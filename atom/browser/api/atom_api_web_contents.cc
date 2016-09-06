@@ -37,7 +37,6 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -76,6 +75,8 @@
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
 #endif
+
+#include "atom/common/node_includes.h"
 
 namespace {
 
@@ -871,7 +872,8 @@ void WebContents::DownloadURL(const GURL& url) {
     content::BrowserContext::GetDownloadManager(browser_context);
 
   download_manager->DownloadUrl(
-    content::DownloadUrlParameters::FromWebContents(web_contents(), url));
+      content::DownloadUrlParameters::CreateForWebContentsMainFrame(
+          web_contents(), url));
 }
 
 GURL WebContents::GetURL() const {
@@ -1177,7 +1179,7 @@ void WebContents::ShowDefinitionForSelection() {
 }
 
 void WebContents::CopyImageAt(int x, int y) {
-  const auto host = web_contents()->GetRenderViewHost();
+  const auto host = web_contents()->GetMainFrame();
   if (host)
     host->CopyImageAt(x, y);
 }

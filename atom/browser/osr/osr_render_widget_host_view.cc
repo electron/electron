@@ -302,10 +302,9 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
   AtomBeginFrameTimer(int frame_rate_threshold_ms,
                       const base::Closure& callback)
       : callback_(callback) {
-    time_source_ = cc::DelayBasedTimeSource::Create(
-        base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms),
+    time_source_.reset(new cc::DelayBasedTimeSource(
         content::BrowserThread::GetMessageLoopProxyForThread(
-          content::BrowserThread::UI).get());
+          content::BrowserThread::UI).get()));
     time_source_->SetClient(this);
   }
 
@@ -522,21 +521,17 @@ bool OffScreenRenderWidgetHostView::LockMouse() {
 void OffScreenRenderWidgetHostView::UnlockMouse() {
 }
 
-bool OffScreenRenderWidgetHostView::GetScreenColorProfile(std::vector<char>*) {
-  return false;
-}
-
 void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
   uint32_t output_surface_id,
-  std::unique_ptr<cc::CompositorFrame> frame) {
+  cc::CompositorFrame frame) {
   TRACE_EVENT0("electron",
     "OffScreenRenderWidgetHostView::OnSwapCompositorFrame");
 
-  if (frame->metadata.root_scroll_offset != last_scroll_offset_) {
-    last_scroll_offset_ = frame->metadata.root_scroll_offset;
+  if (frame.metadata.root_scroll_offset != last_scroll_offset_) {
+    last_scroll_offset_ = frame.metadata.root_scroll_offset;
   }
 
-  if (frame->delegated_frame_data) {
+  if (frame.delegated_frame_data) {
     if (software_output_device_) {
       if (!begin_frame_timer_.get()) {
         software_output_device_->SetActive(painting_);
@@ -551,7 +546,7 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
       }
 
       cc::RenderPass* root_pass =
-          frame->delegated_frame_data->render_pass_list.back().get();
+          frame.delegated_frame_data->render_pass_list.back().get();
       gfx::Size frame_size = root_pass->output_rect.size();
       gfx::Rect damage_rect =
           gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));

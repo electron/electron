@@ -17,6 +17,7 @@
 #include "chrome/common/chrome_paths_internal.h"
 #include "chrome/common/widevine_cdm_constants.h"
 #include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
+#include "third_party/widevine/cdm/widevine_cdm_common.h"
 
 #if defined(OS_ANDROID)
 #include "base/android/path_utils.h"

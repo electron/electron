@@ -32,6 +32,7 @@
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
+#include "content/public/browser/geolocation_delegate.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/resource_dispatcher_host.h"
@@ -52,6 +53,19 @@ bool g_suppress_renderer_process_restart = false;
 
 // Custom schemes to be registered to handle service worker.
 std::string g_custom_service_worker_schemes = "";
+
+// A provider of Geolocation services to override AccessTokenStore.
+class AtomGeolocationDelegate : public content::GeolocationDelegate {
+ public:
+  AtomGeolocationDelegate() = default;
+
+  content::AccessTokenStore* CreateAccessTokenStore() final {
+    return new AtomAccessTokenStore();
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AtomGeolocationDelegate);
+};
 
 void Noop(scoped_refptr<content::SiteInstance>) {
 }
@@ -99,8 +113,9 @@ content::SpeechRecognitionManagerDelegate*
   return new AtomSpeechRecognitionManagerDelegate;
 }
 
-content::AccessTokenStore* AtomBrowserClient::CreateAccessTokenStore() {
-  return new AtomAccessTokenStore;
+content::GeolocationDelegate*
+AtomBrowserClient::CreateGeolocationDelegate() {
+  return new AtomGeolocationDelegate();
 }
 
 void AtomBrowserClient::OverrideWebkitPrefs(

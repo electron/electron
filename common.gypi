@@ -228,6 +228,17 @@
           }],  # OS=="win"
         ],
       }],
+      ['_target_name.startswith("crashpad")', {
+        'conditions': [
+          ['OS=="mac"', {
+            'xcode_settings': {
+              'WARNING_CFLAGS': [
+                '-Wno-unused-private-field',
+              ],
+            },
+          }],  # OS=="mac"
+        ],
+      }],
       ['_target_name.startswith("breakpad") or _target_name in ["crash_report_sender", "dump_syms"]', {
         'conditions': [
           ['OS=="mac"', {
