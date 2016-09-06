@@ -1012,6 +1012,9 @@ void WebContents::InspectElement(int x, int y) {
   if (type_ == REMOTE)
     return;
 
+  if (disable_devtools_)
+    return;
+
   if (!managed_web_contents()->GetDevToolsWebContents())
     OpenDevTools(nullptr);
   scoped_refptr<content::DevToolsAgentHost> agent(
@@ -1021,6 +1024,9 @@ void WebContents::InspectElement(int x, int y) {
 
 void WebContents::InspectServiceWorker() {
   if (type_ == REMOTE)
+    return;
+
+  if (disable_devtools_)
     return;
 
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
