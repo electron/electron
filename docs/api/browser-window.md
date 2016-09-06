@@ -18,7 +18,7 @@ win.on('closed', () => {
 win.loadURL('https://github.com')
 
 // Or load a local HTML file
-win.loadURL(`file://${__dirname}/app/index.html`)
+win.loadURL('file://${__dirname}/app/index.html')
 ```
 
 ## Frameless window
