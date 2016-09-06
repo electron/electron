@@ -199,10 +199,11 @@
         ['OS=="win"', {
           'conditions': [
             ['libchromiumcontent_component', {
-              # sandbox, base_static, devtools_discovery, devtools_http_handler,
-              # http_server are always linked statically.
               'link_settings': {
                 'libraries': [
+                  # Needed by desktop_capture.lib:
+                  '-ld3d11.lib',
+                  # Following libs are always linked statically.
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
                   '<(libchromiumcontent_dir)/sandbox_helper_win.lib',
