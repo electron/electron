@@ -116,8 +116,8 @@
   <script>
     const {remote, shell} = require('electron');
 
-    var execPath = remote.process.execPath;
-    var command = execPath + ' path-to-your-app';
+    const execPath = remote.process.execPath;
+    const command = execPath + ' path-to-your-app';
 
     document.onclick = function(e) {
       e.preventDefault();
@@ -195,7 +195,7 @@
   </div>
 
   <script>
-    var holder = document.getElementById('holder');
+    const holder = document.getElementById('holder');
     holder.ondragover = function () {
       this.className = 'hover';
       return false;
@@ -208,7 +208,7 @@
       this.className = '';
       e.preventDefault();
 
-      var file = e.dataTransfer.files[0];
+      const file = e.dataTransfer.files[0];
       require('child_process').execFile(execPath, [file.path], {
         detached: true, stdio: 'ignore'
       }).unref();
