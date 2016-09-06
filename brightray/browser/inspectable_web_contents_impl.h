@@ -157,7 +157,7 @@ class InspectableWebContentsImpl :
       content::WebContents* source,
       SkColor color,
       const std::vector<content::ColorSuggestion>& suggestions) override;
-  void RunFileChooser(content::WebContents* source,
+  void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       const content::FileChooserParams& params) override;
   void EnumerateDirectory(content::WebContents* source,
                           int request_id,

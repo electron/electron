@@ -295,7 +295,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     }
 
     // --ignore-certificate-errors
-    if (command_line.HasSwitch(::switches::kIgnoreCertificateErrors))
+    if (command_line.HasSwitch(switches::kIgnoreCertificateErrors))
       network_session_params.ignore_certificate_errors = true;
 
     // --host-rules

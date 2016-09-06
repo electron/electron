@@ -54,8 +54,8 @@ gfx::Image& ContentClient::GetNativeImageNamed(int resource_id) const {
       resource_id);
 }
 
-base::RefCountedStaticMemory* ContentClient::GetDataResourceBytes(
-      int resource_id) const {
+base::RefCountedMemory* ContentClient::GetDataResourceBytes(
+    int resource_id) const {
   return ResourceBundle::GetSharedInstance().LoadDataResourceBytes(resource_id);
 }
 
