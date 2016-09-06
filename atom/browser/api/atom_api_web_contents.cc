@@ -841,7 +841,14 @@ void WebContents::NavigationEntryCommitted(
        details.is_in_page, details.did_replace_entry);
 }
 
-int WebContents::GetID() const {
+int64_t WebContents::GetID() const {
+  int64_t process_id = web_contents()->GetRenderProcessHost()->GetID();
+  int64_t routing_id = web_contents()->GetRoutingID();
+  int64_t rv = (process_id << 32) + routing_id;
+  return rv;
+}
+
+int WebContents::GetProcessID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
@@ -1536,6 +1543,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("getId", &WebContents::GetID)
+      .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("downloadURL", &WebContents::DownloadURL)

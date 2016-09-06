@@ -68,7 +68,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  int GetID() const;
+  int64_t GetID() const;
+  int GetProcessID() const;
   Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
