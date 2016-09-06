@@ -65,18 +65,22 @@ WebRequest::WebRequest(v8::Isolate* isolate,
 }
 
 WebRequest::~WebRequest() {
-  net::URLFetcher::CancelAll();
+  fetchers_.clear();
 }
 
 void WebRequest::OnURLFetchComplete(
     const net::URLFetcher* source) {
+  FetchCallback callback = fetchers_[source];
+  fetchers_.erase(source);
+
   mate::Dictionary response = mate::Dictionary::CreateEmpty(isolate());
   int response_code = source->GetResponseCode();
   response.Set("statusCode", response_code);
 
   std::string body;
   v8::Local<v8::Value> err = v8::Null(isolate());
-  if (response_code == net::URLFetcher::ResponseCode::RESPONSE_CODE_INVALID) {
+  if (response_code == net::URLFetcher::ResponseCode::RESPONSE_CODE_INVALID ||
+      !source->GetStatus().is_success()) {
     base::DictionaryValue dict;
     dict.SetInteger("errorCode", source->GetStatus().error());
     err = mate::ConvertToV8(isolate(), dict);
@@ -85,12 +89,10 @@ void WebRequest::OnURLFetchComplete(
     source->GetResponseAsString(&body);
   }
 
-  FetchCallback callback = fetchers_[source];
   // error, response, body
   const uint8_t* data = reinterpret_cast<const uint8_t*>(body.c_str());
   callback.Run(err, response, v8::String::NewFromOneByte(isolate(),
       data, v8::NewStringType::kNormal, body.length()).ToLocalChecked());
-  fetchers_.erase(source);
 }
 
 void WebRequest::Fetch(mate::Arguments* args) {
