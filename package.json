@@ -4,7 +4,7 @@
   "devDependencies": {
     "asar": "^0.11.0",
     "electabul": "~0.0.4",
-    "electron-docs-linter": "^1.4.0",
+    "electron-docs-linter": "^1.6.2",
     "request": "*",
     "standard": "^7.1.2",
     "standard-markdown": "^1.2.1"
@@ -34,7 +34,7 @@
     "lint-cpp": "python ./script/cpplint.py",
     "lint-py": "python ./script/pylint.py",
     "lint-api-docs-js": "standard-markdown docs",
-    "lint-api-docs": "electron-docs-linter docs/api",
+    "lint-api-docs": "electron-docs-linter docs/api --version=$npm_package_version --outfile=out/electron-api.json",
     "preinstall": "node -e 'process.exit(0)'",
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
