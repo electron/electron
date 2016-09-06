@@ -959,6 +959,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
 // we need to make sure the api::WebContents is also deleted.
 void WebContents::WebContentsDestroyed() {
+  memory_pressure_listener_.reset();
   // clear out fullscreen state
   if (CommonWebContentsDelegate::IsFullscreenForTabOrPending(web_contents())) {
     ExitFullscreenModeForTab(web_contents());
