@@ -547,8 +547,9 @@ describe('browser-window module', function () {
     describe('"node-integration" option', function () {
       it('disables node integration when specified to false', function (done) {
         var preload = path.join(fixtures, 'module', 'send-later.js')
-        ipcMain.once('answer', function (event, test) {
-          assert.equal(test, 'undefined')
+        ipcMain.once('answer', function (event, typeofProcess, typeofBuffer) {
+          assert.equal(typeofProcess, 'undefined')
+          assert.equal(typeofBuffer, 'undefined')
           done()
         })
         w.destroy()
