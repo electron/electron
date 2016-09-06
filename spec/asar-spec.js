@@ -744,6 +744,14 @@ describe('asar package', function () {
           fs.readdirSync(asar)
         }, /ENOTDIR/)
       })
+
+      it('is reset to its original value when execSync throws an error', function () {
+        process.noAsar = false
+        assert.throws(function () {
+          ChildProcess.execSync(path.join(__dirname, 'does-not-exist.txt'))
+        })
+        assert.equal(process.noAsar, false)
+      })
     })
   })
 
