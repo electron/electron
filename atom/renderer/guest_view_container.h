@@ -32,7 +32,6 @@ class GuestViewContainer : public content::BrowserPluginDelegate {
 
  private:
   int element_instance_id_;
-  content::RenderFrame* render_frame_;
 
   ResizeCallback element_resize_callback_;
 

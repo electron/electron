@@ -9,7 +9,6 @@
 
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 #include "native_mate/dictionary.h"
@@ -20,6 +19,8 @@
 #include "net/cert/x509_certificate.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
+
+#include "atom/common/node_includes.h"
 
 namespace mate {
 

@@ -29,13 +29,11 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
   void DidCreateDocumentElement(blink::WebLocalFrame* frame) override;
   void DraggableRegionsChanged(blink::WebFrame* frame) override;
   bool OnMessageReceived(const IPC::Message& message) override;
+  void OnDestruct() override;
 
   void OnBrowserMessage(bool send_to_all,
                         const base::string16& channel,
                         const base::ListValue& args);
-
-  // Weak reference to renderer client.
-  AtomRendererClient* renderer_client_;
 
   // Whether the document object has been created.
   bool document_created_;

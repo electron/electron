@@ -13,6 +13,7 @@ class FilePath;
 
 namespace content {
 struct FileChooserParams;
+class RenderFrameHost;
 class WebContents;
 }
 
@@ -25,7 +26,7 @@ class WebDialogHelper {
   explicit WebDialogHelper(NativeWindow* window);
   ~WebDialogHelper();
 
-  void RunFileChooser(content::WebContents* web_contents,
+  void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       const content::FileChooserParams& params);
   void EnumerateDirectory(content::WebContents* web_contents,
                           int request_id,

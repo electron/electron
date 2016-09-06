@@ -375,7 +375,7 @@ base::Value* V8ValueConverter::FromNodeBuffer(
     FromV8ValueState* state,
     v8::Isolate* isolate) const {
   return base::BinaryValue::CreateWithCopiedBuffer(
-      node::Buffer::Data(value), node::Buffer::Length(value));
+      node::Buffer::Data(value), node::Buffer::Length(value)).release();
 }
 
 base::Value* V8ValueConverter::FromV8Object(

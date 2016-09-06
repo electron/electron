@@ -33,6 +33,7 @@
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"

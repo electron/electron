@@ -14,7 +14,6 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "content/public/browser/render_process_host.h"
@@ -30,6 +29,8 @@
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/taskbar_host.h"
 #endif
+
+#include "atom/common/node_includes.h"
 
 #if defined(OS_WIN)
 namespace mate {

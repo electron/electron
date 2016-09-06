@@ -238,7 +238,6 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   dict.Get("accelerationRatioX", &out->accelerationRatioX);
   dict.Get("accelerationRatioY", &out->accelerationRatioY);
   dict.Get("hasPreciseScrollingDeltas", &out->hasPreciseScrollingDeltas);
-  dict.Get("canScroll", &out->canScroll);
   return true;
 }
 
