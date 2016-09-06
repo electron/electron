@@ -7,9 +7,10 @@
 #include <memory>
 
 #include "base/bind.h"
-#include "components/prefs/pref_service.h"
+#include "base/memory/ref_counted_memory.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
+#include "components/prefs/pref_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/printing/print_job.h"

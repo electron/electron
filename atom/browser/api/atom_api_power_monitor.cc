@@ -5,10 +5,11 @@
 #include "atom/browser/api/atom_api_power_monitor.h"
 
 #include "atom/browser/browser.h"
-#include "atom/common/node_includes.h"
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "native_mate/dictionary.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
