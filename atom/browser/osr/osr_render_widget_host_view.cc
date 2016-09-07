@@ -371,7 +371,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_->SetRootLayer(root_layer_.get());
 #endif
 
-  LOG(ERROR) << "GetRootLayer: " << GetRootLayer();
   ResizeRootLayer();
 }
 
