@@ -247,10 +247,8 @@ describe('node feature', function () {
       })
     })
 
-    it('does not throw an exception when calling read()', function () {
-      assert.doesNotThrow(function () {
-        assert.equal(process.stdin.read(), null)
-      })
+    it('returns null when read from', function () {
+      assert.equal(process.stdin.read(), null)
     })
   })
 
