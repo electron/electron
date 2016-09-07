@@ -78,7 +78,8 @@ def main():
   upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME))
   upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME))
   if PLATFORM == 'darwin':
-    upload_electron(github, release, os.path.join(DIST_DIR, 'electron-api.json'))
+      upload_electron(github, release, os.path.join(DIST_DIR,
+                      'electron-api.json'))
     upload_electron(github, release, os.path.join(DIST_DIR, DSYM_NAME))
   elif PLATFORM == 'win32':
     upload_electron(github, release, os.path.join(DIST_DIR, PDB_NAME))
