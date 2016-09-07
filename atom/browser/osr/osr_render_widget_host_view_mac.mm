@@ -137,14 +137,27 @@ void OffScreenRenderWidgetHostView::SelectionChanged(
 }
 
 void OffScreenRenderWidgetHostView::CreatePlatformWidget() {
-  nsview_ = new MacHelper(this);
+  mac_helper_ = new MacHelper(this);
   browser_compositor_.reset(new content::BrowserCompositorMac(
-      nsview_, nsview_, render_widget_host_->is_hidden(), true));
+      mac_helper_, mac_helper_, render_widget_host_->is_hidden(), true));
 }
 
 void OffScreenRenderWidgetHostView::DestroyPlatformWidget() {
   browser_compositor_.reset();
-  delete nsview_;
+  delete mac_helper_;
+}
+
+ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() const {
+  return browser_compositor_->GetCompositor();
+}
+
+ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
+  return browser_compositor_->GetRootLayer();
+}
+
+content::DelegatedFrameHost*
+OffScreenRenderWidgetHostView::GetDelegatedFrameHost() const {
+  return browser_compositor_->GetDelegatedFrameHost();
 }
 
 }   // namespace
