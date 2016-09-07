@@ -189,7 +189,10 @@ class OffScreenRenderWidgetHostView
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
 
-  ui::Compositor* compositor() const { return compositor_.get(); }
+  ui::Compositor* GetCompositor() const;
+  ui::Layer* GetRootLayer() const;
+  content::DelegatedFrameHost* GetDelegatedFrameHost() const;
+
   content::RenderWidgetHostImpl* render_widget_host() const
       { return render_widget_host_; }
   NativeWindow* window() const { return native_window_; }
@@ -230,7 +233,7 @@ class OffScreenRenderWidgetHostView
 
   // Can not be managed by smart pointer because its header can not be included
   // in the file that has the destructor.
-  MacHelper* nsview_;
+  MacHelper* mac_helper_;
 
   // Selected text on the renderer.
   std::string selected_text_;

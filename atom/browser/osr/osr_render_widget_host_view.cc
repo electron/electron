@@ -71,8 +71,9 @@ class AtomCopyFrameGenerator {
       content::BrowserThread::PostDelayedTask(content::BrowserThread::UI,
         FROM_HERE,
         base::Bind(&AtomCopyFrameGenerator::InternalGenerateCopyFrame,
-        weak_ptr_factory_.GetWeakPtr()), base::TimeDelta::FromMilliseconds(
-        frame_rate_threshold_ms_ - frame_rate_delta));
+                   weak_ptr_factory_.GetWeakPtr()),
+        base::TimeDelta::FromMilliseconds(
+            frame_rate_threshold_ms_ - frame_rate_delta));
       return;
     }
 
@@ -103,9 +104,7 @@ class AtomCopyFrameGenerator {
             damage_rect));
 
     request->set_area(gfx::Rect(view_->GetPhysicalBackingSize()));
-
-    view_->DelegatedFrameHostGetLayer()->RequestCopyOfOutput(
-        std::move(request));
+    view_->GetRootLayer()->RequestCopyOfOutput(std::move(request));
   }
 
   void CopyFromCompositingSurfaceHasResult(
@@ -350,11 +349,16 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       is_showing_(!render_widget_host_->is_hidden()),
       size_(native_window->GetSize()),
       painting_(true),
-      root_layer_(new ui::Layer(ui::LAYER_SOLID_COLOR)),
+#if !defined(OS_MACOSX)
       delegated_frame_host_(new content::DelegatedFrameHost(this)),
+#endif
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   render_widget_host_->SetView(this);
+
+#if !defined(OS_MACOSX)
+  root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
+#endif
 
 #if defined(OS_MACOSX)
   CreatePlatformWidget();
@@ -363,17 +367,25 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       new ui::Compositor(content::GetContextFactory(),
                          base::ThreadTaskRunnerHandle::Get()));
   compositor_->SetAcceleratedWidget(native_window_->GetAcceleratedWidget());
-#endif
   compositor_->SetDelegate(this);
   compositor_->SetRootLayer(root_layer_.get());
+#endif
 
+  LOG(ERROR) << "GetRootLayer: " << GetRootLayer();
   ResizeRootLayer();
 }
 
 OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
+#if defined(OS_MACOSX)
+  if (is_showing_)
+    browser_compositor_->SetRenderWidgetHostIsHidden(true);
+#else
+  // Marking the DelegatedFrameHost as removed from the window hierarchy is
+  // necessary to remove all connections to its old ui::Compositor.
   if (is_showing_)
     delegated_frame_host_->WasHidden();
   delegated_frame_host_->ResetCompositor();
+#endif
 
 #if defined(OS_MACOSX)
   DestroyPlatformWidget();
@@ -431,8 +443,8 @@ void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
   const gfx::Size& size_in_pixels =
     gfx::ConvertSizeToPixel(scale_factor_, size);
 
-  root_layer_->SetBounds(gfx::Rect(size));
-  compositor_->SetScaleAndSize(scale_factor_, size_in_pixels);
+  GetRootLayer()->SetBounds(gfx::Rect(size));
+  GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels);
 }
 
 void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
@@ -463,7 +475,7 @@ bool OffScreenRenderWidgetHostView::HasFocus() const {
 }
 
 bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() const {
-  return delegated_frame_host_->CanCopyToBitmap();
+  return GetDelegatedFrameHost()->CanCopyToBitmap();
 }
 
 void OffScreenRenderWidgetHostView::Show() {
@@ -471,10 +483,16 @@ void OffScreenRenderWidgetHostView::Show() {
     return;
 
   is_showing_ = true;
-  if (render_widget_host_)
-    render_widget_host_->WasShown(ui::LatencyInfo());
+
+#if defined(OS_MACOSX)
+  browser_compositor_->SetRenderWidgetHostIsHidden(false);
+#else
   delegated_frame_host_->SetCompositor(compositor_.get());
   delegated_frame_host_->WasShown(ui::LatencyInfo());
+#endif
+
+  if (render_widget_host_)
+    render_widget_host_->WasShown(ui::LatencyInfo());
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
@@ -483,8 +501,14 @@ void OffScreenRenderWidgetHostView::Hide() {
 
   if (render_widget_host_)
     render_widget_host_->WasHidden();
-  delegated_frame_host_->WasHidden();
-  delegated_frame_host_->ResetCompositor();
+
+#if defined(OS_MACOSX)
+  browser_compositor_->SetRenderWidgetHostIsHidden(true);
+#else
+  GetDelegatedFrameHost()->WasHidden();
+  GetDelegatedFrameHost()->ResetCompositor();
+#endif
+
   is_showing_ = false;
 }
 
@@ -537,14 +561,23 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
         software_output_device_->SetActive(painting_);
       }
 
+      // The compositor will draw directly to the SoftwareOutputDevice which
+      // then calls OnPaint.
+#if defined(OS_MACOSX)
+      browser_compositor_->SwapCompositorFrame(output_surface_id,
+                                               std::move(frame));
+#else
       delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
                                                 std::move(frame));
+#endif
     } else {
       if (!copy_frame_generator_.get()) {
         copy_frame_generator_.reset(
             new AtomCopyFrameGenerator(frame_rate_threshold_ms_, this));
       }
 
+      // Determine the damage rectangle for the current frame. This is the same
+      // calculation that SwapDelegatedFrame uses.
       cc::RenderPass* root_pass =
           frame.delegated_frame_data->render_pass_list.back().get();
       gfx::Size frame_size = root_pass->output_rect.size();
@@ -552,17 +585,23 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
           gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
       damage_rect.Intersect(gfx::Rect(frame_size));
 
+#if defined(OS_MACOSX)
+      browser_compositor_->SwapCompositorFrame(output_surface_id,
+                                               std::move(frame));
+#else
       delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
                                                 std::move(frame));
+#endif
 
-      if (painting_)
-        copy_frame_generator_->GenerateCopyFrame(true, damage_rect);
+      // Request a copy of the last compositor frame which will eventually call
+      // OnPaint asynchronously.
+      copy_frame_generator_->GenerateCopyFrame(true, damage_rect);
     }
   }
 }
 
 void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
-  delegated_frame_host_->ClearDelegatedFrame();
+  GetDelegatedFrameHost()->ClearDelegatedFrame();
 }
 
 void OffScreenRenderWidgetHostView::InitAsPopup(
@@ -607,7 +646,7 @@ void OffScreenRenderWidgetHostView::CopyFromCompositingSurface(
     const gfx::Size& dst_size,
     const content::ReadbackRequestCallback& callback,
     const SkColorType preferred_color_type) {
-  delegated_frame_host_->CopyFromCompositingSurface(
+  GetDelegatedFrameHost()->CopyFromCompositingSurface(
     src_subrect, dst_size, callback, preferred_color_type);
 }
 
@@ -615,21 +654,21 @@ void OffScreenRenderWidgetHostView::CopyFromCompositingSurfaceToVideoFrame(
     const gfx::Rect& src_subrect,
     const scoped_refptr<media::VideoFrame>& target,
     const base::Callback<void(const gfx::Rect&, bool)>& callback) {
-  delegated_frame_host_->CopyFromCompositingSurfaceToVideoFrame(
+  GetDelegatedFrameHost()->CopyFromCompositingSurfaceToVideoFrame(
     src_subrect, target, callback);
 }
 
 bool OffScreenRenderWidgetHostView::CanCopyToVideoFrame() const {
-  return delegated_frame_host_->CanCopyToVideoFrame();
+  return GetDelegatedFrameHost()->CanCopyToVideoFrame();
 }
 
 void OffScreenRenderWidgetHostView::BeginFrameSubscription(
   std::unique_ptr<content::RenderWidgetHostViewFrameSubscriber> subscriber) {
-  delegated_frame_host_->BeginFrameSubscription(std::move(subscriber));
+  GetDelegatedFrameHost()->BeginFrameSubscription(std::move(subscriber));
 }
 
 void OffScreenRenderWidgetHostView::EndFrameSubscription() {
-  delegated_frame_host_->EndFrameSubscription();
+  GetDelegatedFrameHost()->EndFrameSubscription();
 }
 
 bool OffScreenRenderWidgetHostView::HasAcceleratedSurface(const gfx::Size &) {
@@ -744,7 +783,7 @@ void OffScreenRenderWidgetHostView::SetBeginFrameSource(
 std::unique_ptr<cc::SoftwareOutputDevice>
   OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(
     ui::Compositor* compositor) {
-  DCHECK_EQ(compositor_.get(), compositor);
+  DCHECK_EQ(GetCompositor(), compositor);
   DCHECK(!copy_frame_generator_);
   DCHECK(!software_output_device_);
 
@@ -758,7 +797,11 @@ std::unique_ptr<cc::SoftwareOutputDevice>
 bool OffScreenRenderWidgetHostView::InstallTransparency() {
   if (transparent_) {
     SetBackgroundColor(SkColor());
+#if defined(OS_MACOSX)
+    browser_compositor_->SetHasTransparentBackground(true);
+#else
     compositor_->SetHostHasTransparentBackground(true);
+#endif
     return true;
   }
   return false;
@@ -811,13 +854,28 @@ int OffScreenRenderWidgetHostView::GetFrameRate() const {
   return frame_rate_;
 }
 
+#if !defined(OS_MACOSX)
+ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() const {
+  return compositor_.get();
+}
+
+ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
+  return root_layer_.get();
+}
+
+content::DelegatedFrameHost*
+OffScreenRenderWidgetHostView::GetDelegatedFrameHost() const {
+  return delegated_frame_host_.get();
+}
+#endif
+
 void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
   if (!force && frame_rate_threshold_ms_ != 0)
     return;
 
   frame_rate_threshold_ms_ = 1000 / frame_rate_;
 
-  compositor_->vsync_manager()->SetAuthoritativeVSyncInterval(
+  GetCompositor()->vsync_manager()->SetAuthoritativeVSyncInterval(
       base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms_));
 
   if (copy_frame_generator_.get()) {
@@ -843,14 +901,14 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer() {
 
   gfx::Size size = GetViewBounds().size();
 
-  if (!scaleFactorDidChange && size == root_layer_->bounds().size())
+  if (!scaleFactorDidChange && size == GetRootLayer()->bounds().size())
     return;
 
   const gfx::Size& size_in_pixels =
       gfx::ConvertSizeToPixel(scale_factor_, size);
 
-  root_layer_->SetBounds(gfx::Rect(size));
-  compositor_->SetScaleAndSize(scale_factor_, size_in_pixels);
+  GetRootLayer()->SetBounds(gfx::Rect(size));
+  GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels);
 }
 
 }  // namespace atom
