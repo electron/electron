@@ -4,6 +4,8 @@
 
 #include "brave/browser/renderer_preferences_helper.h"
 
+#include <string>
+
 #include "brave/browser/brave_content_browser_client.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
@@ -40,4 +42,4 @@ void RendererPreferencesHelper::RenderViewHostChanged(
   UpdateRendererPreferences();
 }
 
-} // namespace brave
+}  // namespace brave

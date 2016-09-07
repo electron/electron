@@ -5,6 +5,8 @@
 #ifndef BRAVE_RENDERER_BRAVE_CONTENT_RENDERER_CLIENT_H_
 #define BRAVE_RENDERER_BRAVE_CONTENT_RENDERER_CLIENT_H_
 
+#include <string>
+
 #include "atom/renderer/atom_renderer_client.h"
 
 namespace atom {
@@ -50,6 +52,6 @@ class BraveContentRendererClient : public atom::AtomRendererClient {
   DISALLOW_COPY_AND_ASSIGN(BraveContentRendererClient);
 };
 
-}  // namespace atom
+}  // namespace brave
 
 #endif  // BRAVE_RENDERER_BRAVE_CONTENT_RENDERER_CLIENT_H_

@@ -5,6 +5,9 @@
 #ifndef BRAVE_BROWSER_NOTIFICATIONS_PLATFORM_NOTIFICATION_SERVICE_IMPL_H_
 #define BRAVE_BROWSER_NOTIFICATIONS_PLATFORM_NOTIFICATION_SERVICE_IMPL_H_
 
+#include <set>
+#include <string>
+
 #include "base/memory/singleton.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/platform_notification_service.h"
@@ -16,7 +19,7 @@ class BrowserClient;
 class PlatformNotificationServiceImpl
     : public content::PlatformNotificationService {
  public:
-  explicit PlatformNotificationServiceImpl();
+  PlatformNotificationServiceImpl();
   ~PlatformNotificationServiceImpl() override;
 
   static PlatformNotificationServiceImpl* GetInstance();

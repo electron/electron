@@ -42,7 +42,8 @@ void BraveContentRendererClient::RenderFrameCreated(
   extensions::Dispatcher* ext_dispatcher = NULL;
 #if defined(ENABLE_EXTENSIONS)
   ext_dispatcher =
-      extensions::AtomExtensionsRendererClient::GetInstance()->extension_dispatcher();
+      extensions::AtomExtensionsRendererClient::GetInstance()->
+          extension_dispatcher();
 #endif
   new atom::ContentSettingsClient(render_frame,
                                   ext_dispatcher,
@@ -62,7 +63,8 @@ void BraveContentRendererClient::RenderFrameCreated(
                     NULL);
 }
 
-void BraveContentRendererClient::RenderViewCreated(content::RenderView* render_view) {
+void BraveContentRendererClient::RenderViewCreated(
+    content::RenderView* render_view) {
   AtomRendererClient::RenderViewCreated(render_view);
 #if defined(ENABLE_EXTENSIONS)
   extensions::AtomExtensionsRendererClient::GetInstance()->
@@ -133,7 +135,8 @@ bool BraveContentRendererClient::WillSendRequest(
   return false;
 }
 
-void BraveContentRendererClient::DidInitializeServiceWorkerContextOnWorkerThread(
+void
+  BraveContentRendererClient::DidInitializeServiceWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context,
     const GURL& url) {
 #if defined(ENABLE_EXTENSIONS)

@@ -113,6 +113,17 @@ BraveBrowserContext::~BraveBrowserContext() {
   if (user_prefs_registrar_.get())
     user_prefs_registrar_->RemoveAll();
 
+  if (otr_context_.get()) {
+    auto user_prefs = user_prefs::UserPrefs::Get(otr_context_.get());
+    if (user_prefs)
+      user_prefs->ClearMutableValues();
+    otr_context_ = NULL;
+#if defined(ENABLE_EXTENSIONS)
+    ExtensionPrefValueMapFactory::GetForBrowserContext(this)->
+        ClearAllIncognitoSessionOnlyPreferences();
+#endif
+  }
+
   if (!IsOffTheRecord()) {
     autofill_data_->ShutdownOnUIThread();
     web_database_->ShutdownDatabase();
@@ -134,18 +145,8 @@ BraveBrowserContext::~BraveBrowserContext() {
 #if defined(ENABLE_EXTENSIONS)
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&NotifyOTRProfileDestroyedOnIOThread, base::Unretained(original_context_), base::Unretained(this)));
-#endif
-  }
-
-  if (otr_context_.get()) {
-    auto user_prefs = user_prefs::UserPrefs::Get(otr_context_.get());
-    if (user_prefs)
-      user_prefs->ClearMutableValues();
-    otr_context_ = NULL;
-#if defined(ENABLE_EXTENSIONS)
-    ExtensionPrefValueMapFactory::GetForBrowserContext(this)->
-        ClearAllIncognitoSessionOnlyPreferences();
+      base::Bind(&NotifyOTRProfileDestroyedOnIOThread,
+          base::Unretained(original_context_), base::Unretained(this)));
 #endif
   }
 
@@ -257,10 +258,11 @@ BraveBrowserContext::CreateURLRequestJobFactory(
   extensions::InfoMap* extension_info_map =
       extensions::AtomExtensionSystemFactory::GetInstance()->
         GetForBrowserContext(this)->info_map();
-  static_cast<atom::AtomURLRequestJobFactory*>(job_factory.get())->SetProtocolHandler(
-      extensions::kExtensionScheme,
-      extensions::CreateExtensionProtocolHandler(IsOffTheRecord(),
-                                                 extension_info_map));
+  static_cast<atom::AtomURLRequestJobFactory*>(
+      job_factory.get())->SetProtocolHandler(
+          extensions::kExtensionScheme,
+          extensions::CreateExtensionProtocolHandler(IsOffTheRecord(),
+                                                     extension_info_map));
 #endif
 
   std::unique_ptr<ProtocolHandlerRegistry::JobInterceptorFactory>
@@ -381,7 +383,8 @@ content::ResourceContext* BraveBrowserContext::GetResourceContext() {
 }
 
 std::unique_ptr<content::ZoomLevelDelegate>
-BraveBrowserContext::CreateZoomLevelDelegate(const base::FilePath& partition_path) {
+BraveBrowserContext::CreateZoomLevelDelegate(
+    const base::FilePath& partition_path) {
   return base::WrapUnique(new ChromeZoomLevelPrefs(
       GetPrefs(), GetPath(), partition_path,
       ui_zoom::ZoomEventManager::GetForBrowserContext(this)->GetWeakPtr()));
@@ -408,5 +411,5 @@ scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
   return new brave::BraveBrowserContext(partition, in_memory, options);
 }
 
-}  // namespace brightray
+}  // namespace atom
 

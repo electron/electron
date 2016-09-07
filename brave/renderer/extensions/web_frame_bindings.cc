@@ -4,6 +4,9 @@
 
 #include "brave/renderer/extensions/web_frame_bindings.h"
 
+#include <string>
+#include <vector>
+
 #include "base/strings/utf_string_conversions.h"
 #include "extensions/renderer/script_context.h"
 #include "third_party/WebKit/public/web/WebView.h"
@@ -17,7 +20,7 @@ namespace {
 
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
-  explicit ScriptExecutionCallback() {}
+  ScriptExecutionCallback() {}
   ~ScriptExecutionCallback() override {}
 
   void completed(
@@ -34,10 +37,12 @@ WebFrameBindings::WebFrameBindings(extensions::ScriptContext* context)
     : extensions::ObjectBackedNativeHandler(context) {
   RouteFunction(
       "executeJavaScript",
-      base::Bind(&WebFrameBindings::ExecuteJavaScript, base::Unretained(this)));
+      base::Bind(&WebFrameBindings::ExecuteJavaScript,
+          base::Unretained(this)));
   RouteFunction(
       "setSpellCheckProvider",
-      base::Bind(&WebFrameBindings::SetSpellCheckProvider, base::Unretained(this)));
+      base::Bind(&WebFrameBindings::SetSpellCheckProvider,
+          base::Unretained(this)));
   RouteFunction(
       "setGlobal",
       base::Bind(&WebFrameBindings::SetGlobal, base::Unretained(this)));
@@ -68,7 +73,8 @@ void WebFrameBindings::SetSpellCheckProvider(
 void WebFrameBindings::ExecuteJavaScript(
       const v8::FunctionCallbackInfo<v8::Value>& args) {
   const base::string16 code = base::UTF8ToUTF16(mate::V8ToString(args[0]));
-  v8::Local<v8::Context> main_context = context()->web_frame()->mainWorldScriptContext();
+  v8::Local<v8::Context> main_context =
+      context()->web_frame()->mainWorldScriptContext();
   v8::Context::Scope context_scope(main_context);
 
   std::unique_ptr<blink::WebScriptExecutionCallback> callback(

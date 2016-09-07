@@ -22,7 +22,8 @@ bool WebContentsDestroyed(int render_process_id, int render_frame_id) {
   if (!host)
     return true;
 
-  auto rfh = content::RenderFrameHost::FromID(render_process_id, render_frame_id);
+  auto rfh =
+      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   if (!rfh)
     return true;
 
@@ -47,7 +48,8 @@ void BravePermissionManager::SetPermissionRequestHandler(
     const RequestHandler& handler) {
   if (handler.is_null() && !pending_requests_.empty()) {
     for (const auto& request : pending_requests_) {
-      if (!WebContentsDestroyed(request.second.render_process_id, request.second.render_frame_id))
+      if (!WebContentsDestroyed(
+          request.second.render_process_id, request.second.render_frame_id))
         request.second.callback.Run(blink::mojom::PermissionStatus::DENIED);
     }
     pending_requests_.clear();
@@ -107,7 +109,8 @@ void BravePermissionManager::OnPermissionResponse(
     blink::mojom::PermissionStatus status) {
   auto request = pending_requests_.find(request_id);
   if (request != pending_requests_.end()) {
-    if (!WebContentsDestroyed(request->second.render_process_id, request->second.render_frame_id))
+    if (!WebContentsDestroyed(
+        request->second.render_process_id, request->second.render_frame_id))
       callback.Run(status);
     pending_requests_.erase(request);
   }
@@ -116,7 +119,8 @@ void BravePermissionManager::OnPermissionResponse(
 void BravePermissionManager::CancelPermissionRequest(int request_id) {
   auto request = pending_requests_.find(request_id);
   if (request != pending_requests_.end()) {
-    if (!WebContentsDestroyed(request->second.render_process_id, request->second.render_frame_id)) {
+    if (!WebContentsDestroyed(
+        request->second.render_process_id, request->second.render_frame_id)) {
       request->second.callback.Run(blink::mojom::PermissionStatus::DENIED);
     } else {
       pending_requests_.erase(request);
@@ -124,4 +128,4 @@ void BravePermissionManager::CancelPermissionRequest(int request_id) {
   }
 }
 
-}  // namespace atom
+}  // namespace brave

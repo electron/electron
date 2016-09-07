@@ -4,6 +4,9 @@
 
 #include "brave/browser/notifications/platform_notification_service_impl.h"
 
+#include <set>
+#include <string>
+
 #include "brave/browser/brave_content_browser_client.h"
 #include "brave/browser/brave_permission_manager.h"
 #include "browser/notification.h"
@@ -22,7 +25,7 @@ namespace {
 
 class NotificationProxy : public base::SupportsWeakPtr<NotificationProxy> {
  public:
-  explicit NotificationProxy() {}
+  NotificationProxy() {}
 
   void Dismiss() {
     if (notification_)
@@ -67,7 +70,8 @@ void OnWebNotificationAllowed(
   auto notification = presenter->CreateNotification(adapter.get());
   if (notification) {
     ignore_result(adapter.release());  // it will release itself automatically.
-    notification->Show(data.title, data.body, data.tag, data.icon, icon, data.silent);
+    notification->Show(data.title, data.body, data.tag,
+        data.icon, icon, data.silent);
     if (notification_proxy)
       notification_proxy->set_notification(notification);
   }
@@ -85,14 +89,16 @@ PlatformNotificationServiceImpl::PlatformNotificationServiceImpl() {}
 
 PlatformNotificationServiceImpl::~PlatformNotificationServiceImpl() {}
 
-blink::mojom::PermissionStatus PlatformNotificationServiceImpl::CheckPermissionOnUIThread(
+blink::mojom::PermissionStatus
+  PlatformNotificationServiceImpl::CheckPermissionOnUIThread(
     content::BrowserContext* browser_context,
     const GURL& origin,
     int render_process_id) {
   return blink::mojom::PermissionStatus::GRANTED;
 }
 
-blink::mojom::PermissionStatus PlatformNotificationServiceImpl::CheckPermissionOnIOThread(
+blink::mojom::PermissionStatus
+  PlatformNotificationServiceImpl::CheckPermissionOnIOThread(
     content::ResourceContext* resource_context,
     const GURL& origin,
     int render_process_id) {
@@ -119,9 +125,10 @@ void PlatformNotificationServiceImpl::DisplayNotification(
              base::Passed(&delegate),
              notification_proxy->AsWeakPtr());
 
-  // TODO(bridiver) - there is a memory leak on mac because CocoaNotification never sends
-  // NotificationClosed to the PageNotificationDelegate
-  *cancel_callback = base::Bind(&RemoveNotification, base::Passed(&notification_proxy));
+  // TODO(bridiver) - there is a memory leak on mac because CocoaNotification
+  // never sends NotificationClosed to the PageNotificationDelegate
+  *cancel_callback =
+      base::Bind(&RemoveNotification, base::Passed(&notification_proxy));
 
   auto permission_manager = browser_context->GetPermissionManager();
   permission_manager->RequestPermission(

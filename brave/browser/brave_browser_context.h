@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BRAVE_BROWSER_ATOM_BROWSER_CONTEXT_H_
-#define BRAVE_BROWSER_ATOM_BROWSER_CONTEXT_H_
+#ifndef BRAVE_BROWSER_BRAVE_BROWSER_CONTEXT_H_
+#define BRAVE_BROWSER_BRAVE_BROWSER_CONTEXT_H_
 
 #include <string>
 #include <vector>
@@ -112,4 +112,4 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
 
 }  // namespace brave
 
-#endif  // BRAVE_BROWSER_ATOM_BROWSER_CONTEXT_H_
+#endif  // BRAVE_BROWSER_BRAVE_BROWSER_CONTEXT_H_
