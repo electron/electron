@@ -262,7 +262,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       type_(REMOTE),
       request_id_(0),
       background_throttling_(true),
-      disable_devtools_(false) {
+      enable_devtools_(true) {
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   Init(isolate);
@@ -275,7 +275,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       type_(BROWSER_WINDOW),
       request_id_(0),
       background_throttling_(true),
-      disable_devtools_(false) {
+      enable_devtools_(true) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
@@ -292,8 +292,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   else if (options.Get("offscreen", &b) && b)
     type_ = OFF_SCREEN;
 
-  // Whether to disable DevTools.
-  options.Get("disableDevTools", &disable_devtools_);
+  // Whether to enable DevTools.
+  options.Get("devTools", &enable_devtools_);
 
   // Obtain the session.
   std::string partition;
@@ -945,7 +945,7 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   if (type_ == REMOTE)
     return;
 
-  if (disable_devtools_)
+  if (!enable_devtools_)
     return;
 
   std::string state;
@@ -1012,7 +1012,7 @@ void WebContents::InspectElement(int x, int y) {
   if (type_ == REMOTE)
     return;
 
-  if (disable_devtools_)
+  if (!enable_devtools_)
     return;
 
   if (!managed_web_contents()->GetDevToolsWebContents())
@@ -1026,7 +1026,7 @@ void WebContents::InspectServiceWorker() {
   if (type_ == REMOTE)
     return;
 
-  if (disable_devtools_)
+  if (!enable_devtools_)
     return;
 
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
