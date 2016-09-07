@@ -148,7 +148,7 @@ describe('<webview> tag', function () {
   describe('preload attribute', function () {
     it('loads the script before other scripts in window', function (done) {
       var listener = function (e) {
-        assert.equal(e.message, 'function object object')
+        assert.equal(e.message, 'function object object function')
         webview.removeEventListener('console-message', listener)
         done()
       }
@@ -158,9 +158,9 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
-    it('preload script can still use "process" in required modules when nodeintegration is off', function (done) {
+    it('preload script can still use "process" and "Buffer" in required modules when nodeintegration is off', function (done) {
       webview.addEventListener('console-message', function (e) {
-        assert.equal(e.message, 'object undefined object')
+        assert.equal(e.message, 'object undefined object function')
         done()
       })
       webview.setAttribute('preload', fixtures + '/module/preload-node-off.js')
@@ -189,7 +189,7 @@ describe('<webview> tag', function () {
 
     it('works without script tag in page', function (done) {
       var listener = function (e) {
-        assert.equal(e.message, 'function object object')
+        assert.equal(e.message, 'function object object function')
         webview.removeEventListener('console-message', listener)
         done()
       }
