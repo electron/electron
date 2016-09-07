@@ -959,7 +959,7 @@ Same as `webContents.capturePage([rect, ]callback)`.
 * `options` Object (optional)
   * `httpReferrer` String - A HTTP Referrer url.
   * `userAgent` String - A user agent originating the request.
-  * `extraHeaders` String - Extra headers separated by "\n"
+  * `extraHeaders` String|Array[Array]|Object - Extra headers
 
 Same as `webContents.loadURL(url[, options])`.
 
