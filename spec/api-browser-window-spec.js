@@ -542,6 +542,22 @@ describe('browser-window module', function () {
         })
         w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'))
       })
+
+      it('can successfully delete the Buffer global', function (done) {
+        var preload = path.join(fixtures, 'module', 'delete-buffer.js')
+        ipcMain.once('answer', function (event, test) {
+          assert.equal(test.toString(), 'buffer')
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'))
+      })
     })
 
     describe('"node-integration" option', function () {
