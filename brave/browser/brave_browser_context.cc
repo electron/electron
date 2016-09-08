@@ -286,6 +286,9 @@ void BraveBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   bool async = false;
 
   if (IsOffTheRecord()) {
+    overlay_pref_names_.push_back("app_state");
+    overlay_pref_names_.push_back("content_settings");
+    overlay_pref_names_.push_back(prefs::kPartitionPerHostZoomLevels);
     user_prefs_.reset(
         original_context()->user_prefs()->CreateIncognitoPrefService(
           extension_prefs, overlay_pref_names_));
