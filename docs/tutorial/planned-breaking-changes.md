@@ -5,6 +5,17 @@ The following list includes the APIs that will be removed in Electron 2.0.
 There is no timetable for when this release will occur but deprecation
 warnings will be added at least 90 days beforehand.
 
+## `BrowserWindow`
+
+```js
+// Deprecated
+new BrowserWindow({webPreferences: {blinkFeatures: ''}})
+// Replace with
+new BrowserWindow({webPreferences: {enableBlinkFeatures: ''}})
+```
+
+## `clipboard`
+
 ```js
 // Deprecated
 clipboard.readRtf()
@@ -25,7 +36,11 @@ clipboard.readHTML()
 clipboard.writeHtml()
 // Replace with
 clipboard.writeHTML()
+```
 
+## `nativeImage`
+
+```js
 // Deprecated
 nativeImage.toPng()
 // Replace with
@@ -35,12 +50,11 @@ nativeImage.toPNG()
 nativeImage.toJpeg()
 // Replace with
 nativeImage.toJPEG()
+```
 
-// Deprecated
-new BrowserWindow({webPreferences: {blinkFeatures: ''}})
-// Replace with
-new BrowserWindow({webPreferences: {enableBlinkFeatures: ''}})
+## `Tray`
 
+```js
 // Deprecated
 tray.setHighlightMode(true)
 // Replace with
@@ -50,7 +64,11 @@ tray.setHighlightMode('on')
 tray.setHighlightMode(false)
 // Replace with
 tray.setHighlightMode('off')
+```
 
+## `webContents`
+
+```js
 // Deprecated
 webContents.openDevTools({detach: true})
 // Replace with
