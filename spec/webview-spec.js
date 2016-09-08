@@ -740,6 +740,8 @@ describe('<webview> tag', function () {
       let requestId = null
       let activeMatchOrdinal = []
       const listener = function (e) {
+        if (!e.result.finalUpdate)
+          return
         assert.equal(e.result.requestId, requestId)
         assert.equal(e.result.matches, 3)
         activeMatchOrdinal.push(e.result.activeMatchOrdinal)
