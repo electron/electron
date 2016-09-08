@@ -317,7 +317,7 @@ void InspectableWebContentsImpl::AttachTo(const scoped_refptr<content::DevToolsA
 
 void InspectableWebContentsImpl::Detach() {
   if (agent_host_.get())
-    agent_host_->DetachClient();
+    agent_host_->DetachClient(this);
   agent_host_ = nullptr;
 }
 
@@ -530,7 +530,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
   }
 
   if (agent_host_.get())
-    agent_host_->DispatchProtocolMessage(message);
+    agent_host_->DispatchProtocolMessage(this, message);
 }
 
 void InspectableWebContentsImpl::RecordActionUMA(const std::string& name, int action) {
@@ -687,11 +687,11 @@ content::ColorChooser* InspectableWebContentsImpl::OpenColorChooser(
 }
 
 void InspectableWebContentsImpl::RunFileChooser(
-    content::WebContents* source,
+    content::RenderFrameHost* render_frame_host,
     const content::FileChooserParams& params) {
   auto delegate = web_contents_->GetDelegate();
   if (delegate)
-    delegate->RunFileChooser(source, params);
+    delegate->RunFileChooser(render_frame_host, params);
 }
 
 void InspectableWebContentsImpl::EnumerateDirectory(

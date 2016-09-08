@@ -25,15 +25,6 @@
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
 #include "net/base/escape.h"
-#include "net/ssl/client_cert_store.h"
-
-#if defined(USE_NSS_CERTS)
-#include "net/ssl/client_cert_store_nss.h"
-#elif defined(OS_WIN)
-#include "net/ssl/client_cert_store_win.h"
-#elif defined(OS_MACOSX)
-#include "net/ssl/client_cert_store_mac.h"
-#endif
 
 using content::BrowserThread;
 
@@ -63,19 +54,6 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
 
   net::URLRequestContext* GetRequestContext() override {
     return getter_->GetURLRequestContext();
-  }
-
-  std::unique_ptr<net::ClientCertStore> CreateClientCertStore() override {
-    #if defined(USE_NSS_CERTS)
-      return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
-          net::ClientCertStoreNSS::PasswordDelegateFactory()));
-    #elif defined(OS_WIN)
-      return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
-    #elif defined(OS_MACOSX)
-      return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
-    #elif defined(USE_OPENSSL)
-      return std::unique_ptr<net::ClientCertStore>();
-    #endif
   }
 
   URLRequestContextGetter* getter_;

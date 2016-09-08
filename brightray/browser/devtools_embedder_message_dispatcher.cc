@@ -13,21 +13,21 @@ namespace {
 
 using DispatchCallback = DevToolsEmbedderMessageDispatcher::DispatchCallback;
 
-bool GetValue(const base::Value* value, std::string* result) {
-  return value->GetAsString(result);
+bool GetValue(const base::Value& value, std::string* result) {
+  return value.GetAsString(result);
 }
 
-bool GetValue(const base::Value* value, int* result) {
-  return value->GetAsInteger(result);
+bool GetValue(const base::Value& value, int* result) {
+  return value.GetAsInteger(result);
 }
 
-bool GetValue(const base::Value* value, bool* result) {
-  return value->GetAsBoolean(result);
+bool GetValue(const base::Value& value, bool* result) {
+  return value.GetAsBoolean(result);
 }
 
-bool GetValue(const base::Value* value, gfx::Rect* rect) {
+bool GetValue(const base::Value& value, gfx::Rect* rect) {
   const base::DictionaryValue* dict;
-  if (!value->GetAsDictionary(&dict))
+  if (!value.GetAsDictionary(&dict))
     return false;
   int x = 0;
   int y = 0;
@@ -69,7 +69,8 @@ template <typename T, typename... Ts>
 struct ParamTuple<T, Ts...> {
   bool Parse(const base::ListValue& list,
              const base::ListValue::const_iterator& it) {
-    return it != list.end() && GetValue(*it, &head) && tail.Parse(list, it + 1);
+    return it != list.end() && GetValue(**it, &head) &&
+           tail.Parse(list, it + 1);
   }
 
   template <typename H, typename... As>

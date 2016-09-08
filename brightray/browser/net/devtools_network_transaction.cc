@@ -284,9 +284,9 @@ void DevToolsNetworkTransaction::SetBeforeNetworkStartCallback(
   transaction_->SetBeforeNetworkStartCallback(callback);
 }
 
-void DevToolsNetworkTransaction::SetBeforeProxyHeadersSentCallback(
-    const BeforeProxyHeadersSentCallback& callback) {
-  transaction_->SetBeforeProxyHeadersSentCallback(callback);
+void DevToolsNetworkTransaction::SetBeforeHeadersSentCallback(
+    const BeforeHeadersSentCallback& callback) {
+  transaction_->SetBeforeHeadersSentCallback(callback);
 }
 
 int DevToolsNetworkTransaction::ResumeNetworkStart() {
