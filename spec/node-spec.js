@@ -233,10 +233,13 @@ describe('node feature', function () {
       })
     })
 
-    it('should have isTTY defined', function () {
+    it('should have isTTY defined on Mac and Linux', function () {
       if (isCI) return
 
-      assert.equal(typeof process.stdout.isTTY, 'boolean')
+      if (process.platform === 'win32')
+        assert.equal(process.stdout.isTTY, undefined)
+      else
+        assert.equal(typeof process.stdout.isTTY, 'boolean')
     })
   })
 
