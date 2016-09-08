@@ -842,7 +842,7 @@ describe('asar package', function () {
     })
 
     it('loads video tag in html', function (done) {
-      this.timeout(14000)
+      this.timeout(20000)
 
       after(function () {
         ipcMain.removeAllListeners('asar-video')
