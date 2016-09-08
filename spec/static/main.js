@@ -3,6 +3,7 @@ process.throwDeprecation = true
 
 const electron = require('electron')
 const app = electron.app
+const crashReporter = electron.crashReporter
 const ipcMain = electron.ipcMain
 const dialog = electron.dialog
 const BrowserWindow = electron.BrowserWindow
@@ -38,6 +39,11 @@ console
 ipcMain.on('message', function (event, ...args) {
   event.sender.send('message', ...args)
 })
+
+// Set productName so getUploadedReports() uses the right directory in specs
+if (process.platform === 'win32') {
+  crashReporter.productName = 'Zombies'
+}
 
 // Write output to file if OUTPUT_TO_FILE is defined.
 const outputToFile = process.env.OUTPUT_TO_FILE
