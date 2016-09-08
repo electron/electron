@@ -273,9 +273,7 @@ describe('browser-window module', function () {
     it('sets the window size', function (done) {
       var size = [300, 400]
       w.once('resize', function () {
-        var newSize = w.getSize()
-        assert.equal(newSize[0], size[0])
-        assert.equal(newSize[1], size[1])
+        assertBoundsEqual(w.getSize(), size)
         done()
       })
       w.setSize(size[0], size[1])
@@ -288,12 +286,12 @@ describe('browser-window module', function () {
       assert.deepEqual(w.getMaximumSize(), [0, 0])
 
       w.setMinimumSize(100, 100)
-      assert.deepEqual(w.getMinimumSize(), [100, 100])
-      assert.deepEqual(w.getMaximumSize(), [0, 0])
+      assertBoundsEqual(w.getMinimumSize(), [100, 100])
+      assertBoundsEqual(w.getMaximumSize(), [0, 0])
 
       w.setMaximumSize(900, 600)
-      assert.deepEqual(w.getMinimumSize(), [100, 100])
-      assert.deepEqual(w.getMaximumSize(), [900, 600])
+      assertBoundsEqual(w.getMinimumSize(), [100, 100])
+      assertBoundsEqual(w.getMaximumSize(), [900, 600])
     })
   })
 
@@ -303,9 +301,7 @@ describe('browser-window module', function () {
       w.setAspectRatio(1 / 2)
       w.setAspectRatio(0)
       w.once('resize', function () {
-        var newSize = w.getSize()
-        assert.equal(newSize[0], size[0])
-        assert.equal(newSize[1], size[1])
+        assertBoundsEqual(w.getSize(), size)
         done()
       })
       w.setSize(size[0], size[1])
@@ -354,7 +350,7 @@ describe('browser-window module', function () {
     it('sets the content size and position', function (done) {
       var bounds = {x: 10, y: 10, width: 250, height: 250}
       w.once('resize', function () {
-        assert.deepEqual(w.getContentBounds(), bounds)
+        assertBoundsEqual(w.getContentBounds(), bounds)
         done()
       })
       w.setContentBounds(bounds)
@@ -515,9 +511,7 @@ describe('browser-window module', function () {
       size.width += 100
       size.height += 100
       w.setSize(size.width, size.height)
-      var after = w.getSize()
-      assert.equal(after[0], size.width)
-      assert.equal(after[1], size.height)
+      assertBoundsEqual(w.getSize(), [size.width, size.height])
     })
   })
 
@@ -1375,7 +1369,7 @@ const assertBoundsEqual = (actual, expect) => {
 }
 
 const assertWithinDelta = (actual, expect, delta, label) => {
-  const result = Math.abs(actual[0] - expect[0])
+  const result = Math.abs(actual - expect)
   assert.ok(result <= delta, `${label} value of ${expect} was not within ${delta} of ${actual}`)
 }
 
