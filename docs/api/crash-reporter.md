@@ -31,7 +31,7 @@ The `crash-reporter` module has the following methods:
 * `options` Object
   * `companyName` String
   * `submitURL` String - URL that crash reports will be sent to as POST.
-  * `productName` String (optional) - Default is `Electron`.
+  * `productName` String (optional) - Defaults to `app.getName()`.
   * `autoSubmit` Boolean - Send the crash report without user interaction.
     Default is `true`.
   * `ignoreSystemCrashHandler` Boolean - Default is `false`.
