@@ -75,6 +75,12 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/pages/a.html'
       document.body.appendChild(webview)
     })
+
+    it('ignores empty values', function () {
+      assert.equal(webview.src, '')
+      webview.src = ''
+      assert.equal(webview.src, '')
+    })
   })
 
   describe('nodeintegration attribute', function () {
@@ -197,6 +203,12 @@ describe('<webview> tag', function () {
       webview.setAttribute('preload', fixtures + '/module/preload.js')
       webview.src = 'file://' + fixtures + '/pages/base-page.html'
       document.body.appendChild(webview)
+    })
+
+    it('ignores empty values', function () {
+      assert.equal(webview.preload, '')
+      webview.preload = ''
+      assert.equal(webview.preload, '')
     })
   })
 
