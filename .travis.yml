@@ -3,14 +3,15 @@ git:
 notifications:
   email: false
 
-language: cpp
-compiler: clang
+language: node_js
+node_js:
+  - "4"
 os:
   - linux
   - osx
 env:
   - TARGET_ARCH=x64
-osx_image: xcode7
+osx_image: xcode7.3
 
 matrix:
   include:
