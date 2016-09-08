@@ -2,7 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const http = require('http')
 const url = require('url')
-const {app, session, ipcMain, BrowserWindow} = require('electron').remote
+const {app, session, getGuestWebContents, ipcMain, BrowserWindow} = require('electron').remote
 
 describe('<webview> tag', function () {
   this.timeout(20000)
@@ -973,6 +973,196 @@ describe('<webview> tag', function () {
       assert.equal(message.runtimeId, 'foo')
       assert.notEqual(message.tabId, w.webContents.id)
       done()
+    })
+  })
+
+  describe('guestinstance attribute', function () {
+    it('before loading there is no attribute', function () {
+      document.body.appendChild(webview)
+      assert(!webview.hasAttribute('guestinstance'))
+    })
+
+    it('loading a page sets the guest view', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var instance = webview.getAttribute('guestinstance')
+        assert.equal(instance, parseInt(instance))
+
+        var guest = getGuestWebContents(parseInt(instance))
+        assert.equal(guest, webview.getWebContents())
+        done()
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('deleting the attribute destroys the webview', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var destroyListener = function () {
+          webview.removeEventListener('destroyed', destroyListener, false)
+          assert.equal(getGuestWebContents(instance), null)
+          done()
+        }
+        webview.addEventListener('destroyed', destroyListener, false)
+
+        var instance = parseInt(webview.getAttribute('guestinstance'))
+        webview.removeAttribute('guestinstance')
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('setting the attribute on a new webview moves the contents', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var webContents = webview.getWebContents()
+        var instance = webview.getAttribute('guestinstance')
+
+        var destroyListener = function () {
+          webview.removeEventListener('destroyed', destroyListener, false)
+          assert.equal(webContents, webview2.getWebContents())
+          // Make sure that events are hooked up to the right webview now
+          webview2.addEventListener('console-message', function (e) {
+            assert.equal(e.message, 'a')
+            document.body.removeChild(webview2)
+            done()
+          })
+
+          webview2.src = 'file://' + fixtures + '/pages/a.html'
+        }
+        webview.addEventListener('destroyed', destroyListener, false)
+
+        var webview2 = new WebView()
+        webview2.setAttribute('guestinstance', instance)
+        document.body.appendChild(webview2)
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('setting the attribute to an invalid guestinstance does nothing', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        webview.setAttribute('guestinstance', 55)
+
+        // Make sure that events are still hooked up to the webview
+        webview.addEventListener('console-message', function (e) {
+          assert.equal(e.message, 'a')
+          done()
+        })
+
+        webview.src = 'file://' + fixtures + '/pages/a.html'
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('setting the attribute on an existing webview moves the contents', function (done) {
+      var load1Listener = function () {
+        webview.removeEventListener('did-finish-load', load1Listener, false)
+        var webContents = webview.getWebContents()
+        var instance = webview.getAttribute('guestinstance')
+        var destroyedInstance
+
+        var destroyListener = function () {
+          webview.removeEventListener('destroyed', destroyListener, false)
+          assert.equal(webContents, webview2.getWebContents())
+          assert.equal(null, getGuestWebContents(parseInt(destroyedInstance)))
+
+          // Make sure that events are hooked up to the right webview now
+          webview2.addEventListener('console-message', function (e) {
+            assert.equal(e.message, 'a')
+            document.body.removeChild(webview2)
+            done()
+          })
+
+          webview2.src = 'file://' + fixtures + '/pages/a.html'
+        }
+        webview.addEventListener('destroyed', destroyListener, false)
+
+        var webview2 = new WebView()
+        var load2Listener = function () {
+          webview2.removeEventListener('did-finish-load', load2Listener, false)
+          destroyedInstance = webview2.getAttribute('guestinstance')
+          assert.notEqual(instance, destroyedInstance)
+
+          webview2.setAttribute('guestinstance', instance)
+        }
+        webview2.addEventListener('did-finish-load', load2Listener, false)
+        webview2.src = 'file://' + fixtures + '/api/blank.html'
+        document.body.appendChild(webview2)
+      }
+      webview.addEventListener('did-finish-load', load1Listener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('moving a guest back to its original webview should work', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var webContents = webview.getWebContents()
+        var instance = webview.getAttribute('guestinstance')
+
+        var destroy1Listener = function () {
+          webview.removeEventListener('destroyed', destroy1Listener, false)
+          assert.equal(webContents, webview2.getWebContents())
+          assert.equal(null, webview.getWebContents())
+
+          var destroy2Listener = function () {
+            webview2.removeEventListener('destroyed', destroy2Listener, false)
+            assert.equal(webContents, webview.getWebContents())
+            assert.equal(null, webview2.getWebContents())
+
+            // Make sure that events are hooked up to the right webview now
+            webview.addEventListener('console-message', function (e) {
+              assert.equal(e.message, 'a')
+              document.body.removeChild(webview2)
+              done()
+            })
+
+            webview.src = 'file://' + fixtures + '/pages/a.html'
+          }
+          webview2.addEventListener('destroyed', destroy2Listener, false)
+
+          webview.setAttribute('guestinstance', instance)
+        }
+        webview.addEventListener('destroyed', destroy1Listener, false)
+
+        var webview2 = new WebView()
+        webview2.setAttribute('guestinstance', instance)
+        document.body.appendChild(webview2)
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('setting the attribute on a webview in a different window moves the contents', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var instance = webview.getAttribute('guestinstance')
+
+        w = new BrowserWindow({ show: false })
+        w.webContents.once('did-finish-load', function () {
+          ipcMain.once('pong', function () {
+            assert(!webview.hasAttribute('guestinstance'))
+
+            done()
+          })
+
+          w.webContents.send('guestinstance', instance)
+        })
+        w.loadURL('file://' + fixtures + '/pages/webview-move-to-window.html')
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
     })
   })
 })

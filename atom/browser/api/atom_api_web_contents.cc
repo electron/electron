@@ -1433,6 +1433,25 @@ content::WebContents* WebContents::HostWebContents() {
   return embedder_->web_contents();
 }
 
+void WebContents::SetEmbedder(const WebContents* embedder) {
+  if (embedder) {
+    NativeWindow* owner_window = nullptr;
+    auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+    if (relay) {
+      owner_window = relay->window.get();
+    }
+    if (owner_window)
+      SetOwnerWindow(owner_window);
+
+    content::RenderWidgetHostView* rwhv =
+        web_contents()->GetRenderWidgetHostView();
+    if (rwhv) {
+      rwhv->Hide();
+      rwhv->Show();
+    }
+  }
+}
+
 v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
   if (devtools_web_contents_.IsEmpty())
     return v8::Null(isolate);
@@ -1529,6 +1548,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
+      .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
