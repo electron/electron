@@ -619,6 +619,7 @@ NativeWindowMac::~NativeWindowMac() {
 void NativeWindowMac::Close() {
   // When this is a sheet showing, performClose won't work.
   if (is_modal() && parent() && IsVisible()) {
+    [parent()->GetNativeWindow() endSheet:window_];
     CloseImmediately();
     return;
   }
