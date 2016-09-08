@@ -36,6 +36,7 @@ things on top of Electron. Pull requests and contributions supporting this
 effort are always very welcome.
 
 ## Ignoring Above Advice
+
 A security issue exists whenever you receive code from a remote destination and
 execute it locally. As an example, consider a remote website being displayed
 inside a browser window. If an attacker somehow manages to change said content
@@ -49,6 +50,7 @@ your application) to execute Node code. To display remote content, use the
 `webview` tag and make sure to disable the `nodeIntegration`.
 
 #### Checklist
+
 This is not bulletproof, but at the least, you should attempt the following:
 
 * Only display secure (https) content
@@ -71,3 +73,22 @@ This is not bulletproof, but at the least, you should attempt the following:
 
 Again, this list merely minimizes the risk, it does not remove it. If your goal
 is to display a website, a browser will be a more secure option.
+
+## Buffer Global
+
+Node's [Buffer](https://nodejs.org/api/buffer.html) class is currently available
+as a global even when `nodeIntegration` is set to `false`. You can delete
+this in your app by doing the following in your `preload` script:
+
+```js
+delete global.Buffer
+```
+
+Deleting it may break Node modules used in your preload script and app since
+many libraries expect it to be a global instead of requiring it directly via:
+
+```js
+const {Buffer} = require('buffer')
+```
+
+The `Buffer` global may be removed in future major versions of Electron.
