@@ -1360,18 +1360,12 @@ describe('browser-window module', function () {
   })
 })
 
-const assertPositionsEqual = (expect, actual) => {
-  if (isIntegerScaleFactor()) {
-    assert.deepEqual(expect, actual)
-  } else {
-    assertWithinDelta(expect[0], actual[0], 1, 'x')
-    assertWithinDelta(expect[1], actual[1], 1, 'y')
-  }
-}
-
 const assertBoundsEqual = (expect, actual) => {
   if (isIntegerScaleFactor()) {
     assert.deepEqual(expect, actual)
+  } else if (Array.isArray(actual)) {
+    assertWithinDelta(expect[0], actual[0], 1, 'x')
+    assertWithinDelta(expect[1], actual[1], 1, 'y')
   } else {
     assertWithinDelta(expect.x, actual.x, 1, 'x')
     assertWithinDelta(expect.y, actual.y, 1, 'y')
