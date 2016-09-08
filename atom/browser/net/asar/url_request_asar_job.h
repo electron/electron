@@ -118,6 +118,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
 
   net::HttpByteRange byte_range_;
   int64_t remaining_bytes_;
+  int64_t seek_offset_;
 
   net::Error range_parse_result_;
 

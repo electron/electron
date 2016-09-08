@@ -44,6 +44,7 @@ URLRequestAsarJob::URLRequestAsarJob(
     : net::URLRequestJob(request, network_delegate),
       type_(TYPE_ERROR),
       remaining_bytes_(0),
+      seek_offset_(0),
       range_parse_result_(net::OK),
       weak_ptr_factory_(this) {}
 
@@ -100,8 +101,6 @@ void URLRequestAsarJob::InitializeFileJob(
 
 void URLRequestAsarJob::Start() {
   if (type_ == TYPE_ASAR) {
-    remaining_bytes_ = static_cast<int64_t>(file_info_.size);
-
     int flags = base::File::FLAG_OPEN |
                 base::File::FLAG_READ |
                 base::File::FLAG_ASYNC;
@@ -274,8 +273,28 @@ void URLRequestAsarJob::DidOpen(int result) {
     return;
   }
 
+  int64_t file_size, read_offset;
   if (type_ == TYPE_ASAR) {
-    int rv = stream_->Seek(file_info_.offset,
+    file_size = file_info_.size;
+    read_offset = file_info_.offset;
+  } else {
+    file_size = meta_info_.file_size;
+    read_offset = 0;
+  }
+
+  if (!byte_range_.ComputeBounds(file_size)) {
+    NotifyStartError(
+        net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                              net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
+    return;
+  }
+
+  remaining_bytes_ = byte_range_.last_byte_position() -
+                     byte_range_.first_byte_position() + 1;
+  seek_offset_ = byte_range_.first_byte_position() + read_offset;
+
+  if (remaining_bytes_ > 0 && seek_offset_ != 0) {
+    int rv = stream_->Seek(seek_offset_,
                            base::Bind(&URLRequestAsarJob::DidSeek,
                                       weak_ptr_factory_.GetWeakPtr()));
     if (rv != net::ERR_IO_PENDING) {
@@ -284,49 +303,19 @@ void URLRequestAsarJob::DidOpen(int result) {
       DidSeek(-1);
     }
   } else {
-    if (!byte_range_.ComputeBounds(meta_info_.file_size)) {
-      NotifyStartError(
-          net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
-      return;
-    }
-
-    remaining_bytes_ = byte_range_.last_byte_position() -
-                       byte_range_.first_byte_position() + 1;
-
-    if (remaining_bytes_ > 0 && byte_range_.first_byte_position() != 0) {
-      int rv = stream_->Seek(byte_range_.first_byte_position(),
-                             base::Bind(&URLRequestAsarJob::DidSeek,
-                                        weak_ptr_factory_.GetWeakPtr()));
-      if (rv != net::ERR_IO_PENDING) {
-        // stream_->Seek() failed, so pass an intentionally erroneous value
-        // into DidSeek().
-        DidSeek(-1);
-      }
-    } else {
-      // We didn't need to call stream_->Seek() at all, so we pass to DidSeek()
-      // the value that would mean seek success. This way we skip the code
-      // handling seek failure.
-      DidSeek(byte_range_.first_byte_position());
-    }
+    // We didn't need to call stream_->Seek() at all, so we pass to DidSeek()
+    // the value that would mean seek success. This way we skip the code
+    // handling seek failure.
+    DidSeek(seek_offset_);
   }
 }
 
 void URLRequestAsarJob::DidSeek(int64_t result) {
-  if (type_ == TYPE_ASAR) {
-    if (result != static_cast<int64_t>(file_info_.offset)) {
-      NotifyStartError(
-          net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
-      return;
-    }
-  } else {
-    if (result != byte_range_.first_byte_position()) {
-      NotifyStartError(
-          net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
-      return;
-    }
+  if (result != seek_offset_) {
+    NotifyStartError(
+        net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                              net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
+    return;
   }
   set_expected_content_size(remaining_bytes_);
   NotifyHeadersComplete();
