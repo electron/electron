@@ -83,7 +83,16 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
 #else
       network_delegate_(new AtomNetworkDelegate),
 #endif
+      has_parent_(false),
+      original_context_(nullptr),
       partition_(partition) {
+  std::string parent_partition;
+  if (options.GetString("parent_partition", &parent_partition)) {
+    has_parent_ = true;
+    original_context_ = static_cast<BraveBrowserContext*>(
+        atom::AtomBrowserContext::From(parent_partition, false).get());
+  }
+
   if (in_memory) {
     original_context_ = static_cast<BraveBrowserContext*>(
         atom::AtomBrowserContext::From(partition, false).get());
@@ -91,7 +100,7 @@ BraveBrowserContext::BraveBrowserContext(const std::string& partition,
   }
   InitPrefs();
 
-  if (in_memory) {
+  if (original_context_) {
     TrackZoomLevelsFromParent();
 #if defined(ENABLE_EXTENSIONS)
     BrowserThread::PostTask(
@@ -124,7 +133,7 @@ BraveBrowserContext::~BraveBrowserContext() {
 #endif
   }
 
-  if (!IsOffTheRecord()) {
+  if (!IsOffTheRecord() && !HasParentContext()) {
     autofill_data_->ShutdownOnUIThread();
     web_database_->ShutdownDatabase();
 
@@ -160,8 +169,12 @@ BraveBrowserContext* BraveBrowserContext::FromBrowserContext(
   return static_cast<BraveBrowserContext*>(browser_context);
 }
 
+bool BraveBrowserContext::HasParentContext() {
+  return has_parent_;
+}
+
 BraveBrowserContext* BraveBrowserContext::original_context() {
-  if (!IsOffTheRecord()) {
+  if (!IsOffTheRecord() && !HasParentContext()) {
     return this;
   }
   return original_context_;
@@ -172,6 +185,9 @@ BraveBrowserContext* BraveBrowserContext::otr_context() {
     return this;
   }
 
+  if (HasParentContext())
+    return original_context_->otr_context();
+
   if (otr_context_.get()) {
     return otr_context_.get();
   }
@@ -180,8 +196,6 @@ BraveBrowserContext* BraveBrowserContext::otr_context() {
 }
 
 void BraveBrowserContext::TrackZoomLevelsFromParent() {
-  DCHECK_NE(true, IsOffTheRecord());
-
   // Here we only want to use zoom levels stored in the main-context's default
   // storage partition. We're not interested in zoom levels in special
   // partitions, e.g. those used by WebViewGuests.
@@ -295,7 +309,15 @@ void BraveBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
         original_context()->user_prefs()->CreateIncognitoPrefService(
           extension_prefs, overlay_pref_names_));
     user_prefs::UserPrefs::Set(this, user_prefs_.get());
+  } else if (HasParentContext()) {
+    // overlay pref names only apply to incognito
+    std::vector<const char*> overlay_pref_names;
+    user_prefs_.reset(
+            original_context()->user_prefs()->CreateIncognitoPrefService(
+              extension_prefs, overlay_pref_names));
+    user_prefs::UserPrefs::Set(this, user_prefs_.get());
   } else {
+    pref_registry_->RegisterDictionaryPref("app_state");
     pref_registry_->RegisterDictionaryPref(prefs::kPartitionDefaultZoomLevel);
     pref_registry_->RegisterDictionaryPref(prefs::kPartitionPerHostZoomLevels);
     // TODO(bridiver) - is this necessary or is it covered by
@@ -342,7 +364,7 @@ void BraveBrowserContext::OnPrefsLoaded(bool success) {
   BrowserContextDependencyManager::GetInstance()->
       CreateBrowserContextServices(this);
 
-  if (!IsOffTheRecord()) {
+  if (!IsOffTheRecord() && !HasParentContext()) {
 #if defined(ENABLE_EXTENSIONS)
     extensions::ExtensionSystem::Get(this)->InitForRegularProfile(true);
     static_cast<extensions::AtomExtensionsNetworkDelegate*>(network_delegate_)->
@@ -393,6 +415,10 @@ BraveBrowserContext::CreateZoomLevelDelegate(
 scoped_refptr<autofill::AutofillWebDataService>
 BraveBrowserContext::GetAutofillWebdataService() {
   return original_context()->autofill_data_;
+}
+
+base::FilePath BraveBrowserContext::GetPath() const {
+  return brightray::BrowserContext::GetPath();
 }
 
 }  // namespace brave

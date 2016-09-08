@@ -11,6 +11,7 @@
 #include "content/public/browser/host_zoom_map.h"
 #include "chrome/browser/ui/zoom/chrome_zoom_level_prefs.h"
 #include "components/autofill/core/browser/webdata/autofill_webdata_service.h"
+#include "components/prefs/overlay_user_pref_store.h"
 #include "components/webdata/common/web_database_service.h"
 
 class PrefChangeRegistrar;
@@ -49,6 +50,8 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
 
   ChromeZoomLevelPrefs* GetZoomLevelPrefs();
 
+  bool HasParentContext();
+
   // content::BrowserContext:
   net::NetworkDelegate* CreateNetworkDelegate() override;
   content::PermissionManager* GetPermissionManager() override;
@@ -81,6 +84,7 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
   scoped_refptr<autofill::AutofillWebDataService>
     GetAutofillWebdataService();
 
+  base::FilePath GetPath() const override;
  private:
   void OnPrefsLoaded(bool success);
   void TrackZoomLevelsFromParent();
@@ -100,6 +104,7 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
 
   atom::AtomNetworkDelegate* network_delegate_;
 
+  bool has_parent_;
   BraveBrowserContext* original_context_;
   scoped_refptr<BraveBrowserContext> otr_context_;
   const std::string partition_;

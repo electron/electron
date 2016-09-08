@@ -4,11 +4,11 @@
 
 #include "atom/browser/extensions/atom_process_manager_delegate.h"
 
-#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
 #include "base/command_line.h"
 #include "base/logging.h"
+#include "brave/browser/brave_browser_context.h"
 #include "build/build_config.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "content/public/browser/notification_service.h"
@@ -17,7 +17,7 @@
 #include "extensions/browser/process_manager_factory.h"
 #include "extensions/common/one_shot_event.h"
 
-using atom::AtomBrowserContext;
+using brave::BraveBrowserContext;
 
 namespace extensions {
 
@@ -49,14 +49,14 @@ void AtomProcessManagerDelegate::Observe(
     const content::NotificationDetails& details) {
   switch (type) {
     case chrome::NOTIFICATION_PROFILE_CREATED: {
-      AtomBrowserContext* browser_context =
-        content::Source<AtomBrowserContext>(source).ptr();
+      BraveBrowserContext* browser_context =
+        content::Source<BraveBrowserContext>(source).ptr();
       OnProfileCreated(browser_context);
       break;
     }
     case chrome::NOTIFICATION_PROFILE_DESTROYED: {
-      AtomBrowserContext* browser_context =
-        content::Source<AtomBrowserContext>(source).ptr();
+      BraveBrowserContext* browser_context =
+        content::Source<BraveBrowserContext>(source).ptr();
       OnProfileDestroyed(browser_context);
       break;
     }
@@ -66,9 +66,9 @@ void AtomProcessManagerDelegate::Observe(
 }
 
 void AtomProcessManagerDelegate::OnProfileCreated(
-                                        AtomBrowserContext* browser_context) {
+                                        BraveBrowserContext* browser_context) {
   // Incognito browser_contexts are handled by their original browser_context.
-  if (browser_context->IsOffTheRecord())
+  if (browser_context->IsOffTheRecord() || browser_context->HasParentContext())
     return;
 
   // The browser_context can be created before the extension system is ready.
@@ -82,7 +82,7 @@ void AtomProcessManagerDelegate::OnProfileCreated(
 }
 
 void AtomProcessManagerDelegate::OnProfileDestroyed(
-                                        AtomBrowserContext* browser_context) {
+                                        BraveBrowserContext* browser_context) {
   ProcessManager* manager =
       ProcessManagerFactory::GetForBrowserContextIfExists(browser_context);
   if (manager) {

@@ -12,8 +12,11 @@
 #include "extensions/browser/process_manager_delegate.h"
 
 namespace atom {
-class AtomBrowserContext;
 class Browser;
+}
+
+namespace brave {
+class BraveBrowserContext;
 }
 
 namespace extensions {
@@ -39,8 +42,8 @@ class AtomProcessManagerDelegate : public ProcessManagerDelegate,
  private:
   // Notification handlers.
   void OnBrowserWindowReady(atom::Browser* browser);
-  void OnProfileCreated(atom::AtomBrowserContext* profile);
-  void OnProfileDestroyed(atom::AtomBrowserContext* profile);
+  void OnProfileCreated(brave::BraveBrowserContext* profile);
+  void OnProfileDestroyed(brave::BraveBrowserContext* profile);
 
   content::NotificationRegistrar registrar_;
 
