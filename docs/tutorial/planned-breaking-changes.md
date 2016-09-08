@@ -9,9 +9,11 @@ warnings will be added at least 90 days beforehand.
 
 ```js
 // Deprecated
-new BrowserWindow({webPreferences: {blinkFeatures: ''}})
+let optionsA = {webPreferences: {blinkFeatures: ''}}
+let windowA = new BrowserWindow(optionsA)
 // Replace with
-new BrowserWindow({webPreferences: {enableBlinkFeatures: ''}})
+let optionsB = {webPreferences: {enableBlinkFeatures: ''}}
+let windowB = new BrowserWindow(optionsB)
 ```
 
 ## `clipboard`
