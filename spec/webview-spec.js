@@ -80,6 +80,10 @@ describe('<webview> tag', function () {
       assert.equal(webview.src, '')
       webview.src = ''
       assert.equal(webview.src, '')
+      webview.src = null
+      assert.equal(webview.src, '')
+      webview.src = undefined
+      assert.equal(webview.src, '')
     })
   })
 
@@ -208,6 +212,10 @@ describe('<webview> tag', function () {
     it('ignores empty values', function () {
       assert.equal(webview.preload, '')
       webview.preload = ''
+      assert.equal(webview.preload, '')
+      webview.preload = null
+      assert.equal(webview.preload, '')
+      webview.preload = undefined
       assert.equal(webview.preload, '')
     })
   })
