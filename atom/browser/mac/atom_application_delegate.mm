@@ -32,8 +32,8 @@
       atom::NSDictionaryToDictionaryValue(user_notification.userInfo);
     atom::Browser::Get()->DidFinishLaunching(*launch_info);
   } else {
-    base::DictionaryValue* launch_info = new base::DictionaryValue();
-    atom::Browser::Get()->DidFinishLaunching(*launch_info);
+    std::unique_ptr<base::DictionaryValue> empty_info(new base::DictionaryValue);
+    atom::Browser::Get()->DidFinishLaunching(*empty_info);
   }
 }
 
