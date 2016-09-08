@@ -532,18 +532,12 @@ void WebContents::FindReply(content::WebContents* web_contents,
   v8::HandleScope handle_scope(isolate());
 
   mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate());
-  if (number_of_matches == -1) {
-    result.Set("requestId", request_id);
-    result.Set("selectionArea", selection_rect);
-    result.Set("finalUpdate", final_update);
-    result.Set("activeMatchOrdinal", active_match_ordinal);
-    Emit("found-in-page", result);
-  } else if (final_update) {
-    result.Set("requestId", request_id);
-    result.Set("matches", number_of_matches);
-    result.Set("finalUpdate", final_update);
-    Emit("found-in-page", result);
-  }
+  result.Set("requestId", request_id);
+  result.Set("matches", number_of_matches);
+  result.Set("finalUpdate", final_update);
+  result.Set("selectionArea", selection_rect);
+  result.Set("activeMatchOrdinal", active_match_ordinal);
+  Emit("found-in-page", result);
 }
 
 bool WebContents::CheckMediaAccessPermission(
