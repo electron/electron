@@ -43,12 +43,12 @@ class Autofill : public mate::TrackableObject<Autofill> {
   ~Autofill() override;
 
   std::string AddProfile(const base::DictionaryValue& profile);
-  autofill::AutofillProfile* GetProfile(std::string guid);
-  bool RemoveProfile(const std::string guid);
+  autofill::AutofillProfile* GetProfile(const std::string& guid);
+  bool RemoveProfile(const std::string& guid);
 
   std::string AddCreditCard(const base::DictionaryValue& card);
-  autofill::CreditCard* GetCreditCard(std::string guid);
-  bool RemoveCreditCard(const std::string guid);
+  autofill::CreditCard* GetCreditCard(const std::string& guid);
+  bool RemoveCreditCard(const std::string& guid);
 
   brave::BraveBrowserContext* browser_context() {
     return static_cast<brave::BraveBrowserContext*>(browser_context_);
