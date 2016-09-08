@@ -1359,3 +1359,33 @@ describe('browser-window module', function () {
     })
   })
 })
+
+const assertPositionsEqual = (expect, actual) => {
+  if (isIntegerScaleFactor()) {
+    assert.deepEqual(expect, actual)
+  } else {
+    assertWithinDelta(expect[0], actual[0], 1, 'x')
+    assertWithinDelta(expect[1], actual[1], 1, 'y')
+  }
+}
+
+const assertBoundsEqual = (expect, actual) => {
+  if (isIntegerScaleFactor()) {
+    assert.deepEqual(expect, actual)
+  } else {
+    assertWithinDelta(expect.x, actual.x, 1, 'x')
+    assertWithinDelta(expect.y, actual.y, 1, 'y')
+    assertWithinDelta(expect.width, actual.width, 1, 'width')
+    assertWithinDelta(expect.height, actual.height, 1, 'height')
+  }
+}
+
+const assertWithinDelta = (expect, actual, delta, label) => {
+  const result = Math.abs(actual[0] - expect[0])
+  assert.ok(result <= delta, `${label} value of ${expect} was not within ${delta} of ${actual}`)
+}
+
+const isIntegerScaleFactor = () => {
+  const {scaleFactor} = screen.getPrimaryDisplay()
+  return Math.round(scaleFactor) === scaleFactor
+}
