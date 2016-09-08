@@ -1360,21 +1360,21 @@ describe('browser-window module', function () {
   })
 })
 
-const assertBoundsEqual = (expect, actual) => {
+const assertBoundsEqual = (actual, expect) => {
   if (isIntegerScaleFactor()) {
     assert.deepEqual(expect, actual)
   } else if (Array.isArray(actual)) {
-    assertWithinDelta(expect[0], actual[0], 1, 'x')
-    assertWithinDelta(expect[1], actual[1], 1, 'y')
+    assertWithinDelta(actual[0], expect[0], 1, 'x')
+    assertWithinDelta(actual[1], expect[1], 1, 'y')
   } else {
-    assertWithinDelta(expect.x, actual.x, 1, 'x')
-    assertWithinDelta(expect.y, actual.y, 1, 'y')
-    assertWithinDelta(expect.width, actual.width, 1, 'width')
-    assertWithinDelta(expect.height, actual.height, 1, 'height')
+    assertWithinDelta(actual.x, expect.x, 1, 'x')
+    assertWithinDelta(actual.y, expect.y, 1, 'y')
+    assertWithinDelta(actual.width, expect.width, 1, 'width')
+    assertWithinDelta(actual.height, expect.height, 1, 'height')
   }
 }
 
-const assertWithinDelta = (expect, actual, delta, label) => {
+const assertWithinDelta = (actual, expect, delta, label) => {
   const result = Math.abs(actual[0] - expect[0])
   assert.ok(result <= delta, `${label} value of ${expect} was not within ${delta} of ${actual}`)
 }
