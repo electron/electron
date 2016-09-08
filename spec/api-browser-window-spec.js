@@ -1355,7 +1355,7 @@ describe('browser-window module', function () {
 })
 
 const assertBoundsEqual = (actual, expect) => {
-  if (isIntegerScaleFactor()) {
+  if (!isScaleFactorRounding()) {
     assert.deepEqual(expect, actual)
   } else if (Array.isArray(actual)) {
     assertWithinDelta(actual[0], expect[0], 1, 'x')
@@ -1373,7 +1373,12 @@ const assertWithinDelta = (actual, expect, delta, label) => {
   assert.ok(result <= delta, `${label} value of ${expect} was not within ${delta} of ${actual}`)
 }
 
-const isIntegerScaleFactor = () => {
+// Is the display's scale factor possibly causing rounding of pixel coordinate
+// values?
+const isScaleFactorRounding = () => {
   const {scaleFactor} = screen.getPrimaryDisplay()
-  return Math.round(scaleFactor) === scaleFactor
+  // Return true if scale factor is non-integer value
+  if (Math.round(scaleFactor) === scaleFactor) return true
+  // Return true if scale factor is odd number above 2
+  return scaleFactor > 2 && scaleFactor % 2 === 1
 }
