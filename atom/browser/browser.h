@@ -184,7 +184,7 @@ class Browser : public WindowListObserver {
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();
-  void DidFinishLaunching();
+  void DidFinishLaunching(const base::DictionaryValue& launch_info);
 
   void OnAccessibilitySupportChanged();
 

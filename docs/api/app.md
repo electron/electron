@@ -28,7 +28,13 @@ In most cases, you should just do everything in the `ready` event handler.
 
 ### Event: 'ready'
 
-Emitted when Electron has finished initialization.
+Returns:
+
+* `launchInfo` Object _macOS_
+
+Emitted when Electron has finished initialization. On macOS, `launchInfo` holds
+the `userInfo` of the `NSUserNotification` that was used to open the application,
+if it was launched from Notification Center.
 
 ### Event: 'window-all-closed'
 
