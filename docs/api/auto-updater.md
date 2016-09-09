@@ -35,6 +35,8 @@ On Windows, you have to install your app into a user's machine before you can
 use the `autoUpdater`, so it is recommended that you use the
 [electron-winstaller][installer-lib], [electron-builder][electron-builder-lib] or the [grunt-electron-installer][installer] package to generate a Windows installer.
 
+When using [electron-winstaller][installer-lib] or [electron-builder][electron-builder-lib] make sure you do not try to update your app [the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events) (Also see [this issue for more info](https://github.com/electron/electron/issues/7155)). It's also recommended to use [electron-squirrel-startup](electron-squirrel-startup) to get desktop shortcuts for your app.
+
 The installer generated with Squirrel will create a shortcut icon with an
 [Application User Model ID][app-user-model-id] in the format of
 `com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`, examples are
