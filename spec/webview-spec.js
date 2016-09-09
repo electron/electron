@@ -76,9 +76,15 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
-    it('resolves relative URLs', function () {
-      webview.src = '../fixtures/test.html'
-      assert.equal(webview.src, 'file://' + fixtures + '/test.html')
+    it('resolves relative URLs', function (done) {
+      var listener = function (e) {
+        assert.equal(e.message, 'Window script is loaded before preload script')
+        webview.removeEventListener('console-message', listener)
+        done()
+      }
+      webview.addEventListener('console-message', listener)
+      webview.src = '../fixtures/pages/e.html'
+      document.body.appendChild(webview)
     })
 
     it('ignores empty values', function () {
@@ -214,9 +220,16 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
-    it('resolves relative URLs', function () {
-      webview.preload = '../fixtures/test.js'
-      assert.equal(webview.preload, 'file://' + fixtures + '/test.js')
+    it('resolves relative URLs', function (done) {
+      var listener = function (e) {
+        assert.equal(e.message, 'function object object')
+        webview.removeEventListener('console-message', listener)
+        done()
+      }
+      webview.addEventListener('console-message', listener)
+      webview.src = 'file://' + fixtures + '/pages/e.html'
+      webview.preload = '../fixtures/module/preload.js'
+      document.body.appendChild(webview)
     })
 
     it('ignores empty values', function () {
