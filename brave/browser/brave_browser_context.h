@@ -85,6 +85,7 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
     GetAutofillWebdataService();
 
   base::FilePath GetPath() const override;
+
  private:
   void OnPrefsLoaded(bool success);
   void TrackZoomLevelsFromParent();

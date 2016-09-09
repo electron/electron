@@ -9,88 +9,15 @@
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/renderer/content_settings_manager.h"
+#include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/WebKit/public/web/WebDocument.h"
+
+namespace atom {
 
 namespace {
-
-content::RenderView* GetCurrentRenderView() {
-  blink::WebLocalFrame* frame =
-    blink::WebLocalFrame::frameForCurrentContext();
-  if (!frame)
-    return NULL;
-
-  blink::WebView* view = frame->view();
-  if (!view)
-    return NULL;  // can happen during closing.
-
-  return content::RenderView::FromWebView(view);
-}
-
-v8::Local<v8::Value> GetHiddenValue(v8::Isolate* isolate,
-                                    v8::Local<v8::String> key) {
-  content::RenderView* render_view = GetCurrentRenderView();
-  v8::Local<v8::Context> context =
-      render_view->GetWebView()->mainFrame()->mainWorldScriptContext();
-  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
-  v8::Local<v8::Value> value;
-  v8::Local<v8::Object> object = context->Global();
-  v8::Maybe<bool> result = object->HasPrivate(context, privateKey);
-  if (!(result.IsJust() && result.FromJust()))
-    return v8::Local<v8::Value>();
-  if (object->GetPrivate(context, privateKey).ToLocal(&value))
-    return value;
-  return v8::Local<v8::Value>();
-}
-
-void SetHiddenValue(v8::Isolate* isolate,
-                    v8::Local<v8::String> key,
-                    v8::Local<v8::Value> value) {
-  if (value.IsEmpty())
-    return;
-  content::RenderView* render_view = GetCurrentRenderView();
-  v8::Local<v8::Context> context =
-      render_view->GetWebView()->mainFrame()->mainWorldScriptContext();
-  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
-  context->Global()->SetPrivate(context, privateKey, value);
-}
-
-void IPCSend(mate::Arguments* args,
-          const base::string16& channel,
-          const base::ListValue& arguments) {
-  content::RenderView* render_view = GetCurrentRenderView();
-  if (render_view == NULL)
-    return;
-
-  bool success = render_view->Send(new AtomViewHostMsg_Message(
-      render_view->GetRoutingID(), channel, arguments));
-
-  if (!success)
-    args->ThrowError("Unable to send AtomViewHostMsg_Message");
-}
-
-base::string16 IPCSendSync(mate::Arguments* args,
-                        const base::string16& channel,
-                        const base::ListValue& arguments) {
-  base::string16 json;
-
-  content::RenderView* render_view = GetCurrentRenderView();
-  if (render_view == NULL)
-    return json;
-
-  IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
-      render_view->GetRoutingID(), channel, arguments, &json);
-  bool success = render_view->Send(message);
-
-  if (!success)
-    args->ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
-
-  return json;
-}
 
 std::vector<v8::Local<v8::Value>> ListValueToVector(v8::Isolate* isolate,
                                                 const base::ListValue& list) {
@@ -102,8 +29,6 @@ std::vector<v8::Local<v8::Value>> ListValueToVector(v8::Isolate* isolate,
 
 }  // namespace
 
-namespace atom {
-
 JavascriptBindings::JavascriptBindings(content::RenderView* render_view,
                                        extensions::ScriptContext* context)
     : content::RenderViewObserver(render_view),
@@ -114,10 +39,85 @@ JavascriptBindings::JavascriptBindings(content::RenderView* render_view,
 }
 
 JavascriptBindings::~JavascriptBindings() {
+  Observe(nullptr);
 }
 
 void JavascriptBindings::OnDestruct() {
-  // do nothing
+  Observe(nullptr);
+}
+
+v8::Local<v8::Value> JavascriptBindings::GetHiddenValue(v8::Isolate* isolate,
+                                    v8::Local<v8::String> key) {
+  if (!is_valid() || !render_view())
+    return v8::Local<v8::Value>();
+
+  v8::Local<v8::Context> context =
+      render_view()->GetWebView()->mainFrame()->mainWorldScriptContext();
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  v8::Local<v8::Value> value;
+  v8::Local<v8::Object> object = context->Global();
+
+  if (!ContextCanAccessObject(context, context->Global(), false)) {
+    LOG(ERROR) << "cannot access global main";
+    return v8::Local<v8::Value>();
+  }
+
+  v8::Maybe<bool> result = object->HasPrivate(context, privateKey);
+  if (!(result.IsJust() && result.FromJust()))
+    return v8::Local<v8::Value>();
+  if (object->GetPrivate(context, privateKey).ToLocal(&value))
+    return value;
+  return v8::Local<v8::Value>();
+}
+
+void JavascriptBindings::SetHiddenValue(v8::Isolate* isolate,
+                    v8::Local<v8::String> key,
+                    v8::Local<v8::Value> value) {
+  if (!is_valid() || !render_view() || value.IsEmpty())
+    return;
+
+  v8::Local<v8::Context> context =
+      render_view()->GetWebView()->mainFrame()->mainWorldScriptContext();
+
+  if (!ContextCanAccessObject(context, context->Global(), false)) {
+    LOG(ERROR) << "cannot access global main";
+    return;
+  }
+
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  context->Global()->SetPrivate(context, privateKey, value);
+}
+
+void JavascriptBindings::IPCSend(mate::Arguments* args,
+          const base::string16& channel,
+          const base::ListValue& arguments) {
+  if (!is_valid() || !render_view())
+    return;
+
+  bool success = render_view()->Send(new AtomViewHostMsg_Message(
+      render_view()->GetRoutingID(), channel, arguments));
+
+  if (!success)
+    args->ThrowError("Unable to send AtomViewHostMsg_Message");
+}
+
+base::string16 JavascriptBindings::IPCSendSync(mate::Arguments* args,
+                        const base::string16& channel,
+                        const base::ListValue& arguments) {
+  base::string16 json;
+
+  if (!is_valid() || !render_view()) {
+    return json;
+  }
+
+  IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
+      render_view()->GetRoutingID(), channel, arguments, &json);
+  bool success = render_view()->Send(message);
+
+  if (!success)
+    args->ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
+
+  return json;
 }
 
 void JavascriptBindings::GetBinding(
@@ -129,28 +129,18 @@ void JavascriptBindings::GetBinding(
   mate::Dictionary binding(isolate, v8::Object::New(isolate));
 
   mate::Dictionary ipc(isolate, v8::Object::New(isolate));
-  ipc.SetMethod("send", &IPCSend);
-  ipc.SetMethod("sendSync", &IPCSendSync);
+  ipc.SetMethod("send", base::Bind(&JavascriptBindings::IPCSend,
+      base::Unretained(this)));
+  ipc.SetMethod("sendSync", base::Bind(&JavascriptBindings::IPCSendSync,
+      base::Unretained(this)));
   binding.Set("ipc", ipc.GetHandle());
 
   mate::Dictionary v8(isolate, v8::Object::New(isolate));
-  v8.SetMethod("getHiddenValue", &GetHiddenValue);
-  v8.SetMethod("setHiddenValue", &SetHiddenValue);
+  v8.SetMethod("getHiddenValue", base::Bind(&JavascriptBindings::GetHiddenValue,
+      base::Unretained(this)));
+  v8.SetMethod("setHiddenValue", base::Bind(&JavascriptBindings::SetHiddenValue,
+      base::Unretained(this)));
   binding.Set("v8", v8.GetHandle());
-
-  mate::Dictionary content_settings(isolate, v8::Object::New(isolate));
-  content_settings.SetMethod("get",
-      base::Bind(&ContentSettingsManager::GetSetting,
-        base::Unretained(ContentSettingsManager::GetInstance())));
-  content_settings.SetMethod("getContentTypes",
-      base::Bind(&ContentSettingsManager::GetContentTypes,
-        base::Unretained(ContentSettingsManager::GetInstance())));
-  content_settings.SetMethod("getCurrent",
-      base::Bind(&ContentSettingsManager::GetSetting,
-        base::Unretained(ContentSettingsManager::GetInstance()),
-        render_view()->GetWebView()->mainFrame()->document().url(),
-        frame->document().url()));
-  binding.Set("content_settings", content_settings);
 
   args.GetReturnValue().Set(binding.GetHandle());
 }

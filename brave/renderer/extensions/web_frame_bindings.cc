@@ -99,6 +99,11 @@ void WebFrameBindings::SetGlobal(
       context()->web_frame()->mainWorldScriptContext();
   v8::Context::Scope context_scope(main_context);
 
+  if (!ContextCanAccessObject(main_context, main_context->Global(), false)) {
+    LOG(ERROR) << "cannot access global main";
+    return;
+  }
+
   v8::Handle<v8::Object> obj;
   for (std::vector<v8::Handle<v8::String>>::const_iterator iter =
              path.begin();

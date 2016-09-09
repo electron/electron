@@ -1,6 +1,5 @@
-var atom = requireNative('atom').GetBinding();
+var contentSettings = requireNative('contentSettings');
 var inIncognitoContext = requireNative('process').InIncognitoContext();
-var contentSettings = atom.content_settings;
 
 function getCurrent (contentType) {
   return contentSettings.getCurrent(contentType, inIncognitoContext)

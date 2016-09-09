@@ -739,6 +739,11 @@ std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
   return std::move(bluetooth_chooser);
 }
 
+void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
+                                 const gfx::Size& pref_size) {
+  Emit("preferred-size-changed", pref_size);
+}
+
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
@@ -774,6 +779,14 @@ void WebContents::DidChangeThemeColor(SkColor theme_color) {
     SkColorGetG(theme_color),
     SkColorGetB(theme_color));
   Emit("did-change-theme-color", hex_theme_color);
+}
+
+void WebContents::DocumentAvailableInMainFrame() {
+  Emit("document-available");
+}
+
+void WebContents::DocumentOnLoadCompletedInMainFrame() {
+  Emit("document-onload");
 }
 
 void WebContents::DocumentLoadedInFrame(
@@ -1692,6 +1705,10 @@ void WebContents::CapturePage(mate::Arguments* args) {
                              kBGRA_8888_SkColorType);
 }
 
+gfx::Size WebContents::GetPreferredSize() {
+  return web_contents()->GetPreferredSize();
+}
+
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   content::WebCursor::CursorInfo info;
   cursor.GetCursorInfo(&info);
@@ -1831,6 +1848,7 @@ void WebContents::OnMemoryPressure(
     web_contents()->GetController().ClearAllScreenshots();
   }
 
+  // TODO(bridiver) only run once per render process
   if (!web_contents()->GetRenderWidgetHostView()->HasFocus()) {
     content::MemoryPressureController::SendPressureNotification(
       web_contents()->GetRenderProcessHost(), memory_pressure_level);
@@ -1967,6 +1985,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
+      .SetMethod("getPreferredSize", &WebContents::GetPreferredSize)
       .SetProperty("id", &WebContents::ID)
       .SetMethod("getContentWindowId", &WebContents::GetContentWindowId)
       .SetMethod("setActive", &WebContents::SetActive)

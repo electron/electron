@@ -10,6 +10,10 @@
 #include "extensions/renderer/script_context.h"
 #include "v8/include/v8.h"
 
+namespace mate {
+class Arguments;
+}
+
 namespace atom {
 
 class JavascriptBindings : public content::RenderViewObserver,
@@ -22,6 +26,18 @@ class JavascriptBindings : public content::RenderViewObserver,
   void GetBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
 
  private:
+  base::string16 IPCSendSync(mate::Arguments* args,
+                        const base::string16& channel,
+                        const base::ListValue& arguments);
+  void IPCSend(mate::Arguments* args,
+                        const base::string16& channel,
+                        const base::ListValue& arguments);
+  v8::Local<v8::Value> GetHiddenValue(v8::Isolate* isolate,
+                                    v8::Local<v8::String> key);
+  void SetHiddenValue(v8::Isolate* isolate,
+                      v8::Local<v8::String> key,
+                      v8::Local<v8::Value> value);
+
   void OnDestruct() override;
   bool OnMessageReceived(const IPC::Message& message) override;
   void OnBrowserMessage(bool all_frames,
