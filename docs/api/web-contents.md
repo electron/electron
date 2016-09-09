@@ -302,10 +302,9 @@ Returns:
 * `event` Event
 * `result` Object
   * `requestId` Integer
-  * `finalUpdate` Boolean - Indicates if more responses are to follow.
-  * `activeMatchOrdinal` Integer (optional) - Position of the active match.
-  * `matches` Integer (optional) - Number of Matches.
-  * `selectionArea` Object (optional) - Coordinates of first match region.
+  * `activeMatchOrdinal` Integer - Position of the active match.
+  * `matches` Integer - Number of Matches.
+  * `selectionArea` Object - Coordinates of first match region.
 
 Emitted when a result is available for
 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
