@@ -848,6 +848,36 @@ describe('asar package', function () {
         done()
       })
     })
+
+    it('loads video tag in html', function (done) {
+      this.timeout(20000)
+
+      after(function () {
+        ipcMain.removeAllListeners('asar-video')
+        return closeWindow(w).then(function () { w = null })
+      })
+
+      var w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400
+      })
+      var p = path.resolve(fixtures, 'asar', 'video.asar', 'index.html')
+      var u = url.format({
+        protocol: 'file',
+        slashed: true,
+        pathname: p
+      })
+      w.loadURL(u)
+      ipcMain.on('asar-video', function (event, message, error) {
+        if (message === 'ended') {
+          assert(!error)
+          done()
+        } else if (message === 'error') {
+          done(error)
+        }
+      })
+    })
   })
 
   describe('original-fs module', function () {
