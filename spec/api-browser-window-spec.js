@@ -1378,7 +1378,7 @@ const assertWithinDelta = (actual, expect, delta, label) => {
 const isScaleFactorRounding = () => {
   const {scaleFactor} = screen.getPrimaryDisplay()
   // Return true if scale factor is non-integer value
-  if (Math.round(scaleFactor) === scaleFactor) return true
+  if (Math.round(scaleFactor) !== scaleFactor) return true
   // Return true if scale factor is odd number above 2
   return scaleFactor > 2 && scaleFactor % 2 === 1
 }
