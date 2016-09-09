@@ -77,8 +77,8 @@ describe('<webview> tag', function () {
     })
 
     it('resolves relative URLs', function () {
-      webview.preload = '../fixtures/test.js'
-      assert.equal(webview.preload, 'file://' + fixtures + '/test.js')
+      webview.src = '../fixtures/test.html'
+      assert.equal(webview.src, 'file://' + fixtures + '/test.html')
     })
 
     it('ignores empty values', function () {
@@ -215,8 +215,8 @@ describe('<webview> tag', function () {
     })
 
     it('resolves relative URLs', function () {
-      webview.src = '../fixtures/test.html'
-      assert.equal(webview.src, 'file://' + fixtures + '/test.html')
+      webview.preload = '../fixtures/test.js'
+      assert.equal(webview.preload, 'file://' + fixtures + '/test.js')
     })
 
     it('ignores empty values', function () {
