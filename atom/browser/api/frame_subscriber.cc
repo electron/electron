@@ -8,8 +8,8 @@
 #include "atom/common/node_includes.h"
 #include "base/bind.h"
 #include "content/public/browser/render_widget_host.h"
-#include "ui/display/screen.h"
 #include "ui/display/display.h"
+#include "ui/display/screen.h"
 
 namespace atom {
 

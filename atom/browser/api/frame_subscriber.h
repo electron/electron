@@ -11,8 +11,8 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/gfx/image/image.h"
 #include "ui/gfx/geometry/size.h"
+#include "ui/gfx/image/image.h"
 
 namespace atom {
 
