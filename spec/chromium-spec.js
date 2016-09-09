@@ -250,14 +250,30 @@ describe('chromium feature', function () {
 
     it('defines a window.location setter', function (done) {
       // Load a page that definitely won't redirect
-      var b
-      b = window.open('about:blank')
+      var b = window.open('about:blank')
       webContents.fromId(b.guestId).once('did-finish-load', function () {
         // When it loads, redirect
         b.location = 'file://' + fixtures + '/pages/base-page.html'
         webContents.fromId(b.guestId).once('did-finish-load', function () {
           // After our second redirect, cleanup and callback
           b.close()
+          done()
+        })
+      })
+    })
+
+    it('open a blank page when no URL is specified', function (done) {
+      let b = window.open()
+      webContents.fromId(b.guestId).once('did-finish-load', function () {
+        const {location} = b
+        b.close()
+        assert.equal(location, 'about:blank')
+
+        let c = window.open('')
+        webContents.fromId(c.guestId).once('did-finish-load', function () {
+          const {location} = c
+          c.close()
+          assert.equal(location, 'about:blank')
           done()
         })
       })
