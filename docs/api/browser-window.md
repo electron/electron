@@ -221,7 +221,6 @@ Possible values of the `titleBarStyle` option are:
   the top left.
 * `hidden-inset` results in a hidden title bar with an alternative look
   where the traffic light buttons are slightly more inset from the window edge.
-  It is not supported on macOS 10.9 Mavericks, where it falls back to `hidden`.
 
 The `webPreferences` option is an object that can have the following properties:
 
