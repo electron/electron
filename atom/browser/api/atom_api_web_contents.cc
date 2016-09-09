@@ -1242,7 +1242,7 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
     std::unique_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
-        isolate(), view, callback, only_dirty));
+        view, callback, only_dirty));
     view->BeginFrameSubscription(std::move(frame_subscriber));
   }
 }

@@ -8,17 +8,17 @@
 #include "atom/common/node_includes.h"
 #include "base/bind.h"
 #include "content/public/browser/render_widget_host.h"
+#include "ui/display/screen.h"
+#include "ui/display/display.h"
 
 namespace atom {
 
 namespace api {
 
-FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
-                                 content::RenderWidgetHostView* view,
+FrameSubscriber::FrameSubscriber(content::RenderWidgetHostView* view,
                                  const FrameCaptureCallback& callback,
                                  bool only_dirty)
-    : isolate_(isolate),
-      view_(view),
+    : view_(view),
       callback_(callback),
       only_dirty_(only_dirty),
       weak_factory_(this) {
@@ -40,6 +40,17 @@ bool FrameSubscriber::ShouldCaptureFrame(
   if (only_dirty_)
     rect = dirty_rect;
 
+  gfx::Size view_size = rect.size();
+  gfx::Size bitmap_size = view_size;
+  const gfx::NativeView native_view = view_->GetNativeView();
+  const float scale =
+      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
+  if (scale > 1.0f)
+    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+
+  rect = gfx::Rect(rect.origin(), bitmap_size);
+
   host->CopyFromBackingStore(
       rect,
       rect.size(),
@@ -57,23 +68,7 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
   if (response != content::ReadbackResponse::READBACK_SUCCESS)
     return;
 
-  v8::Locker locker(isolate_);
-  v8::HandleScope handle_scope(isolate_);
-
-  size_t rgb_arr_size = bitmap.width() * bitmap.height() *
-    bitmap.bytesPerPixel();
-  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate_, rgb_arr_size);
-  if (buffer.IsEmpty())
-    return;
-
-  bitmap.copyPixelsTo(
-    reinterpret_cast<uint8_t*>(node::Buffer::Data(buffer.ToLocalChecked())),
-    rgb_arr_size);
-
-  v8::Local<v8::Value> damage =
-      mate::Converter<gfx::Rect>::ToV8(isolate_, damage_rect);
-
-  callback_.Run(buffer.ToLocalChecked(), damage);
+  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap), damage_rect);
 }
 
 }  // namespace api
