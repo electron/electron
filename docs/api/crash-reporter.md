@@ -36,7 +36,7 @@ The `crash-reporter` module has the following methods:
     Default is `true`.
   * `ignoreSystemCrashHandler` Boolean - Default is `false`.
   * `extra` Object - An object you can define that will be sent along with the
-    report. Only string properties are sent correctly, Nested objects are not
+    report. Only string properties are sent correctly. Nested objects are not
     supported.
 
 You are required to call this method before using other `crashReporter`
@@ -57,6 +57,17 @@ sent or the crash reporter has not been started, `null` is returned.
 
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
+
+### `crashReporter.setExtraParameters(extra)`
+
+* `extra` Object - An object you can define that will be sent along with the
+  report. Only string properties are sent correctly. Nested objects are not
+  supported.
+
+Updates the extra value that will be sent along with the report. This allows
+you to add extra data while the crashReporter is already started. It could be
+possible that you did not have access to certain data while you wanted to start
+the crashReporter.
 
 ## crash-reporter Payload
 

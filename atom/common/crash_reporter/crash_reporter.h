@@ -31,6 +31,8 @@ class CrashReporter {
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
       const std::string& path);
 
+  void SetExtraParameters(const StringMap& parameters);
+
  protected:
   CrashReporter();
   virtual ~CrashReporter();

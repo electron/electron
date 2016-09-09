@@ -42,6 +42,10 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
   SetUploadParameters();
 }
 
+void CrashReporter::SetExtraParameters(const StringMap& parameters) {
+  SetUploadParameters(parameters);
+}
+
 std::vector<CrashReporter::UploadReportResult>
 CrashReporter::GetUploadedReports(const std::string& path) {
   std::string file_content;

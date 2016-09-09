@@ -15,6 +15,12 @@ crashReporter.start({
   }
 });
 
+crashReporter.setExtraParameters({
+    'extra1': 'extra1',
+    'extra2': 'extra2',
+    'extra3': 'extra3'
+})
+
 setImmediate(function() { process.crash(); });
 </script>
 </body>
