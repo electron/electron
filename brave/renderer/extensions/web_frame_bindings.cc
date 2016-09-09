@@ -46,6 +46,12 @@ WebFrameBindings::WebFrameBindings(extensions::ScriptContext* context)
 WebFrameBindings::~WebFrameBindings() {
 }
 
+void WebFrameBindings::Invalidate() {
+  context()->web_frame()->view()->setSpellCheckClient(nullptr);
+  spell_check_client_.reset(nullptr);
+  ObjectBackedNativeHandler::Invalidate();
+}
+
 void WebFrameBindings::SetSpellCheckProvider(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   const std::string lang = mate::V8ToString(args[0].As<v8::String>());

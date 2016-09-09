@@ -21,6 +21,7 @@ class WebFrameBindings : public extensions::ObjectBackedNativeHandler {
   void SetSpellCheckProvider(const v8::FunctionCallbackInfo<v8::Value>& args);
   void SetGlobal(const v8::FunctionCallbackInfo<v8::Value>& args);
   void ExecuteJavaScript(const v8::FunctionCallbackInfo<v8::Value>& args);
+  void Invalidate() override;
 
  private:
   void BindToGC(const v8::FunctionCallbackInfo<v8::Value>& args);
