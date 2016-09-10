@@ -135,7 +135,7 @@ std::string DownloadItem::GetFilename() const {
                            std::string(),
                            download_item_->GetSuggestedFilename(),
                            GetMimeType(),
-                           std::string()).LossyDisplayName());
+                           "download").LossyDisplayName());
 }
 
 std::string DownloadItem::GetContentDisposition() const {
