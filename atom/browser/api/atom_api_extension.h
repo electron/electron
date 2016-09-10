@@ -36,7 +36,7 @@ class Extension : public content::NotificationObserver {
  public:
   static Extension* GetInstance();
 
-  static mate::Dictionary Load(v8::Isolate* isolate,
+  static v8::Local<v8::Value> Load(v8::Isolate* isolate,
                     const base::FilePath& path,
                     const base::DictionaryValue& manifest,
                     const extensions::Manifest::Location& manifest_location,

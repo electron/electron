@@ -41,7 +41,7 @@ namespace extensions {
 // AtomExtensionSystem::Shared
 //
 
-AtomExtensionSystem::Shared::Shared(atom::AtomBrowserContext* browser_context)
+AtomExtensionSystem::Shared::Shared(brave::BraveBrowserContext* browser_context)
     : registry_(ExtensionRegistry::Get(browser_context)),
       browser_context_(browser_context),
       extension_prefs_(ExtensionPrefs::Get(browser_context_)) {
@@ -426,12 +426,12 @@ void AtomExtensionSystem::Shared::Observe(int type,
 // AtomExtensionSystem
 //
 AtomExtensionSystem::AtomExtensionSystem(
-    atom::AtomBrowserContext* browser_context)
+    brave::BraveBrowserContext* browser_context)
     : browser_context_(browser_context) {
   shared_ =
       AtomExtensionSystemSharedFactory::GetForBrowserContext(browser_context_);
 
-  if (!browser_context_->IsOffTheRecord()) {
+  if (browser_context_->original_context() == browser_context_) {
     shared_->InitPrefs();
   }
 }
@@ -443,7 +443,7 @@ void AtomExtensionSystem::Shutdown() {
 }
 
 void AtomExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
-  DCHECK(!browser_context_->IsOffTheRecord());
+  DCHECK(browser_context_->original_context() == browser_context_);
   if (shared_user_script_master() || extension_service())
     return;  // Already initialized.
 

@@ -65,6 +65,6 @@ class BravePermissionManager : public atom::AtomPermissionManager {
   DISALLOW_COPY_AND_ASSIGN(BravePermissionManager);
 };
 
-}  // namespace atom
+}  // namespace brave
 
 #endif  // BRAVE_BROWSER_BRAVE_PERMISSION_MANAGER_H_

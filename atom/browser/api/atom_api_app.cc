@@ -32,7 +32,6 @@
 #include "base/strings/string_util.h"
 #include "brave/browser/brave_content_browser_client.h"
 #include "brightray/browser/brightray_paths.h"
-#include "chrome/browser/chrome_notification_types.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_thread.h"
@@ -40,7 +39,6 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/notification_service.h"
-#include "content/public/browser/notification_types.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/dictionary.h"
@@ -55,6 +53,8 @@
 
 #if defined(ENABLE_EXTENSIONS)
 #include "atom/browser/api/atom_api_extension.h"
+#include "chrome/browser/chrome_notification_types.h"
+#include "content/public/browser/notification_types.h"
 #endif
 
 using atom::Browser;
@@ -239,18 +239,23 @@ App::App(v8::Isolate* isolate) {
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
   Init(isolate);
+#if defined(ENABLE_EXTENSIONS)
   registrar_.Add(this,
                  content::NOTIFICATION_WEB_CONTENTS_RENDER_VIEW_HOST_CREATED,
                  content::NotificationService::AllBrowserContextsAndSources());
+  registrar_.Add(this,
+                 chrome::NOTIFICATION_PROFILE_CREATED,
+                 content::NotificationService::AllBrowserContextsAndSources());
+#endif
 }
 
 // TOOD(bridiver) - move this to api_extension?
 void App::Observe(
     int type, const content::NotificationSource& source,
     const content::NotificationDetails& details) {
+#if defined(ENABLE_EXTENSIONS)
   switch (type) {
     case content::NOTIFICATION_WEB_CONTENTS_RENDER_VIEW_HOST_CREATED: {
-#if defined(ENABLE_EXTENSIONS)
       content::WebContents* web_contents =
           content::Source<content::WebContents>(source).ptr();
       auto browser_context = web_contents->GetBrowserContext();
@@ -261,10 +266,17 @@ void App::Observe(
       if (Extension::IsBackgroundPageUrl(url, browser_context)) {
         WebContents::CreateFrom(isolate(), web_contents);
       }
-#endif
+      break;
+    }
+    case chrome::NOTIFICATION_PROFILE_CREATED: {
+      AtomBrowserContext* browser_context =
+          content::Source<AtomBrowserContext>(source).ptr();
+      auto session = Session::CreateFrom(isolate(), browser_context);
+      Emit("browser-context-created", session);
       break;
     }
   }
+#endif
 }
 
 App::~App() {

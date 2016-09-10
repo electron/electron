@@ -33,6 +33,10 @@ def list_files(directories, filters):
       for f in filters:
         for filename in fnmatch.filter(filenames, f):
           matches.append(os.path.join(root, filename))
+    for root, _, filenames, in os.walk(os.path.join('brave', directory)):
+      for f in filters:
+        for filename in fnmatch.filter(filenames, f):
+          matches.append(os.path.join(root, filename))
   return matches
 
 

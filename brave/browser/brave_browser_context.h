@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BRAVE_BROWSER_ATOM_BROWSER_CONTEXT_H_
-#define BRAVE_BROWSER_ATOM_BROWSER_CONTEXT_H_
+#ifndef BRAVE_BROWSER_BRAVE_BROWSER_CONTEXT_H_
+#define BRAVE_BROWSER_BRAVE_BROWSER_CONTEXT_H_
 
 #include <string>
 #include <vector>
@@ -11,6 +11,7 @@
 #include "content/public/browser/host_zoom_map.h"
 #include "chrome/browser/ui/zoom/chrome_zoom_level_prefs.h"
 #include "components/autofill/core/browser/webdata/autofill_webdata_service.h"
+#include "components/prefs/overlay_user_pref_store.h"
 #include "components/webdata/common/web_database_service.h"
 
 class PrefChangeRegistrar;
@@ -49,6 +50,8 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
 
   ChromeZoomLevelPrefs* GetZoomLevelPrefs();
 
+  bool HasParentContext();
+
   // content::BrowserContext:
   net::NetworkDelegate* CreateNetworkDelegate() override;
   content::PermissionManager* GetPermissionManager() override;
@@ -81,6 +84,8 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
   scoped_refptr<autofill::AutofillWebDataService>
     GetAutofillWebdataService();
 
+  base::FilePath GetPath() const override;
+
  private:
   void OnPrefsLoaded(bool success);
   void TrackZoomLevelsFromParent();
@@ -100,6 +105,7 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
 
   atom::AtomNetworkDelegate* network_delegate_;
 
+  bool has_parent_;
   BraveBrowserContext* original_context_;
   scoped_refptr<BraveBrowserContext> otr_context_;
   const std::string partition_;
@@ -112,4 +118,4 @@ class BraveBrowserContext : public atom::AtomBrowserContext {
 
 }  // namespace brave
 
-#endif  // BRAVE_BROWSER_ATOM_BROWSER_CONTEXT_H_
+#endif  // BRAVE_BROWSER_BRAVE_BROWSER_CONTEXT_H_

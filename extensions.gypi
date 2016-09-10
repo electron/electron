@@ -4,6 +4,7 @@
     'grit_out_dir%': '<(SHARED_INTERMEDIATE_DIR)/atom',
     'grit_defines': [],
     'extension_js_sources': [
+      'lib/browser/api/browser-actions.js',
       'lib/browser/api/extensions.js',
     ],
     'extension_sources': [
@@ -55,6 +56,8 @@
       'atom/renderer/extensions/atom_extensions_dispatcher_delegate.h',
       'atom/renderer/extensions/atom_extensions_renderer_client.cc',
       'atom/renderer/extensions/atom_extensions_renderer_client.h',
+      'brave/renderer/extensions/content_settings_bindings.cc',
+      'brave/renderer/extensions/content_settings_bindings.h',
       'brave/renderer/extensions/web_frame_bindings.cc',
       'brave/renderer/extensions/web_frame_bindings.h',
       'chromium_src/chrome/browser/renderer_host/chrome_extension_message_filter.cc',

@@ -6,7 +6,7 @@
 #define ATOM_BROWSER_EXTENSIONS_ATOM_EXTENSION_SYSTEM_H_
 
 #include <string>
-#include "atom/browser/atom_browser_context.h"
+#include "brave/browser/brave_browser_context.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
@@ -45,7 +45,7 @@ class ValueStoreFactory;
 
 class AtomExtensionSystem : public ExtensionSystem {
  public:
-  explicit AtomExtensionSystem(atom::AtomBrowserContext* browser_context);
+  explicit AtomExtensionSystem(brave::BraveBrowserContext* browser_context);
   ~AtomExtensionSystem() override;
 
   // KeyedService implementation.
@@ -86,7 +86,7 @@ class AtomExtensionSystem : public ExtensionSystem {
                  public content::NotificationObserver,
                  public base::SupportsWeakPtr<Shared> {
    public:
-    explicit Shared(atom::AtomBrowserContext* browser_context);
+    explicit Shared(brave::BraveBrowserContext* browser_context);
     ~Shared() override;
 
     void InitPrefs();
@@ -140,7 +140,7 @@ class AtomExtensionSystem : public ExtensionSystem {
 
     ExtensionRegistry* registry_;  // Not owned.
 
-    content::BrowserContext* browser_context_;
+    brave::BraveBrowserContext* browser_context_;
 
     extensions::ExtensionPrefs* extension_prefs_;
 
@@ -168,7 +168,7 @@ class AtomExtensionSystem : public ExtensionSystem {
     OneShotEvent ready_;
   };
 
-  content::BrowserContext* browser_context_;
+  brave::BraveBrowserContext* browser_context_;
 
   Shared* shared_;
 

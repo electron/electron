@@ -12,6 +12,7 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "components/prefs/pref_service.h"
@@ -124,7 +125,7 @@ Extension* Extension::GetInstance() {
 }
 
 // static
-mate::Dictionary Extension::Load(
+v8::Local<v8::Value> Extension::Load(
   v8::Isolate* isolate,
   const base::FilePath& path,
   const base::DictionaryValue& manifest,
@@ -133,32 +134,37 @@ mate::Dictionary Extension::Load(
   std::string error;
   scoped_refptr<extensions::Extension> extension;
 
-  if (manifest.empty()) {
-    extension = extensions::file_util::LoadExtension(path,
-                                                    manifest_location,
-                                                    flags,
-                                                    &error);
-  } else {
+  std::unique_ptr<base::DictionaryValue> manifest_copy =
+      manifest.CreateDeepCopy();
+  if (manifest_copy->empty()) {
+    manifest_copy = extensions::file_util::LoadManifest(path, &error);
+  }
+
+  if (error.empty()) {
     extension = LoadExtension(path,
-                              manifest,
+                              *manifest_copy,
                               manifest_location,
                               flags,
                               &error);
   }
 
-  mate::Dictionary install_info = mate::Dictionary::CreateEmpty(isolate);
+  std::unique_ptr<base::DictionaryValue>
+      install_info(new base::DictionaryValue);
   if (error.empty()) {
     Install(extension);
-    install_info.Set("name", extension->non_localized_name());
-    install_info.Set("id", extension->id());
-    install_info.Set("url", extension->url().spec());
-    install_info.Set("path", extension->path());
-    install_info.Set("version", extension->VersionString());
-    install_info.Set("description", extension->description());
+    install_info->SetString("name", extension->non_localized_name());
+    install_info->SetString("id", extension->id());
+    install_info->SetString("url", extension->url().spec());
+    install_info->SetString("base_path", extension->path().value());
+    install_info->SetString("version", extension->VersionString());
+    install_info->SetString("description", extension->description());
+    install_info->Set("manifest", std::move(manifest_copy));
   } else {
-    install_info.Set("error", error);
+    install_info->SetString("error", error);
   }
-  return install_info;
+  std::unique_ptr<atom::V8ValueConverter>
+      converter(new atom::V8ValueConverter);
+  return converter->ToV8Value(install_info.get(), isolate->GetCurrentContext());
 }
 
 // static

@@ -83,7 +83,8 @@ void BraveContentBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type != "renderer")
     return;
 
-  atom::AtomBrowserClient::AppendExtraCommandLineSwitches(command_line, process_id);
+  atom::AtomBrowserClient::AppendExtraCommandLineSwitches(
+      command_line, process_id);
 
 #if defined(ENABLE_EXTENSIONS)
   content::RenderProcessHost* process =

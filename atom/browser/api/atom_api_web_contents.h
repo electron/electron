@@ -33,6 +33,10 @@ namespace brightray {
 class InspectableWebContents;
 }
 
+namespace gfx {
+class Size;
+}
+
 namespace mate {
 
 template<>
@@ -214,6 +218,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // done.
   void CapturePage(mate::Arguments* args);
 
+  gfx::Size GetPreferredSize();
+
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
@@ -333,11 +339,15 @@ class WebContents : public mate::TrackableObject<WebContents>,
   std::unique_ptr<content::BluetoothChooser> RunBluetoothChooser(
       content::RenderFrameHost* frame,
       const content::BluetoothChooser::EventHandler& handler) override;
+  void UpdatePreferredSize(content::WebContents* web_contents,
+                                 const gfx::Size& pref_size) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
+  void DocumentAvailableInMainFrame() override;
+  void DocumentOnLoadCompletedInMainFrame() override;
   void DocumentLoadedInFrame(
       content::RenderFrameHost* render_frame_host) override;
   void DidStartProvisionalLoadForFrame(

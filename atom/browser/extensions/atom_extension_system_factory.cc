@@ -4,6 +4,7 @@
 
 #include "atom/browser/extensions/atom_extension_system_factory.h"
 
+#include "brave/browser/brave_browser_context.h"
 #include "content/public/browser/browser_context.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "extensions/browser/declarative_user_script_manager_factory.h"
@@ -52,7 +53,7 @@ AtomExtensionSystemSharedFactory::~AtomExtensionSystemSharedFactory() {
 KeyedService* AtomExtensionSystemSharedFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {
   return new AtomExtensionSystem::Shared(
-      static_cast<atom::AtomBrowserContext*>(context));
+      static_cast<brave::BraveBrowserContext*>(context));
 }
 
 content::BrowserContext*
@@ -88,7 +89,7 @@ AtomExtensionSystemFactory::~AtomExtensionSystemFactory() {
 KeyedService* AtomExtensionSystemFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {
   return new AtomExtensionSystem(
-      static_cast<atom::AtomBrowserContext*>(context));
+      static_cast<brave::BraveBrowserContext*>(context));
 }
 
 content::BrowserContext* AtomExtensionSystemFactory::GetBrowserContextToUse(
