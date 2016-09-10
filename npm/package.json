@@ -15,11 +15,11 @@
   "main": "index.js",
   "dependencies": {
     "extract-zip": "^1.0.3",
-    "electron-download": "^2.0.0"
+    "electron-download": "^2.2.0"
   },
   "devDependencies": {
     "home-path": "^0.1.1",
-    "path-exists": "^1.0.0",
+    "path-exists": "^2.0.0",
     "standard": "^5.4.1",
     "tape": "^3.0.1"
   },
