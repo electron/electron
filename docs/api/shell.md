@@ -46,6 +46,7 @@ application was available to open the URL, false otherwise.
 * `fullPath` String
 
 Move the given file to trash and returns a boolean status for the operation.
+Returns true if the item was successfully moved to the trash, false otherwise.
 
 ### `shell.beep()`
 
