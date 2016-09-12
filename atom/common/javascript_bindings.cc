@@ -11,6 +11,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "extensions/renderer/console.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
@@ -51,21 +52,22 @@ v8::Local<v8::Value> JavascriptBindings::GetHiddenValue(v8::Isolate* isolate,
   if (!is_valid() || !render_view())
     return v8::Local<v8::Value>();
 
-  v8::Local<v8::Context> context =
+  v8::Local<v8::Context> main_context =
       render_view()->GetWebView()->mainFrame()->mainWorldScriptContext();
   v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
   v8::Local<v8::Value> value;
-  v8::Local<v8::Object> object = context->Global();
+  v8::Local<v8::Object> object = main_context->Global();
 
-  if (!ContextCanAccessObject(context, context->Global(), false)) {
-    LOG(ERROR) << "cannot access global main";
+  if (!ContextCanAccessObject(main_context, main_context->Global(), false)) {
+    extensions::console::Warn(context()->GetRenderFrame(),
+      "cannot access global in main frame script context");
     return v8::Local<v8::Value>();
   }
 
-  v8::Maybe<bool> result = object->HasPrivate(context, privateKey);
+  v8::Maybe<bool> result = object->HasPrivate(main_context, privateKey);
   if (!(result.IsJust() && result.FromJust()))
     return v8::Local<v8::Value>();
-  if (object->GetPrivate(context, privateKey).ToLocal(&value))
+  if (object->GetPrivate(main_context, privateKey).ToLocal(&value))
     return value;
   return v8::Local<v8::Value>();
 }
@@ -76,16 +78,17 @@ void JavascriptBindings::SetHiddenValue(v8::Isolate* isolate,
   if (!is_valid() || !render_view() || value.IsEmpty())
     return;
 
-  v8::Local<v8::Context> context =
+  v8::Local<v8::Context> main_context =
       render_view()->GetWebView()->mainFrame()->mainWorldScriptContext();
 
-  if (!ContextCanAccessObject(context, context->Global(), false)) {
-    LOG(ERROR) << "cannot access global main";
+  if (!ContextCanAccessObject(main_context, main_context->Global(), false)) {
+    extensions::console::Warn(context()->GetRenderFrame(),
+          "cannot access global in main frame script context");
     return;
   }
 
   v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
-  context->Global()->SetPrivate(context, privateKey, value);
+  main_context->Global()->SetPrivate(main_context, privateKey, value);
 }
 
 void JavascriptBindings::IPCSend(mate::Arguments* args,
