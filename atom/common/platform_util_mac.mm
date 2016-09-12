@@ -40,11 +40,11 @@ bool ShowItemInFolder(const base::FilePath& path) {
 //  2. Silent no-op for unassociated file types: http://crbug.com/50263
 // Instead, an AppleEvent is constructed to tell the Finder to open the
 // document.
-void OpenItem(const base::FilePath& full_path) {
+bool OpenItem(const base::FilePath& full_path) {
   DCHECK([NSThread isMainThread]);
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   if (!path_string)
-    return;
+    return false;
 
   // Create the target of this AppleEvent, the Finder.
   base::mac::ScopedAEDesc<AEAddressDesc> address;
@@ -55,7 +55,7 @@ void OpenItem(const base::FilePath& full_path) {
                               address.OutPointer());  // result
   if (status != noErr) {
     OSSTATUS_LOG(WARNING, status) << "Could not create OpenItem() AE target";
-    return;
+    return false;
   }
 
   // Build the AppleEvent data structure that instructs Finder to open files.
@@ -68,7 +68,7 @@ void OpenItem(const base::FilePath& full_path) {
                               theEvent.OutPointer());  // result
   if (status != noErr) {
     OSSTATUS_LOG(WARNING, status) << "Could not create OpenItem() AE event";
-    return;
+    return false;
   }
 
   // Create the list of files (only ever one) to open.
@@ -79,7 +79,7 @@ void OpenItem(const base::FilePath& full_path) {
                         fileList.OutPointer());  // resultList
   if (status != noErr) {
     OSSTATUS_LOG(WARNING, status) << "Could not create OpenItem() AE file list";
-    return;
+    return false;
   }
 
   // Add the single path to the file list.  C-style cast to avoid both a
@@ -95,11 +95,11 @@ void OpenItem(const base::FilePath& full_path) {
     if (status != noErr) {
       OSSTATUS_LOG(WARNING, status)
           << "Could not add file path to AE list in OpenItem()";
-      return;
+      return false;
     }
   } else {
     LOG(WARNING) << "Could not get FSRef for path URL in OpenItem()";
-    return;
+    return false;
   }
 
   // Attach the file list to the AppleEvent.
@@ -109,7 +109,7 @@ void OpenItem(const base::FilePath& full_path) {
   if (status != noErr) {
     OSSTATUS_LOG(WARNING, status)
         << "Could not put the AE file list the path in OpenItem()";
-    return;
+    return false;
   }
 
   // Send the actual event.  Do not care about the reply.
@@ -125,6 +125,7 @@ void OpenItem(const base::FilePath& full_path) {
     OSSTATUS_LOG(WARNING, status)
         << "Could not send AE to Finder in OpenItem()";
   }
+  return status == noErr;
 }
 
 bool OpenExternal(const GURL& url, bool activate) {

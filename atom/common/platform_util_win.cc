@@ -292,11 +292,11 @@ bool ShowItemInFolder(const base::FilePath& full_path) {
   }
 }
 
-void OpenItem(const base::FilePath& full_path) {
+bool OpenItem(const base::FilePath& full_path) {
   if (base::DirectoryExists(full_path))
-    ui::win::OpenFolderViaShell(full_path);
+    return ui::win::OpenFolderViaShell(full_path);
   else
-    ui::win::OpenFileViaShell(full_path);
+    return ui::win::OpenFileViaShell(full_path);
 }
 
 bool OpenExternal(const base::string16& url, bool activate) {
