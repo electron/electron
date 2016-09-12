@@ -21,7 +21,7 @@ namespace platform_util {
 
 // Show the given file in a file manager. If possible, select the file.
 // Must be called from the UI thread.
-void ShowItemInFolder(const base::FilePath& full_path);
+bool ShowItemInFolder(const base::FilePath& full_path);
 
 // Open the given file in the desktop's default manner.
 // Must be called from the UI thread.

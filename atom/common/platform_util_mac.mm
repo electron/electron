@@ -18,7 +18,7 @@
 
 namespace platform_util {
 
-void ShowItemInFolder(const base::FilePath& path) {
+bool ShowItemInFolder(const base::FilePath& path) {
   // The API only takes absolute path.
   base::FilePath full_path =
       path.IsAbsolute() ? path : base::MakeAbsoluteFilePath(path);
@@ -26,8 +26,11 @@ void ShowItemInFolder(const base::FilePath& path) {
   DCHECK([NSThread isMainThread]);
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   if (!path_string || ![[NSWorkspace sharedWorkspace] selectFile:path_string
-                                        inFileViewerRootedAtPath:@""])
+                                        inFileViewerRootedAtPath:@""]) {
     LOG(WARNING) << "NSWorkspace failed to select file " << full_path.value();
+    return false;
+  }
+  return true;
 }
 
 // This function opens a file.  This doesn't use LaunchServices or NSWorkspace

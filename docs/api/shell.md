@@ -20,7 +20,8 @@ The `shell` module has the following methods:
 
 * `fullPath` String
 
-Show the given file in a file manager. If possible, select the file.
+Show the given file in a file manager. If possible, select the file. Returns
+true if the item was successfully shown, false otherwse.
 
 ### `shell.openItem(fullPath)`
 
