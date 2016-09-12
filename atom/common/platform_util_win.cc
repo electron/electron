@@ -206,7 +206,7 @@ namespace platform_util {
 bool ShowItemInFolder(const base::FilePath& full_path) {
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.succeeded())
-    return;
+    return false;
 
   base::FilePath dir = full_path.DirName().AsEndingWithSeparator();
   // ParseDisplayName will fail if the directory is "C:", it must be "C:\\".
