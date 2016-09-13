@@ -224,6 +224,7 @@ Possible values of the `titleBarStyle` option are:
 
 The `webPreferences` option is an object that can have the following properties:
 
+* `devTools` Boolean - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
 * `nodeIntegration` Boolean - Whether node integration is enabled. Default
   is `true`.
 * `preload` String - Specifies a script that will be loaded before other
