@@ -13,10 +13,10 @@ win.loadURL('http://github.com')
 const ses = win.webContents.session
 
 const guid = ses.autofill.addCreditCard({
-      name: 'example card',
-      card_number: '1234567890',
-      expiration_month: '12',
-      expiration_year: '2022'
+  name: 'example card',
+  card_number: '1234567890',
+  expiration_month: '12',
+  expiration_year: '2022'
 })
 
 const card = ses.autofill.getCreditCard(guid)

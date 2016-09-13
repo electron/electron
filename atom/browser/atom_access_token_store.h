@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
 #define ATOM_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
 
+#include <string>
 #include "content/public/browser/access_token_store.h"
 
 namespace atom {
