@@ -17,6 +17,7 @@
 #include "content/public/browser/notification_registrar.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
+#include "net/base/network_change_notifier.h"
 
 #if defined(USE_NSS_CERTS)
 #include "chrome/browser/certificate_manager_model.h"
@@ -37,6 +38,7 @@ namespace api {
 class App : public AtomBrowserClient::Delegate,
             public mate::EventEmitter<App>,
             public BrowserObserver,
+            public net::NetworkChangeNotifier::MaxBandwidthObserver,
             public content::GpuDataManagerObserver,
             public content::NotificationObserver {
  public:
@@ -115,6 +117,11 @@ class App : public AtomBrowserClient::Delegate,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
+
+  // net::NetworkChangeNotifier::MaxBandwidthObserver:
+  void OnMaxBandwidthChanged(
+      double max_bandwidth_mbps,
+      net::NetworkChangeNotifier::ConnectionType type) override;
 
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;

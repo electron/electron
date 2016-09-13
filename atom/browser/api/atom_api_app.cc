@@ -283,6 +283,7 @@ App::~App() {
   static_cast<brave::BraveContentBrowserClient*>(
     brave::BraveContentBrowserClient::Get())->set_delegate(nullptr);
   Browser::Get()->RemoveObserver(this);
+  net::NetworkChangeNotifier::RemoveMaxBandwidthObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
 }
 
@@ -325,6 +326,8 @@ void App::OnWillFinishLaunching() {
 }
 
 void App::OnFinishLaunching() {
+  // observer can't be added until after PostMainMessageLoopStart
+  net::NetworkChangeNotifier::AddMaxBandwidthObserver(this);
   Emit("ready");
 }
 
@@ -453,6 +456,20 @@ void App::SelectClientCertificate(
   if (!prevent_default)
     shared_delegate->ContinueWithCertificate(
         cert_request_info->client_certs[0].get());
+}
+
+void App::OnMaxBandwidthChanged(
+    double max_bandwidth_mbps,
+    net::NetworkChangeNotifier::ConnectionType type) {
+  // for some reason NetworkObserver::OnNetworkConnected and
+  // NetworkObserver::OnNetworkDisconnected don't appear to
+  // be called so using the same method that BrowserOnlineStateObserver uses
+  bool online = type != net::NetworkChangeNotifier::CONNECTION_NONE;
+  if (online) {
+    Emit("network-connected");
+  } else {
+    Emit("network-disconnected");
+  }
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
