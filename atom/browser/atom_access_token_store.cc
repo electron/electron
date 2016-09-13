@@ -8,6 +8,7 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/common/google_api_key.h"
+#include "base/environment.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/geolocation_provider.h"
 
