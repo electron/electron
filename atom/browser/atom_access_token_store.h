@@ -24,6 +24,8 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
   void GetRequestContextOnUIThread();
   void RespondOnOriginatingThread(const LoadAccessTokensCallback& callback);
 
+  std::string endpoint_;
+  std::string api_key_;
   scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);

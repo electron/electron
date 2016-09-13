@@ -165,6 +165,8 @@ void AtomMainDelegate::PreSandboxStartup() {
 #endif
   // Set google API key.
   std::unique_ptr<base::Environment> env(base::Environment::Create());
+  if (!env->HasVar("GOOGLE_API_ENDPOINT"))
+    env->SetVar("GOOGLE_API_ENDPOINT", GOOGLEAPIS_ENDPOINT);
   if (!env->HasVar("GOOGLE_API_KEY"))
     env->SetVar("GOOGLE_API_KEY", GOOGLEAPIS_API_KEY);
 
