@@ -32,7 +32,7 @@ Returns:
 
 * `launchInfo` Object _macOS_
 
-Emitted when Electron has finished initialization. On macOS, `launchInfo` holds
+Emitted when Electron has finished initializing. On macOS, `launchInfo` holds
 the `userInfo` of the `NSUserNotification` that was used to open the application,
 if it was launched from Notification Center. You can call `app.isReady()` to
 check if this event has already fired.
@@ -352,7 +352,7 @@ app.exit(0)
 
 ### `app.isReady()`
 
-Returns `true` if Electron has finished initialization, `false` otherwise.
+Returns `true` if Electron has finished initializing, `false` otherwise.
 
 ### `app.focus()`
 
