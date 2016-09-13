@@ -10,10 +10,10 @@
 #ifndef CHROME_BROWSER_BROWSER_PROCESS_H_
 #define CHROME_BROWSER_BROWSER_PROCESS_H_
 
+#include <memory>
 #include <string>
 
-#include "base/basictypes.h"
-#include "base/memory/scoped_ptr.h"
+#include "base/macros.h"
 
 namespace printing {
 class PrintJobManager;
@@ -31,7 +31,7 @@ class BrowserProcess {
   printing::PrintJobManager* print_job_manager();
 
  private:
-  scoped_ptr<printing::PrintJobManager> print_job_manager_;
+  std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcess);
 };

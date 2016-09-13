@@ -11,29 +11,13 @@
 
 namespace mate {
 
-namespace {
-
-v8::Persistent<v8::ObjectTemplate> template_;
-
-}  // namespace
-
-Event::Event()
-    : sender_(NULL),
-      message_(NULL) {
+Event::Event(v8::Isolate* isolate)
+    : sender_(nullptr),
+      message_(nullptr) {
+  Init(isolate);
 }
 
 Event::~Event() {
-}
-
-ObjectTemplateBuilder Event::GetObjectTemplateBuilder(v8::Isolate* isolate) {
-  if (template_.IsEmpty())
-    template_.Reset(isolate, ObjectTemplateBuilder(isolate)
-        .SetMethod("preventDefault", &Event::PreventDefault)
-        .SetMethod("sendReply", &Event::SendReply)
-        .Build());
-
-  return ObjectTemplateBuilder(
-      isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
 }
 
 void Event::SetSenderAndMessage(content::WebContents* sender,
@@ -47,26 +31,38 @@ void Event::SetSenderAndMessage(content::WebContents* sender,
 }
 
 void Event::WebContentsDestroyed() {
-  sender_ = NULL;
-  message_ = NULL;
+  sender_ = nullptr;
+  message_ = nullptr;
 }
 
 void Event::PreventDefault(v8::Isolate* isolate) {
-  GetWrapper(isolate)->Set(StringToV8(isolate, "defaultPrevented"),
+  GetWrapper()->Set(StringToV8(isolate, "defaultPrevented"),
                            v8::True(isolate));
 }
 
 bool Event::SendReply(const base::string16& json) {
-  if (message_ == NULL || sender_ == NULL)
+  if (message_ == nullptr || sender_ == nullptr)
     return false;
 
   AtomViewHostMsg_Message_Sync::WriteReplyParams(message_, json);
-  return sender_->Send(message_);
+  bool success = sender_->Send(message_);
+  message_ = nullptr;
+  sender_ = nullptr;
+  return success;
 }
 
 // static
 Handle<Event> Event::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new Event);
+  return mate::CreateHandle(isolate, new Event(isolate));
+}
+
+// static
+void Event::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Event"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("preventDefault", &Event::PreventDefault)
+      .SetMethod("sendReply", &Event::SendReply);
 }
 
 }  // namespace mate

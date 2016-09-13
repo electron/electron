@@ -20,15 +20,14 @@
 #include "base/strings/string_number_conversions.h"
 #include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
+#include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
-#include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
+#include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
-#include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
-#include "third_party/WebKit/public/web/WebScopedUserGesture.h"
-#include "third_party/WebKit/public/web/WebScriptSource.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "ui/base/resource/resource_bundle.h"
 
@@ -40,7 +39,11 @@ bool GetIPCObject(v8::Isolate* isolate,
                   v8::Local<v8::Context> context,
                   v8::Local<v8::Object>* ipc) {
   v8::Local<v8::String> key = mate::StringToV8(isolate, "ipc");
-  v8::Local<v8::Value> value = context->Global()->GetHiddenValue(key);
+  v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
+  v8::Local<v8::Object> global_object = context->Global();
+  v8::Local<v8::Value> value;
+  if (!global_object->GetPrivate(context, privateKey).ToLocal(&value))
+    return false;
   if (value.IsEmpty() || !value->IsObject())
     return false;
   *ipc = value->ToObject();
@@ -54,6 +57,34 @@ std::vector<v8::Local<v8::Value>> ListValueToVector(
   std::vector<v8::Local<v8::Value>> result;
   mate::ConvertFromV8(isolate, array, &result);
   return result;
+}
+
+void EmitIPCEvent(blink::WebFrame* frame,
+                  const base::string16& channel,
+                  const base::ListValue& args) {
+  if (!frame || frame->isWebRemoteFrame())
+    return;
+
+  v8::Isolate* isolate = blink::mainThreadIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  v8::Local<v8::Context> context = frame->mainWorldScriptContext();
+  v8::Context::Scope context_scope(context);
+
+  // Only emit IPC event for context with node integration.
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (!env)
+    return;
+
+  v8::Local<v8::Object> ipc;
+  if (GetIPCObject(isolate, context, &ipc)) {
+    auto args_vector = ListValueToVector(isolate, args);
+    // Insert the Event object, event.sender is ipc.
+    mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
+    event.Set("sender", ipc);
+    args_vector.insert(args_vector.begin(), event.GetHandle());
+    mate::EmitEvent(isolate, ipc, channel, args_vector);
+  }
 }
 
 base::StringPiece NetResourceProvider(int key) {
@@ -87,7 +118,7 @@ void AtomRenderViewObserver::DidCreateDocumentElement(
 
   // Read --zoom-factor from command line.
   std::string zoom_factor_str = base::CommandLine::ForCurrentProcess()->
-      GetSwitchValueASCII(switches::kZoomFactor);;
+      GetSwitchValueASCII(switches::kZoomFactor);
   if (zoom_factor_str.empty())
     return;
   double zoom_factor;
@@ -101,10 +132,10 @@ void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
   blink::WebVector<blink::WebDraggableRegion> webregions =
       frame->document().draggableRegions();
   std::vector<DraggableRegion> regions;
-  for (size_t i = 0; i < webregions.size(); ++i) {
+  for (const auto& webregion : webregions) {
     DraggableRegion region;
-    region.bounds = webregions[i].bounds;
-    region.draggable = webregions[i].draggable;
+    region.bounds = webregion.bounds;
+    region.draggable = webregion.draggable;
     regions.push_back(region);
   }
   Send(new AtomViewHostMsg_UpdateDraggableRegions(routing_id(), regions));
@@ -114,15 +145,14 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
     IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
-    IPC_MESSAGE_HANDLER(AtomViewMsg_ExecuteJavaScript,
-                        OnJavaScriptExecuteRequest)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
   return handled;
 }
 
-void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
+void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,
+                                              const base::string16& channel,
                                               const base::ListValue& args) {
   if (!document_created_)
     return;
@@ -134,34 +164,14 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
   if (!frame || frame->isWebRemoteFrame())
     return;
 
-  v8::Isolate* isolate = blink::mainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
+  EmitIPCEvent(frame, channel, args);
 
-  v8::Local<v8::Context> context = frame->mainWorldScriptContext();
-  v8::Context::Scope context_scope(context);
-
-  v8::Local<v8::Object> ipc;
-  if (GetIPCObject(isolate, context, &ipc)) {
-    mate::EmitEvent(isolate, ipc, channel, ListValueToVector(isolate, args));
+  // Also send the message to all sub-frames.
+  if (send_to_all) {
+    for (blink::WebFrame* child = frame->firstChild(); child;
+         child = child->nextSibling())
+      EmitIPCEvent(child, channel, args);
   }
-}
-
-void AtomRenderViewObserver::OnJavaScriptExecuteRequest(
-    const base::string16& code, bool has_user_gesture) {
-  if (!document_created_)
-    return;
-
-  if (!render_view()->GetWebView())
-    return;
-
-  scoped_ptr<blink::WebScopedUserGesture> gesture(
-      has_user_gesture ? new blink::WebScopedUserGesture : nullptr);
-
-  v8::Isolate* isolate = blink::mainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
-
-  blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
-  frame->executeScriptAndReturnValue(blink::WebScriptSource(code));
 }
 
 }  // namespace atom

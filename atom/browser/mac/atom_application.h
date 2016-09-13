@@ -3,11 +3,13 @@
 // found in the LICENSE file.
 
 #import "base/mac/scoped_sending_event.h"
+#import "base/mac/scoped_nsobject.h"
 
 @interface AtomApplication : NSApplication<CrAppProtocol,
                                            CrAppControlProtocol> {
  @private
   BOOL handlingSendEvent_;
+  base::scoped_nsobject<NSUserActivity> currentActivity_;
 }
 
 + (AtomApplication*)sharedApplication;
@@ -17,5 +19,10 @@
 
 // CrAppControlProtocol:
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
+
+- (NSUserActivity*)getCurrentActivity;
+- (void)setCurrentActivity:(NSString*)type
+              withUserInfo:(NSDictionary*)userInfo
+            withWebpageURL:(NSURL*)webpageURL;
 
 @end

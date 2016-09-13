@@ -41,6 +41,7 @@ namespace {
 
 void ShowMessageBox(int type,
                     const std::vector<std::string>& buttons,
+                    int default_id,
                     int cancel_id,
                     int options,
                     const std::string& title,
@@ -54,17 +55,19 @@ void ShowMessageBox(int type,
   if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(),
                                                         peek,
                                                         &callback)) {
-    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, cancel_id,
-                         options, title, message, detail, icon, callback);
+    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons,
+                         default_id, cancel_id, options, title,
+                         message, detail, icon, callback);
   } else {
     int chosen = atom::ShowMessageBox(window, (atom::MessageBoxType)type,
-                                      buttons, cancel_id, options, title,
-                                      message, detail, icon);
+                                      buttons, default_id, cancel_id,
+                                      options, title, message, detail, icon);
     args->Return(chosen);
   }
 }
 
 void ShowOpenDialog(const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const file_dialog::Filters& filters,
                     int properties,
@@ -75,17 +78,18 @@ void ShowOpenDialog(const std::string& title,
   if (mate::Converter<file_dialog::OpenDialogCallback>::FromV8(args->isolate(),
                                                                peek,
                                                                &callback)) {
-    file_dialog::ShowOpenDialog(window, title, default_path, filters,
-                                properties, callback);
+    file_dialog::ShowOpenDialog(window, title, button_label, default_path,
+                                filters, properties, callback);
   } else {
     std::vector<base::FilePath> paths;
-    if (file_dialog::ShowOpenDialog(window, title, default_path, filters,
-                                    properties, &paths))
+    if (file_dialog::ShowOpenDialog(window, title, button_label, default_path,
+                                    filters, properties, &paths))
       args->Return(paths);
   }
 }
 
 void ShowSaveDialog(const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const file_dialog::Filters& filters,
                     atom::NativeWindow* window,
@@ -95,11 +99,12 @@ void ShowSaveDialog(const std::string& title,
   if (mate::Converter<file_dialog::SaveDialogCallback>::FromV8(args->isolate(),
                                                                peek,
                                                                &callback)) {
-    file_dialog::ShowSaveDialog(window, title, default_path, filters, callback);
+    file_dialog::ShowSaveDialog(window, title, button_label, default_path,
+                                filters, callback);
   } else {
     base::FilePath path;
-    if (file_dialog::ShowSaveDialog(window, title, default_path, filters,
-                                    &path))
+    if (file_dialog::ShowSaveDialog(window, title, button_label, default_path,
+                                    filters, &path))
       args->Return(path);
   }
 }

@@ -6,23 +6,26 @@
 #define ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_
 
 #include <string>
+#include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
-#include "content/public/renderer/render_process_observer.h"
 
 namespace atom {
 
 class AtomBindings;
+class PreferencesManager;
 class NodeBindings;
 
-class AtomRendererClient : public content::ContentRendererClient,
-                           public content::RenderProcessObserver {
+class AtomRendererClient : public content::ContentRendererClient {
  public:
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
-  void DidCreateScriptContext(blink::WebFrame* frame,
-                              v8::Handle<v8::Context> context);
+  void DidClearWindowObject(content::RenderFrame* render_frame);
+  void DidCreateScriptContext(
+      v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
+  void WillReleaseScriptContext(
+      v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
 
  private:
   enum NodeIntegration {
@@ -32,13 +35,12 @@ class AtomRendererClient : public content::ContentRendererClient,
     DISABLE,
   };
 
-  // content::RenderProcessObserver:
-  void WebKitInitialized() override;
-
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
   void RenderFrameCreated(content::RenderFrame*) override;
   void RenderViewCreated(content::RenderView*) override;
+  void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
+  void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
   blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
       blink::WebSpeechSynthesizerClient* client) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
@@ -55,14 +57,13 @@ class AtomRendererClient : public content::ContentRendererClient,
       content::RenderFrame* render_frame,
       const std::string& mime_type,
       const GURL& original_url) override;
-  bool ShouldOverridePageVisibilityState(
-      const content::RenderFrame* render_frame,
-      blink::WebPageVisibilityState* override_state) override;
+  void AddSupportedKeySystems(
+      std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems)
+      override;
 
-  void EnableWebRuntimeFeatures();
-
-  scoped_ptr<NodeBindings> node_bindings_;
-  scoped_ptr<AtomBindings> atom_bindings_;
+  std::unique_ptr<NodeBindings> node_bindings_;
+  std::unique_ptr<AtomBindings> atom_bindings_;
+  std::unique_ptr<PreferencesManager> preferences_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };

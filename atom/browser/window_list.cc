@@ -17,7 +17,7 @@ base::LazyInstance<base::ObserverList<WindowListObserver>>::Leaky
     WindowList::observers_ = LAZY_INSTANCE_INITIALIZER;
 
 // static
-WindowList* WindowList::instance_ = NULL;
+WindowList* WindowList::instance_ = nullptr;
 
 // static
 WindowList* WindowList::GetInstance() {
@@ -70,8 +70,8 @@ void WindowList::RemoveObserver(WindowListObserver* observer) {
 // static
 void WindowList::CloseAllWindows() {
   WindowVector windows = GetInstance()->windows_;
-  for (size_t i = 0; i < windows.size(); ++i)
-    windows[i]->Close();
+  for (const auto& window : windows)
+    window->Close();
 }
 
 WindowList::WindowList() {

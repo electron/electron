@@ -54,13 +54,13 @@ class URLRequestAsarJob : public net::URLRequestJob {
   // net::URLRequestJob:
   void Start() override;
   void Kill() override;
-  bool ReadRawData(net::IOBuffer* buf,
-                   int buf_size,
-                   int* bytes_read) override;
+  int ReadRawData(net::IOBuffer* buf, int buf_size) override;
   bool IsRedirectResponse(GURL* location, int* http_status_code) override;
-  net::Filter* SetupFilter() const override;
+  std::unique_ptr<net::Filter> SetupFilter() const override;
   bool GetMimeType(std::string* mime_type) const override;
   void SetExtraRequestHeaders(const net::HttpRequestHeaders& headers) override;
+  int GetResponseCode() const override;
+  void GetResponseInfo(net::HttpResponseInfo* info) override;
 
  private:
   // Meta information about the file. It's used as a member in the
@@ -70,7 +70,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
     FileMetaInfo();
 
     // Size of the file.
-    int64 file_size;
+    int64_t file_size;
     // Mime type associated with the file.
     std::string mime_type;
     // Result returned from GetMimeTypeFromFile(), i.e. flag showing whether
@@ -95,7 +95,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
 
   // Callback after seeking to the beginning of |byte_range_| in the file
   // on a background thread.
-  void DidSeek(int64 result);
+  void DidSeek(int64_t result);
 
   // Callback after data is asynchronously read from the file into |buf|.
   void DidRead(scoped_refptr<net::IOBuffer> buf, int result);
@@ -112,12 +112,15 @@ class URLRequestAsarJob : public net::URLRequestJob {
   base::FilePath file_path_;
   Archive::FileInfo file_info_;
 
-  scoped_ptr<net::FileStream> stream_;
+  std::unique_ptr<net::FileStream> stream_;
   FileMetaInfo meta_info_;
   scoped_refptr<base::TaskRunner> file_task_runner_;
 
   net::HttpByteRange byte_range_;
-  int64 remaining_bytes_;
+  int64_t remaining_bytes_;
+  int64_t seek_offset_;
+
+  net::Error range_parse_result_;
 
   base::WeakPtrFactory<URLRequestAsarJob> weak_ptr_factory_;
 

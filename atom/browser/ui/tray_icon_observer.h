@@ -22,7 +22,12 @@ class TrayIconObserver {
   virtual void OnBalloonClicked() {}
   virtual void OnBalloonClosed() {}
   virtual void OnRightClicked(const gfx::Rect& bounds, int modifiers) {}
+  virtual void OnDrop() {}
   virtual void OnDropFiles(const std::vector<std::string>& files) {}
+  virtual void OnDropText(const std::string& text) {}
+  virtual void OnDragEntered() {}
+  virtual void OnDragExited() {}
+  virtual void OnDragEnded() {}
 
  protected:
   virtual ~TrayIconObserver() {}

@@ -201,6 +201,19 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
     return false;
   }
 
+#if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
+  spd_set_language =
+      reinterpret_cast<decltype(this->spd_set_language)>(
+          dlsym(library_, "spd_set_language"));
+#endif
+#if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
+  spd_set_language = &::spd_set_language;
+#endif
+  if (!spd_set_language) {
+    CleanUp(true);
+    return false;
+  }
+
 
   loaded_ = true;
   return true;
@@ -227,5 +240,6 @@ void LibSpeechdLoader::CleanUp(bool unload) {
   spd_set_synthesis_voice = NULL;
   spd_list_modules = NULL;
   spd_set_output_module = NULL;
+  spd_set_language = NULL;
 
 }

@@ -33,6 +33,7 @@ class LibSpeechdLoader {
   decltype(&::spd_set_synthesis_voice) spd_set_synthesis_voice;
   decltype(&::spd_list_modules) spd_list_modules;
   decltype(&::spd_set_output_module) spd_set_output_module;
+  decltype(&::spd_set_language) spd_set_language;
 
 
  private:

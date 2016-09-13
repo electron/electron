@@ -21,7 +21,7 @@ UvTaskRunner::~UvTaskRunner() {
 bool UvTaskRunner::PostDelayedTask(const tracked_objects::Location& from_here,
                                    const base::Closure& task,
                                    base::TimeDelta delay) {
-  uv_timer_t* timer = new uv_timer_t;
+  auto* timer = new uv_timer_t;
   timer->data = this;
   uv_timer_init(loop_, timer);
   uv_timer_start(timer, UvTaskRunner::OnTimeout, delay.InMilliseconds(), 0);
@@ -37,7 +37,7 @@ bool UvTaskRunner::PostNonNestableDelayedTask(
     const tracked_objects::Location& from_here,
     const base::Closure& task,
     base::TimeDelta delay) {
-  return PostDelayedTask(from_here, task, delay);;
+  return PostDelayedTask(from_here, task, delay);
 }
 
 // static
@@ -48,8 +48,13 @@ void UvTaskRunner::OnTimeout(uv_timer_t* timer) {
 
   self->tasks_[timer].Run();
   self->tasks_.erase(timer);
-  uv_unref(reinterpret_cast<uv_handle_t*>(timer));
-  delete timer;
+  uv_timer_stop(timer);
+  uv_close(reinterpret_cast<uv_handle_t*>(timer), UvTaskRunner::OnClose);
+}
+
+// static
+void UvTaskRunner::OnClose(uv_handle_t* handle) {
+  delete reinterpret_cast<uv_timer_t*>(handle);
 }
 
 }  // namespace atom

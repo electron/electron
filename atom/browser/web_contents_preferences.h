@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 #define ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
+#include <vector>
+
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 
@@ -16,12 +18,20 @@ namespace content {
 struct WebPreferences;
 }
 
+namespace mate {
+class Dictionary;
+}
+
 namespace atom {
 
 // Stores and applies the preferences of WebContents.
 class WebContentsPreferences
     : public content::WebContentsUserData<WebContentsPreferences> {
  public:
+  // Get WebContents according to process ID.
+  // FIXME(zcbenz): This method does not belong here.
+  static content::WebContents* GetWebContentsFromProcessID(int process_id);
+
   // Append command paramters according to |web_contents|'s preferences.
   static void AppendExtraCommandLineSwitches(
       content::WebContents* web_contents, base::CommandLine* command_line);
@@ -31,7 +41,7 @@ class WebContentsPreferences
       content::WebContents* web_contents, content::WebPreferences* prefs);
 
   WebContentsPreferences(content::WebContents* web_contents,
-                         base::DictionaryValue* web_preferences);
+                         const mate::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
 
   // $.extend(|web_preferences_|, |new_web_preferences|).
@@ -43,6 +53,9 @@ class WebContentsPreferences
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
 
+  static std::vector<WebContentsPreferences*> instances_;
+
+  content::WebContents* web_contents_;
   base::DictionaryValue web_preferences_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);

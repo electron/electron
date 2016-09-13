@@ -5,9 +5,10 @@
 #ifndef CHROME_BROWSER_PRINTING_PDF_TO_EMF_CONVERTER_H_
 #define CHROME_BROWSER_PRINTING_PDF_TO_EMF_CONVERTER_H_
 
+#include <memory>
+
 #include "base/callback.h"
 #include "base/memory/ref_counted_memory.h"
-#include "base/memory/scoped_ptr.h"
 
 namespace base {
 class FilePath;
@@ -23,11 +24,11 @@ class PdfToEmfConverter {
   typedef base::Callback<void(int page_count)> StartCallback;
   typedef base::Callback<void(int page_number,
                               float scale_factor,
-                              scoped_ptr<MetafilePlayer> emf)> GetPageCallback;
+                              std::unique_ptr<MetafilePlayer> emf)> GetPageCallback;
 
   virtual ~PdfToEmfConverter();
 
-  static scoped_ptr<PdfToEmfConverter> CreateDefault();
+  static std::unique_ptr<PdfToEmfConverter> CreateDefault();
 
   // Starts conversion of PDF provided as |data|. Calls |start_callback|
   // with positive |page_count|. |page_count| is 0 if initialization failed.

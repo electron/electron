@@ -12,8 +12,8 @@
 #include "atom/browser/ui/file_dialog.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
-#include "base/prefs/pref_service.h"
 #include "chrome/common/pref_names.h"
+#include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager.h"
@@ -33,6 +33,17 @@ AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
     download_manager_->SetDelegate(nullptr);
     download_manager_ = nullptr;
   }
+}
+
+void AtomDownloadManagerDelegate::GetItemSavePath(content::DownloadItem* item,
+                                                  base::FilePath* path) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  api::DownloadItem* download = api::DownloadItem::FromWrappedClass(isolate,
+                                                                    item);
+  if (download)
+    *path = download->GetSavePath();
 }
 
 void AtomDownloadManagerDelegate::CreateDownloadPath(
@@ -60,7 +71,7 @@ void AtomDownloadManagerDelegate::CreateDownloadPath(
 }
 
 void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
-    uint32 download_id,
+    uint32_t download_id,
     const content::DownloadTargetCallback& callback,
     const base::FilePath& default_path) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -70,18 +81,32 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     return;
 
   NativeWindow* window = nullptr;
-  auto relay = NativeWindowRelay::FromWebContents(item->GetWebContents());
+  content::WebContents* web_contents = item->GetWebContents();
+  auto relay = web_contents ? NativeWindowRelay::FromWebContents(web_contents)
+                            : nullptr;
   if (relay)
     window = relay->window.get();
 
   base::FilePath path;
-  if (file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
-                                  file_dialog::Filters(), &path)) {
+  GetItemSavePath(item, &path);
+  // Show save dialog if save path was not set already on item
+  if (path.empty() && file_dialog::ShowSaveDialog(window, item->GetURL().spec(),
+                                                  "", default_path,
+                                                  file_dialog::Filters(),
+                                                  &path)) {
     // Remember the last selected download directory.
     AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
         download_manager_->GetBrowserContext());
     browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
                                           path.DirName());
+
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Locker locker(isolate);
+    v8::HandleScope handle_scope(isolate);
+    api::DownloadItem* download_item = api::DownloadItem::FromWrappedClass(
+        isolate, item);
+    if (download_item)
+      download_item->SetSavePath(path);
   }
 
   // Running the DownloadTargetCallback with an empty FilePath signals that the
@@ -109,15 +134,15 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
                  download->GetForcedFilePath());
     return true;
   }
-  base::SupportsUserData::Data* save_path = download->GetUserData(
-      atom::api::DownloadItem::UserDataKey());
-  if (save_path) {
-    const base::FilePath& default_download_path =
-        static_cast<api::DownloadItem::SavePathData*>(save_path)->path();
-    callback.Run(default_download_path,
+
+  // Try to get the save path from JS wrapper.
+  base::FilePath save_path;
+  GetItemSavePath(download, &save_path);
+  if (!save_path.empty()) {
+    callback.Run(save_path,
                  content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
                  content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                 default_download_path);
+                 save_path);
     return true;
   }
 
@@ -125,11 +150,6 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
       download_manager_->GetBrowserContext());
   base::FilePath default_download_path = browser_context->prefs()->GetFilePath(
       prefs::kDownloadDefaultDirectory);
-  // If users didn't set download path, use 'Downloads' directory by default.
-  if (default_download_path.empty()) {
-    auto path = download_manager_->GetBrowserContext()->GetPath();
-    default_download_path = path.Append(FILE_PATH_LITERAL("Downloads"));
-  }
 
   CreateDownloadPathCallback download_path_callback =
       base::Bind(&AtomDownloadManagerDelegate::OnDownloadPathGenerated,
@@ -157,7 +177,7 @@ bool AtomDownloadManagerDelegate::ShouldOpenDownload(
 
 void AtomDownloadManagerDelegate::GetNextId(
     const content::DownloadIdCallback& callback) {
-  static uint32 next_id = content::DownloadItem::kInvalidId + 1;
+  static uint32_t next_id = content::DownloadItem::kInvalidId + 1;
   callback.Run(next_id++);
 }
 

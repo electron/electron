@@ -5,9 +5,9 @@
 #ifndef ATOM_BROWSER_NODE_DEBUGGER_H_
 #define ATOM_BROWSER_NODE_DEBUGGER_H_
 
+#include <memory>
 #include <string>
 
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/threading/thread.h"
 #include "net/test/embedded_test_server/stream_listen_socket.h"
@@ -38,7 +38,7 @@ class NodeDebugger : public net::test_server::StreamListenSocket::Delegate {
   // net::test_server::StreamListenSocket::Delegate:
   void DidAccept(
       net::test_server::StreamListenSocket* server,
-      scoped_ptr<net::test_server::StreamListenSocket> socket) override;
+      std::unique_ptr<net::test_server::StreamListenSocket> socket) override;
   void DidRead(net::test_server::StreamListenSocket* socket,
                const char* data,
                int len) override;
@@ -49,8 +49,8 @@ class NodeDebugger : public net::test_server::StreamListenSocket::Delegate {
   uv_async_t weak_up_ui_handle_;
 
   base::Thread thread_;
-  scoped_ptr<net::test_server::StreamListenSocket> server_;
-  scoped_ptr<net::test_server::StreamListenSocket> accepted_socket_;
+  std::unique_ptr<net::test_server::StreamListenSocket> server_;
+  std::unique_ptr<net::test_server::StreamListenSocket> accepted_socket_;
 
   std::string buffer_;
   int content_length_;

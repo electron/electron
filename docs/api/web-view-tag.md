@@ -1,4 +1,6 @@
-# The `<webview>` tag
+# `<webview>` Tag
+
+> Display external web content in an isolated frame and process.
 
 Use the `webview` tag to embed 'guest' content (such as web pages) in your
 Electron app. The guest content is contained within the `webview` container.
@@ -10,6 +12,9 @@ app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content.
 
+For security purposes, `webview` can only be used in `BrowserWindow`s that have
+`nodeIntegration` enabled.
+
 ## Example
 
 To embed a web page in your app, add the `webview` tag to your app's embedder
@@ -18,7 +23,7 @@ form, the `webview` tag includes the `src` of the web page and css styles that
 control the appearance of the `webview` container:
 
 ```html
-<webview id="foo" src="https://www.github.com/" style="display:inline-block; width:640px; height:480px"></webview>
+<webview id="foo" src="https://www.github.com/" style="display:inline-flex; width:640px; height:480px"></webview>
 ```
 
 If you want to control the guest content in any way, you can write JavaScript
@@ -29,20 +34,52 @@ and displays a "loading..." message during the load time:
 
 ```html
 <script>
-  onload = function() {
-    var webview = document.getElementById("foo");
-    var indicator = document.querySelector(".indicator");
+  onload = () => {
+    const webview = document.getElementById('foo')
+    const indicator = document.querySelector('.indicator')
 
-    var loadstart = function() {
-      indicator.innerText = "loading...";
+    const loadstart = () => {
+      indicator.innerText = 'loading...'
     }
-    var loadstop = function() {
-      indicator.innerText = "";
+
+    const loadstop = () => {
+      indicator.innerText = ''
     }
-    webview.addEventListener("did-start-loading", loadstart);
-    webview.addEventListener("did-stop-loading", loadstop);
+
+    webview.addEventListener('did-start-loading', loadstart)
+    webview.addEventListener('did-stop-loading', loadstop)
   }
 </script>
+```
+
+## CSS Styling Notes
+
+Please note that the `webview` tag's style uses `display:flex;` internally to
+ensure the child `object` element fills the full height and width of its `webview`
+container when used with traditional and flexbox layouts (since v0.36.11). Please
+do not overwrite the default `display:flex;` CSS property, unless specifying
+`display:inline-flex;` for inline layout.
+
+`webview` has issues being hidden using the `hidden` attribute or using `display: none;`.
+It can cause unusual rendering behaviour within its child `browserplugin` object
+and the web page is reloaded, when the `webview` is un-hidden, as opposed to just
+becoming visible again. The recommended approach is to hide the `webview` using
+CSS by zeroing the `width` & `height` and allowing the element to shrink to the 0px
+dimensions via `flex`.
+
+```html
+<style>
+  webview {
+    display:inline-flex;
+    width:640px;
+    height:480px;
+  }
+  webview.hide {
+    flex: 0 1;
+    width: 0px;
+    height: 0px;
+  }
+</style>
 ```
 
 ## Tag Attributes
@@ -131,7 +168,7 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 
 If "on", the guest page will have web security disabled.
 
-### partition
+### `partition`
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
@@ -157,6 +194,26 @@ value will fail with a DOM exception.
 
 If "on", the guest page will be allowed to open new windows.
 
+### `blinkfeatures`
+
+```html
+<webview src="https://www.github.com/" blinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
+```
+
+A list of strings which specifies the blink features to be enabled separated by `,`.
+The full list of supported feature strings can be found in the
+[RuntimeEnabledFeatures.in][blink-feature-string] file.
+
+### `disableblinkfeatures`
+
+```html
+<webview src="https://www.github.com/" disableblinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
+```
+
+A list of strings which specifies the blink features to be disabled separated by `,`.
+The full list of supported feature strings can be found in the
+[RuntimeEnabledFeatures.in][blink-feature-string] file.
+
 ## Methods
 
 The `webview` tag has the following methods:
@@ -164,13 +221,26 @@ The `webview` tag has the following methods:
 **Note:** The webview element must be loaded before using the methods.
 
 **Example**
+
 ```javascript
-webview.addEventListener("dom-ready", function() {
-  webview.openDevTools();
-});
+const webview = document.getElementById('foo')
+webview.addEventListener('dom-ready', () => {
+  webview.openDevTools()
+})
 ```
 
-### `<webview>.getUrl()`
+### `<webview>.loadURL(url[, options])`
+
+* `url` URL
+* `options` Object (optional)
+  * `httpReferrer` String - A HTTP Referrer url.
+  * `userAgent` String - A user agent originating the request.
+  * `extraHeaders` String - Extra headers separated by "\n"
+
+Loads the `url` in the webview, the `url` must contain the protocol prefix,
+e.g. the `http://` or `file://`.
+
+### `<webview>.getURL()`
 
 Returns URL of guest page.
 
@@ -257,12 +327,14 @@ Returns a `String` representing the user agent for guest page.
 
 Injects CSS into the guest page.
 
-### `<webview>.executeJavaScript(code, userGesture)`
+### `<webview>.executeJavaScript(code, userGesture, callback)`
 
 * `code` String
 * `userGesture` Boolean - Default `false`.
+* `callback` Function (optional) - Called after script has been executed.
+  * `result`
 
-Evaluates `code` in page. If `userGesture` is set, it will the create user
+Evaluates `code` in page. If `userGesture` is set, it will create the user
 gesture context in the page. HTML APIs like `requestFullScreen`, which require
 user action, can take advantage of this option for automation.
 
@@ -277,6 +349,10 @@ Closes the DevTools window of guest page.
 ### `<webview>.isDevToolsOpened()`
 
 Returns a boolean whether guest page has a DevTools window attached.
+
+### `<webview>.isDevToolsFocused()`
+
+Returns a boolean whether DevTools window of guest page is focused.
 
 ### `<webview>.inspectElement(x, y)`
 
@@ -335,7 +411,7 @@ Executes editing command `selectAll` in page.
 
 Executes editing command `unselect` in page.
 
-### `<webview.replace(text)`
+### `<webview>.replace(text)`
 
 * `text` String
 
@@ -347,23 +423,64 @@ Executes editing command `replace` in page.
 
 Executes editing command `replaceMisspelling` in page.
 
+### `<webview>.insertText(text)`
+
+* `text` String
+
+Inserts `text` to the focused element.
+
+### `<webview>.findInPage(text[, options])`
+
+* `text` String - Content to be searched, must not be empty.
+* `options` Object (optional)
+  * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
+  * `findNext` Boolean - Whether the operation is first request or a follow up,
+    defaults to `false`.
+  * `matchCase` Boolean - Whether search should be case-sensitive,
+    defaults to `false`.
+  * `wordStart` Boolean - Whether to look only at the start of words.
+    defaults to `false`.
+  * `medialCapitalAsWordStart` Boolean - When combined with `wordStart`,
+    accepts a match in the middle of a word if the match begins with an
+    uppercase letter followed by a lowercase or non-letter.
+    Accepts several other intra-word matches, defaults to `false`.
+
+Starts a request to find all matches for the `text` in the web page and returns an `Integer`
+representing the request id used for the request. The result of the request can be
+obtained by subscribing to [`found-in-page`](web-view-tag.md#event-found-in-page) event.
+
+### `<webview>.stopFindInPage(action)`
+
+* `action` String - Specifies the action to take place when ending
+  [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
+  * `clearSelection` - Clear the selection.
+  * `keepSelection` - Translate the selection into a normal selection.
+  * `activateSelection` - Focus and click the selection node.
+
+Stops any `findInPage` request for the `webview` with the provided `action`.
+
 ### `<webview>.print([options])`
 
-Prints `webview`'s web page. Same with `webContents.print([options])`.
+Prints `webview`'s web page. Same as `webContents.print([options])`.
 
 ### `<webview>.printToPDF(options, callback)`
 
-Prints webview's web page as PDF, Same with `webContents.printToPDF(options, callback)`
+Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options, callback)`.
 
-### `<webview>.send(channel[, args...])`
+### `<webview>.capturePage([rect, ]callback)`
+
+Captures a snapshot of the `webview`'s page. Same as `webContents.capturePage([rect, ]callback)`.
+
+### `<webview>.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
 * `arg` (optional)
 
-Send `args..` to guest page via `channel` in asynchronous message, the guest
-page can handle it by listening to the `channel` event of `ipc` module.
+Send an asynchronous message to renderer process via `channel`, you can also
+send arbitrary arguments. The renderer process can handle the message by
+listening to the `channel` event with the `ipcRenderer` module.
 
-See [WebContents.send](web-contents.md#webcontentssendchannel-args) for
+See [webContents.send](web-contents.md#webcontentssendchannel-args) for
 examples.
 
 ### `<webview>.sendInputEvent(event)`
@@ -372,8 +489,31 @@ examples.
 
 Sends an input `event` to the page.
 
-See [WebContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
+See [webContents.sendInputEvent](web-contents.md#webcontentssendinputeventevent)
 for detailed description of `event` object.
+
+### `<webview>.setZoomFactor(factor)`
+
+* `factor` Number - Zoom factor.
+
+Changes the zoom factor to the specified factor. Zoom factor is
+zoom percent divided by 100, so 300% = 3.0.
+
+### `<webview>.setZoomLevel(level)`
+
+* `level` Number - Zoom level
+
+Changes the zoom level to the specified level. The original size is 0 and each
+increment above or below represents zooming 20% larger or smaller to default
+limits of 300% and 50% of original size, respectively.
+
+### `<webview>.showDefinitionForSelection()` _macOS_
+
+Shows pop-up dictionary that searches the selected word on the page.
+
+### `<webview>.getWebContents()`
+
+Returns the [WebContents](web-contents.md) associated with this `webview`.
 
 ## DOM events
 
@@ -401,7 +541,8 @@ Returns:
 
 * `errorCode` Integer
 * `errorDescription` String
-* `validatedUrl` String
+* `validatedURL` String
+* `isMainFrame` Boolean
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -427,12 +568,13 @@ Corresponds to the points in time when the spinner of the tab stops spinning.
 Returns:
 
 * `status` Boolean
-* `newUrl` String
-* `originalUrl` String
+* `newURL` String
+* `originalURL` String
 * `httpResponseCode` Integer
 * `requestMethod` String
 * `referrer` String
 * `headers` Object
+* `resourceType` String
 
 Fired when details regarding a requested resource is available.
 `status` indicates socket connection to download the resource.
@@ -441,8 +583,8 @@ Fired when details regarding a requested resource is available.
 
 Returns:
 
-* `oldUrl` String
-* `newUrl` String
+* `oldURL` String
+* `newURL` String
 * `isMainFrame` Boolean
 
 Fired when a redirect was received while requesting a resource.
@@ -451,21 +593,21 @@ Fired when a redirect was received while requesting a resource.
 
 Fired when document in the given frame is loaded.
 
-### Event: 'page-title-set'
+### Event: 'page-title-updated'
 
 Returns:
 
 * `title` String
 * `explicitSet` Boolean
 
-Fired when page title is set during navigation. `explicitSet` is false when title is synthesised from file
-url.
+Fired when page title is set during navigation. `explicitSet` is false when
+title is synthesized from file url.
 
 ### Event: 'page-favicon-updated'
 
 Returns:
 
-* `favicons` Array - Array of Urls.
+* `favicons` Array - Array of URLs.
 
 Fired when page receives favicon urls.
 
@@ -492,9 +634,34 @@ The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
 ```javascript
-webview.addEventListener('console-message', function(e) {
-  console.log('Guest page logged a message:', e.message);
-});
+const webview = document.getElementById('foo')
+webview.addEventListener('console-message', (e) => {
+  console.log('Guest page logged a message:', e.message)
+})
+```
+
+### Event: 'found-in-page'
+
+Returns:
+
+* `result` Object
+  * `requestId` Integer
+  * `finalUpdate` Boolean - Indicates if more responses are to follow.
+  * `activeMatchOrdinal` Integer (optional) - Position of the active match.
+  * `matches` Integer (optional) - Number of Matches.
+  * `selectionArea` Object (optional) - Coordinates of first match region.
+
+Fired when a result is available for
+[`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
+
+```javascript
+const webview = document.getElementById('foo')
+webview.addEventListener('found-in-page', (e) => {
+  if (e.result.finalUpdate) webview.stopFindInPage('keepSelection')
+})
+
+const requestId = webview.findInPage('test')
+console.log(requestId)
 ```
 
 ### Event: 'new-window'
@@ -513,10 +680,59 @@ Fired when the guest page attempts to open a new browser window.
 The following example code opens the new url in system's default browser.
 
 ```javascript
-webview.addEventListener('new-window', function(e) {
-  require('shell').openExternal(e.url);
-});
+const {shell} = require('electron')
+const webview = document.getElementById('foo')
+
+webview.addEventListener('new-window', (e) => {
+  const protocol = require('url').parse(e.url).protocol
+  if (protocol === 'http:' || protocol === 'https:') {
+    shell.openExternal(e.url)
+  }
+})
 ```
+
+### Event: 'will-navigate'
+
+Returns:
+
+* `url` String
+
+Emitted when a user or the page wants to start navigation. It can happen when
+the `window.location` object is changed or a user clicks a link in the page.
+
+This event will not emit when the navigation is started programmatically with
+APIs like `<webview>.loadURL` and `<webview>.back`.
+
+It is also not emitted during in-page navigation, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+Calling `event.preventDefault()` does __NOT__ have any effect.
+
+### Event: 'did-navigate'
+
+Returns:
+
+* `url` String
+
+Emitted when a navigation is done.
+
+This event is not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+### Event: 'did-navigate-in-page'
+
+Returns:
+
+* `isMainFrame` Boolean
+* `url` String
+
+Emitted when an in-page navigation happened.
+
+When in-page navigation happens, the page URL changes but does not cause
+navigation outside of the page. Examples of this occurring are when anchor links
+are clicked or when the DOM `hashchange` event is triggered.
 
 ### Event: 'close'
 
@@ -526,9 +742,10 @@ The following example code navigates the `webview` to `about:blank` when the
 guest attempts to close itself.
 
 ```javascript
-webview.addEventListener('close', function() {
-  webview.src = 'about:blank';
-});
+const webview = document.getElementById('foo')
+webview.addEventListener('close', () => {
+  webview.src = 'about:blank'
+})
 ```
 
 ### Event: 'ipc-message'
@@ -545,19 +762,20 @@ between guest page and embedder page:
 
 ```javascript
 // In embedder page.
-webview.addEventListener('ipc-message', function(event) {
-  console.log(event.channel);
+const webview = document.getElementById('foo')
+webview.addEventListener('ipc-message', (event) => {
+  console.log(event.channel)
   // Prints "pong"
-});
-webview.send('ping');
+})
+webview.send('ping')
 ```
 
 ```javascript
 // In guest page.
-var ipc = require('ipc');
-ipc.on('ping', function() {
-  ipc.sendToHost('pong');
-});
+const {ipcRenderer} = require('electron')
+ipcRenderer.on('ping', () => {
+  ipcRenderer.sendToHost('pong')
+})
 ```
 
 ### Event: 'crashed'
@@ -580,3 +798,45 @@ Fired when a plugin process is crashed.
 ### Event: 'destroyed'
 
 Fired when the WebContents is destroyed.
+
+### Event: 'media-started-playing'
+
+Emitted when media starts playing.
+
+### Event: 'media-paused'
+
+Emitted when media is paused or done playing.
+
+### Event: 'did-change-theme-color'
+
+Returns:
+
+* `themeColor` String
+
+Emitted when a page's theme color changes. This is usually due to encountering a meta tag:
+
+```html
+<meta name='theme-color' content='#ff0000'>
+```
+
+### Event: 'update-target-url'
+
+Returns:
+
+* `url` String
+
+Emitted when mouse moves over a link or the keyboard moves the focus to a link.
+
+### Event: 'devtools-opened'
+
+Emitted when DevTools is opened.
+
+### Event: 'devtools-closed'
+
+Emitted when DevTools is closed.
+
+### Event: 'devtools-focused'
+
+Emitted when DevTools is focused / opened.
+
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script>
+      function testStorage (callback) {
+        chrome.storage.sync.set({foo: 'bar'}, function () {
+          chrome.storage.sync.get({foo: 'baz'}, function (syncItems) {
+            chrome.storage.local.set({hello: 'world'}, function () {
+              chrome.storage.local.get(null, function(localItems) {
+                callback(syncItems, localItems)
+              })
+            })
+          })
+        })
+      }
+
+      function reportCoverage () {
+        var message = JSON.stringify({
+          pid: chrome.runtime.id,
+          coverage: window.__coverage__
+        })
+        var coverageMessage = `require('electron').ipcRenderer.send('report-coverage', ${message})`
+        window.chrome.devtools.inspectedWindow.eval(coverageMessage, function () {})
+      }
+
+      testStorage(function (syncItems, localItems) {
+        var message = JSON.stringify({
+          runtimeId: chrome.runtime.id,
+          tabId: chrome.devtools.inspectedWindow.tabId,
+          i18nString: chrome.i18n.getMessage('foo', ['bar', 'baz']),
+          storageItems: {
+            local: localItems,
+            sync: syncItems
+          }
+        })
+
+        reportCoverage()
+        var sendMessage = `require('electron').ipcRenderer.send('answer', ${message})`
+        window.chrome.devtools.inspectedWindow.eval(sendMessage, function () {})
+      })
+    </script>
+  </head>
+  <body>
+    a custom devtools extension
+  </body>
+</html>

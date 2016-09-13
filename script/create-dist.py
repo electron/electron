@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import glob
 import os
 import re
 import shutil
@@ -8,12 +9,13 @@ import sys
 import stat
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       get_target_arch, get_chromedriver_version
-from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
-                     execute, atom_gyp
+                       get_target_arch, get_chromedriver_version, \
+                       get_zip_name
+from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
+                     execute, electron_gyp
 
 
-ATOM_SHELL_VERSION = get_atom_shell_version()
+ELECTRON_VERSION = get_electron_version()
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
@@ -21,8 +23,8 @@ OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
                             'download', 'libchromiumcontent', 'static_library')
 
-PROJECT_NAME = atom_gyp()['project_name%']
-PRODUCT_NAME = atom_gyp()['product_name%']
+PROJECT_NAME = electron_gyp()['project_name%']
+PRODUCT_NAME = electron_gyp()['product_name%']
 
 TARGET_BINARIES = {
   'darwin': [
@@ -34,22 +36,26 @@ TARGET_BINARIES = {
     'icudtl.dat',
     'libEGL.dll',
     'libGLESv2.dll',
-    'msvcp120.dll',
-    'msvcr120.dll',
+    'ffmpeg.dll',
     'node.dll',
-    'pdf.dll',
+    'blink_image_resources_200_percent.pak',
     'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
+    'views_resources_200_percent.pak',
     'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
-    'vccorlib120.dll',
   ],
   'linux': [
     PROJECT_NAME,  # 'electron'
     'content_shell.pak',
     'icudtl.dat',
+    'libffmpeg.so',
     'libnode.so',
+    'blink_image_resources_200_percent.pak',
+    'content_resources_200_percent.pak',
+    'ui_resources_200_percent.pak',
+    'views_resources_200_percent.pak',
     'natives_blob.bin',
     'snapshot_blob.bin',
   ],
@@ -68,17 +74,10 @@ TARGET_DIRECTORIES = {
   ],
 }
 
-SYSTEM_LIBRARIES = [
-  'libgcrypt.so',
-  'libnotify.so',
-]
-
 
 def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
-
-  target_arch = get_target_arch()
 
   force_build()
   create_symbols()
@@ -89,13 +88,12 @@ def main():
 
   if PLATFORM == 'linux':
     strip_binaries()
-    if target_arch != 'arm':
-      copy_system_libraries()
 
   create_version()
   create_dist_zip()
   create_chrome_binary_zip('chromedriver', get_chromedriver_version())
-  create_chrome_binary_zip('mksnapshot', ATOM_SHELL_VERSION)
+  create_chrome_binary_zip('mksnapshot', ELECTRON_VERSION)
+  create_ffmpeg_zip()
   create_symbols_zip()
 
 
@@ -132,34 +130,23 @@ def copy_license():
 
 
 def strip_binaries():
-  if get_target_arch() == 'arm':
-    strip = 'arm-linux-gnueabihf-strip'
-  else:
-    strip = 'strip'
   for binary in TARGET_BINARIES[PLATFORM]:
     if binary.endswith('.so') or '.' not in binary:
-      execute([strip, os.path.join(DIST_DIR, binary)])
+      strip_binary(os.path.join(DIST_DIR, binary))
 
 
-def copy_system_libraries():
-  executable_path = os.path.join(OUT_DIR, PROJECT_NAME)  # our/R/electron
-  ldd = execute(['ldd', executable_path])
-  lib_re = re.compile('\t(.*) => (.+) \(.*\)$')
-  for line in ldd.splitlines():
-    m = lib_re.match(line)
-    if not m:
-      continue
-    for i, library in enumerate(SYSTEM_LIBRARIES):
-      real_library = m.group(1)
-      if real_library.startswith(library):
-        shutil.copyfile(m.group(2), os.path.join(DIST_DIR, real_library))
-        SYSTEM_LIBRARIES[i] = real_library
+def strip_binary(binary_path):
+    if get_target_arch() == 'arm':
+      strip = 'arm-linux-gnueabihf-strip'
+    else:
+      strip = 'strip'
+    execute([strip, binary_path])
 
 
 def create_version():
   version_path = os.path.join(SOURCE_ROOT, 'dist', 'version')
   with open(version_path, 'w') as version_file:
-    version_file.write(ATOM_SHELL_VERSION)
+    version_file.write(ELECTRON_VERSION)
 
 
 def create_symbols():
@@ -167,27 +154,33 @@ def create_symbols():
   dump_symbols = os.path.join(SOURCE_ROOT, 'script', 'dump-symbols.py')
   execute([sys.executable, dump_symbols, destination])
 
+  if PLATFORM == 'darwin':
+    dsyms = glob.glob(os.path.join(OUT_DIR, '*.dSYM'))
+    for dsym in dsyms:
+      shutil.copytree(dsym, os.path.join(DIST_DIR, os.path.basename(dsym)))
+  elif PLATFORM == 'win32':
+    pdbs = glob.glob(os.path.join(OUT_DIR, '*.pdb'))
+    for pdb in pdbs:
+      shutil.copy2(pdb, DIST_DIR)
+
 
 def create_dist_zip():
-  dist_name = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME, ATOM_SHELL_VERSION,
-                                           PLATFORM, get_target_arch())
+  dist_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'version']
-    if PLATFORM == 'linux':
-      files += [lib for lib in SYSTEM_LIBRARIES if os.path.exists(lib)]
+    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'LICENSES.chromium.html',
+                                          'version']
     dirs = TARGET_DIRECTORIES[PLATFORM]
     make_zip(zip_file, files, dirs)
 
 
 def create_chrome_binary_zip(binary, version):
-  dist_name = '{0}-{1}-{2}-{3}.zip'.format(binary, version, PLATFORM,
-                                           get_target_arch())
+  dist_name = get_zip_name(binary, version)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = ['LICENSE']
+    files = ['LICENSE', 'LICENSES.chromium.html']
     if PLATFORM == 'win32':
       files += [binary + '.exe']
     else:
@@ -195,17 +188,46 @@ def create_chrome_binary_zip(binary, version):
     make_zip(zip_file, files, [])
 
 
-def create_symbols_zip():
-  dist_name = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
-                                                   ATOM_SHELL_VERSION,
-                                                   PLATFORM,
-                                                   get_target_arch())
+def create_ffmpeg_zip():
+  dist_name = get_zip_name('ffmpeg', ELECTRON_VERSION)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
+  if PLATFORM == 'darwin':
+    ffmpeg_name = 'libffmpeg.dylib'
+  elif PLATFORM == 'linux':
+    ffmpeg_name = 'libffmpeg.so'
+  elif PLATFORM == 'win32':
+    ffmpeg_name = 'ffmpeg.dll'
+
+  shutil.copy2(os.path.join(CHROMIUM_DIR, '..', 'ffmpeg', ffmpeg_name),
+               DIST_DIR)
+
+  if PLATFORM == 'linux':
+    strip_binary(os.path.join(DIST_DIR, ffmpeg_name))
+
   with scoped_cwd(DIST_DIR):
-    files = ['LICENSE', 'version']
+    make_zip(zip_file, [ffmpeg_name, 'LICENSE', 'LICENSES.chromium.html'], [])
+
+
+def create_symbols_zip():
+  dist_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
+  zip_file = os.path.join(DIST_DIR, dist_name)
+  licenses = ['LICENSE', 'LICENSES.chromium.html', 'version']
+
+  with scoped_cwd(DIST_DIR):
     dirs = ['{0}.breakpad.syms'.format(PROJECT_NAME)]
-    make_zip(zip_file, files, dirs)
+    make_zip(zip_file, licenses, dirs)
+
+  if PLATFORM == 'darwin':
+    dsym_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
+    with scoped_cwd(DIST_DIR):
+      dsyms = glob.glob('*.dSYM')
+      make_zip(os.path.join(DIST_DIR, dsym_name), licenses, dsyms)
+  elif PLATFORM == 'win32':
+    pdb_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
+    with scoped_cwd(DIST_DIR):
+      pdbs = glob.glob('*.pdb')
+      make_zip(os.path.join(DIST_DIR, pdb_name), pdbs + licenses, [])
 
 
 if __name__ == '__main__':

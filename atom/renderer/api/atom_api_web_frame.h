@@ -5,12 +5,13 @@
 #ifndef ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
 #define ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
 
+#include <memory>
 #include <string>
 
 #include "atom/renderer/guest_view_container.h"
-#include "base/memory/scoped_ptr.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
+#include "third_party/WebKit/public/web/WebCache.h"
 
 namespace blink {
 class WebLocalFrame;
@@ -26,13 +27,16 @@ namespace api {
 
 class SpellCheckClient;
 
-class WebFrame : public mate::Wrappable {
+class WebFrame : public mate::Wrappable<WebFrame> {
  public:
   static mate::Handle<WebFrame> Create(v8::Isolate* isolate);
 
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype);
+
  private:
-  WebFrame();
-  virtual ~WebFrame();
+  explicit WebFrame(v8::Isolate* isolate);
+  ~WebFrame() override;
 
   void SetName(const std::string& name);
 
@@ -57,14 +61,20 @@ class WebFrame : public mate::Wrappable {
                              v8::Local<v8::Object> provider);
 
   void RegisterURLSchemeAsSecure(const std::string& scheme);
-  void RegisterURLSchemeAsBypassingCsp(const std::string& scheme);
+  void RegisterURLSchemeAsBypassingCSP(const std::string& scheme);
   void RegisterURLSchemeAsPrivileged(const std::string& scheme);
 
-  // mate::Wrappable:
-  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate);
+  // Editing.
+  void InsertText(const std::string& text);
 
-  scoped_ptr<SpellCheckClient> spell_check_client_;
+  // Excecuting scripts.
+  void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);
+
+  // Resource related methods
+  blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);
+  void ClearCache(v8::Isolate* isolate);
+
+  std::unique_ptr<SpellCheckClient> spell_check_client_;
 
   blink::WebLocalFrame* web_frame_;
 

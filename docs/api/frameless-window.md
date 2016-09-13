@@ -1,6 +1,11 @@
 # Frameless Window
 
-A frameless window is a window that has no [chrome](https://developer.mozilla.org/en-US/docs/Glossary/Chrome), the parts of the window, like toolbars, that are not a part of the webp page. These are options on the [`BrowserWindow`](browser-window.md) class.
+> Open a window without toolbars, borders, or other graphical "chrome".
+
+A frameless window is a window that has no
+[chrome](https://developer.mozilla.org/en-US/docs/Glossary/Chrome), the parts of
+the window, like toolbars, that are not a part of the web page. These are
+options on the [`BrowserWindow`](browser-window.md) class.
 
 ## Create a frameless window
 
@@ -9,22 +14,24 @@ To create a frameless window, you need to set `frame` to `false` in
 
 
 ```javascript
-var BrowserWindow = require('browser-window');
-var win = new BrowserWindow({ width: 800, height: 600, frame: false });
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({width: 800, height: 600, frame: false})
+win.show()
 ```
 
-### Alternatives on Mac
+### Alternatives on macOS
 
-On Mac OS X 10.10 Yosemite and newer, there's an alternative way to specify
+On macOS 10.9 Mavericks and newer, there's an alternative way to specify
 a chromeless window. Instead of setting `frame` to `false` which disables
 both the titlebar and window controls, you may want to have the title bar
 hidden and your content extend to the full window size, yet still preserve
 the window controls ("traffic lights") for standard window actions.
-You can do so by specifying the new `title-bar-style` option:
+You can do so by specifying the new `titleBarStyle` option:
 
 ```javascript
-var BrowserWindow = require('browser-window');
-var win = new BrowserWindow({ width: 800, height: 600, 'title-bar-style': 'hidden' });
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({titleBarStyle: 'hidden'})
+win.show()
 ```
 
 ## Transparent window
@@ -33,20 +40,22 @@ By setting the `transparent` option to `true`, you can also make the frameless
 window transparent:
 
 ```javascript
-var win = new BrowserWindow({ transparent: true, frame: false });
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({transparent: true, frame: false})
+win.show()
 ```
 
 ### Limitations
 
 * You can not click through the transparent area. We are going to introduce an
-  API to set window shape to solve this, but currently blocked at an
-  [upstream bug](https://code.google.com/p/chromium/issues/detail?id=387234).
+  API to set window shape to solve this, see
+  [our issue](https://github.com/electron/electron/issues/1335) for details.
 * Transparent windows are not resizable. Setting `resizable` to `true` may make
   a transparent window stop working on some platforms.
 * The `blur` filter only applies to the web page, so there is no way to apply
   blur effect to the content below the window (i.e. other applications open on
   the user's system).
-* On Windows operation systems, transparent windows will not work when DWM is
+* On Windows operating systems, transparent windows will not work when DWM is
   disabled.
 * On Linux users have to put `--enable-transparent-visuals --disable-gpu` in
   the command line to disable GPU and allow ARGB to make transparent window,
@@ -54,6 +63,18 @@ var win = new BrowserWindow({ transparent: true, frame: false });
   NVidia drivers](https://code.google.com/p/chromium/issues/detail?id=369209) on
   Linux.
 * On Mac the native window shadow will not be shown on a transparent window.
+
+## Click-through window
+
+To create a click-through window, i.e. making the window ignore all mouse
+events, you can call the [win.setIgnoreMouseEvents(ignore)][ignore-mouse-events]
+API:
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setIgnoreMouseEvents(true)
+```
 
 ## Draggable region
 
@@ -104,3 +125,5 @@ On some platforms, the draggable area will be treated as a non-client frame, so
 when you right click on it a system menu will pop up. To make the context menu
 behave correctly on all platforms you should never use a custom context menu on
 draggable areas.
+
+[ignore-mouse-events]: browser-window.md#winsetignoremouseeventsignore

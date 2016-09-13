@@ -1,8 +1,8 @@
 ## Guías
 
-* [Platfaformas Soportadas](tutorial/supported-platforms.md)
-* [Distribución de la Aplicacion](tutorial/application-distribution.md)
-* [Empaquetamiento de la Aplicacion](tutorial/application-packaging.md)
+* [Plataformas Soportadas](tutorial/supported-platforms.md)
+* [Distribución de la Aplicación](tutorial/application-distribution.md)
+* [Empaquetamiento de la Aplicación](tutorial/application-packaging.md)
 * [Utilizando Módulos Node Nativos](tutorial/using-native-node-modules.md)
 * [Depurando el Proceso Principal](tutorial/debugging-main-process.md)
 * [Utilizando Selenium y WebDriver](tutorial/using-selenium-and-webdriver.md)
@@ -35,7 +35,7 @@
 * [content-tracing](../../docs/api/content-tracing.md)
 * [dialog](../../docs/api/dialog.md)
 * [global-shortcut](../../docs/api/global-shortcut.md)
-* [ipc (proceso principal)](../../docs/api/ipc-main-process.md)
+* [ipc (proceso principal)](../../docs/api/ipc-main.md)
 * [menu](../../docs/api/menu.md)
 * [menu-item](../../docs/api/menu-item.md)
 * [power-monitor](../../docs/api/power-monitor.md)
@@ -62,10 +62,10 @@
 ## Desarrollo
 
 * [Guía de Estilo](development/coding-style.md)
-* [Estructura de los directorios del Código Fuente](../../development/source-code-directory-structure.md)
-* [Diferencias Técnicas con NW.js (anteriormente conocido como node-webkit)](../../development/atom-shell-vs-node-webkit.md)
-* [Repaso del Sistema de Compilación](../../development/build-system-overview.md)
-* [Instrucciones de Compilación (Mac)](../../development/build-instructions-osx.md)
-* [Instrucciones de Compilación (Windows)](../../development/build-instructions-windows.md)
-* [Instrucciones de Compilación (Linux)](../../development/build-instructions-linux.md)
-* [Configurando un Servidor de Símbolos en el depurador](../../development/setting-up-symbol-server.md)
+* [Estructura de los directorios del Código Fuente](development/source-code-directory-structure.md)
+* [Diferencias Técnicas con NW.js (anteriormente conocido como node-webkit)](development/atom-shell-vs-node-webkit.md)
+* [Repaso del Sistema de Compilación](development/build-system-overview.md)
+* [Instrucciones de Compilación (macOS)](development/build-instructions-osx.md)
+* [Instrucciones de Compilación (Windows)](development/build-instructions-windows.md)
+* [Instrucciones de Compilación (Linux)](development/build-instructions-linux.md)
+* [Configurando un Servidor de Símbolos en el depurador](development/setting-up-symbol-server.md)

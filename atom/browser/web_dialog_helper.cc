@@ -13,9 +13,9 @@
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
-#include "base/prefs/pref_service.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"
+#include "components/prefs/pref_service.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/file_chooser_file_info.h"
@@ -84,6 +84,7 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
     base::FilePath path;
     if (file_dialog::ShowSaveDialog(window_,
                                     base::UTF16ToUTF8(params.title),
+                                    "",
                                     params.default_file_name,
                                     filters,
                                     &path)) {
@@ -114,6 +115,7 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
         prefs::kSelectFileLastDirectory).Append(params.default_file_name);
     if (file_dialog::ShowOpenDialog(window_,
                                     base::UTF16ToUTF8(params.title),
+                                    "",
                                     default_file_path,
                                     filters,
                                     flags,

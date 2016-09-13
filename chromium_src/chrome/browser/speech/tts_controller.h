@@ -5,12 +5,12 @@
 #ifndef CHROME_BROWSER_SPEECH_TTS_CONTROLLER_H_
 #define CHROME_BROWSER_SPEECH_TTS_CONTROLLER_H_
 
+#include <memory>
 #include <queue>
 #include <set>
 #include <string>
 #include <vector>
 
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/singleton.h"
 #include "base/memory/weak_ptr.h"
 #include "url/gurl.h"
@@ -240,7 +240,7 @@ class Utterance {
 
   // The full options arg passed to tts.speak, which may include fields
   // other than the ones we explicitly parse, below.
-  scoped_ptr<base::Value> options_;
+  std::unique_ptr<base::Value> options_;
 
   // The extension ID of the extension that called speak() and should
   // receive events.

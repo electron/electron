@@ -5,11 +5,11 @@
 #ifndef CHROME_RENDERER_PRINTING_PRINT_WEB_VIEW_HELPER_H_
 #define CHROME_RENDERER_PRINTING_PRINT_WEB_VIEW_HELPER_H_
 
+#include <memory>
 #include <vector>
 
 #include "base/callback.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/shared_memory.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
@@ -83,9 +83,9 @@ class PrintWebViewHelper
     PREVIEW_ERROR_NONE,  // Always first.
     PREVIEW_ERROR_BAD_SETTING,
     PREVIEW_ERROR_METAFILE_COPY_FAILED,
-    PREVIEW_ERROR_METAFILE_INIT_FAILED,
+    PREVIEW_ERROR_METAFILE_INIT_FAILED_DEPRECATED,
     PREVIEW_ERROR_ZERO_PAGES,
-    PREVIEW_ERROR_MAC_DRAFT_METAFILE_INIT_FAILED,
+    PREVIEW_ERROR_MAC_DRAFT_METAFILE_INIT_FAILED_DEPRECATED,
     PREVIEW_ERROR_PAGE_RENDERED_WITHOUT_METAFILE,
     PREVIEW_ERROR_INVALID_PRINTER_SETTINGS,
     PREVIEW_ERROR_LAST_ENUM  // Always last.
@@ -218,7 +218,7 @@ class PrintWebViewHelper
 
   // Helper methods -----------------------------------------------------------
 
-  bool CopyMetafileDataToSharedMem(PdfMetafileSkia* metafile,
+  bool CopyMetafileDataToSharedMem(const PdfMetafileSkia& metafile,
                                    base::SharedMemoryHandle* shared_mem_handle);
 
   // Helper method to get page layout in points and fit to page if needed.
@@ -244,10 +244,10 @@ class PrintWebViewHelper
   void SetPrintPagesParams(const PrintMsg_PrintPages_Params& settings);
 
   // WebView used only to print the selection.
-  scoped_ptr<PrepareFrameAndViewForPrint> prep_frame_view_;
+  std::unique_ptr<PrepareFrameAndViewForPrint> prep_frame_view_;
   bool reset_prep_frame_view_;
 
-  scoped_ptr<PrintMsg_PrintPages_Params> print_pages_params_;
+  std::unique_ptr<PrintMsg_PrintPages_Params> print_pages_params_;
   bool is_print_ready_metafile_sent_;
   bool ignore_css_margins_;
 
@@ -343,8 +343,8 @@ class PrintWebViewHelper
     FrameReference source_frame_;
     blink::WebNode source_node_;
 
-    scoped_ptr<PrepareFrameAndViewForPrint> prep_frame_view_;
-    scoped_ptr<PdfMetafileSkia> metafile_;
+    std::unique_ptr<PrepareFrameAndViewForPrint> prep_frame_view_;
+    std::unique_ptr<PdfMetafileSkia> metafile_;
 
     // Total page count in the renderer.
     int total_page_count_;

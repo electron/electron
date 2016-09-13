@@ -21,6 +21,9 @@ struct Converter<base::FilePath> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      base::FilePath* out) {
+    if (val->IsNull())
+      return true;
+
     base::FilePath::StringType path;
     if (Converter<base::FilePath::StringType>::FromV8(isolate, val, &path)) {
       *out = base::FilePath(path);

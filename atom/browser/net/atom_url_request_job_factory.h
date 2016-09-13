@@ -7,11 +7,11 @@
 #define ATOM_BROWSER_NET_ATOM_URL_REQUEST_JOB_FACTORY_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "base/memory/scoped_ptr.h"
-#include "base/synchronization/lock.h"
+#include "base/containers/scoped_ptr_hash_map.h"
 #include "net/url_request/url_request_job_factory.h"
 
 namespace atom {
@@ -24,19 +24,23 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   // Sets the ProtocolHandler for a scheme. Returns true on success, false on
   // failure (a ProtocolHandler already exists for |scheme|). On success,
   // URLRequestJobFactory takes ownership of |protocol_handler|.
-  bool SetProtocolHandler(
-      const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler);
+  bool SetProtocolHandler(const std::string& scheme,
+                          std::unique_ptr<ProtocolHandler> protocol_handler);
 
-  // Intercepts the ProtocolHandler for a scheme. Returns the original protocol
-  // handler on success, otherwise returns NULL.
-  scoped_ptr<ProtocolHandler> ReplaceProtocol(
-      const std::string& scheme, scoped_ptr<ProtocolHandler> protocol_handler);
+  // Intercepts the ProtocolHandler for a scheme.
+  bool InterceptProtocol(
+      const std::string& scheme,
+      std::unique_ptr<ProtocolHandler> protocol_handler);
+  bool UninterceptProtocol(const std::string& scheme);
 
   // Returns the protocol handler registered with scheme.
   ProtocolHandler* GetProtocolHandler(const std::string& scheme) const;
 
   // Whether the protocol handler is registered by the job factory.
   bool HasProtocolHandler(const std::string& scheme) const;
+
+  // Clear all protocol handlers.
+  void Clear();
 
   // URLRequestJobFactory implementation
   net::URLRequestJob* MaybeCreateJobWithProtocolHandler(
@@ -58,6 +62,12 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   using ProtocolHandlerMap = std::map<std::string, ProtocolHandler*>;
 
   ProtocolHandlerMap protocol_handler_map_;
+
+  // Map that stores the original protocols of schemes.
+  using OriginalProtocolsMap = base::ScopedPtrHashMap<
+      std::string, std::unique_ptr<ProtocolHandler>>;
+  // Can only be accessed in IO thread.
+  OriginalProtocolsMap original_protocols_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequestJobFactory);
 };

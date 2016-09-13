@@ -15,8 +15,8 @@
 #include "base/files/file_util.h"
 #include "base/linux_util.h"
 #include "base/logging.h"
-#include "base/process/memory.h"
 #include "base/memory/singleton.h"
+#include "base/process/memory.h"
 #include "base/strings/stringprintf.h"
 #include "vendor/breakpad/src/client/linux/handler/exception_handler.h"
 #include "vendor/breakpad/src/common/linux/linux_libc_support.h"
@@ -130,7 +130,7 @@ bool CrashReporterLinux::CrashDone(const MinidumpDescriptor& minidump,
 
 // static
 CrashReporterLinux* CrashReporterLinux::GetInstance() {
-  return Singleton<CrashReporterLinux>::get();
+  return base::Singleton<CrashReporterLinux>::get();
 }
 
 // static

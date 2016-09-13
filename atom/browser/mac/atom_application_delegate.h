@@ -11,9 +11,7 @@
   base::scoped_nsobject<AtomMenuController> menu_controller_;
 }
 
-- (id)init;
-
 // Sets the menu that will be returned in "applicationDockMenu:".
-- (void)setApplicationDockMenu:(ui::MenuModel*)model;
+- (void)setApplicationDockMenu:(atom::AtomMenuModel*)model;
 
 @end

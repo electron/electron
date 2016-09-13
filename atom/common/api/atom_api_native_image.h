@@ -5,11 +5,17 @@
 #ifndef ATOM_COMMON_API_ATOM_API_NATIVE_IMAGE_H_
 #define ATOM_COMMON_API_ATOM_API_NATIVE_IMAGE_H_
 
+#include <map>
 #include <string>
 
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 #include "ui/gfx/image/image.h"
+
+#if defined(OS_WIN)
+#include "base/files/file_path.h"
+#include "base/win/scoped_gdi_object.h"
+#endif
 
 class GURL;
 
@@ -29,7 +35,7 @@ namespace atom {
 
 namespace api {
 
-class NativeImage : public mate::Wrappable {
+class NativeImage : public mate::Wrappable<NativeImage> {
  public:
   static mate::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static mate::Handle<NativeImage> Create(
@@ -45,22 +51,30 @@ class NativeImage : public mate::Wrappable {
   static mate::Handle<NativeImage> CreateFromDataURL(
       v8::Isolate* isolate, const GURL& url);
 
-  // The default constructor should only be used by image_converter.cc.
-  NativeImage();
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype);
+
+#if defined(OS_WIN)
+  HICON GetHICON(int size);
+#endif
 
   const gfx::Image& image() const { return image_; }
 
  protected:
-  explicit NativeImage(const gfx::Image& image);
-  virtual ~NativeImage();
-
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
+  NativeImage(v8::Isolate* isolate, const gfx::Image& image);
+#if defined(OS_WIN)
+  NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path);
+#endif
+  ~NativeImage() override;
 
  private:
   v8::Local<v8::Value> ToPNG(v8::Isolate* isolate);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
+  v8::Local<v8::Value> ToBitmap(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetBitmap(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetNativeHandle(
+    v8::Isolate* isolate,
+    mate::Arguments* args);
   std::string ToDataURL();
   bool IsEmpty();
   gfx::Size GetSize();
@@ -70,6 +84,11 @@ class NativeImage : public mate::Wrappable {
   // Determine if the image is a template image.
   bool IsTemplateImage();
 
+#if defined(OS_WIN)
+  base::FilePath hicon_path_;
+  std::map<int, base::win::ScopedHICON> hicons_;
+#endif
+
   gfx::Image image_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeImage);
@@ -78,5 +97,20 @@ class NativeImage : public mate::Wrappable {
 }  // namespace api
 
 }  // namespace atom
+
+namespace mate {
+
+// A custom converter that allows converting path to NativeImage.
+template<>
+struct Converter<mate::Handle<atom::api::NativeImage>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const mate::Handle<atom::api::NativeImage>& val);
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     mate::Handle<atom::api::NativeImage>* out);
+};
+
+}  // namespace mate
+
 
 #endif  // ATOM_COMMON_API_ATOM_API_NATIVE_IMAGE_H_

@@ -16,24 +16,6 @@ using crash_reporter::CrashReporter;
 namespace mate {
 
 template<>
-struct Converter<std::map<std::string, std::string> > {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     std::map<std::string, std::string>* out) {
-    if (!val->IsObject())
-      return false;
-
-    v8::Local<v8::Object> dict = val->ToObject();
-    v8::Local<v8::Array> keys = dict->GetOwnPropertyNames();
-    for (uint32_t i = 0; i < keys->Length(); ++i) {
-      v8::Local<v8::Value> key = keys->Get(i);
-      (*out)[V8ToString(key)] = V8ToString(dict->Get(key));
-    }
-    return true;
-  }
-};
-
-template<>
 struct Converter<CrashReporter::UploadReportResult> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
       const CrashReporter::UploadReportResult& reports) {

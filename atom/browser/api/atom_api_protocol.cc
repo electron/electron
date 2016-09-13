@@ -5,72 +5,75 @@
 #include "atom/browser/api/atom_api_protocol.h"
 
 #include "atom/browser/atom_browser_client.h"
-#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/net/url_request_async_asar_job.h"
 #include "atom/browser/net/url_request_buffer_job.h"
 #include "atom/browser/net/url_request_fetch_job.h"
 #include "atom/browser/net/url_request_string_job.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
+#include "base/strings/string_util.h"
+#include "content/public/browser/child_process_security_policy.h"
 #include "native_mate/dictionary.h"
+#include "url/url_util.h"
 
 using content::BrowserThread;
-
-namespace mate {
-
-template<>
-struct Converter<const net::URLRequest*> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::URLRequest* val) {
-    return mate::ObjectTemplateBuilder(isolate)
-        .SetValue("method", val->method())
-        .SetValue("url", val->url().spec())
-        .SetValue("referrer", val->referrer())
-        .Build()->NewInstance();
-  }
-};
-
-}  // namespace mate
 
 namespace atom {
 
 namespace api {
 
-Protocol::Protocol(AtomBrowserContext* browser_context)
+namespace {
+
+// List of registered custom standard schemes.
+std::vector<std::string> g_standard_schemes;
+
+// Clear protocol handlers in IO thread.
+void ClearJobFactoryInIO(
+    scoped_refptr<brightray::URLRequestContextGetter> request_context_getter) {
+  auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+      request_context_getter->job_factory());
+  job_factory->Clear();
+}
+
+}  // namespace
+
+std::vector<std::string> GetStandardSchemes() {
+  return g_standard_schemes;
+}
+
+void RegisterStandardSchemes(const std::vector<std::string>& schemes) {
+  g_standard_schemes = schemes;
+
+  auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
+  for (const std::string& scheme : schemes) {
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    policy->RegisterWebSafeScheme(scheme);
+  }
+
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      atom::switches::kStandardSchemes, base::JoinString(schemes, ","));
+}
+
+Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : request_context_getter_(browser_context->GetRequestContext()),
-      job_factory_(browser_context->job_factory()) {
-  CHECK(job_factory_);
+      weak_factory_(this) {
+  Init(isolate);
 }
 
-mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("registerStandardSchemes", &Protocol::RegisterStandardSchemes)
-      .SetMethod("registerStringProtocol",
-                 &Protocol::RegisterProtocol<URLRequestStringJob>)
-      .SetMethod("registerBufferProtocol",
-                 &Protocol::RegisterProtocol<URLRequestBufferJob>)
-      .SetMethod("registerFileProtocol",
-                 &Protocol::RegisterProtocol<UrlRequestAsyncAsarJob>)
-      .SetMethod("registerHttpProtocol",
-                 &Protocol::RegisterProtocol<URLRequestFetchJob>)
-      .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
-      .SetMethod("isProtocolHandled", &Protocol::IsProtocolHandled)
-      .SetMethod("interceptStringProtocol",
-                 &Protocol::InterceptProtocol<URLRequestStringJob>)
-      .SetMethod("interceptBufferProtocol",
-                 &Protocol::InterceptProtocol<URLRequestBufferJob>)
-      .SetMethod("interceptFileProtocol",
-                 &Protocol::InterceptProtocol<UrlRequestAsyncAsarJob>)
-      .SetMethod("interceptHttpProtocol",
-                 &Protocol::InterceptProtocol<URLRequestFetchJob>)
-      .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol);
+Protocol::~Protocol() {
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(ClearJobFactoryInIO, request_context_getter_));
 }
 
-void Protocol::RegisterStandardSchemes(
+void Protocol::RegisterServiceWorkerSchemes(
     const std::vector<std::string>& schemes) {
-  atom::AtomBrowserClient::SetCustomSchemes(schemes);
+  atom::AtomBrowserClient::SetCustomServiceWorkerSchemes(schemes);
 }
 
 void Protocol::UnregisterProtocol(
@@ -80,30 +83,37 @@ void Protocol::UnregisterProtocol(
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::UnregisterProtocolInIO,
-                 base::Unretained(this), scheme),
+                 request_context_getter_, scheme),
       base::Bind(&Protocol::OnIOCompleted,
-                 base::Unretained(this), callback));
+                 GetWeakPtr(), callback));
 }
 
+// static
 Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
+    scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
     const std::string& scheme) {
-  if (!job_factory_->HasProtocolHandler(scheme))
+  auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+      request_context_getter->job_factory());
+  if (!job_factory->HasProtocolHandler(scheme))
     return PROTOCOL_NOT_REGISTERED;
-  job_factory_->SetProtocolHandler(scheme, nullptr);
+  job_factory->SetProtocolHandler(scheme, nullptr);
   return PROTOCOL_OK;
 }
 
 void Protocol::IsProtocolHandled(const std::string& scheme,
-                                    const BooleanCallback& callback) {
+                                 const BooleanCallback& callback) {
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::IsProtocolHandledInIO,
-                 base::Unretained(this), scheme),
+                 request_context_getter_, scheme),
       callback);
 }
 
-bool Protocol::IsProtocolHandledInIO(const std::string& scheme) {
-  return job_factory_->IsHandledProtocol(scheme);
+// static
+bool Protocol::IsProtocolHandledInIO(
+    scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+    const std::string& scheme) {
+  return request_context_getter->job_factory()->IsHandledProtocol(scheme);
 }
 
 void Protocol::UninterceptProtocol(
@@ -113,18 +123,18 @@ void Protocol::UninterceptProtocol(
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::UninterceptProtocolInIO,
-                 base::Unretained(this), scheme),
+                 request_context_getter_, scheme),
       base::Bind(&Protocol::OnIOCompleted,
-                 base::Unretained(this), callback));
+                 GetWeakPtr(), callback));
 }
 
+// static
 Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
+    scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
     const std::string& scheme) {
-  if (!original_protocols_.contains(scheme))
-    return PROTOCOL_NOT_INTERCEPTED;
-  job_factory_->ReplaceProtocol(scheme,
-                                original_protocols_.take_and_erase(scheme));
-  return PROTOCOL_OK;
+  return static_cast<AtomURLRequestJobFactory*>(
+      request_context_getter->job_factory())->UninterceptProtocol(scheme) ?
+          PROTOCOL_OK : PROTOCOL_NOT_INTERCEPTED;
 }
 
 void Protocol::OnIOCompleted(
@@ -147,18 +157,53 @@ void Protocol::OnIOCompleted(
 std::string Protocol::ErrorCodeToString(ProtocolError error) {
   switch (error) {
     case PROTOCOL_FAIL: return "Failed to manipulate protocol factory";
-    case PROTOCOL_REGISTERED: return "The scheme has been registred";
-    case PROTOCOL_NOT_REGISTERED: return "The scheme has not been registred";
+    case PROTOCOL_REGISTERED: return "The scheme has been registered";
+    case PROTOCOL_NOT_REGISTERED: return "The scheme has not been registered";
     case PROTOCOL_INTERCEPTED: return "The scheme has been intercepted";
     case PROTOCOL_NOT_INTERCEPTED: return "The scheme has not been intercepted";
     default: return "Unexpected error";
   }
 }
 
+AtomURLRequestJobFactory* Protocol::GetJobFactoryInIO() const {
+  request_context_getter_->GetURLRequestContext();  // Force init.
+  return static_cast<AtomURLRequestJobFactory*>(
+      static_cast<brightray::URLRequestContextGetter*>(
+          request_context_getter_.get())->job_factory());
+}
+
 // static
 mate::Handle<Protocol> Protocol::Create(
     v8::Isolate* isolate, AtomBrowserContext* browser_context) {
-  return mate::CreateHandle(isolate, new Protocol(browser_context));
+  return mate::CreateHandle(isolate, new Protocol(isolate, browser_context));
+}
+
+// static
+void Protocol::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Protocol"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("registerServiceWorkerSchemes",
+                 &Protocol::RegisterServiceWorkerSchemes)
+      .SetMethod("registerStringProtocol",
+                 &Protocol::RegisterProtocol<URLRequestStringJob>)
+      .SetMethod("registerBufferProtocol",
+                 &Protocol::RegisterProtocol<URLRequestBufferJob>)
+      .SetMethod("registerFileProtocol",
+                 &Protocol::RegisterProtocol<URLRequestAsyncAsarJob>)
+      .SetMethod("registerHttpProtocol",
+                 &Protocol::RegisterProtocol<URLRequestFetchJob>)
+      .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
+      .SetMethod("isProtocolHandled", &Protocol::IsProtocolHandled)
+      .SetMethod("interceptStringProtocol",
+                 &Protocol::InterceptProtocol<URLRequestStringJob>)
+      .SetMethod("interceptBufferProtocol",
+                 &Protocol::InterceptProtocol<URLRequestBufferJob>)
+      .SetMethod("interceptFileProtocol",
+                 &Protocol::InterceptProtocol<URLRequestAsyncAsarJob>)
+      .SetMethod("interceptHttpProtocol",
+                 &Protocol::InterceptProtocol<URLRequestFetchJob>)
+      .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol);
 }
 
 }  // namespace api
@@ -167,13 +212,23 @@ mate::Handle<Protocol> Protocol::Create(
 
 namespace {
 
+void RegisterStandardSchemes(
+    const std::vector<std::string>& schemes, mate::Arguments* args) {
+  if (atom::Browser::Get()->is_ready()) {
+    args->ThrowError("protocol.registerStandardSchemes should be called before "
+                     "app is ready");
+    return;
+  }
+
+  atom::api::RegisterStandardSchemes(schemes);
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  auto browser_context = static_cast<atom::AtomBrowserContext*>(
-      atom::AtomBrowserMainParts::Get()->browser_context());
-  dict.Set("protocol", atom::api::Protocol::Create(isolate, browser_context));
+  dict.SetMethod("registerStandardSchemes", &RegisterStandardSchemes);
+  dict.SetMethod("getStandardSchemes", &atom::api::GetStandardSchemes);
 }
 
 }  // namespace

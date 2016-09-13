@@ -2,10 +2,10 @@
 
 Para distribuir tu aplicación con Electron, el directorio que contiene la
 aplicación deberá llamarse `app`, y ser colocado debajo del directorio de
-recursos de Electron (en OSX es `Electron.app/Contents/Resources/`, en Linux y
+recursos de Electron (en macOS es `Electron.app/Contents/Resources/`, en Linux y
 Windows es `resources/`), de esta forma:
 
-En OS X:
+En macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -37,7 +37,7 @@ Para utilizar un archivo `asar` en reemplazo del directorio `app`, debes de
 renombrar el archivo a `app.asar`, y colocarlo por debajo el directorio de recursos
 de Electron (ver en seguida), Electron intentará leer el archivo y arrancar desde el.
 
-En OS X:
+En macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/
@@ -61,10 +61,9 @@ de distribuirlo a los usuarios.
 ### Windows
 
 Puedes renombrar `electron.exe` a cualquier nombre que desees, y editar su ícono
-y otra información con herramientas como [rcedit](https://github.com/atom/rcedit)
-o [ResEdit](http://www.resedit.net).
+y otra información con herramientas como [rcedit](https://github.com/atom/rcedit).
 
-### OSX
+### macOS
 
 Puedes renombrar `Electron.app` a cualquier nombre que desees, y tendrás que
 renombrar los campos `CFBundleDisplayName`, `CFBundleIdentifier` y `CFBundleName`

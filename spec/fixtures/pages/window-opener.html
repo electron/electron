@@ -4,7 +4,7 @@
   if (window.opener !== null)
     window.opener.postMessage(typeof window.opener, '*');
   else
-    require('ipc').send('opener', window.opener);
+    require('electron').ipcRenderer.send('opener', window.opener);
 </script>
 </body>
 </html>

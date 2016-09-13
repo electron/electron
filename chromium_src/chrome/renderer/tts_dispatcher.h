@@ -7,10 +7,8 @@
 
 #include <vector>
 
-#include "base/basictypes.h"
-#include "base/compiler_specific.h"
 #include "base/containers/hash_tables.h"
-#include "content/public/renderer/render_process_observer.h"
+#include "content/public/renderer/render_thread_observer.h"
 #include "third_party/WebKit/public/platform/WebSpeechSynthesizer.h"
 #include "third_party/WebKit/public/platform/WebSpeechSynthesizerClient.h"
 
@@ -29,7 +27,7 @@ struct TtsVoice;
 // the utterance id (which is globally unique) matches.
 class TtsDispatcher
     : public blink::WebSpeechSynthesizer,
-      public content::RenderProcessObserver {
+      public content::RenderThreadObserver {
  public:
   explicit TtsDispatcher(blink::WebSpeechSynthesizerClient* client);
 

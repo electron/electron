@@ -4,6 +4,8 @@
 
 #include "net/test/embedded_test_server/stream_listen_socket.h"
 
+#include <memory>
+
 #if defined(OS_WIN)
 // winsock2.h must be included first in order to ensure it is included before
 // windows.h.
@@ -17,16 +19,17 @@
 #include "net/base/net_errors.h"
 #endif
 
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/memory/ref_counted.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/sys_byteorder.h"
 #include "base/threading/platform_thread.h"
 #include "build/build_config.h"
 #include "net/base/ip_endpoint.h"
 #include "net/base/net_errors.h"
-#include "net/base/net_util.h"
+#include "net/base/network_interfaces.h"
+#include "net/base/sockaddr_storage.h"
 #include "net/socket/socket_descriptor.h"
 
 using std::string;
@@ -125,7 +128,7 @@ SocketDescriptor StreamListenSocket::AcceptSocket() {
   if (conn == kInvalidSocket)
     LOG(ERROR) << "Error accepting connection.";
   else
-    SetNonBlocking(conn);
+    base::SetNonBlocking(conn);
   return conn;
 }
 
@@ -228,7 +231,7 @@ void StreamListenSocket::CloseSocket() {
 void StreamListenSocket::WatchSocket(WaitState state) {
 #if defined(OS_WIN)
   WSAEventSelect(socket_, socket_event_, FD_ACCEPT | FD_CLOSE | FD_READ);
-  watcher_.StartWatching(socket_event_, this);
+  watcher_.StartWatchingOnce(socket_event_, this);
 #elif defined(OS_POSIX)
   // Implicitly calls StartWatchingFileDescriptor().
   base::MessageLoopForIO::current()->WatchFileDescriptor(
@@ -264,7 +267,7 @@ void StreamListenSocket::OnObjectSignaled(HANDLE object) {
     return;
   }
   // The object was reset by WSAEnumNetworkEvents.  Watch for the next signal.
-  watcher_.StartWatching(object, this);
+  watcher_.StartWatchingOnce(object, this);
 
   if (ev.lNetworkEvents == 0) {
     // Occasionally the event is set even though there is no new data.

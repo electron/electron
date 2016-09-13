@@ -16,6 +16,7 @@
 #include <glib-object.h>
 
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/ui/atom_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -23,7 +24,6 @@
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"
-#include "ui/base/models/menu_model.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
 
 // libdbusmenu-glib types
@@ -141,8 +141,8 @@ void EnsureMethodsLoaded() {
       dlsym(dbusmenu_lib, "dbusmenu_server_set_root"));
 }
 
-ui::MenuModel* ModelForMenuItem(DbusmenuMenuitem* item) {
-  return reinterpret_cast<ui::MenuModel*>(
+AtomMenuModel* ModelForMenuItem(DbusmenuMenuitem* item) {
+  return reinterpret_cast<AtomMenuModel*>(
       g_object_get_data(G_OBJECT(item), "model"));
 }
 
@@ -188,7 +188,7 @@ std::string GlobalMenuBarX11::GetPathForWindow(gfx::AcceleratedWidget xid) {
   return base::StringPrintf("/com/canonical/menu/%lX", xid);
 }
 
-void GlobalMenuBarX11::SetMenu(ui::MenuModel* menu_model) {
+void GlobalMenuBarX11::SetMenu(AtomMenuModel* menu_model) {
   if (!IsServerStarted())
     return;
 
@@ -210,14 +210,22 @@ void GlobalMenuBarX11::InitServer(gfx::AcceleratedWidget xid) {
   server_ = server_new(path.c_str());
 }
 
-void GlobalMenuBarX11::BuildMenuFromModel(ui::MenuModel* model,
+void GlobalMenuBarX11::OnWindowMapped() {
+  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowMapped(xid_);
+}
+
+void GlobalMenuBarX11::OnWindowUnmapped() {
+  GlobalMenuBarRegistrarX11::GetInstance()->OnWindowUnmapped(xid_);
+}
+
+void GlobalMenuBarX11::BuildMenuFromModel(AtomMenuModel* model,
                                           DbusmenuMenuitem* parent) {
   for (int i = 0; i < model->GetItemCount(); ++i) {
     DbusmenuMenuitem* item = menuitem_new();
     menuitem_property_set_bool(item, kPropertyVisible, model->IsVisibleAt(i));
 
-    ui::MenuModel::ItemType type = model->GetTypeAt(i);
-    if (type == ui::MenuModel::TYPE_SEPARATOR) {
+    AtomMenuModel::ItemType type = model->GetTypeAt(i);
+    if (type == AtomMenuModel::TYPE_SEPARATOR) {
       menuitem_property_set(item, kPropertyType, kTypeSeparator);
     } else {
       std::string label = ui::ConvertAcceleratorsFromWindowsStyle(
@@ -228,22 +236,22 @@ void GlobalMenuBarX11::BuildMenuFromModel(ui::MenuModel* model,
       g_object_set_data(G_OBJECT(item), "model", model);
       SetMenuItemID(item, i);
 
-      if (type == ui::MenuModel::TYPE_SUBMENU) {
+      if (type == AtomMenuModel::TYPE_SUBMENU) {
         menuitem_property_set(item, kPropertyChildrenDisplay, kDisplaySubmenu);
         g_signal_connect(item, "about-to-show",
                          G_CALLBACK(OnSubMenuShowThunk), this);
       } else {
         ui::Accelerator accelerator;
-        if (model->GetAcceleratorAt(i, &accelerator))
+        if (model->GetAcceleratorAtWithParams(i, true, &accelerator))
           RegisterAccelerator(item, accelerator);
 
         g_signal_connect(item, "item-activated",
                          G_CALLBACK(OnItemActivatedThunk), this);
 
-        if (type == ui::MenuModel::TYPE_CHECK ||
-            type == ui::MenuModel::TYPE_RADIO) {
+        if (type == AtomMenuModel::TYPE_CHECK ||
+            type == AtomMenuModel::TYPE_RADIO) {
           menuitem_property_set(item, kPropertyToggleType,
-              type == ui::MenuModel::TYPE_CHECK ? kToggleCheck : kToggleRadio);
+              type == AtomMenuModel::TYPE_CHECK ? kToggleCheck : kToggleRadio);
           menuitem_property_set_int(item, kPropertyToggleState,
               model->IsItemCheckedAt(i));
         }
@@ -288,14 +296,14 @@ void GlobalMenuBarX11::RegisterAccelerator(DbusmenuMenuitem* item,
 void GlobalMenuBarX11::OnItemActivated(DbusmenuMenuitem* item,
                                        unsigned int timestamp) {
   int id;
-  ui::MenuModel* model = ModelForMenuItem(item);
+  AtomMenuModel* model = ModelForMenuItem(item);
   if (model && GetMenuItemID(item, &id))
     model->ActivatedAt(id, 0);
 }
 
 void GlobalMenuBarX11::OnSubMenuShow(DbusmenuMenuitem* item) {
   int id;
-  ui::MenuModel* model = ModelForMenuItem(item);
+  AtomMenuModel* model = ModelForMenuItem(item);
   if (!model || !GetMenuItemID(item, &id))
     return;
 

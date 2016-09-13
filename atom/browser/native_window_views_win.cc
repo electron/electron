@@ -2,7 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
+#include "content/public/browser/browser_accessibility_state.h"
 
 namespace atom {
 
@@ -80,16 +82,54 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
 
 bool NativeWindowViews::PreHandleMSG(
     UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
+  NotifyWindowMessage(message, w_param, l_param);
+
   switch (message) {
+    // Screen readers send WM_GETOBJECT in order to get the accessibility
+    // object, so take this opportunity to push Chromium into accessible
+    // mode if it isn't already, always say we didn't handle the message
+    // because we still want Chromium to handle returning the actual
+    // accessibility object.
+    case WM_GETOBJECT: {
+      const DWORD obj_id = static_cast<DWORD>(l_param);
+      if (enabled_a11y_support_) return false;
+
+      if (obj_id == OBJID_CLIENT) {
+        const auto axState = content::BrowserAccessibilityState::GetInstance();
+        if (axState && !axState->IsAccessibleBrowser()) {
+          axState->OnScreenReaderDetected();
+          enabled_a11y_support_ = true;
+          Browser::Get()->OnAccessibilitySupportChanged();
+        }
+      }
+
+      return false;
+    }
     case WM_COMMAND:
       // Handle thumbar button click message.
       if (HIWORD(w_param) == THBN_CLICKED)
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
-    case WM_SIZE:
+    case WM_SIZE: {
+      consecutive_moves_ = false;
       // Handle window state change.
       HandleSizeEvent(w_param, l_param);
       return false;
+    }
+    case WM_MOVING: {
+      if (!movable_)
+        ::GetWindowRect(GetAcceleratedWidget(), (LPRECT)l_param);
+      return false;
+    }
+    case WM_MOVE: {
+      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
+        if (consecutive_moves_)
+          last_normal_bounds_ = last_normal_bounds_candidate_;
+        last_normal_bounds_candidate_ = GetBounds();
+        consecutive_moves_ = true;
+      }
+      return false;
+    }
     default:
       return false;
   }
@@ -110,7 +150,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
     case SIZE_RESTORED:
       if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
         // Window was resized so we save it's new size.
-        last_normal_size_ = GetSize();
+        last_normal_bounds_ = GetBounds();
       } else {
         switch (last_window_state_) {
           case ui::SHOW_STATE_MAXIMIZED:
@@ -118,7 +158,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 
             // When the window is restored we resize it to the previous known
             // normal size.
-            NativeWindow::SetSize(last_normal_size_);
+            SetBounds(last_normal_bounds_, false);
 
             NotifyWindowUnmaximize();
             break;
@@ -131,7 +171,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 
               // When the window is restored we resize it to the previous known
               // normal size.
-              NativeWindow::SetSize(last_normal_size_);
+              SetBounds(last_normal_bounds_, false);
 
               NotifyWindowRestore();
             }

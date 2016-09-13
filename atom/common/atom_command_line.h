@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
+#include "build/build_config.h"
 
 namespace atom {
 
@@ -18,6 +19,11 @@ class AtomCommandLine {
   static void Init(int argc, const char* const* argv);
   static std::vector<std::string> argv() { return argv_; }
 
+#if defined(OS_WIN)
+  static void InitW(int argc, const wchar_t* const* argv);
+  static std::vector<std::wstring> wargv() { return wargv_; }
+#endif
+
 #if defined(OS_LINUX)
   // On Linux the command line has to be read from base::CommandLine since
   // it is using zygote.
@@ -26,6 +32,10 @@ class AtomCommandLine {
 
  private:
   static std::vector<std::string> argv_;
+
+#if defined(OS_WIN)
+  static std::vector<std::wstring> wargv_;
+#endif
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(AtomCommandLine);
 };

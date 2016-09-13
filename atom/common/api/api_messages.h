@@ -30,20 +30,14 @@ IPC_SYNC_MESSAGE_ROUTED2_1(AtomViewHostMsg_Message_Sync,
                            base::ListValue /* arguments */,
                            base::string16 /* result (in JSON) */)
 
-IPC_MESSAGE_ROUTED1(AtomViewHostMsg_ZoomLevelChanged,
-                    double /* level */)
-
-IPC_MESSAGE_ROUTED1(AtomViewMsg_SetZoomLevel,
-                    double /* level */)
-
-IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
+IPC_MESSAGE_ROUTED3(AtomViewMsg_Message,
+                    bool /* send_to_all */,
                     base::string16 /* channel */,
                     base::ListValue /* arguments */)
-
-IPC_MESSAGE_ROUTED2(AtomViewMsg_ExecuteJavaScript,
-                    base::string16 /* code */,
-                    bool /* has user gesture */)
 
 // Sent by the renderer when the draggable regions are updated.
 IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
                     std::vector<atom::DraggableRegion> /* regions */)
+
+// Update renderer process preferences.
+IPC_MESSAGE_CONTROL1(AtomMsg_UpdatePreferences, base::ListValue)

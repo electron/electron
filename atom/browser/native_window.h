@@ -6,13 +6,14 @@
 #define ATOM_BROWSER_NATIVE_WINDOW_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
+#include "atom/browser/ui/atom_menu_model.h"
 #include "base/cancelable_callback.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
@@ -43,10 +44,6 @@ namespace mate {
 class Dictionary;
 }
 
-namespace ui {
-class MenuModel;
-}
-
 namespace atom {
 
 struct DraggableRegion;
@@ -54,34 +51,14 @@ struct DraggableRegion;
 class NativeWindow : public base::SupportsUserData,
                      public content::WebContentsObserver {
  public:
-  using CapturePageCallback = base::Callback<void(const SkBitmap& bitmap)>;
-
-  class DialogScope {
-   public:
-    explicit DialogScope(NativeWindow* window)
-        : window_(window) {
-      if (window_ != NULL)
-        window_->set_has_dialog_attached(true);
-    }
-
-    ~DialogScope() {
-      if (window_ != NULL)
-        window_->set_has_dialog_attached(false);
-    }
-
-   private:
-    NativeWindow* window_;
-
-    DISALLOW_COPY_AND_ASSIGN(DialogScope);
-  };
-
-  virtual ~NativeWindow();
+  ~NativeWindow() override;
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
   static NativeWindow* Create(
       brightray::InspectableWebContents* inspectable_web_contents,
-      const mate::Dictionary& options);
+      const mate::Dictionary& options,
+      NativeWindow* parent = nullptr);
 
   // Find a window from its WebContents
   static NativeWindow* FromWebContents(content::WebContents* web_contents);
@@ -97,6 +74,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void ShowInactive() = 0;
   virtual void Hide() = 0;
   virtual bool IsVisible() = 0;
+  virtual bool IsEnabled() = 0;
   virtual void Maximize() = 0;
   virtual void Unmaximize() = 0;
   virtual bool IsMaximized() = 0;
@@ -105,14 +83,16 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsMinimized() = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
-  virtual void SetBounds(const gfx::Rect& bounds) = 0;
+  virtual void SetBounds(const gfx::Rect& bounds, bool animate = false) = 0;
   virtual gfx::Rect GetBounds() = 0;
-  virtual void SetSize(const gfx::Size& size);
+  virtual void SetSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetSize();
-  virtual void SetPosition(const gfx::Point& position);
+  virtual void SetPosition(const gfx::Point& position, bool animate = false);
   virtual gfx::Point GetPosition();
-  virtual void SetContentSize(const gfx::Size& size);
+  virtual void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize();
+  virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
+  virtual gfx::Rect GetContentBounds();
   virtual void SetSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
   virtual extensions::SizeConstraints GetSizeConstraints();
@@ -123,8 +103,21 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetMinimumSize();
   virtual void SetMaximumSize(const gfx::Size& size);
   virtual gfx::Size GetMaximumSize();
+  virtual void SetSheetOffset(const double offsetX, const double offsetY);
+  virtual double GetSheetOffsetX();
+  virtual double GetSheetOffsetY();
   virtual void SetResizable(bool resizable) = 0;
   virtual bool IsResizable() = 0;
+  virtual void SetMovable(bool movable) = 0;
+  virtual bool IsMovable() = 0;
+  virtual void SetMinimizable(bool minimizable) = 0;
+  virtual bool IsMinimizable() = 0;
+  virtual void SetMaximizable(bool maximizable) = 0;
+  virtual bool IsMaximizable() = 0;
+  virtual void SetFullScreenable(bool fullscreenable) = 0;
+  virtual bool IsFullScreenable() = 0;
+  virtual void SetClosable(bool closable) = 0;
+  virtual bool IsClosable() = 0;
   virtual void SetAlwaysOnTop(bool top) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
@@ -134,16 +127,32 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetSkipTaskbar(bool skip) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual void SetBackgroundColor(const std::string& color_name) = 0;
+  virtual void SetHasShadow(bool has_shadow) = 0;
+  virtual bool HasShadow() = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
   virtual bool IsDocumentEdited();
-  virtual void SetMenu(ui::MenuModel* menu);
-  virtual bool HasModalDialog();
+  virtual void SetIgnoreMouseEvents(bool ignore) = 0;
+  virtual void SetContentProtection(bool enable) = 0;
+  virtual void SetFocusable(bool focusable);
+  virtual void SetMenu(AtomMenuModel* menu);
+  virtual void SetParentWindow(NativeWindow* parent);
   virtual gfx::NativeWindow GetNativeWindow() = 0;
+  virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
   // Taskbar/Dock APIs.
-  virtual void SetProgressBar(double progress) = 0;
+  enum ProgressState {
+    PROGRESS_NONE,               // no progress, no marking
+    PROGRESS_INDETERMINATE,      // progress, indeterminate
+    PROGRESS_ERROR,              // progress, errored (red)
+    PROGRESS_PAUSED,             // progress, paused (yellow)
+    PROGRESS_NORMAL,             // progress, not marked (green)
+  };
+
+  virtual void SetProgressBar(double progress,
+                              const ProgressState state) = 0;
   virtual void SetOverlayIcon(const gfx::Image& overlay,
                               const std::string& description) = 0;
 
@@ -155,15 +164,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void FocusOnWebView();
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
-  virtual bool IsDevToolsFocused();
-
-  // Captures the page with |rect|, |callback| would be called when capturing is
-  // done.
-  virtual void CapturePage(const gfx::Rect& rect,
-                           const CapturePageCallback& callback);
-
-  // Show popup dictionary.
-  virtual void ShowDefinitionForSelection();
 
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
@@ -174,7 +174,7 @@ class NativeWindow : public base::SupportsUserData,
   // Set the aspect ratio when resizing window.
   double GetAspectRatio();
   gfx::Size GetAspectRatioExtraSize();
-  void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
+  virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -196,6 +196,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowClosed();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
+  void NotifyWindowShow();
+  void NotifyWindowHide();
   void NotifyWindowMaximize();
   void NotifyWindowUnmaximize();
   void NotifyWindowMinimize();
@@ -203,11 +205,18 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMove();
   void NotifyWindowResize();
   void NotifyWindowMoved();
+  void NotifyWindowScrollTouchBegin();
+  void NotifyWindowScrollTouchEnd();
+  void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
+
+  #if defined(OS_WIN)
+  void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
+  #endif
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
@@ -221,64 +230,58 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   bool has_frame() const { return has_frame_; }
+  void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
+
   bool transparent() const { return transparent_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
-  gfx::ImageSkia icon() const { return icon_; }
 
-  bool force_using_draggable_region() const {
-    return force_using_draggable_region_;
-  }
-  void set_force_using_draggable_region(bool force) {
-    force_using_draggable_region_ = true;
-  }
-
-  void set_has_dialog_attached(bool has_dialog_attached) {
-    has_dialog_attached_ = has_dialog_attached;
-  }
+  NativeWindow* parent() const { return parent_; }
+  bool is_modal() const { return is_modal_; }
 
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
-               const mate::Dictionary& options);
+               const mate::Dictionary& options,
+               NativeWindow* parent);
 
-  // Converts between content size to window size.
-  virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size) = 0;
-  virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size) = 0;
+  // Convert draggable regions in raw format to SkRegion format. Caller is
+  // responsible for deleting the returned SkRegion instance.
+  std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
+      const std::vector<DraggableRegion>& regions);
+
+  // Converts between content bounds and window bounds.
+  virtual gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) = 0;
+
+  // Called when the window needs to update its draggable region.
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions);
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
-  void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
+  void DidFirstVisuallyNonEmptyPaint() override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
-  // Called when the window needs to update its draggable region.
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions);
-
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
 
   // Dispatch unresponsive event to observers.
   void NotifyWindowUnresponsive();
 
-  // Called when CapturePage has done.
-  void OnCapturePageDone(const CapturePageCallback& callback,
-                         const SkBitmap& bitmap,
-                         content::ReadbackResponse response);
+  // Dispatch ReadyToShow event to observers.
+  void NotifyReadyToShow();
 
   // Whether window has standard frame.
   bool has_frame_;
-
-  // Force the window to be aware of draggable regions.
-  bool force_using_draggable_region_;
 
   // Whether window is transparent.
   bool transparent_;
 
   // For custom drag, the whole window is non-draggable and the draggable region
   // has to been explicitly provided.
-  scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
+  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   // Minimum and maximum size, stored as content size.
   extensions::SizeConstraints size_constraints_;
@@ -286,23 +289,28 @@ class NativeWindow : public base::SupportsUserData,
   // Whether window can be resized larger than screen.
   bool enable_larger_than_screen_;
 
-  // Window icon.
-  gfx::ImageSkia icon_;
-
   // The windows has been closed.
   bool is_closed_;
-
-  // There is a dialog that has been attached to window.
-  bool has_dialog_attached_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresposive_closure_;
 
+  // Used to display sheets at the appropriate horizontal and vertical offsets
+  // on macOS.
+  double sheet_offset_x_;
+  double sheet_offset_y_;
+
   // Used to maintain the aspect ratio of a view which is inside of the
   // content view.
   double aspect_ratio_;
   gfx::Size aspect_ratio_extraSize_;
+
+  // The parent window, it is guaranteed to be valid during this window's life.
+  NativeWindow* parent_;
+
+  // Is this a modal window.
+  bool is_modal_;
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;

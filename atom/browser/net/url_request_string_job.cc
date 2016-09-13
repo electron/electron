@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/common/atom_constants.h"
 #include "net/base/net_errors.h"
 
 namespace atom {
@@ -15,7 +16,7 @@ URLRequestStringJob::URLRequestStringJob(
     : JsAsker<net::URLRequestSimpleJob>(request, network_delegate) {
 }
 
-void URLRequestStringJob::StartAsync(scoped_ptr<base::Value> options) {
+void URLRequestStringJob::StartAsync(std::unique_ptr<base::Value> options) {
   if (options->IsType(base::Value::TYPE_DICTIONARY)) {
     base::DictionaryValue* dict =
         static_cast<base::DictionaryValue*>(options.get());
@@ -30,7 +31,9 @@ void URLRequestStringJob::StartAsync(scoped_ptr<base::Value> options) {
 
 void URLRequestStringJob::GetResponseInfo(net::HttpResponseInfo* info) {
   std::string status("HTTP/1.1 200 OK");
-  net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+  auto* headers = new net::HttpResponseHeaders(status);
+
+  headers->AddHeader(kCORSHeader);
 
   if (!mime_type_.empty()) {
     std::string content_type_header(net::HttpRequestHeaders::kContentType);

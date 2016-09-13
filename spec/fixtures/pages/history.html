@@ -2,7 +2,7 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   window.history.pushState(window.history.state, "test page", "foo.html")
-  require('ipc').sendToHost('history', window.history.length);
+  require('electron').ipcRenderer.sendToHost('history', window.history.length);
 </script>
 </body>
 </html>

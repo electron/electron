@@ -25,7 +25,7 @@ appropriate cache directory on your machine.
 
 The Windbg symbol path is configured with a string value delimited with asterisk
 characters. To use only the Electron symbol server, add the following entry to
-your symbol path (__Note:__ you can replace `c:\code\symbols` with any writable
+your symbol path (**Note:** you can replace `c:\code\symbols` with any writable
 directory on your computer, if you'd prefer a different location for downloaded
 symbols):
 
@@ -52,5 +52,5 @@ Type the following commands in Windbg to print why symbols are not loading:
 
 ```
 > !sym noisy
-> .reload /f chromiumcontent.dll
+> .reload /f electron.exe
 ```

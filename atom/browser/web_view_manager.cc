@@ -42,6 +42,13 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
     }
 }
 
+content::WebContents* WebViewManager::GetEmbedder(int guest_instance_id) {
+  if (ContainsKey(web_contents_embedder_map_, guest_instance_id))
+    return web_contents_embedder_map_[guest_instance_id].embedder;
+  else
+    return nullptr;
+}
+
 content::WebContents* WebViewManager::GetGuestByInstanceID(
     int owner_process_id,
     int element_instance_id) {
@@ -63,6 +70,18 @@ bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,
         callback.Run(item.second.web_contents))
       return true;
   return false;
+}
+
+// static
+WebViewManager* WebViewManager::GetWebViewManager(
+    content::WebContents* web_contents) {
+  auto context = web_contents->GetBrowserContext();
+  if (context) {
+    auto manager = context->GetGuestManager();
+    return static_cast<WebViewManager*>(manager);
+  } else {
+    return nullptr;
+  }
 }
 
 }  // namespace atom

@@ -5,14 +5,15 @@
 #include <math.h>
 
 #include <map>
+#include <memory>
 
 #include "base/command_line.h"
 #include "base/debug/leak_annotations.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/singleton.h"
 #include "base/synchronization/lock.h"
 #include "chrome/browser/speech/tts_platform.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/common/content_switches.h"
 
 #include "library_loaders/libspeechd.h"
 
@@ -32,18 +33,17 @@ struct SPDChromeVoice {
 
 class TtsPlatformImplLinux : public TtsPlatformImpl {
  public:
-  virtual bool PlatformImplAvailable() override;
-  virtual bool Speak(
-      int utterance_id,
-      const std::string& utterance,
-      const std::string& lang,
-      const VoiceData& voice,
-      const UtteranceContinuousParameters& params) override;
-  virtual bool StopSpeaking() override;
-  virtual void Pause() override;
-  virtual void Resume() override;
-  virtual bool IsSpeaking() override;
-  virtual void GetVoices(std::vector<VoiceData>* out_voices) override;
+  bool PlatformImplAvailable() override;
+  bool Speak(int utterance_id,
+             const std::string& utterance,
+             const std::string& lang,
+             const VoiceData& voice,
+             const UtteranceContinuousParameters& params) override;
+  bool StopSpeaking() override;
+  void Pause() override;
+  void Resume() override;
+  bool IsSpeaking() override;
+  void GetVoices(std::vector<VoiceData>* out_voices) override;
 
   void OnSpeechEvent(SPDNotificationType type);
 
@@ -52,7 +52,7 @@ class TtsPlatformImplLinux : public TtsPlatformImpl {
 
  private:
   TtsPlatformImplLinux();
-  virtual ~TtsPlatformImplLinux();
+  ~TtsPlatformImplLinux() override;
 
   // Initiate the connection with the speech dispatcher.
   void Initialize();
@@ -81,9 +81,9 @@ class TtsPlatformImplLinux : public TtsPlatformImpl {
 
   // Map a string composed of a voicename and module to the voicename. Used to
   // uniquely identify a voice across all available modules.
-  scoped_ptr<std::map<std::string, SPDChromeVoice> > all_native_voices_;
+  std::unique_ptr<std::map<std::string, SPDChromeVoice> > all_native_voices_;
 
-  friend struct DefaultSingletonTraits<TtsPlatformImplLinux>;
+  friend struct base::DefaultSingletonTraits<TtsPlatformImplLinux>;
 
   DISALLOW_COPY_AND_ASSIGN(TtsPlatformImplLinux);
 };
@@ -94,6 +94,11 @@ SPDNotificationType TtsPlatformImplLinux::current_notification_ =
 
 TtsPlatformImplLinux::TtsPlatformImplLinux()
     : utterance_id_(0) {
+  const base::CommandLine& command_line =
+      *base::CommandLine::ForCurrentProcess();
+  if (!command_line.HasSwitch(switches::kEnableSpeechDispatcher))
+    return;
+
   BrowserThread::PostTask(BrowserThread::FILE,
                           FROM_HERE,
                           base::Bind(&TtsPlatformImplLinux::Initialize,
@@ -111,7 +116,7 @@ void TtsPlatformImplLinux::Initialize() {
     // http://crbug.com/317360
     ANNOTATE_SCOPED_MEMORY_LEAK;
     conn_ = libspeechd_loader_.spd_open(
-        "chrome", "extension_api", NULL, SPD_MODE_SINGLE);
+        "chrome", "extension_api", NULL, SPD_MODE_THREADED);
   }
   if (!conn_)
     return;
@@ -146,7 +151,7 @@ void TtsPlatformImplLinux::Reset() {
   if (conn_)
     libspeechd_loader_.spd_close(conn_);
   conn_ = libspeechd_loader_.spd_open(
-      "chrome", "extension_api", NULL, SPD_MODE_SINGLE);
+      "chrome", "extension_api", NULL, SPD_MODE_THREADED);
 }
 
 bool TtsPlatformImplLinux::PlatformImplAvailable() {
@@ -186,6 +191,10 @@ bool TtsPlatformImplLinux::Speak(
   // 3 = 100.
   libspeechd_loader_.spd_set_voice_rate(conn_, 100 * log10(rate) / log10(3));
   libspeechd_loader_.spd_set_voice_pitch(conn_, 100 * log10(pitch) / log10(3));
+
+  // Support languages other than the default
+  if (!lang.empty())
+    libspeechd_loader_.spd_set_language(conn_, lang.c_str());
 
   utterance_ = utterance;
   utterance_id_ = utterance_id;
@@ -337,8 +346,9 @@ void TtsPlatformImplLinux::IndexMarkCallback(size_t msg_id,
 
 // static
 TtsPlatformImplLinux* TtsPlatformImplLinux::GetInstance() {
-  return Singleton<TtsPlatformImplLinux,
-                   LeakySingletonTraits<TtsPlatformImplLinux> >::get();
+  return base::Singleton<
+      TtsPlatformImplLinux,
+      base::LeakySingletonTraits<TtsPlatformImplLinux>>::get();
 }
 
 // static

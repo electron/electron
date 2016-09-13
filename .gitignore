@@ -1,9 +1,12 @@
 .DS_Store
+.tags*
+/.idea/
 /build/
 /dist/
 /external_binaries/
 /out/
 /vendor/brightray/vendor/download/
+/vendor/debian_wheezy_amd64-sysroot/
 /vendor/debian_wheezy_arm-sysroot/
 /vendor/debian_wheezy_i386-sysroot/
 /vendor/python_26/
@@ -15,5 +18,13 @@ node_modules/
 *.xcodeproj
 *.swp
 *.pyc
+*.VC.db
+*.VC.VC.opendb
+.vs/
+.vscode/
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+*.sln
 debug.log
 npm-debug.log

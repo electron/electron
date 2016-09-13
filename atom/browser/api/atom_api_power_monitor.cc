@@ -14,8 +14,9 @@ namespace atom {
 
 namespace api {
 
-PowerMonitor::PowerMonitor() {
+PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
   base::PowerMonitor::Get()->AddObserver(this);
+  Init(isolate);
 }
 
 PowerMonitor::~PowerMonitor() {
@@ -46,7 +47,13 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
     return v8::Null(isolate);
   }
 
-  return CreateHandle(isolate, new PowerMonitor).ToV8();
+  return mate::CreateHandle(isolate, new PowerMonitor(isolate)).ToV8();
+}
+
+// static
+void PowerMonitor::BuildPrototype(
+    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "PowerMonitor"));
 }
 
 }  // namespace api
@@ -56,16 +63,19 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
 
 namespace {
 
+using atom::api::PowerMonitor;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
 #if defined(OS_MACOSX)
   base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
 #endif
 
-  using atom::api::PowerMonitor;
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("powerMonitor", PowerMonitor::Create(isolate));
+  dict.Set("PowerMonitor",
+           PowerMonitor::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

@@ -4,7 +4,10 @@
 
 #include "atom/common/platform_util.h"
 
-#include <windows.h>
+#include <windows.h>  // windows.h must be included first
+
+#include <atlbase.h>
+#include <comdef.h>
 #include <commdlg.h>
 #include <dwmapi.h>
 #include <shellapi.h>
@@ -19,10 +22,11 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_co_mem.h"
+#include "base/win/scoped_com_initializer.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
-#include "url/gurl.h"
 #include "ui/base/win/shell.h"
+#include "url/gurl.h"
 
 namespace {
 
@@ -42,11 +46,168 @@ bool ValidateShellCommandForScheme(const std::string& scheme) {
   return true;
 }
 
+// Required COM implementation of IFileOperationProgressSink so we can
+// precheck files before deletion to make sure they can be move to the
+// Recycle Bin.
+class DeleteFileProgressSink : public IFileOperationProgressSink {
+ public:
+  DeleteFileProgressSink();
+
+ private:
+  ULONG STDMETHODCALLTYPE AddRef(void);
+  ULONG STDMETHODCALLTYPE Release(void);
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID* ppvObj);
+  HRESULT STDMETHODCALLTYPE StartOperations(void);
+  HRESULT STDMETHODCALLTYPE FinishOperations(HRESULT);
+  HRESULT STDMETHODCALLTYPE PreRenameItem(
+      DWORD, IShellItem*, LPCWSTR);
+  HRESULT STDMETHODCALLTYPE PostRenameItem(
+      DWORD, IShellItem*, LPCWSTR, HRESULT, IShellItem*);
+  HRESULT STDMETHODCALLTYPE PreMoveItem(
+      DWORD, IShellItem*, IShellItem*, LPCWSTR);
+  HRESULT STDMETHODCALLTYPE PostMoveItem(
+      DWORD, IShellItem*, IShellItem*, LPCWSTR, HRESULT, IShellItem*);
+  HRESULT STDMETHODCALLTYPE PreCopyItem(
+      DWORD, IShellItem*, IShellItem*, LPCWSTR);
+  HRESULT STDMETHODCALLTYPE PostCopyItem(
+      DWORD, IShellItem*, IShellItem*, LPCWSTR, HRESULT, IShellItem*);
+  HRESULT STDMETHODCALLTYPE PreDeleteItem(DWORD, IShellItem*);
+  HRESULT STDMETHODCALLTYPE PostDeleteItem(
+      DWORD, IShellItem*, HRESULT, IShellItem*);
+  HRESULT STDMETHODCALLTYPE PreNewItem(
+      DWORD, IShellItem*, LPCWSTR);
+  HRESULT STDMETHODCALLTYPE PostNewItem(
+      DWORD, IShellItem*, LPCWSTR, LPCWSTR, DWORD, HRESULT, IShellItem*);
+  HRESULT STDMETHODCALLTYPE UpdateProgress(UINT, UINT);
+  HRESULT STDMETHODCALLTYPE ResetTimer(void);
+  HRESULT STDMETHODCALLTYPE PauseTimer(void);
+  HRESULT STDMETHODCALLTYPE ResumeTimer(void);
+
+  ULONG m_cRef;
+};
+
+DeleteFileProgressSink::DeleteFileProgressSink() {
+  m_cRef = 0;
+}
+
+HRESULT DeleteFileProgressSink::PreDeleteItem(DWORD dwFlags, IShellItem*) {
+  if (!(dwFlags & TSF_DELETE_RECYCLE_IF_POSSIBLE)) {
+    // TSF_DELETE_RECYCLE_IF_POSSIBLE will not be set for items that cannot be
+    // recycled.  In this case, we abort the delete operation.  This bubbles
+    // up and stops the Delete in IFileOperation.
+    return E_ABORT;
+  }
+  // Returns S_OK if successful, or an error value otherwise. In the case of an
+  // error value, the delete operation and all subsequent operations pending
+  // from the call to IFileOperation are canceled.
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::QueryInterface(REFIID riid, LPVOID* ppvObj) {
+  // Always set out parameter to NULL, validating it first.
+  if (!ppvObj)
+    return E_INVALIDARG;
+  *ppvObj = nullptr;
+  if (riid == IID_IUnknown || riid == IID_IFileOperationProgressSink) {
+    // Increment the reference count and return the pointer.
+    *ppvObj = reinterpret_cast<IUnknown*>(this);
+    AddRef();
+    return NOERROR;
+  }
+  return E_NOINTERFACE;
+}
+
+ULONG DeleteFileProgressSink::AddRef() {
+  InterlockedIncrement(&m_cRef);
+  return m_cRef;
+}
+
+ULONG DeleteFileProgressSink::Release() {
+  // Decrement the object's internal counter.
+  ULONG ulRefCount = InterlockedDecrement(&m_cRef);
+  if (0 == m_cRef) {
+    delete this;
+  }
+  return ulRefCount;
+}
+
+HRESULT DeleteFileProgressSink::StartOperations() {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::FinishOperations(HRESULT) {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::PreRenameItem(DWORD, IShellItem*, LPCWSTR) {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::PostRenameItem(
+    DWORD, IShellItem*, __RPC__in_string LPCWSTR, HRESULT, IShellItem*) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PreMoveItem(
+    DWORD, IShellItem*, IShellItem*, LPCWSTR) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PostMoveItem(
+    DWORD, IShellItem*, IShellItem*, LPCWSTR, HRESULT, IShellItem*) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PreCopyItem(
+    DWORD, IShellItem*, IShellItem*, LPCWSTR) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PostCopyItem(
+    DWORD, IShellItem*, IShellItem*, LPCWSTR, HRESULT, IShellItem*) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PostDeleteItem(
+    DWORD, IShellItem*, HRESULT, IShellItem*) {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::PreNewItem(
+    DWORD dwFlags, IShellItem*, LPCWSTR) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::PostNewItem(
+    DWORD, IShellItem*, LPCWSTR, LPCWSTR, DWORD, HRESULT, IShellItem*) {
+  return E_NOTIMPL;
+}
+
+HRESULT DeleteFileProgressSink::UpdateProgress(UINT, UINT) {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::ResetTimer() {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::PauseTimer() {
+  return S_OK;
+}
+
+HRESULT DeleteFileProgressSink::ResumeTimer() {
+  return S_OK;
+}
+
 }  // namespace
 
 namespace platform_util {
 
 void ShowItemInFolder(const base::FilePath& full_path) {
+  base::win::ScopedCOMInitializer com_initializer;
+  if (!com_initializer.succeeded())
+    return;
+
   base::FilePath dir = full_path.DirName().AsEndingWithSeparator();
   // ParseDisplayName will fail if the directory is "C:", it must be "C:\\".
   if (dir.empty())
@@ -78,7 +239,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
             (GetProcAddress(shell32_base, "SHOpenFolderAndSelectItems"));
   }
   if (!open_folder_and_select_itemsPtr) {
-    ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+    ui::win::OpenFolderViaShell(dir);
     return;
   }
 
@@ -91,15 +252,19 @@ void ShowItemInFolder(const base::FilePath& full_path) {
   hr = desktop->ParseDisplayName(NULL, NULL,
                                  const_cast<wchar_t *>(dir.value().c_str()),
                                  NULL, &dir_item, NULL);
-  if (FAILED(hr))
+  if (FAILED(hr)) {
+    ui::win::OpenFolderViaShell(dir);
     return;
+  }
 
   base::win::ScopedCoMem<ITEMIDLIST> file_item;
   hr = desktop->ParseDisplayName(NULL, NULL,
       const_cast<wchar_t *>(full_path.value().c_str()),
       NULL, &file_item, NULL);
-  if (FAILED(hr))
+  if (FAILED(hr)) {
+    ui::win::OpenFolderViaShell(dir);
     return;
+  }
 
   const ITEMIDLIST* highlight[] = { file_item };
 
@@ -111,7 +276,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
     // found" even though the file is there.  In these cases, ShellExecute()
     // seems to work as a fallback (although it won't select the file).
     if (hr == ERROR_FILE_NOT_FOUND) {
-      ShellExecute(NULL, L"open", dir.value().c_str(), NULL, NULL, SW_SHOW);
+      ui::win::OpenFolderViaShell(dir);
     } else {
       LPTSTR message = NULL;
       DWORD message_length = FormatMessage(
@@ -124,6 +289,8 @@ void ShowItemInFolder(const base::FilePath& full_path) {
                    << " " << reinterpret_cast<LPTSTR>(&message);
       if (message)
         LocalFree(message);
+
+      ui::win::OpenFolderViaShell(dir);
     }
   }
 }
@@ -135,30 +302,13 @@ void OpenItem(const base::FilePath& full_path) {
     ui::win::OpenFileViaShell(full_path);
 }
 
-bool OpenExternal(const GURL& url) {
+bool OpenExternal(const base::string16& url, bool activate) {
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
-  std::string escaped_url = url.spec();
-  escaped_url.insert(0, "\"");
-  escaped_url += "\"";
+  base::string16 escaped_url = L"\"" + url + L"\"";
 
-  // According to Mozilla in uriloader/exthandler/win/nsOSHelperAppService.cpp:
-  // "Some versions of windows (Win2k before SP3, Win XP before SP1) crash in
-  // ShellExecute on long URLs (bug 161357 on bugzilla.mozilla.org). IE 5 and 6
-  // support URLS of 2083 chars in length, 2K is safe."
-  const size_t kMaxUrlLength = 2048;
-  if (escaped_url.length() > kMaxUrlLength) {
-    NOTREACHED();
-    return false;
-  }
-
-  if (base::win::GetVersion() < base::win::VERSION_WIN7) {
-    if (!ValidateShellCommandForScheme(url.scheme()))
-      return false;
-  }
-
-  if (reinterpret_cast<ULONG_PTR>(ShellExecuteA(NULL, "open",
+  if (reinterpret_cast<ULONG_PTR>(ShellExecuteW(NULL, L"open",
                                                 escaped_url.c_str(), NULL, NULL,
                                                 SW_SHOWNORMAL)) <= 32) {
     // We fail to execute the call. We could display a message to the user.
@@ -170,32 +320,53 @@ bool OpenExternal(const GURL& url) {
 }
 
 bool MoveItemToTrash(const base::FilePath& path) {
-  // SHFILEOPSTRUCT wants the path to be terminated with two NULLs,
-  // so we have to use wcscpy because wcscpy_s writes non-NULLs
-  // into the rest of the buffer.
-  wchar_t double_terminated_path[MAX_PATH + 1] = {0};
-#pragma warning(suppress:4996)  // don't complain about wcscpy deprecation
-  wcscpy(double_terminated_path, path.value().c_str());
-
-  SHFILEOPSTRUCT file_operation = {0};
-  file_operation.wFunc = FO_DELETE;
-  file_operation.pFrom = double_terminated_path;
-  file_operation.fFlags = FOF_ALLOWUNDO | FOF_SILENT | FOF_NOCONFIRMATION;
-  int err = SHFileOperation(&file_operation);
-
-  // Since we're passing flags to the operation telling it to be silent,
-  // it's possible for the operation to be aborted/cancelled without err
-  // being set (although MSDN doesn't give any scenarios for how this can
-  // happen).  See MSDN for SHFileOperation and SHFILEOPTSTRUCT.
-  if (file_operation.fAnyOperationsAborted)
+  base::win::ScopedCOMInitializer com_initializer;
+  if (!com_initializer.succeeded())
     return false;
 
-  // Some versions of Windows return ERROR_FILE_NOT_FOUND (0x2) when deleting
-  // an empty directory and some return 0x402 when they should be returning
-  // ERROR_FILE_NOT_FOUND. MSDN says Vista and up won't return 0x402.  Windows 7
-  // can return DE_INVALIDFILES (0x7C) for nonexistent directories.
-  return (err == 0 || err == ERROR_FILE_NOT_FOUND || err == 0x402 ||
-          err == 0x7C);
+  base::win::ScopedComPtr<IFileOperation> pfo;
+  if (FAILED(pfo.CreateInstance(CLSID_FileOperation)))
+    return false;
+
+  // Elevation prompt enabled for UAC protected files.  This overrides the
+  // SILENT, NO_UI and NOERRORUI flags.
+
+  if (base::win::GetVersion() >= base::win::VERSION_WIN8) {
+    // Windows 8 introduces the flag RECYCLEONDELETE and deprecates the
+    // ALLOWUNDO in favor of ADDUNDORECORD.
+    if (FAILED(pfo->SetOperationFlags(FOF_NO_UI |
+                                      FOFX_ADDUNDORECORD |
+                                      FOF_NOERRORUI |
+                                      FOF_SILENT |
+                                      FOFX_SHOWELEVATIONPROMPT |
+                                      FOFX_RECYCLEONDELETE)))
+      return false;
+  } else {
+    // For Windows 7 and Vista, RecycleOnDelete is the default behavior.
+    if (FAILED(pfo->SetOperationFlags(FOF_NO_UI |
+                                      FOF_ALLOWUNDO |
+                                      FOF_NOERRORUI |
+                                      FOF_SILENT |
+                                      FOFX_SHOWELEVATIONPROMPT)))
+      return false;
+  }
+
+  // Create an IShellItem from the supplied source path.
+  base::win::ScopedComPtr<IShellItem> delete_item;
+  if (FAILED(SHCreateItemFromParsingName(path.value().c_str(),
+                                         NULL,
+                                         IID_PPV_ARGS(delete_item.Receive()))))
+    return false;
+
+  base::win::ScopedComPtr<IFileOperationProgressSink> delete_sink(
+      new DeleteFileProgressSink);
+  if (!delete_sink)
+    return false;
+
+  // Processes the queued command DeleteItem. This will trigger
+  // the DeleteFileProgressSink to check for Recycle Bin.
+  return SUCCEEDED(pfo->DeleteItem(delete_item.get(), delete_sink.get())) &&
+         SUCCEEDED(pfo->PerformOperations());
 }
 
 void Beep() {

@@ -8,6 +8,9 @@
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "ui/events/event_constants.h"
+
+#include "atom/common/node_includes.h"
 
 namespace mate {
 
@@ -34,11 +37,13 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
 
 }  // namespace
 
-EventEmitter::EventEmitter() {
-}
+namespace internal {
 
-v8::Local<v8::Object> EventEmitter::CreateJSEvent(
-    v8::Isolate* isolate, content::WebContents* sender, IPC::Message* message) {
+v8::Local<v8::Object> CreateJSEvent(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> object,
+    content::WebContents* sender,
+    IPC::Message* message) {
   v8::Local<v8::Object> event;
   bool use_native_event = sender && message;
 
@@ -49,16 +54,29 @@ v8::Local<v8::Object> EventEmitter::CreateJSEvent(
   } else {
     event = CreateEventObject(isolate);
   }
-  mate::Dictionary(isolate, event).Set("sender", GetWrapper(isolate));
+  mate::Dictionary(isolate, event).Set("sender", object);
   return event;
 }
 
-v8::Local<v8::Object> EventEmitter::CreateCustomEvent(
-    v8::Isolate* isolate, v8::Local<v8::Object> custom_event) {
+v8::Local<v8::Object> CreateCustomEvent(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> object,
+    v8::Local<v8::Object> custom_event) {
   v8::Local<v8::Object> event = CreateEventObject(isolate);
   (void)event->SetPrototype(custom_event->CreationContext(), custom_event);
-  mate::Dictionary(isolate, event).Set("sender", GetWrapper(isolate));
+  mate::Dictionary(isolate, event).Set("sender", object);
   return event;
 }
+
+v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags) {
+  mate::Dictionary obj = mate::Dictionary::CreateEmpty(isolate);
+  obj.Set("shiftKey", static_cast<bool>(flags & ui::EF_SHIFT_DOWN));
+  obj.Set("ctrlKey", static_cast<bool>(flags & ui::EF_CONTROL_DOWN));
+  obj.Set("altKey", static_cast<bool>(flags & ui::EF_ALT_DOWN));
+  obj.Set("metaKey", static_cast<bool>(flags & ui::EF_COMMAND_DOWN));
+  return obj.GetHandle();
+}
+
+}  // namespace internal
 
 }  // namespace mate

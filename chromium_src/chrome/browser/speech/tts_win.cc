@@ -15,26 +15,26 @@
 
 class TtsPlatformImplWin : public TtsPlatformImpl {
  public:
-  virtual bool PlatformImplAvailable() {
+  bool PlatformImplAvailable() override {
     return true;
   }
 
-  virtual bool Speak(
+  bool Speak(
       int utterance_id,
       const std::string& utterance,
       const std::string& lang,
       const VoiceData& voice,
-      const UtteranceContinuousParameters& params);
+      const UtteranceContinuousParameters& params) override;
 
-  virtual bool StopSpeaking();
+  bool StopSpeaking() override;
 
-  virtual void Pause();
+  void Pause() override;
 
-  virtual void Resume();
+  void Resume() override;
 
-  virtual bool IsSpeaking();
+  bool IsSpeaking() override;
 
-  virtual void GetVoices(std::vector<VoiceData>* out_voices) override;
+  void GetVoices(std::vector<VoiceData>* out_voices) override;
 
   // Get the single instance of this class.
   static TtsPlatformImplWin* GetInstance();
@@ -43,7 +43,7 @@ class TtsPlatformImplWin : public TtsPlatformImpl {
 
  private:
   TtsPlatformImplWin();
-  virtual ~TtsPlatformImplWin() {}
+  ~TtsPlatformImplWin() override {}
 
   void OnSpeechEvent();
 
@@ -57,7 +57,7 @@ class TtsPlatformImplWin : public TtsPlatformImpl {
   int char_position_;
   bool paused_;
 
-  friend struct DefaultSingletonTraits<TtsPlatformImplWin>;
+  friend struct base::DefaultSingletonTraits<TtsPlatformImplWin>;
 
   DISALLOW_COPY_AND_ASSIGN(TtsPlatformImplWin);
 };
@@ -87,7 +87,7 @@ bool TtsPlatformImplWin::Speak(
     //   0.1 -> -10
     //   1.0 -> 0
     //  10.0 -> 10
-    speech_synthesizer_->SetRate(static_cast<int32>(10 * log10(params.rate)));
+    speech_synthesizer_->SetRate(static_cast<int32_t>(10 * log10(params.rate)));
   }
 
   if (params.pitch >= 0.0) {
@@ -102,7 +102,7 @@ bool TtsPlatformImplWin::Speak(
 
   if (params.volume >= 0.0) {
     // The TTS api allows a range of 0 to 100 for speech volume.
-    speech_synthesizer_->SetVolume(static_cast<uint16>(params.volume * 100));
+    speech_synthesizer_->SetVolume(static_cast<uint16_t>(params.volume * 100));
   }
 
   // TODO(dmazzoni): convert SSML to SAPI xml. http://crbug.com/88072
@@ -220,6 +220,8 @@ void TtsPlatformImplWin::OnSpeechEvent() {
           utterance_id_, TTS_EVENT_SENTENCE, char_position_,
           std::string());
       break;
+    default:
+      break;
     }
   }
 }
@@ -246,8 +248,8 @@ TtsPlatformImplWin::TtsPlatformImplWin()
 
 // static
 TtsPlatformImplWin* TtsPlatformImplWin::GetInstance() {
-  return Singleton<TtsPlatformImplWin,
-                   LeakySingletonTraits<TtsPlatformImplWin> >::get();
+  return base::Singleton<TtsPlatformImplWin,
+                         base::LeakySingletonTraits<TtsPlatformImplWin>>::get();
 }
 
 // static

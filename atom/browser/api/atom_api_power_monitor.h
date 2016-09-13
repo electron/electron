@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 #define ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 
-#include "atom/browser/api/event_emitter.h"
+#include "atom/browser/api/trackable_object.h"
 #include "base/compiler_specific.h"
 #include "base/power_monitor/power_observer.h"
 #include "native_mate/handle.h"
@@ -14,14 +14,17 @@ namespace atom {
 
 namespace api {
 
-class PowerMonitor : public mate::EventEmitter,
+class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
                      public base::PowerObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype);
+
  protected:
-  PowerMonitor();
-  virtual ~PowerMonitor();
+  explicit PowerMonitor(v8::Isolate* isolate);
+  ~PowerMonitor() override;
 
   // base::PowerObserver implementations:
   void OnPowerStateChange(bool on_battery_power) override;

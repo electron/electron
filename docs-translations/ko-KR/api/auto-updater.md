@@ -1,86 +1,61 @@
 ﻿# autoUpdater
 
-**이 모듈은 현재 OS X에서만 사용할 수 있습니다.**
+> 애플리케이션이 자동으로 업데이트를 진행할 수 있도록 기능을 활성화합니다.
 
-Windows 인스톨러를 생성하려면 [atom/grunt-electron-installer](https://github.com/atom/grunt-electron-installer)를 참고하세요.
+`autoUpdater` 모듈은 [Squirrel](https://github.com/Squirrel) 프레임워크에 대한
+인터페이스를 제공합니다.
 
-`auto-updater` 모듈은 [Squirrel.Mac](https://github.com/Squirrel/Squirrel.Mac) 프레임워크의 간단한 wrapper 입니다.
+다음 프로젝트 중 하나를 선택하여, 애플리케이션을 배포하기 위한 멀티-플랫폼 릴리즈
+서버를 손쉽게 구축할 수 있습니다:
 
-Squirrel.Mac은 업데이트 설치를 위해 `.app` 폴더에
-[codesign](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man1/codesign.1.html)
-툴을 사용한 서명을 요구합니다.
+- [nuts][nuts]: *애플리케이션을 위한 똑똑한 릴리즈 서버이며 GitHub를 백엔드로
+  사용합니다. Squirrel을 통해 자동 업데이트를 지원합니다. (Mac & Windows)*
+- [electron-release-server][electron-release-server]: *완벽하게 모든 기능을
+지원하는 electron 애플리케이션을 위한 자가 호스트 릴리즈 서버입니다. autoUpdater와
+호환됩니다*
+- [squirrel-updates-server][squirrel-updates-server]: *GitHub 릴리즈를 사용하는
+Squirrel.Mac 와 Squirrel.Windows를 위한 간단한 node.js 기반 서버입니다*
 
-## Squirrel
+## 플랫폼별 참고 사항
 
-Squirrel은 어플리케이션이 **안전하고 투명한 업데이트**를 제공할 수 있도록 하는데 초점이 맞춰진 OS X 프레임워크입니다.
+`autoUpdater`는 기본적으로 모든 플랫폼에 대해 같은 API를 제공하지만, 여전히 플랫폼별로
+약간씩 다른 점이 있습니다.
 
-Squirrel은 사용자에게 어플리케이션의 업데이트를 알릴 필요 없이 자동으로 서버가 지시하는 버전을 받아 어플리케이션을 업데이트합니다.
-지능적으로 클라이언트 어플리케이션을 업데이트 할 수 있습니다.
+### macOS
 
-업데이트 요청은 커스텀 헤더 또는 요청 본문에 인증 정보를 포함시킬 수 있습니다.
-이에 따라 서버에선 이러한 요청을 분석 처리하여 사용자에게 적당한 업데이트를 제공할 수 있습니다.
+macOS에선 `autoUpdater`가 [Squirrel.Mac][squirrel-mac]를 기반으로 작동합니다.
+따라서 이 모듈을 작동시키기 위해 특별히 준비해야 할 작업은 없습니다.
+서버 사이드 요구 사항은 [서버 지원][server-support]을 참고하세요.
 
-Squirrel JSON 업데이트 요청시 처리는 반드시 어떤 업데이트가 필요한지 요청의 기준에 맞춰 동적으로 생성되어야 합니다.
-Squirrel은 사용해야 하는 업데이트 선택하는 과정을 서버에 의존합니다. [서버 지원](#서버-지원)을 참고하세요.
+**참고:** macOS에서 자동 업데이트를 지원하려면 반드시 사인이 되어있어야 합니다.
+이것은 `Squirrel.Mac`의 요구 사항입니다.
 
-Squirrel의 인스톨러는 오류에 관대하게 설계되었습니다. 그리고 업데이트가 유효한지 확인합니다.
+### Windows
 
-## 업데이트 요청
+Windows에선 `autoUpdater`를 사용하기 전에 애플리케이션을 사용자의 장치에
+설치해야 합니다. [electron-winstaller][installer-lib],
+[electron-builder][electron-builder-lib] 또는
+[grunt-electron-installer][installer]를 사용하여 애플리케이션 인스톨러를 만드는 것을
+권장합니다.
 
-Squirrel은 클라이언트 어플리케이션이 업데이트 확인을 위해 제공하는 요청을 무시합니다.
-Squirrel이 응답을 분석할 수 있어야하기 때문에 요청 헤더에 `Accept: application/json` 헤더가 추가됩니다.
+Windows에선 `autoUpdater` 모듈을 사용하기 전에 사용자의 장치에 애플리케이션을
+설치해야 합니다. 따라서 [electron-winstaller][installer-lib] 모듈이나
+[grunt-electron-installer][installer] 패키지를 사용하여 애플리케이션 인스톨러를
+만드는 것을 권장합니다.
 
-업데이트 응답과 본문 포맷에 대한 요구 사항은 [서버 지원](#서버-지원)를 참고하세요.
+Squirrel로 생성된 인스톨러는 [Application User Model ID][app-user-model-id]와 함께
+`com.squirrel.PACKAGE_ID.YOUR_EXE_WITHOUT_DOT_EXE`으로 형식화된 바로가기 아이콘을
+생성합니다. `com.squirrel.slack.Slack` 과 `com.squirrel.code.Code`가 그 예시입니다.
+`app.setAppUserModelId` API를 통해 애플리케이션 ID를 동일하게 유지해야 합니다. 그렇지
+않으면 Windows 작업 표시줄에 애플리케이션을 고정할 때 제대로 적용되지 않을 수 있습니다.
 
-업데이트 요청에는 서버가 해당 어플리케이션이 어떤 버전을 사용해야 하는지 판단하기 위해 *반드시* 버전 식별자를 포함시켜야 합니다.
-추가로 OS 버전, 사용자 이름 같은 다른 식별 기준을 포함하여 서버에서 적합한 어플리케이션을 제공할 수 있도록 할 수 있습니다.
+서버 사이드 요구 사항 또한 macOS와 다르게 적용됩니다. 자세한 내용은
+[Squirrel.Windows][squirrel-windows]를 참고하세요.
 
-버전 식별자와 다른 기준을 특정하는 업데이트 요청 폼을 서버로 전달하기 위한 공통적인 방법으로 쿼리 인자를 사용하는 방법이 있습니다:
+### Linux
 
-```javascript
-// In the main process
-var app = require('app');
-var autoUpdater = require('auto-updater');
-autoUpdater.setFeedUrl('http://mycompany.com/myapp/latest?version=' + app.getVersion());
-```
-
-## 서버 지원
-
-업데이트를 제공하는 서버는 반드시 클라이언트로부터 받은 [업데이트 요청](#업데이트-요청)을 기반으로 업데이트를 처리할 수 있어야 합니다.
-
-만약 업데이트 요청이 들어오면 서버는 반드시 [200 OK](http://tools.ietf.org/html/rfc2616#section-10.2.1) 상태 코드를 포함한
-[업데이트 JSON](#update-json-format)을 본문으로 보내야 합니다.
-이 응답을 받으면 Squirrel은 이 업데이트를 다운로드할 것입니다. 참고로 현재 설치된 버전과 서버에서 받아온 새로운 버전이 같아도 상관하지 않고 무조건 받습니다.
-업데이트시 버전 중복을 피하려면 서버에서 클라이언트 업데이트 요청에 대해 통보하지 않으면 됩니다.
-
-만약 따로 업데이트가 없다면 [204 No Content](http://tools.ietf.org/html/rfc2616#section-10.2.5) 상태 코드를 반환해야 합니다.
-Squirrel은 지정한 시간이 지난 후 다시 업데이트를 확인합니다.
-
-## JSON 포맷 업데이트
-
-업데이트가 사용 가능한 경우 Squirrel은 다음과 같은 구조의 json 데이터를 응답으로 받습니다:
-
-```json
-{
-  "url": "http://mycompany.com/myapp/releases/myrelease",
-  "name": "My Release Name",
-  "notes": "Theses are some release notes innit",
-  "pub_date": "2013-09-18T12:29:53+01:00"
-}
-```
-
-응답 json 데이터에서 "url" 키는 필수적으로 포함해야 하고 다른 키들은 옵션입니다.
-
-Squirrel은 "url"로 `Accept: application/zip` 헤더와 함께 업데이트 zip 파일을 요청합니다.
-향후 업데이트 포맷에 대해 서버에서 적절한 포맷을 반환할 수 있도록 MIME 타입을 `Accept` 헤더에 담아 요청합니다.
-
-`pub_date`은 ISO 8601 표준에 따라 포맷된 날짜입니다.
-
-## 업데이트 서버 구현
-
-[Nuts](https://github.com/GitbookIO/nuts)는 위에서 설명한 업데이트 서버의 오픈 소스 구현입니다.
-이 구현은 Github 릴리즈와 완벽하게 통합되어 있습니다. Nuts는 `Squirrel.Mac`과 `Squirrel.Windows`를 지원하고 다운로드와 업데이트를 관리합니다.
-이 구현을 사용하면 cross-platform 지원을 신경 쓸 필요가 없습니다.
+Linux는 따로 `autoUpdater`를 지원하지 않습니다.
+각 배포판의 패키지 관리자를 통해 애플리케이션 업데이트를 제공하는 것을 권장합니다.
 
 ## Events
 
@@ -88,10 +63,11 @@ Squirrel은 "url"로 `Accept: application/zip` 헤더와 함께 업데이트 zip
 
 ### Event: 'error'
 
-* `event` Event
-* `message` String
+Returns:
 
-업데이트시 에러가 나면 발생하는 이벤트입니다.
+* `error` Error
+
+업데이트에 문제가 생기면 발생하는 이벤트입니다.
 
 ### Event: 'checking-for-update'
 
@@ -107,25 +83,44 @@ Squirrel은 "url"로 `Accept: application/zip` 헤더와 함께 업데이트 zip
 
 ### Event: 'update-downloaded'
 
+Returns:
+
 * `event` Event
 * `releaseNotes` String
 * `releaseName` String
 * `releaseDate` Date
-* `updateUrl` String
-* `quitAndUpdate` Function
+* `updateURL` String
 
-업데이트의 다운로드가 완료되었을 때 발생하는 이벤트입니다. `quitAndUpdate()`를 호출하면 어플리케이션을 종료하고 업데이트를 설치합니다.
+업데이트의 다운로드가 완료되었을 때 발생하는 이벤트입니다.
 
 ## Methods
 
 `autoUpdater` 객체에서 사용할 수 있는 메서드입니다:
 
-### `autoUpdater.setFeedUrl(url)`
+### `autoUpdater.setFeedURL(url[, requestHeaders])`
 
 * `url` String
+* `requestHeaders` Object _macOS_ - HTTP 요청 헤더.
 
-`url`을 설정하고 자동 업데이터를 초기화합니다. `url`은 한번 설정되면 변경할 수 없습니다.
+`url`을 설정하고 자동 업데이터를 초기화합니다.
 
 ### `autoUpdater.checkForUpdates()`
 
-서버에 새로운 업데이트가 있는지 요청을 보내 확인합니다. API를 사용하기 전에 `setFeedUrl`를 호출해야 합니다.
+서버에 새로운 업데이트가 있는지 요청을 보내 확인합니다. API를 사용하기 전에
+`setFeedURL`를 호출해야 합니다.
+
+### `autoUpdater.quitAndInstall()`
+
+애플리케이션을 다시 시작하고 다운로드된 업데이트를 설치합니다.
+이 메서드는 `update-downloaded` 이벤트가 발생한 이후에만 사용할 수 있습니다.
+
+[squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
+[server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support
+[squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
+[installer]: https://github.com/electron/grunt-electron-installer
+[installer-lib]: https://github.com/electron/windows-installer
+[electron-builder-lib]: https://github.com/electron-userland/electron-builder
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[electron-release-server]: https://github.com/ArekSredzki/electron-release-server
+[squirrel-updates-server]: https://github.com/Aluxian/squirrel-updates-server
+[nuts]: https://github.com/GitbookIO/nuts

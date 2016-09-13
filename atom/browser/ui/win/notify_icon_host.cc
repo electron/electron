@@ -15,7 +15,7 @@
 #include "base/win/win_util.h"
 #include "base/win/wrapped_window_proc.h"
 #include "ui/events/event_constants.h"
-#include "ui/gfx/screen.h"
+#include "ui/events/win/system_event_state_lookup.h"
 #include "ui/gfx/win/hwnd_util.h"
 
 namespace atom {
@@ -36,11 +36,11 @@ bool IsWinPressed() {
 
 int GetKeyboardModifers() {
   int modifiers = ui::EF_NONE;
-  if (base::win::IsShiftPressed())
+  if (ui::win::IsShiftPressed())
     modifiers |= ui::EF_SHIFT_DOWN;
-  if (base::win::IsCtrlPressed())
+  if (ui::win::IsCtrlPressed())
     modifiers |= ui::EF_CONTROL_DOWN;
-  if (base::win::IsAltPressed())
+  if (ui::win::IsAltPressed())
     modifiers |= ui::EF_ALT_DOWN;
   if (IsWinPressed())
     modifiers |= ui::EF_COMMAND_DOWN;
@@ -172,10 +172,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       case WM_CONTEXTMENU:
         // Walk our icons, find which one was clicked on, and invoke its
         // HandleClickEvent() method.
-        gfx::Point cursor_pos(
-            gfx::Screen::GetNativeScreen()->GetCursorScreenPoint());
         win_icon->HandleClickEvent(
-            cursor_pos,
             GetKeyboardModifers(),
             (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
             (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK));

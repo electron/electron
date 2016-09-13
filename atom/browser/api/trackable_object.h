@@ -8,10 +8,10 @@
 #include <vector>
 
 #include "atom/browser/api/event_emitter.h"
-#include "atom/common/id_weak_map.h"
+#include "atom/common/key_weak_map.h"
 #include "base/bind.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "native_mate/object_template_builder.h"
 
 namespace base {
 class SupportsUserData;
@@ -20,7 +20,7 @@ class SupportsUserData;
 namespace mate {
 
 // Users should use TrackableObject instead.
-class TrackableObjectBase : public mate::EventEmitter {
+class TrackableObjectBase {
  public:
   TrackableObjectBase();
 
@@ -30,26 +30,25 @@ class TrackableObjectBase : public mate::EventEmitter {
   // Wrap TrackableObject into a class that SupportsUserData.
   void AttachAsUserData(base::SupportsUserData* wrapped);
 
-  // Subclasses should implement this to destroy their native types.
-  virtual void Destroy() = 0;
-
  protected:
-  ~TrackableObjectBase() override;
+  virtual ~TrackableObjectBase();
 
-  // mate::Wrappable:
-  void AfterInit(v8::Isolate* isolate) override;
+  // Returns a closure that can destroy the native class.
+  base::Closure GetDestroyClosure();
 
   // Get the weak_map_id from SupportsUserData.
   static int32_t GetIDFromWrappedClass(base::SupportsUserData* wrapped);
 
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
-  static void RegisterDestructionCallback(const base::Closure& closure);
+  static base::Closure RegisterDestructionCallback(const base::Closure& c);
 
   int32_t weak_map_id_;
-  base::SupportsUserData* wrapped_;
 
  private:
+  void Destroy();
+
+  base::Closure cleanup_;
   base::WeakPtrFactory<TrackableObjectBase> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObjectBase);
@@ -58,8 +57,14 @@ class TrackableObjectBase : public mate::EventEmitter {
 // All instances of TrackableObject will be kept in a weak map and can be got
 // from its ID.
 template<typename T>
-class TrackableObject : public TrackableObjectBase {
+class TrackableObject : public TrackableObjectBase,
+                        public mate::EventEmitter<T> {
  public:
+  // Mark the JS object as destroyed.
+  void MarkDestroyed() {
+    Wrappable<T>::GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
+  }
+
   // Finds out the TrackableObject from its ID in weak map.
   static T* FromWeakMapID(v8::Isolate* isolate, int32_t id) {
     if (!weak_map_)
@@ -91,11 +96,6 @@ class TrackableObject : public TrackableObjectBase {
       return std::vector<v8::Local<v8::Object>>();
   }
 
-  TrackableObject() {
-    RegisterDestructionCallback(
-        base::Bind(&TrackableObject<T>::ReleaseAllWeakReferences));
-  }
-
   // Removes this instance from the weak map.
   void RemoveFromWeakMap() {
     if (weak_map_ && weak_map_->Has(weak_map_id()))
@@ -103,30 +103,33 @@ class TrackableObject : public TrackableObjectBase {
   }
 
  protected:
+  TrackableObject() {}
+
   ~TrackableObject() override {
     RemoveFromWeakMap();
   }
 
-  void AfterInit(v8::Isolate* isolate) override {
-    if (!weak_map_)
-      weak_map_.reset(new atom::IDWeakMap);
-    weak_map_id_ = weak_map_->Add(isolate, GetWrapper(isolate));
-    TrackableObjectBase::AfterInit(isolate);
+  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override {
+    WrappableBase::InitWith(isolate, wrapper);
+    if (!weak_map_) {
+      weak_map_ = new atom::KeyWeakMap<int32_t>;
+    }
+    weak_map_id_ = ++next_id_;
+    weak_map_->Set(isolate, weak_map_id_, wrapper);
   }
 
  private:
-  // Releases all weak references in weak map, called when app is terminating.
-  static void ReleaseAllWeakReferences() {
-    weak_map_.reset();
-  }
-
-  static scoped_ptr<atom::IDWeakMap> weak_map_;
+  static int32_t next_id_;
+  static atom::KeyWeakMap<int32_t>* weak_map_;  // leaked on purpose
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };
 
 template<typename T>
-scoped_ptr<atom::IDWeakMap> TrackableObject<T>::weak_map_;
+int32_t TrackableObject<T>::next_id_ = 0;
+
+template<typename T>
+atom::KeyWeakMap<int32_t>* TrackableObject<T>::weak_map_ = nullptr;
 
 }  // namespace mate
 

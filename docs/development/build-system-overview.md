@@ -1,13 +1,14 @@
 # Build System Overview
 
-Electron uses `gyp` for project generation and `ninja` for building. Project
-configurations can be found in the `.gyp` and `.gypi` files.
+Electron uses [gyp](https://gyp.gsrc.io/) for project generation and
+[ninja](https://ninja-build.org/) for building. Project configurations can
+be found in the `.gyp` and `.gypi` files.
 
 ## Gyp Files
 
 Following `gyp` files contain the main rules for building Electron:
 
-* `atom.gyp` defines how Electron itself is built.
+* `electron.gyp` defines how Electron itself is built.
 * `common.gypi` adjusts the build configurations of Node to make it build
   together with Chromium.
 * `vendor/brightray/brightray.gyp` defines how `brightray` is built and
@@ -51,7 +52,7 @@ $ ./script/bootstrap.py --dev
 $ ./script/build.py -c D
 ```
 
-## Two-Phrase Project Generation
+## Two-Phase Project Generation
 
 Electron links with different sets of libraries in `Release` and `Debug`
 builds. `gyp`, however, doesn't support configuring different link settings for

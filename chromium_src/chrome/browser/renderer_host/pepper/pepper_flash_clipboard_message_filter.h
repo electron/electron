@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "base/basictypes.h"
-#include "base/compiler_specific.h"
 #include "ppapi/host/resource_message_filter.h"
 #include "ppapi/shared_impl/flash_clipboard_format_registry.h"
 

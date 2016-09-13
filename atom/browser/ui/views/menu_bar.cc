@@ -17,7 +17,6 @@
 #if defined(OS_WIN)
 #include "ui/gfx/color_utils.h"
 #elif defined(USE_X11)
-#include "chrome/browser/ui/libgtk2ui/owned_widget_gtk2.h"
 #include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #endif
 
@@ -33,15 +32,16 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 #if defined(USE_X11)
 void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
                      SkColor* hover, SkColor* background) {
-  libgtk2ui::OwnedWidgetGtk fake_menu_bar;
-  fake_menu_bar.Own(gtk_menu_bar_new());
+  GtkWidget* menu_bar = gtk_menu_bar_new();
 
-  GtkStyle* style = gtk_rc_get_style(fake_menu_bar.get());
+  GtkStyle* style = gtk_rc_get_style(menu_bar);
   *enabled = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_NORMAL]);
   *disabled = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_INSENSITIVE]);
   *highlight = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_SELECTED]);
   *hover = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_PRELIGHT]);
   *background = libgtk2ui::GdkColorToSkColor(style->bg[GTK_STATE_NORMAL]);
+
+  gtk_widget_destroy(menu_bar);
 }
 #endif
 
@@ -50,14 +50,7 @@ void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
 MenuBar::MenuBar()
     : background_color_(kDefaultColor),
       menu_model_(NULL) {
-#if defined(OS_WIN)
-  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
-#elif defined(USE_X11)
-  GetMenuBarColor(&enabled_color_, &disabled_color_, &highlight_color_,
-                  &hover_color_, &background_color_);
-#endif
-
-  set_background(views::Background::CreateSolidBackground(background_color_));
+  UpdateMenuBarColor();
   SetLayoutManager(new views::BoxLayout(
       views::BoxLayout::kHorizontal, 0, 0, 0));
 }
@@ -65,7 +58,7 @@ MenuBar::MenuBar()
 MenuBar::~MenuBar() {
 }
 
-void MenuBar::SetMenu(ui::MenuModel* model) {
+void MenuBar::SetMenu(AtomMenuModel* model) {
   menu_model_ = model;
   RemoveAllChildViews(true);
 
@@ -104,7 +97,7 @@ int MenuBar::GetAcceleratorIndex(base::char16 key) {
 void MenuBar::ActivateAccelerator(base::char16 key) {
   int i = GetAcceleratorIndex(key);
   if (i != -1)
-    static_cast<SubmenuButton*>(child_at(i))->Activate();
+    static_cast<SubmenuButton*>(child_at(i))->Activate(nullptr);
 }
 
 int MenuBar::GetItemCount() const {
@@ -112,7 +105,7 @@ int MenuBar::GetItemCount() const {
 }
 
 bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
-                                           ui::MenuModel** menu_model,
+                                           AtomMenuModel** menu_model,
                                            views::MenuButton** button) {
   gfx::Point location(point);
   views::View::ConvertPointFromScreen(this, &location);
@@ -124,7 +117,7 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
   for (int i = 0; i < child_count(); ++i) {
     views::View* view = child_at(i);
     if (view->bounds().Contains(location) &&
-        (menu_model_->GetTypeAt(i) == ui::MenuModel::TYPE_SUBMENU)) {
+        (menu_model_->GetTypeAt(i) == AtomMenuModel::TYPE_SUBMENU)) {
       *menu_model = menu_model_->GetSubmenuModelAt(i);
       *button = static_cast<views::MenuButton*>(view);
       return true;
@@ -141,22 +134,38 @@ const char* MenuBar::GetClassName() const {
 void MenuBar::ButtonPressed(views::Button* sender, const ui::Event& event) {
 }
 
-void MenuBar::OnMenuButtonClicked(views::View* source,
-                                  const gfx::Point& point) {
+void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
+                                  const gfx::Point& point,
+                                  const ui::Event* event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(false);
 
   if (!menu_model_)
     return;
 
-  views::MenuButton* button = static_cast<views::MenuButton*>(source);
-  int id = button->tag();
-  ui::MenuModel::ItemType type = menu_model_->GetTypeAt(id);
-  if (type != ui::MenuModel::TYPE_SUBMENU)
+  int id = source->tag();
+  AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);
+  if (type != AtomMenuModel::TYPE_SUBMENU) {
+    menu_model_->ActivatedAt(id, 0);
     return;
+  }
 
-  menu_delegate_.reset(new MenuDelegate(this));
-  menu_delegate_->RunMenu(menu_model_->GetSubmenuModelAt(id), button);
+  MenuDelegate menu_delegate(this);
+  menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), source);
+}
+
+void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
+  UpdateMenuBarColor();
+}
+
+void MenuBar::UpdateMenuBarColor() {
+#if defined(OS_WIN)
+  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
+#elif defined(USE_X11)
+  GetMenuBarColor(&enabled_color_, &disabled_color_, &highlight_color_,
+                  &hover_color_, &background_color_);
+#endif
+  set_background(views::Background::CreateSolidBackground(background_color_));
 }
 
 }  // namespace atom

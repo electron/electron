@@ -13,23 +13,24 @@
   // Disable use of deprecated functions.
   process.throwDeprecation = true;
 
+  var path = require('path');
+  var electron = require ('electron');
+  var remote = electron.remote;
+  var ipcRenderer = electron.ipcRenderer;
+
   // Check if we are running in CI.
-  var argv = require('remote').process.argv;
-  var isCi = argv[2] == '--ci';
+  var isCi = remote.getGlobal('isCi')
 
   if (!isCi) {
-    var win = require('remote').getCurrentWindow();
+    var win = remote.getCurrentWindow();
     win.show();
     win.focus();
   }
 
   // Show DevTools.
   document.oncontextmenu = function(e) {
-    require('remote').getCurrentWindow().inspectElement(e.clientX, e.clientY);
+    remote.getCurrentWindow().inspectElement(e.clientX, e.clientY);
   }
-
-  require('coffee-script/register');  // Supports .coffee tests.
-  var ipc = require('ipc');
 
   // Rediret all output to browser.
   if (isCi) {
@@ -37,19 +38,33 @@
       return {
         log: function() {
           args = Array.prototype.slice.call(arguments);
-          ipc.send('console.log', args);
+          ipcRenderer.send('console.log', args);
         },
         error: function() {
           args = Array.prototype.slice.call(arguments);
-          ipc.send('console.error', args);
+          ipcRenderer.send('console.error', args);
         },
       }
     });
   }
 
+  var Coverage = require('electabul').Coverage;
+
   var Mocha = require('mocha');
 
   var mocha = new Mocha();
+
+  if (isCi) {
+    mocha.grep = function () {
+      try {
+        throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
+      } catch (error) {
+        console.error(error.stack || error)
+      }
+      ipcRenderer.send('process.exit', 1)
+    }
+  }
+
   mocha.ui('bdd').reporter(isCi ? 'tap' : 'html');
 
   var query = Mocha.utils.parseQuery(window.location.search || '');
@@ -62,15 +77,24 @@
   });
 
   walker.on('file', function(file) {
-    if (/-spec.coffee$/.test(file))
+    if (/-spec\.js$/.test(file))
       mocha.addFile(file);
   });
 
   walker.on('end', function() {
     var runner = mocha.run(function() {
       Mocha.utils.highlightTags('code');
+
+      var coverage = new Coverage({
+        libPath: path.join(__dirname, '..', '..', 'lib'),
+        outputPath: path.join(__dirname, '..', '..', 'out', 'coverage'),
+        formats: ['text', 'lcov']
+      });
+      coverage.addCoverage(ipcRenderer.sendSync('get-main-process-coverage'))
+      coverage.generateReport()
+
       if (isCi)
-        ipc.send('process.exit', runner.failures);
+        ipcRenderer.send('process.exit', runner.failures);
     });
   });
 })();

@@ -22,7 +22,7 @@ net::URLRequestJob* AsarProtocolHandler::MaybeCreateJob(
     net::NetworkDelegate* network_delegate) const {
   base::FilePath full_path;
   net::FileURLToFilePath(request->url(), &full_path);
-  URLRequestAsarJob* job = new URLRequestAsarJob(request, network_delegate);
+  auto* job = new URLRequestAsarJob(request, network_delegate);
   job->Initialize(file_task_runner_, full_path);
   return job;
 }

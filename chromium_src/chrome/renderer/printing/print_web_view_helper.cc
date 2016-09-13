@@ -39,6 +39,7 @@
 #include "third_party/WebKit/public/web/WebSettings.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "third_party/WebKit/public/web/WebViewClient.h"
+#include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/base/resource/resource_bundle.h"
 
 using content::WebPreferences;
@@ -62,9 +63,9 @@ int GetDPI(const PrintMsg_Print_Params* print_params) {
 bool PrintMsg_Print_Params_IsValid(const PrintMsg_Print_Params& params) {
   return !params.content_size.IsEmpty() && !params.page_size.IsEmpty() &&
          !params.printable_area.IsEmpty() && params.document_cookie &&
-         params.desired_dpi && params.max_shrink && params.min_shrink &&
-         params.dpi && (params.margin_top >= 0) && (params.margin_left >= 0) &&
-         params.dpi > kMinDpi && params.document_cookie != 0;
+         params.desired_dpi && params.dpi && params.margin_top >= 0 &&
+         params.margin_left >= 0 && params.dpi > kMinDpi &&
+         params.document_cookie != 0;
 }
 
 PrintMsg_Print_Params GetCssPrintParams(
@@ -386,7 +387,7 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
                               blink::WebLocalFrame* frame,
                               const blink::WebNode& node,
                               bool ignore_css_margins);
-  virtual ~PrepareFrameAndViewForPrint();
+  ~PrepareFrameAndViewForPrint() override;
 
   // Optional. Replaces |frame_| with selection if needed. Will call |on_ready|
   // when completed.
@@ -415,22 +416,20 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
     return owns_web_view_ && frame() && frame()->isLoading();
   }
 
-  // TODO(ojan): Remove this override and have this class use a non-null
-  // layerTreeView.
-  // blink::WebViewClient override:
-  virtual bool allowsBrokenNullLayerTreeView() const;
-
  protected:
   // blink::WebViewClient override:
-  virtual void didStopLoading();
+  void didStopLoading() override;
+  bool allowsBrokenNullLayerTreeView() const override;
 
-  // blink::WebFrameClient override:
-  virtual blink::WebFrame* createChildFrame(
+  // blink::WebFrameClient:
+  blink::WebFrame* createChildFrame(
       blink::WebLocalFrame* parent,
       blink::WebTreeScopeType scope,
       const blink::WebString& name,
-      blink::WebSandboxFlags sandboxFlags);
-  virtual void frameDetached(blink::WebFrame* frame, DetachType type);
+      const blink::WebString& unique_name,
+      blink::WebSandboxFlags sandbox_flags,
+      const blink::WebFrameOwnerProperties& frame_owner_properties) override;
+  void frameDetached(blink::WebFrame* frame, DetachType type) override;
 
  private:
   void CallOnReady();
@@ -494,6 +493,7 @@ void PrepareFrameAndViewForPrint::ResizeForPrinting() {
   // think the page is 125% larger so the size of the page is correct for
   // minimum (default) scaling.
   // This is important for sites that try to fill the page.
+  // The 1.25 value is |printingMinimumShrinkFactor|.
   gfx::Size print_layout_size(web_print_params_.printContentArea.width,
                               web_print_params_.printContentArea.height);
   print_layout_size.set_height(
@@ -544,7 +544,6 @@ void PrepareFrameAndViewForPrint::CopySelection(
   // on the page).
   WebPreferences prefs = preferences;
   prefs.javascript_enabled = false;
-  prefs.java_enabled = false;
 
   blink::WebView* web_view = blink::WebView::create(this);
   owns_web_view_ = true;
@@ -577,7 +576,9 @@ blink::WebFrame* PrepareFrameAndViewForPrint::createChildFrame(
     blink::WebLocalFrame* parent,
     blink::WebTreeScopeType scope,
     const blink::WebString& name,
-    blink::WebSandboxFlags sandboxFlags) {
+    const blink::WebString& unique_name,
+    blink::WebSandboxFlags sandbox_flags,
+    const blink::WebFrameOwnerProperties& frame_owner_properties) {
   blink::WebFrame* frame = blink::WebLocalFrame::create(scope, this);
   parent->appendChild(frame);
   return frame;
@@ -813,13 +814,19 @@ bool PrintWebViewHelper::FinalizePrintReadyDocument() {
   DCHECK(!is_print_ready_metafile_sent_);
   print_preview_context_.FinalizePrintReadyDocument();
 
-  // Get the size of the resulting metafile.
   PdfMetafileSkia* metafile = print_preview_context_.metafile();
-  uint32 buf_size = metafile->GetDataSize();
-  DCHECK_GT(buf_size, 0u);
 
   PrintHostMsg_DidPreviewDocument_Params preview_params;
-  preview_params.data_size = buf_size;
+
+  // Ask the browser to create the shared memory for us.
+  if (!CopyMetafileDataToSharedMem(*metafile,
+                                   &(preview_params.metafile_data_handle))) {
+    LOG(ERROR) << "CopyMetafileDataToSharedMem failed";
+    print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
+    return false;
+  }
+
+  preview_params.data_size = metafile->GetDataSize();
   preview_params.document_cookie = print_pages_params_->params.document_cookie;
   preview_params.expected_pages_count =
       print_preview_context_.total_page_count();
@@ -827,13 +834,6 @@ bool PrintWebViewHelper::FinalizePrintReadyDocument() {
   preview_params.preview_request_id =
       print_pages_params_->params.preview_request_id;
 
-  // Ask the browser to create the shared memory for us.
-  if (!CopyMetafileDataToSharedMem(metafile,
-                                   &(preview_params.metafile_data_handle))) {
-    LOG(ERROR) << "CopyMetafileDataToSharedMem failed";
-    print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
-    return false;
-  }
   is_print_ready_metafile_sent_ = true;
 
   Send(new PrintHostMsg_MetafileReadyForPrinting(routing_id(), preview_params));
@@ -1163,21 +1163,25 @@ bool PrintWebViewHelper::RenderPagesForPrint(blink::WebLocalFrame* frame,
 
 #if defined(OS_POSIX)
 bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
-    PdfMetafileSkia* metafile,
+    const PdfMetafileSkia& metafile,
     base::SharedMemoryHandle* shared_mem_handle) {
-  uint32 buf_size = metafile->GetDataSize();
-  scoped_ptr<base::SharedMemory> shared_buf(
-      content::RenderThread::Get()->HostAllocateSharedMemoryBuffer(
-          buf_size).release());
+  uint32_t buf_size = metafile.GetDataSize();
+  if (buf_size == 0)
+    return false;
 
-  if (shared_buf) {
-    if (shared_buf->Map(buf_size)) {
-      metafile->GetData(shared_buf->memory(), buf_size);
-      return shared_buf->GiveToProcess(base::GetCurrentProcessHandle(),
-                                       shared_mem_handle);
-    }
-  }
-  return false;
+  std::unique_ptr<base::SharedMemory> shared_buf(
+      content::RenderThread::Get()->HostAllocateSharedMemoryBuffer(buf_size));
+  if (!shared_buf)
+    return false;
+
+  if (!shared_buf->Map(buf_size))
+    return false;
+
+  if (!metafile.GetData(shared_buf->memory(), buf_size))
+    return false;
+
+  return shared_buf->GiveToProcess(base::GetCurrentProcessHandle(),
+                                   shared_mem_handle);
 }
 #endif  // defined(OS_POSIX)
 
@@ -1263,11 +1267,7 @@ bool PrintWebViewHelper::PrintPreviewContext::CreatePreviewDocument(
   }
 
   metafile_.reset(new PdfMetafileSkia);
-  if (!metafile_->Init()) {
-    set_error(PREVIEW_ERROR_METAFILE_INIT_FAILED);
-    LOG(ERROR) << "PdfMetafileSkia Init failed";
-    return false;
-  }
+  CHECK(metafile_->Init());
 
   current_page_index_ = 0;
   pages_to_render_ = pages;

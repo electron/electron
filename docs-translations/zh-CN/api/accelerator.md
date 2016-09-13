@@ -1,46 +1,43 @@
 # Accelerator
 
-An accelerator is a string that represents a keyboard shortcut. It can contain
-multiple modifiers and key codes, combined by the `+` character.
+一个 `Accelerator` 是一个表示某个快捷键组合的字符串。它包含了用 `+` 连接的若干个按键。
 
-Examples:
+例如：
 
 * `Command+A`
 * `Ctrl+Shift+Z`
 
-## Platform notice
+## 运行平台相关的提示
 
-On Linux and Windows, the `Command` key does not have any effect so
-use `CommandOrControl` which represents `Command` on OS X and `Control` on
-Linux and Windows to define some accelerators.
+在 Linux 和 Windows 上，`Command` 键并不存在，因此我们通常用 `CommandOrControl` 来表示“在 macOS 下为 `Command` 键，但在
+Linux 和 Windows 下为 `Control` 键。
 
-The `Super` key is mapped to the `Windows` key on Windows and Linux and
-`Cmd` on OS X.
+`Super` 键是指 Linux 和 Windows 上的 `Windows` 键，但是在 macOS 下为 `Command` 键。
 
-## Available modifiers
+## 可用的功能按键
 
-* `Command` (or `Cmd` for short)
-* `Control` (or `Ctrl` for short)
-* `CommandOrControl` (or `CmdOrCtrl` for short)
+* `Command`（缩写为 `Cmd`）
+* `Control`（缩写为 `Ctrl`）
+* `CommandOrControl`（缩写为 `CmdOrCtrl`）
 * `Alt`
 * `Shift`
 * `Super`
 
-## Available key codes
+## 可用的普通按键
 
-* `0` to `9`
-* `A` to `Z`
-* `F1` to `F24`
-* Punctuations like `~`, `!`, `@`, `#`, `$`, etc.
+* `0` 到 `9`
+* `A` 到 `Z`
+* `F1` 到 `F24`
+* 类似与 `~`、`!`、`@`、`#`、`$` 的标点符号。
 * `Plus`
 * `Space`
 * `Backspace`
 * `Delete`
 * `Insert`
-* `Return` (or `Enter` as alias)
-* `Up`, `Down`, `Left` and `Right`
-* `Home` and `End`
-* `PageUp` and `PageDown`
-* `Escape` (or `Esc` for short)
-* `VolumeUp`, `VolumeDown` and `VolumeMute`
-* `MediaNextTrack`, `MediaPreviousTrack`, `MediaStop` and `MediaPlayPause`
+* `Return`（和 `Enter` 等同）
+* `Up`、`Down`、`Left` 和 `Right`
+* `Home` 和 `End`
+* `PageUp` 和 `PageDown`
+* `Escape`（缩写为 `Esc`）
+* `VolumeUp`、`VolumeDown` 和 `VolumeMute`
+* `MediaNextTrack`、`MediaPreviousTrack`、`MediaStop` 和 `MediaPlayPause`

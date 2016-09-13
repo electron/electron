@@ -17,7 +17,6 @@
 
 using content::BrowserPpapiHost;
 using content::BrowserThread;
-using content::RenderProcessHost;
 
 namespace chrome {
 

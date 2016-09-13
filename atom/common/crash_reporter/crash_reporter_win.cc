@@ -11,6 +11,25 @@
 #include "base/memory/singleton.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/common/result_codes.h"
+#include "gin/public/debug.h"
+#include "sandbox/win/src/nt_internals.h"
+
+#pragma intrinsic(_AddressOfReturnAddress)
+#pragma intrinsic(_ReturnAddress)
+
+#ifdef _WIN64
+// See http://msdn.microsoft.com/en-us/library/ddssxxy8.aspx
+typedef struct _UNWIND_INFO {
+  unsigned char Version : 3;
+  unsigned char Flags : 5;
+  unsigned char SizeOfProlog;
+  unsigned char CountOfCodes;
+  unsigned char FrameRegister : 4;
+  unsigned char FrameOffset : 4;
+  ULONG ExceptionHandler;
+} UNWIND_INFO, *PUNWIND_INFO;
+#endif
 
 namespace crash_reporter {
 
@@ -24,9 +43,103 @@ const MINIDUMP_TYPE kSmallDumpType = static_cast<MINIDUMP_TYPE>(
 const wchar_t kWaitEventFormat[] = L"$1CrashServiceWaitEvent";
 const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1 Crash Service";
 
+// Matches breakpad/src/client/windows/common/ipc_protocol.h.
+const int kNameMaxLength = 64;
+const int kValueMaxLength = 64;
+
+typedef NTSTATUS (WINAPI* NtTerminateProcessPtr)(HANDLE ProcessHandle,
+                                                 NTSTATUS ExitStatus);
+char* g_real_terminate_process_stub = NULL;
+
+void TerminateProcessWithoutDump() {
+  // Patched stub exists based on conditions (See InitCrashReporter).
+  // As a side note this function also gets called from
+  // WindowProcExceptionFilter.
+  if (g_real_terminate_process_stub == NULL) {
+    ::TerminateProcess(::GetCurrentProcess(), content::RESULT_CODE_KILLED);
+  } else {
+    NtTerminateProcessPtr real_terminate_proc =
+        reinterpret_cast<NtTerminateProcessPtr>(
+            static_cast<char*>(g_real_terminate_process_stub));
+    real_terminate_proc(::GetCurrentProcess(), content::RESULT_CODE_KILLED);
+  }
+}
+
+#ifdef _WIN64
+int CrashForExceptionInNonABICompliantCodeRange(
+    PEXCEPTION_RECORD ExceptionRecord,
+    ULONG64 EstablisherFrame,
+    PCONTEXT ContextRecord,
+    PDISPATCHER_CONTEXT DispatcherContext) {
+  EXCEPTION_POINTERS info = { ExceptionRecord, ContextRecord };
+  if (!CrashReporter::GetInstance())
+    return EXCEPTION_CONTINUE_SEARCH;
+  return static_cast<CrashReporterWin*>(CrashReporter::GetInstance())->
+      CrashForException(&info);
+}
+
+struct ExceptionHandlerRecord {
+  RUNTIME_FUNCTION runtime_function;
+  UNWIND_INFO unwind_info;
+  unsigned char thunk[12];
+};
+
+bool RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
+  ExceptionHandlerRecord* record =
+      reinterpret_cast<ExceptionHandlerRecord*>(start);
+
+  // We assume that the first page of the code range is executable and
+  // committed and reserved for breakpad. What could possibly go wrong?
+
+  // All addresses are 32bit relative offsets to start.
+  record->runtime_function.BeginAddress = 0;
+  record->runtime_function.EndAddress =
+      base::checked_cast<DWORD>(size_in_bytes);
+  record->runtime_function.UnwindData =
+      offsetof(ExceptionHandlerRecord, unwind_info);
+
+  // Create unwind info that only specifies an exception handler.
+  record->unwind_info.Version = 1;
+  record->unwind_info.Flags = UNW_FLAG_EHANDLER;
+  record->unwind_info.SizeOfProlog = 0;
+  record->unwind_info.CountOfCodes = 0;
+  record->unwind_info.FrameRegister = 0;
+  record->unwind_info.FrameOffset = 0;
+  record->unwind_info.ExceptionHandler =
+      offsetof(ExceptionHandlerRecord, thunk);
+
+  // Hardcoded thunk.
+  // mov imm64, rax
+  record->thunk[0] = 0x48;
+  record->thunk[1] = 0xb8;
+  void* handler = &CrashForExceptionInNonABICompliantCodeRange;
+  memcpy(&record->thunk[2], &handler, 8);
+
+  // jmp rax
+  record->thunk[10] = 0xff;
+  record->thunk[11] = 0xe0;
+
+  // Protect reserved page against modifications.
+  DWORD old_protect;
+  return VirtualProtect(start, sizeof(ExceptionHandlerRecord),
+                        PAGE_EXECUTE_READ, &old_protect) &&
+         RtlAddFunctionTable(&record->runtime_function, 1,
+                             reinterpret_cast<DWORD64>(start));
+}
+
+void UnregisterNonABICompliantCodeRange(void* start) {
+  ExceptionHandlerRecord* record =
+      reinterpret_cast<ExceptionHandlerRecord*>(start);
+
+  RtlDeleteFunctionTable(&record->runtime_function);
+}
+#endif  // _WIN64
+
 }  // namespace
 
-CrashReporterWin::CrashReporterWin() {
+CrashReporterWin::CrashReporterWin()
+    : skip_system_crash_handler_(false),
+      code_range_registered_(false) {
 }
 
 CrashReporterWin::~CrashReporterWin() {
@@ -46,9 +159,9 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     return;
   }
 
-  base::string16 pipe_name = ReplaceStringPlaceholders(
+  base::string16 pipe_name = base::ReplaceStringPlaceholders(
       kPipeNameFormat, base::UTF8ToUTF16(product_name), NULL);
-  base::string16 wait_name = ReplaceStringPlaceholders(
+  base::string16 wait_name = base::ReplaceStringPlaceholders(
       kWaitEventFormat, base::UTF8ToUTF16(product_name), NULL);
 
   // Wait until the crash service is started.
@@ -63,24 +176,47 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   // to allow any previous handler to detach in the correct order.
   breakpad_.reset();
 
-  int handler_types = google_breakpad::ExceptionHandler::HANDLER_EXCEPTION |
-      google_breakpad::ExceptionHandler::HANDLER_PURECALL;
   breakpad_.reset(new google_breakpad::ExceptionHandler(
       temp_dir.value(),
       FilterCallback,
       MinidumpCallback,
       this,
-      handler_types,
+      google_breakpad::ExceptionHandler::HANDLER_ALL,
       kSmallDumpType,
       pipe_name.c_str(),
       GetCustomInfo(product_name, version, company_name)));
 
   if (!breakpad_->IsOutOfProcess())
     LOG(ERROR) << "Cannot initialize out-of-process crash handler";
+
+#ifdef _WIN64
+  // Hook up V8 to breakpad.
+  if (!code_range_registered_) {
+    code_range_registered_ = true;
+    // gin::Debug::SetCodeRangeCreatedCallback only runs the callback when
+    // Isolate is just created, so we have to manually run following code here.
+    void* code_range = nullptr;
+    size_t size = 0;
+    v8::Isolate::GetCurrent()->GetCodeRange(&code_range, &size);
+    if (code_range && size &&
+        RegisterNonABICompliantCodeRange(code_range, size)) {
+      gin::Debug::SetCodeRangeDeletedCallback(
+          UnregisterNonABICompliantCodeRange);
+    }
+  }
+#endif
 }
 
 void CrashReporterWin::SetUploadParameters() {
   upload_parameters_["platform"] = "win32";
+}
+
+int CrashReporterWin::CrashForException(EXCEPTION_POINTERS* info) {
+  if (breakpad_) {
+    breakpad_->WriteMinidumpForException(info);
+    TerminateProcessWithoutDump();
+  }
+  return EXCEPTION_CONTINUE_SEARCH;
 }
 
 // static
@@ -118,9 +254,18 @@ google_breakpad::CustomClientInfo* CrashReporterWin::GetCustomInfo(
 
   for (StringMap::const_iterator iter = upload_parameters_.begin();
        iter != upload_parameters_.end(); ++iter) {
-    custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
-        base::UTF8ToWide(iter->first).c_str(),
-        base::UTF8ToWide(iter->second).c_str()));
+    // breakpad has hardcoded the length of name/value, and doesn't truncate
+    // the values itself, so we have to truncate them here otherwise weird
+    // things may happen.
+    std::wstring name = base::UTF8ToWide(iter->first);
+    std::wstring value = base::UTF8ToWide(iter->second);
+    if (name.length() > kNameMaxLength - 1)
+      name.resize(kNameMaxLength - 1);
+    if (value.length() > kValueMaxLength - 1)
+      value.resize(kValueMaxLength - 1);
+
+    custom_info_entries_.push_back(
+        google_breakpad::CustomInfoEntry(name.c_str(), value.c_str()));
   }
 
   custom_info_.entries = &custom_info_entries_.front();
@@ -130,7 +275,7 @@ google_breakpad::CustomClientInfo* CrashReporterWin::GetCustomInfo(
 
 // static
 CrashReporterWin* CrashReporterWin::GetInstance() {
-  return Singleton<CrashReporterWin>::get();
+  return base::Singleton<CrashReporterWin>::get();
 }
 
 // static

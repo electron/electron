@@ -7,8 +7,9 @@
 
 #include <string>
 
-#include "base/basictypes.h"
+#include "atom/browser/ui/atom_menu_model.h"
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/native_widget_types.h"
 
@@ -17,7 +18,6 @@ typedef struct _DbusmenuServer   DbusmenuServer;
 
 namespace ui {
 class Accelerator;
-class MenuModel;
 }
 
 namespace atom {
@@ -40,18 +40,22 @@ class GlobalMenuBarX11 {
   explicit GlobalMenuBarX11(NativeWindowViews* window);
   virtual ~GlobalMenuBarX11();
 
-  // Creates the object path for DbusemenuServer which is attached to |xid|.
+  // Creates the object path for DbusmenuServer which is attached to |xid|.
   static std::string GetPathForWindow(gfx::AcceleratedWidget xid);
 
-  void SetMenu(ui::MenuModel* menu_model);
+  void SetMenu(AtomMenuModel* menu_model);
   bool IsServerStarted() const;
+
+  // Called by NativeWindow when it show/hides.
+  void OnWindowMapped();
+  void OnWindowUnmapped();
 
  private:
   // Creates a DbusmenuServer.
   void InitServer(gfx::AcceleratedWidget xid);
 
   // Create a menu from menu model.
-  void BuildMenuFromModel(ui::MenuModel* model, DbusmenuMenuitem* parent);
+  void BuildMenuFromModel(AtomMenuModel* model, DbusmenuMenuitem* parent);
 
   // Sets the accelerator for |item|.
   void RegisterAccelerator(DbusmenuMenuitem* item,

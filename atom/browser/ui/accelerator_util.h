@@ -8,15 +8,12 @@
 #include <map>
 #include <string>
 
+#include "atom/browser/ui/atom_menu_model.h"
 #include "ui/base/accelerators/accelerator.h"
-
-namespace ui {
-class MenuModel;
-}
 
 namespace accelerator_util {
 
-typedef struct { int position; ui::MenuModel* model; } MenuItem;
+typedef struct { int position; atom::AtomMenuModel* model; } MenuItem;
 typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
 
 // Parse a string as an accelerator.
@@ -27,7 +24,8 @@ bool StringToAccelerator(const std::string& description,
 void SetPlatformAccelerator(ui::Accelerator* accelerator);
 
 // Generate a table that contains memu model's accelerators and command ids.
-void GenerateAcceleratorTable(AcceleratorTable* table, ui::MenuModel* model);
+void GenerateAcceleratorTable(AcceleratorTable* table,
+                              atom::AtomMenuModel* model);
 
 // Trigger command from the accelerators table.
 bool TriggerAcceleratorTableCommand(AcceleratorTable* table,

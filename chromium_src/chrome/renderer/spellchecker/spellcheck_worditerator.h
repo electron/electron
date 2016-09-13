@@ -9,10 +9,10 @@
 #ifndef CHROME_RENDERER_SPELLCHECKER_SPELLCHECK_WORDITERATOR_H_
 #define CHROME_RENDERER_SPELLCHECKER_SPELLCHECK_WORDITERATOR_H_
 
+#include <memory>
 #include <string>
 
-#include "base/basictypes.h"
-#include "base/memory/scoped_ptr.h"
+#include "base/macros.h"
 #include "base/strings/string16.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
 
@@ -167,7 +167,7 @@ class SpellcheckWordIterator {
   const SpellcheckCharAttribute* attribute_;
 
   // The break iterator.
-  scoped_ptr<base::i18n::BreakIterator> iterator_;
+  std::unique_ptr<base::i18n::BreakIterator> iterator_;
 
   DISALLOW_COPY_AND_ASSIGN(SpellcheckWordIterator);
 };

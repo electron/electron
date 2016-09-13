@@ -8,15 +8,21 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/mac/mac_logging.h"
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/sys_string_conversions.h"
+#include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
 
 namespace platform_util {
 
-void ShowItemInFolder(const base::FilePath& full_path) {
+void ShowItemInFolder(const base::FilePath& path) {
+  // The API only takes absolute path.
+  base::FilePath full_path =
+      path.IsAbsolute() ? path : base::MakeAbsoluteFilePath(path);
+
   DCHECK([NSThread isMainThread]);
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   if (!path_string || ![[NSWorkspace sharedWorkspace] selectFile:path_string
@@ -118,10 +124,9 @@ void OpenItem(const base::FilePath& full_path) {
   }
 }
 
-bool OpenExternal(const GURL& url) {
+bool OpenExternal(const GURL& url, bool activate) {
   DCHECK([NSThread isMainThread]);
-  NSString* url_string = base::SysUTF8ToNSString(url.spec());
-  NSURL* ns_url = [NSURL URLWithString:url_string];
+  NSURL* ns_url = net::NSURLWithGURL(url);
   if (!ns_url) {
     return false;
   }
@@ -136,7 +141,15 @@ bool OpenExternal(const GURL& url) {
   }
   CFRelease(openingApp);  // NOT A BUG; LSGetApplicationForURL retains for us
 
-  return [[NSWorkspace sharedWorkspace] openURL:ns_url];
+  NSUInteger launchOptions = NSWorkspaceLaunchDefault;
+  if (!activate)
+    launchOptions |= NSWorkspaceLaunchWithoutActivation;
+
+  return [[NSWorkspace sharedWorkspace] openURLs: @[ns_url]
+                                        withAppBundleIdentifier: nil
+                                        options: launchOptions
+                                        additionalEventParamDescriptor: NULL
+                                        launchIdentifiers: NULL];
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {

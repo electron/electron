@@ -1,4 +1,4 @@
-var ipc = require('ipc');
-window.onload = function() {
-  ipc.send('answer', typeof window.process);
+var ipcRenderer = require('electron').ipcRenderer
+window.onload = function () {
+  ipcRenderer.send('answer', typeof window.process)
 }

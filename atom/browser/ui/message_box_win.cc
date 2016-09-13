@@ -4,7 +4,8 @@
 
 #include "atom/browser/ui/message_box.h"
 
-#include <windows.h>
+#include <windows.h>  // windows.h must be included first
+
 #include <commctrl.h>
 
 #include <map>
@@ -12,6 +13,7 @@
 
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -34,7 +36,7 @@ struct CommonButtonID {
   int id;
 };
 CommonButtonID GetCommonID(const base::string16& button) {
-  base::string16 lower = base::StringToLowerASCII(button);
+  base::string16 lower = base::ToLowerASCII(button);
   if (lower == L"ok")
     return { TDCBF_OK_BUTTON, IDOK };
   else if (lower == L"yes")
@@ -64,7 +66,8 @@ void MapToCommonID(const std::vector<base::string16>& buttons,
       (*button_flags) |= common.button;
     } else {
       // It is a custom button.
-      dialog_buttons->push_back({i + kIDStart, buttons[i].c_str()});
+      dialog_buttons->push_back(
+          {static_cast<int>(i + kIDStart), buttons[i].c_str()});
     }
   }
 }
@@ -72,6 +75,7 @@ void MapToCommonID(const std::vector<base::string16>& buttons,
 int ShowMessageBoxUTF16(HWND parent,
                         MessageBoxType type,
                         const std::vector<base::string16>& buttons,
+                        int default_id,
                         int cancel_id,
                         int options,
                         const base::string16& title,
@@ -88,6 +92,9 @@ int ShowMessageBoxUTF16(HWND parent,
   config.hInstance  = GetModuleHandle(NULL);
   config.dwFlags    = flags;
 
+  if (default_id > 0)
+    config.nDefaultButton = kIDStart + default_id;
+
   // TaskDialogIndirect doesn't allow empty name, if we set empty title it
   // will show "electron.exe" in title.
   base::string16 app_name = base::UTF8ToUTF16(Browser::Get()->GetName());
@@ -98,9 +105,9 @@ int ShowMessageBoxUTF16(HWND parent,
 
   base::win::ScopedHICON hicon;
   if (!icon.isNull()) {
-    hicon.Set(IconUtil::CreateHICONFromSkBitmap(*icon.bitmap()));
+    hicon = IconUtil::CreateHICONFromSkBitmap(*icon.bitmap());
     config.dwFlags |= TDF_USE_HICON_MAIN;
-    config.hMainIcon = hicon.Get();
+    config.hMainIcon = hicon.get();
   } else {
     // Show icon according to dialog's type.
     switch (type) {
@@ -131,7 +138,8 @@ int ShowMessageBoxUTF16(HWND parent,
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
   if (options & MESSAGE_BOX_NO_LINK) {
     for (size_t i = 0; i < buttons.size(); ++i)
-      dialog_buttons.push_back({i + kIDStart, buttons[i].c_str()});
+      dialog_buttons.push_back(
+          {static_cast<int>(i + kIDStart), buttons[i].c_str()});
   } else {
     MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
   }
@@ -156,6 +164,7 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               NativeWindow* parent,
                               MessageBoxType type,
                               const std::vector<std::string>& buttons,
+                              int default_id,
                               int cancel_id,
                               int options,
                               const std::string& title,
@@ -163,8 +172,8 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               const std::string& detail,
                               const gfx::ImageSkia& icon,
                               const MessageBoxCallback& callback) {
-  int result = ShowMessageBox(parent, type, buttons, cancel_id, options, title,
-                              message, detail, icon);
+  int result = ShowMessageBox(parent, type, buttons, default_id,
+                              cancel_id, options, title, message, detail, icon);
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE, base::Bind(callback, result));
   content::BrowserThread::DeleteSoon(
@@ -176,6 +185,7 @@ void RunMessageBoxInNewThread(base::Thread* thread,
 int ShowMessageBox(NativeWindow* parent,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
+                   int default_id,
                    int cancel_id,
                    int options,
                    const std::string& title,
@@ -190,10 +200,11 @@ int ShowMessageBox(NativeWindow* parent,
       static_cast<atom::NativeWindowViews*>(parent)->GetAcceleratedWidget() :
       NULL;
 
-  NativeWindow::DialogScope dialog_scope(parent);
+  atom::UnresponsiveSuppressor suppressor;
   return ShowMessageBoxUTF16(hwnd_parent,
                              type,
                              utf16_buttons,
+                             default_id,
                              cancel_id,
                              options,
                              base::UTF8ToUTF16(title),
@@ -205,6 +216,7 @@ int ShowMessageBox(NativeWindow* parent,
 void ShowMessageBox(NativeWindow* parent,
                     MessageBoxType type,
                     const std::vector<std::string>& buttons,
+                    int default_id,
                     int cancel_id,
                     int options,
                     const std::string& title,
@@ -212,7 +224,7 @@ void ShowMessageBox(NativeWindow* parent,
                     const std::string& detail,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  scoped_ptr<base::Thread> thread(
+  std::unique_ptr<base::Thread> thread(
       new base::Thread(ATOM_PRODUCT_NAME "MessageBoxThread"));
   thread->init_com_with_mta(false);
   if (!thread->Start()) {
@@ -224,13 +236,14 @@ void ShowMessageBox(NativeWindow* parent,
   unretained->message_loop()->PostTask(
       FROM_HERE,
       base::Bind(&RunMessageBoxInNewThread, base::Unretained(unretained),
-                 parent, type, buttons, cancel_id, options, title, message,
-                 detail, icon, callback));
+                 parent, type, buttons, default_id, cancel_id, options, title,
+                 message, detail, icon, callback));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
-  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, 0, L"Error", title,
-                      content, gfx::ImageSkia());
+  atom::UnresponsiveSuppressor suppressor;
+  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, -1, 0, 0, L"Error",
+                      title, content, gfx::ImageSkia());
 }
 
 }  // namespace atom

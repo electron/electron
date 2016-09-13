@@ -1,23 +1,20 @@
-# Supported Chrome command line switches
+# Supported Chrome Command Line Switches
 
-This page lists the command line switches used by the Chrome browser that are also supported by
-Electron. You can use [app.commandLine.appendSwitch][append-switch] to append
-them in your app's main script before the [ready][ready] event of [app][app]
-module is emitted:
+> Command line switches supported by Electron.
+
+You can use [app.commandLine.appendSwitch][append-switch] to append them in
+your app's main script before the [ready][ready] event of the [app][app] module
+is emitted:
 
 ```javascript
-var app = require('app');
-app.commandLine.appendSwitch('remote-debugging-port', '8315');
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+const {app} = require('electron')
+app.commandLine.appendSwitch('remote-debugging-port', '8315')
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
 
-app.on('ready', function() {
+app.on('ready', () => {
   // Your code here
-});
+})
 ```
-
-## --client-certificate=`path`
-
-Sets the `path` of client certificate file.
 
 ## --ignore-connections-limit=`domains`
 
@@ -27,14 +24,46 @@ Ignore the connections limit for `domains` list separated by `,`.
 
 Disables the disk cache for HTTP requests.
 
+## --disable-http2
+
+Disable HTTP/2 and SPDY/3.1 protocols.
+
 ## --remote-debugging-port=`port`
 
 Enables remote debugging over HTTP on the specified `port`.
 
+## --js-flags=`flags`
+
+Specifies the flags passed to JS engine. It has to be passed when starting
+Electron if you want to enable the `flags` in the main process.
+
+```bash
+$ electron --js-flags="--harmony_proxies --harmony_collections" your-app
+```
+
 ## --proxy-server=`address:port`
 
-Use a specified proxy server, which overrides the system setting. This switch only
-affects HTTP and HTTPS requests.
+Use a specified proxy server, which overrides the system setting. This switch
+only affects requests with HTTP protocol, including HTTPS and WebSocket
+requests. It is also noteworthy that not all proxy servers support HTTPS and
+WebSocket requests.
+
+## --proxy-bypass-list=`hosts`
+
+Instructs Electron to bypass the proxy server for the given semi-colon-separated
+list of hosts. This flag has an effect only if used in tandem with
+`--proxy-server`.
+
+For example:
+
+```javascript
+const {app} = require('electron')
+app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')
+```
+
+Will use the proxy server for all hosts except for local addresses (`localhost`,
+`127.0.0.1` etc.), `google.com` subdomains, hosts that contain the suffix
+`foo.com` and anything at `1.2.3.4:5678`.
 
 ## --proxy-pac-url=`url`
 
@@ -67,9 +96,23 @@ connection, and the endpoint host in a `SOCKS` proxy connection).
 
 Like `--host-rules` but these `rules` only apply to the host resolver.
 
-[app]: app.md
-[append-switch]: app.md#appcommandlineappendswitchswitch-value
-[ready]: app.md#event-ready
+## --auth-server-whitelist=`url`
+
+A comma-separated list of servers for which integrated authentication is enabled.
+
+For example:
+
+```
+--auth-server-whitelist='*example.com, *foobar.com, *baz'
+```
+
+then any `url` ending with `example.com`, `foobar.com`, `baz` will be considered
+for integrated authentication. Without `*` prefix the url has to match exactly.
+
+## --auth-negotiate-delegate-whitelist=`url`
+
+A comma-separated list of servers for which delegation of user credentials is required.
+Without `*` prefix the url has to match exactly.
 
 ## --ignore-certificate-errors
 
@@ -89,14 +132,29 @@ Enables net log events to be saved and writes them to `path`.
 
 ## --ssl-version-fallback-min=`version`
 
-Sets the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
+Sets the minimum SSL/TLS version (`tls1`, `tls1.1` or `tls1.2`) that TLS
 fallback will accept.
+
+## --cipher-suite-blacklist=`cipher_suites`
+
+Specifies comma-separated list of SSL cipher suites to disable.
+
+## --disable-renderer-backgrounding
+
+Prevents Chromium from lowering the priority of invisible pages' renderer
+processes.
+
+This flag is global to all renderer processes, if you only want to disable
+throttling in one window, you can take the hack of
+[playing silent audio][play-silent-audio].
 
 ## --enable-logging
 
 Prints Chromium's logging into console.
 
-This switch can not be used in `app.commandLine.appendSwitch` since it is parsed earlier than user's app is loaded.
+This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
+earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
+environment variable to achieve the same effect.
 
 ## --v=`log_level`
 
@@ -116,3 +174,8 @@ whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
+
+[app]: app.md
+[append-switch]: app.md#appcommandlineappendswitchswitch-value
+[ready]: app.md#event-ready
+[play-silent-audio]: https://github.com/atom/atom/pull/9485/files

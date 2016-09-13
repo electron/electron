@@ -5,9 +5,10 @@
 #ifndef CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_WIN_H_
 #define CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_WIN_H_
 
+#include <memory>
+
 #include <windows.h>
 
-#include "base/memory/scoped_ptr.h"
 #include "chrome/browser/extensions/global_shortcut_listener.h"
 #include "ui/gfx/win/singleton_hwnd.h"
 #include "ui/gfx/win/singleton_hwnd_observer.h"
@@ -41,7 +42,7 @@ class GlobalShortcutListenerWin : public GlobalShortcutListener {
   typedef std::map<ui::Accelerator, int> HotkeyIdMap;
   HotkeyIdMap hotkey_ids_;
 
-  scoped_ptr<gfx::SingletonHwndObserver> singleton_hwnd_observer_;
+  std::unique_ptr<gfx::SingletonHwndObserver> singleton_hwnd_observer_;
 
   DISALLOW_COPY_AND_ASSIGN(GlobalShortcutListenerWin);
 };

@@ -5,13 +5,14 @@ Follow the guidelines below for building Electron on Windows.
 ## Prerequisites
 
 * Windows 7 / Server 2008 R2 or higher
-* Visual Studio 2013 - [download VS 2013 Community Edition for
-  free](https://www.visualstudio.com/downloads/download-visual-studio-vs).
+* Visual Studio 2015 - [download VS 2015 Community Edition for
+  free](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx)
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [Node.js](http://nodejs.org/download/)
 * [Git](http://git-scm.com)
 
-If you don't currently have a Windows installation, [modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads)
+If you don't currently have a Windows installation,
+[dev.microsoftedge.com](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/)
 has timebombed versions of Windows that you can use to build Electron.
 
 Building Electron is done entirely with command-line scripts and cannot be done
@@ -21,13 +22,12 @@ building with Visual Studio will come in the future.
 **Note:** Even though Visual Studio is not used for building, it's still
 **required** because we need the build toolchains it provides.
 
-**Note:** Visual Studio 2015 will not work. Please make sure to get MSVS
-**2013**.
+**Note:** While older versions of Electron required Visual Studio 2013, Electron 1.1 and later does require Visual Studio 2015.
 
 ## Getting the Code
 
 ```powershell
-$ git clone https://github.com/atom/electron.git
+$ git clone https://github.com/electron/electron.git
 ```
 
 ## Bootstrapping
@@ -58,16 +58,24 @@ $ python script\build.py -c D
 After building is done, you can find `electron.exe` under `out\D` (debug
 target) or under `out\R` (release target).
 
-## 64bit Build
+## 32bit Build
 
-To build for the 64bit target, you need to pass `--target_arch=x64` when running
-the bootstrap script:
+To build for the 32bit target, you need to pass `--target_arch=ia32` when
+running the bootstrap script:
 
 ```powershell
-$ python script\bootstrap.py -v --target_arch=x64
+$ python script\bootstrap.py -v --target_arch=ia32
 ```
 
 The other building steps are exactly the same.
+
+## Visual Studio project
+
+To generate a Visual Studio project, you can pass the `--msvs` parameter:
+
+```powershell
+$ python script\bootstrap.py --msvs
+```
 
 ## Tests
 
@@ -84,7 +92,7 @@ $ python script\test.py
 ```
 
 Tests that include native modules (e.g. `runas`) can't be executed with the
-debug build (see [#2558](https://github.com/atom/electron/issues/2558) for
+debug build (see [#2558](https://github.com/electron/electron/issues/2558) for
 details), but they will work with the release build.
 
 To run the tests with the release build use:
@@ -98,7 +106,7 @@ $ python script\test.py -R
 ### Command xxxx not found
 
 If you encountered an error like `Command xxxx not found`, you may try to use
-the `VS2012 Command Prompt` console to execute the build scripts.
+the `VS2015 Command Prompt` console to execute the build scripts.
 
 ### Fatal internal compiler error: C1001
 
@@ -147,4 +155,4 @@ $ mkdir ~\AppData\Roaming\npm
 ### node-gyp is not recognized as an internal or external command
 
 You may get this error if you are using Git Bash for building, you should use
-PowerShell or VS2012 Command Prompt instead.
+PowerShell or VS2015 Command Prompt instead.

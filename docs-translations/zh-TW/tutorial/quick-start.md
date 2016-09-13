@@ -3,7 +3,7 @@
 ## 簡介
 
 Electron 可以讓你使用純 JavaScript 提供豐富的原生的 APIs 來創造桌面應用程式。
-你可以把它視為一個 io.js 的變體，專注於桌面應用程式而不是 web 伺服器。
+你可以把它視為一個 Node.js 的變體，專注於桌面應用程式而不是 web 伺服器。
 
 這不表示 Electron 是一個用 JavaScript 去綁定 GUI 函式庫。取而代之的，Electron 是使用網頁介面來作為它的 GUI ，
 所以你可以把它看作是一個被 JavaScript 所控制且精簡化的 Chromium 瀏覽器。
@@ -19,7 +19,7 @@ Electron 可以讓你使用純 JavaScript 提供豐富的原生的 APIs 來創�
 每一個網頁在 Electron 裏執行各自的行程，被稱為 __渲染行程__。
 
 在一般瀏覽器中，網頁通常會在沙盒環境下運行，並且不允許存取原生資源。然而，
-Electron 的用戶擁有在網頁中呼叫 io.js APIs 的能力，允許低級別操作與作業系統的交互作用。
+Electron 的用戶擁有在網頁中呼叫 Node.js APIs 的能力，允許低級別操作與作業系統的交互作用。
 
 ## 主行程與渲染行程的區別
 
@@ -30,7 +30,7 @@ Electron 的用戶擁有在網頁中呼叫 io.js APIs 的能力，允許低級�
 在網頁中，是不允許呼叫原生 GUI 相關 APIs 因為管理原生 GUI 資源在網頁上是非常危險而且容易造成資源洩露。
 如果你想要在網頁中呼叫 GUI 相關的 APIs 的操作，網頁的渲染行程必須與主行程進行通訊，請求主行程進行相關的操作。
 
-在 Electron ，我們提供用於在主行程與渲染行程之間通訊的 [ipc][1] 模組。並且也有一個遠端模使用 RPC 通訊方式 [remote][2]。
+在 Electron，我們提供用於在主行程與渲染行程之間通訊的 [ipc](../api/ipc-renderer.md) 模組。並且也有一個遠端模組使用 RPC 通訊方式 [remote](../api/remote.md)。
 
 # 打造你第一個 Electron 應用
 
@@ -43,7 +43,7 @@ your-app/
 └── index.html
 ```
 
-`package.json ` 的格式與 Node 的模組完全一樣，並且有個腳本被指定為 `main` 是用來啟動你的應用程式，它運行在主行程上。
+`package.json` 的格式與 Node 的模組完全一樣，並且有個腳本被指定為 `main` 是用來啟動你的應用程式，它運行在主行程上。
 你應用裡的 一個範例在你的 `package.json` 看起來可能像這樣：
 
 ```json
@@ -62,16 +62,13 @@ __注意__：如果 `main` 沒有在 `package.json` 裏， Electron會嘗試載�
 var app = require('app'); // 控制應用程式生命週期的模組。
 var BrowserWindow = require('browser-window'); // 創造原生瀏覽器窗口的模組
 
-// 對我們的伺服器傳送異常報告。
-require('crash-reporter').start();
-
 // 保持一個對於 window 物件的全域的引用，不然，當 JavaScript 被GC，
 // window 會被自動地關閉
 var mainWindow = null;
 
 // 當所有窗口被關閉了，退出。
 app.on('window-all-closed', function() {
-  // 在OS X 上，通常使用者在明確地按下 Cmd + Q 之前
+  // 在macOS 上，通常使用者在明確地按下 Cmd + Q 之前
   // 應用會保持活動狀態
   if (process.platform != 'darwin') {
     app.quit();
@@ -85,10 +82,10 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // 載入應用程式的 index.html
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
 
   // 打開開發者工具
-  mainWindow.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   // 當window 被關閉，這個事件會被觸發
   mainWindow.on('closed', function() {
@@ -110,8 +107,9 @@ app.on('ready', function() {
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using io.js <script>document.write(process.version)</script>
-    and Electron <script>document.write(process.versions['electron'])</script>.
+    We are using node <script>document.write(process.versions.node)</script>,
+    Chrome <script>document.write(process.versions.chrome)</script>,
+    and Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
@@ -149,17 +147,28 @@ $ .\electron\electron.exe your-app\
 $ ./electron/electron your-app/
 ```
 
-### OS X
+### macOS
 
 ``` bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
-`Electron.app` 裡面是 Electron 釋出包，你可以在[這裡](https://github.com/atom/electron/releases)下載到。
+`Electron.app` 裡面是 Electron 釋出包，你可以在[這裡](https://github.com/electron/electron/releases)下載到。
 
 # 作為版本發行
-在你完成了你的應用程式後，你可以依照 [應用部署](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) 指南發布一個版本，並且運行已經打包好的應用程式。
+在你完成了你的應用程式後，你可以依照 [應用部署](https://github.com/electron/electron/blob/master/docs/tutorial/application-distribution.md) 指南發布一個版本，並且運行已經打包好的應用程式。
 
-[1]: https://github.com/atom/electron/blob/master/docs/api/ipc-renderer.md
+# 試試這個範例
 
-[2]: https://github.com/atom/electron/blob/master/docs/api/remote.md
+Clone 與執行本篇教學的程式碼，它們都放在 [`atom/electron-quick-start`](https://github.com/electron/electron-quick-start) 這個 repository。
+
+**Note**: 執行這個範例需要 [Git](https://git-scm.com) 以及 [Node.js](https://nodejs.org/en/download/) (其中包括 [npm](https://npmjs.org)) 在你的作業系統。
+
+```bash
+# Clone the repository
+$ git clone https://github.com/electron/electron-quick-start
+# Go into the repository
+$ cd electron-quick-start
+# Install dependencies and run the app
+$ npm install && npm start
+```

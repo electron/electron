@@ -31,7 +31,7 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
                           const std::string& mime_type,
                           const base::FilePath& path,
                           const CreateDownloadPathCallback& callback);
-  void OnDownloadPathGenerated(uint32 download_id,
+  void OnDownloadPathGenerated(uint32_t download_id,
                                const content::DownloadTargetCallback& callback,
                                const base::FilePath& default_path);
 
@@ -46,6 +46,9 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
   void GetNextId(const content::DownloadIdCallback& callback) override;
 
  private:
+  // Get the save path set on the associated api::DownloadItem object
+  void GetItemSavePath(content::DownloadItem* item, base::FilePath* path);
+
   content::DownloadManager* download_manager_;
   base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;
 

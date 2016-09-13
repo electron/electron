@@ -86,7 +86,7 @@ bool WriteReportIDToFile(const std::wstring& dump_path,
   if (!file.is_open())
     return false;
 
-  int64 seconds_since_epoch =
+  int64_t seconds_since_epoch =
       (base::Time::Now() - base::Time::UnixEpoch()).InSeconds();
   std::wstring line = base::Int64ToString16(seconds_since_epoch);
   line += L',';
@@ -118,7 +118,7 @@ HWND g_top_window = NULL;
 bool CreateTopWindow(HINSTANCE instance,
                      const base::string16& application_name,
                      bool visible) {
-  base::string16 class_name = ReplaceStringPlaceholders(
+  base::string16 class_name = base::ReplaceStringPlaceholders(
       kClassNameFormat, application_name, NULL);
 
   WNDCLASSEXW wcx = {0};
@@ -211,7 +211,7 @@ bool CrashService::Initialize(const base::string16& application_name,
   std::wstring pipe_name = kTestPipeName;
   int max_reports = -1;
 
-  // The checkpoint file allows CrashReportSender to enforce the the maximum
+  // The checkpoint file allows CrashReportSender to enforce the maximum
   // reports per day quota. Does not seem to serve any other purpose.
   base::FilePath checkpoint_path = operating_dir.Append(kCheckPointFile);
 
@@ -239,23 +239,17 @@ bool CrashService::Initialize(const base::string16& application_name,
   }
 
   SECURITY_ATTRIBUTES security_attributes = {0};
-  SECURITY_ATTRIBUTES* security_attributes_actual = NULL;
+  SECURITY_DESCRIPTOR* security_descriptor =
+      reinterpret_cast<SECURITY_DESCRIPTOR*>(
+          GetSecurityDescriptorForLowIntegrity());
+  DCHECK(security_descriptor != NULL);
 
-  if (base::win::GetVersion() >= base::win::VERSION_VISTA) {
-    SECURITY_DESCRIPTOR* security_descriptor =
-        reinterpret_cast<SECURITY_DESCRIPTOR*>(
-            GetSecurityDescriptorForLowIntegrity());
-    DCHECK(security_descriptor != NULL);
-
-    security_attributes.nLength = sizeof(security_attributes);
-    security_attributes.lpSecurityDescriptor = security_descriptor;
-    security_attributes.bInheritHandle = FALSE;
-
-    security_attributes_actual = &security_attributes;
-  }
+  security_attributes.nLength = sizeof(security_attributes);
+  security_attributes.lpSecurityDescriptor = security_descriptor;
+  security_attributes.bInheritHandle = FALSE;
 
   // Create the OOP crash generator object.
-  dumper_ = new CrashGenerationServer(pipe_name, security_attributes_actual,
+  dumper_ = new CrashGenerationServer(pipe_name, &security_attributes,
                                       &CrashService::OnClientConnected, this,
                                       &CrashService::OnClientDumpRequest, this,
                                       &CrashService::OnClientExited, this,
@@ -309,9 +303,9 @@ bool CrashService::Initialize(const base::string16& application_name,
 
   // Create or open an event to signal the browser process that the crash
   // service is initialized.
-  base::string16 wait_name = ReplaceStringPlaceholders(
+  base::string16 wait_name = base::ReplaceStringPlaceholders(
       kWaitEventFormat, application_name, NULL);
-  HANDLE wait_event = ::CreateEventW(NULL, TRUE, FALSE, wait_name.c_str());
+  HANDLE wait_event = ::CreateEventW(NULL, TRUE, TRUE, wait_name.c_str());
   ::SetEvent(wait_event);
 
   return true;
@@ -327,7 +321,7 @@ void CrashService::OnClientConnected(void* context,
 
 void CrashService::OnClientExited(void* context,
     const google_breakpad::ClientInfo* client_info) {
-  ProcessingLock lock;
+  ProcessingLock processing_lock;
   VLOG(1) << "client end. pid = " << client_info->pid();
   CrashService* self = static_cast<CrashService*>(context);
   ::InterlockedIncrement(&self->clients_terminated_);
@@ -440,10 +434,12 @@ DWORD CrashService::AsyncSendDump(void* context) {
       // termination of the service object.
       base::AutoLock lock(info->self->sending_);
       VLOG(1) << "trying to send report for pid = " << info->pid;
+      std::map<std::wstring, std::wstring> file_map;
+      file_map[L"upload_file_minidump"] = info->dump_path;
       google_breakpad::ReportResult send_result
           = info->self->sender_->SendCrashReport(info->self->reporter_url_,
                                                  info->map,
-                                                 info->dump_path,
+                                                 file_map,
                                                  &report_id);
       switch (send_result) {
         case google_breakpad::RESULT_FAILED:
@@ -524,4 +520,3 @@ PSECURITY_DESCRIPTOR CrashService::GetSecurityDescriptorForLowIntegrity() {
 }
 
 }  // namespace breakpad
-

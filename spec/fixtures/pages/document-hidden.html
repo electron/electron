@@ -1,7 +1,7 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  require('ipc').send('hidden', document.hidden);
+  require('electron').ipcRenderer.send('hidden', document.hidden);
 </script>
 </body>
 </html>

@@ -1,27 +1,26 @@
 # remote
 
+> Use main process modules from the renderer process.
+
 The `remote` module provides a simple way to do inter-process communication
 (IPC) between the renderer process (web page) and the main process.
 
-In Electron, only GUI-unrelated modules are available in the renderer process.
-Without the `remote` module, users who want to call a main process API in
-the renderer process will have to explicitly send inter-process messages
-to the main process. With the `remote` module, you can invoke methods of the
-main process object without explicitly sending inter-process messages, similar
-to Java's [RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation).
-
-An example of creating a browser window from a renderer process:
+In Electron, GUI-related modules (such as `dialog`, `menu` etc.) are only
+available in the main process, not in the renderer process. In order to use them
+from the renderer process, the `ipc` module is necessary to send inter-process
+messages to the main process. With the `remote` module, you can invoke methods
+of the main process object without explicitly sending inter-process messages,
+similar to Java's [RMI][rmi]. An example of creating a browser window from a
+renderer process:
 
 ```javascript
-var remote = require('remote');
-var BrowserWindow = remote.require('browser-window');
-
-var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadUrl('https://github.com');
+const {BrowserWindow} = require('electron').remote
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('https://github.com')
 ```
 
 **Note:** for the reverse (access the renderer process from the main process),
-you can use [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture).
+you can use [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture-callback).
 
 ## Remote Objects
 
@@ -36,6 +35,9 @@ In the example above, both `BrowserWindow` and `win` were remote objects and
 process. Instead, it created a `BrowserWindow` object in the main process and
 returned the corresponding remote object in the renderer process, namely the
 `win` object.
+
+Please note that only [enumerable properties](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties) which are present when the remote object is first referenced are
+accessible via remote.
 
 ## Lifetime of Remote Objects
 
@@ -66,28 +68,23 @@ For instance you can't use a function from the renderer process in an
 
 ```javascript
 // main process mapNumbers.js
-exports.withRendererCallback = function(mapper) {
-  return [1,2,3].map(mapper);
+exports.withRendererCallback = (mapper) => {
+  return [1, 2, 3].map(mapper)
 }
 
-exports.withLocalCallback = function() {
-  return exports.mapNumbers(function(x) {
-    return x + 1;
-  });
+exports.withLocalCallback = () => {
+  return [1, 2, 3].map(x => x + 1)
 }
 ```
 
 ```javascript
 // renderer process
-var mapNumbers = require("remote").require("./mapNumbers");
+const mapNumbers = require('electron').remote.require('./mapNumbers')
+const withRendererCb = mapNumbers.withRendererCallback(x => x + 1)
+const withLocalCb = mapNumbers.withLocalCallback()
 
-var withRendererCb = mapNumbers.withRendererCallback(function(x) {
-  return x + 1;
-})
-
-var withLocalCb = mapNumbers.withLocalCallback()
-
-console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
+console.log(withRendererCb, withLocalCb)
+// [undefined, undefined, undefined], [2, 3, 4]
 ```
 
 As you can see, the renderer callback's synchronous return value was not as
@@ -101,11 +98,9 @@ For example, the following code seems innocent at first glance. It installs a
 callback for the `close` event on a remote object:
 
 ```javascript
-var remote = require('remote');
-
-remote.getCurrentWindow().on('close', function() {
-  // blabla...
-});
+require('electron').remote.getCurrentWindow().on('close', () => {
+  // window was closed...
+})
 ```
 
 But remember the callback is referenced by the main process until you
@@ -120,6 +115,16 @@ To avoid this problem, ensure you clean up any references to renderer callbacks
 passed to the main process. This involves cleaning up event handlers, or
 ensuring the main process is explicitly told to deference callbacks that came
 from a renderer process that is exiting.
+
+## Accessing built-in modules in the main process
+
+The built-in modules in the main process are added as getters in the `remote`
+module, so you can use them directly like the `electron` module.
+
+```javascript
+const app = require('electron').remote.app
+console.log(app)
+```
 
 ## Methods
 
@@ -147,7 +152,11 @@ Returns the [`WebContents`](web-contents.md) object of this web page.
 Returns the global variable of `name` (e.g. `global[name]`) in the main
 process.
 
+## Properties
+
 ### `remote.process`
 
-Returns the `process` object in the main process. This is the same as
+The `process` object in the main process. This is the same as
 `remote.getGlobal('process')` but is cached.
+
+[rmi]: http://en.wikipedia.org/wiki/Java_remote_method_invocation

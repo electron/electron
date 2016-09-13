@@ -13,20 +13,14 @@
 namespace atom {
 
 void AtomBrowserMainParts::PreMainMessageLoopStart() {
-  // Initialize locale setting.
-  l10n_util::OverrideLocaleWithCocoaLocale();
-
   // Force the NSApplication subclass to be used.
-  NSApplication* application = [AtomApplication sharedApplication];
+  [AtomApplication sharedApplication];
 
+  // Set our own application delegate.
   AtomApplicationDelegate* delegate = [[AtomApplicationDelegate alloc] init];
-  [NSApp setDelegate:(id<NSFileManagerDelegate>)delegate];
+  [NSApp setDelegate:delegate];
 
-  NSBundle* frameworkBundle = base::mac::FrameworkBundle();
-  NSNib* mainNib = [[NSNib alloc] initWithNibNamed:@"MainMenu"
-                                            bundle:frameworkBundle];
-  [mainNib instantiateWithOwner:application topLevelObjects:nil];
-  [mainNib release];
+  brightray::BrowserMainParts::PreMainMessageLoopStart();
 
   // Prevent Cocoa from turning command-line arguments into
   // |-application:openFiles:|, since we already handle them directly.
@@ -34,7 +28,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
       setObject:@"NO" forKey:@"NSTreatUnknownArgumentsAsOpen"];
 }
 
-void AtomBrowserMainParts::PostDestroyThreads() {
+void AtomBrowserMainParts::FreeAppDelegate() {
   [[NSApp delegate] release];
   [NSApp setDelegate:nil];
 }

@@ -19,16 +19,17 @@ namespace atom {
 
 namespace api {
 
-Menu::Menu()
+Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
     : model_(new AtomMenuModel(this)),
-      parent_(NULL) {
+      parent_(nullptr) {
+  InitWith(isolate, wrapper);
 }
 
 Menu::~Menu() {
 }
 
 void Menu::AfterInit(v8::Isolate* isolate) {
-  mate::Dictionary wrappable(isolate, GetWrapper(isolate));
+  mate::Dictionary wrappable(isolate, GetWrapper());
   mate::Dictionary delegate;
   if (!wrappable.Get("delegate", &delegate))
     return;
@@ -53,16 +54,21 @@ bool Menu::IsCommandIdVisible(int command_id) const {
   return is_visible_.Run(command_id);
 }
 
-bool Menu::GetAcceleratorForCommandId(int command_id,
-                                      ui::Accelerator* accelerator) {
+bool Menu::GetAcceleratorForCommandIdWithParams(
+    int command_id,
+    bool use_default_accelerator,
+    ui::Accelerator* accelerator) const {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  v8::Local<v8::Value> val = get_accelerator_.Run(command_id);
+  v8::Local<v8::Value> val = get_accelerator_.Run(
+      command_id, use_default_accelerator);
   return mate::ConvertFromV8(isolate(), val, accelerator);
 }
 
-void Menu::ExecuteCommand(int command_id, int event_flags) {
-  execute_command_.Run(command_id);
+void Menu::ExecuteCommand(int command_id, int flags) {
+  execute_command_.Run(
+      mate::internal::CreateEventFromFlags(isolate(), flags),
+      command_id);
 }
 
 void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
@@ -149,8 +155,10 @@ bool Menu::IsVisibleAt(int index) const {
 
 // static
 void Menu::BuildPrototype(v8::Isolate* isolate,
-                          v8::Local<v8::ObjectTemplate> prototype) {
-  mate::ObjectTemplateBuilder(isolate, prototype)
+                          v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "Menu"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .MakeDestroyable()
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
       .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
@@ -168,8 +176,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
-      .SetMethod("_popup", &Menu::Popup)
-      .SetMethod("_popupAt", &Menu::PopupAt);
+      .SetMethod("popupAt", &Menu::PopupAt);
 }
 
 }  // namespace api
@@ -179,14 +186,15 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
+using atom::api::Menu;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using atom::api::Menu;
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Function> constructor = mate::CreateConstructor<Menu>(
-      isolate, "Menu", base::Bind(&Menu::Create));
+  Menu::SetConstructor(isolate, base::Bind(&Menu::New));
+
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Menu", static_cast<v8::Local<v8::Value>>(constructor));
+  dict.Set("Menu", Menu::GetConstructor(isolate)->GetFunction());
 #if defined(OS_MACOSX)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",

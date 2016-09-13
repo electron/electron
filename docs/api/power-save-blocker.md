@@ -1,18 +1,16 @@
 # powerSaveBlocker
 
-The `power-save-blocker` module is used to block the system from entering
-low-power (sleep) mode and thus allowing the app to keep the system and screen
-active.
+> Block the system from entering low-power (sleep) mode.
 
 For example:
 
 ```javascript
-var powerSaveBlocker = require('power-save-blocker');
+const {powerSaveBlocker} = require('electron')
 
-var id = powerSaveBlocker.start('prevent-display-sleep');
-console.log(powerSaveBlocker.isStarted(id));
+const id = powerSaveBlocker.start('prevent-display-sleep')
+console.log(powerSaveBlocker.isStarted(id))
 
-powerSaveBlocker.stop(id);
+powerSaveBlocker.stop(id)
 ```
 
 ## Methods
@@ -25,13 +23,13 @@ The `powerSaveBlocker` module has the following methods:
   * `prevent-app-suspension` - Prevent the application from being suspended.
     Keeps system active but allows screen to be turned off.  Example use cases:
     downloading a file or playing audio.
-  * `prevent-display-sleep`- Prevent the display from going to sleep. Keeps
+  * `prevent-display-sleep` - Prevent the display from going to sleep. Keeps
     system and screen active.  Example use case: playing video.
 
 Starts preventing the system from entering lower-power mode. Returns an integer
 identifying the power save blocker.
 
-**Note:** `prevent-display-sleep` has higher has precedence over
+**Note:** `prevent-display-sleep` has higher precedence over
 `prevent-app-suspension`. Only the highest precedence type takes effect. In
 other words, `prevent-display-sleep` always takes precedence over
 `prevent-app-suspension`.

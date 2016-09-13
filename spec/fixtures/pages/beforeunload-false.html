@@ -3,8 +3,8 @@
 <script type="text/javascript" charset="utf-8">
   window.onbeforeunload = function() {
     setTimeout(function() {
-      var ipc = require('ipc');
-      ipc.sendToHost('onbeforeunload');
+        var ipcRenderer = require('electron').ipcRenderer;
+      ipcRenderer.sendToHost('onbeforeunload');
     }, 0);
     return false;
   }

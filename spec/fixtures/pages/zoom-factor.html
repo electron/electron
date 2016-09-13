@@ -1,0 +1,8 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer, webFrame} = require('electron')
+  ipcRenderer.send('pong', webFrame.getZoomFactor(), webFrame.getZoomLevel())
+</script>
+</body>
+</html>

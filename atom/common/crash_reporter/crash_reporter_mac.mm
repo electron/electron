@@ -4,6 +4,8 @@
 
 #include "atom/common/crash_reporter/crash_reporter_mac.h"
 
+#include <memory>
+
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/mac/bundle_locations.h"
@@ -48,7 +50,8 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
       if (crashpad_client.StartHandler(handler_path, database_path,
                                        submit_url,
                                        StringMap(),
-                                       std::vector<std::string>())) {
+                                       std::vector<std::string>(),
+                                       true)) {
         crashpad_client.UseHandler();
       }
     }  // @autoreleasepool
@@ -72,7 +75,7 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
     SetCrashKeyValue(upload_parameter.first, upload_parameter.second);
   }
   if (is_browser_) {
-    scoped_ptr<crashpad::CrashReportDatabase> database =
+    std::unique_ptr<crashpad::CrashReportDatabase> database =
         crashpad::CrashReportDatabase::Initialize(database_path);
     if (database) {
       database->GetSettings()->SetUploadsEnabled(auto_submit);
@@ -98,7 +101,7 @@ CrashReporterMac::GetUploadedReports(const std::string& path) {
     return uploaded_reports;
   }
   // Load crashpad database.
-  scoped_ptr<crashpad::CrashReportDatabase> database =
+  std::unique_ptr<crashpad::CrashReportDatabase> database =
     crashpad::CrashReportDatabase::Initialize(file_path);
   DCHECK(database);
 
@@ -126,7 +129,7 @@ CrashReporterMac::GetUploadedReports(const std::string& path) {
 
 // static
 CrashReporterMac* CrashReporterMac::GetInstance() {
-  return Singleton<CrashReporterMac>::get();
+  return base::Singleton<CrashReporterMac>::get();
 }
 
 // static

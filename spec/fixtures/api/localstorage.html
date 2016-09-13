@@ -2,9 +2,9 @@
 <body>
 <script type="text/javascript" charset="utf-8">
 window.localStorage.setItem('test', 'test');
-var ipc = require('ipc');
-ipc.on('getcount', function() {
-  ipc.send('count', window.localStorage.length);
+var ipcRenderer = require('electron').ipcRenderer;
+ipcRenderer.on('getcount', function() {
+  ipcRenderer.send('count', window.localStorage.length);
 })
 </script>
 </body>

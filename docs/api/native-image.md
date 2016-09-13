@@ -1,4 +1,6 @@
-# NativeImage
+# nativeImage
+
+> Create tray, dock, and application icons using PNG or JPG files.
 
 In Electron, for the APIs that take images, you can pass either file paths or
 `NativeImage` instances. An empty image will be used when `null` is passed.
@@ -7,16 +9,20 @@ For example, when creating a tray or setting a window's icon, you can pass an
 image file path as a `String`:
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
-var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+const {BrowserWindow, Tray} = require('electron')
+
+const appIcon = new Tray('/Users/somebody/images/icon.png')
+let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'})
+console.log(appIcon, win)
 ```
 
-Or read the image from the clipboard which returns a `NativeImage`:
+Or read the image from the clipboard which returns a `nativeImage`:
 
 ```javascript
-var clipboard = require('clipboard');
-var image = clipboard.readImage();
-var appIcon = new Tray(image);
+const {clipboard, Tray} = require('electron')
+const image = clipboard.readImage()
+const appIcon = new Tray(image)
+console.log(appIcon)
 ```
 
 ## Supported Formats
@@ -24,12 +30,29 @@ var appIcon = new Tray(image);
 Currently `PNG` and `JPEG` image formats are supported. `PNG` is recommended
 because of its support for transparency and lossless compression.
 
-On Windows, you can also load an `ICO` icon from a file path.
+On Windows, you can also load `ICO` icons from file paths. For best visual
+quality it is recommended to include at least the following sizes in the:
+
+* Small icon
+ * 16x16 (100% DPI scale)
+ * 20x20 (125% DPI scale)
+ * 24x24 (150% DPI scale)
+ * 32x32 (200% DPI scale)
+* Large icon
+ * 32x32 (100% DPI scale)
+ * 40x40 (125% DPI scale)
+ * 48x48 (150% DPI scale)
+ * 64x64 (200% DPI scale)
+* 256x256
+
+Check the *Size requirements* section in [this article][icons].
+
+[icons]:https://msdn.microsoft.com/en-us/library/windows/desktop/dn742485(v=vs.85).aspx
 
 ## High Resolution Image
 
-On platforms that have high-DPI support, you can append `@2x` after image's
-base filename to mark it as a high resolution image.
+On platforms that have high-DPI support such as Apple Retina displays, you can
+append `@2x` after image's base filename to mark it as a high resolution image.
 
 For example if `icon.png` is a normal image that has standard resolution, then
 `icon@2x.png` will be treated as a high resolution image that has double DPI
@@ -48,7 +71,9 @@ images/
 
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
+const {Tray} = require('electron')
+let appIcon = new Tray('/Users/somebody/images/icon.png')
+console.log(appIcon)
 ```
 
 Following suffixes for DPI are also supported:
@@ -74,7 +99,7 @@ mixed with other content to create the desired final appearance.
 The most common case is to use template images for a menu bar icon so it can
 adapt to both light and dark menu bars.
 
-**Note:** Template image is only supported on OS X.
+**Note:** Template image is only supported on macOS.
 
 To mark an image as a template image, its filename should end with the word
 `Template`. For example:
@@ -84,19 +109,27 @@ To mark an image as a template image, its filename should end with the word
 
 ## Methods
 
-The `NativeImage` class has the following methods:
+The `nativeImage` module has the following methods, all of which return
+an instance of the `NativeImage` class:
 
-### `NativeImage.createEmpty()`
+### `nativeImage.createEmpty()`
 
 Creates an empty `NativeImage` instance.
 
-### `NativeImage.createFromPath(path)`
+### `nativeImage.createFromPath(path)`
 
 * `path` String
 
 Creates a new `NativeImage` instance from a file located at `path`.
 
-### `NativeImage.createFromBuffer(buffer[, scaleFactor])`
+```javascript
+const nativeImage = require('electron').nativeImage
+
+let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
+console.log(image)
+```
+
+### `nativeImage.createFromBuffer(buffer[, scaleFactor])`
 
 * `buffer` [Buffer][buffer]
 * `scaleFactor` Double (optional)
@@ -104,52 +137,72 @@ Creates a new `NativeImage` instance from a file located at `path`.
 Creates a new `NativeImage` instance from `buffer`. The default `scaleFactor` is
 1.0.
 
-### `NativeImage.createFromDataUrl(dataUrl)`
+### `nativeImage.createFromDataURL(dataURL)`
 
-* `dataUrl` String
+* `dataURL` String
 
-Creates a new `NativeImage` instance from `dataUrl`.
+Creates a new `NativeImage` instance from `dataURL`.
 
-## Instance Methods
+## Class: NativeImage
 
-The following methods are available on instances of `nativeImage`:
+> Natively wrap images such as tray, dock, and application icons.
 
-```javascript
-var NativeImage = require('native-image');
+### Instance Methods
 
-var image = NativeImage.createFromPath('/Users/somebody/images/icon.png');
-```
+The following methods are available on instances of the `NativeImage` class:
 
-### `image.toPng()`
+#### `image.toPNG()`
 
 Returns a [Buffer][buffer] that contains the image's `PNG` encoded data.
 
-### `image.toJpeg(quality)`
+#### `image.toJPEG(quality)`
 
-* `quality` Integer between 0 - 100 (**required**)
+* `quality` Integer (**required**) - Between 0 - 100.
 
 Returns a [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
-### `image.toDataUrl()`
+#### `image.toBitmap()`
+
+Returns a [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
+data.
+
+#### `image.toDataURL()`
 
 Returns the data URL of the image.
 
-### `image.isEmpty()`
+#### `image.getBitmap()`
+
+Returns a [Buffer][buffer] that contains the image's raw bitmap pixel data.
+
+The difference between `getBitmap()` and `toBitmap()` is, `getBitmap()` does not
+copy the bitmap data, so you have to use the returned Buffer immediately in
+current event loop tick, otherwise the data might be changed or destroyed.
+
+#### `image.getNativeHandle()` _macOS_
+
+Returns a [Buffer][buffer] that stores C pointer to underlying native handle of
+the image. On macOS, a pointer to `NSImage` instance would be returned.
+
+Notice that the returned pointer is a weak pointer to the underlying native
+image instead of a copy, so you _must_ ensure that the associated
+`nativeImage` instance is kept around.
+
+#### `image.isEmpty()`
 
 Returns a boolean whether the image is empty.
 
-### `image.getSize()`
+#### `image.getSize()`
 
 Returns the size of the image.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
 
-### `image.setTemplateImage(option)`
+#### `image.setTemplateImage(option)`
 
 * `option` Boolean
 
-Marks the image as template image.
+Marks the image as a template image.
 
-### `image.isTemplateImage()`
+#### `image.isTemplateImage()`
 
 Returns a boolean whether the image is a template image.

@@ -11,8 +11,10 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/win/scoped_comptr.h"
+#include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/image/image.h"
 
 namespace atom {
@@ -33,22 +35,33 @@ class TaskbarHost {
   bool SetThumbarButtons(
       HWND window, const std::vector<ThumbarButton>& buttons);
 
+  void RestoreThumbarButtons(HWND window);
+
   // Set the progress state in taskbar.
-  bool SetProgressBar(HWND window, double value);
+  bool SetProgressBar(
+      HWND window, double value, const NativeWindow::ProgressState state);
 
   // Set the overlay icon in taskbar.
   bool SetOverlayIcon(
       HWND window, const gfx::Image& overlay, const std::string& text);
 
+  // Set the region of the window to show as a thumbnail in taskbar.
+  bool SetThumbnailClip(HWND window, const gfx::Rect& region);
+
+  // Set the tooltip for the thumbnail in taskbar.
+  bool SetThumbnailToolTip(HWND window, const std::string& tooltip);
+
   // Called by the window that there is a button in thumbar clicked.
   bool HandleThumbarButtonEvent(int button_id);
 
  private:
-  // Initailize the taskbar object.
-  bool InitailizeTaskbar();
+  // Initialize the taskbar object.
+  bool InitializeTaskbar();
 
   using CallbackMap = std::map<int, base::Closure>;
   CallbackMap callback_map_;
+
+  std::vector<ThumbarButton> last_buttons_;
 
   // The COM object of taskbar.
   base::win::ScopedComPtr<ITaskbarList3> taskbar_;

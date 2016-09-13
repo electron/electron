@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/basictypes.h"
+#include "base/macros.h"
 #include "net/base/net_export.h"
 #include "net/socket/socket_descriptor.h"
 #include "net/test/embedded_test_server/stream_listen_socket.h"
@@ -23,9 +23,9 @@ class TCPListenSocket : public StreamListenSocket {
 
   // Listen on port for the specified IP address.  Use 127.0.0.1 to only
   // accept local connections.
-  static scoped_ptr<TCPListenSocket> CreateAndListen(
+  static std::unique_ptr<TCPListenSocket> CreateAndListen(
       const std::string& ip,
-      uint16 port,
+      uint16_t port,
       StreamListenSocket::Delegate* del);
 
  protected:
@@ -39,11 +39,11 @@ class TCPListenSocket : public StreamListenSocket {
   friend class TCPListenSocketTester;
 
   // Get raw TCP socket descriptor bound to ip:port.
-  static SocketDescriptor CreateAndBind(const std::string& ip, uint16 port);
+  static SocketDescriptor CreateAndBind(const std::string& ip, uint16_t port);
 
   // Get raw TCP socket descriptor bound to ip and return port it is bound to.
   static SocketDescriptor CreateAndBindAnyPort(const std::string& ip,
-                                               uint16* port);
+                                               uint16_t* port);
 
   DISALLOW_COPY_AND_ASSIGN(TCPListenSocket);
 };

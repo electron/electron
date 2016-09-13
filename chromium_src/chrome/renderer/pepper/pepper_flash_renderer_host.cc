@@ -29,7 +29,6 @@
 #include "third_party/skia/include/core/SkMatrix.h"
 #include "third_party/skia/include/core/SkPaint.h"
 #include "third_party/skia/include/core/SkPoint.h"
-#include "third_party/skia/include/core/SkTemplates.h"
 #include "third_party/skia/include/core/SkTypeface.h"
 #include "ui/gfx/geometry/rect.h"
 #include "url/gurl.h"
@@ -206,7 +205,7 @@ int32_t PepperFlashRendererHost::OnDrawGlyphs(
     style |= SkTypeface::kBold;
   if (params.font_desc.italic)
     style |= SkTypeface::kItalic;
-  skia::RefPtr<SkTypeface> typeface = skia::AdoptRef(SkTypeface::CreateFromName(
+  sk_sp<SkTypeface> typeface(SkTypeface::CreateFromName(
       params.font_desc.face.c_str(), static_cast<SkTypeface::Style>(style)));
   if (!typeface)
     return PP_ERROR_FAILED;
@@ -256,7 +255,7 @@ int32_t PepperFlashRendererHost::OnDrawGlyphs(
   paint.setAntiAlias(true);
   paint.setHinting(SkPaint::kFull_Hinting);
   paint.setTextSize(SkIntToScalar(params.font_desc.size));
-  paint.setTypeface(typeface.get());  // Takes a ref and manages lifetime.
+  paint.setTypeface(std::move(typeface));
   if (params.allow_subpixel_aa) {
     paint.setSubpixelText(true);
     paint.setLCDRenderText(true);
@@ -315,7 +314,7 @@ int32_t PepperFlashRendererHost::OnNavigate(
   bool rejected = false;
   while (header_iter.GetNext()) {
     std::string lower_case_header_name =
-        base::StringToLowerASCII(header_iter.name());
+        base::ToLowerASCII(header_iter.name());
     if (!IsSimpleHeader(lower_case_header_name, header_iter.values())) {
       rejected = true;
 

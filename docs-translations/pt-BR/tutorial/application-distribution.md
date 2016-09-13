@@ -1,11 +1,11 @@
 # Distribuição de aplicações
 
-Para distribuir sua aplicação com o Electron, você deve nomear o diretório que contém sua aplicação como 
-`app` e dentro deste diretório colocar os recursos que você está utilizando (no OSX 
+Para distribuir sua aplicação com o Electron, você deve nomear o diretório que contém sua aplicação como
+`app` e dentro deste diretório colocar os recursos que você está utilizando (no macOS
 `Electron.app/Contents/Resources/`,
 no Linux e no Windows é em `resources/`):
 
-No OSX:
+No macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -24,7 +24,7 @@ electron/resources/app
 ```
 
 Logo após execute `Electron.app` (ou `electron` no Linux e `electron.exe` no Windows),
-e o Electron iniciaria a aplicação. O diretório `electron` será utilizado para criar a distribuição para 
+e o Electron iniciaria a aplicação. O diretório `electron` será utilizado para criar a distribuição para
 usuários finais.
 
 ## Empacotando sua aplicação em um arquivo.
@@ -37,7 +37,7 @@ Para usar um arquivo `asar` ao invés da pasta `app` você precisa mudar o nome 
 arquivo para `app.asar` e colocá-lo sob o diretório de recursos do Electron como
 mostrado abaixo, então o Electron vai ler o arquivo e iniciar a aplicação a partir dele.
 
-No OSX:
+No macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/
@@ -58,13 +58,12 @@ Mais detalhes podem ser encontrados em [Empacotamento da aplicação](../../../d
 Depois de empacotar seu aplicativo Electron, você vai querer renomear a marca Electron
 antes de distribuí-lo aos usuários.
 
-### Janelas
+### Windows
 
 Você pode renomear `electron.exe` para o nome que desejar e editar o seu ícone e outras
-informações com ferramentas como [rcedit](https://github.com/atom/rcedit) ou
-[ResEdit](http://www.resedit.net).
+informações com ferramentas como [rcedit](https://github.com/atom/rcedit).
 
-### OS X
+### macOS
 
 Você pode renomear `Electron.app` para o nome que desejar e também pode mudar o nome
 do `CFBundleDisplayName`, `CFBundleIdentifier` e os campos em `CFBundleName`

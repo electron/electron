@@ -15,7 +15,7 @@ Estas son las maneras en las que construimos la documentación de Electron.
   - Archivos separados por guiones, mas sin embargo, es correcto.
 - No subtítulos seguidos por otros subtítulos, añadir por lo menos un enunciado
   de descripción.
-- Métodos de cabecera son delimitados con apóstrofes: `codigo`.
+- Métodos de cabecera son delimitados con apóstrofes: `código`.
 - Cabeceras de Eventos son delimitados con 'comillas' simples.
 - No generar listas de mas de dos niveles (debido al renderizador de Markdown
   desafortunadamente).
@@ -25,8 +25,8 @@ Estas son las maneras en las que construimos la documentación de Electron.
 - Argumentos opcionales escritos como `function (required[, optional])`.
 - Argumentos opcionales son denotados cuando se llaman en listas.
 - Delimitador de línea de 80-columnas.
-- Métodos específicos de Plataformas son denotados en italicas seguidas por la cabecera del método.
-  - ```### `method(foo, bar)` _OS X_```
+- Métodos específicos de Plataformas son denotados en itálicas seguidas por la cabecera del método.
+  - ```### `method(foo, bar)` _macOS_```
 - Preferir 'en el ___ proceso' en lugar de 'sobre el'
 
 ### Traducciones de la Documentación
@@ -43,11 +43,11 @@ Para agregar otro set (o un set parcial):
 - Actualizar el `README.md` dentro del subdirectorio del lenguaje apuntando a
   los archivos que has traducido.
 - Agregar un enlace al folder de tu traducción en la sección principal Electron
-[README](https://github.com/atom/electron#documentation-translations).
+[README](https://github.com/electron/electron#documentation-translations).
 
 ## Leyendo la Documentación de Electron
 
-Estos son algunos consejos para entender la syntaxis de la documentación de
+Estos son algunos consejos para entender la sintaxis de la documentación de
 Electron.
 
 ### Métodos
@@ -67,7 +67,7 @@ El nombre del método es seguido por los argumentos que recibe. Argumentos
 opcionales son denotados por corchetes rodeados por el argumento opcional y la
 coma requerida si el argumento opcional fuera seguido por otro argumento.
 
-Debajo del método se encuentra mas información detallada de cada uno de los
+Debajo del método se encuentra más información detallada de cada uno de los
 argumentos. El tipo de argumento es denotado por los tipos comúnes:
 [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String),
 [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number),
@@ -90,7 +90,7 @@ Returns:
 ---
 
 El evento es una cadena que es utilizada luego de un método observador `.on`. Si
-regresa un valor, el y su tipo son denotados abajo. Si se estaba a la escucha y
+regresa un valor, él y su tipo son denotados abajo. Si se estaba a la escucha y
 respondió a este evento se debería ver así:
 
 ```javascript

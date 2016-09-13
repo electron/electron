@@ -4,61 +4,76 @@
 
 #include "atom/browser/api/frame_subscriber.h"
 
+#include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/bind.h"
-#include "media/base/video_frame.h"
-#include "media/base/yuv_convert.h"
+#include "content/public/browser/render_widget_host.h"
 
 namespace atom {
 
 namespace api {
 
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
-                                 const gfx::Size& size,
-                                 const FrameCaptureCallback& callback)
-    : isolate_(isolate), size_(size), callback_(callback) {
+                                 content::RenderWidgetHostView* view,
+                                 const FrameCaptureCallback& callback,
+                                 bool only_dirty)
+    : isolate_(isolate),
+      view_(view),
+      callback_(callback),
+      only_dirty_(only_dirty),
+      weak_factory_(this) {
 }
 
 bool FrameSubscriber::ShouldCaptureFrame(
-    const gfx::Rect& damage_rect,
+    const gfx::Rect& dirty_rect,
     base::TimeTicks present_time,
     scoped_refptr<media::VideoFrame>* storage,
     DeliverFrameCallback* callback) {
-  *storage = media::VideoFrame::CreateFrame(media::VideoFrame::YV12, size_,
-                                            gfx::Rect(size_), size_,
-                                            base::TimeDelta());
-  *callback = base::Bind(&FrameSubscriber::OnFrameDelivered,
-                         base::Unretained(this),
-                         *storage);
-  return true;
+  const auto host = view_ ? view_->GetRenderWidgetHost() : nullptr;
+  if (!view_ || !host)
+    return false;
+
+  if (dirty_rect.IsEmpty())
+    return false;
+
+  gfx::Rect rect = gfx::Rect(view_->GetVisibleViewportSize());
+  if (only_dirty_)
+    rect = dirty_rect;
+
+  host->CopyFromBackingStore(
+      rect,
+      rect.size(),
+      base::Bind(&FrameSubscriber::OnFrameDelivered,
+                 weak_factory_.GetWeakPtr(), callback_, rect),
+      kBGRA_8888_SkColorType);
+
+  return false;
 }
 
-void FrameSubscriber::OnFrameDelivered(
-    scoped_refptr<media::VideoFrame> frame, base::TimeTicks, bool result) {
-  if (!result)
+void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
+                                       const gfx::Rect& damage_rect,
+                                       const SkBitmap& bitmap,
+                                       content::ReadbackResponse response) {
+  if (response != content::ReadbackResponse::READBACK_SUCCESS)
     return;
 
-  gfx::Rect rect = frame->visible_rect();
-  size_t rgb_arr_size = rect.width() * rect.height() * 4;
+  v8::Locker locker(isolate_);
+  v8::HandleScope handle_scope(isolate_);
+
+  size_t rgb_arr_size = bitmap.width() * bitmap.height() *
+    bitmap.bytesPerPixel();
   v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate_, rgb_arr_size);
   if (buffer.IsEmpty())
     return;
 
-  // Convert a frame of YUV to 32 bit ARGB.
-  media::ConvertYUVToRGB32(frame->data(media::VideoFrame::kYPlane),
-                           frame->data(media::VideoFrame::kUPlane),
-                           frame->data(media::VideoFrame::kVPlane),
-                           reinterpret_cast<uint8*>(
-                              node::Buffer::Data(buffer.ToLocalChecked())),
-                           rect.width(), rect.height(),
-                           frame->stride(media::VideoFrame::kYPlane),
-                           frame->stride(media::VideoFrame::kUVPlane),
-                           rect.width() * 4,
-                           media::YV12);
+  bitmap.copyPixelsTo(
+    reinterpret_cast<uint8_t*>(node::Buffer::Data(buffer.ToLocalChecked())),
+    rgb_arr_size);
 
-  v8::Locker locker(isolate_);
-  v8::HandleScope handle_scope(isolate_);
-  callback_.Run(buffer.ToLocalChecked());
+  v8::Local<v8::Value> damage =
+      mate::Converter<gfx::Rect>::ToV8(isolate_, damage_rect);
+
+  callback_.Run(buffer.ToLocalChecked(), damage);
 }
 
 }  // namespace api

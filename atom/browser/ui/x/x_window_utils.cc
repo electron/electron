@@ -9,8 +9,8 @@
 #include "base/environment.h"
 #include "base/strings/string_util.h"
 #include "dbus/bus.h"
-#include "dbus/object_proxy.h"
 #include "dbus/message.h"
+#include "dbus/object_proxy.h"
 #include "ui/base/x/x11_util.h"
 
 namespace atom {
@@ -42,7 +42,7 @@ void SetWindowType(::Window xwindow, const std::string& type) {
   XDisplay* xdisplay = gfx::GetXDisplay();
   std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
   ::Atom window_type = XInternAtom(
-      xdisplay, (type_prefix + base::StringToUpperASCII(type)).c_str(), False);
+      xdisplay, (type_prefix + base::ToUpperASCII(type)).c_str(), False);
   XChangeProperty(xdisplay, xwindow,
                   XInternAtom(xdisplay, "_NET_WM_WINDOW_TYPE", False),
                   XA_ATOM,
@@ -51,7 +51,7 @@ void SetWindowType(::Window xwindow, const std::string& type) {
 }
 
 bool ShouldUseGlobalMenuBar() {
-  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
   if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
     return false;
 
@@ -61,7 +61,7 @@ bool ShouldUseGlobalMenuBar() {
   dbus::ObjectProxy* object_proxy =
       bus->GetObjectProxy(DBUS_SERVICE_DBUS, dbus::ObjectPath(DBUS_PATH_DBUS));
   dbus::MethodCall method_call(DBUS_INTERFACE_DBUS, "ListNames");
-  scoped_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
+  std::unique_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
       &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT));
   if (!response) {
     bus->ShutdownAndBlock();

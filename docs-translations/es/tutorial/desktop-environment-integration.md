@@ -6,9 +6,9 @@ en la JumpList de la barra de tareas, y en Mac, las aplicaciones pueden agregar 
 
 Esta guía explica cómo integrar tu aplicación en esos entornos de escritorio a través de las APIs de Electron.
 
-## Documentos recientes (Windows y OS X)
+## Documentos recientes (Windows y macOS)
 
-Windows y OS X proveen un acceso sencillo a la lista de documentos recientes.
+Windows y macOS proveen un acceso sencillo a la lista de documentos recientes.
 
 __JumpList:__
 
@@ -42,14 +42,14 @@ registrar tu aplicación en [Application Registration][app-registration].
 Cuando un usuario haga click en un archivo de la JumpList, una nueva instancia de tu aplicación
 se iniciará, la ruta del archivo se agregará como un argumento de la línea de comandos.
 
-### Notas sobre OS X
+### Notas sobre macOS
 
 Cuando un archivo es solicitado desde el menú de documentos recientes, el evento `open-file`
 del módulo `app` será emitido.
 
-## Menú dock personalizado (OS X)
+## Menú dock personalizado (macOS)
 
-OS X permite a los desarrolladores definir un menú personalizado para el dock,
+macOS permite a los desarrolladores definir un menú personalizado para el dock,
 el cual usualmente contiene algunos accesos directos a las características más comunes
 de tu aplicación:
 
@@ -57,7 +57,7 @@ __Menú dock de Terminal.app:__
 
 <img src="https://cloud.githubusercontent.com/assets/639601/5069962/6032658a-6e9c-11e4-9953-aa84006bdfff.png" height="354" width="341" >
 
-Para establecer tu menú dock, puedes utilizar la API `app.dock.setMenu`, la cual sólo está disponible para OSX:
+Para establecer tu menú dock, puedes utilizar la API `app.dock.setMenu`, la cual sólo está disponible para macOS:
 
 ```javascript
 var app = require('app');
@@ -99,7 +99,7 @@ __Tareas de Internet Explorer:__
 
 ![IE](http://i.msdn.microsoft.com/dynimg/IC420539.png)
 
-A diferencia del menú dock en OS X, el cual es un menú real, las tareas de usuario en Windows
+A diferencia del menú dock en macOS, el cual es un menú real, las tareas de usuario en Windows
 funcionan como accesos directos de aplicación, que al ser clickeados, lanzan el programa
 con argumentos específicos.
 

@@ -17,49 +17,42 @@ namespace atom {
 
 namespace api {
 
-class DownloadItem : public mate::EventEmitter,
+class DownloadItem : public mate::TrackableObject<DownloadItem>,
                      public content::DownloadItem::Observer {
  public:
-  class SavePathData : public base::SupportsUserData::Data {
-   public:
-    explicit SavePathData(const base::FilePath& path);
-    const base::FilePath& path();
-   private:
-    base::FilePath path_;
-  };
-
   static mate::Handle<DownloadItem> Create(v8::Isolate* isolate,
                                            content::DownloadItem* item);
-  static void* UserDataKey();
+
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype);
+
+  void Pause();
+  bool IsPaused() const;
+  void Resume();
+  bool CanResume() const;
+  void Cancel();
+  int64_t GetReceivedBytes() const;
+  int64_t GetTotalBytes() const;
+  std::string GetMimeType() const;
+  bool HasUserGesture() const;
+  std::string GetFilename() const;
+  std::string GetContentDisposition() const;
+  const GURL& GetURL() const;
+  content::DownloadItem::DownloadState GetState() const;
+  bool IsDone() const;
+  void SetSavePath(const base::FilePath& path);
+  base::FilePath GetSavePath() const;
 
  protected:
-  explicit DownloadItem(content::DownloadItem* download_item);
+  DownloadItem(v8::Isolate* isolate, content::DownloadItem* download_item);
   ~DownloadItem();
 
   // Override content::DownloadItem::Observer methods
   void OnDownloadUpdated(content::DownloadItem* download) override;
   void OnDownloadDestroyed(content::DownloadItem* download) override;
 
-  void Pause();
-  void Resume();
-  void Cancel();
-  int64 GetReceivedBytes();
-  int64 GetTotalBytes();
-  std::string GetMimeType();
-  bool HasUserGesture();
-  std::string GetFilename();
-  std::string GetContentDisposition();
-  const GURL& GetUrl();
-  void SetSavePath(const base::FilePath& path);
-
  private:
-  // mate::Wrappable:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  bool IsDestroyed() const override;
-
-  void Destroy();
-
+  base::FilePath save_path_;
   content::DownloadItem* download_item_;
 
   DISALLOW_COPY_AND_ASSIGN(DownloadItem);

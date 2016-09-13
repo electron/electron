@@ -20,11 +20,11 @@ namespace {
 RenderView* GetCurrentRenderView() {
   WebLocalFrame* frame = WebLocalFrame::frameForCurrentContext();
   if (!frame)
-    return NULL;
+    return nullptr;
 
   WebView* view = frame->view();
   if (!view)
-    return NULL;  // can happen during closing.
+    return nullptr;  // can happen during closing.
 
   return RenderView::FromWebView(view);
 }
@@ -33,7 +33,7 @@ void Send(mate::Arguments* args,
           const base::string16& channel,
           const base::ListValue& arguments) {
   RenderView* render_view = GetCurrentRenderView();
-  if (render_view == NULL)
+  if (render_view == nullptr)
     return;
 
   bool success = render_view->Send(new AtomViewHostMsg_Message(
@@ -49,13 +49,11 @@ base::string16 SendSync(mate::Arguments* args,
   base::string16 json;
 
   RenderView* render_view = GetCurrentRenderView();
-  if (render_view == NULL)
+  if (render_view == nullptr)
     return json;
 
   IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
       render_view->GetRoutingID(), channel, arguments, &json);
-  // Enable the UI thread in browser to receive messages.
-  message->EnableMessagePumping();
   bool success = render_view->Send(message);
 
   if (!success)

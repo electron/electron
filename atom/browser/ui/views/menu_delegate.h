@@ -5,16 +5,13 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
 
-#include <vector>
+#include <memory>
 
+#include "atom/browser/ui/atom_menu_model.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
 namespace views {
-class MenuModelAdapter;
-}
-
-namespace ui {
-class MenuModel;
+class MenuRunner;
 }
 
 namespace atom {
@@ -26,7 +23,7 @@ class MenuDelegate : public views::MenuDelegate {
   explicit MenuDelegate(MenuBar* menu_bar);
   virtual ~MenuDelegate();
 
-  void RunMenu(ui::MenuModel* model, views::MenuButton* button);
+  void RunMenu(AtomMenuModel* model, views::MenuButton* button);
 
  protected:
   // views::MenuDelegate:
@@ -51,20 +48,10 @@ class MenuDelegate : public views::MenuDelegate {
       views::MenuButton** button) override;
 
  private:
-  // Gets the cached menu item view from the model.
-  views::MenuItemView* BuildMenu(ui::MenuModel* model);
-
-  // Returns delegate for current item.
-  views::MenuDelegate* delegate() const { return delegates_[id_]; }
-
   MenuBar* menu_bar_;
-
-  // Current item's id.
   int id_;
-  // Cached menu items, managed by MenuRunner.
-  std::vector<views::MenuItemView*> items_;
-  // Cached menu delegates for each menu item, managed by us.
-  std::vector<views::MenuDelegate*> delegates_;
+  std::unique_ptr<views::MenuDelegate> adapter_;
+  std::unique_ptr<views::MenuRunner> menu_runner_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };

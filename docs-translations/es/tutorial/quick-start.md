@@ -1,8 +1,6 @@
-# Intro
-
 ## Introducción
 
-Electron permite la creación de aplicaciones de escritorio utilizando JavaScript puro, a través de un runtime con APIs nativas. Puedes verlo como una variante de io.js, enfocado en aplicaciones de escritorio, en vez de servidores web. 
+Electron permite la creación de aplicaciones de escritorio utilizando JavaScript puro, a través de un runtime con APIs nativas. Puedes verlo como una variante de io.js, enfocado a aplicaciones de escritorio, en vez de servidores web.
 
 Esto no significa que Electron sea un binding de librerías GUI para JavaScript.
 Electron utiliza páginas web como su GUI, por lo cual puedes verlo como un navegador Chromium mínimo,
@@ -37,8 +35,8 @@ porque la gestión de los recursos GUI nativos es peligrosa, y tiende a que ocur
 Si deseas realizar operaciones GUI en una página web, el proceso renderer de la página web debe comunicarse
 con el proceso principal, y solicitar a este que realice esas operaciones.
 
-En Electron, hemos proveído el módulo [ipc](../api/ipc-renderer.md) para la comunicación
-entre el proceso principal y el proceso renderer. Y también hay un módulo [remote](../api/remote.md)
+En Electron, hemos proveído el módulo [ipc](../../../docs/api/ipc-renderer.md) para la comunicación
+entre el proceso principal y el proceso renderer. Y también hay un módulo [remote](../../../docs/api/remote.md)
 para comunicación al estilo RPC.
 
 ## Escribe tu primera aplicación Electron
@@ -65,14 +63,10 @@ a ser ejecutado por el proceso principal. Un ejemplo de `package.json` podría v
 ```
 
 El `main.js` debería crear las ventanas y gestionar los eventos del sistema, un ejemplo típico sería:
-example being:
 
 ```javascript
 var app = require('app');  // Módulo para controlar el ciclo de vida de la aplicación.
 var BrowserWindow = require('browser-window');  // Módulo para crear uan ventana de navegador.
-
-// Reportar crashes a nuestro servidor.
-require('crash-reporter').start();
 
 // Mantener una referencia global al objeto window, si no lo haces, esta ventana
 // se cerrará automáticamente cuando el objeto JavaScript sea recolectado (garbage collected):
@@ -80,7 +74,7 @@ var mainWindow = null;
 
 // Salir de todas las ventanas cuando se cierren.
 app.on('window-all-closed', function() {
-  // En OS X es común que las aplicaciones y su barra de menú
+  // En macOS es común que las aplicaciones y su barra de menú
   // se mantengan activas hasta que el usuario cierre la aplicación
   // explícitamente utilizando Cmd + Q
   if (process.platform != 'darwin') {
@@ -95,7 +89,7 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // cargar el index.html de nuestra aplicación.
-  mainWindow.loadUrl('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
 
   // Desplegar devtools.
   mainWindow.openDevTools();
@@ -121,7 +115,7 @@ Finalmente el `index.html` es la página web que mostraremos:
   <body>
     <h1>Hello World!</h1>
     We are using io.js <script>document.write(process.version)</script>
-    and Electron <script>document.write(process.versions['electron'])</script>.
+    and Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
@@ -145,10 +139,10 @@ En Linux:
 $ ./electron/electron your-app/
 ```
 
-En OS X:
+En macOS:
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
-`Electron.app` es parte del paquete de release de Electron, puedes descargarlo [aquí](https://github.com/atom/electron/releases).
+`Electron.app` es parte del paquete de release de Electron, puedes descargarlo [aquí](https://github.com/electron/electron/releases).

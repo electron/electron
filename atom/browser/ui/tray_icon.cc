@@ -12,21 +12,26 @@ TrayIcon::TrayIcon() {
 TrayIcon::~TrayIcon() {
 }
 
-void TrayIcon::SetPressedImage(const gfx::Image& image) {
+void TrayIcon::SetPressedImage(ImageType image) {
 }
 
 void TrayIcon::SetTitle(const std::string& title) {
 }
 
-void TrayIcon::SetHighlightMode(bool highlight) {
+void TrayIcon::SetHighlightMode(TrayIcon::HighlightMode mode) {
 }
 
-void TrayIcon::DisplayBalloon(const gfx::Image& icon,
+void TrayIcon::DisplayBalloon(ImageType icon,
                               const base::string16& title,
                               const base::string16& contents) {
 }
 
-void TrayIcon::PopUpContextMenu(const gfx::Point& pos) {
+void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
+                                AtomMenuModel* menu_model) {
+}
+
+gfx::Rect TrayIcon::GetBounds() {
+  return gfx::Rect();
 }
 
 void TrayIcon::NotifyClicked(const gfx::Rect& bounds, int modifiers) {
@@ -55,8 +60,28 @@ void TrayIcon::NotifyRightClicked(const gfx::Rect& bounds, int modifiers) {
                     OnRightClicked(bounds, modifiers));
 }
 
-void TrayIcon::NotfiyDropFiles(const std::vector<std::string>& files) {
+void TrayIcon::NotifyDrop() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDrop());
+}
+
+void TrayIcon::NotifyDropFiles(const std::vector<std::string>& files) {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropFiles(files));
+}
+
+void TrayIcon::NotifyDropText(const std::string& text) {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropText(text));
+}
+
+void TrayIcon::NotifyDragEntered() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragEntered());
+}
+
+void TrayIcon::NotifyDragExited() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragExited());
+}
+
+void TrayIcon::NotifyDragEnded() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDragEnded());
 }
 
 }  // namespace atom

@@ -1,19 +1,18 @@
 # webFrame
 
-The `web-frame` module allows you to customize the rendering of the current
-web page.
+> Customize the rendering of the current web page.
 
 An example of zooming current page to 200%.
 
 ```javascript
-var webFrame = require('web-frame');
+const {webFrame} = require('electron')
 
-webFrame.setZoomFactor(2);
+webFrame.setZoomFactor(2)
 ```
 
 ## Methods
 
-The `web-frame` module has the following methods:
+The `webFrame` module has the following methods:
 
 ### `webFrame.setZoomFactor(factor)`
 
@@ -59,14 +58,15 @@ whether the word passed is correctly spelled.
 An example of using [node-spellchecker][spellchecker] as provider:
 
 ```javascript
-require('web-frame').setSpellCheckProvider("en-US", true, {
-  spellCheck: function(text) {
-    return !(require('spellchecker').isMisspelled(text));
+const {webFrame} = require('electron')
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck (text) {
+    return !(require('spellchecker').isMisspelled(text))
   }
-});
+})
 ```
 
-### `webFrame.registerUrlSchemeAsSecure(scheme)`
+### `webFrame.registerURLSchemeAsSecure(scheme)`
 
 * `scheme` String
 
@@ -76,18 +76,75 @@ Secure schemes do not trigger mixed content warnings. For example, `https` and
 `data` are secure schemes because they cannot be corrupted by active network
 attackers.
 
-### `webFrame.registerUrlSchemeAsBypassingCsp(scheme)`
+### `webFrame.registerURLSchemeAsBypassingCSP(scheme)`
 
 * `scheme` String
 
 Resources will be loaded from this `scheme` regardless of the current page's
 Content Security Policy.
 
-### `webFrame.registerUrlSchemeAsPrivileged(scheme)`
+### `webFrame.registerURLSchemeAsPrivileged(scheme)`
 
 * `scheme` String
 
-Registers the `scheme` as secure, bypasses content security policy for resources and
-allows registering ServiceWorker.
+Registers the `scheme` as secure, bypasses content security policy for resources,
+allows registering ServiceWorker and supports fetch API.
+
+### `webFrame.insertText(text)`
+
+* `text` String
+
+Inserts `text` to the focused element.
+
+### `webFrame.executeJavaScript(code[, userGesture])`
+
+* `code` String
+* `userGesture` Boolean (optional) - Default is `false`.
+
+Evaluates `code` in page.
+
+In the browser window some HTML APIs like `requestFullScreen` can only be
+invoked by a gesture from the user. Setting `userGesture` to `true` will remove
+this limitation.
+
+### `webFrame.getResourceUsage()`
+
+Returns an object describing usage information of Blink's internal memory
+caches.
+
+```javascript
+const {webFrame} = require('electron')
+console.log(webFrame.getResourceUsage())
+```
+
+This will generate:
+
+```javascript
+{
+  images: {
+    count: 22,
+    size: 2549,
+    liveSize: 2542,
+    decodedSize: 478,
+    purgedSize: 0,
+    purgeableSize: 0
+  },
+  cssStyleSheets: { /* same with "images" */ },
+  xslStyleSheets: { /* same with "images" */ },
+  fonts: { /* same with "images" */ },
+  other: { /* same with "images" */ }
+}
+```
+
+### `webFrame.clearCache()`
+
+Attempts to free memory that is no longer being used (like images from a
+previous navigation).
+
+Note that blindly calling this method probably makes Electron slower since it
+will have to refill these emptied caches, you should only call it if an event
+in your app has occurred that makes you think your page is actually using less
+memory (i.e. you have navigated from a super heavy page to a mostly empty one,
+and intend to stay there).
 
 [spellchecker]: https://github.com/atom/node-spellchecker

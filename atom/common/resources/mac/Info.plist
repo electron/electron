@@ -2,12 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleExecutable</key>
-	<string>${PRODUCT_NAME} Framework</string>
 	<key>CFBundleIdentifier</key>
 	<string>${ATOM_BUNDLE_ID}</string>
 	<key>CFBundleName</key>
-	<string>${PRODUCT_NAME} Framework</string>
+	<string>${PRODUCT_NAME}</string>
+	<key>CFBundleExecutable</key>
+	<string>${PRODUCT_NAME}</string>
 	<key>CFBundlePackageType</key>
 	<string>FMWK</string>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>

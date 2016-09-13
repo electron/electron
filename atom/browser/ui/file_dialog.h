@@ -23,10 +23,11 @@ typedef std::pair<std::string, std::vector<std::string> > Filter;
 typedef std::vector<Filter> Filters;
 
 enum FileDialogProperty {
-  FILE_DIALOG_OPEN_FILE        = 1 << 0,
-  FILE_DIALOG_OPEN_DIRECTORY   = 1 << 1,
-  FILE_DIALOG_MULTI_SELECTIONS = 1 << 2,
-  FILE_DIALOG_CREATE_DIRECTORY = 1 << 3,
+  FILE_DIALOG_OPEN_FILE         = 1 << 0,
+  FILE_DIALOG_OPEN_DIRECTORY    = 1 << 1,
+  FILE_DIALOG_MULTI_SELECTIONS  = 1 << 2,
+  FILE_DIALOG_CREATE_DIRECTORY  = 1 << 3,
+  FILE_DIALOG_SHOW_HIDDEN_FILES = 1 << 4,
 };
 
 typedef base::Callback<void(
@@ -37,6 +38,7 @@ typedef base::Callback<void(
 
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
@@ -44,6 +46,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
 
 void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
@@ -51,12 +54,14 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     base::FilePath* path);
 
 void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
+                    const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     const SaveDialogCallback& callback);

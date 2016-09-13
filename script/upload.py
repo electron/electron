@@ -2,37 +2,34 @@
 
 import argparse
 import errno
+import hashlib
 import os
 import subprocess
 import sys
 import tempfile
 
-from lib.config import PLATFORM, get_target_arch, get_chromedriver_version
-from lib.util import atom_gyp, execute, get_atom_shell_version, parse_version, \
-                     scoped_cwd
+from io import StringIO
+from lib.config import PLATFORM, get_target_arch, get_chromedriver_version, \
+                       get_env_var, s3_config, get_zip_name
+from lib.util import electron_gyp, execute, get_electron_version, \
+                     parse_version, scoped_cwd, s3put
 from lib.github import GitHub
 
 
-ATOM_SHELL_REPO = 'atom/electron'
-ATOM_SHELL_VERSION = get_atom_shell_version()
+ELECTRON_REPO = 'electron/electron'
+ELECTRON_VERSION = get_electron_version()
 
-PROJECT_NAME = atom_gyp()['project_name%']
-PRODUCT_NAME = atom_gyp()['product_name%']
+PROJECT_NAME = electron_gyp()['project_name%']
+PRODUCT_NAME = electron_gyp()['product_name%']
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
-DIST_NAME = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME,
-                                         ATOM_SHELL_VERSION,
-                                         PLATFORM,
-                                         get_target_arch())
-SYMBOLS_NAME = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
-                                                    ATOM_SHELL_VERSION,
-                                                    PLATFORM,
-                                                    get_target_arch())
-MKSNAPSHOT_NAME = 'mksnapshot-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
-                                                      PLATFORM,
-                                                      get_target_arch())
+
+DIST_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
+SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
+DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
+PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
 
 
 def main():
@@ -40,19 +37,18 @@ def main():
 
   if not args.publish_release:
     if not dist_newer_than_head():
-      create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
-      execute([sys.executable, create_dist])
+      run_python_script('create-dist.py')
 
-    build_version = get_atom_shell_build_version()
-    if not ATOM_SHELL_VERSION.startswith(build_version):
+    build_version = get_electron_build_version()
+    if not ELECTRON_VERSION.startswith(build_version):
       error = 'Tag name ({0}) should match build version ({1})\n'.format(
-          ATOM_SHELL_VERSION, build_version)
+          ELECTRON_VERSION, build_version)
       sys.stderr.write(error)
       sys.stderr.flush()
       return 1
 
   github = GitHub(auth_token())
-  releases = github.repos(ATOM_SHELL_REPO).releases.get()
+  releases = github.repos(ELECTRON_REPO).releases.get()
   tag_exists = False
   for release in releases:
     if not release['draft'] and release['tag_name'] == args.version:
@@ -63,14 +59,14 @@ def main():
                                         tag_exists)
 
   if args.publish_release:
-    # Upload the SHASUMS.txt.
-    execute([sys.executable,
-             os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
-             '-v', ATOM_SHELL_VERSION])
+    # Upload the Node SHASUMS*.txt.
+    run_python_script('upload-node-checksums.py', '-v', ELECTRON_VERSION)
 
     # Upload the index.json.
-    execute([sys.executable,
-             os.path.join(SOURCE_ROOT, 'script', 'upload-index-json.py')])
+    run_python_script('upload-index-json.py')
+
+    # Create and upload the Electron SHASUMS*.txt
+    release_electron_checksums(github, release)
 
     # Press the publish button.
     publish_release(github, release['id'])
@@ -78,49 +74,63 @@ def main():
     # Do not upload other files when passed "-p".
     return
 
-  # Upload atom-shell with GitHub Releases API.
-  upload_atom_shell(github, release, os.path.join(DIST_DIR, DIST_NAME))
-  upload_atom_shell(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME))
+  # Upload Electron with GitHub Releases API.
+  upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME))
+  upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME))
+  if PLATFORM == 'darwin':
+    upload_electron(github, release, os.path.join(DIST_DIR, DSYM_NAME))
+  elif PLATFORM == 'win32':
+    upload_electron(github, release, os.path.join(DIST_DIR, PDB_NAME))
+
+  # Upload free version of ffmpeg.
+  ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
+  upload_electron(github, release, os.path.join(DIST_DIR, ffmpeg))
 
   # Upload chromedriver and mksnapshot for minor version update.
   if parse_version(args.version)[2] == '0':
-    chromedriver = 'chromedriver-{0}-{1}-{2}.zip'.format(
-        get_chromedriver_version(), PLATFORM, get_target_arch())
-    upload_atom_shell(github, release, os.path.join(DIST_DIR, chromedriver))
-    upload_atom_shell(github, release, os.path.join(DIST_DIR, MKSNAPSHOT_NAME))
+    chromedriver = get_zip_name('chromedriver', get_chromedriver_version())
+    upload_electron(github, release, os.path.join(DIST_DIR, chromedriver))
+    mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
+    upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot))
 
   if PLATFORM == 'win32' and not tag_exists:
+    # Upload PDBs to Windows symbol server.
+    run_python_script('upload-windows-pdb.py')
+
     # Upload node headers.
-    execute([sys.executable,
-             os.path.join(SOURCE_ROOT, 'script', 'upload-node-headers.py'),
-             '-v', args.version])
+    run_python_script('upload-node-headers.py', '-v', args.version)
 
 
 def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
   parser.add_argument('-v', '--version', help='Specify the version',
-                      default=ATOM_SHELL_VERSION)
+                      default=ELECTRON_VERSION)
   parser.add_argument('-p', '--publish-release',
                       help='Publish the release',
                       action='store_true')
   return parser.parse_args()
 
 
-def get_atom_shell_build_version():
+def run_python_script(script, *args):
+  script_path = os.path.join(SOURCE_ROOT, 'script', script)
+  return execute([sys.executable, script_path] + list(args))
+
+
+def get_electron_build_version():
   if get_target_arch() == 'arm' or os.environ.has_key('CI'):
     # In CI we just build as told.
-    return ATOM_SHELL_VERSION
+    return ELECTRON_VERSION
   if PLATFORM == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R',
+    electron = os.path.join(SOURCE_ROOT, 'out', 'R',
                               '{0}.app'.format(PRODUCT_NAME), 'Contents',
                               'MacOS', PRODUCT_NAME)
   elif PLATFORM == 'win32':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R',
+    electron = os.path.join(SOURCE_ROOT, 'out', 'R',
                               '{0}.exe'.format(PROJECT_NAME))
   else:
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', PROJECT_NAME)
+    electron = os.path.join(SOURCE_ROOT, 'out', 'R', PROJECT_NAME)
 
-  return subprocess.check_output([atom_shell, '--version']).strip()
+  return subprocess.check_output([electron, '--version']).strip()
 
 
 def dist_newer_than_head():
@@ -167,48 +177,75 @@ def create_or_get_release_draft(github, releases, tag, tag_exists):
 
 
 def create_release_draft(github, tag):
+  name = '{0} {1}'.format(PROJECT_NAME, tag)
   if os.environ.has_key('CI'):
-    name = '{0} pending draft'.format(PROJECT_NAME)
     body = '(placeholder)'
   else:
-    name = '{0} {1}'.format(PROJECT_NAME, tag)
     body = get_text_with_editor(name)
   if body == '':
     sys.stderr.write('Quit due to empty release note.\n')
     sys.exit(0)
 
   data = dict(tag_name=tag, name=name, body=body, draft=True)
-  r = github.repos(ATOM_SHELL_REPO).releases.post(data=data)
+  r = github.repos(ELECTRON_REPO).releases.post(data=data)
   return r
 
 
-def upload_atom_shell(github, release, file_path):
+def release_electron_checksums(github, release):
+  checksums = run_python_script('merge-electron-checksums.py',
+                                '-v', ELECTRON_VERSION)
+  upload_io_to_github(github, release, 'SHASUMS256.txt',
+                      StringIO(checksums.decode('utf-8')), 'text/plain')
+
+
+def upload_electron(github, release, file_path):
   # Delete the original file before uploading in CI.
+  filename = os.path.basename(file_path)
   if os.environ.has_key('CI'):
     try:
       for asset in release['assets']:
-        if asset['name'] == os.path.basename(file_path):
-          github.repos(ATOM_SHELL_REPO).releases.assets(asset['id']).delete()
-          break
+        if asset['name'] == filename:
+          github.repos(ELECTRON_REPO).releases.assets(asset['id']).delete()
     except Exception:
       pass
 
   # Upload the file.
-  params = {'name': os.path.basename(file_path)}
-  headers = {'Content-Type': 'application/zip'}
   with open(file_path, 'rb') as f:
-    github.repos(ATOM_SHELL_REPO).releases(release['id']).assets.post(
-        params=params, headers=headers, data=f, verify=False)
+    upload_io_to_github(github, release, filename, f, 'application/zip')
+
+  # Upload the checksum file.
+  upload_sha256_checksum(release['tag_name'], file_path)
+
+
+def upload_io_to_github(github, release, name, io, content_type):
+  params = {'name': name}
+  headers = {'Content-Type': content_type}
+  github.repos(ELECTRON_REPO).releases(release['id']).assets.post(
+      params=params, headers=headers, data=io, verify=False)
+
+
+def upload_sha256_checksum(version, file_path):
+  bucket, access_key, secret_key = s3_config()
+  checksum_path = '{}.sha256sum'.format(file_path)
+  sha256 = hashlib.sha256()
+  with open(file_path, 'rb') as f:
+    sha256.update(f.read())
+
+  filename = os.path.basename(file_path)
+  with open(checksum_path, 'w') as checksum:
+    checksum.write('{} *{}'.format(sha256.hexdigest(), filename))
+  s3put(bucket, access_key, secret_key, os.path.dirname(checksum_path),
+        'atom-shell/tmp/{0}'.format(version), [checksum_path])
 
 
 def publish_release(github, release_id):
   data = dict(draft=False)
-  github.repos(ATOM_SHELL_REPO).releases(release_id).patch(data=data)
+  github.repos(ELECTRON_REPO).releases(release_id).patch(data=data)
 
 
 def auth_token():
-  token = os.environ.get('ATOM_SHELL_GITHUB_TOKEN')
-  message = ('Error: Please set the $ATOM_SHELL_GITHUB_TOKEN '
+  token = get_env_var('GITHUB_TOKEN')
+  message = ('Error: Please set the $ELECTRON_GITHUB_TOKEN '
              'environment variable, which is your personal token')
   assert token, message
   return token

@@ -6,11 +6,11 @@
 #define ATOM_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
 
 #include <map>
+#include <memory>
 
-#include "base/memory/scoped_ptr.h"
+#include "atom/browser/api/trackable_object.h"
 #include "content/public/browser/power_save_blocker.h"
 #include "native_mate/handle.h"
-#include "native_mate/wrappable.h"
 
 namespace mate {
 class Dictionary;
@@ -20,17 +20,16 @@ namespace atom {
 
 namespace api {
 
-class PowerSaveBlocker : public mate::Wrappable {
+class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
  public:
   static mate::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
- protected:
-  PowerSaveBlocker();
-  virtual ~PowerSaveBlocker();
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype);
 
-  // mate::Wrappable implementations:
-  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
+ protected:
+  explicit PowerSaveBlocker(v8::Isolate* isolate);
+  ~PowerSaveBlocker() override;
 
  private:
   void UpdatePowerSaveBlocker();
@@ -38,7 +37,7 @@ class PowerSaveBlocker : public mate::Wrappable {
   bool Stop(int id);
   bool IsStarted(int id);
 
-  scoped_ptr<content::PowerSaveBlocker> power_save_blocker_;
+  std::unique_ptr<content::PowerSaveBlocker> power_save_blocker_;
 
   // Currnet blocker type used by |power_save_blocker_|
   content::PowerSaveBlocker::PowerSaveBlockerType current_blocker_type_;
@@ -47,7 +46,6 @@ class PowerSaveBlocker : public mate::Wrappable {
   using PowerSaveBlockerTypeMap =
       std::map<int, content::PowerSaveBlocker::PowerSaveBlockerType>;
   PowerSaveBlockerTypeMap power_save_blocker_types_;
-
 
   DISALLOW_COPY_AND_ASSIGN(PowerSaveBlocker);
 };

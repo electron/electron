@@ -5,7 +5,8 @@
 #include "atom/browser/ui/message_box.h"
 
 #include "atom/browser/browser.h"
-#include "atom/browser/native_window.h"
+#include "atom/browser/native_window_views.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -29,13 +30,14 @@ class GtkMessageBox {
   GtkMessageBox(NativeWindow* parent_window,
                 MessageBoxType type,
                 const std::vector<std::string>& buttons,
+                int default_id,
                 int cancel_id,
                 const std::string& title,
                 const std::string& message,
                 const std::string& detail,
                 const gfx::ImageSkia& icon)
-      : dialog_scope_(parent_window),
-        cancel_id_(cancel_id) {
+      : cancel_id_(cancel_id),
+        parent_(static_cast<NativeWindowViews*>(parent_window)) {
     // Create dialog.
     dialog_ = gtk_message_dialog_new(
         nullptr,  // parent
@@ -52,28 +54,39 @@ class GtkMessageBox {
     // Set dialog's icon.
     if (!icon.isNull()) {
       GdkPixbuf* pixbuf = libgtk2ui::GdkPixbufFromSkBitmap(*icon.bitmap());
-      GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
+      GtkIconSource* iconsource = gtk_icon_source_new();
+      GtkIconSet* iconset = gtk_icon_set_new();
+      gtk_icon_source_set_pixbuf(iconsource, pixbuf);
+      gtk_icon_set_add_source(iconset, iconsource);
+      GtkWidget* image = gtk_image_new_from_icon_set(iconset,
+                                                     GTK_ICON_SIZE_DIALOG);
       gtk_message_dialog_set_image(GTK_MESSAGE_DIALOG(dialog_), image);
       gtk_widget_show(image);
+      gtk_icon_source_free(iconsource);
+      gtk_icon_set_unref(iconset);
       g_object_unref(pixbuf);
     }
 
     // Add buttons.
     for (size_t i = 0; i < buttons.size(); ++i) {
-      gtk_dialog_add_button(GTK_DIALOG(dialog_),
-                            TranslateToStock(i, buttons[i]),
-                            i);
+      GtkWidget* button = gtk_dialog_add_button(
+          GTK_DIALOG(dialog_), TranslateToStock(i, buttons[i]), i);
+      if (static_cast<int>(i) == default_id)
+        gtk_widget_grab_focus(button);
     }
 
     // Parent window.
-    if (parent_window) {
-      gfx::NativeWindow window = parent_window->GetNativeWindow();
-      libgtk2ui::SetGtkTransientForAura(dialog_, window);
+    if (parent_) {
+      parent_->SetEnabled(false);
+      libgtk2ui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+      gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     }
   }
 
   ~GtkMessageBox() {
     gtk_widget_destroy(dialog_);
+    if (parent_)
+      parent_->SetEnabled(true);
   }
 
   GtkMessageType GetMessageType(MessageBoxType type) {
@@ -92,7 +105,7 @@ class GtkMessageBox {
   }
 
   const char* TranslateToStock(int id, const std::string& text) {
-    std::string lower = base::StringToLowerASCII(text);
+    std::string lower = base::ToLowerASCII(text);
     if (lower == "cancel")
       return GTK_STOCK_CANCEL;
     else if (lower == "no")
@@ -114,7 +127,6 @@ class GtkMessageBox {
   }
 
   int RunSynchronous() {
-    gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     Show();
     int response = gtk_dialog_run(GTK_DIALOG(dialog_));
     if (response < 0)
@@ -135,11 +147,12 @@ class GtkMessageBox {
   CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, int);
 
  private:
-  atom::NativeWindow::DialogScope dialog_scope_;
+  atom::UnresponsiveSuppressor unresponsive_suppressor_;
 
   // The id to return when the dialog is closed without pressing buttons.
   int cancel_id_;
 
+  NativeWindowViews* parent_;
   GtkWidget* dialog_;
   MessageBoxCallback callback_;
 
@@ -147,7 +160,7 @@ class GtkMessageBox {
 };
 
 void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
-  gtk_widget_hide_all(dialog_);
+  gtk_widget_hide(dialog_);
 
   if (response < 0)
     callback_.Run(cancel_id_);
@@ -161,19 +174,21 @@ void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
 int ShowMessageBox(NativeWindow* parent,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
+                   int default_id,
                    int cancel_id,
                    int options,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
-  return GtkMessageBox(parent, type, buttons, cancel_id, title, message, detail,
-                       icon).RunSynchronous();
+  return GtkMessageBox(parent, type, buttons, default_id, cancel_id,
+                       title, message, detail, icon).RunSynchronous();
 }
 
 void ShowMessageBox(NativeWindow* parent,
                     MessageBoxType type,
                     const std::vector<std::string>& buttons,
+                    int default_id,
                     int cancel_id,
                     int options,
                     const std::string& title,
@@ -181,13 +196,13 @@ void ShowMessageBox(NativeWindow* parent,
                     const std::string& detail,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  (new GtkMessageBox(parent, type, buttons, cancel_id, title, message, detail,
-                     icon))->RunAsynchronous(callback);
+  (new GtkMessageBox(parent, type, buttons, default_id, cancel_id,
+                     title, message, detail, icon))->RunAsynchronous(callback);
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
-    GtkMessageBox(nullptr, MESSAGE_BOX_TYPE_ERROR, { "OK" }, 0, "Error",
+    GtkMessageBox(nullptr, MESSAGE_BOX_TYPE_ERROR, { "OK" }, -1, 0, "Error",
                   base::UTF16ToUTF8(title).c_str(),
                   base::UTF16ToUTF8(content).c_str(),
                   gfx::ImageSkia()).RunSynchronous();

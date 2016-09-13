@@ -1,21 +1,26 @@
 # Accelerator
 
-An accelerator is a string that represents a keyboard shortcut. It can contain
-multiple modifiers and key codes, combined by the `+` character.
+> Define keyboard shortcuts.
+
+Accelerators can contain multiple modifiers and key codes, combined by
+the `+` character.
 
 Examples:
 
-* `Command+A`
-* `Ctrl+Shift+Z`
+* `CommandOrControl+A`
+* `CommandOrControl+Shift+Z`
 
 ## Platform notice
 
 On Linux and Windows, the `Command` key does not have any effect so
-use `CommandOrControl` which represents `Command` on OS X and `Control` on
+use `CommandOrControl` which represents `Command` on macOS and `Control` on
 Linux and Windows to define some accelerators.
 
+Use `Alt` instead of `Option`. The `Option` key only exists on macOS, whereas
+the `Alt` key is available on all platforms.
+
 The `Super` key is mapped to the `Windows` key on Windows and Linux and
-`Cmd` on OS X.
+`Cmd` on macOS.
 
 ## Available modifiers
 
@@ -23,6 +28,8 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
 * `Control` (or `Ctrl` for short)
 * `CommandOrControl` (or `CmdOrCtrl` for short)
 * `Alt`
+* `Option`
+* `AltGr`
 * `Shift`
 * `Super`
 
@@ -34,6 +41,7 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
 * Punctuations like `~`, `!`, `@`, `#`, `$`, etc.
 * `Plus`
 * `Space`
+* `Tab`
 * `Backspace`
 * `Delete`
 * `Insert`
@@ -44,3 +52,4 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
 * `Escape` (or `Esc` for short)
 * `VolumeUp`, `VolumeDown` and `VolumeMute`
 * `MediaNextTrack`, `MediaPreviousTrack`, `MediaStop` and `MediaPlayPause`
+* `PrintScreen`
