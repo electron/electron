@@ -4,6 +4,7 @@ import argparse
 import errno
 import hashlib
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -215,6 +216,14 @@ def upload_electron(github, release, file_path):
 
   # Upload the checksum file.
   upload_sha256_checksum(release['tag_name'], file_path)
+
+  # Upload ARM assets without the v7l suffix for backwards compatibility
+  # TODO Remove for 2.0
+  if 'armv7l' in filename:
+    arm_filename = filename.replace('armv7l', 'arm')
+    arm_file_path = os.path.join(os.path.dirname(file_path), arm_filename)
+    shutil.copy2(file_path, arm_file_path)
+    upload_electron(github, release, arm_file_path)
 
 
 def upload_io_to_github(github, release, name, io, content_type):
