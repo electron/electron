@@ -780,25 +780,21 @@ describe('<webview> tag', function () {
 
   describe('found-in-page event', function () {
     it('emits when a request is made', function (done) {
-      var requestId = null
-      var totalMatches = null
-      var activeMatchOrdinal = []
-      var listener = function (e) {
+      let requestId = null
+      let activeMatchOrdinal = []
+      const listener = function (e) {
         assert.equal(e.result.requestId, requestId)
-        if (e.result.finalUpdate) {
-          assert.equal(e.result.matches, 3)
-          totalMatches = e.result.matches
-          listener2()
+        assert.equal(e.result.matches, 3)
+        activeMatchOrdinal.push(e.result.activeMatchOrdinal)
+        if (e.result.activeMatchOrdinal === e.result.matches) {
+          assert.deepEqual(activeMatchOrdinal, [1, 2, 3])
+          webview.stopFindInPage('clearSelection')
+          done()
         } else {
-          activeMatchOrdinal.push(e.result.activeMatchOrdinal)
-          if (e.result.activeMatchOrdinal === totalMatches) {
-            assert.deepEqual(activeMatchOrdinal, [1, 2, 3])
-            webview.stopFindInPage('clearSelection')
-            done()
-          }
+          listener2()
         }
       }
-      var listener2 = function () {
+      const listener2 = function () {
         requestId = webview.findInPage('virtual')
       }
       webview.addEventListener('found-in-page', listener)

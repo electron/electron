@@ -4,6 +4,8 @@
 
 #include "atom/browser/osr/osr_web_contents_view.h"
 
+#import <Cocoa/Cocoa.h>
+
 @interface OffScreenView : NSView
 @end
 

@@ -252,11 +252,11 @@ content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
 }
 
 void CommonWebContentsDelegate::RunFileChooser(
-    content::WebContents* guest,
+    content::RenderFrameHost* render_frame_host,
     const content::FileChooserParams& params) {
   if (!web_dialog_helper_)
     web_dialog_helper_.reset(new WebDialogHelper(owner_window()));
-  web_dialog_helper_->RunFileChooser(guest, params);
+  web_dialog_helper_->RunFileChooser(render_frame_host, params);
 }
 
 void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,

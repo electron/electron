@@ -27,7 +27,7 @@ bool BridgeTaskRunner::PostDelayedTask(
     base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();
   if (!message_loop) {
-    tasks_.push_back(base::MakeTuple(from_here, task, delay));
+    tasks_.push_back(std::make_tuple(from_here, task, delay));
     return true;
   }
 
@@ -48,7 +48,7 @@ bool BridgeTaskRunner::PostNonNestableDelayedTask(
     base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();
   if (!message_loop) {
-    non_nestable_tasks_.push_back(base::MakeTuple(from_here, task, delay));
+    non_nestable_tasks_.push_back(std::make_tuple(from_here, task, delay));
     return true;
   }
 

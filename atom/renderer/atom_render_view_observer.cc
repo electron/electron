@@ -103,7 +103,6 @@ AtomRenderViewObserver::AtomRenderViewObserver(
     content::RenderView* render_view,
     AtomRendererClient* renderer_client)
     : content::RenderViewObserver(render_view),
-      renderer_client_(renderer_client),
       document_created_(false) {
   // Initialise resource for directory listing.
   net::NetModule::SetResourceProvider(NetResourceProvider);
@@ -149,6 +148,10 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
+}
+
+void AtomRenderViewObserver::OnDestruct() {
+  delete this;
 }
 
 void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,

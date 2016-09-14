@@ -22,6 +22,7 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
 #include "skia/ext/skia_utils_mac.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/skia_util.h"
 
 namespace {
@@ -1009,8 +1010,8 @@ bool NativeWindowMac::IsKiosk() {
 
 void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
   SkColor color = ParseHexColor(color_name);
-  base::ScopedCFTypeRef<CGColorRef> cgcolor =
-      skia::CGColorCreateFromSkColor(color);
+  base::ScopedCFTypeRef<CGColorRef> cgcolor(
+      skia::CGColorCreateFromSkColor(color));
   [[[window_ contentView] layer] setBackgroundColor:cgcolor];
 
   const auto view = web_contents()->GetRenderWidgetHostView();
