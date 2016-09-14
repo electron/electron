@@ -419,6 +419,8 @@
       'atom/common/node_includes.h',
       'atom/common/options_switches.cc',
       'atom/common/options_switches.h',
+      'atom/common/pepper_flash_util.cc',
+      'atom/common/pepper_flash_util.h',
       'atom/common/platform_util.h',
       'atom/common/platform_util_linux.cc',
       'atom/common/platform_util_mac.mm',

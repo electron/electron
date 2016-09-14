@@ -10,6 +10,7 @@
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/options_switches.h"
+#include "atom/common/pepper_flash_util.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_split.h"
@@ -18,7 +19,6 @@
 #include "content/public/common/content_constants.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/user_agent.h"
-#include "ppapi/shared_impl/ppapi_permissions.h"
 #include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
@@ -35,46 +35,6 @@
 namespace atom {
 
 namespace {
-
-content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
-                                                const std::string& version) {
-  content::PepperPluginInfo plugin;
-
-  plugin.is_out_of_process = true;
-  plugin.name = content::kFlashPluginName;
-  plugin.path = path;
-  plugin.permissions = ppapi::PERMISSION_ALL_BITS;
-
-  std::vector<std::string> flash_version_numbers = base::SplitString(
-      version, ".", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  if (flash_version_numbers.size() < 1)
-    flash_version_numbers.push_back("11");
-  // |SplitString()| puts in an empty string given an empty string. :(
-  else if (flash_version_numbers[0].empty())
-    flash_version_numbers[0] = "11";
-  if (flash_version_numbers.size() < 2)
-    flash_version_numbers.push_back("2");
-  if (flash_version_numbers.size() < 3)
-    flash_version_numbers.push_back("999");
-  if (flash_version_numbers.size() < 4)
-    flash_version_numbers.push_back("999");
-  // E.g., "Shockwave Flash 10.2 r154":
-  plugin.description = plugin.name + " " + flash_version_numbers[0] + "." +
-      flash_version_numbers[1] + " r" + flash_version_numbers[2];
-  plugin.version = base::JoinString(flash_version_numbers, ".");
-  content::WebPluginMimeType swf_mime_type(
-      content::kFlashPluginSwfMimeType,
-      content::kFlashPluginSwfExtension,
-      content::kFlashPluginSwfDescription);
-  plugin.mime_types.push_back(swf_mime_type);
-  content::WebPluginMimeType spl_mime_type(
-      content::kFlashPluginSplMimeType,
-      content::kFlashPluginSplExtension,
-      content::kFlashPluginSplDescription);
-  plugin.mime_types.push_back(spl_mime_type);
-
-  return plugin;
-}
 
 #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
 content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
@@ -125,20 +85,6 @@ void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
 }
 
 }  // namespace
-
-void AddPepperFlashFromCommandLine(
-    std::vector<content::PepperPluginInfo>* plugins) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath flash_path = command_line->GetSwitchValuePath(
-      switches::kPpapiFlashPath);
-  if (flash_path.empty())
-    return;
-
-  auto flash_version = command_line->GetSwitchValueASCII(
-      switches::kPpapiFlashVersion);
-
-  plugins->push_back(CreatePepperFlashInfo(flash_path, flash_version));
-}
 
 #if defined(WIDEVINE_CDM_AVAILABLE) && defined(ENABLE_PEPPER_CDMS)
 void AddWidevineCdmFromCommandLine(
