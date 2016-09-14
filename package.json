@@ -42,8 +42,9 @@
     "cibuild-windows-ia32": "rm -Rf node_mdules && python ./script/cibuild --target_arch=ia32",
     "test": "python ./script/test.py",
     "browser-build": "npm run build && rsync -avz --delete out/D/Brave.app ../browser-laptop/node_modules/electron-prebuilt/dist/",
+    "browser-build-linux": "python ./script/build.py -c R && rsync -avz --delete out/R/ ../browser-laptop/node_modules/electron-prebuilt/dist/",
     "browser-build-windows": "python ./script/build.py && xcopy .\\out\\R\\* ..\\browser-laptop\\node_modules\\electron-prebuilt\\dist\\ /Y /S /I /F /R",
-    "libchromium-build": "../libchromiumcontent/script/bootstrap && ../libchromiumcontent/script/update && ../libchromiumcontent/script/build && ../libchromiumcontent/script/create-dist --no_zip",
-    "libchromium-bootstrap": "./script/bootstrap.py -v --libcc_source_path ../libchromiumcontent/dist/main/src --libcc_shared_library_path ../libchromiumcontent/dist/main/shared_library --libcc_static_library_path ../libchromiumcontent/dist/main/static_library"
+    "libchromium-build": "python ../libchromiumcontent/script/bootstrap && python ../libchromiumcontent/script/update && python ../libchromiumcontent/script/build && python ../libchromiumcontent/script/create-dist --no_zip",
+    "libchromium-bootstrap": "python ./script/bootstrap.py -v --libcc_source_path ../libchromiumcontent/dist/main/src --libcc_shared_library_path ../libchromiumcontent/dist/main/shared_library --libcc_static_library_path ../libchromiumcontent/dist/main/static_library"
   }
 }
