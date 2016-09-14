@@ -45,6 +45,7 @@ class Extension : public content::NotificationObserver {
       const scoped_refptr<const extensions::Extension>& extension);
   static void Disable(const std::string& extension_id);
   static void Enable(const std::string& extension_id);
+  static void Remove(const std::string& extension_id);
 
   static bool HandleURLOverride(GURL* url,
                                      content::BrowserContext* browser_context);

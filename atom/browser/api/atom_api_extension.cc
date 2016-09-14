@@ -15,9 +15,11 @@
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
+#include "base/path_service.h"
 #include "components/prefs/pref_service.h"
 #include "base/strings/string_util.h"
 #include "components/user_prefs/user_prefs.h"
+#include "components/component_updater/component_updater_paths.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/notification_source.h"
@@ -217,6 +219,33 @@ void Extension::Enable(const std::string& extension_id) {
         atom::NOTIFICATION_ENABLE_USER_EXTENSION_REQUEST,
         content::Source<Extension>(GetInstance()),
         content::Details<const extensions::Extension>(extension));
+}
+
+// static
+void Extension::Remove(const std::string& extension_id) {
+  const extensions::Extension* extension =
+    GetInstance()->extensions_.GetByID(extension_id);
+  if (extension) {
+    content::NotificationService::current()->Notify(
+      atom::NOTIFICATION_DISABLE_USER_EXTENSION_REQUEST,
+      content::Source<Extension>(GetInstance()),
+      content::Details<const extensions::Extension>(extension));
+  }
+
+  base::FilePath install_directory;
+  PathService::Get(component_updater::DIR_COMPONENT_USER, &install_directory);
+  extensions::file_util::UninstallExtension(install_directory, extension_id);
+  base::FilePath path(install_directory.Append(
+    base::FilePath::StringType(extension_id.begin(), extension_id.end())));
+  base::CreateDirectory(path);
+
+  if (extension) {
+    content::NotificationService::current()->Notify(
+      atom::NOTIFICATION_EXTENSION_UNINSTALL_REQUEST,
+      content::Source<Extension>(GetInstance()),
+      content::Details<const extensions::Extension>(extension));
+    GetInstance()->extensions_.Remove(extension_id);
+  }
 }
 
 // static

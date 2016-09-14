@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "atom/browser/api/atom_api_autofill.h"
+#include "atom/browser/api/atom_api_update_client.h"
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/api/atom_api_protocol.h"
@@ -565,6 +566,14 @@ v8::Local<v8::Value> Session::Autofill(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, autofill_);
 }
 
+v8::Local<v8::Value> Session::UpdateClient(v8::Isolate* isolate) {
+  if (update_client_.IsEmpty()) {
+    auto handle = atom::api::UpdateClient::Create(isolate, browser_context());
+    update_client_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, update_client_);
+}
+
 bool Session::Equal(Session* session) const {
 #if defined(ENABLE_EXTENSIONS)
   return extensions::ExtensionsBrowserClient::Get()->IsSameContext(
@@ -642,7 +651,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest)
-      .SetProperty("autofill", &Session::Autofill);
+      .SetProperty("autofill", &Session::Autofill)
+      .SetProperty("updateClient", &Session::UpdateClient);
 }
 
 }  // namespace api

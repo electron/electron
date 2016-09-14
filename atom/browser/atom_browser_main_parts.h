@@ -20,6 +20,32 @@ namespace brightray {
 class BrowserContext;
 }
 
+namespace component_updater {
+class ComponentUpdateService;
+}
+
+namespace update_client {
+struct CrxUpdateItem;
+}
+
+// Just used to give access to OnDemandUpdater since it's private.
+// Chromium has ComponentsUI which is a friend class, so we just
+// do this hack here to gain access.
+class ComponentsUI {
+ public:
+  void OnDemandUpdate(
+      component_updater::ComponentUpdateService* cus,
+      const std::string& component_id);
+  bool GetComponentDetails(const std::string& id,
+                           update_client::CrxUpdateItem* item) const;
+  component_updater::ComponentUpdateService *component_update_service() {
+    return cus_.get();
+  }
+
+ protected:
+  std::unique_ptr<component_updater::ComponentUpdateService> cus_;
+};
+
 namespace atom {
 
 class AtomBindings;
@@ -29,7 +55,8 @@ class NodeBindings;
 class NodeDebugger;
 class BridgeTaskRunner;
 
-class AtomBrowserMainParts : public brightray::BrowserMainParts {
+class AtomBrowserMainParts : public brightray::BrowserMainParts,
+                             public ComponentsUI {
  public:
   AtomBrowserMainParts();
   virtual ~AtomBrowserMainParts();
@@ -41,6 +68,13 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
   // Gets the exit code
   int GetExitCode();
+
+  // Installs an extension for the first time
+  void InstallExtension(const std::string &extension_id);
+
+  // Registers a component for auto updates and for the ability to be installed
+  void RegisterComponentForUpdate(const std::string& public_key,
+      const base::Closure& callback);
 
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.

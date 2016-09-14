@@ -22,7 +22,11 @@ enum NotificationType {
   NOTIFICATION_DISABLE_USER_EXTENSION_REQUEST = NOTIFICATION_ATOM_START,
 
   // Sent when an extension should be enabled. The details are an extension id
-  NOTIFICATION_ENABLE_USER_EXTENSION_REQUEST
+  NOTIFICATION_ENABLE_USER_EXTENSION_REQUEST,
+
+  // Sent when an extension should be uninstalled.
+  // This happens during an update process.
+  NOTIFICATION_EXTENSION_UNINSTALL_REQUEST
 };
 
 }  // namespace atom

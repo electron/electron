@@ -48,6 +48,7 @@
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
+#include "components/component_updater/component_updater_paths.h"
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -149,6 +150,8 @@ int GetPathConstant(const std::string& name) {
     return chrome::DIR_USER_VIDEOS;
   else if (name == "pepperFlashSystemPlugin")
     return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
+  else if (name == "extensionsDir")
+    return component_updater::DIR_COMPONENT_USER;
   else
     return -1;
 }

@@ -23,6 +23,7 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/user_prefs/user_prefs.h"
+#include "components/update_client/update_client.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"
 #include "extensions/browser/api/alarms/alarms_api.h"

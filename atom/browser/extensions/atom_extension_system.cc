@@ -13,6 +13,7 @@
 #include "atom/browser/extensions/atom_notification_types.h"
 #include "atom/browser/extensions/shared_user_script_master.h"
 #include "base/memory/weak_ptr.h"
+#include "base/path_service.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/notification_service.h"
@@ -29,9 +30,14 @@
 #include "extensions/browser/runtime_data.h"
 #include "extensions/browser/service_worker_manager.h"
 #include "extensions/common/extension_messages.h"
+#include "extensions/common/file_util.h"
 #include "extensions/common/manifest_handlers/shared_module_info.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "extensions/browser/value_store/value_store_factory_impl.h"
+#include "brightray/browser/brightray_paths.h"
+#include "components/component_updater/component_updater_paths.h"
+#include "base/files/file_path.h"
+#include "base/files/file_util.h"
 
 using content::BrowserThread;
 
@@ -70,6 +76,8 @@ void AtomExtensionSystem::Shared::Init(bool extensions_enabled) {
   registrar_.Add(this, atom::NOTIFICATION_ENABLE_USER_EXTENSION_REQUEST,
                  content::NotificationService::AllSources());
   registrar_.Add(this, atom::NOTIFICATION_DISABLE_USER_EXTENSION_REQUEST,
+                 content::NotificationService::AllSources());
+  registrar_.Add(this, atom::NOTIFICATION_EXTENSION_UNINSTALL_REQUEST,
                  content::NotificationService::AllSources());
 
   if (extensions_enabled) {
@@ -369,6 +377,20 @@ void AtomExtensionSystem::Shared::Observe(int type,
         DisableExtension(extension->id(), Extension::DISABLE_USER_ACTION);
 
       break;
+    }
+    case atom::NOTIFICATION_EXTENSION_UNINSTALL_REQUEST: {
+      auto extension =
+        content::Details<const Extension>(details).ptr();
+      base::FilePath install_directory;
+      PathService::Get(component_updater::DIR_COMPONENT_USER,
+          &install_directory);
+      std::string extension_id = extension->id();
+      auto registry = ExtensionRegistry::Get(browser_context_);
+      registry->RemoveEnabled(extension_id);
+      registry->RemoveDisabled(extension_id);
+      registry->RemoveTerminated(extension_id);
+      registry->RemoveReady(extension_id);
+          break;
     }
     case content::NOTIFICATION_RENDERER_PROCESS_TERMINATED: {
       content::RenderProcessHost* process =

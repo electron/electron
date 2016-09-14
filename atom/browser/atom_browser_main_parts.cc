@@ -25,11 +25,29 @@
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "v8/include/v8-debug.h"
+#include "components/component_updater/component_updater_service.h"
+#include "components/update_client/crx_update_item.h"
+#include "atom/browser/component_updater/atom_update_client_config.h"
+#include "atom/browser/component_updater/extension_installer.h"
+
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
+
+void ComponentsUI::OnDemandUpdate(
+    component_updater::ComponentUpdateService* cus,
+    const std::string& component_id) {
+  cus->GetOnDemandUpdater().OnDemandUpdate(component_id);
+}
+
+bool
+ComponentsUI::GetComponentDetails(const std::string& id,
+                                  update_client::CrxUpdateItem* item) const {
+  return cus_->GetComponentDetails(id, item);
+}
+
 
 namespace atom {
 
@@ -149,6 +167,15 @@ void AtomBrowserMainParts::IdleHandler() {
   base::allocator::ReleaseFreeMemory();
 }
 
+void AtomBrowserMainParts::InstallExtension(const std::string &extension_id) {
+  OnDemandUpdate(cus_.get(), extension_id);
+}
+
+void AtomBrowserMainParts::RegisterComponentForUpdate(
+    const std::string& public_key, const base::Closure& callback) {
+  component_updater::RegisterExtension(cus_.get(), public_key, callback);
+}
+
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
   js_env_->OnMessageLoopCreated();
 
@@ -180,6 +207,10 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   EnsureBrowserContextKeyedServiceFactoriesBuilt();
 
   browser_context_ = AtomBrowserContext::From("", false);
+
+  cus_ = component_updater::ComponentUpdateServiceFactory(
+    new extensions::AtomUpdateClientConfig(browser_context_.get()));
+
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();
   bridge_task_runner_ = nullptr;

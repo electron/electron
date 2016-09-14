@@ -11,6 +11,7 @@
     'vendor/native_mate/native_mate_files.gypi',
     'extensions.gypi',
     'autofill.gypi',
+    'update_client.gypi',
   ],
   'target_defaults': {
     'msvs_disabled_warnings': [
@@ -235,6 +236,7 @@
       'sources': [
         '<@(lib_sources)',
         '<@(autofill_sources)',
+        '<@(update_client_sources)',
       ],
       'include_dirs': [
         '.',
@@ -290,7 +292,7 @@
         ['OS!="linux" and libchromiumcontent_component', {
           'link_settings': {
             # Following libraries are always linked statically.
-            'libraries': [ '<@(autofill_libraries)' ],
+            'libraries': [ '<@(autofill_libraries)', '<@(update_client_libraries)' ],
           },
         }],
         ['OS=="linux" and libchromiumcontent_component', {
@@ -299,6 +301,7 @@
               # hack to handle cyclic dependencies
               '-Wl,--start-group',
               '<@(autofill_libraries)',
+              '<@(update_client_libraries)',
               '-Wl,--end-group',
             ],
           }
