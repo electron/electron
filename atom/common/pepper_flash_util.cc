@@ -62,16 +62,15 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
 void AddPepperFlashFromCommandLine(
     std::vector<content::PepperPluginInfo>* plugins) {
   auto command_line = base::CommandLine::ForCurrentProcess();
-  const base::CommandLine::StringType flash_path =
-    command_line->GetSwitchValueNative(switches::kPpapiFlashPath);
+  base::FilePath flash_path = command_line->GetSwitchValuePath(
+      switches::kPpapiFlashPath);
   if (flash_path.empty())
     return;
 
-  auto flash_version = command_line->GetSwitchValueNative(
+  auto flash_version = command_line->GetSwitchValueASCII(
       switches::kPpapiFlashVersion);
 
-  plugins->push_back(
-      CreatePepperFlashInfo(base::FilePath(flash_path), flash_version));
+  plugins->push_back(CreatePepperFlashInfo(flash_path, flash_version));
 }
 
 }  // namespace atom
