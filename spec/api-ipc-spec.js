@@ -70,7 +70,7 @@ describe('ipc module', function () {
       assert.ok(Object.keys(a.foo).includes('nested'))
       assert.ok(Object.keys(a.foo).includes('method1'))
 
-      a = remote.require(path.join(fixtures, 'module', 'function-with-missing-properties.js'))
+      a = remote.require(path.join(fixtures, 'module', 'function-with-missing-properties.js')).setup()
       assert.equal(a.bar(), true)
       assert.equal(typeof a.bar.baz, 'function')
     })
