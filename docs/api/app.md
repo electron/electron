@@ -32,9 +32,10 @@ Returns:
 
 * `launchInfo` Object _macOS_
 
-Emitted when Electron has finished initialization. On macOS, `launchInfo` holds
+Emitted when Electron has finished initializing. On macOS, `launchInfo` holds
 the `userInfo` of the `NSUserNotification` that was used to open the application,
-if it was launched from Notification Center.
+if it was launched from Notification Center. You can call `app.isReady()` to
+check if this event has already fired.
 
 ### Event: 'window-all-closed'
 
@@ -349,6 +350,10 @@ app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
 app.exit(0)
 ```
 
+### `app.isReady()`
+
+Returns `true` if Electron has finished initializing, `false` otherwise.
+
 ### `app.focus()`
 
 On Linux, focuses on the first visible window. On macOS, makes the application
@@ -586,7 +591,7 @@ replaced by the standard Jump List for the app (managed by Windows).
   omitted.
 * `items` Array - Array of `JumpListItem` objects if `type` is `tasks` or
   `custom`, otherwise it should be omitted.
-          
+
 **Note:** If a `JumpListCategory` object has neither the `type` nor the `name`
 property set then its `type` is assumed to be `tasks`. If the `name` property
 is set but the `type` property is omitted then the `type` is assumed to be
@@ -627,7 +632,7 @@ items can be obtained using `app.getJumpListSettings()`.
   resource file contains multiple icons this value can be used to specify the
   zero-based index of the icon that should be displayed for this task. If a
   resource file contains only one icon, this property should be set to zero.
- 
+
 Here's a very simple example of creating a custom Jump List:
 
 ```javascript
