@@ -24,6 +24,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
+#include "atom/common/pepper_flash_util.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
@@ -33,6 +34,7 @@
 #include "brave/browser/brave_content_browser_client.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/browser/plugin_service_impl.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -716,6 +718,21 @@ void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
     base::FilePath path;
     args->GetNext(&path);
     command_line->AppendSwitchPath(switch_string, path);
+
+    // load flash if the switch is added after
+    // AtomContentClient::AddPepperPlugins is called
+    if (switch_string == atom::switches::kPpapiFlashPath) {
+      std::vector<content::PepperPluginInfo> plugins;
+      atom::AddPepperFlashFromCommandLine(&plugins);
+      auto plugin_service = content::PluginServiceImpl::GetInstance();
+      for (size_t i = 0; i < plugins.size(); ++i) {
+        if (!plugin_service->
+            GetRegisteredPpapiPluginInfo(plugins[i].path)) {
+          plugin_service->
+            RegisterInternalPlugin(plugins[i].ToWebPluginInfo(), true);
+        }
+      }
+    }
     return;
   }
 

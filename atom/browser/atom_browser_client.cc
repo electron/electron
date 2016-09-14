@@ -204,6 +204,9 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // Copy following switches to child process.
   static const char* const kCommonSwitchNames[] = {
     switches::kStandardSchemes,
+    switches::kEnablePlugins,
+    switches::kPpapiFlashPath,
+    switches::kPpapiFlashVersion,
   };
   command_line->CopySwitchesFrom(
       *base::CommandLine::ForCurrentProcess(),
