@@ -72,7 +72,7 @@ describe('ipc module', function () {
 
       a = remote.require(path.join(fixtures, 'module', 'function-with-missing-properties.js')).setup()
       assert.equal(a.bar(), true)
-      assert.equal(typeof a.bar.baz, 'function')
+      assert.equal(a.bar.baz, undefined)
     })
 
     it('should work with static class members', function () {
