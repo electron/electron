@@ -218,6 +218,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // done.
   void CapturePage(mate::Arguments* args);
 
+  void EnablePreferredSizeMode(bool enable);
   gfx::Size GetPreferredSize();
 
   // Methods for creating <webview>.
