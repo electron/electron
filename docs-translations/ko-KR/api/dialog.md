@@ -127,6 +127,9 @@ macOS 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지�
 
 ### `dialog.showErrorBox(title, content)`
 
+* `title` String - 오류 상자에서 표시할 제목
+* `content` String - 오류 상자에서 표시할 텍스트
+
 에러 메시지를 보여주는 대화 상자를 표시합니다.
 
 이 함수는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 있습니다. 이 메서드는

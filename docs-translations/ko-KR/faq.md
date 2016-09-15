@@ -9,7 +9,7 @@ Electron의 Chrome 버전은 보통 새로운 Chrome 안정 버전이 릴리즈 
 Electron은 크롬이 사용하는 안정된 채널만을 이용합니다, 만약 중요한 수정이 베타 또는
 개발 채널에 패치된 경우, 이전 버전의 채널로 롤백합니다.
 
-자세한 내용은 [보안 설명](../tutorial/security.md)을 참고하세요.
+자세한 내용은 [보안 설명](tutorial/security.md)을 참고하세요.
 
 ## Electron은 언제 최신 버전의 Node.js로 업그레이드 하나요?
 

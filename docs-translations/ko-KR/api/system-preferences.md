@@ -14,6 +14,11 @@ console.log(systemPreferences.isDarkMode());
 이 메서드는 시스템이 어두운 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`를
 반환합니다.
 
+### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
+
+이 메서드는 페이지 간의 스와이프가 설정되어있을 때 `true`를 반환하고 그렇지 않은 경우
+`false`를 반환합니다.
+
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
 * `event` String
@@ -41,12 +46,16 @@ macOS의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하�
 
 ### `systemPreferences.subscribeLocalNotification(event, callback)` _macOS_
 
-`subscribeNotification`와 같지만, 로컬 기본값으로 `NSNotificationCenter`를
-사용합니다. 다음과 같은 이벤트에 필수적입니다:
+* `event` String
+* `callback` Function
 
-* `NSUserDefaultsDidChangeNotification`
+`subscribeNotification`와 같습니다. 하지만 로컬 기본값에 대해
+`NSNotificationCenter`를 사용합니다. 이는 `NSUserDefaultsDidChangeNotification`와
+같은 이벤트에 대해 필수적입니다.
 
 ### `systemPreferences.unsubscribeLocalNotification(id)` _macOS_
+
+* `id` Integer
 
 `unsubscribeNotification`와 같지만, `NSNotificationCenter`에서 구독자를 제거합니다.
 

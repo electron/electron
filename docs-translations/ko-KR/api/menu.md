@@ -2,37 +2,20 @@
 
 > 네이티브 애플리케이션 메뉴와 컨텍스트 메뉴를 생성합니다.
 
-이 모듈은 메인 프로세스용 모듈이지만 `remote` 모듈을 통해 렌더러 프로세스에서도 사용할
-수 있습니다.
-
 각 메뉴는 여러 개의 [메뉴 아이템](menu-item.md)으로 구성되고 서브 메뉴를 가질 수도 있습니다.
 
-다음 예시는 웹 페이지 내에서 [remote](remote.md) 모듈을 활용하여 동적으로 메뉴를
-생성하는 예시입니다. 그리고 유저가 페이지에서 오른쪽 클릭을 할 때마다 마우스 위치에
-팝업 형태로 메뉴를 표시합니다:
+## 예시
 
-```html
-<!-- index.html -->
-<script>
-const {remote} = require('electron');
-const {Menu, MenuItem} = remote;
+`Menu` 클래스는 메인 프로세스에서만 사용할 수 있지만, [`remote`](remote.md) 모듈을
+통해 랜더러 프로세스에서도 사용할 수 있습니다.
 
-const menu = new Menu();
-menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked'); }}));
-menu.append(new MenuItem({type: 'separator'}));
-menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}));
+### 메인 프로세스
 
-window.addEventListener('contextmenu', (e) => {
-  e.preventDefault();
-  menu.popup(remote.getCurrentWindow());
-}, false);
-</script>
-```
-
-또 하나의 예를 들자면 다음 예시는 렌더러 프로세스에서 template API를 사용하여
-애플리케이션 메뉴를 만듭니다:
+다음은 템플릿 API를 사용하여 메인 프로세스에서 어플리케이션 메뉴를 생성하는 예시입니다:
 
 ```javascript
+const {Menu} = require('electron')
+
 const template = [
   {
     label: 'Edit',
@@ -63,7 +46,7 @@ const template = [
       },
       {
         role: 'selectall'
-      },
+      }
     ]
   },
   {
@@ -72,21 +55,35 @@ const template = [
       {
         label: 'Reload',
         accelerator: 'CmdOrCtrl+R',
-        click(item, focusedWindow) {
-          if (focusedWindow) focusedWindow.reload();
+        click (item, focusedWindow) {
+          if (focusedWindow) focusedWindow.reload()
         }
-      },
-      {
-        role: 'togglefullscreen'
       },
       {
         label: 'Toggle Developer Tools',
         accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-        click(item, focusedWindow) {
-          if (focusedWindow)
-            focusedWindow.webContents.toggleDevTools();
+        click (item, focusedWindow) {
+          if (focusedWindow) focusedWindow.webContents.toggleDevTools()
         }
       },
+      {
+        type: 'separator'
+      },
+      {
+        role: 'resetzoom'
+      },
+      {
+        role: 'zoomin'
+      },
+      {
+        role: 'zoomout'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        role: 'togglefullscreen'
+      }
     ]
   },
   {
@@ -97,7 +94,7 @@ const template = [
       },
       {
         role: 'close'
-      },
+      }
     ]
   },
   {
@@ -105,14 +102,14 @@ const template = [
     submenu: [
       {
         label: 'Learn More',
-        click() { require('electron').shell.openExternal('http://electron.atom.io'); }
-      },
+        click () { require('electron').shell.openExternal('http://electron.atom.io') }
+      }
     ]
-  },
-];
+  }
+]
 
 if (process.platform === 'darwin') {
-  const name = require('electron').remote.app.getName();
+  const name = require('electron').remote.app.getName()
   template.unshift({
     label: name,
     submenu: [
@@ -143,9 +140,26 @@ if (process.platform === 'darwin') {
       },
       {
         role: 'quit'
-      },
+      }
     ]
-  });
+  })
+  // Edit menu.
+  template[1].submenu.push(
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Speech',
+      submenu: [
+        {
+          role: 'startspeaking'
+        },
+        {
+          role: 'stopspeaking'
+        }
+      ]
+    }
+  )
   // Window menu.
   template[3].submenu = [
     {
@@ -169,11 +183,34 @@ if (process.platform === 'darwin') {
       label: 'Bring All to Front',
       role: 'front'
     }
-  ];
+  ]
 }
 
-const menu = Menu.buildFromTemplate(template);
-Menu.setApplicationMenu(menu);
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
+```
+
+### 렌더러 프로세스
+
+밑은 [`remote`](remote.md) 모듈을 사용하여 동적으로 웹 페이지 (렌더러 프로세스)에서
+메뉴를 직접적으로 생성하는 예시이며 오른쪽 클릭을 했을 때 메뉴를 표시합니다.
+
+```html
+<!-- index.html -->
+<script>
+const {remote} = require('electron')
+const {Menu, MenuItem} = remote
+
+const menu = new Menu()
+menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked') }}))
+menu.append(new MenuItem({type: 'separator'}))
+menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
+
+window.addEventListener('contextmenu', (e) => {
+  e.preventDefault()
+  menu.popup(remote.getCurrentWindow())
+}, false)
+</script>
 ```
 
 ## Class: Menu
@@ -182,11 +219,11 @@ Menu.setApplicationMenu(menu);
 
 새로운 메뉴를 생성합니다.
 
-## Methods
+## Static Methods
 
-`menu` 클래스는 다음과 같은 메서드를 가지고 있습니다:
+`menu` 클래스는 다음과 같은 정적 메서드를 가지고 있습니다:
 
-### `Menu.setApplicationMenu(menu)`
+#### `Menu.setApplicationMenu(menu)`
 
 * `menu` Menu
 
@@ -195,12 +232,12 @@ Linux에선 각 창의 상단에 표시됩니다.
 
 **참고** 이 API는 `app`의 `ready` 이벤트가 발생한 이후에 호출해야 합니다.
 
-### `Menu.getApplicationMenu()`
+#### `Menu.getApplicationMenu()`
 
 설정되어있는 어플리케이션 메뉴를 반환합니다. (`Menu`의 인스턴스) 만약 없다면 `null`을
 반환합니다.
 
-### `Menu.sendActionToFirstResponder(action)` _macOS_
+#### `Menu.sendActionToFirstResponder(action)` _macOS_
 
 * `action` String
 
@@ -211,7 +248,7 @@ macOS의 네이티브 액션에 대해 자세히 알아보려면
 [macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
 문서를 참고하세요.
 
-### `Menu.buildFromTemplate(template)`
+#### `Menu.buildFromTemplate(template)`
 
 * `template` Array
 
@@ -221,41 +258,39 @@ macOS의 네이티브 액션에 대해 자세히 알아보려면
 또한 `template`에는 다른 속성도 추가할 수 있으며 메뉴가 만들어질 때 해당 메뉴 아이템의
 프로퍼티로 변환됩니다.
 
-## Instance Methods
+### Instance Methods
 
 `menu` 객체는 다음과 같은 인스턴스 메서드를 가지고 있습니다:
 
-### `menu.popup([browserWindow, x, y, positioningItem])`
+#### `menu.popup([browserWindow, x, y, positioningItem])`
 
-* `browserWindow` BrowserWindow (optional) - 기본값은 `null`입니다.
-* `x` Number (optional) - 기본값은 -1입니다.
-* `y` Number (만약 `x`를 지정한 경우 **필수 항목**) - 기본값은 -1입니다.
+* `browserWindow` BrowserWindow (optional) - 기본값은
+  `BrowserWindow.getFocusedWindow()`입니다.
+* `x` Number (optional) - 기본값은 현재 마우스의 위치입니다.
+* `y` Number (만약 `x`를 지정한 경우 **필수 항목**) - 기본값은 현재 마우스의 위치입니다.
 * `positioningItem` Number (optional) _macOS_ - 메뉴 팝업 시 마우스 커서에 바로
   위치시킬 메뉴 아이템의 인덱스. 기본값은 -1입니다.
 
-메뉴를 `browserWindow` 내부 팝업으로 표시합니다. 옵션으로 메뉴를 표시할 `(x,y)`
-좌표를 지정할 수 있습니다. 따로 좌표를 지정하지 않은 경우 마우스 커서 위치에 표시됩니다.
-`positioningItem` 속성은 메뉴 팝업 시 마우스 커서에 바로 위치시킬 메뉴 아이템의
-인덱스입니다. (macOS에서만 지원합니다)
+메뉴를 `browserWindow` 내부 팝업으로 표시합니다.
 
-### `menu.append(menuItem)`
+#### `menu.append(menuItem)`
 
 * `menuItem` MenuItem
 
 메뉴의 리스트 끝에 `menuItem`을 삽입합니다.
 
-### `menu.insert(pos, menuItem)`
+#### `menu.insert(pos, menuItem)`
 
 * `pos` Integer
 * `menuItem` MenuItem
 
 `pos` 위치에 `menuItem`을 삽입합니다.
 
-## Instance Properties
+### Instance Properties
 
 `menu` 객체는 또한 다음과 같은 속성을 가지고 있습니다:
 
-### `menu.items`
+#### `menu.items`
 
 메뉴가 가지고 있는 메뉴 아이템들의 배열입니다.
 

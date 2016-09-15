@@ -183,8 +183,13 @@ Returns:
 * `url` URL
 * `error` String - 에러 코드
 * `certificate` Object
-  * `data` Buffer - PEM 인코딩된 데이터
-  * `issuerName` String
+  * `data` String - PEM 인코딩된 데이터
+  * `issuerName` String - 인증서 발급자의 공통 이름
+  * `subjectName` String - 대상의 공통 이름
+  * `serialNumber` String - 문자열로 표현된 hex 값
+  * `validStart` Integer - 초 단위의 인증서가 유효하기 시작한 날짜
+  * `validExpiry` Integer - 초 단위의 인증서가 만료되는 날짜
+  * `fingerprint` String - 인증서의 지문
 * `callback` Function
 
 `url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
@@ -211,8 +216,13 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
 * `certificateList` [Objects]
-  * `data` Buffer - PEM으로 인코딩된 데이터
-  * `issuerName` String - 발급자의 공통 이름
+  * `data` String - PEM으로 인코딩된 데이터
+  * `issuerName` String - 인증서 발급자의 공통 이름
+  * `subjectName` String - 대상의 공통 이름
+  * `serialNumber` String - 문자열로 표현된 hex 값
+  * `validStart` Integer - 초 단위의 인증서가 유효하기 시작한 날짜
+  * `validExpiry` Integer - 초 단위의 인증서가 만료되는 날짜
+  * `fingerprint` String - 인증서의 지문
 * `callback` Function
 
 클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
@@ -434,15 +444,22 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 최근 문서 목록을 모두 비웁니다.
 
-### `app.setAsDefaultProtocolClient(protocol)` _macOS_ _Windows_
+### `app.setAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - 프로토콜의 이름, `://` 제외. 만약 앱을 통해 `electron://`과
   같은 링크를 처리하고 싶다면, 이 메서드에 `electron` 인수를 담아 호출하면 됩니다.
+* `path` String (optional) _Windows_ - 기본값은 `process.execPath`입니다.
+* `args` Array (optional) _Windows_ - 기본값은 빈 배열입니다.
 
 이 메서드는 지정한 프로토콜(URI scheme)에 대해 현재 실행파일을 기본 핸들러로
 등록합니다. 이를 통해 운영체제와 더 가깝게 통합할 수 있습니다. 한 번 등록되면,
 `your-protocol://`과 같은 모든 링크에 대해 호출시 현재 실행 파일이 실행됩니다.
 모든 링크, 프로토콜을 포함하여 애플리케이션의 인수로 전달됩니다.
+
+Windows에선 실행시에 선택적 매개변수를 통해 경로, 실행 파일, 인수, 실행 파일로 전달될
+인수의 배열을 제공할 수 있습니다.
+
+호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
 
 **참고:** macOS에선, 애플리케이션의 `info.plist`에 등록해둔 프로토콜만 사용할 수
 있습니다. 이는 런타임에서 변경될 수 없습니다. 이 파일은 간단히 텍스트 에디터를
@@ -451,19 +468,27 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 이 API는 내부적으로 Windows 레지스트리와 LSSetDefaultHandlerForURLScheme를 사용합니다.
 
-### `app.removeAsDefaultProtocolClient(protocol)` _macOS_ _Windows_
+호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
+
+### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - 프로토콜의 이름, `://` 제외.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` Array (optional) _Windows_ - Defaults to an empty array
 
 이 메서드는 현재 실행파일이 지정한 프로토콜(URI scheme)에 대해 기본 핸들러인지를
 확인합니다. 만약 그렇다면, 이 메서드는 앱을 기본 핸들러에서 제거합니다.
 
-### `app.isDefaultProtocolClient(protocol)` _macOS_ _Windows_
+호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
+
+### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - `://`를 제외한 프로토콜의 이름.
 
 이 메서드는 현재 실행 파일이 지정한 프로토콜에 대해 기본 동작인지 확인합니다. (URI
 스킴) 만약 그렇다면 `true`를 반환하고 아닌 경우 `false`를 반환합니다.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` Array (optional) _Windows_ - Defaults to an empty array
 
 **참고:** macOS에선, 응용 프로그램이 프로토콜에 대한 기본 프로토콜 동작으로
 등록되었는지를 확인하기 위해 이 메서드를 사용할 수 있습니다. 또한 macOS에서
@@ -493,6 +518,8 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 * `iconIndex` Integer - 아이콘 파일의 인덱스. 만약 아이콘 파일이 두 개 이상의
   아이콘을 가지고 있을 경우, 사용할 아이콘의 인덱스를 이 옵션으로 지정해 주어야 합니다.
   단, 아이콘을 하나만 포함하고 있는 경우 0을 지정하면 됩니다.
+
+호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
 
 ### `app.makeSingleInstance(callback)`
 
@@ -621,12 +648,17 @@ https://www.chromium.org/developers/design-documents/accessibility 를 참고하
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
+* `switch` String -명령줄 스위치
+* `value` String (optional) - 주어진 스위치에 대한 값
+
 Chrominum의 명령줄에 스위치를 추가합니다. `value`는 추가적인 값을 뜻하며 옵션입니다.
 
 **참고:** 이 메서드는 `process.argv`에 영향을 주지 않습니다. 개발자들은 보통
 Chrominum의 로우 레벨 수준의 동작을 제어하기 위해 주로 사용합니다.
 
 ### `app.commandLine.appendArgument(value)`
+
+* `value` String - 명령줄에 덧붙여질 인수
 
 Chrominum의 명령줄에 인수를 추가합니다. 인수는 올바르게 인용됩니다.
 
@@ -675,6 +707,12 @@ dock 아이콘을 숨깁니다.
 
 dock 아이콘을 표시합니다.
 
+### `app.dock.isVisible()` _macOS_
+
+dock 아이콘이 보이는 상태인지 여부를 반환합니다. `app.dock.show()` 호출은
+비동기이므로 해당 메서드를 호출한 후 바로 이 메서드를 호출하면 `true`를 반환하지
+않을 수 있습니다.
+
 ### `app.dock.setMenu(menu)` _macOS_
 
 * `menu` [Menu](menu.md)
@@ -687,21 +725,23 @@ dock 아이콘을 표시합니다.
 
 dock 아이콘의 `image`를 설정합니다.
 
-### `app.getLoginItemSettings()` _macOS_
+### `app.getLoginItemSettings()` _macOS_ _Windows_
 
 앱의 로그인 항목 설정을 객체로 반환합니다.
 
 * `openAtLogin` Boolean - 앱이 로그인시 열리도록 설정되어있는 경우 `true`를 반환.
 * `openAsHidden` Boolean - 앱이 로구인시 숨겨진 채로 열리도록 설정되어있는 경우
-  `true`를 반환.
+  `true`를 반환. 이 설정은 macOS에서만 지원됩니다.
 * `wasOpenedAtLogin` Boolean - 자동으로 로그인할 때 애플리케이션이 열려있었는지 여부.
+  이 설정은 macOS에서만 지원됩니다.
 * `wasOpenedAsHidden` Boolean - 앱이 숨겨진 로그인 항목처럼 열려있었는지 여부.
-  이는 앱이 시작시 어떤 윈도우도 열지 않을 것을 표시합니다.
+  이는 앱이 시작시 어떤 윈도우도 열지 않을 것을 표시합니다. 이 설정은 macOS에서만
+  지원됩니다.
 * `restoreState` Boolean - 앱이 이전 세션에서 상태를 복원하여 로그인 항목처럼
   열려있었는지 여부. 이는 앱이 마지막으로 종료되었던 때에 열려있었던 윈도우를 복원하는
-  것을 표시합니다.
+  것을 표시합니다. 이 설정은 macOS에서만 지원됩니다.
 
-### `app.setLoginItemSettings(settings)` _macOS_
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
   * `openAtLogin` Boolean - `true`로 지정하면 로그인시 애플리케이션을 열도록 하며
@@ -709,7 +749,8 @@ dock 아이콘의 `image`를 설정합니다.
   * `openAsHidden` Boolean - `true`로 지정하면 애플리케이션을 숨겨진 채로 열도록
     합니다. 기본값은 `false`입니다. 사용자가 시스템 설정에서 이 설정을 변경할 수
     있으며 앱이 열렸을 때 현재 값을 확인하려면
-    `app.getLoginItemStatus().wasOpenedAsHidden`를 확인해야 합니다.
+    `app.getLoginItemStatus().wasOpenedAsHidden`을 확인해야 합니다. 이 설정은
+    macOS에서만 지원됩니다.
 
 앱의 로그인 항목 설정을 지정합니다.
 
