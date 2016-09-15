@@ -449,7 +449,7 @@ session.defaultSession.cookies.set(cookie, (error) => {
 
 ## Class: WebRequest
 
-> 생명주기 동안의 다양한 단계를 가지는 요청의 컨텐츠를 가로채고 변경합니다.
+> 생명주기 동안의 다양한 단계를 가지는 요청의 콘텐츠를 가로채고 변경합니다.
 
 `WebRequest` 클래스의 인스턴스는 `Session`의 `webRequest` 속성을 통해 접근할 수
 있습니다.

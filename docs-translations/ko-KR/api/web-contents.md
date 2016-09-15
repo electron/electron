@@ -13,14 +13,34 @@ const {BrowserWindow} = require('electron');
 let win = new BrowserWindow({width: 800, height: 1500});
 win.loadURL('http://github.com');
 
-let webContents = win.webContents;
+let contents = win.webContents;
 ```
 
-## Events
+## Methods
 
-`webContents` 객체는 다음과 같은 이벤트들을 발생시킵니다:
+다음 메서드는 `webContents` 모듈에서 접근할 수 있는 메서드입니다:
 
-### Event: 'did-finish-load'
+```javascript
+const {webContents} = require('electron');
+```
+
+#### `webContents.getAllWebContents()`
+
+모든 `WebContents` 인스턴스의 배열을 반환합니다. 이 배열은 윈도우, 웹뷰, 열린 개발자
+도구 그리고 개발자 도구 확장 기능의 백그라운드 페이지의 모든 웹 콘텐츠를 포함합니다.
+
+#### `webContents.getFocusedWebContents()`
+
+이 애플리케이션에서 포커스되어있는 웹 콘텐츠를 반환합니다. 포커스된 웹 콘텐츠가 없을
+경우 `null`을 반환합니다.
+
+## Class: WebContents
+
+> BrowserWindow 인스턴스의 콘텐츠를 표시하고 제어합니다.
+
+### Instance Events
+
+#### Event: 'did-finish-load'
 
 탐색 작업이 끝났을 때 발생하는 이벤트입니다. 브라우저의 탭의 스피너가 멈추고 `onload`
 이벤트가 발생했을 때를 말합니다.
@@ -41,7 +61,7 @@ Returns:
 확인할 수 있습니다. 참고로 리다이렉트 응답은 `errorCode` -3과 함께 발생합니다; 이
 에러는 명시적으로 무시할 수 있습니다.
 
-### Event: 'did-frame-finish-load'
+#### Event: 'did-frame-finish-load'
 
 Returns:
 
@@ -50,15 +70,15 @@ Returns:
 
 프레임(Frame)이 탐색을 끝냈을 때 발생하는 이벤트입니다.
 
-### Event: 'did-start-loading'
+#### Event: 'did-start-loading'
 
 브라우저 탭의 스피너가 회전을 시작한 때와 같은 시점에 대응하는 이벤트입니다.
 
-### Event: 'did-stop-loading'
+#### Event: 'did-stop-loading'
 
 브라우저 탭의 스피너가 회전을 멈추었을 때와 같은 시점에 대응하는 이벤트입니다.
 
-### Event: 'did-get-response-details'
+#### Event: 'did-get-response-details'
 
 Returns:
 
@@ -75,7 +95,7 @@ Returns:
 요청한 리소스에 관련된 자세한 정보를 사용할 수 있을 때 발생하는 이벤트입니다.
 `status`는 리소스를 다운로드하기 위한 소켓 연결을 나타냅니다.
 
-### Event: 'did-get-redirect-request'
+#### Event: 'did-get-redirect-request'
 
 Returns:
 
@@ -90,7 +110,7 @@ Returns:
 
 리소스를 요청하는 동안에 리다이렉트 응답을 받았을 때 발생하는 이벤트입니다.
 
-### Event: 'dom-ready'
+#### Event: 'dom-ready'
 
 Returns:
 
@@ -98,7 +118,7 @@ Returns:
 
 주어진 프레임의 문서가 로드되었을 때 발생하는 이벤트입니다.
 
-### Event: 'page-favicon-updated'
+#### Event: 'page-favicon-updated'
 
 Returns:
 
@@ -107,7 +127,7 @@ Returns:
 
 페이지가 favicon(파비콘) URL을 받았을 때 발생하는 이벤트입니다.
 
-### Event: 'new-window'
+#### Event: 'new-window'
 
 Returns:
 
@@ -125,7 +145,7 @@ Returns:
 
 `event.preventDefault()`를 호출하면 새로운 창이 생성되는 것을 방지할 수 있습니다.
 
-### Event: 'will-navigate'
+#### Event: 'will-navigate'
 
 Returns:
 
@@ -143,7 +163,7 @@ Returns:
 
 `event.preventDefault()`를 호출하면 탐색을 방지할 수 있습니다.
 
-### Event: 'did-navigate'
+#### Event: 'did-navigate'
 
 Returns:
 
@@ -155,7 +175,7 @@ Returns:
 이 이벤트는 앵커 링크를 클릭하거나 `window.location.hash`의 값을 변경하는 등의 페이지
 내 탐색시엔 발생하지 않습니다. 대신 `did-navigate-in-page` 이벤트를 사용해야 합니다.
 
-### Event: 'did-navigate-in-page'
+#### Event: 'did-navigate-in-page'
 
 Returns:
 
@@ -169,11 +189,11 @@ Returns:
 않습니다. 예를 들어 앵커 링크를 클릭했을 때, 또는 DOM `hashchange` 이벤트가 발생했을
 때로 볼 수 있습니다.
 
-### Event: 'crashed'
+#### Event: 'crashed'
 
 렌더러 프로세스가 예기치 못하게 종료되었을 때 발생되는 이벤트입니다.
 
-### Event: 'plugin-crashed'
+#### Event: 'plugin-crashed'
 
 Returns:
 
@@ -183,23 +203,23 @@ Returns:
 
 플러그인 프로세스가 예기치 못하게 종료되었을 때 발생되는 이벤트입니다.
 
-### Event: 'destroyed'
+#### Event: 'destroyed'
 
 `webContents`가 소멸될 때 발생되는 이벤트입니다.
 
-### Event: 'devtools-opened'
+#### Event: 'devtools-opened'
 
 개발자 도구가 열렸을 때 발생되는 이벤트입니다.
 
-### Event: 'devtools-closed'
+#### Event: 'devtools-closed'
 
 개발자 도구가 닫혔을 때 발생되는 이벤트입니다.
 
-### Event: 'devtools-focused'
+#### Event: 'devtools-focused'
 
 개발자 도구에 포커스가 가거나 개발자 도구가 열렸을 때 발생되는 이벤트입니다.
 
-### Event: 'certificate-error'
+#### Event: 'certificate-error'
 
 Returns:
 
@@ -221,7 +241,7 @@ Returns:
 사용법은 [`app`의 `certificate-error` 이벤트](app.md#event-certificate-error)와
 같습니다.
 
-### Event: 'select-client-certificate'
+#### Event: 'select-client-certificate'
 
 Returns:
 
@@ -242,7 +262,7 @@ Returns:
 사용법은 [`app`의 `select-client-certificate` 이벤트](app.md#event-select-client-certificate)와
 같습니다.
 
-### Event: 'login'
+#### Event: 'login'
 
 Returns:
 
@@ -263,7 +283,7 @@ Returns:
 
 [`app`의 `login`이벤트](app.md#event-login)와 사용 방법은 같습니다.
 
-### Event: 'found-in-page'
+#### Event: 'found-in-page'
 
 Returns:
 
@@ -278,15 +298,15 @@ Returns:
 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) 요청의 결과를
 사용할 수 있을 때 발생하는 이벤트입니다.
 
-### Event: 'media-started-playing'
+#### Event: 'media-started-playing'
 
 미디어가 재생되기 시작할 때 발생하는 이벤트입니다.
 
-### Event: 'media-paused'
+#### Event: 'media-paused'
 
 미디어가 중지되거나 재생이 완료되었을 때 발생하는 이벤트입니다.
 
-### Event: 'did-change-theme-color'
+#### Event: 'did-change-theme-color'
 
 페이지의 테마 색이 변경될 때 발생하는 이벤트입니다. 이 이벤트는 보통 meta 태그에
 의해서 발생합니다:
@@ -295,7 +315,7 @@ Returns:
 <meta name='theme-color' content='#ff0000'>
 ```
 
-### Event: 'update-target-url'
+#### Event: 'update-target-url'
 
 Returns:
 
@@ -304,7 +324,7 @@ Returns:
 
 마우스나 키보드를 사용해 링크에 포커스할 때 발생하는 이벤트입니다.
 
-### Event: 'cursor-changed'
+#### Event: 'cursor-changed'
 
 Returns:
 
@@ -332,7 +352,7 @@ Returns:
 커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale`, `size` 그리고 `hotspot` 인수는
 커스텀 커서의 추가적인 정보를 포함합니다.
 
-### Event: 'context-menu'
+#### Event: 'context-menu'
 
 Returns:
 
@@ -388,7 +408,7 @@ Returns:
 
 새로운 컨텍스트 메뉴의 제어가 필요할 때 발생하는 이벤트입니다.
 
-### Event: 'select-bluetooth-device'
+#### Event: 'select-bluetooth-device'
 
 Returns:
 
@@ -447,25 +467,9 @@ win.webContents.on('paint', (event, dirty, image) => {
 win.loadURL('http://github.com')
 ```
 
-## Static Methods
+### Instance Methods
 
-`webContents` 클래스는 다음과 같은 정적 메서드를 가지고 있습니다:
-
-#### `webContents.getAllWebContents()`
-
-모든 `WebContents` 인스턴스의 배열을 반환합니다. 이 배열은 윈도우, 웹뷰, 열린 개발자
-도구 그리고 개발자 도구 확장 기능의 백그라운드 페이지의 모든 웹 콘텐츠를 포함합니다.
-
-#### `webContents.getFocusedWebContents()`
-
-이 애플리케이션에서 포커스되어있는 웹 콘텐츠를 반환합니다. 포커스된 웹 콘텐츠가 없을
-경우 `null`을 반환합니다.
-
-## Instance Methods
-
-`webContents`객체는 다음과 같은 인스턴스 메서드들을 가지고 있습니다.
-
-### `webContents.loadURL(url[, options])`
+#### `contents.loadURL(url[, options])`
 
 * `url` URL
 * `options` Object (optional)
@@ -482,14 +486,14 @@ const options = {extraHeaders: 'pragma: no-cache\n'};
 webContents.loadURL(url, options)
 ```
 
-### `webContents.downloadURL(url)`
+#### `contents.downloadURL(url)`
 
 * `url` URL
 
 `url`의 리소스를 탐색 없이 다운로드를 시작합니다. `session`의 `will-download`
 이벤트가 발생합니다.
 
-### `webContents.getURL()`
+#### `contents.getURL()`
 
 현재 웹 페이지의 URL을 반환합니다.
 
@@ -500,7 +504,7 @@ win.loadURL('http://github.com');
 let currentURL = win.webContents.getURL();
 ```
 
-### `webContents.getTitle()`
+#### `contents.getTitle()`
 
 현재 웹 페이지의 제목을 반환합니다.
 
@@ -508,93 +512,93 @@ let currentURL = win.webContents.getURL();
 
 윈도우가 소멸되었는지 여부를 반환합니다.
 
-### `webContents.isFocused()`
+#### `contents.isFocused()`
 
 웹 페이지가 포커스되어있는지 여부를 반환합니다.
 
-### `webContents.isLoading()`
+#### `contents.isLoading()`
 
 현재 웹 페이지가 리소스를 로드중인지 여부를 반환합니다.
 
-### `webContents.isLoadingMainFrame()`
+#### `contents.isLoadingMainFrame()`
 
 메인 프레임이 여전히 로딩중인지 여부를 반환합니다. (내부 iframe 또는 frame 포함)
 
-### `webContents.isWaitingForResponse()`
+#### `contents.isWaitingForResponse()`
 
 현재 웹 페이지가 페이지의 메인 리소스로부터 첫 응답을 기다리고있는지 여부를 반환합니다.
 
-### `webContents.stop()`
+#### `contents.stop()`
 
 대기중인 탐색 작업을 모두 멈춥니다.
 
-### `webContents.reload()`
+#### `contents.reload()`
 
 현재 웹 페이지를 새로고침합니다.
 
-### `webContents.reloadIgnoringCache()`
+#### `contents.reloadIgnoringCache()`
 
 현재 웹 페이지의 캐시를 무시한 채로 새로고침합니다.
 
-### `webContents.canGoBack()`
+#### `contents.canGoBack()`
 
 브라우저가 이전 웹 페이지로 돌아갈 수 있는지 여부를 반환합니다.
 
-### `webContents.canGoForward()`
+#### `contents.canGoForward()`
 
 브라우저가 다음 웹 페이지로 이동할 수 있는지 여부를 반환합니다.
 
-### `webContents.canGoToOffset(offset)`
+#### `contents.canGoToOffset(offset)`
 
 * `offset` Integer
 
 웹 페이지가 `offset`로 이동할 수 있는지 여부를 반환합니다.
 
-### `webContents.clearHistory()`
+#### `contents.clearHistory()`
 
 탐색 기록을 삭제합니다.
 
-### `webContents.goBack()`
+#### `contents.goBack()`
 
 브라우저가 이전 웹 페이지로 이동하게 합니다.
 
-### `webContents.goForward()`
+#### `contents.goForward()`
 
 브라우저가 다음 웹 페이지로 이동하게 합니다.
 
-### `webContents.goToIndex(index)`
+#### `contents.goToIndex(index)`
 
 * `index` Integer
 
 브라우저가 지정된 절대 웹 페이지 인덱스로 탐색하게 합니다.
 
-### `webContents.goToOffset(offset)`
+#### `contents.goToOffset(offset)`
 
 * `offset` Integer
 
 "current entry"에서 지정된 offset으로 탐색합니다.
 
-### `webContents.isCrashed()`
+#### `contents.isCrashed()`
 
 렌더러 프로세스가 예기치 않게 종료되었는지 여부를 반환합니다.
 
-### `webContents.setUserAgent(userAgent)`
+#### `contents.setUserAgent(userAgent)`
 
 * `userAgent` String
 
 현재 웹 페이지의 유저 에이전트를 덮어씌웁니다.
 
-### `webContents.getUserAgent()`
+#### `contents.getUserAgent()`
 
 현재 웹 페이지의 유저 에이전트 문자열을 반환합니다.
 
-### `webContents.insertCSS(css)`
+#### `contents.insertCSS(css)`
 
 * `css` String
 
 CSS 코드를 현재 웹 페이지에 삽입합니다.
 
-### `webContents.executeJavaScript(code[, userGesture, callback])`
+#### `contents.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
 * `userGesture` Boolean (optional)
@@ -607,13 +611,13 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 호출될 수 있습니다. `userGesture`를 `true`로 설정하면 이러한 제약을 무시할 수
 있습니다.
 
-### `webContents.setAudioMuted(muted)`
+#### `contents.setAudioMuted(muted)`
 
 * `muted` Boolean
 
 현재 웹 페이지의 소리를 음소거합니다.
 
-### `webContents.isAudioMuted()`
+#### `contents.isAudioMuted()`
 
 현재 페이지가 음소거 되어있는지 여부를 반환합니다.
 
@@ -649,19 +653,19 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 최대와 최소 값의 줌 수준 값을 지정합니다.
 
-### `webContents.undo()`
+#### `contents.undo()`
 
 웹 페이지에서 `undo` 편집 커맨드를 실행합니다.
 
-### `webContents.redo()`
+#### `contents.redo()`
 
 웹 페이지에서 `redo` 편집 커맨드를 실행합니다.
 
-### `webContents.cut()`
+#### `contents.cut()`
 
 웹 페이지에서 `cut` 편집 커맨드를 실행합니다.
 
-### `webContents.copy()`
+#### `contents.copy()`
 
 웹 페이지에서 `copy` 편집 커맨드를 실행합니다.
 
@@ -672,45 +676,45 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 주어진 위치에 있는 이미지를 클립보드로 복사합니다.
 
-### `webContents.paste()`
+#### `contents.paste()`
 
 웹 페이지에서 `paste` 편집 커맨드를 실행합니다.
 
-### `webContents.pasteAndMatchStyle()`
+#### `contents.pasteAndMatchStyle()`
 
 웹 페이지에서 `pasteAndMatchStyle` 편집 커맨드를 실행합니다.
 
-### `webContents.delete()`
+#### `contents.delete()`
 
 웹 페이지에서 `delete` 편집 커맨드를 실행합니다.
 
-### `webContents.selectAll()`
+#### `contents.selectAll()`
 
 웹 페이지에서 `selectAll` 편집 커맨드를 실행합니다.
 
-### `webContents.unselect()`
+#### `contents.unselect()`
 
 웹 페이지에서 `unselect` 편집 커맨드를 실행합니다.
 
-### `webContents.replace(text)`
+#### `contents.replace(text)`
 
 * `text` String
 
 웹 페이지에서 `replace` 편집 커맨드를 실행합니다.
 
-### `webContents.replaceMisspelling(text)`
+#### `contents.replaceMisspelling(text)`
 
 * `text` String
 
 웹 페이지에서 `replaceMisspelling` 편집 커맨드를 실행합니다.
 
-### `webContents.insertText(text)`
+#### `contents.insertText(text)`
 
 * `text` String
 
 포커스된 요소에 `text`를 삽입합니다.
 
-### `webContents.findInPage(text[, options])`
+#### `contents.findInPage(text[, options])`
 
 * `text` String - 찾을 콘텐츠, 반드시 공백이 아니여야 합니다.
 * `options` Object (optional)
@@ -731,7 +735,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 [`found-in-page`](web-contents.md#event-found-in-page) 이벤트를 통해 취득할 수
 있습니다.
 
-### `webContents.stopFindInPage(action)`
+#### `contents.stopFindInPage(action)`
 
 * `action` String - [`webContents.findInPage`](web-contents.md#webcontentfindinpage)
   요청이 종료되었을 때 일어날 수 있는 작업을 지정합니다.
@@ -750,7 +754,7 @@ webContents.on('found-in-page', (event, result) => {
 const requestId = webContents.findInPage('api');
 ```
 
-### `webContents.capturePage([rect, ]callback)`
+#### `contents.capturePage([rect, ]callback)`
 
 * `rect` Object (optional) - 캡쳐할 페이지의 영역
   * `x` Integer
@@ -763,21 +767,21 @@ const requestId = webContents.findInPage('api');
 `callback(image)` 형식으로 호출됩니다. `image`는 [NativeImage](native-image.md)의
 인스턴스이며 스크린샷 데이터를 담고있습니다. `rect`를 생략하면 페이지 전체를 캡처합니다.
 
-### `webContents.hasServiceWorker(callback)`
+#### `contents.hasServiceWorker(callback)`
 
 * `callback` Function
 
 ServiceWorker가 등록되어있는지 확인하고 `callback`에 대한 응답으로 boolean 값을
 반환합니다.
 
-### `webContents.unregisterServiceWorker(callback)`
+#### `contents.unregisterServiceWorker(callback)`
 
 * `callback` Function
 
 ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족될 때 `callback`에
 대한 응답으로 boolean을 반환하거나 JS Promise가 만족되지 않을 때 `false`를 반환합니다.
 
-### `webContents.print([options])`
+#### `contents.print([options])`
 
 `options` Object (optional)
   * `silent` Boolean - 사용자에게 프린트 설정을 묻지 않습니다. 기본값을 `false`입니다.
@@ -791,7 +795,7 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
 `webContents.print({silent: false, printBackground: false})`를 호출하는 것과
 같습니다.
 
-### `webContents.printToPDF(options, callback)`
+#### `contents.printToPDF(options, callback)`
 
 * `options` Object
   * `marginsType` Integer - 사용할 마진의 종류를 지정합니다. 0 부터 2 사이 값을 사용할
@@ -844,7 +848,7 @@ win.webContents.on('did-finish-load', () => {
 });
 ```
 
-### `webContents.addWorkSpace(path)`
+#### `contents.addWorkSpace(path)`
 
 * `path` String
 
@@ -857,13 +861,13 @@ win.webContents.on('devtools-opened', () => {
 });
 ```
 
-### `webContents.removeWorkSpace(path)`
+#### `contents.removeWorkSpace(path)`
 
 * `path` String
 
 특정 경로를 개발자 도구의 워크스페이스에서 제거합니다.
 
-### `webContents.openDevTools([options])`
+#### `contents.openDevTools([options])`
 
 * `options` Object (optional)
   * `detach` Boolean - 새 창에서 개발자 도구를 엽니다.
@@ -874,34 +878,34 @@ win.webContents.on('devtools-opened', () => {
 
 개발자 도구를 엽니다.
 
-### `webContents.closeDevTools()`
+#### `contents.closeDevTools()`
 
 개발자 도구를 닫습니다.
 
-### `webContents.isDevToolsOpened()`
+#### `contents.isDevToolsOpened()`
 
 개발자 도구가 열려있는지 여부를 반환합니다.
 
-### `webContents.isDevToolsFocused()`
+#### `contents.isDevToolsFocused()`
 
 개발자 도구에 포커스 되어있는지 여부를 반환합니다.
 
-### `webContents.toggleDevTools()`
+#### `contents.toggleDevTools()`
 
 개발자 도구를 토글합니다.
 
-### `webContents.inspectElement(x, y)`
+#### `contents.inspectElement(x, y)`
 
 * `x` Integer
 * `y` Integer
 
 (`x`, `y`)위치의 요소를 조사합니다.
 
-### `webContents.inspectServiceWorker()`
+#### `contents.inspectServiceWorker()`
 
 서비스 워커 컨텍스트(service worker context)를 위한 개발자 도구를 엽니다.
 
-### `webContents.send(channel[, arg1][, arg2][, ...])`
+#### `contents.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
 
@@ -939,7 +943,7 @@ app.on('ready', () => {
 </html>
 ```
 
-### `webContents.enableDeviceEmulation(parameters)`
+#### `contents.enableDeviceEmulation(parameters)`
 
 * `parameters` Object
   * `screenPosition` String - 에뮬레이트 할 화면 종료를 지정합니다
@@ -971,11 +975,11 @@ app.on('ready', () => {
 
 `parameters`로 디바이스 에뮬레이션을 사용합니다.
 
-### `webContents.disableDeviceEmulation()`
+#### `contents.disableDeviceEmulation()`
 
 `webContents.enableDeviceEmulation`로 활성화된 디바이스 에뮬레이선을 비활성화 합니다.
 
-### `webContents.sendInputEvent(event)`
+#### `contents.sendInputEvent(event)`
 
 * `event` Object
   * `type` String (**required**) - 이벤트의 종류. 다음 값들을 사용할 수 있습니다:
@@ -1015,7 +1019,7 @@ Input `event`를 웹 페이지로 전송합니다.
 * `hasPreciseScrollingDeltas` Boolean
 * `canScroll` Boolean
 
-### `webContents.beginFrameSubscription([onlyDirty ,]callback)`
+#### `contents.beginFrameSubscription([onlyDirty ,]callback)`
 
 * `onlyDirty` Boolean (optional) - 기본값은 `false`입니다.
 * `callback` Function
@@ -1034,11 +1038,11 @@ Input `event`를 웹 페이지로 전송합니다.
 속성을 포함하는 객체입니다. 만약 `onlyDirty`가 `true`로 지정되어 있으면,
 `frameBuffer`가 다시 그려진 부분만 포함합니다. `onlyDirty`의 기본값은 `false`입니다.
 
-### `webContents.endFrameSubscription()`
+#### `contents.endFrameSubscription()`
 
 프레임 프레젠테이션 이벤트들에 대한 구독을 중지합니다.
 
-### `webContents.startDrag(item)`
+#### `contents.startDrag(item)`
 
 * `item` object
   * `file` String
@@ -1048,7 +1052,7 @@ Input `event`를 웹 페이지로 전송합니다.
 드래그될 파일의 절대 경로입니다. 그리고 `icon`은 드래그 도중 커서 밑에 표시될
 이미지입니다.
 
-### `webContents.savePage(fullPath, saveType, callback)`
+#### `contents.savePage(fullPath, saveType, callback)`
 
 * `fullPath` String - 전체 파일 경로.
 * `saveType` String - 저장 종류를 지정합니다.
@@ -1071,7 +1075,7 @@ win.webContents.on('did-finish-load', () => {
 });
 ```
 
-### `webContents.showDefinitionForSelection()` _macOS_
+#### `contents.showDefinitionForSelection()` _macOS_
 
 페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
 
@@ -1102,32 +1106,34 @@ win.webContents.on('did-finish-load', () => {
 
 *오프 스크린 렌더링* 이 활성화된 경우 현재 프레임 레이트를 반환합니다.
 
-## Instance Properties
+### Instance Properties
 
-`WebContents`객체들은 다음 속성들을 가지고 있습니다:
-
-### `webContents.id`
+#### `contents.id`
 
 이 WebContents의 유일 ID.
 
-### `webContents.session`
+#### `contents.session`
 
 이 webContents에서 사용하는 [session](session.md) 객체를 반환합니다.
 
-### `webContents.hostWebContents`
+#### `contents.hostWebContents`
 
 현재 `WebContents`를 소유하는 `WebContents`를 반환합니다.
 
-### `webContents.devToolsWebContents`
+#### `contents.devToolsWebContents`
 
 이 `WebContents`에 대한 개발자 도구의 `WebContents`를 가져옵니다.
 
 **참고:** 사용자가 절대로 이 객체를 저장해서는 안 됩니다. 개발자 도구가 닫혔을 때,
 `null`이 반환될 수 있습니다.
 
-### `webContents.debugger`
+#### `contents.debugger`
 
-디버거 API는 [원격 디버깅 프로토콜][rdp]에 대한 대체 수송자 역할을 합니다.
+현재 `webContents`에 대한 디버거 인스턴스를 가져옵니다.
+
+## Class: Debugger
+
+> Chrome의 원격 디버깅 프로토콜에 대한 대체 접근자입니다.
 
 ```javascript
 try {
@@ -1150,21 +1156,23 @@ win.webContents.debugger.on('message', (event, method, params) => {
 win.webContents.debugger.sendCommand('Network.enable');
 ```
 
-#### `webContents.debugger.attach([protocolVersion])`
+### Instance Methods
 
-* `protocolVersion` String (optional) - 요쳥할 디버깅 프로토콜의 버전.
+#### `debugger.attach([protocolVersion])`
+
+* `protocolVersion` String (optional) - 요청할 디버깅 프로토콜의 버전.
 
 `webContents`에 디버거를 부착합니다.
 
-#### `webContents.debugger.isAttached()`
+#### `debugger.isAttached()`
 
 디버거가 `webContents`에 부착되어 있는지 여부를 반환합니다.
 
-#### `webContents.debugger.detach()`
+#### `debugger.detach()`
 
 `webContents`로부터 디버거를 분리시킵니다.
 
-#### `webContents.debugger.sendCommand(method[, commandParams, callback])`
+#### `debugger.sendCommand(method[, commandParams, callback])`
 
 * `method` String - 메서드 이름, 반드시 원격 디버깅 프로토콜에 의해 정의된 메서드중
   하나가 됩니다.
@@ -1175,6 +1183,8 @@ win.webContents.debugger.sendCommand('Network.enable');
     정의된 응답
 
 지정한 커맨드를 디버깅 대상에게 전송합니다.
+
+### Instance Events
 
 #### Event: 'detach'
 
