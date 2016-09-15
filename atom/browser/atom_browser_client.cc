@@ -318,6 +318,7 @@ bool AtomBrowserClient::CanCreateWindow(
     const content::Referrer& referrer,
     WindowOpenDisposition disposition,
     const blink::WebWindowFeatures& features,
+    const std::vector<base::string16>& additional_features,
     bool user_gesture,
     bool opener_suppressed,
     content::ResourceContext* context,
@@ -339,6 +340,7 @@ bool AtomBrowserClient::CanCreateWindow(
                                     target_url,
                                     frame_name,
                                     disposition,
+                                    additional_features,
                                     render_process_id,
                                     opener_render_frame_id));
   }
