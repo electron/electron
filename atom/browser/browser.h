@@ -60,7 +60,7 @@ class Browser : public WindowListObserver {
   // Overrides the application version.
   void SetVersion(const std::string& version);
 
-  // Returns the application's name, default is just Atom-Shell.
+  // Returns the application's name, default is just Electron.
   std::string GetName() const;
 
   // Overrides the application name.
