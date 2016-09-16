@@ -134,6 +134,7 @@ struct Converter<WindowOpenDisposition> {
       case NEW_FOREGROUND_TAB: disposition = "foreground-tab"; break;
       case NEW_BACKGROUND_TAB: disposition = "background-tab"; break;
       case NEW_POPUP: case NEW_WINDOW: disposition = "new-window"; break;
+      case SAVE_TO_DISK: disposition = "save-to-disk"; break;
       default: break;
     }
     return mate::ConvertToV8(isolate, disposition);
