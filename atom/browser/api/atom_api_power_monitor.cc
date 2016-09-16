@@ -44,7 +44,7 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate,
-        "Cannot initialize \"power-monitor\" module before app is ready")));
+        "Cannot initialize \"powerMonitor\" module before app is ready")));
     return v8::Null(isolate);
   }
 
