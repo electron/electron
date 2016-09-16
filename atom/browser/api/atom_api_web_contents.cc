@@ -1852,8 +1852,16 @@ void WebContents::OnMemoryPressure(
     web_contents()->GetController().ClearAllScreenshots();
   }
 
+  if (web_contents()->GetRenderProcessHost() &&
+      !web_contents()->GetRenderWidgetHostView()) {
+    content::MemoryPressureController::SendPressureNotification(
+      web_contents()->GetRenderProcessHost(), memory_pressure_level);
+    return;
+  }
+
   // TODO(bridiver) only run once per render process
-  if (!web_contents()->GetRenderWidgetHostView()->HasFocus()) {
+  if (web_contents()->GetRenderWidgetHostView() &&
+      !web_contents()->GetRenderWidgetHostView()->HasFocus()) {
     content::MemoryPressureController::SendPressureNotification(
       web_contents()->GetRenderProcessHost(), memory_pressure_level);
   }
