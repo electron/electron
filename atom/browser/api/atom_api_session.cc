@@ -504,6 +504,21 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+void Session::GetBlobData(
+    const std::string& uuid,
+    const AtomBlobReader::CompletionCallback& callback) {
+  if (callback.is_null())
+    return;
+
+  AtomBlobReader* blob_reader =
+      browser_context()->GetBlobReader();
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomBlobReader::StartReading,
+                 base::Unretained(blob_reader),
+                 uuid,
+                 callback));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -586,6 +601,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                  &Session::AllowNTLMCredentialsForDomains)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("getBlobData", &Session::GetBlobData)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);

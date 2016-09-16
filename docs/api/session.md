@@ -326,6 +326,14 @@ This doesn't affect existing `WebContents`, and each `WebContents` can use
 
 Returns a `String` representing the user agent for this session.
 
+#### `ses.getBlobData(identifier, callback)`
+
+* `identifier` String - Valid UUID.
+* `callback` Function
+  * `result` Buffer - Blob data.
+
+Returns the blob data associated with the `identifier`.
+
 ### Instance Properties
 
 The following properties are available on instances of `Session`:
@@ -513,6 +521,8 @@ The `uploadData` is an array of `data` objects:
 * `data` Object
   * `bytes` Buffer - Content being sent.
   * `file` String - Path of file being uploaded.
+  * `blobUUID` String - UUID of blob data. Use [ses.getBlobData](session.md#sesgetblobdataidentifier-callback) method
+    to retrieve the data.
 
 The `callback` has to be called with an `response` object:
 

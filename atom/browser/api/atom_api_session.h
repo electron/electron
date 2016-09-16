@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/atom_blob_reader.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
@@ -76,6 +77,8 @@ class Session: public mate::TrackableObject<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
+  void GetBlobData(const std::string& uuid,
+                   const AtomBlobReader::CompletionCallback& callback);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);

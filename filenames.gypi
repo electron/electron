@@ -152,6 +152,8 @@
       'atom/browser/auto_updater_mac.mm',
       'atom/browser/atom_access_token_store.cc',
       'atom/browser/atom_access_token_store.h',
+      'atom/browser/atom_blob_reader.cc',
+      'atom/browser/atom_blob_reader.h',
       'atom/browser/atom_browser_client.cc',
       'atom/browser/atom_browser_client.h',
       'atom/browser/atom_browser_context.cc',
