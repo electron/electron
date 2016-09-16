@@ -252,6 +252,9 @@ describe('session module', function () {
     var contentDisposition = 'inline; filename="mock.pdf"'
     var downloadFilePath = path.join(fixtures, 'mock.pdf')
     var downloadServer = http.createServer(function (req, res) {
+      if (req.url === '/?testFilename') {
+        contentDisposition = 'inline'
+      }
       res.writeHead(200, {
         'Content-Length': mockPDF.length,
         'Content-Type': 'application/pdf',
@@ -311,6 +314,23 @@ describe('session module', function () {
         ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
           assert.equal(state, 'cancelled')
           assert.equal(filename, 'mock.pdf')
+          assert.equal(mimeType, 'application/pdf')
+          assert.equal(receivedBytes, 0)
+          assert.equal(totalBytes, mockPDF.length)
+          assert.equal(disposition, contentDisposition)
+          done()
+        })
+      })
+    })
+
+    it('can generate a default filename', function (done) {
+      downloadServer.listen(0, '127.0.0.1', function () {
+        var port = downloadServer.address().port
+        ipcRenderer.sendSync('set-download-option', true, false)
+        w.loadURL(url + ':' + port + '/?testFilename')
+        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
+          assert.equal(state, 'cancelled')
+          assert.equal(filename, 'download.pdf')
           assert.equal(mimeType, 'application/pdf')
           assert.equal(receivedBytes, 0)
           assert.equal(totalBytes, mockPDF.length)

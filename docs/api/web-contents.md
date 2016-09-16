@@ -144,7 +144,7 @@ Returns:
 * `url` String
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
-  `new-window` and `other`.
+  `new-window`, `save-to-disk` and `other`.
 * `options` Object - The options which will be used for creating the new
   `BrowserWindow`.
 
