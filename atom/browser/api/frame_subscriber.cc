@@ -15,10 +15,12 @@ namespace atom {
 
 namespace api {
 
-FrameSubscriber::FrameSubscriber(content::RenderWidgetHostView* view,
+FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
+                                 content::RenderWidgetHostView* view,
                                  const FrameCaptureCallback& callback,
                                  bool only_dirty)
-    : view_(view),
+    : isolate_(isolate),
+      view_(view),
       callback_(callback),
       only_dirty_(only_dirty),
       weak_factory_(this) {
@@ -68,7 +70,23 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
   if (response != content::ReadbackResponse::READBACK_SUCCESS)
     return;
 
-  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap), damage_rect);
+  v8::Locker locker(isolate_);
+  v8::HandleScope handle_scope(isolate_);
+
+  size_t rgb_arr_size = bitmap.width() * bitmap.height() *
+    bitmap.bytesPerPixel();
+  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate_, rgb_arr_size);
+  if (buffer.IsEmpty())
+    return;
+
+  bitmap.copyPixelsTo(
+    reinterpret_cast<uint8_t*>(node::Buffer::Data(buffer.ToLocalChecked())),
+    rgb_arr_size);
+
+  v8::Local<v8::Value> damage =
+      mate::Converter<gfx::Rect>::ToV8(isolate_, damage_rect);
+
+  callback_.Run(buffer.ToLocalChecked(), damage);
 }
 
 }  // namespace api

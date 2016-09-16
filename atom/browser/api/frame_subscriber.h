@@ -12,7 +12,7 @@
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/geometry/size.h"
-#include "ui/gfx/image/image.h"
+#include "v8/include/v8.h"
 
 namespace atom {
 
@@ -21,9 +21,10 @@ namespace api {
 class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
  public:
   using FrameCaptureCallback =
-      base::Callback<void(const gfx::Image&, const gfx::Rect&)>;
+      base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
-  FrameSubscriber(content::RenderWidgetHostView* view,
+  FrameSubscriber(v8::Isolate* isolate,
+                  content::RenderWidgetHostView* view,
                   const FrameCaptureCallback& callback,
                   bool only_dirty);
 
@@ -38,6 +39,7 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
                         const SkBitmap& bitmap,
                         content::ReadbackResponse response);
 
+  v8::Isolate* isolate_;
   content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
   bool only_dirty_;

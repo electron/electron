@@ -670,12 +670,12 @@ describe('browser-window module', function () {
       let called = false
       w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
       w.webContents.on('dom-ready', function () {
-        w.webContents.beginFrameSubscription(function (image) {
+        w.webContents.beginFrameSubscription(function (data) {
           // This callback might be called twice.
           if (called) return
           called = true
 
-          assert.equal(image.isEmpty(), false)
+          assert.notEqual(data.length, 0)
           w.webContents.endFrameSubscription()
           done()
         })
@@ -686,12 +686,12 @@ describe('browser-window module', function () {
       let called = false
       w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
       w.webContents.on('dom-ready', function () {
-        w.webContents.beginFrameSubscription(true, function (image) {
+        w.webContents.beginFrameSubscription(true, function (data) {
           // This callback might be called twice.
           if (called) return
           called = true
 
-          assert.equal(image.isEmpty(), false)
+          assert.notEqual(data.length, 0)
           w.webContents.endFrameSubscription()
           done()
         })
