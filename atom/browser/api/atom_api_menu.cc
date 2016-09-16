@@ -21,11 +21,13 @@ namespace api {
 
 Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
     : model_(new AtomMenuModel(this)),
-      parent_(nullptr) {
+      parent_(nullptr),
+      is_destroyed_(false) {
   InitWith(isolate, wrapper);
 }
 
 Menu::~Menu() {
+  is_destroyed_ = true;
   MenuDestroyed();
 }
 
@@ -157,7 +159,9 @@ bool Menu::IsVisibleAt(int index) const {
 
 void Menu::MenuDestroyed() {
   FOR_EACH_OBSERVER(MenuObserver, observers_, MenuDestroyed());
-  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+  if (!is_destroyed_) {
+    base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+  }
 }
 
 // static

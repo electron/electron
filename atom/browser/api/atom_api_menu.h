@@ -111,6 +111,8 @@ class Menu : public mate::TrackableObject<Menu>,
 
   base::ObserverList<MenuObserver> observers_;
 
+  bool is_destroyed_;
+
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };
 
