@@ -9,26 +9,19 @@
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 
-#if defined(OS_WIN)
-#include "ui/base/win/shell.h"
-#endif
-
 namespace atom {
 
 namespace api {
 
 SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
   Init(isolate);
+  #if defined(OS_WIN)
+  InitializeWindow();
+  #endif
 }
 
 SystemPreferences::~SystemPreferences() {
 }
-
-#if defined(OS_WIN)
-bool SystemPreferences::IsAeroGlassEnabled() {
-  return ui::win::IsAeroGlassEnabled();
-}
-#endif
 
 #if !defined(OS_MACOSX)
 bool SystemPreferences::IsDarkMode() {
@@ -49,6 +42,7 @@ void SystemPreferences::BuildPrototype(
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
 #if defined(OS_WIN)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
+      .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
 #elif defined(OS_MACOSX)
       .SetMethod("postNotification",
                  &SystemPreferences::PostNotification)

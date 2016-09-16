@@ -127,6 +127,7 @@
       'atom/browser/api/atom_api_system_preferences.cc',
       'atom/browser/api/atom_api_system_preferences.h',
       'atom/browser/api/atom_api_system_preferences_mac.mm',
+      'atom/browser/api/atom_api_system_preferences_win.cc',
       'atom/browser/api/atom_api_tray.cc',
       'atom/browser/api/atom_api_tray.h',
       'atom/browser/api/atom_api_web_contents.cc',
