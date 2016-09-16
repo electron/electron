@@ -371,6 +371,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_->SetRootLayer(root_layer_.get());
 #endif
 
+  native_window_->AddObserver(this);
+
   ResizeRootLayer();
 }
 
@@ -914,6 +916,12 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer() {
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
   GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels);
+}
+
+void OffScreenRenderWidgetHostView::OnWindowResize() {
+  // In offscreen mode call RenderWidgetHostView's SetSize explicitly
+  auto size = native_window_->GetSize();
+  SetSize(size);
 }
 
 }  // namespace atom

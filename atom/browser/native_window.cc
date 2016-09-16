@@ -205,14 +205,6 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
 
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
-
-  // In offscreen mode call RenderWidgetHostView's SetSize explicitly
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  if (view) {
-    auto old_size = view->GetViewBounds().size();
-    if (old_size != size)
-      view->SetSize(size);
-  }
 }
 
 gfx::Size NativeWindow::GetSize() {
