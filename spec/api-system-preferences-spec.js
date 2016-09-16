@@ -9,9 +9,9 @@ describe('systemPreferences module', function () {
     }
 
     it('should return a non-empty string', function () {
-      let accentColor = systemPreferences.getAccentColor();
-      assert.notEqual(accentColor, null);
-      assert(accentColor.length > 0);
+      let accentColor = systemPreferences.getAccentColor()
+      assert.notEqual(accentColor, null)
+      assert(accentColor.length > 0)
     })
   })
 
