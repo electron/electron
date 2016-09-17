@@ -623,6 +623,53 @@ describe('<webview> tag', function () {
     })
   })
 
+  describe('<webview>.goForward()', function () {
+    it('should work after a replaced history entry', function (done) {
+      var loadCount = 1
+      var listener = function (e) {
+        if (loadCount === 1) {
+          assert.equal(e.channel, 'history')
+          assert.equal(e.args[0], 1)
+          assert(!webview.canGoBack())
+          assert(!webview.canGoForward())
+        } else if (loadCount === 2) {
+          assert.equal(e.channel, 'history')
+          assert.equal(e.args[0], 2)
+          assert(!webview.canGoBack())
+          assert(webview.canGoForward())
+          webview.removeEventListener('ipc-message', listener)
+        }
+      }
+
+      var loadListener = function (e) {
+        if (loadCount === 1) {
+          webview.src = 'file://' + fixtures + '/pages/base-page.html'
+        } else if (loadCount === 2) {
+          assert(webview.canGoBack())
+          assert(!webview.canGoForward())
+
+          webview.goBack()
+        } else if (loadCount === 3) {
+          webview.goForward()
+        } else if (loadCount === 4) {
+          assert(webview.canGoBack())
+          assert(!webview.canGoForward())
+
+          webview.removeEventListener('did-finish-load', loadListener)
+          done()
+        }
+
+        loadCount++
+      }
+
+      webview.addEventListener('ipc-message', listener)
+      webview.addEventListener('did-finish-load', loadListener)
+      webview.setAttribute('nodeintegration', 'on')
+      webview.src = 'file://' + fixtures + '/pages/history-replace.html'
+      document.body.appendChild(webview)
+    })
+  })
+
   describe('<webview>.clearHistory()', function () {
     it('should clear the navigation history', function (done) {
       var listener = function (e) {
