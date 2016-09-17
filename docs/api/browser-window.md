@@ -448,6 +448,10 @@ Emitted when scroll wheel event phase has begun.
 
 Emitted when scroll wheel event phase has ended.
 
+#### Event: 'scroll-touch-edge' _macOS_
+
+Emitted when scroll wheel event phase filed upon reaching the edge of element.
+
 #### Event: 'swipe' _macOS_
 
 Returns:

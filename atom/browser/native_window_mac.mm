@@ -530,8 +530,7 @@ NativeWindowMac::NativeWindowMac(
     : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
       attention_request_id_(0),
-      title_bar_style_(NORMAL),
-      is_edge_(false) {
+      title_bar_style_(NORMAL) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -676,16 +675,14 @@ NativeWindowMac::NativeWindowMac(
       if (!web_contents)
         return event;
 
-      if (!began && is_edge_ && (([event phase] == NSEventPhaseMayBegin) ||
+      if (!began && (([event phase] == NSEventPhaseMayBegin) ||
                                  ([event phase] == NSEventPhaseBegan))) {
         this->NotifyWindowScrollTouchBegin();
         began = YES;
-        is_edge_ = false;
       } else if (began && (([event phase] == NSEventPhaseEnded) ||
                            ([event phase] == NSEventPhaseCancelled))) {
         this->NotifyWindowScrollTouchEnd();
         began = NO;
-        is_edge_ = false;
       }
       return event;
   }];
@@ -1131,7 +1128,7 @@ void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
     case blink::WebInputEvent::GestureScrollBegin:
     case blink::WebInputEvent::GestureScrollUpdate:
     case blink::WebInputEvent::GestureScrollEnd:
-      is_edge_ = true;
+        this->NotifyWindowScrollTouchEdge();
       break;
     default:
       break;
