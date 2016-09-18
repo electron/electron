@@ -280,7 +280,12 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 
 ### Event: 'gpu-process-crashed'
 
-Emitted when the gpu process crashes.
+Returns:
+
+* `event` Event
+* `killed` Boolean
+
+Emitted when the gpu process crashes or is killed.
 
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
 

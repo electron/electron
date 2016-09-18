@@ -102,7 +102,7 @@ class App : public AtomBrowserClient::Delegate,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
 
   // content::GpuDataManagerObserver:
-  void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
+  void OnGpuProcessCrashed(base::TerminationStatus status) override;
 
  private:
   // Get/Set the pre-defined path in PathService.

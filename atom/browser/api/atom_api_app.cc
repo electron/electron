@@ -585,8 +585,9 @@ void App::SelectClientCertificate(
         cert_request_info->client_certs[0].get());
 }
 
-void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
-  Emit("gpu-process-crashed");
+void App::OnGpuProcessCrashed(base::TerminationStatus status) {
+  Emit("gpu-process-crashed",
+    status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
