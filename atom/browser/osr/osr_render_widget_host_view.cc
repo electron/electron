@@ -377,6 +377,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 }
 
 OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
+  if (native_window_)
+    native_window_->RemoveObserver(this);
+
 #if defined(OS_MACOSX)
   if (is_showing_)
     browser_compositor_->SetRenderWidgetHostIsHidden(true);
@@ -922,6 +925,11 @@ void OffScreenRenderWidgetHostView::OnWindowResize() {
   // In offscreen mode call RenderWidgetHostView's SetSize explicitly
   auto size = native_window_->GetSize();
   SetSize(size);
+}
+
+void OffScreenRenderWidgetHostView::OnWindowClosed() {
+  native_window_->RemoveObserver(this);
+  native_window_ = nullptr;
 }
 
 }  // namespace atom
