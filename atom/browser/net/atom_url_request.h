@@ -25,8 +25,19 @@ public:
     const std::string& url,
     base::WeakPtr<api::URLRequest> delegate);
 
-  void Start();
   void set_method(const std::string& method);
+
+  void Write();
+  void End();
+  void Abort();
+  void SetHeader();
+  void GetHeader();
+  void RemoveHeader();
+
+  int StatusCode();
+  void StatusMessage();
+  void ResponseHeaders();
+  void ResponseHttpVersion();
 
 protected:
   // Overrides of net::URLRequest::Delegate

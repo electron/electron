@@ -39,16 +39,7 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
 
   auto browser_context = session->browser_context();
 
-  //auto url_request_context_getter = browser_context->url_request_context_getter();
- // auto url_request_context = url_request_context_getter->GetURLRequestContext();
 
-  //auto net_url_request = url_request_context->CreateRequest(GURL(url), 
-                                              //          net::RequestPriority::DEFAULT_PRIORITY, 
-                                               //         nullptr);
- // net_url_request->set_method(method);
-   
- // auto atom_url_request = new URLRequest(args->isolate(), args->GetThis(), net_url_request.release());
-  
   auto api_url_request = new URLRequest(args->isolate(), args->GetThis());
   auto weak_ptr = api_url_request->weak_ptr_factory_.GetWeakPtr();
   auto atom_url_request = AtomURLRequest::create(browser_context, url, weak_ptr);
@@ -67,20 +58,75 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "URLRequest"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
-      .SetMethod("start", &URLRequest::start);
+    // Request API
+    .MakeDestroyable()
+    .SetMethod("write", &URLRequest::Write)
+    .SetMethod("end", &URLRequest::End)
+    .SetMethod("abort", &URLRequest::Abort)
+    .SetMethod("setHeader", &URLRequest::SetHeader)
+    .SetMethod("getHeader", &URLRequest::GetHeader)
+    .SetMethod("removaHeader", &URLRequest::RemoveHeader)
+    // Response APi
+    .SetProperty("statusCode", &URLRequest::StatusCode)
+    .SetProperty("statusMessage", &URLRequest::StatusMessage)
+    .SetProperty("responseHeaders", &URLRequest::ResponseHeaders)
+    .SetProperty("responseHttpVersion", &URLRequest::ResponseHttpVersion);
 }
 
-void URLRequest::start() {
+void URLRequest::Write() {
+  atom_url_request_->Write();
+}
+
+void URLRequest::End() {
   pin();
-  atom_url_request_->Start();
+  atom_url_request_->End();
 }
 
-void URLRequest::stop() {
-
+void URLRequest::Abort() {
+  atom_url_request_->Abort();
 }
+
+void URLRequest::SetHeader() {
+  atom_url_request_->SetHeader();
+}
+void URLRequest::GetHeader() {
+  atom_url_request_->GetHeader();
+}
+void URLRequest::RemoveHeader() {
+  atom_url_request_->RemoveHeader();
+}
+
+
 void URLRequest::OnResponseStarted() {
-  Emit("response-started");
+  v8::Local<v8::Function> _emitResponse;
+
+  auto wrapper = GetWrapper();
+  if (mate::Dictionary(isolate(), wrapper).Get("_emitResponse", &_emitResponse))
+    _emitResponse->Call(wrapper, 0, nullptr);
+}
+
+void URLRequest::OnResponseData() {
+  Emit("data");
+}
+
+void URLRequest::OnResponseEnd() {
+  Emit("end");
+}
+
+int URLRequest::StatusCode() {
+  return atom_url_request_->StatusCode();
+}
+
+void URLRequest::StatusMessage() {
+  return atom_url_request_->StatusMessage();
+}
+
+void URLRequest::ResponseHeaders() {
+  return atom_url_request_->ResponseHeaders();
+}
+
+void URLRequest::ResponseHttpVersion() {
+  return atom_url_request_->ResponseHttpVersion();
 }
 
 void URLRequest::pin() {

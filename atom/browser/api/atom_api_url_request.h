@@ -22,17 +22,31 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   static void BuildPrototype(v8::Isolate* isolate,
     v8::Local<v8::FunctionTemplate> prototype);
 
-  void start();
-  void stop();
-  void OnResponseStarted();
  protected:
   URLRequest(v8::Isolate* isolate, 
              v8::Local<v8::Object> wrapper);
   ~URLRequest() override;
 
 
+private:
+  void Write();
+  void End();
+  void Abort();
+  void SetHeader();
+  void GetHeader();
+  void RemoveHeader();
 
- private:
+  friend class AtomURLRequest;
+  void OnResponseStarted();
+  void OnResponseData();
+  void OnResponseEnd();
+
+  int StatusCode();
+  void StatusMessage();
+  void ResponseHeaders();
+  void ResponseHttpVersion();
+
+
   void pin();
   void unpin();
 

@@ -23,31 +23,70 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::create(
   const std::string& url,
   base::WeakPtr<api::URLRequest> delegate) {
 
+  DCHECK(browser_context);
+  DCHECK(!url.empty());
 
-  auto url_request_context_getter = browser_context->url_request_context_getter();
-  auto url_request_context = url_request_context_getter->GetURLRequestContext();
+  auto request_context_getter = browser_context->url_request_context_getter();
 
-  auto net_url_request = url_request_context->CreateRequest(GURL(url),
-    net::RequestPriority::DEFAULT_PRIORITY,
-    nullptr);
- // net_url_request->set_method(method);
+  DCHECK(request_context_getter);
+
+  auto context = request_context_getter->GetURLRequestContext();
+
+  DCHECK(context);
 
   scoped_refptr<AtomURLRequest> atom_url_request = new AtomURLRequest(delegate);
 
-  net_url_request->set_delegate(atom_url_request.get());
-
-  atom_url_request->url_request_ = std::move(net_url_request);
+  atom_url_request->url_request_ = context->CreateRequest(GURL(url),
+    net::RequestPriority::DEFAULT_PRIORITY,
+    atom_url_request.get());
 
   return atom_url_request;
 
 }
 
-void AtomURLRequest::Start() {
+void AtomURLRequest::Write() {
+}
+
+void AtomURLRequest::End() {
   // post to io thread
   content::BrowserThread::PostTask(
     content::BrowserThread::IO, FROM_HERE,
     base::Bind(&AtomURLRequest::StartOnIOThread, this));
 }
+
+void AtomURLRequest::Abort() {
+}
+
+void AtomURLRequest::SetHeader() {
+
+}
+
+void AtomURLRequest::GetHeader() {
+
+}
+
+void AtomURLRequest::RemoveHeader() {
+
+}
+
+
+
+
+
+
+int AtomURLRequest::StatusCode() {
+  return url_request_->GetResponseCode();
+}
+
+void AtomURLRequest::StatusMessage() {
+}
+void AtomURLRequest::ResponseHeaders() {
+}
+
+void AtomURLRequest::ResponseHttpVersion() {
+}
+
+
 
 void AtomURLRequest::StartOnIOThread() {
   url_request_->Start();
