@@ -417,6 +417,16 @@ describe('menu module', function () {
       assert.equal(item.label, 'Hide Electron Test')
       assert.equal(item.accelerator, undefined)
       assert.equal(item.getDefaultRoleAccelerator(), 'Command+H')
+
+      item = new MenuItem({role: 'undo'})
+      assert.equal(item.label, 'Undo')
+      assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+Z')
+
+      item = new MenuItem({role: 'redo'})
+      assert.equal(item.label, 'Redo')
+      assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), process.platform === 'win32' ? 'Control+Y' : 'Shift+CommandOrControl+Z')
     })
   })
 })
