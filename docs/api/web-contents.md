@@ -203,7 +203,12 @@ are clicked or when the DOM `hashchange` event is triggered.
 
 #### Event: 'crashed'
 
-Emitted when the renderer process has crashed.
+Returns:
+
+* `event` Event
+* `killed` Boolean
+
+Emitted when the renderer process crashes or is killed.
 
 #### Event: 'plugin-crashed'
 

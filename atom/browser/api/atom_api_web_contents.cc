@@ -586,7 +586,7 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
-  Emit("crashed");
+  Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,
