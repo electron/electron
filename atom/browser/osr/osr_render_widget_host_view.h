@@ -13,6 +13,7 @@
 #endif
 
 #include "atom/browser/native_window.h"
+#include "atom/browser/native_window_observer.h"
 #include "atom/browser/osr/osr_output_device.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
@@ -60,7 +61,8 @@ class MacHelper;
 class OffScreenRenderWidgetHostView
     : public content::RenderWidgetHostViewBase,
       public ui::CompositorDelegate,
-      public content::DelegatedFrameHostClient {
+      public content::DelegatedFrameHostClient,
+      public NativeWindowObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
                                 const OnPaintCallback& callback,
@@ -172,6 +174,9 @@ class OffScreenRenderWidgetHostView
   bool IsAutoResizeEnabled() const;
   void OnSetNeedsBeginFrames(bool enabled);
 
+  // NativeWindowObserver:
+  void OnWindowResize() override;
+
   void OnBeginFrameTimerTick();
   void SendBeginFrame(base::TimeTicks frame_time,
                       base::TimeDelta vsync_period);
@@ -192,6 +197,8 @@ class OffScreenRenderWidgetHostView
   ui::Compositor* GetCompositor() const;
   ui::Layer* GetRootLayer() const;
   content::DelegatedFrameHost* GetDelegatedFrameHost() const;
+
+  void Invalidate();
 
   content::RenderWidgetHostImpl* render_widget_host() const
       { return render_widget_host_; }

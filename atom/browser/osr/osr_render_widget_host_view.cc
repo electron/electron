@@ -371,6 +371,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_->SetRootLayer(root_layer_.get());
 #endif
 
+  native_window_->AddObserver(this);
+
   ResizeRootLayer();
 }
 
@@ -439,11 +441,7 @@ content::RenderWidgetHost* OffScreenRenderWidgetHostView::GetRenderWidgetHost()
 void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
   size_ = size;
 
-  const gfx::Size& size_in_pixels =
-    gfx::ConvertSizeToPixel(scale_factor_, size);
-
-  GetRootLayer()->SetBounds(gfx::Rect(size));
-  GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels);
+  ResizeRootLayer();
 }
 
 void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
@@ -892,6 +890,16 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
   }
 }
 
+void OffScreenRenderWidgetHostView::Invalidate() {
+  const gfx::Rect& bounds_in_pixels = GetViewBounds();
+
+  if (software_output_device_) {
+    software_output_device_->OnPaint(bounds_in_pixels);
+  } else if (copy_frame_generator_.get()) {
+    copy_frame_generator_->GenerateCopyFrame(true, bounds_in_pixels);
+  }
+}
+
 void OffScreenRenderWidgetHostView::ResizeRootLayer() {
   SetupFrameRate(false);
 
@@ -908,6 +916,12 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer() {
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
   GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels);
+}
+
+void OffScreenRenderWidgetHostView::OnWindowResize() {
+  // In offscreen mode call RenderWidgetHostView's SetSize explicitly
+  auto size = native_window_->GetSize();
+  SetSize(size);
 }
 
 }  // namespace atom

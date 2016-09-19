@@ -1418,6 +1418,15 @@ int WebContents::GetFrameRate() const {
   return osr_rwhv ? osr_rwhv->GetFrameRate() : 0;
 }
 
+void WebContents::Invalidate() {
+  if (!IsOffScreen())
+    return;
+
+  auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  if (osr_rwhv)
+    osr_rwhv->Invalidate();
+}
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   WebContentsPreferences* web_preferences =
@@ -1527,6 +1536,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isPainting", &WebContents::IsPainting)
       .SetMethod("setFrameRate", &WebContents::SetFrameRate)
       .SetMethod("getFrameRate", &WebContents::GetFrameRate)
+      .SetMethod("invalidate", &WebContents::Invalidate)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
