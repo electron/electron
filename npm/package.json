@@ -15,7 +15,7 @@
   "main": "index.js",
   "dependencies": {
     "extract-zip": "^1.0.3",
-    "electron-download": "^2.2.0"
+    "electron-download": "^3.0.0"
   },
   "devDependencies": {
     "home-path": "^0.1.1",
