@@ -266,7 +266,7 @@ void AtomRendererClient::DidCreateScriptContext(
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
 
-  // Add atom-shell extended APIs.
+  // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
   AddRenderBindings(env->isolate(), env->process_object(),
                     preferences_manager_.get());

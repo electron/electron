@@ -54,6 +54,15 @@ nativeImage.toJpeg()
 nativeImage.toJPEG()
 ```
 
+## `process`
+
+```js
+// Deprecated
+process.versions['atom-shell']
+// Replace with
+process.versions.electron
+```
+
 ## `Tray`
 
 ```js
