@@ -176,6 +176,7 @@ class OffScreenRenderWidgetHostView
 
   // NativeWindowObserver:
   void OnWindowResize() override;
+  void OnWindowClosed() override;
 
   void OnBeginFrameTimerTick();
   void SendBeginFrame(base::TimeTicks frame_time,
