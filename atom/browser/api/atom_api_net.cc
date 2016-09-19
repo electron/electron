@@ -57,6 +57,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("net", Net::Create(isolate));
+  dict.Set("Net", Net::GetConstructor(isolate)->GetFunction());
 
 }
 

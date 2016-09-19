@@ -7,13 +7,15 @@
 
 #include "atom/browser/api/trackable_object.h"
 #include "native_mate/handle.h"
+#include "net/url_request/url_request_context.h"
 
 namespace atom {
 
+class AtomURLRequest;
+
 namespace api {
 
-
-class URLRequest : public mate::TrackableObject<URLRequest> {
+class URLRequest : public mate::EventEmitter<URLRequest> {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 
@@ -21,12 +23,23 @@ class URLRequest : public mate::TrackableObject<URLRequest> {
     v8::Local<v8::FunctionTemplate> prototype);
 
   void start();
-
+  void stop();
+  void OnResponseStarted();
  protected:
-  URLRequest(v8::Isolate* isolate);
+  URLRequest(v8::Isolate* isolate, 
+             v8::Local<v8::Object> wrapper);
   ~URLRequest() override;
 
+
+
  private:
+  void pin();
+  void unpin();
+
+  scoped_refptr<AtomURLRequest> atom_url_request_;
+  v8::Global<v8::Object> wrapper_;
+  base::WeakPtrFactory<URLRequest> weak_ptr_factory_;
+
   DISALLOW_COPY_AND_ASSIGN(URLRequest);
 };
 
