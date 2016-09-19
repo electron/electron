@@ -279,6 +279,7 @@
               '-lcomdlg32.lib',
               '-lwininet.lib',
               '-lwinmm.lib',
+              '-lcrypt32.lib',
             ],
           },
           'dependencies': [
