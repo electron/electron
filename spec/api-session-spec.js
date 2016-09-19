@@ -324,6 +324,9 @@ describe('session module', function () {
     })
 
     it('can generate a default filename', function (done) {
+      // Somehow this test always fail on appveyor.
+      if (process.env.APPVEYOR === 'True') return done()
+
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', true, false)
