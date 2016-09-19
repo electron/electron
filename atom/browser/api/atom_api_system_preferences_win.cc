@@ -12,7 +12,7 @@ namespace atom {
 
 namespace {
 
-const wchar_t kSystemPreferencestWindowClass[] =
+const wchar_t kSystemPreferencesWindowClass[] =
   L"Electron_SystemPreferencesHostWindow";
 
 }  // namespace
@@ -44,7 +44,7 @@ std::string SystemPreferences::GetAccentColor() {
 void SystemPreferences::InitializeWindow() {
   WNDCLASSEX window_class;
   base::win::InitializeWindowClass(
-      kSystemPreferencestWindowClass,
+      kSystemPreferencesWindowClass,
       &base::win::WrappedWindowProc<SystemPreferences::WndProcStatic>,
       0, 0, 0, NULL, NULL, NULL, NULL, NULL,
       &window_class);
