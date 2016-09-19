@@ -2,7 +2,7 @@
 # http://www.appveyor.com/docs/appveyor-yml
 version: "{build}"
 
-os: Visual Studio 2015
+os: Previous Visual Studio 2015
 
 init:
   - git config --global core.autocrlf input
