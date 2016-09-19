@@ -6,8 +6,8 @@
   "scripts": {
     "cache-clean": "rm -rf ~/.electron && rm -rf dist",
     "postinstall": "node install.js",
-    "pretest": "npm run cache-clean && node install.js",
-    "test": "standard && tape test/*.js"
+    "pretest": "npm run cache-clean && npm --silent run postinstall",
+    "test": "tape test/*.js && standard"
   },
   "bin": {
     "electron": "cli.js"
@@ -15,11 +15,11 @@
   "main": "index.js",
   "dependencies": {
     "extract-zip": "^1.0.3",
-    "electron-download": "^2.0.0"
+    "electron-download": "^3.0.0"
   },
   "devDependencies": {
     "home-path": "^0.1.1",
-    "path-exists": "^1.0.0",
+    "path-exists": "^2.0.0",
     "standard": "^5.4.1",
     "tape": "^3.0.1"
   },
