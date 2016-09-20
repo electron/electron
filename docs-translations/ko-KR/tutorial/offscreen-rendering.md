@@ -2,7 +2,7 @@
 
 오프스크린 렌더링은 비트맵에 브라우저 윈도우의 컨텐츠를 얻게 합니다. 그래서
 아무곳에서나 렌더링 될 수 있습니다. 예를 들어 3D 에서 텍스처위에 렌더링 될 수
-있습니다. Electron 에서 오프스크린 렌더링은 [Chromium Embedded Framework](https://bitbucket.org/chromiumembedded/cef)
+있습니다. Electron 의 오프스크린 렌더링은 [Chromium Embedded Framework](https://bitbucket.org/chromiumembedded/cef)
 프로젝트와 비슷한 접근방식을 사용합니다.
 
 두 방식의 렌더링을 사용할 수 있고 효율적으로 하기 위해 변경된 영역만 `'paint'`
