@@ -91,12 +91,10 @@ child.once('ready-to-show', () => {
 
 ### 플랫폼별 특이사항
 
-* On macOS the child windows will keep the relative position to parent window
-  when parent window moves, while on Windows and Linux child windows will not
-  move.
-* On Windows it is not supported to change parent window dynamically.
-* On Linux the type of modal windows will be changed to `dialog`.
-* On Linux many desktop environments do not support hiding a modal window.
+* macOS 에서 부모창이 이동할 때 자식창은 부모창과의 상대적 위치를 유지합니다. 윈도우즈와 리눅스는 자식창이 움직이지 않습니다.
+* 윈도우즈에서 parent 를 동적으로 변경할 수 없습니다.
+* 리눅스에서 모달창의 타입이 `dialog`로 변경됩니다.
+* 리눅스에서 많은 데스크톱 환경이 모달창 숨김을 지원하지 않습니다.
 
 ## Class: BrowserWindow
 
