@@ -214,6 +214,21 @@ A list of strings which specifies the blink features to be disabled separated by
 The full list of supported feature strings can be found in the
 [RuntimeEnabledFeatures.in][blink-feature-string] file.
 
+### `guestinstance`
+
+```html
+<webview src="https://www.github.com/" guestinstance="3"></webview>
+```
+
+A value that links the webview to a specific webContents. When a webview
+first loads a new webContents is created and this attribute is set to its
+instance identifier. Setting this attribute on a new or existing webview
+connects it to the existing webContents that currently renders in a different
+webview.
+
+The existing webview will see the `destroy` event and will then create a new
+webContents when a new url is loaded.
+
 ## Methods
 
 The `webview` tag has the following methods:
