@@ -4,6 +4,7 @@
 
 #include "atom/browser/atom_access_token_store.h"
 
+#include <string>
 #include <utility>
 
 #include "atom/browser/atom_browser_context.h"
@@ -43,10 +44,13 @@ class TokenLoadingJob : public base::RefCountedThreadSafe<TokenLoadingJob> {
     DCHECK_CURRENTLY_ON(BrowserThread::UI);
     auto browser_context = AtomBrowserContext::From("", false);
     request_context_getter_ = browser_context->GetRequestContext();
+    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    if (!env->GetVar("GOOGLE_API_KEY", &api_key_))
+      api_key_ = GOOGLEAPIS_API_KEY;
   }
 
   void RespondOnOriginatingThread() {
-    // Equivelent to access_token_map[kGeolocationProviderURL].
+    // Equivalent to access_token_map[kGeolocationProviderURL].
     // Somehow base::string16 is causing compilation errors when used in a pair
     // of std::map on Linux, this can work around it.
     content::AccessTokenStore::AccessTokenMap access_token_map;
@@ -59,15 +63,13 @@ class TokenLoadingJob : public base::RefCountedThreadSafe<TokenLoadingJob> {
 
   content::AccessTokenStore::LoadAccessTokensCallback callback_;
   net::URLRequestContextGetter* request_context_getter_;
+  std::string api_key_;
 };
 
 }  // namespace
 
 AtomAccessTokenStore::AtomAccessTokenStore() {
   content::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  if (!env->GetVar("GOOGLE_API_KEY", &api_key_))
-    api_key_ = GOOGLEAPIS_API_KEY;
 }
 
 AtomAccessTokenStore::~AtomAccessTokenStore() {

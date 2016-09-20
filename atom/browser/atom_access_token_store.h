@@ -21,7 +21,6 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
                        const base::string16& access_token) override;
 
  private:
-  std::string api_key_;
   DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);
 };
 
