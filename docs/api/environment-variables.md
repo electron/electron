@@ -19,6 +19,32 @@ Windows console example:
 > electron
 ```
 
+## Production Variables
+
+The following environment variables are intended primarily for use at runtime
+in packaged Electron applications.
+
+### `GOOGLE_API_KEY`
+
+Electron includes a hardcoded API key for making requests to Google's geocoding
+webservice. Because this API key is included in every version of Electron, it
+often exceeds its usage quota. To work around this, you can supply your own
+Google API key in the environment. Place the following code in your main process
+file, before opening any browser windows that will make geocoding requests:
+
+```javascript
+process.env.GOOGLE_API_KEY='YOUR_KEY_HERE'
+```
+
+By default, a newly generated Google API key may not be allowed to make
+geocoding requests. To enable geocoding requests, visit this page:
+https://console.developers.google.com/apis/api/geolocation/overview
+
+## Development Variables
+
+The following environment variables are intended primarily for development and
+debugging purposes.
+
 ### `ELECTRON_RUN_AS_NODE`
 
 Starts the process as a normal Node.js process.
