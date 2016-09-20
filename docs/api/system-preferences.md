@@ -33,7 +33,7 @@ This method returns `true` if the Swipe between pages setting is on, and `false`
 ### `systemPreferences.postNotification(event, userInfo)` _macOS_
 
 * `event` String
-* `userInfo` Dictionary
+* `userInfo` Object
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
@@ -41,7 +41,7 @@ that contains the user information dictionary sent along with the notification.
 ### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
 
 * `event` String
-* `userInfo` Dictionary
+* `userInfo` Object
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
