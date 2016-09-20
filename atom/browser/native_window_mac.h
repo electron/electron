@@ -160,9 +160,6 @@ class NativeWindowMac : public NativeWindow,
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_;
 
-  // Whether user has scrolled the page to edge.
-  bool is_edge_;
-
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
 

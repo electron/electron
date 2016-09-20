@@ -230,6 +230,10 @@ void Window::OnWindowScrollTouchEnd() {
   Emit("scroll-touch-end");
 }
 
+void Window::OnWindowScrollTouchEdge() {
+  Emit("scroll-touch-edge");
+}
+
 void Window::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
