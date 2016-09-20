@@ -8,6 +8,7 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/common/google_api_key.h"
+#include "base/environment.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/geolocation_provider.h"
 
@@ -16,13 +17,6 @@ using content::BrowserThread;
 namespace atom {
 
 namespace {
-
-// Notice that we just combined the api key with the url together here, because
-// if we use the standard {url: key} format Chromium would override our key with
-// the predefined one in common.gypi of libchromiumcontent, which is empty.
-const char* kGeolocationProviderURL =
-    "https://www.googleapis.com/geolocation/v1/geolocate?key="
-    GOOGLEAPIS_API_KEY;
 
 // Loads access tokens and other necessary data on the UI thread, and
 // calls back to the originator on the originating thread.
@@ -57,7 +51,7 @@ class TokenLoadingJob : public base::RefCountedThreadSafe<TokenLoadingJob> {
     // of std::map on Linux, this can work around it.
     content::AccessTokenStore::AccessTokenMap access_token_map;
     std::pair<GURL, base::string16> token_pair;
-    token_pair.first = GURL(kGeolocationProviderURL);
+    token_pair.first = GURL(GOOGLEAPIS_ENDPOINT + api_key_);
     access_token_map.insert(token_pair);
 
     callback_.Run(access_token_map, request_context_getter_);
@@ -71,6 +65,9 @@ class TokenLoadingJob : public base::RefCountedThreadSafe<TokenLoadingJob> {
 
 AtomAccessTokenStore::AtomAccessTokenStore() {
   content::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  if (!env->GetVar("GOOGLE_API_KEY", &api_key_))
+    api_key_ = GOOGLEAPIS_API_KEY;
 }
 
 AtomAccessTokenStore::~AtomAccessTokenStore() {
