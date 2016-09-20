@@ -33,7 +33,7 @@ Google API key in the environment. Place the following code in your main process
 file, before opening any browser windows that will make geocoding requests:
 
 ```javascript
-process.env.GOOGLE_API_KEY='YOUR_KEY_HERE'
+process.env.GOOGLE_API_KEY = 'YOUR_KEY_HERE'
 ```
 
 For instructions on how to acquire a Google API key, see
