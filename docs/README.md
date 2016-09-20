@@ -9,7 +9,7 @@ that matches your version.
 
 ## FAQ
 
-There are questions that are asked quite often, check this out before creating
+There are questions that are asked quite often. Check this out before creating
 an issue:
 
 * [Electron FAQ](faq.md)
