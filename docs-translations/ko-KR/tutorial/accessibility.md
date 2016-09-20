@@ -1,6 +1,6 @@
 > 이 문서는 아직 Electron 기여자가 번역하지 않았습니다.
 >
-> Electron에 기여하고 싶다면 [기여 가이드](https://github.com/electron/electron/blob/master/CONTRIBUTING-ko.md)를
+> Electron에 기여하고 싶다면 [기여 가이드](https://github.com/tinydew4/electron/blob/master/docs-translations/ko-KR/project/CONTRIBUTING.md)를
 > 참고하세요.
 >
 > 문서의 번역이 완료되면 이 틀을 삭제해주세요.
