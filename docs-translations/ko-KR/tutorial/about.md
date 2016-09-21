@@ -1,10 +1,3 @@
-> 이 문서는 아직 Electron 기여자가 번역하지 않았습니다.
->
-> Electron에 기여하고 싶다면 [기여 가이드](https://github.com/electron/electron/blob/master/docs-translations/ko-KR/project/CONTRIBUTING.md)를
-> 참고하세요.
->
-> 문서의 번역이 완료되면 이 틀을 삭제해주세요.
-
 # Electron 에 대하여
 
 [Electron](http://electron.atom.io) 은 HTML, CSS 와 Javascript 로 크로스플랫폼
@@ -63,12 +56,13 @@ Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관�
 동작한다면, 그것을 원하는 만큼 유지하세요. 새로운 기능들을 사용하려면
 새버전으로 업그레이드 해야합니다.
 
-주 버전은 `v1.0.0` 입니다. 아직 이 버전을 사용중이지 않다면, [v1.0.0 변화에 대해 읽어보세요](http://electron.atom.io/blog/2016/05/11/electron-1-0).
+주 버전은 `v1.0.0` 입니다. 아직 이 버전을 사용중이지 않다면,
+[v1.0.0 변화에 대해 읽어보세요](http://electron.atom.io/blog/2016/05/11/electron-1-0).
 
 ## 중심 철학
 
-Electron 을 작고 (파일 크기) 지속가능하게 (the spread of dependencies and APIs)
-할 목적으로 중심 프로젝트의 범위를 제한합니다.
+Electron 을 작고 (파일 크기) 지속가능하게 (종속성 및 API 의 확산) 할 목적으로
+중심 프로젝트의 범위를 제한합니다.
 
 예를 들어, Electron 은 Chromium 전체가 아닌 렌더링 라이브러리만 사용합니다.
 이것은 Chromium 업그레이드를 쉽게 하지만 Google Chrome 에서 볼 수 있는 몇몇
