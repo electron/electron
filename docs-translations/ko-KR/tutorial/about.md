@@ -83,7 +83,7 @@ Node.js 모듈로 해야합니다. [커뮤니티에 의해 개발된 Electron �
 | --- | --- |
 | **2013년 4월**| [Atom Shell 탄생](https://github.com/electron/electron/commit/6ef8875b1e93787fa9759f602e7880f28e8e6b45).|
 | **2014년 5월** | [Atom Shell 오픈소스화](http://blog.atom.io/2014/05/06/atom-is-now-open-source.html). |
-| **2015년 4월** | [Electron 으로 개](https://github.com/electron/electron/pull/1389). |
+| **2015년 4월** | [Electron 으로 개명](https://github.com/electron/electron/pull/1389). |
 | **2016년 5월** | [Electron v1.0.0 출시](http://electron.atom.io/blog/2016/05/11/electron-1-0).|
 | **2016년 5월** | [Electron 앱이 Mac App Store 와 호환](http://electron.atom.io/docs/tutorial/mac-app-store-submission-guide).|
 | **2016년 8월** | [Windows Store 의 Electron 앱 지원](http://electron.atom.io/docs/tutorial/windows-store-guide).|
