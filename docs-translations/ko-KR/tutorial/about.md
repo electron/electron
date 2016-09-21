@@ -5,17 +5,23 @@
 >
 > 문서의 번역이 완료되면 이 틀을 삭제해주세요.
 
-# About Electron
+# Electron 에 대하여
 
-[Electron](http://electron.atom.io) is an open source library developed by GitHub for building cross-platform desktop applications with HTML, CSS, and JavaScript. Electron accomplishes this by combining [Chromium](https://www.chromium.org/Home) and [Node.js](https://nodejs.org) into a single runtime and apps can be packaged for Mac, Windows, and Linux.
+[Electron](http://electron.atom.io) 은 HTML, CSS 와 Javascript 로 크로스플랫폼
+데스크톱 애플리케이션을 위해 Github 에서 개발한 오픈소스 라이브러리 입니다.
+Electron 은 [Chromium](https://www.chromium.org/Home) 와
+[Node.js](https://nodejs.org) 를 단일 실행으로 합치고 앱을 Mac, Windows 와
+Linux 용으로 패키지화 할 수 있게 함으로써 이것을 가능하게 합니다.
 
-Electron began in 2013 as the framework on which [Atom](https://atom.io), GitHub's hackable text editor, would be built. The two were open sourced in the Spring of 2014.
+Electron 은 2013년에 Github 의 해킹 가능한 텍스트 편집기 Atom 의 프레임워크로
+시작하였습니다. 이 둘은 2014년에 오픈소스화 됩니다.
 
-It has since become a popular tool used by open source developers, startups, and established companies. [See who is building on Electron](/apps).
+그후로 오픈소스 개발자, 스타트업과 안정된 회사에서 인기있는 도구가 되었습니다.
+[Electron 을 사용하는 곳을 보세요.](/apps).
 
-Read on to learn more about the contributors and releases of Electron or get started building with Electron in the [Quick Start Guide](../quick-start).
+Electron 의 공헌자와 릴리즈에 대한 자세한 내용이나 개발을 시작하려면 [Quick Start Guide](quick-start) 를 읽어보세요.
 
-## Core Team and Contributors
+## 코어 팀과 공헌자
 
 Electron is maintained by a team at GitHub as well as a group of [active contributors](https://github.com/electron/electron/graphs/contributors) from the community. Some of the contributors are individuals and some work at larger companies who are developing on Electron. We're happy to add frequent contributors to the project as maintainers. Read more about [contributing to Electron](https://github.com/electron/electron/blob/master/CONTRIBUTING.md).
 
@@ -42,7 +48,7 @@ Long term support of older versions of Electron does not currently exist. If you
 
 A major update came with version `v1.0.0`. If you're not yet using this version, you should [read more about the `v1.0.0` changes](http://electron.atom.io/blog/2016/05/11/electron-1-0).
 
-## Core Philosophy
+## 중심 철학
 
 In order to keep Electron small (file size) and sustainable (the spread of dependencies and APIs) the project limits the scope of the core project.
 
@@ -50,15 +56,15 @@ For instance, Electron uses just the rendering library from Chromium rather than
 
 New features added to Electron should primarily be native APIs. If a feature can be its own Node.js module, it probably should be. See the [Electron tools built by the community](http://electron.atom.io/community).
 
-## History
+## 이력
 
-Below are milestones in Electron's history.
+다음은 Electron 이력의 주요 시점입니다.
 
 | :calendar: | :tada: |
 | --- | --- |
-| **April 2013**| [Atom Shell is started](https://github.com/electron/electron/commit/6ef8875b1e93787fa9759f602e7880f28e8e6b45).|
-| **May 2014** | [Atom Shell is open sourced](http://blog.atom.io/2014/05/06/atom-is-now-open-source.html). |
-| **April 2015** | [Atom Shell is re-named Electron](https://github.com/electron/electron/pull/1389). |
-| **May 2016** | [Electron releases `v1.0.0`](http://electron.atom.io/blog/2016/05/11/electron-1-0).|
-| **May 2016** | [Electron apps compatible with Mac App Store](http://electron.atom.io/docs/tutorial/mac-app-store-submission-guide).|
-| **August 2016** | [Windows Store support for Electron apps](http://electron.atom.io/docs/tutorial/windows-store-guide).|
+| **2013년 4월**| [Atom Shell 탄생](https://github.com/electron/electron/commit/6ef8875b1e93787fa9759f602e7880f28e8e6b45).|
+| **2014년 5월** | [Atom Shell 오픈소스화](http://blog.atom.io/2014/05/06/atom-is-now-open-source.html). |
+| **2015년 4월** | [Electron 으로 개](https://github.com/electron/electron/pull/1389). |
+| **2016년 5월** | [Electron v1.0.0 출시](http://electron.atom.io/blog/2016/05/11/electron-1-0).|
+| **2016년 5월** | [Electron 앱이 Mac App Store 와 호환](http://electron.atom.io/docs/tutorial/mac-app-store-submission-guide).|
+| **2016년 8월** | [Windows Store 의 Electron 앱 지원](http://electron.atom.io/docs/tutorial/windows-store-guide).|
