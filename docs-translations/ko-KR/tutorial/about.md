@@ -39,16 +39,19 @@ Electron 은 Gihub 의 팀과 커뮤니티에서
 
 ### 업데이트 종속성
 
-Electron's version of Chromium is usually updated within one or two weeks after a new stable Chromium version is released, depending on the effort involved in the upgrade.
+Electron 의 Chromium 버전은 보통 새 버전 출시 이후 1~2 주 후에 업데이트 하는데,
+이는 업그레이드 노력에 따라 달라집니다.
 
-When a new version of Node.js is released, Electron usually waits about a month before upgrading in order to bring in a more stable version.
+Node.js 의 새버전이 출시되면, Electron 은 더 안정된 버전을 가져오기 위해 약
+한달정도 기다립니다.
 
-In Electron, Node.js and Chromium share a single V8 instance—usually the version that Chromium is using. Most of the time this _just works_ but sometimes it means patching Node.js.
+Electron 에서, Node.js 와 Chromium 은 단일 V8 인스턴스를 공유합니다--보통
+Chromium 이 사용하는 버전. 대부분은 동작하지만 가끔 Node.js 를 패치해야 합니다.
 
 
 ### 버전 관리
 
-Due to the hard dependency on Node.js and Chromium, Electron is in a tricky versioning position and [does not follow `semver`](http://semver.org). You should therefore always reference a specific version of Electron. [Read more about Electron's versioning](http://electron.atom.io/docs/tutorial/electron-versioning/) or see the [versions currently in use](https://electron.atom.io/#electron-versions).
+Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관리가 까다롭고 [`semver`을 따르지 않습니다](http://semver.org). You should therefore always reference a specific version of Electron. [Electron 의 버전관리를 읽거나](http://electron.atom.io/docs/tutorial/electron-versioning/) [현재 쓰이는 버전](https://electron.atom.io/#electron-versions)을 보세요.
 
 ### LTS
 
