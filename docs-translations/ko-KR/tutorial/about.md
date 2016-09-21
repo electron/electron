@@ -68,7 +68,9 @@ Electron 을 작고 (파일 크기) 지속가능하게 (the spread of dependenci
 이것은 Chromium 업그레이드를 쉽게 하지만 Google Chrome 에서 볼 수 있는 몇몇
 브라우저 기능이 Electron 에서는 빠집니다.
 
-New features added to Electron should primarily be native APIs. If a feature can be its own Node.js module, it probably should be. [커뮤니티에 의해 개발된 Electron 도구들](http://electron.atom.io/community)을 보세요.
+Electron 에 추가된 새로운 기능은 주로 네이티브 API 입니다. 기능은 가능한한
+Node.js 모듈로 해야합니다. [커뮤니티에 의해 개발된 Electron 도구들]
+(http://electron.atom.io/community)을 보세요.
 
 ## 이력
 
