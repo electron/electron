@@ -114,84 +114,49 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 
 ### `new BrowserWindow([options])`
 
-* `options` Object
-  * `width` Integer - Window's width in pixels. Default is `800`.
-  * `height` Integer - Window's height in pixels. Default is `600`.
-  * `x` Integer (**required** if y is used) - Window's left offset from screen.
-    Default is to center the window.
-  * `y` Integer (**required** if x is used) - Window's top offset from screen.
-    Default is to center the window.
-  * `useContentSize` Boolean - The `width` and `height` would be used as web
-    page's size, which means the actual window's size will include window
-    frame's size and be slightly larger. Default is `false`.
-  * `center` Boolean - Show window in the center of the screen.
-  * `minWidth` Integer - Window's minimum width. Default is `0`.
-  * `minHeight` Integer - Window's minimum height. Default is `0`.
-  * `maxWidth` Integer - Window's maximum width. Default is no limit.
-  * `maxHeight` Integer - Window's maximum height. Default is no limit.
-  * `resizable` Boolean - Whether window is resizable. Default is `true`.
-  * `movable` Boolean - Whether window is movable. This is not implemented
-    on Linux. Default is `true`.
-  * `minimizable` Boolean - Whether window is minimizable. This is not
-    implemented on Linux. Default is `true`.
-  * `maximizable` Boolean - Whether window is maximizable. This is not
-    implemented on Linux. Default is `true`.
-  * `closable` Boolean - Whether window is closable. This is not implemented
-    on Linux. Default is `true`.
-  * `focusable` Boolean - Whether the window can be focused. Default is
-    `true`. On Windows setting `focusable: false` also implies setting
-    `skipTaskbar: true`. On Linux setting `focusable: false` makes the window
-    stop interacting with wm, so the window will always stay on top in all
-    workspaces.
-  * `alwaysOnTop` Boolean - Whether the window should always stay on top of
-    other windows. Default is `false`.
-  * `fullscreen` Boolean - Whether the window should show in fullscreen. When
-    explicitly set to `false` the fullscreen button will be hidden or disabled
-    on macOS. Default is `false`.
-  * `fullscreenable` Boolean - Whether the window can be put into fullscreen
-    mode. On macOS, also whether the maximize/zoom button should toggle full
-    screen mode or maximize window. Default is `true`.
-  * `skipTaskbar` Boolean - Whether to show the window in taskbar. Default is
-    `false`.
-  * `kiosk` Boolean - The kiosk mode. Default is `false`.
-  * `title` String - Default window title. Default is `"Electron"`.
-  * `icon` [NativeImage](native-image.md) - The window icon. On Windows it is
-    recommended to use `ICO` icons to get best visual effects, you can also
-    leave it undefined so the executable's icon will be used.
-  * `show` Boolean - Whether window should be shown when created. Default is
-    `true`.
-  * `frame` Boolean - Specify `false` to create a
-    [Frameless Window](frameless-window.md). Default is `true`.
-  * `parent` BrowserWindow - Specify parent window. Default is `null`.
-  * `modal` Boolean - Whether this is a modal window. This only works when the
-    window is a child window. Default is `false`.
-  * `acceptFirstMouse` Boolean - Whether the web view accepts a single
-    mouse-down event that simultaneously activates the window. Default is
-    `false`.
-  * `disableAutoHideCursor` Boolean - Whether to hide cursor when typing.
-    Default is `false`.
-  * `autoHideMenuBar` Boolean - Auto hide the menu bar unless the `Alt`
-    key is pressed. Default is `false`.
-  * `enableLargerThanScreen` Boolean - Enable the window to be resized larger
-    than screen. Default is `false`.
-  * `backgroundColor` String - Window's background color as Hexadecimal value,
-    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported). Default is
-    `#FFF` (white).
-  * `hasShadow` Boolean - Whether window should have a shadow. This is only
-    implemented on macOS. Default is `true`.
-  * `darkTheme` Boolean - Forces using dark theme for the window, only works on
-    some GTK+3 desktop environments. Default is `false`.
-  * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
-    Default is `false`.
-  * `type` String - The type of window, default is normal window. See more about
-    this below.
-  * `titleBarStyle` String - The style of window title bar. See more about this
-    below.
-  * `thickFrame` Boolean - Use `WS_THICKFRAME` style for frameless windows on
-    Windows, which adds standard window frame. Setting it to `false` will remove
-    window shadow and window animations. Default is `true`.
-  * `webPreferences` Object - Settings of web page's features. See more about
-    this below.
+#### `options` Object
+
+Option            | Type    | Default           | Description
+------------------|---------|-------------------|------------
+`width`           | Integer | `800`             | Window's width in pixels.
+`height`          | Integer | `600`             | Window's height in pixels.
+`x`               | Integer | center the window | Window's left offset from screen. (**required** if `y` is used)
+`y`               | Integer | center the window | Window's top offset from screen. (**required** if x is used)
+`useContentSize`  | Boolean | `false`           | The `width` and `height` would be used as web page's size, which means the actual window's size will include window frame's size and be slightly larger.
+`center`          | Boolean | -                 | Show window in the center of the screen.
+`minWidth`        | Integer | `0`               | Window's minimum width.
+`minHeight`       | Integer | `0`               | Window's minimum height.
+`maxWidth`        | Integer | no limit          | Window's maximum width.
+`maxHeight`       | Integer | no limit          | Window's maximum height.
+`resizable`       | Boolean | `true`            | Whether window is resizable.
+`movable`         | Boolean | `true`            | Whether window is movable. This is not implemented on Linux.
+`minimizable`     | Boolean | `true`            | Whether window is minimizable. This is not implemented on Linux.
+`maximizable`     | Boolean | `true`            | Whether window is maximizable. This is not implemented on Linux.
+`closable`        | Boolean | `true`            | Whether window is closable. This is not implemented on Linux.
+`focusable`       | Boolean | `true`            | Whether the window can be focused. On Windows setting `focusable: false` also implies setting `skipTaskbar: true`. On Linux setting `focusable: false` makes the window stop interacting with wm, so the window will always stay on top in all workspaces.
+`alwaysOnTop`     | Boolean | `false`           | Whether the window should always stay on top of other windows.
+`fullscreen`      | Boolean | `false`           | Whether the window should show in fullscreen. When explicitly set to `false` the fullscreen button will be hidden or disabled on macOS.
+`fullscreenable`  | Boolean | `true`            | Whether the window can be put into fullscreen mode. On macOS, also whether the maximize/zoom button should toggle full screen mode or maximize window.
+`skipTaskbar`     | Boolean | `false`           | Whether to show the window in taskbar.
+`kiosk`           | Boolean | `false`           | The kiosk mode.
+`title`           | String  | `"Electron"`      | Default window title.
+`icon`            | String  | [NativeImage](native-image.md)   | The window icon. On Windows it is recommended to use `ICO` icons to get best visual effects, you can also leave it undefined so the executable's icon will be used.
+`show`            | Boolean | `true`            | Whether window should be shown when created.
+`frame`           | Boolean | `true`            | Specify `false` to create a [Frameless Window](frameless-window.md).
+`parent`          | BrowserWindow | `null`      | Specify parent window.
+`modal`                  | Boolean | `false`        |  Whether this is a modal window. This only works when the window is a child window.
+`acceptFirstMouse`       | Boolean | `false`        | Whether the web view accepts a single mouse-down event that simultaneously activates the window.
+`disableAutoHideCursor`  | Boolean | `false`        | Whether to hide cursor when typing.
+`autoHideMenuBar`        | Boolean | `false`        | Auto hide the menu bar unless the `Alt` key is pressed.
+`enableLargerThanScreen` | Boolean | `false`        | Enable the window to be resized larger than screen.
+`backgroundColor`        | String  | `#FFF` (white) | Window's background color as Hexadecimal value, like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported).
+`hasShadow`              | Boolean | `true`         | Whether window should have a shadow. This is only implemented on macOS.
+`darkTheme`              | Boolean | `false`        | Forces using dark theme for the window, only works on some GTK+3 desktop environments.
+`transparent`            | Boolean | `false`        | Makes the window [transparent](frameless-window.md).
+`type`                   | String  | -              | The type of window, default is normal window. See more about this below.
+`titleBarStyle`          | String  | -              | The style of window title bar. See more about this below.
+`thickFrame`             | Boolean | `true`         | Use `WS_THICKFRAME` style for frameless windows on Windows, which adds standard window frame. Setting it to `false` will remove window shadow and window animations.
+`webPreferences`         | Object  | -              | Settings of web page's features. See more about this below.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
