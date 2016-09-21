@@ -20,6 +20,7 @@
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 
+using atom::AtomCookieDelegate;
 using content::BrowserThread;
 
 namespace mate {
@@ -53,6 +54,29 @@ struct Converter<net::CanonicalCookie> {
     return dict.GetHandle();
   }
 };
+
+
+template<>
+struct Converter<AtomCookieDelegate::ChangeCause> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const AtomCookieDelegate::ChangeCause& val) {
+    switch (val) {
+      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_EXPLICIT:
+        return mate::StringToV8(isolate, "explicit");
+      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_OVERWRITE:
+        return mate::StringToV8(isolate, "overwrite");
+      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_EXPIRED:
+        return mate::StringToV8(isolate, "expired");
+      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_EVICTED:
+        return mate::StringToV8(isolate, "evicted");
+      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_EXPIRED_OVERWRITE:
+        return mate::StringToV8(isolate, "expired-overwrite");
+      default:
+        return mate::StringToV8(isolate, "unknown");
+    }
+  }
+};
+
 
 }  // namespace mate
 
@@ -206,11 +230,14 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 
 Cookies::Cookies(v8::Isolate* isolate,
                  AtomBrowserContext* browser_context)
-      : request_context_getter_(browser_context->url_request_context_getter()) {
+      : request_context_getter_(browser_context->url_request_context_getter()),
+        cookie_delegate_(browser_context->cookie_delegate()) {
   Init(isolate);
+  cookie_delegate_->AddObserver(this);
 }
 
 Cookies::~Cookies() {
+  cookie_delegate_->RemoveObserver(this);
 }
 
 void Cookies::Get(const base::DictionaryValue& filter,
@@ -238,6 +265,15 @@ void Cookies::Set(const base::DictionaryValue& details,
       BrowserThread::IO, FROM_HERE,
       base::Bind(SetCookieOnIO, getter, Passed(&copied), callback));
 }
+
+void Cookies::OnCookieChanged(const net::CanonicalCookie& cookie,
+                              bool removed,
+                              AtomCookieDelegate::ChangeCause cause) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  Emit("changed", cookie, cause, removed);
+}
+
 
 // static
 mate::Handle<Cookies> Cookies::Create(
