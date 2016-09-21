@@ -10,6 +10,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/base/io_buffer.h"
 
+
 namespace {
 
 const int kBufferSize = 4096;
@@ -18,19 +19,20 @@ const int kBufferSize = 4096;
 
 namespace atom {
 
-AtomURLRequest::AtomURLRequest(base::WeakPtr<api::URLRequest> delegate) 
+AtomURLRequest::AtomURLRequest(base::WeakPtr<api::URLRequest> delegate)
   : delegate_(delegate)
-  , buffer_( new net::IOBuffer(kBufferSize)) {
+  , buffer_(new net::IOBuffer(kBufferSize)) {
 }
 
 AtomURLRequest::~AtomURLRequest() {
 }
 
-scoped_refptr<AtomURLRequest> AtomURLRequest::create(
+scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
   AtomBrowserContext* browser_context,
+  const std::string& method,
   const std::string& url,
   base::WeakPtr<api::URLRequest> delegate) {
-
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   DCHECK(browser_context);
   DCHECK(!url.empty());
 
@@ -44,69 +46,117 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::create(
 
   scoped_refptr<AtomURLRequest> atom_url_request = new AtomURLRequest(delegate);
 
-  atom_url_request->url_request_ = context->CreateRequest(GURL(url),
+  atom_url_request->request_ = context->CreateRequest(GURL(url),
     net::RequestPriority::DEFAULT_PRIORITY,
     atom_url_request.get());
 
+  atom_url_request->request_->set_method(method);
   return atom_url_request;
 
 }
 
-void AtomURLRequest::Write() {
+void AtomURLRequest::Write() const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 }
 
-void AtomURLRequest::End() {
-  // Called on content::BrowserThread::UI
+void AtomURLRequest::End() const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   content::BrowserThread::PostTask(
     content::BrowserThread::IO, FROM_HERE,
-    base::Bind(&AtomURLRequest::StartOnIOThread, this));
+    base::Bind(&AtomURLRequest::DoStart, this));
 }
 
-void AtomURLRequest::Abort() {
+void AtomURLRequest::Abort() const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 }
 
-void AtomURLRequest::SetHeader() {
-
+void AtomURLRequest::SetHeader(const std::string& name,
+                               const std::string& value) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  request_->SetExtraRequestHeaderByName(name, value, true);
 }
 
-void AtomURLRequest::GetHeader() {
-
+std::string AtomURLRequest::GetHeader(const std::string& name) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  std::string result;
+  const auto& extra_headers = request_->extra_request_headers();
+  if (!extra_headers.GetHeader(name, &result)) {
+    net::HttpRequestHeaders* request_headers = nullptr;
+    if (request_->GetFullRequestHeaders(request_headers) && request_headers) {
+      request_headers->GetHeader(name, &result);
+    }
+  }
+  return result;
 }
 
-void AtomURLRequest::RemoveHeader() {
-
-}
-
-
-
-scoped_refptr<net::HttpResponseHeaders> AtomURLRequest::GetResponseHeaders() {
-  return url_request_->response_headers();
-}
-
-
-
-void AtomURLRequest::StartOnIOThread() {
-  // Called on content::BrowserThread::IO
-
-  url_request_->Start();
+void AtomURLRequest::RemoveHeader(const std::string& name) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  request_->RemoveRequestHeaderByName(name);
 }
 
 
-void AtomURLRequest::set_method(const std::string& method) {
-  url_request_->set_method(method);
+
+scoped_refptr<const net::HttpResponseHeaders>
+AtomURLRequest::GetResponseHeaders() const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  return request_->response_headers();
+}
+
+
+void AtomURLRequest::PassLoginInformation(const base::string16& username,
+  const base::string16& password) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  if (username.empty() || password.empty()) {
+    content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomURLRequest::DoCancelAuth, this));
+  }
+  else {
+    content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomURLRequest::DoSetAuth, this, username, password));
+  }
+}
+
+
+void AtomURLRequest::DoStart() const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+
+  request_->Start();
+}
+
+void AtomURLRequest::DoSetAuth(const base::string16& username,
+  const base::string16& password) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  request_->SetAuth(net::AuthCredentials(username, password));
+}
+
+void AtomURLRequest::DoCancelAuth() const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  request_->CancelAuth();
+}
+
+void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
+                    net::AuthChallengeInfo* auth_info) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+   
+  content::BrowserThread::PostTask(
+    content::BrowserThread::UI, FROM_HERE,
+    base::Bind(&AtomURLRequest::InformDelegateAuthenticationRequired, 
+               this,
+               scoped_refptr<net::AuthChallengeInfo>(auth_info)));
 }
 
 void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
-  // Called on content::BrowserThread::IO
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  DCHECK_EQ(request, request_.get());
 
-  DCHECK_EQ(request, url_request_.get());
-
-  if (url_request_->status().is_success()) {
+  if (request_->status().is_success()) {
     // Cache net::HttpResponseHeaders instance, a read-only objects
     // so that headers and other http metainformation can be simultaneously
     // read from UI thread while request data is simulataneously streaming
     // on IO thread.
-    response_headers_ = url_request_->response_headers();
+    response_headers_ = request_->response_headers();
   }
 
   content::BrowserThread::PostTask(
@@ -117,29 +167,28 @@ void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
 }
 
 void AtomURLRequest::ReadResponse() {
-
-  // Called on content::BrowserThread::IO
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
   // Some servers may treat HEAD requests as GET requests. To free up the
   // network connection as soon as possible, signal that the request has
   // completed immediately, without trying to read any data back (all we care
   // about is the response code and headers, which we already have).
   int bytes_read = 0;
-  if (url_request_->status().is_success() /* TODO && (request_type_ != URLFetcher::HEAD)*/) {
-    if (!url_request_->Read(buffer_.get(), kBufferSize, &bytes_read))
+  if (request_->status().is_success() /* TODO && (request_type_ != URLFetcher::HEAD)*/) {
+    if (!request_->Read(buffer_.get(), kBufferSize, &bytes_read))
       bytes_read = -1; 
   }
-  OnReadCompleted(url_request_.get(), bytes_read);
+  OnReadCompleted(request_.get(), bytes_read);
 }
 
 
 void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
-  // Called on content::BrowserThread::IO
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  DCHECK_EQ(request, url_request_.get());
+  DCHECK_EQ(request, request_.get());
 
   do {
-    if (!url_request_->status().is_success() || bytes_read <= 0)
+    if (!request_->status().is_success() || bytes_read <= 0)
       break;
 
 
@@ -148,9 +197,9 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
       // Failed to transfer data to UI thread.
       return;
     }
-  } while (url_request_->Read(buffer_.get(), kBufferSize, &bytes_read));
+  } while (request_->Read(buffer_.get(), kBufferSize, &bytes_read));
     
-  const auto status = url_request_->status();
+  const auto status = request_->status();
 
   if (!status.is_io_pending() /* TODO || request_type_ == URLFetcher::HEAD*/ ) {
 
@@ -161,9 +210,8 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
 
 }
 
-
 bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
-  // Called on content::BrowserThread::IO.
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
   // data is only a wrapper for the async buffer_.
   // Make a deep copy of payload and transfer ownership to the UI thread.
@@ -176,16 +224,25 @@ bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
 }
 
 
-void AtomURLRequest::InformDelegateResponseStarted() {
-  // Called  on content::BrowserThread::UI.
+void AtomURLRequest::InformDelegateAuthenticationRequired(
+  scoped_refptr<net::AuthChallengeInfo> auth_info) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  if (delegate_) {
+    delegate_->OnAuthenticationRequired(auth_info);
+  }
+}
+
+void AtomURLRequest::InformDelegateResponseStarted() const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   if (delegate_) {
     delegate_->OnResponseStarted();
   }
 }
 
-void AtomURLRequest::InformDelegateResponseData(scoped_refptr<net::IOBufferWithSize> data) {
-  // Called  on content::BrowserThread::IO.
+void AtomURLRequest::InformDelegateResponseData(
+  scoped_refptr<net::IOBufferWithSize> data) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   // Transfer ownership of the data buffer, data will be released
   // by the delegate's OnResponseData.
@@ -194,7 +251,9 @@ void AtomURLRequest::InformDelegateResponseData(scoped_refptr<net::IOBufferWithS
   }
 }
 
-void AtomURLRequest::InformDelegateResponseCompleted() {
+void AtomURLRequest::InformDelegateResponseCompleted() const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
   if (delegate_) {
     delegate_->OnResponseCompleted();
   }

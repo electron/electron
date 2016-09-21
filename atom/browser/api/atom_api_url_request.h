@@ -35,25 +35,27 @@ private:
   void Write();
   void End();
   void Abort();
-  void SetHeader();
-  void GetHeader();
-  void RemoveHeader();
+  void SetHeader(const std::string& name, const std::string& value);
+  std::string GetHeader(const std::string& name);
+  void RemoveHeader(const std::string& name);
 
   friend class AtomURLRequest;
+  void OnAuthenticationRequired(
+    scoped_refptr<const net::AuthChallengeInfo> auth_info);
   void OnResponseStarted();
-  void OnResponseData(scoped_refptr<net::IOBufferWithSize> data);
+  void OnResponseData(scoped_refptr<const net::IOBufferWithSize> data);
   void OnResponseCompleted();
 
-  int StatusCode();
-  std::string StatusMessage();
-  scoped_refptr<net::HttpResponseHeaders> RawResponseHeaders();
-  uint32_t ResponseHttpVersionMajor();
-  uint32_t ResponseHttpVersionMinor();
+  int StatusCode() const;
+  std::string StatusMessage() const;
+  scoped_refptr<const net::HttpResponseHeaders> RawResponseHeaders() const;
+  uint32_t ResponseHttpVersionMajor() const;
+  uint32_t ResponseHttpVersionMinor() const;
 
 
   template <typename ... ArgTypes>
   std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> 
-  BuildArgsArray(ArgTypes... args);
+  BuildArgsArray(ArgTypes... args) const;
 
   template <typename ... ArgTypes>
   void EmitRequestEvent(ArgTypes... args);
@@ -61,12 +63,10 @@ private:
   template <typename ... ArgTypes>
   void EmitResponseEvent(ArgTypes... args);
 
-
-
   void pin();
   void unpin();
 
-  scoped_refptr<AtomURLRequest> atom_url_request_;
+  scoped_refptr<const AtomURLRequest> atom_request_;
   v8::Global<v8::Object> wrapper_;
   base::WeakPtrFactory<URLRequest> weak_ptr_factory_;
   
@@ -76,7 +76,7 @@ private:
 
 template <typename ... ArgTypes>
 std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)>
-URLRequest::BuildArgsArray(ArgTypes... args) {
+URLRequest::BuildArgsArray(ArgTypes... args) const {
   std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> result
     = { mate::ConvertToV8(isolate(), args)... };
   return result;

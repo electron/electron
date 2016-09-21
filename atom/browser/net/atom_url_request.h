@@ -27,43 +27,52 @@ namespace api {
 class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
                        public net::URLRequest::Delegate {
 public:
-  static scoped_refptr<AtomURLRequest> create(
+  static scoped_refptr<AtomURLRequest> Create(
     AtomBrowserContext* browser_context,
+    const std::string& method,
     const std::string& url,
     base::WeakPtr<api::URLRequest> delegate);
 
-  void set_method(const std::string& method);
-
-  void Write();
-  void End();
-  void Abort();
-  void SetHeader();
-  void GetHeader();
-  void RemoveHeader();
-
-  scoped_refptr<net::HttpResponseHeaders> GetResponseHeaders();
+  void Write() const;
+  void End() const;
+  void Abort() const;
+  void SetHeader(const std::string& name, const std::string& value) const;
+  std::string GetHeader(const std::string& name) const;
+  void RemoveHeader(const std::string& name) const;
+  void PassLoginInformation(const base::string16& username,
+    const base::string16& password) const;
+  scoped_refptr<const net::HttpResponseHeaders> GetResponseHeaders() const;
 
 protected:
   // Overrides of net::URLRequest::Delegate
+  virtual void OnAuthRequired(net::URLRequest* request,
+                              net::AuthChallengeInfo* auth_info) override;
   virtual void OnResponseStarted(net::URLRequest* request) override;
-  virtual void OnReadCompleted(net::URLRequest* request, int bytes_read) override;
+  virtual void OnReadCompleted(net::URLRequest* request,
+                               int bytes_read) override;
 
 private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
-  void StartOnIOThread();
+  void DoStart() const;
+  void DoSetAuth(const base::string16& username,
+    const base::string16& password) const;
+  void DoCancelAuth() const;
 
   void ReadResponse();
   bool CopyAndPostBuffer(int bytes_read);
 
-  void InformDelegateResponseStarted();
-  void InformDelegateResponseData(scoped_refptr<net::IOBufferWithSize> data);
-  void InformDelegateResponseCompleted();
+  void InformDelegateAuthenticationRequired(
+    scoped_refptr<net::AuthChallengeInfo> auth_info) const;
+  void InformDelegateResponseStarted() const;
+  void InformDelegateResponseData(
+    scoped_refptr<net::IOBufferWithSize> data) const;
+  void InformDelegateResponseCompleted() const;
 
   AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
   virtual ~AtomURLRequest();
 
   base::WeakPtr<api::URLRequest> delegate_;
-  std::unique_ptr<net::URLRequest> url_request_;
+  std::unique_ptr<net::URLRequest> request_;
   scoped_refptr<net::IOBuffer> buffer_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
 
