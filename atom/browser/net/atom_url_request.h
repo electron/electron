@@ -9,6 +9,13 @@
 #include "base/memory/ref_counted.h"
 #include "net/url_request/url_request.h"
 
+
+namespace net {
+class IOBuffer;
+class IOBufferWithSize;
+class DrainableIOBuffer;
+}
+
 namespace atom {
 
 class AtomBrowserContext;
@@ -34,10 +41,7 @@ public:
   void GetHeader();
   void RemoveHeader();
 
-  int StatusCode();
-  void StatusMessage();
-  void ResponseHeaders();
-  void ResponseHttpVersion();
+  scoped_refptr<net::HttpResponseHeaders> GetResponseHeaders();
 
 protected:
   // Overrides of net::URLRequest::Delegate
@@ -47,13 +51,21 @@ protected:
 private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
   void StartOnIOThread();
-  void InformDelegeteResponseStarted();
+
+  void ReadResponse();
+  bool CopyAndPostBuffer(int bytes_read);
+
+  void InformDelegateResponseStarted();
+  void InformDelegateResponseData(scoped_refptr<net::IOBufferWithSize> data);
+  void InformDelegateResponseCompleted();
 
   AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
   virtual ~AtomURLRequest();
 
   base::WeakPtr<api::URLRequest> delegate_;
   std::unique_ptr<net::URLRequest> url_request_;
+  scoped_refptr<net::IOBuffer> buffer_;
+  scoped_refptr<net::HttpResponseHeaders> response_headers_;
 
    DISALLOW_COPY_AND_ASSIGN(AtomURLRequest);
  };

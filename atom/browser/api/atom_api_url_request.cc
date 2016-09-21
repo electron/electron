@@ -7,12 +7,49 @@
 
 #include "native_mate/dictionary.h"
 #include "atom/browser/net/atom_url_request.h"
+#include "atom/common/node_includes.h"
 
+namespace {
 
+const char* const kResponse = "response";
+const char* const kData = "data";
+const char* const kEnd = "end";
+
+}
+namespace mate {
+
+template<>
+struct Converter<scoped_refptr<net::HttpResponseHeaders>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+    scoped_refptr<net::HttpResponseHeaders> val) {
+
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    if (val) {
+      size_t iter = 0;
+      std::string name;
+      std::string value;
+      while (val->EnumerateHeaderLines(&iter, &name, &value)) {
+        dict.Set(name, value);
+      }  
+    }
+    return dict.GetHandle();
+  }
+};
+
+template<>
+struct Converter<scoped_refptr<net::IOBufferWithSize>> {
+  static v8::Local<v8::Value> ToV8(
+    v8::Isolate* isolate,
+    scoped_refptr<net::IOBufferWithSize> buffer) {
+      return node::Buffer::Copy(isolate, buffer->data(), buffer->size()).ToLocalChecked();
+  }
+};
+
+}
 namespace atom {
 
 namespace api {
-  
+
 URLRequest::URLRequest(v8::Isolate* isolate, 
                        v8::Local<v8::Object> wrapper)
   : weak_ptr_factory_(this) {
@@ -69,8 +106,11 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
     // Response APi
     .SetProperty("statusCode", &URLRequest::StatusCode)
     .SetProperty("statusMessage", &URLRequest::StatusMessage)
-    .SetProperty("responseHeaders", &URLRequest::ResponseHeaders)
-    .SetProperty("responseHttpVersion", &URLRequest::ResponseHttpVersion);
+    .SetProperty("rawResponseHeaders", &URLRequest::RawResponseHeaders)
+    .SetProperty("httpVersionMajor", &URLRequest::ResponseHttpVersionMajor)
+    .SetProperty("httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
+  
+    
 }
 
 void URLRequest::Write() {
@@ -98,35 +138,71 @@ void URLRequest::RemoveHeader() {
 
 
 void URLRequest::OnResponseStarted() {
-  v8::Local<v8::Function> _emitResponse;
+  //v8::Local<v8::Function> _emitResponse;
 
-  auto wrapper = GetWrapper();
-  if (mate::Dictionary(isolate(), wrapper).Get("_emitResponse", &_emitResponse))
-    _emitResponse->Call(wrapper, 0, nullptr);
+  //auto wrapper = GetWrapper();
+  //if (mate::Dictionary(isolate(), wrapper).Get("_emitResponse", &_emitResponse))
+  //  _emitResponse->Call(wrapper, 0, nullptr);
+  EmitRequestEvent("response");
 }
 
-void URLRequest::OnResponseData() {
-  Emit("data");
+void URLRequest::OnResponseData(scoped_refptr<net::IOBufferWithSize> buffer) {
+  if (!buffer || !buffer->data() || !buffer->size()) {
+    return;
+  }
+
+  EmitResponseEvent("data", buffer);
+  //v8::Local<v8::Function> _emitData;
+  //auto data = mate::ConvertToV8(isolate(), buffer);
+
+  //auto wrapper = GetWrapper();
+  //if (mate::Dictionary(isolate(), wrapper).Get("_emitData", &_emitData))
+  //  _emitData->Call(wrapper, 1, &data);
 }
 
-void URLRequest::OnResponseEnd() {
-  Emit("end");
+void URLRequest::OnResponseCompleted() {
+
+  //v8::Local<v8::Function> _emitEnd;
+
+  //auto wrapper = GetWrapper();
+  //if (mate::Dictionary(isolate(), wrapper).Get("_emitEnd", &_emitEnd))
+  //  _emitEnd->Call(wrapper, 0, nullptr);
+
+  EmitResponseEvent("end");
 }
+
 
 int URLRequest::StatusCode() {
-  return atom_url_request_->StatusCode();
+  if (auto response_headers = atom_url_request_->GetResponseHeaders()) {
+    return response_headers->response_code();
+  }
+  return -1;
 }
 
-void URLRequest::StatusMessage() {
-  return atom_url_request_->StatusMessage();
+std::string URLRequest::StatusMessage() {
+  std::string result;
+  if (auto response_headers = atom_url_request_->GetResponseHeaders()) {
+    result = response_headers->GetStatusText();
+  }
+  return result;
 }
 
-void URLRequest::ResponseHeaders() {
-  return atom_url_request_->ResponseHeaders();
+scoped_refptr<net::HttpResponseHeaders> URLRequest::RawResponseHeaders() {
+	return atom_url_request_->GetResponseHeaders();
 }
 
-void URLRequest::ResponseHttpVersion() {
-  return atom_url_request_->ResponseHttpVersion();
+uint32_t URLRequest::ResponseHttpVersionMajor() {
+  if (auto response_headers = atom_url_request_->GetResponseHeaders()) {
+     return response_headers->GetHttpVersion().major_value();
+  }
+  return 0;
+}
+
+uint32_t URLRequest::ResponseHttpVersionMinor() {
+  if (auto response_headers = atom_url_request_->GetResponseHeaders()) {
+    return response_headers->GetHttpVersion().minor_value();
+  }
+  return 0;
 }
 
 void URLRequest::pin() {

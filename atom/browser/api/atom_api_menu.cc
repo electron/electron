@@ -191,8 +191,7 @@ using atom::api::Menu;
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Menu::thehub
-    SetConstructor(isolate, base::Bind(&Menu::New));
+  Menu::SetConstructor(isolate, base::Bind(&Menu::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("Menu", Menu::GetConstructor(isolate)->GetFunction());
