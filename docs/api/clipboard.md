@@ -90,6 +90,17 @@ bookmark is unavailable.
 
 Writes the `title` and `url` into the clipboard as a bookmark.
 
+**Note:** Most apps on Windows don't support pasting bookmarks into them so
+you can use `clipboard.write` to write both a bookmark and fallback text to the
+clipboard.
+
+```js
+clipboard.write({
+  text: 'http://electron.atom.io',
+  bookmark: 'Electron Homepage'
+})
+```
+
 ### `clipboard.clear([type])`
 
 * `type` String (optional)
