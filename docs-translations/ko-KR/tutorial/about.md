@@ -55,9 +55,10 @@ Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관�
 
 ### LTS
 
-현재 Electron 의 구버전에 대한 장기 지원은 없습니다. If your current version of Electron works for you, you can stay on it for as long as you'd like. If you want to make use of new features as they come in you should upgrade to a newer version.
+현재 Electron 의 구버전에 대한 장기 지원은 없습니다. Electron 현재 버전이 잘
+동작한다면, 그것을 원하는 만큼 유지하세요. If you want to make use of new features as they come in you should upgrade to a newer version.
 
-A major update came with version `v1.0.0`. If you're not yet using this version, you should [read more about the `v1.0.0` changes](http://electron.atom.io/blog/2016/05/11/electron-1-0).
+주 버전은 `v1.0.0` 입니다. 아직 이 버전을 사용중이지 않다면, [v1.0.0 변화에 대해 읽어보세요](http://electron.atom.io/blog/2016/05/11/electron-1-0).
 
 ## 중심 철학
 
