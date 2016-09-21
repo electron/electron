@@ -25,7 +25,6 @@
 #include "net/cert/ct_known_logs.h"
 #include "net/cert/ct_log_verifier.h"
 #include "net/cert/ct_policy_enforcer.h"
-#include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_filter.h"
@@ -278,9 +277,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(std::move(server_properties));
 
-    auto multi_log_ct_verifier = new net::MultiLogCTVerifier();
-    multi_log_ct_verifier->AddLogs(net::ct::CreateLogVerifiersForKnownLogs());
-    cert_transparency_verifier_.reset(multi_log_ct_verifier);
+    cert_transparency_verifier_.reset(new net::MultiLogCTVerifier());
+    cert_transparency_verifier_->AddLogs(
+        net::ct::CreateLogVerifiersForKnownLogs());
     ct_policy_enforcer_.reset(new net::CTPolicyEnforcer());
 
     net::HttpNetworkSession::Params network_session_params;

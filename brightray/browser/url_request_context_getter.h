@@ -8,6 +8,7 @@
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
+#include "net/cert/multi_log_ct_verifier.h"
 #include "net/http/http_cache.h"
 #include "net/http/url_security_manager.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -88,7 +89,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   std::unique_ptr<net::HostMappingRules> host_mapping_rules_;
   std::unique_ptr<net::HttpAuthPreferences> http_auth_preferences_;
   std::unique_ptr<net::HttpNetworkSession> http_network_session_;
-  std::unique_ptr<net::CTVerifier> cert_transparency_verifier_;
+  std::unique_ptr<net::MultiLogCTVerifier> cert_transparency_verifier_;
   std::unique_ptr<net::CTPolicyEnforcer> ct_policy_enforcer_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
