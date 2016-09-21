@@ -105,7 +105,7 @@ After building is done, you can find the `electron` debug binary under `out/D`.
 To clean the build files:
 
 ```bash
-$ ./script/clean.py
+$ npm run clean
 ```
 
 ## Troubleshooting

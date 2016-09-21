@@ -77,6 +77,14 @@ To generate a Visual Studio project, you can pass the `--msvs` parameter:
 $ python script\bootstrap.py --msvs
 ```
 
+## Cleaning
+
+To clean the build files:
+
+```powershell
+$ npm run clean
+```
+
 ## Tests
 
 Test your changes conform to the project coding style using:
