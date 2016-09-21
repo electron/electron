@@ -62,11 +62,13 @@ Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관�
 
 ## 중심 철학
 
-In order to keep Electron small (file size) and sustainable (the spread of dependencies and APIs) the project limits the scope of the core project.
+Electron 을 작고 (파일 크기) 지속가능하게 (the spread of dependencies and APIs) 할 목적으로 중심 프로젝트의 범위를 제한합니다.
 
-For instance, Electron uses just the rendering library from Chromium rather than all of Chromium. This makes it easier to upgrade Chromium but also means some browser features found in Google Chrome do not exist in Electron.
+예를 들어, Electron 은 Chromium 전체가 아닌 렌더링 라이브러리만 사용합니다.
+이것은 Chromium 업그레이드를 쉽게 하지만 Google Chrome 에서 볼 수 있는 몇몇
+브라우저 기능이 Electron 에서는 빠집니다.
 
-New features added to Electron should primarily be native APIs. If a feature can be its own Node.js module, it probably should be. See the [Electron tools built by the community](http://electron.atom.io/community).
+New features added to Electron should primarily be native APIs. If a feature can be its own Node.js module, it probably should be. [커뮤니티에 의해 개발된 Electron 도구들](http://electron.atom.io/community)을 보세요.
 
 ## 이력
 
