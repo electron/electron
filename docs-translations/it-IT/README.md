@@ -1,17 +1,17 @@
-Per favore sii certo di usare la documentazione che corrisponde alla tua
-versione di Electron. Il numero della versione dovrebbe fare parte dell'URL
-della pagina. Se così non fosse, stai probabilmente utilizzando una
-documentazione facente parte di una branch di sviluppo che potrebbe contenere
-modifiche all'API che non sono compatibili con la tua versione di Electron. Se
-così fosse, puoi passare a una differente versione della documentazione dalla
-lista di [versioni disponibili](http://electron.atom.io/docs/) su atom.io, o nel
-caso tu stia usando l'interfaccia di GitHub, apri il menu a tendina "Switch
+Sii certo di usare la documentazione che corrisponde alla tua versione di
+Electron. Il numero della versione dovrebbe fare parte dell'URL della pagina.
+Se cos� non fosse, stai probabilmente utilizzando una documentazione facente
+parte di una branch di sviluppo che potrebbe contenere modifiche all'API che non
+sono compatibili con la tua versione di Electron. In questo caso, puoi passare a
+una differente versione della documentazione dalla lista di
+[versioni disponibili](http://electron.atom.io/docs/) su atom.io, o nel caso tu
+stia usando l'interfaccia di GitHub, apri il menu a tendina "Switch
 branches/tags" e seleziona il tag che corrisponde alla tua versione.
 
 ## FAQ
 
-Ci sono domande che vengono chieste abbastanza spesso, controlla questa sezione
-prima di creare una issue:
+Ci sono domande che vengono chieste abbastanza spesso, quindi controlla questa
+sezione prima di creare una issue:
 
 * [Electron FAQ](faq.md)
 
@@ -21,11 +21,11 @@ prima di creare una issue:
 * [Sicurezza](tutorial/sicurezza.md)
 * [Versionamento Electron](tutorial/versionamento-electron.md)
 * [Distribuzione dell'Applicazione](tutorial/distribuzione-applicazione.md)
-* [Guida alla Presentazione della Domanda per Mac App Store](tutorial/guida-presentazione-domanda-mac-app-store.md)
+* [Guida Mac App Store](tutorial/guida-mac-app-store.md)
 * [Guida Windows Store](tutorial/guida-windows-store.md)
 * [Packaging Applicazione](tutorial/packaging-applicazione.md)
 * [Usare Moduli Node Nativi](tutorial/usare-moduli-node-nativi.md)
-* [Debugging Processo Main](tutorial/debugging-processo-main.md)
+* [Debugging Processo Principale](tutorial/debugging-processo-principale.md)
 * [Usare Selenium e WebDriver](tutorial/usare-selenium-e-webdriver.md)
 * [Estensioni DevTools](tutorial/estensioni-devtools.md)
 * [Usare Plugin Pepper Flash](tutorial/usare-plugin-pepper-flash.md)
@@ -35,20 +35,20 @@ prima di creare una issue:
 
 ## Tutorial
 
-* [Avvio Rapido](tutorial/avvio-rapido.md)
+* [Guida Rapida](tutorial/guida-rapida.md)
 * [Integrazione Ambiente Desktop](tutorial/integrazione-ambiente-desktop.md)
 * [Rilevazione Eventi Online/Offline](tutorial/eventi-online-offline.md)
 
-## Riferimenti API
+## Documentazione API
 
 * [Sinossi](api/sinossi.md)
 * [Oggetto Process](api/process.md)
 * [Parametri Linea di Comando Chrome Supportati](api/parametri-linea-comando-chrome.md)
-* [Variabili d'Ambiente](api/variabili-ambiente.md)
+* [Variabili di Ambiente](api/variabili-ambiente.md)
 
 ### Elementi personalizzati DOM:
 
-* [Object `File`](api/file-object.md)
+* [Oggetto `File`](api/oggetto-file.md)
 * [Tag `<webview>`](api/web-view-tag.md)
 * [Funzione `window.open`](api/window-open.md)
 
@@ -71,7 +71,7 @@ prima di creare una issue:
 * [Tray](api/tray.md)
 * [webContents](api/web-contents.md)
 
-### Moduli per il Processo Renderer (Pagina Web):
+### Moduli per il Processo di Rendering (Pagina Web):
 
 * [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)
