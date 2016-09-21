@@ -31,13 +31,13 @@ Electron 은 Gihub 의 팀과 커뮤니티에서
 추가하겠습니다.
 [Electron 에 공헌하기](../project/CONTRIBUTING.md)를 참고하세요..
 
-## Releases
+## 출시
 
 [Electron 출시](https://github.com/electron/electron/releases)는 빈번합니다.
 중요한 버그 수정, 새 API 추가 또는 Chromium 이나 Node.js 의 업데이트시에
 출시합니다.
 
-### Updating Dependencies
+### 업데이트 종속성
 
 Electron's version of Chromium is usually updated within one or two weeks after a new stable Chromium version is released, depending on the effort involved in the upgrade.
 
@@ -46,13 +46,13 @@ When a new version of Node.js is released, Electron usually waits about a month 
 In Electron, Node.js and Chromium share a single V8 instance—usually the version that Chromium is using. Most of the time this _just works_ but sometimes it means patching Node.js.
 
 
-### Versioning
+### 버전 관리
 
 Due to the hard dependency on Node.js and Chromium, Electron is in a tricky versioning position and [does not follow `semver`](http://semver.org). You should therefore always reference a specific version of Electron. [Read more about Electron's versioning](http://electron.atom.io/docs/tutorial/electron-versioning/) or see the [versions currently in use](https://electron.atom.io/#electron-versions).
 
 ### LTS
 
-Long term support of older versions of Electron does not currently exist. If your current version of Electron works for you, you can stay on it for as long as you'd like. If you want to make use of new features as they come in you should upgrade to a newer version.
+현재 Electron 의 구버전에 대한 장기 지원은 없습니다. If your current version of Electron works for you, you can stay on it for as long as you'd like. If you want to make use of new features as they come in you should upgrade to a newer version.
 
 A major update came with version `v1.0.0`. If you're not yet using this version, you should [read more about the `v1.0.0` changes](http://electron.atom.io/blog/2016/05/11/electron-1-0).
 
