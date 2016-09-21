@@ -52,7 +52,10 @@ Chromium 이 사용하는 버전. 대부분은 동작하지만 가끔 Node.js �
 ### 버전 관리
 
 Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관리가 까다롭고
-[`semver`을 따르지 않습니다](http://semver.org). You should therefore always reference a specific version of Electron. [Electron 의 버전관리](http://electron.atom.io/docs/tutorial/electron-versioning/)를 읽거나 [현재 쓰이는 버전](https://electron.atom.io/#electron-versions)을 보세요.
+[`semver`을 따르지 않습니다](http://semver.org). 그러므로 항상 Electron 의 특정
+버전을 참조해야 합니다. [Electron 의 버전관리]
+(http://electron.atom.io/docs/tutorial/electron-versioning/)를 읽거나
+[현재 쓰이는 버전](https://electron.atom.io/#electron-versions)을 보세요.
 
 ### LTS
 
