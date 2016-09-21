@@ -17,7 +17,7 @@ Electron 은 2013년에 Github 의 해킹 가능한 텍스트 편집기 Atom 의
 시작하였습니다. 이 둘은 2014년에 오픈소스화 됩니다.
 
 그후로 오픈소스 개발자, 스타트업과 안정된 회사에서 인기있는 도구가 되었습니다.
-[Electron 을 사용하는 곳을 보세요.](/apps).
+[Electron 을 사용하는 곳을 보세요](/apps).
 
 Electron 의 공헌자와 릴리즈에 대한 자세한 내용이나 개발을 시작하려면
 [Quick Start Guide](quick-start.md) 를 읽어보세요.
@@ -29,13 +29,13 @@ Electron 은 Gihub 의 팀과 커뮤니티에서
 그룹에 의해 유지됩니다. 일부 공헌자는 개인이고, 일부는 Electron 으로 개발을
 하는 큰 회사입니다. 프로젝트에 자주 공여하는 분은 기꺼이 메인테이너로
 추가하겠습니다.
-[Electron 에 공헌하기](../project/CONTRIBUTING.md)를 참고하세요..
+[Electron 에 공헌하기](../project/CONTRIBUTING.md)를 참고하세요.
 
 ## 출시
 
-[Electron 출시](https://github.com/electron/electron/releases)는 빈번합니다.
-중요한 버그 수정, 새 API 추가 또는 Chromium 이나 Node.js 의 업데이트시에
-출시합니다.
+Electron 은 빈번하게 [출시](https://github.com/electron/electron/releases)
+됩니다. 중요한 버그 수정, 새 API 추가 또는 Chromium 이나 Node.js 의
+업데이트시에 출시합니다.
 
 ### 업데이트 종속성
 
@@ -52,7 +52,7 @@ Chromium 이 사용하는 버전. 대부분은 동작하지만 가끔 Node.js �
 ### 버전 관리
 
 Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관리가 까다롭고
-[`semver`을 따르지 않습니다](http://semver.org). You should therefore always reference a specific version of Electron. [Electron 의 버전관리를 읽거나](http://electron.atom.io/docs/tutorial/electron-versioning/) [현재 쓰이는 버전](https://electron.atom.io/#electron-versions)을 보세요.
+[`semver`을 따르지 않습니다](http://semver.org). You should therefore always reference a specific version of Electron. [Electron 의 버전관리](http://electron.atom.io/docs/tutorial/electron-versioning/)를 읽거나 [현재 쓰이는 버전](https://electron.atom.io/#electron-versions)을 보세요.
 
 ### LTS
 
