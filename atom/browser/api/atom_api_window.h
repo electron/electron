@@ -132,7 +132,7 @@ class Window : public mate::TrackableObject<Window>,
   bool IsFullScreenable();
   void SetClosable(bool closable);
   bool IsClosable();
-  void SetAlwaysOnTop(bool top);
+  void SetAlwaysOnTop(bool top, mate::Arguments* args);
   bool IsAlwaysOnTop();
   void Center();
   void SetPosition(int x, int y, mate::Arguments* args);

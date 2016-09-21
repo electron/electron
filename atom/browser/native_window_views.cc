@@ -682,8 +682,8 @@ bool NativeWindowViews::IsClosable() {
 #endif
 }
 
-void NativeWindowViews::SetAlwaysOnTop(bool top) {
-  window_->SetAlwaysOnTop(top);
+void NativeWindowViews::SetAlwaysOnTop(bool top, int level) {
+  window_->SetAlwaysOnTop(top, level);
 }
 
 bool NativeWindowViews::IsAlwaysOnTop() {

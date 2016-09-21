@@ -943,8 +943,11 @@ bool NativeWindowMac::IsClosable() {
   return [window_ styleMask] & NSClosableWindowMask;
 }
 
-void NativeWindowMac::SetAlwaysOnTop(bool top) {
-  [window_ setLevel:(top ? NSFloatingWindowLevel : NSNormalWindowLevel)];
+void NativeWindowMac::SetAlwaysOnTop(bool top, int level) {
+  if (!level) {
+    level = NSFloatingWindowLevel;
+  }
+  [window_ setLevel:(top ? level : NSNormalWindowLevel)];
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {
