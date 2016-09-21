@@ -51,18 +51,21 @@ Chromium 이 사용하는 버전. 대부분은 동작하지만 가끔 Node.js �
 
 ### 버전 관리
 
-Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관리가 까다롭고 [`semver`을 따르지 않습니다](http://semver.org). You should therefore always reference a specific version of Electron. [Electron 의 버전관리를 읽거나](http://electron.atom.io/docs/tutorial/electron-versioning/) [현재 쓰이는 버전](https://electron.atom.io/#electron-versions)을 보세요.
+Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관리가 까다롭고
+[`semver`을 따르지 않습니다](http://semver.org). You should therefore always reference a specific version of Electron. [Electron 의 버전관리를 읽거나](http://electron.atom.io/docs/tutorial/electron-versioning/) [현재 쓰이는 버전](https://electron.atom.io/#electron-versions)을 보세요.
 
 ### LTS
 
 현재 Electron 의 구버전에 대한 장기 지원은 없습니다. Electron 현재 버전이 잘
-동작한다면, 그것을 원하는 만큼 유지하세요. If you want to make use of new features as they come in you should upgrade to a newer version.
+동작한다면, 그것을 원하는 만큼 유지하세요. 새로운 기능들을 사용하려면
+새버전으로 업그레이드 해야합니다.
 
 주 버전은 `v1.0.0` 입니다. 아직 이 버전을 사용중이지 않다면, [v1.0.0 변화에 대해 읽어보세요](http://electron.atom.io/blog/2016/05/11/electron-1-0).
 
 ## 중심 철학
 
-Electron 을 작고 (파일 크기) 지속가능하게 (the spread of dependencies and APIs) 할 목적으로 중심 프로젝트의 범위를 제한합니다.
+Electron 을 작고 (파일 크기) 지속가능하게 (the spread of dependencies and APIs)
+할 목적으로 중심 프로젝트의 범위를 제한합니다.
 
 예를 들어, Electron 은 Chromium 전체가 아닌 렌더링 라이브러리만 사용합니다.
 이것은 Chromium 업그레이드를 쉽게 하지만 Google Chrome 에서 볼 수 있는 몇몇
