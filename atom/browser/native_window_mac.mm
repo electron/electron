@@ -968,7 +968,7 @@ void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level) {
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {
-  return [window_ level] == NSFloatingWindowLevel;
+  return [window_ level] != NSNormalWindowLevel;
 }
 
 void NativeWindowMac::Center() {
