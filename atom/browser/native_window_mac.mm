@@ -943,28 +943,28 @@ bool NativeWindowMac::IsClosable() {
   return [window_ styleMask] & NSClosableWindowMask;
 }
 
-void NativeWindowMac::SetAlwaysOnTop(bool top, std::string level) {
-  int intLevel;
-  if (level == "normal") {
-    intLevel = NSNormalWindowLevel;
-  } else if (level == "floating") {
-    intLevel = NSFloatingWindowLevel;
-  } else if (level == "torn-off-menu") {
-    intLevel = NSTornOffMenuWindowLevel;
-  } else if (level == "modal-panel") {
-    intLevel = NSModalPanelWindowLevel;
-  } else if (level == "main-menu") {
-    intLevel = NSMainMenuWindowLevel;
-  } else if (level == "status") {
-    intLevel = NSStatusWindowLevel;
-  } else if (level == "pop-up-menu") {
-    intLevel = NSPopUpMenuWindowLevel;
-  } else if (level == "screen-saver") {
-    intLevel = NSScreenSaverWindowLevel;
-  } else if (level == "dock") {
-    intLevel = NSDockWindowLevel;
+void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level) {
+  int windowLevel = NSNormalWindowLevel;
+  if (top) {
+    if (level == "floating") {
+      windowLevel = NSFloatingWindowLevel;
+    } else if (level == "torn-off-menu") {
+      windowLevel = NSTornOffMenuWindowLevel;
+    } else if (level == "modal-panel") {
+      windowLevel = NSModalPanelWindowLevel;
+    } else if (level == "main-menu") {
+      windowLevel = NSMainMenuWindowLevel;
+    } else if (level == "status") {
+      windowLevel = NSStatusWindowLevel;
+    } else if (level == "pop-up-menu") {
+      windowLevel = NSPopUpMenuWindowLevel;
+    } else if (level == "screen-saver") {
+      windowLevel = NSScreenSaverWindowLevel;
+    } else if (level == "dock") {
+      windowLevel = NSDockWindowLevel;
+    }
   }
-  [window_ setLevel:(top ? intLevel : NSNormalWindowLevel)];
+  [window_ setLevel:windowLevel];
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {
