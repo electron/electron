@@ -487,7 +487,7 @@ bool Window::IsClosable() {
 }
 
 void Window::SetAlwaysOnTop(bool top, mate::Arguments* args) {
-  int level = 0;
+  std::string level = "floating";
   args->GetNext(&level);
   window_->SetAlwaysOnTop(top, level);
 }

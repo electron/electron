@@ -682,7 +682,7 @@ bool NativeWindowViews::IsClosable() {
 #endif
 }
 
-void NativeWindowViews::SetAlwaysOnTop(bool top, int level) {
+void NativeWindowViews::SetAlwaysOnTop(bool top, const std::string& level) {
   window_->SetAlwaysOnTop(top, level);
 }
 

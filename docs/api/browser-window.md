@@ -812,13 +812,12 @@ returns `true`.
 #### `win.setAlwaysOnTop(flag[, level])`
 
 * `flag` Boolean
-* `level` Integer (optional) macOS
+* `level` String (optional) _macOS_ - Options include (`normal`, `floating`, `torn-off-menu`,
+`modal-panel`, `main-menu`, `status`, `pop-up-menu`, `screen-saver`, `dock`). Default is `floating`.
 
 Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
 can not be focused on.
-
-A custom level can be set on MacOS that will override the default `NSFloatingWindowLevel`.
 
 #### `win.isAlwaysOnTop()`
 

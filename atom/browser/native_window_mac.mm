@@ -943,11 +943,28 @@ bool NativeWindowMac::IsClosable() {
   return [window_ styleMask] & NSClosableWindowMask;
 }
 
-void NativeWindowMac::SetAlwaysOnTop(bool top, int level) {
-  if (!level) {
-    level = NSFloatingWindowLevel;
+void NativeWindowMac::SetAlwaysOnTop(bool top, std::string level) {
+  int intLevel;
+  if (level == "normal") {
+    intLevel = NSNormalWindowLevel;
+  } else if (level == "floating") {
+    intLevel = NSFloatingWindowLevel;
+  } else if (level == "torn-off-menu") {
+    intLevel = NSTornOffMenuWindowLevel;
+  } else if (level == "modal-panel") {
+    intLevel = NSModalPanelWindowLevel;
+  } else if (level == "main-menu") {
+    intLevel = NSMainMenuWindowLevel;
+  } else if (level == "status") {
+    intLevel = NSStatusWindowLevel;
+  } else if (level == "pop-up-menu") {
+    intLevel = NSPopUpMenuWindowLevel;
+  } else if (level == "screen-saver") {
+    intLevel = NSScreenSaverWindowLevel;
+  } else if (level == "dock") {
+    intLevel = NSDockWindowLevel;
   }
-  [window_ setLevel:(top ? level : NSNormalWindowLevel)];
+  [window_ setLevel:(top ? intLevel : NSNormalWindowLevel)];
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {
