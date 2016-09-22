@@ -78,6 +78,14 @@ Visual Studio 프로젝트를 생성하려면, `--msvs` 인수를 전달할 수 
 $ python script\bootstrap.py --msvs
 ```
 
+## 정리하기
+
+빌드 파일들을 정리하려면:
+
+```powershell
+$ npm run clean
+```
+
 ## 테스트
 
 프로젝트 코딩 스타일을 확인하려면:

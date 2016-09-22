@@ -1,4 +1,4 @@
-﻿# remote
+# remote
 
 > 메인 프로세스 모듈을 렌더러 프로세스에서 사용합니다.
 
@@ -35,9 +35,12 @@ win.loadURL('https://github.com');
 않습니다. 대신에 이 `BrowserWindow` 객체는 메인 프로세스에서 생성되며 렌더러
 프로세스에 `win` 객체와 같이 이에 대응하는 remote 객체를 반환합니다.
 
-참고로 remote 객체가 처음 참조될 때 표시되는
-[enumerable 속성](https://developer.mozilla.org/ko/docs/Web/JavaScript/Enumerability_and_ownership_of_properties)은
-remote를 통해서만 접근할 수 있습니다.
+**참고:** remote 객체가 처음 참조될 때 표시되는
+[enumerable 속성][enumerable-properties]은 remote를 통해서만 접근할 수 있습니다.
+
+**참고:** 배열과 버퍼는 `remote` 모듈을 통해 접근할 떄 IPC 를 통해
+복사됩니다. 렌더러 프로세스에서의 수정은 메인 프로세스의 것을 수정하지 않으며,
+반대의 경우도 마찬가지 입니다.
 
 ## Remote 객체의 생명 주기
 
@@ -157,3 +160,4 @@ const app = remote.app;
 같습니다. 하지만 캐시 됩니다.
 
 [rmi]: http://en.wikipedia.org/wiki/Java_remote_method_invocation
+[enumerable-properties]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
