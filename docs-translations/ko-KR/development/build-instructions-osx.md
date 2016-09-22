@@ -1,4 +1,4 @@
-﻿# 빌드 설명서 (macOS)
+# 빌드 설명서 (macOS)
 
 이 가이드는 macOS 운영체제에서 Electron을 빌드하는 방법을 설명합니다.
 
@@ -49,6 +49,14 @@ $ ./script/build.py -c D
 
 Electron은 현재 macOS 64비트만 지원하고 있습니다. 그리고 앞으로도 macOS 32비트는 지원할
 계획이 없습니다.
+
+## 정리하기
+
+빌드 파일들을 정리하려면:
+
+```bash
+$ npm run clean
+```
 
 ## 테스트
 

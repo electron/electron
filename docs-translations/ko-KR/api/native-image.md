@@ -1,4 +1,4 @@
-﻿# nativeImage
+# nativeImage
 
 > PNG 또는 JPG 파일을 사용하여 트레이, 독, 애플리케이션 아이콘을 생성합니다.
 
@@ -112,6 +112,8 @@ let appIcon = new Tray('/Users/somebody/images/icon.png')
 * `path` String
 
 `path`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
+`path` 가 존재하지 않거나, 읽을 수 없거나, 유효한 이미지가 아니면 빈 이미지를
+반환한다.
 
 ```javascript
 const nativeImage = require('electron').nativeImage

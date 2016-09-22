@@ -1,4 +1,4 @@
-﻿# clipboard
+# clipboard
 
 > 시스템 클립보드에 복사와 붙여넣기를 수행합니다.
 
@@ -88,6 +88,16 @@ console.log(clipboard.readText('selection'));
 * `type` String (optional)
 
 `title`과 `url`을 클립보드에 북마크 형식으로 씁니다.
+
+**참고:** 윈도우의 대부분의 앱은 북마크 붙여넣기를 지원하지 않습니다.
+`clipboard.write` 를 통해 북마크와 대체 텍스트를 클립보드에 쓸 수 있습니다.
+
+```js
+clipboard.write({
+  text: 'http://electron.atom.io',
+  bookmark: 'Electron Homepage'
+})
+```
 
 ### `clipboard.clear([type])`
 
