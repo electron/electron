@@ -19,15 +19,16 @@ influenzati dai bug introdotti nelle nuove versioni di Node.js, cosa che accade
 spesso.
 
 Le nuove funzionalità di Node.js sono solitamente introdotte dagli aggiornamenti
-di V8. Siccome Electron usa la versione di V8 incorporata nel browser Chrome, le
+di V8. Siccome Electron usa la versione di V8 integrata nel browser Chrome, le
 nuove funzionalità di JavaScript implementate nella nuova versione di Node.js
 sono già presenti in Electron.
 
 ## Come condividere dati tra pagine web?
 
 Il modo più semplice per condividere dati tra pagine web (il processo di 
-rendering) è usare le API di HTML5 già disponibili nei browser. Buone opzioni
-sono [Storage API][storage], [`localStorage`][local-storage], [`sessionStorage`][session-storage] e [IndexDB][indexed-db].
+rendering) è usare le API di HTML5 già disponibili nei browser. Alcune buone
+opzioni sono [Storage API][storage], [`localStorage`][local-storage],
+[`sessionStorage`][session-storage] e [IndexDB][indexed-db].
 
 Oppure puoi usare il sistema IPC, che è specifico di Electron, per memorizzare
 gli oggetti nel processo principale come variabile globale e accedervi poi
@@ -61,8 +62,8 @@ d'aiuto:
 * [Gestione Memoria][memory-management]
 * [Visibilità Variabili][variable-scope]
 
-Se hai bisogno un fix veloce, puoi rendere le variabili globali cambiando il tuo
-codice da così:
+Se hai bisogno di un fix veloce, puoi rendere le variabili globali cambiando il
+tuo codice da così:
 
 ```javascript
 const {app, Tray} = require('electron')
