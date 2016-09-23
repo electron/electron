@@ -367,9 +367,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       new ui::Compositor(content::GetContextFactory(),
                          base::ThreadTaskRunnerHandle::Get()));
   compositor_->SetAcceleratedWidget(native_window_->GetAcceleratedWidget());
-  compositor_->SetDelegate(this);
   compositor_->SetRootLayer(root_layer_.get());
 #endif
+  GetCompositor()->SetDelegate(this);
 
   native_window_->AddObserver(this);
 
@@ -445,6 +445,9 @@ void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
   size_ = size;
 
   ResizeRootLayer();
+  if (render_widget_host_)
+    render_widget_host_->WasResized();
+  GetDelegatedFrameHost()->WasResized();
 }
 
 void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
