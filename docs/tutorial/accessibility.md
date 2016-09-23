@@ -30,4 +30,4 @@ In Devtron there is a new accessibility tab which will allow you to audit a page
 
 Both of these tools are using the [Accessibility Developer Tools](https://github.com/GoogleChrome/accessibility-developer-tools) library built by Google for Chrome. You can learn more about the accessibility audit rules this library uses on that [repository's wiki](https://github.com/GoogleChrome/accessibility-developer-tools/wiki/Audit-Rules).
 
-If you know of other great accessibility tools for Electron, add them to the [accessibility documentation](http://electron.atom.io/docs/tutorials/accessibility) with a pull request.
+If you know of other great accessibility tools for Electron, add them to the [accessibility documentation](http://electron.atom.io/docs/tutorial/accessibility) with a pull request.

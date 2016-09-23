@@ -340,7 +340,7 @@ window.onbeforeunload = (e) => {
 
 #### Event: 'blur'
 
-윈도우가 포커스를 잃었을 떄 발생하는 이벤트입니다.
+윈도우가 포커스를 잃었을 때 발생하는 이벤트입니다.
 
 #### Event: 'focus'
 
