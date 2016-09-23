@@ -23,5 +23,5 @@ Electron 브라우저 창의 개발자 도구는 웹 페이지 같은 창에서 
 V8 디버거 프로토콜을 지원하는 디버거가 필요합니다. 다음 가이드들이 도움이
 됩니다:
 
-- [Debugging the Main Process in VSCode](debugging-main-process-vscode.md)
-- [Debugging the Main Process in node-inspector](debugging-main-process-node-inspector.md)
+- [VSCode 에서 메인 프로세스 디버깅하기](debugging-main-process-vscode.md)
+- [node-inspector 에서 메인 프로세스 디버깅하기](debugging-main-process-node-inspector.md)
