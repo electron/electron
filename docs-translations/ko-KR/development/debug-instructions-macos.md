@@ -5,33 +5,32 @@
 >
 > 문서의 번역이 완료되면 이 틀을 삭제해주세요.
 
-# Debugging on macOS
+# macOS 에서 디버깅하기
 
-If you experience crashes or issues in Electron that you believe are not caused
-by your JavaScript application, but instead by Electron itself, debugging can
-be a little bit tricky, especially for developers not used to native/C++
-debugging. However, using lldb, and the Electron source code, it is fairly easy
-to enable step-through debugging with breakpoints inside Electron's source code.
+만약 작성한 Javascript 애플리케이션이 아닌 Electron 자체의 크래시나 문제를
+경험하고 있다면, 네이티브/C++ 디버깅에 익숙하지 않은 개발자는 디버깅이 약간
+까다로울 수 있습니다. 그렇다 해도, lldb, Electron 소스 코드가 중단점을 통해
+순차적으로 쉽게 디버깅할 수 있느 환경을 제공합니다.
 
-## Requirements
+## 요구사항
 
-* **A debug build of Electron**: The easiest way is usually building it
-  yourself, using the tools and prerequisites listed in the
-  [build instructions for macOS](build-instructions-osx.md). While you can
-  easily attach to and debug Electron as you can download it directly, you will
-  find that it is heavily optimized, making debugging substantially more
-  difficult: The debugger will not be able to show you the content of all
-  variables and the execution path can seem strange because of inlining,
-  tail calls, and other compiler optimizations.
+* **Electron의 디버그 빌드**: 가장 쉬운 방법은 보통 [macOS용 빌드 설명서]
+  (buildinstruction-osx.md)에 명시된 요구 사항과 툴을 사용하여 스스로 빌드하는
+  것입니다. 물론 직접 다운로드 받은 Electron 바이너리에도 디버거 연결 및
+  디버깅을 사용할 수 있지만, 실질적으로 디버깅이 까다롭게 고도의 최적화가
+  되어있음을 발견하게 될 것입니다: 인라인화, 꼬리 호출, 이외 여러 가지 생소한
+  최적화가 적용되어 디버거가 모든 변수와 실행 경로를 정상적으로 표시할 수
+  없습니다.
 
-* **Xcode**: In addition to Xcode, also install the Xcode command line tools.
-  They include LLDB, the default debugger in Xcode on Mac OS X. It supports
-  debugging C, Objective-C and C++ on the desktop and iOS devices and simulator.
+* **Xcode**: Xcode 뿐만 아니라, Xcode 명령 줄 도구를 설치합니다. 이것은 LLDB,
+  macOS Xcode 의 기본 디버거를 포함합니다. 그것은 데스크톱과 iOS 기기와
+  시뮬레이터에서 C, Objective-C, C++ 디버깅을 지원합니다.
 
-## Attaching to and Debugging Electron
+## Electron에 디버거 연결하고 디버깅하기
 
-To start a debugging session, open up Terminal and start `lldb`, passing a debug
-build of Electron as a parameter.
+디버깅 작업을 시작하려면, Terminal 을 열고 디버그 빌드 상태의 Electron 을
+전달하여 `lldb` 를 시작합니다.
+
 
 ```bash
 $ lldb ./out/D/Electron.app
@@ -39,33 +38,33 @@ $ lldb ./out/D/Electron.app
 Current executable set to './out/D/Electron.app' (x86_64).
 ```
 
-### Setting Breakpoints
+### 중단점 설정
 
-LLDB is a powerful tool and supports multiple strategies for code inspection. For
-this basic introduction, let's assume that you're calling a command from JavaScript
-that isn't behaving correctly - so you'd like to break on that command's C++
-counterpart inside the Electron source.
+LLDB 는 강력한 도구이며 코드 검사를 위한 다양한 전략을 제공합니다. 간단히
+소개하자면, JavaScript 에서 올바르지 않은 명령을 호출한다고 가정합시다 - 당신은
+명령의 C++ 부분에서 멈추길 원하며 그것은 Electron 소스 내에 있습니다.
 
-Relevant code files can be found in `./atom/` as well as in Brightray, found in
-`./vendor/brightray/browser` and `./vendor/brightray/common`. If you're hardcore,
-you can also debug Chromium directly, which is obviously found in `chromium_src`.
+관련 코드는 `./atom/` 에서 찾을 수 있으며 마찬가지로 Brightray 도
+`./vendor/brightray/browser` 와 `./vendor/brightray/common` 에서 찾을 수
+있습니다. 당신이 열정적이라면, Chromium 을 직접 디버깅할 수 있으며,
+`chromium_src` 에서 찾을 수 있습니다.
 
-Let's assume that you want to debug `app.setName()`, which is defined in `browser.cc`
-as `Browser::SetName()`. Set the breakpoint using the `breakpoint` command, specifying
-file and line to break on:
+app.setName() 을 디버깅한다고 가정합시다, 이것은 browser.cc 에
+Browser::SetName() 으로 정의되어있습니다. breakpoint 명령으로 멀추려는 파일과
+줄을 명시하여 중단점을 설정합시다:
 
 ```bash
 (lldb) breakpoint set --file browser.cc --line 117
 Breakpoint 1: where = Electron Framework``atom::Browser::SetName(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&) + 20 at browser.cc:118, address = 0x000000000015fdb4
 ```
 
-Then, start Electron:
+그리고 Electron 을 시작하세요:
 
 ```bash
 (lldb) run
 ```
 
-The app will immediately be paused, since Electron sets the app's name on launch:
+Electron 이 시작시에 앱의 이름을 설정하기때문에, 앱은 즉시 중지됩니다:
 
 ```bash
 (lldb) run
@@ -83,8 +82,8 @@ Process 25244 stopped
 (lldb)
 ```
 
-To show the arguments and local variables for the current frame, run `frame variable` (or `fr v`),
-which will show you that the app is currently setting the name to "Electron".
+현재 매개변수와 지역 변수를 보기위해, `frame variable` (또는 `fr v`) 를
+실행하면, 현재 앱 이름이 "Electron" 인 것을 불 수 있습니다.
 
 ```bash
 (lldb) frame variable
@@ -94,9 +93,9 @@ which will show you that the app is currently setting the name to "Electron".
 }
 ```
 
-To do a source level single step in the currently selected thread, execute `step` (or `s`).
-This would take you into into `name_override_.empty()`. To proceed and do a step over,
-run `next` (or `n`).
+현재 선택된 쓰레드에서 소스 수준 한단계를 실행하기위해, `step` (또는 `s`) 를
+실행하세요. `name_override_.empty()` 로 들어가게 됩니다. 스텝 오버 실행은,
+`next` (또는 `n`) 을 실행하세요.
 
 ```bash
 (lldb) step
@@ -112,20 +111,21 @@ Process 25244 stopped
    122 	  return badge_count_;
 ```
 
-To finish debugging at this point, run `process continue`. You can also continue until a certain
-line is hit in this thread (`thread until 100`). This command will run the thread in the current
-frame till it reaches line 100 in this frame or stops if it leaves the current frame.
+디버깅을 끝내려면, `process continue` 를 실행하세요. 또한 쓰레드에서 실행 줄
+수를 지정할 수 있습니다 (`thread until 100`). 이 명령은 현재 프레임에서 100 줄에
+도달하거나 현재 프레임을 나가려고 할 떄 까지 쓰레드를 실행합니다.
 
-Now, if you open up Electron's developer tools and call `setName`, you will once again hit the
-breakpoint.
+이제, Electron 의 개발자 도구를 열고 `setName` 을 호출하면, 다시 중단점을 만날
+것 입니다.
 
-### Further Reading
-LLDB is a powerful tool with a great documentation. To learn more about it, consider
-Apple's debugging documentation, for instance the [LLDB Command Structure Reference][lldb-command-structure]
-or the introduction to [Using LLDB as a Standalone Debugger][lldb-standalone].
+### 더 읽을거리
+LLDB 는 훌륭한 문서가 있는 강력한 도구입니다. 더 학습하기 위해,
+[LLDB 명령 구조 참고][lldb-command-structure] 와
+[LLDB 를 독립 실행 디버거로 사용하기][lldb-standalone] 같은 애플의 디버깅
+문서를 고려하세요.
 
-You can also check out LLDB's fantastic [manual and tutorial][lldb-tutorial], which
-will explain more complex debugging scenarios.
+LLDB 의 환상적인 [설명서와 학습서][lldb-tutorial] 를 확인할 수 있습니다.
+그것은 더 복잡한 디버깅 시나리오를 설명합니다.
 
 [lldb-command-structure]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/document/lldb-basics.html#//apple_ref/doc/uid/TP40012917-CH2-SW2
 [lldb-standalone]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/document/lldb-terminal-workflow-tutorial.html
