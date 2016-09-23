@@ -1,10 +1,3 @@
-> 이 문서는 아직 Electron 기여자가 번역하지 않았습니다.
->
-> Electron에 기여하고 싶다면 [기여 가이드](https://github.com/electron/electron/blob/master/CONTRIBUTING-ko.md)를
-> 참고하세요.
->
-> 문서의 번역이 완료되면 이 틀을 삭제해주세요.
-
 # macOS 에서 디버깅하기
 
 만약 작성한 Javascript 애플리케이션이 아닌 Electron 자체의 크래시나 문제를
