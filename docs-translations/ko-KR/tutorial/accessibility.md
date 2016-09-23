@@ -47,5 +47,5 @@ Devtron 에서 앱의 페이지를 검사할 수 있는 접근성 탭이 생겼�
 통해 더 알아볼 수 있습니다.
 
 Electron 을 위한 다른 훌륭한 접근성 도구를 알고계시다면,
-[접근성 문서](http://electron.atom.io/docs/tutorials/accessibility) 에 풀
+[접근성 문서](http://electron.atom.io/docs/tutorial/accessibility) 에 풀
 요청과 함께 추가해 주세요.
