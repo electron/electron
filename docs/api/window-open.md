@@ -25,8 +25,10 @@ Returns `BrowserWindowProxy` - Creates a new window and returns an instance of `
 The `features` string follows the format of standard browser, but each feature
 has to be a field of `BrowserWindow`'s options.
 
-**Note:** Node integration will always be disabled in the opened `window` if it
+**Notes:**
+* Node integration will always be disabled in the opened `window` if it
 is disabled on the parent window.
+* Non-standard features (that are not handled by Chromium or Electron such `this-is-not-a-standard-feature`) given in features will be passed to any registered `webContent`'s `new-window` event handler in the `additional_features` argument.
 
 ### `window.opener.postMessage(message, targetOrigin)`
 
