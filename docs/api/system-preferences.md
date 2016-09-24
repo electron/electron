@@ -138,13 +138,13 @@ if (browserOptions.transparent) {
 
 [dwm-composition]:https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx
 
-### `SystemPreferences.getAccentColor()` _Windows_
+### `systemPreferences.getAccentColor()` _Windows_
 
 Returns the users current system wide color preference in the form of an RGBA
 hexadecimal string.
 
 ```js
-const color = app.getSystemAccentColor() // `"aabbccdd"`
+const color = systemPreferences.getAccentColor() // `"aabbccdd"`
 const red = color.substr(0, 2) // "aa"
 const green = color.substr(2, 2) // "bb"
 const blue = color.substr(4, 2) // "cc"
