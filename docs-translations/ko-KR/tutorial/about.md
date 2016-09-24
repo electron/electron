@@ -12,17 +12,17 @@ Electron 은 2013년에 Github 의 해킹 가능한 텍스트 편집기 Atom 의
 그후로 오픈소스 개발자, 스타트업과 안정된 회사에서 인기있는 도구가 되었습니다.
 [Electron 을 사용하는 곳을 보세요](/apps).
 
-Electron 의 공헌자와 릴리즈에 대한 자세한 내용이나 개발을 시작하려면
+Electron 의 기여자와 릴리즈에 대한 자세한 내용이나 개발을 시작하려면
 [Quick Start Guide](quick-start.md) 를 읽어보세요.
 
-## 코어 팀과 공헌자
+## 코어 팀과 기여자
 
 Electron 은 Gihub 의 팀과 커뮤니티에서
-[활동중인 공헌자](https://github.com/electron/electron/graphs/contributors)
-그룹에 의해 유지됩니다. 일부 공헌자는 개인이고, 일부는 Electron 으로 개발을
+[활동중인 기여자](https://github.com/electron/electron/graphs/contributors)
+그룹에 의해 유지됩니다. 일부 기여자는 개인이고, 일부는 Electron 으로 개발을
 하는 큰 회사입니다. 프로젝트에 자주 공여하는 분은 기꺼이 메인테이너로
 추가하겠습니다.
-[Electron 에 공헌하기](../project/CONTRIBUTING.md)를 참고하세요.
+[Electron 에 기여하기](../project/CONTRIBUTING.md)를 참고하세요.
 
 ## 출시
 
