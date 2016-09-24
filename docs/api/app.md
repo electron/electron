@@ -357,7 +357,7 @@ app.exit(0)
 
 ### `app.isReady()`
 
-Returns `true` if Electron has finished initializing, `false` otherwise.
+Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
 
 ### `app.focus()`
 
@@ -375,13 +375,13 @@ them.
 
 ### `app.getAppPath()`
 
-Returns the current application directory.
+Returns `String` - The current application directory.
 
 ### `app.getPath(name)`
 
 * `name` String
 
-Retrieves a path to a special directory or file associated with `name`. On
+Returns `String` - A path to a special directory or file associated with `name`. On
 failure an `Error` is thrown.
 
 You can request the following paths by the name:
@@ -421,13 +421,13 @@ directory. If you want to change this location, you have to override the
 
 ### `app.getVersion()`
 
-Returns the version of the loaded application. If no version is found in the
+Returns `String` - The version of the loaded application. If no version is found in the
 application's `package.json` file, the version of the current bundle or
 executable is returned.
 
 ### `app.getName()`
 
-Returns the current application's name, which is the name in the application's
+Returns `String` - The current application's name, which is the name in the application's
 `package.json` file.
 
 Usually the `name` field of `package.json` is a short lowercased name, according
@@ -443,7 +443,7 @@ Overrides the current application's name.
 
 ### `app.getLocale()`
 
-Returns the current application locale. Possible return values are documented
+Returns `String` - The current application locale. Possible return values are documented
 [here](locales.md).
 
 **Note:** When distributing your packaged app, you have to also ship the
@@ -507,6 +507,8 @@ Returns `true` when the call succeeded, otherwise returns `false`.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
 * `args` Array (optional) _Windows_ - Defaults to an empty array
 
+Returns `Boolean`
+
 This method checks if the current executable is the default handler for a protocol
 (aka URI scheme). If so, it will return true. Otherwise, it will return false.
 
@@ -548,8 +550,7 @@ Returns `true` when the call succeeded, otherwise returns `false`.
 
 ### `app.getJumpListSettings()` _Windows_
 
-Returns an Object with the following properties:
-
+Returns `Object`:
 * `minItems` Integer - The minimum number of items that will be shown in the
   Jump List (for a more detailed description of this value see the
   [MSDN docs][JumpListBeginListMSDN]).
@@ -759,7 +760,7 @@ is eligible for [Handoff][handoff] to another device afterward.
 
 ### `app.getCurrentActivityType()` _macOS_
 
-Returns the type of the currently running activity.
+Returns `String` - The type of the currently running activity.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
@@ -799,16 +800,15 @@ for more information please read [Desktop Environment Integration][unity-require
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
-Returns the current value displayed in the counter badge.
+Returns `Integer` - The current value displayed in the counter badge.
 
 ### `app.isUnityRunning()` _Linux_
 
-Returns whether current desktop environment is Unity launcher.
+Returns `Boolean` - Whether the current desktop environment is Unity launcher.
 
 ### `app.getLoginItemSettings()` _macOS_ _Windows_
 
-Return an Object with the login item settings of the app.
-
+Returns `Object`:
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
 * `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
   This setting is only supported on macOS.
@@ -837,7 +837,7 @@ Set the app's login item settings.
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
-Returns a `Boolean`, `true` if Chrome's accessibility support is enabled,
+Returns `Boolean` - `true` if Chrome's accessibility support is enabled,
 `false` otherwise. This API will return `true` if the use of assistive
 technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
@@ -896,7 +896,7 @@ Sets the string to be displayed in the dock’s badging area.
 
 ### `app.dock.getBadge()` _macOS_
 
-Returns the badge string of the dock.
+Returns `String` - The badge string of the dock.
 
 ### `app.dock.hide()` _macOS_
 
@@ -908,7 +908,7 @@ Shows the dock icon.
 
 ### `app.dock.isVisible()` _macOS_
 
-Returns whether the dock icon is visible.
+Returns `Boolean` - Whether the dock icon is visible.
 The `app.dock.show()` call is asynchronous so this method might not
 return true immediately after that call.
 

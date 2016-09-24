@@ -56,7 +56,7 @@ want applications to fight for global shortcuts.
 
 * `accelerator` [Accelerator](accelerator.md)
 
-Returns whether this application has registered `accelerator`.
+Returns `Boolean` - Whether this application has registered `accelerator`.
 
 When the accelerator is already taken by other applications, this call will
 still return `false`. This behavior is intended by operating systems, since they

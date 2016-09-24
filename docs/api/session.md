@@ -27,7 +27,7 @@ The `session` module has the following methods:
 * `options` Object
   * `cache` Boolean - Whether to enable cache.
 
-Returns a `Session` instance from `partition` string. When there is an existing
+Returns `Session` - A session instance from `partition` string. When there is an existing
 `Session` with the same `partition`, it will be returned; othewise a new
 `Session` instance will be created with `options`.
 
@@ -46,7 +46,7 @@ The `session` module has the following properties:
 
 ### `session.defaultSession`
 
-Returns the default session object of the app.
+A `Session` object, the default session object of the app.
 
 ## Class: Session
 
@@ -324,7 +324,7 @@ This doesn't affect existing `WebContents`, and each `WebContents` can use
 
 #### `ses.getUserAgent()`
 
-Returns a `String` representing the user agent for this session.
+Returns `String` - The user agent for this session.
 
 #### `ses.getBlobData(identifier, callback)`
 
@@ -332,7 +332,7 @@ Returns a `String` representing the user agent for this session.
 * `callback` Function
   * `result` Buffer - Blob data.
 
-Returns the blob data associated with the `identifier`.
+Returns `Blob` - The blob data associated with the `identifier`.
 
 ### Instance Properties
 
@@ -340,15 +340,15 @@ The following properties are available on instances of `Session`:
 
 #### `ses.cookies`
 
-Returns an instance of `Cookies` class for this session.
+A Cookies object for this session.
 
 #### `ses.webRequest`
 
-Returns an instance of `WebRequest` class for this session.
+A WebRequest object for this session.
 
 #### `ses.protocol`
 
-Returns an instance of [protocol](protocol.md) module for this session.
+A Protocol object (an instance of [protocol](protocol.md) module) for this session.
 
 ```javascript
 const {app, session} = require('electron')

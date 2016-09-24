@@ -243,12 +243,12 @@ Sets the context menu for this icon.
 
 #### `tray.getBounds()` _macOS_ _Windows_
 
-Returns the `bounds` of this tray icon as `Object`.
+Returns `Object`:
+* `x` Integer
+* `y` Integer
+* `width` Integer
+* `height` Integer
 
-* `bounds` Object
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+The `bounds` of this tray icon as `Object`.
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter

@@ -28,7 +28,7 @@ The `clipboard` module has the following methods:
 
 * `type` String (optional)
 
-Returns the content in the clipboard as plain text.
+Returns `String` - The content in the clipboard as plain text.
 
 ### `clipboard.writeText(text[, type])`
 
@@ -41,7 +41,7 @@ Writes the `text` into the clipboard as plain text.
 
 * `type` String (optional)
 
-Returns the content in the clipboard as markup.
+Returns `String` - The content in the clipboard as markup.
 
 ### `clipboard.writeHTML(markup[, type])`
 
@@ -54,7 +54,7 @@ Writes `markup` to the clipboard.
 
 * `type` String (optional)
 
-Returns the content in the clipboard as a [NativeImage](native-image.md).
+Returns `NativeImage` - The content in the clipboard as a [NativeImage](native-image.md).
 
 ### `clipboard.writeImage(image[, type])`
 
@@ -67,7 +67,7 @@ Writes `image` to the clipboard.
 
 * `type` String (optional)
 
-Returns the content in the clipboard as RTF.
+Returns `String` - The content in the clipboard as RTF.
 
 ### `clipboard.writeRTF(text[, type])`
 
@@ -77,6 +77,10 @@ Returns the content in the clipboard as RTF.
 Writes the `text` into the clipboard in RTF.
 
 ### `clipboard.readBookmark()` _macOS_ _Windows_
+
+Returns `Object`:
+* `title` String
+* `url` String
 
 Returns an Object containing `title` and `url` keys representing the bookmark in
 the clipboard. The `title` and `url` values will be empty strings when the
@@ -111,14 +115,14 @@ Clears the clipboard content.
 
 * `type` String (optional)
 
-Returns an array of supported formats for the clipboard `type`.
+Returns `String[]` - An array of supported formats for the clipboard `type`.
 
 ### `clipboard.has(data[, type])` _Experimental_
 
 * `data` String
 * `type` String (optional)
 
-Returns whether the clipboard supports the format of specified `data`.
+Returns `Boolean` - Whether the clipboard supports the format of specified `data`.
 
 ```javascript
 const {clipboard} = require('electron')
@@ -130,7 +134,7 @@ console.log(clipboard.has('<p>selection</p>'))
 * `data` String
 * `type` String (optional)
 
-Reads `data` from the clipboard.
+Returns `String` - Reads `data` from the clipboard.
 
 ### `clipboard.write(data[, type])`
 

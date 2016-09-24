@@ -294,7 +294,7 @@ Inserts the `menuItem` to the `pos` position of the menu.
 
 #### `menu.items`
 
-Get an array containing the menu's items.
+A MenuItem[] array containing the menu's items.
 
 ## Notes on macOS Application Menu
 
