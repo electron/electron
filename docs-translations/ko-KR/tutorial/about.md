@@ -33,7 +33,7 @@ Electron 은 빈번하게 [출시](https://github.com/electron/electron/releases
 ### 업데이트 종속성
 
 Electron 의 Chromium 버전은 보통 새 버전 출시 이후 1~2 주 후에 업데이트 하는데,
-이는 업그레이드 노력에 따라 달라집니다.
+이는 업그레이드에 필요한 작업의 양에 따라 달라집니다.
 
 Node.js 의 새버전이 출시되면, Electron 은 더 안정된 버전을 가져오기 위해 약
 한달정도 기다립니다.

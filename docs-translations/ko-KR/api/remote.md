@@ -38,7 +38,7 @@ win.loadURL('https://github.com');
 **참고:** remote 객체가 처음 참조될 때 표시되는
 [enumerable 속성][enumerable-properties]은 remote를 통해서만 접근할 수 있습니다.
 
-**참고:** 배열과 버퍼는 `remote` 모듈을 통해 접근할 떄 IPC 를 통해
+**참고:** 배열과 버퍼는 `remote` 모듈을 통해 접근할 때 IPC 를 통해
 복사됩니다. 렌더러 프로세스에서의 수정은 메인 프로세스의 것을 수정하지 않으며,
 반대의 경우도 마찬가지 입니다.
 
