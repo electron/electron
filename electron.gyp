@@ -122,6 +122,9 @@
             '<(libchromiumcontent_dir)/gen/ui/resources',
           ],
           'msvs_settings': {
+            'VCLinkerTool': {
+              'LargeAddressAware': '2'
+            },
             'VCManifestTool': {
               'EmbedManifest': 'true',
               'AdditionalManifestFiles': 'atom/browser/resources/win/atom.manifest',
