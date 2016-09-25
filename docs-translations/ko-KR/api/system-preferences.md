@@ -7,6 +7,18 @@ const {systemPreferences} = require('electron');
 console.log(systemPreferences.isDarkMode());
 ```
 
+## Events
+
+`systemPreferences` 객체는 다음 이벤트를 발생시킵니다:
+
+### Event: 'accent-color-changed' _Windows_
+
+Returns:
+
+* `event` Event
+* `newColor` String - 사용자에 의해 시스템 강조색으로 설정 된 새 RGBA 색상.
+
+
 ## Methods
 
 ### `systemPreferences.isDarkMode()` _macOS_
@@ -18,6 +30,22 @@ console.log(systemPreferences.isDarkMode());
 
 이 메서드는 페이지 간의 스와이프가 설정되어있을 때 `true`를 반환하고 그렇지 않은 경우
 `false`를 반환합니다.
+
+### `systemPreferences.postNotification(event, userInfo)` _macOS_
+
+* `event` String
+* `userInfo` Object
+
+Posts `event` as native notifications of macOS. The `userInfo` is an Object
+that contains the user information dictionary sent along with the notification.
+
+### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
+
+* `event` String
+* `userInfo` Object
+
+Posts `event` as native notifications of macOS. The `userInfo` is an Object
+that contains the user information dictionary sent along with the notification.
 
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
@@ -87,6 +115,7 @@ macOS에선 API가 `NSUserDefaults`를 읽어들입니다. 유명한 `key`와 `t
 예시입니다 (투명한 윈도우는 DWM 컴포지션이 비활성화되어있을 시 작동하지 않습니다):
 
 ```javascript
+const {BrowserWindow, systemPreferences} = require('electron');
 let browserOptions = {width: 1000, height: 800};
 
 // 플랫폼이 지원하는 경우에만 투명 윈도우를 생성.
@@ -108,3 +137,15 @@ if (browserOptions.transparent) {
 ```
 
 [dwm-composition]:https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx
+
+### `systemPreferences.getAccentColor()` _Windows_
+
+사용자의 현재 시스템 전체 색상 환경설정을 RGBA 16진 문자열 형태로 반환합니다.
+
+```js
+const color = systemPreferences.getAccentColor() // `"aabbccdd"`
+const red = color.substr(0, 2) // "aa"
+const green = color.substr(2, 2) // "bb"
+const blue = color.substr(4, 2) // "cc"
+const alpha = color.substr(6, 2) // "dd"
+```
