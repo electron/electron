@@ -1111,6 +1111,11 @@ win.webContents.on('did-finish-load', () => {
 
 *오프 스크린 렌더링* 이 활성화된 경우 현재 프레임 레이트를 반환합니다.
 
+#### `contents.invalidate()`
+
+*오프 스크린 렌더링* 이 활성화된 경우 프레임을 무효화 하고 `'paint'` 이벤트를
+통해 새로 만듭니다.
+
 ### Instance Properties
 
 #### `contents.id`
