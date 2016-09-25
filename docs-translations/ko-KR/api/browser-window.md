@@ -289,7 +289,7 @@ On Windows it is
 
 #### Event: 'page-title-updated'
 
-Returns:
+반환값:
 
 * `event` Event
 * `title` String
@@ -299,7 +299,7 @@ Returns:
 
 #### Event: 'close'
 
-Returns:
+반환값:
 
 * `event` Event
 * `title` String
@@ -407,7 +407,7 @@ __참고__: macOS에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alia
 
 #### Event: 'app-command' _Windows_
 
-Returns:
+반환값:
 
 * `event` Event
 * `command` String
@@ -438,9 +438,13 @@ someWindow.on('app-command', (e, cmd) => {
 
 스크롤 휠 이벤트가 동작을 멈췄을 때 발생하는 이벤트입니다.
 
+#### Event: 'scroll-touch-edge' _macOS_
+
+스크롤 휠 이벤트로 요소의 끝에 도달했을 때 발생하는 이벤트입니다.
+
 #### Event: 'swipe' _macOS_
 
-Returns:
+반환값:
 
 * `event` Event
 * `direction` String
