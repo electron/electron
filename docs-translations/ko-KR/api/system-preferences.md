@@ -7,19 +7,19 @@ const {systemPreferences} = require('electron');
 console.log(systemPreferences.isDarkMode());
 ```
 
-## 이벤트
+## Events
 
 `systemPreferences` 객체는 다음 이벤트를 발생시킵니다:
 
-### 이벤트: 'accent-color-changed' _Windows_
+### Event: 'accent-color-changed' _Windows_
 
-반환값:
+Returns:
 
 * `event` Event
 * `newColor` String - 사용자에 의해 시스템 강조색으로 설정 된 새 RGBA 색상.
 
 
-## 메소드
+## Methods
 
 ### `systemPreferences.isDarkMode()` _macOS_
 

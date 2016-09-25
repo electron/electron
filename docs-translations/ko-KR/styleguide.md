@@ -75,7 +75,7 @@ API 참고문서에는 이 규칙에 예외가 있습니다.
 
 ### 모듈 메소드와 이벤트
 
-클래스가 아닌 모듈에서 메소드와 이벤트는 `## 메소드` 와 `## 이벤트` 챕터에
+클래스가 아닌 모듈에서 메소드와 이벤트는 `## Methods` 와 `## Events` 챕터에
 있어야 합니다.
 
 `autoUpdater` 사용 예시:
@@ -83,22 +83,22 @@ API 참고문서에는 이 규칙에 예외가 있습니다.
 ```markdown
 # autoUpdater
 
-## 이벤트
+## Events
 
-### 이벤트: 'error'
+### Event: 'error'
 
-## 메소드
+## Methods
 
 ### `autoUpdater.setFeedURL(url[, requestHeaders])`
 ```
 
 ### 클래스
 
-* API 클래스와 모듈 클래스는 `## 클래스: 클래스이름` 챕터 아래에 표시합니다.
+* API 클래스와 모듈 클래스는 `## Class: TheClassName` 챕터 아래에 표시합니다.
 * 한 페이지에 여러개의 클래스가 있을 수 있습니다.
 * 생성자는 `###`-단계의 제목으로 표시합니다.
-* [정적 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) 는 `### 정적 메소드` 챕터 아래에 표시합니다.
-* [인스턴스 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#Prototype_methods) 는 `### 인스턴스 메소드`  챕터 아래에 표시합니다.
+* [정적 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) 는 `### Statis Methods` 챕터 아래에 표시합니다.
+* [인스턴스 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#Prototype_methods) 는 `### Instance Methods`  챕터 아래에 표시합니다.
 * 반환값이 있는 모든 메소드는 "반환값 `[유형]` - 반환값 설명" 형태의 설명으로 시작해야 합니다.
 * 인스턴스 이벤트는 `### 인스턴스 이벤트` 챕터 아래에 표시합니다.
 * 인스턴스 속성은 `### 인스턴스 속성` 챕터 아래에 표시합니다.
@@ -109,31 +109,31 @@ API 참고문서에는 이 규칙에 예외가 있습니다.
 ```markdown
 # session
 
-## 메소드
+## Methods
 
 ### session.fromPartition(partition)
 
-## 속성
+## Properties
 
 ### session.defaultSession
 
-## 클래스: Session
+## Class: Session
 
-### 인스턴스 이벤트
+### Instance Events
 
-#### 이벤트: 'will-download'
+#### Event: 'will-download'
 
-### 인스턴스 메소드
+### Instance Methods
 
 #### `ses.getCacheSize(callback)`
 
-### 인스턴스 속성
+### Instance Properties
 
 #### `ses.cookies`
 
-## 클래스: Cookies
+## Class: Cookies
 
-### 인스턴스 메소드
+### Instance Methods
 
 #### `cookies.get(filter, callback)`
 ```
@@ -193,9 +193,9 @@ required[, optional]
 이벤트 챕터는 다음을 따릅니다:
 
 ```markdown
-### 이벤트: 'wake-up'
+### Event: 'wake-up'
 
-반환값:
+Returns:
 
 * `time` String
 
