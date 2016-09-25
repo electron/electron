@@ -7,45 +7,45 @@ const {systemPreferences} = require('electron');
 console.log(systemPreferences.isDarkMode());
 ```
 
-## Events
+## 이벤트
 
 `systemPreferences` 객체는 다음 이벤트를 발생시킵니다:
 
-### Event: 'accent-color-changed' _Windows_
+### 이벤트: 'accent-color-changed' _Windows_
 
-Returns:
+반환값:
 
 * `event` Event
 * `newColor` String - 사용자에 의해 시스템 강조색으로 설정 된 새 RGBA 색상.
 
 
-## Methods
+## 메소드
 
 ### `systemPreferences.isDarkMode()` _macOS_
 
-이 메서드는 시스템이 어두운 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`를
-반환합니다.
+이 메서드는 시스템이 어두운 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`
+를 반환합니다.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
-이 메서드는 페이지 간의 스와이프가 설정되어있을 때 `true`를 반환하고 그렇지 않은 경우
-`false`를 반환합니다.
+이 메서드는 페이지 간의 스와이프가 설정되어있을 때 `true`를 반환하고 그렇지 않은
+경우 `false`를 반환합니다.
 
 ### `systemPreferences.postNotification(event, userInfo)` _macOS_
 
 * `event` String
 * `userInfo` Object
 
-Posts `event` as native notifications of macOS. The `userInfo` is an Object
-that contains the user information dictionary sent along with the notification.
+macOS 의 기본 알림으로 `event` 를 구독합니다. `userInfo` 는 알림과 함께 전송되는
+사용자 정보 딕셔너리를 포함하는 객체입니다.
 
 ### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
 
 * `event` String
 * `userInfo` Object
 
-Posts `event` as native notifications of macOS. The `userInfo` is an Object
-that contains the user information dictionary sent along with the notification.
+macOS 의 기본 알림으로 `event` 를 구독합니다. `userInfo` 는 알림과 함께 전송되는
+사용자 정보 딕셔너리를 포함하는 객체입니다.
 
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
