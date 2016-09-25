@@ -272,7 +272,12 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 
 ### Event: 'gpu-process-crashed'
 
-GPU가 작동하던 중 크래시가 일어났을 때 발생하는 이벤트입니다.
+Returns:
+
+* `event` Event
+* `killed` Boolean
+
+GPU 처리가 충돌하거나 종료되었을 때 발생하는 이벤트입니다.
 
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
 
