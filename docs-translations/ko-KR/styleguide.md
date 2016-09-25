@@ -94,14 +94,15 @@ API 참고문서에는 이 규칙에 예외가 있습니다.
 
 ### 클래스
 
-* API classes or classes that are part of modules must be listed under a
-  `## Class: TheClassName` chapter.
+* API 클래스와 모듈 클래스는 `## 클래스: 클래스이름` 챕터 아래에 표시합니다.
 * 한 페이지에 여러개의 클래스가 있을 수 있습니다.
 * 생성자는 `###`-단계의 제목으로 표시합니다.
 * [정적 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) 는 `### 정적 메소드` 챕터 아래에 표시합니다.
 * [인스턴스 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#Prototype_methods) 는 `### 인스턴스 메소드`  챕터 아래에 표시합니다.
+* 반환값이 있는 모든 메소드는 "반환값 `[유형]` - 반환값 설명" 형태의 설명으로 시작해야 합니다.
 * 인스턴스 이벤트는 `### 인스턴스 이벤트` 챕터 아래에 표시합니다.
 * 인스턴스 속성은 `### 인스턴스 속성` 챕터 아래에 표시합니다.
+* 인스턴스 속성은 "[속성 유형]" 으로 시작해야 합니다.
 
 `Session` 과 `Cookies` 클래스 사용 예시:
 
@@ -164,7 +165,7 @@ API 참고문서에는 이 규칙에 예외가 있습니다.
 required[, optional]
 ```
 
-아래 메소드에 각 인수에 대한 더 자세한 내용이 있습니다. 인수의 형식은 기본 형식
+아래 메소드에 각 인수에 대한 더 자세한 내용이 있습니다. 인수의 유형은 기본 유형
 중 하나로 표시합니다.
 
 * [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)
@@ -182,10 +183,10 @@ required[, optional]
 * `animate` Boolean (optional) _macOS_ _Windows_
 ```
 
-`Array` 형식의 인수는 배열이 무엇을 포함하는지 아래에 명시해야 합니다.
+`Array` 유형의 인수는 배열이 무엇을 포함하는지 아래에 명시해야 합니다.
 
-`Function` 형식의 인수를 위한 설명은 호출방법을 명확히 하고, 전달되는
-매개변수의 형식을 표시해야 합니다.
+`Function` 유형의 인수를 위한 설명은 호출방법을 명확히 하고, 전달되는
+매개변수의 유형을 표시해야 합니다.
 
 ### 이벤트
 
