@@ -191,7 +191,12 @@ Returns:
 
 #### Event: 'crashed'
 
-렌더러 프로세스가 예기치 못하게 종료되었을 때 발생되는 이벤트입니다.
+Returns:
+
+* `event` Event
+* `killed` Boolean
+
+렌더러 프로세스가 충돌하거나 종료될 때 발생되는 이벤트입니다.
 
 #### Event: 'plugin-crashed'
 
