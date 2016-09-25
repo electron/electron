@@ -117,28 +117,28 @@ Returns `Object`:
   * `decodedSize` Integer
   * `purgedSize` Integer
   * `purgeableSize` Integer
-* `cssStyleSheets`
+* `cssStyleSheets` Object
   * `count` Integer
   * `size` Integer
   * `liveSize` Integer
   * `decodedSize` Integer
   * `purgedSize` Integer
   * `purgeableSize` Integer
-* `xslStyleSheets`
+* `xslStyleSheets` Object
   * `count` Integer
   * `size` Integer
   * `liveSize` Integer
   * `decodedSize` Integer
   * `purgedSize` Integer
   * `purgeableSize` Integer
-* `fonts`
+* `fonts` Object
   * `count` Integer
   * `size` Integer
   * `liveSize` Integer
   * `decodedSize` Integer
   * `purgedSize` Integer
   * `purgeableSize` Integer
-* `other`
+* `other` Object
   * `count` Integer
   * `size` Integer
   * `liveSize` Integer
