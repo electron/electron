@@ -289,7 +289,7 @@ On Windows it is
 
 #### Event: 'page-title-updated'
 
-반환값:
+Returns:
 
 * `event` Event
 * `title` String
@@ -299,7 +299,7 @@ On Windows it is
 
 #### Event: 'close'
 
-반환값:
+Returns:
 
 * `event` Event
 * `title` String
@@ -407,7 +407,7 @@ __참고__: macOS에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alia
 
 #### Event: 'app-command' _Windows_
 
-반환값:
+Returns:
 
 * `event` Event
 * `command` String
@@ -444,7 +444,7 @@ someWindow.on('app-command', (e, cmd) => {
 
 #### Event: 'swipe' _macOS_
 
-반환값:
+Returns:
 
 * `event` Event
 * `direction` String
