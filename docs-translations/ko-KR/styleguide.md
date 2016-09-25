@@ -172,7 +172,7 @@ required[, optional]
 * [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)
 * [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
 * [`Boolean`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)
-* 또는 Electron 의 [`WebContent`](api/web-content.md)와 같은 사용자 타입
+* 또는 Electron 의 [`WebContents`](api/web-contents.md)와 같은 사용자 타입
 
 인수 또는 메소드가 특정 플랫폼에만 사용된다면, 이 플랫폼들은 자료형 다음에
 공백으로 구분된 이탤릭체 목록으로 표시된다. 값은 `macOS`, `windows`, 또는
