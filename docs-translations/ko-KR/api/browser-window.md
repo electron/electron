@@ -955,7 +955,7 @@ win.loadURL(url)
 
 * `progress` Double
 * `options` Object (optional)
-  * `mode` String _Windows_ - 프로그래스 막대의 모드 (`none`, `normal`,
+  * `mode` String _Windows_ - 프로그레스 막대의 모드 (`none`, `normal`,
     `indeterminate`, `error`, `paused`)
 
 작업표시줄에 표시되고 있는 애플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]

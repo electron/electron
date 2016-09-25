@@ -20,6 +20,7 @@ Node의 버전과 전혀 다른 V8 버전을 사용하고 있을 가능성이 �
 export npm_config_target=1.2.3
 # Electron의 아키텍쳐, ia32 또는 x64가 될 수 있습니다.
 export npm_config_arch=x64
+export npm_config_target_arch=x64
 # Electron에 대한 헤더 다운로드 링크.
 export npm_config_disturl=https://atom.io/download/atom-shell
 # node-pre-gyp에 Electron을 빌드한다는 것을 알려줍니다.
