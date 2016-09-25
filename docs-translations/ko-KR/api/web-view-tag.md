@@ -670,7 +670,7 @@ Returns:
 * `url` String
 * `frameName` String
 * `disposition` String - `default`, `foreground-tab`, `background-tab`,
-  `new-window`, `other`를 사용할 수 있습니다.
+  `new-window`, `save-to-disk`, `other`를 사용할 수 있습니다.
 * `options` Object - 새로운 `BrowserWindow`를 만들 때 사용되어야 하는 옵션.
 
 페이지가 새로운 브라우저 창을 생성할 때 발생하는 이벤트입니다.

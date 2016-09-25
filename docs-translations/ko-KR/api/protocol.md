@@ -1,4 +1,4 @@
-﻿# protocol
+# protocol
 
 > 커스텀 프로토콜을 등록하거나 이미 존재하능 프로토콜의 요청의 동작을 변경합니다.
 
@@ -85,11 +85,14 @@ app.on('ready', () => {
   * `uploadData` Array (optional)
 * `callback` Function
 
-The `uploadData` is an array of `data` objects:
+`uploadData` 는 `data` 객체의 배열입니다:
 
 * `data` Object
-  * `bytes` Buffer - Content being sent.
-  * `file` String - Path of file being uploaded.
+  * `bytes` Buffer - 전송될 콘텐츠.
+  * `file` String - 업로드될 파일의 경로.
+  * `blobUUID` String - blob 데이터의 UUID. 데이터를 이용하기 위해
+    [ses.getBlobData](session.md#sesgetblobdataidentifier-callback) 메소드를
+    사용하세요.
 
 `request`를 처리할 때 반드시 파일 경로 또는 `path` 속성을 포함하는 객체를 인수에
 포함하여 `callback`을 호출해야 합니다. 예: `callback(filePath)` 또는

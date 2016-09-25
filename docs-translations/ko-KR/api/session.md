@@ -323,6 +323,14 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 현재 세션의 유저 에이전트를 표현하는 `String`을 반환합니다.
 
+#### `ses.getBlobData(identifier, callback)`
+
+* `identifier` String - Valid UUID.
+* `callback` Function
+  * `result` Buffer - Blob data.
+
+`identifier` 에 연결된 blob 데이터를 반환합니다.
+
 ### Instance Properties
 
 다음은 `Session` 인스턴스에서 사용할 수 있는 속성들입니다:
@@ -505,6 +513,9 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback
 * `data` Object
   * `bytes` Buffer - 전송될 콘텐츠.
   * `file` String - 업로드될 파일의 경로.
+  * `blobUUID` String - blob 데이터의 UUID. 데이터를 이용하기 위해
+    [ses.getBlobData](session.md#sesgetblobdataidentifier-callback) 메소드를
+    사용하세요.
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 
