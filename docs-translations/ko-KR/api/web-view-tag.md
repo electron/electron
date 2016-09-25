@@ -1,4 +1,4 @@
-﻿# `<webview>` 태그
+# `<webview>` 태그
 
 > 외부 웹 콘텐츠를 고립된 프레임과 프로세스에서 표시합니다.
 
@@ -206,6 +206,20 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 비활성화할 blink 기능을 지정한 `,`로 구분된 문자열의 리스트입니다. 지원하는 기능
 문자열의 전체 목록은 [RuntimeEnabledFeatures.in][blink-feature-string] 파일에서
 찾을 수 있습니다.
+
+### `guestinstance`
+
+```html
+<webview src="https://www.github.com/" guestinstance="3"></webview>
+```
+
+webview 를 특정 webContents 와 연결해주는 값 입니다. webview 가 처음 로드될 때
+새 webContents 가 생성되고 이 속성이 그 인스턴스의 식별자로 설정됩니다. 새로운
+또는 기존 webview 에 이 속성을 설정하면 다른 webview 에서 현재 렌더링하는 기존
+webContents 와 연결합니다.
+
+기존 webview 는 `destroy` 이벤트가 발생하고 새 URL 이 로드될 때 새 webContens
+가 생성될 것 입니다.
 
 ## Methods
 
