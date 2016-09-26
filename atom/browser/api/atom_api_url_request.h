@@ -32,10 +32,9 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
 
 
 private:
-  void Write();
-  void End();
+  bool WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
   void Abort();
-  void SetHeader(const std::string& name, const std::string& value);
+  bool SetHeader(const std::string& name, const std::string& value);
   std::string GetHeader(const std::string& name);
   void RemoveHeader(const std::string& name);
 
@@ -66,7 +65,7 @@ private:
   void pin();
   void unpin();
 
-  scoped_refptr<const AtomURLRequest> atom_request_;
+  scoped_refptr<AtomURLRequest> atom_request_;
   v8::Global<v8::Object> wrapper_;
   base::WeakPtrFactory<URLRequest> weak_ptr_factory_;
   

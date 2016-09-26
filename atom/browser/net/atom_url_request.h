@@ -8,20 +8,21 @@
 
 #include "base/memory/ref_counted.h"
 #include "net/url_request/url_request.h"
+#include "net/base/chunked_upload_data_stream.h"
 
 
 namespace net {
 class IOBuffer;
 class IOBufferWithSize;
 class DrainableIOBuffer;
-}
+};
 
 namespace atom {
 
 class AtomBrowserContext;
 
 namespace api {
-  class URLRequest;
+class URLRequest;
 }
 
 class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
@@ -33,8 +34,8 @@ public:
     const std::string& url,
     base::WeakPtr<api::URLRequest> delegate);
 
-  void Write() const;
-  void End() const;
+  void WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
+  void SetChunkedUpload();
   void Abort() const;
   void SetHeader(const std::string& name, const std::string& value) const;
   std::string GetHeader(const std::string& name) const;
@@ -53,7 +54,7 @@ protected:
 
 private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
-  void DoStart() const;
+  void DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
   void DoSetAuth(const base::string16& username,
     const base::string16& password) const;
   void DoCancelAuth() const;
@@ -73,7 +74,14 @@ private:
 
   base::WeakPtr<api::URLRequest> delegate_;
   std::unique_ptr<net::URLRequest> request_;
-  scoped_refptr<net::IOBuffer> buffer_;
+
+  bool is_chunked_upload_;
+  std::unique_ptr<net::ChunkedUploadDataStream> chunked_stream_;
+  std::unique_ptr<net::ChunkedUploadDataStream::Writer> chunked_stream_writer_;
+
+  std::vector<std::unique_ptr<net::UploadElementReader>>upload_element_readers_;
+
+  scoped_refptr<net::IOBuffer> response_read_buffer_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
 
    DISALLOW_COPY_AND_ASSIGN(AtomURLRequest);

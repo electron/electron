@@ -9,6 +9,8 @@
 #include "base/callback.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/io_buffer.h"
+#include "net/base/elements_upload_data_stream.h"
+#include "net/base/upload_bytes_element_reader.h"
 
 
 namespace {
@@ -19,9 +21,37 @@ const int kBufferSize = 4096;
 
 namespace atom {
 
+namespace internal {
+
+
+class UploadOwnedIOBufferElementReader : public net::UploadBytesElementReader {
+public:
+  explicit UploadOwnedIOBufferElementReader(
+    scoped_refptr<const net::IOBufferWithSize> buffer)
+    : net::UploadBytesElementReader(buffer->data(), buffer->size())
+    , buffer_(buffer) {
+  }
+  ~UploadOwnedIOBufferElementReader() override {
+  }
+
+
+  static UploadOwnedIOBufferElementReader* CreateWithBuffer(
+    scoped_refptr<const net::IOBufferWithSize> buffer) {
+    return new UploadOwnedIOBufferElementReader(std::move(buffer));
+  }
+
+private:
+  scoped_refptr<const net::IOBuffer> buffer_;
+
+  DISALLOW_COPY_AND_ASSIGN(UploadOwnedIOBufferElementReader);
+};
+
+}
+
 AtomURLRequest::AtomURLRequest(base::WeakPtr<api::URLRequest> delegate)
   : delegate_(delegate)
-  , buffer_(new net::IOBuffer(kBufferSize)) {
+  , response_read_buffer_(new net::IOBuffer(kBufferSize))
+  , is_chunked_upload_(is_chunked_upload_) {
 }
 
 AtomURLRequest::~AtomURLRequest() {
@@ -55,16 +85,24 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
 
 }
 
-void AtomURLRequest::Write() const {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-}
 
-void AtomURLRequest::End() const {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+void AtomURLRequest::WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
+                           bool is_last) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI); 
   content::BrowserThread::PostTask(
     content::BrowserThread::IO, FROM_HERE,
-    base::Bind(&AtomURLRequest::DoStart, this));
+    base::Bind(&AtomURLRequest::DoWriteBuffer, this, buffer, is_last));
 }
+
+void AtomURLRequest::SetChunkedUpload() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  // The method can be called only before switching to multi-threaded mode,
+  // i.e. before the first call to write.
+  // So it is safe to change the object in the UI thread.
+  is_chunked_upload_ = true;
+}
+
 
 void AtomURLRequest::Abort() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -119,10 +157,58 @@ void AtomURLRequest::PassLoginInformation(const base::string16& username,
 }
 
 
-void AtomURLRequest::DoStart() const {
+void AtomURLRequest::DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
+                             bool is_last) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  request_->Start();
+  if (is_chunked_upload_) {
+
+    // Chunked encoding case.
+
+    bool first_call = false;
+    if (!chunked_stream_writer_) {
+      std::unique_ptr<net::ChunkedUploadDataStream> chunked_stream(
+        new net::ChunkedUploadDataStream(0));
+      chunked_stream_writer_ = chunked_stream->CreateWriter();
+      request_->set_upload(std::move(chunked_stream));
+      first_call = true;
+    }
+
+    if (buffer) {
+      // Non-empty buffer.
+      auto write_result = chunked_stream_writer_->AppendData(
+        buffer->data(),
+        buffer->size(),
+        is_last);
+    }
+    else if (is_last) {
+      // Empty buffer and last chunck, i.e. request.end().
+      auto write_result = chunked_stream_writer_->AppendData(
+        nullptr,
+        0,
+        true);
+    }
+
+    if (first_call) {
+      request_->Start();
+    }
+  }
+  else {
+
+    if (buffer) {
+      // Handling potential empty buffers.
+      std::unique_ptr<net::UploadElementReader> element_reader(internal::UploadOwnedIOBufferElementReader
+        ::CreateWithBuffer(std::move(buffer)));
+      upload_element_readers_.push_back(std::move(element_reader));
+    }
+
+    if (is_last) {
+      std::unique_ptr<net::UploadDataStream> elements_upload_data_stream(
+        new net::ElementsUploadDataStream(std::move(upload_element_readers_), 0));
+      request_->set_upload(std::move(elements_upload_data_stream));
+      request_->Start();
+    }
+  }
 }
 
 void AtomURLRequest::DoSetAuth(const base::string16& username,
@@ -175,7 +261,7 @@ void AtomURLRequest::ReadResponse() {
   // about is the response code and headers, which we already have).
   int bytes_read = 0;
   if (request_->status().is_success() /* TODO && (request_type_ != URLFetcher::HEAD)*/) {
-    if (!request_->Read(buffer_.get(), kBufferSize, &bytes_read))
+    if (!request_->Read(response_read_buffer_.get(), kBufferSize, &bytes_read))
       bytes_read = -1; 
   }
   OnReadCompleted(request_.get(), bytes_read);
@@ -197,7 +283,7 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
       // Failed to transfer data to UI thread.
       return;
     }
-  } while (request_->Read(buffer_.get(), kBufferSize, &bytes_read));
+  } while (request_->Read(response_read_buffer_.get(), kBufferSize, &bytes_read));
     
   const auto status = request_->status();
 
@@ -213,10 +299,10 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
 bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  // data is only a wrapper for the async buffer_.
+  // data is only a wrapper for the async response_read_buffer_.
   // Make a deep copy of payload and transfer ownership to the UI thread.
   scoped_refptr<net::IOBufferWithSize> buffer_copy(new net::IOBufferWithSize(bytes_read));
-  memcpy(buffer_copy->data(), buffer_->data(), bytes_read);
+  memcpy(buffer_copy->data(), response_read_buffer_->data(), bytes_read);
 
   return content::BrowserThread::PostTask(
     content::BrowserThread::UI, FROM_HERE,

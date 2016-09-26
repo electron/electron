@@ -41,10 +41,44 @@ struct Converter<scoped_refptr<const net::HttpResponseHeaders>> {
 
 template<>
 struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
+
   static v8::Local<v8::Value> ToV8(
     v8::Isolate* isolate,
     scoped_refptr<const net::IOBufferWithSize> buffer) {
       return node::Buffer::Copy(isolate, buffer->data(), buffer->size()).ToLocalChecked();
+  }
+
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+    scoped_refptr<const net::IOBufferWithSize>* out) {
+
+    auto size = node::Buffer::Length(val);
+    
+    if (size == 0) {
+      // Support conversoin from empty buffer. A use case is 
+      // a GET request without body. 
+      // Since zero-sized IOBuffer(s) are not supported, we set the
+      // out pointer to null.
+      *out = nullptr;
+      return true;
+    }
+    
+    auto data = node::Buffer::Data(val);
+    if (!data) {
+      // This is an error as size is positif but data is null.
+      return false;
+    }
+
+    auto io_buffer = new net::IOBufferWithSize(size);
+    if (!io_buffer) {
+      // Assuming allocation failed.
+      return false;
+    }
+
+    // We do a deep copy. We could have used Buffer's internal memory
+    // but that is much more complicated to be properly handled.
+    memcpy(io_buffer->data(), data, size);
+    *out = io_buffer;
+    return true;
   }
 };
 
@@ -102,8 +136,7 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
     // Request API
     .MakeDestroyable()
-    .SetMethod("_write", &URLRequest::Write)
-    .SetMethod("_end", &URLRequest::End)
+    .SetMethod("_writeBuffer", &URLRequest::WriteBuffer)
     .SetMethod("abort", &URLRequest::Abort)
     .SetMethod("_setHeader", &URLRequest::SetHeader)
     .SetMethod("_getHeader", &URLRequest::GetHeader)
@@ -118,21 +151,27 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
     
 }
 
-void URLRequest::Write() {
-  atom_request_->Write();
+bool URLRequest::WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last) {
+  atom_request_->WriteBuffer(buffer, is_last);
+  return true;
 }
 
-void URLRequest::End() {
-  pin();
-  atom_request_->End();
-}
 
 void URLRequest::Abort() {
   atom_request_->Abort();
 }
 
-void URLRequest::SetHeader(const std::string& name, const std::string& value) {
+bool URLRequest::SetHeader(const std::string& name, const std::string& value) {
+  if (!net::HttpUtil::IsValidHeaderName(name)) {
+    return false;
+  }
+
+  if (!net::HttpUtil::IsValidHeaderValue(value)) {
+    return false;
+  }
+
   atom_request_->SetHeader(name, value);
+  return true;
 }
 std::string URLRequest::GetHeader(const std::string& name) {
   return atom_request_->GetHeader(name);
@@ -165,6 +204,8 @@ void URLRequest::OnResponseData(
 
 void URLRequest::OnResponseCompleted() {
   EmitResponseEvent("end");
+  unpin();
+  atom_request_ = nullptr;
 }
 
 
