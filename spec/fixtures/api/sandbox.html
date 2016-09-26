@@ -1,0 +1,76 @@
+<html>
+<script type="text/javascript" charset="utf-8">
+  if (window.opener) {
+    window.callback = function() {
+      opener.require('electron').ipcRenderer.send('answer', document.body.innerHTML)
+    };
+  } else {
+    const {ipcRenderer} = require('electron')
+    const tests = {
+      'window-events': () => {
+        document.title = 'changed'
+      },
+      'webcontents-stop': () => {
+        stop()
+      },
+      'webcontents-events': () => {
+        addEventListener('load', () => {
+          location.hash = 'in-page-navigate'
+          setTimeout(() => {
+            location.reload()
+          }, 50)
+        })
+      },
+      'exit-event': () => {
+        process.on('exit', () => {
+          ipcRenderer.send('answer', location.href)
+        })
+        location.assign('http://www.google.com')
+      },
+      'window-open': () => {
+        addEventListener('load', () => {
+          popup = open(window.location.href, 'popup!', 'top=60,left=50,width=500,height=600')
+          popup.addEventListener('DOMContentLoaded', () => {
+            popup.document.write('<h1>scripting from opener</h1>')
+            popup.callback()
+          }, false)
+        })
+      },
+      'window-open-external': () => {
+        addEventListener('load', () => {
+          ipcRenderer.once('child-loaded', (e) => {
+            try {
+              let childDoc = popup.document
+            } catch (e) {
+              ipcRenderer.send('answer', e.message)
+            }
+          })
+          popup = open('http://www.google.com/#q=electron', '', 'top=65,left=55,width=505,height=605')
+        })
+      },
+      'verify-ipc-sender': () => {
+        popup = open()
+        ipcRenderer.once('verified', () => {
+          ipcRenderer.send('parent-answer')
+        })
+        popup.ipcRenderer.once('verified', () => {
+          popup.ipcRenderer.send('child-answer')
+        })
+        setTimeout(() => {
+          ipcRenderer.send('parent-ready')
+          popup.ipcRenderer.send('child-ready')
+        }, 50)
+      }
+    }
+
+    addEventListener('unload', () => {
+      if (window.popup)
+        popup.close()
+    }, false)
+
+    let [,test] = window.location.href.split('?')
+      if (tests.hasOwnProperty(test))
+        tests[test]()
+  }
+</script>
+</html>
