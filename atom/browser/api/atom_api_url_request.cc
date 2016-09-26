@@ -23,8 +23,9 @@ namespace mate {
 
 template<>
 struct Converter<scoped_refptr<const net::HttpResponseHeaders>> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-    scoped_refptr<const net::HttpResponseHeaders> val) {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      scoped_refptr<const net::HttpResponseHeaders> val) {
 
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     if (val) {
@@ -41,15 +42,18 @@ struct Converter<scoped_refptr<const net::HttpResponseHeaders>> {
 
 template<>
 struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
-
   static v8::Local<v8::Value> ToV8(
-    v8::Isolate* isolate,
-    scoped_refptr<const net::IOBufferWithSize> buffer) {
-      return node::Buffer::Copy(isolate, buffer->data(), buffer->size()).ToLocalChecked();
+      v8::Isolate* isolate,
+      scoped_refptr<const net::IOBufferWithSize> buffer) {
+    return node::Buffer::Copy(isolate,
+                              buffer->data(),
+                              buffer->size()).ToLocalChecked();
   }
 
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-    scoped_refptr<const net::IOBufferWithSize>* out) {
+  static bool FromV8(
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> val,
+      scoped_refptr<const net::IOBufferWithSize>* out) {
 
     auto size = node::Buffer::Length(val);
     
@@ -87,10 +91,9 @@ namespace atom {
 
 namespace api {
 
-URLRequest::URLRequest(v8::Isolate* isolate, 
-                       v8::Local<v8::Object> wrapper)
+URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
   : weak_ptr_factory_(this) {
-  InitWith(isolate, wrapper);
+    InitWith(isolate, wrapper);
 }
 
 URLRequest::~URLRequest() {
@@ -142,18 +145,20 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
     .SetMethod("_getHeader", &URLRequest::GetHeader)
     .SetMethod("_removaHeader", &URLRequest::RemoveHeader)
     // Response APi
-    .SetProperty("statusCode", &URLRequest::StatusCode)
-    .SetProperty("statusMessage", &URLRequest::StatusMessage)
-    .SetProperty("rawResponseHeaders", &URLRequest::RawResponseHeaders)
-    .SetProperty("httpVersionMajor", &URLRequest::ResponseHttpVersionMajor)
-    .SetProperty("httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
+    .SetProperty("_statusCode", &URLRequest::StatusCode)
+    .SetProperty("_statusMessage", &URLRequest::StatusMessage)
+    .SetProperty("_rawResponseHeaders", &URLRequest::RawResponseHeaders)
+    .SetProperty("_httpVersionMajor", &URLRequest::ResponseHttpVersionMajor)
+    .SetProperty("_httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
   
     
 }
 
-bool URLRequest::WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last) {
-  atom_request_->WriteBuffer(buffer, is_last);
-  return true;
+bool URLRequest::WriteBuffer(
+    scoped_refptr<const net::IOBufferWithSize> buffer,
+    bool is_last) {
+  return atom_request_->WriteBuffer(buffer, is_last);
+
 }
 
 
@@ -161,7 +166,8 @@ void URLRequest::Abort() {
   atom_request_->Abort();
 }
 
-bool URLRequest::SetHeader(const std::string& name, const std::string& value) {
+bool URLRequest::SetHeader(const std::string& name,
+                           const std::string& value) {
   if (!net::HttpUtil::IsValidHeaderName(name)) {
     return false;
   }
@@ -181,7 +187,7 @@ void URLRequest::RemoveHeader(const std::string& name) {
 }
 
 void URLRequest::OnAuthenticationRequired(
-  scoped_refptr<const net::AuthChallengeInfo> auth_info) {
+    scoped_refptr<const net::AuthChallengeInfo> auth_info) {
   EmitRequestEvent(
     "login",
     auth_info.get(),
@@ -194,7 +200,7 @@ void URLRequest::OnResponseStarted() {
 }
 
 void URLRequest::OnResponseData(
-  scoped_refptr<const net::IOBufferWithSize> buffer) {
+    scoped_refptr<const net::IOBufferWithSize> buffer) {
   if (!buffer || !buffer->data() || !buffer->size()) {
     return;
   }
@@ -224,7 +230,8 @@ std::string URLRequest::StatusMessage() const {
   return result;
 }
 
-scoped_refptr<const net::HttpResponseHeaders> URLRequest::RawResponseHeaders() const {
+scoped_refptr<const net::HttpResponseHeaders>
+URLRequest::RawResponseHeaders() const {
 	return atom_request_->GetResponseHeaders();
 }
 

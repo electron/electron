@@ -34,7 +34,8 @@ public:
     const std::string& url,
     base::WeakPtr<api::URLRequest> delegate);
 
-  void WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
+  bool WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
+                   bool is_last);
   void SetChunkedUpload();
   void Abort() const;
   void SetHeader(const std::string& name, const std::string& value) const;
@@ -54,7 +55,8 @@ protected:
 
 private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
-  void DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
+  void DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
+                     bool is_last);
   void DoSetAuth(const base::string16& username,
     const base::string16& password) const;
   void DoCancelAuth() const;

@@ -32,7 +32,8 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
 
 
 private:
-  bool WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
+  bool WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
+                   bool is_last);
   void Abort();
   bool SetHeader(const std::string& name, const std::string& value);
   std::string GetHeader(const std::string& name);
@@ -86,7 +87,8 @@ void URLRequest::EmitRequestEvent(ArgTypes... args) {
   auto arguments = BuildArgsArray(args...);
   v8::Local<v8::Function> _emitRequestEvent;
   auto wrapper = GetWrapper();
-  if (mate::Dictionary(isolate(), wrapper).Get("_emitRequestEvent", &_emitRequestEvent))
+  if (mate::Dictionary(isolate(), wrapper)
+      .Get("_emitRequestEvent", &_emitRequestEvent))
     _emitRequestEvent->Call(wrapper, arguments.size(), arguments.data());
 }
 
@@ -96,7 +98,8 @@ void URLRequest::EmitResponseEvent(ArgTypes... args) {
   auto arguments = BuildArgsArray(args...);
   v8::Local<v8::Function> _emitResponseEvent;
   auto wrapper = GetWrapper();
-  if (mate::Dictionary(isolate(), wrapper).Get("_emitResponseEvent", &_emitResponseEvent))
+  if (mate::Dictionary(isolate(), wrapper)
+      .Get("_emitResponseEvent", &_emitResponseEvent))
     _emitResponseEvent->Call(wrapper, arguments.size(), arguments.data());
 }
 
