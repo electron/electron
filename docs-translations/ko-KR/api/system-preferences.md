@@ -36,7 +36,7 @@ Returns:
 * `event` String
 * `userInfo` Object
 
-macOS 의 기본 알림으로 `event` 를 구독합니다. `userInfo` 는 알림과 함께 전송되는
+macOS 의 기본 알림으로 `event` 를 전달합니다. `userInfo` 는 알림과 함께 전송되는
 사용자 정보 딕셔너리를 포함하는 객체입니다.
 
 ### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
@@ -44,7 +44,7 @@ macOS 의 기본 알림으로 `event` 를 구독합니다. `userInfo` 는 알림
 * `event` String
 * `userInfo` Object
 
-macOS 의 기본 알림으로 `event` 를 구독합니다. `userInfo` 는 알림과 함께 전송되는
+macOS 의 기본 알림으로 `event` 를 전달합니다. `userInfo` 는 알림과 함께 전송되는
 사용자 정보 딕셔너리를 포함하는 객체입니다.
 
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
@@ -52,7 +52,7 @@ macOS 의 기본 알림으로 `event` 를 구독합니다. `userInfo` 는 알림
 * `event` String
 * `callback` Function
 
-macOS의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하면 `callback`이
+macOS의 기본 알림을 구독하며, 해당하는 `event`가 발생하면 `callback`이
 `callback(event, userInfo)` 형태로 호출됩니다. `userInfo`는 알림과 함께 전송되는
 사용자 정보 딕셔너리를 포함하는 객체입니다.
 
