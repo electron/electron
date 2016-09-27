@@ -138,22 +138,22 @@ The `remote` module has the following methods:
 
 * `module` String
 
-Returns the object returned by `require(module)` in the main process.
+Returns `Object` - The object returned by `require(module)` in the main process.
 
 ### `remote.getCurrentWindow()`
 
-Returns the [`BrowserWindow`](browser-window.md) object to which this web page
+Returns `BrowserWindow` - The [`BrowserWindow`](browser-window.md) object to which this web page
 belongs.
 
 ### `remote.getCurrentWebContents()`
 
-Returns the [`WebContents`](web-contents.md) object of this web page.
+Returns `WebContents` - The [`WebContents`](web-contents.md) object of this web page.
 
 ### `remote.getGlobal(name)`
 
 * `name` String
 
-Returns the global variable of `name` (e.g. `global[name]`) in the main
+Returns `any` - The global variable of `name` (e.g. `global[name]`) in the main
 process.
 
 ## Properties

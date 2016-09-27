@@ -20,7 +20,7 @@ string.
 * `frameName` String (optional)
 * `features` String (optional)
 
-Creates a new window and returns an instance of `BrowserWindowProxy` class.
+Returns `BrowserWindowProxy` - Creates a new window and returns an instance of `BrowserWindowProxy` class.
 
 The `features` string follows the format of standard browser, but each feature
 has to be a field of `BrowserWindow`'s options.
@@ -86,4 +86,4 @@ The `BrowserWindowProxy` object has the following instance properties:
 
 #### `win.closed`
 
-Set to true after the child window gets closed.
+A Boolean that is set to true after the child window gets closed.

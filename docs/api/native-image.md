@@ -114,11 +114,15 @@ an instance of the `NativeImage` class:
 
 ### `nativeImage.createEmpty()`
 
+Returns `NativeImage`
+
 Creates an empty `NativeImage` instance.
 
 ### `nativeImage.createFromPath(path)`
 
 * `path` String
+
+Returns `NativeImage`
 
 Creates a new `NativeImage` instance from a file located at `path`. This method
 returns an empty image if the `path` does not exist, cannot be read, or is not
@@ -135,6 +139,8 @@ console.log(image)
 
 * `buffer` [Buffer][buffer]
 * `scaleFactor` Double (optional)
+
+Returns `NativeImage`
 
 Creates a new `NativeImage` instance from `buffer`. The default `scaleFactor` is
 1.0.
@@ -155,26 +161,26 @@ The following methods are available on instances of the `NativeImage` class:
 
 #### `image.toPNG()`
 
-Returns a [Buffer][buffer] that contains the image's `PNG` encoded data.
+Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded data.
 
 #### `image.toJPEG(quality)`
 
 * `quality` Integer (**required**) - Between 0 - 100.
 
-Returns a [Buffer][buffer] that contains the image's `JPEG` encoded data.
+Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
 #### `image.toBitmap()`
 
-Returns a [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
+Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
 
 #### `image.toDataURL()`
 
-Returns the data URL of the image.
+Returns `String` - The data URL of the image.
 
 #### `image.getBitmap()`
 
-Returns a [Buffer][buffer] that contains the image's raw bitmap pixel data.
+Returns `Buffer` - A [Buffer][buffer] that contains the image's raw bitmap pixel data.
 
 The difference between `getBitmap()` and `toBitmap()` is, `getBitmap()` does not
 copy the bitmap data, so you have to use the returned Buffer immediately in
@@ -182,7 +188,7 @@ current event loop tick, otherwise the data might be changed or destroyed.
 
 #### `image.getNativeHandle()` _macOS_
 
-Returns a [Buffer][buffer] that stores C pointer to underlying native handle of
+Returns `Buffer` - A [Buffer][buffer] that stores C pointer to underlying native handle of
 the image. On macOS, a pointer to `NSImage` instance would be returned.
 
 Notice that the returned pointer is a weak pointer to the underlying native
@@ -191,11 +197,11 @@ image instead of a copy, so you _must_ ensure that the associated
 
 #### `image.isEmpty()`
 
-Returns a boolean whether the image is empty.
+Returns `Boolean` -  Whether the image is empty.
 
 #### `image.getSize()`
 
-Returns the size of the image.
+Returns `Integer[]` - The size of the image.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
 
@@ -207,4 +213,4 @@ Marks the image as a template image.
 
 #### `image.isTemplateImage()`
 
-Returns a boolean whether the image is a template image.
+Returns `Boolean` - Whether the image is a template image.

@@ -104,7 +104,7 @@ Sets the `url` and initialize the auto updater.
 
 ### `autoUpdater.getFeedURL()`
 
-Returns the current update feed URL.
+Returns `String` - The current update feed URL.
 
 ### `autoUpdater.checkForUpdates()`
 

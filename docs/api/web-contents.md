@@ -29,19 +29,19 @@ console.log(webContents)
 
 ### `webContents.getAllWebContents()`
 
-Returns an array of all `WebContents` instances. This will contain web contents
+Returns `WebContents[]` - An array of all `WebContents` instances. This will contain web contents
 for all windows, webviews, opened devtools, and devtools extension background pages.
 
 ### `webContents.getFocusedWebContents()`
 
-Returns the web contents that is focused in this application, otherwise
+Returns `WebContents` - The web contents that is focused in this application, otherwise
 returns `null`.
 
 ### `webContents.fromId(id)`
 
 * `id` Integer
 
-Find a `WebContents` instance according to its ID.
+Returns `WebContents` - A WebContents instance with the given ID.
 
 ## Class: WebContents
 
@@ -524,7 +524,7 @@ Initiates a download of the resource at `url` without navigating. The
 
 #### `contents.getURL()`
 
-Returns URL of the current web page.
+Returns `String` - The URL of the current web page.
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -537,28 +537,28 @@ console.log(currentURL)
 
 #### `contents.getTitle()`
 
-Returns the title of the current web page.
+Returns `String` - The title of the current web page.
 
 #### `contents.isDestroyed()`
 
-Returns a Boolean, whether the web page is destroyed.
+Returns `Boolean` - Whether the web page is destroyed.
 
 #### `contents.isFocused()`
 
-Returns a Boolean, whether the web page is focused.
+Returns `Boolean` - Whether the web page is focused.
 
 #### `contents.isLoading()`
 
-Returns whether web page is still loading resources.
+Returns `Boolean` - Whether web page is still loading resources.
 
 #### `contents.isLoadingMainFrame()`
 
-Returns whether the main frame (and not just iframes or frames within it) is
+Returns `Boolean` - Whether the main frame (and not just iframes or frames within it) is
 still loading.
 
 #### `contents.isWaitingForResponse()`
 
-Returns whether the web page is waiting for a first-response from the main
+Returns `Boolean` - Whether the web page is waiting for a first-response from the main
 resource of the page.
 
 #### `contents.stop()`
@@ -575,17 +575,17 @@ Reloads current page and ignores cache.
 
 #### `contents.canGoBack()`
 
-Returns whether the browser can go back to previous web page.
+Returns `Boolean` - Whether the browser can go back to previous web page.
 
 #### `contents.canGoForward()`
 
-Returns whether the browser can go forward to next web page.
+Returns `Boolean` - Whether the browser can go forward to next web page.
 
 #### `contents.canGoToOffset(offset)`
 
 * `offset` Integer
 
-Returns whether the web page can go to `offset`.
+Returns `Boolean` - Whether the web page can go to `offset`.
 
 #### `contents.clearHistory()`
 
@@ -613,7 +613,7 @@ Navigates to the specified offset from the "current entry".
 
 #### `contents.isCrashed()`
 
-Whether the renderer process has crashed.
+Returns `Boolean` - Whether the renderer process has crashed.
 
 #### `contents.setUserAgent(userAgent)`
 
@@ -623,7 +623,7 @@ Overrides the user agent for this web page.
 
 #### `contents.getUserAgent()`
 
-Returns a `String` representing the user agent for this web page.
+Returns `String` - The user agent for this web page.
 
 #### `contents.insertCSS(css)`
 
@@ -652,7 +652,7 @@ Mute the audio on the current web page.
 
 #### `contents.isAudioMuted()`
 
-Returns whether this page has been muted.
+Returns `Boolean` - Whether this page has been muted.
 
 #### `contents.setZoomFactor(factor)`
 
@@ -925,11 +925,11 @@ Closes the devtools.
 
 #### `contents.isDevToolsOpened()`
 
-Returns whether the devtools is opened.
+Returns `Boolean` - Whether the devtools is opened.
 
 #### `contents.isDevToolsFocused()`
 
-Returns whether the devtools view is focused .
+Returns `Boolean` - Whether the devtools view is focused .
 
 #### `contents.toggleDevTools()`
 
@@ -1126,7 +1126,7 @@ Shows pop-up dictionary that searches the selected word on the page.
 
 #### `contents.isOffscreen()`
 
-Indicates whether *offscreen rendering* is enabled.
+Returns `Boolean` - Indicates whether *offscreen rendering* is enabled.
 
 #### `contents.startPainting()`
 
@@ -1138,7 +1138,7 @@ If *offscreen rendering* is enabled and painting, stop painting.
 
 #### `contents.isPainting()`
 
-If *offscreen rendering* is enabled returns whether it is currently painting.
+Returns `Boolean` - If *offscreen rendering* is enabled returns whether it is currently painting.
 
 #### `contents.setFrameRate(fps)`
 
@@ -1149,7 +1149,7 @@ Only values between 1 and 60 are accepted.
 
 #### `contents.getFrameRate()`
 
-If *offscreen rendering* is enabled returns the current frame rate.
+Returns `Integer` - If *offscreen rendering* is enabled returns the current frame rate.
 
 #### `contents.invalidate()`
 
@@ -1160,26 +1160,26 @@ one through the `'paint'` event.
 
 #### `contents.id`
 
-The unique ID of this WebContents.
+A Integer representing the unique ID of this WebContents.
 
 #### `contents.session`
 
-Returns the [session](session.md) object used by this webContents.
+A Session object ([session](session.md)) used by this webContents.
 
 #### `contents.hostWebContents`
 
-Returns the `WebContents` that might own this `WebContents`.
+A `WebContents` that might own this `WebContents`.
 
 #### `contents.devToolsWebContents`
 
-Get the `WebContents` of DevTools for this `WebContents`.
+A `WebContents` of DevTools for this `WebContents`.
 
 **Note:** Users should never store this object because it may become `null`
 when the DevTools has been closed.
 
 #### `contents.debugger`
 
-Get the debugger instance for this webContents.
+A Debugger instance for this webContents.
 
 ## Class: Debugger
 
@@ -1223,7 +1223,7 @@ Attaches the debugger to the `webContents`.
 
 #### `debugger.isAttached()`
 
-Returns a boolean indicating whether a debugger is attached to the `webContents`.
+Returns `Boolean` - Whether a debugger is attached to the `webContents`.
 
 #### `debugger.detach()`
 

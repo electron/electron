@@ -24,11 +24,11 @@ accent color.
 
 ### `systemPreferences.isDarkMode()` _macOS_
 
-This method returns `true` if the system is in Dark Mode, and `false` otherwise.
+Returns `Boolean` - Whether the the system is in Dark Mode.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
-This method returns `true` if the Swipe between pages setting is on, and `false` otherwise.
+Returns `Boolean` - Whether the Swipe between pages setting is on.
 
 ### `systemPreferences.postNotification(event, userInfo)` _macOS_
 
