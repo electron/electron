@@ -95,13 +95,13 @@ bool AtomURLRequest::WriteBuffer(
       base::Bind(&AtomURLRequest::DoWriteBuffer, this, buffer, is_last));
 }
 
-void AtomURLRequest::SetChunkedUpload() {
+void AtomURLRequest::SetChunkedUpload(bool is_chunked_upload) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   // The method can be called only before switching to multi-threaded mode,
   // i.e. before the first call to write.
   // So it is safe to change the object in the UI thread.
-  is_chunked_upload_ = true;
+  is_chunked_upload_ = is_chunked_upload;
 }
 
 
@@ -109,26 +109,14 @@ void AtomURLRequest::Abort() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 }
 
-void AtomURLRequest::SetHeader(const std::string& name,
+void AtomURLRequest::SetExtraHeader(const std::string& name,
                                const std::string& value) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   request_->SetExtraRequestHeaderByName(name, value, true);
 }
 
-std::string AtomURLRequest::GetHeader(const std::string& name) const {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  std::string result;
-  const auto& extra_headers = request_->extra_request_headers();
-  if (!extra_headers.GetHeader(name, &result)) {
-    net::HttpRequestHeaders* request_headers = nullptr;
-    if (request_->GetFullRequestHeaders(request_headers) && request_headers) {
-      request_headers->GetHeader(name, &result);
-    }
-  }
-  return result;
-}
 
-void AtomURLRequest::RemoveHeader(const std::string& name) const {
+void AtomURLRequest::RemoveExtraHeader(const std::string& name) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   request_->RemoveRequestHeaderByName(name);
 }

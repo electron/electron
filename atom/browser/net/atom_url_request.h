@@ -36,11 +36,10 @@ public:
 
   bool WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
                    bool is_last);
-  void SetChunkedUpload();
+  void SetChunkedUpload(bool is_chunked_upload);
   void Abort() const;
-  void SetHeader(const std::string& name, const std::string& value) const;
-  std::string GetHeader(const std::string& name) const;
-  void RemoveHeader(const std::string& name) const;
+  void SetExtraHeader(const std::string& name, const std::string& value) const;
+  void RemoveExtraHeader(const std::string& name) const;
   void PassLoginInformation(const base::string16& username,
     const base::string16& password) const;
   scoped_refptr<const net::HttpResponseHeaders> GetResponseHeaders() const;

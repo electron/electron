@@ -35,9 +35,9 @@ private:
   bool WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
                    bool is_last);
   void Abort();
-  bool SetHeader(const std::string& name, const std::string& value);
-  std::string GetHeader(const std::string& name);
-  void RemoveHeader(const std::string& name);
+  bool SetExtraHeader(const std::string& name, const std::string& value);
+  void RemoveExtraHeader(const std::string& name);
+  void SetChunkedUpload(bool is_chunked_upload);
 
   friend class AtomURLRequest;
   void OnAuthenticationRequired(

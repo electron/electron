@@ -115,8 +115,6 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
   auto session = Session::FromPartition(args->isolate(), session_name);
 
   auto browser_context = session->browser_context();
-
-
   auto api_url_request = new URLRequest(args->isolate(), args->GetThis());
   auto weak_ptr = api_url_request->weak_ptr_factory_.GetWeakPtr();
   auto atom_url_request = AtomURLRequest::Create(
@@ -126,11 +124,9 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
     weak_ptr);
   
   api_url_request->atom_request_ = atom_url_request;
-  
 
   return api_url_request;
 }
-
 
 // static
 void URLRequest::BuildPrototype(v8::Isolate* isolate,
@@ -139,17 +135,17 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
     // Request API
     .MakeDestroyable()
-    .SetMethod("_writeBuffer", &URLRequest::WriteBuffer)
+    .SetMethod("writeBuffer", &URLRequest::WriteBuffer)
     .SetMethod("abort", &URLRequest::Abort)
-    .SetMethod("_setHeader", &URLRequest::SetHeader)
-    .SetMethod("_getHeader", &URLRequest::GetHeader)
-    .SetMethod("_removaHeader", &URLRequest::RemoveHeader)
+    .SetMethod("setExtraHeader", &URLRequest::SetExtraHeader)
+    .SetMethod("removeExtraHeader", &URLRequest::RemoveExtraHeader)
+    .SetMethod("setChunkedUpload", &URLRequest::SetChunkedUpload)
     // Response APi
-    .SetProperty("_statusCode", &URLRequest::StatusCode)
-    .SetProperty("_statusMessage", &URLRequest::StatusMessage)
-    .SetProperty("_rawResponseHeaders", &URLRequest::RawResponseHeaders)
-    .SetProperty("_httpVersionMajor", &URLRequest::ResponseHttpVersionMajor)
-    .SetProperty("_httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
+    .SetProperty("statusCode", &URLRequest::StatusCode)
+    .SetProperty("statusMessage", &URLRequest::StatusMessage)
+    .SetProperty("rawResponseHeaders", &URLRequest::RawResponseHeaders)
+    .SetProperty("httpVersionMajor", &URLRequest::ResponseHttpVersionMajor)
+    .SetProperty("httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
   
     
 }
@@ -166,7 +162,7 @@ void URLRequest::Abort() {
   atom_request_->Abort();
 }
 
-bool URLRequest::SetHeader(const std::string& name,
+bool URLRequest::SetExtraHeader(const std::string& name,
                            const std::string& value) {
   if (!net::HttpUtil::IsValidHeaderName(name)) {
     return false;
@@ -176,14 +172,16 @@ bool URLRequest::SetHeader(const std::string& name,
     return false;
   }
 
-  atom_request_->SetHeader(name, value);
+  atom_request_->SetExtraHeader(name, value);
   return true;
 }
-std::string URLRequest::GetHeader(const std::string& name) {
-  return atom_request_->GetHeader(name);
+
+void URLRequest::RemoveExtraHeader(const std::string& name) {
+  atom_request_->RemoveExtraHeader(name);
 }
-void URLRequest::RemoveHeader(const std::string& name) {
-  atom_request_->RemoveHeader(name);
+
+void URLRequest::SetChunkedUpload(bool is_chunked_upload) {
+  atom_request_->SetChunkedUpload(is_chunked_upload);
 }
 
 void URLRequest::OnAuthenticationRequired(
@@ -196,7 +194,7 @@ void URLRequest::OnAuthenticationRequired(
  
 
 void URLRequest::OnResponseStarted() {
-  EmitRequestEvent("response");
+  Emit("response");
 }
 
 void URLRequest::OnResponseData(
