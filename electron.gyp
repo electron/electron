@@ -5,6 +5,7 @@
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
     'version%': '1.4.1',
+    'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
   },
   'includes': [
     'filenames.gypi',
@@ -411,13 +412,63 @@
       ],
     },  # target app2asar
     {
+      'target_name': 'atom_js2c_copy',
+      'type': 'none',
+      'copies': [
+        {
+          'destination': '<(js2c_input_dir)',
+          'files': [
+            '<@(js2c_sources)',
+          ],
+        },
+      ],
+    },  # target atom_js2c_copy
+    {
+      'target_name': 'atom_browserify',
+      'type': 'none',
+      'dependencies': [
+        # depend on this target to ensure the '<(js2c_input_dir)' is created
+        'atom_js2c_copy',
+      ],
+      'actions': [
+        {
+          'action_name': 'atom_browserify',
+          'inputs': [
+            '<@(browserify_entries)',
+            # Any js file under `lib/` can be included in the preload bundle.
+            # Add all js sources as dependencies so any change to a js file will
+            # trigger a rebuild of the bundle(and consequently of js2c).
+            '<@(js_sources)',
+          ],
+          'outputs': [
+            '<(js2c_input_dir)/preload_bundle.js',
+          ],
+          'action': [
+            'npm',
+            'run',
+            'browserify',
+            '--',
+            '<@(browserify_entries)',
+            '-o',
+            '<@(_outputs)',
+          ],
+        }
+      ],
+    },  # target atom_browserify
+    {
       'target_name': 'atom_js2c',
       'type': 'none',
+      'dependencies': [
+        'atom_js2c_copy',
+        'atom_browserify',
+      ],
       'actions': [
         {
           'action_name': 'atom_js2c',
           'inputs': [
+            # List all input files that should trigger a rebuild with js2c
             '<@(js2c_sources)',
+            '<(js2c_input_dir)/preload_bundle.js',
           ],
           'outputs': [
             '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
@@ -426,7 +477,7 @@
             'python',
             'tools/js2c.py',
             '<@(_outputs)',
-            '<@(_inputs)',
+            '<(js2c_input_dir)',
           ],
         }
       ],
