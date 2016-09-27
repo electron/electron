@@ -86,7 +86,7 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
 }
 
 
-bool AtomURLRequest::WriteBuffer(
+bool AtomURLRequest::Write(
     scoped_refptr<const net::IOBufferWithSize> buffer,
     bool is_last) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI); 

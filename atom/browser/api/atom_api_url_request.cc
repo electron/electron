@@ -105,10 +105,10 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
   v8::Local<v8::Object> options;
   args->GetNext(&options);
   mate::Dictionary dict(args->isolate(), options);
-  std::string url;
-  dict.Get("url", &url);
   std::string method;
   dict.Get("method", &method);
+  std::string url;
+  dict.Get("url", &url);
   std::string session_name;
   dict.Get("session", &session_name);
 
@@ -135,7 +135,7 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
     // Request API
     .MakeDestroyable()
-    .SetMethod("writeBuffer", &URLRequest::WriteBuffer)
+    .SetMethod("writeBuffer", &URLRequest::Write)
     .SetMethod("abort", &URLRequest::Abort)
     .SetMethod("setExtraHeader", &URLRequest::SetExtraHeader)
     .SetMethod("removeExtraHeader", &URLRequest::RemoveExtraHeader)
@@ -150,10 +150,10 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
     
 }
 
-bool URLRequest::WriteBuffer(
+bool URLRequest::Write(
     scoped_refptr<const net::IOBufferWithSize> buffer,
     bool is_last) {
-  return atom_request_->WriteBuffer(buffer, is_last);
+  return atom_request_->Write(buffer, is_last);
 
 }
 

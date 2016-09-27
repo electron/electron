@@ -32,7 +32,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
 
 
 private:
-  bool WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
+  bool Write(scoped_refptr<const net::IOBufferWithSize> buffer,
                    bool is_last);
   void Abort();
   bool SetExtraHeader(const std::string& name, const std::string& value);

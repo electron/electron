@@ -34,7 +34,7 @@ public:
     const std::string& url,
     base::WeakPtr<api::URLRequest> delegate);
 
-  bool WriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
+  bool Write(scoped_refptr<const net::IOBufferWithSize> buffer,
                    bool is_last);
   void SetChunkedUpload(bool is_chunked_upload);
   void Abort() const;
