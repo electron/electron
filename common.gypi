@@ -36,6 +36,7 @@
     'node_use_perfctr': 'false',
     'node_use_v8_platform': 'false',
     'node_use_bundled_v8': 'false',
+    'node_enable_d8': 'false',
     'uv_library': 'static_library',
     'uv_parent_path': 'vendor/node/deps/uv',
     'uv_use_dtrace': 'false',
