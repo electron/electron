@@ -135,7 +135,7 @@ Returns:
 * `url` String
 * `frameName` String
 * `disposition` String - `default`, `foreground-tab`, `background-tab`,
-  `new-window`, `other`중 하나일 수 있습니다.
+  `new-window`, `save-to-disk`, `other`중 하나일 수 있습니다.
 * `options` Object - 새로운 `BrowserWindow` 객체를 만들 때 사용되는 옵션 객체입니다.
 
 페이지가 `url`에 대하여 새로운 윈도우를 열기위해 요청한 경우 발생하는 이벤트입니다.
@@ -191,7 +191,12 @@ Returns:
 
 #### Event: 'crashed'
 
-렌더러 프로세스가 예기치 못하게 종료되었을 때 발생되는 이벤트입니다.
+Returns:
+
+* `event` Event
+* `killed` Boolean
+
+렌더러 프로세스가 충돌하거나 종료될 때 발생되는 이벤트입니다.
 
 #### Event: 'plugin-crashed'
 
@@ -1105,6 +1110,11 @@ win.webContents.on('did-finish-load', () => {
 #### `contents.getFrameRate()`
 
 *오프 스크린 렌더링* 이 활성화된 경우 현재 프레임 레이트를 반환합니다.
+
+#### `contents.invalidate()`
+
+*오프 스크린 렌더링* 이 활성화된 경우 프레임을 무효화 하고 `'paint'` 이벤트를
+통해 새로 만듭니다.
 
 ### Instance Properties
 

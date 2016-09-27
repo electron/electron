@@ -438,6 +438,10 @@ someWindow.on('app-command', (e, cmd) => {
 
 스크롤 휠 이벤트가 동작을 멈췄을 때 발생하는 이벤트입니다.
 
+#### Event: 'scroll-touch-edge' _macOS_
+
+스크롤 휠 이벤트로 요소의 끝에 도달했을 때 발생하는 이벤트입니다.
+
 #### Event: 'swipe' _macOS_
 
 Returns:
@@ -955,7 +959,7 @@ win.loadURL(url)
 
 * `progress` Double
 * `options` Object (optional)
-  * `mode` String _Windows_ - 프로그래스 막대의 모드 (`none`, `normal`,
+  * `mode` String _Windows_ - 프로그레스 막대의 모드 (`none`, `normal`,
     `indeterminate`, `error`, `paused`)
 
 작업표시줄에 표시되고 있는 애플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]
