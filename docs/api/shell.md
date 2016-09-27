@@ -55,7 +55,7 @@ Play the beep sound.
 ### `shell.writeShortcutLink(shortcutPath[, operation], options)` _Windows_
 
 * `shortcutPath` String
-* `operation` String (optional) - Default is `create`, can be one of followings:
+* `operation` String (optional) - Default is `create`, can be one of following:
   * `create` - Creates a new shortcut, overwriting if necessary.
   * `update` - Updates specified properties only on an existing shortcut.
   * `replace` - Overwrites an existing shortcut, fails if the shortcut doesn't
