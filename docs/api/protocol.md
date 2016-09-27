@@ -50,8 +50,11 @@ non-standard schemes can not recognize relative URLs:
 
 Registering a scheme as standard will allow access to files through the
 [FileSystem API][file-system-api]. Otherwise the renderer will throw a security
-error for the scheme. So in general if you want to register a custom protocol to
-replace the `http` protocol, you have to register it as a standard scheme:
+error for the scheme.
+
+By default web storage apis (localStorage, sessionStorage, webSQL, indexedDB, cookies)
+are disabled for non standard schemes. So in general if you want to register a
+custom protocol to replace the `http` protocol, you have to register it as a standard scheme:
 
 ```javascript
 const {app, protocol} = require('electron')
