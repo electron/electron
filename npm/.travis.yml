@@ -11,5 +11,3 @@ node_js:
 branches:
   only:
   - master
-install:
-  - npm --silent install
