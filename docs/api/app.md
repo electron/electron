@@ -329,7 +329,7 @@ and `will-quit` events will not be emitted.
 ### `app.relaunch([options])`
 
 * `options` Object (optional)
-  * `args` Array (optional)
+  * `args` String[] (optional)
   * `execPath` String (optional)
 
 Relaunches the app when current instance exits.
@@ -470,7 +470,9 @@ Clears the recent documents list.
   app to handle `electron://` links, call this method with `electron` as the
   parameter.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` Array (optional) _Windows_ - Defaults to an empty array
+* `args` String[] (optional) _Windows_ - Defaults to an empty array
+
+Returns `Boolean` - Whether the call succeeded.
 
 This method sets the current executable as the default handler for a protocol
 (aka URI scheme). It allows you to integrate your app deeper into the operating
@@ -480,8 +482,6 @@ your application as a parameter.
 
 On Windows you can provide optional parameters path, the path to your executable,
 and args, an array of arguments to be passed to your executable when it launches.
-
-Returns `true` when the call succeeded, otherwise returns `false`.
 
 **Note:** On macOS, you can only register protocols that have been added to
 your app's `info.plist`, which can not be modified at runtime. You can however
@@ -494,18 +494,19 @@ The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally
 
 * `protocol` String - The name of your protocol, without `://`.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` Array (optional) _Windows_ - Defaults to an empty array
+* `args` String[] (optional) _Windows_ - Defaults to an empty array
+
+Returns `Boolean` - Whether the call succeeded.
 
 This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
 
-Returns `true` when the call succeeded, otherwise returns `false`.
 
 ### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` Array (optional) _Windows_ - Defaults to an empty array
+* `args` String[] (optional) _Windows_ - Defaults to an empty array
 
 Returns `Boolean`
 
@@ -543,7 +544,7 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
 
-Returns `true` when the call succeeded, otherwise returns `false`.
+Returns `Boolean` - Whether the call succeeded.
 
 **Note:** If you'd like to customize the Jump List even more use
 `app.setJumpList(categories)` instead.
@@ -790,8 +791,10 @@ This method can only be called before app is ready.
 
 * `count` Integer
 
+Returns `Boolean` - Whether the call succeeded.
+
 Sets the counter badge for current app. Setting the count to `0` will hide the
-badge. Returns `true` when the call succeeded, otherwise returns `false`.
+badge.
 
 On macOS it shows on the dock icon. On Linux it only works for Unity launcher,
 
