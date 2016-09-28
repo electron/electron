@@ -408,6 +408,18 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setAlwaysOnTop(flag, level)', function () {
+    it('sets the window as always on top', function () {
+      assert.equal(w.isAlwaysOnTop(), false)
+      w.setAlwaysOnTop(true, 'dock')
+      assert.equal(w.isAlwaysOnTop(), true)
+      w.setAlwaysOnTop(false)
+      assert.equal(w.isAlwaysOnTop(), false)
+      w.setAlwaysOnTop(true)
+      assert.equal(w.isAlwaysOnTop(), true)
+    })
+  })
+
   describe('BrowserWindow.fromId(id)', function () {
     it('returns the window with id', function () {
       assert.equal(w.id, BrowserWindow.fromId(w.id).id)
