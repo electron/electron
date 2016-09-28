@@ -943,12 +943,32 @@ bool NativeWindowMac::IsClosable() {
   return [window_ styleMask] & NSClosableWindowMask;
 }
 
-void NativeWindowMac::SetAlwaysOnTop(bool top) {
-  [window_ setLevel:(top ? NSFloatingWindowLevel : NSNormalWindowLevel)];
+void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level) {
+  int windowLevel = NSNormalWindowLevel;
+  if (top) {
+    if (level == "floating") {
+      windowLevel = NSFloatingWindowLevel;
+    } else if (level == "torn-off-menu") {
+      windowLevel = NSTornOffMenuWindowLevel;
+    } else if (level == "modal-panel") {
+      windowLevel = NSModalPanelWindowLevel;
+    } else if (level == "main-menu") {
+      windowLevel = NSMainMenuWindowLevel;
+    } else if (level == "status") {
+      windowLevel = NSStatusWindowLevel;
+    } else if (level == "pop-up-menu") {
+      windowLevel = NSPopUpMenuWindowLevel;
+    } else if (level == "screen-saver") {
+      windowLevel = NSScreenSaverWindowLevel;
+    } else if (level == "dock") {
+      windowLevel = NSDockWindowLevel;
+    }
+  }
+  [window_ setLevel:windowLevel];
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {
-  return [window_ level] == NSFloatingWindowLevel;
+  return [window_ level] != NSNormalWindowLevel;
 }
 
 void NativeWindowMac::Center() {

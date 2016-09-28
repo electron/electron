@@ -823,9 +823,11 @@ Returns `Boolean` - Whether the window can be manually closed by user.
 
 On Linux always returns `true`.
 
-#### `win.setAlwaysOnTop(flag)`
+#### `win.setAlwaysOnTop(flag[, level])`
 
 * `flag` Boolean
+* `level` String (optional) _macOS_ - Options include (`normal`, `floating`, `torn-off-menu`,
+`modal-panel`, `main-menu`, `status`, `pop-up-menu`, `screen-saver`, `dock`). Default is `floating`.
 
 Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
