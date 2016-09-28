@@ -826,8 +826,10 @@ On Linux always returns `true`.
 #### `win.setAlwaysOnTop(flag[, level])`
 
 * `flag` Boolean
-* `level` String (optional) _macOS_ - Options include (`normal`, `floating`, `torn-off-menu`,
-`modal-panel`, `main-menu`, `status`, `pop-up-menu`, `screen-saver`, `dock`). Default is `floating`.
+* `level` String (optional) _macOS_ - Values include `normal`, `floating`,
+  `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
+  `screen-saver`, and `dock`. The default is `floating`. See the
+  [macOS docs][window-levels] for more details.
 
 Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
@@ -1201,3 +1203,5 @@ Returns `BrowserWindow` - The parent window.
 #### `win.getChildWindows()`
 
 Returns `BrowserWindow[]` - All child windows.
+
+[window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
