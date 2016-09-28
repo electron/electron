@@ -46,6 +46,7 @@
 #include "net/url_request/file_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
+#include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_context_storage.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
@@ -285,22 +286,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_ct_policy_enforcer(base::MakeUnique<net::CTPolicyEnforcer>());
 
     net::HttpNetworkSession::Params network_session_params;
-    network_session_params.cert_verifier = url_request_context_->cert_verifier();
-    network_session_params.proxy_service = url_request_context_->proxy_service();
-    network_session_params.ssl_config_service = url_request_context_->ssl_config_service();
-    network_session_params.http_server_properties = url_request_context_->http_server_properties();
+    net::URLRequestContextBuilder::SetHttpNetworkSessionComponents(
+        url_request_context_.get(), &network_session_params);
     network_session_params.ignore_certificate_errors = false;
-    network_session_params.transport_security_state =
-        url_request_context_->transport_security_state();
-    network_session_params.channel_id_service =
-        url_request_context_->channel_id_service();
-    network_session_params.http_auth_handler_factory =
-        url_request_context_->http_auth_handler_factory();
-    network_session_params.net_log = url_request_context_->net_log();
-    network_session_params.cert_transparency_verifier =
-        url_request_context_->cert_transparency_verifier();
-    network_session_params.ct_policy_enforcer =
-        url_request_context_->ct_policy_enforcer();
 
     // --disable-http2
     if (command_line.HasSwitch(switches::kDisableHttp2)) {
