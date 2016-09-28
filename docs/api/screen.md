@@ -49,23 +49,6 @@ app.on('ready', () => {
 })
 ```
 
-## The `Display` object
-
-The `Display` object represents a physical display connected to the system. A
-fake `Display` may exist on a headless system, or a `Display` may correspond to
-a remote, virtual display.
-
-* `display` object
-  * `id` Integer - Unique identifier associated with the display.
-  * `rotation` Integer - Can be 0, 90, 180, 270, represents screen rotation in
-    clock-wise degrees.
-  * `scaleFactor` Number - Output device's pixel scale factor.
-  * `touchSupport` String - Can be `available`, `unavailable`, `unknown`.
-  * `bounds` Object
-  * `size` Object
-  * `workArea` Object
-  * `workAreaSize` Object
-
 ## Events
 
 The `screen` module emits the following events:
@@ -75,7 +58,7 @@ The `screen` module emits the following events:
 Returns:
 
 * `event` Event
-* `newDisplay` Object
+* `newDisplay` [Display](structures/display.md)
 
 Emitted when `newDisplay` has been added.
 
@@ -84,7 +67,7 @@ Emitted when `newDisplay` has been added.
 Returns:
 
 * `event` Event
-* `oldDisplay` Object
+* `oldDisplay` [Display](structures/display.md)
 
 Emitted when `oldDisplay` has been removed.
 
@@ -93,7 +76,7 @@ Emitted when `oldDisplay` has been removed.
 Returns:
 
 * `event` Event
-* `display` Object
+* `display` [Display](structures/display.md)
 * `changedMetrics` String[]
 
 Emitted when one or more metrics change in a `display`. The `changedMetrics` is
@@ -130,10 +113,6 @@ Returns `Display` - The display nearest the specified point.
 
 ### `screen.getDisplayMatching(rect)`
 
-* `rect` Object
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `rect` [Bounds](structures/bounds.md)
 
 Returns `Display` - The display that most closely intersects the provided bounds.
