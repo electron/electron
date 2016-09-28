@@ -107,6 +107,10 @@ void AtomURLRequest::SetChunkedUpload(bool is_chunked_upload) {
 
 void AtomURLRequest::Abort() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  content::BrowserThread::PostTask(
+    content::BrowserThread::IO,
+    FROM_HERE,
+    base::Bind(&AtomURLRequest::DoAbort, this));
 }
 
 void AtomURLRequest::SetExtraHeader(const std::string& name,
@@ -133,16 +137,14 @@ AtomURLRequest::GetResponseHeaders() const {
 void AtomURLRequest::PassLoginInformation(const base::string16& username,
   const base::string16& password) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  if (username.empty() || password.empty()) {
+  if (username.empty() || password.empty())
     content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&AtomURLRequest::DoCancelAuth, this));
-  }
-  else {
+  else
     content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&AtomURLRequest::DoSetAuth, this, username, password));
-  }
 }
 
 
@@ -164,24 +166,21 @@ void AtomURLRequest::DoWriteBuffer(
       first_call = true;
     }
 
-    if (buffer) {
+    if (buffer)
       // Non-empty buffer.
       auto write_result = chunked_stream_writer_->AppendData(
         buffer->data(),
         buffer->size(),
         is_last);
-    }
-    else if (is_last) {
+    else if (is_last)
       // Empty buffer and last chunck, i.e. request.end().
       auto write_result = chunked_stream_writer_->AppendData(
         nullptr,
         0,
         true);
-    }
 
-    if (first_call) {
+    if (first_call)
       request_->Start();
-    }
   }
   else {
 
@@ -203,6 +202,11 @@ void AtomURLRequest::DoWriteBuffer(
       request_->Start();
     }
   }
+}
+
+void AtomURLRequest::DoAbort() const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  request_->Cancel();
 }
 
 void AtomURLRequest::DoSetAuth(const base::string16& username,
@@ -231,19 +235,25 @@ void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   DCHECK_EQ(request, request_.get());
 
-  if (request_->status().is_success()) {
+  const auto& status = request_->status();
+  if (status.is_success()) {
     // Cache net::HttpResponseHeaders instance, a read-only objects
     // so that headers and other http metainformation can be simultaneously
     // read from UI thread while request data is simulataneously streaming
     // on IO thread.
     response_headers_ = request_->response_headers();
+    content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&AtomURLRequest::InformDelegateResponseStarted, this));
+
+    ReadResponse();
   }
-
-  content::BrowserThread::PostTask(
-    content::BrowserThread::UI, FROM_HERE,
-    base::Bind(&AtomURLRequest::InformDelegateResponseStarted, this));
-
-  ReadResponse();
+  else {
+    auto error = net::ErrorToString(status.ToNetError());
+    content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&AtomURLRequest::InformDelegateErrorOccured, this, std::move(error)));
+  }
 }
 
 void AtomURLRequest::ReadResponse() {
@@ -255,10 +265,9 @@ void AtomURLRequest::ReadResponse() {
   // about is the response code and headers, which we already have).
   int bytes_read = 0;
   if (request_->status().is_success() 
-    /* TODO && (request_type_ != URLFetcher::HEAD)*/) {
+    /* TODO && (request_type_ != URLFetcher::HEAD)*/)
     if (!request_->Read(response_read_buffer_.get(), kBufferSize, &bytes_read))
       bytes_read = -1; 
-  }
   OnReadCompleted(request_.get(), bytes_read);
 }
 
@@ -269,29 +278,31 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request,
 
   DCHECK_EQ(request, request_.get());
 
+  const auto status = request_->status();
   do {
-    if (!request_->status().is_success() || bytes_read <= 0)
+    if (!status.is_success() || bytes_read <= 0) {
+      auto error = net::ErrorToString(status.ToNetError());
+      content::BrowserThread::PostTask(
+        content::BrowserThread::UI, FROM_HERE,
+        base::Bind(&AtomURLRequest::InformDelegateErrorOccured, this, std::move(error)));
       break;
-
+    }
 
     const auto result = CopyAndPostBuffer(bytes_read);
-    if (!result) {
+    if (!result)
       // Failed to transfer data to UI thread.
       return;
-    }
   } while (request_->Read(response_read_buffer_.get(),
                           kBufferSize,
                           &bytes_read));
     
-  const auto status = request_->status();
 
   if (!status.is_io_pending() 
-    /* TODO || request_type_ == URLFetcher::HEAD*/ ) {
+    /* TODO || request_type_ == URLFetcher::HEAD*/ )
 
     content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&AtomURLRequest::InformDelegateResponseCompleted, this));
-  }
 
 }
 
@@ -314,17 +325,14 @@ bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
 void AtomURLRequest::InformDelegateAuthenticationRequired(
   scoped_refptr<net::AuthChallengeInfo> auth_info) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnAuthenticationRequired(auth_info);
-  }
 }
 
 void AtomURLRequest::InformDelegateResponseStarted() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnResponseStarted();
-  }
 }
 
 void AtomURLRequest::InformDelegateResponseData(
@@ -333,17 +341,23 @@ void AtomURLRequest::InformDelegateResponseData(
 
   // Transfer ownership of the data buffer, data will be released
   // by the delegate's OnResponseData.
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnResponseData(data);
-  }
 }
 
 void AtomURLRequest::InformDelegateResponseCompleted() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  if (delegate_) {
+  if (delegate_)
     delegate_->OnResponseCompleted();
-  }
+}
+
+void AtomURLRequest::InformDelegateErrorOccured(
+  const std::string& error) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  if (delegate_)
+    delegate_->OnError(error);
 }
 
 

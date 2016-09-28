@@ -56,6 +56,7 @@ private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
   void DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
                      bool is_last);
+  void DoAbort() const;
   void DoSetAuth(const base::string16& username,
     const base::string16& password) const;
   void DoCancelAuth() const;
@@ -69,6 +70,7 @@ private:
   void InformDelegateResponseData(
     scoped_refptr<net::IOBufferWithSize> data) const;
   void InformDelegateResponseCompleted() const;
+  void InformDelegateErrorOccured(const std::string& error) const;
 
   AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
   virtual ~AtomURLRequest();

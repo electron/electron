@@ -135,7 +135,7 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
     // Request API
     .MakeDestroyable()
-    .SetMethod("writeBuffer", &URLRequest::Write)
+    .SetMethod("write", &URLRequest::Write)
     .SetMethod("abort", &URLRequest::Abort)
     .SetMethod("setExtraHeader", &URLRequest::SetExtraHeader)
     .SetMethod("removeExtraHeader", &URLRequest::RemoveExtraHeader)
@@ -212,6 +212,10 @@ void URLRequest::OnResponseCompleted() {
   atom_request_ = nullptr;
 }
 
+void URLRequest::OnError(const std::string& error) {
+  auto error_object = v8::Exception::Error(mate::StringToV8(isolate(), error));
+  EmitRequestEvent("error", error_object);
+}
 
 int URLRequest::StatusCode() const {
   if (auto response_headers = atom_request_->GetResponseHeaders()) {

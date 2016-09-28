@@ -45,6 +45,7 @@ private:
   void OnResponseStarted();
   void OnResponseData(scoped_refptr<const net::IOBufferWithSize> data);
   void OnResponseCompleted();
+  void OnError(const std::string& error);
 
   int StatusCode() const;
   std::string StatusMessage() const;
