@@ -120,7 +120,6 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 문서를 참고하여 기본적인 개념을 이해해야 합니다. 그리고 자격(plist) 파일에
 애플리케이션에서 요구하는 권한의 키를 추가합니다.
 
-
 그 외에 별로도 [electron-osx-sign][electron-osx-sign] 모듈을 사용하여 직접 서명할
 수도 있습니다.
 
@@ -161,6 +160,8 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 * 비디오 캡쳐 기능은 몇몇 장치에서 작동하지 않을 수 있습니다.
 * 특정 접근성 기능이 작동하지 않을 수 있습니다.
 * 애플리케이션이 DNS의 변경을 감지하지 못할 수 있습니다.
+* 로그인할 때 앱을 시작하기 위한 API 는 사용할 수 없습니다. 다음 문서를 보세요.
+https://github.com/electron/electron/issues/7312#issuecomment-249479237
 
 또한 애플리케이션 샌드박스 개념으로 인해 애플리케이션에서 접근할 수 있는 리소스는
 엄격하게 제한되어 있습니다. 자세한 내용은 [앱 샌드박싱][app-sandboxing] 문서를
@@ -170,6 +171,24 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 
 Mac 앱 스토어 빌드를 위해 앱에서 사용하는 Electron API에 따라 `parent.plist` 파일에
 추가적인 기능에 대한 권한을 추가해야 할 수도 있습니다.
+
+#### 네트워크 접근
+
+서버와 연결하기 위한 외부로 나가는 네트워크 연결 허용 활성화:
+
+```xml
+<key>com.apple.security.network.client</key>
+<true/>
+```
+
+네트워크 리스닝 소켓을 열기 위한 내부로 들어오는 네트워크 연결 허용 활성화:
+
+```xml
+<key>com.apple.security.network.server</key>
+<true/>
+```
+
+자세한 내용은 [네트워크 접근 활성화 문서][network-access] 를 참고하세요.
 
 #### dialog.showOpenDialog
 
