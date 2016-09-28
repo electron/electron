@@ -58,8 +58,9 @@ Input field나 text area에 철자 검사(spell checking) 제공자를 설정합
 [node-spellchecker][spellchecker]를 철자 검사 제공자로 사용하는 예시입니다:
 
 ```javascript
+const {webFrame} = require('electron');
 webFrame.setSpellCheckProvider('en-US', true, {
-  spellCheck(text) {
+  spellCheck (text) {
     return !(require('spellchecker').isMisspelled(text));
   }
 });
@@ -105,10 +106,48 @@ ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
 
 ### `webFrame.getResourceUsage()`
 
+Returns `Object`:
+* `images` Object
+  * `count` Integer
+  * `size` Integer
+  * `liveSize` Integer
+  * `decodedSize` Integer
+  * `purgedSize` Integer
+  * `purgeableSize` Integer
+* `cssStyleSheets` Object
+  * `count` Integer
+  * `size` Integer
+  * `liveSize` Integer
+  * `decodedSize` Integer
+  * `purgedSize` Integer
+  * `purgeableSize` Integer
+* `xslStyleSheets` Object
+  * `count` Integer
+  * `size` Integer
+  * `liveSize` Integer
+  * `decodedSize` Integer
+  * `purgedSize` Integer
+  * `purgeableSize` Integer
+* `fonts` Object
+  * `count` Integer
+  * `size` Integer
+  * `liveSize` Integer
+  * `decodedSize` Integer
+  * `purgedSize` Integer
+  * `purgeableSize` Integer
+* `other` Object
+  * `count` Integer
+  * `size` Integer
+  * `liveSize` Integer
+  * `decodedSize` Integer
+  * `purgedSize` Integer
+  * `purgeableSize` Integer
+
 Blink의 내부 메모리 캐시 사용 정보를 담고있는 객체를 반환합니다.
 
 ```javascript
-console.log(webFrame.getResourceUsage())
+const {webFrame} = require('electron');
+console.log(webFrame.getResourceUsage());
 ```
 
 다음이 출력됩니다:
@@ -132,7 +171,7 @@ console.log(webFrame.getResourceUsage())
 
 ### `webFrame.clearCache()`
 
-사용하지 않는 메모리 비우기를 시도합니다. (이전 페이지의 이미지 등)
+(이전 페이지의 이미지 등) 사용하지 않는 메모리 해제를 시도합니다.
 
 참고로 맹목적으로 이 메서드를 호출하는 것은 이 빈 캐시를 다시 채워야하기 때문에
 Electron을 느리게 만듭니다. 따라서 이 메서드는 페이지가 예상했던 것 보다 실질적으로 더
