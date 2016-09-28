@@ -61,7 +61,7 @@ class Cookies : public mate::TrackableObject<Cookies>,
 
  private:
   net::URLRequestContextGetter* request_context_getter_;
-  AtomCookieDelegate* cookie_delegate_;
+  scoped_refptr<AtomCookieDelegate> cookie_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };
