@@ -351,7 +351,7 @@ line argument to the new instance:
 ```javascript
 const {app} = require('electron')
 
-app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
+app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
 app.exit(0)
 ```
 
