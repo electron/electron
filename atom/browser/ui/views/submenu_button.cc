@@ -28,7 +28,8 @@ base::string16 FilterAccelerator(const base::string16& label) {
 
 SubmenuButton::SubmenuButton(views::ButtonListener* listener,
                              const base::string16& title,
-                             views::MenuButtonListener* menu_button_listener)
+                             views::MenuButtonListener* menu_button_listener,
+                             const SkColor& background_color)
     : views::MenuButton(FilterAccelerator(title),
                         menu_button_listener, false),
       accelerator_(0),
@@ -37,7 +38,8 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
       underline_end_(-1),
       text_width_(0),
       text_height_(0),
-      underline_color_(SK_ColorBLACK) {
+      underline_color_(SK_ColorBLACK),
+      background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
   SetBorder(std::move(CreateDefaultBorder()));
@@ -49,8 +51,8 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
                                &text_height_, 0, 0);
 
   SetHasInkDrop(true);
-  set_ink_drop_base_color(color_utils::BlendTowardOppositeLuma(
-      color_utils::GetSysSkColor(COLOR_MENUBAR), 0x61));
+  set_ink_drop_base_color(
+      color_utils::BlendTowardOppositeLuma(background_color_, 0x61));
 }
 
 SubmenuButton::~SubmenuButton() {
@@ -61,7 +63,7 @@ std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
   return base::MakeUnique<views::FloodFillInkDropRipple>(
       GetLocalBounds(),
       GetInkDropCenterBasedOnLastEvent(),
-      GetInkDropBaseColor()
+      GetInkDropBaseColor(),
       ink_drop_visible_opacity());
 }
 

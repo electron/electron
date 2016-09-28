@@ -15,7 +15,8 @@ class SubmenuButton : public views::MenuButton {
  public:
   SubmenuButton(views::ButtonListener* listener,
                 const base::string16& title,
-                views::MenuButtonListener* menu_button_listener);
+                views::MenuButtonListener* menu_button_listener,
+                const SkColor& background_color);
   virtual ~SubmenuButton();
 
   void SetAcceleratorVisibility(bool visible);
@@ -51,6 +52,7 @@ class SubmenuButton : public views::MenuButton {
   int text_width_;
   int text_height_;
   SkColor underline_color_;
+  SkColor background_color_;
 
   DISALLOW_COPY_AND_ASSIGN(SubmenuButton);
 };
