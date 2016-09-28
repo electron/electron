@@ -179,7 +179,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     storage_.reset(new net::URLRequestContextStorage(url_request_context_.get()));
 
-    std::unique_ptr<net::CookieStore> cookie_store = nullptr;
     auto cookie_path = in_memory_ ?
         base::FilePath() : base_path_.Append(FILE_PATH_LITERAL("Cookies"));
     auto cookie_config = content::CookieStoreConfig(
@@ -188,7 +187,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         nullptr,
         delegate_->CreateCookieDelegate());
     cookie_config.cookieable_schemes = delegate_->GetCookieableSchemes();
-    cookie_store = content::CreateCookieStore(cookie_config);
+    std::unique_ptr<net::CookieStore> cookie_store =
+        content::CreateCookieStore(cookie_config);
     storage_->set_cookie_store(std::move(cookie_store));
     storage_->set_channel_id_service(base::WrapUnique(
         new net::ChannelIDService(new net::DefaultChannelIDStore(nullptr),
