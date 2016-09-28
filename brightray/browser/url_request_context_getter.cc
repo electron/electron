@@ -277,10 +277,11 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(std::move(server_properties));
 
-    cert_transparency_verifier_.reset(new net::MultiLogCTVerifier());
-    cert_transparency_verifier_->AddLogs(
-        net::ct::CreateLogVerifiersForKnownLogs());
-    ct_policy_enforcer_.reset(new net::CTPolicyEnforcer());
+    std::unique_ptr<net::MultiLogCTVerifier> ct_verifier =
+        base::MakeUnique<net::MultiLogCTVerifier>();
+    ct_verifier->AddLogs(net::ct::CreateLogVerifiersForKnownLogs());
+    storage_->set_cert_transparency_verifier(std::move(ct_verifier));
+    storage_->set_ct_policy_enforcer(base::MakeUnique<net::CTPolicyEnforcer>());
 
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.cert_verifier = url_request_context_->cert_verifier();
@@ -296,8 +297,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         url_request_context_->http_auth_handler_factory();
     network_session_params.net_log = url_request_context_->net_log();
     network_session_params.cert_transparency_verifier =
-        cert_transparency_verifier_.get();
-    network_session_params.ct_policy_enforcer = ct_policy_enforcer_.get();
+        url_request_context_->cert_transparency_verifier();
+    network_session_params.ct_policy_enforcer =
+        url_request_context_->ct_policy_enforcer();
 
     // --disable-http2
     if (command_line.HasSwitch(switches::kDisableHttp2)) {
