@@ -822,6 +822,9 @@ Returns `Object`:
   app should restore the windows that were open the last time the app was
   closed. This setting is only supported on macOS.
 
+**Note:** This API has no effect on
+[MAS builds](docs/tutorial/mac-app-store-submission-guide.md).
+
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
@@ -834,6 +837,9 @@ Returns `Object`:
     macOS.
 
 Set the app's login item settings.
+
+**Note:** This API has no effect on
+[MAS builds](docs/tutorial/mac-app-store-submission-guide.md).
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
