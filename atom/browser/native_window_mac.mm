@@ -740,8 +740,9 @@ bool NativeWindowMac::IsFocused() {
 
 void NativeWindowMac::Show() {
   if (is_modal() && parent()) {
-    [parent()->GetNativeWindow() beginSheet:window_
-                          completionHandler:^(NSModalResponse) {}];
+    if ([window_ sheetParent] == nil)
+      [parent()->GetNativeWindow() beginSheet:window_
+                            completionHandler:^(NSModalResponse) {}];
     return;
   }
 
