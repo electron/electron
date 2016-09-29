@@ -350,8 +350,8 @@ Chrome의 접근성 지원이 변경될 때 발생하는 이벤트입니다. 이
 ```javascript
 const {app} = require('electron');
 
-app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
-app.exit(0)
+app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])});
+app.exit(0);
 ```
 
 ### `app.isReady()`
@@ -809,7 +809,7 @@ Returns `Object`:
   것을 표시합니다. 이 설정은 macOS에서만 지원됩니다.
 
 **참고:** 이 API 는 [MAS 빌드](docs/tutorial/mac-app-store-submission-guide.md)
-에 영향이 없습니다.
+에 영향을 주지 않습니다.
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
@@ -825,7 +825,7 @@ Returns `Object`:
 앱의 로그인 항목 설정을 지정합니다.
 
 **참고:** 이 API 는 [MAS 빌드](docs/tutorial/mac-app-store-submission-guide.md)
-에 영향이 없습니다.
+에 영향을 주지 않습니다.
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 

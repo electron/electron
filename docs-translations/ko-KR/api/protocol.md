@@ -49,9 +49,12 @@ app.on('ready', () => {
 ```
 
 표준 스킴으로 등록하는 것은 [파일 시스템 API][file-system-api]를 통해 파일에 접근하는
-것을 허용할 것입니다. 그렇지 않은 경우 렌더러는 해당 스킴에 대해 보안 에러를 throw할
-것입니다. 일반적인 경우 `http` 프로토콜을 대체하는 커스텀 프로토콜을 등록하고 싶다면,
-표준 스킴으로 등록해야 합니다:
+것을 허용할 것입니다. 그렇지 않은 경우 렌더러는 해당 스킴에 대해 보안 에러를 발생 할
+것입니다.
+
+표준 스킴에는 기본적으로 저장 API (localStorage, sessionStorage, webSQL,
+indexedDB, cookies) 가 비활성화 되어있습니다. 일반적으로 `http` 프로토콜을
+대체하는 커스텀 프로토콜을 등록하고 싶다면, 표준 스킴으로 등록해야 합니다:
 
 ```javascript
 protocol.registerStandardSchemes(['atom']);

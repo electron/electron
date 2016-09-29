@@ -160,7 +160,7 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 * 비디오 캡쳐 기능은 몇몇 장치에서 작동하지 않을 수 있습니다.
 * 특정 접근성 기능이 작동하지 않을 수 있습니다.
 * 애플리케이션이 DNS의 변경을 감지하지 못할 수 있습니다.
-* 로그인할 때 앱을 시작하기 위한 API 는 사용할 수 없습니다. 다음 문서를 보세요.
+* 로그인할 때 앱을 시작하기 위한 API 는 비활성화 되어있습니다. 다음 문서를 보세요.
 https://github.com/electron/electron/issues/7312#issuecomment-249479237
 
 또한 애플리케이션 샌드박스 개념으로 인해 애플리케이션에서 접근할 수 있는 리소스는

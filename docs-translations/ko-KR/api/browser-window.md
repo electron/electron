@@ -776,9 +776,13 @@ let win = new BrowserWindow({width: 800, height: 600});
 사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부를 반환합니다. Linux에선 항상
 `true`를 반환합니다.
 
-#### `win.setAlwaysOnTop(flag)`
+#### `win.setAlwaysOnTop(flag[, level])`
 
 * `flag` Boolean
+* `level` String (optional) _macOS_ - 이 값은 `normal`, `floating`,
+  `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
+  `screen-saver`, `dock` 을 포함합니다. 기본값은 `floating` 입니다. 자세한
+  내용은 [macOS 문서][window-levels] 를 보세요.
 
 윈도우가 언제나 다른 윈도우들 위에 표시되는지 여부를 지정합니다. 이 설정을 활성화 하면
 윈도우는 포커스 될 수 없는 툴박스 윈도우가 아닌 일반 윈도우로 유지됩니다.
@@ -1125,7 +1129,7 @@ Windows에선 `WDA_MONITOR`와 함께 SetWindowDisplayAffinity를 호출합니�
 #### `win.setParentWindow(parent)` _Linux_ _macOS_
 
 * `parent` BrowserWindow
-
+`
 `parent` 인수를 현재 윈도우의 부모 윈도우로 설정합니다. `null`로 설정하면
 현재 윈도우를 상위 윈도우로 전환합니다.
 
@@ -1138,3 +1142,4 @@ Windows에선 `WDA_MONITOR`와 함께 SetWindowDisplayAffinity를 호출합니�
 모든 자식 윈도우를 반환합니다.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+[window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels

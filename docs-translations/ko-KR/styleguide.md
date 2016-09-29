@@ -97,11 +97,16 @@ API 참고문서에는 이 규칙에 예외가 있습니다.
 * API 클래스와 모듈 클래스는 `## Class: TheClassName` 챕터 아래에 표시합니다.
 * 한 페이지에 여러개의 클래스가 있을 수 있습니다.
 * 생성자는 `###`-단계의 제목으로 표시합니다.
-* [정적 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) 는 `### Statis Methods` 챕터 아래에 표시합니다.
-* [인스턴스 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#Prototype_methods) 는 `### Instance Methods`  챕터 아래에 표시합니다.
-* 반환값이 있는 모든 메소드는 "반환값 `[유형]` - 반환값 설명" 형태의 설명으로 시작해야 합니다.
-* 인스턴스 이벤트는 `### 인스턴스 이벤트` 챕터 아래에 표시합니다.
-* 인스턴스 속성은 `### 인스턴스 속성` 챕터 아래에 표시합니다.
+* [정적 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static)
+  는 `### Statis Methods` 챕터 아래에 표시합니다.
+* [인스턴스 메소드](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#Prototype_methods)
+  는 `### Instance Methods`  챕터 아래에 표시합니다.
+* 반환값이 있는 모든 메소드는 "반환값 `[유형]` - 반환값 설명" 형태의 설명으로
+  시작해야 합니다.
+  * 메소드가 `Object` 를 반환한다면, 끝에 콜론을 붙인 뒤 다음줄부터 함수
+    매개변수와 같은 스타일로 순서에 상관없이 그 구조를 명시해야 합니다.
+* 인스턴스 이벤트는 `### Instance Events` 챕터 아래에 표시합니다.
+* 인스턴스 속성은 `### Instance Properties` 챕터 아래에 표시합니다.
 * 인스턴스 속성은 "[속성 유형]" 으로 시작해야 합니다.
 
 `Session` 과 `Cookies` 클래스 사용 예시:

@@ -1,4 +1,4 @@
-﻿# powerSaveBlocker
+# powerSaveBlocker
 
 > 시스템이 저전력 (슬립) 모드로 진입하는 것을 막습니다.
 
