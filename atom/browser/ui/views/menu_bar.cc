@@ -63,7 +63,10 @@ void MenuBar::SetMenu(AtomMenuModel* model) {
   RemoveAllChildViews(true);
 
   for (int i = 0; i < model->GetItemCount(); ++i) {
-    SubmenuButton* button = new SubmenuButton(this, model->GetLabelAt(i), this);
+    SubmenuButton* button = new SubmenuButton(this,
+                                              model->GetLabelAt(i),
+                                              this,
+                                              background_color_);
     button->set_tag(i);
 
 #if defined(USE_X11)
