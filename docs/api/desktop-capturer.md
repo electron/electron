@@ -56,7 +56,7 @@ The `desktopCapturer` module has the following methods:
 ### `desktopCapturer.getSources(options, callback)`
 
 * `options` Object
-  * `types` Array - An array of String that lists the types of desktop sources
+  * `types` String[] - An array of Strings that lists the types of desktop sources
     to be captured, available types are `screen` and `window`.
   * `thumbnailSize` Object (optional) - The suggested size that the media source
     thumbnail should be scaled to, defaults to `{width: 150, height: 150}`.

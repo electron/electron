@@ -107,10 +107,10 @@ Clears the session’s HTTP cache.
 * `options` Object (optional)
   * `origin` String - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
-  * `storages` Array - The types of storages to clear, can contain:
+  * `storages` String[] - The types of storages to clear, can contain:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `local storage`,
     `shadercache`, `websql`, `serviceworkers`
-  * `quotas` Array - The types of quotas to clear, can contain:
+  * `quotas` String[] - The types of quotas to clear, can contain:
     `temporary`, `persistent`, `syncable`.
 * `callback` Function (optional) - Called when operation is done.
 

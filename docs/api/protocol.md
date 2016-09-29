@@ -28,7 +28,7 @@ The `protocol` module has the following methods:
 
 ### `protocol.registerStandardSchemes(schemes)`
 
-* `schemes` Array - Custom schemes to be registered as standard schemes.
+* `schemes` String[] - Custom schemes to be registered as standard schemes.
 
 A standard scheme adheres to what RFC 3986 calls [generic URI
 syntax](https://tools.ietf.org/html/rfc3986#section-3). For example `http` and
@@ -70,7 +70,7 @@ module gets emitted.
 
 ### `protocol.registerServiceWorkerSchemes(schemes)`
 
-* `schemes` Array - Custom schemes to be registered to handle service workers.
+* `schemes` String[] - Custom schemes to be registered to handle service workers.
 
 ### `protocol.registerFileProtocol(scheme, handler[, completion])`
 

@@ -94,7 +94,7 @@ Returns:
 
 * `event` Event
 * `display` Object
-* `changedMetrics` Array
+* `changedMetrics` String[]
 
 Emitted when one or more metrics change in a `display`. The `changedMetrics` is
 an array of strings that describe the changes. Possible changes are `bounds`,

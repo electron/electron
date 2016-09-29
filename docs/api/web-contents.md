@@ -132,7 +132,7 @@ Emitted when the document in the given frame is loaded.
 Returns:
 
 * `event` Event
-* `favicons` Array - Array of URLs
+* `favicons` String[] - Array of URLs
 
 Emitted when page receives favicon urls.
 
@@ -1026,7 +1026,7 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
   * `type` String (**required**) - The type of the event, can be `mouseDown`,
     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
     `mouseMove`, `keyDown`, `keyUp`, `char`.
-  * `modifiers` Array - An array of modifiers of the event, can
+  * `modifiers` String[] - An array of modifiers of the event, can
     include `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
     `numLock`, `left`, `right`.

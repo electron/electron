@@ -622,7 +622,7 @@ title is synthesized from file url.
 
 Returns:
 
-* `favicons` Array - Array of URLs.
+* `favicons` String[] - Array of URLs.
 
 Fired when page receives favicon urls.
 
