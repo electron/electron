@@ -395,6 +395,27 @@ session.defaultSession.cookies.set(cookie, (error) => {
 })
 ```
 
+### Instance Events
+
+The following events are available on instances of `Cookies`:
+
+#### Event: 'changed'
+
+* `event` Event
+* `cookie` Object - The cookie that was changed
+* `cause` String - The cause of the change with one of the following values:
+  * `explicit` - The cookie was changed directly by a consumer's action.
+  * `overwrite` - The cookie was automatically removed due to an insert
+    operation that overwrote it.
+  * `expired` - The cookie was automatically removed as it expired.
+  * `evicted` - The cookie was automatically evicted during garbage collection.
+  * `expired-overwrite` - The cookie was overwritten with an already-expired
+    expiration date.
+* `removed` Boolean - `true` if the cookie was removed, `false` otherwise.
+
+Emitted when a cookie is changed because it was added, edited, removed, or
+expired.
+
 ### Instance Methods
 
 The following methods are available on instances of `Cookies`:
