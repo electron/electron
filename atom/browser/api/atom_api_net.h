@@ -12,20 +12,18 @@ namespace atom {
 namespace api {
 
 class Net : public mate::EventEmitter<Net> {
-
-public:
+ public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   v8::Local<v8::Value> URLRequest(v8::Isolate* isolate);
-protected:
-  Net(v8::Isolate* isolate);
+ protected:
+  explicit Net(v8::Isolate* isolate);
   ~Net() override;
 
-private:
-
+ private:
   DISALLOW_COPY_AND_ASSIGN(Net);
 };
 

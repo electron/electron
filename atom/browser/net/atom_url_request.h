@@ -6,9 +6,11 @@
 #ifndef ATOM_BROWSER_NET_ATOM_URL_REQUEST_H_
 #define ATOM_BROWSER_NET_ATOM_URL_REQUEST_H_
 
+#include <string>
+#include <vector>
 #include "base/memory/ref_counted.h"
-#include "net/url_request/url_request.h"
 #include "net/base/chunked_upload_data_stream.h"
+#include "net/url_request/url_request.h"
 
 
 namespace net {
@@ -27,7 +29,7 @@ class URLRequest;
 
 class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
                        public net::URLRequest::Delegate {
-public:
+ public:
   static scoped_refptr<AtomURLRequest> Create(
     AtomBrowserContext* browser_context,
     const std::string& method,
@@ -44,15 +46,15 @@ public:
     const base::string16& password) const;
   scoped_refptr<const net::HttpResponseHeaders> GetResponseHeaders() const;
 
-protected:
+ protected:
   // Overrides of net::URLRequest::Delegate
-  virtual void OnAuthRequired(net::URLRequest* request,
+  void OnAuthRequired(net::URLRequest* request,
                               net::AuthChallengeInfo* auth_info) override;
-  virtual void OnResponseStarted(net::URLRequest* request) override;
-  virtual void OnReadCompleted(net::URLRequest* request,
+  void OnResponseStarted(net::URLRequest* request) override;
+  void OnReadCompleted(net::URLRequest* request,
                                int bytes_read) override;
 
-private:
+ private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
   void DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
                      bool is_last);
@@ -72,7 +74,7 @@ private:
   void InformDelegateResponseCompleted() const;
   void InformDelegateErrorOccured(const std::string& error) const;
 
-  AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
+  explicit AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
   virtual ~AtomURLRequest();
 
   base::WeakPtr<api::URLRequest> delegate_;
@@ -81,14 +83,13 @@ private:
   bool is_chunked_upload_;
   std::unique_ptr<net::ChunkedUploadDataStream> chunked_stream_;
   std::unique_ptr<net::ChunkedUploadDataStream::Writer> chunked_stream_writer_;
-
-  std::vector<std::unique_ptr<net::UploadElementReader>>upload_element_readers_;
-
+  std::vector<std::unique_ptr<net::UploadElementReader>>
+    upload_element_readers_;
   scoped_refptr<net::IOBuffer> response_read_buffer_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
 
-   DISALLOW_COPY_AND_ASSIGN(AtomURLRequest);
- };
+  DISALLOW_COPY_AND_ASSIGN(AtomURLRequest);
+};
 
 }  // namespace atom
 

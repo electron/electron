@@ -4,8 +4,8 @@
 
 #include "atom/browser/api/atom_api_net.h"
 #include "atom/browser/api/atom_api_url_request.h"
-#include "native_mate/dictionary.h"
 #include "atom/common/node_includes.h"
+#include "native_mate/dictionary.h"
 
 namespace atom {
 
@@ -50,7 +50,6 @@ using atom::api::URLRequest;
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-
   v8::Isolate* isolate = context->GetIsolate();
 
   URLRequest::SetConstructor(isolate, base::Bind(URLRequest::New));
@@ -58,7 +57,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(isolate, exports);
   dict.Set("net", Net::Create(isolate));
   dict.Set("Net", Net::GetConstructor(isolate)->GetFunction());
-
 }
 
 }  // namespace

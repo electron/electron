@@ -6,10 +6,11 @@
 #define ATOM_BROWSER_API_ATOM_API_URL_REQUEST_H_
 
 #include <array>
+#include <string>
 #include "atom/browser/api/trackable_object.h"
 #include "native_mate/handle.h"
-#include "net/url_request/url_request_context.h"
 #include "net/http/http_response_headers.h"
+#include "net/url_request/url_request_context.h"
 
 
 namespace atom {
@@ -22,18 +23,19 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 
-  static void BuildPrototype(v8::Isolate* isolate,
+  static void BuildPrototype(
+    v8::Isolate* isolate,
     v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  URLRequest(v8::Isolate* isolate, 
+  explicit URLRequest(v8::Isolate* isolate,
              v8::Local<v8::Object> wrapper);
   ~URLRequest() override;
 
 
-private:
+ private:
   bool Write(scoped_refptr<const net::IOBufferWithSize> buffer,
-                   bool is_last);
+             bool is_last);
   void Abort();
   bool SetExtraHeader(const std::string& name, const std::string& value);
   void RemoveExtraHeader(const std::string& name);
@@ -55,7 +57,7 @@ private:
 
 
   template <typename ... ArgTypes>
-  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> 
+  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)>
   BuildArgsArray(ArgTypes... args) const;
 
   template <typename ... ArgTypes>
@@ -70,7 +72,6 @@ private:
   scoped_refptr<AtomURLRequest> atom_request_;
   v8::Global<v8::Object> wrapper_;
   base::WeakPtrFactory<URLRequest> weak_ptr_factory_;
-  
 
   DISALLOW_COPY_AND_ASSIGN(URLRequest);
 };
@@ -107,8 +108,8 @@ void URLRequest::EmitResponseEvent(ArgTypes... args) {
 
 
 
-}  // namepsace api
+}  // namespace api
 
-}  // namepsace atom
+}  // namespace atom
 
 #endif  // ATOM_BROWSER_API_ATOM_API_URL_REQUEST_H_

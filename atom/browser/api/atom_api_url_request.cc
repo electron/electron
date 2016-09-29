@@ -2,31 +2,24 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_url_request.h"
+#include <string>
 #include "atom/browser/api/atom_api_session.h"
-
-#include "native_mate/dictionary.h"
+#include "atom/browser/api/atom_api_url_request.h"
 #include "atom/browser/net/atom_url_request.h"
-#include "atom/common/node_includes.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/node_includes.h"
+#include "native_mate/dictionary.h"
 
-namespace {
 
-const char* const kResponse = "response";
-const char* const kData = "data";
-const char* const kEnd = "end";
-
-}
 namespace mate {
 
 template<>
 struct Converter<scoped_refptr<const net::HttpResponseHeaders>> {
   static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      scoped_refptr<const net::HttpResponseHeaders> val) {
-
+    v8::Isolate* isolate,
+    scoped_refptr<const net::HttpResponseHeaders> val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     if (val) {
       size_t iter = 0;
@@ -34,7 +27,7 @@ struct Converter<scoped_refptr<const net::HttpResponseHeaders>> {
       std::string value;
       while (val->EnumerateHeaderLines(&iter, &name, &value)) {
         dict.Set(name, value);
-      }  
+      }
     }
     return dict.GetHandle();
   }
@@ -43,29 +36,27 @@ struct Converter<scoped_refptr<const net::HttpResponseHeaders>> {
 template<>
 struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
   static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      scoped_refptr<const net::IOBufferWithSize> buffer) {
+    v8::Isolate* isolate,
+    scoped_refptr<const net::IOBufferWithSize> buffer) {
     return node::Buffer::Copy(isolate,
-                              buffer->data(),
-                              buffer->size()).ToLocalChecked();
+      buffer->data(),
+      buffer->size()).ToLocalChecked();
   }
 
   static bool FromV8(
-      v8::Isolate* isolate,
-      v8::Local<v8::Value> val,
-      scoped_refptr<const net::IOBufferWithSize>* out) {
-
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    scoped_refptr<const net::IOBufferWithSize>* out) {
     auto size = node::Buffer::Length(val);
-    
+
     if (size == 0) {
-      // Support conversoin from empty buffer. A use case is 
-      // a GET request without body. 
+      // Support conversoin from empty buffer. A use case is
+      // a GET request without body.
       // Since zero-sized IOBuffer(s) are not supported, we set the
       // out pointer to null.
       *out = nullptr;
       return true;
     }
-    
     auto data = node::Buffer::Data(val);
     if (!data) {
       // This is an error as size is positif but data is null.
@@ -86,9 +77,9 @@ struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
   }
 };
 
-}
-namespace atom {
+}  // namespace mate
 
+namespace atom {
 namespace api {
 
 URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
@@ -101,7 +92,6 @@ URLRequest::~URLRequest() {
 
 // static
 mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
-
   v8::Local<v8::Object> options;
   args->GetNext(&options);
   mate::Dictionary dict(args->isolate(), options);
@@ -122,7 +112,7 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
     method,
     url,
     weak_ptr);
-  
+
   api_url_request->atom_request_ = atom_url_request;
 
   return api_url_request;
@@ -146,15 +136,12 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
     .SetProperty("rawResponseHeaders", &URLRequest::RawResponseHeaders)
     .SetProperty("httpVersionMajor", &URLRequest::ResponseHttpVersionMajor)
     .SetProperty("httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
-  
-    
 }
 
 bool URLRequest::Write(
     scoped_refptr<const net::IOBufferWithSize> buffer,
     bool is_last) {
   return atom_request_->Write(buffer, is_last);
-
 }
 
 
@@ -191,7 +178,7 @@ void URLRequest::OnAuthenticationRequired(
     auth_info.get(),
     base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
 }
- 
+
 
 void URLRequest::OnResponseStarted() {
   Emit("response");
@@ -202,7 +189,6 @@ void URLRequest::OnResponseData(
   if (!buffer || !buffer->data() || !buffer->size()) {
     return;
   }
-
   EmitResponseEvent("data", buffer);
 }
 
@@ -234,7 +220,7 @@ std::string URLRequest::StatusMessage() const {
 
 scoped_refptr<const net::HttpResponseHeaders>
 URLRequest::RawResponseHeaders() const {
-	return atom_request_->GetResponseHeaders();
+  return atom_request_->GetResponseHeaders();
 }
 
 uint32_t URLRequest::ResponseHttpVersionMajor() const {
@@ -261,6 +247,6 @@ void URLRequest::unpin() {
   wrapper_.Reset();
 }
 
-}  // namespace mate
+}  // namespace api
 
-}  // namepsace mate
+}  // namespace atom

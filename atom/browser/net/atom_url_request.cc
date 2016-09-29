@@ -3,19 +3,21 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/atom_url_request.h"
+#include <string>
 #include "atom/browser/api/atom_api_url_request.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/net/atom_url_request.h"
 #include "base/callback.h"
 #include "content/public/browser/browser_thread.h"
-#include "net/base/io_buffer.h"
 #include "net/base/elements_upload_data_stream.h"
+#include "net/base/io_buffer.h"
 #include "net/base/upload_bytes_element_reader.h"
+
 
 
 namespace {
 const int kBufferSize = 4096;
-} // namespace
+}  // namespace
 
 namespace atom {
 
@@ -23,7 +25,7 @@ namespace internal {
 
 
 class UploadOwnedIOBufferElementReader : public net::UploadBytesElementReader {
-public:
+ public:
   explicit UploadOwnedIOBufferElementReader(
     scoped_refptr<const net::IOBufferWithSize> buffer)
     : net::UploadBytesElementReader(buffer->data(), buffer->size())
@@ -39,18 +41,18 @@ public:
     return new UploadOwnedIOBufferElementReader(std::move(buffer));
   }
 
-private:
+ private:
   scoped_refptr<const net::IOBuffer> buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(UploadOwnedIOBufferElementReader);
 };
 
-}
+}  // namespace internal
 
 AtomURLRequest::AtomURLRequest(base::WeakPtr<api::URLRequest> delegate)
   : delegate_(delegate)
   , response_read_buffer_(new net::IOBuffer(kBufferSize))
-  , is_chunked_upload_(is_chunked_upload_) {
+  , is_chunked_upload_(false) {
 }
 
 AtomURLRequest::~AtomURLRequest() {
@@ -73,7 +75,7 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
 
   DCHECK(context);
 
-  scoped_refptr<AtomURLRequest> atom_url_request = 
+  scoped_refptr<AtomURLRequest> atom_url_request =
     new AtomURLRequest(delegate);
 
   atom_url_request->request_ = context->CreateRequest(GURL(url),
@@ -82,14 +84,13 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
 
   atom_url_request->request_->set_method(method);
   return atom_url_request;
-
 }
 
 
 bool AtomURLRequest::Write(
     scoped_refptr<const net::IOBufferWithSize> buffer,
     bool is_last) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI); 
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   return content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&AtomURLRequest::DoWriteBuffer, this, buffer, is_last));
@@ -154,7 +155,6 @@ void AtomURLRequest::DoWriteBuffer(
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
   if (is_chunked_upload_) {
-
     // Chunked encoding case.
 
     bool first_call = false;
@@ -181,9 +181,7 @@ void AtomURLRequest::DoWriteBuffer(
 
     if (first_call)
       request_->Start();
-  }
-  else {
-
+  } else {
     if (buffer) {
       // Handling potential empty buffers.
       using internal::UploadOwnedIOBufferElementReader;
@@ -223,10 +221,10 @@ void AtomURLRequest::DoCancelAuth() const {
 void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
                     net::AuthChallengeInfo* auth_info) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
-   
+
   content::BrowserThread::PostTask(
     content::BrowserThread::UI, FROM_HERE,
-    base::Bind(&AtomURLRequest::InformDelegateAuthenticationRequired, 
+    base::Bind(&AtomURLRequest::InformDelegateAuthenticationRequired,
                this,
                scoped_refptr<net::AuthChallengeInfo>(auth_info)));
 }
@@ -247,12 +245,13 @@ void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
       base::Bind(&AtomURLRequest::InformDelegateResponseStarted, this));
 
     ReadResponse();
-  }
-  else {
+  } else {
     auto error = net::ErrorToString(status.ToNetError());
     content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&AtomURLRequest::InformDelegateErrorOccured, this, std::move(error)));
+      base::Bind(&AtomURLRequest::InformDelegateErrorOccured,
+                 this,
+                 std::move(error)));
   }
 }
 
@@ -264,10 +263,10 @@ void AtomURLRequest::ReadResponse() {
   // completed immediately, without trying to read any data back (all we care
   // about is the response code and headers, which we already have).
   int bytes_read = 0;
-  if (request_->status().is_success() 
+  if (request_->status().is_success()
     /* TODO && (request_type_ != URLFetcher::HEAD)*/)
     if (!request_->Read(response_read_buffer_.get(), kBufferSize, &bytes_read))
-      bytes_read = -1; 
+      bytes_read = -1;
   OnReadCompleted(request_.get(), bytes_read);
 }
 
@@ -284,7 +283,9 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request,
       auto error = net::ErrorToString(status.ToNetError());
       content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&AtomURLRequest::InformDelegateErrorOccured, this, std::move(error)));
+        base::Bind(&AtomURLRequest::InformDelegateErrorOccured,
+                   this,
+                   std::move(error)));
       break;
     }
 
@@ -295,15 +296,13 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request,
   } while (request_->Read(response_read_buffer_.get(),
                           kBufferSize,
                           &bytes_read));
-    
 
-  if (!status.is_io_pending() 
+  if (!status.is_io_pending()
     /* TODO || request_type_ == URLFetcher::HEAD*/ )
 
     content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&AtomURLRequest::InformDelegateResponseCompleted, this));
-
 }
 
 bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
