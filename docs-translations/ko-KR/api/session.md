@@ -25,9 +25,9 @@ let ses = win.webContents.session
 * `options` Object
   * `cache` Boolean - 캐시를 활성화할지 여부.
 
-`partition` 문자열로부터 `Session` 인스턴스를 만들어 반환합니다. 이미 `partition`에
-해당하는 `Session`이 존재할 경우, 해당 세션이 반환됩니다. 그렇지않은 경우 `Session`
-인스턴스가 `options`에 맞춰 새로 생성됩니다.
+Returns `Session` - `partition` 문자열로부터 만들어진 `Session` 인스턴스. 이미
+`partition`에 해당하는 `Session`이 존재할 경우, 해당 세션이 반환됩니다.
+그렇지않은 경우 `Session` 인스턴스가 `options`에 맞춰 새로 생성됩니다.
 
 `partition`이 `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
 페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로 시작하지
@@ -44,7 +44,7 @@ let ses = win.webContents.session
 
 ### `session.defaultSession`
 
-애플리케이션의 기본 세션 객체를 반환합니다.
+`Session` 객체, 애플리케이션의 기본 세션 객체.
 
 ## Class: Session
 
@@ -321,7 +321,7 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 #### `ses.getUserAgent()`
 
-현재 세션의 유저 에이전트를 표현하는 `String`을 반환합니다.
+Returns `String` - 현재 세션의 유저 에이전트.
 
 #### `ses.getBlobData(identifier, callback)`
 
@@ -329,7 +329,7 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 * `callback` Function
   * `result` Buffer - Blob data.
 
-`identifier` 에 연결된 blob 데이터를 반환합니다.
+Returns `Blob` - `identifier` 에 연결된 blob 데이터.
 
 ### Instance Properties
 
@@ -337,15 +337,15 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 #### `ses.cookies`
 
-현재 세션의 `Cookies` 클래스 인스턴스를 반환합니다.
+현재 세션의 `Cookies` 객체.
 
 #### `ses.webRequest`
 
-현재 세션의 `WebRequest` 클래스 인스턴스를 반환합니다.
+현재 세션의 `WebRequest` 객체.
 
 #### `ses.protocol`
 
-현재 세션의 [protocol](protocol.md) 모듈 인스턴스를 반환합니다.
+현재 세션의 Protocol 객체 ([protocol](protocol.md) 모듈의 인스턴스).
 
 ```javascript
 const {app, session} = require('electron')

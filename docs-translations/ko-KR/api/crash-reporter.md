@@ -1,4 +1,4 @@
-﻿# crashReporter
+# crashReporter
 
 > 원격 서버에 크래시 정보를 보고합니다.
 
@@ -46,10 +46,18 @@ crashReporter.start({
 
 ### `crashReporter.getLastCrashReport()`
 
+Returns `Object`:
+* `date` String
+* `ID` Integer
+
 마지막 크래시 리포트의 날짜와 ID를 반환합니다.
 이전 크래시 리포트가 없거나 Crash Reporter가 시작되지 않았을 경우 `null`이 반환됩니다.
 
 ### `crashReporter.getUploadedReports()`
+
+Returns `Object[]`:
+* `date` String
+* `ID` Integer
 
 모든 업로드된 크래시 리포트를 반환합니다. 각 보고는 날짜와 업로드 ID를 포함하고 있습니다.
 

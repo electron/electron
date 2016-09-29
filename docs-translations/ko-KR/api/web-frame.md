@@ -23,7 +23,7 @@ webFrame.setZoomFactor(2);
 
 ### `webFrame.getZoomFactor()`
 
-현재 줌 값을 반환합니다.
+Returns `Number` - 현재 줌 값.
 
 ### `webFrame.setZoomLevel(level)`
 
@@ -35,7 +35,7 @@ webFrame.setZoomFactor(2);
 
 ### `webFrame.getZoomLevel()`
 
-현재 줌 레벨을 반환합니다.
+Returns `Number` - 현재 줌 레벨.
 
 ### `webFrame.setZoomLevelLimits(minimumLevel, maximumLevel)`
 

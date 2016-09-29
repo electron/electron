@@ -106,7 +106,7 @@ Returns:
 
 ### `autoUpdater.getFeedURL()`
 
-현재 업데이트 피드 URL을 반환합니다.
+Returns `String` - 현재 업데이트 피드 URL.
 
 ### `autoUpdater.checkForUpdates()`
 

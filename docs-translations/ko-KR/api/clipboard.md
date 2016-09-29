@@ -28,7 +28,7 @@ console.log(clipboard.readText('selection'));
 
 * `type` String (optional)
 
-클립보드 콘텐츠를 `plain text`로 반환합니다.
+Returns `String` - 일반 텍스트 형식의 클립보드의 내용.
 
 ### `clipboard.writeText(text[, type])`
 
@@ -41,7 +41,7 @@ console.log(clipboard.readText('selection'));
 
 * `type` String (optional)
 
-클립보드 콘텐츠를 `markup`으로 반환합니다.
+returns `String` - 마크업 형식의 클립보드의 내용.
 
 ### `clipboard.writeHTML(markup[, type])`
 
@@ -54,7 +54,7 @@ console.log(clipboard.readText('selection'));
 
 * `type` String (optional)
 
-클립보드로부터 [NativeImage](native-image.md)로 이미지를 읽어들입니다.
+Returns `NativeImage` - [NativeImage](native-image.md) 형식의 클립보드의 내용.
 
 ### `clipboard.writeImage(image[, type])`
 
@@ -67,7 +67,7 @@ console.log(clipboard.readText('selection'));
 
 * `type` String (optional)
 
-클립보드로부터 RTF 형식으로 콘텐츠를 읽어옵니다.
+Returns `String` - RTF 형식의 클립보드 내용.
 
 ### `clipboard.writeRTF(text[, type])`
 
@@ -77,6 +77,10 @@ console.log(clipboard.readText('selection'));
 클립보드에 `text`를 RTF 형식으로 씁니다.
 
 ### `clipboard.readBookmark()` _macOS_ _Windows_
+
+Returns `Object`:
+* `title` String
+* `url` String
 
 클립보드로부터 북마크 형식으로 표현된 `title`와 `url` 키를 담은 객체를 반환합니다.
 `title`과 `url` 값들은 북마크를 사용할 수 없을 때 빈 문자열을 포함합니다.
@@ -105,16 +109,16 @@ clipboard.write({
 
 클립보드에 저장된 모든 콘텐츠를 삭제합니다.
 
-### clipboard.availableFormats([type])
+### `clipboard.availableFormats([type])`
 
-클립보드의 `type`에 해당하는 지원하는 `format`을 문자열로 반환합니다.
+Return `String[]` - 클립보드 `type` 에 지원되는 형식의 배열.
 
 ### `clipboard.has(data[, type])`
 
 * `data` String
 * `type` String (optional)
 
-클립보드가 지정한 `data`의 형식을 지원하는지 확인합니다.
+Returns `Boolean` - 클립보드가 지정한 `data` 의 형식을 지원하는지 여부.
 
 ```javascript
 console.log(clipboard.has('<p>selection</p>'));
@@ -125,7 +129,7 @@ console.log(clipboard.has('<p>selection</p>'));
 * `data` String
 * `type` String (optional)
 
-클립보드로부터 `data`를 읽어들입니다.
+Returns `String` - 클립보드로부터 `data`를 읽습니다.
 
 ### `clipboard.write(data[, type])` _Experimental_
 

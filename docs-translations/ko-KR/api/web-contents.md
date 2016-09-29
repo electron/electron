@@ -14,6 +14,7 @@ let win = new BrowserWindow({width: 800, height: 1500});
 win.loadURL('http://github.com');
 
 let contents = win.webContents;
+console.log(contents);
 ```
 
 ## Methods
@@ -22,17 +23,25 @@ let contents = win.webContents;
 
 ```javascript
 const {webContents} = require('electron');
+console.log(webContents);
 ```
 
 #### `webContents.getAllWebContents()`
 
-모든 `WebContents` 인스턴스의 배열을 반환합니다. 이 배열은 윈도우, 웹뷰, 열린 개발자
-도구 그리고 개발자 도구 확장 기능의 백그라운드 페이지의 모든 웹 콘텐츠를 포함합니다.
+Returns `WebContents[]` - 모든 `WebContents` 인스턴스의 배열. 이 배열은 윈도우,
+웹뷰, 열린 개발자 도구 그리고 백그라운드 페이지의 개발자 도구 확장 기능의 모든
+웹 콘텐츠를 포함합니다.
 
 #### `webContents.getFocusedWebContents()`
 
-이 애플리케이션에서 포커스되어있는 웹 콘텐츠를 반환합니다. 포커스된 웹 콘텐츠가 없을
-경우 `null`을 반환합니다.
+Returns `WebContents` - 이 애플리케이션에서 포커스되어있는 웹 콘텐츠. 없을 경우
+`null` 을 반환합니다.
+
+### `webContents.fromId(id)`
+
+* `id` Integer
+
+Returns `WebContents` - ID 에 해당하는 WebContens 인스턴스.
 
 ## Class: WebContents
 
@@ -431,6 +440,7 @@ Returns:
 호출되어야 하며, 빈 문자열을 `callback`에 보내면 요청이 취소됩니다.
 
 ```javascript
+const {app, webContents} = require('electron');
 app.commandLine.appendSwitch('enable-web-bluetooth')
 
 app.on('ready', () => {
@@ -487,6 +497,7 @@ win.loadURL('http://github.com')
 하는 경우 `pragma` 헤더를 사용할 수 있습니다.
 
 ```javascript
+const {webContents} = require('electron');
 const options = {extraHeaders: 'pragma: no-cache\n'};
 webContents.loadURL(url, options)
 ```
@@ -503,6 +514,7 @@ webContents.loadURL(url, options)
 현재 웹 페이지의 URL을 반환합니다.
 
 ```javascript
+const {BrowserWindow} = require('electron');
 let win = new BrowserWindow({width: 800, height: 600});
 win.loadURL('http://github.com');
 
@@ -751,6 +763,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 제공된 `action`에 대한 `webContents`의 모든 `findInPage` 요청을 중지합니다.
 
 ```javascript
+const {webContents} = require('electron');
 webContents.on('found-in-page', (event, result) => {
   if (result.finalUpdate)
     webContents.stopFindInPage('clearSelection');
@@ -861,6 +874,8 @@ win.webContents.on('did-finish-load', () => {
 이후에 사용해야 합니다.
 
 ```javascript
+const {BrowserWindow} = require('electron');
+let win = new BrowserWindow();
 win.webContents.on('devtools-opened', () => {
   win.webContents.addWorkSpace(__dirname);
 });
@@ -925,6 +940,7 @@ win.webContents.on('devtools-opened', () => {
 
 ```javascript
 // In the main process.
+const {app, BrowserWindow} = require('electron');
 let win = null;
 app.on('ready', () => {
   win = new BrowserWindow({width: 800, height: 600});
@@ -1070,6 +1086,9 @@ Input `event`를 웹 페이지로 전송합니다.
 만약 페이지를 저장하는 프로세스가 성공적으로 끝났을 경우 true를 반환합니다.
 
 ```javascript
+const {BrowserWindow} = require('electron');
+let win = new BrowserWindow();
+
 win.loadURL('https://github.com');
 
 win.webContents.on('did-finish-load', () => {
@@ -1146,6 +1165,9 @@ win.webContents.on('did-finish-load', () => {
 > Chrome의 원격 디버깅 프로토콜에 대한 대체 접근자입니다.
 
 ```javascript
+const {BrowserWindow} = require('electron');
+let win = new BrowserWindow();
+
 try {
   win.webContents.debugger.attach('1.1');
 } catch(err) {

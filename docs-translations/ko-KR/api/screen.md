@@ -107,15 +107,19 @@ Returns:
 
 ### `screen.getCursorScreenPoint()`
 
-현재 마우스 포인터의 절대 위치를 반환합니다.
+Returns `Object`:
+* `x` Integer
+* `y` Integer
+
+현재 마우스 포인터의 절대 위치.
 
 ### `screen.getPrimaryDisplay()`
 
-기본 디스플레이를 반환합니다.
+Returns `Display` - 기본 디스플레이.
 
 ### `screen.getAllDisplays()`
 
-사용 가능한 모든 디스플레이를 배열로 반환합니다.
+Returns `Display[]` - 사용 가능한 모든 디스플레이의 배열.
 
 ### `screen.getDisplayNearestPoint(point)`
 
@@ -123,7 +127,7 @@ Returns:
   * `x` Integer
   * `y` Integer
 
-지정한 좌표에 가까운 디스플레이를 반환합니다.
+Returns `Display` - 지정한 좌표에 가까운 디스플레이.
 
 ### `screen.getDisplayMatching(rect)`
 
@@ -133,4 +137,4 @@ Returns:
   * `width` Integer
   * `height` Integer
 
-지정한 범위에 가장 가깝게 교차한 디스플레이를 반환합니다.
+Returns `Display` - 지정한 범위에 가장 가깝게 교차한 디스플레이.

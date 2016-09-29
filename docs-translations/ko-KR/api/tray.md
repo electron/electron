@@ -232,12 +232,12 @@ win.on('hide', () => {
 
 ### `tray.getBounds()` _macOS_ _Windows_
 
-이 트레이 아이콘의 `bounds`를 `Object` 형식으로 반환합니다.
+Returns `Object`:
+* `x` Integer
+* `y` Integer
+* `width` Integer
+* `height` Integer
 
-* `bounds` Object
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+이 트레이 아이콘의 `Object` 형식의 `bounds`.
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter

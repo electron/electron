@@ -105,11 +105,15 @@ let appIcon = new Tray('/Users/somebody/images/icon.png')
 
 ### `nativeImage.createEmpty()`
 
+Returns `NativeImage`
+
 빈 `NativeImage` 인스턴스를 만듭니다.
 
 ### `nativeImage.createFromPath(path)`
 
 * `path` String
+
+Returns `NativeImage`
 
 `path`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
 `path` 가 존재하지 않거나, 읽을 수 없거나, 유효한 이미지가 아니면 빈 이미지를
@@ -124,6 +128,8 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 
 * `buffer` [Buffer][buffer]
 * `scaleFactor` Double (optional)
+
+Returns `NativeImage`
 
 `buffer`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
 `scaleFactor`의 기본값은 1.0 입니다.
@@ -144,34 +150,35 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 
 #### `image.toPNG()`
 
-`PNG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
+Return `Buffer` - `PNG` 로 인코딩된 데이터가 있는 [Buffer][buffer].
 
 #### `image.toJPEG(quality)`
 
 * `quality` Integer (**required**) 0 - 100 사이의 값
 
-`JPEG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
+Return `Buffer` - `JPEG` 로 인코딩된 데이터가 있는 [Buffer][buffer].
 
 ##### `image.toBitmap()`
 
-이미지의 raw 비트맵 픽셀 데이터를 가지는 [Buffer][buffer]의 복사본을 반환합니다.
+Return `Buffer` - 이미지의 raw 비트맵 픽셀 데이터가 있는 [Buffer][buffer]의
+복사본.
 
 #### `image.toDataURL()`
 
-이미지를 data URL로 반환합니다.
+Returns `String` - 이미지의 data URL.
 
 #### `image.getBitmap()`
 
-이미지의 raw 비트맵 픽셀 데이터를 가지는 [Buffer][buffer]를 반환합니다.
+Returns `Buffer` - 이미지의 raw 비트맵 픽셀 데이터가 있는 [Buffer][buffer].
 
 `getBitmap()`과 `toBitmap()`의 차이는 `getBitmap()`은 비트맵 데이터를 복사하지
-않습니다. 그래서 버퍼를 현재 이벤트 루프 틱에 바로 반환해야 할 경우 유용하게 사용할 수
-있습니다. 그렇지 않은 경우 데이터가 변경되거나 소멸될 수 있습니다.
+않습니다. 그래서 버퍼를 현재 이벤트 루프 틱에 바로 반환해야 할 경우 유용하게
+사용할 수 있습니다. 그렇지 않은 경우 데이터가 변경되거나 소멸될 수 있습니다.
 
 #### `image.getNativeHandle()` _macOS_
 
-이미지의 네이티브 핸들 밑에 있는 C 포인터를 담은 [Buffer][buffer]을 반환합니다.
-macOS에선, `NSImage` 인스턴스가 반환됩니다.
+Returns `Buffer` - 이미지의 네이티브 핸들의 C 포인터를 담은 [Buffer][buffer].
+macOS에선, `NSImage` 인스턴스의 포인터가 반환됩니다.
 
 참고로 반환된 포인터는 복사본이 아닌 네이티브 이미지의 밑에 있는 약한 포인터이며,
 따라서 반드시 관련된 `nativeImage` 인스턴스가 확실하게 유지되고 있는지를 인지해야
@@ -179,11 +186,11 @@ macOS에선, `NSImage` 인스턴스가 반환됩니다.
 
 #### `image.isEmpty()`
 
-이미지가 비었는지 확인합니다.
+Returns `Boolean` - 이미지가 비었는지 여부.
 
 #### `image.getSize()`
 
-이미지의 사이즈를 반환합니다.
+Returns `Integer[]` - 이미지의 크기.
 
 #### `image.setTemplateImage(option)`
 
@@ -193,6 +200,6 @@ macOS에선, `NSImage` 인스턴스가 반환됩니다.
 
 #### `image.isTemplateImage()`
 
-이미지가 템플릿 이미지인지 확인합니다.
+Returns `Boolean` - 이미지가 템플릿 이미지인지 여부.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer

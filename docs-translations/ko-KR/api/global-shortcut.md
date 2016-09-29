@@ -1,4 +1,4 @@
-﻿# globalSortcut
+# globalSortcut
 
 > 애플리케이션에 키보드 포커스가 없을 때도 키보드 이벤트를 받을 수 있도록 합니다.
 
@@ -56,7 +56,7 @@ accelerator가 이미 다른 애플리케이션에서 사용 중일 경우, 이 
 
 * `accelerator` [Accelerator](accelerator.md)
 
-지정된 `accelerator` 단축키가 등록되었는지 여부를 확인합니다.
+Returns `Boolean` - `accelerator` 가 등록되었는지 여부.
 
 Accelerator가 이미 다른 애플리케이션에서 사용 중일 경우, 여전히 `false`를 반환합니다.
 이러한 동작은 애플리케이션이 전역 키보드 단축키를 가지고 충돌이 일어나지 않도록 하기

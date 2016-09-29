@@ -375,6 +375,16 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 
 Service worker에 대한 개발자 도구를 엽니다.
 
+### `<webview>.setAudioMuted(muted)`
+
+* `muted` Boolean
+
+게스트 페이지 음소거 설정.
+
+### `<webview>.isAudioMuted()`
+
+Returns `Boolean` - 게스트 페이지 음소거 여부.
+
 ### `<webview>.undo()`
 
 페이지에서 실행 취소 커맨드를 실행합니다.

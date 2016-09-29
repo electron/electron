@@ -373,14 +373,14 @@ Linux에선, 첫 번째로 보여지는 윈도우가 포커스됩니다. macOS�
 
 ### `app.getAppPath()`
 
-현재 애플리케이션의 디렉터리를 반환합니다.
+Returns `String` - 현재 애플리케이션 디렉토리.
 
 ### `app.getPath(name)`
 
 * `name` String
 
-`name`에 관련한 특정 디렉터리 또는 파일의 경로를 반환합니다.
-경로를 가져오는 데 실패할 경우 `Error`를 반환합니다.
+Returns `String` -`name` 에 관련한 특정 디렉터리 또는 파일의 경로. 실패시
+`Error` 발생.
 
 **역자주:** 이 메서드는 운영체제에서 지정한 특수 디렉터리를 가져오는데 사용할 수 있습니다.
 
@@ -442,8 +442,9 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 ### `app.getLocale()`
 
-현재 애플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을
-반환합니다. 반환될 수 있는 값은 [여기](locales.md)에서 찾아볼 수 있습니다.
+Returns `String` - 현재 애플리케이션의
+[로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC). 반환될 수
+있는 값은 [여기](locales.md)에서 찾아볼 수 있습니다.
 
 **참고:** 패키징된 앱을 배포할 때, `locales` 폴더도 같이 배포해야 합니다.
 
@@ -494,6 +495,8 @@ Windows에선 실행시에 선택적 매개변수를 통해 경로, 실행 파�
 * `path` String (optional) _Windows_ - 기본값은 `process.execPath`
 * `args` Array (optional) _Windows_ - 기본값은 빈 배열
 
+Returns `Boolean`
+
 이 메서드는 현재 실행파일이 지정한 프로토콜(URI scheme)에 대해 기본 핸들러인지를
 확인합니다. 만약 그렇다면, 이 메서드는 앱을 기본 핸들러에서 제거합니다.
 
@@ -507,8 +510,8 @@ Windows에선 실행시에 선택적 매개변수를 통해 경로, 실행 파�
 
 Returns `Boolean`
 
-이 메서드는 현재 실행 파일이 지정한 프로토콜에 대해 기본 동작인지 확인합니다. (URI
-스킴) 만약 그렇다면 `true`를 반환하고 아닌 경우 `false`를 반환합니다.
+이 메서드는 현재 실행 파일이 지정한 프로토콜에 대해 기본 동작인지 확인합니다.
+(URI 스킴) 만약 그렇다면 `true`를 반환하고 아닌 경우 `false`를 반환합니다.
 
 **참고:** macOS에선, 응용 프로그램이 프로토콜에 대한 기본 프로토콜 동작으로
 등록되었는지를 확인하기 위해 이 메서드를 사용할 수 있습니다. 또한 macOS에서
@@ -533,12 +536,12 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 * `arguments` String - `program`이 실행될 때 사용될 명령줄 인수.
 * `title` String - JumpList에 표시할 문자열.
 * `description` String - 이 작업에 대한 설명.
-* `iconPath` String - JumpList에 표시될 아이콘의 절대 경로.
-  아이콘을 포함하고 있는 임의의 리소스 파일을 사용할 수 있습니다.
-  보통 애플리케이션의 아이콘을 그대로 사용하기 위해 `process.execPath`를 지정합니다.
+* `iconPath` String - JumpList에 표시될 아이콘의 절대 경로. 아이콘을 포함하고
+  있는 임의의 리소스 파일을 사용할 수 있습니다. 보통 애플리케이션의 아이콘을
+  그대로 사용하기 위해 `process.execPath`를 지정합니다.
 * `iconIndex` Integer - 아이콘 파일의 인덱스. 만약 아이콘 파일이 두 개 이상의
-  아이콘을 가지고 있을 경우, 사용할 아이콘의 인덱스를 이 옵션으로 지정해 주어야 합니다.
-  단, 아이콘을 하나만 포함하고 있는 경우 0을 지정하면 됩니다.
+  아이콘을 가지고 있을 경우, 사용할 아이콘의 인덱스를 이 옵션으로 지정해 주어야
+  합니다. 단, 아이콘을 하나만 포함하고 있는 경우 0을 지정하면 됩니다.
 
 호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
 
@@ -686,10 +689,10 @@ app.setJumpList([
 신호를 보내고 종료됩니다.
 
 `callback`은 주 인스턴스가 생성된 이후 또 다른 인스턴스가 생성됐을 때
-`callback(argv, workingDirectory)` 형식으로 호출됩니다. `argv`는 두 번째 인스턴스의
-명령줄 인수이며 `workingDirectory`는 현재 작업중인 디렉터리입니다. 보통 대부분의
-애플리케이션은 이러한 콜백이 호출될 때 주 윈도우를 포커스하고 최소화되어있으면 창
-복구를 실행합니다.
+`callback(argv, workingDirectory)` 형식으로 호출됩니다. `argv`는 두 번째
+인스턴스의 명령줄 인수이며 `workingDirectory`는 현재 작업중인 디렉터리입니다.
+보통 대부분의 애플리케이션은 이러한 콜백이 호출될 때 주 윈도우를 포커스하고
+최소화되어있으면 창 복구를 실행합니다.
 
 `callback`은 `app`의 `ready` 이벤트가 발생한 후 실행됨을 보장합니다.
 
@@ -704,8 +707,8 @@ macOS에선 사용자가 Finder에서 애플리케이션의 두 번째 인스턴
 인스턴스 메커니즘이 무시되며 그대로 중복 실행됩니다. 따라서 macOS에서도 이
 메서드를 통해 확실히 중복 실행을 방지하는 것이 좋습니다.
 
-다음 예시는 두 번째 인스턴스가 생성되었을 때 중복된 인스턴스를 종료하고 주 애플리케이션
-인스턴스의 윈도우를 활성화 시키는 예시입니다:
+다음 예시는 두 번째 인스턴스가 생성되었을 때 중복된 인스턴스를 종료하고 주
+애플리케이션 인스턴스의 윈도우를 활성화 시키는 예시입니다:
 
 ```javascript
 const {app} = require('electron');
@@ -741,12 +744,12 @@ app.on('ready', () => {
 * `webpageURL` String - 적당한 앱이 기기에 설치되지 않았을 때 브라우저에서 로드할
   웹 페이지. 스킴은 반드시 `http` 또는 `https`가 되어야 합니다.
 
-`NSUserActivity`를 만들고 현재 activity에 설정합니다. 이 activity는 이후 다른 기기와
-[Handoff][handoff]할 때 자격으로 사용됩니다.
+`NSUserActivity`를 만들고 현재 activity에 설정합니다. 이 activity는 이후 다른
+기기와 [Handoff][handoff]할 때 자격으로 사용됩니다.
 
 ### `app.getCurrentActivityType()` _macOS_
 
-현재 작동중인 activity의 타입을 반환합니다.
+Returns `String` - 현재 작동중인 activity의 타입.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
@@ -787,11 +790,11 @@ macOS에선 독 아이콘에 표시됩니다. Linux에선 Unity 런처에서만 
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
-현재 카운터 뱃지에 표시중인 값을 반환합니다.
+Returns `Integer` - 현재 카운터 뱃지에 표시중인 값.
 
 ### `app.isUnityRunning()` _Linux_
 
-현재 데스크톱 환경이 Unity인지 여부를 반환합니다.
+Returns `Boolean` - 현재 데스크톱 환경이 Unity 인지 여부.
 
 ### `app.getLoginItemSettings()` _macOS_ _Windows_
 
@@ -799,14 +802,14 @@ Returns `Object`:
 * `openAtLogin` Boolean - 앱이 로그인시 열리도록 설정되어있는 경우 `true`를 반환.
 * `openAsHidden` Boolean - 앱이 로구인시 숨겨진 채로 열리도록 설정되어있는 경우
   `true`를 반환. 이 설정은 macOS에서만 지원됩니다.
-* `wasOpenedAtLogin` Boolean - 자동으로 로그인할 때 애플리케이션이 열려있었는지 여부.
-  이 설정은 macOS에서만 지원됩니다.
+* `wasOpenedAtLogin` Boolean - 자동으로 로그인할 때 애플리케이션이 열려있었는지
+  여부. 이 설정은 macOS에서만 지원됩니다.
 * `wasOpenedAsHidden` Boolean - 앱이 숨겨진 로그인 항목처럼 열려있었는지 여부.
   이는 앱이 시작시 어떤 윈도우도 열지 않을 것을 표시합니다. 이 설정은 macOS에서만
   지원됩니다.
 * `restoreState` Boolean - 앱이 이전 세션에서 상태를 복원하여 로그인 항목처럼
-  열려있었는지 여부. 이는 앱이 마지막으로 종료되었던 때에 열려있었던 윈도우를 복원하는
-  것을 표시합니다. 이 설정은 macOS에서만 지원됩니다.
+  열려있었는지 여부. 이는 앱이 마지막으로 종료되었던 때에 열려있었던 윈도우를
+  복원하는 것을 표시합니다. 이 설정은 macOS에서만 지원됩니다.
 
 **참고:** 이 API 는 [MAS 빌드](docs/tutorial/mac-app-store-submission-guide.md)
 에 영향을 주지 않습니다.
@@ -829,9 +832,9 @@ Returns `Object`:
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
-`Boolean` 값을 반환하며 Chrome의 접근성 지원이 활성화되어있으면 `true`를 그렇지
-않다면 `false`를 반환합니다. 이 API는 사용할 수 있는 스크린 리더와 같은 접근성 기술이
-감지되었을 때 `true`를 반환합니다. 자세한 내용은
+Returns `Boolean` - Chrome의 접근성 지원이 활성화되어있으면 `true`를 그렇지
+않다면 `false`를 반환합니다. 이 API는 사용할 수 있는 스크린 리더와 같은 접근성
+기술이 감지되었을 때 `true`를 반환합니다. 자세한 내용은
 https://www.chromium.org/developers/design-documents/accessibility 를 참고하세요.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
@@ -857,8 +860,8 @@ Chrominum의 명령줄에 인수를 추가합니다. 인수는 올바르게 인�
 * `type` String (optional) - `critical` 또는 `informational`을 지정할 수 있습니다.
   기본값은 `informational` 입니다.
 
-`critical`이 전달되면 dock 아이콘이 애플리케이션이 활성화되거나 요청이 중지되기 전까지
-통통 튀는 바운스 효과를 적용합니다.
+`critical`이 전달되면 dock 아이콘이 애플리케이션이 활성화되거나 요청이 중지되기
+전까지 통통 튀는 바운스 효과를 적용합니다.
 
 `informational`이 전달되면 dock 아이콘이 1초만 통통 튑니다. 하지만 애플리케이션이
 활성화되거나 요청이 중지되기 전까지 요청은 계속 활성화로 유지 됩니다.
@@ -885,7 +888,7 @@ dock의 badge에 표시할 문자열을 설정합니다.
 
 ### `app.dock.getBadge()` _macOS_
 
-dock의 badge에 설정된 문자열을 반환합니다.
+Returns `String` - dock의 badge에 설정된 문자열.
 
 ### `app.dock.hide()` _macOS_
 

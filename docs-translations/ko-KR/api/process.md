@@ -83,9 +83,7 @@ Mac App Store 빌드에선 이 속성이 `true`가 됩니다. 다른 빌드에�
 
 ### `process.getProcessMemoryInfo()`
 
-현재 프로세스의 메모리 사용량에 대한 정보를 객체 형태로 반환합니다. 참고로 모든 사용량은
-킬로바이트로 표기됩니다.
-
+Returns `Object`:
 * `workingSetSize` Integer - 현재 실제 물리적 RAM에 예약된 메모리의 양.
 * `peakWorkingSetSize` Integer - 물리적 RAM에 예약된 메모리의 최대 사용량.
 * `privateBytes` Integer - 다른 프로세스에 공유되지 않은 JS 힙 또는 HTML 콘텐츠와
@@ -93,11 +91,12 @@ Mac App Store 빌드에선 이 속성이 `true`가 됩니다. 다른 빌드에�
 * `sharedBytes` Integer - 다른 프로세스와 공유된, 일반적으로 Electron 코드 자체에서
   사용하는 메모리의 양.
 
-### `process.getSystemMemoryInfo()`
-
-전체 시스템의 메모리 사용량에 대한 정보를 객체 형태로 반환합니다. 참고로 모든 사용량은
+현재 프로세스의 메모리 사용량에 대한 정보를 객체 형태로 반환합니다. 참고로 모든 사용량은
 킬로바이트로 표기됩니다.
 
+### `process.getSystemMemoryInfo()`
+
+Returns `Object`:
 * `total` Integer - 시스템에서 사용할 수 있는 킬로바이트 단위의 전체 물리적 메모리의
   양.
 * `free` Integer - 애플리케이션이나 디스크 캐시로 사용되지 않은 메모리의 양.
@@ -105,3 +104,6 @@ Mac App Store 빌드에선 이 속성이 `true`가 됩니다. 다른 빌드에�
   전체 양.  _Windows_ _Linux_
 * `swapFree` Integer - 시스템에서 사용할 수 있는 킬로 바이트 단위의 사용되지 않은
   스왑 메모리의 양. _Windows_ _Linux_
+
+전체 시스템의 메모리 사용량에 대한 정보를 객체 형태로 반환합니다. 참고로 모든 사용량은
+킬로바이트로 표기됩니다.

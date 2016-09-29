@@ -136,21 +136,22 @@ const app = remote.app;
 
 * `module` String
 
-메인 프로세스의 `require(module)` API를 실행한 후 결과 객체를 반환합니다.
+Returns `Object` - 메인 프로세스의 `require(module)` 에 의해 반환된 객체.
 
 ### `remote.getCurrentWindow()`
 
-현재 웹 페이지가 들어있는 [`BrowserWindow`](browser-window.md) 객체를 반환합니다.
+Returns `BrowserWindow` - 현재 웹 페이지가 들어있는
+[`BrowserWindow`](browser-window.md) 객체.
 
 ### `remote.getCurrentWebContents()`
 
-현재 웹 페이지의 [`WebContents`](web-contents.md) 객체를 반환합니다.
+Returns `WebContents` - 현재 웹 페이지의 [`WebContents`](web-contents.md) 객체.
 
 ### `remote.getGlobal(name)`
 
 * `name` String
 
-메인 프로세스의 전역 변수(`name`)를 가져옵니다. (예시: `global[name]`)
+Returns `any` - 메인 프로세스의 전역 변수 `name` (예시: `global[name]`).
 
 ## Properties
 
