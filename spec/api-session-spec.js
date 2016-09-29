@@ -180,48 +180,34 @@ describe('session module', function () {
       })
     })
 
-    describe('changed events', function () {
-      it('emits an event when a cookie is set', function (done) {
-        session.defaultSession.cookies.on('changed', function cookieChanged(event, cookie, cause, removed) {
-          if (cookie.name !== 'foo') return
+    it('emits a changed event when a cookie is added or removed', function (done) {
+      const {cookies} = session.fromPartition('cookies-changed')
 
+      cookies.once('changed', function (event, cookie, cause, removed) {
+        assert.equal(cookie.name, 'foo')
+        assert.equal(cookie.value, 'bar')
+        assert.equal(cause, 'explicit')
+        assert.equal(removed, false)
+
+        cookies.once('changed', function (event, cookie, cause, removed) {
           assert.equal(cookie.name, 'foo')
           assert.equal(cookie.value, 'bar')
           assert.equal(cause, 'explicit')
-          assert.equal(removed, false)
-          session.defaultSession.cookies.removeListener('changed', cookieChanged)
+          assert.equal(removed, true)
           done()
         })
-        session.defaultSession.cookies.set({
-          url: url,
-          name: 'foo',
-          value: 'bar'
-        }, function (error) {
+
+        cookies.remove(url, 'foo', function (error) {
           if (error) return done(error)
         })
       })
 
-      it('emits an event when a cookie is removed', function (done) {
-        session.defaultSession.cookies.on('changed', function cookieChanged(event, cookie, cause, removed) {
-          if (cookie.name !== 'foo' || removed == false) return
-
-          assert.equal(cookie.name, 'foo')
-          assert.equal(cookie.value, 'bar')
-          assert.equal(cause, 'overwrite')
-          assert.equal(removed, true)
-          session.defaultSession.cookies.removeListener('changed', cookieChanged)
-          done()
-        })
-        session.defaultSession.cookies.set({
-          url: url,
-          name: 'foo',
-          value: 'bar'
-        }, function (error) {
-          if (error) return done(error)
-          session.defaultSession.cookies.remove(url, 'foo', function (error) {
-            if (error) return done(error)
-          })
-        })
+      cookies.set({
+        url: url,
+        name: 'foo',
+        value: 'bar'
+      }, function (error) {
+        if (error) return done(error)
       })
     })
   })

@@ -55,7 +55,6 @@ struct Converter<net::CanonicalCookie> {
   }
 };
 
-
 template<>
 struct Converter<AtomCookieDelegate::ChangeCause> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -76,7 +75,6 @@ struct Converter<AtomCookieDelegate::ChangeCause> {
     }
   }
 };
-
 
 }  // namespace mate
 
