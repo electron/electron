@@ -619,7 +619,7 @@ URL에서 합성(synthesised)된 제목인 경우 false로 표시됩니다.
 
 Returns:
 
-* `favicons` Array - URL 배열
+* `favicons` String[] - URL 배열
 
 페이지가 favicon URL을 받았을 때 발생하는 이벤트입니다.
 

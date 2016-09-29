@@ -27,7 +27,7 @@ app.on('ready', () => {
 
 ### `protocol.registerStandardSchemes(schemes)`
 
-* `schemes` Array - 표준 스킴으로 등록할 커스텀 스킴 리스트
+* `schemes` String[] - 표준 스킴으로 등록할 커스텀 스킴 리스트
 
 표준 스킴의 형식은 RFC 3986 [일반 URI 문법](https://tools.ietf.org/html/rfc3986#section-3)
 표준을 따릅니다. 예를 들어 `http`와 `https` 같은 표준 스킴과 `file`과 같은 표준이
@@ -69,7 +69,7 @@ app.on('ready', () => {
 
 ### `protocol.registerServiceWorkerSchemes(schemes)`
 
-* `schemes` Array - 서비스 워커를 제어하기 위해 등록될 커스텀 스킴.
+* `schemes` String[] - 서비스 워커를 제어하기 위해 등록될 커스텀 스킴.
 
 ### `protocol.registerFileProtocol(scheme, handler[, completion])`
 

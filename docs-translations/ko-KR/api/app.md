@@ -329,7 +329,7 @@ Chrome의 접근성 지원이 변경될 때 발생하는 이벤트입니다. 이
 ### `app.relaunch([options])`
 
 * `options` Object (optional)
-  * `args` Array (optional)
+  * `args` String[] (optional)
   * `execPath` String (optional)
 
 현재 인스턴스가 종료되면 애플리케이션을 재시작합니다.
@@ -468,7 +468,9 @@ Returns `String` - 현재 애플리케이션의
 * `protocol` String - 프로토콜의 이름, `://` 제외. 만약 앱을 통해 `electron://`과
   같은 링크를 처리하고 싶다면, 이 메서드에 `electron` 인수를 담아 호출하면 됩니다.
 * `path` String (optional) _Windows_ - 기본값은 `process.execPath`입니다.
-* `args` Array (optional) _Windows_ - 기본값은 빈 배열입니다.
+* `args` String[] (optional) _Windows_ - 기본값은 빈 배열입니다.
+
+Returns `Boolean` - 호출 성공 여부.
 
 이 메서드는 지정한 프로토콜(URI scheme)에 대해 현재 실행파일을 기본 핸들러로
 등록합니다. 이를 통해 운영체제와 더 가깝게 통합할 수 있습니다. 한 번 등록되면,
@@ -477,8 +479,6 @@ Returns `String` - 현재 애플리케이션의
 
 Windows에선 실행시에 선택적 매개변수를 통해 경로, 실행 파일, 인수, 실행 파일로 전달될
 인수의 배열을 제공할 수 있습니다.
-
-호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
 
 **참고:** macOS에선, 애플리케이션의 `info.plist`에 등록해둔 프로토콜만 사용할 수
 있습니다. 이는 런타임에서 변경될 수 없습니다. 이 파일은 간단히 텍스트 에디터를
@@ -493,20 +493,18 @@ Windows에선 실행시에 선택적 매개변수를 통해 경로, 실행 파�
 
 * `protocol` String - 프로토콜의 이름, `://` 제외.
 * `path` String (optional) _Windows_ - 기본값은 `process.execPath`
-* `args` Array (optional) _Windows_ - 기본값은 빈 배열
+* `args` String[] (optional) _Windows_ - 기본값은 빈 배열
 
-Returns `Boolean`
+Returns `Boolean` - 호출 성공 여부.
 
 이 메서드는 현재 실행파일이 지정한 프로토콜(URI scheme)에 대해 기본 핸들러인지를
 확인합니다. 만약 그렇다면, 이 메서드는 앱을 기본 핸들러에서 제거합니다.
-
-호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
 
 ### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - `://`를 제외한 프로토콜의 이름.
 * `path` String (optional) _Windows_ - 기본값은 `process.execPath`
-* `args` Array (optional) _Windows_ - 기본값은 빈 배열
+* `args` String[] (optional) _Windows_ - 기본값은 빈 배열
 
 Returns `Boolean`
 
@@ -543,7 +541,7 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
   아이콘을 가지고 있을 경우, 사용할 아이콘의 인덱스를 이 옵션으로 지정해 주어야
   합니다. 단, 아이콘을 하나만 포함하고 있는 경우 0을 지정하면 됩니다.
 
-호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
+Returns `Boolean` - 호출 성공 여부.
 
 **참고:** 점프 목록을 커스터마이징 하려면 대신 `app.setJumpList(categories)` 를
 사용하세요.
@@ -780,8 +778,10 @@ pkcs12 형식으로된 인증서를 플랫폼 인증서 저장소로 가져옵�
 
 * `count` Integer
 
-현재 앱에 대해 카운터 뱃지를 설정합니다. count를 `0`으로 설정하면 뱃지를 숨깁니다.
-호출이 성공적으로 끝나면 `true`를 반환하고 아닌 경우 `false`를 반환합니다.
+Returns `Boolean` - 호출 성공 여부.
+
+현재 앱에 대해 카운터 뱃지를 설정합니다. count 를 `0`으로 설정하면 뱃지를
+숨깁니다.
 
 macOS에선 독 아이콘에 표시됩니다. Linux에선 Unity 런처에서만 작동합니다.
 

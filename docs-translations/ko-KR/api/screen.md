@@ -95,7 +95,7 @@ Returns:
 
 * `event` Event
 * `display` Object
-* `changedMetrics` Array
+* `changedMetrics` String[]
 
 `display`에서 하나 또는 다수의 매트릭스가 변경될 때 발생하는 이벤트입니다.
 `changedMetrics`는 변경에 대한 정보를 담은 문자열의 배열입니다.

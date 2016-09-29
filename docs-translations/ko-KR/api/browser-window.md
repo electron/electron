@@ -1049,19 +1049,22 @@ Windows와 Linux에선 항상 `true`를 반환합니다.
 
 * `Button` 객체
   * `icon` [NativeImage](native-image.md) - 미리보기 툴바에 보여질 아이콘.
+  * `click` Function
   * `tooltip` String (optional) - 버튼의 툴팁 텍스트.
-  * `flags` Array (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이
-    사용됩니다. 이 속성은 다음 문자열들을 포함할 수 있습니다:
-    * `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
-    * `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의
-      동작에 응답하지 않는 비활성화 상태로 표시됩니다.
-    * `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시
-      종료됩니다.
-    * `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
-    * `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
-    * `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도
-      눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
-      만들어졌습니다.
+  * `flags` String[] (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이
+    사용됩니다.
+
+`flags` 는 다음 `String` 들을 포함할 수 있는 배열입니다:
+* `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
+* `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의
+  동작에 응답하지 않는 비활성화 상태로 표시됩니다.
+* `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시
+  종료됩니다.
+* `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
+* `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
+* `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도
+  눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
+  만들어졌습니다.
 
 #### `win.setThumbnailClip(region)` _Windows_
 

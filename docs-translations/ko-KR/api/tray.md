@@ -118,7 +118,7 @@ appIcon.setContextMenu(contextMenu)
 #### Event: 'drop-files' _macOS_
 
 * `event` Event
-* `files` Array - 드롭된 파일의 경로
+* `files` String[] - 드롭된 파일의 경로
 
 트레이 아이콘에 파일이 드롭되면 발생하는 이벤트입니다.
 

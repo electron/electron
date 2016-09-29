@@ -132,7 +132,7 @@ Returns:
 Returns:
 
 * `event` Event
-* `favicons` Array - URL 배열
+* `favicons` String[] - URL 배열
 
 페이지가 favicon(파비콘) URL을 받았을 때 발생하는 이벤트입니다.
 
@@ -1006,7 +1006,7 @@ app.on('ready', () => {
   * `type` String (**required**) - 이벤트의 종류. 다음 값들을 사용할 수 있습니다:
     `mouseDown`,     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`,
     `mouseWheel`, `mouseMove`, `keyDown`, `keyUp`, `char`.
-  * `modifiers` Array - 이벤트의 수정자(modifier)들에 대한 배열. 다음 값들을 포함
+  * `modifiers` String[] - 이벤트의 수정자(modifier)들에 대한 배열. 다음 값들을 포함
     할 수 있습니다: `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
     `numLock`, `left`, `right`.

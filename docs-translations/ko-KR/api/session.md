@@ -105,10 +105,10 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 * `options` Object (optional), proprties:
   * `origin` String - `scheme://host:port`와 같은 `window.location.origin` 규칙을
     따르는 origin 문자열.
-  * `storages` Array - 비우려는 스토리지의 종류, 다음과 같은 타입을 포함할 수 있습니다:
+  * `storages` String[] - 비우려는 스토리지의 종류, 다음과 같은 타입을 포함할 수 있습니다:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `local storage`,
     `shadercache`, `websql`, `serviceworkers`
-  * `quotas` Array - 비우려는 할당의 종류, 다음과 같은 타입을 포함할 수 있습니다:
+  * `quotas` String[] - 비우려는 할당의 종류, 다음과 같은 타입을 포함할 수 있습니다:
     `temporary`, `persistent`, `syncable`.
 * `callback` Function (optional) - 작업이 완료되면 호출됩니다.
 

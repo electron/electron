@@ -29,8 +29,8 @@ console.log(dialog)
   * `defaultPath` String
   * `buttonLabel` String - 확인 버튼을 위한 커스텀 라벨이며, 빈칸으로 둘 경우 기본
     라벨이 사용됩니다.
-  * `filters` Array
-  * `properties` Array - 대화 상자가 사용할 기능(모드)이 담긴 배열입니다.
+  * `filters` String[]
+  * `properties` String[] - 대화 상자가 사용할 기능(모드)이 담긴 배열입니다.
     다음을 포함할 수 있습니다: `openFile`, `openDirectory`, `multiSelections`,
     `createDirectory`, `showHiddenFiles`.
 * `callback` Function (optional)
@@ -75,7 +75,7 @@ console.log(dialog)
   * `defaultPath` String
   * `buttonLabel` String - 확인 버튼을 위한 커스텀 라벨이며, 빈칸으로 둘 경우 기본
     라벨이 사용됩니다.
-  * `filters` Array
+  * `filters` String[]
 * `callback` Function (optional)
 
 작업에 성공하면 콜백으로 유저가 선택한 파일의 경로를 포함한 배열을 반환합니다. 그 외엔
@@ -94,7 +94,7 @@ console.log(dialog)
   * `type` String - `"none"`, `"info"`, `"error"`, `"question"`, `"warning"` 중
     하나를 사용할 수 있습니다. Windows에선 따로 `icon`을 설정하지 않은 이상
     "question"과 "info"는 같은 아이콘으로 표시됩니다.
-  * `buttons` Array - 버튼들의 라벨을 포함한 배열입니다. Windows에서 빈 배열로 둘
+  * `buttons` String[] - 버튼들의 라벨을 포함한 배열입니다. Windows에서 빈 배열로 둘
     경우, "OK" 버튼 하나가 포함됩니다.
   * `defaultId` Integer - 메시지 박스가 열렸을 때 기본적으로 선택될 버튼 배열의
     버튼 인덱스입니다.

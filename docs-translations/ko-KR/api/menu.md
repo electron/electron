@@ -250,7 +250,7 @@ macOS의 네이티브 액션에 대해 자세히 알아보려면
 
 #### `Menu.buildFromTemplate(template)`
 
-* `template` Array
+* `template` MenuItem[]
 
 기본적으로 `template`는 [MenuItem](menu-item.md)을 생성할 때 사용하는 `options`의
 배열입니다. 사용법은 위에서 설명한 것과 같습니다.
