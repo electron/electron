@@ -6,7 +6,7 @@ The Chrome version of Electron is usually bumped within one or two weeks after
 a new stable Chrome version gets released. This estimate is not guaranteed and
 depends on the amount of work involved with upgrading.
 
-Only the stable channel of Chrome is used. If an important fix is in beta or dev
+Only the stable channel of Chrome is used. If an important fix is in the beta or dev
 channel, we will back-port it.
 
 For more information, please see the [security introduction](tutorial/security.md).
