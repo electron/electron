@@ -267,8 +267,6 @@ void Cookies::Set(const base::DictionaryValue& details,
 void Cookies::OnCookieChanged(const net::CanonicalCookie& cookie,
                               bool removed,
                               AtomCookieDelegate::ChangeCause cause) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
   Emit("changed", cookie, cause, removed);
 }
 
