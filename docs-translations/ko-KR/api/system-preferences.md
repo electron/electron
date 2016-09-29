@@ -3,8 +3,8 @@
 > 시스템 설정을 가져옵니다.
 
 ```javascript
-const {systemPreferences} = require('electron');
-console.log(systemPreferences.isDarkMode());
+const {systemPreferences} = require('electron')
+console.log(systemPreferences.isDarkMode())
 ```
 
 ## Events
@@ -113,24 +113,24 @@ macOS에선 API가 `NSUserDefaults`를 읽어들입니다. 유명한 `key`와 `t
 예시입니다 (투명한 윈도우는 DWM 컴포지션이 비활성화되어있을 시 작동하지 않습니다):
 
 ```javascript
-const {BrowserWindow, systemPreferences} = require('electron');
-let browserOptions = {width: 1000, height: 800};
+const {BrowserWindow, systemPreferences} = require('electron')
+let browserOptions = {width: 1000, height: 800}
 
 // 플랫폼이 지원하는 경우에만 투명 윈도우를 생성.
 if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
+  browserOptions.transparent = true
+  browserOptions.frame = false
 }
 
 // 원도우 생성
-let win = new BrowserWindow(browserOptions);
+let win = new BrowserWindow(browserOptions)
 
 // 페이지 로드.
 if (browserOptions.transparent) {
-  win.loadURL('file://' + __dirname + '/index.html');
+  win.loadURL(`file://${__dirname}/index.html`)
 } else {
   // 투명 윈도우 상태가 아니라면, 기본적인 스타일 사용
-  win.loadURL('file://' + __dirname + '/fallback.html');
+  win.loadURL(`file://${__dirname}/fallback.html`)
 }
 ```
 

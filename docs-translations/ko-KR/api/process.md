@@ -16,12 +16,12 @@ Electron 내부 초기화 스크립트의 로드가 완료되고, 웹 페이지�
 
 ```javascript
 // preload.js
-const _setImmediate = setImmediate;
-const _clearImmediate = clearImmediate;
+const _setImmediate = setImmediate
+const _clearImmediate = clearImmediate
 process.once('loaded', () => {
-  global.setImmediate = _setImmediate;
-  global.clearImmediate = _clearImmediate;
-});
+  global.setImmediate = _setImmediate
+  global.clearImmediate = _clearImmediate
+})
 ```
 
 ## Properties

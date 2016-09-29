@@ -13,7 +13,7 @@ app.on('ready', () => {
     {label: 'Item2', type: 'radio'},
     {label: 'Item3', type: 'radio', checked: true},
     {label: 'Item4', type: 'radio'}
-  ]);
+  ])
   tray.setToolTip('이것은 나의 애플리케이션 입니다!')
   tray.setContextMenu(contextMenu)
 })

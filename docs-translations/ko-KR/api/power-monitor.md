@@ -8,14 +8,14 @@
 예시:
 
 ```javascript
-const electron = require('electron');
-const {app} = electron;
+const electron = require('electron')
+const {app} = electron
 
 app.on('ready', () => {
   electron.powerMonitor.on('suspend', () => {
-    console.log('절전모드로 진입합니다!');
-  });
-});
+    console.log('절전모드로 진입합니다!')
+  })
+})
 ```
 
 ## Events

@@ -23,7 +23,7 @@ let win
 app.on('ready', () => {
   const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize
   win = new BrowserWindow({width, height})
-});
+})
 ```
 
 다음 예시는 확장 디스플레이에 윈도우를 생성합니다:

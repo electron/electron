@@ -5,14 +5,14 @@
 다음 예시는 윈격 서버에 애플리케이션 크래시 정보를 자동으로 보고하는 예시입니다:
 
 ```javascript
-const {crashReporter} = require('electron');
+const {crashReporter} = require('electron')
 
 crashReporter.start({
   productName: 'YourName',
   companyName: 'YourCompany',
   submitURL: 'https://your-domain.com/url-to-submit',
   autoSubmit: true
-});
+})
 ```
 
 서버가 크래시 리포트를 받을 수 있도록 설정하기 위해 다음과 같은 프로젝트를 사용할 수도

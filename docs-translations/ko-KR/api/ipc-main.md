@@ -1,4 +1,4 @@
-﻿# ipcMain
+# ipcMain
 
 > 메인 프로세스에서 렌더러 프로세스로 비동기 통신을 합니다.
 
@@ -20,27 +20,27 @@
 
 ```javascript
 // 메인 프로세스
-const {ipcMain} = require('electron');
+const {ipcMain} = require('electron')
 ipcMain.on('asynchronous-message', (event, arg) => {
-  console.log(arg);  // "ping" 출력
-  event.sender.send('asynchronous-reply', 'pong');
-});
+  console.log(arg)  // "ping" 출력
+  event.sender.send('asynchronous-reply', 'pong')
+})
 
 ipcMain.on('synchronous-message', (event, arg) => {
-  console.log(arg);  // "ping" 출력
-  event.returnValue = 'pong';
-});
+  console.log(arg)  // "ping" 출력
+  event.returnValue = 'pong'
+})
 ```
 
 ```javascript
 // 렌더러 프로세스 (웹 페이지)
-const {ipcRenderer} = require('electron');
-console.log(ipc.sendSync('synchronous-message', 'ping')); // "pong" 출력
+const {ipcRenderer} = require('electron')
+console.log(ipc.sendSync('synchronous-message', 'ping')) // "pong" 출력
 
 ipcRenderer.on('asynchronous-reply', (arg) => {
-  console.log(arg); // "pong" 출력
-});
-ipcRenderer.send('asynchronous-message', 'ping');
+  console.log(arg) // "pong" 출력
+})
+ipcRenderer.send('asynchronous-message', 'ping')
 ```
 
 ## 메시지 리스닝

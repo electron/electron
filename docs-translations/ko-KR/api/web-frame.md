@@ -5,9 +5,9 @@
 다음 예시는 현재 페이지를 200% 줌 합니다:
 
 ```javascript
-const {webFrame} = require('electron');
+const {webFrame} = require('electron')
 
-webFrame.setZoomFactor(2);
+webFrame.setZoomFactor(2)
 ```
 
 ## Methods
@@ -58,12 +58,12 @@ Input field나 text area에 철자 검사(spell checking) 제공자를 설정합
 [node-spellchecker][spellchecker]를 철자 검사 제공자로 사용하는 예시입니다:
 
 ```javascript
-const {webFrame} = require('electron');
+const {webFrame} = require('electron')
 webFrame.setSpellCheckProvider('en-US', true, {
   spellCheck (text) {
-    return !(require('spellchecker').isMisspelled(text));
+    return !(require('spellchecker').isMisspelled(text))
   }
-});
+})
 ```
 
 ### `webFrame.registerURLSchemeAsSecure(scheme)`
@@ -146,8 +146,8 @@ Returns `Object`:
 Blink의 내부 메모리 캐시 사용 정보를 담고있는 객체를 반환합니다.
 
 ```javascript
-const {webFrame} = require('electron');
-console.log(webFrame.getResourceUsage());
+const {webFrame} = require('electron')
+console.log(webFrame.getResourceUsage())
 ```
 
 다음이 출력됩니다:

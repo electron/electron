@@ -5,16 +5,17 @@
 다음 예시는 클립보드에 문자열을 쓰는 방법을 보여줍니다:
 
 ```javascript
-const {clipboard} = require('electron');
-clipboard.writeText('Example String');
+const {clipboard} = require('electron')
+clipboard.writeText('Example String')
 ```
 
 X Window 시스템에선 selection 클립보드도 존재합니다. 이를 사용하려면 인수 뒤에
 `selection` 문자열을 같이 지정해주어야 합니다:
 
 ```javascript
-clipboard.writeText('Example String', 'selection');
-console.log(clipboard.readText('selection'));
+const {clipboard} = require('electron')
+clipboard.writeText('Example String', 'selection')
+console.log(clipboard.readText('selection'))
 ```
 
 ## Methods
@@ -121,7 +122,8 @@ Return `String[]` - 클립보드 `type` 에 지원되는 형식의 배열.
 Returns `Boolean` - 클립보드가 지정한 `data` 의 형식을 지원하는지 여부.
 
 ```javascript
-console.log(clipboard.has('<p>selection</p>'));
+const {clipboard} = require('electron')
+console.log(clipboard.has('<p>selection</p>'))
 ```
 
 ### `clipboard.read(data[, type])` _Experimental_
@@ -142,7 +144,8 @@ Returns `String` - 클립보드로부터 `data`를 읽습니다.
 * `type` String (optional)
 
 ```javascript
-clipboard.write({text: 'test', html: '<b>test</b>'});
+const {clipboard} = require('electron')
+clipboard.write({text: 'test', html: '<b>test</b>'})
 ```
 
 `data`를 클립보드에 씁니다.

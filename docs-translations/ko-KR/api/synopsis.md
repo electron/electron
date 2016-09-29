@@ -18,14 +18,14 @@ node 모듈을 완벽하게 지원합니다. ([네이티브 모듈](../tutorial/
 메인 프로세스 스크립트는 일반 Node.js 스크립트와 비슷합니다:
 
 ```javascript
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow} = require('electron')
 
-let win = null;
+let win = null
 
 app.on('ready', () => {
-  win = new BrowserWindow({width: 800, height: 600});
-  win.loadURL('https://github.com');
-});
+  win = new BrowserWindow({width: 800, height: 600})
+  win.loadURL('https://github.com')
+})
 ```
 
 렌더러 프로세스도 예외적인 node module들을 사용할 수 있다는 점을 제외하면 일반 웹

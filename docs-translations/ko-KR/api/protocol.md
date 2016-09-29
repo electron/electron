@@ -5,18 +5,17 @@
 다음 예시는 `file://` 프로토콜과 비슷한 일을 하는 커스텀 프로토콜을 설정합니다:
 
 ```javascript
-const {app, protocol} = require('electron');
-const path = require('path');
+const {app, protocol} = require('electron')
+const path = require('path')
 
 app.on('ready', () => {
-  protocol.registerFileProtocol('atom', function (request, callback) {
-    const url = request.url.substr(7);
-    callback({path: path.normalize(__dirname + '/' + url)});
+  protocol.registerFileProtocol('atom', (request, callback) => {
+    const url = request.url.substr(7)
+    callback({path: path.normalize(`${__dirname}/${url}`)})
   }, function (error) {
-    if (error)
-      console.error('Failed to register protocol');
-  });
-});
+    if (error) console.error('프로토콜 등록 실패')
+  })
+})
 ```
 
 **참고:** 모든 메서드는 따로 표기하지 않는 한 `app` 모듈의 `ready` 이벤트가 발생한
@@ -57,10 +56,12 @@ indexedDB, cookies) 가 비활성화 되어있습니다. 일반적으로 `http` 
 대체하는 커스텀 프로토콜을 등록하고 싶다면, 표준 스킴으로 등록해야 합니다:
 
 ```javascript
-protocol.registerStandardSchemes(['atom']);
+const {app, protocol} = require('electron')
+
+protocol.registerStandardSchemes(['atom'])
 app.on('ready', () => {
-  protocol.registerHttpProtocol('atom', ...);
-});
+  protocol.registerHttpProtocol('atom', '...')
+})
 ```
 
 **참고:** 이 메서드는 `app` 모듈의 `ready` 이벤트가 발생하기 이전에만 사용할 수
@@ -124,12 +125,13 @@ app.on('ready', () => {
 예시:
 
 ```javascript
+const {protocol} = require('electron')
+
 protocol.registerBufferProtocol('atom', (request, callback) => {
-  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
+  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
 }, (error) => {
-  if (error)
-    console.error('Failed to register protocol');
-});
+  if (error) console.error('Failed to register protocol')
+})
 ```
 
 ### `protocol.registerStringProtocol(scheme, handler[, completion])`

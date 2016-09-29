@@ -1,20 +1,20 @@
-﻿# dialog
+# dialog
 
 > 파일을 열거나 저장하고, 알림을 표시하기 위한 네이티브 시스템 대화 상자를 표시합니다.
 
 다음 예시는 파일과 디렉터리를 다중으로 선택하는 대화 상자를 표시하는 예시입니다:
 
 ```javascript
-let win = ...;  // 대화 상자를 사용할 BrowserWindow 객체
-const {dialog} = require('electron');
-console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}));
+const {dialog} = require('electron')
+console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}))
 ```
 
 대화 상자는 Electron의 메인 스레드에서 열립니다. 만약 렌더러 프로세스에서 대화 상자
 객체를 사용하고 싶다면, `remote`를 통해 접근하는 방법을 고려해야 합니다:
 
 ```javascript
-const {dialog} = require('electron').remote;
+const {dialog} = require('electron').remote
+console.log(dialog)
 ```
 
 ## Methods

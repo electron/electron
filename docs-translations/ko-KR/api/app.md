@@ -5,10 +5,10 @@
 밑의 예시는 마지막 윈도우가 종료되었을 때, 애플리케이션을 종료시키는 예시입니다:
 
 ```javascript
-const {app} = require('electron');
+const {app} = require('electron')
 app.on('window-all-closed', () => {
-  app.quit();
-});
+  app.quit()
+})
 ```
 
 ## Events
@@ -200,17 +200,17 @@ Returns:
 기본 동작을 방지하고 인증을 승인할 수 있습니다.
 
 ```javascript
-const {app} = require('electron');
+const {app} = require('electron')
 
 app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
   if (url === 'https://github.com') {
     // 확인 로직.
-    event.preventDefault();
-    callback(true);
+    event.preventDefault()
+    callback(true)
   } else {
-    callback(false);
+    callback(false)
   }
-});
+})
 ```
 
 ### Event: 'select-client-certificate'
@@ -238,12 +238,12 @@ Returns:
 것을 막습니다.
 
 ```javascript
-const {app} = require('electron');
+const {app} = require('electron')
 
 app.on('select-client-certificate', (event, webContents, url, list, callback) => {
-  event.preventDefault();
-  callback(list[0]);
-});
+  event.preventDefault()
+  callback(list[0])
+})
 ```
 
 ### Event: 'login'
@@ -271,12 +271,12 @@ Returns:
 `callback(username, password)` 형태의 콜백을 호출하여 인증을 처리해야 합니다.
 
 ```javascript
-const {app} = require('electron');
+const {app} = require('electron')
 
 app.on('login', (event, webContents, request, authInfo, callback) => {
-  event.preventDefault();
-  callback('username', 'secret');
-});
+  event.preventDefault()
+  callback('username', 'secret')
+})
 ```
 
 ### Event: 'gpu-process-crashed'
@@ -348,10 +348,10 @@ Chrome의 접근성 지원이 변경될 때 발생하는 이벤트입니다. 이
 인스턴스의 애플리케이션을 실행하는 예시입니다:
 
 ```javascript
-const {app} = require('electron');
+const {app} = require('electron')
 
-app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])});
-app.exit(0);
+app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
+app.exit(0)
 ```
 
 ### `app.isReady()`
@@ -632,7 +632,7 @@ Returns `Object`:
 사용자 점프 목록을 생성하는 간단한 예제 입니다:
 
 ```javascript
-const {app} = require('electron');
+const {app} = require('electron')
 
 app.setJumpList([
   {
@@ -676,7 +676,7 @@ app.setJumpList([
       }
     ]
   }
-]);
+])
 ```
 
 ### `app.makeSingleInstance(callback)`
@@ -711,24 +711,24 @@ macOS에선 사용자가 Finder에서 애플리케이션의 두 번째 인스턴
 애플리케이션 인스턴스의 윈도우를 활성화 시키는 예시입니다:
 
 ```javascript
-const {app} = require('electron');
-let myWindow = null;
+const {app} = require('electron')
+let myWindow = null
 
 const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
   // 애플리케이션을 중복 실행했습니다. 주 애플리케이션 인스턴스를 활성화 합니다.
   if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore();
-    myWindow.focus();
+    if (myWindow.isMinimized()) myWindow.restore()
+    myWindow.focus()
   }
-});
+})
 
 if (shouldQuit) {
-  app.quit();
+  app.quit()
 }
 
 // 윈도우를 생성하고 각종 리소스를 로드하고 작업합니다.
 app.on('ready', () => {
-});
+})
 ```
 
 ### `app.releaseSingleInstance()`

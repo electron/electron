@@ -2,18 +2,16 @@
 
 > 브라우저 윈도우를 생성하고 제어합니다.
 
-다음 예시는 윈도우를 생성합니다:
-
 ```javascript
 // 메인 프로세스에서
 const {BrowserWindow} = require('electron')
 
 // 또는 렌더러 프로세스에서
-const {BrowserWindow} = require('electron').remote
+// const {BrowserWindow} = require('electron').remote
 
 let win = new BrowserWindow({width: 800, height: 600})
 win.on('closed', () => {
-  win = null;
+  win = null
 })
 
 // 원격 URL 로드
@@ -41,6 +39,7 @@ Frameless 윈도우를 만들거나 일정한 모양의 투명한 윈도우를 �
 수 있습니다.
 
 ```javascript
+const {BrowserWindow} = require('electron')
 let win = new BrowserWindow({show: false})
 win.once('ready-to-show', () => {
   win.show()
@@ -59,6 +58,8 @@ win.once('ready-to-show', () => {
 통해 설정합니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
+
 let win = new BrowserWindow({backgroundColor: '#2e2c29'})
 win.loadURL('https://github.com')
 ```
@@ -71,8 +72,12 @@ win.loadURL('https://github.com')
 `parent` 옵션을 사용하면 자식 윈도우를 만들 수 있습니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
+
 let top = new BrowserWindow()
 let child = new BrowserWindow({parent: top})
+child.show()
+top.show()
 ```
 
 `child` 윈도우는 언제나 `top` 윈도우의 상위에 표시됩니다.
@@ -82,6 +87,8 @@ let child = new BrowserWindow({parent: top})
 모달 윈도우는 부모 윈도우를 비활성화 시키는 자식 윈도우입니다. 모달 윈도우를 만드려면 `parent`, `modal` 옵션을 동시에 설정해야 합니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
+
 let child = new BrowserWindow({parent: top, modal: true, show: false})
 child.loadURL('https://github.com')
 child.once('ready-to-show', () => {
@@ -315,14 +322,14 @@ Electron에선 `undefined`가 아닌 이외의 값을 전달할 경우 윈도우
 
 ```javascript
 window.onbeforeunload = (e) => {
-  console.log('I do not want to be closed');
+  console.log('I do not want to be closed')
 
   // 일반적인 브라우저와는 달리 사용자에게 확인 창을 보여주지 않고, non-void 값을 반환하면
   // 조용히 닫기를 취소합니다.
   // Dialog API를 통해 사용자가 애플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
   // 추천합니다.
-  e.returnValue = false;
-};
+  e.returnValue = false
+}
 ```
 
 #### Event: 'closed'
@@ -422,12 +429,14 @@ Returns:
 e.g. `APPCOMMAND_BROWSER_BACKWARD` 는 `browser-backward`와 같이 반환됩니다.
 
 ```javascript
-someWindow.on('app-command', (e, cmd) => {
-  // 마우스의 뒤로가기 버튼을 눌렀을 때 뒤로가기 탐색을 실행합니다
-  if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
-    someWindow.webContents.goBack();
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.on('app-command', (e, cmd) => {
+  // Navigate the window back when the user hits their mouse back button
+  if (cmd === 'browser-backward' && win.webContents.canGoBack()) {
+    win.webContents.goBack()
   }
-});
+})
 ```
 
 #### Event: 'scroll-touch-begin' _macOS_
@@ -504,7 +513,10 @@ Returns `Object` - 키는 확장 기능 이름을 값은 `name`과 `version` 속
 개발자 도구 확장 기능이 설치되었는지 확인하려면 다음과 같이 실행할 수 있습니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
+
 let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
+console.log(installed)
 ```
 
 **참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
@@ -514,8 +526,10 @@ let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
 `new BrowserWindow`로 생성한 객체는 다음과 같은 속성을 가지고 있습니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
 // `win`은 BrowserWindow의 인스턴스입니다
-let win = new BrowserWindow({width: 800, height: 600});
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('https://github.com')
 ```
 
 #### `win.webContents`
@@ -842,8 +856,11 @@ macOS에서 시트를 부착할 위치를 지정합니다. 기본적으로 시�
 표시하기 위해 사용할 것입니다:
 
 ```javascript
-let toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
-win.setSheetOffset(toolbarRect.height);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
+let toolbarRect = document.getElementById('toolbar').getBoundingClientRect()
+win.setSheetOffset(toolbarRect.height)
 ```
 
 #### `win.flashFrame(flag)`
