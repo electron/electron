@@ -21,6 +21,11 @@
   // Don't add the "Enter Full Screen" menu item automatically.
   [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"NSFullScreenMenuItemEverywhere"];
 
+  // Don't add the "Show Tab Bar" menu item.
+  if ([NSWindow respondsToSelector:@selector(allowsAutomaticWindowTabbing)]) {
+    NSWindow.allowsAutomaticWindowTabbing = NO;
+  }
+
   atom::Browser::Get()->WillFinishLaunching();
 }
 
