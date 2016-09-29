@@ -5,8 +5,8 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
 #define ATOM_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
 
-#include "ui/views/controls/button/menu_button.h"
 #include "ui/views/animation/ink_drop_highlight.h"
+#include "ui/views/controls/button/menu_button.h"
 
 namespace atom {
 
@@ -33,7 +33,7 @@ class SubmenuButton : public views::MenuButton {
   // views::InkDropHostView:
   std::unique_ptr<views::InkDropRipple> CreateInkDropRipple() const override;
   std::unique_ptr<views::InkDropHighlight> CreateInkDropHighlight()
-     const override;
+      const override;
   bool ShouldShowInkDropForFocus() const override;
 
  private:

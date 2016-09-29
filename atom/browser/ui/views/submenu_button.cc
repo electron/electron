@@ -9,8 +9,8 @@
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/text_utils.h"
-#include "ui/views/animation/ink_drop_host_view.h"
 #include "ui/views/animation/flood_fill_ink_drop_ripple.h"
+#include "ui/views/animation/ink_drop_host_view.h"
 #include "ui/views/controls/button/label_button_border.h"
 
 namespace atom {
