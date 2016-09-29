@@ -19,11 +19,11 @@ Windows, Linux, macOS 운영체제 모두 기본적으로 애플리케이션에�
 ```javascript
 let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
-});
+})
 
 myNotification.onclick = () => {
-  console.log('Notification clicked');
-};
+  console.log('Notification clicked')
+}
 ```
 
 위 코드를 통해 생성한 데스크톱 알림은 각 운영체제 모두 비슷한 사용자 경험을 제공하지만,
@@ -73,14 +73,16 @@ __애플리케이션 dock menu:__
 사용할 수 있습니다:
 
 ```javascript
-app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
+const {app} = require('electron')
+app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 
 그리고 [app.clearRecentDocuments][clearrecentdocuments] API로 최근 문서 리스트를
 비울 수 있습니다:
 
 ```javascript
-app.clearRecentDocuments();
+const {app} = require('electron')
+app.clearRecentDocuments()
 ```
 
 ### Windows에서 주의할 점
@@ -110,18 +112,17 @@ __Terminal.app의 dock menu:__
 macOS에서만 사용 가능합니다:
 
 ```javascript
-const {app, Menu} = require('electron');
+const {app, Menu} = require('electron')
 
 const dockMenu = Menu.buildFromTemplate([
-  {label: 'New Window', click() { console.log('New Window'); }},
+  {label: 'New Window', click () { console.log('New Window') }},
   {label: 'New Window with Settings', submenu: [
     {label: 'Basic'},
     {label: 'Pro'}
   ]},
   {label: 'New Command...'}
-]);
-
-app.dock.setMenu(dockMenu);
+])
+app.dock.setMenu(dockMenu)
 ```
 
 ## 사용자 작업 (Windows)
@@ -155,6 +156,7 @@ macOS의 dock menu(진짜 메뉴)와는 달리 Windows의 사용자 작업은 �
 수 있습니다:
 
 ```javascript
+const {app} = require('electron')
 app.setUserTasks([
   {
     program: process.execPath,
@@ -164,14 +166,15 @@ app.setUserTasks([
     title: 'New Window',
     description: 'Create a new window'
   }
-]);
+])
 ```
 
 작업 리스트를 비우려면 간단히 `app.setUserTasks` 메서드의 첫번째 인수에 빈 배열을 넣어
 호출하면 됩니다:
 
 ```javascript
-app.setUserTasks([]);
+const {app} = require('electron')
+app.setUserTasks([])
 ```
 
 
@@ -202,34 +205,36 @@ __Windows Media Player의 미리보기 툴바:__
 미리보기 툴바를 설정할 수 있습니다:
 
 ```javascript
-const {BrowserWindow} = require('electron');
-const path = require('path');
+const {BrowserWindow} = require('electron')
+const path = require('path')
 
 let win = new BrowserWindow({
   width: 800,
   height: 600
-});
+})
 
 win.setThumbarButtons([
   {
     tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click() { console.log('button1 clicked'); }
+    click () { console.log('button1 clicked') }
   },
   {
     tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
-    flags:['enabled', 'dismissonclick'],
-    click() { console.log('button2 clicked.'); }
+    flags: ['enabled', 'dismissonclick'],
+    click () { console.log('button2 clicked.') }
   }
-]);
+])
 ```
 
 미리보기 툴바를 비우려면 간단히 `BrowserWindow.setThumbarButtons` API에 빈 배열을
 전달하면 됩니다:
 
 ```javascript
-win.setThumbarButtons([]);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setThumbarButtons([])
 ```
 
 ## Unity 런처 숏컷 기능 (Linux)
@@ -259,8 +264,9 @@ __작업 표시줄 버튼의 프로그레스 바:__
 있습니다:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setProgressBar(0.5);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setProgressBar(0.5)
 ```
 
 ## 작업 표시줄의 아이콘 오버레이 (Windows)
@@ -286,8 +292,9 @@ __작업 표시줄 버튼 위의 오버레이:__
 API를 사용할 수 있습니다:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 ```
 
 ## 대표 파일 제시 (macOS)
@@ -305,9 +312,10 @@ __대표 파일 팝업 메뉴:__
 [BrowserWindow.setDocumentEdited][setdocumentedited]를 사용할 수 있습니다:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setRepresentedFilename('/etc/passwd');
-win.setDocumentEdited(true);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setRepresentedFilename('/etc/passwd')
+win.setDocumentEdited(true)
 ```
 
 ## 파일을 윈도우 밖으로 드래그할 수 있도록 만들기
@@ -332,6 +340,7 @@ win.setDocumentEdited(true);
 메인 프로세스에서:
 
 ```javascript
+const {ipcMain} = require('electron')
 ipcMain.on('ondragstart', (event, filePath) => {
   event.sender.startDrag({
     file: filePath,

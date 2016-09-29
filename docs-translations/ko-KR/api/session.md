@@ -25,9 +25,9 @@ let ses = win.webContents.session
 * `options` Object
   * `cache` Boolean - 캐시를 활성화할지 여부.
 
-`partition` 문자열로부터 `Session` 인스턴스를 만들어 반환합니다. 이미 `partition`에
-해당하는 `Session`이 존재할 경우, 해당 세션이 반환됩니다. 그렇지않은 경우 `Session`
-인스턴스가 `options`에 맞춰 새로 생성됩니다.
+Returns `Session` - `partition` 문자열로부터 만들어진 `Session` 인스턴스. 이미
+`partition`에 해당하는 `Session`이 존재할 경우, 해당 세션이 반환됩니다.
+그렇지않은 경우 `Session` 인스턴스가 `options`에 맞춰 새로 생성됩니다.
 
 `partition`이 `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
 페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로 시작하지
@@ -44,7 +44,7 @@ let ses = win.webContents.session
 
 ### `session.defaultSession`
 
-애플리케이션의 기본 세션 객체를 반환합니다.
+`Session` 객체, 애플리케이션의 기본 세션 객체.
 
 ## Class: Session
 
@@ -53,10 +53,10 @@ let ses = win.webContents.session
 `session` 모듈을 사용하여 `Session` 객체를 생성할 수 있습니다:
 
 ```javascript
-const session = require('electron').session;
-
-const ses = session.fromPartition('persist:name');
- ```
+const {session} = require('electron')
+const ses = session.fromPartition('persist:name')
+console.log(ses.getUserAgent())
+```
 
 ### Instance Events
 
@@ -74,12 +74,13 @@ Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이�
 틱부터 `item`을 사용할 수 없게 됩니다.
 
 ```javascript
+const {session} = require('electron')
 session.defaultSession.on('will-download', (event, item, webContents) => {
-  event.preventDefault();
+  event.preventDefault()
   require('request')(item.getURL(), (data) => {
-    require('fs').writeFileSync('/somewhere', data);
-  });
-});
+    require('fs').writeFileSync('/somewhere', data)
+  })
+})
 ```
 
 ### Instance Methods
@@ -104,10 +105,10 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 * `options` Object (optional), proprties:
   * `origin` String - `scheme://host:port`와 같은 `window.location.origin` 규칙을
     따르는 origin 문자열.
-  * `storages` Array - 비우려는 스토리지의 종류, 다음과 같은 타입을 포함할 수 있습니다:
+  * `storages` String[] - 비우려는 스토리지의 종류, 다음과 같은 타입을 포함할 수 있습니다:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `local storage`,
     `shadercache`, `websql`, `serviceworkers`
-  * `quotas` Array - 비우려는 할당의 종류, 다음과 같은 타입을 포함할 수 있습니다:
+  * `quotas` String[] - 비우려는 할당의 종류, 다음과 같은 타입을 포함할 수 있습니다:
     `temporary`, `persistent`, `syncable`.
 * `callback` Function (optional) - 작업이 완료되면 호출됩니다.
 
@@ -227,13 +228,13 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 ```javascript
 // 50kbps의 처리량과 함께 500ms의 레이턴시로 GPRS 연결을 에뮬레이트합니다.
 window.webContents.session.enableNetworkEmulation({
-    latency: 500,
-    downloadThroughput: 6400,
-    uploadThroughput: 6400
-});
+  latency: 500,
+  downloadThroughput: 6400,
+  uploadThroughput: 6400
+})
 
 // 네트워크가 끊긴 상태를 에뮬레이트합니다.
-window.webContents.session.enableNetworkEmulation({offline: true});
+window.webContents.session.enableNetworkEmulation({offline: true})
 ```
 
 #### `ses.disableNetworkEmulation()`
@@ -252,12 +253,12 @@ window.webContents.session.enableNetworkEmulation({offline: true});
 `setCertificateVerifyProc(null)`을 호출하면 기본 검증 프로세스로 되돌립니다.
 
 ```javascript
-myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
- if (hostname === 'github.com')
-   callback(true);
- else
-   callback(false);
-});
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
+win.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
+  callback(hostname === 'github.com')
+})
 ```
 #### `ses.setPermissionRequestHandler(handler)`
 
@@ -272,16 +273,14 @@ myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback)
 호출하면 권한 제공을 거부합니다.
 
 ```javascript
-session.fromPartition(partition).setPermissionRequestHandler((webContents, permission, callback) => {
-  if (webContents.getURL() === host) {
-    if (permission === 'notifications') {
-      callback(false); // 거부됨.
-      return;
-    }
+const {session} = require('electron')
+session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
+  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
+    return callback(false) // 거부됨.
   }
 
-  callback(true);
-});
+  callback(true)
+})
 ```
 
 #### `ses.clearHostResolverCache([callback])`
@@ -321,7 +320,7 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 #### `ses.getUserAgent()`
 
-현재 세션의 유저 에이전트를 표현하는 `String`을 반환합니다.
+Returns `String` - 현재 세션의 유저 에이전트.
 
 #### `ses.getBlobData(identifier, callback)`
 
@@ -329,7 +328,7 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 * `callback` Function
   * `result` Buffer - Blob data.
 
-`identifier` 에 연결된 blob 데이터를 반환합니다.
+Returns `Blob` - `identifier` 에 연결된 blob 데이터.
 
 ### Instance Properties
 
@@ -337,15 +336,15 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 #### `ses.cookies`
 
-현재 세션의 `Cookies` 클래스 인스턴스를 반환합니다.
+현재 세션의 `Cookies` 객체.
 
 #### `ses.webRequest`
 
-현재 세션의 `WebRequest` 클래스 인스턴스를 반환합니다.
+현재 세션의 `WebRequest` 객체.
 
 #### `ses.protocol`
 
-현재 세션의 [protocol](protocol.md) 모듈 인스턴스를 반환합니다.
+현재 세션의 Protocol 객체 ([protocol](protocol.md) 모듈의 인스턴스).
 
 ```javascript
 const {app, session} = require('electron')
@@ -355,10 +354,9 @@ app.on('ready', function () {
   const protocol = session.fromPartition(partitionName).protocol
   protocol.registerFileProtocol('atom', function (request, callback) {
     var url = request.url.substr(7)
-    callback({path: path.normalize(__dirname + '/' + url)})
+    callback({path: path.normalize(`${__dirname}/${url}`)})
   }, function (error) {
-    if (error)
-      console.error('Failed to register protocol')
+    if (error) console.error('Failed to register protocol')
   })
 })
 ```
@@ -374,21 +372,20 @@ app.on('ready', function () {
 ```javascript
 // 모든 쿠키를 요청합니다.
 session.defaultSession.cookies.get({}, (error, cookies) => {
-  console.log(cookies);
-});
+  console.log(error, cookies)
+})
 
 // url에 관련된 쿠키를 모두 가져옵니다.
 session.defaultSession.cookies.get({url: 'http://www.github.com'}, (error, cookies) => {
-  console.log(cookies);
-});
+  console.log(error, cookies)
+})
 
 // 지정한 쿠키 데이터를 설정합니다.
 // 동일한 쿠키가 있으면 해당 쿠키를 덮어씁니다.
-const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'};
+const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'}
 session.defaultSession.cookies.set(cookie, (error) => {
-  if (error)
-    console.error(error);
-});
+  if (error) console.error(error)
+})
 ```
 
 ### Instance Methods
@@ -483,7 +480,7 @@ const filter = {
 }
 
 session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
-  details.requestHeaders['User-Agent'] = "MyAgent"
+  details.requestHeaders['User-Agent'] = 'MyAgent'
   callback({cancel: false, requestHeaders: details.requestHeaders})
 })
 ```

@@ -14,10 +14,10 @@ inter-process 통신을 하지 않고도 간단한 API를 통해 직접 메인 �
 다음 예시는 렌더러 프로세스에서 브라우저 창을 만드는 예시입니다:
 
 ```javascript
-const {BrowserWindow} = require('electron').remote;
+const {BrowserWindow} = require('electron').remote
 
-let win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('https://github.com');
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('https://github.com')
 ```
 
 **참고:** 반대로 메인 프로세스에서 렌더러 프로세스에 접근 하려면 [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture-callback)
@@ -69,23 +69,23 @@ Remote 객체가 GC 되려면 대응하는 메인 프로세스 내부 객체의 
 ```javascript
 // mapNumbers.js 메인 프로세스
 exports.withRendererCallback = (mapper) => {
-  return [1,2,3].map(mapper);
-;
+  return [1, 2, 3].map(mapper)
+}
 
 exports.withLocalCallback = () => {
-  return [1,2,3].map(x => x + 1);
-};
+  return [1, 2, 3].map(x => x + 1)
+}
 ```
 
 ```javascript
 // 렌더러 프로세스
-const mapNumbers = require('electron').remote.require('./mapNumbers');
+const mapNumbers = require('electron').remote.require('./mapNumbers')
 
-const withRendererCb = mapNumbers.withRendererCallback(x => x + 1);
+const withRendererCb = mapNumbers.withRendererCallback(x => x + 1)
 
-const withLocalCb = mapNumbers.withLocalCallback();
+const withLocalCb = mapNumbers.withLocalCallback()
 
-console.log(withRendererCb, withLocalCb); // [undefined, undefined, undefined], [2, 3, 4]
+console.log(withRendererCb, withLocalCb) // [undefined, undefined, undefined], [2, 3, 4]
 ```
 
 보다시피 동기적인 렌더러 콜백 함수의 반환 값은 예상되지 않은 값입니다. 그리고 메인
@@ -99,11 +99,11 @@ console.log(withRendererCb, withLocalCb); // [undefined, undefined, undefined], 
 등록합니다:
 
 ```javascript
-const remote = require('remote');
+const remote = require('remote')
 
 remote.getCurrentWindow().on('close', () => {
   // blabla...
-});
+})
 ```
 
 하지만 이 코드와 같이 등록된 이벤트는 명시적으로 제거하지 않는 이상 콜백 함수의 참조가
@@ -125,7 +125,7 @@ remote.getCurrentWindow().on('close', () => {
 `remote` 모듈을 `electron` 모듈처럼 직접 사용할 수 있습니다.
 
 ```javascript
-const app = remote.app;
+const app = remote.app
 ```
 
 ## Methods
@@ -136,28 +136,29 @@ const app = remote.app;
 
 * `module` String
 
-메인 프로세스의 `require(module)` API를 실행한 후 결과 객체를 반환합니다.
+Returns `Object` - 메인 프로세스의 `require(module)` 에 의해 반환된 객체.
 
 ### `remote.getCurrentWindow()`
 
-현재 웹 페이지가 들어있는 [`BrowserWindow`](browser-window.md) 객체를 반환합니다.
+Returns `BrowserWindow` - 현재 웹 페이지가 들어있는
+[`BrowserWindow`](browser-window.md) 객체.
 
 ### `remote.getCurrentWebContents()`
 
-현재 웹 페이지의 [`WebContents`](web-contents.md) 객체를 반환합니다.
+Returns `WebContents` - 현재 웹 페이지의 [`WebContents`](web-contents.md) 객체.
 
 ### `remote.getGlobal(name)`
 
 * `name` String
 
-메인 프로세스의 전역 변수(`name`)를 가져옵니다. (예시: `global[name]`)
+Returns `any` - 메인 프로세스의 전역 변수 `name` (예시: `global[name]`).
 
 ## Properties
 
 ### `remote.process`
 
-메인 프로세스의 `process` 객체입니다. `remote.getGlobal('process')`와
-같습니다. 하지만 캐시 됩니다.
+메인 프로세스의 `process` 객체입니다. `remote.getGlobal('process')`와 같습니다.
+하지만 캐시 됩니다.
 
 [rmi]: http://en.wikipedia.org/wiki/Java_remote_method_invocation
 [enumerable-properties]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties

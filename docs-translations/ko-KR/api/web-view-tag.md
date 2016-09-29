@@ -32,20 +32,20 @@
 ```html
 <script>
   onload = () => {
-    const webview = document.getElementById('foo');
-    const indicator = document.querySelector('.indicator');
+    const webview = document.getElementById('foo')
+    const indicator = document.querySelector('.indicator')
 
     const loadstart = () => {
-      indicator.innerText = 'loading...';
-    };
+      indicator.innerText = 'loading...'
+    }
 
     const loadstop = () => {
-      indicator.innerText = '';
-    };
+      indicator.innerText = ''
+    }
 
-    webview.addEventListener('did-start-loading', loadstart);
-    webview.addEventListener('did-stop-loading', loadstop);
-  };
+    webview.addEventListener('did-start-loading', loadstart)
+    webview.addEventListener('did-stop-loading', loadstop)
+  }
 </script>
 ```
 
@@ -230,9 +230,10 @@ webContents 와 연결합니다.
 **예시**
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('dom-ready', () => {
-  webview.openDevTools();
-});
+  webview.openDevTools()
+})
 ```
 
 ### `<webview>.loadURL(url[, options])`
@@ -374,6 +375,16 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 ### `<webview>.inspectServiceWorker()`
 
 Service worker에 대한 개발자 도구를 엽니다.
+
+### `<webview>.setAudioMuted(muted)`
+
+* `muted` Boolean
+
+게스트 페이지 음소거 설정.
+
+### `<webview>.isAudioMuted()`
+
+Returns `Boolean` - 게스트 페이지 음소거 여부.
 
 ### `<webview>.undo()`
 
@@ -608,7 +619,7 @@ URL에서 합성(synthesised)된 제목인 경우 false로 표시됩니다.
 
 Returns:
 
-* `favicons` Array - URL 배열
+* `favicons` String[] - URL 배열
 
 페이지가 favicon URL을 받았을 때 발생하는 이벤트입니다.
 
@@ -635,9 +646,10 @@ Returns:
 콘솔에 다시 로깅하는 예시입니다.
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('console-message', (e) => {
-  console.log('Guest page logged a message:', e.message);
-});
+  console.log('Guest page logged a message:', e.message)
+})
 ```
 
 ### Event: 'found-in-page'
@@ -655,12 +667,13 @@ Returns:
 사용할 수 있을 때 발생하는 이벤트입니다.
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('found-in-page', (e) => {
-  if (e.result.finalUpdate)
-    webview.stopFindInPage('keepSelection');
-});
+  webview.stopFindInPage('keepSelection')
+})
 
-const requestId = webview.findInPage('test');
+const requestId = webview.findInPage('test')
+console.log(requestId)
 ```
 
 ### Event: 'new-window'
@@ -678,14 +691,15 @@ Returns:
 다음 예시 코드는 새 URL을 시스템의 기본 브라우저로 여는 코드입니다.
 
 ```javascript
-const {shell} = require('electron');
+const {shell} = require('electron')
+const webview = document.getElementById('foo')
 
 webview.addEventListener('new-window', (e) => {
-  const protocol = require('url').parse(e.url).protocol;
+  const protocol = require('url').parse(e.url).protocol
   if (protocol === 'http:' || protocol === 'https:') {
-    shell.openExternal(e.url);
+    shell.openExternal(e.url)
   }
-});
+})
 ```
 
 ### Event: 'will-navigate'
@@ -737,9 +751,10 @@ Returns:
 이동시키는 예시입니다.
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('close', () => {
-  webview.src = 'about:blank';
-});
+  webview.src = 'about:blank'
+})
 ```
 
 ### Event: 'ipc-message'
@@ -756,19 +771,20 @@ Returns:
 
 ```javascript
 // In embedder page.
+const webview = document.getElementById('foo')
 webview.addEventListener('ipc-message', (event) => {
-  console.log(event.channel);
+  console.log(event.channel)
   // Prints "pong"
-});
-webview.send('ping');
+})
+webview.send('ping')
 ```
 
 ```javascript
 // In guest page.
-const {ipcRenderer} = require('electron');
+const {ipcRenderer} = require('electron')
 ipcRenderer.on('ping', () => {
-  ipcRenderer.sendToHost('pong');
-});
+  ipcRenderer.sendToHost('pong')
+})
 ```
 
 ### Event: 'crashed'

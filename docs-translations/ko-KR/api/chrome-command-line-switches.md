@@ -1,4 +1,4 @@
-﻿# 크롬 명령줄 스위치 지원
+# 크롬 명령줄 스위치 지원
 
 > Electron에서 지원하는 커맨드 명령줄 스위치입니다.
 
@@ -7,13 +7,13 @@
 명령줄 옵션을 추가로 지정할 수 있습니다:
 
 ```javascript
-const {app} = require('electron');
-app.commandLine.appendSwitch('remote-debugging-port', '8315');
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+const {app} = require('electron')
+app.commandLine.appendSwitch('remote-debugging-port', '8315')
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
 
 app.on('ready', () => {
   // Your code here
-});
+})
 ```
 
 ## --ignore-connections-limit=`domains`
@@ -58,7 +58,7 @@ Electron이 세미콜론으로 구분된 호스트 리스트에서 지정한 프
 예시:
 
 ```javascript
-app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678');
+app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')
 ```
 
 위 예시는 로컬 주소(`localhost`, `127.0.0.1`, 등)와 `google.com`의 서브도메인,

@@ -5,10 +5,10 @@
 밑의 예시는 마지막 윈도우가 종료되었을 때, 애플리케이션을 종료시키는 예시입니다:
 
 ```javascript
-const {app} = require('electron');
+const {app} = require('electron')
 app.on('window-all-closed', () => {
-  app.quit();
-});
+  app.quit()
+})
 ```
 
 ## Events
@@ -27,6 +27,10 @@ Windows, Linux 운영체제에서의 `will-finish-launching` 이벤트는 `ready
 대부분의 경우, 모든 것을 `ready` 이벤트 핸들러 안에서 해결해야 합니다.
 
 ### Event: 'ready'
+
+Returns:
+
+* `launchInfo` Object _macOS_
 
 Electron이 초기화를 끝냈을 때 발생하는 이벤트입니다.
 
@@ -103,7 +107,6 @@ Returns:
 * `url` String
 
 유저가 애플리케이션을 통해 URL을 열고자 할 때 발생하는 이벤트입니다.
-
 애플리케이션에서 URL을 열기 위해 반드시 URL 스킴이 등록되어 있어야 합니다.
 
 이 이벤트를 처리할 땐 반드시 `event.preventDefault()`를 호출해야 합니다.
@@ -197,15 +200,17 @@ Returns:
 기본 동작을 방지하고 인증을 승인할 수 있습니다.
 
 ```javascript
+const {app} = require('electron')
+
 app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
   if (url === 'https://github.com') {
     // 확인 로직.
-    event.preventDefault();
-    callback(true);
+    event.preventDefault()
+    callback(true)
   } else {
-    callback(false);
+    callback(false)
   }
-});
+})
 ```
 
 ### Event: 'select-client-certificate'
@@ -233,10 +238,12 @@ Returns:
 것을 막습니다.
 
 ```javascript
+const {app} = require('electron')
+
 app.on('select-client-certificate', (event, webContents, url, list, callback) => {
-  event.preventDefault();
-  callback(list[0]);
-});
+  event.preventDefault()
+  callback(list[0])
+})
 ```
 
 ### Event: 'login'
@@ -264,10 +271,12 @@ Returns:
 `callback(username, password)` 형태의 콜백을 호출하여 인증을 처리해야 합니다.
 
 ```javascript
+const {app} = require('electron')
+
 app.on('login', (event, webContents, request, authInfo, callback) => {
-  event.preventDefault();
-  callback('username', 'secret');
-});
+  event.preventDefault()
+  callback('username', 'secret')
+})
 ```
 
 ### Event: 'gpu-process-crashed'
@@ -320,7 +329,7 @@ Chrome의 접근성 지원이 변경될 때 발생하는 이벤트입니다. 이
 ### `app.relaunch([options])`
 
 * `options` Object (optional)
-  * `args` Array (optional)
+  * `args` String[] (optional)
   * `execPath` String (optional)
 
 현재 인스턴스가 종료되면 애플리케이션을 재시작합니다.
@@ -339,9 +348,15 @@ Chrome의 접근성 지원이 변경될 때 발생하는 이벤트입니다. 이
 인스턴스의 애플리케이션을 실행하는 예시입니다:
 
 ```javascript
-app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
+const {app} = require('electron')
+
+app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
 app.exit(0)
 ```
+
+### `app.isReady()`
+
+Returns `Boolean` - Electron 이 초기화를 마쳤으면 `true`, 아니면 `false`.
 
 ### `app.focus()`
 
@@ -358,14 +373,14 @@ Linux에선, 첫 번째로 보여지는 윈도우가 포커스됩니다. macOS�
 
 ### `app.getAppPath()`
 
-현재 애플리케이션의 디렉터리를 반환합니다.
+Returns `String` - 현재 애플리케이션 디렉토리.
 
 ### `app.getPath(name)`
 
 * `name` String
 
-`name`에 관련한 특정 디렉터리 또는 파일의 경로를 반환합니다.
-경로를 가져오는 데 실패할 경우 `Error`를 반환합니다.
+Returns `String` -`name` 에 관련한 특정 디렉터리 또는 파일의 경로. 실패시
+`Error` 발생.
 
 **역자주:** 이 메서드는 운영체제에서 지정한 특수 디렉터리를 가져오는데 사용할 수 있습니다.
 
@@ -379,7 +394,6 @@ Linux에선, 첫 번째로 보여지는 윈도우가 포커스됩니다. macOS�
 * `userData` - 애플리케이션의 설정을 저장하는 디렉터리.
   이 디렉터리는 기본적으로 `appData`에 애플리케이션 이름으로 생성된 폴더가 지정됩니다.
 * `temp` - 임시 폴더 디렉터리.
-* `userDesktop` - 현재 사용자의 데스트탑 디렉터리.
 * `exe` - 현재 실행중인 Electron 바이너리 파일.
 * `module` - `libchromiumcontent` 라이브러리.
 * `desktop` - 사용자의 데스크탑 디렉터리.
@@ -407,14 +421,13 @@ Linux에선, 첫 번째로 보여지는 윈도우가 포커스됩니다. macOS�
 
 ### `app.getVersion()`
 
-로드된 애플리케이션의 버전을 반환합니다.
-
-만약 `package.json` 파일에서 애플리케이션의 버전을 찾을 수 없는 경우, 현재 번들 또는
-실행 파일의 버전을 반환합니다.
+Returns `String` - 로드된 애플리케이션의 버전. 만약 `package.json` 파일에서
+애플리케이션의 버전을 찾을 수 없는 경우, 현재 번들 또는 실행 파일의 버전을
+반환합니다.
 
 ### `app.getName()`
 
-`package.json`에서 기술된 현재 애플리케이션의 이름을 반환합니다.
+Returns `String` - `package.json` 에 기술된 현재 애플리케이션의 이름.
 
 npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드는 소문자 이름을
 사용합니다. 하지만 Electron은 `name`대신 `productName` 필드를 주로 사용하기 때문에
@@ -429,8 +442,9 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 ### `app.getLocale()`
 
-현재 애플리케이션의 [로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC)을
-반환합니다. 반환될 수 있는 값은 [여기](locales.md)에서 찾아볼 수 있습니다.
+Returns `String` - 현재 애플리케이션의
+[로케일](https://ko.wikipedia.org/wiki/%EB%A1%9C%EC%BC%80%EC%9D%BC). 반환될 수
+있는 값은 [여기](locales.md)에서 찾아볼 수 있습니다.
 
 **참고:** 패키징된 앱을 배포할 때, `locales` 폴더도 같이 배포해야 합니다.
 
@@ -454,7 +468,9 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 * `protocol` String - 프로토콜의 이름, `://` 제외. 만약 앱을 통해 `electron://`과
   같은 링크를 처리하고 싶다면, 이 메서드에 `electron` 인수를 담아 호출하면 됩니다.
 * `path` String (optional) _Windows_ - 기본값은 `process.execPath`입니다.
-* `args` Array (optional) _Windows_ - 기본값은 빈 배열입니다.
+* `args` String[] (optional) _Windows_ - 기본값은 빈 배열입니다.
+
+Returns `Boolean` - 호출 성공 여부.
 
 이 메서드는 지정한 프로토콜(URI scheme)에 대해 현재 실행파일을 기본 핸들러로
 등록합니다. 이를 통해 운영체제와 더 가깝게 통합할 수 있습니다. 한 번 등록되면,
@@ -463,8 +479,6 @@ npm 모듈 규칙에 따라 대부분의 경우 `package.json`의 `name` 필드�
 
 Windows에선 실행시에 선택적 매개변수를 통해 경로, 실행 파일, 인수, 실행 파일로 전달될
 인수의 배열을 제공할 수 있습니다.
-
-호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
 
 **참고:** macOS에선, 애플리케이션의 `info.plist`에 등록해둔 프로토콜만 사용할 수
 있습니다. 이는 런타임에서 변경될 수 없습니다. 이 파일은 간단히 텍스트 에디터를
@@ -478,22 +492,24 @@ Windows에선 실행시에 선택적 매개변수를 통해 경로, 실행 파�
 ### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - 프로토콜의 이름, `://` 제외.
-* `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` Array (optional) _Windows_ - Defaults to an empty array
+* `path` String (optional) _Windows_ - 기본값은 `process.execPath`
+* `args` String[] (optional) _Windows_ - 기본값은 빈 배열
+
+Returns `Boolean` - 호출 성공 여부.
 
 이 메서드는 현재 실행파일이 지정한 프로토콜(URI scheme)에 대해 기본 핸들러인지를
 확인합니다. 만약 그렇다면, 이 메서드는 앱을 기본 핸들러에서 제거합니다.
 
-호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
-
 ### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - `://`를 제외한 프로토콜의 이름.
+* `path` String (optional) _Windows_ - 기본값은 `process.execPath`
+* `args` String[] (optional) _Windows_ - 기본값은 빈 배열
 
-이 메서드는 현재 실행 파일이 지정한 프로토콜에 대해 기본 동작인지 확인합니다. (URI
-스킴) 만약 그렇다면 `true`를 반환하고 아닌 경우 `false`를 반환합니다.
-* `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` Array (optional) _Windows_ - Defaults to an empty array
+Returns `Boolean`
+
+이 메서드는 현재 실행 파일이 지정한 프로토콜에 대해 기본 동작인지 확인합니다.
+(URI 스킴) 만약 그렇다면 `true`를 반환하고 아닌 경우 `false`를 반환합니다.
 
 **참고:** macOS에선, 응용 프로그램이 프로토콜에 대한 기본 프로토콜 동작으로
 등록되었는지를 확인하기 위해 이 메서드를 사용할 수 있습니다. 또한 macOS에서
@@ -512,71 +528,205 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 `tasks`는 다음과 같은 구조를 가지는 `Task` 객체의 배열입니다:
 
 `Task` Object:
+
 * `program` String - 실행할 프로그램의 경로.
   보통 현재 작동중인 애플리케이션의 경로인 `process.execPath`를 지정합니다.
 * `arguments` String - `program`이 실행될 때 사용될 명령줄 인수.
 * `title` String - JumpList에 표시할 문자열.
 * `description` String - 이 작업에 대한 설명.
-* `iconPath` String - JumpList에 표시될 아이콘의 절대 경로.
-  아이콘을 포함하고 있는 임의의 리소스 파일을 사용할 수 있습니다.
-  보통 애플리케이션의 아이콘을 그대로 사용하기 위해 `process.execPath`를 지정합니다.
+* `iconPath` String - JumpList에 표시될 아이콘의 절대 경로. 아이콘을 포함하고
+  있는 임의의 리소스 파일을 사용할 수 있습니다. 보통 애플리케이션의 아이콘을
+  그대로 사용하기 위해 `process.execPath`를 지정합니다.
 * `iconIndex` Integer - 아이콘 파일의 인덱스. 만약 아이콘 파일이 두 개 이상의
-  아이콘을 가지고 있을 경우, 사용할 아이콘의 인덱스를 이 옵션으로 지정해 주어야 합니다.
-  단, 아이콘을 하나만 포함하고 있는 경우 0을 지정하면 됩니다.
+  아이콘을 가지고 있을 경우, 사용할 아이콘의 인덱스를 이 옵션으로 지정해 주어야
+  합니다. 단, 아이콘을 하나만 포함하고 있는 경우 0을 지정하면 됩니다.
 
-호출에 성공하면 `true`를 반환하고 그렇지 않다면 `false`를 반환합니다.
+Returns `Boolean` - 호출 성공 여부.
+
+**참고:** 점프 목록을 커스터마이징 하려면 대신 `app.setJumpList(categories)` 를
+사용하세요.
+
+### `app.getJumpListSettings()` _Windows_
+
+Returns `Object`:
+* `minItems` Integer - 점프 목록에서 보여질 항목의 최소 수 (이 값에 대한 자세한
+  설명은 [MSDN 문서][JumpListBeginListMSDN])를 보세요.
+* `removedItems` Array - 점프 목록의 사용자 정의 카테고리에서 사용자가 삭제한
+  항목에 해당하는 `JumpListItem` 객체 배열. 이 항목들은 **다음**
+  `app.setJumpList()` 호출로 다시 추가하면 안됩니다. 윈도우는 삭제된 항목을
+  포함하는 카테고리를 표시하지 않을 것 입니다.
+
+### `app.setJumpList(categories)` _Windows_
+
+* `categories` Array or `null` - `JumpListCategory` 객체의 배열.
+
+애플리케이션에 사용자 정의 점프 목록을 설정하거나 삭제하고 다음 문자열 중 하나를
+반환:
+
+* `ok` - 잘못된 것이 없음.
+* `error` - 하나 이상의 에러 발생. 가능성 높은 원인을 파악하기 위해 런타임 로그
+  활성화하세요.
+* `invalidSeparatorError` - 점프 목록의 사용자 정의 카테고리에서 구분자 추가
+  시도. 구분자는 표준 `Tasks` 카테고리에서만 가능 합니다.
+* `fileTypeRegistrationError` - 앱이 등록하지 않은 파일 유형을 점프 목록에
+  추가하려고 시도함.
+* `customCategoryAccessDeniedError` - 사용자 개인 정보 보호와 그룹 정책 설정에
+  따라 점프 목록에 사용자 정의 카테고리 추가가 불가능 합니다.
+
+만약 `categories` 가 `null` 이면 이전 사용자 점프 목록 설정은 앱을 위한 표준
+점프 목록으로 대체됩니다 (윈도우에 의해 관리됨).
+
+`JumpListCategory` 객체는 다음 속성을 가져야 합니다:
+
+* `type` String - 다음 중 하나:
+  * `tasks` - 이 카테고리의 항목은 표준 `Tasks` 카테고리에 위치할 것 입니다.
+    이 카테고리는 하나만 존재하며, 항상 점프 목록의 하단에 보여집니다.
+  * `frequent` - 앱에 의해 자주 열린 파일의 목록을 보여줍니다. 카테고리의
+    이름과 항목들은 윈도우에 읳해 설정 됩니다.
+  * `recent` - 앱에 의해 최근에 열린 파일의 목록을 보여줍니다. 카테고리의
+    이름과 항목들은 윈도우에 의해 설정 됩니다. `app.addRecentDocument(path)` 을
+    사용하면 간접적으로 이 카테고리에 항목이 추가될 것 입니다.
+  * `custom` - 작업 또는 파일 링크를 보여주며, 앱에 의해 `name` 설정되어야 합니다.
+* `name` String - `type` 이 `custom` 이면 꼭 설정되어야 하고, 그 외는 생략합니다.
+* `items` Array - `type` 이 `taks` 면 `JumpListItem` 객체의 배열, 그 외는
+  생략합니다.
+
+**참고:** `JumpListCategory` 객체가 `type`, `name` 솏속성 둘 다 없다면 `type` 은
+`tasks` 로 가정합니다. `name` 속성이 설정되었지만 `type` 속성이 생략된 경우
+`type` 은 `custom` 으로 가정합니다.
+
+**참고:** 사용자는 사용자 카테고리에서 항목을 삭제할 수 있습니다. 그리고 윈도우는
+`app.setJumpList(categories)` 의 다음 성공적인 호출 이후까지 삭제된 항목을 다시
+추가하는 것을 금지할 것 입니다. 그 이전에 커스텀 카테고리에 삭제된 항목을 다시
+추가하려 한다면 커스텀 카테고리가 전부 점프 목록에서 빠질 것 입니다. 제거된 항목
+목록은 `app.getJumpListSettings()` 를 사용해 얻을 수 있습니다.
+
+`JumpListItem` 객체는 다음 속성을 가져야 합니다:
+
+* `type` String - 다음 중 하나:
+  * `task` - 특정 인수로 앱을 실행시킬 작업.
+  * `separator` - 표준 `Tasks` 카테고리에서 항목을 구분할 수 있습니다.
+  * `file` - 점프 목록을 만든 앱을 사용하여 파일을 열 파일 링크. 이것이
+    동작하려면 그 파일 형식을 앱이 처리할 수 있게 등록되있어야 한다. (하지만,
+    그것이 기본 처리기일 필요는 없습니다.).
+* `path` String - 파일을 열기 위한 경로. `type` 이 `file` 경우에만 설정되어야
+  한다.
+* `program` String - 실행하기 위한 프로그램의 경로. 일반적으로 현재 프로그램을
+  열기 위해 `process.execPath` 를 지정해야 합니다.
+* `args` String - `program` 이 실행됐을 때의 커맨드 라인 인수. `type` 이
+  `task` 일 경우만 설정되어야 한다.
+* `title` String - 점프 목록에서 항목에 표시될 글자. `type` 이 `task` 일 경우만
+  설정되어야 한다.
+* `description` String - 작업의 설명 (툴팁으로 표시된다). `type` 이 `task` 일
+  경우만 설정되어야 한다.
+* `iconPath` String - The absolute path to an icon to be displayed in a
+  Jump List, which can be an arbitrary resource file that contains an icon
+  (e.g. `.ico`, `.exe`, `.dll`). You can usually specify `process.execPath` to
+  show the program icon.
+* `iconIndex` Integer - 리소스 파일의 아이콘 인덱스. 리소스 파일이 여러 아이콘을
+  포함하고 있다면 이 작업을 위해 표시되어야 할 아이콘의 0 기준 인덱스를 명시할
+  수 있다. 리소스 파일이 하나의 아이콘만 가지고 있다면 이 속성은 0 이어야 한다.
+
+사용자 점프 목록을 생성하는 간단한 예제 입니다:
+
+```javascript
+const {app} = require('electron')
+
+app.setJumpList([
+  {
+    type: 'custom',
+    name: 'Recent Projects',
+    items: [
+      { type: 'file', path: 'C:\\Projects\\project1.proj' },
+      { type: 'file', path: 'C:\\Projects\\project2.proj' }
+    ]
+  },
+  { // has a name so `type` is assumed to be "custom"
+    name: 'Tools',
+    items: [
+      {
+        type: 'task', title: 'Tool A',
+        program: process.execPath, args: '--run-tool-a',
+        icon: process.execPath, iconIndex: 0,
+        description: 'Runs Tool A'
+      },
+      {
+        type: 'task', title: 'Tool B',
+        program: process.execPath, args: '--run-tool-b',
+        icon: process.execPath, iconIndex: 0,
+        description: 'Runs Tool B'
+      }
+    ]
+  },
+  { type: 'frequent' },
+  { // has no name and no type so `type` is assumed to be "tasks"
+    items: [
+      {
+        type: 'task', title: 'New Project',
+        program: process.execPath, args: '--new-project',
+        description: 'Create a new project.'
+      },
+      { type: 'separator' },
+      {
+        type: 'task', title: 'Recover Project',
+        program: process.execPath, args: '--recover-project',
+        description: 'Recover Project'
+      }
+    ]
+  }
+])
+```
 
 ### `app.makeSingleInstance(callback)`
 
 * `callback` Function
 
-현재 애플리케이션을 **Single Instance Application** 으로 만들어줍니다.
-이 메서드는 애플리케이션이 여러 번 실행됐을 때 다중 인스턴스가 생성되는 대신 한 개의
-주 인스턴스만 유지되도록 만들 수 있습니다. 이때 중복 생성된 인스턴스는 주 인스턴스에
+현재 애플리케이션을 단일 인스턴스 애플리케이션으로 만들어줍니다. 이 메서드는
+애플리케이션이 여러 번 실행됐을 때 다중 인스턴스가 생성되는 대신 한 개의 주
+인스턴스만 유지되도록 만들 수 있습니다. 이때 중복 생성된 인스턴스는 주 인스턴스에
 신호를 보내고 종료됩니다.
 
 `callback`은 주 인스턴스가 생성된 이후 또 다른 인스턴스가 생성됐을 때
-`callback(argv, workingDirectory)` 형식으로 호출됩니다. `argv`는 두 번째 인스턴스의
-명령줄 인수이며 `workingDirectory`는 현재 작업중인 디렉터리입니다. 보통 대부분의
-애플리케이션은 이러한 콜백이 호출될 때 주 윈도우를 포커스하고 최소화되어있으면 창
-복구를 실행합니다.
+`callback(argv, workingDirectory)` 형식으로 호출됩니다. `argv`는 두 번째
+인스턴스의 명령줄 인수이며 `workingDirectory`는 현재 작업중인 디렉터리입니다.
+보통 대부분의 애플리케이션은 이러한 콜백이 호출될 때 주 윈도우를 포커스하고
+최소화되어있으면 창 복구를 실행합니다.
 
 `callback`은 `app`의 `ready` 이벤트가 발생한 후 실행됨을 보장합니다.
 
 이 메서드는 현재 실행된 애플리케이션이 주 인스턴스인 경우 `false`를 반환하고
-애플리케이션의 로드가 계속 진행 되도록 합니다. 그리고 두 번째 중복된 인스턴스 생성인
-경우 `true`를 반환합니다. (다른 인스턴스에 인수가 전달됬을 때) 이 불리언 값을 통해
-중복 생성된 인스턴스는 즉시 종료시켜야 합니다.
+애플리케이션의 로드가 계속 진행 되도록 합니다. 그리고 두 번째 중복된 인스턴스
+생성인 경우 `true`를 반환합니다. (다른 인스턴스에 인수가 전달됬을 때) 이 불리언
+값을 통해 중복 생성된 인스턴스는 즉시 종료시켜야 합니다.
 
-macOS에선 사용자가 Finder에서 애플리케이션의 두 번째 인스턴스를 열려고 했을 때 자동으로
-**Single Instance** 화 하고 `open-file`과 `open-url` 이벤트를 발생시킵니다. 그러나
-사용자가 애플리케이션을 CLI 터미널에서 실행하면 운영체제 시스템의 싱글 인스턴스
-메커니즘이 무시되며 그대로 중복 실행됩니다. 따라서 macOS에서도 이 메서드를 통해 확실히
-중복 실행을 방지하는 것이 좋습니다.
+macOS에선 사용자가 Finder에서 애플리케이션의 두 번째 인스턴스를 열려고 했을 때
+자동으로 단일 인스턴스화 하고 `open-file`과 `open-url` 이벤트를 발생시킵니다.
+그러나 사용자가 애플리케이션을 CLI 터미널에서 실행하면 운영체제 시스템의 싱글
+인스턴스 메커니즘이 무시되며 그대로 중복 실행됩니다. 따라서 macOS에서도 이
+메서드를 통해 확실히 중복 실행을 방지하는 것이 좋습니다.
 
-다음 예시는 두 번째 인스턴스가 생성되었을 때 중복된 인스턴스를 종료하고 주 애플리케이션
-인스턴스의 윈도우를 활성화 시키는 예시입니다:
+다음 예시는 두 번째 인스턴스가 생성되었을 때 중복된 인스턴스를 종료하고 주
+애플리케이션 인스턴스의 윈도우를 활성화 시키는 예시입니다:
 
 ```javascript
-let myWindow = null;
+const {app} = require('electron')
+let myWindow = null
 
 const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
   // 애플리케이션을 중복 실행했습니다. 주 애플리케이션 인스턴스를 활성화 합니다.
   if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore();
-    myWindow.focus();
+    if (myWindow.isMinimized()) myWindow.restore()
+    myWindow.focus()
   }
-  return true;
-});
+})
 
 if (shouldQuit) {
-  app.quit();
-  return;
+  app.quit()
 }
 
 // 윈도우를 생성하고 각종 리소스를 로드하고 작업합니다.
 app.on('ready', () => {
-});
+})
 ```
 
 ### `app.releaseSingleInstance()`
@@ -592,12 +742,12 @@ app.on('ready', () => {
 * `webpageURL` String - 적당한 앱이 기기에 설치되지 않았을 때 브라우저에서 로드할
   웹 페이지. 스킴은 반드시 `http` 또는 `https`가 되어야 합니다.
 
-`NSUserActivity`를 만들고 현재 activity에 설정합니다. 이 activity는 이후 다른 기기와
-[Handoff][handoff]할 때 자격으로 사용됩니다.
+`NSUserActivity`를 만들고 현재 activity에 설정합니다. 이 activity는 이후 다른
+기기와 [Handoff][handoff]할 때 자격으로 사용됩니다.
 
 ### `app.getCurrentActivityType()` _macOS_
 
-현재 작동중인 activity의 타입을 반환합니다.
+Returns `String` - 현재 작동중인 activity의 타입.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
@@ -628,8 +778,10 @@ pkcs12 형식으로된 인증서를 플랫폼 인증서 저장소로 가져옵�
 
 * `count` Integer
 
-현재 앱에 대해 카운터 뱃지를 설정합니다. count를 `0`으로 설정하면 뱃지를 숨깁니다.
-호출이 성공적으로 끝나면 `true`를 반환하고 아닌 경우 `false`를 반환합니다.
+Returns `Boolean` - 호출 성공 여부.
+
+현재 앱에 대해 카운터 뱃지를 설정합니다. count 를 `0`으로 설정하면 뱃지를
+숨깁니다.
 
 macOS에선 독 아이콘에 표시됩니다. Linux에선 Unity 런처에서만 작동합니다.
 
@@ -638,17 +790,51 @@ macOS에선 독 아이콘에 표시됩니다. Linux에선 Unity 런처에서만 
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
-현재 카운터 뱃지에 표시중인 값을 반환합니다.
+Returns `Integer` - 현재 카운터 뱃지에 표시중인 값.
 
 ### `app.isUnityRunning()` _Linux_
 
-현재 데스크톱 환경이 Unity인지 여부를 반환합니다.
+Returns `Boolean` - 현재 데스크톱 환경이 Unity 인지 여부.
+
+### `app.getLoginItemSettings()` _macOS_ _Windows_
+
+Returns `Object`:
+* `openAtLogin` Boolean - 앱이 로그인시 열리도록 설정되어있는 경우 `true`를 반환.
+* `openAsHidden` Boolean - 앱이 로구인시 숨겨진 채로 열리도록 설정되어있는 경우
+  `true`를 반환. 이 설정은 macOS에서만 지원됩니다.
+* `wasOpenedAtLogin` Boolean - 자동으로 로그인할 때 애플리케이션이 열려있었는지
+  여부. 이 설정은 macOS에서만 지원됩니다.
+* `wasOpenedAsHidden` Boolean - 앱이 숨겨진 로그인 항목처럼 열려있었는지 여부.
+  이는 앱이 시작시 어떤 윈도우도 열지 않을 것을 표시합니다. 이 설정은 macOS에서만
+  지원됩니다.
+* `restoreState` Boolean - 앱이 이전 세션에서 상태를 복원하여 로그인 항목처럼
+  열려있었는지 여부. 이는 앱이 마지막으로 종료되었던 때에 열려있었던 윈도우를
+  복원하는 것을 표시합니다. 이 설정은 macOS에서만 지원됩니다.
+
+**참고:** 이 API 는 [MAS 빌드](docs/tutorial/mac-app-store-submission-guide.md)
+에 영향을 주지 않습니다.
+
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
+
+* `settings` Object
+  * `openAtLogin` Boolean - `true`로 지정하면 로그인시 애플리케이션을 열도록 하며
+    `false`로 지정시 로그인 항목에서 삭제합니다.
+  * `openAsHidden` Boolean - `true`로 지정하면 애플리케이션을 숨겨진 채로 열도록
+    합니다. 기본값은 `false`입니다. 사용자가 시스템 설정에서 이 설정을 변경할 수
+    있으며 앱이 열렸을 때 현재 값을 확인하려면
+    `app.getLoginItemStatus().wasOpenedAsHidden`을 확인해야 합니다. 이 설정은
+    macOS에서만 지원됩니다.
+
+앱의 로그인 항목 설정을 지정합니다.
+
+**참고:** 이 API 는 [MAS 빌드](docs/tutorial/mac-app-store-submission-guide.md)
+에 영향을 주지 않습니다.
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
-`Boolean` 값을 반환하며 Chrome의 접근성 지원이 활성화되어있으면 `true`를 그렇지
-않다면 `false`를 반환합니다. 이 API는 사용할 수 있는 스크린 리더와 같은 접근성 기술이
-감지되었을 때 `true`를 반환합니다. 자세한 내용은
+Returns `Boolean` - Chrome의 접근성 지원이 활성화되어있으면 `true`를 그렇지
+않다면 `false`를 반환합니다. 이 API는 사용할 수 있는 스크린 리더와 같은 접근성
+기술이 감지되었을 때 `true`를 반환합니다. 자세한 내용은
 https://www.chromium.org/developers/design-documents/accessibility 를 참고하세요.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
@@ -674,8 +860,8 @@ Chrominum의 명령줄에 인수를 추가합니다. 인수는 올바르게 인�
 * `type` String (optional) - `critical` 또는 `informational`을 지정할 수 있습니다.
   기본값은 `informational` 입니다.
 
-`critical`이 전달되면 dock 아이콘이 애플리케이션이 활성화되거나 요청이 중지되기 전까지
-통통 튀는 바운스 효과를 적용합니다.
+`critical`이 전달되면 dock 아이콘이 애플리케이션이 활성화되거나 요청이 중지되기
+전까지 통통 튀는 바운스 효과를 적용합니다.
 
 `informational`이 전달되면 dock 아이콘이 1초만 통통 튑니다. 하지만 애플리케이션이
 활성화되거나 요청이 중지되기 전까지 요청은 계속 활성화로 유지 됩니다.
@@ -702,7 +888,7 @@ dock의 badge에 표시할 문자열을 설정합니다.
 
 ### `app.dock.getBadge()` _macOS_
 
-dock의 badge에 설정된 문자열을 반환합니다.
+Returns `String` - dock의 badge에 설정된 문자열.
 
 ### `app.dock.hide()` _macOS_
 
@@ -714,7 +900,7 @@ dock 아이콘을 표시합니다.
 
 ### `app.dock.isVisible()` _macOS_
 
-dock 아이콘이 보이는 상태인지 여부를 반환합니다. `app.dock.show()` 호출은
+Returns `Boolean` - dock 아이콘이 보이는 상태인지 여부. `app.dock.show()` 호출은
 비동기이므로 해당 메서드를 호출한 후 바로 이 메서드를 호출하면 `true`를 반환하지
 않을 수 있습니다.
 
@@ -730,35 +916,6 @@ dock 아이콘이 보이는 상태인지 여부를 반환합니다. `app.dock.sh
 
 dock 아이콘의 `image`를 설정합니다.
 
-### `app.getLoginItemSettings()` _macOS_ _Windows_
-
-앱의 로그인 항목 설정을 객체로 반환합니다.
-
-* `openAtLogin` Boolean - 앱이 로그인시 열리도록 설정되어있는 경우 `true`를 반환.
-* `openAsHidden` Boolean - 앱이 로구인시 숨겨진 채로 열리도록 설정되어있는 경우
-  `true`를 반환. 이 설정은 macOS에서만 지원됩니다.
-* `wasOpenedAtLogin` Boolean - 자동으로 로그인할 때 애플리케이션이 열려있었는지 여부.
-  이 설정은 macOS에서만 지원됩니다.
-* `wasOpenedAsHidden` Boolean - 앱이 숨겨진 로그인 항목처럼 열려있었는지 여부.
-  이는 앱이 시작시 어떤 윈도우도 열지 않을 것을 표시합니다. 이 설정은 macOS에서만
-  지원됩니다.
-* `restoreState` Boolean - 앱이 이전 세션에서 상태를 복원하여 로그인 항목처럼
-  열려있었는지 여부. 이는 앱이 마지막으로 종료되었던 때에 열려있었던 윈도우를 복원하는
-  것을 표시합니다. 이 설정은 macOS에서만 지원됩니다.
-
-### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
-
-* `settings` Object
-  * `openAtLogin` Boolean - `true`로 지정하면 로그인시 애플리케이션을 열도록 하며
-    `false`로 지정시 로그인 항목에서 삭제합니다.
-  * `openAsHidden` Boolean - `true`로 지정하면 애플리케이션을 숨겨진 채로 열도록
-    합니다. 기본값은 `false`입니다. 사용자가 시스템 설정에서 이 설정을 변경할 수
-    있으며 앱이 열렸을 때 현재 값을 확인하려면
-    `app.getLoginItemStatus().wasOpenedAsHidden`을 확인해야 합니다. 이 설정은
-    macOS에서만 지원됩니다.
-
-앱의 로그인 항목 설정을 지정합니다.
-
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
@@ -767,3 +924,4 @@ dock 아이콘의 `image`를 설정합니다.
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
 [unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux
+[JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
