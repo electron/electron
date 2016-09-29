@@ -25,6 +25,7 @@
 #include "net/cert/ct_known_logs.h"
 #include "net/cert/ct_log_verifier.h"
 #include "net/cert/ct_policy_enforcer.h"
+#include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_filter.h"
@@ -45,6 +46,7 @@
 #include "net/url_request/file_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
+#include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_context_storage.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
@@ -277,27 +279,16 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(std::move(server_properties));
 
-    cert_transparency_verifier_.reset(new net::MultiLogCTVerifier());
-    cert_transparency_verifier_->AddLogs(
-        net::ct::CreateLogVerifiersForKnownLogs());
-    ct_policy_enforcer_.reset(new net::CTPolicyEnforcer());
+    std::unique_ptr<net::MultiLogCTVerifier> ct_verifier =
+        base::MakeUnique<net::MultiLogCTVerifier>();
+    ct_verifier->AddLogs(net::ct::CreateLogVerifiersForKnownLogs());
+    storage_->set_cert_transparency_verifier(std::move(ct_verifier));
+    storage_->set_ct_policy_enforcer(base::MakeUnique<net::CTPolicyEnforcer>());
 
     net::HttpNetworkSession::Params network_session_params;
-    network_session_params.cert_verifier = url_request_context_->cert_verifier();
-    network_session_params.proxy_service = url_request_context_->proxy_service();
-    network_session_params.ssl_config_service = url_request_context_->ssl_config_service();
-    network_session_params.http_server_properties = url_request_context_->http_server_properties();
+    net::URLRequestContextBuilder::SetHttpNetworkSessionComponents(
+        url_request_context_.get(), &network_session_params);
     network_session_params.ignore_certificate_errors = false;
-    network_session_params.transport_security_state =
-        url_request_context_->transport_security_state();
-    network_session_params.channel_id_service =
-        url_request_context_->channel_id_service();
-    network_session_params.http_auth_handler_factory =
-        url_request_context_->http_auth_handler_factory();
-    network_session_params.net_log = url_request_context_->net_log();
-    network_session_params.cert_transparency_verifier =
-        cert_transparency_verifier_.get();
-    network_session_params.ct_policy_enforcer = ct_policy_enforcer_.get();
 
     // --disable-http2
     if (command_line.HasSwitch(switches::kDisableHttp2)) {
