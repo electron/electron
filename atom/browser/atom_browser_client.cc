@@ -38,6 +38,7 @@
 #include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
@@ -352,6 +353,7 @@ void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     additional_schemes->insert(additional_schemes->end(),
                                schemes_list.begin(),
                                schemes_list.end());
+  additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
