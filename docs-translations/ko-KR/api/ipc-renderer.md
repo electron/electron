@@ -1,4 +1,4 @@
-﻿# ipcRenderer
+# ipcRenderer
 
 > 렌더러 프로세스에서 메인 프로세스로 비동기 통신을 합니다.
 
