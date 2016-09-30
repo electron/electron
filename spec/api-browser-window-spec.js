@@ -598,7 +598,7 @@ describe('browser-window module', function () {
 
       const preload = path.join(fixtures, 'module', 'preload-sandbox.js')
 
-      // http protocol to simulate accessing a another domain. this is required
+      // http protocol to simulate accessing another domain. This is required
       // because the code paths for cross domain popups is different.
       function crossDomainHandler (request, callback) {
         callback({
@@ -698,6 +698,7 @@ describe('browser-window module', function () {
         })
         let htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open-external')
         const pageUrl = 'file://' + htmlPath
+        let popupWindow
         w.loadURL(pageUrl)
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
           assert.equal(url, 'http://www.google.com/#q=electron')
@@ -710,10 +711,19 @@ describe('browser-window module', function () {
             assert.equal(html, '<h1>http://www.google.com/#q=electron</h1>')
             ipcMain.once('answer', function (event, exceptionMessage) {
               assert(/Blocked a frame with origin/.test(exceptionMessage))
-              done()
+
+              // FIXME this popup window should be closed in sandbox.html
+              closeWindow(popupWindow).then(() => {
+                popupWindow = null
+                done()
+              })
             })
             w.webContents.send('child-loaded')
           })
+        })
+
+        app.once('browser-window-created', function (event, window) {
+          popupWindow = window
         })
       })
 

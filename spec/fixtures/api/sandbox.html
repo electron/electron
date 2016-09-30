@@ -1,9 +1,9 @@
 <html>
 <script type="text/javascript" charset="utf-8">
   if (window.opener) {
-    window.callback = function() {
+    window.callback = () => {
       opener.require('electron').ipcRenderer.send('answer', document.body.innerHTML)
-    };
+    }
   } else {
     const {ipcRenderer} = require('electron')
     const tests = {
@@ -69,8 +69,8 @@
     }, false)
 
     let [,test] = window.location.href.split('?')
-      if (tests.hasOwnProperty(test))
-        tests[test]()
+    if (tests.hasOwnProperty(test))
+      tests[test]()
   }
 </script>
 </html>
