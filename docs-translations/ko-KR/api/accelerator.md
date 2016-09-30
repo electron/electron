@@ -1,4 +1,4 @@
-﻿# Accelerator
+# Accelerator
 
 > 키보드 단축키를 정의합니다.
 

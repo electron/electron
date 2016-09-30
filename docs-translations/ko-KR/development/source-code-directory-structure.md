@@ -1,4 +1,4 @@
-﻿# 소스 코드 디렉터리 구조
+# 소스 코드 디렉터리 구조
 
 Electron의 소스 코드는 몇 개의 파트로 분리되어 있습니다. 그리고 Chromium의 분리
 규칙(separation conventions)을 주로 따르고 있습니다.
