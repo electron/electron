@@ -598,7 +598,7 @@ describe('browser-window module', function () {
 
       const preload = path.join(fixtures, 'module', 'preload-sandbox.js')
 
-      // http protocol to simulate accessing a another domain. this is required
+      // http protocol to simulate accessing another domain. This is required
       // because the code paths for cross domain popups is different.
       function crossDomainHandler (request, callback) {
         callback({
