@@ -698,6 +698,7 @@ describe('browser-window module', function () {
         })
         let htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open-external')
         const pageUrl = 'file://' + htmlPath
+        let openedWindow
         w.loadURL(pageUrl)
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
           assert.equal(url, 'http://www.google.com/#q=electron')
@@ -710,10 +711,16 @@ describe('browser-window module', function () {
             assert.equal(html, '<h1>http://www.google.com/#q=electron</h1>')
             ipcMain.once('answer', function (event, exceptionMessage) {
               assert(/Blocked a frame with origin/.test(exceptionMessage))
-              done()
+
+              // FIXME this opened window should be closed in sandbox.html
+              closeWindow(openedWindow).then(done)
             })
             w.webContents.send('child-loaded')
           })
+        })
+
+        app.once('browser-window-created', function (event, window) {
+          openedWindow = window
         })
       })
 
