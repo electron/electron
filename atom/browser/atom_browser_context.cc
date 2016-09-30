@@ -71,7 +71,8 @@ AtomBrowserContext::AtomBrowserContext(
     const std::string& partition, bool in_memory,
     const base::DictionaryValue& options)
     : brightray::BrowserContext(partition, in_memory),
-      network_delegate_(new AtomNetworkDelegate) {
+      network_delegate_(new AtomNetworkDelegate),
+      cookie_delegate_(new AtomCookieDelegate) {
   // Construct user agent string.
   Browser* browser = Browser::Get();
   std::string name = RemoveWhitespace(browser->GetName());
@@ -105,6 +106,10 @@ void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
 
 net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
   return network_delegate_;
+}
+
+net::CookieMonsterDelegate* AtomBrowserContext::CreateCookieDelegate() {
+  return cookie_delegate();
 }
 
 std::string AtomBrowserContext::GetUserAgent() {
