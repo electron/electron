@@ -17,9 +17,10 @@ describe('<webview> tag', function () {
   })
 
   afterEach(function () {
-    if (document.body.contains(webview)) {
-      document.body.removeChild(webview)
+    if (!document.body.contains(webview)) {
+      document.body.appendChild(webview)
     }
+    webview.remove()
     if (w) {
       w.destroy()
       w = null
