@@ -388,6 +388,24 @@ session.defaultSession.cookies.set(cookie, (error) => {
 })
 ```
 
+### Instance Events
+
+다음은 `Cookies` 의 인스턴스의 이벤트입니다:
+
+#### Event: 'changed'
+
+* `event` Event
+* `cookie` Object - 변경된 쿠키
+* `cause` String - 다음 값 중 하나인 변경된 이유:
+  * `explicit` - 쿠키가 소비자의 행위에 의해 직접 변경되었습니다.
+  * `overwrite` - 쿠키를 덮어쓰는 삽입 동작에 의해 자동으로 제거되었습니다.
+  * `expired` - 쿠키가 유효기간이 만료되어 자동으로 제거되었습니다.
+  * `evicted` - 가비지 컬렉션에 의해 자동으로 퇴출되었습니다.
+  * `expired-overwrite` - 쿠키가 이미 만료된 유효기간으로 덮어써졌습니다.
+* `removed` Boolean - 쿠키가 제거되었으면 `true`, 아니면 `false`.
+
+쿠키가 추가, 편집, 삭제, 만료되는 변경이 되면 발생합니다.
+
 ### Instance Methods
 
 다음은 `Cookies` 객체에서 사용할 수 있는 메서드들입니다:
