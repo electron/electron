@@ -13,6 +13,7 @@
 #include "native_mate/dictionary.h"
 
 
+
 namespace mate {
 
 template<>
@@ -83,8 +84,8 @@ namespace atom {
 namespace api {
 
 URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-  : weak_ptr_factory_(this) {
-    InitWith(isolate, wrapper);
+    : weak_ptr_factory_(this) {
+  InitWith(isolate, wrapper);
 }
 
 URLRequest::~URLRequest() {

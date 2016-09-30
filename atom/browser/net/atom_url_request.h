@@ -8,24 +8,18 @@
 
 #include <string>
 #include <vector>
+#include "atom/browser/api/atom_api_url_request.h"
+#include "atom/browser/atom_browser_context.h"
 #include "base/memory/ref_counted.h"
+#include "base/memory/weak_ptr.h"
+#include "net/base/auth.h"
 #include "net/base/chunked_upload_data_stream.h"
+#include "net/base/io_buffer.h"
+#include "net/base/upload_element_reader.h"
+#include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 
-
-namespace net {
-class IOBuffer;
-class IOBufferWithSize;
-class DrainableIOBuffer;
-};
-
 namespace atom {
-
-class AtomBrowserContext;
-
-namespace api {
-class URLRequest;
-}
 
 class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
                        public net::URLRequest::Delegate {
@@ -56,6 +50,10 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
 
  private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
+
+   explicit AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
+   ~AtomURLRequest()override;
+
   void DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
                      bool is_last);
   void DoAbort() const;
@@ -73,9 +71,6 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
     scoped_refptr<net::IOBufferWithSize> data) const;
   void InformDelegateResponseCompleted() const;
   void InformDelegateErrorOccured(const std::string& error) const;
-
-  explicit AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
-  virtual ~AtomURLRequest();
 
   base::WeakPtr<api::URLRequest> delegate_;
   std::unique_ptr<net::URLRequest> request_;

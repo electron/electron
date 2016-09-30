@@ -7,11 +7,15 @@
 
 #include <array>
 #include <string>
+#include "atom/browser/api/event_emitter.h"
 #include "atom/browser/api/trackable_object.h"
+#include "base/memory/weak_ptr.h"
 #include "native_mate/handle.h"
+#include "native_mate/wrappable_base.h"
+#include "net/base/auth.h"
+#include "net/base/io_buffer.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request_context.h"
-
 
 namespace atom {
 
@@ -19,6 +23,72 @@ class AtomURLRequest;
 
 namespace api {
 
+//
+// The URLRequest class implements the V8 binding between the JavaScript API
+// and Chromium native net library. It is responsible for handling HTTP/HTTPS 
+// requests.
+//
+// The current class provides only the binding layer. Two other JavaScript 
+// classes (ClientRequest and IncomingMessage) in the net module provide the 
+// final API, including some state management and arguments validation.
+//
+// URLRequest's methods fall into two main categories: command and event methods.
+// They are always executed on the Browser's UI thread.
+// Command methods are called directly from JavaScript code via the API defined
+// in BuildPrototype. A command method is generally implemented by forwarding 
+// the call to a corresponding method on AtomURLRequest which does the 
+// synchronization on the Browser IO thread. The latter then calls into Chromium 
+// net library. On the other hand, net library events originate on the IO 
+// thread in AtomURLRequest and are synchronized back on the UI thread, then
+// forwarded to a corresponding event method in URLRequest and then to 
+// JavaScript via the EmitRequestEvent/EmitResponseEvent helpers.
+//
+// URLRequest lifetime management: we followed the Wrapper/Wrappable pattern 
+// defined in native_mate. However, we augment that pattern with a pin/unpin
+// mechanism. The main reason is that we want the JS API to provide a similar
+// lifetime guarantees as the XMLHttpRequest. 
+// https://xhr.spec.whatwg.org/#garbage-collection
+//
+// The primary motivation is to not garbage collect a URLInstance as long as the
+// object is emitting network events. For instance, in the following JS code
+//
+// (function() {
+//   let request = new URLRequest(...);
+//   request.on('response', (response)=>{
+//    response.on('data', (data) = > {
+//      console.log(data.toString());
+//    });
+//  });
+// })();
+//
+// we still want data to be logged even if the response/request objects are no 
+// more referenced in JavaScript.
+//
+// Binding by simply following the native_mate Wrapper/Wrappable pattern will
+// delete the URLRequest object when the corresponding JS object is collected.
+// The v8 handle is a private member in WrappableBase and it is always weak, 
+// there is no way to make it strong without changing native_mate.
+// The solution we implement consists of maintaining some kind of state that 
+// prevents collection of JS wrappers as long as the request is emitting network
+// events. At initialization, the object is unpinned. When the request starts, 
+// it is pinned. When no more events would be emitted, the object is unpinned 
+// and lifetime is again managed by the standard native mate Wrapper/Wrappable 
+// pattern.
+//
+// pin/unpin: are implemented by constructing/reseting a V8 strong persistent 
+// handle.
+//
+// The URLRequest/AtmURLRequest interaction could have been implemented in a 
+// single class. However, it implies that the resulting class lifetime will be
+// managed by two conflicting mechanisms: JavaScript garbage collection and 
+// Chromium reference counting. Reasoning about lifetime issues become much 
+// more complex.
+//
+// We chose to split the implementation into two classes linked via a strong/weak
+// pointers. A URLRequest instance is deleted if it is unpinned and the 
+// corresponding JS wrapper object is garbage collected. On the other hand, 
+// an AtmURLRequest instance lifetime is totally governed by reference counting.
+//
 class URLRequest : public mate::EventEmitter<URLRequest> {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
@@ -27,11 +97,18 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
     v8::Isolate* isolate,
     v8::Local<v8::FunctionTemplate> prototype);
 
+  // Methods for reporting events into JavaScript.
+  void OnAuthenticationRequired(
+    scoped_refptr<const net::AuthChallengeInfo> auth_info);
+  void OnResponseStarted();
+  void OnResponseData(scoped_refptr<const net::IOBufferWithSize> data);
+  void OnResponseCompleted();
+  void OnError(const std::string& error);
+
  protected:
   explicit URLRequest(v8::Isolate* isolate,
              v8::Local<v8::Object> wrapper);
   ~URLRequest() override;
-
 
  private:
   bool Write(scoped_refptr<const net::IOBufferWithSize> buffer,
@@ -41,20 +118,11 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   void RemoveExtraHeader(const std::string& name);
   void SetChunkedUpload(bool is_chunked_upload);
 
-  friend class AtomURLRequest;
-  void OnAuthenticationRequired(
-    scoped_refptr<const net::AuthChallengeInfo> auth_info);
-  void OnResponseStarted();
-  void OnResponseData(scoped_refptr<const net::IOBufferWithSize> data);
-  void OnResponseCompleted();
-  void OnError(const std::string& error);
-
   int StatusCode() const;
   std::string StatusMessage() const;
   scoped_refptr<const net::HttpResponseHeaders> RawResponseHeaders() const;
   uint32_t ResponseHttpVersionMajor() const;
   uint32_t ResponseHttpVersionMinor() const;
-
 
   template <typename ... ArgTypes>
   std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)>
@@ -70,7 +138,10 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   void unpin();
 
   scoped_refptr<AtomURLRequest> atom_request_;
+
+  // Used to implement pin/unpin.
   v8::Global<v8::Object> wrapper_;
+
   base::WeakPtrFactory<URLRequest> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequest);
@@ -94,7 +165,6 @@ void URLRequest::EmitRequestEvent(ArgTypes... args) {
     _emitRequestEvent->Call(wrapper, arguments.size(), arguments.data());
 }
 
-
 template <typename ... ArgTypes>
 void URLRequest::EmitResponseEvent(ArgTypes... args) {
   auto arguments = BuildArgsArray(args...);
@@ -104,9 +174,6 @@ void URLRequest::EmitResponseEvent(ArgTypes... args) {
       .Get("_emitResponseEvent", &_emitResponseEvent))
     _emitResponseEvent->Call(wrapper, arguments.size(), arguments.data());
 }
-
-
-
 
 }  // namespace api
 

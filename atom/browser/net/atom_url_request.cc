@@ -50,9 +50,9 @@ class UploadOwnedIOBufferElementReader : public net::UploadBytesElementReader {
 }  // namespace internal
 
 AtomURLRequest::AtomURLRequest(base::WeakPtr<api::URLRequest> delegate)
-  : delegate_(delegate)
-  , response_read_buffer_(new net::IOBuffer(kBufferSize))
-  , is_chunked_upload_(false) {
+    : delegate_(delegate),
+      response_read_buffer_(new net::IOBuffer(kBufferSize)),
+      is_chunked_upload_(false) {
 }
 
 AtomURLRequest::~AtomURLRequest() {
@@ -263,8 +263,7 @@ void AtomURLRequest::ReadResponse() {
   // completed immediately, without trying to read any data back (all we care
   // about is the response code and headers, which we already have).
   int bytes_read = 0;
-  if (request_->status().is_success()
-    /* TODO && (request_type_ != URLFetcher::HEAD)*/)
+  if (request_->status().is_success())
     if (!request_->Read(response_read_buffer_.get(), kBufferSize, &bytes_read))
       bytes_read = -1;
   OnReadCompleted(request_.get(), bytes_read);
@@ -297,8 +296,7 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request,
                           kBufferSize,
                           &bytes_read));
 
-  if (!status.is_io_pending()
-    /* TODO || request_type_ == URLFetcher::HEAD*/ )
+  if (!status.is_io_pending())
 
     content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
