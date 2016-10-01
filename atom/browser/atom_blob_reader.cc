@@ -127,6 +127,7 @@ void AtomBlobReader::BlobReadHelper::DidReadBlobData(
   memcpy(data, blob_data->data(), size);
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
       base::Bind(completion_callback_, data, size));
+  delete[] data;
   delete this;
 }
 
