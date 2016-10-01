@@ -252,7 +252,7 @@ for more information on macOS' native actions.
 
 #### `Menu.buildFromTemplate(template)`
 
-* `template` Array
+* `template` MenuItem[]
 
 Generally, the `template` is just an array of `options` for constructing a
 [MenuItem](menu-item.md). The usage can be referenced above.
@@ -294,7 +294,7 @@ Inserts the `menuItem` to the `pos` position of the menu.
 
 #### `menu.items`
 
-Get an array containing the menu's items.
+A MenuItem[] array containing the menu's items.
 
 ## Notes on macOS Application Menu
 

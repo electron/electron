@@ -258,17 +258,25 @@ void OnCapturePageDone(base::Callback<void(const gfx::Image&)> callback,
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
-                         content::WebContents* web_contents)
+                         content::WebContents* web_contents,
+                         Type type)
     : content::WebContentsObserver(web_contents),
       embedder_(nullptr),
-      type_(REMOTE),
+      type_(type),
       request_id_(0),
       background_throttling_(true),
       enable_devtools_(true) {
-  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
-  Init(isolate);
-  AttachAsUserData(web_contents);
+  if (type == REMOTE) {
+    web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+    Init(isolate);
+    AttachAsUserData(web_contents);
+  } else {
+    const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
+    auto session = Session::CreateFrom(isolate, GetBrowserContext());
+    session_.Reset(isolate, session.ToV8());
+    InitWithSessionAndOptions(isolate, web_contents, session, options);
+  }
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -336,6 +344,13 @@ WebContents::WebContents(v8::Isolate* isolate,
     web_contents = content::WebContents::Create(params);
   }
 
+  InitWithSessionAndOptions(isolate, web_contents, session, options);
+}
+
+void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
+                                            content::WebContents *web_contents,
+                                            mate::Handle<api::Session> session,
+                                            const mate::Dictionary& options) {
   Observe(web_contents);
   InitWithWebContents(web_contents, session->browser_context());
 
@@ -406,6 +421,31 @@ void WebContents::OnCreateWindow(const GURL& target_url,
     Emit("-new-window", target_url, frame_name, disposition);
   else
     Emit("new-window", target_url, frame_name, disposition);
+}
+
+void WebContents::WebContentsCreated(content::WebContents* source_contents,
+                                     int opener_render_frame_id,
+                                     const std::string& frame_name,
+                                     const GURL& target_url,
+                                     content::WebContents* new_contents) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto api_web_contents = CreateFrom(isolate(), new_contents, BROWSER_WINDOW);
+  Emit("-web-contents-created", api_web_contents, target_url, frame_name);
+}
+
+void WebContents::AddNewContents(content::WebContents* source,
+                                 content::WebContents* new_contents,
+                                 WindowOpenDisposition disposition,
+                                 const gfx::Rect& initial_rect,
+                                 bool user_gesture,
+                                 bool* was_blocked) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto api_web_contents = CreateFrom(isolate(), new_contents);
+  Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
+      initial_rect.x(), initial_rect.y(), initial_rect.width(),
+      initial_rect.height());
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
@@ -801,7 +841,14 @@ void WebContents::NavigationEntryCommitted(
        details.is_in_page, details.did_replace_entry);
 }
 
-int WebContents::GetID() const {
+int64_t WebContents::GetID() const {
+  int64_t process_id = web_contents()->GetRenderProcessHost()->GetID();
+  int64_t routing_id = web_contents()->GetRoutingID();
+  int64_t rv = (process_id << 32) + routing_id;
+  return rv;
+}
+
+int WebContents::GetProcessID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
@@ -1455,6 +1502,25 @@ content::WebContents* WebContents::HostWebContents() {
   return embedder_->web_contents();
 }
 
+void WebContents::SetEmbedder(const WebContents* embedder) {
+  if (embedder) {
+    NativeWindow* owner_window = nullptr;
+    auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+    if (relay) {
+      owner_window = relay->window.get();
+    }
+    if (owner_window)
+      SetOwnerWindow(owner_window);
+
+    content::RenderWidgetHostView* rwhv =
+        web_contents()->GetRenderWidgetHostView();
+    if (rwhv) {
+      rwhv->Hide();
+      rwhv->Show();
+    }
+  }
+}
+
 v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
   if (devtools_web_contents_.IsEmpty())
     return v8::Null(isolate);
@@ -1477,6 +1543,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("getId", &WebContents::GetID)
+      .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
@@ -1552,6 +1619,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
+      .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
@@ -1585,7 +1653,15 @@ mate::Handle<WebContents> WebContents::CreateFrom(
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 
   // Otherwise create a new WebContents wrapper object.
-  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents));
+  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents,
+        REMOTE));
+}
+
+mate::Handle<WebContents> WebContents::CreateFrom(
+    v8::Isolate* isolate, content::WebContents* web_contents, Type type) {
+  // Otherwise create a new WebContents wrapper object.
+  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents,
+        type));
 }
 
 // static

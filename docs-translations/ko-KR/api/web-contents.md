@@ -8,12 +8,13 @@
 접근하는 예시입니다:
 
 ```javascript
-const {BrowserWindow} = require('electron');
+const {BrowserWindow} = require('electron')
 
-let win = new BrowserWindow({width: 800, height: 1500});
-win.loadURL('http://github.com');
+let win = new BrowserWindow({width: 800, height: 1500})
+win.loadURL('http://github.com')
 
-let contents = win.webContents;
+let contents = win.webContents
+console.log(contents)
 ```
 
 ## Methods
@@ -21,18 +22,26 @@ let contents = win.webContents;
 다음 메서드는 `webContents` 모듈에서 접근할 수 있는 메서드입니다:
 
 ```javascript
-const {webContents} = require('electron');
+const {webContents} = require('electron')
+console.log(webContents)
 ```
 
 #### `webContents.getAllWebContents()`
 
-모든 `WebContents` 인스턴스의 배열을 반환합니다. 이 배열은 윈도우, 웹뷰, 열린 개발자
-도구 그리고 개발자 도구 확장 기능의 백그라운드 페이지의 모든 웹 콘텐츠를 포함합니다.
+Returns `WebContents[]` - 모든 `WebContents` 인스턴스의 배열. 이 배열은 윈도우,
+웹뷰, 열린 개발자 도구 그리고 백그라운드 페이지의 개발자 도구 확장 기능의 모든
+웹 콘텐츠를 포함합니다.
 
 #### `webContents.getFocusedWebContents()`
 
-이 애플리케이션에서 포커스되어있는 웹 콘텐츠를 반환합니다. 포커스된 웹 콘텐츠가 없을
-경우 `null`을 반환합니다.
+Returns `WebContents` - 이 애플리케이션에서 포커스되어있는 웹 콘텐츠. 없을 경우
+`null` 을 반환합니다.
+
+### `webContents.fromId(id)`
+
+* `id` Integer
+
+Returns `WebContents` - ID 에 해당하는 WebContens 인스턴스.
 
 ## Class: WebContents
 
@@ -123,7 +132,7 @@ Returns:
 Returns:
 
 * `event` Event
-* `favicons` Array - URL 배열
+* `favicons` String[] - URL 배열
 
 페이지가 favicon(파비콘) URL을 받았을 때 발생하는 이벤트입니다.
 
@@ -135,7 +144,7 @@ Returns:
 * `url` String
 * `frameName` String
 * `disposition` String - `default`, `foreground-tab`, `background-tab`,
-  `new-window`, `other`중 하나일 수 있습니다.
+  `new-window`, `save-to-disk`, `other`중 하나일 수 있습니다.
 * `options` Object - 새로운 `BrowserWindow` 객체를 만들 때 사용되는 옵션 객체입니다.
 
 페이지가 `url`에 대하여 새로운 윈도우를 열기위해 요청한 경우 발생하는 이벤트입니다.
@@ -191,7 +200,12 @@ Returns:
 
 #### Event: 'crashed'
 
-렌더러 프로세스가 예기치 못하게 종료되었을 때 발생되는 이벤트입니다.
+Returns:
+
+* `event` Event
+* `killed` Boolean
+
+렌더러 프로세스가 충돌하거나 종료될 때 발생되는 이벤트입니다.
 
 #### Event: 'plugin-crashed'
 
@@ -426,6 +440,7 @@ Returns:
 호출되어야 하며, 빈 문자열을 `callback`에 보내면 요청이 취소됩니다.
 
 ```javascript
+const {app, webContents} = require('electron')
 app.commandLine.appendSwitch('enable-web-bluetooth')
 
 app.on('ready', () => {
@@ -482,7 +497,8 @@ win.loadURL('http://github.com')
 하는 경우 `pragma` 헤더를 사용할 수 있습니다.
 
 ```javascript
-const options = {extraHeaders: 'pragma: no-cache\n'};
+const {webContents} = require('electron')
+const options = {extraHeaders: 'pragma: no-cache\n'}
 webContents.loadURL(url, options)
 ```
 
@@ -498,10 +514,12 @@ webContents.loadURL(url, options)
 현재 웹 페이지의 URL을 반환합니다.
 
 ```javascript
-let win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('http://github.com');
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('http://github.com')
 
-let currentURL = win.webContents.getURL();
+let currentURL = win.webContents.getURL()
+console.log(currentURL)
 ```
 
 #### `contents.getTitle()`
@@ -746,12 +764,13 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 제공된 `action`에 대한 `webContents`의 모든 `findInPage` 요청을 중지합니다.
 
 ```javascript
+const {webContents} = require('electron')
 webContents.on('found-in-page', (event, result) => {
-  if (result.finalUpdate)
-    webContents.stopFindInPage('clearSelection');
-});
+  if (result.finalUpdate) webContents.stopFindInPage('clearSelection')
+})
 
-const requestId = webContents.findInPage('api');
+const requestId = webContents.findInPage('api')
+console.log(requestId)
 ```
 
 #### `contents.capturePage([rect, ]callback)`
@@ -829,23 +848,22 @@ Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의
 다음은 `webContents.printToPDF`의 예시입니다:
 
 ```javascript
-const {BrowserWindow} = require('electron');
-const fs = require('fs');
+const {BrowserWindow} = require('electron')
+const fs = require('fs')
 
-let win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('http://github.com');
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('http://github.com')
 
 win.webContents.on('did-finish-load', () => {
   // 기본 프린트 옵션을 사용합니다
   win.webContents.printToPDF({}, (error, data) => {
-    if (error) throw error;
+    if (error) throw error
     fs.writeFile('/tmp/print.pdf', data, (error) => {
-      if (error)
-        throw error;
-      console.log('Write PDF successfully.');
-    });
-  });
-});
+      if (error) throw error
+      console.log('Write PDF successfully.')
+    })
+  })
+})
 ```
 
 #### `contents.addWorkSpace(path)`
@@ -856,9 +874,11 @@ win.webContents.on('did-finish-load', () => {
 이후에 사용해야 합니다.
 
 ```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
 win.webContents.on('devtools-opened', () => {
-  win.webContents.addWorkSpace(__dirname);
-});
+  win.webContents.addWorkSpace(__dirname)
+})
 ```
 
 #### `contents.removeWorkSpace(path)`
@@ -920,14 +940,15 @@ win.webContents.on('devtools-opened', () => {
 
 ```javascript
 // In the main process.
-let win = null;
+const {app, BrowserWindow} = require('electron')
+let win = null
 app.on('ready', () => {
-  win = new BrowserWindow({width: 800, height: 600});
-  win.loadURL('file://' + __dirname + '/index.html');
+  win = new BrowserWindow({width: 800, height: 600})
+  win.loadURL(`file://${__dirname}/index.html`)
   win.webContents.on('did-finish-load', () => {
-    win.webContents.send('ping', 'whoooooooh!');
-  });
-});
+    win.webContents.send('ping', 'whoooooooh!')
+  })
+})
 ```
 
 ```html
@@ -936,7 +957,7 @@ app.on('ready', () => {
 <body>
   <script>
     require('electron').ipcRenderer.on('ping', (event, message) => {
-      console.log(message);  // "whoooooooh!" 출력
+      console.log(message)  // "whoooooooh!" 출력
     });
   </script>
 </body>
@@ -985,7 +1006,7 @@ app.on('ready', () => {
   * `type` String (**required**) - 이벤트의 종류. 다음 값들을 사용할 수 있습니다:
     `mouseDown`,     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`,
     `mouseWheel`, `mouseMove`, `keyDown`, `keyUp`, `char`.
-  * `modifiers` Array - 이벤트의 수정자(modifier)들에 대한 배열. 다음 값들을 포함
+  * `modifiers` String[] - 이벤트의 수정자(modifier)들에 대한 배열. 다음 값들을 포함
     할 수 있습니다: `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
     `numLock`, `left`, `right`.
@@ -1065,14 +1086,16 @@ Input `event`를 웹 페이지로 전송합니다.
 만약 페이지를 저장하는 프로세스가 성공적으로 끝났을 경우 true를 반환합니다.
 
 ```javascript
-win.loadURL('https://github.com');
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
+win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', () => {
   win.webContents.savePage('/tmp/test.html', 'HTMLComplete', (error) => {
-    if (!error)
-      console.log('Save page successfully');
-  });
-});
+    if (!error) console.log('Save page successfully')
+  })
+})
 ```
 
 #### `contents.showDefinitionForSelection()` _macOS_
@@ -1106,6 +1129,11 @@ win.webContents.on('did-finish-load', () => {
 
 *오프 스크린 렌더링* 이 활성화된 경우 현재 프레임 레이트를 반환합니다.
 
+#### `contents.invalidate()`
+
+*오프 스크린 렌더링* 이 활성화된 경우 프레임을 무효화 하고 `'paint'` 이벤트를
+통해 새로 만듭니다.
+
 ### Instance Properties
 
 #### `contents.id`
@@ -1136,24 +1164,28 @@ win.webContents.on('did-finish-load', () => {
 > Chrome의 원격 디버깅 프로토콜에 대한 대체 접근자입니다.
 
 ```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
 try {
-  win.webContents.debugger.attach('1.1');
-} catch(err) {
-  console.log('Debugger attach failed : ', err);
-};
+  win.webContents.debugger.attach('1.1')
+} catch (err) {
+  console.log('Debugger attach failed : ', err)
+}
 
 win.webContents.debugger.on('detach', (event, reason) => {
-  console.log('Debugger detached due to : ', reason);
-});
+  console.log('Debugger detached due to : ', reason)
+})
 
 win.webContents.debugger.on('message', (event, method, params) => {
   if (method === 'Network.requestWillBeSent') {
-    if (params.request.url === 'https://www.github.com')
-      win.webContents.debugger.detach();
+    if (params.request.url === 'https://www.github.com') {
+      win.webContents.debugger.detach()
+    }
   }
-});
+})
 
-win.webContents.debugger.sendCommand('Network.enable');
+win.webContents.debugger.sendCommand('Network.enable')
 ```
 
 ### Instance Methods

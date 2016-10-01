@@ -161,6 +161,8 @@ and the following behaviors have been changed:
 * Video capture may not work for some machines.
 * Certain accessibility features may not work.
 * Apps will not be aware of DNS changes.
+* APIs for launching apps at login are disabled. See
+https://github.com/electron/electron/issues/7312#issuecomment-249479237
 
 Also, due to the usage of app sandboxing, the resources which can be accessed by
 the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for

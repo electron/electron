@@ -1,4 +1,4 @@
-1﻿# `window.open` 함수
+# `window.open` 함수
 
 > 새 윈도우를 열고 URL을 로드합니다.
 

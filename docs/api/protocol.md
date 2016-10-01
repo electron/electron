@@ -28,7 +28,7 @@ The `protocol` module has the following methods:
 
 ### `protocol.registerStandardSchemes(schemes)`
 
-* `schemes` Array - Custom schemes to be registered as standard schemes.
+* `schemes` String[] - Custom schemes to be registered as standard schemes.
 
 A standard scheme adheres to what RFC 3986 calls [generic URI
 syntax](https://tools.ietf.org/html/rfc3986#section-3). For example `http` and
@@ -50,8 +50,11 @@ non-standard schemes can not recognize relative URLs:
 
 Registering a scheme as standard will allow access to files through the
 [FileSystem API][file-system-api]. Otherwise the renderer will throw a security
-error for the scheme. So in general if you want to register a custom protocol to
-replace the `http` protocol, you have to register it as a standard scheme:
+error for the scheme.
+
+By default web storage apis (localStorage, sessionStorage, webSQL, indexedDB, cookies)
+are disabled for non standard schemes. So in general if you want to register a
+custom protocol to replace the `http` protocol, you have to register it as a standard scheme:
 
 ```javascript
 const {app, protocol} = require('electron')
@@ -67,7 +70,7 @@ module gets emitted.
 
 ### `protocol.registerServiceWorkerSchemes(schemes)`
 
-* `schemes` Array - Custom schemes to be registered to handle service workers.
+* `schemes` String[] - Custom schemes to be registered to handle service workers.
 
 ### `protocol.registerFileProtocol(scheme, handler[, completion])`
 

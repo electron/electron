@@ -448,6 +448,10 @@ Emitted when scroll wheel event phase has begun.
 
 Emitted when scroll wheel event phase has ended.
 
+#### Event: 'scroll-touch-edge' _macOS_
+
+Emitted when scroll wheel event phase filed upon reaching the edge of element.
+
 #### Event: 'swipe' _macOS_
 
 Returns:
@@ -463,23 +467,23 @@ The `BrowserWindow` class has the following static methods:
 
 #### `BrowserWindow.getAllWindows()`
 
-Returns an array of all opened browser windows.
+Returns `BrowserWindow[]` - An array of all opened browser windows.
 
 #### `BrowserWindow.getFocusedWindow()`
 
-Returns the window that is focused in this application, otherwise returns `null`.
+Returns `BrowserWindow` - The window that is focused in this application, otherwise returns `null`.
 
 #### `BrowserWindow.fromWebContents(webContents)`
 
 * `webContents` [WebContents](web-contents.md)
 
-Find a window according to the `webContents` it owns.
+Returns `BrowserWindow` - The window that owns the given `webContents`.
 
 #### `BrowserWindow.fromId(id)`
 
 * `id` Integer
 
-Find a window according to its ID.
+Returns `BrowserWindow` - The window with the given `id`.
 
 #### `BrowserWindow.addDevToolsExtension(path)`
 
@@ -508,7 +512,7 @@ is emitted.
 
 #### `BrowserWindow.getDevToolsExtensions()`
 
-Returns an Object where the keys are the extension names and each value is
+Returns `Object` - The keys are the extension names and each value is
 an Object containing `name` and `version` properties.
 
 To check if a DevTools extension is installed you can run the following:
@@ -536,7 +540,7 @@ win.loadURL('https://github.com')
 
 #### `win.webContents`
 
-The `WebContents` object this window owns. All web page related events and
+A `WebContents` object this window owns. All web page related events and
 operations will be done via it.
 
 See the [`webContents` documentation](web-contents.md) for its methods and
@@ -544,7 +548,7 @@ events.
 
 #### `win.id`
 
-The unique ID of the window.
+A `Integer` representing the unique ID of the window.
 
 ### Instance Methods
 
@@ -575,11 +579,11 @@ Removes focus from the window.
 
 #### `win.isFocused()`
 
-Returns a boolean, whether the window is focused.
+Returns `Boolean` - Whether the window is focused.
 
 #### `win.isDestroyed()`
 
-Returns a boolean, whether the window is destroyed.
+Returns `Boolean` - Whether the window is destroyed.
 
 #### `win.show()`
 
@@ -595,11 +599,11 @@ Hides the window.
 
 #### `win.isVisible()`
 
-Returns a boolean, whether the window is visible to the user.
+Returns `Boolean` - Whether the window is visible to the user.
 
 #### `win.isModal()`
 
-Returns a boolean, whether current window is a modal window.
+Returns `Boolean` - Whether current window is a modal window.
 
 #### `win.maximize()`
 
@@ -611,7 +615,7 @@ Unmaximizes the window.
 
 #### `win.isMaximized()`
 
-Returns a boolean, whether the window is maximized.
+Returns `Boolean` - Whether the window is maximized.
 
 #### `win.minimize()`
 
@@ -624,7 +628,7 @@ Restores the window from minimized state to its previous state.
 
 #### `win.isMinimized()`
 
-Returns a boolean, whether the window is minimized.
+Returns `Boolean` - Whether the window is minimized.
 
 #### `win.setFullScreen(flag)`
 
@@ -634,7 +638,7 @@ Sets whether the window should be in fullscreen mode.
 
 #### `win.isFullScreen()`
 
-Returns a boolean, whether the window is in fullscreen mode.
+Returns `Boolean` - Whether the window is in fullscreen mode.
 
 #### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
@@ -672,7 +676,11 @@ Resizes and moves the window to `width`, `height`, `x`, `y`.
 
 #### `win.getBounds()`
 
-Returns an object that contains window's width, height, x and y values.
+Returns `Object`:
+* `width` Integer
+* `height` Integer
+* `x` Integer
+* `y` Integer
 
 #### `win.setContentBounds(options[, animate])`
 
@@ -688,6 +696,12 @@ Resizes and moves the window's client area (e.g. the web page) to
 
 #### `win.getContentBounds()`
 
+Returns `Object`:
+* `width` Integer
+* `height` Integer
+* `x` Integer
+* `y` Integer
+
 Returns an object that contains the window's client area (e.g. the web page)
 width, height, x and y values.
 
@@ -701,7 +715,7 @@ Resizes the window to `width` and `height`.
 
 #### `win.getSize()`
 
-Returns an array that contains window's width and height.
+Returns `Integer[]` - Contains the window's width and height.
 
 #### `win.setContentSize(width, height[, animate])`
 
@@ -713,7 +727,7 @@ Resizes the window's client area (e.g. the web page) to `width` and `height`.
 
 #### `win.getContentSize()`
 
-Returns an array that contains window's client area's width and height.
+Returns `Integer[]` - Contains the window's client area's width and height.
 
 #### `win.setMinimumSize(width, height)`
 
@@ -724,7 +738,7 @@ Sets the minimum size of window to `width` and `height`.
 
 #### `win.getMinimumSize()`
 
-Returns an array that contains window's minimum width and height.
+Returns `Integer[]` - Contains the window's minimum width and height.
 
 #### `win.setMaximumSize(width, height)`
 
@@ -735,7 +749,7 @@ Sets the maximum size of window to `width` and `height`.
 
 #### `win.getMaximumSize()`
 
-Returns an array that contains window's maximum width and height.
+Returns `Integer[]` - Contains the window's maximum width and height.
 
 #### `win.setResizable(resizable)`
 
@@ -745,7 +759,7 @@ Sets whether the window can be manually resized by user.
 
 #### `win.isResizable()`
 
-Returns whether the window can be manually resized by user.
+Returns `Boolean` - Whether the window can be manually resized by user.
 
 #### `win.setMovable(movable)` _macOS_ _Windows_
 
@@ -755,8 +769,9 @@ Sets whether the window can be moved by user. On Linux does nothing.
 
 #### `win.isMovable()` _macOS_ _Windows_
 
-Returns whether the window can be moved by user. On Linux always returns
-`true`.
+Returns `Boolean` - Whether the window can be moved by user.
+
+On Linux always returns `true`.
 
 #### `win.setMinimizable(minimizable)` _macOS_ _Windows_
 
@@ -767,8 +782,9 @@ nothing.
 
 #### `win.isMinimizable()` _macOS_ _Windows_
 
-Returns whether the window can be manually minimized by user. On Linux always
-returns `true`.
+Returns `Boolean` - Whether the window can be manually minimized by user
+
+On Linux always returns `true`.
 
 #### `win.setMaximizable(maximizable)` _macOS_ _Windows_
 
@@ -779,8 +795,9 @@ nothing.
 
 #### `win.isMaximizable()` _macOS_ _Windows_
 
-Returns whether the window can be manually maximized by user. On Linux always
-returns `true`.
+Returns `Boolean` - Whether the window can be manually maximized by user.
+
+On Linux always returns `true`.
 
 #### `win.setFullScreenable(fullscreenable)`
 
@@ -791,7 +808,7 @@ maximizes the window.
 
 #### `win.isFullScreenable()`
 
-Returns whether the maximize/zoom window button toggles fullscreen mode or
+Returns `Boolean` - Whether the maximize/zoom window button toggles fullscreen mode or
 maximizes the window.
 
 #### `win.setClosable(closable)` _macOS_ _Windows_
@@ -802,12 +819,17 @@ Sets whether the window can be manually closed by user. On Linux does nothing.
 
 #### `win.isClosable()` _macOS_ _Windows_
 
-Returns whether the window can be manually closed by user. On Linux always
-returns `true`.
+Returns `Boolean` - Whether the window can be manually closed by user.
 
-#### `win.setAlwaysOnTop(flag)`
+On Linux always returns `true`.
+
+#### `win.setAlwaysOnTop(flag[, level])`
 
 * `flag` Boolean
+* `level` String (optional) _macOS_ - Values include `normal`, `floating`,
+  `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
+  `screen-saver`, and `dock`. The default is `floating`. See the
+  [macOS docs][window-levels] for more details.
 
 Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
@@ -815,7 +837,7 @@ can not be focused on.
 
 #### `win.isAlwaysOnTop()`
 
-Returns whether the window is always on top of other windows.
+Returns `Boolean` - Whether the window is always on top of other windows.
 
 #### `win.center()`
 
@@ -831,7 +853,7 @@ Moves window to `x` and `y`.
 
 #### `win.getPosition()`
 
-Returns an array that contains window's current position.
+Returns `Integer[]` - Contains the window's current position.
 
 #### `win.setTitle(title)`
 
@@ -841,7 +863,7 @@ Changes the title of native window to `title`.
 
 #### `win.getTitle()`
 
-Returns the title of the native window.
+Returns `String` - The title of the native window.
 
 **Note:** The title of web page can be different from the title of the native
 window.
@@ -883,11 +905,11 @@ Enters or leaves the kiosk mode.
 
 #### `win.isKiosk()`
 
-Returns whether the window is in kiosk mode.
+Returns `Boolean` - Whether the window is in kiosk mode.
 
 #### `win.getNativeWindowHandle()`
 
-Returns the platform-specific handle of the window as `Buffer`.
+Returns `Buffer` - The platform-specific handle of the window.
 
 The native type of the handle is `HWND` on Windows, `NSView*` on macOS, and
 `Window` (`unsigned long`) on Linux.
@@ -904,7 +926,7 @@ the message is received in the WndProc.
 
 * `message` Integer
 
-Returns `true` or `false` depending on whether the message is hooked.
+Returns `Boolean` - `true` or `false` depending on whether the message is hooked.
 
 #### `win.unhookWindowMessage(message)` _Windows_
 
@@ -925,7 +947,7 @@ will show in window's title bar.
 
 #### `win.getRepresentedFilename()` _macOS_
 
-Returns the pathname of the file the window represents.
+Returns `String` - The pathname of the file the window represents.
 
 #### `win.setDocumentEdited(edited)` _macOS_
 
@@ -936,7 +958,7 @@ bar will become gray when set to `true`.
 
 #### `win.isDocumentEdited()` _macOS_
 
-Whether the window's document has been edited.
+Whether `Boolean` - Whether the window's document has been edited.
 
 #### `win.focusOnWebView()`
 
@@ -995,7 +1017,7 @@ menu bar.
 
 * `progress` Double
 * `options` Object (optional)
-  * `mode` String _Windows_ - Mode for the progres bar (`none`, `normal`, `indeterminate`, `error`, or `paused`)
+  * `mode` String _Windows_ - Mode for the progress bar (`none`, `normal`, `indeterminate`, `error`, or `paused`)
 
 Sets progress value in progress bar. Valid range is [0, 1.0].
 
@@ -1030,7 +1052,9 @@ nothing.
 
 #### `win.hasShadow()` _macOS_
 
-Returns whether the window has a shadow. On Windows and Linux always returns
+Returns `Boolean` - Whether the window has a shadow.
+
+On Windows and Linux always returns
 `true`.
 
 #### `win.setThumbarButtons(buttons)` _Windows_
@@ -1053,7 +1077,7 @@ The `buttons` is an array of `Button` objects:
     toolbar.
   * `click` Function
   * `tooltip` String (optional) - The text of the button's tooltip.
-  * `flags` Array (optional) - Control specific states and behaviors of the
+  * `flags` String[] (optional) - Control specific states and behaviors of the
     button. By default, it is `['enabled']`.
 
 The `flags` is an array that can include following `String`s:
@@ -1111,7 +1135,7 @@ hide it immediately.
 
 #### `win.isMenuBarAutoHide()`
 
-Returns whether menu bar automatically hides itself.
+Returns `Boolean` - Whether menu bar automatically hides itself.
 
 #### `win.setMenuBarVisibility(visible)`
 
@@ -1122,7 +1146,7 @@ can still bring up the menu bar by pressing the single `Alt` key.
 
 #### `win.isMenuBarVisible()`
 
-Returns whether the menu bar is visible.
+Returns `Boolean` - Whether the menu bar is visible.
 
 #### `win.setVisibleOnAllWorkspaces(visible)`
 
@@ -1134,7 +1158,7 @@ Sets whether the window should be visible on all workspaces.
 
 #### `win.isVisibleOnAllWorkspaces()`
 
-Returns whether the window is visible on all workspaces.
+Returns `Boolean` - Whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
 
@@ -1174,8 +1198,10 @@ current window into a top-level window.
 
 #### `win.getParentWindow()`
 
-Returns the parent window.
+Returns `BrowserWindow` - The parent window.
 
 #### `win.getChildWindows()`
 
-Returns all child windows.
+Returns `BrowserWindow[]` - All child windows.
+
+[window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels

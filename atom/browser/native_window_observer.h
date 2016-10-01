@@ -64,6 +64,7 @@ class NativeWindowObserver {
   virtual void OnWindowMoved() {}
   virtual void OnWindowScrollTouchBegin() {}
   virtual void OnWindowScrollTouchEnd() {}
+  virtual void OnWindowScrollTouchEdge() {}
   virtual void OnWindowSwipe(const std::string& direction) {}
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}

@@ -5,7 +5,7 @@ const ws = require('ws')
 const url = require('url')
 const remote = require('electron').remote
 
-const {BrowserWindow, session, webContents} = remote
+const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
@@ -440,6 +440,88 @@ describe('chromium feature', function () {
       navigator.webkitPersistentStorage.requestQuota(1024 * 1024, function (grantedBytes) {
         assert.equal(grantedBytes, 1048576)
         done()
+      })
+    })
+
+    describe('custom non standard schemes', function () {
+      const protocolName = 'storage'
+      let contents = null
+      before(function (done) {
+        const handler = function (request, callback) {
+          let parsedUrl = url.parse(request.url)
+          let filename
+          switch (parsedUrl.pathname) {
+            case '/localStorage' : filename = 'local_storage.html'; break
+            case '/sessionStorage' : filename = 'session_storage.html'; break
+            case '/WebSQL' : filename = 'web_sql.html'; break
+            case '/indexedDB' : filename = 'indexed_db.html'; break
+            case '/cookie' : filename = 'cookie.html'; break
+            default : filename = ''
+          }
+          callback({path: fixtures + '/pages/storage/' + filename})
+        }
+        protocol.registerFileProtocol(protocolName, handler, function (error) {
+          done(error)
+        })
+      })
+
+      after(function (done) {
+        protocol.unregisterProtocol(protocolName, () => done())
+      })
+
+      beforeEach(function () {
+        contents = webContents.create({})
+      })
+
+      afterEach(function () {
+        contents.destroy()
+        contents = null
+      })
+
+      it('cannot access localStorage', function (done) {
+        ipcMain.once('local-storage-response', function (event, error) {
+          assert.equal(
+            error,
+            'Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.')
+          done()
+        })
+        contents.loadURL(protocolName + '://host/localStorage')
+      })
+
+      it('cannot access sessionStorage', function (done) {
+        ipcMain.once('session-storage-response', function (event, error) {
+          assert.equal(
+            error,
+            'Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.')
+          done()
+        })
+        contents.loadURL(protocolName + '://host/sessionStorage')
+      })
+
+      it('cannot access WebSQL database', function (done) {
+        ipcMain.once('web-sql-response', function (event, error) {
+          assert.equal(
+            error,
+            'An attempt was made to break through the security policy of the user agent.')
+          done()
+        })
+        contents.loadURL(protocolName + '://host/WebSQL')
+      })
+
+      it('cannot access indexedDB', function (done) {
+        ipcMain.once('indexed-db-response', function (event, error) {
+          assert.equal(error, 'The user denied permission to access the database.')
+          done()
+        })
+        contents.loadURL(protocolName + '://host/indexedDB')
+      })
+
+      it('cannot access cookie', function (done) {
+        ipcMain.once('cookie-response', function (event, cookie) {
+          assert(!cookie)
+          done()
+        })
+        contents.loadURL(protocolName + '://host/cookie')
       })
     })
   })

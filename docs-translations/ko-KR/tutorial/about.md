@@ -1,64 +1,86 @@
-> 이 문서는 아직 Electron 기여자가 번역하지 않았습니다.
->
-> Electron에 기여하고 싶다면 [기여 가이드](https://github.com/electron/electron/blob/master/CONTRIBUTING-ko.md)를
-> 참고하세요.
->
-> 문서의 번역이 완료되면 이 틀을 삭제해주세요.
+# Electron 에 대하여
 
-# About Electron
+[Electron](http://electron.atom.io) 은 HTML, CSS 와 Javascript 로 크로스플랫폼
+데스크톱 애플리케이션을 위해 Github 에서 개발한 오픈소스 라이브러리 입니다.
+Electron 은 [Chromium](https://www.chromium.org/Home) 와
+[Node.js](https://nodejs.org) 를 단일 실행으로 합치고 앱을 Mac, Windows 와
+Linux 용으로 패키지화 할 수 있게 함으로써 이것을 가능하게 합니다.
 
-[Electron](http://electron.atom.io) is an open source library developed by GitHub for building cross-platform desktop applications with HTML, CSS, and JavaScript. Electron accomplishes this by combining [Chromium](https://www.chromium.org/Home) and [Node.js](https://nodejs.org) into a single runtime and apps can be packaged for Mac, Windows, and Linux.
+Electron 은 2013년에 Github 의 해킹 가능한 텍스트 편집기 Atom 의 프레임워크로
+시작하였습니다. 이 둘은 2014년에 오픈소스화 됩니다.
 
-Electron began in 2013 as the framework on which [Atom](https://atom.io), GitHub's hackable text editor, would be built. The two were open sourced in the Spring of 2014.
+그후로 오픈소스 개발자, 스타트업과 안정된 회사에서 인기있는 도구가 되었습니다.
+[Electron 을 사용하는 곳을 보세요](/apps).
 
-It has since become a popular tool used by open source developers, startups, and established companies. [See who is building on Electron](/apps).
+Electron 의 기여자와 릴리즈에 대한 자세한 내용이나 개발을 시작하려면
+[Quick Start Guide](quick-start.md) 를 읽어보세요.
 
-Read on to learn more about the contributors and releases of Electron or get started building with Electron in the [Quick Start Guide](../quick-start).
+## 코어 팀과 기여자
 
-## Core Team and Contributors
+Electron 은 Gihub 의 팀과 커뮤니티에서
+[활동중인 기여자](https://github.com/electron/electron/graphs/contributors)
+그룹에 의해 유지됩니다. 일부 기여자는 개인이고, 일부는 Electron 으로 개발을
+하는 큰 회사입니다. 프로젝트에 자주 공여하는 분은 기꺼이 메인테이너로
+추가하겠습니다.
+[Electron 에 기여하기](../project/CONTRIBUTING.md)를 참고하세요.
 
-Electron is maintained by a team at GitHub as well as a group of [active contributors](https://github.com/electron/electron/graphs/contributors) from the community. Some of the contributors are individuals and some work at larger companies who are developing on Electron. We're happy to add frequent contributors to the project as maintainers. Read more about [contributing to Electron](https://github.com/electron/electron/blob/master/CONTRIBUTING.md).
+## 출시
 
-## Releases
+Electron 은 빈번하게 [출시](https://github.com/electron/electron/releases)
+됩니다. 중요한 버그 수정, 새 API 추가 또는 Chromium 이나 Node.js 의
+업데이트시에 출시합니다.
 
-[Electron releases](https://github.com/electron/electron/releases) frequently. We release when there are significant bug fixes, new APIs or are updating versions of Chromium or Node.js.
+### 업데이트 종속성
 
-### Updating Dependencies
+Electron 의 Chromium 버전은 보통 새 버전 출시 이후 1~2 주 후에 업데이트 하는데,
+이는 업그레이드에 필요한 작업의 양에 따라 달라집니다.
 
-Electron's version of Chromium is usually updated within one or two weeks after a new stable Chromium version is released, depending on the effort involved in the upgrade.
+Node.js 의 새버전이 출시되면, Electron 은 더 안정된 버전을 가져오기 위해 약
+한달정도 기다립니다.
 
-When a new version of Node.js is released, Electron usually waits about a month before upgrading in order to bring in a more stable version.
+Electron 에서, Node.js 와 Chromium 은 단일 V8 인스턴스를 공유합니다--보통
+Chromium 이 사용하는 버전. 대부분은 동작하지만 가끔 Node.js 를 패치해야 합니다.
 
-In Electron, Node.js and Chromium share a single V8 instance—usually the version that Chromium is using. Most of the time this _just works_ but sometimes it means patching Node.js.
 
+### 버전 관리
 
-### Versioning
-
-Due to the hard dependency on Node.js and Chromium, Electron is in a tricky versioning position and [does not follow `semver`](http://semver.org). You should therefore always reference a specific version of Electron. [Read more about Electron's versioning](http://electron.atom.io/docs/tutorial/electron-versioning/) or see the [versions currently in use](https://electron.atom.io/#electron-versions).
+Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관리가 까다롭고
+[`semver`을 따르지 않습니다](http://semver.org). 그러므로 항상 Electron 의 특정
+버전을 참조해야 합니다. [Electron 의 버전관리]
+(http://electron.atom.io/docs/tutorial/electron-versioning/)를 읽거나
+[현재 쓰이는 버전](https://electron.atom.io/#electron-versions)을 보세요.
 
 ### LTS
 
-Long term support of older versions of Electron does not currently exist. If your current version of Electron works for you, you can stay on it for as long as you'd like. If you want to make use of new features as they come in you should upgrade to a newer version.
+현재 Electron 의 구버전에 대한 장기 지원은 없습니다. Electron 현재 버전이 잘
+동작한다면, 그것을 원하는 만큼 유지하세요. 새로운 기능들을 사용하려면
+새버전으로 업그레이드 해야합니다.
 
-A major update came with version `v1.0.0`. If you're not yet using this version, you should [read more about the `v1.0.0` changes](http://electron.atom.io/blog/2016/05/11/electron-1-0).
+주 버전은 `v1.0.0` 입니다. 아직 이 버전을 사용중이지 않다면,
+[v1.0.0 변화에 대해 읽어보세요](http://electron.atom.io/blog/2016/05/11/electron-1-0).
 
-## Core Philosophy
+## 중심 철학
 
-In order to keep Electron small (file size) and sustainable (the spread of dependencies and APIs) the project limits the scope of the core project.
+Electron 을 작고 (파일 크기) 지속가능하게 (종속성 및 API 의 확산) 할 목적으로
+중심 프로젝트의 범위를 제한합니다.
 
-For instance, Electron uses just the rendering library from Chromium rather than all of Chromium. This makes it easier to upgrade Chromium but also means some browser features found in Google Chrome do not exist in Electron.
+예를 들어, Electron 은 Chromium 전체가 아닌 렌더링 라이브러리만 사용합니다.
+이것은 Chromium 업그레이드를 쉽게 하지만 Google Chrome 에서 볼 수 있는 몇몇
+브라우저 기능이 Electron 에서는 빠집니다.
 
-New features added to Electron should primarily be native APIs. If a feature can be its own Node.js module, it probably should be. See the [Electron tools built by the community](http://electron.atom.io/community).
+Electron 에 추가된 새로운 기능은 주로 네이티브 API 입니다. 기능은 가능한한
+Node.js 모듈로 해야합니다. [커뮤니티에 의해 개발된 Electron 도구들]
+(http://electron.atom.io/community)을 보세요.
 
-## History
+## 이력
 
-Below are milestones in Electron's history.
+다음은 Electron 이력의 주요 시점입니다.
 
 | :calendar: | :tada: |
 | --- | --- |
-| **April 2013**| [Atom Shell is started](https://github.com/electron/electron/commit/6ef8875b1e93787fa9759f602e7880f28e8e6b45).|
-| **May 2014** | [Atom Shell is open sourced](http://blog.atom.io/2014/05/06/atom-is-now-open-source.html). |
-| **April 2015** | [Atom Shell is re-named Electron](https://github.com/electron/electron/pull/1389). |
-| **May 2016** | [Electron releases `v1.0.0`](http://electron.atom.io/blog/2016/05/11/electron-1-0).|
-| **May 2016** | [Electron apps compatible with Mac App Store](http://electron.atom.io/docs/tutorial/mac-app-store-submission-guide).|
-| **August 2016** | [Windows Store support for Electron apps](http://electron.atom.io/docs/tutorial/windows-store-guide).|
+| **2013년 4월**| [Atom Shell 탄생](https://github.com/electron/electron/commit/6ef8875b1e93787fa9759f602e7880f28e8e6b45).|
+| **2014년 5월** | [Atom Shell 오픈소스화](http://blog.atom.io/2014/05/06/atom-is-now-open-source.html). |
+| **2015년 4월** | [Electron 으로 개명](https://github.com/electron/electron/pull/1389). |
+| **2016년 5월** | [Electron v1.0.0 출시](http://electron.atom.io/blog/2016/05/11/electron-1-0).|
+| **2016년 5월** | [Electron 앱이 Mac App Store 와 호환](http://electron.atom.io/docs/tutorial/mac-app-store-submission-guide).|
+| **2016년 8월** | [Windows Store 의 Electron 앱 지원](http://electron.atom.io/docs/tutorial/windows-store-guide).|

@@ -1,43 +1,33 @@
-> 이 문서는 아직 Electron 기여자가 번역하지 않았습니다.
->
-> Electron에 기여하고 싶다면 [기여 가이드](https://github.com/electron/electron/blob/master/CONTRIBUTING-ko.md)를
-> 참고하세요.
->
-> 문서의 번역이 완료되면 이 틀을 삭제해주세요.
+# 오프스크린 렌더링
 
-# Offscreen Rendering
+오프스크린 렌더링은 비트맵에 브라우저 윈도우의 컨텐츠를 얻게 합니다. 그래서
+아무곳에서나 렌더링 될 수 있습니다. 예를 들어 3D 에서 텍스처위에 렌더링 될 수
+있습니다. Electron 의 오프스크린 렌더링은 [Chromium Embedded Framework](https://bitbucket.org/chromiumembedded/cef)
+프로젝트와 비슷한 접근방식을 사용합니다.
 
-Offscreen rendering lets you obtain the content of a browser window in a bitmap,
-so it can be rendered anywhere, for example on a texture in a 3D scene. The
-offscreen rendering in Electron uses a similar approach than the [Chromium
-Embedded Framework](https://bitbucket.org/chromiumembedded/cef) project.
+두 방식의 렌더링을 사용할 수 있고 효율적으로 하기 위해 변경된 영역만 `'paint'`
+이벤트에 전달됩니다. 렌더링을 중지하거나, 계속하거나, 프레임 속도를 변경할 수
+있습니다. 명시된 프레임 속도는 상한선입니다. 웹페이지에 아무일도 발생하지
+않으면 프레임이 생성되지 않습니다. 프레임 속도 최고값은 60입니다. 그 이상은
+이점은 없고, 성능 저하만 발생합니다.
 
-Two modes of rendering can be used and only the dirty area is passed in the
-`'paint'` event to be more efficient. The rendering can be stopped, continued
-and the frame rate can be set. The specified frame rate is a top limit value,
-when there is nothing happening on a webpage, no frames are generated. The
-maximum frame rate is 60, because above that there is no benefit, just
-performance loss.
+## 두가지 렌더링 방식
 
-## Two modes of rendering
+### GPU 가속
 
-### GPU accelerated
+GPU 가속 렌더링은 컴포지션에 GPU 가 사용되는 것을 의미합니다. 프레임이 GPU 에서
+복사되기 때문에 더 많은 성능이 필요합니다. 그래서 이 방식이 좀 더 느립니다.
+이 방식의 장점은 WebGL 과 3D CSS 애니메이션 지원입니다.
 
-GPU accelerated rendering means that the GPU is used for composition. Because of
-that the frame has to be copied from the GPU which requires more performance,
-thus this mode is quite a bit slower than the other one. The benefit of this
-mode that WebGL and 3D CSS animations are supported.
+### 소프트웨어 출력 장치
 
-### Software output device
+이 방식은 CPU에서 렌더링을 위해 소프트웨어 출력 장치를 사용하여 프레임 생성이
+더 빠릅니다. 그래서 이 방식을 GPU 가속보다 선호합니다.
 
-This mode uses a software output device for rendering in the CPU, so the frame
-generation is much faster, thus this mode is preferred over the GPU accelerated
-one.
+이 방식을 사용하려면 [`app.disableHardwareAcceleration()`][disablehardwareacceleration]
+API 를 호출하여 GPU 가속을 비활성화 하여야합니다.
 
-To enable this mode GPU acceleration has to be disabled by calling the
-[`app.disableHardwareAcceleration()`][disablehardwareacceleration] API.
-
-## Usage
+## 사용법
 
 ``` javascript
 const {app, BrowserWindow} = require('electron')

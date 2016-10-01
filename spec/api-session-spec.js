@@ -179,6 +179,37 @@ describe('session module', function () {
         })
       })
     })
+
+    it('emits a changed event when a cookie is added or removed', function (done) {
+      const {cookies} = session.fromPartition('cookies-changed')
+
+      cookies.once('changed', function (event, cookie, cause, removed) {
+        assert.equal(cookie.name, 'foo')
+        assert.equal(cookie.value, 'bar')
+        assert.equal(cause, 'explicit')
+        assert.equal(removed, false)
+
+        cookies.once('changed', function (event, cookie, cause, removed) {
+          assert.equal(cookie.name, 'foo')
+          assert.equal(cookie.value, 'bar')
+          assert.equal(cause, 'explicit')
+          assert.equal(removed, true)
+          done()
+        })
+
+        cookies.remove(url, 'foo', function (error) {
+          if (error) return done(error)
+        })
+      })
+
+      cookies.set({
+        url: url,
+        name: 'foo',
+        value: 'bar'
+      }, function (error) {
+        if (error) return done(error)
+      })
+    })
   })
 
   describe('ses.clearStorageData(options)', function () {

@@ -18,14 +18,14 @@ node 모듈을 완벽하게 지원합니다. ([네이티브 모듈](../tutorial/
 메인 프로세스 스크립트는 일반 Node.js 스크립트와 비슷합니다:
 
 ```javascript
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow} = require('electron')
 
-let win = null;
+let win = null
 
 app.on('ready', () => {
-  win = new BrowserWindow({width: 800, height: 600});
-  win.loadURL('https://github.com');
-});
+  win = new BrowserWindow({width: 800, height: 600})
+  win.loadURL('https://github.com')
+})
 ```
 
 렌더러 프로세스도 예외적인 node module들을 사용할 수 있다는 점을 제외하면 일반 웹
@@ -52,23 +52,43 @@ app.on('ready', () => {
 직관적으로 사용할 수 있습니다:
 
 ```javascript
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow} = require('electron')
+
+let win
+
+app.on('ready', () => {
+  win = new BrowserWindow()
+  win.loadURL('https://github.com')
+})
 ```
 
 모든 `electron` 모듈이 필요하다면, 먼저 require한 후 각 독립적인 모듈을
 `electron`에서 분리 할당함으로써 모듈을 사용할 수 있습니다.
 
 ```javascript
-const electron = require('electron');
-const {app, BrowserWindow} = electron;
- ```
+const electron = require('electron')
+const {app, BrowserWindow} = electron
+
+let win
+
+app.on('ready', () => {
+  win = new BrowserWindow()
+  win.loadURL('https://github.com')
+})
+```
 
 위 코드는 다음과 같습니다:
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const electron = require('electron')
+const app = electron.app
+const BrowserWindow = electron.BrowserWindow
+let win
+
+app.on('ready', () => {
+  win = new BrowserWindow()
+  win.loadURL('https://github.com')
+})
 ```
 
 [gui]: https://en.wikipedia.org/wiki/Graphical_user_interface

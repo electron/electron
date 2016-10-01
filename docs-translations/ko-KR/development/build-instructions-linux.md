@@ -1,4 +1,4 @@
-﻿# 빌드 설명서 (Linux)
+# 빌드 설명서 (Linux)
 
 이 가이드는 Linux 운영체제에서 Electron을 빌드하는 방법을 설명합니다.
 
@@ -104,10 +104,10 @@ $ ./script/build.py -c D
 
 ## 정리하기
 
-빌드 파일들을 정리합니다:
+빌드 파일들을 정리하려면:
 
 ```bash
-$ ./script/clean.py
+$ npm run clean
 ```
 
 ## 문제 해결

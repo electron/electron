@@ -1,4 +1,4 @@
-﻿# autoUpdater
+# autoUpdater
 
 > 애플리케이션이 자동으로 업데이트를 진행할 수 있도록 기능을 활성화합니다.
 
@@ -106,7 +106,7 @@ Returns:
 
 ### `autoUpdater.getFeedURL()`
 
-현재 업데이트 피드 URL을 반환합니다.
+Returns `String` - 현재 업데이트 피드 URL.
 
 ### `autoUpdater.checkForUpdates()`
 

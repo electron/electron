@@ -1,4 +1,4 @@
-﻿# Tray
+# Tray
 
 > 아이콘과 컨텍스트 메뉴를 시스템 알림 영역에 추가합니다.
 
@@ -13,7 +13,7 @@ app.on('ready', () => {
     {label: 'Item2', type: 'radio'},
     {label: 'Item3', type: 'radio', checked: true},
     {label: 'Item4', type: 'radio'}
-  ]);
+  ])
   tray.setToolTip('이것은 나의 애플리케이션 입니다!')
   tray.setContextMenu(contextMenu)
 })
@@ -118,7 +118,7 @@ appIcon.setContextMenu(contextMenu)
 #### Event: 'drop-files' _macOS_
 
 * `event` Event
-* `files` Array - 드롭된 파일의 경로
+* `files` String[] - 드롭된 파일의 경로
 
 트레이 아이콘에 파일이 드롭되면 발생하는 이벤트입니다.
 
@@ -232,12 +232,12 @@ win.on('hide', () => {
 
 ### `tray.getBounds()` _macOS_ _Windows_
 
-이 트레이 아이콘의 `bounds`를 `Object` 형식으로 반환합니다.
+Returns `Object`:
+* `x` Integer
+* `y` Integer
+* `width` Integer
+* `height` Integer
 
-* `bounds` Object
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+이 트레이 아이콘의 `Object` 형식의 `bounds`.
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter

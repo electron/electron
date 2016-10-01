@@ -10,6 +10,8 @@ describe('nativeImage module', () => {
       assert(nativeImage.createFromPath('').isEmpty())
       assert(nativeImage.createFromPath('does-not-exist.png').isEmpty())
       assert(nativeImage.createFromPath('does-not-exist.ico').isEmpty())
+      assert(nativeImage.createFromPath(__dirname).isEmpty())
+      assert(nativeImage.createFromPath(__filename).isEmpty())
     })
 
     it('loads images from paths relative to the current working directory', () => {

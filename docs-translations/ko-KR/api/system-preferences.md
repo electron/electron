@@ -3,28 +3,54 @@
 > 시스템 설정을 가져옵니다.
 
 ```javascript
-const {systemPreferences} = require('electron');
-console.log(systemPreferences.isDarkMode());
+const {systemPreferences} = require('electron')
+console.log(systemPreferences.isDarkMode())
 ```
+
+## Events
+
+`systemPreferences` 객체는 다음 이벤트를 발생시킵니다:
+
+### Event: 'accent-color-changed' _Windows_
+
+Returns:
+
+* `event` Event
+* `newColor` String - 사용자에 의해 시스템 강조색으로 설정 된 새 RGBA 색상.
+
 
 ## Methods
 
 ### `systemPreferences.isDarkMode()` _macOS_
 
-이 메서드는 시스템이 어두운 모드 상태인 경우 `true`를 반환하고 아닐 경우 `false`를
-반환합니다.
+Returns `Boolean` - 시스템이 어두운 모드인지 여부.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
-이 메서드는 페이지 간의 스와이프가 설정되어있을 때 `true`를 반환하고 그렇지 않은 경우
-`false`를 반환합니다.
+Returns `Boolean` - 페이지 간의 스와이프가 설정되어 있는지 여부.
+
+### `systemPreferences.postNotification(event, userInfo)` _macOS_
+
+* `event` String
+* `userInfo` Object
+
+macOS 의 기본 알림으로 `event` 를 전달합니다. `userInfo` 는 알림과 함께 전송되는
+사용자 정보 딕셔너리를 포함하는 객체입니다.
+
+### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
+
+* `event` String
+* `userInfo` Object
+
+macOS 의 기본 알림으로 `event` 를 전달합니다. `userInfo` 는 알림과 함께 전송되는
+사용자 정보 딕셔너리를 포함하는 객체입니다.
 
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
 * `event` String
 * `callback` Function
 
-macOS의 네이티브 알림을 구독하며, 해당하는 `event`가 발생하면 `callback`이
+macOS의 기본 알림을 구독하며, 해당하는 `event`가 발생하면 `callback`이
 `callback(event, userInfo)` 형태로 호출됩니다. `userInfo`는 알림과 함께 전송되는
 사용자 정보 딕셔너리를 포함하는 객체입니다.
 
@@ -87,24 +113,37 @@ macOS에선 API가 `NSUserDefaults`를 읽어들입니다. 유명한 `key`와 `t
 예시입니다 (투명한 윈도우는 DWM 컴포지션이 비활성화되어있을 시 작동하지 않습니다):
 
 ```javascript
-let browserOptions = {width: 1000, height: 800};
+const {BrowserWindow, systemPreferences} = require('electron')
+let browserOptions = {width: 1000, height: 800}
 
 // 플랫폼이 지원하는 경우에만 투명 윈도우를 생성.
 if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
+  browserOptions.transparent = true
+  browserOptions.frame = false
 }
 
 // 원도우 생성
-let win = new BrowserWindow(browserOptions);
+let win = new BrowserWindow(browserOptions)
 
 // 페이지 로드.
 if (browserOptions.transparent) {
-  win.loadURL('file://' + __dirname + '/index.html');
+  win.loadURL(`file://${__dirname}/index.html`)
 } else {
   // 투명 윈도우 상태가 아니라면, 기본적인 스타일 사용
-  win.loadURL('file://' + __dirname + '/fallback.html');
+  win.loadURL(`file://${__dirname}/fallback.html`)
 }
 ```
 
 [dwm-composition]:https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx
+
+### `systemPreferences.getAccentColor()` _Windows_
+
+사용자의 현재 시스템 전체 색상 환경설정을 RGBA 16진 문자열 형태로 반환합니다.
+
+```js
+const color = systemPreferences.getAccentColor() // `"aabbccdd"`
+const red = color.substr(0, 2) // "aa"
+const green = color.substr(2, 2) // "bb"
+const blue = color.substr(4, 2) // "cc"
+const alpha = color.substr(6, 2) // "dd"
+```

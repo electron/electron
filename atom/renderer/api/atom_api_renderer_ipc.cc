@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -15,7 +16,9 @@ using content::RenderView;
 using blink::WebLocalFrame;
 using blink::WebView;
 
-namespace {
+namespace atom {
+
+namespace api {
 
 RenderView* GetCurrentRenderView() {
   WebLocalFrame* frame = WebLocalFrame::frameForCurrentContext();
@@ -69,6 +72,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("sendSync", &SendSync);
 }
 
-}  // namespace
+}  // namespace api
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_renderer_ipc, Initialize)
+}  // namespace atom
+
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_renderer_ipc, atom::api::Initialize)

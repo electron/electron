@@ -1,22 +1,21 @@
-﻿# protocol
+# protocol
 
 > 커스텀 프로토콜을 등록하거나 이미 존재하능 프로토콜의 요청의 동작을 변경합니다.
 
 다음 예시는 `file://` 프로토콜과 비슷한 일을 하는 커스텀 프로토콜을 설정합니다:
 
 ```javascript
-const {app, protocol} = require('electron');
-const path = require('path');
+const {app, protocol} = require('electron')
+const path = require('path')
 
 app.on('ready', () => {
-  protocol.registerFileProtocol('atom', function (request, callback) {
-    const url = request.url.substr(7);
-    callback({path: path.normalize(__dirname + '/' + url)});
+  protocol.registerFileProtocol('atom', (request, callback) => {
+    const url = request.url.substr(7)
+    callback({path: path.normalize(`${__dirname}/${url}`)})
   }, function (error) {
-    if (error)
-      console.error('Failed to register protocol');
-  });
-});
+    if (error) console.error('프로토콜 등록 실패')
+  })
+})
 ```
 
 **참고:** 모든 메서드는 따로 표기하지 않는 한 `app` 모듈의 `ready` 이벤트가 발생한
@@ -28,7 +27,7 @@ app.on('ready', () => {
 
 ### `protocol.registerStandardSchemes(schemes)`
 
-* `schemes` Array - 표준 스킴으로 등록할 커스텀 스킴 리스트
+* `schemes` String[] - 표준 스킴으로 등록할 커스텀 스킴 리스트
 
 표준 스킴의 형식은 RFC 3986 [일반 URI 문법](https://tools.ietf.org/html/rfc3986#section-3)
 표준을 따릅니다. 예를 들어 `http`와 `https` 같은 표준 스킴과 `file`과 같은 표준이
@@ -49,15 +48,20 @@ app.on('ready', () => {
 ```
 
 표준 스킴으로 등록하는 것은 [파일 시스템 API][file-system-api]를 통해 파일에 접근하는
-것을 허용할 것입니다. 그렇지 않은 경우 렌더러는 해당 스킴에 대해 보안 에러를 throw할
-것입니다. 일반적인 경우 `http` 프로토콜을 대체하는 커스텀 프로토콜을 등록하고 싶다면,
-표준 스킴으로 등록해야 합니다:
+것을 허용할 것입니다. 그렇지 않은 경우 렌더러는 해당 스킴에 대해 보안 에러를 발생 할
+것입니다.
+
+표준 스킴에는 기본적으로 저장 API (localStorage, sessionStorage, webSQL,
+indexedDB, cookies) 가 비활성화 되어있습니다. 일반적으로 `http` 프로토콜을
+대체하는 커스텀 프로토콜을 등록하고 싶다면, 표준 스킴으로 등록해야 합니다:
 
 ```javascript
-protocol.registerStandardSchemes(['atom']);
+const {app, protocol} = require('electron')
+
+protocol.registerStandardSchemes(['atom'])
 app.on('ready', () => {
-  protocol.registerHttpProtocol('atom', ...);
-});
+  protocol.registerHttpProtocol('atom', '...')
+})
 ```
 
 **참고:** 이 메서드는 `app` 모듈의 `ready` 이벤트가 발생하기 이전에만 사용할 수
@@ -65,7 +69,7 @@ app.on('ready', () => {
 
 ### `protocol.registerServiceWorkerSchemes(schemes)`
 
-* `schemes` Array - 서비스 워커를 제어하기 위해 등록될 커스텀 스킴.
+* `schemes` String[] - 서비스 워커를 제어하기 위해 등록될 커스텀 스킴.
 
 ### `protocol.registerFileProtocol(scheme, handler[, completion])`
 
@@ -85,11 +89,14 @@ app.on('ready', () => {
   * `uploadData` Array (optional)
 * `callback` Function
 
-The `uploadData` is an array of `data` objects:
+`uploadData` 는 `data` 객체의 배열입니다:
 
 * `data` Object
-  * `bytes` Buffer - Content being sent.
-  * `file` String - Path of file being uploaded.
+  * `bytes` Buffer - 전송될 콘텐츠.
+  * `file` String - 업로드될 파일의 경로.
+  * `blobUUID` String - blob 데이터의 UUID. 데이터를 이용하기 위해
+    [ses.getBlobData](session.md#sesgetblobdataidentifier-callback) 메소드를
+    사용하세요.
 
 `request`를 처리할 때 반드시 파일 경로 또는 `path` 속성을 포함하는 객체를 인수에
 포함하여 `callback`을 호출해야 합니다. 예: `callback(filePath)` 또는
@@ -118,12 +125,13 @@ The `uploadData` is an array of `data` objects:
 예시:
 
 ```javascript
+const {protocol} = require('electron')
+
 protocol.registerBufferProtocol('atom', (request, callback) => {
-  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
+  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
 }, (error) => {
-  if (error)
-    console.error('Failed to register protocol');
-});
+  if (error) console.error('Failed to register protocol')
+})
 ```
 
 ### `protocol.registerStringProtocol(scheme, handler[, completion])`

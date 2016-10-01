@@ -1,10 +1,11 @@
 {
   "name": "electron",
-  "version": "1.4.0",
+  "version": "1.4.2",
   "devDependencies": {
     "asar": "^0.11.0",
+    "browserify": "^13.1.0",
     "electabul": "~0.0.4",
-    "electron-docs-linter": "^1.6.2",
+    "electron-docs-linter": "^1.7.1",
     "request": "*",
     "standard": "^7.1.2",
     "standard-markdown": "^1.2.1"
@@ -25,6 +26,7 @@
   "private": true,
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
+    "browserify": "browserify",
     "build": "python ./script/build.py -c D",
     "clean": "python ./script/clean.py",
     "coverage": "npm run instrument-code-coverage && npm test -- --use-instrumented-asar",

@@ -94,7 +94,7 @@ Returns:
 
 * `event` Event
 * `display` Object
-* `changedMetrics` Array
+* `changedMetrics` String[]
 
 Emitted when one or more metrics change in a `display`. The `changedMetrics` is
 an array of strings that describe the changes. Possible changes are `bounds`,
@@ -106,15 +106,19 @@ The `screen` module has the following methods:
 
 ### `screen.getCursorScreenPoint()`
 
-Returns the current absolute position of the mouse pointer.
+Returns `Object`:
+* `x` Integer
+* `y` Integer
+
+The current absolute position of the mouse pointer.
 
 ### `screen.getPrimaryDisplay()`
 
-Returns the primary display.
+Returns `Display` - The primary display.
 
 ### `screen.getAllDisplays()`
 
-Returns an array of displays that are currently available.
+Returns `Display[]` - An array of displays that are currently available.
 
 ### `screen.getDisplayNearestPoint(point)`
 
@@ -122,7 +126,7 @@ Returns an array of displays that are currently available.
   * `x` Integer
   * `y` Integer
 
-Returns the display nearest the specified point.
+Returns `Display` - The display nearest the specified point.
 
 ### `screen.getDisplayMatching(rect)`
 
@@ -132,4 +136,4 @@ Returns the display nearest the specified point.
   * `width` Integer
   * `height` Integer
 
-Returns the display that most closely intersects the provided bounds.
+Returns `Display` - The display that most closely intersects the provided bounds.

@@ -1,19 +1,18 @@
-﻿반드시 사용하는 Electron 버전과 문서 버전을 일치시켜야 합니다. 버전 숫자는 문서 페이지
-URL에 포함되어 있습니다. 만약 그렇지 않다면, 아마 현재 보고 있는 문서는 개발 중인
-브랜치의 문서를 보고 있을 가능성이 있으며 해당 문서는 추후 API의 변경 가능성이 있고
-현재 사용하고 있는 Electron의 버전과 호환되지 않을 수 있습니다. 이 경우 atom.io의
-[사용할 수 있는 버전](http://electron.atom.io/docs/) 목록에서 다른 버전으로 변경할
-수 있습니다. 또한 GitHub 인터페이스의 "Switch branches/tags" 드롭다운 메뉴에서도
-사용 중인 Electron 버전으로 변경할 수 있습니다.
+반드시 사용하는 Electron 버전과 문서 버전을 일치시켜야 합니다. 버전 숫자는 문서
+페이지 URL에 포함되어 있습니다. 만약 그렇지 않다면, 아마 개발 브랜치의 문서일
+것이며 당신의 Electron 버전과 호환되지 않는 API 변경을 포함할 것 입니다.
+이전 버전 문서는 깃허브에서 [태그로 열어]
+(https://github.com/electron/electron/tree/v1.4.0) 볼 수 있습니다.
+"branches/tags 변경" 드롭다운을 열고 해당 버전의 태그를 선택하세요.
 
-**역자주:** 한국어 번역 문서는 `atom.io`에 반영되어 있지 않습니다. 한국어 번역 문서는
-현재 `upstream` 원본 문서의 변경에 따라 최대한 문서의 버전을 맞추려고 노력하고 있지만
-가끔 누락된 번역이 존재할 수 있습니다.
+**역자주:** 한국어 번역 문서는 `atom.io`에 반영되어 있지 않습니다. 한국어 번역
+문서는 현재 `upstream` 원본 문서의 변경에 따라 최대한 문서의 버전을 맞추려고
+노력하고 있지만 가끔 누락된 번역이 존재할 수 있습니다.
 
 ## FAQ
 
-Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 전에 다음 문서를 먼저
-확인해 보세요:
+Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 전에 다음 문서를
+먼저 확인해 보세요:
 
 * [Electron FAQ](faq.md)
 
@@ -100,3 +99,4 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [디버그 설명서 (macOS)](development/debug-instructions-macos.md)
 * [디버그 설명서 (Windows)](development/debug-instructions-windows.md)
 * [디버거 심볼 서버 설정](development/setting-up-symbol-server.md)
+* [문서 스타일가이드](styleguide.md)

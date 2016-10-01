@@ -530,8 +530,7 @@ NativeWindowMac::NativeWindowMac(
     : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
       attention_request_id_(0),
-      title_bar_style_(NORMAL),
-      is_edge_(false) {
+      title_bar_style_(NORMAL) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -676,16 +675,14 @@ NativeWindowMac::NativeWindowMac(
       if (!web_contents)
         return event;
 
-      if (!began && is_edge_ && (([event phase] == NSEventPhaseMayBegin) ||
+      if (!began && (([event phase] == NSEventPhaseMayBegin) ||
                                  ([event phase] == NSEventPhaseBegan))) {
         this->NotifyWindowScrollTouchBegin();
         began = YES;
-        is_edge_ = false;
       } else if (began && (([event phase] == NSEventPhaseEnded) ||
                            ([event phase] == NSEventPhaseCancelled))) {
         this->NotifyWindowScrollTouchEnd();
         began = NO;
-        is_edge_ = false;
       }
       return event;
   }];
@@ -743,8 +740,9 @@ bool NativeWindowMac::IsFocused() {
 
 void NativeWindowMac::Show() {
   if (is_modal() && parent()) {
-    [parent()->GetNativeWindow() beginSheet:window_
-                          completionHandler:^(NSModalResponse) {}];
+    if ([window_ sheetParent] == nil)
+      [parent()->GetNativeWindow() beginSheet:window_
+                            completionHandler:^(NSModalResponse) {}];
     return;
   }
 
@@ -946,12 +944,32 @@ bool NativeWindowMac::IsClosable() {
   return [window_ styleMask] & NSClosableWindowMask;
 }
 
-void NativeWindowMac::SetAlwaysOnTop(bool top) {
-  [window_ setLevel:(top ? NSFloatingWindowLevel : NSNormalWindowLevel)];
+void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level) {
+  int windowLevel = NSNormalWindowLevel;
+  if (top) {
+    if (level == "floating") {
+      windowLevel = NSFloatingWindowLevel;
+    } else if (level == "torn-off-menu") {
+      windowLevel = NSTornOffMenuWindowLevel;
+    } else if (level == "modal-panel") {
+      windowLevel = NSModalPanelWindowLevel;
+    } else if (level == "main-menu") {
+      windowLevel = NSMainMenuWindowLevel;
+    } else if (level == "status") {
+      windowLevel = NSStatusWindowLevel;
+    } else if (level == "pop-up-menu") {
+      windowLevel = NSPopUpMenuWindowLevel;
+    } else if (level == "screen-saver") {
+      windowLevel = NSScreenSaverWindowLevel;
+    } else if (level == "dock") {
+      windowLevel = NSDockWindowLevel;
+    }
+  }
+  [window_ setLevel:windowLevel];
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {
-  return [window_ level] == NSFloatingWindowLevel;
+  return [window_ level] != NSNormalWindowLevel;
 }
 
 void NativeWindowMac::Center() {
@@ -1131,7 +1149,7 @@ void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
     case blink::WebInputEvent::GestureScrollBegin:
     case blink::WebInputEvent::GestureScrollUpdate:
     case blink::WebInputEvent::GestureScrollEnd:
-      is_edge_ = true;
+        this->NotifyWindowScrollTouchEdge();
       break;
     default:
       break;
