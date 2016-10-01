@@ -40,7 +40,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 
 ### Elementos DOM Personalizados:
 
-* [Objeto `File`](../../docs/api/file-object.md)
+* [Objeto `File`](../../docs-translations/pt-BR/api/file-object.md)
 * [Tag `<webview>`](../../docs/api/web-view-tag.md)
 * [Função `window.open`](../../docs/api/window-open.md)
 
