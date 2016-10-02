@@ -19,34 +19,44 @@ let ses = win.webContents.session
 
 `session` 모듈은 다음과 같은 메서드를 가지고 있습니다:
 
-### session.fromPartition(partition)
+### `session.fromPartition(partition[, options])`
 
 * `partition` String
+* `options` Object
+  * `cache` Boolean - 캐시를 활성화할지 여부.
 
-`partition` 문자열로 부터 새로운 `Session` 인스턴스를 만들어 반환합니다.
+Returns `Session` - `partition` 문자열로부터 만들어진 `Session` 인스턴스. 이미
+`partition`에 해당하는 `Session`이 존재할 경우, 해당 세션이 반환됩니다.
+그렇지않은 경우 `Session` 인스턴스가 `options`에 맞춰 새로 생성됩니다.
 
 `partition`이 `persist:`로 시작하면 페이지는 지속성 세션을 사용하며 다른 모든 앱 내의
 페이지에서 같은 `partition`을 사용할 수 있습니다. 만약 `persist:` 접두어로 시작하지
 않으면 페이지는 인-메모리 세션을 사용합니다. `partition`을 지정하지 않으면 애플리케이션의
 기본 세션이 반환됩니다.
 
+`options`에 맞춰 `Session`을 생성하려면, `partition`에 해당하는 `Session`이 이미
+이전에 사용되지 않고 있는지 확인해야 합니다. 이미 존재하는 `Session` 객체의
+`options`를 변경하는 방법은 없습니다.
+
 ## Properties
 
 `session` 모듈은 다음과 같은 속성을 가지고 있습니다:
 
-### session.defaultSession
+### `session.defaultSession`
 
-애플리케이션의 기본 세션 객체를 반환합니다.
+`Session` 객체, 애플리케이션의 기본 세션 객체.
 
 ## Class: Session
+
+> 세션의 속성을 가져오거나 설정합니다.
 
 `session` 모듈을 사용하여 `Session` 객체를 생성할 수 있습니다:
 
 ```javascript
-const session = require('electron').session;
-
-const ses = session.fromPartition('persist:name');
- ```
+const {session} = require('electron')
+const ses = session.fromPartition('persist:name')
+console.log(ses.getUserAgent())
+```
 
 ### Instance Events
 
@@ -64,12 +74,13 @@ Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이�
 틱부터 `item`을 사용할 수 없게 됩니다.
 
 ```javascript
+const {session} = require('electron')
 session.defaultSession.on('will-download', (event, item, webContents) => {
-  event.preventDefault();
+  event.preventDefault()
   require('request')(item.getURL(), (data) => {
-    require('fs').writeFileSync('/somewhere', data);
-  });
-});
+    require('fs').writeFileSync('/somewhere', data)
+  })
+})
 ```
 
 ### Instance Methods
@@ -89,17 +100,17 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 
 세션의 HTTP 캐시를 비웁니다.
 
-#### `ses.clearStorageData([options, ]callback)`
+#### `ses.clearStorageData([options, callback])`
 
 * `options` Object (optional), proprties:
   * `origin` String - `scheme://host:port`와 같은 `window.location.origin` 규칙을
     따르는 origin 문자열.
-  * `storages` Array - 비우려는 스토리지의 종류, 다음과 같은 타입을 포함할 수 있습니다:
+  * `storages` String[] - 비우려는 스토리지의 종류, 다음과 같은 타입을 포함할 수 있습니다:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `local storage`,
     `shadercache`, `websql`, `serviceworkers`
-  * `quotas` Array - 비우려는 할당의 종류, 다음과 같은 타입을 포함할 수 있습니다:
+  * `quotas` String[] - 비우려는 할당의 종류, 다음과 같은 타입을 포함할 수 있습니다:
     `temporary`, `persistent`, `syncable`.
-* `callback` Function - 작업이 완료되면 호출됩니다.
+* `callback` Function (optional) - 작업이 완료되면 호출됩니다.
 
 웹 스토리지의 데이터를 비웁니다.
 
@@ -112,6 +123,8 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 * `config` Object
   * `pacScript` String - PAC 파일과 관련된 URL입니다.
   * `proxyRules` String - 사용할 프록시의 규칙을 나타냅니다.
+  * `proxyBypassRules` String - 어떤 URL이 프록시 설정을 무시되어야 하는지를
+    지정하는 규칙입니다.
 * `callback` Function - 작업이 완료되면 호출됩니다.
 
 프록시 설정을 적용합니다.
@@ -146,6 +159,43 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 * `http=foopy;socks=foopy2` - http:// URL에 `foopy` HTTP 프록시를 사용합니다.
   그리고 `socks4://foopy2` 프록시를 다른 모든 URL에 사용합니다.
 
+`proxyBypassRules`는 밑에서 묘사된 규칙의 콤마로 구분된 목록입니다:
+
+* `[ URL_SCHEME "://" ] HOSTNAME_PATTERN [ ":" <port> ]`
+
+   Match all hostnames that match the pattern HOSTNAME_PATTERN.
+
+   예시:
+     "foobar.com", "*foobar.com", "*.foobar.com", "*foobar.com:99",
+     "https://x.*.y.com:99"
+
+ * `"." HOSTNAME_SUFFIX_PATTERN [ ":" PORT ]`
+
+   Match a particular domain suffix.
+
+   예시:
+     ".google.com", ".com", "http://.google.com"
+
+* `[ SCHEME "://" ] IP_LITERAL [ ":" PORT ]`
+
+   Match URLs which are IP address literals.
+
+   예시:
+     "127.0.1", "[0:0::1]", "[::1]", "http://[::1]:99"
+
+*  `IP_LITERAL "/" PREFIX_LENGHT_IN_BITS`
+
+   Match any URL that is to an IP literal that falls between the
+   given range. IP range is specified using CIDR notation.
+
+   예시:
+     "192.168.1.1/16", "fefe:13::abc/33".
+
+*  `<local>`
+
+   Match local addresses. The meaning of `<local>` is whether the
+   host matches one of: "127.0.0.1", "::1", "localhost".
+
 #### `ses.resolveProxy(url, callback)`
 
 * `url` URL
@@ -164,23 +214,27 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 #### `ses.enableNetworkEmulation(options)`
 
 * `options` Object
-  * `offline` Boolean - 네트워크의 오프라인 상태 여부
-  * `latency` Double - 밀리세컨드 단위의 RTT
-  * `downloadThroughput` Double - Bps 단위의 다운로드 주기
-  * `uploadThroughput` Double - Bps 단위의 업로드 주기
+  * `offline` Boolean (optional) - 네트워크 연결 끊김을 에뮬레이트할지 여부입니다.
+    기본값은 false입니다.
+  * `latency` Double (optional) - 밀리세컨드당 RTT입니다. 기본값은 0이며 이는
+    레이턴시 스로틀링을 비활성화합니다.
+  * `downloadThroughput` Double (optional) - Bps 단위의 다운로드 속도입니다.
+    기본값은 0이며 이는 다운로드 스로틀링을 비활성화합니다.
+  * `uploadThroughput` Double (optional) - Bps 단위의 업로드 속도입니다. 기본값은
+    0이며 이는 업로드 스로틀링을 비활성화합니다.
 
 제공된 설정으로 `session`의 네트워크를 에뮬레이트합니다.
 
 ```javascript
 // 50kbps의 처리량과 함께 500ms의 레이턴시로 GPRS 연결을 에뮬레이트합니다.
 window.webContents.session.enableNetworkEmulation({
-    latency: 500,
-    downloadThroughput: 6400,
-    uploadThroughput: 6400
-});
+  latency: 500,
+  downloadThroughput: 6400,
+  uploadThroughput: 6400
+})
 
 // 네트워크가 끊긴 상태를 에뮬레이트합니다.
-window.webContents.session.enableNetworkEmulation({offline: true});
+window.webContents.session.enableNetworkEmulation({offline: true})
 ```
 
 #### `ses.disableNetworkEmulation()`
@@ -199,12 +253,12 @@ window.webContents.session.enableNetworkEmulation({offline: true});
 `setCertificateVerifyProc(null)`을 호출하면 기본 검증 프로세스로 되돌립니다.
 
 ```javascript
-myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
- if (hostname === 'github.com')
-   callback(true);
- else
-   callback(false);
-});
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
+win.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
+  callback(hostname === 'github.com')
+})
 ```
 #### `ses.setPermissionRequestHandler(handler)`
 
@@ -219,16 +273,14 @@ myWindow.webContents.session.setCertificateVerifyProc((hostname, cert, callback)
 호출하면 권한 제공을 거부합니다.
 
 ```javascript
-session.fromPartition(partition).setPermissionRequestHandler((webContents, permission, callback) => {
-  if (webContents.getURL() === host) {
-    if (permission === 'notifications') {
-      callback(false); // 거부됨.
-      return;
-    }
+const {session} = require('electron')
+session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
+  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
+    return callback(false) // 거부됨.
   }
 
-  callback(true);
-});
+  callback(true)
+})
 ```
 
 #### `ses.clearHostResolverCache([callback])`
@@ -268,7 +320,15 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 #### `ses.getUserAgent()`
 
-현재 세션의 유저 에이전트를 표현하는 `String`을 반환합니다.
+Returns `String` - 현재 세션의 유저 에이전트.
+
+#### `ses.getBlobData(identifier, callback)`
+
+* `identifier` String - Valid UUID.
+* `callback` Function
+  * `result` Buffer - Blob data.
+
+Returns `Blob` - `identifier` 에 연결된 blob 데이터.
 
 ### Instance Properties
 
@@ -276,15 +336,15 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 #### `ses.cookies`
 
-현재 세션의 `Cookies` 클래스 인스턴스를 반환합니다.
+현재 세션의 `Cookies` 객체.
 
 #### `ses.webRequest`
 
-현재 세션의 `WebRequest` 클래스 인스턴스를 반환합니다.
+현재 세션의 `WebRequest` 객체.
 
 #### `ses.protocol`
 
-현재 세션의 [protocol](protocol.md) 모듈 인스턴스를 반환합니다.
+현재 세션의 Protocol 객체 ([protocol](protocol.md) 모듈의 인스턴스).
 
 ```javascript
 const {app, session} = require('electron')
@@ -294,39 +354,38 @@ app.on('ready', function () {
   const protocol = session.fromPartition(partitionName).protocol
   protocol.registerFileProtocol('atom', function (request, callback) {
     var url = request.url.substr(7)
-    callback({path: path.normalize(__dirname + '/' + url)})
+    callback({path: path.normalize(`${__dirname}/${url}`)})
   }, function (error) {
-    if (error)
-      console.error('Failed to register protocol')
+    if (error) console.error('Failed to register protocol')
   })
 })
 ```
 
 ## Class: Cookies
 
-`Cookies` 클래스는 쿠키를 탐색하고 조작하는 방법을 제공합니다. `Cookies` 클래스의
-인스턴스는 반드시 `Session` 클래스의 `cookies` 속성에서 접근해야 합니다.
+> 세션의 쿠키를 변경하거나 요청합니다.
+
+`Cookies` 클래스의 인스턴스는 `Session`의 `cookies` 속성을 통해 접근합니다.
 
 예를 들어:
 
 ```javascript
 // 모든 쿠키를 요청합니다.
 session.defaultSession.cookies.get({}, (error, cookies) => {
-  console.log(cookies);
-});
+  console.log(error, cookies)
+})
 
 // url에 관련된 쿠키를 모두 가져옵니다.
 session.defaultSession.cookies.get({url: 'http://www.github.com'}, (error, cookies) => {
-  console.log(cookies);
-});
+  console.log(error, cookies)
+})
 
 // 지정한 쿠키 데이터를 설정합니다.
 // 동일한 쿠키가 있으면 해당 쿠키를 덮어씁니다.
-const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'};
+const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'}
 session.defaultSession.cookies.set(cookie, (error) => {
-  if (error)
-    console.error(error);
-});
+  if (error) console.error(error)
+})
 ```
 
 ### Instance Methods
@@ -395,9 +454,10 @@ session.defaultSession.cookies.set(cookie, (error) => {
 
 ## Class: WebRequest
 
-`WebRequest` 클래스는 생명 주기의 다양한 단계에서 요청의 콘텐츠를 조작하거나 가로채는
-방법을 제공합니다. `WebRequest` 클래스는 반드시 `Session` 클래스의 `webRequest`
-속성에서 접근해야 합니다.
+> 생명주기 동안의 다양한 단계를 가지는 요청의 콘텐츠를 가로채고 변경합니다.
+
+`WebRequest` 클래스의 인스턴스는 `Session`의 `webRequest` 속성을 통해 접근할 수
+있습니다.
 
 `WebRequest`의 메서드는 선택적인 `filter`와 `listener` 속성을 허용하며 `listener`는
 API의 이벤트가 발생했을 때 `listener(details)` 형식으로 호출되고, `details`는 요청에
@@ -420,7 +480,7 @@ const filter = {
 }
 
 session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
-  details.requestHeaders['User-Agent'] = "MyAgent"
+  details.requestHeaders['User-Agent'] = 'MyAgent'
   callback({cancel: false, requestHeaders: details.requestHeaders})
 })
 ```
@@ -450,6 +510,9 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback
 * `data` Object
   * `bytes` Buffer - 전송될 콘텐츠.
   * `file` String - 업로드될 파일의 경로.
+  * `blobUUID` String - blob 데이터의 UUID. 데이터를 이용하기 위해
+    [ses.getBlobData](session.md#sesgetblobdataidentifier-callback) 메소드를
+    사용하세요.
 
 `callback`은 `response` 객체와 함께 호출되어야 합니다:
 

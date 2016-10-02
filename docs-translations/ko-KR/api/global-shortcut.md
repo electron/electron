@@ -1,4 +1,4 @@
-﻿# globalSortcut
+# globalSortcut
 
 > 애플리케이션에 키보드 포커스가 없을 때도 키보드 이벤트를 받을 수 있도록 합니다.
 
@@ -11,29 +11,29 @@
 사용할 수 없습니다.
 
 ```javascript
-const {app, globalShortcut} = require('electron');
+const {app, globalShortcut} = require('electron')
 
 app.on('ready', () => {
   // 'CommandOrControl+X' 단축키를 리스너에 등록합니다.
   const ret = globalShortcut.register('CommandOrControl+X', () => {
-    console.log('CommandOrControl+X is pressed');
-  });
+    console.log('CommandOrControl+X is pressed')
+  })
 
   if (!ret) {
-    console.log('registration failed');
+    console.log('registration failed')
   }
 
   // 단축키가 등록되었는지 확인합니다.
-  console.log(globalShortcut.isRegistered('CommandOrControl+X'));
-});
+  console.log(globalShortcut.isRegistered('CommandOrControl+X'))
+})
 
 app.on('will-quit', () => {
   // 단축키의 등록을 해제합니다.
-  globalShortcut.unregister('CommandOrControl+X');
+  globalShortcut.unregister('CommandOrControl+X')
 
   // 모든 단축키의 등록을 해제합니다.
-  globalShortcut.unregisterAll();
-});
+  globalShortcut.unregisterAll()
+})
 ```
 
 ## Methods
@@ -56,7 +56,7 @@ accelerator가 이미 다른 애플리케이션에서 사용 중일 경우, 이 
 
 * `accelerator` [Accelerator](accelerator.md)
 
-지정된 `accelerator` 단축키가 등록되었는지 여부를 확인합니다.
+Returns `Boolean` - `accelerator` 가 등록되었는지 여부.
 
 Accelerator가 이미 다른 애플리케이션에서 사용 중일 경우, 여전히 `false`를 반환합니다.
 이러한 동작은 애플리케이션이 전역 키보드 단축키를 가지고 충돌이 일어나지 않도록 하기

@@ -238,7 +238,15 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   dict.Get("accelerationRatioX", &out->accelerationRatioX);
   dict.Get("accelerationRatioY", &out->accelerationRatioY);
   dict.Get("hasPreciseScrollingDeltas", &out->hasPreciseScrollingDeltas);
-  dict.Get("canScroll", &out->canScroll);
+
+#if defined(USE_AURA)
+  // Matches the behavior of ui/events/blink/web_input_event_traits.cc:
+  bool can_scroll = true;
+  if (dict.Get("canScroll", &can_scroll) && !can_scroll) {
+    out->hasPreciseScrollingDeltas = false;
+    out->modifiers &= ~blink::WebInputEvent::ControlKey;
+  }
+#endif
   return true;
 }
 

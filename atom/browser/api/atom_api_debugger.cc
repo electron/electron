@@ -9,13 +9,14 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+
+#include "atom/common/node_includes.h"
 
 using content::DevToolsAgentHost;
 
@@ -107,7 +108,7 @@ bool Debugger::IsAttached() {
 void Debugger::Detach() {
   if (!agent_host_.get())
     return;
-  agent_host_->DetachClient();
+  agent_host_->DetachClient(this);
   AgentHostClosed(agent_host_.get(), false);
   agent_host_ = nullptr;
 }
@@ -136,7 +137,7 @@ void Debugger::SendCommand(mate::Arguments* args) {
 
   std::string json_args;
   base::JSONWriter::Write(request, &json_args);
-  agent_host_->DispatchProtocolMessage(json_args);
+  agent_host_->DispatchProtocolMessage(this, json_args);
 }
 
 // static

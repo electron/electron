@@ -1,16 +1,16 @@
-﻿# powerSaveBlocker
+# powerSaveBlocker
 
 > 시스템이 저전력 (슬립) 모드로 진입하는 것을 막습니다.
 
 예시:
 
 ```javascript
-const {powerSaveBlocker} = require('electron');
+const {powerSaveBlocker} = require('electron')
 
-const id = powerSaveBlocker.start('prevent-display-sleep');
-console.log(powerSaveBlocker.isStarted(id));
+const id = powerSaveBlocker.start('prevent-display-sleep')
+console.log(powerSaveBlocker.isStarted(id))
 
-powerSaveBlocker.stop(id);
+powerSaveBlocker.stop(id)
 ```
 
 ## Methods
@@ -21,17 +21,17 @@ powerSaveBlocker.stop(id);
 
 * `type` String - Power save blocker 종류
   * `prevent-app-suspension` - 저전력 모드 등으로 인한 애플리케이션 작동 중단을
-    방지합니다. 시스템을 항시 활성화 상태로 만듭니다. 하지만 화면은 자동으로 꺼질 수
-    있습니다. 사용 예시: 파일 다운로드, 음악 재생 등.
-  * `prevent-display-sleep`- 슬립 모드 등으로 인한 애플리케이션의 작동 중단을
-    방지합니다. 시스템을 항시 활성화 상태로 만들고 슬립 모드(화면 꺼짐)를 방지합니다.
-    사용 예시: 비디오 재생 등.
+    방지합니다. 시스템을 항시 활성화 상태로 만듭니다. 하지만 화면은 자동으로 꺼질
+    수 있습니다. 사용 예시: 파일 다운로드, 음악 재생 등.
+  * `prevent-display-sleep` - 슬립 모드 등으로 인한 애플리케이션의 작동 중단을
+    방지합니다. 시스템을 항시 활성화 상태로 만들고 슬립 모드(화면 꺼짐)를
+    방지합니다. 사용 예시: 비디오 재생 등.
 
 시스템이 저전력 모드(슬립)로 진입하는 것을 막기 시작합니다. 정수로 된 식별 ID를
 반환합니다.
 
-**참고:** `prevent-display-sleep` 모드는 `prevent-app-suspension` 보다 우선 순위가
-높습니다. 두 모드 중 가장 높은 우선 순위의 모드만 작동합니다. 다시 말해
+**참고:** `prevent-display-sleep` 모드는 `prevent-app-suspension` 보다 우선
+순위가 높습니다. 두 모드 중 가장 높은 우선 순위의 모드만 작동합니다. 다시 말해
 `prevent-display-sleep` 모드는 언제나 `prevent-app-suspension` 모드의 효과를
 덮어씌웁니다.
 
@@ -52,4 +52,4 @@ ID.
 * `id` Integer - `powerSaveBlocker.start`로부터 반환되는 power save blocker 식별
 ID.
 
-지정한 id의 `powerSaveBlocker`가 실행 중인지 확인합니다.
+Returns `Boolean` - 지정한 id의 `powerSaveBlocker`가 실행 중인지 여부.

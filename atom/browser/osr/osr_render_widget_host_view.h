@@ -13,6 +13,7 @@
 #endif
 
 #include "atom/browser/native_window.h"
+#include "atom/browser/native_window_observer.h"
 #include "atom/browser/osr/osr_output_device.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
@@ -36,7 +37,6 @@
 
 #if defined(OS_MACOSX)
 #include "content/browser/renderer_host/browser_compositor_view_mac.h"
-#include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
 #endif
 
 #if defined(OS_MACOSX)
@@ -54,13 +54,15 @@ namespace atom {
 class AtomCopyFrameGenerator;
 class AtomBeginFrameTimer;
 
+#if defined(OS_MACOSX)
+class MacHelper;
+#endif
+
 class OffScreenRenderWidgetHostView
     : public content::RenderWidgetHostViewBase,
-#if defined(OS_MACOSX)
-      public ui::AcceleratedWidgetMacNSView,
-#endif
       public ui::CompositorDelegate,
-      public content::DelegatedFrameHostClient {
+      public content::DelegatedFrameHostClient,
+      public NativeWindowObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
                                 const OnPaintCallback& callback,
@@ -90,7 +92,6 @@ class OffScreenRenderWidgetHostView
   void SetBackgroundColor(SkColor color) override;
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
-  bool GetScreenColorProfile(std::vector<char>*) override;
 #if defined(OS_MACOSX)
   ui::AcceleratedWidgetMac* GetAcceleratedWidgetMac() const override;
   void SetActive(bool active) override;
@@ -102,7 +103,7 @@ class OffScreenRenderWidgetHostView
 #endif  // defined(OS_MACOSX)
 
   // content::RenderWidgetHostViewBase:
-  void OnSwapCompositorFrame(uint32_t, std::unique_ptr<cc::CompositorFrame>)
+  void OnSwapCompositorFrame(uint32_t, cc::CompositorFrame)
     override;
   void ClearCompositorFrame(void) override;
   void InitAsPopup(content::RenderWidgetHostView *rwhv, const gfx::Rect& rect)
@@ -173,13 +174,9 @@ class OffScreenRenderWidgetHostView
   bool IsAutoResizeEnabled() const;
   void OnSetNeedsBeginFrames(bool enabled);
 
-#if defined(OS_MACOSX)
-  // ui::AcceleratedWidgetMacNSView:
-  NSView* AcceleratedWidgetGetNSView() const override;
-  void AcceleratedWidgetGetVSyncParameters(
-        base::TimeTicks* timebase, base::TimeDelta* interval) const override;
-  void AcceleratedWidgetSwapCompleted() override;
-#endif  // defined(OS_MACOSX)
+  // NativeWindowObserver:
+  void OnWindowResize() override;
+  void OnWindowClosed() override;
 
   void OnBeginFrameTimerTick();
   void SendBeginFrame(base::TimeTicks frame_time,
@@ -198,9 +195,15 @@ class OffScreenRenderWidgetHostView
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
 
-  ui::Compositor* compositor() const { return compositor_.get(); }
+  ui::Compositor* GetCompositor() const;
+  ui::Layer* GetRootLayer() const;
+  content::DelegatedFrameHost* GetDelegatedFrameHost() const;
+
+  void Invalidate();
+
   content::RenderWidgetHostImpl* render_widget_host() const
       { return render_widget_host_; }
+  NativeWindow* window() const { return native_window_; }
 
  private:
   void SetupFrameRate(bool force);
@@ -233,9 +236,12 @@ class OffScreenRenderWidgetHostView
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
 
 #if defined(OS_MACOSX)
-  NSWindow* window_;
   CALayer* background_layer_;
   std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
+
+  // Can not be managed by smart pointer because its header can not be included
+  // in the file that has the destructor.
+  MacHelper* mac_helper_;
 
   // Selected text on the renderer.
   std::string selected_text_;

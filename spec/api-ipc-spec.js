@@ -69,6 +69,10 @@ describe('ipc module', function () {
       assert.ok(Object.keys(a.foo).includes('bar'))
       assert.ok(Object.keys(a.foo).includes('nested'))
       assert.ok(Object.keys(a.foo).includes('method1'))
+
+      a = remote.require(path.join(fixtures, 'module', 'function-with-missing-properties.js')).setup()
+      assert.equal(a.bar(), true)
+      assert.equal(a.bar.baz, undefined)
     })
 
     it('should work with static class members', function () {
@@ -152,6 +156,7 @@ describe('ipc module', function () {
       assert.equal(property.getFunctionProperty(), 'foo-browser')
       property.func.property = 'bar'
       assert.equal(property.getFunctionProperty(), 'bar-browser')
+      property.func.property = 'foo'  // revert back
 
       var property2 = remote.require(path.join(fixtures, 'module', 'property.js'))
       assert.equal(property2.property, 1007)

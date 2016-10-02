@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/net/atom_cookie_delegate.h"
 #include "base/callback.h"
 #include "native_mate/handle.h"
 #include "net/cookies/canonical_cookie.h"
@@ -26,7 +27,8 @@ class AtomBrowserContext;
 
 namespace api {
 
-class Cookies : public mate::TrackableObject<Cookies> {
+class Cookies : public mate::TrackableObject<Cookies>,
+                public AtomCookieDelegate::Observer {
  public:
   enum Error {
     SUCCESS,
@@ -52,8 +54,14 @@ class Cookies : public mate::TrackableObject<Cookies> {
               const base::Closure& callback);
   void Set(const base::DictionaryValue& details, const SetCallback& callback);
 
+  // AtomCookieDelegate::Observer:
+  void OnCookieChanged(const net::CanonicalCookie& cookie,
+                       bool removed,
+                       AtomCookieDelegate::ChangeCause cause) override;
+
  private:
   net::URLRequestContextGetter* request_context_getter_;
+  scoped_refptr<AtomCookieDelegate> cookie_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };

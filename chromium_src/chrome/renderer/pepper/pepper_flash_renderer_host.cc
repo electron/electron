@@ -205,8 +205,8 @@ int32_t PepperFlashRendererHost::OnDrawGlyphs(
     style |= SkTypeface::kBold;
   if (params.font_desc.italic)
     style |= SkTypeface::kItalic;
-  sk_sp<SkTypeface> typeface(SkTypeface::CreateFromName(
-      params.font_desc.face.c_str(), static_cast<SkTypeface::Style>(style)));
+  sk_sp<SkTypeface> typeface(SkTypeface::MakeFromName(
+      params.font_desc.face.c_str(), SkFontStyle::FromOldStyle(style)));
   if (!typeface)
     return PP_ERROR_FAILED;
 

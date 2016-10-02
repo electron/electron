@@ -11,15 +11,13 @@
 #include "base/process/launch.h"
 #include "url/gurl.h"
 
+#define ELECTRON_TRASH "ELECTRON_TRASH"
+#define ELECTRON_DEFAULT_TRASH "gvfs-trash"
+
 namespace {
 
-bool XDGUtil(const std::string& util,
-             const std::string& arg,
+bool XDGUtilV(const std::vector<std::string>& argv,
              const bool wait_for_exit) {
-  std::vector<std::string> argv;
-  argv.push_back(util);
-  argv.push_back(arg);
-
   base::LaunchOptions options;
   options.allow_new_privs = true;
   // xdg-open can fall back on mailcap which eventually might plumb through
@@ -44,6 +42,16 @@ bool XDGUtil(const std::string& util,
   return (exit_code == 0);
 }
 
+bool XDGUtil(const std::string& util,
+             const std::string& arg,
+             const bool wait_for_exit) {
+  std::vector<std::string> argv;
+  argv.push_back(util);
+  argv.push_back(arg);
+
+  return XDGUtilV(argv, wait_for_exit);
+}
+
 bool XDGOpen(const std::string& path, const bool wait_for_exit) {
   return XDGUtil("xdg-open", path, wait_for_exit);
 }
@@ -59,16 +67,16 @@ namespace platform_util {
 // TODO(estade): It would be nice to be able to select the file in the file
 // manager, but that probably requires extending xdg-open. For now just
 // show the folder.
-void ShowItemInFolder(const base::FilePath& full_path) {
+bool ShowItemInFolder(const base::FilePath& full_path) {
   base::FilePath dir = full_path.DirName();
   if (!base::DirectoryExists(dir))
-    return;
+    return false;
 
-  XDGOpen(dir.value(), true);
+  return XDGOpen(dir.value(), true);
 }
 
-void OpenItem(const base::FilePath& full_path) {
-  XDGOpen(full_path.value(), true);
+bool OpenItem(const base::FilePath& full_path) {
+  return XDGOpen(full_path.value(), true);
 }
 
 bool OpenExternal(const GURL& url, bool activate) {
@@ -81,7 +89,28 @@ bool OpenExternal(const GURL& url, bool activate) {
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {
-  return XDGUtil("gvfs-trash", full_path.value(), true);
+  std::string trash;
+  if (getenv(ELECTRON_TRASH) != NULL) {
+    trash = getenv(ELECTRON_TRASH);
+  } else {
+    trash = ELECTRON_DEFAULT_TRASH;
+  }
+
+  std::vector<std::string> argv;
+
+  if (trash.compare("kioclient5") == 0 || trash.compare("kioclient") == 0) {
+    argv.push_back(trash);
+    argv.push_back("move");
+    argv.push_back(full_path.value());
+    argv.push_back("trash:/");
+  } else if (trash.compare("trash-cli") == 0) {
+    argv.push_back("trash-put");
+    argv.push_back(full_path.value());
+  } else {
+    argv.push_back(ELECTRON_DEFAULT_TRASH);
+    argv.push_back(full_path.value());
+  }
+  return XDGUtilV(argv, true);
 }
 
 void Beep() {

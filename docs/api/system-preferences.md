@@ -7,20 +7,33 @@ const {systemPreferences} = require('electron')
 console.log(systemPreferences.isDarkMode())
 ```
 
+## Events
+
+The `systemPreferences` object emits the following events:
+
+### Event: 'accent-color-changed' _Windows_
+
+Returns:
+
+* `event` Event
+* `newColor` String - The new RGBA color the user assigned to be there system
+accent color.
+
+
 ## Methods
 
 ### `systemPreferences.isDarkMode()` _macOS_
 
-This method returns `true` if the system is in Dark Mode, and `false` otherwise.
+Returns `Boolean` - Whether the the system is in Dark Mode.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
-This method returns `true` if the Swipe between pages setting is on, and `false` otherwise.
+Returns `Boolean` - Whether the Swipe between pages setting is on.
 
 ### `systemPreferences.postNotification(event, userInfo)` _macOS_
 
 * `event` String
-* `userInfo` Dictionary
+* `userInfo` Object
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
@@ -28,7 +41,7 @@ that contains the user information dictionary sent along with the notification.
 ### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
 
 * `event` String
-* `userInfo` Dictionary
+* `userInfo` Object
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
@@ -124,3 +137,16 @@ if (browserOptions.transparent) {
 ```
 
 [dwm-composition]:https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx
+
+### `systemPreferences.getAccentColor()` _Windows_
+
+Returns the users current system wide color preference in the form of an RGBA
+hexadecimal string.
+
+```js
+const color = systemPreferences.getAccentColor() // `"aabbccdd"`
+const red = color.substr(0, 2) // "aa"
+const green = color.substr(2, 2) // "bb"
+const blue = color.substr(4, 2) // "cc"
+const alpha = color.substr(6, 2) // "dd"
+```

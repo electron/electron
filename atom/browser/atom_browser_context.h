@@ -8,10 +8,13 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/net/atom_cookie_delegate.h"
 #include "brightray/browser/browser_context.h"
+#include "net/cookies/cookie_monster.h"
 
 namespace atom {
 
+class AtomBlobReader;
 class AtomDownloadManagerDelegate;
 class AtomNetworkDelegate;
 class AtomPermissionManager;
@@ -30,6 +33,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   // brightray::URLRequestContextGetter::Delegate:
   net::NetworkDelegate* CreateNetworkDelegate() override;
+  net::CookieMonsterDelegate* CreateCookieDelegate() override;
   std::string GetUserAgent() override;
   std::unique_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* protocol_handlers) override;
@@ -47,7 +51,11 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
 
+  AtomBlobReader* GetBlobReader();
   AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
+  AtomCookieDelegate* cookie_delegate() const {
+    return cookie_delegate_.get();
+  }
 
  protected:
   AtomBrowserContext(const std::string& partition, bool in_memory,
@@ -58,11 +66,13 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;
+  std::unique_ptr<AtomBlobReader> blob_reader_;
   std::string user_agent_;
   bool use_cache_;
 
   // Managed by brightray::BrowserContext.
   AtomNetworkDelegate* network_delegate_;
+  scoped_refptr<AtomCookieDelegate> cookie_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };

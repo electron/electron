@@ -104,7 +104,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("setRemoteObjectFreer", &atom::RemoteObjectFreer::BindTo);
   dict.SetMethod("createIDWeakMap", &atom::api::KeyWeakMap<int32_t>::Create);
   dict.SetMethod("createDoubleIDWeakMap",
-                 &atom::api::KeyWeakMap<std::pair<int32_t, int32_t>>::Create);
+                 &atom::api::KeyWeakMap<std::pair<int64_t, int32_t>>::Create);
 }
 
 }  // namespace

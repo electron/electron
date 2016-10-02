@@ -1,4 +1,4 @@
-﻿# 온라인/오프라인 이벤트 감지
+# 온라인/오프라인 이벤트 감지
 
 온라인/오프라인 이벤트는 다음 예시와 같이 렌더러 프로세스에서 표준 HTML5 API를 이용하여
 구현할 수 있습니다.
@@ -6,14 +6,14 @@
 _main.js_
 
 ```javascript
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow} = require('electron')
 
-let onlineStatusWindow;
+let onlineStatusWindow
 
 app.on('ready', () => {
-  onlineStatusWindow = new BrowserWindow({width: 0, height: 0, show: false});
-  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html');
-});
+  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
+  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
+})
 ```
 
 _online-status.html_
@@ -24,13 +24,13 @@ _online-status.html_
 <body>
 <script>
   const alertOnlineStatus = () => {
-    window.alert(navigator.onLine ? 'online' : 'offline');
-  };
+    window.alert(navigator.onLine ? 'online' : 'offline')
+  }
 
-  window.addEventListener('online',  alertOnlineStatus);
-  window.addEventListener('offline',  alertOnlineStatus);
+  window.addEventListener('online',  alertOnlineStatus)
+  window.addEventListener('offline',  alertOnlineStatus)
 
-  alertOnlineStatus();
+  alertOnlineStatus()
 </script>
 </body>
 </html>
@@ -46,18 +46,17 @@ _online-status.html_
 _main.js_
 
 ```javascript
-const {app, ipcMain, BrowserWindow} = require('electron');
-
-let onlineStatusWindow;
+const {app, BrowserWindow, ipcMain} = require('electron')
+let onlineStatusWindow
 
 app.on('ready', () => {
-  onlineStatusWindow = new BrowserWindow({width: 0, height: 0, show: false});
-  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`);
-});
+  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
+  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
+})
 
 ipcMain.on('online-status-changed', (event, status) => {
-  console.log(status);
-});
+  console.log(status)
+})
 ```
 
 _online-status.html_
@@ -67,15 +66,15 @@ _online-status.html_
 <html>
 <body>
 <script>
-  const {ipcRenderer} = require('electron');
+  const {ipcRenderer} = require('electron')
   const updateOnlineStatus = () => {
-    ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
-  };
+    ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline')
+  }
 
-  window.addEventListener('online',  updateOnlineStatus);
-  window.addEventListener('offline',  updateOnlineStatus);
+  window.addEventListener('online',  updateOnlineStatus)
+  window.addEventListener('offline',  updateOnlineStatus)
 
-  updateOnlineStatus();
+  updateOnlineStatus()
 </script>
 </body>
 </html>

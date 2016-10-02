@@ -1,4 +1,4 @@
-﻿# 시작하기
+# 시작하기
 
 ## 소개
 
@@ -76,56 +76,56 @@ __알림__: 만약 `main` 필드가 `package.json`에 설정되어 있지 않으
 다음과 같이 작성할 수 있습니다:
 
 ```javascript
-const electron = require('electron');
+const electron = require('electron')
 // 애플리케이션 생명주기를 조작 하는 모듈.
-const {app} = electron;
+const {app} = electron
 // 네이티브 브라우저 창을 만드는 모듈.
-const {BrowserWindow} = electron;
+const {BrowserWindow} = electron
 
 // 윈도우 객체를 전역에 유지합니다. 만약 이렇게 하지 않으면
 // 자바스크립트 GC가 일어날 때 창이 멋대로 닫혀버립니다.
-let win;
+let win
 
 function createWindow () {
   // 새로운 브라우저 창을 생성합니다.
-  win = new BrowserWindow({width: 800, height: 600});
+  win = new BrowserWindow({width: 800, height: 600})
 
   // 그리고 현재 디렉터리의 index.html을 로드합니다.
-  win.loadURL(`file://${__dirname}/index.html`);
+  win.loadURL(`file://${__dirname}/index.html`)
 
   // 개발자 도구를 엽니다.
-  win.webContents.openDevTools();
+  win.webContents.openDevTools()
 
   // 창이 닫히면 호출됩니다.
   win.on('closed', () => {
     // 윈도우 객체의 참조를 삭제합니다. 보통 멀티 윈도우 지원을 위해
     // 윈도우 객체를 배열에 저장하는 경우가 있는데 이 경우
     // 해당하는 모든 윈도우 객체의 참조를 삭제해 주어야 합니다.
-    win = null;
-  });
+    win = null
+  })
 }
 
 // 이 메서드는 Electron의 초기화가 끝나면 실행되며 브라우저
 // 윈도우를 생성할 수 있습니다. 몇몇 API는 이 이벤트 이후에만
 // 사용할 수 있습니다.
-app.on('ready', createWindow);
+app.on('ready', createWindow)
 
 // 모든 창이 닫히면 애플리케이션 종료.
 app.on('window-all-closed', () => {
   // macOS의 대부분의 애플리케이션은 유저가 Cmd + Q 커맨드로 확실하게
   // 종료하기 전까지 메뉴바에 남아 계속 실행됩니다.
   if (process.platform !== 'darwin') {
-    app.quit();
+    app.quit()
   }
-});
+})
 
 app.on('activate', () => {
   // macOS에선 보통 독 아이콘이 클릭되고 나서도
   // 열린 윈도우가 없으면, 새로운 윈도우를 다시 만듭니다.
   if (win === null) {
-    createWindow();
+    createWindow()
   }
-});
+})
 
 // 이 파일엔 제작할 애플리케이션에 특화된 메인 프로세스 코드를
 // 포함할 수 있습니다. 또한 파일을 분리하여 require하는 방법으로
@@ -156,9 +156,9 @@ app.on('activate', () => {
 패키징 하고 패키징한 앱을 실행할 수 있습니다. 또한 Electron 실행파일을 다운로드 받아
 바로 실행해 볼 수도 있습니다.
 
-### electron-prebuilt
+### `electron`
 
-[`electron-prebuilt`](https://github.com/electron-userland/electron-prebuilt)는
+[`electron`](https://github.com/electron-userland/electron-prebuilt)은
 Electron의 미리 컴파일된 바이너리를 포함하는 `npm` 모듈입니다.
 
 만약 `npm`을 통해 전역에 이 모듈을 설치했다면, 애플리케이션 소스 디렉터리에서 다음
@@ -176,8 +176,16 @@ electron app
 
 npm 모듈을 로컬에 설치했다면 다음 명령으로 실행할 수 있습니다:
 
+#### macOS / Linux
+
 ```bash
-./node_modules/.bin/electron .
+$ ./node_modules/.bin/electron .
+```
+
+#### Windows
+
+```bash
+$ .\node_modules\.bin\electron .
 ```
 
 ### 다운로드 받은 Electron 바이너리 사용
@@ -229,5 +237,9 @@ $ cd electron-quick-start
 # 애플리케이션의 종속성 모듈을 설치한 후 실행합니다
 $ npm install && npm start
 ```
+
+더 많은 예시 앱을 보려면 대단한 Electron 커뮤니티에 의해 만들어진
+[보일러플레이트 리스트](http://electron.atom.io/community/#boilerplates)를
+참고하세요.
 
 [share-data]: ../faq.md#어떻게-웹-페이지-간에-데이터를-공유할-수-있나요

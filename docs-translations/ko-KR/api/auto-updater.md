@@ -104,6 +104,10 @@ Returns:
 
 `url`을 설정하고 자동 업데이터를 초기화합니다.
 
+### `autoUpdater.getFeedURL()`
+
+Returns `String` - 현재 업데이트 피드 URL.
+
 ### `autoUpdater.checkForUpdates()`
 
 서버에 새로운 업데이트가 있는지 요청을 보내 확인합니다. API를 사용하기 전에

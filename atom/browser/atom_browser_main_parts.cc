@@ -117,7 +117,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   if (node_debugger_->IsRunning())
     env->AssignToContext(v8::Debug::GetDebugContext());
 
-  // Add atom-shell extended APIs.
+  // Add Electron extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
   // Load everything.

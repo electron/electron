@@ -9,6 +9,11 @@ Electron은 유명한 웹 프레임워크를 디버깅하기 위해 사용할 �
 
 ## 개발자 도구는 어떻게 로드하나요
 
+이 문서는 확장 기능을 수동으로 로드하는 방법의 과정을 설명합니다.
+[electron-devtools-installer](https://github.com/GPMDP/electron-devtools-installer)와
+같은 Chrome WebStore에서 자동으로 확장 기능을 다운로드하는 서드-파티 도구를 사용할 수도
+있습니다.
+
 Electron에 확장 기능을 로드하려면, Chrome 브라우저에서 다운로드 해야 하며, 파일 시스템 경로를 지정해야 합니다. 그리고 `BrowserWindow.addDevToolsExtension(extension)`를 호출함으로써 기능을 로드할 수 있습니다.
 
 예시로 [React Developer Tools][react-devtools]를 사용한다면:
@@ -26,7 +31,10 @@ Electron에 확장 기능을 로드하려면, Chrome 브라우저에서 다운�
    * macOS에선 `~/Library/Application Support/Google/Chrome/Default/Extensions`.
 4. 확장 기능의 경로를 `BrowserWindow.addDevToolsExtension` API로 전달합니다.
    React Developer Tools의 경우 다음과 비슷해야 합니다:
-   `~/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.14.10_0`
+   `~/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.15.0_0`
+
+**참고:** `BrowserWindow.addDevToolsExtension` API는 `app` 모듈의 `ready` 이벤트가
+발생하기 전까지 사용할 수 없습니다.
 
 확장 기능의 이름은 `BrowserWindow.addDevToolsExtension`에서 반환되며, 이 이름을
 `BrowserWindow.removeDevToolsExtension` API로 전달함으로써 해당하는 확장 기능을
@@ -45,6 +53,7 @@ Electron에서 정상적으로 작동하는 것을 확인했으며 작동 여부
 * [jQuery Debugger](https://chrome.google.com/webstore/detail/jquery-debugger/dbhhnnnpaeobfddmlalhnehgclcmjimi)
 * [AngularJS Batarang](https://chrome.google.com/webstore/detail/angularjs-batarang/ighdmehidhipcmcojjgiloacoafjmpfk)
 * [Vue.js devtools](https://chrome.google.com/webstore/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
+* [Cerebral Debugger](http://www.cerebraljs.com/documentation/the_debugger)
 
 ### 개발자 도구가 작동하지 않을 때 어떻게 해야 하나요?
 

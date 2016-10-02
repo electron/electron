@@ -1,4 +1,4 @@
-﻿# 빌드 설명서 (Linux)
+# 빌드 설명서 (Linux)
 
 이 가이드는 Linux 운영체제에서 Electron을 빌드하는 방법을 설명합니다.
 
@@ -22,7 +22,8 @@ Ubuntu를 사용하고 있다면 다음과 같이 라이브러리를 설치해�
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libnotify-dev libgnome-keyring-dev libgconf2-dev \
                        libasound2-dev libcap-dev libcups2-dev libxtst-dev \
-                       libxss1 libnss3-dev gcc-multilib g++-multilib curl
+                       libxss1 libnss3-dev gcc-multilib g++-multilib curl \
+                       gperf bison
 ```
 
 Fedora를 사용하고 있다면 다음과 같이 라이브러리를 설치해야 합니다:
@@ -30,7 +31,8 @@ Fedora를 사용하고 있다면 다음과 같이 라이브러리를 설치해�
 ```bash
 $ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
                    xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
-                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel bison \
+                   gperf
 ```
 
 다른 배포판의 경우 pacman 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다.
@@ -102,10 +104,10 @@ $ ./script/build.py -c D
 
 ## 정리하기
 
-빌드 파일들을 정리합니다:
+빌드 파일들을 정리하려면:
 
 ```bash
-$ ./script/clean.py
+$ npm run clean
 ```
 
 ## 문제 해결

@@ -29,6 +29,17 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
 
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
+
+  typedef HRESULT (STDAPICALLTYPE *DwmGetColorizationColor)(DWORD *, BOOL *);
+  DwmGetColorizationColor dwmGetColorizationColor =
+    (DwmGetColorizationColor) GetProcAddress(LoadLibraryW(L"dwmapi.dll"),
+                                            "DwmGetColorizationColor");
+
+  std::string GetAccentColor();
+
+  void InitializeWindow();
+
+
 #elif defined(OS_MACOSX)
   using NotificationCallback = base::Callback<
     void(const std::string&, const base::DictionaryValue&)>;
@@ -64,6 +75,25 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
 #endif
 
  private:
+#if defined(OS_WIN)
+  // Static callback invoked when a message comes in to our messaging window.
+  static LRESULT CALLBACK
+      WndProcStatic(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
+  LRESULT CALLBACK
+      WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
+  // The window class of |window_|.
+  ATOM atom_;
+
+  // The handle of the module that contains the window procedure of |window_|.
+  HMODULE instance_;
+
+  // The window used for processing events.
+  HWND window_;
+
+  std::string current_color_;
+#endif
   DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
 };
 

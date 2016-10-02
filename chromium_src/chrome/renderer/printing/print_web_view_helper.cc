@@ -545,7 +545,8 @@ void PrepareFrameAndViewForPrint::CopySelection(
   WebPreferences prefs = preferences;
   prefs.javascript_enabled = false;
 
-  blink::WebView* web_view = blink::WebView::create(this);
+  blink::WebView* web_view =
+      blink::WebView::create(this, blink::WebPageVisibilityStateVisible);
   owns_web_view_ = true;
   content::RenderView::ApplyWebPreferences(prefs, web_view);
   web_view->setMainFrame(
@@ -660,6 +661,10 @@ bool PrintWebViewHelper::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_UNHANDLED(handled = false)
     IPC_END_MESSAGE_MAP()
   return handled;
+}
+
+void PrintWebViewHelper::OnDestruct() {
+  delete this;
 }
 
 bool PrintWebViewHelper::GetPrintFrame(blink::WebLocalFrame** frame) {
@@ -1266,7 +1271,7 @@ bool PrintWebViewHelper::PrintPreviewContext::CreatePreviewDocument(
     return false;
   }
 
-  metafile_.reset(new PdfMetafileSkia);
+  metafile_.reset(new PdfMetafileSkia(PDF_SKIA_DOCUMENT_TYPE));
   CHECK(metafile_->Init());
 
   current_page_index_ = 0;

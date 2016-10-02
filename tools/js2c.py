@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import contextlib
+import glob
 import os
 import subprocess
 import sys
@@ -11,7 +12,7 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 def main():
   natives = os.path.abspath(sys.argv[1])
-  js_source_files = sys.argv[2:]
+  js_source_files = glob.glob('{0}/*.js'.format(sys.argv[2]))
 
   call_js2c(natives, js_source_files)
 

@@ -32,9 +32,10 @@ Returns:
 
 * `launchInfo` Object _macOS_
 
-Emitted when Electron has finished initialization. On macOS, `launchInfo` holds
+Emitted when Electron has finished initializing. On macOS, `launchInfo` holds
 the `userInfo` of the `NSUserNotification` that was used to open the application,
-if it was launched from Notification Center.
+if it was launched from Notification Center. You can call `app.isReady()` to
+check if this event has already fired.
 
 ### Event: 'window-all-closed'
 
@@ -279,7 +280,12 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 
 ### Event: 'gpu-process-crashed'
 
-Emitted when the gpu process crashes.
+Returns:
+
+* `event` Event
+* `killed` Boolean
+
+Emitted when the gpu process crashes or is killed.
 
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
 
@@ -323,7 +329,7 @@ and `will-quit` events will not be emitted.
 ### `app.relaunch([options])`
 
 * `options` Object (optional)
-  * `args` Array (optional)
+  * `args` String[] (optional)
   * `execPath` String (optional)
 
 Relaunches the app when current instance exits.
@@ -345,9 +351,13 @@ line argument to the new instance:
 ```javascript
 const {app} = require('electron')
 
-app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
+app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
 app.exit(0)
 ```
+
+### `app.isReady()`
+
+Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
 
 ### `app.focus()`
 
@@ -365,13 +375,13 @@ them.
 
 ### `app.getAppPath()`
 
-Returns the current application directory.
+Returns `String` - The current application directory.
 
 ### `app.getPath(name)`
 
 * `name` String
 
-Retrieves a path to a special directory or file associated with `name`. On
+Returns `String` - A path to a special directory or file associated with `name`. On
 failure an `Error` is thrown.
 
 You can request the following paths by the name:
@@ -411,13 +421,13 @@ directory. If you want to change this location, you have to override the
 
 ### `app.getVersion()`
 
-Returns the version of the loaded application. If no version is found in the
+Returns `String` - The version of the loaded application. If no version is found in the
 application's `package.json` file, the version of the current bundle or
 executable is returned.
 
 ### `app.getName()`
 
-Returns the current application's name, which is the name in the application's
+Returns `String` - The current application's name, which is the name in the application's
 `package.json` file.
 
 Usually the `name` field of `package.json` is a short lowercased name, according
@@ -433,7 +443,7 @@ Overrides the current application's name.
 
 ### `app.getLocale()`
 
-Returns the current application locale. Possible return values are documented
+Returns `String` - The current application locale. Possible return values are documented
 [here](locales.md).
 
 **Note:** When distributing your packaged app, you have to also ship the
@@ -460,7 +470,9 @@ Clears the recent documents list.
   app to handle `electron://` links, call this method with `electron` as the
   parameter.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` Array (optional) _Windows_ - Defaults to an empty array
+* `args` String[] (optional) _Windows_ - Defaults to an empty array
+
+Returns `Boolean` - Whether the call succeeded.
 
 This method sets the current executable as the default handler for a protocol
 (aka URI scheme). It allows you to integrate your app deeper into the operating
@@ -470,8 +482,6 @@ your application as a parameter.
 
 On Windows you can provide optional parameters path, the path to your executable,
 and args, an array of arguments to be passed to your executable when it launches.
-
-Returns `true` when the call succeeded, otherwise returns `false`.
 
 **Note:** On macOS, you can only register protocols that have been added to
 your app's `info.plist`, which can not be modified at runtime. You can however
@@ -484,18 +494,21 @@ The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally
 
 * `protocol` String - The name of your protocol, without `://`.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` Array (optional) _Windows_ - Defaults to an empty array
+* `args` String[] (optional) _Windows_ - Defaults to an empty array
+
+Returns `Boolean` - Whether the call succeeded.
 
 This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
 
-Returns `true` when the call succeeded, otherwise returns `false`.
 
 ### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` Array (optional) _Windows_ - Defaults to an empty array
+* `args` String[] (optional) _Windows_ - Defaults to an empty array
+
+Returns `Boolean`
 
 This method checks if the current executable is the default handler for a protocol
 (aka URI scheme). If so, it will return true. Otherwise, it will return false.
@@ -531,15 +544,14 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
 
-Returns `true` when the call succeeded, otherwise returns `false`.
+Returns `Boolean` - Whether the call succeeded.
 
 **Note:** If you'd like to customize the Jump List even more use
 `app.setJumpList(categories)` instead.
 
 ### `app.getJumpListSettings()` _Windows_
 
-Returns an Object with the following properties:
-
+Returns `Object`:
 * `minItems` Integer - The minimum number of items that will be shown in the
   Jump List (for a more detailed description of this value see the
   [MSDN docs][JumpListBeginListMSDN]).
@@ -586,7 +598,7 @@ replaced by the standard Jump List for the app (managed by Windows).
   omitted.
 * `items` Array - Array of `JumpListItem` objects if `type` is `tasks` or
   `custom`, otherwise it should be omitted.
-          
+
 **Note:** If a `JumpListCategory` object has neither the `type` nor the `name`
 property set then its `type` is assumed to be `tasks`. If the `name` property
 is set but the `type` property is omitted then the `type` is assumed to be
@@ -627,7 +639,7 @@ items can be obtained using `app.getJumpListSettings()`.
   resource file contains multiple icons this value can be used to specify the
   zero-based index of the icon that should be displayed for this task. If a
   resource file contains only one icon, this property should be set to zero.
- 
+
 Here's a very simple example of creating a custom Jump List:
 
 ```javascript
@@ -749,7 +761,7 @@ is eligible for [Handoff][handoff] to another device afterward.
 
 ### `app.getCurrentActivityType()` _macOS_
 
-Returns the type of the currently running activity.
+Returns `String` - The type of the currently running activity.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
@@ -779,8 +791,10 @@ This method can only be called before app is ready.
 
 * `count` Integer
 
+Returns `Boolean` - Whether the call succeeded.
+
 Sets the counter badge for current app. Setting the count to `0` will hide the
-badge. Returns `true` when the call succeeded, otherwise returns `false`.
+badge.
 
 On macOS it shows on the dock icon. On Linux it only works for Unity launcher,
 
@@ -789,16 +803,15 @@ for more information please read [Desktop Environment Integration][unity-require
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
-Returns the current value displayed in the counter badge.
+Returns `Integer` - The current value displayed in the counter badge.
 
 ### `app.isUnityRunning()` _Linux_
 
-Returns whether current desktop environment is Unity launcher.
+Returns `Boolean` - Whether the current desktop environment is Unity launcher.
 
 ### `app.getLoginItemSettings()` _macOS_ _Windows_
 
-Return an Object with the login item settings of the app.
-
+Returns `Object`:
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
 * `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
   This setting is only supported on macOS.
@@ -811,6 +824,9 @@ Return an Object with the login item settings of the app.
   should restore the state from the previous session. This indicates that the
   app should restore the windows that were open the last time the app was
   closed. This setting is only supported on macOS.
+
+**Note:** This API has no effect on
+[MAS builds](docs/tutorial/mac-app-store-submission-guide.md).
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
@@ -825,9 +841,12 @@ Return an Object with the login item settings of the app.
 
 Set the app's login item settings.
 
+**Note:** This API has no effect on
+[MAS builds](docs/tutorial/mac-app-store-submission-guide.md).
+
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
-Returns a `Boolean`, `true` if Chrome's accessibility support is enabled,
+Returns `Boolean` - `true` if Chrome's accessibility support is enabled,
 `false` otherwise. This API will return `true` if the use of assistive
 technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
@@ -886,7 +905,7 @@ Sets the string to be displayed in the dock’s badging area.
 
 ### `app.dock.getBadge()` _macOS_
 
-Returns the badge string of the dock.
+Returns `String` - The badge string of the dock.
 
 ### `app.dock.hide()` _macOS_
 
@@ -898,7 +917,7 @@ Shows the dock icon.
 
 ### `app.dock.isVisible()` _macOS_
 
-Returns whether the dock icon is visible.
+Returns `Boolean` - Whether the dock icon is visible.
 The `app.dock.show()` call is asynchronous so this method might not
 return true immediately after that call.
 
