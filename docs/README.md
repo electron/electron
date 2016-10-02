@@ -65,6 +65,7 @@ an issue:
 * [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
+* [REPL](api/repl.md)
 * [session](api/session.md)
 * [systemPreferences](api/system-preferences.md)
 * [Tray](api/tray.md)
