@@ -18,15 +18,15 @@ $ git clone --recursive https://github.com/facebook/react-devtools.git
 接著你就可以在 Electron 中打開任何視窗來載入擴充套件了，然後在 DevTools console 執行以下的程式碼：
 
 ```javascript
-const BrowserWindow = require('electron').remote.BrowserWindow;
-BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
+const BrowserWindow = require('electron').remote.BrowserWindow
+BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome')
 ```
 
 要卸載擴充套件，你可以呼叫 `BrowserWindow.removeDevToolsExtension` 
 API，並帶入套件的名稱，則套件就不會在下次起打開 DevTools 的時候載入了：
 
 ```javascript
-BrowserWindow.removeDevToolsExtension('React Developer Tools');
+BrowserWindow.removeDevToolsExtension('React Developer Tools')
 ```
 
 ## DevTools 擴充套件的格式

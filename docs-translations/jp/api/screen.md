@@ -9,35 +9,35 @@
 画面全体にウィンドウを作成する例：
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const electron = require('electron')
+const app = electron.app
+const BrowserWindow = electron.BrowserWindow
 
-var mainWindow;
+var mainWindow
 
-app.on('ready', function() {
-  var electronScreen = electron.screen;
-  var size = electronScreen.getPrimaryDisplay().workAreaSize;
-  mainWindow = new BrowserWindow({ width: size.width, height: size.height });
-});
+app.on('ready', function () {
+  var electronScreen = electron.screen
+  var size = electronScreen.getPrimaryDisplay().workAreaSize
+  mainWindow = new BrowserWindow({ width: size.width, height: size.height })
+})
 ```
 外部ディスプレイにウィンドウを作成する別の例：
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const electron = require('electron')
+const app = electron.app
+const BrowserWindow = electron.BrowserWindow
 
-var mainWindow;
+var mainWindow
 
-app.on('ready', function() {
-  var electronScreen = electron.screen;
-  var displays = electronScreen.getAllDisplays();
-  var externalDisplay = null;
+app.on('ready', function () {
+  var electronScreen = electron.screen
+  var displays = electronScreen.getAllDisplays()
+  var externalDisplay = null
   for (var i in displays) {
     if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
-      externalDisplay = displays[i];
-      break;
+      externalDisplay = displays[i]
+      break
     }
   }
 
@@ -45,9 +45,9 @@ app.on('ready', function() {
     mainWindow = new BrowserWindow({
       x: externalDisplay.bounds.x + 50,
       y: externalDisplay.bounds.y + 50
-    });
+    })
   }
-});
+})
 ```
 
 ## `Display` オブジェクト

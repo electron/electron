@@ -25,17 +25,17 @@ Node.js 的新特性通常是由新版本的 V8 带来的。由于 Electron 使�
 // 在主进程中
 global.sharedObject = {
   someProperty: 'default value'
-};
+}
 ```
 
 ```javascript
 // 在第一个页面中
-require('remote').getGlobal('sharedObject').someProperty = 'new value';
+require('remote').getGlobal('sharedObject').someProperty = 'new value'
 ```
 
 ```javascript
 // 在第二个页面中
-console.log(require('remote').getGlobal('sharedObject').someProperty);
+console.log(require('remote').getGlobal('sharedObject').someProperty)
 ```
 
 ## 为什么应用的窗口、托盘在一段时间后不见了？
@@ -52,17 +52,17 @@ console.log(require('remote').getGlobal('sharedObject').someProperty);
 从
 
 ```javascript
-app.on('ready', function() {
-  var tray = new Tray('/path/to/icon.png');
+app.on('ready', function () {
+  var tray = new Tray('/path/to/icon.png')
 })
 ```
 
 改为
 
 ```javascript
-var tray = null;
-app.on('ready', function() {
-  tray = new Tray('/path/to/icon.png');
+var tray = null
+app.on('ready', function () {
+  tray = new Tray('/path/to/icon.png')
 })
 ```
 
@@ -79,7 +79,7 @@ var mainWindow = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }
-});
+})
 ```
 
 假如你依然需要使用 Node.js 和 Electron 提供的 API，你需要在引入那些库之前将这些变量重命名，比如：
@@ -111,7 +111,7 @@ Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
 你可以通过以下方式输出 `electron` 模块的路径来确认你是否使用了正确的模块。
 
 ```javascript
-console.log(require.resolve('electron'));
+console.log(require.resolve('electron'))
 ```
 
 确认一下它是不是像下面这样的：

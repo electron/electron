@@ -5,16 +5,16 @@
 _main.js_
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const electron = require('electron')
+const app = electron.app
+const BrowserWindow = electron.BrowserWindow
 
-let onlineStatusWindow;
+let onlineStatusWindow
 
 app.on('ready', () => {
-  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`);
-});
+  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
+  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
+})
 ```
 
 _online-status.html_
@@ -42,21 +42,21 @@ _online-status.html_
 _main.js_
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const ipcMain = electron.ipcMain;
-const BrowserWindow = electron.BrowserWindow;
+const electron = require('electron')
+const app = electron.app
+const ipcMain = electron.ipcMain
+const BrowserWindow = electron.BrowserWindow
 
-let onlineStatusWindow;
+let onlineStatusWindow
 
 app.on('ready', () => {
-  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`);
-});
+  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
+  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
+})
 
 ipcMain.on('online-status-changed', (event, status) => {
-  console.log(status);
-});
+  console.log(status)
+})
 ```
 
 _online-status.html_

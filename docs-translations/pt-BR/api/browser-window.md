@@ -3,15 +3,15 @@
 A classe `BrowserWindow` lhe dá a habilidade de criar uma janela do browser. Por exemplo:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const BrowserWindow = require('electron').BrowserWindow
 
-var win = new BrowserWindow({ width: 800, height: 600, show: false });
-win.on('closed', function() {
-  win = null;
-});
+var win = new BrowserWindow({ width: 800, height: 600, show: false })
+win.on('closed', function () {
+  win = null
+})
 
-win.loadURL('https://github.com');
-win.show();
+win.loadURL('https://github.com')
+win.show()
 ```
 
 Você também pode criar uma janela sem o chrome utilizando a API [Frameless Window](../../../docs/api/frameless-window.md).
@@ -109,16 +109,16 @@ Emitido quando a janela for fechar. É emitido antes dos eventos `beforeunload` 
 Normalmente você utiliza o manipulador de eventos do `beforeunload` para decidir se a janela deve ser fechada, que também será chamado quando a janela é recarregada. No Electron, retornar uma string vazia ou `false` cancela o fechamento. Por exemplo:
 
 ```javascript
-window.onbeforeunload = function(e) {
-  console.log('Não quero ser fechada');
+window.onbeforeunload = function (e) {
+  console.log('Não quero ser fechada')
 
   // Diferente de navegadores comuns, nos quais uma string deve ser retornada e
   // o usuário deve confirmar se a janela será fechada, o Electron dá mais opções
   // aos desenvolvedores. Retornar uma string vazia ou false cancela o fechamento.
   // Você também pode usar a API de diálogo para deixar que o usuário confirme o
   // fechamento do aplicativo.
-  e.returnValue = false;
-};
+  e.returnValue = false
+}
 ```
 
 ### Evento: 'closed'
@@ -192,12 +192,12 @@ Emitido quando a janela sai do estado de tela cheia, ocasionado por uma api de h
 Emitido quando um [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx) é invocado. Estes estão tipicamente relacionado às teclas de mídia do teclado, ou comandos do browser, assim como o botão "Voltar" existente em alguns modelos de mouse no Windows.
 
 ```js
-someWindow.on('app-command', function(e, cmd) {
+someWindow.on('app-command', function (e, cmd) {
   // Navega a janela 'para trás' quando o usuário pressiona o botão voltar do mouse
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
-    someWindow.webContents.goBack();
+    someWindow.webContents.goBack()
   }
-});
+})
 ```
 
 ## Métodos
@@ -244,7 +244,7 @@ Objetos criados com `new BrowserWindow` possuem as seguintes propriedades:
 
 ```javascript
 // Neste exemplo `win` é a nossa instância
-var win = new BrowserWindow({ width: 800, height: 600 });
+var win = new BrowserWindow({ width: 800, height: 600 })
 ```
 
 ### `win.webContents`

@@ -65,43 +65,43 @@ a ser ejecutado por el proceso principal. Un ejemplo de `package.json` podría v
 El `main.js` debería crear las ventanas y gestionar los eventos del sistema, un ejemplo típico sería:
 
 ```javascript
-var app = require('app');  // Módulo para controlar el ciclo de vida de la aplicación.
-var BrowserWindow = require('browser-window');  // Módulo para crear uan ventana de navegador.
+var app = require('app')  // Módulo para controlar el ciclo de vida de la aplicación.
+var BrowserWindow = require('browser-window')  // Módulo para crear uan ventana de navegador.
 
 // Mantener una referencia global al objeto window, si no lo haces, esta ventana
 // se cerrará automáticamente cuando el objeto JavaScript sea recolectado (garbage collected):
-var mainWindow = null;
+var mainWindow = null
 
 // Salir de todas las ventanas cuando se cierren.
-app.on('window-all-closed', function() {
+app.on('window-all-closed', function () {
   // En macOS es común que las aplicaciones y su barra de menú
   // se mantengan activas hasta que el usuario cierre la aplicación
   // explícitamente utilizando Cmd + Q
   if (process.platform != 'darwin') {
-    app.quit();
+    app.quit()
   }
-});
+})
 
 // Este método será llamado cuando Electron haya finalizado la inicialización
 // y esté listo para crear ventanas de navegador.
-app.on('ready', function() {
+app.on('ready', function () {
   // Crear la ventana.
-  mainWindow = new BrowserWindow({width: 800, height: 600});
+  mainWindow = new BrowserWindow({width: 800, height: 600})
 
   // cargar el index.html de nuestra aplicación.
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  mainWindow.loadURL('file://' + __dirname + '/index.html')
 
   // Desplegar devtools.
-  mainWindow.openDevTools();
+  mainWindow.openDevTools()
 
   // Evento emitido cuando se cierra la ventana.
-  mainWindow.on('closed', function() {
+  mainWindow.on('closed', function () {
     // Eliminar la referencia del objeto window.
     // En el caso de soportar multiples ventanas, es usual almacenar
     // los objetos window en un array, este es el momento en el que debes eliminar el elemento correspondiente.
-    mainWindow = null;
-  });
-});
+    mainWindow = null
+  })
+})
 ```
 
 Finalmente el `index.html` es la página web que mostraremos:

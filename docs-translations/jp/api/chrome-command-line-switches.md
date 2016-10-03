@@ -5,13 +5,13 @@
 アプリケーションのメインスクリプトで[app.commandLine.appendSwitch][append-switch]を使うことで、[app][app]モジュールの[ready][ready]イベントが発行される前にコマンドラインスイッチを追加できます。
 
 ```javascript
-const {app} = require('electron');
-app.commandLine.appendSwitch('remote-debugging-port', '8315');
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+const {app} = require('electron')
+app.commandLine.appendSwitch('remote-debugging-port', '8315')
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
 
 app.on('ready', () => {
   // Your code here
-});
+})
 ```
 
 

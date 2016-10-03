@@ -25,15 +25,15 @@ Para adicionar um arquivo para os documentos recentes, você pode usar a API
 [app.addRecentDocument][addrecentdocument]:
 
 ```javascript
-var app = require('app');
-app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
+var app = require('app')
+app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 
 E você pode usar a API [app.clearRecentDocuments][clearrecentdocuments] para
 limpar a lista de documentos recentes.
 
 ```javascript
-app.clearRecentDocuments();
+app.clearRecentDocuments()
 ```
 
 ### Notas para Windows
@@ -67,17 +67,17 @@ Para criar seu Dock Menu customizado, você pode usar a API `app.dock.setMenu`,
 ela está disponível apenas no macOS:
 
 ```javascript
-var app = require('app');
-var Menu = require('menu');
+var app = require('app')
+var Menu = require('menu')
 var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function() { console.log('New Window'); } },
+  { label: 'New Window', click: function () { console.log('New Window') } },
   { label: 'New Window with Settings', submenu: [
     { label: 'Basic' },
     { label: 'Pro'}
   ]},
   { label: 'New Command...'}
-]);
-app.dock.setMenu(dockMenu);
+])
+app.dock.setMenu(dockMenu)
 ```
 
 ## Tarefas do Usuário (Windows)
@@ -114,7 +114,7 @@ Para setar tarefas do usuário para sua aplicação, você pode usar a API
 [app.setUserTasks][setusertaskstasks]:
 
 ```javascript
-var app = require('app');
+var app = require('app')
 app.setUserTasks([
   {
     program: process.execPath,
@@ -124,14 +124,14 @@ app.setUserTasks([
     title: 'New Window',
     description: 'Create a new window'
   }
-]);
+])
 ```
 
 Para limpar sua lista de tarefas, apenas chame `app.setUserTasks` com um
 array vazio.
 
 ```javascript
-app.setUserTasks([]);
+app.setUserTasks([])
 ```
 
 As tarefas do usuário são exibidas mesmo depois da aplicação ser fechada,
@@ -189,7 +189,7 @@ Para limpar os botões na miniatura da barra de ferramentas, apenas chame
 `BrowserWindow.setThumbarButtons` com um array vazio.
 
 ```javascript
-win.setThumbarButtons([]);
+win.setThumbarButtons([])
 ```
 
 ## Unity Launcher Shortcuts (Linux)

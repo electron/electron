@@ -40,7 +40,7 @@ excepto que necesitas especificar manualmente cómo se conectará el chrome driv
 y dónde encontrará el binario de Electron:
 
 ```javascript
-var webdriver = require('selenium-webdriver');
+var webdriver = require('selenium-webdriver')
 
 var driver = new webdriver.Builder()
   // El puerto "9515" es que abre chrome driver.
@@ -49,18 +49,18 @@ var driver = new webdriver.Builder()
     // Aquí especificamos la ruta a Electron
     binary: '/Path-to-Your-App.app/Contents/MacOS/Atom'}})
   .forBrowser('electron')
-  .build();
+  .build()
 
-driver.get('http://www.google.com');
-driver.findElement(webdriver.By.name('q')).sendKeys('webdriver');
-driver.findElement(webdriver.By.name('btnG')).click();
-driver.wait(function() {
- return driver.getTitle().then(function(title) {
-   return title === 'webdriver - Google Search';
- });
-}, 1000);
+driver.get('http://www.google.com')
+driver.findElement(webdriver.By.name('q')).sendKeys('webdriver')
+driver.findElement(webdriver.By.name('btnG')).click()
+driver.wait(function () {
+  return driver.getTitle().then(function (title) {
+    return title === 'webdriver - Google Search'
+  })
+}, 1000)
 
-driver.quit();
+driver.quit()
 ```
 
 ## Workflow

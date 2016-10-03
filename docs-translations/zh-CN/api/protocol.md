@@ -5,20 +5,20 @@
 例子，使用一个与 `file://` 功能相似的协议 :
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const path = require('path');
+const electron = require('electron')
+const app = electron.app
+const path = require('path')
 
-app.on('ready', function() {
-    var protocol = electron.protocol;
-    protocol.registerFileProtocol('atom', function(request, callback) {
-      var url = request.url.substr(7);
-      callback({path: path.normalize(__dirname + '/' + url)});
-    }, function (error) {
-      if (error)
-        console.error('Failed to register protocol')
-    });
-});
+app.on('ready', function () {
+  var protocol = electron.protocol
+  protocol.registerFileProtocol('atom', function (request, callback) {
+    var url = request.url.substr(7)
+    callback({path: path.normalize(__dirname + '/' + url)})
+  }, function (error) {
+    if (error)
+      console.error('Failed to register protocol')
+  })
+})
 ```
 
 **注意:** 这个模块只有在 `app` 模块的 `ready` 事件触发之后才可使用.
@@ -82,12 +82,12 @@ app.on('ready', function() {
 例子:
 
 ```javascript
-protocol.registerBufferProtocol('atom', function(request, callback) {
-  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
+protocol.registerBufferProtocol('atom', function (request, callback) {
+  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
 }, function (error) {
   if (error)
     console.error('Failed to register protocol')
-});
+})
 ```
 
 ### `protocol.registerStringProtocol(scheme, handler[, completion])`

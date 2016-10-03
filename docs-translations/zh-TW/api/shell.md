@@ -6,9 +6,9 @@
 一個範例示範如何利用使用者的預設瀏覽器開啟 URL:
 
 ```javascript
-var shell = require('shell');
+var shell = require('shell')
 
-shell.openExternal('https://github.com');
+shell.openExternal('https://github.com')
 ```
 
 ## Methods

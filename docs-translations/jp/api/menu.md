@@ -64,7 +64,7 @@ var template = [
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
         role: 'selectall'
-      },
+      }
     ]
   },
   {
@@ -73,37 +73,37 @@ var template = [
       {
         label: 'Reload',
         accelerator: 'CmdOrCtrl+R',
-        click: function(item, focusedWindow) {
+        click: function (item, focusedWindow) {
           if (focusedWindow)
-            focusedWindow.reload();
+            focusedWindow.reload()
         }
       },
       {
         label: 'Toggle Full Screen',
-        accelerator: (function() {
+        accelerator: (function () {
           if (process.platform == 'darwin')
-            return 'Ctrl+Command+F';
+            return 'Ctrl+Command+F'
           else
-            return 'F11';
+            return 'F11'
         })(),
-        click: function(item, focusedWindow) {
+        click: function (item, focusedWindow) {
           if (focusedWindow)
-            focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+            focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
         }
       },
       {
         label: 'Toggle Developer Tools',
-        accelerator: (function() {
+        accelerator: (function () {
           if (process.platform == 'darwin')
-            return 'Alt+Command+I';
+            return 'Alt+Command+I'
           else
-            return 'Ctrl+Shift+I';
+            return 'Ctrl+Shift+I'
         })(),
-        click: function(item, focusedWindow) {
+        click: function (item, focusedWindow) {
           if (focusedWindow)
-            focusedWindow.toggleDevTools();
+            focusedWindow.toggleDevTools()
         }
-      },
+      }
     ]
   },
   {
@@ -119,7 +119,7 @@ var template = [
         label: 'Close',
         accelerator: 'CmdOrCtrl+W',
         role: 'close'
-      },
+      }
     ]
   },
   {
@@ -128,14 +128,14 @@ var template = [
     submenu: [
       {
         label: 'Learn More',
-        click: function() { require('electron').shell.openExternal('http://electron.atom.io') }
-      },
+        click: function () { require('electron').shell.openExternal('http://electron.atom.io') }
+      }
     ]
-  },
-];
+  }
+]
 
 if (process.platform == 'darwin') {
-  var name = require('electron').remote.app.getName();
+  var name = require('electron').remote.app.getName()
   template.unshift({
     label: name,
     submenu: [
@@ -174,10 +174,10 @@ if (process.platform == 'darwin') {
       {
         label: 'Quit',
         accelerator: 'Command+Q',
-        click: function() { app.quit(); }
-      },
+        click: function () { app.quit() }
+      }
     ]
-  });
+  })
   // Window menu.
   template[3].submenu.push(
     {
@@ -187,11 +187,11 @@ if (process.platform == 'darwin') {
       label: 'Bring All to Front',
       role: 'front'
     }
-  );
+  )
 }
 
-var menu = Menu.buildFromTemplate(template);
-Menu.setApplicationMenu(menu);
+var menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
 ```
 
 ## クラス: Menu

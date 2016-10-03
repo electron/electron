@@ -19,12 +19,12 @@ Electron 中的 `process` 对象 与 upstream node 中的有以下的不同点:
 
 ```js
 // preload.js
-var _setImmediate = setImmediate;
-var _clearImmediate = clearImmediate;
-process.once('loaded', function() {
-  global.setImmediate = _setImmediate;
-  global.clearImmediate = _clearImmediate;
-});
+var _setImmediate = setImmediate
+var _clearImmediate = clearImmediate
+process.once('loaded', function () {
+  global.setImmediate = _setImmediate
+  global.clearImmediate = _clearImmediate
+})
 ```
 
 ## 属性

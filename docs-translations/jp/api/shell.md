@@ -5,9 +5,9 @@
 ユーザーのデフォルトのブラウザでURLを開く例です：
 
 ```javascript
-const shell = require('electron').shell;
+const shell = require('electron').shell
 
-shell.openExternal('https://github.com');
+shell.openExternal('https://github.com')
 ```
 
 ## メソッド

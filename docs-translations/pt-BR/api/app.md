@@ -5,10 +5,10 @@ O módulo `app` é responsável por controlar o ciclo de vida do aplicativo.
 O exemplo a seguir mostra como fechar o aplicativo quando a última janela é fechada: 
 
 ```javascript
-const app = require('electron').app;
-app.on('window-all-closed', function() {
-  app.quit();
-});
+const app = require('electron').app
+app.on('window-all-closed', function () {
+  app.quit()
+})
 ```
 
 ## Eventos
@@ -152,15 +152,15 @@ para confiar no certificado, você deve impedir o comportamento padrão com
 `event.preventDefault()` e chamar `callback(true)`.
 
 ```javascript
-session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
-  if (url == "https://github.com") {
+session.on('certificate-error', function (event, webContents, url, error, certificate, callback) {
+  if (url == 'https://github.com') {
     // Lógica de verificação.
-    event.preventDefault();
-    callback(true);
+    event.preventDefault()
+    callback(true)
   } else {
-    callback(false);
+    callback(false)
   }
-});
+})
 ```
 
 ### Evento: 'select-client-certificate'
@@ -183,9 +183,9 @@ Usar `event.preventDefault()` impede o aplicativo de usar o primeiro certificado
 da memória.
 
 ```javascript
-app.on('select-client-certificate', function(event, webContents, url, list, callback) {
-  event.preventDefault();
-  callback(list[0]);
+app.on('select-client-certificate', function (event, webContents, url, list, callback) {
+  event.preventDefault()
+  callback(list[0])
 })
 ```
 
@@ -214,9 +214,9 @@ isto, você deve impedir esse comportamento com `event.preventDefault()` e
 chamar `callback(username, password)` com as credenciais.
 
 ```javascript
-app.on('login', function(event, webContents, request, authInfo, callback) {
-  event.preventDefault();
-  callback('username', 'secret');
+app.on('login', function (event, webContents, request, authInfo, callback) {
+  event.preventDefault()
+  callback('username', 'secret')
 })
 ```
 

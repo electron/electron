@@ -47,29 +47,29 @@ $ asar list /path/to/example.asar
 从 `asar` 包读取一个文件：
 
 ```javascript
-const fs = require('fs');
-fs.readFileSync('/path/to/example.asar/file.txt');
+const fs = require('fs')
+fs.readFileSync('/path/to/example.asar/file.txt')
 ```
 
 列出 `asar` 包中根目录下的所有文件：
 
 ```javascript
-const fs = require('fs');
-fs.readdirSync('/path/to/example.asar');
+const fs = require('fs')
+fs.readdirSync('/path/to/example.asar')
 ```
 
 使用 `asar` 包中的一个模块：
 
 ```javascript
-require('/path/to/example.asar/dir/module.js');
+require('/path/to/example.asar/dir/module.js')
 ```
 
 你也可以使用 `BrowserWindow` 来显示一个 `asar` 包里的 web 页面：
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('file:///path/to/example.asar/static/index.html');
+const BrowserWindow = require('electron').BrowserWindow
+var win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('file:///path/to/example.asar/static/index.html')
 ```
 
 ### Web API
@@ -93,8 +93,8 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 你可以使用内置的 `original-fs` （提供和 `fs` 一样的 API）模块来读取 `asar` 包的真实信息。
 
 ```javascript
-var originalFs = require('original-fs');
-originalFs.readFileSync('/path/to/example.asar');
+var originalFs = require('original-fs')
+originalFs.readFileSync('/path/to/example.asar')
 ```
 
 ## Node API 缺陷

@@ -6,12 +6,12 @@
 它负责渲染并控制网页，也是 [`BrowserWindow`](browser-window.md) 对象的属性.一个使用 `webContents` 的例子:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const BrowserWindow = require('electron').BrowserWindow
 
-var win = new BrowserWindow({width: 800, height: 1500});
-win.loadURL("http://github.com");
+var win = new BrowserWindow({width: 800, height: 1500})
+win.loadURL('http://github.com')
 
-var webContents = win.webContents;
+var webContents = win.webContents
 ```
 
 ## 事件
@@ -302,7 +302,7 @@ var webContents = win.webContents;
 比如 `http://` 或 `file://`. 如果加载想要忽略 http 缓存，可以使用 `pragma` 头来达到目的.
 
 ```javascript
-const options = {"extraHeaders" : "pragma: no-cache\n"}
+const options = {'extraHeaders': 'pragma: no-cache\n'}
 webContents.loadURL(url, options)
 ```
 
@@ -317,10 +317,10 @@ webContents.loadURL(url, options)
 返回当前page 的 url.
 
 ```javascript
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadURL("http://github.com");
+var win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('http://github.com')
 
-var currentURL = win.webContents.getURL();
+var currentURL = win.webContents.getURL()
 ```
 
 ### `webContents.getTitle()`
@@ -507,12 +507,12 @@ var currentURL = win.webContents.getURL();
 使用给定的 `action` 来为 `webContents` 停止任何 `findInPage` 请求.
 
 ```javascript
-webContents.on('found-in-page', function(event, result) {
+webContents.on('found-in-page', function (event, result) {
   if (result.finalUpdate)
-    webContents.stopFindInPage("clearSelection");
-});
+    webContents.stopFindInPage('clearSelection')
+})
 
-const requestId = webContents.findInPage("api");
+const requestId = webContents.findInPage('api')
 ```
 
 ### `webContents.hasServiceWorker(callback)`
@@ -566,23 +566,23 @@ const requestId = webContents.findInPage("api");
 ```
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-const fs = require('fs');
+const BrowserWindow = require('electron').BrowserWindow
+const fs = require('fs')
 
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadURL("http://github.com");
+var win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('http://github.com')
 
-win.webContents.on("did-finish-load", function() {
+win.webContents.on('did-finish-load', function () {
   // Use default printing options
-  win.webContents.printToPDF({}, function(error, data) {
-    if (error) throw error;
-    fs.writeFile("/tmp/print.pdf", data, function(error) {
+  win.webContents.printToPDF({}, function (error, data) {
+    if (error) throw error
+    fs.writeFile('/tmp/print.pdf', data, function (error) {
       if (error)
-        throw error;
-      console.log("Write PDF successfully.");
+        throw error
+      console.log('Write PDF successfully.')
     })
   })
-});
+})
 ```
 
 ### `webContents.addWorkSpace(path)`
@@ -592,9 +592,9 @@ win.webContents.on("did-finish-load", function() {
 添加指定的路径给开发者工具栏的 workspace.必须在 DevTools 创建之后使用它 :
 
 ```javascript
-mainWindow.webContents.on('devtools-opened', function() {
-  mainWindow.webContents.addWorkSpace(__dirname);
-});
+mainWindow.webContents.on('devtools-opened', function () {
+  mainWindow.webContents.addWorkSpace(__dirname)
+})
 ```
 
 ### `webContents.removeWorkSpace(path)`
@@ -650,14 +650,14 @@ Toggles 开发者工具.
 
 ```javascript
 // 主进程.
-var window = null;
-app.on('ready', function() {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('file://' + __dirname + '/index.html');
-  window.webContents.on('did-finish-load', function() {
-    window.webContents.send('ping', 'whoooooooh!');
-  });
-});
+var window = null
+app.on('ready', function () {
+  window = new BrowserWindow({width: 800, height: 600})
+  window.loadURL('file://' + __dirname + '/index.html')
+  window.webContents.on('did-finish-load', function () {
+    window.webContents.send('ping', 'whoooooooh!')
+  })
+})
 ```
 
 ```html
@@ -769,14 +769,14 @@ app.on('ready', function() {
 如果保存界面过程初始化成功，返回 true.
 
 ```javascript
-win.loadURL('https://github.com');
+win.loadURL('https://github.com')
 
-win.webContents.on('did-finish-load', function() {
-  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', function(error) {
+win.webContents.on('did-finish-load', function () {
+  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', function (error) {
     if (!error)
-      console.log("Save page successfully");
-  });
-});
+      console.log('Save page successfully')
+  })
+})
 ```
 
 ## 实例属性
@@ -803,23 +803,23 @@ win.webContents.on('did-finish-load', function() {
 
 ```javascript
 try {
-  win.webContents.debugger.attach("1.1");
-} catch(err) {
-  console.log("Debugger attach failed : ", err);
+  win.webContents.debugger.attach('1.1')
+} catch (err) {
+  console.log('Debugger attach failed : ', err)
 };
 
-win.webContents.debugger.on('detach', function(event, reason) {
-  console.log("Debugger detached due to : ", reason);
-});
+win.webContents.debugger.on('detach', function (event, reason) {
+  console.log('Debugger detached due to : ', reason)
+})
 
-win.webContents.debugger.on('message', function(event, method, params) {
-  if (method == "Network.requestWillBeSent") {
-    if (params.request.url == "https://www.github.com")
-      win.webContents.debugger.detach();
+win.webContents.debugger.on('message', function (event, method, params) {
+  if (method == 'Network.requestWillBeSent') {
+    if (params.request.url == 'https://www.github.com')
+      win.webContents.debugger.detach()
   }
 })
 
-win.webContents.debugger.sendCommand("Network.enable");
+win.webContents.debugger.sendCommand('Network.enable')
 ```
 
 #### `webContents.debugger.attach([protocolVersion])`

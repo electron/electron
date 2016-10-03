@@ -6,9 +6,9 @@
 在用户默认浏览器中打开URL的示例:
 
 ```javascript
-const {shell} = require('electron');
+const {shell} = require('electron')
 
-shell.openExternal('https://github.com');
+shell.openExternal('https://github.com')
 ```
 
 ## Methods

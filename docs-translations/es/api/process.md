@@ -21,12 +21,12 @@ de Node eliminados, al alcance global cuando la integración de Node está apaga
 
 ```js
 // preload.js
-var _setImmediate = setImmediate;
-var _clearImmediate = clearImmediate;
-process.once('loaded', function() {
-  global.setImmediate = _setImmediate;
-  global.clearImmediate = _clearImmediate;
-});
+var _setImmediate = setImmediate
+var _clearImmediate = clearImmediate
+process.once('loaded', function () {
+  global.setImmediate = _setImmediate
+  global.clearImmediate = _clearImmediate
+})
 ```
 
 ## Methods

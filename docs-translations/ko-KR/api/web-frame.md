@@ -165,7 +165,7 @@ console.log(webFrame.getResourceUsage())
   cssStyleSheets: { /* same with "images" */ },
   xslStyleSheets: { /* same with "images" */ },
   fonts: { /* same with "images" */ },
-  other: { /* same with "images" */ },
+  other: { /* same with "images" */ }
 }
 ```
 

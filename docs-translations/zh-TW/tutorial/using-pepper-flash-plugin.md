@@ -18,22 +18,22 @@ Electron 命定列或是在應用程式的 ready 事件之前使用 `app.command
 // Windows 中可能是 /path/to/pepflashplayer.dll
 // macOS 中 /path/to/PepperFlashPlayer.plugin
 // Linux 中 /path/to/libpepflashplayer.so
-app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
+app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so')
 
 // 指定 Flash 版本, 例如 v17.0.0.169
-app.commandLine.appendSwitch('ppapi-flash-version', '17.0.0.169');
+app.commandLine.appendSwitch('ppapi-flash-version', '17.0.0.169')
 
-app.on('ready', function() {
+app.on('ready', function () {
   mainWindow = new BrowserWindow({
     'width': 800,
     'height': 600,
     'web-preferences': {
       'plugins': true
     }
-  });
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  })
+  mainWindow.loadURL('file://' + __dirname + '/index.html')
   // Something else
-});
+})
 ```
 
 ## 在一個 `<webview>` Tag 中啟用 Flash 外掛

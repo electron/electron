@@ -5,15 +5,15 @@ Electronでは、画像を取得するAPI用に、ファイルパスまたは`na
 例えば、トレイを作成したり、ウィンドウアイコンを設定する時、`String`としてイメージファイルパスを渡します:
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
-var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+var appIcon = new Tray('/Users/somebody/images/icon.png')
+var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'})
 ```
 
 もしくは、`nativeImage`を返すクリップボードからイメージを読み込みます:
 
 ```javascript
-var image = clipboard.readImage();
-var appIcon = new Tray(image);
+var image = clipboard.readImage()
+var appIcon = new Tray(image)
 ```
 
 ## 対応しているフォーマット
@@ -42,7 +42,7 @@ images/
 
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
+var appIcon = new Tray('/Users/somebody/images/icon.png')
 ```
 
 次のDPIサフィックスに対応しています:
@@ -107,9 +107,9 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 `nativeImage`のインスタンス上で提供されるメソッド:
 
 ```javascript
-const nativeImage = require('electron').nativeImage;
+const nativeImage = require('electron').nativeImage
 
-var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+var image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 ```
 
 ### `image.toPNG()`

@@ -5,14 +5,14 @@
 下面是一个自动提交崩溃报告给服务器的例子 :
 
 ```javascript
-const crashReporter = require('electron').crashReporter;
+const crashReporter = require('electron').crashReporter
 
 crashReporter.start({
   productName: 'YourName',
   companyName: 'YourCompany',
   submitURL: 'https://your-domain.com/url-to-submit',
   autoSubmit: true
-});
+})
 ```
 
 可以使用下面的项目来创建一个服务器，用来接收和处理崩溃报告 :
