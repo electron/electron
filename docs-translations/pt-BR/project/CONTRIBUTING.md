@@ -1,73 +1,74 @@
-# Contribuindo para Electron
+# Contribuindo com Electron
 
-:memo: Traduções Disponíveis: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/CONTRIBUTING.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/CONTRIBUTING.md) | [Português do Brasil](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/CONTRIBUTING.md)
+:memo: Traduções disponíveis: [Inglês](https://github.com/electron/electron/tree/master/CONTRIBUTING.md) | [Coreano](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/CONTRIBUTING.md) | [Chinês Simplificado](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/CONTRIBUTING.md)
 
-:+1::tada: Em primeiro lugar, obrigado pelo seu tempo para contribuir! :tada::+1:
+:+1::tada: Primeiramente, obrigado por utilizar seu tempo contribuindo! :tada::+1:
 
-Este projeto obedece ao Pacto do Colaborador [código de conduta](CODE_OF_CONDUCT.md).
-Ao participar, é esperado que você mantenha este código. Por favor, reporte o comportamento inesperado para atom@github.com.
+Esse projeto segue um [código de conduta](CODE_OF_CONDUCT.md).
+Ao participar, é esperado que o código seja seguido. Favor reportar comportamentos inaceitáveis para atom@github.com.
 
-A seguir um conjunto de diretrizes para contribuir para Electron. Estas são apenas diretrizes, não são regras, use-as com bom senso e sinta-se livre para propor alterações a este documento através de um pull request.
+O texto a seguir é um conjunto de diretrizes para a contribuir com o Electron.
+Estas são apenas diretrizes e não regras, use o seu bom senso e sinta-se livre para propor alterações nesse documento em um pull request.
 
 ## Reportando Issues
 
 * Você pode criar uma issue [aqui](https://github.com/electron/electron/issues/new),
-mas antes de fazer, por favor leia as notas abaixo e inclua o maior número de detalhes possíveis do problema. Se puder, por favor inclua:
-  * A versão do Electron que estiver usando
-  * O sistema operacional que estiver usando
-  * Se possível, o que estava fazendo quando ocorreu o problema e o que esperava que acontecesse
-* Outras coisas que poderão ajudar a resolver o problema:
-  * Captura de telas e GIFs animados
-  * O erro que aparece no terminal, ferramentas de desenvolvimento ou alertas lançados
-  * Realizar uma [pesquisa rápida](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+)
-  para ver se um problema semelhante já não foi reportado
+mas antes disso, por favor, leia as notas abaixo e inclua o máximo de detalhes possíveis em seu relato. Se puder, favor informar:
+  * A versão do Electron utilizada
+  * O sistema operacional utilizado
+  * Se possível, o que estava fazendo quando o problema ocorreu e o que era esperado que acontecesse
+* Alguns outros meios que irão ajudar a resolver a issue:
+  * Capturas de tela e GIFs animados
+  * Saída de erro que aparece no terminal, dev tools ou algum em algum alerta
+  * Faça uma [pesquisa rápida](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+)
+  para verificar se já não existe uma issue similar já aberta
 
 ## Submetendo Pull Requests
 
-* Incluir captura de telas e GIFs animados no pull request sempre que possível.
-* Seguir o [estilo de código definido na documento](/docs-translations/pt-BR/development/coding-style.md) do JavaScript, C++, and Python.
-* Escrever a documentação em [Markdown](https://daringfireball.net/projects/markdown).
-  Veja o [guia de estilo da documentação](/docs-translations/pt-BR/styleguide.md).
-* Escreva mensagens curtas e no tempo presente para o commit. Veja [guia de estilo para mensagens de commit](#git-commit-messages).
+* Inclua capturas de tela e GIFs animados em seu pull request sempre que possível.
+* Siga os [padrões de código definidos nos documentos](/docs/development/coding-style.md) para JavaScript, C++, e Python.
+* Escreva a documentação em [Markdown](https://daringfireball.net/projects/markdown).
+  Veja o [Guia de estilo de documentação](/docs/styleguide.md).
+* Use mensagens curtas e com a conjugação verbal no tempo presente. Veja em [Guia de estilo de mensagens de commit](#git-commit-messages).
 
-## Guias de Estilo
+## Guias de estilo
 
 ### Código Geral
 
 * Terminar arquivos com uma nova linha.
-* Coloque na seguinte sequência:
-  * Construa um módulos nó (como `path`)
-  * Construa um módulos Electron (como `ipc`, `app`)
-  * Módulos locais (use caminhos relativos)
-* Coloque propriedades da classe na seguinte sequência:
-  * Métodos e propriedades da classe (métodos começando com um `@`)
+* A organização deve estar na seguinte ordem:
+  * Módulos embutidos do Node (como o `path`)
+  * Módulos embutidos do Electron (como `ipc`, `app`)
+  * Módulos locais (usando caminhos relativos)
+* Defina as propriedades da classe na seguinte ordem:
+  * Métodos e propriedades da classe (métodos iniciam com `@`)
   * Métodos e propriedades de instância
-* Evite código dependente de plataforma:
+* Evite o uso de códigos dependentes da plataforma:
   * Use `path.join()` para concatenar nomes de arquivos.
-  * Use `os.tmpdir()` ao inves de `/tmp` quando precisar fazer referência ao diretório temporário.
-* Use um simples `return` explicitamente no final de uma função com retorno.
-  * Nao `return null`, `return undefined`, `null`, ou `undefined`
+  * Use `os.tmpdir()` ao invés de `/tmp` quando precisar referenciar o diretório temporário.
+* Use um simples `return` para retornar explícitamente o fim de uma função.
+  * Não usar `return null`, `return undefined`, `null`, ou `undefined`
 
-### Mensagens Git Commit
+### Mensagens de Commit do Git
 
-* Use o tempo presente("Add feature" não "Added feature")
-* Use o modo imperativo ("Move cursor to..." não "Moves cursor to...")
-* Limitar a primeira linha para 72 caracteres ou menos
-* Referênciar issues e pull requests liberalmente
-* Quando apenas a documentação mudar, inclua `[ci skip]` na descrição do commit
-* Considere começar a mensagem do commit aplicando um emoji:
-  * :art: `:art:` quando melhorar o formato/estrutura do código
-  * :racehorse: `:racehorse:` quando melhorar o desempenho
-  * :non-potable_water: `:non-potable_water:` quando acabar com vazamento de memória
+* Use o tempo presente ("Adicionando função" não "Adicionada função")
+* Use o modo imperativo ("Mova o cursor para..." não "O cursor deve ser movido...")
+* Limite a primeira linha para 72 caracteres ou menos
+* Referencie issues e pull requests livremente
+* Quando alterar somente a documentação. inclua `[ci skip]` na descrição do commit
+* Considerando iniciar a mensagem do commit com um emoji:
+  * :art: `:art:` quando aperfeiçoar o formato/estrutura do código
+  * :racehorse: `:racehorse:` quando aperfeiçoar a performance
+  * :non-potable_water: `:non-potable_water:` quando previnir vazamento de memória
   * :memo: `:memo:` quando escrever documentação
   * :penguin: `:penguin:` quando corrigir algo no Linux
-  * :apple: `:apple:` quando corrigir algo no macOS
+  * :apple: `:apple:` quando corrigir algo no OSX
   * :checkered_flag: `:checkered_flag:` quando corrigir algo no Windows
   * :bug: `:bug:` quando corrigir um bug
   * :fire: `:fire:` quando remover código ou arquivos
-  * :green_heart: `:green_heart:` quando corrigir a compilação CI
+  * :green_heart: `:green_heart:` quando corrigir o build do CI
   * :white_check_mark: `:white_check_mark:` quando adicionar testes
-  * :lock: `:lock:` quando se trata de segurança
-  * :arrow_up: `:arrow_up:` quando upgrading dependências
-  * :arrow_down: `:arrow_down:` quando downgrading dependências
-  * :shirt: `:shirt:` quando remover advertências linter
+  * :lock: `:lock:` quando estiver lidando com segurança
+  * :arrow_up: `:arrow_up:` quando atualizar dependências
+  * :arrow_down: `:arrow_down:` quando abaixar as dependências
+  * :shirt: `:shirt:` quando remover avisos do linter
