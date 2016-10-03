@@ -21,6 +21,10 @@ namespace atom {
 
 namespace {
 
+void FreeNodeBufferData(char* data, void* hint) {
+  delete[] data;
+}
+
 void RunCallbackInUI(
     const AtomBlobReader::CompletionCallback& callback,
     char* blob_data,
@@ -32,7 +36,8 @@ void RunCallbackInUI(
   v8::HandleScope handle_scope(isolate);
   if (blob_data) {
     v8::Local<v8::Value> buffer = node::Buffer::New(isolate,
-        blob_data, static_cast<size_t>(size)).ToLocalChecked();
+        blob_data, static_cast<size_t>(size), &FreeNodeBufferData, nullptr)
+        .ToLocalChecked();
     callback.Run(buffer);
   } else {
     callback.Run(v8::Null(isolate));

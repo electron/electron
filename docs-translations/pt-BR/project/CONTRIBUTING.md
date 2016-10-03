@@ -5,27 +5,27 @@
 :+1::tada: Primeiramente, obrigado por utilizar seu tempo contribuindo! :tada::+1:
 
 Esse projeto segue um [código de conduta](CODE_OF_CONDUCT.md).
-Participando, é esperado que o código seja seguido. Favor reportar comportamentos inaceitáveis para atom@github.com.
+Ao participar, é esperado que o código seja seguido. Favor reportar comportamentos inaceitáveis para atom@github.com.
 
-O texto a seguir é um conjunto de diretrizes para a contribuição com o Electron.
-São apenas diretrizes, e não regras, use o seu bom senso e sinta-se livre para sugerir modificações nesse documento em um pull request.
+O texto a seguir é um conjunto de diretrizes para a contribuir com o Electron.
+Estas são apenas diretrizes e não regras, use o seu bom senso e sinta-se livre para propor alterações nesse documento em um pull request.
 
-## Enviando Issues
+## Reportando Issues
 
 * Você pode criar uma issue [aqui](https://github.com/electron/electron/issues/new),
-porém, antes disso, por favor, leia as notas abaixo e inclua o máximo de detalhes possível em seu relato. Se puder, favor informar:
+mas antes disso, por favor, leia as notas abaixo e inclua o máximo de detalhes possíveis em seu relato. Se puder, favor informar:
   * A versão do Electron utilizada
   * O sistema operacional utilizado
-  * Se possível, o que estava fazendo para que esse problema surgisse e o que era esperado que acontecesse
+  * Se possível, o que estava fazendo quando o problema ocorreu e o que era esperado que acontecesse
 * Alguns outros meios que irão ajudar a resolver a issue:
-  * Imagens da tela e GIFs animados
+  * Capturas de tela e GIFs animados
   * Saída de erro que aparece no terminal, dev tools ou algum em algum alerta
   * Faça uma [pesquisa rápida](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+)
   para verificar se já não existe uma issue similar já aberta
 
-## Enviando Pull Requests
+## Submetendo Pull Requests
 
-* Inclua imagens da tela e GIFs animados em seu pull request sempre que possível.
+* Inclua capturas de tela e GIFs animados em seu pull request sempre que possível.
 * Siga os [padrões de código definidos nos documentos](/docs/development/coding-style.md) para JavaScript, C++, e Python.
 * Escreva a documentação em [Markdown](https://daringfireball.net/projects/markdown).
   Veja o [Guia de estilo de documentação](/docs/styleguide.md).
@@ -33,16 +33,16 @@ porém, antes disso, por favor, leia as notas abaixo e inclua o máximo de detal
 
 ## Guias de estilo
 
-### General Code
+### Código Geral
 
-* Arquivos terminam com uma nova linha.
+* Terminar arquivos com uma nova linha.
 * A organização deve estar na seguinte ordem:
   * Módulos embutidos do Node (como o `path`)
   * Módulos embutidos do Electron (como `ipc`, `app`)
   * Módulos locais (usando caminhos relativos)
 * Defina as propriedades da classe na seguinte ordem:
-  * Métodos da classe e propriedades (métodos iniciam com `@`)
-  * Métodos de instância e propriedades
+  * Métodos e propriedades da classe (métodos iniciam com `@`)
+  * Métodos e propriedades de instância
 * Evite o uso de códigos dependentes da plataforma:
   * Use `path.join()` para concatenar nomes de arquivos.
   * Use `os.tmpdir()` ao invés de `/tmp` quando precisar referenciar o diretório temporário.
@@ -60,13 +60,13 @@ porém, antes disso, por favor, leia as notas abaixo e inclua o máximo de detal
   * :art: `:art:` quando aperfeiçoar o formato/estrutura do código
   * :racehorse: `:racehorse:` quando aperfeiçoar a performance
   * :non-potable_water: `:non-potable_water:` quando previnir vazamento de memória
-  * :memo: `:memo:` quando escrever documentos
-  * :penguin: `:penguin:` quando consertar algo no Linux
-  * :apple: `:apple:` quando consertar algo no macOS
-  * :checkered_flag: `:checkered_flag:` quando consertar algo no Windows
+  * :memo: `:memo:` quando escrever documentação
+  * :penguin: `:penguin:` quando corrigir algo no Linux
+  * :apple: `:apple:` quando corrigir algo no OSX
+  * :checkered_flag: `:checkered_flag:` quando corrigir algo no Windows
   * :bug: `:bug:` quando corrigir um bug
   * :fire: `:fire:` quando remover código ou arquivos
-  * :green_heart: `:green_heart:` quando consertar o build do CI
+  * :green_heart: `:green_heart:` quando corrigir o build do CI
   * :white_check_mark: `:white_check_mark:` quando adicionar testes
   * :lock: `:lock:` quando estiver lidando com segurança
   * :arrow_up: `:arrow_up:` quando atualizar dependências
