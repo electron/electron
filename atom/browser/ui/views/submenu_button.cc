@@ -53,6 +53,10 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
   SetHasInkDrop(true);
   set_ink_drop_base_color(
       color_utils::BlendTowardOppositeLuma(background_color_, 0x61));
+
+  set_request_focus_on_press(true);
+  SetFocusForPlatform();
+  SetFocusPainter(nullptr);
 }
 
 SubmenuButton::~SubmenuButton() {
