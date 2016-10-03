@@ -1155,6 +1155,9 @@ void NativeWindowViews::OnWidgetMove() {
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) {
+  if (!has_frame())
+    return bounds;
+
   gfx::Rect window_bounds(bounds);
 #if defined(OS_WIN)
   HWND hwnd = GetAcceleratedWidget();
@@ -1164,7 +1167,7 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
       window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
 #endif
 
-  if (has_frame() && menu_bar_ && menu_bar_visible_) {
+  if (menu_bar_ && menu_bar_visible_) {
     window_bounds.set_y(window_bounds.y() - kMenuBarHeight);
     window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
   }
@@ -1173,6 +1176,9 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 
 gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
     const gfx::Rect& bounds) {
+  if (!has_frame())
+    return bounds;
+
   gfx::Rect content_bounds(bounds);
 #if defined(OS_WIN)
   HWND hwnd = GetAcceleratedWidget();
@@ -1189,7 +1195,7 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
       display::win::ScreenWin::ScreenToDIPSize(hwnd, content_bounds.size()));
 #endif
 
-  if (has_frame() && menu_bar_ && menu_bar_visible_) {
+  if (menu_bar_ && menu_bar_visible_) {
     content_bounds.set_y(content_bounds.y() + kMenuBarHeight);
     content_bounds.set_height(content_bounds.height() - kMenuBarHeight);
   }
