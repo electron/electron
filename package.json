@@ -35,7 +35,7 @@
     "lint-js": "standard && cd spec && standard",
     "lint-cpp": "python ./script/cpplint.py",
     "lint-py": "python ./script/pylint.py",
-    "lint-api-docs-js": "standard-markdown docs",
+    "lint-api-docs-js": "standard-markdown docs && standard-markdown docs-translations",
     "lint-api-docs": "electron-docs-linter docs/api --version=$npm_package_version --outfile=out/electron-api.json",
     "preinstall": "node -e 'process.exit(0)'",
     "repl": "python ./script/start.py --interactive",
