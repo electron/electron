@@ -26,8 +26,7 @@ base::string16 FilterAccelerator(const base::string16& label) {
 
 }  // namespace
 
-SubmenuButton::SubmenuButton(views::ButtonListener* listener,
-                             const base::string16& title,
+SubmenuButton::SubmenuButton(const base::string16& title,
                              views::MenuButtonListener* menu_button_listener,
                              const SkColor& background_color)
     : views::MenuButton(FilterAccelerator(title),
