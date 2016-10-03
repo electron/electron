@@ -8,7 +8,7 @@
     "electron-docs-linter": "^1.8.1",
     "request": "*",
     "standard": "^7.1.2",
-    "standard-markdown": "^1.2.1"
+    "standard-markdown": "^2.1.0"
   },
   "optionalDependencies": {
     "runas": "^3.0.0"
