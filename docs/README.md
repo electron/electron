@@ -37,6 +37,7 @@ an issue:
 * [Quick Start](tutorial/quick-start.md)
 * [Desktop Environment Integration](tutorial/desktop-environment-integration.md)
 * [Online/Offline Event Detection](tutorial/online-offline-events.md)
+* [REPL](tutorial/repl.md)
 
 ## API References
 
@@ -65,7 +66,6 @@ an issue:
 * [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
-* [REPL](api/repl.md)
 * [session](api/session.md)
 * [systemPreferences](api/system-preferences.md)
 * [Tray](api/tray.md)
