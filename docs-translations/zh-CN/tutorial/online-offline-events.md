@@ -1,35 +1,36 @@
 # 在线/离线事件探测
 使用标准 HTML5 APIs 可以实现在线和离线事件的探测，就像以下例子：
 
-*main.js*
-```javascript
-const electron = require('electron')
-const app = electron.app
-const BrowserWindow = electron.BrowserWindow
+_main.js_
 
-var onlineStatusWindow
-app.on('ready', function () {
+```javascript
+const {app, BrowserWindow} = require('electron')
+
+let onlineStatusWindow
+
+app.on('ready', () => {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
   onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
 })
 ```
 
-*online-status.html*
+_online-status.html_
+
 ```html
 <!DOCTYPE html>
 <html>
-  <body>
-    <script>
-      var alertOnlineStatus = function() {
-        window.alert(navigator.onLine ? 'online' : 'offline');
-      };
+<body>
+<script>
+  const alertOnlineStatus = () => {
+    window.alert(navigator.onLine ? 'online' : 'offline')
+  }
 
-      window.addEventListener('online',  alertOnlineStatus);
-      window.addEventListener('offline',  alertOnlineStatus);
+  window.addEventListener('online',  alertOnlineStatus)
+  window.addEventListener('offline',  alertOnlineStatus)
 
-      alertOnlineStatus();
-    </script>
-  </body>
+  alertOnlineStatus()
+</script>
+</body>
 </html>
 ```
 
