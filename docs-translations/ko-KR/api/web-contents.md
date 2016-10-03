@@ -309,7 +309,7 @@ Returns:
   * `matches` Integer (optional) - 일치하는 개수.
   * `selectionArea` Object (optional) - 첫 일치 부위의 좌표.
 
-[`webContents.findInPage`](web-contents.md#webcontentsfindinpage) 요청의 결과를
+[`webContents.findInPage`] 요청의 결과를
 사용할 수 있을 때 발생하는 이벤트입니다.
 
 #### Event: 'media-started-playing'
@@ -755,7 +755,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 
 #### `contents.stopFindInPage(action)`
 
-* `action` String - [`webContents.findInPage`](web-contents.md#webcontentfindinpage)
+* `action` String - [`webContents.findInPage`]
   요청이 종료되었을 때 일어날 수 있는 작업을 지정합니다.
   * `clearSelection` - 선택을 취소합니다.
   * `keepSelection` - 선택을 일반 선택으로 변경합니다.
@@ -1235,3 +1235,4 @@ win.webContents.debugger.sendCommand('Network.enable')
 디버깅 타겟이 관련 이벤트를 발생시킬 때 마다 발생하는 이벤트입니다.
 
 [rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol
+[`webContents.findInPage`]: web-contents.md#contentsfindinpagetext-options

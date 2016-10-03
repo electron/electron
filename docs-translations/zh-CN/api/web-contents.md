@@ -248,7 +248,7 @@ var webContents = win.webContents;
   * `matches` Integer (可选) - 匹配数量.
   * `selectionArea` Object (可选) - 协调首个匹配位置.
 
-当使用 [`webContents.findInPage`](web-contents.md#webcontentsfindinpage) 进行页内查找并且找到可用值得时候发出事件.
+当使用 [`webContents.findInPage`] 进行页内查找并且找到可用值得时候发出事件.
 
 ### Event: 'media-started-playing'
 
@@ -499,7 +499,7 @@ var currentURL = win.webContents.getURL();
 ### `webContents.stopFindInPage(action)`
 
 * `action` String - 指定一个行为来接替停止
-  [`webContents.findInPage`](web-contents.md#webcontentfindinpage) 请求.
+  [`webContents.findInPage`] 请求.
   * `clearSelection` - 转变为一个普通的 selection.
   * `keepSelection` - 清除 selection.
   * `activateSelection` - 获取焦点并点击 selection node.
@@ -862,3 +862,4 @@ win.webContents.debugger.sendCommand("Network.enable");
 每当调试目标发出事件时发出.
 
 [rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol
+[`webContents.findInPage`]: web-contents.md#webcontentsfindinpagetext-options

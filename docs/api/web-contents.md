@@ -312,7 +312,7 @@ Returns:
   * `selectionArea` Object - Coordinates of first match region.
 
 Emitted when a result is available for
-[`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
+[`webContents.findInPage`] request.
 
 #### Event: 'media-started-playing'
 
@@ -775,7 +775,7 @@ the request can be obtained by subscribing to
 #### `contents.stopFindInPage(action)`
 
 * `action` String - Specifies the action to take place when ending
-  [`webContents.findInPage`](web-contents.md#webcontentfindinpage) request.
+  [`webContents.findInPage`] request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
@@ -1261,3 +1261,4 @@ Emitted when debugging session is terminated. This happens either when
 Emitted whenever debugging target issues instrumentation event.
 
 [rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol
+[`webContents.findInPage`]: web-contents.md#contentsfindinpagetext-options
