@@ -24,7 +24,7 @@ You can read more about this feature in [Spectron's documentation](https://githu
 
 ### Devtron
 
-In Devtron there is a new accessibility tab which will allow you to audit a page in your app, sort and filter the results.
+In Devtron, there is a new accessibility tab which will allow you to audit a page in your app, sort and filter the results.
 
 ![devtron screenshot](https://cloud.githubusercontent.com/assets/1305617/17156618/9f9bcd72-533f-11e6-880d-389115f40a2a.png)
 
