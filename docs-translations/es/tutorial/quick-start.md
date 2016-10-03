@@ -54,7 +54,7 @@ El formato de `package.json` es exactamente el mismo que cualquier módulo Node,
 y el script especificado en el campo `main` será el script de arranque de tu aplicación,
 a ser ejecutado por el proceso principal. Un ejemplo de `package.json` podría verse así:
 
-```json
+```javascripton
 {
   "name"    : "your-app",
   "version" : "0.1.0",
@@ -77,7 +77,7 @@ app.on('window-all-closed', function () {
   // En macOS es común que las aplicaciones y su barra de menú
   // se mantengan activas hasta que el usuario cierre la aplicación
   // explícitamente utilizando Cmd + Q
-  if (process.platform != 'darwin') {
+  if (process.platform !== 'darwin') {
     app.quit()
   }
 })
@@ -89,7 +89,7 @@ app.on('ready', function () {
   mainWindow = new BrowserWindow({width: 800, height: 600})
 
   // cargar el index.html de nuestra aplicación.
-  mainWindow.loadURL('file://' + __dirname + '/index.html')
+  mainWindow.loadURL(`file://${__dirname}/index.html`)
 
   // Desplegar devtools.
   mainWindow.openDevTools()

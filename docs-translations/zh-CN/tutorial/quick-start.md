@@ -30,7 +30,7 @@ your-app/
 └── index.html
 ````
 `package.json `的格式和 Node 的完全一致，并且那个被 `main` 字段声明的脚本文件是你的应用的启动脚本，它运行在主进程上。你应用里的 `package.json` 看起来应该像：
-```json
+```javascripton
 {
   "name"    : "your-app",
   "version" : "0.1.0",

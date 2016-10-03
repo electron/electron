@@ -63,7 +63,7 @@ e o script especificado pelo campo `main` é o script de inicialização do seu 
 que irá executar o processo principal. Um exemplo do seu `package.json` deve parecer
 com isso:
 
-```json
+```javascripton
 {
   "name"    : "seu-app",
   "version" : "0.1.0",

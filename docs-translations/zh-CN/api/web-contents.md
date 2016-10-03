@@ -428,51 +428,51 @@ var currentURL = win.webContents.getURL()
 
 ### `webContents.undo()`
 
-执行网页的编辑命令 `undo` . 
+执行网页的编辑命令 `undo` .
 
 ### `webContents.redo()`
 
-执行网页的编辑命令 `redo` . 
+执行网页的编辑命令 `redo` .
 
 ### `webContents.cut()`
 
-执行网页的编辑命令 `cut` . 
+执行网页的编辑命令 `cut` .
 
 ### `webContents.copy()`
 
-执行网页的编辑命令 `copy` . 
+执行网页的编辑命令 `copy` .
 
 ### `webContents.paste()`
 
-执行网页的编辑命令 `paste` . 
+执行网页的编辑命令 `paste` .
 
 ### `webContents.pasteAndMatchStyle()`
 
-执行网页的编辑命令 `pasteAndMatchStyle` . 
+执行网页的编辑命令 `pasteAndMatchStyle` .
 
 ### `webContents.delete()`
 
-执行网页的编辑命令 `delete` . 
+执行网页的编辑命令 `delete` .
 
 ### `webContents.selectAll()`
 
-执行网页的编辑命令 `selectAll` . 
+执行网页的编辑命令 `selectAll` .
 
 ### `webContents.unselect()`
 
-执行网页的编辑命令 `unselect` . 
+执行网页的编辑命令 `unselect` .
 
 ### `webContents.replace(text)`
 
 * `text` String
 
-执行网页的编辑命令 `replace` . 
+执行网页的编辑命令 `replace` .
 
 ### `webContents.replaceMisspelling(text)`
 
 * `text` String
 
-执行网页的编辑命令 `replaceMisspelling` . 
+执行网页的编辑命令 `replaceMisspelling` .
 
 ### `webContents.insertText(text)`
 
@@ -508,8 +508,7 @@ var currentURL = win.webContents.getURL()
 
 ```javascript
 webContents.on('found-in-page', function (event, result) {
-  if (result.finalUpdate)
-    webContents.stopFindInPage('clearSelection')
+  if (result.finalUpdate) webContents.stopFindInPage('clearSelection')
 })
 
 const requestId = webContents.findInPage('api')
@@ -577,8 +576,7 @@ win.webContents.on('did-finish-load', function () {
   win.webContents.printToPDF({}, function (error, data) {
     if (error) throw error
     fs.writeFile('/tmp/print.pdf', data, function (error) {
-      if (error)
-        throw error
+      if (error) throw error
       console.log('Write PDF successfully.')
     })
   })
@@ -653,7 +651,7 @@ Toggles 开发者工具.
 var window = null
 app.on('ready', function () {
   window = new BrowserWindow({width: 800, height: 600})
-  window.loadURL('file://' + __dirname + '/index.html')
+  window.loadURL(`file://${__dirname}/index.html`)
   window.webContents.on('did-finish-load', function () {
     window.webContents.send('ping', 'whoooooooh!')
   })
@@ -666,8 +664,8 @@ app.on('ready', function () {
 <body>
   <script>
     require('electron').ipcRenderer.on('ping', function(event, message) {
-      console.log(message);  // Prints "whoooooooh!"
-    });
+      console.log(message)  // Prints "whoooooooh!"
+    })
   </script>
 </body>
 </html>
@@ -686,8 +684,8 @@ app.on('ready', function () {
   * `height` Integer - 设置模拟屏幕 height
 * `viewPosition` Object - 在屏幕放置 view
     (screenPosition == mobile) (默认: `{x: 0, y: 0}`)
-  * `x` Integer - 设置偏移左上角的x轴 
-  * `y` Integer - 设置偏移左上角的y轴 
+  * `x` Integer - 设置偏移左上角的x轴
+  * `y` Integer - 设置偏移左上角的y轴
 * `deviceScaleFactor` Integer - 设置设备比例因子 (如果为0，默认为原始屏幕比例) (默认: `0`)
 * `viewSize` Object - 设置模拟视图 size (空表示不覆盖)
   * `width` Integer - 设置模拟视图 width
@@ -773,8 +771,7 @@ win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', function () {
   win.webContents.savePage('/tmp/test.html', 'HTMLComplete', function (error) {
-    if (!error)
-      console.log('Save page successfully')
+    if (!error) console.log('Save page successfully')
   })
 })
 ```
@@ -806,16 +803,17 @@ try {
   win.webContents.debugger.attach('1.1')
 } catch (err) {
   console.log('Debugger attach failed : ', err)
-};
+}
 
 win.webContents.debugger.on('detach', function (event, reason) {
   console.log('Debugger detached due to : ', reason)
 })
 
 win.webContents.debugger.on('message', function (event, method, params) {
-  if (method == 'Network.requestWillBeSent') {
-    if (params.request.url == 'https://www.github.com')
+  if (method === 'Network.requestWillBeSent') {
+    if (params.request.url === 'https://www.github.com') {
       win.webContents.debugger.detach()
+    }
   }
 })
 

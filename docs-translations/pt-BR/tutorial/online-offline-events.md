@@ -13,7 +13,7 @@ var onlineStatusWindow
 
 app.on('ready', function () {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
-  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html')
+  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
 })
 ```
 
@@ -53,7 +53,7 @@ var onlineStatusWindow
 
 app.on('ready', function () {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
-  onlineStatusWindow.loadURL('file://' + __dirname + '/online-status.html')
+  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
 })
 
 ipc.on('online-status-changed', function (event, status) {
@@ -66,18 +66,18 @@ _online-status.html_
 ```html
 <!DOCTYPE html>
 <html>
-  <body>
-    <script>
-      var ipc = require('ipc');
-      var updateOnlineStatus = function() {
-        ipc.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
-      };
+<body>
+<script>
+  const {ipcRenderer} = require('electron')
+  const updateOnlineStatus = () => {
+    ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline')
+  }
 
-      window.addEventListener('online',  updateOnlineStatus);
-      window.addEventListener('offline',  updateOnlineStatus);
+  window.addEventListener('online',  updateOnlineStatus)
+  window.addEventListener('offline',  updateOnlineStatus)
 
-      updateOnlineStatus();
-    </script>
-  </body>
+  updateOnlineStatus()
+</script>
+</body>
 </html>
 ```

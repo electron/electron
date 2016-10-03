@@ -15,7 +15,7 @@ Electronで `chromedriver` を使用するために、Electronがどこにある
 $ npm install --save-dev spectron
 ```
 
-```js
+```javascript
 // 可視のウィンドウがタイトル付きで開かれているかを調べる簡単なテスト
 var Application = require('spectron').Application
 var assert = require('assert')

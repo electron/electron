@@ -7,7 +7,7 @@
 const BrowserWindow = require('electron').BrowserWindow
 
 // Or in the renderer process.
-const BrowserWindow = require('electron').remote.BrowserWindow
+// const BrowserWindow = require('electron').remote.BrowserWindow
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false })
 win.on('closed', function () {
@@ -233,7 +233,7 @@ window.onbeforeunload = function (e) {
 在请求一个[App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)的时候触发.
 典型的是键盘媒体或浏览器命令, Windows上的 "Back" 按钮用作鼠标也会触发.
 
-```js
+```javascript
 someWindow.on('app-command', function (e, cmd) {
   // Navigate the window back when the user hits their mouse back button
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {

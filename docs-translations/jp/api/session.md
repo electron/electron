@@ -77,11 +77,13 @@ session.defaultSession.on('will-download', function (event, item, webContents) {
 ```javascript
 // Query all cookies.
 session.defaultSession.cookies.get({}, function (error, cookies) {
+  if (error) console.error(error)
   console.log(cookies)
 })
 
 // Query all cookies associated with a specific url.
 session.defaultSession.cookies.get({ url: 'http://www.github.com' }, function (error, cookies) {
+  if (error) console.error(error)
   console.log(cookies)
 })
 
@@ -89,8 +91,7 @@ session.defaultSession.cookies.get({ url: 'http://www.github.com' }, function (e
 // may overwrite equivalent cookies if they exist.
 var cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy' }
 session.defaultSession.cookies.set(cookie, function (error) {
-  if (error)
-    console.error(error)
+  if (error) console.error(error)
 })
 ```
 
@@ -255,10 +256,7 @@ Calling `setCertificateVerifyProc(null)`をコールして、既定の証明書�
 
 ```javascript
 myWindow.webContents.session.setCertificateVerifyProc(function (hostname, cert, callback) {
-  if (hostname == 'github.com')
-    callback(true)
-  else
-    callback(false)
+  callback(hostname === 'github.com')
 })
 ```
 

@@ -67,15 +67,16 @@ Para criar seu Dock Menu customizado, você pode usar a API `app.dock.setMenu`,
 ela está disponível apenas no macOS:
 
 ```javascript
-var app = require('app')
-var Menu = require('menu')
-var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function () { console.log('New Window') } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
+const {app, Menu} = require('electron')
+
+const dockMenu = Menu.buildFromTemplate([
+  {label: 'New Window', click () { console.log('New Window') }},
+  {label: 'New Window with Settings',
+  submenu: [
+    {label: 'Basic'},
+    {label: 'Pro'}
   ]},
-  { label: 'New Command...'}
+  {label: 'New Command...'}
 ])
 app.dock.setMenu(dockMenu)
 ```
@@ -163,26 +164,26 @@ __Miniaturas da barra de tarefas do Windows Media Player:__
 Você pode usar [BrowserWindow.setThumbarButtons][setthumbarbuttons] para criar
 miniaturas na barra de ferramentas para sua aplicação.
 
-```
-var BrowserWindow = require('browser-window');
-var path = require('path');
+```javascript
+var BrowserWindow = require('browser-window')
+var path = require('path')
 var win = new BrowserWindow({
   width: 800,
   height: 600
-});
+})
 win.setThumbarButtons([
   {
-    tooltip: "button1",
+    tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click: function() { console.log("button2 clicked"); }
+    click: function () { console.log('button2 clicked') }
   },
   {
-    tooltip: "button2",
+    tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
-    flags:['enabled', 'dismissonclick'],
-    click: function() { console.log("button2 clicked."); }
+    flags: ['enabled', 'dismissonclick'],
+    click: function () { console.log('button2 clicked.') }
   }
-]);
+])
 ```
 
 Para limpar os botões na miniatura da barra de ferramentas, apenas chame
@@ -222,8 +223,8 @@ Para adicionar uma barra de progresso para uma janela, você pode ver a API:
 [BrowserWindow.setProgressBar][setprogressbar]:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+var window = new BrowserWindow()
+window.setProgressBar(0.5)
 ```
 
 ## Representação do arquivo na janela (macOS)
@@ -244,9 +245,9 @@ Para inserir o arquivo de representacão da janela, você pode usar as API
 [BrowserWindow.setDocumentEdited][setdocumentedited]:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setRepresentedFilename('/etc/passwd');
-window.setDocumentEdited(true);
+var window = new BrowserWindow()
+window.setRepresentedFilename('/etc/passwd')
+window.setDocumentEdited(true)
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath

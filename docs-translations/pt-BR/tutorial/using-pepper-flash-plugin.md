@@ -20,18 +20,15 @@ para a linha de comando do Electron ou usando o método
 Por exemplo:
 
 ```javascript
-var app = require('app')
-var BrowserWindow = require('browser-window')
+const {app, BrowserWindow} = require('electron')
 
 // Mantém uma referência global da janela, se não manter, a janela irá fechar
 // automaticamente quando o objeto javascript for GCed.
-var mainWindow = null
+let mainWindow = null
 
 // Sai assim que todas as janelas forem fechadas.
 app.on('window-all-closed', function () {
-  if (process.platform != 'darwin') {
-    app.quit()
-  }
+  if (process.platform !== 'darwin') app.quit()
 })
 
 // Epecifica o caminho do flash.
@@ -51,7 +48,7 @@ app.on('ready', function () {
       'plugins': true
     }
   })
-  mainWindow.loadURL('file://' + __dirname + '/index.html')
+  mainWindow.loadURL(`file://${__dirname}/index.html`)
   // Algo mais
 })
 ```

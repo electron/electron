@@ -135,7 +135,7 @@ Windowsでは、ファイルパスを取得するために、 `process.argv` を
 
 ```javascript
 session.on('certificate-error', function (event, webContents, url, error, certificate, callback) {
-  if (url == 'https://github.com') {
+  if (url === 'https://github.com') {
     // Verification logic.
     event.preventDefault()
     callback(true)
@@ -325,26 +325,25 @@ macOSは、ユーザーがFinderで2つ目のアプリインスタンスを開�
 
 2つ目のインスタンスを起動するとき、メインのインスタンスのウィンドウをアクティブにする例
 
-```js
-var myWindow = null;
+```javascript
+var myWindow = null
 
-var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+var shouldQuit = app.makeSingleInstance(function (commandLine, workingDirectory) {
   // Someone tried to run a second instance, we should focus our window
   if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore();
-    myWindow.focus();
+    if (myWindow.isMinimized()) myWindow.restore()
+    myWindow.focus()
   }
-  return true;
-});
+  return true
+})
 
 if (shouldQuit) {
-  app.quit();
-  return;
+  app.quit()
 }
 
-// Create myWindow, load the rest of the app, etc...
-app.on('ready', function() {
-});
+app.on('ready', function () {
+  // Create myWindow, load the rest of the app, etc...
+})
 ```
 
 ### `app.setAppUserModelId(id)` _Windows_
@@ -359,7 +358,7 @@ app.on('ready', function() {
 
 使用例:
 
-```js
+```javascript
 let browserOptions = {width: 1000, height: 800}
 
 // Make the window transparent only if the platform supports it.
@@ -373,10 +372,10 @@ win = new BrowserWindow(browserOptions)
 
 // Navigate.
 if (browserOptions.transparent) {
-  win.loadURL('file://' + __dirname + '/index.html')
+  win.loadURL(`file://${__dirname}/index.html`)
 } else {
   // No transparency, so we load a fallback that uses basic styles.
-  win.loadURL('file://' + __dirname + '/fallback.html')
+  win.loadURL(`file://${__dirname}/fallback.html`)
 }
 ```
 

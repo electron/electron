@@ -77,34 +77,29 @@ var template = [
         label: 'Reload',
         accelerator: 'CmdOrCtrl+R',
         click: function (item, focusedWindow) {
-          if (focusedWindow)
-            focusedWindow.reload()
+          if (focusedWindow) focusedWindow.reload()
         }
       },
       {
         label: 'Toggle Full Screen',
         accelerator: (function () {
-          if (process.platform == 'darwin')
-            return 'Ctrl+Command+F'
-          else
-            return 'F11'
+          return (process.platform === 'darwin') ? 'Ctrl+Command+F' : 'F11'
         })(),
         click: function (item, focusedWindow) {
-          if (focusedWindow)
-            focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
+          if (focusedWindow) focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
         }
       },
       {
         label: 'Toggle Developer Tools',
         accelerator: (function () {
-          if (process.platform == 'darwin')
+          if (process.platform === 'darwin') {
             return 'Alt+Command+I'
-          else
+          } else {
             return 'Ctrl+Shift+I'
+          }
         })(),
         click: function (item, focusedWindow) {
-          if (focusedWindow)
-            focusedWindow.toggleDevTools()
+          if (focusedWindow) focusedWindow.toggleDevTools()
         }
       }
     ]
@@ -137,7 +132,7 @@ var template = [
   }
 ]
 
-if (process.platform == 'darwin') {
+if (process.platform === 'darwin') {
   var name = require('electron').remote.app.getName()
   template.unshift({
     label: name,

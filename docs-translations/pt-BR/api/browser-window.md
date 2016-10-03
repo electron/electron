@@ -191,7 +191,7 @@ Emitido quando a janela sai do estado de tela cheia, ocasionado por uma api de h
 
 Emitido quando um [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx) é invocado. Estes estão tipicamente relacionado às teclas de mídia do teclado, ou comandos do browser, assim como o botão "Voltar" existente em alguns modelos de mouse no Windows.
 
-```js
+```javascript
 someWindow.on('app-command', function (e, cmd) {
   // Navega a janela 'para trás' quando o usuário pressiona o botão voltar do mouse
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {

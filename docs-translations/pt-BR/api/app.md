@@ -2,7 +2,7 @@
 
 O módulo `app` é responsável por controlar o ciclo de vida do aplicativo.
 
-O exemplo a seguir mostra como fechar o aplicativo quando a última janela é fechada: 
+O exemplo a seguir mostra como fechar o aplicativo quando a última janela é fechada:
 
 ```javascript
 const app = require('electron').app
@@ -153,7 +153,7 @@ para confiar no certificado, você deve impedir o comportamento padrão com
 
 ```javascript
 session.on('certificate-error', function (event, webContents, url, error, certificate, callback) {
-  if (url == 'https://github.com') {
+  if (url === 'https://github.com') {
     // Lógica de verificação.
     event.preventDefault()
     callback(true)
@@ -365,26 +365,23 @@ No macOS o sistema enforça instância única automaticamente quando usuários t
 
 Um exemplo de ativação da janela de primeira instância quando uma segunda instância inicializa:
 
-```js
-var myWindow = null;
+```javascript
+let myWindow = null
 
-var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+let shouldQuit = app.makeSingleInstance(function (commandLine, workingDirectory) {
   // Alguém tentou rodar uma segunda instância, devemos focar nossa janela
   if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore();
-    myWindow.focus();
+    if (myWindow.isMinimized()) myWindow.restore()
+    myWindow.focus()
   }
-  return true;
-});
+  return true
+})
 
-if (shouldQuit) {
-  app.quit();
-  return;
-}
+if (shouldQuit) app.quit()
 
-// Cria myWindow, carrega o resto do aplicativo, etc...
-app.on('ready', function() {
-});
+app.on('ready', function () {
+  // Cria myWindow, carrega o resto do aplicativo, etc...
+})
 ```
 
 ### `app.setAppUserModelId(id)` _Windows_

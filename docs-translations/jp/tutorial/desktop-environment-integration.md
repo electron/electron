@@ -87,20 +87,20 @@ __Dock menu of Terminal.app:__
 カスタムドックメニューを設定するために、macOSのみに提供されている `app.dock.setMenu` APIを使用できます。
 
 ```javascript
-const electron = require('electron')
-const app = electron.app
-const Menu = electron.Menu
+const {app, Menu} = require('electron')
 
 const dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click () { console.log('New Window') } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
+  {label: 'New Window', click () { console.log('New Window') }},
+  {label: 'New Window with Settings',
+  submenu: [
+    {label: 'Basic'},
+    {label: 'Pro'}
   ]},
-  { label: 'New Command...'}
+  {label: 'New Command...'}
 ])
 app.dock.setMenu(dockMenu)
 ```
+
 
 ## ユーザータスク (Windows)
 
@@ -206,8 +206,8 @@ __タスクバーボタン上の進行状況バー:__
 ウィンドウに進行状況バーを設定するために、[BrowserWindow.setProgressBar][setprogressbar] APIを使えます:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setProgressBar(0.5);
+let win = new BrowserWindow()
+win.setProgressBar(0.5)
 ```
 
 ## タスクバーでアイコンをオーバーレイする (Windows)
@@ -223,8 +223,8 @@ __タスクバーボタンでのオーバーレイ:__
 ウィンドウでオーバーレイアイコンを設定するために、[BrowserWindow.setOverlayIcon][setoverlayicon] APIを使用できます。
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+let win = new BrowserWindow()
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 ```
 
 ##  Windowのファイル表示 (macOS)
@@ -240,9 +240,9 @@ __Represented file ポップアップメニュー:__
 ウィンドウにrepresented fileを設定するために、[BrowserWindow.setRepresentedFilename][setrepresentedfilename] と [BrowserWindow.setDocumentEdited][setdocumentedited] APIsを使えます:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setRepresentedFilename('/etc/passwd');
-win.setDocumentEdited(true);
+let win = new BrowserWindow()
+win.setRepresentedFilename('/etc/passwd')
+win.setDocumentEdited(true)
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows

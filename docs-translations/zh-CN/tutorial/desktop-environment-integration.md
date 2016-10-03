@@ -75,16 +75,18 @@ macOS 可以让开发者定制自己的菜单，通常会包含一些常用特�
 ![Dock menu of Terminal.app][6]
 
 使用 `app.dock.setMenu` API 来设置你的菜单，这仅在 macOS 上可行：
+
 ```javascript
-var app = require('app')
-var Menu = require('menu')
-var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function () { console.log('New Window') } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
+const {app, Menu} = require('electron')
+
+const dockMenu = Menu.buildFromTemplate([
+  {label: 'New Window', click () { console.log('New Window') }},
+  {label: 'New Window with Settings',
+  submenu: [
+    {label: 'Basic'},
+    {label: 'Pro'}
   ]},
-  { label: 'New Command...'}
+  {label: 'New Command...'}
 ])
 app.dock.setMenu(dockMenu)
 ```
@@ -174,8 +176,8 @@ Unity DE 也具有同样的特性，在运行器上显示进度条。
 
 给一个窗口设置进度条，你可以调用 [BrowserWindow.setProgressBar][15] API：
 ```javascript
-var window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+var window = new BrowserWindow()
+window.setProgressBar(0.5)
 ```
 在 macOS，一个窗口可以设置它展示的文件，文件的图标可以出现在标题栏，当用户 Command-Click 或者 Control-Click 标题栏，文件路径弹窗将会出现。
 ### 展示文件弹窗菜单：
@@ -183,9 +185,9 @@ window.setProgressBar(0.5);
 
 你可以调用 [BrowserWindow.setRepresentedFilename][17] 和 [BrowserWindow.setDocumentEdited][18] APIs：
 ```javascript
-var window = new BrowserWindow({...});
-window.setRepresentedFilename('/etc/passwd');
-window.setDocumentEdited(true);
+var window = new BrowserWindow()
+window.setRepresentedFilename('/etc/passwd')
+window.setDocumentEdited(true)
 ```
 
  [1]:https://camo.githubusercontent.com/3310597e01f138b1d687e07aa618c50908a88dec/687474703a2f2f692e6d73646e2e6d6963726f736f66742e636f6d2f64796e696d672f49433432303533382e706e67
@@ -206,7 +208,7 @@ window.setDocumentEdited(true);
   [16]: https://cloud.githubusercontent.com/assets/639601/5082061/670a949a-6f14-11e4-987a-9aaa04b23c1d.png
   [17]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
   [18]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
-  
+
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows
 [clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows

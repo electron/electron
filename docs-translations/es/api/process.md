@@ -19,7 +19,7 @@ está comenzando a cargar la página web o el script principal.
 Puede ser usado por el script precargado para añadir de nuevo los símbolos globales
 de Node eliminados, al alcance global cuando la integración de Node está apagada:
 
-```js
+```javascript
 // preload.js
 var _setImmediate = setImmediate
 var _clearImmediate = clearImmediate

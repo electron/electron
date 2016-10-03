@@ -144,7 +144,7 @@ app.on('window-all-closed', function () {
 
 ```javascript
 session.on('certificate-error', function (event, webContents, url, error, certificate, callback) {
-  if (url == 'https://github.com') {
+  if (url === 'https://github.com') {
     // 验证逻辑。
     event.preventDefault()
     callback(true)
@@ -363,29 +363,26 @@ app.on('login', function (event, webContents, request, authInfo, callback) {
 
 下面是一个简单的例子。我们可以通过这个例子了解如何确保应用为单实例运行状态。
 
-```js
-var myWindow = null;
+```javascript
+let myWindow = null
 
-var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+let shouldQuit = app.makeSingleInstance(function (commandLine, workingDirectory) {
   // 当另一个实例运行的时候，这里将会被调用，我们需要激活应用的窗口
   if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore();
-    myWindow.focus();
+    if (myWindow.isMinimized()) myWindow.restore()
+    myWindow.focus()
   }
-  return true;
-});
+  return true
+})
 
 // 这个实例是多余的实例，需要退出
-if (shouldQuit) {
-  app.quit();
-  return;
-}
+if (shouldQuit) app.quit()
 
-// 创建窗口、继续加载应用、应用逻辑等……
-app.on('ready', function() {
-});
-
+app.on('ready', function () {
+  // 创建窗口、继续加载应用、应用逻辑等……
+})
 ```
+
 ### `app.setAppUserModelId(id)` _Windows_
 
 * `id` String
@@ -400,7 +397,7 @@ app.on('ready', function() {
 
 举个例子：
 
-```js
+```javascript
 let browserOptions = {width: 1000, height: 800}
 
 // 只有平台支持的时候才使用透明窗口
@@ -414,10 +411,10 @@ win = new BrowserWindow(browserOptions)
 
 // 转到某个网页
 if (browserOptions.transparent) {
-  win.loadURL('file://' + __dirname + '/index.html')
+  win.loadURL(`file://${__dirname}/index.html`)
 } else {
   // 没有透明特效，我们应该用某个只包含基本样式的替代解决方案。
-  win.loadURL('file://' + __dirname + '/fallback.html')
+  win.loadURL(`file://${__dirname}/fallback.html`)
 }
 ```
 ### `app.commandLine.appendSwitch(switch[, value])`

@@ -17,7 +17,7 @@ Electron 中的 `process` 对象 与 upstream node 中的有以下的不同点:
 
 当node被完全关闭的时候，它可以被预加载脚本使用来添加(原文: removed)与node无关的全局符号来回退到全局范围:
 
-```js
+```javascript
 // preload.js
 var _setImmediate = setImmediate
 var _clearImmediate = clearImmediate

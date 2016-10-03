@@ -16,7 +16,7 @@ Emitido quando o Electron carregou seu script de inicialização interno e está
 
 Pode ser utilizado pelo script pré-carregamento (preload.js abaixo) para adicionar símbolos globais do Node removidos para o escopo global quando a integração do node é desligada:
 
-```js
+```javascript
 // preload.js
 var _setImmediate = setImmediate
 var _clearImmediate = clearImmediate

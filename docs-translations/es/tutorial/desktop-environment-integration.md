@@ -63,12 +63,14 @@ Para establecer tu menú dock, puedes utilizar la API `app.dock.setMenu`, la cua
 var app = require('app')
 var Menu = require('menu')
 var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function () { console.log('New Window') } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
-  ]},
-  { label: 'New Command...'}
+  {label: 'New Window', click: function () { console.log('New Window') }},
+  {label: 'New Window with Settings',
+    submenu: [
+      {label: 'Basic'},
+      {label: 'Pro'}
+    ]
+  },
+  {label: 'New Command...'}
 ])
 app.dock.setMenu(dockMenu)
 ```
@@ -157,8 +159,8 @@ Para establecer la barra de progreso de una ventana, puedes utilizar
 [BrowserWindow.setProgressBar][setprogressbar] API:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+var window = new BrowserWindow()
+window.setProgressBar(0.5)
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath

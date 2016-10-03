@@ -77,11 +77,13 @@ session.defaultSession.on('will-download', function (event, item, webContents) {
 ```javascript
 // 查询所有 cookies.
 session.defaultSession.cookies.get({}, function (error, cookies) {
+  if (error) console.error(error)
   console.log(cookies)
 })
 
 // 查询与指定 url 相关的所有 cookies.
 session.defaultSession.cookies.get({ url: 'http://www.github.com' }, function (error, cookies) {
+  if (error) console.error(error)
   console.log(cookies)
 })
 
@@ -89,15 +91,14 @@ session.defaultSession.cookies.get({ url: 'http://www.github.com' }, function (e
 // may overwrite equivalent cookies if they exist.
 var cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy' }
 session.defaultSession.cookies.set(cookie, function (error) {
-  if (error)
-    console.error(error)
+  if (error) console.error(error)
 })
 ```
 
 #### `ses.cookies.get(filter, callback)`
 
 * `filter` Object
-  * `url` String (可选) - 与获取 cookies 相关的 
+  * `url` String (可选) - 与获取 cookies 相关的
     `url`.不设置的话就是从所有 url 获取 cookies .
   * `name` String (可选) - 通过 name 过滤 cookies.
   * `domain` String (可选) - 获取对应域名或子域名的 cookies .
@@ -106,7 +107,7 @@ session.defaultSession.cookies.set(cookie, function (error) {
   * `session` Boolean (可选) - 过滤掉 session 或 持久的 cookies.
 * `callback` Function
 
-发送一个请求，希望获得所有匹配 `details` 的 cookies, 
+发送一个请求，希望获得所有匹配 `details` 的 cookies,
 在完成的时候，将通过 `callback(error, cookies)` 调用 `callback`.
 
 `cookies`是一个 `cookie` 对象.
@@ -126,7 +127,7 @@ session.defaultSession.cookies.set(cookie, function (error) {
 #### `ses.cookies.set(details, callback)`
 
 * `details` Object
-  * `url` String - 与获取 cookies 相关的 
+  * `url` String - 与获取 cookies 相关的
     `url`.
   * `name` String - cookie 名. 忽略默认为空.
   * `value` String - cookie 值. 忽略默认为空.
@@ -142,7 +143,7 @@ session.defaultSession.cookies.set(cookie, function (error) {
 
 #### `ses.cookies.remove(url, name, callback)`
 
-* `url` String - 与 cookies 相关的 
+* `url` String - 与 cookies 相关的
     `url`.
 * `name` String - 需要删除的 cookie 名.
 * `callback` Function
@@ -203,7 +204,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 
 例子:
 
-* `http=foopy:80;ftp=foopy2` - 为 `http://` URL 使用 HTTP 代理 `foopy:80` , 和为 `ftp://` URL 
+* `http=foopy:80;ftp=foopy2` - 为 `http://` URL 使用 HTTP 代理 `foopy:80` , 和为 `ftp://` URL
   HTTP 代理 `foopy2:80` .
 * `foopy:80` - 为所有 URL 使用 HTTP 代理 `foopy:80` .
 * `foopy:80,bar,direct://` - 为所有 URL 使用 HTTP 代理 `foopy:80` , 如果 `foopy:80` 不可用，则切换使用  `bar`, 再往后就不使用代理了.
@@ -229,7 +230,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 
 * `options` Object
   * `offline` Boolean - 是否模拟网络故障.
-  * `latency` Double - 每毫秒的 RTT 
+  * `latency` Double - 每毫秒的 RTT
   * `downloadThroughput` Double - 每 Bps 的下载速率.
   * `uploadThroughput` Double - 每 Bps 的上载速率.
 
@@ -262,10 +263,7 @@ window.webContents.session.enableNetworkEmulation({offline: true})
 
 ```javascript
 myWindow.webContents.session.setCertificateVerifyProc(function (hostname, cert, callback) {
-  if (hostname == 'github.com')
-    callback(true)
-  else
-    callback(false)
+  callback(hostname === 'github.com')
 })
 ```
 
@@ -281,7 +279,7 @@ myWindow.webContents.session.setCertificateVerifyProc(function (hostname, cert, 
 ```javascript
 session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
   if (webContents.getURL() === host) {
-    if (permission == 'notifications') {
+    if (permission === 'notifications') {
       callback(false) // denied.
       return
     }

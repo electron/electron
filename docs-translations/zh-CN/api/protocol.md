@@ -5,18 +5,15 @@
 例子，使用一个与 `file://` 功能相似的协议 :
 
 ```javascript
-const electron = require('electron')
-const app = electron.app
+const {app, protocol} = require('electron')
 const path = require('path')
 
-app.on('ready', function () {
-  var protocol = electron.protocol
-  protocol.registerFileProtocol('atom', function (request, callback) {
-    var url = request.url.substr(7)
-    callback({path: path.normalize(__dirname + '/' + url)})
-  }, function (error) {
-    if (error)
-      console.error('Failed to register protocol')
+app.on('ready', () => {
+  protocol.registerFileProtocol('atom', (request, callback) => {
+    const url = request.url.substr(7)
+    callback({path: path.normalize(`${__dirname}/${url}`)})
+  }, (error) => {
+    if (error) console.error('Failed to register protocol')
   })
 })
 ```
@@ -63,7 +60,7 @@ app.on('ready', function () {
 为了处理请求，调用 `callback` 时需要使用文件路径或者一个带 `path` 参数的对象, 例如 `callback(filePath)` 或
 `callback({path: filePath})`.
 
-当不使用任何参数调用 `callback` 时，你可以指定一个数字或一个带有 `error` 参数的对象，来标识 `request` 失败.你可以使用的 error number 可以参考 
+当不使用任何参数调用 `callback` 时，你可以指定一个数字或一个带有 `error` 参数的对象，来标识 `request` 失败.你可以使用的 error number 可以参考
 [net error list][net-error].
 
 默认 `scheme` 会被注册为一个 `http:` 协议，它与遵循 "generic URI syntax" 规则的协议解析不同，例如 `file:` ，所以你或许应该调用 `protocol.registerStandardSchemes` 来创建一个标准的 scheme.
@@ -85,8 +82,7 @@ app.on('ready', function () {
 protocol.registerBufferProtocol('atom', function (request, callback) {
   callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
 }, function (error) {
-  if (error)
-    console.error('Failed to register protocol')
+  if (error) console.error('Failed to register protocol')
 })
 ```
 

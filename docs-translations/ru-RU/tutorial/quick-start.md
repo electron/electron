@@ -60,7 +60,7 @@ your-app/
 как `main`, будет выполняться при запуске вашего приложения, работая в
 главном процессе. Например, Ваш `package.json` может выглядеть вот так:
 
-```json
+```javascripton
 {
   "name"    : "your-app",
   "version" : "0.1.0",
@@ -91,7 +91,7 @@ function createWindow () {
   mainWindow = new BrowserWindow({width: 800, height: 600})
 
   // и загружаем index.html приложения.
-  mainWindow.loadURL('file://' + __dirname + '/index.html')
+  mainWindow.loadURL(`file://${__dirname}/index.html`)
 
   // Открываем DevTools.
   mainWindow.webContents.openDevTools()

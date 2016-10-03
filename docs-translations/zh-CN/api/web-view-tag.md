@@ -537,8 +537,7 @@ webview.addEventListener('console-message', function (e) {
 
 ```javascript
 webview.addEventListener('found-in-page', function (e) {
-  if (e.result.finalUpdate)
-    webview.stopFindInPage('keepSelection')
+  if (e.result.finalUpdate) webview.stopFindInPage('keepSelection')
 })
 
 const rquestId = webview.findInPage('test')
@@ -670,7 +669,7 @@ ipcRenderer.on('ping', function () {
 
 ### Event: 'did-change-theme-color'
 
-在页面的主体色改变的时候触发. 
+在页面的主体色改变的时候触发.
 在使用 meta 标签的时候这就很常见了:
 
 ```html

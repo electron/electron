@@ -193,7 +193,7 @@ webview.addEventListener('dom-ready', () => {
 
 * `url` URL
 * `options` Object (optional)
-  * `httpReferrer` String - リファラURL 
+  * `httpReferrer` String - リファラURL
   * `userAgent` String - リクエストに使用されるUser agent
   * `extraHeaders` String - 追加のヘッダを"\n"で区切って指定します。
 
@@ -577,8 +577,7 @@ webview.addEventListener('console-message', (e) => {
 
 ```javascript
 webview.addEventListener('found-in-page', (e) => {
-  if (e.result.finalUpdate)
-    webview.stopFindInPage('keepSelection')
+  if (e.result.finalUpdate) webview.stopFindInPage('keepSelection')
 })
 
 const requestId = webview.findInPage('test')
