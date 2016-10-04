@@ -5,6 +5,42 @@ const {nativeImage} = require('electron')
 const path = require('path')
 
 describe('nativeImage module', () => {
+  describe('createEmpty()', () => {
+    it('returns an empty image', () => {
+      assert(nativeImage.createEmpty().isEmpty())
+    })
+  })
+
+  describe('createFromBuffer(buffer, scaleFactor)', () => {
+    it('returns an empty image when the buffer is empty', () => {
+      assert(nativeImage.createFromBuffer(Buffer.from([])).isEmpty())
+    })
+
+    it('returns an image created from the given buffer', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+
+      const imageB = nativeImage.createFromBuffer(imageA.toPNG())
+      assert.deepEqual(imageB.getSize(), {width: 538, height: 190})
+      assert(imageA.toBitmap().equals(imageB.toBitmap()))
+
+      const imageC = nativeImage.createFromBuffer(imageA.toJPEG(100))
+      assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
+    })
+  })
+
+  describe('createFromDataURL(dataURL)', () => {
+    it('returns an empty image when the dataURL is empty', () => {
+      assert(nativeImage.createFromDataURL('').isEmpty())
+    })
+
+    it('returns an image created from the given buffer', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      const imageB = nativeImage.createFromDataURL(imageA.toDataURL())
+      assert.deepEqual(imageB.getSize(), {width: 538, height: 190})
+      assert(imageA.toBitmap().equals(imageB.toBitmap()))
+    })
+  })
+
   describe('createFromPath(path)', () => {
     it('returns an empty image for invalid paths', () => {
       assert(nativeImage.createFromPath('').isEmpty())
