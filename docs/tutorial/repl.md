@@ -18,7 +18,9 @@ The `repl` module provides a REPL implementation that can be accessed using:
   electron --interactive
   ```
 
-Note: This only creates a REPL for the main process. You can use the Console
+This only creates a REPL for the main process. You can use the Console
 tab of the Dev Tools to get a REPL for the renderer processes.
+
+Note: REPL is not available on Windows.
 
 More info here: https://github.com/nodejs/node/blob/master/doc/api/repl.md
