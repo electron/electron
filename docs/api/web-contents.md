@@ -147,6 +147,8 @@ Returns:
   `new-window`, `save-to-disk` and `other`.
 * `options` Object - The options which will be used for creating the new
   `BrowserWindow`.
+* `additionalFeatures` Array - The non-standard features (features not handled
+  by Chromium or Electron) given to `window.open()`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.

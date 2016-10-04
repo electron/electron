@@ -525,6 +525,7 @@ void App::OnLogin(LoginHandler* login_handler,
 void App::OnCreateWindow(const GURL& target_url,
                          const std::string& frame_name,
                          WindowOpenDisposition disposition,
+                         const std::vector<base::string16>& features,
                          int render_process_id,
                          int render_frame_id) {
   v8::Locker locker(isolate());
@@ -535,7 +536,10 @@ void App::OnCreateWindow(const GURL& target_url,
       content::WebContents::FromRenderFrameHost(rfh);
   if (web_contents) {
     auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
-    api_web_contents->OnCreateWindow(target_url, frame_name, disposition);
+    api_web_contents->OnCreateWindow(target_url,
+                                     frame_name,
+                                     disposition,
+                                     features);
   }
 }
 

@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_APP_H_
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/atom_browser_client.h"
@@ -50,6 +51,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnCreateWindow(const GURL& target_url,
                       const std::string& frame_name,
                       WindowOpenDisposition disposition,
+                      const std::vector<base::string16>& features,
                       int render_process_id,
                       int render_frame_id);
 
