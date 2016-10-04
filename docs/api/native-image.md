@@ -195,15 +195,17 @@ Notice that the returned pointer is a weak pointer to the underlying native
 image instead of a copy, so you _must_ ensure that the associated
 `nativeImage` instance is kept around.
 
+[buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
+
 #### `image.isEmpty()`
 
 Returns `Boolean` -  Whether the image is empty.
 
 #### `image.getSize()`
 
-Returns `Integer[]` - The size of the image.
-
-[buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
+Returns `Object`:
+* `width` Integer
+* `height` Integer
 
 #### `image.setTemplateImage(option)`
 
