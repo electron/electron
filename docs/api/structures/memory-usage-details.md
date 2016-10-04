@@ -1,8 +1,8 @@
 # MemoryUsageDetails
 
-* `count` Integer
-* `size` Integer
-* `liveSize` Integer
-* `decodedSize` Integer
-* `purgedSize` Integer
-* `purgeableSize` Integer
+* `count` Number
+* `size` Number
+* `liveSize` Number
+* `decodedSize` Number
+* `purgedSize` Number
+* `purgeableSize` Number

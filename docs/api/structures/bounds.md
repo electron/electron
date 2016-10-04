@@ -1,6 +1,6 @@
 # Bounds
 
-* `x` Integer
-* `y` Integer
-* `width` Integer
-* `height` Integer
+* `x` Number
+* `y` Number
+* `width` Number
+* `height` Number
