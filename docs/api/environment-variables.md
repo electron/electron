@@ -43,6 +43,10 @@ By default, a newly generated Google API key may not be allowed to make
 geocoding requests. To enable geocoding requests, visit this page:
 https://console.developers.google.com/apis/api/geolocation/overview
 
+### `ELECTRON_NO_ASAR`
+
+Disables ASAR support. Note that this variable can only be used when forking a process to disable any ASAR support in that process.
+
 ## Development Variables
 
 The following environment variables are intended primarily for development and
