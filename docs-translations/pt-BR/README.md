@@ -32,7 +32,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 
 ## API - Referências
 
-* [Sinopse](../../docs/api/synopsis.md)
+* [Sinopse](api/synopsis.md)
 * [Processos](api/process.md)
 * [Aceleradores (Teclas de Atalho)](api/accelerator.md)
 * [Parâmetros CLI suportados (Chrome)](../../docs/api/chrome-command-line-switches.md)
