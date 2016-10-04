@@ -278,7 +278,7 @@ void URLRequest::Cancel() {
 
 bool URLRequest::SetExtraHeader(const std::string& name,
                            const std::string& value) {
-  // State must be equal to not started.
+  // Request state must be in the initial non started state.
   if (!request_state_.NotStarted()) {
     // Cannot change headers after send.
     return false;
@@ -292,7 +292,10 @@ bool URLRequest::SetExtraHeader(const std::string& name,
     return false;
   }
 
-  atom_request_->SetExtraHeader(name, value);
+  DCHECK(atom_request_);
+  if (atom_request_) {
+    atom_request_->SetExtraHeader(name, value);
+  }
   return true;
 }
 
@@ -302,7 +305,10 @@ void URLRequest::RemoveExtraHeader(const std::string& name) {
     // Cannot change headers after send.
     return;
   }
-  atom_request_->RemoveExtraHeader(name);
+  DCHECK(atom_request_);
+  if (atom_request_) {
+    atom_request_->RemoveExtraHeader(name);
+  }
 }
 
 void URLRequest::SetChunkedUpload(bool is_chunked_upload) {
@@ -311,11 +317,24 @@ void URLRequest::SetChunkedUpload(bool is_chunked_upload) {
     // Cannot change headers after send.
     return;
   }
-  atom_request_->SetChunkedUpload(is_chunked_upload);
+  DCHECK(atom_request_);
+  if (atom_request_) {
+    atom_request_->SetChunkedUpload(is_chunked_upload);
+  }
 }
 
 void URLRequest::OnAuthenticationRequired(
-    scoped_refptr<const net::AuthChallengeInfo> auth_info) {
+  scoped_refptr<const net::AuthChallengeInfo> auth_info) {
+  if (request_state_.Canceled() ||
+    request_state_.Closed()) {
+    return;
+  }
+
+  DCHECK(atom_request_);
+  if (!atom_request_) {
+    return;
+  }
+  
   EmitRequestEvent(
     false,
     "login",
@@ -367,15 +386,15 @@ void URLRequest::OnResponseCompleted() {
 }
 
 void URLRequest::OnRequestError(const std::string& error) {
-  request_state_.SetFlag(RequestStateFlags::kFailed);
   auto error_object = v8::Exception::Error(mate::StringToV8(isolate(), error));
+  request_state_.SetFlag(RequestStateFlags::kFailed);
   EmitRequestEvent(false, "error", error_object);
   Close();
 }
 
 void URLRequest::OnResponseError(const std::string& error) {
-  response_state_.SetFlag(ResponseStateFlags::kFailed);
   auto error_object = v8::Exception::Error(mate::StringToV8(isolate(), error));
+  response_state_.SetFlag(ResponseStateFlags::kFailed);
   EmitResponseEvent(false, "error", error_object);
   Close();
 }
