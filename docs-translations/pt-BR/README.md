@@ -83,7 +83,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [Estrutura de Diretórios de Código Fonte](../../docs/development/source-code-directory-structure.md)
 * [Diferenças Técnicas do NW.js (antigo node-webkit)](../../docs/development/atom-shell-vs-node-webkit.md)
 * [Visão Geral do Build](../../docs/development/build-system-overview.md)
-* [Instrução de Build (Mac)](../../docs/development/build-instructions-osx.md)
+* [Instrução de Build (Mac)](development/build-instructions-osx.md)
 * [Instrução de Build (Windows)](../../docs/development/build-instructions-windows.md)
 * [Instrução de Build (Linux)](../../docs/development/build-instructions-linux.md)
 * [Configurando um Symbol Server no Debugger](../../docs/development/setting-up-symbol-server.md)
