@@ -309,6 +309,15 @@ mate::Handle<NativeImage> NativeImage::Resize(
                             new NativeImage(isolate, gfx::Image(resized)));
 }
 
+mate::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
+                                            const gfx::Rect& bounds) {
+  gfx::ImageSkia cropped = gfx::ImageSkiaOperations::ExtractSubset(
+      image_.AsImageSkia(), bounds);
+  return mate::CreateHandle(isolate,
+                            new NativeImage(isolate, gfx::Image(cropped)));
+}
+
+
 #if !defined(OS_MACOSX)
 void NativeImage::SetTemplateImage(bool setAsTemplate) {
 }
@@ -410,6 +419,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
       .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
       .SetMethod("resize", &NativeImage::Resize)
+      .SetMethod("crop", &NativeImage::Crop)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
       .SetMethod("toPng", &NativeImage::ToPNG)
       .SetMethod("toJpeg", &NativeImage::ToJPEG);
