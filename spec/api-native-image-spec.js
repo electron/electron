@@ -18,24 +18,21 @@ describe('nativeImage module', () => {
       const imagePath = `.${path.sep}${path.join('spec', 'fixtures', 'assets', 'logo.png')}`
       const image = nativeImage.createFromPath(imagePath)
       assert(!image.isEmpty())
-      assert.equal(image.getSize().height, 190)
-      assert.equal(image.getSize().width, 538)
+      assert.deepEqual(image.getSize(), {width: 538, height: 190})
     })
 
     it('loads images from paths with `.` segments', () => {
       const imagePath = `${path.join(__dirname, 'fixtures')}${path.sep}.${path.sep}${path.join('assets', 'logo.png')}`
       const image = nativeImage.createFromPath(imagePath)
       assert(!image.isEmpty())
-      assert.equal(image.getSize().height, 190)
-      assert.equal(image.getSize().width, 538)
+      assert.deepEqual(image.getSize(), {width: 538, height: 190})
     })
 
     it('loads images from paths with `..` segments', () => {
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`
       const image = nativeImage.createFromPath(imagePath)
       assert(!image.isEmpty())
-      assert.equal(image.getSize().height, 190)
-      assert.equal(image.getSize().width, 538)
+      assert.deepEqual(image.getSize(), {width: 538, height: 190})
     })
 
     it('Gets an NSImage pointer on macOS', () => {
@@ -57,8 +54,7 @@ describe('nativeImage module', () => {
       const imagePath = path.join(__dirname, 'fixtures', 'assets', 'icon.ico')
       const image = nativeImage.createFromPath(imagePath)
       assert(!image.isEmpty())
-      assert.equal(image.getSize().height, 256)
-      assert.equal(image.getSize().width, 256)
+      assert.deepEqual(image.getSize(), {width: 256, height: 256})
     })
   })
 
