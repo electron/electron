@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 
+#include "base/values.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 #include "ui/gfx/image/image.h"
@@ -75,6 +76,8 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   v8::Local<v8::Value> GetNativeHandle(
     v8::Isolate* isolate,
     mate::Arguments* args);
+  mate::Handle<NativeImage> Resize(v8::Isolate* isolate,
+                                   const base::DictionaryValue& options);
   std::string ToDataURL();
   bool IsEmpty();
   gfx::Size GetSize();

@@ -11,6 +11,7 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/base64.h"
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
@@ -24,6 +25,7 @@
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
+#include "ui/gfx/image/image_skia_operations.h"
 #include "ui/gfx/image/image_util.h"
 
 #if defined(OS_WIN)
@@ -282,6 +284,31 @@ gfx::Size NativeImage::GetSize() {
   return image_.Size();
 }
 
+mate::Handle<NativeImage> NativeImage::Resize(
+    v8::Isolate* isolate, const base::DictionaryValue& options) {
+  gfx::Size size = GetSize();
+  int width = size.width();
+  int height = size.height();
+  options.GetInteger("width", &width);
+  options.GetInteger("height", &height);
+  size.set_width(width);
+  size.set_height(height);
+
+  skia::ImageOperations::ResizeMethod method =
+      skia::ImageOperations::ResizeMethod::RESIZE_BEST;
+  std::string quality;
+  options.GetString("quality", &quality);
+  if (quality == "good")
+    method = skia::ImageOperations::ResizeMethod::RESIZE_GOOD;
+  else if (quality == "better")
+    method = skia::ImageOperations::ResizeMethod::RESIZE_BETTER;
+
+  gfx::ImageSkia resized = gfx::ImageSkiaOperations::CreateResizedImage(
+      image_.AsImageSkia(), method, size);
+  return mate::CreateHandle(isolate,
+                            new NativeImage(isolate, gfx::Image(resized)));
+}
+
 #if !defined(OS_MACOSX)
 void NativeImage::SetTemplateImage(bool setAsTemplate) {
 }
@@ -382,6 +409,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("getSize", &NativeImage::GetSize)
       .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
       .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
+      .SetMethod("resize", &NativeImage::Resize)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
       .SetMethod("toPng", &NativeImage::ToPNG)
       .SetMethod("toJpeg", &NativeImage::ToJPEG);
