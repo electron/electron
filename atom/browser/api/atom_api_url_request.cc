@@ -51,7 +51,7 @@ struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
     auto size = node::Buffer::Length(val);
 
     if (size == 0) {
-      // Support conversoin from empty buffer. A use case is
+      // Support conversion from empty buffer. A use case is
       // a GET request without body.
       // Since zero-sized IOBuffer(s) are not supported, we set the
       // out pointer to null.
@@ -60,7 +60,7 @@ struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
     }
     auto data = node::Buffer::Data(val);
     if (!data) {
-      // This is an error as size is positif but data is null.
+      // This is an error as size is positive but data is null.
       return false;
     }
 
@@ -333,13 +333,15 @@ void URLRequest::OnAuthenticationRequired(
     base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
 }
 
-void URLRequest::OnResponseStarted() {
+void URLRequest::OnResponseStarted(
+    scoped_refptr<const net::HttpResponseHeaders> response_headers) {
   if (request_state_.Canceled() ||
       request_state_.Failed() ||
       request_state_.Closed()) {
     // Don't emit any event after request cancel.
     return;
   }
+  response_headers_ = response_headers;
   response_state_.SetFlag(ResponseStateFlags::kStarted);
   Emit("response");
 }
@@ -386,35 +388,35 @@ void URLRequest::OnResponseError(const std::string& error) {
 
 
 int URLRequest::StatusCode() const {
-  if (auto response_headers = atom_request_->GetResponseHeaders()) {
-    return response_headers->response_code();
+  if (response_headers_) {
+    return response_headers_->response_code();
   }
   return -1;
 }
 
 std::string URLRequest::StatusMessage() const {
   std::string result;
-  if (auto response_headers = atom_request_->GetResponseHeaders()) {
-    result = response_headers->GetStatusText();
+  if (response_headers_) {
+    result = response_headers_->GetStatusText();
   }
   return result;
 }
 
 scoped_refptr<const net::HttpResponseHeaders>
 URLRequest::RawResponseHeaders() const {
-  return atom_request_->GetResponseHeaders();
+  return response_headers_;
 }
 
 uint32_t URLRequest::ResponseHttpVersionMajor() const {
-  if (auto response_headers = atom_request_->GetResponseHeaders()) {
-     return response_headers->GetHttpVersion().major_value();
+  if (response_headers_) {
+     return response_headers_->GetHttpVersion().major_value();
   }
   return 0;
 }
 
 uint32_t URLRequest::ResponseHttpVersionMinor() const {
-  if (auto response_headers = atom_request_->GetResponseHeaders()) {
-    return response_headers->GetHttpVersion().minor_value();
+  if (response_headers_) {
+    return response_headers_->GetHttpVersion().minor_value();
   }
   return 0;
 }

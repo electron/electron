@@ -100,7 +100,8 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   // Methods for reporting events into JavaScript.
   void OnAuthenticationRequired(
     scoped_refptr<const net::AuthChallengeInfo> auth_info);
-  void OnResponseStarted();
+  void OnResponseStarted(
+    scoped_refptr<const net::HttpResponseHeaders> response_headers);
   void OnResponseData(scoped_refptr<const net::IOBufferWithSize> data);
   void OnResponseCompleted();
   void OnRequestError(const std::string& error);
@@ -202,7 +203,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
 
   // Used to implement pin/unpin.
   v8::Global<v8::Object> wrapper_;
-
+  scoped_refptr<const net::HttpResponseHeaders> response_headers_;
   base::WeakPtrFactory<URLRequest> weak_ptr_factory_;
 
 

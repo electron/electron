@@ -126,15 +126,6 @@ void AtomURLRequest::RemoveExtraHeader(const std::string& name) const {
   request_->RemoveRequestHeaderByName(name);
 }
 
-
-
-scoped_refptr<const net::HttpResponseHeaders>
-AtomURLRequest::GetResponseHeaders() const {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  return request_->response_headers();
-}
-
-
 void AtomURLRequest::PassLoginInformation(const base::string16& username,
   const base::string16& password) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -173,7 +164,7 @@ void AtomURLRequest::DoWriteBuffer(
         buffer->size(),
         is_last);
     else if (is_last)
-      // Empty buffer and last chunck, i.e. request.end().
+      // Empty buffer and last chunk, i.e. request.end().
       auto write_result = chunked_stream_writer_->AppendData(
         nullptr,
         0,
@@ -233,12 +224,16 @@ void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   DCHECK_EQ(request, request_.get());
 
+  scoped_refptr<const net::HttpResponseHeaders> response_headers =
+    request->response_headers();
   const auto& status = request_->status();
   if (status.is_success()) {
     // Success or pending trigger a Read.
     content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&AtomURLRequest::InformDelegateResponseStarted, this));
+      base::Bind(&AtomURLRequest::InformDelegateResponseStarted,
+                 this,
+                 response_headers));
 
     ReadResponse();
   } else if (status.status() == net::URLRequestStatus::Status::FAILED) {
@@ -337,10 +332,11 @@ void AtomURLRequest::InformDelegateAuthenticationRequired(
     delegate_->OnAuthenticationRequired(auth_info);
 }
 
-void AtomURLRequest::InformDelegateResponseStarted() const {
+void AtomURLRequest::InformDelegateResponseStarted(
+    scoped_refptr<const net::HttpResponseHeaders> response_headers) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (delegate_)
-    delegate_->OnResponseStarted();
+    delegate_->OnResponseStarted(response_headers);
 }
 
 void AtomURLRequest::InformDelegateResponseData(

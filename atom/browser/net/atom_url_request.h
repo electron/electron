@@ -38,7 +38,6 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   void RemoveExtraHeader(const std::string& name) const;
   void PassLoginInformation(const base::string16& username,
     const base::string16& password) const;
-  scoped_refptr<const net::HttpResponseHeaders> GetResponseHeaders() const;
 
  protected:
   // Overrides of net::URLRequest::Delegate
@@ -66,7 +65,8 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
 
   void InformDelegateAuthenticationRequired(
     scoped_refptr<net::AuthChallengeInfo> auth_info) const;
-  void InformDelegateResponseStarted() const;
+  void InformDelegateResponseStarted(
+    scoped_refptr<const net::HttpResponseHeaders>) const;
   void InformDelegateResponseData(
     scoped_refptr<net::IOBufferWithSize> data) const;
   void InformDelegateResponseCompleted() const;
