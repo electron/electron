@@ -149,9 +149,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
     kNotStarted = 0x0,
     kStarted = 0x1,
     kEnded = 0x2,
-    kCanceled = 0x4,
-    kFailed = 0x8,
-    kClosed = 0x10
+    kFailed = 0x4
   };
 
   class ResponseState : public StateBase<ResponseStateFlags> {

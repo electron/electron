@@ -149,16 +149,9 @@ bool URLRequest::ResponseState::Ended() const {
   return IsFlagSet(ResponseStateFlags::kEnded);
 }
 
-bool URLRequest::ResponseState::Canceled() const {
-  return IsFlagSet(ResponseStateFlags::kCanceled);
-}
 
 bool URLRequest::ResponseState::Failed() const {
   return IsFlagSet(ResponseStateFlags::kFailed);
-}
-
-bool URLRequest::ResponseState::Closed() const {
-  return IsFlagSet(ResponseStateFlags::kClosed);
 }
 
 URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
@@ -261,7 +254,8 @@ bool URLRequest::Write(
 
 
 void URLRequest::Cancel() {
-  if (request_state_.Canceled()) {
+  if (request_state_.Canceled() ||
+      request_state_.Closed()) {
     // Cancel only once.
     return;
   }
@@ -269,18 +263,14 @@ void URLRequest::Cancel() {
   // Mark as canceled.
   request_state_.SetFlag(RequestStateFlags::kCanceled);
 
-  if (request_state_.Started()) {
+  DCHECK(atom_request_);
+  if (atom_request_ && request_state_.Started()) {
     // Really cancel if it was started.
     atom_request_->Cancel();
   }
+  EmitRequestEvent(true, "abort");
 
-  if (!request_state_.Closed()) {
-    EmitRequestEvent(true, "abort");
-  }
-
-
-  response_state_.SetFlag(ResponseStateFlags::kCanceled);
-  if (response_state_.Started() && !response_state_.Closed()) {
+  if (response_state_.Started() && !response_state_.Ended()) {
     EmitResponseEvent(true, "aborted");
   }
   Close();
@@ -348,27 +338,31 @@ void URLRequest::OnResponseStarted(
 
 void URLRequest::OnResponseData(
     scoped_refptr<const net::IOBufferWithSize> buffer) {
-  if (request_state_.Canceled()) {
-    // Don't emit any event after request cancel.
+  if (request_state_.Canceled() ||
+      request_state_.Closed() ||
+      request_state_.Failed() ||
+      response_state_.Failed()) {
+    // In case we received an unexpected event from Chromium net,
+    // don't emit any data event after request cancel/error/close.
     return;
   }
   if (!buffer || !buffer->data() || !buffer->size()) {
     return;
   }
-  if (!response_state_.Closed()) {
-    EmitResponseEvent(false, "data", buffer);
-  }
+  EmitResponseEvent(false, "data", buffer);
 }
 
 void URLRequest::OnResponseCompleted() {
-  response_state_.SetFlag(ResponseStateFlags::kEnded);
-  if (request_state_.Canceled()) {
-    // Don't emit any event after request cancel.
+  if (request_state_.Canceled() ||
+    request_state_.Closed() ||
+    request_state_.Failed() ||
+    response_state_.Failed()) {
+    // In case we received an unexpected event from Chromium net,
+    // don't emit any data event after request cancel/error/close.
     return;
   }
-  if (!response_state_.Closed()) {
-    EmitResponseEvent(false, "end");
-  }
+  response_state_.SetFlag(ResponseStateFlags::kEnded);
+  EmitResponseEvent(false, "end");
   Close();
 }
 
@@ -422,15 +416,12 @@ uint32_t URLRequest::ResponseHttpVersionMinor() const {
 }
 
 void URLRequest::Close() {
-  if (!response_state_.Closed()) {
-    response_state_.SetFlag(ResponseStateFlags::kClosed);
+  if (!request_state_.Closed()) {
+    request_state_.SetFlag(RequestStateFlags::kClosed);
     if (response_state_.Started()) {
       // Emit a close event if we really have a response object.
       EmitResponseEvent(true, "close");
     }
-  }
-  if (!request_state_.Closed()) {
-    request_state_.SetFlag(RequestStateFlags::kClosed);
     EmitRequestEvent(true, "close");
   }
   unpin();
