@@ -101,6 +101,13 @@ describe('nativeImage module', () => {
       assert.deepEqual(image.resize({width: 400}).getSize(), {width: 400, height: 190})
       assert.deepEqual(image.resize({height: 123}).getSize(), {width: 538, height: 123})
       assert.deepEqual(image.resize({width: 80, height: 65}).getSize(), {width: 80, height: 65})
+      assert.deepEqual(image.resize({width: 0, height: 0}).getSize(), {width: 0, height: 0})
+      assert.deepEqual(image.resize({width: -1, height: -1}).getSize(), {width: 0, height: 0})
+    })
+
+    it('returns an empty image when called on an empty image', () => {
+      assert(nativeImage.createEmpty().resize({width: 1, height: 1}).isEmpty())
+      assert(nativeImage.createEmpty().resize({width: 0, height: 0}).isEmpty())
     })
 
     it('supports a quality option', () => {
@@ -114,6 +121,11 @@ describe('nativeImage module', () => {
   })
 
   describe('crop(bounds)', () => {
+    it('returns an empty image when called on an empty image', () => {
+      assert(nativeImage.createEmpty().crop({width: 1, height: 2, x: 0, y: 0}).isEmpty())
+      assert(nativeImage.createEmpty().crop({width: 0, height: 0, x: 0, y: 0}).isEmpty())
+    })
+
     it('returns an empty image when the bounds are invalid', () => {
       const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
       assert(image.crop({width: 0, height: 0, x: 0, y: 0}).isEmpty())
