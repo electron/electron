@@ -201,9 +201,9 @@ Returns `Boolean` -  Whether the image is empty.
 
 #### `image.getSize()`
 
-Returns `Integer[]` - The size of the image.
-
-[buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
+Returns `Object`:
+* `width` Integer
+* `height` Integer
 
 #### `image.setTemplateImage(option)`
 
@@ -214,3 +214,5 @@ Marks the image as a template image.
 #### `image.isTemplateImage()`
 
 Returns `Boolean` - Whether the image is a template image.
+
+[buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
