@@ -666,45 +666,26 @@ height areas you have within the overall content view.
 
 #### `win.setBounds(options[, animate])`
 
-* `options` Object
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `options` [Bounds](structures/bounds.md)
 * `animate` Boolean (optional) _macOS_
 
-Resizes and moves the window to `width`, `height`, `x`, `y`.
+Resizes and moves the window to the supplied bounds
 
 #### `win.getBounds()`
 
-Returns `Object`:
-* `width` Integer
-* `height` Integer
-* `x` Integer
-* `y` Integer
+Returns [`Bounds`](structures/bounds.md)
 
 #### `win.setContentBounds(options[, animate])`
 
-* `options` Object
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `options` [Bounds](structures/bounds.md)
 * `animate` Boolean (optional) _macOS_
 
 Resizes and moves the window's client area (e.g. the web page) to
-`width`, `height`, `x`, `y`.
+the supplied bounds.
 
 #### `win.getContentBounds()`
 
-Returns `Object`:
-* `width` Integer
-* `height` Integer
-* `x` Integer
-* `y` Integer
-
-Returns an object that contains the window's client area (e.g. the web page)
-width, height, x and y values.
+Returns [`Bounds`](structures/bounds.md)
 
 #### `win.setSize(width, height[, animate])`
 
@@ -967,11 +948,7 @@ Whether `Boolean` - Whether the window's document has been edited.
 
 #### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional) - The area of the page to be captured
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `rect` [Bounds](structures/bounds.md) (optional) - The bounds to capture
 * `callback` Function
 
 Same as `webContents.capturePage([rect, ]callback)`.
@@ -1060,7 +1037,9 @@ On Windows and Linux always returns
 
 #### `win.setThumbarButtons(buttons)` _Windows_
 
-* `buttons` Array
+* `buttons` [ThumbarButton[]](structures/thumbar-button.md)
+
+Returns `Boolean` - Whether the buttons were added successfully
 
 Add a thumbnail toolbar with a specified set of buttons to the thumbnail image
 of a window in a taskbar button layout. Returns a `Boolean` object indicates
@@ -1096,11 +1075,7 @@ The `flags` is an array that can include following `String`s:
 
 #### `win.setThumbnailClip(region)` _Windows_
 
-* `region` Object - Region of the window
-  * `x` Integer - x-position of region
-  * `y` Integer - y-position of region
-  * `width` Integer - width of region
-  * `height` Integer - height of region
+* `region` [Bounds](structures/bounds.md) - Region of the window
 
 Sets the region of the window to show as the thumbnail image displayed when
 hovering over the window in the taskbar. You can reset the thumbnail to be
