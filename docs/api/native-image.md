@@ -195,8 +195,6 @@ Notice that the returned pointer is a weak pointer to the underlying native
 image instead of a copy, so you _must_ ensure that the associated
 `nativeImage` instance is kept around.
 
-[buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
-
 #### `image.isEmpty()`
 
 Returns `Boolean` -  Whether the image is empty.
@@ -216,3 +214,5 @@ Marks the image as a template image.
 #### `image.isTemplateImage()`
 
 Returns `Boolean` - Whether the image is a template image.
+
+[buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
