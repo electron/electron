@@ -24,8 +24,12 @@
 `features` 문자열은 표준 브라우저의 포맷을 따르고 있지만, 각 기능은 `BrowserWindow`의
 옵션이어야 합니다.
 
-**참고:** Node 통합 기능은 열린 `window`에서 부모 윈도우가 해당 옵션이
-비활성화되어있는 경우 항상 비활성화됩니다.
+**참고:**
+* Node 통합 기능은 열린 `window` 에서 부모 윈도우가 해당 옵션이 비활성화
+  되어있는 경우 항상 비활성화됩니다.
+* `features` 에 있는 (Chromium 또는 Electron 에 의해 처리되지 않는) 비표준
+  기능은 `webContent` 에 등록된 `new-window` 이벤트 핸들러에
+  `additionalFeatures` 인수로 전달될 것이다.
 
 ### `window.opener.postMessage(message, targetOrigin)`
 

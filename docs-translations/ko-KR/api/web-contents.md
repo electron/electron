@@ -146,6 +146,8 @@ Returns:
 * `disposition` String - `default`, `foreground-tab`, `background-tab`,
   `new-window`, `save-to-disk`, `other`중 하나일 수 있습니다.
 * `options` Object - 새로운 `BrowserWindow` 객체를 만들 때 사용되는 옵션 객체입니다.
+* `additionalFeatures` Array - `window.open()` 에 주어진 (Chromium 또는 Electron
+  에 의해 처리되지 않는) 비표준 기능.
 
 페이지가 `url`에 대하여 새로운 윈도우를 열기위해 요청한 경우 발생하는 이벤트입니다.
 `window.open`이나 `<a target='_blank'>`과 같은 외부 링크에 의해 요청될 수 있습니다.
