@@ -6,7 +6,6 @@
 #define ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 
 #include "atom/browser/ui/atom_menu_model.h"
-#include "ui/views/controls/button/button.h"
 #include "ui/views/controls/button/menu_button_listener.h"
 #include "ui/views/view.h"
 
@@ -19,7 +18,6 @@ namespace atom {
 class MenuDelegate;
 
 class MenuBar : public views::View,
-                public views::ButtonListener,
                 public views::MenuButtonListener {
  public:
   MenuBar();
@@ -49,9 +47,6 @@ class MenuBar : public views::View,
  protected:
   // views::View:
   const char* GetClassName() const override;
-
-  // views::ButtonListener:
-  void ButtonPressed(views::Button* sender, const ui::Event& event) override;
 
   // views::MenuButtonListener:
   void OnMenuButtonClicked(views::MenuButton* source,

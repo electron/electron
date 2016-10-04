@@ -26,8 +26,7 @@ base::string16 FilterAccelerator(const base::string16& label) {
 
 }  // namespace
 
-SubmenuButton::SubmenuButton(views::ButtonListener* listener,
-                             const base::string16& title,
+SubmenuButton::SubmenuButton(const base::string16& title,
                              views::MenuButtonListener* menu_button_listener,
                              const SkColor& background_color)
     : views::MenuButton(FilterAccelerator(title),
@@ -53,6 +52,10 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
   SetHasInkDrop(true);
   set_ink_drop_base_color(
       color_utils::BlendTowardOppositeLuma(background_color_, 0x61));
+
+  set_request_focus_on_press(true);
+  SetFocusForPlatform();
+  SetFocusPainter(nullptr);
 }
 
 SubmenuButton::~SubmenuButton() {

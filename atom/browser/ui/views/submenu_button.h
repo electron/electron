@@ -13,8 +13,7 @@ namespace atom {
 // Special button that used by menu bar to show submenus.
 class SubmenuButton : public views::MenuButton {
  public:
-  SubmenuButton(views::ButtonListener* listener,
-                const base::string16& title,
+  SubmenuButton(const base::string16& title,
                 views::MenuButtonListener* menu_button_listener,
                 const SkColor& background_color);
   virtual ~SubmenuButton();
