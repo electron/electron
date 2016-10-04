@@ -33,7 +33,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   bool Write(scoped_refptr<const net::IOBufferWithSize> buffer,
                    bool is_last);
   void SetChunkedUpload(bool is_chunked_upload);
-  void Abort() const;
+  void Cancel() const;
   void SetExtraHeader(const std::string& name, const std::string& value) const;
   void RemoveExtraHeader(const std::string& name) const;
   void PassLoginInformation(const base::string16& username,
@@ -51,12 +51,12 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
  private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
 
-   explicit AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
-   ~AtomURLRequest()override;
+  explicit AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
+  ~AtomURLRequest()override;
 
   void DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
                      bool is_last);
-  void DoAbort() const;
+  void DoCancel() const;
   void DoSetAuth(const base::string16& username,
     const base::string16& password) const;
   void DoCancelAuth() const;
@@ -70,7 +70,8 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   void InformDelegateResponseData(
     scoped_refptr<net::IOBufferWithSize> data) const;
   void InformDelegateResponseCompleted() const;
-  void InformDelegateErrorOccured(const std::string& error) const;
+  void InformDelegateRequestErrorOccured(const std::string& error) const;
+  void InformDelegateResponseErrorOccured(const std::string& error) const;
 
   base::WeakPtr<api::URLRequest> delegate_;
   std::unique_ptr<net::URLRequest> request_;
@@ -81,7 +82,6 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   std::vector<std::unique_ptr<net::UploadElementReader>>
     upload_element_readers_;
   scoped_refptr<net::IOBuffer> response_read_buffer_;
-  scoped_refptr<net::HttpResponseHeaders> response_headers_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequest);
 };

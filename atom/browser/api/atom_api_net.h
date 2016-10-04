@@ -24,6 +24,7 @@ class Net : public mate::EventEmitter<Net> {
   ~Net() override;
 
  private:
+  void RequestGarbageCollectionForTesting();
   DISALLOW_COPY_AND_ASSIGN(Net);
 };
 

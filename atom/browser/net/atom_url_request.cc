@@ -106,12 +106,12 @@ void AtomURLRequest::SetChunkedUpload(bool is_chunked_upload) {
 }
 
 
-void AtomURLRequest::Abort() const {
+void AtomURLRequest::Cancel() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   content::BrowserThread::PostTask(
     content::BrowserThread::IO,
     FROM_HERE,
-    base::Bind(&AtomURLRequest::DoAbort, this));
+    base::Bind(&AtomURLRequest::DoCancel, this));
 }
 
 void AtomURLRequest::SetExtraHeader(const std::string& name,
@@ -202,7 +202,7 @@ void AtomURLRequest::DoWriteBuffer(
   }
 }
 
-void AtomURLRequest::DoAbort() const {
+void AtomURLRequest::DoCancel() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   request_->Cancel();
 }
@@ -235,38 +235,32 @@ void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
 
   const auto& status = request_->status();
   if (status.is_success()) {
-    // Cache net::HttpResponseHeaders instance, a read-only objects
-    // so that headers and other http metainformation can be simultaneously
-    // read from UI thread while request data is simulataneously streaming
-    // on IO thread.
-    response_headers_ = request_->response_headers();
+    // Success or pending trigger a Read.
     content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&AtomURLRequest::InformDelegateResponseStarted, this));
 
     ReadResponse();
-  } else {
+  } else if (status.status() == net::URLRequestStatus::Status::FAILED) {
+    // Report error on Start.
+    DoCancel();
     auto error = net::ErrorToString(status.ToNetError());
     content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&AtomURLRequest::InformDelegateErrorOccured,
+      base::Bind(&AtomURLRequest::InformDelegateRequestErrorOccured,
                  this,
                  std::move(error)));
   }
+  // We don't report an error is the request is canceled.
 }
 
 void AtomURLRequest::ReadResponse() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  // Some servers may treat HEAD requests as GET requests. To free up the
-  // network connection as soon as possible, signal that the request has
-  // completed immediately, without trying to read any data back (all we care
-  // about is the response code and headers, which we already have).
-  int bytes_read = 0;
-  if (request_->status().is_success())
-    if (!request_->Read(response_read_buffer_.get(), kBufferSize, &bytes_read))
-      bytes_read = -1;
-  OnReadCompleted(request_.get(), bytes_read);
+  int bytes_read = -1;
+  if (request_->Read(response_read_buffer_.get(), kBufferSize, &bytes_read)) {
+    OnReadCompleted(request_.get(), bytes_read);
+  }
 }
 
 
@@ -277,36 +271,53 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request,
   DCHECK_EQ(request, request_.get());
 
   const auto status = request_->status();
+
+  bool response_error = false;
+  bool data_ended = false;
+  bool data_transfer_error = false;
   do {
-    if (!status.is_success() || bytes_read <= 0) {
-      auto error = net::ErrorToString(status.ToNetError());
-      content::BrowserThread::PostTask(
-        content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&AtomURLRequest::InformDelegateErrorOccured,
-                   this,
-                   std::move(error)));
+    if (!status.is_success()) {
+      response_error = true;
       break;
     }
-
-    const auto result = CopyAndPostBuffer(bytes_read);
-    if (!result)
-      // Failed to transfer data to UI thread.
-      return;
+    if (bytes_read == 0) {
+      data_ended = true;
+      break;
+    }
+    if (bytes_read < 0 || !CopyAndPostBuffer(bytes_read)) {
+      data_transfer_error = true;
+      break;
+    }
   } while (request_->Read(response_read_buffer_.get(),
                           kBufferSize,
                           &bytes_read));
-
-  if (!status.is_io_pending())
-
+  if (response_error) {
+    DoCancel();
+    auto error = net::ErrorToString(status.ToNetError());
+    content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&AtomURLRequest::InformDelegateResponseErrorOccured,
+                 this,
+                 std::move(error)));
+  } else if (data_ended) {
     content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&AtomURLRequest::InformDelegateResponseCompleted, this));
+  } else if (data_transfer_error) {
+    // We abort the request on corrupted data transfer.
+    DoCancel();
+    content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&AtomURLRequest::InformDelegateResponseErrorOccured,
+      this,
+      "Failed to transfer data from IO to UI thread."));
+  }
 }
 
 bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  // data is only a wrapper for the async response_read_buffer_.
+  // data is only a wrapper for the asynchronous response_read_buffer_.
   // Make a deep copy of payload and transfer ownership to the UI thread.
   auto buffer_copy = new net::IOBufferWithSize(bytes_read);
   memcpy(buffer_copy->data(), response_read_buffer_->data(), bytes_read);
@@ -349,13 +360,20 @@ void AtomURLRequest::InformDelegateResponseCompleted() const {
     delegate_->OnResponseCompleted();
 }
 
-void AtomURLRequest::InformDelegateErrorOccured(
+void AtomURLRequest::InformDelegateRequestErrorOccured(
   const std::string& error) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   if (delegate_)
-    delegate_->OnError(error);
+    delegate_->OnRequestError(error);
 }
 
+void AtomURLRequest::InformDelegateResponseErrorOccured(
+  const std::string& error) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  if (delegate_)
+    delegate_->OnResponseError(error);
+}
 
 }  // namespace atom

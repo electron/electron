@@ -83,6 +83,84 @@ struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
 namespace atom {
 namespace api {
 
+
+template <typename Flags>
+URLRequest::StateBase<Flags>::StateBase(Flags initialState)
+  : state_(initialState) {
+}
+
+template <typename Flags>
+void URLRequest::StateBase<Flags>::SetFlag(Flags flag) {
+  state_ = static_cast<Flags>(static_cast<int>(state_) &
+    static_cast<int>(flag));
+}
+
+template <typename Flags>
+bool URLRequest::StateBase<Flags>::operator==(Flags flag) const {
+  return state_ == flag;
+}
+
+template <typename Flags>
+bool URLRequest::StateBase<Flags>::IsFlagSet(Flags flag) const {
+  return static_cast<int>(state_) & static_cast<int>(flag);
+}
+
+URLRequest::RequestState::RequestState()
+  : StateBase(RequestStateFlags::kNotStarted) {
+}
+
+bool URLRequest::RequestState::NotStarted() const {
+  return *this == RequestStateFlags::kNotStarted;
+}
+
+bool URLRequest::RequestState::Started() const {
+  return IsFlagSet(RequestStateFlags::kStarted);
+}
+
+bool URLRequest::RequestState::Finished() const {
+  return IsFlagSet(RequestStateFlags::kFinished);
+}
+
+bool URLRequest::RequestState::Canceled() const {
+  return IsFlagSet(RequestStateFlags::kCanceled);
+}
+
+bool URLRequest::RequestState::Failed() const {
+  return IsFlagSet(RequestStateFlags::kFailed);
+}
+
+bool URLRequest::RequestState::Closed() const {
+  return IsFlagSet(RequestStateFlags::kClosed);
+}
+
+URLRequest::ResponseState::ResponseState()
+  : StateBase(ResponseStateFlags::kNotStarted) {
+}
+
+bool URLRequest::ResponseState::NotStarted() const {
+  return *this == ResponseStateFlags::kNotStarted;
+}
+
+bool URLRequest::ResponseState::Started() const {
+  return IsFlagSet(ResponseStateFlags::kStarted);
+}
+
+bool URLRequest::ResponseState::Ended() const {
+  return IsFlagSet(ResponseStateFlags::kEnded);
+}
+
+bool URLRequest::ResponseState::Canceled() const {
+  return IsFlagSet(ResponseStateFlags::kCanceled);
+}
+
+bool URLRequest::ResponseState::Failed() const {
+  return IsFlagSet(ResponseStateFlags::kFailed);
+}
+
+bool URLRequest::ResponseState::Closed() const {
+  return IsFlagSet(ResponseStateFlags::kClosed);
+}
+
 URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
     : weak_ptr_factory_(this) {
   InitWith(isolate, wrapper);
@@ -127,10 +205,12 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
     // Request API
     .MakeDestroyable()
     .SetMethod("write", &URLRequest::Write)
-    .SetMethod("abort", &URLRequest::Abort)
+    .SetMethod("cancel", &URLRequest::Cancel)
     .SetMethod("setExtraHeader", &URLRequest::SetExtraHeader)
     .SetMethod("removeExtraHeader", &URLRequest::RemoveExtraHeader)
     .SetMethod("setChunkedUpload", &URLRequest::SetChunkedUpload)
+    .SetProperty("notStarted", &URLRequest::NotStarted)
+    .SetProperty("finished", &URLRequest::Finished)
     // Response APi
     .SetProperty("statusCode", &URLRequest::StatusCode)
     .SetProperty("statusMessage", &URLRequest::StatusMessage)
@@ -139,19 +219,81 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
     .SetProperty("httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
 }
 
+bool URLRequest::NotStarted() const {
+  return request_state_.NotStarted();
+}
+
+bool URLRequest::Finished() const {
+  return request_state_.Finished();
+}
+
+bool URLRequest::Canceled() const {
+  return request_state_.Canceled();
+}
+
 bool URLRequest::Write(
     scoped_refptr<const net::IOBufferWithSize> buffer,
     bool is_last) {
-  return atom_request_->Write(buffer, is_last);
+  if (request_state_.Canceled() ||
+    request_state_.Failed() ||
+    request_state_.Finished() ||
+    request_state_.Closed()) {
+    return false;
+  }
+
+  if (request_state_.NotStarted()) {
+    request_state_.SetFlag(RequestStateFlags::kStarted);
+    // Pin on first write.
+    pin();
+  }
+
+  if (is_last) {
+    request_state_.SetFlag(RequestStateFlags::kFinished);
+    EmitRequestEvent(true, "finish");
+  }
+
+  DCHECK(atom_request_);
+  if (atom_request_) {
+    return atom_request_->Write(buffer, is_last);
+  }
+  return false;
 }
 
 
-void URLRequest::Abort() {
-  atom_request_->Abort();
+void URLRequest::Cancel() {
+  if (request_state_.Canceled()) {
+    // Cancel only once.
+    return;
+  }
+
+  // Mark as canceled.
+  request_state_.SetFlag(RequestStateFlags::kCanceled);
+
+  if (request_state_.Started()) {
+    // Really cancel if it was started.
+    atom_request_->Cancel();
+  }
+
+  if (!request_state_.Closed()) {
+    EmitRequestEvent(true, "abort");
+  }
+
+
+  response_state_.SetFlag(ResponseStateFlags::kCanceled);
+  if (response_state_.Started() && !response_state_.Closed()) {
+    EmitResponseEvent(true, "aborted");
+  }
+  Close();
 }
 
 bool URLRequest::SetExtraHeader(const std::string& name,
                            const std::string& value) {
+  // State must be equal to not started.
+  if (!request_state_.NotStarted()) {
+    // Cannot change headers after send.
+    return false;
+  }
+
   if (!net::HttpUtil::IsValidHeaderName(name)) {
     return false;
   }
@@ -165,44 +307,83 @@ bool URLRequest::SetExtraHeader(const std::string& name,
 }
 
 void URLRequest::RemoveExtraHeader(const std::string& name) {
+  // State must be equal to not started.
+  if (!request_state_.NotStarted()) {
+    // Cannot change headers after send.
+    return;
+  }
   atom_request_->RemoveExtraHeader(name);
 }
 
 void URLRequest::SetChunkedUpload(bool is_chunked_upload) {
+  // State must be equal to not started.
+  if (!request_state_.NotStarted()) {
+    // Cannot change headers after send.
+    return;
+  }
   atom_request_->SetChunkedUpload(is_chunked_upload);
 }
 
 void URLRequest::OnAuthenticationRequired(
     scoped_refptr<const net::AuthChallengeInfo> auth_info) {
   EmitRequestEvent(
+    false,
     "login",
     auth_info.get(),
     base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
 }
 
-
 void URLRequest::OnResponseStarted() {
+  if (request_state_.Canceled() ||
+      request_state_.Failed() ||
+      request_state_.Closed()) {
+    // Don't emit any event after request cancel.
+    return;
+  }
+  response_state_.SetFlag(ResponseStateFlags::kStarted);
   Emit("response");
 }
 
 void URLRequest::OnResponseData(
     scoped_refptr<const net::IOBufferWithSize> buffer) {
+  if (request_state_.Canceled()) {
+    // Don't emit any event after request cancel.
+    return;
+  }
   if (!buffer || !buffer->data() || !buffer->size()) {
     return;
   }
-  EmitResponseEvent("data", buffer);
+  if (!response_state_.Closed()) {
+    EmitResponseEvent(false, "data", buffer);
+  }
 }
 
 void URLRequest::OnResponseCompleted() {
-  EmitResponseEvent("end");
-  unpin();
-  atom_request_ = nullptr;
+  response_state_.SetFlag(ResponseStateFlags::kEnded);
+  if (request_state_.Canceled()) {
+    // Don't emit any event after request cancel.
+    return;
+  }
+  if (!response_state_.Closed()) {
+    EmitResponseEvent(false, "end");
+  }
+  Close();
 }
 
-void URLRequest::OnError(const std::string& error) {
+void URLRequest::OnRequestError(const std::string& error) {
+  request_state_.SetFlag(RequestStateFlags::kFailed);
   auto error_object = v8::Exception::Error(mate::StringToV8(isolate(), error));
-  EmitRequestEvent("error", error_object);
+  EmitRequestEvent(false, "error", error_object);
+  Close();
 }
+
+void URLRequest::OnResponseError(const std::string& error) {
+  response_state_.SetFlag(ResponseStateFlags::kFailed);
+  auto error_object = v8::Exception::Error(mate::StringToV8(isolate(), error));
+  EmitResponseEvent(false, "error", error_object);
+  Close();
+}
+
 
 int URLRequest::StatusCode() const {
   if (auto response_headers = atom_request_->GetResponseHeaders()) {
@@ -236,6 +417,22 @@ uint32_t URLRequest::ResponseHttpVersionMinor() const {
     return response_headers->GetHttpVersion().minor_value();
   }
   return 0;
+}
+
+void URLRequest::Close() {
+  if (!response_state_.Closed()) {
+    response_state_.SetFlag(ResponseStateFlags::kClosed);
+    if (response_state_.Started()) {
+      // Emit a close event if we really have a response object.
+      EmitResponseEvent(true, "close");
+    }
+  }
+  if (!request_state_.Closed()) {
+    request_state_.SetFlag(RequestStateFlags::kClosed);
+    EmitRequestEvent(true, "close");
+  }
+  unpin();
+  atom_request_ = nullptr;
 }
 
 void URLRequest::pin() {

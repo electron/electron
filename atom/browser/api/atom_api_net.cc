@@ -29,13 +29,20 @@ void Net::BuildPrototype(v8::Isolate* isolate,
                          v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Net"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-    .SetProperty("URLRequest", &Net::URLRequest);
+    .SetProperty("URLRequest", &Net::URLRequest)
+    .SetMethod("RequestGarbageCollectionForTesting",
+               &Net::RequestGarbageCollectionForTesting);
 }
 
 v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
   return URLRequest::GetConstructor(isolate)->GetFunction();
 }
 
+
+void Net::RequestGarbageCollectionForTesting() {
+  isolate()->RequestGarbageCollectionForTesting(
+    v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
+}
 
 
 }  // namespace api
