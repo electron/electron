@@ -112,4 +112,23 @@ describe('nativeImage module', () => {
       assert(better.toPNG().length < best.toPNG().length)
     })
   })
+
+  describe('crop(bounds)', () => {
+    it('returns an empty image when the bounds are invalid', () => {
+      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      assert(image.crop({width: 0, height: 0, x: 0, y: 0}).isEmpty())
+      assert(image.crop({width: -1, height: 10, x: 0, y: 0}).isEmpty())
+      assert(image.crop({width: 10, height: -35, x: 0, y: 0}).isEmpty())
+      assert(image.crop({width: 100, height: 100, x: 1000, y: 1000}).isEmpty())
+    })
+
+    it('returns a cropped image', () => {
+      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      const cropA = image.crop({width: 25, height: 64, x: 0, y: 0})
+      const cropB = image.crop({width: 25, height: 64, x: 30, y: 40})
+      assert.deepEqual(cropA.getSize(), {width: 25, height: 64})
+      assert.deepEqual(cropB.getSize(), {width: 25, height: 64})
+      assert(!cropA.toPNG().equals(cropB.toPNG()))
+    })
+  })
 })
