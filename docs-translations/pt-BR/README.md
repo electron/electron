@@ -80,7 +80,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 ## Desenvolvimento
 
 * [Estilo de Código](development/coding-style.md)
-* [Estrutura de Diretórios de Código Fonte](../../docs/development/source-code-directory-structure.md)
+* [Estrutura de Diretórios de Código Fonte](development/source-code-directory-structure.md)
 * [Diferenças Técnicas do NW.js (antigo node-webkit)](../../docs/development/atom-shell-vs-node-webkit.md)
 * [Visão Geral do Build](../../docs/development/build-system-overview.md)
 * [Instrução de Build (Mac)](development/build-instructions-osx.md)
