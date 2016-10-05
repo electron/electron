@@ -94,10 +94,10 @@ void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
 
 std::vector<CrashReporter::UploadReportResult>
 CrashReporterMac::GetUploadedReports(const std::string& product_name,
-                                     const std::string& temp_path) {
+                                     const std::string& temp_dir) {
   std::vector<CrashReporter::UploadReportResult> uploaded_reports;
 
-  base::FilePath file_path = GetCrashesDirectory(product_name, temp_path);
+  base::FilePath file_path = GetCrashesDirectory(product_name, temp_dir);
   if (!base::PathExists(file_path)) {
     return uploaded_reports;
   }
