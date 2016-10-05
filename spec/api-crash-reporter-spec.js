@@ -1,5 +1,4 @@
 const assert = require('assert')
-const fs = require('fs')
 const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')

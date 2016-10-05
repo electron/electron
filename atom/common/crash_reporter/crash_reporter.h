@@ -34,6 +34,9 @@ class CrashReporter {
       const std::string& product_name,
       const std::string& temp_path);
 
+  base::FilePath GetCrashesDirectory(const std::string& product_name,
+                                     const std::string& temp_dir);
+
  protected:
   CrashReporter();
   virtual ~CrashReporter();
@@ -46,9 +49,6 @@ class CrashReporter {
                             bool auto_submit,
                             bool skip_system_crash_handler);
   virtual void SetUploadParameters();
-
-  base::FilePath GetCrashesDirectory(const std::string& product_name,
-                                     const std::string& temp_dir);
 
   StringMap upload_parameters_;
   bool is_browser_;
