@@ -11,6 +11,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "content/public/common/content_switches.h"
+#include "base/strings/utf_string_conversions.h"
 
 namespace crash_reporter {
 
@@ -37,7 +38,7 @@ void CrashReporter::Start(const std::string& product_name,
 
 base::FilePath CrashReporter::GetCrashesDirectory(
     const std::string& product_name, const base::FilePath& temp_path) {
-  return temp_path.Append(product_name + " Crashes");
+  return temp_path.Append(base::UTF8ToUTF16(product_name + " Crashes"));
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {

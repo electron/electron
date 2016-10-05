@@ -63,7 +63,7 @@ int Main(const wchar_t* cmd) {
   // We use/create a directory under the user's temp folder, for logging.
   base::FilePath operating_dir(
       cmd_line.GetSwitchValueNative(kCrashesDirectory));
-  GetCrashServiceDirectory(operating_dir);
+  CreateCrashServiceDirectory(operating_dir);
   base::FilePath log_file = operating_dir.Append(kStandardLogFile);
 
   // Logging to stderr (to help with debugging failures on the
