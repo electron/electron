@@ -60,10 +60,11 @@ describe('crashReporter module', function () {
         assert.equal(fields['_companyName'], 'Umbrella Corporation')
         assert.equal(fields['_version'], app.getVersion())
 
-        res.end('abc-123-def', () => {
-          assert.equal(crashReporter.getLastCrashReport().id, 'abc-123-def')
+        const reportId = 'abc-123-def-456-abc-789-abc-123-abcd'
+        res.end(reportId, () => {
+          assert.equal(crashReporter.getLastCrashReport().id, reportId)
           assert.notEqual(crashReporter.getUploadedReports().length, 0)
-          assert.equal(crashReporter.getUploadedReports()[0].id, 'abc-123-def')
+          assert.equal(crashReporter.getUploadedReports()[0].id, reportId)
           assert.equal(fs.existsSync(tempDirectory, 'Zombies Crahses'), true)
           done()
         })
