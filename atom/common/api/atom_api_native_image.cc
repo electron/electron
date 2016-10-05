@@ -310,9 +310,9 @@ mate::Handle<NativeImage> NativeImage::Resize(
 }
 
 mate::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
-                                            const gfx::Rect& bounds) {
+                                            const gfx::Rect& rect) {
   gfx::ImageSkia cropped = gfx::ImageSkiaOperations::ExtractSubset(
-      image_.AsImageSkia(), bounds);
+      image_.AsImageSkia(), rect);
   return mate::CreateHandle(isolate,
                             new NativeImage(isolate, gfx::Image(cropped)));
 }

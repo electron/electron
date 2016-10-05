@@ -80,7 +80,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   mate::Handle<NativeImage> Resize(v8::Isolate* isolate,
                                    const base::DictionaryValue& options);
   mate::Handle<NativeImage> Crop(v8::Isolate* isolate,
-                                 const gfx::Rect& bounds);
+                                 const gfx::Rect& rect);
   std::string ToDataURL();
   bool IsEmpty();
   gfx::Size GetSize();

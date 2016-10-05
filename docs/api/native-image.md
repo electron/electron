@@ -215,9 +215,9 @@ Marks the image as a template image.
 
 Returns `Boolean` - Whether the image is a template image.
 
-#### `image.crop(region)`
+#### `image.crop(rect)`
 
-* `region` Object - The region of the image to crop
+* `rect` Object - The area of the image to crop
   * `x` Integer
   * `y` Integer
   * `width` Integer
