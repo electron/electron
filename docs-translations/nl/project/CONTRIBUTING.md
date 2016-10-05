@@ -1,6 +1,6 @@
 # Bijdragen aan Electron
 
-:memo: Beschikbare vertalingen: [Koreaans](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/CONTRIBUTING.md) | [Versimpeld Chinees](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/CONTRIBUTING.md) | [Braziliaans Portugees](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/CONTRIBUTING.md)
+:memo: Beschikbare vertalingen: [Koreaans](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/CONTRIBUTING.md) | [Versimpeld Chinees](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/CONTRIBUTING.md) | [Braziliaans Portugees](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/CONTRIBUTING.md) | [Nederlands](https://github.com/electron/electron/tree/master/docs-translations/nl/project/CONTRIBUTING.md)
 
 :+1::tada: Ten eerste, bedankt om de tijd te nemen om bij te dragen! :tada::+1:
 
@@ -29,7 +29,7 @@ maar lees eerst onderstaande suggesties en voeg zo veel mogelijk details toe bij
 * Volg de JavaScript, C++ en Python [codeer-stijl gedefinieerd in de documentatie](/docs/development/coding-style.md).
 * Schrijf documentatie in in [Markdown](https://daringfireball.net/projects/markdown).
   Zie de [Documentatie Stijlgids](/docs/styleguide.md).
-* Gebruik korte commit-berichten in de tegenwoordige tijd. Zie [Commit Bericht Stijlgids](#git-commit-messages).
+* Gebruik korte commit-berichten in de tegenwoordige tijd. Zie [Commit Bericht Stijlgids](##git-commit-berichten).
 
 ## Stijlgidsen
 
