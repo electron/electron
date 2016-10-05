@@ -6,10 +6,11 @@
   "devDependencies": {
     "basic-auth": "^1.0.0",
     "graceful-fs": "3.0.5",
-    "mocha": "2.1.0",
     "mkdirp": "0.5.1",
+    "mocha": "2.1.0",
     "multiparty": "4.1.2",
     "q": "0.9.7",
+    "rimraf": "^2.5.4",
     "temp": "0.8.1",
     "walkdir": "0.0.7",
     "ws": "0.7.2",

@@ -1,7 +1,10 @@
 const assert = require('assert')
+const fs = require('fs')
 const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')
+const rimraf = require('rimraf')
+const temp = require('temp').track()
 const url = require('url')
 const {closeWindow} = require('./window-helpers')
 
@@ -11,14 +14,20 @@ const {app, BrowserWindow, crashReporter} = remote.require('electron')
 describe('crashReporter module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
+  var originalTempDirectory = null
+  var tempDirectory = null
 
   beforeEach(function () {
     w = new BrowserWindow({
       show: false
     })
+    tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
+    originalTempDirectory = app.getPath('temp')
+    app.setPath('temp', tempDirectory)
   })
 
   afterEach(function () {
+    app.setPath('temp', originalTempDirectory)
     return closeWindow(w).then(function () { w = null })
   })
 
@@ -56,6 +65,7 @@ describe('crashReporter module', function () {
           assert.equal(crashReporter.getLastCrashReport().id, 'abc-123-def')
           assert.notEqual(crashReporter.getUploadedReports().length, 0)
           assert.equal(crashReporter.getUploadedReports()[0].id, 'abc-123-def')
+          assert.equal(fs.existsSync(tempDirectory, 'Zombies Crahses'), true)
           done()
         })
       })
