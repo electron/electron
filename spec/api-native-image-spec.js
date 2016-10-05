@@ -146,4 +146,11 @@ describe('nativeImage module', () => {
       assert(!cropA.toPNG().equals(cropB.toPNG()))
     })
   })
+
+  describe('getAspectRatio()', () => {
+    it('returns the aspect ratio of the image', () => {
+      assert.equal(nativeImage.createEmpty().getAspectRatio(), 1.0)
+      assert.equal(nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png')).getAspectRatio(), 2.8315789699554443)
+    })
+  })
 })
