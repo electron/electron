@@ -5,10 +5,8 @@ const path = require('path')
 const url = require('url')
 const {closeWindow} = require('./window-helpers')
 
-const remote = require('electron').remote
-const app = remote.require('electron').app
-const crashReporter = remote.require('electron').crashReporter
-const BrowserWindow = remote.require('electron').BrowserWindow
+const {remote} = require('electron')
+const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
 describe('crashReporter module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
