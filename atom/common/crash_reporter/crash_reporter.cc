@@ -25,19 +25,19 @@ CrashReporter::~CrashReporter() {
 void CrashReporter::Start(const std::string& product_name,
                           const std::string& company_name,
                           const std::string& submit_url,
-                          const std::string& temp_dir,
+                          const base::FilePath& temp_path,
                           bool auto_submit,
                           bool skip_system_crash_handler,
                           const StringMap& extra_parameters) {
   SetUploadParameters(extra_parameters);
 
   InitBreakpad(product_name, ATOM_VERSION_STRING, company_name, submit_url,
-               temp_dir, auto_submit, skip_system_crash_handler);
+               temp_path, auto_submit, skip_system_crash_handler);
 }
 
 base::FilePath CrashReporter::GetCrashesDirectory(
-    const std::string& product_name, const std::string& temp_dir) {
-  return base::FilePath(temp_dir).Append(product_name + " Crashes");
+    const std::string& product_name, const base::FilePath& temp_path) {
+  return temp_path.Append(product_name + " Crashes");
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
@@ -50,11 +50,12 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
 
 std::vector<CrashReporter::UploadReportResult>
 CrashReporter::GetUploadedReports(const std::string& product_name,
-                                  const std::string& temp_dir) {
+                                  const base::FilePath& temp_path) {
   std::vector<CrashReporter::UploadReportResult> result;
 
   base::FilePath uploads_path =
-      GetCrashesDirectory(product_name, temp_dir).Append("uploads.log");
+      GetCrashesDirectory(product_name, temp_path)
+          .Append(FILE_PATH_LITERAL("uploads.log"));
   std::string file_content;
   if (base::ReadFileToString(uploads_path, &file_content)) {
     std::vector<std::string> reports = base::SplitString(
@@ -77,7 +78,7 @@ void CrashReporter::InitBreakpad(const std::string& product_name,
                                  const std::string& version,
                                  const std::string& company_name,
                                  const std::string& submit_url,
-                                 const std::string& temp_dir,
+                                 const base::FilePath& temp_path,
                                  bool auto_submit,
                                  bool skip_system_crash_handler) {
 }

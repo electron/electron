@@ -27,7 +27,7 @@ class CrashReporterMac : public CrashReporter {
                     const std::string& version,
                     const std::string& company_name,
                     const std::string& submit_url,
-                    const std::string& temp_dir,
+                    const base::FilePath& temp_path,
                     bool auto_submit,
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
@@ -43,7 +43,7 @@ class CrashReporterMac : public CrashReporter {
                         const base::StringPiece& value);
 
   std::vector<UploadReportResult> GetUploadedReports(
-      const std::string& path, const std::string& temp_dir) override;
+      const std::string& path, const base::FilePath& temp_path) override;
 
   std::unique_ptr<crashpad::SimpleStringDictionary> simple_string_dictionary_;
 
