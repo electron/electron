@@ -41,7 +41,7 @@ ipcMain.on('message', function (event, ...args) {
 })
 
 // Set productName so getUploadedReports() uses the right directory in specs
-if (process.platform === 'win32') {
+if (process.platform !== 'darwin') {
   crashReporter.productName = 'Zombies'
 }
 
