@@ -154,10 +154,8 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   skip_system_crash_handler_ = skip_system_crash_handler;
 
   base::FilePath temp_dir;
-  if (!GetTempDirectory(&temp_dir)) {
-    LOG(ERROR) << "Cannot get temp directory";
+  if (!GetTempDirectory(&temp_dir))
     return;
-  }
 
   base::string16 pipe_name = base::ReplaceStringPlaceholders(
       kPipeNameFormat, base::UTF8ToUTF16(product_name), NULL);

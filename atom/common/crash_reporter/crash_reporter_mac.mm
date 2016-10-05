@@ -34,15 +34,13 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
                                     bool auto_submit,
                                     bool skip_system_crash_handler) {
   // check whether crashpad has been initialized.
-  // Only need to initilize once.
+  // Only need to initialize once.
   if (simple_string_dictionary_)
     return;
 
   base::FilePath database_path;
-  if (!GetCrashesDirectory(product_name, &database_path)) {
-    LOG(ERROR) << "Cannot get temp directory";
+  if (!GetCrashesDirectory(product_name, &database_path))
     return;
-  }
 
   if (is_browser_) {
     @autoreleasepool {

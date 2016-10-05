@@ -79,10 +79,8 @@ void CrashReporterLinux::SetUploadParameters() {
 
 void CrashReporterLinux::EnableCrashDumping(const std::string& product_name) {
   base::FilePath dumps_path;
-  if (!GetCrashesDirectory(&dumps_path)) {
-    LOG(ERROR) << "Cannot get temp directory";
+  if (!GetCrashesDirectory(&dumps_path))
     return;
-  }
 
   base::CreateDirectory(dumps_path);
 

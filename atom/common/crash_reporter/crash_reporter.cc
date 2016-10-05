@@ -36,7 +36,10 @@ void CrashReporter::Start(const std::string& product_name,
 }
 
 bool CrashReporter::GetTempDirectory(base::FilePath* path) {
-  return PathService::Get(base::DIR_TEMP, path);
+  bool success = PathService::Get(base::DIR_TEMP, path);
+  if (!success)
+    LOG(ERROR) << "Cannot get temp directory";
+  return success;
 }
 
 bool CrashReporter::GetCrashesDirectory(
