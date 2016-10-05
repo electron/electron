@@ -431,7 +431,7 @@ describe('menu module', function () {
   })
 })
 
-describe('MenuItem with custom properties in constructor', function () {
+describe.only('MenuItem with custom properties in constructor', function () {
   it('preserves the custom properties', function () {
     var template = [{
       label: 'menu 1',
@@ -439,7 +439,7 @@ describe('MenuItem with custom properties in constructor', function () {
       submenu: []
     }]
 
-    var menu = new Menu.buildFromTemplate(template)
+    var menu = Menu.buildFromTemplate(template)
     menu.items[0].submenu.append(new MenuItem({
       label: 'item 1',
       customProp: 'bar'
