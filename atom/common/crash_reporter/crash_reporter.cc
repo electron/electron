@@ -8,6 +8,7 @@
 #include "atom/common/atom_version.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
+#include "base/path_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "content/public/common/content_switches.h"
@@ -34,6 +35,19 @@ void CrashReporter::Start(const std::string& product_name,
                auto_submit, skip_system_crash_handler);
 }
 
+bool CrashReporter::GetTempDirectory(base::FilePath* path) {
+  return PathService::Get(base::DIR_TEMP, path);
+}
+
+bool CrashReporter::GetCrashesDirectory(
+    const std::string& product_name, base::FilePath* path) {
+  if (GetTempDirectory(path)) {
+    *path = path->Append(product_name + " Crashes");
+    return true;
+  }
+  return false;
+}
+
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
   upload_parameters_ = parameters;
   upload_parameters_["process_type"] = is_browser_ ? "browser" : "renderer";
@@ -43,10 +57,15 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
 }
 
 std::vector<CrashReporter::UploadReportResult>
-CrashReporter::GetUploadedReports(const std::string& path) {
-  std::string file_content;
+CrashReporter::GetUploadedReports(const std::string& product_name) {
   std::vector<CrashReporter::UploadReportResult> result;
-  if (base::ReadFileToString(base::FilePath::FromUTF8Unsafe(path),
+
+  base::FilePath crashes_dir;
+  if (!GetCrashesDirectory(product_name, &crashes_dir))
+    return result;
+
+  std::string file_content;
+  if (base::ReadFileToString(crashes_dir.Append("uploads.log"),
         &file_content)) {
     std::vector<std::string> reports = base::SplitString(
         file_content, "\n", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);

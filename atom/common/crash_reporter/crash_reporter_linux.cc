@@ -78,8 +78,12 @@ void CrashReporterLinux::SetUploadParameters() {
 }
 
 void CrashReporterLinux::EnableCrashDumping(const std::string& product_name) {
-  std::string dump_dir = "/tmp/" + product_name + " Crashes";
-  base::FilePath dumps_path(dump_dir);
+  base::FilePath dumps_path;
+  if (!GetCrashesDirectory(&dumps_path)) {
+    LOG(ERROR) << "Cannot get temp directory";
+    return;
+  }
+
   base::CreateDirectory(dumps_path);
 
   std::string log_file = base::StringPrintf(

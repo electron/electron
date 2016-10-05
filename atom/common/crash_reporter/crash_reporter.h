@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/macros.h"
 
 namespace crash_reporter {
@@ -29,7 +30,7 @@ class CrashReporter {
              const StringMap& extra_parameters);
 
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
-      const std::string& path);
+      const std::string& product_name);
 
  protected:
   CrashReporter();
@@ -42,6 +43,10 @@ class CrashReporter {
                             bool auto_submit,
                             bool skip_system_crash_handler);
   virtual void SetUploadParameters();
+
+  bool GetTempDirectory(base::FilePath* path);
+  bool GetCrashesDirectory(const std::string& product_name,
+                           base::FilePath* path);
 
   StringMap upload_parameters_;
   bool is_browser_;

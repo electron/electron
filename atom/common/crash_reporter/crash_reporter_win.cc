@@ -154,7 +154,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   skip_system_crash_handler_ = skip_system_crash_handler;
 
   base::FilePath temp_dir;
-  if (!base::GetTempDir(&temp_dir)) {
+  if (!GetTempDirectory(&temp_dir)) {
     LOG(ERROR) << "Cannot get temp directory";
     return;
   }
