@@ -79,13 +79,13 @@ void CrashReporterLinux::SetUploadParameters() {
 
 void CrashReporterLinux::EnableCrashDumping(const std::string& product_name) {
   base::FilePath dumps_path;
-  if (!GetCrashesDirectory(&dumps_path))
+  if (!GetCrashesDirectory(product_name, &dumps_path))
     return;
 
   base::CreateDirectory(dumps_path);
 
   std::string log_file = base::StringPrintf(
-      "%s/%s", dump_dir.c_str(), "uploads.log");
+      "%s/%s", dumps_path.value().c_str(), "uploads.log");
   strncpy(g_crash_log_path, log_file.c_str(), sizeof(g_crash_log_path));
 
   MinidumpDescriptor minidump_descriptor(dumps_path.value());
