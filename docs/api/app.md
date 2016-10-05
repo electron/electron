@@ -812,6 +812,7 @@ Returns `Boolean` - Whether the current desktop environment is Unity launcher.
 ### `app.getLoginItemSettings()` _macOS_ _Windows_
 
 Returns `Object`:
+
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
 * `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
   This setting is only supported on macOS.
