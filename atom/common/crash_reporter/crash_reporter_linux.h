@@ -41,7 +41,8 @@ class CrashReporterLinux : public CrashReporter {
   CrashReporterLinux();
   virtual ~CrashReporterLinux();
 
-  void EnableCrashDumping(const std::string& product_name);
+  void EnableCrashDumping(const std::string& product_name,
+                          const std::string& temp_dir);
 
   static bool CrashDone(const google_breakpad::MinidumpDescriptor& minidump,
                         void* context,

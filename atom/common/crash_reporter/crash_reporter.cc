@@ -8,7 +8,6 @@
 #include "atom/common/atom_version.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
-#include "base/path_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "content/public/common/content_switches.h"
@@ -26,29 +25,19 @@ CrashReporter::~CrashReporter() {
 void CrashReporter::Start(const std::string& product_name,
                           const std::string& company_name,
                           const std::string& submit_url,
+                          const std::string& temp_path,
                           bool auto_submit,
                           bool skip_system_crash_handler,
                           const StringMap& extra_parameters) {
   SetUploadParameters(extra_parameters);
 
   InitBreakpad(product_name, ATOM_VERSION_STRING, company_name, submit_url,
-               auto_submit, skip_system_crash_handler);
+               temp_path, auto_submit, skip_system_crash_handler);
 }
 
-bool CrashReporter::GetTempDirectory(base::FilePath* path) {
-  bool success = PathService::Get(base::DIR_TEMP, path);
-  if (!success)
-    LOG(ERROR) << "Cannot get temp directory";
-  return success;
-}
-
-bool CrashReporter::GetCrashesDirectory(
-    const std::string& product_name, base::FilePath* path) {
-  if (GetTempDirectory(path)) {
-    *path = path->Append(product_name + " Crashes");
-    return true;
-  }
-  return false;
+base::FilePath CrashReporter::GetCrashesDirectory(
+    const std::string& product_name, const std::string& temp_dir) {
+  return base::FilePath(temp_dir).Append(product_name + " Crashes");
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
@@ -60,16 +49,14 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
 }
 
 std::vector<CrashReporter::UploadReportResult>
-CrashReporter::GetUploadedReports(const std::string& product_name) {
+CrashReporter::GetUploadedReports(const std::string& product_name,
+                                  const std::string& temp_path) {
   std::vector<CrashReporter::UploadReportResult> result;
 
-  base::FilePath crashes_dir;
-  if (!GetCrashesDirectory(product_name, &crashes_dir))
-    return result;
-
+  base::FilePath uploads_path =
+      GetCrashesDirectory(product_name, temp_path).Append("uploads.log");
   std::string file_content;
-  if (base::ReadFileToString(crashes_dir.Append("uploads.log"),
-        &file_content)) {
+  if (base::ReadFileToString(uploads_path, &file_content)) {
     std::vector<std::string> reports = base::SplitString(
         file_content, "\n", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
     for (const std::string& report : reports) {
@@ -90,6 +77,7 @@ void CrashReporter::InitBreakpad(const std::string& product_name,
                                  const std::string& version,
                                  const std::string& company_name,
                                  const std::string& submit_url,
+                                 const std::string& temp_path,
                                  bool auto_submit,
                                  bool skip_system_crash_handler) {
 }

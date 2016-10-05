@@ -25,12 +25,14 @@ class CrashReporter {
   void Start(const std::string& product_name,
              const std::string& company_name,
              const std::string& submit_url,
+             const std::string& temp_path,
              bool auto_submit,
              bool skip_system_crash_handler,
              const StringMap& extra_parameters);
 
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
-      const std::string& product_name);
+      const std::string& product_name,
+      const std::string& temp_path);
 
  protected:
   CrashReporter();
@@ -40,13 +42,13 @@ class CrashReporter {
                             const std::string& version,
                             const std::string& company_name,
                             const std::string& submit_url,
+                            const std::string& temp_path,
                             bool auto_submit,
                             bool skip_system_crash_handler);
   virtual void SetUploadParameters();
 
-  bool GetTempDirectory(base::FilePath* path);
-  bool GetCrashesDirectory(const std::string& product_name,
-                           base::FilePath* path);
+  base::FilePath GetCrashesDirectory(const std::string& product_name,
+                                     const std::string& temp_dir);
 
   StringMap upload_parameters_;
   bool is_browser_;

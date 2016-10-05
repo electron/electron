@@ -31,6 +31,7 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
                                     const std::string& version,
                                     const std::string& company_name,
                                     const std::string& submit_url,
+                                    const std::string& temp_dir,
                                     bool auto_submit,
                                     bool skip_system_crash_handler) {
   // check whether crashpad has been initialized.
@@ -38,10 +39,7 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   if (simple_string_dictionary_)
     return;
 
-  base::FilePath database_path;
-  if (!GetCrashesDirectory(product_name, &database_path))
-    return;
-
+  base::FilePath database_path = GetCrashesDirectory(product_name, temp_dir);
   if (is_browser_) {
     @autoreleasepool {
       base::FilePath framework_bundle_path = base::mac::FrameworkBundlePath();
@@ -95,15 +93,14 @@ void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
 }
 
 std::vector<CrashReporter::UploadReportResult>
-CrashReporterMac::GetUploadedReports(const std::string& product_name) {
+CrashReporterMac::GetUploadedReports(const std::string& product_name,
+                                     const std::string& temp_path) {
   std::vector<CrashReporter::UploadReportResult> uploaded_reports;
 
-  base::FilePath file_path;
-  if (!GetCrashesDirectory(product_name, &file_path) ||
-      !base::PathExists(file_path)) {
+  base::FilePath file_path = GetCrashesDirectory(product_name, temp_path);
+  if (!base::PathExists(file_path)) {
     return uploaded_reports;
   }
-
   // Load crashpad database.
   std::unique_ptr<crashpad::CrashReportDatabase> database =
     crashpad::CrashReportDatabase::Initialize(file_path);

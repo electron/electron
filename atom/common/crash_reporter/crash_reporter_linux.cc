@@ -60,9 +60,10 @@ void CrashReporterLinux::InitBreakpad(const std::string& product_name,
                                       const std::string& version,
                                       const std::string& company_name,
                                       const std::string& submit_url,
+                                      const std::string& temp_dir,
                                       bool auto_submit,
                                       bool skip_system_crash_handler) {
-  EnableCrashDumping(product_name);
+  EnableCrashDumping(product_name, temp_dir);
 
   crash_keys_.SetKeyValue("prod", ATOM_PRODUCT_NAME);
   crash_keys_.SetKeyValue("ver", version.c_str());
@@ -77,11 +78,9 @@ void CrashReporterLinux::SetUploadParameters() {
   upload_parameters_["platform"] = "linux";
 }
 
-void CrashReporterLinux::EnableCrashDumping(const std::string& product_name) {
-  base::FilePath dumps_path;
-  if (!GetCrashesDirectory(product_name, &dumps_path))
-    return;
-
+void CrashReporterLinux::EnableCrashDumping(const std::string& product_name,
+                                            const std::string& temp_dir) {
+  base::FilePath dumps_path = GetCrashesDirectory(product_name, temp_dir);
   base::CreateDirectory(dumps_path);
 
   std::string log_file = base::StringPrintf(
