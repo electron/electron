@@ -29,7 +29,7 @@ maar lees eerst onderstaande suggesties en voeg zo veel mogelijk details toe bij
 * Volg de JavaScript, C++ en Python [codeer-stijl gedefinieerd in de documentatie](/docs/development/coding-style.md).
 * Schrijf documentatie in in [Markdown](https://daringfireball.net/projects/markdown).
   Zie de [Documentatie Stijlgids](/docs/styleguide.md).
-* Gebruik korte commit-berichten in de tegenwoordige tijd. Zie [Commit Bericht Stijlgids](##git-commit-berichten).
+* Gebruik korte commit-berichten in de tegenwoordige tijd. Zie [Commit Bericht Stijlgids](#git-commit-berichten).
 
 ## Stijlgidsen
 
