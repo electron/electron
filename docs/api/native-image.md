@@ -228,8 +228,8 @@ Returns `NativeImage` - The cropped image.
 #### `image.resize(options)`
 
 * `options` Object
-  * `width` Integer
-  * `height` Integer
+  * `width` Integer (optional)
+  * `height` Integer (optional)
   * `quality` String (optional) - The desired quality of the resize image.
     Possible values are `good`, `better` or `best`. The default is `best`.
     These values express a desired quality/speed tradeoff. They are translated
