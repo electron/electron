@@ -65,7 +65,6 @@ describe('crashReporter module', function () {
           assert.equal(crashReporter.getLastCrashReport().id, reportId)
           assert.notEqual(crashReporter.getUploadedReports().length, 0)
           assert.equal(crashReporter.getUploadedReports()[0].id, reportId)
-          assert.equal(fs.existsSync(tempDirectory, 'Zombies Crahses'), true)
           done()
         })
       })
