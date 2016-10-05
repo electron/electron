@@ -430,3 +430,23 @@ describe('menu module', function () {
     })
   })
 })
+
+describe('MenuItem with custom properties in constructor', function () {
+  it('preserves the custom properties', function () {
+    var template = [{
+      label: 'menu 1',
+      customProp: 'foo',
+      submenu: []
+    }]
+
+    var menu = new Menu.buildFromTemplate(template)
+    menu.items[0].submenu.append(new MenuItem({
+      label: 'item 1',
+      customProp: 'bar'
+    }))
+
+    assert.equal(menu.items[0].customProp, 'foo')
+    assert.equal(menu.items[0].submenu.items[0].label, 'item 1')
+    assert.equal(menu.items[0].submenu.items[0].customProp, 'bar')
+  })
+})
