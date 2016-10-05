@@ -84,6 +84,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   std::string ToDataURL();
   bool IsEmpty();
   gfx::Size GetSize();
+  float GetAspectRatio();
 
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);

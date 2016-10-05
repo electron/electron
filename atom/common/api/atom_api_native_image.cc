@@ -284,15 +284,32 @@ gfx::Size NativeImage::GetSize() {
   return image_.Size();
 }
 
+float NativeImage::GetAspectRatio() {
+  gfx::Size size = GetSize();
+  if (size.IsEmpty())
+    return 1.f;
+  else
+    return static_cast<float>(size.width()) / static_cast<float>(size.height());
+}
+
 mate::Handle<NativeImage> NativeImage::Resize(
     v8::Isolate* isolate, const base::DictionaryValue& options) {
   gfx::Size size = GetSize();
   int width = size.width();
   int height = size.height();
-  options.GetInteger("width", &width);
-  options.GetInteger("height", &height);
-  size.set_width(width);
-  size.set_height(height);
+  bool width_set = options.GetInteger("width", &width);
+  bool height_set = options.GetInteger("height", &height);
+  size.SetSize(width, height);
+
+  if (width_set && !height_set) {
+    // Scale height to preserve original aspect ratio
+    size.set_height(width);
+    size = gfx::ScaleToRoundedSize(size, 1.f, 1.f / GetAspectRatio());
+  } else if (height_set && !width_set) {
+    // Scale width to preserve original aspect ratio
+    size.set_width(height);
+    size = gfx::ScaleToRoundedSize(size, GetAspectRatio(), 1.f);
+  }
 
   skia::ImageOperations::ResizeMethod method =
       skia::ImageOperations::ResizeMethod::RESIZE_BEST;
@@ -420,6 +437,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)
+      .SetMethod("getAspectRatio", &NativeImage::GetAspectRatio)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
       .SetMethod("toPng", &NativeImage::ToPNG)
       .SetMethod("toJpeg", &NativeImage::ToJPEG);

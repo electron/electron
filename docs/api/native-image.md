@@ -239,4 +239,11 @@ Returns `NativeImage` - The cropped image.
 
 Returns `NativeImage` - The resized image.
 
+If only the `height` or the `width` are specified then the current aspect ratio
+will be preserved in the resized image.
+
+#### `image.getAspectRatio()`
+
+Returns `Float` - The image's aspect ratio.
+
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
