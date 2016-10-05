@@ -31,6 +31,7 @@ class CrashReporterLinux : public CrashReporter {
                     const std::string& version,
                     const std::string& company_name,
                     const std::string& submit_url,
+                    const std::string& temp_dir,
                     bool auto_submit,
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
