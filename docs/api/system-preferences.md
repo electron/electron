@@ -24,7 +24,7 @@ accent color.
 
 ### `systemPreferences.isDarkMode()` _macOS_
 
-Returns `Boolean` - Whether the the system is in Dark Mode.
+Returns `Boolean` - Whether the system is in Dark Mode.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
