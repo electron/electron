@@ -16,7 +16,7 @@ the following Python modules:
 ## Getting the Code
 
 ```bash
-$ git clone https://github.com/electron/electron.git
+$ git clone https://github.com/electron/electron
 ```
 
 ## Bootstrapping
@@ -64,11 +64,28 @@ $ npm run clean
 Test your changes conform to the project coding style using:
 
 ```bash
-$ ./script/cpplint.py
+$ npm run lint
 ```
 
 Test functionality using:
 
 ```bash
-$ ./script/test.py
+$ npm test
+```
+
+You can make the test suite run faster by isolating the specific test or block
+you're currently working on using Mocha's
+[exclusive tests](https://mochajs.org/#exclusive-tests) feature:
+
+```js
+describe.only('some feature', function () {
+  // ... only tests in this block will be run
+})
+```
+
+Alternatively, you can use mocha's `grep` option to only run tests matching the
+given regular expression pattern:
+
+```sh
+npm test -- --grep child_process
 ```
