@@ -215,4 +215,35 @@ Marks the image as a template image.
 
 Returns `Boolean` - Whether the image is a template image.
 
+#### `image.crop(rect)`
+
+* `rect` Object - The area of the image to crop
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+
+Returns `NativeImage` - The cropped image.
+
+#### `image.resize(options)`
+
+* `options` Object
+  * `width` Integer (optional)
+  * `height` Integer (optional)
+  * `quality` String (optional) - The desired quality of the resize image.
+    Possible values are `good`, `better` or `best`. The default is `best`.
+    These values express a desired quality/speed tradeoff. They are translated
+    into an algorithm-specific method that depends on the capabilities
+    (CPU, GPU) of the underlying platform. It is possible for all three methods
+    to be mapped to the same algorithm on a given platform.
+
+Returns `NativeImage` - The resized image.
+
+If only the `height` or the `width` are specified then the current aspect ratio
+will be preserved in the resized image.
+
+#### `image.getAspectRatio()`
+
+Returns `Float` - The image's aspect ratio.
+
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
