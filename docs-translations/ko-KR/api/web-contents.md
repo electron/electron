@@ -155,7 +155,8 @@ Returns:
 기본값으로 `BrowserWindow`는 `url`을 기반으로 생성됩니다.
 
 `event.preventDefault()`를 호출하면 새로운 창이 생성되는 것을 방지할 수
-있습니다. 이러한 경우에, the `event.newGuest` may be set with a reference to a `BrowserWindow` instance to make it used by the Electron's runtime.
+있습니다. 이 경우, `event.newGuest` 는 Electron 의 런타임에 의해 사용할 수 있게
+`BrowserWindow` 인스턴스에 대한 참조를 설정할 수 있습니다.
 
 #### Event: 'will-navigate'
 
