@@ -61,31 +61,4 @@ $ npm run clean
 
 ## Tests
 
-Test your changes conform to the project coding style using:
-
-```bash
-$ npm run lint
-```
-
-Test functionality using:
-
-```bash
-$ npm test
-```
-
-You can make the test suite run faster by isolating the specific test or block
-you're currently working on using Mocha's
-[exclusive tests](https://mochajs.org/#exclusive-tests) feature:
-
-```js
-describe.only('some feature', function () {
-  // ... only tests in this block will be run
-})
-```
-
-Alternatively, you can use mocha's `grep` option to only run tests matching the
-given regular expression pattern:
-
-```sh
-npm test -- --grep child_process
-```
+See [Build System Overview: Tests](docs/development/build-system-overview.md#tests)

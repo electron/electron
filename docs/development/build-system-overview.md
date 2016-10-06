@@ -71,3 +71,44 @@ to generate one target at a time as stated above.
 
 This only affects developers, if you are just building Electron for rebranding
 you are not affected.
+
+## Tests
+
+Test your changes conform to the project coding style using:
+
+```bash
+$ npm run lint
+```
+
+Test functionality using:
+
+```bash
+$ npm test
+```
+
+You can make the test suite run faster by isolating the specific test or block
+you're currently working on using Mocha's
+[exclusive tests](https://mochajs.org/#exclusive-tests) feature:
+
+```js
+describe.only('some feature', function () {
+  // ... only tests in this block will be run
+})
+```
+
+Alternatively, you can use mocha's `grep` option to only run tests matching the
+given regular expression pattern:
+
+```sh
+$ npm test -- --grep child_process
+```
+
+Tests that include native modules (e.g. `runas`) can't be executed with the
+debug build (see [#2558](https://github.com/electron/electron/issues/2558) for
+details), but they will work with the release build.
+
+To run the tests with the release build use:
+
+```bash
+$ npm test -- -R
+```
