@@ -190,7 +190,9 @@ Returns `Boolean` - 이미지가 비었는지 여부.
 
 #### `image.getSize()`
 
-Returns `Integer[]` - 이미지의 크기.
+Returns `Object`:
+* `width` Integer
+* `height` Integer
 
 #### `image.setTemplateImage(option)`
 
