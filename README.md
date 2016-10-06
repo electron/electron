@@ -1,17 +1,17 @@
 [![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
-
+So Electron is the smallest particle as you know ?? So what it is?> <br>
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kvxe4byi7jcxbe26/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron#info=devDependencies)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
-
+<br>
 :memo: Available Translations: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/README.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/README.md)
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
 [Chromium](http://www.chromium.org) and is used by the [Atom
 editor](https://github.com/atom/atom) and many other [apps](http://electron.atom.io/apps).
-
+<br>
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
