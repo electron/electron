@@ -1,9 +1,11 @@
 const assert = require('assert')
-const {net} = require('electron');
+const {remote} = require('electron')
+const {net} = remote
 
-describe('net module', function() {
+describe.only('net module', function() {
   describe('HTTP basics', function() {
     it ('should be able to fetch google.com', function(done) {
+      this.timeout(30000);
       let response_event_emitted = false;
       let data_event_emitted = false;
       let end_event_emitted = false;
@@ -19,8 +21,7 @@ describe('net module', function() {
         assert.equal(statusCode, 200)
         const statusMessage = response.statusMessage
         const rawHeaders = response.rawHeaders
-        assert(typeof rawHeaders === 'string')
-        assert(rawHeaders.length > 0)
+        assert(typeof rawHeaders === 'object')
         const httpVersion = response.httpVersion;
         assert(typeof httpVersion === 'string')
         assert(httpVersion.length > 0)
@@ -28,7 +29,7 @@ describe('net module', function() {
         assert(typeof httpVersionMajor === 'number')
         assert(httpVersionMajor >= 1)
         const httpVersionMinor = response.httpVersionMinor;
-        assert(typeof rawHeaders === 'number')
+        assert(typeof httpVersionMinor === 'number')
         assert(httpVersionMinor >= 0)
         let body = '';
         response.on('data', function(buffer) {
@@ -48,7 +49,7 @@ describe('net module', function() {
         assert.ifError(error);
       })
       urlRequest.on('close', function() {
-        asset(response_event_emitted)
+        assert(response_event_emitted)
         assert(data_event_emitted)
         assert(end_event_emitted)
         assert(finish_event_emitted)
@@ -58,11 +59,12 @@ describe('net module', function() {
     })
 
     it ('should be able to post data', function(done) {
+      this.timeout(20000);
       let response_event_emitted = false;
       let data_event_emitted = false;
       let end_event_emitted = false;
       let finish_event_emitted = false;
-      let urlRequest =  net.request({
+      const urlRequest =  net.request({
         method: 'POST',
         url: 'http://httpbin.org/post'
       });
@@ -73,8 +75,7 @@ describe('net module', function() {
         assert.equal(statusCode, 200)
         const statusMessage = response.statusMessage
         const rawHeaders = response.rawHeaders
-        assert(typeof rawHeaders === 'string')
-        assert(rawHeaders.length > 0)
+        assert(typeof rawHeaders === 'object')
         const httpVersion = response.httpVersion;
         assert(typeof httpVersion === 'string')
         assert(httpVersion.length > 0)
@@ -82,18 +83,24 @@ describe('net module', function() {
         assert(typeof httpVersionMajor === 'number')
         assert(httpVersionMajor >= 1)
         const httpVersionMinor = response.httpVersionMinor;
-        assert(typeof rawHeaders === 'number')
+        assert(typeof httpVersionMinor === 'number')
         assert(httpVersionMinor >= 0)
         let body = '';
+        response.on('end', function() {
+          end_event_emitted = true;
+          assert(response_event_emitted)
+          assert(data_event_emitted)
+          assert(end_event_emitted)
+          assert(finish_event_emitted)
+          done()
+        })
         response.on('data', function(buffer) {
           data_event_emitted = true;
           body += buffer.toString()
           assert(typeof body === 'string')
           assert(body.length > 0)
         });
-        response.on('end', function() {
-          end_event_emitted = true;
-        })
+
       });
       urlRequest.on('finish', function() {
         finish_event_emitted = true;
@@ -102,11 +109,7 @@ describe('net module', function() {
         assert.ifError(error);
       })
       urlRequest.on('close', function() {
-        asset(response_event_emitted)
-        assert(data_event_emitted)
-        assert(end_event_emitted)
-        assert(finish_event_emitted)
-        done()
+
       })
       for (let i = 0; i < 100; ++i) {
         urlRequest.write('Hello World!');
@@ -122,16 +125,22 @@ describe('net module', function() {
       assert(false)
     })
     it ('should be able to pipe into a request', function() {
-    
+      assert(false)
+    })
+    it ('should be able to pipe from a response', function() {
+      assert(false)
     })
     it ('should be able to create a request with options', function() {
-    
+      assert(false)
     })
     it ('should be able to specify a custom session', function() {
+      assert(false)
     })
     it ('should support chunked encoding', function() {
-    
+      assert(false)
     })
-
+    it ('should not emit any event after close', function() {
+      assert(false)
+    })
   })
 })
