@@ -202,6 +202,7 @@ Returns `Boolean` -  Whether the image is empty.
 #### `image.getSize()`
 
 Returns `Object`:
+
 * `width` Integer
 * `height` Integer
 
