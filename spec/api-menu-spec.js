@@ -431,7 +431,7 @@ describe('menu module', function () {
   })
 })
 
-describe.only('MenuItem with custom properties in constructor', function () {
+describe('MenuItem with custom properties in constructor', function () {
   it('preserves the custom properties', function () {
     var template = [{
       label: 'menu 1',
@@ -442,11 +442,13 @@ describe.only('MenuItem with custom properties in constructor', function () {
     var menu = Menu.buildFromTemplate(template)
     menu.items[0].submenu.append(new MenuItem({
       label: 'item 1',
-      customProp: 'bar'
+      customProp: 'bar',
+      overrideProperty: 'oops not allowed'
     }))
 
     assert.equal(menu.items[0].customProp, 'foo')
     assert.equal(menu.items[0].submenu.items[0].label, 'item 1')
     assert.equal(menu.items[0].submenu.items[0].customProp, 'bar')
+    assert.notEqual(typeof menu.items[0].submenu.items[0].overrideProperty, 'string')
   })
 })
