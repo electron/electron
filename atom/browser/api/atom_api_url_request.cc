@@ -368,7 +368,7 @@ void URLRequest::OnResponseData(
   if (!buffer || !buffer->data() || !buffer->size()) {
     return;
   }
-  EmitResponseEvent(false, "data", buffer);
+  Emit("data", buffer);
 }
 
 void URLRequest::OnResponseCompleted() {
@@ -381,7 +381,7 @@ void URLRequest::OnResponseCompleted() {
     return;
   }
   response_state_.SetFlag(ResponseStateFlags::kEnded);
-  EmitResponseEvent(false, "end");
+  Emit("end");
   Close();
 }
 
