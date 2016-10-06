@@ -569,7 +569,7 @@ Sets or removes a custom Jump List for the application, and returns one of the
 following strings:
 
 * `ok` - Nothing went wrong.
-* `error` - One or more errors occured, enable runtime logging to figure out
+* `error` - One or more errors occurred, enable runtime logging to figure out
   the likely cause.
 * `invalidSeparatorError` - An attempt was made to add a separator to a
   custom category in the Jump List. Separators are only allowed in the
