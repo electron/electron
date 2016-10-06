@@ -150,3 +150,8 @@ const green = color.substr(2, 2) // "bb"
 const blue = color.substr(4, 2) // "cc"
 const alpha = color.substr(6, 2) // "dd"
 ```
+
+### `systemPreferences.isInvertedColorScheme()` _Windows_
+
+Returns `Boolean` - `true` if an inverted color scheme, such as a high contrast
+theme, is active, `false` otherwise.
