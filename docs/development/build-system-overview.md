@@ -86,6 +86,13 @@ Test functionality using:
 $ npm test
 ```
 
+Whenever you make changes to Electron source code, you'll need to re-run the
+build before the tests:
+
+```bash
+$ npm run build && npm test
+```
+
 You can make the test suite run faster by isolating the specific test or block
 you're currently working on using Mocha's
 [exclusive tests](https://mochajs.org/#exclusive-tests) feature:
