@@ -334,4 +334,23 @@ describe('app module', function () {
       assert.equal(typeof app.isAccessibilitySupportEnabled(), 'boolean')
     })
   })
+
+  describe('getPath(name)', function () {
+    it('returns paths that exist', function () {
+      assert.equal(fs.existsSync(app.getPath('exe')), true)
+      assert.equal(fs.existsSync(app.getPath('home')), true)
+      assert.equal(fs.existsSync(app.getPath('temp')), true)
+    })
+
+    it('throws an error when the name is invalid', function () {
+      assert.throws(function () {
+        app.getPath('does-not-exist')
+      }, /Failed to get 'does-not-exist' path/)
+    })
+
+    it('returns the overridden path', function () {
+      app.setPath('music', __dirname)
+      assert.equal(app.getPath('music'), __dirname)
+    })
+  })
 })
