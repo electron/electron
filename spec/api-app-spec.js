@@ -285,6 +285,7 @@ describe('app module', function () {
     it('should set a badge count', function () {
       app.setBadgeCount(42)
       assert.equal(app.getBadgeCount(), shouldFail ? 0 : 42)
+      app.setBadgeCount(0)
     })
   })
 
