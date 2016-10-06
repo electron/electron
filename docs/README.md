@@ -37,6 +37,7 @@ an issue:
 * [Quick Start](tutorial/quick-start.md)
 * [Desktop Environment Integration](tutorial/desktop-environment-integration.md)
 * [Online/Offline Event Detection](tutorial/online-offline-events.md)
+* [REPL](tutorial/repl.md)
 
 ## API References
 
