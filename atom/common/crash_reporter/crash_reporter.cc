@@ -38,7 +38,12 @@ void CrashReporter::Start(const std::string& product_name,
 
 base::FilePath CrashReporter::GetCrashesDirectory(
     const std::string& product_name, const base::FilePath& temp_path) {
-  return temp_path.Append(base::UTF8ToUTF16(product_name + " Crashes"));
+  std::string folder_name = product_name + " Crashes";
+#if defined(OS_WIN)
+  return temp_path.Append(base::UTF8ToUTF16(folder_name));
+#else
+  return temp_path.Append(folder_name);
+#endif
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
