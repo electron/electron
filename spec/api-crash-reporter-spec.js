@@ -61,10 +61,12 @@ describe('crashReporter module', function () {
 
         const reportId = 'abc-123-def-456-abc-789-abc-123-abcd'
         res.end(reportId, () => {
-          assert.equal(crashReporter.getLastCrashReport().id, reportId)
-          assert.notEqual(crashReporter.getUploadedReports().length, 0)
-          assert.equal(crashReporter.getUploadedReports()[0].id, reportId)
-          done()
+          waitForCrashReport().then(() => {
+            assert.equal(crashReporter.getLastCrashReport().id, reportId)
+            assert.notEqual(crashReporter.getUploadedReports().length, 0)
+            assert.equal(crashReporter.getUploadedReports()[0].id, reportId)
+            done()
+          }, done)
         })
       })
     })
@@ -116,3 +118,20 @@ describe('crashReporter module', function () {
     })
   })
 })
+
+const waitForCrashReport = () => {
+  return new Promise((resolve, reject) => {
+    let times = 0
+    const checkForReport = () => {
+      if (crashReporter.getLastCrashReport() != null) {
+        resolve()
+      } else if (times >= 10) {
+        reject(new Error('No crash report available'))
+      } else {
+        times++
+        setTimeout(checkForReport, 100)
+      }
+    }
+    checkForReport()
+  })
+}
