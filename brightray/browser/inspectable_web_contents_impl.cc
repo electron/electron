@@ -124,15 +124,11 @@ GURL GetRemoteBaseURL() {
       content::GetWebKitRevision().c_str()));
 }
 
-GURL GetDevToolsURL(
-    bool can_dock,
-    const std::string& dock_state) {
+GURL GetDevToolsURL(bool can_dock) {
   auto url_string =
       base::StringPrintf(kChromeUIDevToolsURL,
                          GetRemoteBaseURL().spec().c_str(),
                          can_dock ? "true" : "");
-  if (!dock_state.empty())
-    url_string += "&settings={\"currentDockState\":\"\\\"" + dock_state + "\\\"\"}&";
   return GURL(url_string);
 }
 
@@ -287,7 +283,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
     agent_host_->AttachClient(this);
 
     devtools_web_contents_->GetController().LoadURL(
-        GetDevToolsURL(can_dock_, dock_state_),
+        GetDevToolsURL(can_dock_),
         content::Referrer(),
         ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
         std::string());
@@ -381,8 +377,13 @@ void InspectableWebContentsImpl::LoadCompleted() {
   view_->ShowDevTools();
 
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
-  if (!can_dock_)
+  if (!can_dock_) {
     SetIsDocked(DispatchCallback(), false);
+  } else {
+    base::string16 javascript = base::UTF8ToUTF16(
+        "WebInspector.dockController.setDockSide(\"" + dock_state_ + "\");");
+    devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(javascript);
+  }
 
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsOpened();
