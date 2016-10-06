@@ -1,6 +1,6 @@
 # Contributing to Electron
 
-:memo: Available Translations: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/CONTRIBUTING.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/CONTRIBUTING.md) | [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/CONTRIBUTING.md)
+:memo: Available Translations: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/CONTRIBUTING.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/CONTRIBUTING.md) | [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/CONTRIBUTING.md) | [Dutch](https://github.com/electron/electron/tree/master/docs-translations/nl/project/CONTRIBUTING.md)
 
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
