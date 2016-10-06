@@ -10,6 +10,7 @@
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/api/trackable_object.h"
 #include "base/memory/weak_ptr.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable_base.h"
 #include "net/base/auth.h"
