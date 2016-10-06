@@ -87,7 +87,7 @@ $ npm run clean
 
 ## Tests
 
-See [Build System Overview: Tests](docs/development/build-system-overview.md#tests)
+See [Build System Overview: Tests](build-system-overview.md#tests)
 
 ## Troubleshooting
 
