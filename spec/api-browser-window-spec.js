@@ -818,10 +818,11 @@ describe('browser-window module', function () {
     }
 
     it('emits when window.open is called', function (done) {
-      w.webContents.once('new-window', function (e, url, frameName) {
+      w.webContents.once('new-window', function (e, url, frameName, disposition, options, additionalFeatures) {
         e.preventDefault()
         assert.equal(url, 'http://host/')
         assert.equal(frameName, 'host')
+        assert.equal(additionalFeatures[0], 'this-is-not-a-standard-feature')
         done()
       })
       w.loadURL('file://' + fixtures + '/pages/window-open.html')
