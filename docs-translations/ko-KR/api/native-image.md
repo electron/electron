@@ -190,7 +190,9 @@ Returns `Boolean` - 이미지가 비었는지 여부.
 
 #### `image.getSize()`
 
-Returns `Integer[]` - 이미지의 크기.
+Returns `Object`:
+* `width` Integer
+* `height` Integer
 
 #### `image.setTemplateImage(option)`
 
@@ -201,5 +203,35 @@ Returns `Integer[]` - 이미지의 크기.
 #### `image.isTemplateImage()`
 
 Returns `Boolean` - 이미지가 템플릿 이미지인지 여부.
+
+#### `image.crop(rect)`
+
+* `rect` Object - 잘라내기 위한 이미지 영역
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+
+Returns `NativeImage` - 잘라낸 이미지.
+
+#### `image.resize(options)`
+
+* `options` Object
+  * `width` Integer (optional)
+  * `height` Integer (optional)
+  * `quality` String (optional) - 크기 변경된 이미지의 원하는 품질.
+    가능한 값은 `good`, `better`, `best` 이며, 기본값은 `best` 입니다.
+    이 값은 원하는 품질/속도 균형을 표현합니다. 이것은 기본이되는 플랫폼의 성능
+    (CPU, GPU) 에 의존하는 알고리즘에 특정 방법으로 변환됩니다. 주어진
+    플랫폼에서 세가지 방법이 모두 같은 알고리즘에 매핑될 수 있습니다.
+
+Returns `NativeImage` - 크기 변경된 이미지.
+
+`height` 또는 `width` 하나만 명시한다면 크기가 변경된 이미지에서도 종횡비가
+유지될 것 입니다.
+
+#### `image.getAspectRatio()`
+
+Returns `Float` - 이미지의 종횡비.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
