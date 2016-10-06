@@ -289,6 +289,7 @@ The `webPreferences` option is an object that can have the following properties:
   when the page becomes background. Defaults to `true`.
 * `offscreen` Boolean - Whether to enable offscreen rendering for the browser
   window. Defaults to `false`.
+* `sandbox` Boolean - Whether to enable Chromium OS-level sandbox.
 
 ### Instance Events
 

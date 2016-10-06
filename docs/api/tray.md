@@ -251,4 +251,8 @@ Returns `Object`:
 
 The `bounds` of this tray icon as `Object`.
 
+#### `tray.isDestroyed()`
+
+Returns `Boolean` - Whether the tray icon is destroyed.
+
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter
