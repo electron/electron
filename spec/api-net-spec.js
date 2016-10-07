@@ -4,7 +4,27 @@ const http = require('http')
 const url = require('url')
 const {net} = remote
 
-describe.only('net module', function() {
+function randomBuffer(size, start, end) {
+  start = start || 0
+  end = end || 255
+  let range = 1 + end - start
+  const buffer = Buffer.allocUnsafe(size)
+  for (let i = 0; i < size; ++i) {
+    buffer[i] = start + Math.floor(Math.random()*range)
+  }
+  return buffer;
+}
+
+function randomString(length) {
+  let buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0))
+  return buffer.toString();
+}
+
+const kOneKiloByte = 1024
+const kOneMegaByte = kOneKiloByte * kOneKiloByte
+
+
+describe('net module', function() {
   this.timeout(0)
   describe('HTTP basics', function() {
 
@@ -40,12 +60,13 @@ describe.only('net module', function() {
       const urlRequest = net.request(`${server.url}${request_url}`)
       urlRequest.on('response', function(response) {
         assert.equal(response.statusCode, 200)
+        response.pause()
+        response.on('data', function(chunk) {
+        })
         response.on('end', function() {
           done()
         })
-        response.on('data', function(chunk) {
-        
-        })
+        response.resume()
       })
       urlRequest.end();
     })
@@ -70,12 +91,13 @@ describe.only('net module', function() {
       })
       urlRequest.on('response', function(response) {
         assert.equal(response.statusCode, 200)
+        response.pause()
+        response.on('data', function(chunk) {
+        })
         response.on('end', function() {
           done()
         })
-        response.on('data', function(chunk) {
-        
-        })
+        response.resume()
       })
       urlRequest.end();
     })
@@ -100,13 +122,15 @@ describe.only('net module', function() {
       urlRequest.on('response', function(response) {
         let expected_body_data = '';
         assert.equal(response.statusCode, 200)
+        response.pause()
+        response.on('data', function(chunk) {
+          expected_body_data += chunk.toString();
+        })
         response.on('end', function() {
           assert.equal(expected_body_data, body_data)
           done()
         })
-        response.on('data', function(chunk) {
-          expected_body_data += chunk.toString();
-        })
+        response.resume()
       })
       urlRequest.end();
     })
@@ -139,130 +163,237 @@ describe.only('net module', function() {
       })
       urlRequest.on('response', function(response) {
         assert.equal(response.statusCode, 200)
+        response.pause()
+        response.on('data', function(chunk) {
+        })
         response.on('end', function() {
           done()
         })
-        response.on('data', function(chunk) {
-        })
+        response.resume()
       })
       urlRequest.write(body_data)
       urlRequest.end();
     })
 
-  })
-  describe('ClientRequest API', function() {
-    it ('should emit ClientRequest events in a GET request', function(done) {
-      this.timeout(30000);
-      let response_event_emitted = false;
-      let data_event_emitted = false;
-      let end_event_emitted = false;
-      let finish_event_emitted = false;
-      const urlRequest =  net.request({
-    method: 'GET',
-    url: 'https://www.google.com'
-  })
-      urlRequest.on('response', function(response) {
-        response_event_emitted = true;
-        const statusCode = response.statusCode
-        assert(typeof statusCode === 'number')
-        assert.equal(statusCode, 200)
-        const statusMessage = response.statusMessage
-        const rawHeaders = response.rawHeaders
-        assert(typeof rawHeaders === 'object')
-        const httpVersion = response.httpVersion;
-        assert(typeof httpVersion === 'string')
-        assert(httpVersion.length > 0)
-        const httpVersionMajor = response.httpVersionMajor;
-        assert(typeof httpVersionMajor === 'number')
-        assert(httpVersionMajor >= 1)
-        const httpVersionMinor = response.httpVersionMinor;
-        assert(typeof httpVersionMinor === 'number')
-        assert(httpVersionMinor >= 0)
-        let body = '';
-        response.on('data', function(buffer) {
-          data_event_emitted = true;
-          body += buffer.toString()
-          assert(typeof body === 'string')
-          assert(body.length > 0)
-  });
-        response.on('end', function() {
-          end_event_emitted = true;
-  })
-  });
-      urlRequest.on('finish', function() {
-        finish_event_emitted = true;
-  })
-      urlRequest.on('error', function(error) {
-        assert.ifError(error);
-  })
-      urlRequest.on('close', function() {
-        assert(response_event_emitted)
-        assert(data_event_emitted)
-        assert(end_event_emitted)
-        assert(finish_event_emitted)
-        done()
-  })
-      urlRequest.end();
-  })
+    it.only('should support chunked encoding', function(done) {
+      const request_url = '/request_url'
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case request_url:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.chunkedEncoding = true
+            assert.equal(request.method, 'POST')
+            assert.equal(request.headers['transfer-encoding'], 'chunked')
+            assert(!request.headers['content-length'])
+            request.on('data', function(chunk) {
+              response.write(chunk)
+            })
+            request.on('end', function(chunk) {
+              response.end(chunk);
+            })
+            break;
+          default:
+            response.statusCode = 501
+            response.statusMessage = 'Not Implemented'
+            response.end()
+        }
+      })
+      const urlRequest = net.request({
+        method: 'POST',
+        url: `${server.url}${request_url}`
+      })
 
-    it ('should emit ClientRequest events in a POST request', function(done) {
-      this.timeout(20000);
-      let response_event_emitted = false;
-      let data_event_emitted = false;
-      let end_event_emitted = false;
-      let finish_event_emitted = false;
-      const urlRequest =  net.request({
-    method: 'POST',
-    url: 'http://httpbin.org/post'
-  });
+      let chunk_index = 0
+      let chunk_count = 100
+      let sent_chunks = [];
+      let received_chunks = [];
       urlRequest.on('response', function(response) {
-        response_event_emitted = true;
-        const statusCode = response.statusCode
-        assert(typeof statusCode === 'number')
-        assert.equal(statusCode, 200)
-        const statusMessage = response.statusMessage
-        const rawHeaders = response.rawHeaders
-        assert(typeof rawHeaders === 'object')
-        const httpVersion = response.httpVersion;
-        assert(typeof httpVersion === 'string')
-        assert(httpVersion.length > 0)
-        const httpVersionMajor = response.httpVersionMajor;
-        assert(typeof httpVersionMajor === 'number')
-        assert(httpVersionMajor >= 1)
-        const httpVersionMinor = response.httpVersionMinor;
-        assert(typeof httpVersionMinor === 'number')
-        assert(httpVersionMinor >= 0)
-        let body = '';
+        assert.equal(response.statusCode, 200)
+        response.pause()
+        response.on('data', function(chunk) {
+          received_chunks.push(chunk)
+        })
         response.on('end', function() {
-          end_event_emitted = true;
-          assert(response_event_emitted)
-          assert(data_event_emitted)
-          assert(end_event_emitted)
-          assert(finish_event_emitted)
+          let sent_data = Buffer.concat(sent_chunks)
+          let received_data = Buffer.concat(received_chunks)
+          assert.equal(sent_data.toString(), received_data.toString())
+          assert.equal(chunk_index, chunk_count)
           done()
+        })
+        response.resume()
+      })
+      urlRequest.chunkedEncoding = true
+      while (chunk_index < chunk_count) {
+        ++chunk_index
+        let chunk = randomBuffer(kOneKiloByte)
+        sent_chunks.push(chunk)
+        assert(urlRequest.write(chunk))
+      }
+      urlRequest.end();
+    })
   })
-        response.on('data', function(buffer) {
-          data_event_emitted = true;
-          body += buffer.toString()
-          assert(typeof body === 'string')
-          assert(body.length > 0)
-  });
 
-  });
+  describe('ClientRequest API', function() {
+
+    let server
+    beforeEach(function (done) {
+      server = http.createServer()
+      server.listen(0, '127.0.0.1', function () {
+        server.url = 'http://127.0.0.1:' + server.address().port
+        done()
+      })
+    })
+
+    afterEach(function () {
+      server.close(function() {
+      })
+      server = null
+    })
+
+    it ('response object should implement the IncomingMessage API', function(done) {
+      const request_url = '/request_url'
+      const custom_header_name = 'Some-Custom-Header-Name'
+      const custom_header_value = 'Some-Customer-Header-Value'
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case request_url:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.setHeader(custom_header_name, custom_header_value)
+            response.end();
+            break;
+          default:
+            response.statusCode = 501
+            response.statusMessage = 'Not Implemented'
+            response.end()
+        }
+      })
+      let response_event_emitted = false;
+      let data_event_emitted = false;
+      let end_event_emitted = false;
+      let finish_event_emitted = false;
+      const urlRequest =  net.request({
+        method: 'GET',
+        url: `${server.url}${request_url}`
+      })
+      urlRequest.on('response', function(response) {
+        response_event_emitted = true;
+        const statusCode = response.statusCode
+        assert(typeof statusCode === 'number')
+        assert.equal(statusCode, 200)
+        const statusMessage = response.statusMessage
+        assert(typeof statusMessage === 'string')
+        assert.equal(statusMessage, 'OK')
+        const rawHeaders = response.rawHeaders
+        assert(typeof rawHeaders === 'object')
+        assert(rawHeaders[custom_header_name] === 
+          custom_header_value)
+        const httpVersion = response.httpVersion;
+        assert(typeof httpVersion === 'string')
+        assert(httpVersion.length > 0)
+        const httpVersionMajor = response.httpVersionMajor;
+        assert(typeof httpVersionMajor === 'number')
+        assert(httpVersionMajor >= 1)
+        const httpVersionMinor = response.httpVersionMinor;
+        assert(typeof httpVersionMinor === 'number')
+        assert(httpVersionMinor >= 0)
+        response.pause()
+        response.on('data', function(chunk) {
+        });
+        response.on('end', function() {
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.end();
+    })
+
+
+
+    it('request/response objects should emit expected events', function(done) {
+
+      const request_url = '/request_url'
+      let body_data = randomString(kOneMegaByte)
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case request_url:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.write(body_data)
+            response.end();
+            break;
+          default:
+            response.statusCode = 501
+            response.statusMessage = 'Not Implemented'
+            response.end()
+        }
+      })
+
+      let request_response_event_emitted = false
+      let request_finish_event_emitted = false
+      let request_close_event_emitted = false
+      let response_data_event_emitted = false
+      let response_end_event_emitted = false
+      let response_close_event_emitted = false
+
+      function maybeDone(done) {
+        if (!request_close_event_emitted || !response_end_event_emitted) {
+          return
+        }
+
+        assert(request_response_event_emitted)
+        assert(request_finish_event_emitted)
+        assert(request_close_event_emitted)
+        assert(response_data_event_emitted)
+        assert(response_end_event_emitted)
+        done()
+      }
+
+      const urlRequest =  net.request({
+        method: 'GET',
+        url: `${server.url}${request_url}`
+      })
+      urlRequest.on('response', function(response) {
+        request_response_event_emitted = true;
+        const statusCode = response.statusCode
+        assert.equal(statusCode, 200)
+        let buffers = [];
+        response.pause();
+        response.on('data', function(chunk) {
+          buffers.push(chunk)
+          response_data_event_emitted = true
+        })
+        response.on('end', function() {
+          let received_body_data = Buffer.concat(buffers);
+          assert(received_body_data.toString() === body_data)
+          response_end_event_emitted = true
+          maybeDone(done)
+        })
+        response.resume();
+        response.on('error', function(error) {
+          assert.ifError(error);
+        })
+        response.on('aborted', function() {
+          assert(false)
+        })
+      })
       urlRequest.on('finish', function() {
-        finish_event_emitted = true;
-  })
+        request_finish_event_emitted = true
+      })
       urlRequest.on('error', function(error) {
         assert.ifError(error);
-  })
+      })
+      urlRequest.on('abort', function() {
+        assert(false);
+      })
       urlRequest.on('close', function() {
-
-  })
-      for (let i = 0; i < 100; ++i) {
-        urlRequest.write('Hello World!');
-  }
+        request_close_event_emitted = true
+        maybeDone(done)
+      })
       urlRequest.end();
-  })
+    })
+
 
     it ('should be able to set a custom HTTP header', function() {
       assert(false)
@@ -278,10 +409,7 @@ describe.only('net module', function() {
   })
     it ('should be able to specify a custom session', function() {
       assert(false)
-  })
-    it ('should support chunked encoding', function() {
-      assert(false)
-  })
+    })
   })
   describe('IncomingMessage API', function() {
     it('should provide a Node.js-similar API', function() {
