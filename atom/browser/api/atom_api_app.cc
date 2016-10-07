@@ -37,6 +37,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
+#include "media/audio/audio_manager.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -490,6 +491,9 @@ void App::OnWillFinishLaunching() {
 }
 
 void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
+  // Set the application name for audio streams shown in external
+  // applications. Only affects pulseaudio currently.
+  media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
   Emit("ready", launch_info);
 }
 
