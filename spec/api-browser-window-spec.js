@@ -828,6 +828,19 @@ describe('browser-window module', function () {
       w.loadURL('file://' + fixtures + '/pages/window-open.html')
     })
 
+    it('emits when window.open is called with no webPreferences', function (done) {
+      w.destroy()
+      w = new BrowserWindow({ show: false })
+      w.webContents.once('new-window', function (e, url, frameName, disposition, options, additionalFeatures) {
+        e.preventDefault()
+        assert.equal(url, 'http://host/')
+        assert.equal(frameName, 'host')
+        assert.equal(additionalFeatures[0], 'this-is-not-a-standard-feature')
+        done()
+      })
+      w.loadURL('file://' + fixtures + '/pages/window-open.html')
+    })
+
     it('emits when link with target is called', function (done) {
       this.timeout(10000)
       w.webContents.once('new-window', function (e, url, frameName) {
