@@ -781,7 +781,7 @@ describe('asar package', function () {
           output += data
         })
         spawned.stdout.on('close', function () {
-          stats = JSON.parse(output)
+          const stats = JSON.parse(output)
           assert.equal(stats.isFile, true)
           assert.equal(stats.size, 778)
           done()
