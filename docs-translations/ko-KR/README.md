@@ -32,13 +32,14 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [Pepper 플래시 플러그인 사용하기](tutorial/using-pepper-flash-plugin.md)
 * [Widevine CDM 플러그인 사용하기](tutorial/using-widevine-cdm-plugin.md)
 * [Headless CI 시스템에서 테스팅하기 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
-* [오프 스크린 랜더링](tutorial/offscreen-rendering.md)
+* [오프 스크린 렌더링](tutorial/offscreen-rendering.md)
 
 ## 튜토리얼
 
 * [시작하기](tutorial/quick-start.md)
 * [데스크톱 환경 통합](tutorial/desktop-environment-integration.md)
-* [온라인/오프라인 이벤트 감지](tutorial/online-offline-events.md)
+* [온/오프라인 이벤트 감지](tutorial/online-offline-events.md)
+* [REPL](tutorial/repl.md)
 
 ## API 레퍼런스
 
