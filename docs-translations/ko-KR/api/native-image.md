@@ -191,6 +191,7 @@ Returns `Boolean` - 이미지가 비었는지 여부.
 #### `image.getSize()`
 
 Returns `Object`:
+
 * `width` Integer
 * `height` Integer
 

@@ -224,13 +224,13 @@ win.on('hide', () => {
 
 `position`은 Windows에서만 사용할 수 있으며 기본값은 (0, 0)입니다.
 
-### `tray.setContextMenu(menu)`
+#### `tray.setContextMenu(menu)`
 
 * `menu` Menu
 
 트레이에 컨텍스트 메뉴를 설정합니다.
 
-### `tray.getBounds()` _macOS_ _Windows_
+#### `tray.getBounds()` _macOS_ _Windows_
 
 Returns `Object`:
 * `x` Integer
@@ -239,5 +239,9 @@ Returns `Object`:
 * `height` Integer
 
 이 트레이 아이콘의 `Object` 형식의 `bounds`.
+
+#### `tray.isDestroyed()`
+
+Returns `Boolean` - 트레이 아이콘이 파괴되었는지 여부.
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter

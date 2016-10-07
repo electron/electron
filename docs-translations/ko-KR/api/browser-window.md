@@ -287,6 +287,7 @@ On Windows it is
   타이머에 스로틀을 적용할지 여부입니다. 기본값은 `true`입니다.
 * `offscreen` Boolean - 브라우저 윈도우에 오프 스크린 랜더링을 적용할지 여부를
   지정합니다. 기본값은 `false`입니다.
+* `sandbox` Boolean - Chromium 운영체제 수준의 샌드박스 활성화 여부.
 
 ### Instance Events
 
