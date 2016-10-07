@@ -15,6 +15,7 @@ namespace atom {
 // pressed.
 ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted);
 
+// Ported from ui/events/blink/blink_event_util.h
 int WebEventModifiersToEventFlags(int modifiers);
 
 }  // namespace atom

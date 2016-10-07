@@ -776,7 +776,7 @@ describe('<webview> tag', function () {
     it('can send keyboard event', function (done) {
       webview.addEventListener('ipc-message', function (e) {
         assert.equal(e.channel, 'keyup')
-        assert.deepEqual(e.args, [67, true, false])
+        assert.deepEqual(e.args, ['C', 'KeyC', 67, true, false])
         done()
       })
       webview.addEventListener('dom-ready', function () {
