@@ -5,7 +5,7 @@ const path = require('path')
 const {closeWindow} = require('./window-helpers')
 
 const {remote} = require('electron')
-const {BrowserWindow, webContents} = remote
+const {BrowserWindow, webContents, ipcMain} = remote
 
 const isCi = remote.getGlobal('isCi')
 
@@ -94,6 +94,62 @@ describe('webContents module', function () {
     it('returns false when the window is hidden', function () {
       BrowserWindow.getAllWindows().forEach(function (window) {
         assert.equal(!window.isVisible() && window.webContents.isFocused(), false)
+      })
+    })
+  })
+
+  describe('sendInputEvent(event)', function () {
+    it('can send keydown events', function (done) {
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'onkeydown.html'))
+
+      ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, '')
+        assert.equal(code, '')
+        assert.equal(keyCode, 65)
+        assert.equal(shiftKey, false)
+        assert.equal(ctrlKey, false)
+        assert.equal(altKey, false)
+        done()
+      })
+
+      w.webContents.once('did-finish-load', function () {
+        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
+      })
+    })
+
+    it('can send keydown events with modifiers', function (done) {
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'onkeydown.html'))
+
+      ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, '')
+        assert.equal(code, '')
+        assert.equal(keyCode, 90)
+        assert.equal(shiftKey, true)
+        assert.equal(ctrlKey, true)
+        assert.equal(altKey, false)
+        done()
+      })
+
+      w.webContents.once('did-finish-load', function () {
+        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
+      })
+    })
+
+    it('can send keydown events with special keys', function (done) {
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'onkeydown.html'))
+
+      ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, '')
+        assert.equal(code, '')
+        assert.equal(keyCode, 9)
+        assert.equal(shiftKey, false)
+        assert.equal(ctrlKey, false)
+        assert.equal(altKey, true)
+        done()
+      })
+
+      w.webContents.once('did-finish-load', function () {
+        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Tab', modifiers: ['alt']})
       })
     })
   })
