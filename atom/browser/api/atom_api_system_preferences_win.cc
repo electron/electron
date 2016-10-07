@@ -19,11 +19,11 @@ const wchar_t kSystemPreferencesWindowClass[] =
 
 namespace api {
 
-class SystemPreferencesColorChangeListener :
-    public gfx::SysColorChangeListener {
+class SystemPreferencesColorChangeListener
+    : public gfx::SysColorChangeListener {
  public:
-  explicit SystemPreferencesColorChangeListener(SystemPreferences* prefs):
-        prefs_(prefs) {
+  explicit SystemPreferencesColorChangeListener(SystemPreferences* prefs)
+      : prefs_(prefs) {
   }
 
   void OnSysColorChange() {

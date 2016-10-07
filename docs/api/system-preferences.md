@@ -24,7 +24,7 @@ Returns:
 Returns:
 
 * `event` Event
-* `invertedColorScheme` Boolean - `true` if a inverted color scheme, such as
+* `invertedColorScheme` Boolean - `true` if an inverted color scheme, such as
   a high contrast theme, is being used, `false` otherwise.
 
 ## Methods
