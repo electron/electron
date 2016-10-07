@@ -4,6 +4,9 @@
 document.onkeydown = function (e) {
   require('electron').ipcRenderer.send('keydown', e.key, e.code, e.keyCode, e.shiftKey, e.ctrlKey, e.altKey)
 }
+document.onkeypress = function (e) {
+  require('electron').ipcRenderer.send('keypress', e.key, e.code, e.keyCode, e.shiftKey, e.ctrlKey, e.altKey)
+}
 </script>
 </body>
 </html>

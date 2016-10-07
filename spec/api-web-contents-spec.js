@@ -99,9 +99,14 @@ describe('webContents module', function () {
   })
 
   describe('sendInputEvent(event)', function () {
-    it('can send keydown events', function (done) {
-      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'onkeydown.html'))
+    beforeEach(function (done) {
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'key-events.html'))
+      w.webContents.once('did-finish-load', function () {
+        done()
+      })
+    })
 
+    it('can send keydown events', function (done) {
       ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
         assert.equal(key, 'a')
         assert.equal(code, 'KeyA')
@@ -111,15 +116,10 @@ describe('webContents module', function () {
         assert.equal(altKey, false)
         done()
       })
-
-      w.webContents.once('did-finish-load', function () {
-        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
-      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
     })
 
     it('can send keydown events with modifiers', function (done) {
-      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'onkeydown.html'))
-
       ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
         assert.equal(key, 'Z')
         assert.equal(code, 'KeyZ')
@@ -129,15 +129,10 @@ describe('webContents module', function () {
         assert.equal(altKey, false)
         done()
       })
-
-      w.webContents.once('did-finish-load', function () {
-        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
-      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
     })
 
     it('can send keydown events with special keys', function (done) {
-      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'onkeydown.html'))
-
       ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
         assert.equal(key, 'Tab')
         assert.equal(code, 'Tab')
@@ -147,10 +142,33 @@ describe('webContents module', function () {
         assert.equal(altKey, true)
         done()
       })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Tab', modifiers: ['alt']})
+    })
 
-      w.webContents.once('did-finish-load', function () {
-        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Tab', modifiers: ['alt']})
+    it('can send char events', function (done) {
+      ipcMain.once('keypress', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'a')
+        assert.equal(code, 'KeyA')
+        assert.equal(keyCode, 65)
+        assert.equal(shiftKey, false)
+        assert.equal(ctrlKey, false)
+        assert.equal(altKey, false)
+        done()
       })
+      w.webContents.sendInputEvent({type: 'char', keyCode: 'A'})
+    })
+
+    it('can send char events with modifiers', function (done) {
+      ipcMain.once('keypress', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'Z')
+        assert.equal(code, 'KeyZ')
+        assert.equal(keyCode, 90)
+        assert.equal(shiftKey, true)
+        assert.equal(ctrlKey, true)
+        assert.equal(altKey, false)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'char', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
     })
   })
 })
