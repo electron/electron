@@ -110,8 +110,8 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
 void SystemPreferences::OnColorChanged() {
   bool new_invertered_color_scheme = IsInvertedColorScheme();
   if (new_invertered_color_scheme != invertered_color_scheme_) {
-    Emit("inverted-color-scheme-changed", new_invertered_color_scheme);
     invertered_color_scheme_ = new_invertered_color_scheme;
+    Emit("inverted-color-scheme-changed", new_invertered_color_scheme);
   }
 }
 

@@ -17,8 +17,15 @@ Returns:
 
 * `event` Event
 * `newColor` String - The new RGBA color the user assigned to be there system
-accent color.
+  accent color.
 
+### Event: 'inverted-color-scheme-changed' _Windows_
+
+Returns:
+
+* `event` Event
+* `invertedColorScheme` Boolean - `true` if a inverted color scheme, such as
+  a high contrast theme, is being used, `false` otherwise.
 
 ## Methods
 
