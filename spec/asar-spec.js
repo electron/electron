@@ -753,6 +753,41 @@ describe('asar package', function () {
         assert.equal(process.noAsar, false)
       })
     })
+
+    describe('process.env.ELECTRON_NO_ASAR', function () {
+      it('disables asar support in forked processes', function (done) {
+        const forked = ChildProcess.fork(path.join(__dirname, 'fixtures', 'module', 'no-asar.js'), [], {
+          env: {
+            ELECTRON_NO_ASAR: true
+          }
+        })
+        forked.on('message', function (stats) {
+          assert.equal(stats.isFile, true)
+          assert.equal(stats.size, 778)
+          done()
+        })
+      })
+
+      it('disables asar support in spawned processes', function (done) {
+        const spawned = ChildProcess.spawn(process.execPath, [path.join(__dirname, 'fixtures', 'module', 'no-asar.js')], {
+          env: {
+            ELECTRON_NO_ASAR: true,
+            ELECTRON_RUN_AS_NODE: true
+          }
+        })
+
+        let output = ''
+        spawned.stdout.on('data', function (data) {
+          output += data
+        })
+        spawned.stdout.on('close', function () {
+          stats = JSON.parse(output)
+          assert.equal(stats.isFile, true)
+          assert.equal(stats.size, 778)
+          done()
+        })
+      })
+    })
   })
 
   describe('asar protocol', function () {
