@@ -16,9 +16,9 @@ namespace api {
 
 SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
   Init(isolate);
-  #if defined(OS_WIN)
+#if defined(OS_WIN)
   InitializeWindow();
-  #endif
+#endif
 }
 
 SystemPreferences::~SystemPreferences() {
@@ -29,6 +29,10 @@ bool SystemPreferences::IsDarkMode() {
   return false;
 }
 #endif
+
+bool SystemPreferences::IsInvertedColorScheme() {
+  return color_utils::IsInvertedColorScheme();
+}
 
 // static
 mate::Handle<SystemPreferences> SystemPreferences::Create(
@@ -62,7 +66,7 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
 #endif
       .SetMethod("isInvertedColorScheme",
-                 &color_utils::IsInvertedColorScheme)
+                 &SystemPreferences::IsInvertedColorScheme)
       .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode);
 }
 
