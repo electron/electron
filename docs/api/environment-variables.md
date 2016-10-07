@@ -45,7 +45,8 @@ https://console.developers.google.com/apis/api/geolocation/overview
 
 ### `ELECTRON_NO_ASAR`
 
-Disables ASAR support. Note that this variable can only be used when forking a process to disable any ASAR support in that process.
+Disables ASAR support. This variable is only supported in forked child processes
+and spawned child processes that set `ELECTRON_RUN_AS_NODE`.
 
 ## Development Variables
 
