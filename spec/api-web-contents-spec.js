@@ -103,8 +103,8 @@ describe('webContents module', function () {
       w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'onkeydown.html'))
 
       ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
-        assert.equal(key, '')
-        assert.equal(code, '')
+        assert.equal(key, 'a')
+        assert.equal(code, 'KeyA')
         assert.equal(keyCode, 65)
         assert.equal(shiftKey, false)
         assert.equal(ctrlKey, false)
@@ -121,8 +121,8 @@ describe('webContents module', function () {
       w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'onkeydown.html'))
 
       ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
-        assert.equal(key, '')
-        assert.equal(code, '')
+        assert.equal(key, 'Z')
+        assert.equal(code, 'KeyZ')
         assert.equal(keyCode, 90)
         assert.equal(shiftKey, true)
         assert.equal(ctrlKey, true)
@@ -139,8 +139,8 @@ describe('webContents module', function () {
       w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'onkeydown.html'))
 
       ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
-        assert.equal(key, '')
-        assert.equal(code, '')
+        assert.equal(key, 'Tab')
+        assert.equal(code, 'Tab')
         assert.equal(keyCode, 9)
         assert.equal(shiftKey, false)
         assert.equal(ctrlKey, false)
