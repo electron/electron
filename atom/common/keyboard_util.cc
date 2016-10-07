@@ -7,6 +7,8 @@
 #include "atom/common/keyboard_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "third_party/WebKit/public/web/WebInputEvent.h"
+#include "ui/events/event_constants.h"
 
 namespace atom {
 
@@ -172,6 +174,35 @@ ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted) {
     return KeyboardCodeFromCharCode(str[0], shifted);
   else
     return KeyboardCodeFromKeyIdentifier(str, shifted);
+}
+
+int WebEventModifiersToEventFlags(int modifiers) {
+  int flags = 0;
+
+  if (modifiers & blink::WebInputEvent::ShiftKey)
+    flags |= ui::EF_SHIFT_DOWN;
+  if (modifiers & blink::WebInputEvent::ControlKey)
+    flags |= ui::EF_CONTROL_DOWN;
+  if (modifiers & blink::WebInputEvent::AltKey)
+    flags |= ui::EF_ALT_DOWN;
+  if (modifiers & blink::WebInputEvent::MetaKey)
+    flags |= ui::EF_COMMAND_DOWN;
+  if (modifiers & blink::WebInputEvent::CapsLockOn)
+    flags |= ui::EF_CAPS_LOCK_ON;
+  if (modifiers & blink::WebInputEvent::NumLockOn)
+    flags |= ui::EF_NUM_LOCK_ON;
+  if (modifiers & blink::WebInputEvent::ScrollLockOn)
+    flags |= ui::EF_SCROLL_LOCK_ON;
+  if (modifiers & blink::WebInputEvent::LeftButtonDown)
+    flags |= ui::EF_LEFT_MOUSE_BUTTON;
+  if (modifiers & blink::WebInputEvent::MiddleButtonDown)
+    flags |= ui::EF_MIDDLE_MOUSE_BUTTON;
+  if (modifiers & blink::WebInputEvent::RightButtonDown)
+    flags |= ui::EF_RIGHT_MOUSE_BUTTON;
+  if (modifiers & blink::WebInputEvent::IsAutoRepeat)
+    flags |= ui::EF_IS_REPEAT;
+
+  return flags;
 }
 
 }  // namespace atom
