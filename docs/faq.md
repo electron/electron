@@ -80,7 +80,7 @@ app.on('ready', () => {
   tray.setTitle('hello world')
 })
 ```
-
+##Here using jquery is not prefarable.
 ## I can not use jQuery/RequireJS/Meteor/AngularJS in Electron.
 
 Due to the Node.js integration of Electron, there are some extra symbols
