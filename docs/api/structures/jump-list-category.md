@@ -1,4 +1,4 @@
-# JumpListCategory
+# JumpListCategory Object
 
 * `type` String - One of the following:
   * `tasks` - Items in this category will be placed into the standard `Tasks`

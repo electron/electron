@@ -1,4 +1,4 @@
-# Certificate
+# Certificate Object
 
 * `data` String - PEM encoded data
 * `issuerName` String - Issuer's Common Name

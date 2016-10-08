@@ -664,20 +664,20 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Just sum any extra width and
 height areas you have within the overall content view.
 
-#### `win.setBounds(options[, animate])`
+#### `win.setBounds(bounds[, animate])`
 
-* `options` [Bounds](structures/bounds.md)
+* `bounds` [Rectangle](structures/rectangle.md)
 * `animate` Boolean (optional) _macOS_
 
 Resizes and moves the window to the supplied bounds
 
 #### `win.getBounds()`
 
-Returns [`Bounds`](structures/bounds.md)
+Returns [`Rectangle`](structures/rectangle.md)
 
-#### `win.setContentBounds(options[, animate])`
+#### `win.setContentBounds(bounds[, animate])`
 
-* `options` [Bounds](structures/bounds.md)
+* `bounds` [Rectangle](structures/rectangle.md)
 * `animate` Boolean (optional) _macOS_
 
 Resizes and moves the window's client area (e.g. the web page) to
@@ -685,7 +685,7 @@ the supplied bounds.
 
 #### `win.getContentBounds()`
 
-Returns [`Bounds`](structures/bounds.md)
+Returns [`Rectangle`](structures/rectangle.md)
 
 #### `win.setSize(width, height[, animate])`
 
@@ -948,7 +948,7 @@ Whether `Boolean` - Whether the window's document has been edited.
 
 #### `win.capturePage([rect, ]callback)`
 
-* `rect` [Bounds](structures/bounds.md) (optional) - The bounds to capture
+* `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
 * `callback` Function
 
 Same as `webContents.capturePage([rect, ]callback)`.
@@ -1075,7 +1075,7 @@ The `flags` is an array that can include following `String`s:
 
 #### `win.setThumbnailClip(region)` _Windows_
 
-* `region` [Bounds](structures/bounds.md) - Region of the window
+* `region` [Rectangle](structures/rectangle.md) - Region of the window
 
 Sets the region of the window to show as the thumbnail image displayed when
 hovering over the window in the taskbar. You can reset the thumbnail to be

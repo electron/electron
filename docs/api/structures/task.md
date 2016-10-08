@@ -1,4 +1,4 @@
-# Task
+# Task Object
 
 * `program` String - Path of the program to execute, usually you should
   specify `process.execPath` which opens the current program.

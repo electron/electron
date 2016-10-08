@@ -70,7 +70,7 @@ The `Tray` module emits the following events:
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
   * `metaKey` Boolean
-* `bounds` [Bounds](structures/bounds.md) - The bounds of tray icon
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
 
 Emitted when the tray icon is clicked.
 
@@ -81,7 +81,7 @@ Emitted when the tray icon is clicked.
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
   * `metaKey` Boolean
-* `bounds` [Bounds](structures/bounds.md) - The bounds of tray icon
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
 
 Emitted when the tray icon is right clicked.
 
@@ -92,7 +92,7 @@ Emitted when the tray icon is right clicked.
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
   * `metaKey` Boolean
-* `bounds` [Bounds](structures/bounds.md) - The bounds of tray icon
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
 
 Emitted when the tray icon is double clicked.
 
@@ -231,7 +231,7 @@ Sets the context menu for this icon.
 
 #### `tray.getBounds()` _macOS_ _Windows_
 
-Returns [`Bounds`](structures/bounds.md)
+Returns [`Rectangle`](structures/rectangle.md)
 
 The `bounds` of this tray icon as `Object`.
 

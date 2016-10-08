@@ -465,7 +465,7 @@ app.on('ready', () => {
 Returns:
 
 * `event` Event
-* `dirtyRect` [Bounds](structures/bounds.md)
+* `dirtyRect` [Rectangle](structures/rectangle.md)
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
 Emitted when a new frame is generated. Only the dirty area is passed in the
@@ -780,7 +780,7 @@ console.log(requestId)
 
 #### `contents.capturePage([rect, ]callback)`
 
-* `rect` [Bounds](structures/bounds.md) (optional) - The area of the page to be captured
+* `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured
 * `callback` Function
 
 Captures a snapshot of the page within `rect`. Upon completion `callback` will

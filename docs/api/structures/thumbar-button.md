@@ -1,4 +1,4 @@
-# ThumbarButton
+# ThumbarButton Object
 
 * `icon` [NativeImage](native-image.md) - The icon showing in thumbnail
   toolbar.

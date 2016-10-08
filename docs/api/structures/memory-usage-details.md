@@ -1,4 +1,4 @@
-# MemoryUsageDetails
+# MemoryUsageDetails Object
 
 * `count` Number
 * `size` Number

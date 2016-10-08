@@ -113,6 +113,6 @@ Returns `Display` - The display nearest the specified point.
 
 ### `screen.getDisplayMatching(rect)`
 
-* `rect` [Bounds](structures/bounds.md)
+* `rect` [Rectangle](structures/rectangle.md)
 
 Returns `Display` - The display that most closely intersects the provided bounds.
