@@ -30,6 +30,7 @@
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #include "chrome/browser/renderer_host/pepper/widevine_cdm_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
+#include "content/common/resource_request_body_impl.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/geolocation_delegate.h"
@@ -319,7 +320,7 @@ bool AtomBrowserClient::CanCreateWindow(
     WindowOpenDisposition disposition,
     const blink::WebWindowFeatures& features,
     const std::vector<base::string16>& additional_features,
-    const scoped_refptr<ResourceRequestBodyImpl>& body,
+    const scoped_refptr<content::ResourceRequestBodyImpl>& body,
     bool user_gesture,
     bool opener_suppressed,
     content::ResourceContext* context,
@@ -342,6 +343,7 @@ bool AtomBrowserClient::CanCreateWindow(
                                     frame_name,
                                     disposition,
                                     additional_features,
+                                    body,
                                     render_process_id,
                                     opener_render_frame_id));
   }

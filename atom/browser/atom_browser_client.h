@@ -13,8 +13,6 @@
 #include "brightray/browser/browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
 
-using content::ResourceRequestBodyImpl;
-
 namespace content {
 class QuotaPermissionContext;
 class ClientCertificateDelegate;
@@ -81,24 +79,25 @@ class AtomBrowserClient : public brightray::BrowserClient,
       net::SSLCertRequestInfo* cert_request_info,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
   void ResourceDispatcherHostCreated() override;
-  bool CanCreateWindow(const GURL& opener_url,
-                       const GURL& opener_top_level_frame_url,
-                       const GURL& source_origin,
-                       WindowContainerType container_type,
-                       const std::string& frame_name,
-                       const GURL& target_url,
-                       const content::Referrer& referrer,
-                       WindowOpenDisposition disposition,
-                       const blink::WebWindowFeatures& features,
-                       const std::vector<base::string16>& additional_features,
-                       const scoped_refptr<ResourceRequestBodyImpl>& body,
-                       bool user_gesture,
-                       bool opener_suppressed,
-                       content::ResourceContext* context,
-                       int render_process_id,
-                       int opener_render_view_id,
-                       int opener_render_frame_id,
-                       bool* no_javascript_access) override;
+  bool CanCreateWindow(
+      const GURL& opener_url,
+      const GURL& opener_top_level_frame_url,
+      const GURL& source_origin,
+      WindowContainerType container_type,
+      const std::string& frame_name,
+      const GURL& target_url,
+      const content::Referrer& referrer,
+      WindowOpenDisposition disposition,
+      const blink::WebWindowFeatures& features,
+      const std::vector<base::string16>& additional_features,
+      const scoped_refptr<content::ResourceRequestBodyImpl>& body,
+      bool user_gesture,
+      bool opener_suppressed,
+      content::ResourceContext* context,
+      int render_process_id,
+      int opener_render_view_id,
+      int opener_render_frame_id,
+      bool* no_javascript_access) override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* schemes) override;
 

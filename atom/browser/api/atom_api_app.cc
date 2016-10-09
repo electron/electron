@@ -528,12 +528,14 @@ void App::OnLogin(LoginHandler* login_handler,
     login_handler->CancelAuth();
 }
 
-void App::OnCreateWindow(const GURL& target_url,
-                         const std::string& frame_name,
-                         WindowOpenDisposition disposition,
-                         const std::vector<base::string16>& features,
-                         int render_process_id,
-                         int render_frame_id) {
+void App::OnCreateWindow(
+    const GURL& target_url,
+    const std::string& frame_name,
+    WindowOpenDisposition disposition,
+    const std::vector<base::string16>& features,
+    const scoped_refptr<content::ResourceRequestBodyImpl>& body,
+    int render_process_id,
+    int render_frame_id) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   content::RenderFrameHost* rfh =
@@ -545,7 +547,8 @@ void App::OnCreateWindow(const GURL& target_url,
     api_web_contents->OnCreateWindow(target_url,
                                      frame_name,
                                      disposition,
-                                     features);
+                                     features,
+                                     body);
   }
 }
 
