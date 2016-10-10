@@ -31,10 +31,10 @@ npm install electron -g
 npm install electron --save-dev
 
 # 淘宝源全局安装(PS:大陆到Electron源的下载速度极不稳定，无法下载成功时可用)
-ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install -g electron-prebuilt
+ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install -g electron
 
 # 淘宝源开发依赖安装(PS:大陆到Electron源的下载速度极不稳定，无法下载成功时可用)
-ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron-prebuilt --save-dev
+ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron --save-dev
 ```
 
 ### 其他源
