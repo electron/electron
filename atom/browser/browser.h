@@ -14,6 +14,7 @@
 #include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
+#include "base/values.h"
 #include "native_mate/arguments.h"
 
 #if defined(OS_WIN)
@@ -21,7 +22,6 @@
 #endif
 
 namespace base {
-class DictionaryValue;
 class FilePath;
 }
 
@@ -146,6 +146,9 @@ class Browser : public WindowListObserver {
 
   // Set docks' icon.
   void DockSetIcon(const gfx::Image& image);
+
+  void ShowAboutPanel();
+  void SetAboutPanelOptions(const base::DictionaryValue& options);
 #endif  // defined(OS_MACOSX)
 
 #if defined(OS_WIN)
@@ -243,6 +246,10 @@ class Browser : public WindowListObserver {
 
 #if defined(OS_WIN)
   base::string16 app_user_model_id_;
+#endif
+
+#if defined(OS_MACOSX)
+  base::DictionaryValue about_panel_options_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(Browser);
