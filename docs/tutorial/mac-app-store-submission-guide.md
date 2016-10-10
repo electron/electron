@@ -135,8 +135,9 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 
 Also note that native modules may have intermediate files produced which should
 not be included (as they would also need to be signed). If you use
-[electron-packager][electron-packager], add `--ignore=.+\.o$` to build step to
-ignore these files.
+[electron-packager][electron-packager] before version 8.1.0, add
+`--ignore=.+\.o$` to your build step to ignore these files. Versions 8.1.0 and
+later ignores those files by default.
 
 ### Upload Your App
 
