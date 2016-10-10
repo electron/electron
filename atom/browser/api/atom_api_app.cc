@@ -607,7 +607,7 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   if (key >= 0)
     succeed = PathService::Get(key, &path);
   if (!succeed)
-    args->ThrowError("Failed to get path");
+    args->ThrowError("Failed to get '" + name + "' path");
   return path;
 }
 
@@ -615,7 +615,7 @@ void App::SetPath(mate::Arguments* args,
                   const std::string& name,
                   const base::FilePath& path) {
   if (!path.IsAbsolute()) {
-    args->ThrowError("path must be absolute");
+    args->ThrowError("Path must be absolute");
     return;
   }
 

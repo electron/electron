@@ -31,6 +31,7 @@ class CrashReporterLinux : public CrashReporter {
                     const std::string& version,
                     const std::string& company_name,
                     const std::string& submit_url,
+                    const base::FilePath& crashes_dir,
                     bool auto_submit,
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
@@ -41,7 +42,7 @@ class CrashReporterLinux : public CrashReporter {
   CrashReporterLinux();
   virtual ~CrashReporterLinux();
 
-  void EnableCrashDumping(const std::string& product_name);
+  void EnableCrashDumping(const base::FilePath& crashes_dir);
 
   static bool CrashDone(const google_breakpad::MinidumpDescriptor& minidump,
                         void* context,
