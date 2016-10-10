@@ -8,9 +8,10 @@
 ## C++과 Python
 
 C++과 Python 스크립트는 Chromium의
-[코딩 스타일](http://www.chromium.org/developers/coding-style)을 따릅니다. 파이선
-스크립트 `script/cpplint.py`를 사용하여 모든 파일이 해당 코딩스타일에 맞게 코딩 했는지
-확인할 수 있습니다.
+[코딩 스타일](http://www.chromium.org/developers/coding-style)을 따릅니다.
+자동으로 C++ 코드 형식을 맞추기 위해 [clang-format](clang-format.md) 을 사용할
+수 있습니다. 파이선 스크립트 `script/cpplint.py`를 사용하여 모든 파일이 해당
+코딩스타일에 맞게 코딩 했는지 확인할 수 있습니다.
 
 Python 버전은 2.7을 사용합니다.
 
