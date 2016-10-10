@@ -155,6 +155,7 @@ describe('webContents module', function () {
         assert.equal(altKey, false)
         done()
       })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
       w.webContents.sendInputEvent({type: 'char', keyCode: 'A'})
     })
 
@@ -168,6 +169,7 @@ describe('webContents module', function () {
         assert.equal(altKey, false)
         done()
       })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z'})
       w.webContents.sendInputEvent({type: 'char', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
     })
   })
