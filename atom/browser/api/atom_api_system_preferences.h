@@ -24,7 +24,11 @@ namespace atom {
 
 namespace api {
 
-class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
+class SystemPreferences : public mate::EventEmitter<SystemPreferences>
+#if defined(OS_WIN)
+    , public gfx::SysColorChangeListener
+#endif
+  {
  public:
   static mate::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
@@ -43,8 +47,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
 
   void InitializeWindow();
 
-  void OnColorChanged();
-
+  // gfx::SysColorChangeListener:
+  void OnSysColorChange() override;
 
 #elif defined(OS_MACOSX)
   using NotificationCallback = base::Callback<
@@ -101,9 +105,9 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
 
   std::string current_color_;
 
-  bool invertered_color_scheme_ = false;
+  bool invertered_color_scheme_;
 
-  std::unique_ptr<gfx::ScopedSysColorChangeListener> color_change_listener_;
+  gfx::ScopedSysColorChangeListener color_change_listener_;
 #endif
   DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
 };

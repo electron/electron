@@ -19,21 +19,6 @@ const wchar_t kSystemPreferencesWindowClass[] =
 
 namespace api {
 
-class SystemPreferencesColorChangeListener
-    : public gfx::SysColorChangeListener {
- public:
-  explicit SystemPreferencesColorChangeListener(SystemPreferences* prefs)
-      : prefs_(prefs) {
-  }
-
-  void OnSysColorChange() {
-    prefs_->OnColorChanged();
-  }
-
- private:
-  SystemPreferences* prefs_;
-};
-
 bool SystemPreferences::IsAeroGlassEnabled() {
   return ui::win::IsAeroGlassEnabled();
 }
@@ -57,6 +42,8 @@ std::string SystemPreferences::GetAccentColor() {
 }
 
 void SystemPreferences::InitializeWindow() {
+  invertered_color_scheme_ = IsInvertedColorScheme();
+
   WNDCLASSEX window_class;
   base::win::InitializeWindowClass(
       kSystemPreferencesWindowClass,
@@ -74,10 +61,6 @@ void SystemPreferences::InitializeWindow() {
                          0, WS_POPUP, 0, 0, 0, 0, 0, 0, instance_, 0);
   gfx::CheckWindowCreated(window_);
   gfx::SetWindowUserData(window_, this);
-
-  color_change_listener_.reset(
-      new gfx::ScopedSysColorChangeListener(
-          new SystemPreferencesColorChangeListener(this)));
 }
 
 LRESULT CALLBACK SystemPreferences::WndProcStatic(HWND hwnd,
@@ -107,7 +90,7 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
   return ::DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-void SystemPreferences::OnColorChanged() {
+void SystemPreferences::OnSysColorChange() {
   bool new_invertered_color_scheme = IsInvertedColorScheme();
   if (new_invertered_color_scheme != invertered_color_scheme_) {
     invertered_color_scheme_ = new_invertered_color_scheme;
