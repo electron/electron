@@ -1463,6 +1463,7 @@ describe('browser-window module', function () {
   describe('window.webContents.executeJavaScript', function () {
     var expected = 'hello, world!'
     var code = '(() => "' + expected + '")()'
+    var asyncCode = '(() => new Promise(r => setTimeout(() => r("' + expected + '"), 500)))()'
 
     it('doesnt throw when no calback is provided', function () {
       const result = ipcRenderer.sendSync('executeJavaScript', code, false)
@@ -1471,6 +1472,14 @@ describe('browser-window module', function () {
 
     it('returns result when calback is provided', function (done) {
       ipcRenderer.send('executeJavaScript', code, true)
+      ipcRenderer.once('executeJavaScript-response', function (event, result) {
+        assert.equal(result, expected)
+        done()
+      })
+    })
+
+    it('returns result if the code returns an asyncronous promise', function (done) {
+      ipcRenderer.send('executeJavaScript', asyncCode, true)
       ipcRenderer.once('executeJavaScript-response', function (event, result) {
         assert.equal(result, expected)
         done()
