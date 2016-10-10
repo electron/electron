@@ -265,6 +265,29 @@ webview.addEventListener('dom-ready', () => {
   * `httpReferrer` String - A HTTP Referrer url.
   * `userAgent` String - A user agent originating the request.
   * `extraHeaders` String - Extra headers separated by "\n"
+  * `postData` Array - An array of `upload` objects which
+    provides the request body for `POST` navigation.
+
+* `upload` Object
+  * `type` String - `data`, `file`, `filsSystem`, `blob`.
+
+If `type` is `data` then `upload` object must contain:
+  * `bytes` Buffer - Raw data to be uploaded.
+
+If `type` is `file` then `upload` object must contain:
+  * `filePath` String - Path of file to be uploaded.
+  * `offset` Integer
+  * `length` Integer
+  * `modificationTime` Double
+
+If `type` is `fileSystem` then `upload` object must contain:
+  * `filsSystemURL` String - FileSystem url to read data for upload.
+  * `offset` Integer
+  * `length` Integer
+  * `modificationTime` Double
+
+If `type` is `blob` then `upload` object must contain:
+  * `blobUUID` String - UUID of blob data to upload.
 
 Loads the `url` in the webview, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.
