@@ -24,7 +24,7 @@ const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
 
 
-describe('net module', function() {
+describe.only('net module', function() {
   this.timeout(0)
   describe('HTTP basics', function() {
 
@@ -175,7 +175,7 @@ describe('net module', function() {
       urlRequest.end();
     })
 
-    it.only('should support chunked encoding', function(done) {
+    it('should support chunked encoding', function(done) {
       const request_url = '/request_url'
       server.on('request', function(request, response) {
         switch (request.url) {
@@ -394,19 +394,193 @@ describe('net module', function() {
       urlRequest.end();
     })
 
+    it('should be able to set a custom HTTP request header before first write', function(done) {
+      const request_url = '/request_url'
+      const custom_header_name = 'Some-Custom-Header-Name'
+      const custom_header_value = 'Some-Customer-Header-Value'
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case request_url:
+            assert.equal(request.headers[custom_header_name.toLowerCase()], 
+              custom_header_value)
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.end();
+            break;
+          default:
+            response.statusCode = 501
+            response.statusMessage = 'Not Implemented'
+            response.end()
+        }
+      })
+      const urlRequest =  net.request({
+        method: 'GET',
+        url: `${server.url}${request_url}`
+      })
+      urlRequest.on('response', function(response) {
+        const statusCode = response.statusCode
+        assert.equal(statusCode, 200)
+        response.pause()
+        response.on('data', function(chunk) {
+        });
+        response.on('end', function() {
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.setHeader(custom_header_name, custom_header_value)
+      assert.equal(urlRequest.getHeader(custom_header_name), 
+        custom_header_value)
+      assert.equal(urlRequest.getHeader(custom_header_name.toLowerCase()), 
+        custom_header_value)
+      urlRequest.write('');
+      assert.equal(urlRequest.getHeader(custom_header_name), 
+        custom_header_value)
+      assert.equal(urlRequest.getHeader(custom_header_name.toLowerCase()), 
+        custom_header_value)
+      urlRequest.end();
+    })
 
-    it ('should be able to set a custom HTTP header', function() {
-      assert(false)
-  })
+    it('should not be able to set a custom HTTP request header after first write', function(done) {
+      const request_url = '/request_url'
+      const custom_header_name = 'Some-Custom-Header-Name'
+      const custom_header_value = 'Some-Customer-Header-Value'
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case request_url:
+            assert(!request.headers[custom_header_name.toLowerCase()])
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.end();
+            break;
+          default:
+            response.statusCode = 501
+            response.statusMessage = 'Not Implemented'
+            response.end()
+        }
+      })
+      const urlRequest =  net.request({
+        method: 'GET',
+        url: `${server.url}${request_url}`
+      })
+      urlRequest.on('response', function(response) {
+        const statusCode = response.statusCode
+        assert.equal(statusCode, 200)
+        response.pause()
+        response.on('data', function(chunk) {
+        });
+        response.on('end', function() {
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.write('');
+      assert.throws( () => {
+        urlRequest.setHeader(custom_header_name, custom_header_value)
+      })
+      assert(!urlRequest.getHeader(custom_header_name))
+      urlRequest.end();
+    })
+
+    it('should be able to remove a custom HTTP request header before first write', function(done) {
+      const request_url = '/request_url'
+      const custom_header_name = 'Some-Custom-Header-Name'
+      const custom_header_value = 'Some-Customer-Header-Value'
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case request_url:
+            assert(!request.headers[custom_header_name.toLowerCase()])
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.end();
+            break;
+          default:
+            response.statusCode = 501
+            response.statusMessage = 'Not Implemented'
+            response.end()
+        }
+      })
+      const urlRequest =  net.request({
+        method: 'GET',
+        url: `${server.url}${request_url}`
+      })
+      urlRequest.on('response', function(response) {
+        const statusCode = response.statusCode
+        assert.equal(statusCode, 200)
+        response.pause()
+        response.on('data', function(chunk) {
+        });
+        response.on('end', function() {
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.setHeader(custom_header_name, custom_header_value)
+      assert.equal(urlRequest.getHeader(custom_header_name), 
+        custom_header_value)
+      urlRequest.removeHeader(custom_header_name)
+      assert(!urlRequest.getHeader(custom_header_name))
+      urlRequest.write('');
+      urlRequest.end();
+    })
+
+    it('should not be able to remove a custom HTTP request header after first write', function(done) {
+      const request_url = '/request_url'
+      const custom_header_name = 'Some-Custom-Header-Name'
+      const custom_header_value = 'Some-Customer-Header-Value'
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case request_url:
+            assert.equal(request.headers[custom_header_name.toLowerCase()], 
+              custom_header_value)
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.end();
+            break;
+          default:
+            response.statusCode = 501
+            response.statusMessage = 'Not Implemented'
+            response.end()
+        }
+      })
+      const urlRequest =  net.request({
+        method: 'GET',
+        url: `${server.url}${request_url}`
+      })
+      urlRequest.on('response', function(response) {
+        const statusCode = response.statusCode
+        assert.equal(statusCode, 200)
+        response.pause()
+        response.on('data', function(chunk) {
+        });
+        response.on('end', function() {
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.setHeader(custom_header_name, custom_header_value)
+      assert.equal(urlRequest.getHeader(custom_header_name), 
+        custom_header_value)
+      urlRequest.write('');
+      assert.throws(function() {
+        urlRequest.removeHeader(custom_header_name)
+      })
+      assert.equal(urlRequest.getHeader(custom_header_name), 
+        custom_header_value)
+      urlRequest.end();
+    })
+
+
+
     it ('should be able to abort an HTTP request', function() {
       assert(false)
-  })
+    })
     it ('should be able to pipe into a request', function() {
       assert(false)
-  })
+    })
     it ('should be able to create a request with options', function() {
       assert(false)
-  })
+    })
     it ('should be able to specify a custom session', function() {
       assert(false)
     })
@@ -414,12 +588,12 @@ describe('net module', function() {
   describe('IncomingMessage API', function() {
     it('should provide a Node.js-similar API', function() {
       assert(false)
-  })
+    })
     it ('should not emit any event after close', function() {
       assert(false)
-  })
+    })
     it ('should be able to pipe from a response', function() {
       assert(false)
+    })
   })
-  })
-  })
+})

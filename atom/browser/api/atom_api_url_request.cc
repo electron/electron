@@ -91,7 +91,7 @@ URLRequest::StateBase<Flags>::StateBase(Flags initialState)
 
 template <typename Flags>
 void URLRequest::StateBase<Flags>::SetFlag(Flags flag) {
-  state_ = static_cast<Flags>(static_cast<int>(state_) &
+  state_ = static_cast<Flags>(static_cast<int>(state_) |
     static_cast<int>(flag));
 }
 
