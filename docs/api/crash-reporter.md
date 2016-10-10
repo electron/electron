@@ -88,5 +88,5 @@ a `multipart/form-data` `POST`:
 * `_companyName` String - The company name in the `crashReporter` `options`
   object.
 * `upload_file_minidump` File - The crash report in the format of `minidump`.
-* All level one properties of the `extra` object in the `crashReporter`.
-  `options` object
+* All level one properties of the `extra` object in the `crashReporter`
+  `options` object.
