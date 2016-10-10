@@ -1,0 +1,25 @@
+{
+  "name": "tr-electron-download",
+  "homepage": "https://github.com/thomsonreuters/electron",
+  "version": "1.0.0",
+  "description": "Download Thomson Reuters compiled Electron distribution",
+  "main": "index.js",
+  "bin": {
+    "tr-electron-download": "cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thomsonreuters/electron.git"
+  },
+  "dependencies": {
+    "debug": "^2.2.0",
+    "fs-extra": "^0.30.0",
+    "home-path": "^1.0.1",
+    "minimist": "^1.2.0",
+    "nugget": "^2.0.0",
+    "path-exists": "^2.1.0",
+    "rc": "^1.1.2",
+    "semver": "^5.3.0",
+    "sumchecker": "^1.2.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "tr-electron",
+  "homepage": "https://github.com/thomsonreuters/electron",
+  "version": "1.4.3",
+  "description": "Install Thomson Reuters compiled Electron distribution",
+  "main": "index.js",
+  "bin": {
+    "tr-electron": "cli.js"
+  },
+    "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thomsonreuters/electron.git"
+  },
+  "dependencies": {
+    "tr-electron-download": "1.0.0",
+    "extract-zip": "^1.0.3"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  }
+}
