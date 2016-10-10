@@ -449,6 +449,6 @@ describe('MenuItem with custom properties in constructor', function () {
     assert.equal(menu.items[0].customProp, 'foo')
     assert.equal(menu.items[0].submenu.items[0].label, 'item 1')
     assert.equal(menu.items[0].submenu.items[0].customProp, 'bar')
-    assert.notEqual(typeof menu.items[0].submenu.items[0].overrideProperty, 'string')
+    assert.equal(typeof menu.items[0].submenu.items[0].overrideProperty, 'function')
   })
 })
