@@ -30,4 +30,10 @@ describe('systemPreferences module', function () {
       assert(languages.length > 0)
     })
   })
+
+  describe('systemPreferences.isInvertedColorScheme()', function () {
+    it('returns a boolean', function () {
+      assert.equal(typeof systemPreferences.isInvertedColorScheme(), 'boolean')
+    })
+  })
 })

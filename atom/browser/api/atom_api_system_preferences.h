@@ -12,6 +12,10 @@
 #include "base/values.h"
 #include "native_mate/handle.h"
 
+#if defined(OS_WIN)
+#include "ui/gfx/sys_color_change_listener.h"
+#endif
+
 namespace base {
 class DictionaryValue;
 }
@@ -20,7 +24,11 @@ namespace atom {
 
 namespace api {
 
-class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
+class SystemPreferences : public mate::EventEmitter<SystemPreferences>
+#if defined(OS_WIN)
+    , public gfx::SysColorChangeListener
+#endif
+  {
  public:
   static mate::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
@@ -39,6 +47,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
 
   void InitializeWindow();
 
+  // gfx::SysColorChangeListener:
+  void OnSysColorChange() override;
 
 #elif defined(OS_MACOSX)
   using NotificationCallback = base::Callback<
@@ -59,6 +69,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   bool IsSwipeTrackingFromScrollEventsEnabled();
 #endif
   bool IsDarkMode();
+  bool IsInvertedColorScheme();
 
  protected:
   explicit SystemPreferences(v8::Isolate* isolate);
@@ -93,6 +104,10 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   HWND window_;
 
   std::string current_color_;
+
+  bool invertered_color_scheme_;
+
+  gfx::ScopedSysColorChangeListener color_change_listener_;
 #endif
   DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
 };

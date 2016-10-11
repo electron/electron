@@ -42,6 +42,8 @@ std::string SystemPreferences::GetAccentColor() {
 }
 
 void SystemPreferences::InitializeWindow() {
+  invertered_color_scheme_ = IsInvertedColorScheme();
+
   WNDCLASSEX window_class;
   base::win::InitializeWindowClass(
       kSystemPreferencesWindowClass,
@@ -86,6 +88,14 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
     }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);
+}
+
+void SystemPreferences::OnSysColorChange() {
+  bool new_invertered_color_scheme = IsInvertedColorScheme();
+  if (new_invertered_color_scheme != invertered_color_scheme_) {
+    invertered_color_scheme_ = new_invertered_color_scheme;
+    Emit("inverted-color-scheme-changed", new_invertered_color_scheme);
+  }
 }
 
 }  // namespace api

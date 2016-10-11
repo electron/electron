@@ -17,8 +17,15 @@ Returns:
 
 * `event` Event
 * `newColor` String - The new RGBA color the user assigned to be there system
-accent color.
+  accent color.
 
+### Event: 'inverted-color-scheme-changed' _Windows_
+
+Returns:
+
+* `event` Event
+* `invertedColorScheme` Boolean - `true` if an inverted color scheme, such as
+  a high contrast theme, is being used, `false` otherwise.
 
 ## Methods
 
@@ -150,3 +157,8 @@ const green = color.substr(2, 2) // "bb"
 const blue = color.substr(4, 2) // "cc"
 const alpha = color.substr(6, 2) // "dd"
 ```
+
+### `systemPreferences.isInvertedColorScheme()` _Windows_
+
+Returns `Boolean` - `true` if an inverted color scheme, such as a high contrast
+theme, is active, `false` otherwise.
