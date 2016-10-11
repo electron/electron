@@ -18,6 +18,13 @@ Returns:
 * `event` Event
 * `newColor` String - 사용자에 의해 시스템 강조색으로 설정 된 새 RGBA 색상.
 
+### Event: 'inverted-color-scheme-changed' _Windows_
+
+Returns:
+
+* `event` Event
+* `invertedColorScheme` Boolean - 고대비 테마 같은 반전된 색상 스킴을
+  사용중이라면 `true`, 아니면 `false`.
 
 ## Methods
 
@@ -147,3 +154,8 @@ const green = color.substr(2, 2) // "bb"
 const blue = color.substr(4, 2) // "cc"
 const alpha = color.substr(6, 2) // "dd"
 ```
+
+### `systemPreferences.isInvertedColorScheme()` _Windows_
+
+Returns `Boolean` - 고대비 테마 같은 반전된 색상 스킴이 활성화 되있다면 `true`,
+아니면 `false`.

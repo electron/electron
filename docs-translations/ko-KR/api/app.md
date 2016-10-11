@@ -838,6 +838,18 @@ Returns `Boolean` - Chrome의 접근성 지원이 활성화되어있으면 `true
 기술이 감지되었을 때 `true`를 반환합니다. 자세한 내용은
 https://www.chromium.org/developers/design-documents/accessibility 를 참고하세요.
 
+### `app.setAboutPanelOptions(options)` _macOS_
+
+* `options` Object
+  * `ApplicationName` String (optional) - 앱 이름.
+  * `ApplicationVersion` String (optional) - 앱 버전.
+  * `Copyright` String (optional) - 저작권 정보.
+  * `Credits` String (optional) - 크레딧 정보.
+  * `Version` String (optional) - 앱 빌드 버전 숫자.
+
+정보 패널의 옵션을 설정합니다. 앱의 `.plist` 에 정의된 값보다 우선합니다. 자세한
+내용은 [애플 문서][about-panel-options]를 참조하세요.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 * `switch` String -명령줄 스위치
@@ -926,3 +938,4 @@ dock 아이콘의 `image`를 설정합니다.
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
 [unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux
 [JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
+[about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc
