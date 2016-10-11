@@ -4,19 +4,27 @@
 
 #include "atom/app/node_main.h"
 
+#include <iostream>
+
 #include "atom/app/uv_task_runner.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
+#include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
 
 namespace atom {
+
+void Log(const base::string16& message) {
+  std::cout << message << std::flush;
+}
 
 int NodeMain(int argc, char *argv[]) {
   base::CommandLine::Init(argc, argv);
@@ -52,6 +60,9 @@ int NodeMain(int argc, char *argv[]) {
       env->AssignToContext(v8::Debug::GetDebugContext());
 
     node::LoadEnvironment(env);
+
+    mate::Dictionary dict(gin_env.isolate(), env->process_object());
+    dict.SetMethod("log", &Log);
 
     bool more;
     do {
