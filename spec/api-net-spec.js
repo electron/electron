@@ -242,64 +242,6 @@ describe('net module', function() {
       server = null
     })
 
-    it ('response object should implement the IncomingMessage API', function(done) {
-      const request_url = '/request_url'
-      const custom_header_name = 'Some-Custom-Header-Name'
-      const custom_header_value = 'Some-Customer-Header-Value'
-      server.on('request', function(request, response) {
-        switch (request.url) {
-          case request_url:
-            response.statusCode = 200
-            response.statusMessage = 'OK'
-            response.setHeader(custom_header_name, custom_header_value)
-            response.end();
-            break;
-          default:
-            assert(false)
-        }
-      })
-      let response_event_emitted = false;
-      let data_event_emitted = false;
-      let end_event_emitted = false;
-      let finish_event_emitted = false;
-      const urlRequest =  net.request({
-        method: 'GET',
-        url: `${server.url}${request_url}`
-      })
-      urlRequest.on('response', function(response) {
-        response_event_emitted = true;
-        const statusCode = response.statusCode
-        assert(typeof statusCode === 'number')
-        assert.equal(statusCode, 200)
-        const statusMessage = response.statusMessage
-        assert(typeof statusMessage === 'string')
-        assert.equal(statusMessage, 'OK')
-        const rawHeaders = response.rawHeaders
-        assert(typeof rawHeaders === 'object')
-        assert(rawHeaders[custom_header_name] === 
-          custom_header_value)
-        const httpVersion = response.httpVersion;
-        assert(typeof httpVersion === 'string')
-        assert(httpVersion.length > 0)
-        const httpVersionMajor = response.httpVersionMajor;
-        assert(typeof httpVersionMajor === 'number')
-        assert(httpVersionMajor >= 1)
-        const httpVersionMinor = response.httpVersionMinor;
-        assert(typeof httpVersionMinor === 'number')
-        assert(httpVersionMinor >= 0)
-        response.pause()
-        response.on('data', function(chunk) {
-        });
-        response.on('end', function() {
-          done()
-        })
-        response.resume()
-      })
-      urlRequest.end();
-    })
-
-
-
     it('request/response objects should emit expected events', function(done) {
 
       const request_url = '/request_url'
@@ -756,6 +698,60 @@ describe('net module', function() {
       urlRequest.end(randomString(kOneKiloByte))
     })
 
+    it('abort event should be emitted at most once', function(done) {
+      const request_url = '/request_url'
+      let request_received_by_server = false
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case request_url:
+            request_received_by_server = true;
+            cancelRequest();
+            break;
+          default:
+            assert(false)
+        }
+      })
+
+      let request_finish_event_emitted = false
+      let request_abort_event_count = 0
+      let request_close_event_emitted = false
+
+      const urlRequest =  net.request({
+        method: 'GET',
+        url: `${server.url}${request_url}`
+      })
+      urlRequest.on('response', function(response) {
+        assert(false)
+      })
+      urlRequest.on('finish', function() {
+        request_finish_event_emitted = true
+      })
+      urlRequest.on('error', function(error) {
+        assert(false);
+      })
+      urlRequest.on('abort', function() {
+        ++request_abort_event_count
+        urlRequest.abort()
+      })
+      urlRequest.on('close', function() {
+        request_close_event_emitted = true
+        // Let all pending async events to be emitted
+        setTimeout(function() {
+          assert(request_finish_event_emitted)
+          assert(request_received_by_server)
+          assert.equal(request_abort_event_count, 1)
+          assert(request_close_event_emitted)
+          done()
+        }, 500)
+      })
+
+      urlRequest.end(randomString(kOneKiloByte))
+      function cancelRequest() {
+        urlRequest.abort()
+        urlRequest.abort()
+      }
+    })
+
     it('Requests should be intercepted by webRequest module', function(done) {
 
       const request_url = '/request_url'
@@ -868,7 +864,7 @@ describe('net module', function() {
       urlRequest.end();
     })
 
-    it.only ('should be able to create a request with options', function() {
+    it('should be able to create a request with options', function() {
       const request_url = '/'
       const custom_header_name = 'Some-Custom-Header-Name'
       const custom_header_value = 'Some-Customer-Header-Value'
@@ -905,29 +901,188 @@ describe('net module', function() {
       urlRequest.end();
     })
 
-    it('abort request should be emitted at most once', function() {
-      assert(false)
-    })
 
+    it('should be able to pipe a readable stream into a net request', function(done) {
+      const node_request_url = '/node_request_url'
+      const net_request_url = '/net_request_url'
+      const body_data = randomString(kOneMegaByte)
+      let net_request_received = false
+      let net_request_ended = false
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case node_request_url:
+            response.write(body_data)
+            response.end();
+            break;
+          case net_request_url:
+            net_request_received = true
+            let received_body_data = ''
+            request.on('data', function(chunk) {
+              received_body_data += chunk.toString()
+            })
+            request.on('end', function(chunk) {
+              net_request_ended = true
+              if (chunk) {
+                received_body_data += chunk.toString()
+              }
+              assert.equal(received_body_data, body_data)
+              response.end()
+            })
+            break;
+          default:
+            assert(false)
+        }
+      })
+
+      let nodeRequest = http.request(`${server.url}${node_request_url}`);
+      nodeRequest.on('response', function(nodeResponse) {
+        const netRequest = net.request(`${server.url}${net_request_url}`)
+        netRequest.on('response', function(netResponse) {
+
+          assert.equal(netResponse.statusCode, 200)
+          netResponse.pause()
+          netResponse.on('data', function(chunk) {
+          })
+          netResponse.on('end', function() {
+            assert(net_request_received)
+            assert(net_request_ended)
+            done()
+          })
+          netResponse.resume()
+        })
+        nodeResponse.pipe(netRequest)
+      })
+      nodeRequest.end()
+    })
     it('headers cannot be manipulated after abort', function() {
       assert(false)
     })
-
-    it ('should be able to pipe into a request', function() {
-      assert(false)
-    })
-
-
   })
   describe('IncomingMessage API', function() {
-    it('should provide a Node.js-similar API', function() {
-      assert(false)
+
+        let server
+    beforeEach(function (done) {
+      server = http.createServer()
+      server.listen(0, '127.0.0.1', function () {
+        server.url = 'http://127.0.0.1:' + server.address().port
+        done()
+      })
     })
+
+    afterEach(function () {
+      server.close(function() {
+      })
+      server = null
+    })
+
+    it ('response object should implement the IncomingMessage API', function(done) {
+      const request_url = '/request_url'
+      const custom_header_name = 'Some-Custom-Header-Name'
+      const custom_header_value = 'Some-Customer-Header-Value'
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case request_url:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.setHeader(custom_header_name, custom_header_value)
+            response.end();
+            break;
+          default:
+            assert(false)
+        }
+      })
+      let response_event_emitted = false;
+      let data_event_emitted = false;
+      let end_event_emitted = false;
+      let finish_event_emitted = false;
+      const urlRequest =  net.request({
+        method: 'GET',
+        url: `${server.url}${request_url}`
+      })
+      urlRequest.on('response', function(response) {
+        response_event_emitted = true;
+        const statusCode = response.statusCode
+        assert(typeof statusCode === 'number')
+        assert.equal(statusCode, 200)
+        const statusMessage = response.statusMessage
+        assert(typeof statusMessage === 'string')
+        assert.equal(statusMessage, 'OK')
+        const rawHeaders = response.rawHeaders
+        assert(typeof rawHeaders === 'object')
+        assert(rawHeaders[custom_header_name] === 
+          custom_header_value)
+        const httpVersion = response.httpVersion;
+        assert(typeof httpVersion === 'string')
+        assert(httpVersion.length > 0)
+        const httpVersionMajor = response.httpVersionMajor;
+        assert(typeof httpVersionMajor === 'number')
+        assert(httpVersionMajor >= 1)
+        const httpVersionMinor = response.httpVersionMinor;
+        assert(typeof httpVersionMinor === 'number')
+        assert(httpVersionMinor >= 0)
+        response.pause()
+        response.on('data', function(chunk) {
+        });
+        response.on('end', function() {
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.end();
+    })
+
     it ('should not emit any event after close', function() {
       assert(false)
     })
-    it ('should be able to pipe from a response', function() {
-      assert(false)
+
+    it.only('should be able to net response into a writable stream', function() {
+      const node_request_url = '/node_request_url'
+      const net_request_url = '/net_request_url'
+      const body_data = randomString(kOneMegaByte)
+      let node_request_received = false
+      let node_request_ended = false
+      server.on('request', function(request, response) {
+        switch (request.url) {
+          case net_request_url:
+            response.write(body_data)
+            response.end();
+            break;
+          case node_request_url:
+            node_request_received = true
+            let received_body_data = ''
+            request.on('data', function(chunk) {
+              received_body_data += chunk.toString()
+            })
+            request.on('end', function(chunk) {
+              node_request_ended = true
+              if (chunk) {
+                received_body_data += chunk.toString()
+              }
+              assert.equal(received_body_data, body_data)
+              response.end()
+            })
+            break;
+          default:
+            assert(false)
+        }
+      })
+      const netRequest = net.request(`${server.url}${net_request_url}`)
+      netRequest.on('response', function(netResponse) {
+        assert.equal(netResponse.statusCode, 200)
+        let nodeRequest = http.request(`${server.url}${node_request_url}`);
+        nodeRequest.on('response', function(nodeResponse) {
+          nodeResponse.on('data', function(chunk) {
+          
+          })
+          nodeResponse.on('end', function(chunk) {
+            assert(node_request_received)
+            assert(node_request_ended)
+            done()
+          })
+        })
+        netResponse.pipe(nodeRequest)
+      })
+      netRequest.end()
     })
   })
 })
