@@ -64,14 +64,6 @@ std::string SystemPreferences::GetColor(const std::string& color,
     id = COLOR_GRADIENTACTIVECAPTION;
   } else if (color == "app-workspace") {
     id = COLOR_APPWORKSPACE;
-  } else if (color == "background") {
-    id = COLOR_BACKGROUND;
-  } else if (color == "button-face") {
-    id = COLOR_BTNFACE;
-  } else if (color == "button-highlight") {
-    id = COLOR_BTNHIGHLIGHT;
-  } else if (color == "button-shadow") {
-    id = COLOR_BTNSHADOW;
   } else if (color == "button-text") {
     id = COLOR_BTNTEXT;
   } else if (color == "caption-text") {
