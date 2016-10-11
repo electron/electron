@@ -380,6 +380,13 @@ void InspectableWebContentsImpl::LoadCompleted() {
   if (!can_dock_) {
     SetIsDocked(DispatchCallback(), false);
   } else {
+    if (dock_state_.empty()) {
+      const base::DictionaryValue* prefs = pref_service_->GetDictionary(
+          kDevToolsPreferences);
+      std::string current_dock_state;
+      prefs->GetString("currentDockState", &current_dock_state);
+      base::RemoveChars(current_dock_state, "\"", &dock_state_);
+    }
     base::string16 javascript = base::UTF8ToUTF16(
         "WebInspector.dockController.setDockSide(\"" + dock_state_ + "\");");
     devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(javascript);
