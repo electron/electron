@@ -173,6 +173,10 @@ app.on('ready', function () {
     if (hasCallback) {
       window.webContents.executeJavaScript(code, (result) => {
         window.webContents.send('executeJavaScript-response', result)
+      }).then((result) => {
+        window.webContents.send('executeJavaScript-promise-response', result)
+      }).catch((err) => {
+        window.webContents.send('executeJavaScript-promise-error', err)
       })
     } else {
       window.webContents.executeJavaScript(code)

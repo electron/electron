@@ -620,11 +620,25 @@ Injects CSS into the current web page.
 * `callback` Function (optional) - Called after script has been executed.
   * `result` Any
 
+Returns `Promise` - A promise that resolves with the result of the executed code
+or is rejected if the result of the code is a rejected promise
+
 Evaluates `code` in page.
 
 In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
+
+If the result of the executed code is a promise the callback result will be the
+resolved value of the promise.  We recommend that you use the returned Promise
+to handle code that results in a Promise.
+
+```js
+contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
+  .then((result) => {
+    console.log(result) // Will be the JSON object from the fetch call
+  })
+```
 
 #### `contents.setAudioMuted(muted)`
 

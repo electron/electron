@@ -1462,8 +1462,10 @@ describe('browser-window module', function () {
 
   describe('window.webContents.executeJavaScript', function () {
     var expected = 'hello, world!'
+    var expectedErrorMsg = 'woops!'
     var code = '(() => "' + expected + '")()'
     var asyncCode = '(() => new Promise(r => setTimeout(() => r("' + expected + '"), 500)))()'
+    var badAsyncCode = '(() => new Promise((r, e) => setTimeout(() => e("' + expectedErrorMsg + '"), 500)))()'
 
     it('doesnt throw when no calback is provided', function () {
       const result = ipcRenderer.sendSync('executeJavaScript', code, false)
@@ -1482,6 +1484,30 @@ describe('browser-window module', function () {
       ipcRenderer.send('executeJavaScript', asyncCode, true)
       ipcRenderer.once('executeJavaScript-response', function (event, result) {
         assert.equal(result, expected)
+        done()
+      })
+    })
+
+    it('resolves the returned promise with the result', function (done) {
+      ipcRenderer.send('executeJavaScript', code, true)
+      ipcRenderer.once('executeJavaScript-promise-response', function (event, result) {
+        assert.equal(result, expected)
+        done()
+      })
+    })
+
+    it('resolves the returned promise with the result if the code returns an asyncronous promise', function (done) {
+      ipcRenderer.send('executeJavaScript', asyncCode, true)
+      ipcRenderer.once('executeJavaScript-promise-response', function (event, result) {
+        assert.equal(result, expected)
+        done()
+      })
+    })
+
+    it('rejects the returned promise if an async error is thrown', function (done) {
+      ipcRenderer.send('executeJavaScript', badAsyncCode, true)
+      ipcRenderer.once('executeJavaScript-promise-error', function (event, error) {
+        assert.equal(error, expectedErrorMsg)
         done()
       })
     })
