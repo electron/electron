@@ -961,27 +961,27 @@ bool ProcessSingleton::Create() {
 #endif
   }
 
-#if defined(MAS_BUILD)
-  // For Mac App Store build, the tmp dir could be too long to fit
-  // addr->sun_path, so we need to make it as short as possible.
-  base::FilePath tmp_dir;
-  if (!base::GetTempDir(&tmp_dir)) {
-    LOG(ERROR) << "Failed to get temporary directory.";
-    return false;
+  if (IsAppSandboxed()) {
+    // For sandboxed applications, the tmp dir could be too long to fit
+    // addr->sun_path, so we need to make it as short as possible.
+    base::FilePath tmp_dir;
+    if (!base::GetTempDir(&tmp_dir)) {
+      LOG(ERROR) << "Failed to get temporary directory.";
+      return false;
+    }
+    if (!socket_dir_.Set(tmp_dir.Append("S"))) {
+      LOG(ERROR) << "Failed to set socket directory.";
+      return false;
+    }
+  } else {
+    // Create the socket file somewhere in /tmp which is usually mounted as a
+    // normal filesystem. Some network filesystems (notably AFS) are screwy and
+    // do not support Unix domain sockets.
+    if (!socket_dir_.CreateUniqueTempDir()) {
+      LOG(ERROR) << "Failed to create socket directory.";
+      return false;
+    }
   }
-  if (!socket_dir_.Set(tmp_dir.Append("S"))) {
-    LOG(ERROR) << "Failed to set socket directory.";
-    return false;
-  }
-#else
-  // Create the socket file somewhere in /tmp which is usually mounted as a
-  // normal filesystem. Some network filesystems (notably AFS) are screwy and
-  // do not support Unix domain sockets.
-  if (!socket_dir_.CreateUniqueTempDir()) {
-    LOG(ERROR) << "Failed to create socket directory.";
-    return false;
-  }
-#endif
 
   // Check that the directory was created with the correct permissions.
   int dir_mode = 0;
