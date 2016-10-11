@@ -8,7 +8,7 @@
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
 * [node.js](http://nodejs.org) (external)
 
-만약 Homebrew를 이용해 Python을 설치했다면 다음 Python 모듈도 같이 설치해야 합니다:
+만약 Homebrew 를 이용해 파이썬을 설치했다면 다음 파이썬 모듈도 같이 설치해야 합니다:
 
 * [pyobjc](https://pythonhosted.org/pyobjc/install.html)
 
