@@ -353,7 +353,7 @@ bool IsAppSandboxed() {
   // NB: There is no sane API for this, we have to just guess by
   // reading tea leaves
   base::FilePath home_dir;
-  if (!PathService.Get(base::DIR_HOME, &home_dir)) {
+  if (!base::PathService::Get(base::DIR_HOME, &home_dir)) {
     return false;
   }
 
