@@ -134,8 +134,9 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 
 참고로 네이티브 모듈이 의도하지 않게 중간 파일을 포함하는 경우도 있으며 이 파일은
 포함되어선 안됩니다. (해당 파일에도 서명해야 할 수도 있습니다)
-[electron-packager][electron-packager]를 사용한다면, 빌드 과정에 `--ignore=.+\.o$`
-인수를 추가하여 중간 파일을 무시할 수 있습니다.
+버전 8.1.0 전의 [electron-packager][electron-packager] 는, `--ignore=.+\.o$`
+를 추가하여 이 파일을 무시할 수 있습니다. 8.1.0 버전 이후에는 기본적으로
+무시됩니다.
 
 ### 애플리케이션 업로드
 
