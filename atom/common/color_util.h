@@ -15,7 +15,7 @@ namespace atom {
 SkColor ParseHexColor(const std::string& name);
 
 // Convert color to RGB hex value like "#ABCDEF"
-std::string ToRGBHex(const SkColor color);
+std::string ToRGBHex(SkColor color);
 
 }  // namespace atom
 

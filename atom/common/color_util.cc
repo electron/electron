@@ -46,7 +46,7 @@ SkColor ParseHexColor(const std::string& color_string) {
   return SkColorSetARGB(bytes[0], bytes[1], bytes[2], bytes[3]);
 }
 
-std::string ToRGBHex(const SkColor color) {
+std::string ToRGBHex(SkColor color) {
   return base::StringPrintf("#%02X%02X%02X",
                             SkColorGetR(color),
                             SkColorGetG(color),
