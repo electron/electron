@@ -118,8 +118,9 @@ than the minimum values or greater than the maximum.
 <webview src="http://www.google.com/" nodeintegration></webview>
 ```
 
-If "on", the guest page in `webview` will have node integration and can use node
+If "true", the guest page in `webview` will have node integration and can use node
 APIs like `require` and `process` to access low level system resources.
+Note that by including attribute, `nodeintegration` in `webview` tag, nodeintegration is automatically sets to "true".
 
 ### `plugins`
 
