@@ -16,7 +16,7 @@ An example of creating the application menu in the main process with the
 simple template API:
 
 ```javascript
-const {Menu} = require('electron')
+const {app, Menu} = require('electron')
 
 const template = [
   {
@@ -111,9 +111,8 @@ const template = [
 ]
 
 if (process.platform === 'darwin') {
-  const name = require('electron').remote.app.getName()
   template.unshift({
-    label: name,
+    label: app.getName(),
     submenu: [
       {
         role: 'about'
