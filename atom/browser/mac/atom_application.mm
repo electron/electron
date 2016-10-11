@@ -87,4 +87,8 @@
   atom::Browser::Get()->OnAccessibilitySupportChanged();
 }
 
+- (void)orderFrontStandardAboutPanel:(id)sender {
+  atom::Browser::Get()->ShowAboutPanel();
+}
+
 @end

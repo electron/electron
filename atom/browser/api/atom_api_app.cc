@@ -850,6 +850,8 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetUserActivity, browser))
       .SetMethod("getCurrentActivityType",
                  base::Bind(&Browser::GetCurrentActivityType, browser))
+      .SetMethod("setAboutPanelOptions",
+                 base::Bind(&Browser::SetAboutPanelOptions, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))

@@ -853,6 +853,18 @@ technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
 details.
 
+### `app.setAboutPanelOptions(options)` _macOS_
+
+* `options` Object
+  * `ApplicationName` String (optional) - The app's name.
+  * `ApplicationVersion` String (optional) - The app's version.
+  * `Copyright` String (optional) - Copyright information.
+  * `Credits` String (optional) - Credit information.
+  * `Version` String (optional) - The app's build version number.
+
+Set the about panel options. This will override the values defined in the app's
+`.plist` file. See the [Apple docs][about-panel-options] for more details.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 * `switch` String - A command-line switch
@@ -943,3 +955,4 @@ Sets the `image` associated with this dock icon.
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
 [unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux
 [JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
+[about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc

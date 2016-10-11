@@ -253,4 +253,15 @@ void Browser::DockSetIcon(const gfx::Image& image) {
       setApplicationIconImage:image.AsNSImage()];
 }
 
+void Browser::ShowAboutPanel() {
+  NSDictionary* options = DictionaryValueToNSDictionary(about_panel_options_);
+  [[AtomApplication sharedApplication]
+      orderFrontStandardAboutPanelWithOptions:options];
+}
+
+void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
+  about_panel_options_.Clear();
+  about_panel_options_.MergeDictionary(&options);
+}
+
 }  // namespace atom
