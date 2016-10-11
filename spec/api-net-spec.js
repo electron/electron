@@ -240,6 +240,7 @@ describe('net module', function() {
       server.close(function() {
       })
       server = null
+      session.defaultSession.webRequest.onBeforeRequest(null)
     })
 
     it('request/response objects should emit expected events', function(done) {
@@ -491,7 +492,7 @@ describe('net module', function() {
       urlRequest.end();
     })
 
-    it('should be able to abort an HTTP request before first write', function() {
+    it('should be able to abort an HTTP request before first write', function(done) {
       const request_url = '/request_url'
       server.on('request', function(request, response) {
         assert(false)
@@ -864,7 +865,7 @@ describe('net module', function() {
       urlRequest.end();
     })
 
-    it('should be able to create a request with options', function() {
+    it('should be able to create a request with options', function(done) {
       const request_url = '/'
       const custom_header_name = 'Some-Custom-Header-Name'
       const custom_header_value = 'Some-Customer-Header-Value'
@@ -874,6 +875,8 @@ describe('net module', function() {
             assert.equal(request.method, 'GET')
             assert.equal(request.headers[custom_header_name.toLowerCase()], 
               custom_header_value)
+            response.statusCode = 200
+            response.statusMessage = 'OK'
             response.end();
             break;
           default:
@@ -881,9 +884,10 @@ describe('net module', function() {
         }
       })
 
-      const server_url = url.parse(server.url)
+      const serverUrl = url.parse(server.url)
       let options = {
-        port: server_url.port,
+        port: serverUrl.port,
+        hostname: '127.0.0.1',
         headers: {}
       }
       options.headers[custom_header_name] = custom_header_value
@@ -954,13 +958,14 @@ describe('net module', function() {
       })
       nodeRequest.end()
     })
-    it('headers cannot be manipulated after abort', function() {
+
+    it.skip('should emit error event on server socket close', function(done) {
       assert(false)
     })
   })
   describe('IncomingMessage API', function() {
 
-        let server
+    let server
     beforeEach(function (done) {
       server = http.createServer()
       server.listen(0, '127.0.0.1', function () {
@@ -970,8 +975,7 @@ describe('net module', function() {
     })
 
     afterEach(function () {
-      server.close(function() {
-      })
+      server.close()
       server = null
     })
 
@@ -1031,11 +1035,7 @@ describe('net module', function() {
       urlRequest.end();
     })
 
-    it ('should not emit any event after close', function() {
-      assert(false)
-    })
-
-    it.only('should be able to net response into a writable stream', function() {
+    it.skip('should be able to pipe a net response into a writable stream', function(done) {
       const node_request_url = '/node_request_url'
       const net_request_url = '/net_request_url'
       const body_data = randomString(kOneMegaByte)
@@ -1044,6 +1044,8 @@ describe('net module', function() {
       server.on('request', function(request, response) {
         switch (request.url) {
           case net_request_url:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
             response.write(body_data)
             response.end();
             break;
@@ -1066,13 +1068,20 @@ describe('net module', function() {
             assert(false)
         }
       })
-      const netRequest = net.request(`${server.url}${net_request_url}`)
+      
+      netRequest = net.request(`${server.url}${net_request_url}`);
       netRequest.on('response', function(netResponse) {
         assert.equal(netResponse.statusCode, 200)
-        let nodeRequest = http.request(`${server.url}${node_request_url}`);
+        const serverUrl = url.parse(server.url)
+        const nodeOptions = {
+          method: 'POST',
+          path: node_request_url,
+          port: serverUrl.port
+        }
+        let nodeRequest = http.request(nodeOptions);
+
         nodeRequest.on('response', function(nodeResponse) {
           nodeResponse.on('data', function(chunk) {
-          
           })
           nodeResponse.on('end', function(chunk) {
             assert(node_request_received)
@@ -1083,6 +1092,10 @@ describe('net module', function() {
         netResponse.pipe(nodeRequest)
       })
       netRequest.end()
+    })
+
+    it.skip('should not emit any event after close', function() {
+      assert(false)
     })
   })
 })
