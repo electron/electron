@@ -169,6 +169,7 @@ void SystemPreferences::OnSysColorChange() {
     invertered_color_scheme_ = new_invertered_color_scheme;
     Emit("inverted-color-scheme-changed", new_invertered_color_scheme);
   }
+  Emit("color-changed");
 }
 
 }  // namespace api

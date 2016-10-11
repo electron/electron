@@ -19,6 +19,12 @@ Returns:
 * `newColor` String - The new RGBA color the user assigned to be there system
   accent color.
 
+### Event: 'color-changed' _Windows_
+
+Returns:
+
+* `event` Event
+
 ### Event: 'inverted-color-scheme-changed' _Windows_
 
 Returns:
