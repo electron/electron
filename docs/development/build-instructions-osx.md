@@ -11,7 +11,7 @@ Follow the guidelines below for building Electron on macOS.
 If you are using the Python downloaded by Homebrew, you also need to install
 following python modules:
 
-* pyobjc
+* [pyobjc](https://pythonhosted.org/pyobjc/install.html)
 
 ## Getting the Code
 
