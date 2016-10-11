@@ -348,6 +348,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
   return (cookie == ReadLink(path));
 }
 
+bool IsAppSandboxed() {
+#if defined(OS_MACOSX)
+  // NB: There is no sane API for this, we have to just guess by
+  // reading tea leaves
+  base::FilePath home_dir;
+  if (!PathService.Get(base::DIR_HOME, &home_dir)) {
+    return false;
+  }
+
+  return home_dir.value().find("Library/Containers") != std::string::npos;
+#else
+  return false;
+#endif  // defined(OS_MACOSX)
+}
+
 bool ConnectSocket(ScopedSocket* socket,
                    const base::FilePath& socket_path,
                    const base::FilePath& cookie_path) {
