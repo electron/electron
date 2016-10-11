@@ -33,7 +33,7 @@ After finishing the preparation work, you can package your app by following
 signing your app.
 
 First, you have to add a `ElectronTeamID` key to your app's `Info.plist`, which
-has your Team ID as key:
+has your Team ID as value:
 
 ```xml
 <plist version="1.0">
