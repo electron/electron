@@ -7,8 +7,6 @@
 #include "atom/app/uv_task_runner.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
-#include "atom/common/api/atom_bindings.h"
-
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -17,6 +15,7 @@
 #include "gin/v8_initializer.h"
 
 #if defined(OS_WIN)
+#include "atom/common/api/atom_bindings.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/dictionary.h"
 #endif
