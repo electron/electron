@@ -30,7 +30,7 @@ void Net::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "Net"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
     .SetProperty("URLRequest", &Net::URLRequest)
-    .SetMethod("RequestGarbageCollectionForTesting",
+    .SetMethod("_RequestGarbageCollectionForTesting",
                &Net::RequestGarbageCollectionForTesting);
 }
 

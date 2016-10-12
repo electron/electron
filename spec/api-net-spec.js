@@ -25,7 +25,7 @@ const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
 
 describe('net module', function () {
-  this.timeout(0)
+  // this.timeout(0)
   describe('HTTP basics', function () {
     let server
     beforeEach(function (done) {
