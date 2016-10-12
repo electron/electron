@@ -234,7 +234,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 $ git clone https://github.com/electron/electron-quick-start
 # 저장소 안으로 들어갑니다
 $ cd electron-quick-start
-# 애플리케이션의 종속성 모듈을 설치한 후 실행합니다
+# 애플리케이션의 의존성 모듈을 설치한 후 실행합니다
 $ npm install && npm start
 ```
 

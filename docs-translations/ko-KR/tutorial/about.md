@@ -30,7 +30,7 @@ Electron 은 빈번하게 [출시](https://github.com/electron/electron/releases
 됩니다. 중요한 버그 수정, 새 API 추가 또는 Chromium 이나 Node.js 의
 업데이트시에 출시합니다.
 
-### 업데이트 종속성
+### 업데이트 의존성
 
 Electron 의 Chromium 버전은 보통 새 버전 출시 이후 1~2 주 후에 업데이트 하는데,
 이는 업그레이드에 필요한 작업의 양에 따라 달라집니다.
@@ -61,7 +61,7 @@ Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관�
 
 ## 중심 철학
 
-Electron 을 작고 (파일 크기) 지속가능하게 (종속성 및 API 의 확산) 할 목적으로
+Electron 을 작고 (파일 크기) 지속가능하게 (의존성 및 API 의 확산) 할 목적으로
 중심 프로젝트의 범위를 제한합니다.
 
 예를 들어, Electron 은 Chromium 전체가 아닌 렌더링 라이브러리만 사용합니다.
