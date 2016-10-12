@@ -14,7 +14,7 @@
 다음은 템플릿 API를 사용하여 메인 프로세스에서 어플리케이션 메뉴를 생성하는 예시입니다:
 
 ```javascript
-const {Menu} = require('electron')
+const {app, Menu} = require('electron')
 
 const template = [
   {
@@ -109,9 +109,8 @@ const template = [
 ]
 
 if (process.platform === 'darwin') {
-  const name = require('electron').remote.app.getName()
   template.unshift({
-    label: name,
+    label: app.getName(),
     submenu: [
       {
         role: 'about'

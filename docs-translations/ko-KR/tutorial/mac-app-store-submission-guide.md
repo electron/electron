@@ -32,7 +32,7 @@ Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출�
 준비 작업이 끝난 후, [애플리케이션 배포](application-distribution.md) 문서에 따라
 애플리케이션을 패키징한 후 애플리케이션에 서명합니다.
 
-먼저, Team ID를 키로 가지고 있는 애플리케이션의 `Info.plist`에 `ElectronTeamID` 키를
+먼저, Team ID를 키로 가지고 있는 애플리케이션의 `Info.plist`에 `ElectronTeamID` 값을
 추가해야 합니다:
 
 ```xml

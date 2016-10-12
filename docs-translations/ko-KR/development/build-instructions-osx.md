@@ -8,9 +8,9 @@
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
 * [node.js](http://nodejs.org) (external)
 
-만약 Homebrew를 이용해 파이선을 설치했다면 다음 Python 모듈도 같이 설치해야 합니다:
+만약 Homebrew를 이용해 Python을 설치했다면 다음 Python 모듈도 같이 설치해야 합니다:
 
-* pyobjc
+* [pyobjc](https://pythonhosted.org/pyobjc/install.html)
 
 ## 코드 가져오기
 
@@ -47,8 +47,8 @@ $ ./script/build.py -c D
 
 ## 32비트 지원
 
-Electron은 현재 macOS 64비트만 지원하고 있습니다. 그리고 앞으로도 macOS 32비트는 지원할
-계획이 없습니다.
+Electron은 현재 macOS 64비트만 지원하고 있습니다. 그리고 앞으로도 macOS 32비트는
+지원할 계획이 없습니다.
 
 ## 정리하기
 
