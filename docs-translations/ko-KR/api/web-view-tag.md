@@ -806,7 +806,7 @@ Returns:
 
 ### Event: 'destroyed'
 
-WebContents가 파괴될 때 발생하는 이벤트입니다.
+WebContents가 소멸될 때 발생하는 이벤트입니다.
 
 ### Event: 'media-started-playing'
 

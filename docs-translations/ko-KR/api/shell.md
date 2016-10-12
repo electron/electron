@@ -96,8 +96,8 @@ Returns `Object`:
   기본값은 빈 문자열.
 * `description` String (optional) - 바로가기의 설명. 기본값은 빈 문자열.
 * `icon` String (optional) - 아이콘의 경로. DLL 이나 EXE 일 수 있다. `icon` 과
-  `iconIndex` 는 함께 설정해야 한다. 기본값은 빈 문자열이며, 타겟의 아이콘을
-  사용한다.
+  `iconIndex` 는 함께 설정해야 합니다. 기본값은 빈 문자열이며, 타겟의 아이콘을
+  사용합니다.
 * `iconIndex` Integer (optional) - `icon` 이 DLL 이나 EXE 일 경우 아이콘의
   리소스 ID. 기본값은 0.
 * `appUserModelId` String (optional) - 애플리케이션 사용자 모델 ID. 기본값은 빈

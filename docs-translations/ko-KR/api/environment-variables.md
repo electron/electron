@@ -21,7 +21,7 @@ Windows 콘솔의 예시입니다:
 
 ## 제품 변수
 
-다음 환경 변수는 Electron 애플리케이션 패키지 실행에 우선적으로 사용된다.
+다음 환경 변수는 Electron 애플리케이션 패키지 실행에 우선적으로 사용됩니다.
 
 ### `GOOGLE_API_KEY`
 
@@ -44,7 +44,7 @@ https://console.developers.google.com/apis/api/geolocation/overview
 
 ## 개발 변수
 
-다음 환경 변수는 개발과 디버깅시 우선적으로 사용된다.
+다음 환경 변수는 개발과 디버깅시 우선적으로 사용됩니다.
 
 ### `ELECTRON_RUN_AS_NODE`
 

@@ -32,7 +32,7 @@ Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출�
 준비 작업이 끝난 후, [애플리케이션 배포](application-distribution.md) 문서에 따라
 애플리케이션을 패키징한 후 애플리케이션에 서명합니다.
 
-먼저, Team ID를 키로 가지고 있는 애플리케이션의 `Info.plist`에 `ElectronTeamID` 키를
+먼저, Team ID를 키로 가지고 있는 애플리케이션의 `Info.plist`에 `ElectronTeamID` 값을
 추가해야 합니다:
 
 ```xml
@@ -242,7 +242,8 @@ Electron은 다음과 같은 암호화 알고리즘을 사용합니다:
 * RIPEMD - [ISO/IEC 10118-3](http://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
 
 ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니다:
-[애플리케이션이 암호화를 사용할 때, 합법적으로 Apple의 앱 스토어에 제출하는 방법 (또는 ERN의 승인을 얻는 방법)][ern-tutorial].
+[애플리케이션이 암호화를 사용할 때, 합법적으로 Apple의 앱 스토어에 제출하는 방법 (또는
+ERN의 승인을 얻는 방법)][ern-tutorial].
 
 **역자주:** [Mac 앱 배포 가이드 공식 한국어 문서](https://developer.apple.com/osx/distribution/kr/)
 
