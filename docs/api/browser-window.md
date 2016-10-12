@@ -966,32 +966,10 @@ Same as `webContents.capturePage([rect, ]callback)`.
 
 * `url` String
 * `options` Object (optional)
-  * `httpReferrer` String (optional) - A HTTP Referrer url.
-  * `userAgent` String (optional) - A user agent originating the request.
-  * `extraHeaders` String (optional) - Extra headers separated by "\n"
-  * `postData` Array (optional) - An array of `upload` objects which
-    provides the request body for `POST` navigation.
-
-* `upload` Object
-  * `type` String - `data`, `file`, `filsSystem`, `blob`.
-
-If `type` is `data` then `upload` object must contain:
-  * `bytes` Buffer - Raw data to be uploaded.
-
-If `type` is `file` then `upload` object must contain:
-  * `filePath` String - Path of file to be uploaded.
-  * `offset` Integer
-  * `length` Integer
-  * `modificationTime` Double
-
-If `type` is `fileSystem` then `upload` object must contain:
-  * `filsSystemURL` String - FileSystem url to read data for upload.
-  * `offset` Integer
-  * `length` Integer
-  * `modificationTime` Double
-
-If `type` is `blob` then `upload` object must contain:
-  * `blobUUID` String - UUID of blob data to upload.
+  * `httpReferrer` String - A HTTP Referrer url.
+  * `userAgent` String - A user agent originating the request.
+  * `extraHeaders` String - Extra headers separated by "\n"
+  * `postData` ([UploadData](structures/upload-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[]
 
 Same as `webContents.loadURL(url[, options])`.
 
