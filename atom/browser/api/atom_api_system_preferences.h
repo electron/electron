@@ -44,6 +44,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
                                             "DwmGetColorizationColor");
 
   std::string GetAccentColor();
+  std::string GetColor(const std::string& color, mate::Arguments* args);
 
   void InitializeWindow();
 

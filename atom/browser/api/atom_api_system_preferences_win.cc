@@ -4,8 +4,10 @@
 
 #include "atom/browser/api/atom_api_system_preferences.h"
 
+#include "atom/common/color_util.h"
 #include "base/win/wrapped_window_proc.h"
 #include "ui/base/win/shell.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
 
 namespace atom {
@@ -39,6 +41,77 @@ std::string SystemPreferences::GetAccentColor() {
   }
 
   return hexColorDWORDToRGBA(color);
+}
+
+std::string SystemPreferences::GetColor(const std::string& color,
+                                        mate::Arguments* args) {
+  int id;
+  if (color == "3d-dark-shadow") {
+    id = COLOR_3DDKSHADOW;
+  } else if (color == "3d-face") {
+    id = COLOR_3DFACE;
+  } else if (color == "3d-highlight") {
+    id = COLOR_3DHIGHLIGHT;
+  } else if (color == "3d-light") {
+    id = COLOR_3DLIGHT;
+  } else if (color == "3d-shadow") {
+    id = COLOR_3DSHADOW;
+  } else if (color == "active-border") {
+    id = COLOR_ACTIVEBORDER;
+  } else if (color == "active-caption") {
+    id = COLOR_ACTIVECAPTION;
+  } else if (color == "active-caption-gradient") {
+    id = COLOR_GRADIENTACTIVECAPTION;
+  } else if (color == "app-workspace") {
+    id = COLOR_APPWORKSPACE;
+  } else if (color == "button-text") {
+    id = COLOR_BTNTEXT;
+  } else if (color == "caption-text") {
+    id = COLOR_CAPTIONTEXT;
+  } else if (color == "desktop") {
+    id = COLOR_DESKTOP;
+  } else if (color == "disabled-text") {
+    id = COLOR_GRAYTEXT;
+  } else if (color == "highlight") {
+    id = COLOR_HIGHLIGHT;
+  } else if (color == "highlight-text") {
+    id = COLOR_HIGHLIGHTTEXT;
+  } else if (color == "hotlight") {
+    id = COLOR_HOTLIGHT;
+  } else if (color == "inactive-border") {
+    id = COLOR_INACTIVEBORDER;
+  } else if (color == "inactive-caption") {
+    id = COLOR_INACTIVECAPTION;
+  } else if (color == "inactive-caption-gradient") {
+    id = COLOR_GRADIENTINACTIVECAPTION;
+  } else if (color == "inactive-caption-text") {
+    id = COLOR_INACTIVECAPTIONTEXT;
+  } else if (color == "info-background") {
+    id = COLOR_INFOBK;
+  } else if (color == "info-text") {
+    id = COLOR_INFOTEXT;
+  } else if (color == "menu") {
+    id = COLOR_MENU;
+  } else if (color == "menu-highlight") {
+    id = COLOR_MENUHILIGHT;
+  } else if (color == "menubar") {
+    id = COLOR_MENUBAR;
+  } else if (color == "menu-text") {
+    id = COLOR_MENUTEXT;
+  } else if (color == "scrollbar") {
+    id = COLOR_SCROLLBAR;
+  } else if (color == "window") {
+    id = COLOR_WINDOW;
+  } else if (color == "window-frame") {
+    id = COLOR_WINDOWFRAME;
+  } else if (color == "window-text") {
+    id = COLOR_WINDOWTEXT;
+  } else {
+    args->ThrowError("Unknown color: " + color);
+    return "";
+  }
+
+  return ToRGBHex(color_utils::GetSysSkColor(id));
 }
 
 void SystemPreferences::InitializeWindow() {
@@ -96,6 +169,7 @@ void SystemPreferences::OnSysColorChange() {
     invertered_color_scheme_ = new_invertered_color_scheme;
     Emit("inverted-color-scheme-changed", new_invertered_color_scheme);
   }
+  Emit("color-changed");
 }
 
 }  // namespace api

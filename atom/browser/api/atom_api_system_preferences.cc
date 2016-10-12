@@ -52,6 +52,7 @@ void SystemPreferences::BuildPrototype(
 #if defined(OS_WIN)
       .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
+      .SetMethod("getColor", &SystemPreferences::GetColor)
 #elif defined(OS_MACOSX)
       .SetMethod("postNotification",
                  &SystemPreferences::PostNotification)
