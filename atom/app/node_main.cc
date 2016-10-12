@@ -8,14 +8,18 @@
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
+
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
+
+#if defined(OS_WIN)
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/dictionary.h"
+#endif
 
 #include "atom/common/node_includes.h"
 
@@ -54,8 +58,10 @@ int NodeMain(int argc, char *argv[]) {
     if (node_debugger.IsRunning())
       env->AssignToContext(v8::Debug::GetDebugContext());
 
+#if defined(OS_WIN)
     mate::Dictionary process(gin_env.isolate(), env->process_object());
     process.SetMethod("log", &AtomBindings::Log);
+#endif
 
     node::LoadEnvironment(env);
 
