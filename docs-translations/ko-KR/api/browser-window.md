@@ -84,7 +84,8 @@ top.show()
 
 ### 모달 윈도우
 
-모달 윈도우는 부모 윈도우를 비활성화 시키는 자식 윈도우입니다. 모달 윈도우를 만드려면 `parent`, `modal` 옵션을 동시에 설정해야 합니다:
+모달 윈도우는 부모 윈도우를 비활성화 시키는 자식 윈도우입니다. 모달 윈도우를 만드려면
+`parent`, `modal` 옵션을 동시에 설정해야 합니다:
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -98,7 +99,8 @@ child.once('ready-to-show', () => {
 
 ### 플랫폼별 특이사항
 
-* macOS 에서 부모창이 이동할 때 자식창은 부모창과의 상대적 위치를 유지합니다. 윈도우즈와 리눅스는 자식창이 움직이지 않습니다.
+* macOS 에서 부모창이 이동할 때 자식창은 부모창과의 상대적 위치를 유지합니다. 윈도우즈와
+  리눅스는 자식창이 움직이지 않습니다.
 * 윈도우즈에서 parent 를 동적으로 변경할 수 없습니다.
 * 리눅스에서 모달창의 타입이 `dialog`로 변경됩니다.
 * 리눅스에서 많은 데스크톱 환경이 모달창 숨김을 지원하지 않습니다.
@@ -1052,8 +1054,8 @@ Windows와 Linux에선 항상 `true`를 반환합니다.
   * `icon` [NativeImage](native-image.md) - 미리보기 툴바에 보여질 아이콘.
   * `click` Function
   * `tooltip` String (optional) - 버튼의 툴팁 텍스트.
-  * `flags` String[] (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이
-    사용됩니다.
+  * `flags` String[] (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로
+    `enabled`이 사용됩니다.
 
 `flags` 는 다음 `String` 들을 포함할 수 있는 배열입니다:
 * `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.

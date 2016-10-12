@@ -14,7 +14,9 @@ Electron은 유명한 웹 프레임워크를 디버깅하기 위해 사용할 �
 같은 Chrome WebStore에서 자동으로 확장 기능을 다운로드하는 서드-파티 도구를 사용할 수도
 있습니다.
 
-Electron에 확장 기능을 로드하려면, Chrome 브라우저에서 다운로드 해야 하며, 파일 시스템 경로를 지정해야 합니다. 그리고 `BrowserWindow.addDevToolsExtension(extension)`를 호출함으로써 기능을 로드할 수 있습니다.
+Electron에 확장 기능을 로드하려면, Chrome 브라우저에서 다운로드 해야 하며, 파일 시스템
+경로를 지정해야 합니다. 그리고 `BrowserWindow.addDevToolsExtension(extension)`를
+호출함으로써 기능을 로드할 수 있습니다.
 
 예시로 [React Developer Tools][react-devtools]를 사용한다면:
 

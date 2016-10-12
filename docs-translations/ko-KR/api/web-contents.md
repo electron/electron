@@ -367,8 +367,8 @@ Returns:
 `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
 
 만약 `type` 인수가 `custom` 이고 `image` 인수가 `NativeImage`를 통한 커스텀
-커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale`, `size` 그리고 `hotspot` 인수는
-커스텀 커서의 추가적인 정보를 포함합니다.
+커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale`, `size` 그리고
+`hotspot` 인수는 커스텀 커서의 추가적인 정보를 포함합니다.
 
 #### Event: 'context-menu'
 

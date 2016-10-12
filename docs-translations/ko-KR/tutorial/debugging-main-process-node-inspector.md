@@ -25,7 +25,8 @@ $ code electron-quick-start
 }
 ```
 
-**참고:** 윈도우에서, `runtimeExecutable` 을 위해 `"${workspaceRoot}/node_modules/.bin/electron.cmd"` 를 사용하세요.
+**참고:** 윈도우에서, `runtimeExecutable` 을 위해
+`"${workspaceRoot}/node_modules/.bin/electron.cmd"` 를 사용하세요.
 
 ### 3. 디버깅
 
