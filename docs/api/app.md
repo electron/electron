@@ -219,14 +219,7 @@ Returns:
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
-* `certificateList` [Objects]
-  * `data` String - PEM encoded data
-  * `issuerName` String - Issuer's Common Name
-  * `subjectName` String - Subject's Common Name
-  * `serialNumber` String - Hex value represented string
-  * `validStart` Integer - Start date of the certificate being valid in seconds
-  * `validExpiry` Integer - End date of the certificate being valid in seconds
-  * `fingerprint` String - Fingerprint of the certificate
+* `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
 
 Emitted when a client certificate is requested.
@@ -523,7 +516,7 @@ The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internall
 
 ### `app.setUserTasks(tasks)` _Windows_
 
-* `tasks` Array - Array of `Task` objects
+* `tasks` [Task[]](structures/task.md) - Array of `Task` objects
 
 Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 
@@ -555,7 +548,7 @@ Returns `Object`:
 * `minItems` Integer - The minimum number of items that will be shown in the
   Jump List (for a more detailed description of this value see the
   [MSDN docs][JumpListBeginListMSDN]).
-* `removedItems` Array - Array of `JumpListItem` objects that correspond to
+* `removedItems` [JumpListItem[]](structures/jump-list-item.md) - Array of `JumpListItem` objects that correspond to
   items that the user has explicitly removed from custom categories in the
   Jump List. These items must not be re-added to the Jump List in the **next**
   call to `app.setJumpList()`, Windows will not display any custom category
@@ -563,7 +556,7 @@ Returns `Object`:
 
 ### `app.setJumpList(categories)` _Windows_
 
-* `categories` Array or `null` - Array of `JumpListCategory` objects.
+* `categories` [JumpListCategory[]](structures/jump-list-category.md) or `null` - Array of `JumpListCategory` objects.
 
 Sets or removes a custom Jump List for the application, and returns one of the
 following strings:
@@ -658,15 +651,21 @@ app.setJumpList([
     name: 'Tools',
     items: [
       {
-        type: 'task', title: 'Tool A',
-        program: process.execPath, args: '--run-tool-a',
-        icon: process.execPath, iconIndex: 0,
+        type: 'task',
+        title: 'Tool A',
+        program: process.execPath,
+        args: '--run-tool-a',
+        icon: process.execPath,
+        iconIndex: 0,
         description: 'Runs Tool A'
       },
       {
-        type: 'task', title: 'Tool B',
-        program: process.execPath, args: '--run-tool-b',
-        icon: process.execPath, iconIndex: 0,
+        type: 'task',
+        title: 'Tool B',
+        program: process.execPath,
+        args: '--run-tool-b',
+        icon: process.execPath,
+        iconIndex: 0,
         description: 'Runs Tool B'
       }
     ]
@@ -675,14 +674,18 @@ app.setJumpList([
   { // has no name and no type so `type` is assumed to be "tasks"
     items: [
       {
-        type: 'task', title: 'New Project',
-        program: process.execPath, args: '--new-project',
+        type: 'task',
+        title: 'New Project',
+        program: process.execPath,
+        args: '--new-project',
         description: 'Create a new project.'
       },
       { type: 'separator' },
       {
-        type: 'task', title: 'Recover Project',
-        program: process.execPath, args: '--recover-project',
+        type: 'task',
+        title: 'Recover Project',
+        program: process.execPath,
+        args: '--recover-project',
         description: 'Recover Project'
       }
     ]
