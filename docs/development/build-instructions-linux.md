@@ -121,17 +121,7 @@ $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
 
 ## Tests
 
-Test your changes conform to the project coding style using:
-
-```bash
-$ npm run lint
-```
-
-Test functionality using:
-
-```bash
-$ ./script/test.py
-```
+See [Build System Overview: Tests](build-system-overview.md#tests)
 
 ## Advanced topics
 
