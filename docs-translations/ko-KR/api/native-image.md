@@ -117,7 +117,7 @@ Returns `NativeImage`
 
 `path`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
 `path` 가 존재하지 않거나, 읽을 수 없거나, 유효한 이미지가 아니면 빈 이미지를
-반환한다.
+반환합니다.
 
 ```javascript
 const nativeImage = require('electron').nativeImage

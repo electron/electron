@@ -242,6 +242,6 @@ Returns `Object`:
 
 #### `tray.isDestroyed()`
 
-Returns `Boolean` - 트레이 아이콘이 파괴되었는지 여부.
+Returns `Boolean` - 트레이 아이콘이 소멸되었는지 여부.
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter
