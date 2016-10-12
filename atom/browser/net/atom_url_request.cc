@@ -51,8 +51,8 @@ class UploadOwnedIOBufferElementReader : public net::UploadBytesElementReader {
 
 AtomURLRequest::AtomURLRequest(base::WeakPtr<api::URLRequest> delegate)
     : delegate_(delegate),
-      response_read_buffer_(new net::IOBuffer(kBufferSize)),
-      is_chunked_upload_(false) {
+      is_chunked_upload_(false),
+      response_read_buffer_(new net::IOBuffer(kBufferSize)) {
 }
 
 AtomURLRequest::~AtomURLRequest() {
@@ -159,14 +159,12 @@ void AtomURLRequest::DoWriteBuffer(
 
     if (buffer)
       // Non-empty buffer.
-      auto write_result = chunked_stream_writer_->AppendData(
-        buffer->data(),
+      chunked_stream_writer_->AppendData(buffer->data(),
         buffer->size(),
         is_last);
     else if (is_last)
       // Empty buffer and last chunk, i.e. request.end().
-      auto write_result = chunked_stream_writer_->AppendData(
-        nullptr,
+      chunked_stream_writer_->AppendData(nullptr,
         0,
         true);
 

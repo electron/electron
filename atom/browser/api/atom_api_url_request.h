@@ -213,7 +213,7 @@ template <typename ... ArgTypes>
 std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)>
 URLRequest::BuildArgsArray(ArgTypes... args) const {
   std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> result
-    = { mate::ConvertToV8(isolate(), args)... };
+    = { { mate::ConvertToV8(isolate(), args)... } };
   return result;
 }
 
