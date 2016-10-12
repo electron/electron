@@ -729,6 +729,10 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
+void Window::PreviewFile(const base::string16& filepath) {
+  window_->PreviewFile(filepath);
+}
+
 void Window::SetParentWindow(v8::Local<v8::Value> value,
                              mate::Arguments* args) {
   if (IsModal()) {
@@ -825,6 +829,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
+      .SetMethod("previewFile", &Window::PreviewFile)
 #if !defined(OS_WIN)
       .SetMethod("setParentWindow", &Window::SetParentWindow)
 #endif

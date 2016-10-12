@@ -10,6 +10,8 @@
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
@@ -24,6 +26,7 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/skia_util.h"
+
 
 namespace {
 
@@ -897,6 +900,15 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
     [window_ setAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
   else
     [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
+}
+
+void NativeWindowMac::PreviewFile(const base::string16& filepath) {
+  std::string rtf = base::UTF16ToUTF8(filepath);
+
+  NSString *path = [NSString stringWithCString:rtf.c_str() 
+                                   encoding:[NSString defaultCStringEncoding]];
+  NSAlert *alert = [NSAlert alertWithMessageText:path defaultButton:@"Close anyway" alternateButton:@"Cancel" otherButton:nil informativeTextWithFormat:@""];
+  [alert runModal];
 }
 
 void NativeWindowMac::SetMovable(bool movable) {
