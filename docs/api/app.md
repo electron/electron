@@ -859,11 +859,11 @@ details.
 ### `app.setAboutPanelOptions(options)` _macOS_
 
 * `options` Object
-  * `ApplicationName` String (optional) - The app's name.
-  * `ApplicationVersion` String (optional) - The app's version.
-  * `Copyright` String (optional) - Copyright information.
-  * `Credits` String (optional) - Credit information.
-  * `Version` String (optional) - The app's build version number.
+  * `applicationName` String (optional) - The app's name.
+  * `applicationVersion` String (optional) - The app's version.
+  * `copyright` String (optional) - Copyright information.
+  * `credits` String (optional) - Credit information.
+  * `version` String (optional) - The app's build version number.
 
 Set the about panel options. This will override the values defined in the app's
 `.plist` file. See the [Apple docs][about-panel-options] for more details.
