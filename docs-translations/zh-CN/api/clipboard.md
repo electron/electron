@@ -4,15 +4,15 @@
 下面例子展示了如何将一个字符串写道 clipboard 上:
 
 ```javascript
-const clipboard = require('electron').clipboard;
-clipboard.writeText('Example String');
+const clipboard = require('electron').clipboard
+clipboard.writeText('Example String')
 ```
 
 在 X Window 系统上, 有一个可选的 clipboard. 你可以为每个方法使用 `selection` 来控制它:
 
 ```javascript
-clipboard.writeText('Example String', 'selection');
-console.log(clipboard.readText('selection'));
+clipboard.writeText('Example String', 'selection')
+console.log(clipboard.readText('selection'))
 ```
 
 ## 方法
@@ -93,7 +93,7 @@ console.log(clipboard.readText('selection'));
 返回 clipboard 是否支持指定 `data` 的格式.
 
 ```javascript
-console.log(clipboard.has('<p>selection</p>'));
+console.log(clipboard.has('<p>selection</p>'))
 ```
 
 ### `clipboard.read(data[, type])` _Experimental_
@@ -112,6 +112,6 @@ console.log(clipboard.has('<p>selection</p>'));
 * `type` String (可选)
 
 ```javascript
-clipboard.write({text: 'test', html: "<b>test</b>"});
+clipboard.write({text: 'test', html: '<b>test</b>'})
 ```
 向 clipboard 写入 `data` .

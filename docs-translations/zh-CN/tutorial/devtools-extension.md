@@ -18,14 +18,14 @@ $ git clone --recursive https://github.com/facebook/react-devtools.git
 然后你就可以在任意页面的 DevTools 里加载 React DevTools 了，通过控制台输入如下命令加载扩展：
 
 ```javascript
-const BrowserWindow = require('electron').remote.BrowserWindow;
-BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
+const BrowserWindow = require('electron').remote.BrowserWindow
+BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome')
 ```
 
 要卸载扩展，可以调用 `BrowserWindow.removeDevToolsExtension` API (扩展名作为参数传入)，该扩展在下次打开DevTools时就不会加载了：
 
 ```javascript
-BrowserWindow.removeDevToolsExtension('React Developer Tools');
+BrowserWindow.removeDevToolsExtension('React Developer Tools')
 ```
 
 ## DevTools 扩展的格式

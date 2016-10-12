@@ -4,12 +4,12 @@
 
 ```javascript
 // In the renderer process.
-var desktopCapturer = require('electron').desktopCapturer;
+var desktopCapturer = require('electron').desktopCapturer
 
-desktopCapturer.getSources({types: ['window', 'screen']}, function(error, sources) {
-  if (error) throw error;
+desktopCapturer.getSources({types: ['window', 'screen']}, function (error, sources) {
+  if (error) throw error
   for (var i = 0; i < sources.length; ++i) {
-    if (sources[i].name == "Electron") {
+    if (sources[i].name === 'Electron') {
       navigator.webkitGetUserMedia({
         audio: false,
         video: {
@@ -22,18 +22,18 @@ desktopCapturer.getSources({types: ['window', 'screen']}, function(error, source
             maxHeight: 720
           }
         }
-      }, gotStream, getUserMediaError);
-      return;
+      }, gotStream, getUserMediaError)
+      return
     }
   }
-});
+})
 
-function gotStream(stream) {
-  document.querySelector('video').src = URL.createObjectURL(stream);
+function gotStream (stream) {
+  document.querySelector('video').src = URL.createObjectURL(stream)
 }
 
-function getUserMediaError(e) {
-  console.log('getUserMediaError');
+function getUserMediaError (e) {
+  console.log('getUserMediaError')
 }
 ```
 

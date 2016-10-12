@@ -1,6 +1,6 @@
 Sii certo di usare la documentazione che corrisponde alla tua versione di
 Electron. Il numero della versione dovrebbe fare parte dell'URL della pagina.
-Se così non fosse, stai probabilmente utilizzando una documentazione facente
+Se cosï¿½ non fosse, stai probabilmente utilizzando una documentazione facente
 parte di una branch di sviluppo che potrebbe contenere modifiche all'API che non
 sono compatibili con la tua versione di Electron. In questo caso, puoi passare a
 una differente versione della documentazione dalla lista di

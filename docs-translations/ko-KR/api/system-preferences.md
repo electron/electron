@@ -147,7 +147,7 @@ if (browserOptions.transparent) {
 
 사용자의 현재 시스템 전체 색상 환경설정을 RGBA 16진 문자열 형태로 반환합니다.
 
-```js
+```javascript
 const color = systemPreferences.getAccentColor() // `"aabbccdd"`
 const red = color.substr(0, 2) // "aa"
 const green = color.substr(2, 2) // "bb"

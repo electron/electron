@@ -7,11 +7,11 @@ Electronでは、GUI関連モジュール（`dialog`や`menu`など）はメイ�
 レンダラープロセスからブラウザーウィンドウを作成する例：
 
 ```javascript
-const remote = require('electron').remote;
-const BrowserWindow = remote.BrowserWindow;
+const remote = require('electron').remote
+const BrowserWindow = remote.BrowserWindow
 
-var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadURL('https://github.com');
+var win = new BrowserWindow({ width: 800, height: 600 })
+win.loadURL('https://github.com')
 ```
 
 **Note:** 逆には（メインプロセスからレンダラープロセスにアクセスする）、[webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture)が使えます。
@@ -42,23 +42,23 @@ Electronは、レンダラープロセスのリモートオブジェクトが生
 
 ```javascript
 // main process mapNumbers.js
-exports.withRendererCallback = function(mapper) {
-  return [1,2,3].map(mapper);
+exports.withRendererCallback = function (mapper) {
+  return [1, 2, 3].map(mapper)
 }
 
-exports.withLocalCallback = function() {
-  return exports.mapNumbers(function(x) {
-    return x + 1;
-  });
+exports.withLocalCallback = function () {
+  return exports.mapNumbers(function (x) {
+    return x + 1
+  })
 }
 ```
 
 ```javascript
 // renderer process
-var mapNumbers = require("remote").require("./mapNumbers");
+var mapNumbers = require('remote').require('./mapNumbers')
 
-var withRendererCb = mapNumbers.withRendererCallback(function(x) {
-  return x + 1;
+var withRendererCb = mapNumbers.withRendererCallback(function (x) {
+  return x + 1
 })
 
 var withLocalCb = mapNumbers.withLocalCallback()
@@ -73,9 +73,9 @@ console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
 例えば、次のコードは一目で無害なコードのように思えます。リモートオブジェクト上で`close`イベントのコールバックをインストールしています。
 
 ```javascript
-remote.getCurrentWindow().on('close', function() {
+remote.getCurrentWindow().on('close', function () {
   // blabla...
-});
+})
 ```
 
 りかし、明確にアンインストールするまでメインプロセスによってコールバックは参照されることを覚えておいてください。アンインストールしない場合、ウィンドウをリロードするたびに、コールバックは再度インストールされ、それぞれの再起動時にコールバックあリークします。
@@ -89,7 +89,7 @@ remote.getCurrentWindow().on('close', function() {
 メインプロセスの組み込みモジュールは、`remote`モジュールでゲッターとして追加されるので、`electron`モジュールのように直接それらを使用できます。
 
 ```javascript
-const app = remote.app;
+const app = remote.app
 ```
 
 ## メソッド

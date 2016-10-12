@@ -48,29 +48,29 @@ $ asar list /path/to/example.asar
 Leer un archivo de nuestro paquete `asar`:
 
 ```javascript
-var fs = require('fs');
-fs.readFileSync('/path/to/example.asar/file.txt');
+var fs = require('fs')
+fs.readFileSync('/path/to/example.asar/file.txt')
 ```
 
 Listar todos los archivos de la raíz:
 
 ```javascript
-var fs = require('fs');
-fs.readdirSync('/path/to/example.asar');
+var fs = require('fs')
+fs.readdirSync('/path/to/example.asar')
 ```
 
 Utilizar un módulo que se encuentra dentro del archivo:
 
 ```javascript
-require('/path/to/example.asar/dir/module.js');
+require('/path/to/example.asar/dir/module.js')
 ```
 
 También puedes mostrar una página web contenida en un `asar` utilizando `BrowserWindow`.
 
 ```javascript
-var BrowserWindow = require('browser-window');
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('file:///path/to/example.asar/static/index.html');
+var BrowserWindow = require('browser-window')
+var win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('file:///path/to/example.asar/static/index.html')
 ```
 
 ### API Web
@@ -96,8 +96,8 @@ si necesitáramos verificar la integridad del archivo con un checksum.
 Para casos así es posible utilizar el módulo  `original-fs`, que provee la API `fs` original:
 
 ```javascript
-var originalFs = require('original-fs');
-originalFs.readFileSync('/path/to/example.asar');
+var originalFs = require('original-fs')
+originalFs.readFileSync('/path/to/example.asar')
 ```
 
 ## Limitaciones de la API Node:

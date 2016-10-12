@@ -5,10 +5,10 @@
 次の例は、最後のウィンドウが閉じたときにアプリケーションを終了させる方法を示しています。
 
 ```javascript
-const app = require('electron').app;
-app.on('window-all-closed', function() {
-  app.quit();
-});
+const app = require('electron').app
+app.on('window-all-closed', function () {
+  app.quit()
+})
 ```
 
 ## イベント
@@ -134,15 +134,15 @@ Windowsでは、ファイルパスを取得するために、 `process.argv` を
  `url` の  `certificate` 検証に失敗したときに発生します。証明書を信頼するために`event.preventDefault()` と `callback(true)`をコールして既定の動作を止める必要があります。
 
 ```javascript
-session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
-  if (url == "https://github.com") {
+session.on('certificate-error', function (event, webContents, url, error, certificate, callback) {
+  if (url === 'https://github.com') {
     // Verification logic.
-    event.preventDefault();
-    callback(true);
+    event.preventDefault()
+    callback(true)
   } else {
-    callback(false);
+    callback(false)
   }
-});
+})
 ```
 
 ### イベント: 'select-client-certificate'
@@ -162,9 +162,9 @@ session.on('certificate-error', function(event, webContents, url, error, certifi
 `url` は、クライアント証明書を要求するナビゲーションエントリーに対応し、`callback` リストからエントリをフィルターしてコールするのに必要です。`event.preventDefault()` を使用して、アプリケーションの証明書ストアから最初の証明書を使用するのを止めることができます。
 
 ```javascript
-app.on('select-client-certificate', function(event, webContents, url, list, callback) {
-  event.preventDefault();
-  callback(list[0]);
+app.on('select-client-certificate', function (event, webContents, url, list, callback) {
+  event.preventDefault()
+  callback(list[0])
 })
 ```
 
@@ -191,9 +191,9 @@ Returns:
 既定の動作ではすべての認証をキャンセルしたり、`event.preventDefault()` と `callback(username, password)` とを証明書でコールし既定の動作をとめてオーバーライドします。
 
 ```javascript
-app.on('login', function(event, webContents, request, authInfo, callback) {
-  event.preventDefault();
-  callback('username', 'secret');
+app.on('login', function (event, webContents, request, authInfo, callback) {
+  event.preventDefault()
+  callback('username', 'secret')
 })
 ```
 
@@ -325,26 +325,25 @@ macOSは、ユーザーがFinderで2つ目のアプリインスタンスを開�
 
 2つ目のインスタンスを起動するとき、メインのインスタンスのウィンドウをアクティブにする例
 
-```js
-var myWindow = null;
+```javascript
+var myWindow = null
 
-var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+var shouldQuit = app.makeSingleInstance(function (commandLine, workingDirectory) {
   // Someone tried to run a second instance, we should focus our window
   if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore();
-    myWindow.focus();
+    if (myWindow.isMinimized()) myWindow.restore()
+    myWindow.focus()
   }
-  return true;
-});
+  return true
+})
 
 if (shouldQuit) {
-  app.quit();
-  return;
+  app.quit()
 }
 
-// Create myWindow, load the rest of the app, etc...
-app.on('ready', function() {
-});
+app.on('ready', function () {
+  // Create myWindow, load the rest of the app, etc...
+})
 ```
 
 ### `app.setAppUserModelId(id)` _Windows_
@@ -359,24 +358,24 @@ app.on('ready', function() {
 
 使用例:
 
-```js
-let browserOptions = {width: 1000, height: 800};
+```javascript
+let browserOptions = {width: 1000, height: 800}
 
 // Make the window transparent only if the platform supports it.
 if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
+  browserOptions.transparent = true
+  browserOptions.frame = false
 }
 
 // Create the window.
-win = new BrowserWindow(browserOptions);
+win = new BrowserWindow(browserOptions)
 
 // Navigate.
 if (browserOptions.transparent) {
-  win.loadURL('file://' + __dirname + '/index.html');
+  win.loadURL(`file://${__dirname}/index.html`)
 } else {
   // No transparency, so we load a fallback that uses basic styles.
-  win.loadURL('file://' + __dirname + '/fallback.html');
+  win.loadURL(`file://${__dirname}/fallback.html`)
 }
 ```
 

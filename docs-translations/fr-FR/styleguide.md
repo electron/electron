@@ -95,7 +95,7 @@ valeur, elle est écrite en dessous ainsi que son type. Si vous voulez écouter 
 répondre à l'évènement wake-up, ça donne quelque chose comme :
 
 ```javascript
-Alarm.on('wake-up', function(time) {
+Alarm.on('wake-up', function (time) {
   console.log(time)
 })
 ```

@@ -5,20 +5,18 @@
 `file://`プロトコルの同様の効果をもつプロトコルを実装した例です。
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const path = require('path');
+const {app} = require('electron')
+const path = require('path')
 
-app.on('ready', function() {
-    var protocol = electron.protocol;
-    protocol.registerFileProtocol('atom', function(request, callback) {
-      var url = request.url.substr(7);
-      callback({path: path.normalize(__dirname + '/' + url)});
-    }, function (error) {
-      if (error)
-        console.error('Failed to register protocol')
-    });
-});
+app.on('ready', function () {
+  var protocol = electron.protocol
+  protocol.registerFileProtocol('atom', function (request, callback) {
+    var url = request.url.substr(7)
+    callback({path: path.join(__dirname, url)})
+  }, function (error) {
+    if (error) console.error('Failed to register protocol')
+  })
+})
 ```
 
 **Note:** このモジュールは、`app`モジュールで`ready`イベントが出力された後のみ使うことができます。
@@ -77,12 +75,11 @@ app.on('ready', function() {
 例:
 
 ```javascript
-protocol.registerBufferProtocol('atom', function(request, callback) {
-  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
+protocol.registerBufferProtocol('atom', function (request, callback) {
+  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
 }, function (error) {
-  if (error)
-    console.error('Failed to register protocol')
-});
+  if (error) console.error('Failed to register protocol')
+})
 ```
 
 ### `protocol.registerStringProtocol(scheme, handler[, completion])`

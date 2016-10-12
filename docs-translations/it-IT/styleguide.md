@@ -48,7 +48,7 @@ API.
 * Usa `bash` invece di `cmd` nei blocchi di codice (per via della diversa
 evidenziazione della sintassi).
 * Le linee devono essere lunghe al massimo 80 caratteri.
-* Non annidare le liste per più di due livelli (per via del rendering compiuto
+* Non annidare le liste per piï¿½ di due livelli (per via del rendering compiuto
 da markdown).
 * Tutti i blocchi di codice `js` o `javascript` sono analizzati con
 [standard-markdown](http://npm.im/standard-markdown). 
@@ -97,7 +97,7 @@ Prendendo `autoUpdate` come esempio:
 
 * Le classi API e le classi che sono parte di moduli devono essere elencate
 sotto un capitolo `## Classe: NomeDellaClasse`.
-* Una pagina può avere più classi.
+* Una pagina puï¿½ avere piï¿½ classi.
 * I costruttoi devono essere elencati con un titolo di livello `###`.
 * I [Metodi Statici](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) (Inglese) devono essere elencati sotto un capitolo
 `### Metodi Statici`.
@@ -105,7 +105,7 @@ sotto un capitolo `## Classe: NomeDellaClasse`.
 capitolo `### Metodi di Istanza`.
 * Gli Eventi di Istanza devono essere elencati sotto un capitolo
 `## Eventi di Istanza`.
-* Le Proprietà di Istanza devono essere elencate sotto un capitolo `## Proprietà di Istanza`.
+* Le Proprietï¿½ di Istanza devono essere elencate sotto un capitolo `## Proprietï¿½ di Istanza`.
 
 Prendendo le classi `Session` e `Cookies` come esempi:
 
@@ -116,7 +116,7 @@ Prendendo le classi `Session` e `Cookies` come esempi:
 
 ### session.fromPartition(partition)
 
-## Proprietà
+## Proprietï¿½
 
 ### session.defaultSession
 
@@ -130,7 +130,7 @@ Prendendo le classi `Session` e `Cookies` come esempi:
 
 #### `ses.getCacheSize(callback)`
 
-### Proprietà di Istanza
+### Proprietï¿½ di Istanza
 
 #### `ses.cookies`
 
@@ -154,10 +154,10 @@ Il capitolo dei metodi deve seguire il seguente formato:
 ...
 ```
 
-Il titolo può essere di livello `###` o `####` a seconda che sia un metodo di
+Il titolo puï¿½ essere di livello `###` o `####` a seconda che sia un metodo di
 un modulo o di una classe.
 
-Per i moduli, il `nomeOggetto` è il nome del modulo. Per le classi, deve essere
+Per i moduli, il `nomeOggetto` ï¿½ il nome del modulo. Per le classi, deve essere
 il nome dell'istanza della classe e non deve essere lo stesso del modulo.
 
 Per esempio, i metodi della classe `Session` sotto il modulo `session` devono
@@ -172,7 +172,7 @@ required[, optional]
 ```
 
 Sotto ogni metodo si trovano informazioni dettagliate su ogni parametro. Il tipo
-di parametro è caratterizzato da uno dei tipi di dati comuni:
+di parametro ï¿½ caratterizzato da uno dei tipi di dati comuni:
 
 * [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)
 * [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
@@ -192,7 +192,7 @@ corsivo e delimitati da uno spazio. I valori possono essere `macOS`,
 ```
 
 I parametri di tipo `Array` devono specificare nella descrizione sottostante
-che elementi può contenere l'array.
+che elementi puï¿½ contenere l'array.
 
 La descrizione per i parametri di tipo `Funzione` dovrebbero rendere chiaro come
 sia possibile chiamarli, ed elencare i tipi di parametri che vi saranno passati.
@@ -211,14 +211,14 @@ Ritorna:
 ...
 ```
 
-Il titolo può essere di livello `###` o `####` a seconda che sia di un evento di
+Il titolo puï¿½ essere di livello `###` o `####` a seconda che sia di un evento di
 un modulo o di una classe.
 
 I parametri di un evento seguono le stesse regole di quelli dei metodi.
 
-### Proprietà
+### Proprietï¿½
 
-Il capitolo delle proprietà deve seguire il seguente formato:
+Il capitolo delle proprietï¿½ deve seguire il seguente formato:
 
 ```markdown
 ### session.defaultSession
@@ -226,7 +226,7 @@ Il capitolo delle proprietà deve seguire il seguente formato:
 ...
 ```
 
-Il titolo può essere di livello `###` o `####` a seconda che sia una proprietà
+Il titolo puï¿½ essere di livello `###` o `####` a seconda che sia una proprietï¿½
 di un metodo o di una classe.
 
 ## Traduzioni della Documentazione
@@ -243,4 +243,4 @@ reindirizzi ai file che hai tradotto.
 * Aggiungi un collegamento alla cartella della traduzione nel [README](https://github.com/electron/electron#documentation-translations) principale di Electron.
 
 Nota che tutti i file nella cartella `docs-translations` devono includere solo
-i file tradotti. I file originali in inglese non devono essere copiati lì.
+i file tradotti. I file originali in inglese non devono essere copiati lï¿½.

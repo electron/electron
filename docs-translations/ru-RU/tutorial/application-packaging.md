@@ -49,29 +49,29 @@ $ asar list /path/to/example.asar
 Прочитаеем файл в архиве `asar`:
 
 ```javascript
-const fs = require('fs');
-fs.readFileSync('/path/to/example.asar/file.txt');
+const fs = require('fs')
+fs.readFileSync('/path/to/example.asar/file.txt')
 ```
 
 Список всех файлов начиная от корня архива:
 
 ```javascript
-const fs = require('fs');
-fs.readdirSync('/path/to/example.asar');
+const fs = require('fs')
+fs.readdirSync('/path/to/example.asar')
 ```
 
 Используем модуль из архива:
 
 ```javascript
-require('/path/to/example.asar/dir/module.js');
+require('/path/to/example.asar/dir/module.js')
 ```
 
 Вы также можете показывать веб-страницы из архива `asar` через `BrowserWindow`:
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('file:///path/to/example.asar/static/index.html');
+const BrowserWindow = require('electron').BrowserWindow
+var win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('file:///path/to/example.asar/static/index.html')
 ```
 
 ### Веб API
@@ -98,16 +98,16 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 `original-fs`, который предоставляет доступ к `fs` без поддежки `asar`:
 
 ```javascript
-var originalFs = require('original-fs');
-originalFs.readFileSync('/path/to/example.asar');
+var originalFs = require('original-fs')
+originalFs.readFileSync('/path/to/example.asar')
 ```
 
 Вы также можете выставить `process.noAsar` в `true`, чтобы выключить поддержку `asar`
 в модуле `fs`:
 
 ```javascript
-process.noAsar = true;
-fs.readFileSync('/path/to/example.asar');
+process.noAsar = true
+fs.readFileSync('/path/to/example.asar')
 ```
 
 ## Ограничения Node API

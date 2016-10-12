@@ -36,17 +36,17 @@ Si vous voulez corriger rapidement le problème, vous pouvez rendre les variable
 globales en changeant votre code de ça :
 
 ```javascript
-app.on('ready', function() {
-  var tray = new Tray('/path/to/icon.png');
+app.on('ready', function () {
+  var tray = new Tray('/path/to/icon.png')
 })
 ```
 
 à ça :
 
 ```javascript
-var tray = null;
-app.on('ready', function() {
-  tray = new Tray('/path/to/icon.png');
+var tray = null
+app.on('ready', function () {
+  tray = new Tray('/path/to/icon.png')
 })
 ```
 
@@ -65,7 +65,7 @@ var mainWindow = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }
-});
+})
 ```
 
 Mais si vous voulez garder la possibilité d'utiliser Node.js et les APIs
@@ -101,7 +101,7 @@ Vous vérifiez que vous utilisez les bons modules, vous pouvez afficher le
 chemin du module `electron` :
 
 ```javascript
-console.log(require.resolve('electron'));
+console.log(require.resolve('electron'))
 ```
 
 et vérifier si il est de la forme :

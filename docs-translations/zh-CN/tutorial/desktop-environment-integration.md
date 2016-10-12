@@ -14,7 +14,7 @@
 ```javascript
 var myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
-});
+})
 
 myNotification.onclick = function () {
   console.log('Notification clicked')
@@ -56,12 +56,12 @@ Windows 和 macOS 提供获取最近文档列表的便捷方式，那就是打�
 为了增加一个文件到最近文件列表，你可以使用 [app.addRecentDocument][3] API:
 
 ```javascript
-var app = require('app');
-app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
+var app = require('app')
+app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 或者你也可以使用 [app.clearRecentDocuments][4] API 来清空最近文件列表。
 ```javascript
-app.clearRecentDocuments();
+app.clearRecentDocuments()
 ```
 ## Windows 需注意
 为了这个特性在 Windows 上表现正常，你的应用需要被注册成为一种文件类型的句柄，否则，在你注册之前，文件不会出现在跳转列表。你可以在 [Application Registration][5] 里找到任何关于注册事宜的说明。
@@ -75,18 +75,20 @@ macOS 可以让开发者定制自己的菜单，通常会包含一些常用特�
 ![Dock menu of Terminal.app][6]
 
 使用 `app.dock.setMenu` API 来设置你的菜单，这仅在 macOS 上可行：
+
 ```javascript
-var app = require('app');
-var Menu = require('menu');
-var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function() { console.log('New Window'); } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
+const {app, Menu} = require('electron')
+
+const dockMenu = Menu.buildFromTemplate([
+  {label: 'New Window', click () { console.log('New Window') }},
+  {label: 'New Window with Settings',
+  submenu: [
+    {label: 'Basic'},
+    {label: 'Pro'}
   ]},
-  { label: 'New Command...'}
-]);
-app.dock.setMenu(dockMenu);
+  {label: 'New Command...'}
+])
+app.dock.setMenu(dockMenu)
 ```
 
 ## 用户任务(Windows)
@@ -102,7 +104,7 @@ app.dock.setMenu(dockMenu);
 
 你可以使用 [app.setUserTasks][8] API 来设置你的应用中的用户任务：
 ```javascript
-var app = require('app');
+var app = require('app')
 app.setUserTasks([
   {
     program: process.execPath,
@@ -112,11 +114,11 @@ app.setUserTasks([
     title: 'New Window',
     description: 'Create a new window'
   }
-]);
+])
 ```
 调用 `app.setUserTasks` 并传入空数组就可以清除你的任务列表：
 ```javascript
-app.setUserTasks([]);
+app.setUserTasks([])
 ```
 当你的应用关闭时，用户任务会仍然会出现，在你的应用被卸载前，任务指定的图标和程序的路径必须是存在的。
 
@@ -132,29 +134,29 @@ app.setUserTasks([]);
 ![Thumbnail toolbar of Windows Media Player][9]
 你可以使用 [BrowserWindow.setThumbarButtons][10] 来设置你的应用的缩略图工具栏。
 ```javascript
-var BrowserWindow = require('browser-window');
-var path = require('path');
+var BrowserWindow = require('browser-window')
+var path = require('path')
 var win = new BrowserWindow({
   width: 800,
   height: 600
-});
+})
 win.setThumbarButtons([
   {
-    tooltip: "button1",
+    tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click: function() { console.log("button2 clicked"); }
+    click: function () { console.log('button2 clicked') }
   },
   {
-    tooltip: "button2",
+    tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
-    flags:['enabled', 'dismissonclick'],
-    click: function() { console.log("button2 clicked."); }
+    flags: ['enabled', 'dismissonclick'],
+    click: function () { console.log('button2 clicked.') }
   }
-]);
+])
 ```
 调用 `BrowserWindow.setThumbarButtons` 并传入空数组即可清空缩略图工具栏：
 ```javascript
-win.setThumbarButtons([]);
+win.setThumbarButtons([])
 ```
 
 ## Unity launcher 快捷方式(Linux)
@@ -174,8 +176,8 @@ Unity DE 也具有同样的特性，在运行器上显示进度条。
 
 给一个窗口设置进度条，你可以调用 [BrowserWindow.setProgressBar][15] API：
 ```javascript
-var window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+var window = new BrowserWindow()
+window.setProgressBar(0.5)
 ```
 在 macOS，一个窗口可以设置它展示的文件，文件的图标可以出现在标题栏，当用户 Command-Click 或者 Control-Click 标题栏，文件路径弹窗将会出现。
 ### 展示文件弹窗菜单：
@@ -183,9 +185,9 @@ window.setProgressBar(0.5);
 
 你可以调用 [BrowserWindow.setRepresentedFilename][17] 和 [BrowserWindow.setDocumentEdited][18] APIs：
 ```javascript
-var window = new BrowserWindow({...});
-window.setRepresentedFilename('/etc/passwd');
-window.setDocumentEdited(true);
+var window = new BrowserWindow()
+window.setRepresentedFilename('/etc/passwd')
+window.setDocumentEdited(true)
 ```
 
  [1]:https://camo.githubusercontent.com/3310597e01f138b1d687e07aa618c50908a88dec/687474703a2f2f692e6d73646e2e6d6963726f736f66742e636f6d2f64796e696d672f49433432303533382e706e67
@@ -206,7 +208,7 @@ window.setDocumentEdited(true);
   [16]: https://cloud.githubusercontent.com/assets/639601/5082061/670a949a-6f14-11e4-987a-9aaa04b23c1d.png
   [17]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
   [18]: https://github.com/electron/electron/blob/master/docs-translations/zh-CN/api/browser-window.md
-  
+
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows
 [clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows

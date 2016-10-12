@@ -43,29 +43,29 @@ $ asar list /path/to/example.asar
 讀取一個在 `asar` 壓縮檔中的檔案：
 
 ```javascript
-const fs = require('fs');
-fs.readFileSync('/path/to/example.asar/file.txt');
+const fs = require('fs')
+fs.readFileSync('/path/to/example.asar/file.txt')
 ```
 
 列出所有在壓縮檔根目錄下的檔案：
 
 ```javascript
-const fs = require('fs');
-fs.readdirSync('/path/to/example.asar');
+const fs = require('fs')
+fs.readdirSync('/path/to/example.asar')
 ```
 
 使用一個壓縮檔中的模組：
 
 ```javascript
-require('/path/to/example.asar/dir/module.js');
+require('/path/to/example.asar/dir/module.js')
 ```
 
 你也可以利用 `BrowserWindow` 在 `asar` 壓縮檔中呈現一個網頁：
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadURL('file:///path/to/example.asar/static/index.html');
+const BrowserWindow = require('electron').BrowserWindow
+var win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('file:///path/to/example.asar/static/index.html')
 ```
 
 ### Web API
@@ -89,15 +89,15 @@ $.get('file:///path/to/example.asar/file.txt', function(data) {
 `original-fs` 模組，它提供了沒有 `asar` 支援的原生 `fs` API:
 
 ```javascript
-var originalFs = require('original-fs');
-originalFs.readFileSync('/path/to/example.asar');
+var originalFs = require('original-fs')
+originalFs.readFileSync('/path/to/example.asar')
 ```
 
 你也可以設定 `process.noAsar` 為 `true` 來關掉在 `fs` 模組中的 `asar` 支援：
 
 ```javascript
-process.noAsar = true;
-fs.readFileSync('/path/to/example.asar');
+process.noAsar = true
+fs.readFileSync('/path/to/example.asar')
 ```
 
 ## Node API 上的限制

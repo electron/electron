@@ -5,11 +5,11 @@
 例如:
 
 ```javascript
-app.on('ready', function() {
-  require('electron').powerMonitor.on('suspend', function() {
-    console.log('The system is going to sleep');
-  });
-});
+app.on('ready', function () {
+  require('electron').powerMonitor.on('suspend', function () {
+    console.log('The system is going to sleep')
+  })
+})
 ```
 
 ## 事件

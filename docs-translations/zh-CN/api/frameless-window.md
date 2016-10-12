@@ -10,8 +10,8 @@
 
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({ width: 800, height: 600, frame: false });
+const BrowserWindow = require('electron').BrowserWindow
+var win = new BrowserWindow({ width: 800, height: 600, frame: false })
 ```
 
 ### macOS上的替代方案
@@ -21,7 +21,7 @@ var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ，同时又想保持对窗口的控制("traffic lights")。你可以通过指定`titleBarStyle`这一新选项达到目标:
 
 ```javascript
-var win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
+var win = new BrowserWindow({ 'titleBarStyle': 'hidden' })
 ```
 
 ## 透明窗口
@@ -29,7 +29,7 @@ var win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
 通过设置`transparent` 选项为 `true`，你能使无边框窗口透明:
 
 ```javascript
-var win = new BrowserWindow({ transparent: true, frame: false });
+var win = new BrowserWindow({ transparent: true, frame: false })
 ```
 
 ### 限制

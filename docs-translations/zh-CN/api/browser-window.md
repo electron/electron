@@ -4,18 +4,18 @@
 
 ```javascript
 // In the main process.
-const BrowserWindow = require('electron').BrowserWindow;
+const BrowserWindow = require('electron').BrowserWindow
 
 // Or in the renderer process.
-const BrowserWindow = require('electron').remote.BrowserWindow;
+// const BrowserWindow = require('electron').remote.BrowserWindow
 
-var win = new BrowserWindow({ width: 800, height: 600, show: false });
-win.on('closed', function() {
-  win = null;
-});
+var win = new BrowserWindow({ width: 800, height: 600, show: false })
+win.on('closed', function () {
+  win = null
+})
 
-win.loadURL('https://github.com');
-win.show();
+win.loadURL('https://github.com')
+win.show()
 ```
 
 你也可以不通过chrome创建窗口，使用
@@ -151,15 +151,15 @@ win.show();
 通常你想通过 `beforeunload` 处理器来决定是否关闭窗口，但是它也会在窗口重载的时候被触发. 在 Electron 中，返回一个空的字符串或 `false` 可以取消关闭.例如:
 
 ```javascript
-window.onbeforeunload = function(e) {
-  console.log('I do not want to be closed');
+window.onbeforeunload = function (e) {
+  console.log('I do not want to be closed')
 
   // Unlike usual browsers, in which a string should be returned and the user is
   // prompted to confirm the page unload, Electron gives developers more options.
   // Returning empty string or false would prevent the unloading now.
   // You can also use the dialog API to let the user confirm closing the application.
-  e.returnValue = false;
-};
+  e.returnValue = false
+}
 ```
 
 ### Event: 'closed'
@@ -233,13 +233,13 @@ window.onbeforeunload = function(e) {
 在请求一个[App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)的时候触发.
 典型的是键盘媒体或浏览器命令, Windows上的 "Back" 按钮用作鼠标也会触发.
 
-```js
-someWindow.on('app-command', function(e, cmd) {
+```javascript
+someWindow.on('app-command', function (e, cmd) {
   // Navigate the window back when the user hits their mouse back button
   if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
-    someWindow.webContents.goBack();
+    someWindow.webContents.goBack()
   }
-});
+})
 ```
 
 ### Event: 'scroll-touch-begin' _macOS_
@@ -294,7 +294,7 @@ someWindow.on('app-command', function(e, cmd) {
 
 ```javascript
 // In this example `win` is our instance
-var win = new BrowserWindow({ width: 800, height: 600 });
+var win = new BrowserWindow({ width: 800, height: 600 })
 ```
 
 ### `win.webContents`

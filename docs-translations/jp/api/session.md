@@ -5,12 +5,12 @@
 [`BrowserWindow`](browser-window.md)のプロパティである [`webContents`](web-contents.md)プロパティの`session`を使うことで既存ページの `session`にアクセスできます。
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const BrowserWindow = require('electron').BrowserWindow
 
-var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadURL("http://github.com");
+var win = new BrowserWindow({ width: 800, height: 600 })
+win.loadURL('http://github.com')
 
-var ses = win.webContents.session;
+var ses = win.webContents.session
 ```
 
 ## メソッド
@@ -38,9 +38,9 @@ var ses = win.webContents.session;
 `session`モジュールで、`Session`オブジェクトを作成できます:
 
 ```javascript
-const session = require('electron').session;
+const session = require('electron').session
 
-var ses = session.fromPartition('persist:name');
+var ses = session.fromPartition('persist:name')
 ```
 
 ### インスタンスイベント
@@ -58,12 +58,12 @@ Electronが`webContents`で`item`をダウンロードしようとすると出�
 `event.preventDefault()` をコールするとダウンロードをキャンセルできます。
 
 ```javascript
-session.defaultSession.on('will-download', function(event, item, webContents) {
-  event.preventDefault();
-  require('request')(item.getURL(), function(data) {
-    require('fs').writeFileSync('/somewhere', data);
-  });
-});
+session.defaultSession.on('will-download', function (event, item, webContents) {
+  event.preventDefault()
+  require('request')(item.getURL(), function (data) {
+    require('fs').writeFileSync('/somewhere', data)
+  })
+})
 ```
 
 ### インスタンスのメソッド
@@ -76,22 +76,23 @@ session.defaultSession.on('will-download', function(event, item, webContents) {
 
 ```javascript
 // Query all cookies.
-session.defaultSession.cookies.get({}, function(error, cookies) {
-  console.log(cookies);
-});
+session.defaultSession.cookies.get({}, function (error, cookies) {
+  if (error) console.error(error)
+  console.log(cookies)
+})
 
 // Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({ url : "http://www.github.com" }, function(error, cookies) {
-  console.log(cookies);
-});
+session.defaultSession.cookies.get({ url: 'http://www.github.com' }, function (error, cookies) {
+  if (error) console.error(error)
+  console.log(cookies)
+})
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
-var cookie = { url : "http://www.github.com", name : "dummy_name", value : "dummy" };
-session.defaultSession.cookies.set(cookie, function(error) {
-  if (error)
-    console.error(error);
-});
+var cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy' }
+session.defaultSession.cookies.set(cookie, function (error) {
+  if (error) console.error(error)
+})
 ```
 
 #### `ses.cookies.get(filter, callback)`
@@ -232,13 +233,13 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 ```javascript
 // To emulate a GPRS connection with 50kbps throughput and 500 ms latency.
 window.webContents.session.enableNetworkEmulation({
-    latency: 500,
-    downloadThroughput: 6400,
-    uploadThroughput: 6400
-});
+  latency: 500,
+  downloadThroughput: 6400,
+  uploadThroughput: 6400
+})
 
 // To emulate a network outage.
-window.webContents.session.enableNetworkEmulation({offline: true});
+window.webContents.session.enableNetworkEmulation({offline: true})
 ```
 
 #### `ses.disableNetworkEmulation()`
@@ -254,12 +255,9 @@ window.webContents.session.enableNetworkEmulation({offline: true});
 Calling `setCertificateVerifyProc(null)`をコールして、既定の証明書検証ロジックに戻します。
 
 ```javascript
-myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, callback) {
-  if (hostname == 'github.com')
-    callback(true);
-  else
-    callback(false);
-});
+myWindow.webContents.session.setCertificateVerifyProc(function (hostname, cert, callback) {
+  callback(hostname === 'github.com')
+})
 ```
 
 #### `ses.webRequest`
@@ -275,13 +273,13 @@ APIのイベントが発生したとき、それぞれのAPIはオプション�
 ```javascript
 // Modify the user agent for all requests to the following urls.
 var filter = {
-  urls: ["https://*.github.com/*", "*://electron.github.io"]
-};
+  urls: ['https://*.github.com/*', '*://electron.github.io']
+}
 
-session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, callback) {
-  details.requestHeaders['User-Agent'] = "MyAgent";
-  callback({cancel: false, requestHeaders: details.requestHeaders});
-});
+session.defaultSession.webRequest.onBeforeSendHeaders(filter, function (details, callback) {
+  details.requestHeaders['User-Agent'] = 'MyAgent'
+  callback({cancel: false, requestHeaders: details.requestHeaders})
+})
 ```
 
 #### `ses.webRequest.onBeforeRequest([filter, ]listener)`

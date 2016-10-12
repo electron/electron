@@ -14,27 +14,27 @@
 
 ```javascript
 // 在主进程中.
-var ipc = require('ipc');
-ipc.on('asynchronous-message', function(event, arg) {
-  console.log(arg);  // 打印 "ping"
-  event.sender.send('asynchronous-reply', 'pong');
-});
+var ipc = require('ipc')
+ipc.on('asynchronous-message', function (event, arg) {
+  console.log(arg)  // 打印 "ping"
+  event.sender.send('asynchronous-reply', 'pong')
+})
 
-ipc.on('synchronous-message', function(event, arg) {
-  console.log(arg);  // 打印 "ping"
-  event.returnValue = 'pong';
-});
+ipc.on('synchronous-message', function (event, arg) {
+  console.log(arg)  // 打印 "ping"
+  event.returnValue = 'pong'
+})
 ```
 
 ```javascript
 // 在渲染进程(网页).
-var ipc = require('ipc');
-console.log(ipc.sendSync('synchronous-message', 'ping')); // 打印 "pong"
+var ipc = require('ipc')
+console.log(ipc.sendSync('synchronous-message', 'ping')) // 打印 "pong"
 
-ipc.on('asynchronous-reply', function(arg) {
-  console.log(arg); // 打印 "pong"
-});
-ipc.send('asynchronous-message', 'ping');
+ipc.on('asynchronous-reply', function (arg) {
+  console.log(arg) // 打印 "pong"
+})
+ipc.send('asynchronous-message', 'ping')
 ```
 
 ## 监听消息
