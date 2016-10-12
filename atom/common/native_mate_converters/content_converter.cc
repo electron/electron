@@ -254,7 +254,8 @@ bool Converter<scoped_refptr<ResourceRequestBodyImpl>>::FromV8(
   for (int i = 0; i < list->GetSize(); ++i) {
     base::DictionaryValue* dict = nullptr;
     std::string type;
-    list->GetDictionary(i, &dict);
+    if (!list->GetDictionary(i, &dict))
+      return false;
     dict->GetString("type", &type);
     if (type == "data") {
       base::BinaryValue* bytes = nullptr;

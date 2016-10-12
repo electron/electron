@@ -4,6 +4,7 @@ const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const qs = require('querystring')
 const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
@@ -21,11 +22,47 @@ const {protocol} = remote
 describe('browser-window module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
-  var server
+  var server, postData
 
   before(function (done) {
+    const filePath = path.join(fixtures, 'pages', 'a.html')
+    const fileStats = fs.statSync(filePath)
+    postData = [
+      {
+        'type': 'data',
+        'bytes': new Buffer('username=test&file=')
+      },
+      {
+        'type': 'file',
+        'filePath': filePath,
+        'offset': 0,
+        'length': fileStats.size,
+        'modificationTime': fileStats.mtime.getTime() / 1000
+      }
+    ]
     server = http.createServer(function (req, res) {
-      function respond () { res.end('') }
+      function respond () {
+        if (req.method === 'POST') {
+          let body = ''
+          req.on('data', (data) => {
+            if (data) {
+              body += data
+            }
+          })
+          req.on('end', () => {
+            let parsedData = qs.parse(body)
+            fs.readFile(filePath, (err, data) => {
+              if (err) return
+              if (parsedData.username === 'test' &&
+                  parsedData.file === data.toString()) {
+                res.end()
+              }
+            })
+          })
+        } else {
+          res.end()
+        }
+      }
       setTimeout(respond, req.url.includes('slow') ? 200 : 0)
     })
     server.listen(0, '127.0.0.1', function () {
@@ -186,6 +223,11 @@ describe('browser-window module', function () {
         done()
       })
       w.loadURL('http://127.0.0.1:11111')
+    })
+
+    it('can initiate POST navigation', function (done) {
+      w.webContents.on('did-finish-load', () => done())
+      w.loadURL(server.url, {'postData': postData})
     })
   })
 
