@@ -5,30 +5,28 @@ const url = require('url')
 const {net} = remote
 const {session} = remote
 
-function randomBuffer(size, start, end) {
+function randomBuffer (size, start, end) {
   start = start || 0
   end = end || 255
   let range = 1 + end - start
   const buffer = Buffer.allocUnsafe(size)
   for (let i = 0; i < size; ++i) {
-    buffer[i] = start + Math.floor(Math.random()*range)
+    buffer[i] = start + Math.floor(Math.random() * range)
   }
-  return buffer;
+  return buffer
 }
 
-function randomString(length) {
+function randomString (length) {
   let buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0))
-  return buffer.toString();
+  return buffer.toString()
 }
 
 const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
 
-
-describe('net module', function() {
+describe('net module', function () {
   this.timeout(0)
-  describe('HTTP basics', function() {
-
+  describe('HTTP basics', function () {
     let server
     beforeEach(function (done) {
       server = http.createServer()
@@ -39,194 +37,193 @@ describe('net module', function() {
     })
 
     afterEach(function () {
-      server.close(function() {
+      server.close(function () {
       })
       server = null
     })
 
-    it('should be able to issue a basic GET request', function(done) {
-      const request_url = '/request_url'
-      server.on('request', function(request, response) {
+    it('should be able to issue a basic GET request', function (done) {
+      const requestUrl = '/requestUrl'
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             assert.equal(request.method, 'GET')
-            response.end();
-            break;
+            response.end()
+            break
           default:
             assert(false)
         }
       })
-      const urlRequest = net.request(`${server.url}${request_url}`)
-      urlRequest.on('response', function(response) {
+      const urlRequest = net.request(`${server.url}${requestUrl}`)
+      urlRequest.on('response', function (response) {
         assert.equal(response.statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
+        response.on('data', function (chunk) {
         })
-        response.on('end', function() {
+        response.on('end', function () {
           done()
         })
         response.resume()
       })
-      urlRequest.end();
+      urlRequest.end()
     })
 
-    it('should be able to issue a basic POST request', function(done) {
-      const request_url = '/request_url'
-      server.on('request', function(request, response) {
+    it('should be able to issue a basic POST request', function (done) {
+      const requestUrl = '/requestUrl'
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             assert.equal(request.method, 'POST')
-            response.end();
-            break;
+            response.end()
+            break
           default:
             assert(false)
         }
       })
       const urlRequest = net.request({
         method: 'POST',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         assert.equal(response.statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
+        response.on('data', function (chunk) {
         })
-        response.on('end', function() {
+        response.on('end', function () {
           done()
         })
         response.resume()
       })
-      urlRequest.end();
+      urlRequest.end()
     })
 
-    it('should fetch correct data in a GET request', function(done) {
-      const request_url = '/request_url'
-      const body_data = "Hello World!"
-      server.on('request', function(request, response) {
+    it('should fetch correct data in a GET request', function (done) {
+      const requestUrl = '/requestUrl'
+      const bodyData = 'Hello World!'
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             assert.equal(request.method, 'GET')
-            response.write(body_data)
-            response.end();
-            break;
+            response.write(bodyData)
+            response.end()
+            break
           default:
             assert(false)
         }
       })
-      const urlRequest = net.request(`${server.url}${request_url}`)
-      urlRequest.on('response', function(response) {
-        let expected_body_data = '';
+      const urlRequest = net.request(`${server.url}${requestUrl}`)
+      urlRequest.on('response', function (response) {
+        let expectedBodyData = ''
         assert.equal(response.statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
-          expected_body_data += chunk.toString();
+        response.on('data', function (chunk) {
+          expectedBodyData += chunk.toString()
         })
-        response.on('end', function() {
-          assert.equal(expected_body_data, body_data)
+        response.on('end', function () {
+          assert.equal(expectedBodyData, bodyData)
           done()
         })
         response.resume()
       })
-      urlRequest.end();
+      urlRequest.end()
     })
 
-    it('should post the correct data in a POST request', function(done) {
-      const request_url = '/request_url'
-      const body_data = "Hello World!"
-      server.on('request', function(request, response) {
-        let posted_body_data = ''
+    it('should post the correct data in a POST request', function (done) {
+      const requestUrl = '/requestUrl'
+      const bodyData = 'Hello World!'
+      server.on('request', function (request, response) {
+        let postedBodyData = ''
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             assert.equal(request.method, 'POST')
-            request.on('data', function(chunk) {
-              posted_body_data += chunk.toString()
+            request.on('data', function (chunk) {
+              postedBodyData += chunk.toString()
             })
-            request.on('end', function() {
-              assert.equal(posted_body_data, body_data)
-              response.end();
+            request.on('end', function () {
+              assert.equal(postedBodyData, bodyData)
+              response.end()
             })
-            break;
+            break
           default:
             assert(false)
         }
       })
       const urlRequest = net.request({
         method: 'POST',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         assert.equal(response.statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
+        response.on('data', function (chunk) {
         })
-        response.on('end', function() {
+        response.on('end', function () {
           done()
         })
         response.resume()
       })
-      urlRequest.write(body_data)
-      urlRequest.end();
+      urlRequest.write(bodyData)
+      urlRequest.end()
     })
 
-    it('should support chunked encoding', function(done) {
-      const request_url = '/request_url'
-      server.on('request', function(request, response) {
+    it('should support chunked encoding', function (done) {
+      const requestUrl = '/requestUrl'
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.chunkedEncoding = true
             assert.equal(request.method, 'POST')
             assert.equal(request.headers['transfer-encoding'], 'chunked')
             assert(!request.headers['content-length'])
-            request.on('data', function(chunk) {
+            request.on('data', function (chunk) {
               response.write(chunk)
             })
-            request.on('end', function(chunk) {
-              response.end(chunk);
+            request.on('end', function (chunk) {
+              response.end(chunk)
             })
-            break;
+            break
           default:
             assert(false)
         }
       })
       const urlRequest = net.request({
         method: 'POST',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
 
-      let chunk_index = 0
-      let chunk_count = 100
-      let sent_chunks = [];
-      let received_chunks = [];
-      urlRequest.on('response', function(response) {
+      let chunkIndex = 0
+      let chunkCount = 100
+      let sentChunks = []
+      let receivedChunks = []
+      urlRequest.on('response', function (response) {
         assert.equal(response.statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
-          received_chunks.push(chunk)
+        response.on('data', function (chunk) {
+          receivedChunks.push(chunk)
         })
-        response.on('end', function() {
-          let sent_data = Buffer.concat(sent_chunks)
-          let received_data = Buffer.concat(received_chunks)
-          assert.equal(sent_data.toString(), received_data.toString())
-          assert.equal(chunk_index, chunk_count)
+        response.on('end', function () {
+          let sentData = Buffer.concat(sentChunks)
+          let receivedData = Buffer.concat(receivedChunks)
+          assert.equal(sentData.toString(), receivedData.toString())
+          assert.equal(chunkIndex, chunkCount)
           done()
         })
         response.resume()
       })
       urlRequest.chunkedEncoding = true
-      while (chunk_index < chunk_count) {
-        ++chunk_index
+      while (chunkIndex < chunkCount) {
+        ++chunkIndex
         let chunk = randomBuffer(kOneKiloByte)
-        sent_chunks.push(chunk)
+        sentChunks.push(chunk)
         assert(urlRequest.write(chunk))
       }
-      urlRequest.end();
+      urlRequest.end()
     })
   })
 
-  describe('ClientRequest API', function() {
-
+  describe('ClientRequest API', function () {
     let server
     beforeEach(function (done) {
       server = http.createServer()
@@ -237,586 +234,581 @@ describe('net module', function() {
     })
 
     afterEach(function () {
-      server.close(function() {
+      server.close(function () {
       })
       server = null
       session.defaultSession.webRequest.onBeforeRequest(null)
     })
 
-    it('request/response objects should emit expected events', function(done) {
-
-      const request_url = '/request_url'
-      let body_data = randomString(kOneMegaByte)
-      server.on('request', function(request, response) {
+    it('request/response objects should emit expected events', function (done) {
+      const requestUrl = '/requestUrl'
+      let bodyData = randomString(kOneMegaByte)
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             response.statusCode = 200
             response.statusMessage = 'OK'
-            response.write(body_data)
-            response.end();
-            break;
+            response.write(bodyData)
+            response.end()
+            break
           default:
             assert(false)
         }
       })
 
-      let request_response_event_emitted = false
-      let request_finish_event_emitted = false
-      let request_close_event_emitted = false
-      let response_data_event_emitted = false
-      let response_end_event_emitted = false
-      let response_close_event_emitted = false
+      let requestResponseEventEmitted = false
+      let requestFinishEventEmitted = false
+      let requestCloseEventEmitted = false
+      let responseDataEventEmitted = false
+      let responseEndEventEmitted = false
 
-      function maybeDone(done) {
-        if (!request_close_event_emitted || !response_end_event_emitted) {
+      function maybeDone (done) {
+        if (!requestCloseEventEmitted || !responseEndEventEmitted) {
           return
         }
 
-        assert(request_response_event_emitted)
-        assert(request_finish_event_emitted)
-        assert(request_close_event_emitted)
-        assert(response_data_event_emitted)
-        assert(response_end_event_emitted)
+        assert(requestResponseEventEmitted)
+        assert(requestFinishEventEmitted)
+        assert(requestCloseEventEmitted)
+        assert(responseDataEventEmitted)
+        assert(responseEndEventEmitted)
         done()
       }
 
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
-        request_response_event_emitted = true;
+      urlRequest.on('response', function (response) {
+        requestResponseEventEmitted = true
         const statusCode = response.statusCode
         assert.equal(statusCode, 200)
-        let buffers = [];
-        response.pause();
-        response.on('data', function(chunk) {
+        let buffers = []
+        response.pause()
+        response.on('data', function (chunk) {
           buffers.push(chunk)
-          response_data_event_emitted = true
+          responseDataEventEmitted = true
         })
-        response.on('end', function() {
-          let received_body_data = Buffer.concat(buffers);
-          assert(received_body_data.toString() === body_data)
-          response_end_event_emitted = true
+        response.on('end', function () {
+          let receivedBodyData = Buffer.concat(buffers)
+          assert(receivedBodyData.toString() === bodyData)
+          responseEndEventEmitted = true
           maybeDone(done)
         })
-        response.resume();
-        response.on('error', function(error) {
-          assert.ifError(error);
+        response.resume()
+        response.on('error', function (error) {
+          assert.ifError(error)
         })
-        response.on('aborted', function() {
+        response.on('aborted', function () {
           assert(false)
         })
       })
-      urlRequest.on('finish', function() {
-        request_finish_event_emitted = true
+      urlRequest.on('finish', function () {
+        requestFinishEventEmitted = true
       })
-      urlRequest.on('error', function(error) {
-        assert.ifError(error);
+      urlRequest.on('error', function (error) {
+        assert.ifError(error)
       })
-      urlRequest.on('abort', function() {
-        assert(false);
+      urlRequest.on('abort', function () {
+        assert(false)
       })
-      urlRequest.on('close', function() {
-        request_close_event_emitted = true
+      urlRequest.on('close', function () {
+        requestCloseEventEmitted = true
         maybeDone(done)
       })
-      urlRequest.end();
+      urlRequest.end()
     })
 
-    it('should be able to set a custom HTTP request header before first write', function(done) {
-      const request_url = '/request_url'
-      const custom_header_name = 'Some-Custom-Header-Name'
-      const custom_header_value = 'Some-Customer-Header-Value'
-      server.on('request', function(request, response) {
+    it('should be able to set a custom HTTP request header before first write', function (done) {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
-            assert.equal(request.headers[custom_header_name.toLowerCase()], 
-              custom_header_value)
+          case requestUrl:
+            assert.equal(request.headers[customHeaderName.toLowerCase()],
+              customHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
-            response.end();
-            break;
+            response.end()
+            break
           default:
             assert(false)
         }
       })
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         const statusCode = response.statusCode
         assert.equal(statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
-        });
-        response.on('end', function() {
+        response.on('data', function (chunk) {
+        })
+        response.on('end', function () {
           done()
         })
         response.resume()
       })
-      urlRequest.setHeader(custom_header_name, custom_header_value)
-      assert.equal(urlRequest.getHeader(custom_header_name), 
-        custom_header_value)
-      assert.equal(urlRequest.getHeader(custom_header_name.toLowerCase()), 
-        custom_header_value)
-      urlRequest.write('');
-      assert.equal(urlRequest.getHeader(custom_header_name), 
-        custom_header_value)
-      assert.equal(urlRequest.getHeader(custom_header_name.toLowerCase()), 
-        custom_header_value)
-      urlRequest.end();
+      urlRequest.setHeader(customHeaderName, customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName),
+        customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName.toLowerCase()),
+        customHeaderValue)
+      urlRequest.write('')
+      assert.equal(urlRequest.getHeader(customHeaderName),
+        customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName.toLowerCase()),
+        customHeaderValue)
+      urlRequest.end()
     })
 
-    it('should not be able to set a custom HTTP request header after first write', function(done) {
-      const request_url = '/request_url'
-      const custom_header_name = 'Some-Custom-Header-Name'
-      const custom_header_value = 'Some-Customer-Header-Value'
-      server.on('request', function(request, response) {
+    it('should not be able to set a custom HTTP request header after first write', function (done) {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
-            assert(!request.headers[custom_header_name.toLowerCase()])
+          case requestUrl:
+            assert(!request.headers[customHeaderName.toLowerCase()])
             response.statusCode = 200
             response.statusMessage = 'OK'
-            response.end();
-            break;
+            response.end()
+            break
           default:
             assert(false)
         }
       })
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         const statusCode = response.statusCode
         assert.equal(statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
-        });
-        response.on('end', function() {
+        response.on('data', function (chunk) {
+        })
+        response.on('end', function () {
           done()
         })
         response.resume()
       })
-      urlRequest.write('');
-      assert.throws( () => {
-        urlRequest.setHeader(custom_header_name, custom_header_value)
+      urlRequest.write('')
+      assert.throws(() => {
+        urlRequest.setHeader(customHeaderName, customHeaderValue)
       })
-      assert(!urlRequest.getHeader(custom_header_name))
-      urlRequest.end();
+      assert(!urlRequest.getHeader(customHeaderName))
+      urlRequest.end()
     })
 
-    it('should be able to remove a custom HTTP request header before first write', function(done) {
-      const request_url = '/request_url'
-      const custom_header_name = 'Some-Custom-Header-Name'
-      const custom_header_value = 'Some-Customer-Header-Value'
-      server.on('request', function(request, response) {
+    it('should be able to remove a custom HTTP request header before first write', function (done) {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
-            assert(!request.headers[custom_header_name.toLowerCase()])
+          case requestUrl:
+            assert(!request.headers[customHeaderName.toLowerCase()])
             response.statusCode = 200
             response.statusMessage = 'OK'
-            response.end();
-            break;
-          default:
-          assert(false)
-        }
-      })
-      const urlRequest =  net.request({
-        method: 'GET',
-        url: `${server.url}${request_url}`
-      })
-      urlRequest.on('response', function(response) {
-        const statusCode = response.statusCode
-        assert.equal(statusCode, 200)
-        response.pause()
-        response.on('data', function(chunk) {
-        });
-        response.on('end', function() {
-          done()
-        })
-        response.resume()
-      })
-      urlRequest.setHeader(custom_header_name, custom_header_value)
-      assert.equal(urlRequest.getHeader(custom_header_name), 
-        custom_header_value)
-      urlRequest.removeHeader(custom_header_name)
-      assert(!urlRequest.getHeader(custom_header_name))
-      urlRequest.write('');
-      urlRequest.end();
-    })
-
-    it('should not be able to remove a custom HTTP request header after first write', function(done) {
-      const request_url = '/request_url'
-      const custom_header_name = 'Some-Custom-Header-Name'
-      const custom_header_value = 'Some-Customer-Header-Value'
-      server.on('request', function(request, response) {
-        switch (request.url) {
-          case request_url:
-            assert.equal(request.headers[custom_header_name.toLowerCase()], 
-              custom_header_value)
-            response.statusCode = 200
-            response.statusMessage = 'OK'
-            response.end();
-            break;
+            response.end()
+            break
           default:
             assert(false)
         }
       })
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         const statusCode = response.statusCode
         assert.equal(statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
-        });
-        response.on('end', function() {
+        response.on('data', function (chunk) {
+        })
+        response.on('end', function () {
           done()
         })
         response.resume()
       })
-      urlRequest.setHeader(custom_header_name, custom_header_value)
-      assert.equal(urlRequest.getHeader(custom_header_name), 
-        custom_header_value)
-      urlRequest.write('');
-      assert.throws(function() {
-        urlRequest.removeHeader(custom_header_name)
-      })
-      assert.equal(urlRequest.getHeader(custom_header_name), 
-        custom_header_value)
-      urlRequest.end();
+      urlRequest.setHeader(customHeaderName, customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName),
+        customHeaderValue)
+      urlRequest.removeHeader(customHeaderName)
+      assert(!urlRequest.getHeader(customHeaderName))
+      urlRequest.write('')
+      urlRequest.end()
     })
 
-    it('should be able to abort an HTTP request before first write', function(done) {
-      const request_url = '/request_url'
-      server.on('request', function(request, response) {
+    it('should not be able to remove a custom HTTP request header after first write', function (done) {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case requestUrl:
+            assert.equal(request.headers[customHeaderName.toLowerCase()],
+              customHeaderValue)
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        method: 'GET',
+        url: `${server.url}${requestUrl}`
+      })
+      urlRequest.on('response', function (response) {
+        const statusCode = response.statusCode
+        assert.equal(statusCode, 200)
+        response.pause()
+        response.on('data', function (chunk) {
+        })
+        response.on('end', function () {
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.setHeader(customHeaderName, customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName),
+        customHeaderValue)
+      urlRequest.write('')
+      assert.throws(function () {
+        urlRequest.removeHeader(customHeaderName)
+      })
+      assert.equal(urlRequest.getHeader(customHeaderName),
+        customHeaderValue)
+      urlRequest.end()
+    })
+
+    it('should be able to abort an HTTP request before first write', function (done) {
+      const requestUrl = '/requestUrl'
+      server.on('request', function (request, response) {
         assert(false)
       })
 
-      let request_abort_event_emitted = false
-      let request_close_event_emitted = false
+      let requestAbortEventEmitted = false
+      let requestCloseEventEmitted = false
 
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         assert(false)
       })
-      urlRequest.on('finish', function() {
-        assert(false);
+      urlRequest.on('finish', function () {
+        assert(false)
       })
-      urlRequest.on('error', function(error) {
-        assert(false);
+      urlRequest.on('error', function () {
+        assert(false)
       })
-      urlRequest.on('abort', function() {
-        request_abort_event_emitted = true
+      urlRequest.on('abort', function () {
+        requestAbortEventEmitted = true
       })
-      urlRequest.on('close', function() {
-        request_close_event_emitted = true
-        assert(request_abort_event_emitted)
-        assert(request_close_event_emitted)
-        done();
+      urlRequest.on('close', function () {
+        requestCloseEventEmitted = true
+        assert(requestAbortEventEmitted)
+        assert(requestCloseEventEmitted)
+        done()
       })
       urlRequest.abort()
       assert(!urlRequest.write(''))
-      urlRequest.end();
+      urlRequest.end()
     })
 
-    
-    it('it should be able to abort an HTTP request before request end', function(done) {
-      const request_url = '/request_url'
-      let request_received_by_server = false
-      server.on('request', function(request, response) {
+    it('it should be able to abort an HTTP request before request end', function (done) {
+      const requestUrl = '/requestUrl'
+      let requestReceivedByServer = false
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
-            request_received_by_server = true;
-            cancelRequest();
-            break;
+          case requestUrl:
+            requestReceivedByServer = true
+            cancelRequest()
+            break
           default:
             assert(false)
         }
       })
 
-      let request_abort_event_emitted = false
-      let request_close_event_emitted = false
+      let requestAbortEventEmitted = false
+      let requestCloseEventEmitted = false
 
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         assert(false)
       })
-      urlRequest.on('finish', function() {
+      urlRequest.on('finish', function () {
         assert(false)
       })
-      urlRequest.on('error', function(error) {
-        assert(false);
+      urlRequest.on('error', function () {
+        assert(false)
       })
-      urlRequest.on('abort', function() {
-        request_abort_event_emitted = true
+      urlRequest.on('abort', function () {
+        requestAbortEventEmitted = true
       })
-      urlRequest.on('close', function() {
-        request_close_event_emitted = true
-        assert(request_received_by_server)
-        assert(request_abort_event_emitted)
-        assert(request_close_event_emitted)
+      urlRequest.on('close', function () {
+        requestCloseEventEmitted = true
+        assert(requestReceivedByServer)
+        assert(requestAbortEventEmitted)
+        assert(requestCloseEventEmitted)
         done()
       })
 
       urlRequest.chunkedEncoding = true
       urlRequest.write(randomString(kOneKiloByte))
-      function cancelRequest() {
+      function cancelRequest () {
         urlRequest.abort()
       }
     })
 
-    it('it should be able to abort an HTTP request after request end and before response', function(done) {
-      const request_url = '/request_url'
-      let request_received_by_server = false
-      server.on('request', function(request, response) {
+    it('it should be able to abort an HTTP request after request end and before response', function (done) {
+      const requestUrl = '/requestUrl'
+      let requestReceivedByServer = false
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
-            request_received_by_server = true;
-            cancelRequest();
-            process.nextTick( () => {
+          case requestUrl:
+            requestReceivedByServer = true
+            cancelRequest()
+            process.nextTick(() => {
               response.statusCode = 200
               response.statusMessage = 'OK'
-              response.end();
+              response.end()
             })
-            break;
+            break
           default:
             assert(false)
         }
       })
 
-      let request_abort_event_emitted = false
-      let request_finish_event_emitted = false
-      let request_close_event_emitted = false
+      let requestAbortEventEmitted = false
+      let requestFinishEventEmitted = false
+      let requestCloseEventEmitted = false
 
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         assert(false)
       })
-      urlRequest.on('finish', function() {
-        request_finish_event_emitted = true
+      urlRequest.on('finish', function () {
+        requestFinishEventEmitted = true
       })
-      urlRequest.on('error', function(error) {
-        assert(false);
+      urlRequest.on('error', function () {
+        assert(false)
       })
-      urlRequest.on('abort', function() {
-        request_abort_event_emitted = true
+      urlRequest.on('abort', function () {
+        requestAbortEventEmitted = true
       })
-      urlRequest.on('close', function() {
-        request_close_event_emitted = true
-        assert(request_finish_event_emitted)
-        assert(request_received_by_server)
-        assert(request_abort_event_emitted)
-        assert(request_close_event_emitted)
+      urlRequest.on('close', function () {
+        requestCloseEventEmitted = true
+        assert(requestFinishEventEmitted)
+        assert(requestReceivedByServer)
+        assert(requestAbortEventEmitted)
+        assert(requestCloseEventEmitted)
         done()
       })
 
       urlRequest.end(randomString(kOneKiloByte))
-      function cancelRequest() {
+      function cancelRequest () {
         urlRequest.abort()
       }
     })
 
-    it('it should be able to abort an HTTP request after response start', function(done) {
-      const request_url = '/request_url'
-      let request_received_by_server = false
-      server.on('request', function(request, response) {
+    it('it should be able to abort an HTTP request after response start', function (done) {
+      const requestUrl = '/requestUrl'
+      let requestReceivedByServer = false
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
-            request_received_by_server = true;
-              response.statusCode = 200
-              response.statusMessage = 'OK'
-              response.write(randomString(kOneKiloByte))
-            break;
+          case requestUrl:
+            requestReceivedByServer = true
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.write(randomString(kOneKiloByte))
+            break
           default:
             assert(false)
         }
       })
 
-      let request_finish_event_emitted = false
-      let request_response_event_emitted = false
-      let request_abort_event_emitted = false
-      let request_close_event_emitted = false
-      let response_aborted_event_emitted = false
+      let requestFinishEventEmitted = false
+      let requestResponseEventEmitted = false
+      let requestAbortEventEmitted = false
+      let requestCloseEventEmitted = false
+      let responseAbortedEventEmitted = false
 
-
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
-        request_response_event_emitted = true
+      urlRequest.on('response', function (response) {
+        requestResponseEventEmitted = true
         const statusCode = response.statusCode
         assert.equal(statusCode, 200)
-        response.pause();
-        response.on('data', function(chunk) {
+        response.pause()
+        response.on('data', function (chunk) {
         })
-        response.on('end', function() {
+        response.on('end', function () {
           assert(false)
         })
-        response.resume();
-        response.on('error', function(error) {
+        response.resume()
+        response.on('error', function () {
           assert(false)
         })
-        response.on('aborted', function() {
-          response_aborted_event_emitted = true
+        response.on('aborted', function () {
+          responseAbortedEventEmitted = true
         })
         urlRequest.abort()
       })
-      urlRequest.on('finish', function() {
-        request_finish_event_emitted = true
+      urlRequest.on('finish', function () {
+        requestFinishEventEmitted = true
       })
-      urlRequest.on('error', function(error) {
-        assert(false);
+      urlRequest.on('error', function () {
+        assert(false)
       })
-      urlRequest.on('abort', function() {
-        request_abort_event_emitted = true
+      urlRequest.on('abort', function () {
+        requestAbortEventEmitted = true
       })
-      urlRequest.on('close', function() {
-        request_close_event_emitted = true
-        assert(request_finish_event_emitted, 'request should emit "finish" event')
-        assert(request_received_by_server, 'request should be received by the server')
-        assert(request_response_event_emitted, '"response" event should be emitted')
-        assert(request_abort_event_emitted, 'request should emit "abort" event')
-        assert(response_aborted_event_emitted, 'response should emit "aborted" event')
-        assert(request_close_event_emitted, 'request should emit "close" event')
+      urlRequest.on('close', function () {
+        requestCloseEventEmitted = true
+        assert(requestFinishEventEmitted, 'request should emit "finish" event')
+        assert(requestReceivedByServer, 'request should be received by the server')
+        assert(requestResponseEventEmitted, '"response" event should be emitted')
+        assert(requestAbortEventEmitted, 'request should emit "abort" event')
+        assert(responseAbortedEventEmitted, 'response should emit "aborted" event')
+        assert(requestCloseEventEmitted, 'request should emit "close" event')
         done()
       })
       urlRequest.end(randomString(kOneKiloByte))
     })
 
-    it('abort event should be emitted at most once', function(done) {
-      const request_url = '/request_url'
-      let request_received_by_server = false
-      server.on('request', function(request, response) {
+    it('abort event should be emitted at most once', function (done) {
+      const requestUrl = '/requestUrl'
+      let requestReceivedByServer = false
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
-            request_received_by_server = true;
-            cancelRequest();
-            break;
+          case requestUrl:
+            requestReceivedByServer = true
+            cancelRequest()
+            break
           default:
             assert(false)
         }
       })
 
-      let request_finish_event_emitted = false
-      let request_abort_event_count = 0
-      let request_close_event_emitted = false
+      let requestFinishEventEmitted = false
+      let requestAbortEventCount = 0
+      let requestCloseEventEmitted = false
 
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         assert(false)
       })
-      urlRequest.on('finish', function() {
-        request_finish_event_emitted = true
+      urlRequest.on('finish', function () {
+        requestFinishEventEmitted = true
       })
-      urlRequest.on('error', function(error) {
-        assert(false);
+      urlRequest.on('error', function () {
+        assert(false)
       })
-      urlRequest.on('abort', function() {
-        ++request_abort_event_count
+      urlRequest.on('abort', function () {
+        ++requestAbortEventCount
         urlRequest.abort()
       })
-      urlRequest.on('close', function() {
-        request_close_event_emitted = true
+      urlRequest.on('close', function () {
+        requestCloseEventEmitted = true
         // Let all pending async events to be emitted
-        setTimeout(function() {
-          assert(request_finish_event_emitted)
-          assert(request_received_by_server)
-          assert.equal(request_abort_event_count, 1)
-          assert(request_close_event_emitted)
+        setTimeout(function () {
+          assert(requestFinishEventEmitted)
+          assert(requestReceivedByServer)
+          assert.equal(requestAbortEventCount, 1)
+          assert(requestCloseEventEmitted)
           done()
         }, 500)
       })
 
       urlRequest.end(randomString(kOneKiloByte))
-      function cancelRequest() {
+      function cancelRequest () {
         urlRequest.abort()
         urlRequest.abort()
       }
     })
 
-    it('Requests should be intercepted by webRequest module', function(done) {
-
-      const request_url = '/request_url'
-      const redirect_url = '/redirect_url'
-      let request_is_redirected = false;
-      server.on('request', function(request, response) {
+    it('Requests should be intercepted by webRequest module', function (done) {
+      const requestUrl = '/requestUrl'
+      const redirectUrl = '/redirectUrl'
+      let requestIsRedirected = false
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             assert(false)
             break
-          case redirect_url:
-            request_is_redirected = true
-            response.end();
+          case redirectUrl:
+            requestIsRedirected = true
+            response.end()
             break
           default:
             assert(false)
         }
       })
 
-      let request_is_intercepted = false
+      let requestIsIntercepted = false
       session.defaultSession.webRequest.onBeforeRequest(
-        function(details, callback){
-          if (details.url === `${server.url}${request_url}`) {
-            request_is_intercepted = true
+        function (details, callback) {
+          if (details.url === `${server.url}${requestUrl}`) {
+            requestIsIntercepted = true
             callback({
-              redirectURL: `${server.url}${redirect_url}`
+              redirectURL: `${server.url}${redirectUrl}`
             })
           } else {
-            callback( {
+            callback({
               cancel: false
             })
           }
-        });
+        })
 
-      const urlRequest = net.request(`${server.url}${request_url}`)
+      const urlRequest = net.request(`${server.url}${requestUrl}`)
 
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         assert.equal(response.statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
+        response.on('data', function (chunk) {
         })
-        response.on('end', function() {
-          assert(request_is_redirected, 'The server should receive a request to the forward URL')
-          assert(request_is_intercepted, 'The request should be intercepted by the webRequest module')
+        response.on('end', function () {
+          assert(requestIsRedirected, 'The server should receive a request to the forward URL')
+          assert(requestIsIntercepted, 'The request should be intercepted by the webRequest module')
           done()
         })
         response.resume()
       })
-      urlRequest.end();
+      urlRequest.end()
     })
 
-    it('should to able to create and intercept a request on a custom session', function(done) {
-      const request_url = '/request_url'
-      const redirect_url = '/redirect_url'
-      const custom_session_name = 'custom-session'
-      let request_is_redirected = false;
-      server.on('request', function(request, response) {
+    it('should to able to create and intercept a request on a custom session', function (done) {
+      const requestUrl = '/requestUrl'
+      const redirectUrl = '/redirectUrl'
+      const customSessionName = 'custom-session'
+      let requestIsRedirected = false
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             assert(false)
             break
-          case redirect_url:
-            request_is_redirected = true
-            response.end();
+          case redirectUrl:
+            requestIsRedirected = true
+            response.end()
             break
           default:
             assert(false)
@@ -824,61 +816,61 @@ describe('net module', function() {
       })
 
       session.defaultSession.webRequest.onBeforeRequest(
-        function(details, callback) {
+        function (details, callback) {
           assert(false, 'Request should not be intercepted by the default session')
-        });
+        })
 
-      let custom_session = session.fromPartition(custom_session_name, {
+      let customSession = session.fromPartition(customSessionName, {
         cache: false
       })
-      let request_is_intercepted = false
-      custom_session.webRequest.onBeforeRequest(
-        function(details, callback){
-          if (details.url === `${server.url}${request_url}`) {
-            request_is_intercepted = true
+      let requestIsIntercepted = false
+      customSession.webRequest.onBeforeRequest(
+        function (details, callback) {
+          if (details.url === `${server.url}${requestUrl}`) {
+            requestIsIntercepted = true
             callback({
-              redirectURL: `${server.url}${redirect_url}`
+              redirectURL: `${server.url}${redirectUrl}`
             })
           } else {
-            callback( {
+            callback({
               cancel: false
             })
           }
-        });
+        })
 
       const urlRequest = net.request({
-        url: `${server.url}${request_url}`,
-        session: custom_session_name
+        url: `${server.url}${requestUrl}`,
+        session: customSessionName
       })
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         assert.equal(response.statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
+        response.on('data', function (chunk) {
         })
-        response.on('end', function() {
-          assert(request_is_redirected, 'The server should receive a request to the forward URL')
-          assert(request_is_intercepted, 'The request should be intercepted by the webRequest module')
+        response.on('end', function () {
+          assert(requestIsRedirected, 'The server should receive a request to the forward URL')
+          assert(requestIsIntercepted, 'The request should be intercepted by the webRequest module')
           done()
         })
         response.resume()
       })
-      urlRequest.end();
+      urlRequest.end()
     })
 
-    it('should be able to create a request with options', function(done) {
-      const request_url = '/'
-      const custom_header_name = 'Some-Custom-Header-Name'
-      const custom_header_value = 'Some-Customer-Header-Value'
-      server.on('request', function(request, response) {
+    it('should be able to create a request with options', function (done) {
+      const requestUrl = '/'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             assert.equal(request.method, 'GET')
-            assert.equal(request.headers[custom_header_name.toLowerCase()], 
-              custom_header_value)
+            assert.equal(request.headers[customHeaderName.toLowerCase()],
+              customHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
-            response.end();
-            break;
+            response.end()
+            break
           default:
             assert(false)
         }
@@ -890,66 +882,64 @@ describe('net module', function() {
         hostname: '127.0.0.1',
         headers: {}
       }
-      options.headers[custom_header_name] = custom_header_value
+      options.headers[customHeaderName] = customHeaderValue
       const urlRequest = net.request(options)
-      urlRequest.on('response', function(response) {
+      urlRequest.on('response', function (response) {
         assert.equal(response.statusCode, 200)
         response.pause()
-        response.on('data', function(chunk) {
+        response.on('data', function (chunk) {
         })
-        response.on('end', function() {
+        response.on('end', function () {
           done()
         })
         response.resume()
       })
-      urlRequest.end();
+      urlRequest.end()
     })
 
-
-    it('should be able to pipe a readable stream into a net request', function(done) {
-      const node_request_url = '/node_request_url'
-      const net_request_url = '/net_request_url'
-      const body_data = randomString(kOneMegaByte)
-      let net_request_received = false
-      let net_request_ended = false
-      server.on('request', function(request, response) {
+    it('should be able to pipe a readable stream into a net request', function (done) {
+      const nodeRequestUrl = '/nodeRequestUrl'
+      const netRequestUrl = '/netRequestUrl'
+      const bodyData = randomString(kOneMegaByte)
+      let netRequestReceived = false
+      let netRequestEnded = false
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case node_request_url:
-            response.write(body_data)
-            response.end();
-            break;
-          case net_request_url:
-            net_request_received = true
-            let received_body_data = ''
-            request.on('data', function(chunk) {
-              received_body_data += chunk.toString()
+          case nodeRequestUrl:
+            response.write(bodyData)
+            response.end()
+            break
+          case netRequestUrl:
+            netRequestReceived = true
+            let receivedBodyData = ''
+            request.on('data', function (chunk) {
+              receivedBodyData += chunk.toString()
             })
-            request.on('end', function(chunk) {
-              net_request_ended = true
+            request.on('end', function (chunk) {
+              netRequestEnded = true
               if (chunk) {
-                received_body_data += chunk.toString()
+                receivedBodyData += chunk.toString()
               }
-              assert.equal(received_body_data, body_data)
+              assert.equal(receivedBodyData, bodyData)
               response.end()
             })
-            break;
+            break
           default:
             assert(false)
         }
       })
 
-      let nodeRequest = http.request(`${server.url}${node_request_url}`);
-      nodeRequest.on('response', function(nodeResponse) {
-        const netRequest = net.request(`${server.url}${net_request_url}`)
-        netRequest.on('response', function(netResponse) {
-
+      let nodeRequest = http.request(`${server.url}${nodeRequestUrl}`)
+      nodeRequest.on('response', function (nodeResponse) {
+        const netRequest = net.request(`${server.url}${netRequestUrl}`)
+        netRequest.on('response', function (netResponse) {
           assert.equal(netResponse.statusCode, 200)
           netResponse.pause()
-          netResponse.on('data', function(chunk) {
+          netResponse.on('data', function (chunk) {
           })
-          netResponse.on('end', function() {
-            assert(net_request_received)
-            assert(net_request_ended)
+          netResponse.on('end', function () {
+            assert(netRequestReceived)
+            assert(netRequestEnded)
             done()
           })
           netResponse.resume()
@@ -959,12 +949,11 @@ describe('net module', function() {
       nodeRequest.end()
     })
 
-    it.skip('should emit error event on server socket close', function(done) {
+    it.skip('should emit error event on server socket close', function (done) {
       assert(false)
     })
   })
-  describe('IncomingMessage API', function() {
-
+  describe('IncomingMessage API', function () {
     let server
     beforeEach(function (done) {
       server = http.createServer()
@@ -979,32 +968,27 @@ describe('net module', function() {
       server = null
     })
 
-    it ('response object should implement the IncomingMessage API', function(done) {
-      const request_url = '/request_url'
-      const custom_header_name = 'Some-Custom-Header-Name'
-      const custom_header_value = 'Some-Customer-Header-Value'
-      server.on('request', function(request, response) {
+    it('response object should implement the IncomingMessage API', function (done) {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Custom-Header-Name'
+      const customHeaderValue = 'Some-Customer-Header-Value'
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case request_url:
+          case requestUrl:
             response.statusCode = 200
             response.statusMessage = 'OK'
-            response.setHeader(custom_header_name, custom_header_value)
-            response.end();
-            break;
+            response.setHeader(customHeaderName, customHeaderValue)
+            response.end()
+            break
           default:
             assert(false)
         }
       })
-      let response_event_emitted = false;
-      let data_event_emitted = false;
-      let end_event_emitted = false;
-      let finish_event_emitted = false;
-      const urlRequest =  net.request({
+      const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${request_url}`
+        url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function(response) {
-        response_event_emitted = true;
+      urlRequest.on('response', function (response) {
         const statusCode = response.statusCode
         assert(typeof statusCode === 'number')
         assert.equal(statusCode, 200)
@@ -1013,79 +997,79 @@ describe('net module', function() {
         assert.equal(statusMessage, 'OK')
         const rawHeaders = response.rawHeaders
         assert(typeof rawHeaders === 'object')
-        assert(rawHeaders[custom_header_name] === 
-          custom_header_value)
-        const httpVersion = response.httpVersion;
+        assert(rawHeaders[customHeaderName] ===
+          customHeaderValue)
+        const httpVersion = response.httpVersion
         assert(typeof httpVersion === 'string')
         assert(httpVersion.length > 0)
-        const httpVersionMajor = response.httpVersionMajor;
+        const httpVersionMajor = response.httpVersionMajor
         assert(typeof httpVersionMajor === 'number')
         assert(httpVersionMajor >= 1)
-        const httpVersionMinor = response.httpVersionMinor;
+        const httpVersionMinor = response.httpVersionMinor
         assert(typeof httpVersionMinor === 'number')
         assert(httpVersionMinor >= 0)
         response.pause()
-        response.on('data', function(chunk) {
-        });
-        response.on('end', function() {
+        response.on('data', function (chunk) {
+        })
+        response.on('end', function () {
           done()
         })
         response.resume()
       })
-      urlRequest.end();
+      urlRequest.end()
     })
 
-    it.skip('should be able to pipe a net response into a writable stream', function(done) {
-      const node_request_url = '/node_request_url'
-      const net_request_url = '/net_request_url'
-      const body_data = randomString(kOneMegaByte)
-      let node_request_received = false
-      let node_request_ended = false
-      server.on('request', function(request, response) {
+    it.skip('should be able to pipe a net response into a writable stream', function (done) {
+      const nodeRequestUrl = '/nodeRequestUrl'
+      const netRequestUrl = '/netRequestUrl'
+      const bodyData = randomString(kOneMegaByte)
+      let nodeRequestReceived = false
+      let nodeRequestEnded = false
+      server.on('request', function (request, response) {
         switch (request.url) {
-          case net_request_url:
+          case netRequestUrl:
             response.statusCode = 200
             response.statusMessage = 'OK'
-            response.write(body_data)
-            response.end();
-            break;
-          case node_request_url:
-            node_request_received = true
-            let received_body_data = ''
-            request.on('data', function(chunk) {
-              received_body_data += chunk.toString()
+            response.write(bodyData)
+            response.end()
+            break
+          case nodeRequestUrl:
+            nodeRequestReceived = true
+            let receivedBodyData = ''
+            request.on('data', function (chunk) {
+              receivedBodyData += chunk.toString()
             })
-            request.on('end', function(chunk) {
-              node_request_ended = true
+            request.on('end', function (chunk) {
+              nodeRequestEnded = true
               if (chunk) {
-                received_body_data += chunk.toString()
+                receivedBodyData += chunk.toString()
               }
-              assert.equal(received_body_data, body_data)
+              assert.equal(receivedBodyData, bodyData)
               response.end()
             })
-            break;
+            break
           default:
             assert(false)
         }
       })
-      
-      netRequest = net.request(`${server.url}${net_request_url}`);
-      netRequest.on('response', function(netResponse) {
+
+      const netRequest = net.request(`${server.url}${netRequestUrl}`)
+      netRequest.on('response', function (netResponse) {
         assert.equal(netResponse.statusCode, 200)
         const serverUrl = url.parse(server.url)
         const nodeOptions = {
           method: 'POST',
-          path: node_request_url,
+          path: nodeRequestUrl,
           port: serverUrl.port
         }
-        let nodeRequest = http.request(nodeOptions);
+        let nodeRequest = http.request(nodeOptions)
 
-        nodeRequest.on('response', function(nodeResponse) {
-          nodeResponse.on('data', function(chunk) {
+        nodeRequest.on('response', function (nodeResponse) {
+          nodeResponse.on('data', function (chunk) {
           })
-          nodeResponse.on('end', function(chunk) {
-            assert(node_request_received)
-            assert(node_request_ended)
+          nodeResponse.on('end', function (chunk) {
+            assert(nodeRequestReceived)
+            assert(nodeRequestEnded)
             done()
           })
         })
@@ -1094,7 +1078,7 @@ describe('net module', function() {
       netRequest.end()
     })
 
-    it.skip('should not emit any event after close', function() {
+    it.skip('should not emit any event after close', function () {
       assert(false)
     })
   })

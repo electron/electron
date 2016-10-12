@@ -334,7 +334,7 @@ void URLRequest::OnAuthenticationRequired(
   if (!atom_request_) {
     return;
   }
-  
+
   EmitRequestEvent(
     false,
     "login",
