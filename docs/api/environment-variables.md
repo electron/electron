@@ -36,12 +36,10 @@ file, before opening any browser windows that will make geocoding requests:
 process.env.GOOGLE_API_KEY = 'YOUR_KEY_HERE'
 ```
 
-For instructions on how to acquire a Google API key, see
-https://www.chromium.org/developers/how-tos/api-keys
+For instructions on how to acquire a [Google API key](https://www.chromium.org/developers/how-tos/api-keys)
 
 By default, a newly generated Google API key may not be allowed to make
-geocoding requests. To enable geocoding requests, visit this page:
-https://console.developers.google.com/apis/api/geolocation/overview
+geocoding requests. To enable geocoding requests, visit [this page](https://console.developers.google.com/apis/api/geolocation/overview)
 
 ## Development Variables
 
