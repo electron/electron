@@ -18,6 +18,8 @@
 #include "atom/browser/ui/win/message_handler_delegate.h"
 #include "atom/browser/ui/win/taskbar_host.h"
 #include "base/win/scoped_gdi_object.h"
+#include "ui/base/win/accessibility_misc_utils.h"
+#include <UIAutomationCoreApi.h>
 #endif
 
 namespace views {
@@ -227,6 +229,9 @@ class NativeWindowViews : public NativeWindow,
 
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
+
+  // Memoized version of a11y check
+  bool checked_for_a11y_support_;
 
   // If true we have enabled a11y
   bool enabled_a11y_support_;
