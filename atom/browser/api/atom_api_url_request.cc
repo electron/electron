@@ -322,7 +322,7 @@ void URLRequest::OnAuthenticationRequired(
 }
 
 void URLRequest::OnResponseStarted(
-    scoped_refptr<const net::HttpResponseHeaders> response_headers) {
+    scoped_refptr<net::HttpResponseHeaders> response_headers) {
   if (request_state_.Canceled() ||
       request_state_.Failed() ||
       request_state_.Closed()) {
@@ -394,7 +394,7 @@ std::string URLRequest::StatusMessage() const {
   return result;
 }
 
-scoped_refptr<const net::HttpResponseHeaders>
+scoped_refptr<net::HttpResponseHeaders>
 URLRequest::RawResponseHeaders() const {
   return response_headers_;
 }

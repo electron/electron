@@ -61,9 +61,9 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
 
 // static
 v8::Local<v8::Value>
-Converter<scoped_refptr<const net::HttpResponseHeaders>>::ToV8(
+Converter<scoped_refptr<net::HttpResponseHeaders>>::ToV8(
     v8::Isolate* isolate,
-    scoped_refptr<const net::HttpResponseHeaders> headers) {
+    scoped_refptr<net::HttpResponseHeaders> headers) {
   base::DictionaryValue response_headers;
   if (headers) {
     size_t iter = 0;

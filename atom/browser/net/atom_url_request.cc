@@ -249,7 +249,7 @@ void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   DCHECK_EQ(request, request_.get());
 
-  scoped_refptr<const net::HttpResponseHeaders> response_headers =
+  scoped_refptr<net::HttpResponseHeaders> response_headers =
     request->response_headers();
   const auto& status = request_->status();
   if (status.is_success()) {
@@ -358,7 +358,7 @@ void AtomURLRequest::InformDelegateAuthenticationRequired(
 }
 
 void AtomURLRequest::InformDelegateResponseStarted(
-    scoped_refptr<const net::HttpResponseHeaders> response_headers) const {
+    scoped_refptr<net::HttpResponseHeaders> response_headers) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (delegate_)
     delegate_->OnResponseStarted(response_headers);

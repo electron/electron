@@ -72,7 +72,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   void InformDelegateAuthenticationRequired(
     scoped_refptr<net::AuthChallengeInfo> auth_info) const;
   void InformDelegateResponseStarted(
-    scoped_refptr<const net::HttpResponseHeaders>) const;
+    scoped_refptr<net::HttpResponseHeaders>) const;
   void InformDelegateResponseData(
     scoped_refptr<net::IOBufferWithSize> data) const;
   void InformDelegateResponseCompleted() const;

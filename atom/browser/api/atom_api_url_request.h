@@ -102,7 +102,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   void OnAuthenticationRequired(
     scoped_refptr<const net::AuthChallengeInfo> auth_info);
   void OnResponseStarted(
-    scoped_refptr<const net::HttpResponseHeaders> response_headers);
+    scoped_refptr<net::HttpResponseHeaders> response_headers);
   void OnResponseData(scoped_refptr<const net::IOBufferWithSize> data);
   void OnResponseCompleted();
   void OnRequestError(const std::string& error);
@@ -178,7 +178,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   bool CanReadHeaders() const;
   int StatusCode() const;
   std::string StatusMessage() const;
-  scoped_refptr<const net::HttpResponseHeaders> RawResponseHeaders() const;
+  scoped_refptr<net::HttpResponseHeaders> RawResponseHeaders() const;
   uint32_t ResponseHttpVersionMajor() const;
   uint32_t ResponseHttpVersionMinor() const;
 
@@ -202,7 +202,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
 
   // Used to implement pin/unpin.
   v8::Global<v8::Object> wrapper_;
-  scoped_refptr<const net::HttpResponseHeaders> response_headers_;
+  scoped_refptr<net::HttpResponseHeaders> response_headers_;
   base::WeakPtrFactory<URLRequest> weak_ptr_factory_;
 
 
