@@ -147,7 +147,7 @@ Returns:
   `new-window`, `save-to-disk` and `other`.
 * `options` Object - The options which will be used for creating the new
   `BrowserWindow`.
-* `additionalFeatures` Array - The non-standard features (features not handled
+* `additionalFeatures` String[] - The non-standard features (features not handled
   by Chromium or Electron) given to `window.open()`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
@@ -428,9 +428,7 @@ Emitted when there is a new context menu that needs to be handled.
 Returns:
 
 * `event` Event
-* `devices` [Objects]
-  * `deviceName` String
-  * `deviceId` String
+* `devices` [BluetoothDevice[]](structures/bluetooth-device.md)
 * `callback` Function
   * `deviceId` String
 
@@ -1069,7 +1067,7 @@ End subscribing for frame presentation events.
 
 #### `contents.startDrag(item)`
 
-* `item` object
+* `item` Object
   * `file` String
   * `icon` [NativeImage](native-image.md)
 
