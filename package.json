@@ -7,7 +7,7 @@
     "electabul": "~0.0.4",
     "electron-docs-linter": "^1.8.2",
     "request": "*",
-    "standard": "^7.1.2",
+    "standard": "^8.4.0",
     "standard-markdown": "^2.1.1"
   },
   "optionalDependencies": {
