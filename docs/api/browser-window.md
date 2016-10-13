@@ -664,6 +664,11 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Just sum any extra width and
 height areas you have within the overall content view.
 
+#### `win.previewFile(pathname, filename)`
+
+* `pathname` String - The absolute path to the file to preview with QuickLook. This is important as Quicklook uses the file name and file extension on the path to determine the content_type of the file to open.
+* `filename` String - The name of the file to display on QuickLook modal view. This is purely visual and does not affect the content_type of the file.
+
 #### `win.setBounds(bounds[, animate])`
 
 * `bounds` [Rectangle](structures/rectangle.md)
