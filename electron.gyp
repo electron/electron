@@ -509,6 +509,7 @@
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
               '$(SDKROOT)/System/Library/Frameworks/QuartzCore.framework',
+              '$(SDKROOT)/System/Library/Frameworks/Quartz.framework',
             ],
           },
           'mac_bundle': 1,

@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <Quartz/Quartz.h>
 
 #include "atom/browser/native_window.h"
 #include "base/mac/scoped_nsobject.h"
@@ -55,7 +56,7 @@ class NativeWindowMac : public NativeWindow,
   void SetMovable(bool movable) override;
   void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size)
     override;
-  void PreviewFile(const base::string16& filepath) override;
+  void PreviewFile(const base::string16& filepath, const base::string16& filename) override;
   bool IsMovable() override;
   void SetMinimizable(bool minimizable) override;
   bool IsMinimizable() override;
