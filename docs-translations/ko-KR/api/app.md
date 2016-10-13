@@ -843,11 +843,11 @@ https://www.chromium.org/developers/design-documents/accessibility 를 참고하
 ### `app.setAboutPanelOptions(options)` _macOS_
 
 * `options` Object
-  * `ApplicationName` String (optional) - 앱 이름.
-  * `ApplicationVersion` String (optional) - 앱 버전.
-  * `Copyright` String (optional) - 저작권 정보.
-  * `Credits` String (optional) - 크레딧 정보.
-  * `Version` String (optional) - 앱 빌드 버전 숫자.
+  * `applicationName` String (optional) - 앱 이름.
+  * `applicationVersion` String (optional) - 앱 버전.
+  * `copyright` String (optional) - 저작권 정보.
+  * `credits` String (optional) - 크레딧 정보.
+  * `version` String (optional) - 앱 빌드 버전 숫자.
 
 정보 패널의 옵션을 설정합니다. 앱의 `.plist` 에 정의된 값보다 우선합니다. 자세한
 내용은 [애플 문서][about-panel-options]를 참조하세요.
