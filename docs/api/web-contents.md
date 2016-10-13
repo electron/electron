@@ -3,7 +3,7 @@
 > Render and control web pages.
 
 `webContents` is an
-[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+[EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 It is responsible for rendering and controlling a web page and is a property of
 the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:

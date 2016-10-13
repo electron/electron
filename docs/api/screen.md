@@ -5,7 +5,7 @@
 You cannot require or use this module until the `ready` event of the `app`
 module is emitted.
 
-`screen` is an [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+`screen` is an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 
 **Note:** In the renderer / DevTools, `window.screen` is a reserved DOM
 property, so writing `let {screen} = require('electron')` will not work.
