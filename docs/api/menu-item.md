@@ -13,6 +13,9 @@ Create a new `MenuItem` with the following method:
 * `options` Object
   * `click` Function - Will be called with
     `click(menuItem, browserWindow, event)` when the menu item is clicked.
+    * `menuItem` MenuItem
+    * `browserWindow` BrowserWindow
+    * `event` Event
   * `role` String - Define the action of the menu item, when specified the
     `click` property will be ignored.
   * `type` String - Can be `normal`, `separator`, `submenu`, `checkbox` or

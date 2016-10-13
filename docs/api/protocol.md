@@ -76,28 +76,21 @@ module gets emitted.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 Registers a protocol of `scheme` that will send the file as a response. The
 `handler` will be called with `handler(request, callback)` when a `request` is
 going to be created with `scheme`. `completion` will be called with
 `completion(null)` when `scheme` is successfully registered or
 `completion(error)` when failed.
-
-* `request` Object
-  * `url` String
-  * `referrer` String
-  * `method` String
-  * `uploadData` Array (optional)
-* `callback` Function
-
-The `uploadData` is an array of `data` objects:
-
-* `data` Object
-  * `bytes` Buffer - Content being sent.
-  * `file` String - Path of file being uploaded.
-  * `blobUUID` String - UUID of blob data. Use [ses.getBlobData](session.md#sesgetblobdataidentifier-callback) method
-    to retrieve the data.
 
 To handle the `request`, the `callback` should be called with either the file's
 path or an object that has a `path` property, e.g. `callback(filePath)` or
@@ -117,7 +110,15 @@ treated as a standard scheme.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `buffer` Buffer (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 Registers a protocol of `scheme` that will send a `Buffer` as a response.
 
@@ -141,7 +142,15 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `data` String (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 Registers a protocol of `scheme` that will send a `String` as a response.
 
@@ -153,7 +162,21 @@ should be called with either a `String` or an object that has the `data`,
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `redirectRequest` Object
+      * `url` String
+      * `method` String
+      * `session` Object (optional)
+      * `uploadData` Object (optional)
+        * `contentType` String - MIME type of the content.
+        * `data` String - Content to be sent.
 * `completion` Function (optional)
+  * `error` Error
 
 Registers a protocol of `scheme` that will send an HTTP request as a response.
 
@@ -161,25 +184,16 @@ The usage is the same with `registerFileProtocol`, except that the `callback`
 should be called with a `redirectRequest` object that has the `url`, `method`,
 `referrer`, `uploadData` and `session` properties.
 
-* `redirectRequest` Object
-  * `url` String
-  * `method` String
-  * `session` Object (optional)
-  * `uploadData` Object (optional)
-
 By default the HTTP request will reuse the current session. If you want the
 request to have a different session you should set `session` to `null`.
 
 For POST requests the `uploadData` object must be provided.
 
-* `uploadData` object
-  * `contentType` String - MIME type of the content.
-  * `data` String - Content to be sent.
-
 ### `protocol.unregisterProtocol(scheme[, completion])`
 
 * `scheme` String
 * `completion` Function (optional)
+  * `error` Error
 
 Unregisters the custom protocol of `scheme`.
 
@@ -187,6 +201,7 @@ Unregisters the custom protocol of `scheme`.
 
 * `scheme` String
 * `callback` Function
+  * `error` Error
 
 The `callback` will be called with a boolean that indicates whether there is
 already a handler for `scheme`.
@@ -195,7 +210,15 @@ already a handler for `scheme`.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String
 * `completion` Function (optional)
+  * `error` Error
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a file as a response.
@@ -204,7 +227,15 @@ which sends a file as a response.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `data` String (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `String` as a response.
@@ -213,7 +244,15 @@ which sends a `String` as a response.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `buffer` Buffer (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `Buffer` as a response.
@@ -222,7 +261,21 @@ which sends a `Buffer` as a response.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `redirectRequest` Object
+      * `url` String
+      * `method` String
+      * `session` Object (optional)
+      * `uploadData` Object (optional)
+        * `contentType` String - MIME type of the content.
+        * `data` String - Content to be sent.
 * `completion` Function (optional)
+  * `error` Error
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a new HTTP request as a response.
@@ -230,7 +283,9 @@ which sends a new HTTP request as a response.
 ### `protocol.uninterceptProtocol(scheme[, completion])`
 
 * `scheme` String
-* `completion` Function
+* `completion` Function (optional)
+  * `error` Error
+
 
 Remove the interceptor installed for `scheme` and restore its original handler.
 

@@ -249,6 +249,7 @@ Returns:
 * `error` String - The error code
 * `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
+  * `isTrusted` Boolean - Indicates whether the certificate can be considered trusted
 
 Emitted when failed to verify the `certificate` for `url`.
 
@@ -263,6 +264,7 @@ Returns:
 * `url` URL
 * `certificateList` Certificate[]
 * `callback` Function
+  * `certificate` [Certificate](structures/certificate.md) - Must be a certificate from the given list
 
 Emitted when a client certificate is requested.
 
@@ -285,6 +287,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
+  * `username` String
+  * `password` String
 
 Emitted when `webContents` wants to do basic auth.
 
@@ -622,7 +626,7 @@ Injects CSS into the current web page.
 * `code` String
 * `userGesture` Boolean (optional)
 * `callback` Function (optional) - Called after script has been executed.
-  * `result`
+  * `result` Any
 
 Evaluates `code` in page.
 
@@ -650,6 +654,7 @@ zoom percent divided by 100, so 300% = 3.0.
 #### `contents.getZoomFactor(callback)`
 
 * `callback` Function
+  * `zoomFactor` Number
 
 Sends a request to get current zoom factor, the `callback` will be called with
 `callback(zoomFactor)`.
@@ -665,6 +670,7 @@ limits of 300% and 50% of original size, respectively.
 #### `contents.getZoomLevel(callback)`
 
 * `callback` Function
+  * `zoomLevel` Number
 
 Sends a request to get current zoom level, the `callback` will be called with
 `callback(zoomLevel)`.
@@ -782,6 +788,7 @@ console.log(requestId)
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured
 * `callback` Function
+  * `image` [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Upon completion `callback` will
 be called with `callback(image)`. The `image` is an instance of
@@ -791,6 +798,7 @@ be called with `callback(image)`. The `image` is an instance of
 #### `contents.hasServiceWorker(callback)`
 
 * `callback` Function
+  * `hasWorker` Boolean
 
 Checks if any ServiceWorker is registered and returns a boolean as
 response to `callback`.
@@ -798,6 +806,7 @@ response to `callback`.
 #### `contents.unregisterServiceWorker(callback)`
 
 * `callback` Function
+  * `success` Boolean
 
 Unregisters any ServiceWorker if present and returns a boolean as
 response to `callback` when the JS promise is fulfilled or false
@@ -830,6 +839,8 @@ Use `page-break-before: always; ` CSS style to force to print to a new page.
   * `printSelectionOnly` Boolean - Whether to print selection only.
   * `landscape` Boolean - `true` for landscape, `false` for portrait.
 * `callback` Function
+  * `error` Error
+  * `data` Buffer
 
 Prints window's web page as PDF with Chromium's preview printing custom
 settings.
@@ -1047,6 +1058,8 @@ For the `mouseWheel` event, the `event` object also have following properties:
 
 * `onlyDirty` Boolean (optional) - Defaults to `false`
 * `callback` Function
+  * `frameBuffer` Buffer
+  * `dirtyRect` [Rectangle](structures/rectangle.md)
 
 Begin subscribing for presentation events and captured frames, the `callback`
 will be called with `callback(frameBuffer, dirtyRect)` when there is a

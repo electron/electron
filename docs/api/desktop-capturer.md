@@ -61,25 +61,14 @@ The `desktopCapturer` module has the following methods:
   * `thumbnailSize` Object (optional) - The suggested size that the media source
     thumbnail should be scaled to, defaults to `{width: 150, height: 150}`.
 * `callback` Function
+  * `error` Error
+  * `sources` [DesktopCapturerSource[]](structures/desktop-capturer-source.md)
 
 Starts gathering information about all available desktop media sources,
 and calls `callback(error, sources)` when finished.
 
-`sources` is an array of `Source` objects, each `Source` represents a
-screen or an individual window that can be captured, and has the following
-properties:
-
-* `id` String - The identifier of a window or screen that can be used as a
-  `chromeMediaSourceId` constraint when calling
-  [`navigator.webkitGetUserMedia`]. The format of the identifier will be
-  `window:XX` or `screen:XX`, where `XX` is a random generated number.
-* `name` String - A screen source will be named either `Entire Screen` or
-  `Screen <index>`, while the name of a window source will match the window
-  title.
-* `thumbnail` [NativeImage](native-image.md) - A thumbnail image. **Note:**
-  There is no guarantee that the size of the thumbnail is the same as the
-  `thumnbailSize` specified in the `options` passed to
-  `desktopCapturer.getSources`. The actual size depends on the scale of the
-  screen or window.
+`sources` is an array of [`DesktopCapturerSource`](structures/desktop-capturer-source.md)
+objects, each `Source` represents a screen or an individual window that can be
+captured.
 
 [`navigator.webkitGetUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/Navigator/getUserMedia
