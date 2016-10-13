@@ -17,37 +17,19 @@
 namespace mate {
 
 template<>
-struct Converter<scoped_refptr<const net::HttpResponseHeaders>> {
-  static v8::Local<v8::Value> ToV8(
-    v8::Isolate* isolate,
-    scoped_refptr<const net::HttpResponseHeaders> val) {
-    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-    if (val) {
-      size_t iter = 0;
-      std::string name;
-      std::string value;
-      while (val->EnumerateHeaderLines(&iter, &name, &value)) {
-        dict.Set(name, value);
-      }
-    }
-    return dict.GetHandle();
-  }
-};
-
-template<>
 struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
   static v8::Local<v8::Value> ToV8(
-    v8::Isolate* isolate,
-    scoped_refptr<const net::IOBufferWithSize> buffer) {
+      v8::Isolate* isolate,
+      scoped_refptr<const net::IOBufferWithSize> buffer) {
     return node::Buffer::Copy(isolate,
-      buffer->data(),
-      buffer->size()).ToLocalChecked();
+                              buffer->data(),
+                              buffer->size()).ToLocalChecked();
   }
 
   static bool FromV8(
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> val,
-    scoped_refptr<const net::IOBufferWithSize>* out) {
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> val,
+      scoped_refptr<const net::IOBufferWithSize>* out) {
     auto size = node::Buffer::Length(val);
 
     if (size == 0) {
@@ -179,11 +161,8 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
   auto browser_context = session->browser_context();
   auto api_url_request = new URLRequest(args->isolate(), args->GetThis());
   auto weak_ptr = api_url_request->weak_ptr_factory_.GetWeakPtr();
-  auto atom_url_request = AtomURLRequest::Create(
-    browser_context,
-    method,
-    url,
-    weak_ptr);
+  auto atom_url_request = AtomURLRequest::Create(browser_context, method, url,
+                                                 weak_ptr);
 
   api_url_request->atom_request_ = atom_url_request;
 
@@ -228,9 +207,9 @@ bool URLRequest::Write(
     scoped_refptr<const net::IOBufferWithSize> buffer,
     bool is_last) {
   if (request_state_.Canceled() ||
-    request_state_.Failed() ||
-    request_state_.Finished() ||
-    request_state_.Closed()) {
+      request_state_.Failed() ||
+      request_state_.Finished() ||
+      request_state_.Closed()) {
     return false;
   }
 
@@ -326,7 +305,7 @@ void URLRequest::SetChunkedUpload(bool is_chunked_upload) {
 void URLRequest::OnAuthenticationRequired(
   scoped_refptr<const net::AuthChallengeInfo> auth_info) {
   if (request_state_.Canceled() ||
-    request_state_.Closed()) {
+      request_state_.Closed()) {
     return;
   }
 
@@ -336,10 +315,10 @@ void URLRequest::OnAuthenticationRequired(
   }
 
   EmitRequestEvent(
-    false,
-    "login",
-    auth_info.get(),
-    base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
+      false,
+      "login",
+      auth_info.get(),
+      base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
 }
 
 void URLRequest::OnResponseStarted(
@@ -373,9 +352,9 @@ void URLRequest::OnResponseData(
 
 void URLRequest::OnResponseCompleted() {
   if (request_state_.Canceled() ||
-    request_state_.Closed() ||
-    request_state_.Failed() ||
-    response_state_.Failed()) {
+      request_state_.Closed() ||
+      request_state_.Failed() ||
+      response_state_.Failed()) {
     // In case we received an unexpected event from Chromium net,
     // don't emit any data event after request cancel/error/close.
     return;

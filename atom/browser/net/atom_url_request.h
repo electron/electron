@@ -53,9 +53,15 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   explicit AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
   ~AtomURLRequest()override;
 
+  void DoInitialize(scoped_refptr<net::URLRequestContextGetter>,
+                    const std::string& method,
+                    const std::string& url);
   void DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
                      bool is_last);
   void DoCancel() const;
+  void DoSetExtraHeader(const std::string& name,
+                        const std::string& value) const;
+  void DoRemoveExtraHeader(const std::string& name) const;
   void DoSetAuth(const base::string16& username,
     const base::string16& password) const;
   void DoCancelAuth() const;

@@ -41,7 +41,7 @@ v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
 
 void Net::RequestGarbageCollectionForTesting() {
   isolate()->RequestGarbageCollectionForTesting(
-    v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
+      v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
 }
 
 

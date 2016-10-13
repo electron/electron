@@ -949,8 +949,28 @@ describe('net module', function () {
       nodeRequest.end()
     })
 
-    it.skip('should emit error event on server socket close', function (done) {
-      assert(false)
+    it('should emit error event on server socket close', function (done) {
+      const requestUrl = '/requestUrl'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case requestUrl:
+            request.socket.destroy()
+            break
+          default:
+            assert(false)
+        }
+      })
+      let requestErrorEventEmitted = false
+      const urlRequest = net.request(`${server.url}${requestUrl}`)
+      urlRequest.on('error', function (error) {
+        assert(error)
+        requestErrorEventEmitted = true
+      })
+      urlRequest.on('close', function () {
+        assert(requestErrorEventEmitted)
+        done()
+      })
+      urlRequest.end()
     })
   })
   describe('IncomingMessage API', function () {
@@ -995,10 +1015,10 @@ describe('net module', function () {
         const statusMessage = response.statusMessage
         assert(typeof statusMessage === 'string')
         assert.equal(statusMessage, 'OK')
-        const rawHeaders = response.rawHeaders
-        assert(typeof rawHeaders === 'object')
-        assert(rawHeaders[customHeaderName] ===
-          customHeaderValue)
+        const headers = response.headers
+        assert(typeof headers === 'object')
+        assert.deepEqual(headers[customHeaderName.toLowerCase()],
+          [customHeaderValue])
         const httpVersion = response.httpVersion
         assert(typeof httpVersion === 'string')
         assert(httpVersion.length > 0)
@@ -1078,8 +1098,60 @@ describe('net module', function () {
       netRequest.end()
     })
 
-    it.skip('should not emit any event after close', function () {
-      assert(false)
+    it('should not emit any event after close', function (done) {
+      const requestUrl = '/requestUrl'
+      let bodyData = randomString(kOneKiloByte)
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case requestUrl:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.write(bodyData)
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      let requestCloseEventEmitted = false
+      const urlRequest = net.request({
+        method: 'GET',
+        url: `${server.url}${requestUrl}`
+      })
+      urlRequest.on('response', function (response) {
+        assert(!requestCloseEventEmitted)
+        const statusCode = response.statusCode
+        assert.equal(statusCode, 200)
+        response.pause()
+        response.on('data', function () {
+        })
+        response.on('end', function () {
+        })
+        response.resume()
+        response.on('error', function () {
+          assert(!requestCloseEventEmitted)
+        })
+        response.on('aborted', function () {
+          assert(!requestCloseEventEmitted)
+        })
+      })
+      urlRequest.on('finish', function () {
+        assert(!requestCloseEventEmitted)
+      })
+      urlRequest.on('error', function () {
+        assert(!requestCloseEventEmitted)
+      })
+      urlRequest.on('abort', function () {
+        assert(!requestCloseEventEmitted)
+      })
+      urlRequest.on('close', function () {
+        requestCloseEventEmitted = true
+        // Wait so that all async events get scheduled.
+        setTimeout(function () {
+          done()
+        }, 100)
+      })
+      urlRequest.end()
     })
   })
 })

@@ -35,10 +35,10 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
-#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
@@ -66,7 +66,6 @@
 #include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "net/http/http_response_headers.h"
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
@@ -138,32 +137,6 @@ struct Converter<WindowOpenDisposition> {
       default: break;
     }
     return mate::ConvertToV8(isolate, disposition);
-  }
-};
-
-template<>
-struct Converter<net::HttpResponseHeaders*> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   net::HttpResponseHeaders* headers) {
-    base::DictionaryValue response_headers;
-    if (headers) {
-      size_t iter = 0;
-      std::string key;
-      std::string value;
-      while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-        key = base::ToLowerASCII(key);
-        if (response_headers.HasKey(key)) {
-          base::ListValue* values = nullptr;
-          if (response_headers.GetList(key, &values))
-            values->AppendString(value);
-        } else {
-          std::unique_ptr<base::ListValue> values(new base::ListValue());
-          values->AppendString(value);
-          response_headers.Set(key, std::move(values));
-        }
-      }
-    }
-    return ConvertToV8(isolate, response_headers);
   }
 };
 
@@ -691,7 +664,7 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       details.headers.get(),
+       details.headers,
        ResourceTypeToString(details.resource_type));
 }
 
@@ -705,7 +678,7 @@ void WebContents::DidGetRedirectForResourceRequest(
        details.http_response_code,
        details.method,
        details.referrer,
-       details.headers.get());
+       details.headers);
 }
 
 void WebContents::DidFinishNavigation(
