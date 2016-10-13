@@ -239,4 +239,4 @@ The `bounds` of this tray icon as `Object`.
 
 Returns `Boolean` - Whether the tray icon is destroyed.
 
-[event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
