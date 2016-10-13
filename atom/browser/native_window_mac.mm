@@ -11,8 +11,6 @@
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "base/strings/utf_string_conversions.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
