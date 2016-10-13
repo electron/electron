@@ -654,34 +654,27 @@ Returns `Boolean` - 윈도우가 전체화면 모드인지 여부.
 크기는 관여하지 않습니다. 그저 전체 콘텐츠 뷰 내에 있는 모든 엑스트라 너비, 높이 영역이
 합해집니다.
 
-#### `win.setBounds(options[, animate])`
+#### `win.setBounds(bounds[, animate])`
 
-* `options` Object
-
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
-
+* `bounds` [Rectangle](structures/rectangle.md)
 * `animate` Boolean (optional) _macOS_
 
-윈도우를 지정한 `width`, `height`, `x`, `y`로 크기 재조정 및 이동합니다.
+윈도우를 주어진 영역으로 크기 재조정 및 이동합니다.
 
 #### `win.getBounds()`
 
-Returns `Object`:
-* `width` Integer
-* `height` Integer
-* `x` Integer
-* `y` Integer
+Returns [`Rectangle`](structures/rectangle.md)
+
+#### `win.setContentBounds(bounds[, animate])`
+
+* `bounds` [Rectangle](structures/rectangle.md)
+* `animate` Boolean (optional) _macOS_
+
+윈도우의 내부 영역 (예. 웹페이지) 을 주어진 영역으로 크기 재조정 및 이동합니다.
 
 #### `win.getContentBounds()`
 
-Returns `Object`:
-* `width` Integer
-* `height` Integer
-* `x` Integer
-* `y` Integer
+* `bounds` [`Rectangle`](structures/rectangle.md)
 
 윈도우의 클라이언트 영역 (웹 페이지)의 너비, 높이, x, y 값을 포함하는 객체를
 반환합니다.
@@ -946,11 +939,7 @@ Returns `Boolean` - 윈도우의 문서가 변경되었는지 여부.
 
 #### `win.capturePage([rect, ]callback)`
 
-* `rect` Object (optional) - 캡쳐될 페이지의 영역
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `rect` [Rectangle](structures/rectangle.md) (optional) - 캡쳐될 페이지의 영역
 * `callback` Function
 
 `webContents.capturePage([rect, ]callback)`와 같습니다.
@@ -1038,7 +1027,9 @@ Windows와 Linux에선 항상 `true`를 반환합니다.
 
 #### `win.setThumbarButtons(buttons)` _Windows_
 
-* `buttons` - Array
+* `buttons` [ThumbarButton[]](structures/thumbar-button.md)
+
+Returns `Boolean` - 버튼이 성공적으로 추가되었는지 여부
 
 윈도우 작업표시줄 버튼 레이아웃의 미리보기 이미지 영역에 미리보기 툴바와 버튼 세트를
 추가합니다. 반환되는 `Boolean` 값은 미리보기 툴바가 성공적으로 추가됬는지를 알려줍니다.
@@ -1071,11 +1062,7 @@ Windows와 Linux에선 항상 `true`를 반환합니다.
 
 #### `win.setThumbnailClip(region)` _Windows_
 
-* `region` Object - Region of the window
-  * `x` Integer - 영역의 x 위치
-  * `y` Integer - 영역의 y 위치
-  * `width` Integer - 영역의 너비
-  * `height` Integer - 영역의 높이
+* `region` [Rectangle](structures/rectangle.md) - 윈도우의 영역
 
 작업 표시줄에 윈도우의 섬네일이 표시될 때 섬네일 이미지로 사용할 윈도우의 영역을
 지정합니다. 빈 영역을 지정하는 것으로 전체 윈도우의 섬네일로 초기화할 수 있습니다:

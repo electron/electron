@@ -261,7 +261,7 @@ Returns:
 
 * `event` Event
 * `url` URL
-* `certificateList` Certificate[]
+* `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
 
 Emitted when a client certificate is requested.
