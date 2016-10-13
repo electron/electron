@@ -954,11 +954,8 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
 }
 
 void NativeWindowMac::PreviewFile(const std::string& filepath, const std::string& filename) {
-  NSString *path = [NSString stringWithCString:filepath.c_str() 
-                                      encoding:[NSString defaultCStringEncoding]];
-
-  NSString *name = [NSString stringWithCString:filename.c_str() 
-                                      encoding:[NSString defaultCStringEncoding]];
+  NSString *path = [NSString stringWithUTF8String:filepath.c_str()];
+  NSString *name = [NSString stringWithUTF8String:filename.c_str()];
 
   [window_ previewFileAtPath:path withName:name];
 }
