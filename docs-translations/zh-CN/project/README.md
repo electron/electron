@@ -5,26 +5,26 @@
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron#info=devDependencies)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
-Electron框架，可用JavaScript, HTML 及 CSS 编写桌面程序。
+Electron框架，让您可使用JavaScript, HTML 及 CSS 编写桌面程序。
 它基于[Node.js](https://nodejs.org/)及[Chromium](http://www.chromium.org)
-[Atom editor](https://github.com/atom/atom)以及[apps](http://electron.atom.io/apps)就是使用Electron编写的。
+[Atom editor](https://github.com/atom/atom)以及很多其他的[apps](http://electron.atom.io/apps)就是使用Electron编写的。
 
-请关注Twitter [@ElectronJS](https://twitter.com/electronjs) 的重要公共。
+请关注Twitter [@ElectronJS](https://twitter.com/electronjs) 以获得重要通告。
 
 这个项目将坚持贡献者盟约 [code of conduct](CODE_OF_CONDUCT.md).
 我们希望贡献者能遵守贡献者盟约，如果有任何不能接受的行为被发现，请报告至electron@github.com(PS:请用英语)
 
 ## 下载
 
-预编译的二进制版本及symbols调试版本可以在[releases](https://github.com/electron/electron/releases)找到，
-其中包括Linux,Windows和macOS版本
+预编译的二进制版本及symbols调试版本可以在[releases](https://github.com/electron/electron/releases)找获，
+其中包括Linux,Windows和macOS版本。
 
-你可以使用[`npm`](https://docs.npmjs.com/)来安装预编译版本的electron
-You can also use  to install prebuilt electron
-二进制文件:
+你可以使用[`npm`](https://docs.npmjs.com/)来安装预编译版本electron的二进制文件:
+You can also use [`npm`] to install prebuilt electron binaries.
+
 
 ```sh
-# 全局安装 `electron`
+# 在 $PATH 里全局安装 `electron`
 npm install electron -g
 
 # 安装为开发依赖
@@ -39,7 +39,7 @@ ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron --s
 
 ### 其他源
 
-- [China](https://npm.taobao.org/mirrors/electron)
+- [中国](https://npm.taobao.org/mirrors/electron)
 
 ## 文档
 
@@ -63,19 +63,23 @@ ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron --s
 ## 快速开始
 
 Clone 并 run 这个 [`electron/electron-quick-start`](https://github.com/electron/electron-quick-start)
-库来启动一个最小项目
+库来看行动的一个最小的 Electron 应用软件。
 
 ## 社区
 
-你可以在此提问题或互相提供帮助:
-- [`electron`](http://discuss.atom.io/c/electron) 上的Atom论坛
+你可以在此提出问题和互相提供帮助:
+- [`electron`](http://discuss.atom.io/c/electron) Atom论坛上的一类。
 - `#atom-shell` Freenode上的聊天频道
 - [`Atom`](http://atom-slack.herokuapp.com/) Slack上的频道
 - [`electron-br`](https://electron-br.slack.com) *(葡萄牙语－巴西)*
-- [`electron-kr`](http://www.meetup.com/electron-kr/) *(韩国)*
+- [`electron-kr`](http://www.meetup.com/electron-kr/) *(韩语)*
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(日语)*
 - [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(土耳其)*
 - [`electron-id`](https://electron-id.slack.com) *(印度尼西亚)*
 
 查看 [awesome-electron](https://github.com/sindresorhus/awesome-electron)
-例子，工具和资源列表。
+来获得被社会维持的应用件例子，工具和资源列表。
+
+## 执照
+
+MIT © 2016 Github
