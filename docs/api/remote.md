@@ -20,7 +20,7 @@ win.loadURL('https://github.com')
 ```
 
 **Note:** For the reverse (access the renderer process from the main process),
-you can use [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture-callback).
+you can use [webContents.executeJavascript](web-contents.md#contentsexecutejavascriptcode-usergesture-callback).
 
 ## Remote Objects
 
