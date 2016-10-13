@@ -733,7 +733,7 @@ void Window::PreviewFile(const std::string& filepath, mate::Arguments* args) {
   std::string filename;
   if (!args->GetNext(&filename)) {
     filename = filepath;
-  } 
+  }
   window_->PreviewFile(filepath, filename);
 }
 
