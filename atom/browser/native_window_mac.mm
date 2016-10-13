@@ -26,7 +26,6 @@
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/skia_util.h"
 
-
 namespace {
 
 // Prevents window from resizing during the scope.
