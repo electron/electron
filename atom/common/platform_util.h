@@ -6,6 +6,7 @@
 #define ATOM_COMMON_PLATFORM_UTIL_H_
 
 #include "build/build_config.h"
+#include "base/callback_forward.h"
 
 #if defined(OS_WIN)
 #include "base/strings/string16.h"
@@ -27,6 +28,8 @@ bool ShowItemInFolder(const base::FilePath& full_path);
 // Must be called from the UI thread.
 bool OpenItem(const base::FilePath& full_path);
 
+typedef base::Callback<void(bool opened)> OpenExternalCallback;
+
 // Open the given external protocol URL in the desktop's default manner.
 // (For example, mailto: URLs in the default mail user agent.)
 bool OpenExternal(
@@ -36,6 +39,15 @@ bool OpenExternal(
     const GURL& url,
 #endif
     bool activate);
+
+bool OpenExternal(
+#if defined(OS_WIN)
+    const base::string16& url,
+#else
+    const GURL& url,
+#endif
+    bool activate,
+    const OpenExternalCallback& callback);
 
 // Move a file to trash.
 bool MoveItemToTrash(const base::FilePath& full_path);

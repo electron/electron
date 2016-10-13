@@ -79,13 +79,24 @@ bool OpenItem(const base::FilePath& full_path) {
   return XDGOpen(full_path.value(), true);
 }
 
-bool OpenExternal(const GURL& url, bool activate) {
+bool openExternal(const GURL& url, bool activate) {
   // Don't wait for exit, since we don't want to wait for the browser/email
   // client window to close before returning
   if (url.SchemeIs("mailto"))
     return XDGEmail(url.spec(), false);
   else
     return XDGOpen(url.spec(), false);
+}
+
+bool OpenExternal(const GURL& url, bool activate) {
+  return openExternal(url, activate);
+}
+
+bool OpenExternal(const GURL& url, bool activate, const OpenExternalCallback& callback) {
+  // TODO: Implement async open if callback is specified
+  bool opened = openExternal(url, activate);
+  callback(opened);
+  return opened;
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {

@@ -7,6 +7,7 @@
 #include <Carbon/Carbon.h>
 #import <Cocoa/Cocoa.h>
 
+#include "base/cancelable_callback.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
@@ -128,7 +129,17 @@ bool OpenItem(const base::FilePath& full_path) {
   return status == noErr;
 }
 
-bool OpenExternal(const GURL& url, bool activate) {
+bool openURLInWorkspace(NSURL* ns_url, NSUInteger launchOptions) {
+  return [[NSWorkspace sharedWorkspace] openURLs: @[ns_url]
+                                        withAppBundleIdentifier: nil
+                                        options: launchOptions
+                                        additionalEventParamDescriptor: NULL
+                                        launchIdentifiers: NULL];
+}
+
+typedef bool(^OpenExternalBlock)(NSURL* ns_url, NSUInteger launchOptions);
+
+bool openExternal(const GURL& url, bool activate, OpenExternalBlock open) {
   DCHECK([NSThread isMainThread]);
   NSURL* ns_url = net::NSURLWithGURL(url);
   if (!ns_url) {
@@ -149,11 +160,26 @@ bool OpenExternal(const GURL& url, bool activate) {
   if (!activate)
     launchOptions |= NSWorkspaceLaunchWithoutActivation;
 
-  return [[NSWorkspace sharedWorkspace] openURLs: @[ns_url]
-                                        withAppBundleIdentifier: nil
-                                        options: launchOptions
-                                        additionalEventParamDescriptor: NULL
-                                        launchIdentifiers: NULL];
+  return open(ns_url, launchOptions);
+}
+
+bool OpenExternal(const GURL& url, bool activate) {
+  return openExternal(url, activate, ^bool(NSURL* ns_url, NSUInteger launchOptions) {
+    return openURLInWorkspace(ns_url, launchOptions);
+  });
+}
+
+bool OpenExternal(const GURL& url, bool activate, const OpenExternalCallback& c) {
+  __block OpenExternalCallback callback = c;
+  return openExternal(url, activate, ^bool(NSURL* ns_url, NSUInteger launchOptions) {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+      bool opened = openURLInWorkspace(ns_url, launchOptions);
+      dispatch_async(dispatch_get_main_queue(), ^{
+        callback.Run(opened);
+      });
+    });
+    return YES;
+  });
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {

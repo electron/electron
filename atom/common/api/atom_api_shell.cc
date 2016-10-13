@@ -4,6 +4,7 @@
 
 #include <string>
 
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -49,12 +50,22 @@ bool OpenExternal(
 #endif
     mate::Arguments* args) {
   bool activate = true;
-  if (args->Length() == 2) {
+  if (args->Length() >= 2) {
     mate::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("activate", &activate);
     }
   }
+
+  if (args->Length() >= 3) {
+    v8::Local<v8::Value> peek = args->PeekNext();
+    platform_util::OpenExternalCallback callback;
+    if (mate::Converter<platform_util::OpenExternalCallback>::FromV8(args->isolate(), peek, &callback)) {
+      return platform_util::OpenExternal(url, activate, callback);
+    }
+    return false;
+  }
+
   return platform_util::OpenExternal(url, activate);
 }
 
