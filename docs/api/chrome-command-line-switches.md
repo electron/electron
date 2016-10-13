@@ -45,7 +45,7 @@ Electron if you want to enable the `flags` in the main process.
 $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 ```
 
-See the [Node documentation](https://nodejs.org/api/cli.html) or run `node man` in your terminal for a list of available flags. Additionally, run `node --v8-options` to see a list of flags that specifically refer to Node's V8 JavaScript engine.
+See the [Node documentation][node-cli] or run `node man` in your terminal for a list of available flags. Additionally, run `node --v8-options` to see a list of flags that specifically refer to Node's V8 JavaScript engine.
 
 ## --proxy-server=`address:port`
 
@@ -186,3 +186,4 @@ This switch only works when `--enable-logging` is also passed.
 [ready]: app.md#event-ready
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [debugging-main-process]: ../tutorial/debugging-main-process.md
+[node-cli]: https://nodejs.org/api/cli.html
