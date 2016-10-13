@@ -279,6 +279,7 @@
               '-lcomdlg32.lib',
               '-lwininet.lib',
               '-lwinmm.lib',
+              '-luiautomationcore.lib',
             ],
           },
           'dependencies': [
