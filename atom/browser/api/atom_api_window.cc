@@ -729,7 +729,7 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
-void Window::PreviewFile(const base::string16& filepath, const base::string16& filename) {
+void Window::PreviewFile(const std::string& filepath, const std::string& filename) {
   window_->PreviewFile(filepath, filename);
 }
 
