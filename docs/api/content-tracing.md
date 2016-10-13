@@ -132,7 +132,7 @@ Once all child processes have acknowledged the `stopMonitoring` request the
 
 * `resultFilePath` String
 * `callback` Function
-  * `resultFilePath`
+  * `resultFilePath` String
 
 Get the current monitoring traced data.
 
