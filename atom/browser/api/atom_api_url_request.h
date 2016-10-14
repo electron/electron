@@ -175,7 +175,6 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   void RemoveExtraHeader(const std::string& name);
   void SetChunkedUpload(bool is_chunked_upload);
 
-  bool CanReadHeaders() const;
   int StatusCode() const;
   std::string StatusMessage() const;
   scoped_refptr<net::HttpResponseHeaders> RawResponseHeaders() const;

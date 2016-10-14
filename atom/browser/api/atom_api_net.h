@@ -19,6 +19,7 @@ class Net : public mate::EventEmitter<Net> {
                              v8::Local<v8::FunctionTemplate> prototype);
 
   v8::Local<v8::Value> URLRequest(v8::Isolate* isolate);
+
  protected:
   explicit Net(v8::Isolate* isolate);
   ~Net() override;
@@ -31,6 +32,5 @@ class Net : public mate::EventEmitter<Net> {
 }  // namespace api
 
 }  // namespace atom
-
 
 #endif  // ATOM_BROWSER_API_ATOM_API_NET_H_

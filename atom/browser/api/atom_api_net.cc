@@ -15,9 +15,7 @@ Net::Net(v8::Isolate* isolate) {
   Init(isolate);
 }
 
-Net::~Net() {
-}
-
+Net::~Net() {}
 
 // static
 v8::Local<v8::Value> Net::Create(v8::Isolate* isolate) {
@@ -29,34 +27,33 @@ void Net::BuildPrototype(v8::Isolate* isolate,
                          v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Net"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-    .SetProperty("URLRequest", &Net::URLRequest)
-    .SetMethod("_RequestGarbageCollectionForTesting",
-               &Net::RequestGarbageCollectionForTesting);
+      .SetProperty("URLRequest", &Net::URLRequest)
+      .SetMethod("_RequestGarbageCollectionForTesting",
+                 &Net::RequestGarbageCollectionForTesting);
 }
 
 v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
   return URLRequest::GetConstructor(isolate)->GetFunction();
 }
 
-
 void Net::RequestGarbageCollectionForTesting() {
   isolate()->RequestGarbageCollectionForTesting(
       v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
 }
 
-
 }  // namespace api
 
 }  // namespace atom
-
 
 namespace {
 
 using atom::api::Net;
 using atom::api::URLRequest;
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
 
   URLRequest::SetConstructor(isolate, base::Bind(URLRequest::New));

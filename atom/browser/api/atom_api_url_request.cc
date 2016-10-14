@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/api/atom_api_url_request.h"
 #include <string>
 #include "atom/browser/api/atom_api_session.h"
-#include "atom/browser/api/atom_api_url_request.h"
 #include "atom/browser/net/atom_url_request.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/net_converter.h"
@@ -12,24 +12,20 @@
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 
-
-
 namespace mate {
 
-template<>
+template <>
 struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       scoped_refptr<const net::IOBufferWithSize> buffer) {
-    return node::Buffer::Copy(isolate,
-                              buffer->data(),
-                              buffer->size()).ToLocalChecked();
+    return node::Buffer::Copy(isolate, buffer->data(), buffer->size())
+        .ToLocalChecked();
   }
 
-  static bool FromV8(
-      v8::Isolate* isolate,
-      v8::Local<v8::Value> val,
-      scoped_refptr<const net::IOBufferWithSize>* out) {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     scoped_refptr<const net::IOBufferWithSize>* out) {
     auto size = node::Buffer::Length(val);
 
     if (size == 0) {
@@ -65,16 +61,14 @@ struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
 namespace atom {
 namespace api {
 
-
 template <typename Flags>
 URLRequest::StateBase<Flags>::StateBase(Flags initialState)
-  : state_(initialState) {
-}
+    : state_(initialState) {}
 
 template <typename Flags>
 void URLRequest::StateBase<Flags>::SetFlag(Flags flag) {
-  state_ = static_cast<Flags>(static_cast<int>(state_) |
-    static_cast<int>(flag));
+  state_ =
+      static_cast<Flags>(static_cast<int>(state_) | static_cast<int>(flag));
 }
 
 template <typename Flags>
@@ -88,8 +82,7 @@ bool URLRequest::StateBase<Flags>::IsFlagSet(Flags flag) const {
 }
 
 URLRequest::RequestState::RequestState()
-  : StateBase(RequestStateFlags::kNotStarted) {
-}
+    : StateBase(RequestStateFlags::kNotStarted) {}
 
 bool URLRequest::RequestState::NotStarted() const {
   return *this == RequestStateFlags::kNotStarted;
@@ -116,8 +109,7 @@ bool URLRequest::RequestState::Closed() const {
 }
 
 URLRequest::ResponseState::ResponseState()
-  : StateBase(ResponseStateFlags::kNotStarted) {
-}
+    : StateBase(ResponseStateFlags::kNotStarted) {}
 
 bool URLRequest::ResponseState::NotStarted() const {
   return *this == ResponseStateFlags::kNotStarted;
@@ -131,7 +123,6 @@ bool URLRequest::ResponseState::Ended() const {
   return IsFlagSet(ResponseStateFlags::kEnded);
 }
 
-
 bool URLRequest::ResponseState::Failed() const {
   return IsFlagSet(ResponseStateFlags::kFailed);
 }
@@ -141,8 +132,7 @@ URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
   InitWith(isolate, wrapper);
 }
 
-URLRequest::~URLRequest() {
-}
+URLRequest::~URLRequest() {}
 
 // static
 mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
@@ -161,8 +151,8 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
   auto browser_context = session->browser_context();
   auto api_url_request = new URLRequest(args->isolate(), args->GetThis());
   auto weak_ptr = api_url_request->weak_ptr_factory_.GetWeakPtr();
-  auto atom_url_request = AtomURLRequest::Create(browser_context, method, url,
-                                                 weak_ptr);
+  auto atom_url_request =
+      AtomURLRequest::Create(browser_context, method, url, weak_ptr);
 
   api_url_request->atom_request_ = atom_url_request;
 
@@ -174,21 +164,21 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "URLRequest"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-    // Request API
-    .MakeDestroyable()
-    .SetMethod("write", &URLRequest::Write)
-    .SetMethod("cancel", &URLRequest::Cancel)
-    .SetMethod("setExtraHeader", &URLRequest::SetExtraHeader)
-    .SetMethod("removeExtraHeader", &URLRequest::RemoveExtraHeader)
-    .SetMethod("setChunkedUpload", &URLRequest::SetChunkedUpload)
-    .SetProperty("notStarted", &URLRequest::NotStarted)
-    .SetProperty("finished", &URLRequest::Finished)
-    // Response APi
-    .SetProperty("statusCode", &URLRequest::StatusCode)
-    .SetProperty("statusMessage", &URLRequest::StatusMessage)
-    .SetProperty("rawResponseHeaders", &URLRequest::RawResponseHeaders)
-    .SetProperty("httpVersionMajor", &URLRequest::ResponseHttpVersionMajor)
-    .SetProperty("httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
+      // Request API
+      .MakeDestroyable()
+      .SetMethod("write", &URLRequest::Write)
+      .SetMethod("cancel", &URLRequest::Cancel)
+      .SetMethod("setExtraHeader", &URLRequest::SetExtraHeader)
+      .SetMethod("removeExtraHeader", &URLRequest::RemoveExtraHeader)
+      .SetMethod("setChunkedUpload", &URLRequest::SetChunkedUpload)
+      .SetProperty("notStarted", &URLRequest::NotStarted)
+      .SetProperty("finished", &URLRequest::Finished)
+      // Response APi
+      .SetProperty("statusCode", &URLRequest::StatusCode)
+      .SetProperty("statusMessage", &URLRequest::StatusMessage)
+      .SetProperty("rawResponseHeaders", &URLRequest::RawResponseHeaders)
+      .SetProperty("httpVersionMajor", &URLRequest::ResponseHttpVersionMajor)
+      .SetProperty("httpVersionMinor", &URLRequest::ResponseHttpVersionMinor);
 }
 
 bool URLRequest::NotStarted() const {
@@ -203,13 +193,10 @@ bool URLRequest::Canceled() const {
   return request_state_.Canceled();
 }
 
-bool URLRequest::Write(
-    scoped_refptr<const net::IOBufferWithSize> buffer,
-    bool is_last) {
-  if (request_state_.Canceled() ||
-      request_state_.Failed() ||
-      request_state_.Finished() ||
-      request_state_.Closed()) {
+bool URLRequest::Write(scoped_refptr<const net::IOBufferWithSize> buffer,
+                       bool is_last) {
+  if (request_state_.Canceled() || request_state_.Failed() ||
+      request_state_.Finished() || request_state_.Closed()) {
     return false;
   }
 
@@ -231,10 +218,8 @@ bool URLRequest::Write(
   return false;
 }
 
-
 void URLRequest::Cancel() {
-  if (request_state_.Canceled() ||
-      request_state_.Closed()) {
+  if (request_state_.Canceled() || request_state_.Closed()) {
     // Cancel only once.
     return;
   }
@@ -303,9 +288,8 @@ void URLRequest::SetChunkedUpload(bool is_chunked_upload) {
 }
 
 void URLRequest::OnAuthenticationRequired(
-  scoped_refptr<const net::AuthChallengeInfo> auth_info) {
-  if (request_state_.Canceled() ||
-      request_state_.Closed()) {
+    scoped_refptr<const net::AuthChallengeInfo> auth_info) {
+  if (request_state_.Canceled() || request_state_.Closed()) {
     return;
   }
 
@@ -315,16 +299,13 @@ void URLRequest::OnAuthenticationRequired(
   }
 
   EmitRequestEvent(
-      false,
-      "login",
-      auth_info.get(),
+      false, "login", auth_info.get(),
       base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
 }
 
 void URLRequest::OnResponseStarted(
-      scoped_refptr<net::HttpResponseHeaders> response_headers) {
-  if (request_state_.Canceled() ||
-      request_state_.Failed() ||
+    scoped_refptr<net::HttpResponseHeaders> response_headers) {
+  if (request_state_.Canceled() || request_state_.Failed() ||
       request_state_.Closed()) {
     // Don't emit any event after request cancel.
     return;
@@ -335,11 +316,9 @@ void URLRequest::OnResponseStarted(
 }
 
 void URLRequest::OnResponseData(
-      scoped_refptr<const net::IOBufferWithSize> buffer) {
-  if (request_state_.Canceled() ||
-      request_state_.Closed() ||
-      request_state_.Failed() ||
-      response_state_.Failed()) {
+    scoped_refptr<const net::IOBufferWithSize> buffer) {
+  if (request_state_.Canceled() || request_state_.Closed() ||
+      request_state_.Failed() || response_state_.Failed()) {
     // In case we received an unexpected event from Chromium net,
     // don't emit any data event after request cancel/error/close.
     return;
@@ -351,10 +330,8 @@ void URLRequest::OnResponseData(
 }
 
 void URLRequest::OnResponseCompleted() {
-  if (request_state_.Canceled() ||
-      request_state_.Closed() ||
-      request_state_.Failed() ||
-      response_state_.Failed()) {
+  if (request_state_.Canceled() || request_state_.Closed() ||
+      request_state_.Failed() || response_state_.Failed()) {
     // In case we received an unexpected event from Chromium net,
     // don't emit any data event after request cancel/error/close.
     return;
@@ -378,7 +355,6 @@ void URLRequest::OnResponseError(const std::string& error) {
   Close();
 }
 
-
 int URLRequest::StatusCode() const {
   if (response_headers_) {
     return response_headers_->response_code();
@@ -394,14 +370,13 @@ std::string URLRequest::StatusMessage() const {
   return result;
 }
 
-scoped_refptr<net::HttpResponseHeaders>
-URLRequest::RawResponseHeaders() const {
+scoped_refptr<net::HttpResponseHeaders> URLRequest::RawResponseHeaders() const {
   return response_headers_;
 }
 
 uint32_t URLRequest::ResponseHttpVersionMajor() const {
   if (response_headers_) {
-     return response_headers_->GetHttpVersion().major_value();
+    return response_headers_->GetHttpVersion().major_value();
   }
   return 0;
 }

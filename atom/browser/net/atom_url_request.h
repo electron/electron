@@ -30,8 +30,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
       const std::string& url,
       base::WeakPtr<api::URLRequest> delegate);
 
-  bool Write(scoped_refptr<const net::IOBufferWithSize> buffer,
-             bool is_last);
+  bool Write(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
   void SetChunkedUpload(bool is_chunked_upload);
   void Cancel() const;
   void SetExtraHeader(const std::string& name, const std::string& value) const;
@@ -50,7 +49,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
 
   explicit AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
-  ~AtomURLRequest()override;
+  ~AtomURLRequest() override;
 
   void DoInitialize(scoped_refptr<net::URLRequestContextGetter>,
                     const std::string& method,
@@ -85,7 +84,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   std::unique_ptr<net::ChunkedUploadDataStream> chunked_stream_;
   std::unique_ptr<net::ChunkedUploadDataStream::Writer> chunked_stream_writer_;
   std::vector<std::unique_ptr<net::UploadElementReader>>
-    upload_element_readers_;
+      upload_element_readers_;
   scoped_refptr<net::IOBuffer> response_read_buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequest);
