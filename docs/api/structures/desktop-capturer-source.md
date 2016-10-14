@@ -1,4 +1,4 @@
-# Desktop Capturer Source Object
+# DesktopCapturerSource Object
 
 * `id` String - The identifier of a window or screen that can be used as a
   `chromeMediaSourceId` constraint when calling
