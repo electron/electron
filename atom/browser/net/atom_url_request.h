@@ -18,21 +18,24 @@
 #include "net/base/upload_element_reader.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
+#include "net/url_request/url_request_context_getter_observer.h"
 
 namespace atom {
 
 class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
-                       public net::URLRequest::Delegate {
+                       public net::URLRequest::Delegate,
+                       public net::URLRequestContextGetterObserver {
  public:
   static scoped_refptr<AtomURLRequest> Create(
       AtomBrowserContext* browser_context,
       const std::string& method,
       const std::string& url,
       base::WeakPtr<api::URLRequest> delegate);
+  void Terminate();
 
   bool Write(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
   void SetChunkedUpload(bool is_chunked_upload);
-  void Cancel() const;
+  void Cancel();
   void SetExtraHeader(const std::string& name, const std::string& value) const;
   void RemoveExtraHeader(const std::string& name) const;
   void PassLoginInformation(const base::string16& username,
@@ -45,6 +48,9 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   void OnResponseStarted(net::URLRequest* request) override;
   void OnReadCompleted(net::URLRequest* request, int bytes_read) override;
 
+  // Overrides of net::URLRequestContextGetterObserver
+  void OnContextShuttingDown() override;
+
  private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
 
@@ -54,15 +60,17 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   void DoInitialize(scoped_refptr<net::URLRequestContextGetter>,
                     const std::string& method,
                     const std::string& url);
+  void DoTerminate();
   void DoWriteBuffer(scoped_refptr<const net::IOBufferWithSize> buffer,
                      bool is_last);
-  void DoCancel() const;
+  void DoCancel();
   void DoSetExtraHeader(const std::string& name,
                         const std::string& value) const;
   void DoRemoveExtraHeader(const std::string& name) const;
   void DoSetAuth(const base::string16& username,
                  const base::string16& password) const;
   void DoCancelAuth() const;
+  void DoCancelWithError(const std::string& error, bool isRequestError);
 
   void ReadResponse();
   bool CopyAndPostBuffer(int bytes_read);
@@ -74,11 +82,12 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   void InformDelegateResponseData(
       scoped_refptr<net::IOBufferWithSize> data) const;
   void InformDelegateResponseCompleted() const;
-  void InformDelegateRequestErrorOccured(const std::string& error) const;
-  void InformDelegateResponseErrorOccured(const std::string& error) const;
+  void InformDelegateErrorOccured(const std::string& error,
+                                  bool isRequestError) const;
 
   base::WeakPtr<api::URLRequest> delegate_;
   std::unique_ptr<net::URLRequest> request_;
+  scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
 
   bool is_chunked_upload_;
   std::unique_ptr<net::ChunkedUploadDataStream> chunked_stream_;

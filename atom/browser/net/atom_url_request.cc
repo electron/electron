@@ -48,7 +48,10 @@ AtomURLRequest::AtomURLRequest(base::WeakPtr<api::URLRequest> delegate)
       is_chunked_upload_(false),
       response_read_buffer_(new net::IOBuffer(kBufferSize)) {}
 
-AtomURLRequest::~AtomURLRequest() {}
+AtomURLRequest::~AtomURLRequest() {
+  DCHECK(!request_context_getter_);
+  DCHECK(!request_);
+}
 
 scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
     AtomBrowserContext* browser_context,
@@ -59,11 +62,15 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
 
   DCHECK(browser_context);
   DCHECK(!url.empty());
-  if (!browser_context || url.empty()) {
+  DCHECK(delegate);
+  if (!browser_context || url.empty() || !delegate) {
     return nullptr;
   }
-
   auto request_context_getter = browser_context->url_request_context_getter();
+  DCHECK(request_context_getter);
+  if (!request_context_getter) {
+    return nullptr;
+  }
   scoped_refptr<AtomURLRequest> atom_url_request(new AtomURLRequest(delegate));
   if (content::BrowserThread::PostTask(
           content::BrowserThread::IO, FROM_HERE,
@@ -74,6 +81,13 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
   return nullptr;
 }
 
+void AtomURLRequest::Terminate() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomURLRequest::DoTerminate, this));
+}
+
 void AtomURLRequest::DoInitialize(
     scoped_refptr<net::URLRequestContextGetter> request_context_getter,
     const std::string& method,
@@ -81,13 +95,32 @@ void AtomURLRequest::DoInitialize(
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   DCHECK(request_context_getter);
 
-  auto context = request_context_getter->GetURLRequestContext();
+  request_context_getter_ = request_context_getter;
+  request_context_getter_->AddObserver(this);
+  auto context = request_context_getter_->GetURLRequestContext();
+  if (!context) {
+    // Called after shutdown.
+    DoCancelWithError("Cannot start a request after shutdown.", true);
+    return;
+  }
 
   DCHECK(context);
   request_ = context->CreateRequest(
       GURL(url), net::RequestPriority::DEFAULT_PRIORITY, this);
-
+  if (!request_) {
+    DoCancelWithError("Failed to create a net::URLRequest.", true);
+    return;
+  }
   request_->set_method(method);
+}
+
+void AtomURLRequest::DoTerminate() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  request_.reset();
+  if (request_context_getter_) {
+    request_context_getter_->RemoveObserver(this);
+    request_context_getter_ = nullptr;
+  }
 }
 
 bool AtomURLRequest::Write(scoped_refptr<const net::IOBufferWithSize> buffer,
@@ -107,7 +140,7 @@ void AtomURLRequest::SetChunkedUpload(bool is_chunked_upload) {
   is_chunked_upload_ = is_chunked_upload;
 }
 
-void AtomURLRequest::Cancel() const {
+void AtomURLRequest::Cancel() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   content::BrowserThread::PostTask(content::BrowserThread::IO, FROM_HERE,
                                    base::Bind(&AtomURLRequest::DoCancel, this));
@@ -147,6 +180,9 @@ void AtomURLRequest::DoWriteBuffer(
     scoped_refptr<const net::IOBufferWithSize> buffer,
     bool is_last) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (!request_) {
+    return;
+  }
 
   if (is_chunked_upload_) {
     // Chunked encoding case.
@@ -191,30 +227,54 @@ void AtomURLRequest::DoWriteBuffer(
   }
 }
 
-void AtomURLRequest::DoCancel() const {
+void AtomURLRequest::DoCancel() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
-  request_->Cancel();
+  if (request_) {
+    request_->Cancel();
+  }
+  DoTerminate();
 }
 
 void AtomURLRequest::DoSetExtraHeader(const std::string& name,
                                       const std::string& value) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (!request_) {
+    return;
+  }
   request_->SetExtraRequestHeaderByName(name, value, true);
 }
 void AtomURLRequest::DoRemoveExtraHeader(const std::string& name) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (!request_) {
+    return;
+  }
   request_->RemoveRequestHeaderByName(name);
 }
 
 void AtomURLRequest::DoSetAuth(const base::string16& username,
                                const base::string16& password) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (!request_) {
+    return;
+  }
   request_->SetAuth(net::AuthCredentials(username, password));
 }
 
 void AtomURLRequest::DoCancelAuth() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (!request_) {
+    return;
+  }
   request_->CancelAuth();
+}
+
+void AtomURLRequest::DoCancelWithError(const std::string& error,
+                                       bool isRequestError) {
+  DoCancel();
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&AtomURLRequest::InformDelegateErrorOccured, this, error,
+                 isRequestError));
 }
 
 void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
@@ -229,6 +289,9 @@ void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
 
 void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (!request_) {
+    return;
+  }
   DCHECK_EQ(request, request_.get());
 
   scoped_refptr<net::HttpResponseHeaders> response_headers =
@@ -240,16 +303,10 @@ void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
         content::BrowserThread::UI, FROM_HERE,
         base::Bind(&AtomURLRequest::InformDelegateResponseStarted, this,
                    response_headers));
-
     ReadResponse();
   } else if (status.status() == net::URLRequestStatus::Status::FAILED) {
     // Report error on Start.
-    DoCancel();
-    auto error = net::ErrorToString(status.ToNetError());
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&AtomURLRequest::InformDelegateRequestErrorOccured, this,
-                   std::move(error)));
+    DoCancelWithError(net::ErrorToString(status.ToNetError()), true);
   }
   // We don't report an error is the request is canceled.
 }
@@ -265,7 +322,9 @@ void AtomURLRequest::ReadResponse() {
 
 void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
-
+  if (!request_) {
+    return;
+  }
   DCHECK_EQ(request, request_.get());
 
   const auto status = request_->status();
@@ -289,24 +348,21 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
   } while (
       request_->Read(response_read_buffer_.get(), kBufferSize, &bytes_read));
   if (response_error) {
-    DoCancel();
-    auto error = net::ErrorToString(status.ToNetError());
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&AtomURLRequest::InformDelegateResponseErrorOccured, this,
-                   std::move(error)));
+    DoCancelWithError(net::ErrorToString(status.ToNetError()), false);
   } else if (data_ended) {
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
         base::Bind(&AtomURLRequest::InformDelegateResponseCompleted, this));
+    DoTerminate();
   } else if (data_transfer_error) {
     // We abort the request on corrupted data transfer.
-    DoCancel();
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&AtomURLRequest::InformDelegateResponseErrorOccured, this,
-                   "Failed to transfer data from IO to UI thread."));
+    DoCancelWithError("Failed to transfer data from IO to UI thread.", false);
   }
+}
+
+void AtomURLRequest::OnContextShuttingDown() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  DoCancel();
 }
 
 bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
@@ -354,20 +410,12 @@ void AtomURLRequest::InformDelegateResponseCompleted() const {
     delegate_->OnResponseCompleted();
 }
 
-void AtomURLRequest::InformDelegateRequestErrorOccured(
-    const std::string& error) const {
+void AtomURLRequest::InformDelegateErrorOccured(const std::string& error,
+                                                bool isRequestError) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   if (delegate_)
-    delegate_->OnRequestError(error);
-}
-
-void AtomURLRequest::InformDelegateResponseErrorOccured(
-    const std::string& error) const {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
-  if (delegate_)
-    delegate_->OnResponseError(error);
+    delegate_->OnError(error, isRequestError);
 }
 
 }  // namespace atom

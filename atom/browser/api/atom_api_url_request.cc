@@ -132,7 +132,14 @@ URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
   InitWith(isolate, wrapper);
 }
 
-URLRequest::~URLRequest() {}
+URLRequest::~URLRequest() {
+  // A request has been created in JS, it was not used and then
+  // it got collected, no close event to cleanup, only destructor
+  // is called.
+  if (atom_request_) {
+    atom_request_->Terminate();
+  }
+}
 
 // static
 mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
@@ -341,17 +348,15 @@ void URLRequest::OnResponseCompleted() {
   Close();
 }
 
-void URLRequest::OnRequestError(const std::string& error) {
+void URLRequest::OnError(const std::string& error, bool isRequestError) {
   auto error_object = v8::Exception::Error(mate::StringToV8(isolate(), error));
-  request_state_.SetFlag(RequestStateFlags::kFailed);
-  EmitRequestEvent(false, "error", error_object);
-  Close();
-}
-
-void URLRequest::OnResponseError(const std::string& error) {
-  auto error_object = v8::Exception::Error(mate::StringToV8(isolate(), error));
-  response_state_.SetFlag(ResponseStateFlags::kFailed);
-  EmitResponseEvent(false, "error", error_object);
+  if (isRequestError) {
+    request_state_.SetFlag(RequestStateFlags::kFailed);
+    EmitRequestEvent(false, "error", error_object);
+  } else {
+    response_state_.SetFlag(ResponseStateFlags::kFailed);
+    EmitResponseEvent(false, "error", error_object);
+  }
   Close();
 }
 
@@ -398,6 +403,11 @@ void URLRequest::Close() {
     EmitRequestEvent(true, "close");
   }
   unpin();
+  if (atom_request_) {
+    // A request has been created in JS, used and then it ended.
+    // We release unneeded net resources.
+    atom_request_->Terminate();
+  }
   atom_request_ = nullptr;
 }
 

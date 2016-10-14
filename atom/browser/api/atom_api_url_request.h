@@ -104,8 +104,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
       scoped_refptr<net::HttpResponseHeaders> response_headers);
   void OnResponseData(scoped_refptr<const net::IOBufferWithSize> data);
   void OnResponseCompleted();
-  void OnRequestError(const std::string& error);
-  void OnResponseError(const std::string& error);
+  void OnError(const std::string& error, bool isRequestError);
 
  protected:
   explicit URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
