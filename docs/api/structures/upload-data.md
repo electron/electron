@@ -1,4 +1,4 @@
-# ThumbarButton Object
+# UploadData Object
 
 * `bytes` Buffer - Content being sent.
 * `file` String - Path of file being uploaded.
