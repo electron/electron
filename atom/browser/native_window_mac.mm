@@ -492,9 +492,9 @@ bool ScopedDisableResize::disable_resize_ = false;
   return [self quickLookItem];
 }
 
-- (void)previewFileAtPath:(NSString *)filepath  withName:(NSString *) name {
-  NSURL * url = [[NSURL alloc] initFileURLWithPath:filepath];
-  [self setQuickLookItem:[[AtomPreviewItem alloc] initWithURL:url title:name]];
+- (void)previewFileAtPath:(NSString *)path  withName:(NSString *) fileName {
+  NSURL * url = [[[NSURL alloc] initFileURLWithPath:path] autorelease];
+  [self setQuickLookItem:[[[AtomPreviewItem alloc] initWithURL:url title:fileName] autorelease]];
   [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
 }
 
@@ -953,11 +953,11 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
     [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
 }
 
-void NativeWindowMac::PreviewFile(const std::string& filepath, const std::string& filename) {
-  NSString *path = [NSString stringWithUTF8String:filepath.c_str()];
-  NSString *name = [NSString stringWithUTF8String:filename.c_str()];
+void NativeWindowMac::PreviewFile(const std::string& path, const std::string& fileName) {
+  NSString *pathStr = [NSString stringWithUTF8String:path.c_str()];
+  NSString *nameStr = [NSString stringWithUTF8String:fileName.c_str()];
 
-  [window_ previewFileAtPath:path withName:name];
+  [window_ previewFileAtPath:pathStr withName:nameStr];
 }
 
 void NativeWindowMac::SetMovable(bool movable) {

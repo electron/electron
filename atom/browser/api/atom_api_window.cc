@@ -729,12 +729,12 @@ void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
-void Window::PreviewFile(const std::string& filepath, mate::Arguments* args) {
-  std::string filename;
-  if (!args->GetNext(&filename)) {
-    filename = filepath;
+void Window::PreviewFile(const std::string& path, mate::Arguments* args) {
+  std::string fileName;
+  if (!args->GetNext(&fileName)) {
+    fileName = path;
   }
-  window_->PreviewFile(filepath, filename);
+  window_->PreviewFile(path, fileName);
 }
 
 void Window::SetParentWindow(v8::Local<v8::Value> value,
