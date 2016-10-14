@@ -322,7 +322,7 @@ bool OpenExternal(const base::string16& url, bool activate) {
 
 bool OpenExternal(const base::string16& url, bool activate, const OpenExternalCallback& callback) {
   // TODO: Implement async open if callback is specified
-  bool opened = openExternal(url, activate)
+  bool opened = openExternal(url, activate);
   callback(opened);
   return opened;
 }
