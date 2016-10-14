@@ -79,7 +79,7 @@ bool OpenItem(const base::FilePath& full_path) {
   return XDGOpen(full_path.value(), true);
 }
 
-bool openExternal(const GURL& url, bool activate) {
+bool OpenExternal(const GURL& url, bool activate) {
   // Don't wait for exit, since we don't want to wait for the browser/email
   // client window to close before returning
   if (url.SchemeIs("mailto"))
@@ -88,13 +88,9 @@ bool openExternal(const GURL& url, bool activate) {
     return XDGOpen(url.spec(), false);
 }
 
-bool OpenExternal(const GURL& url, bool activate) {
-  return openExternal(url, activate);
-}
-
 bool OpenExternal(const GURL& url, bool activate, const OpenExternalCallback& callback) {
   // TODO: Implement async open if callback is specified
-  bool opened = openExternal(url, activate);
+  bool opened = OpenExternal(url, activate);
   callback.Run(opened);
   return opened;
 }

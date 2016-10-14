@@ -299,7 +299,7 @@ bool OpenItem(const base::FilePath& full_path) {
     return ui::win::OpenFileViaShell(full_path);
 }
 
-bool openExternal(const base::string16& url, bool activate) {
+bool OpenExternal(const base::string16& url, bool activate) {
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
@@ -316,13 +316,9 @@ bool openExternal(const base::string16& url, bool activate) {
   return true;
 }
 
-bool OpenExternal(const base::string16& url, bool activate) {
-  return openExternal(url, activate);
-}
-
 bool OpenExternal(const base::string16& url, bool activate, const OpenExternalCallback& callback) {
   // TODO: Implement async open if callback is specified
-  bool opened = openExternal(url, activate);
+  bool opened = OpenExternal(url, activate);
   callback.Run(opened);
   return opened;
 }
