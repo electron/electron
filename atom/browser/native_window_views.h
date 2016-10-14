@@ -233,9 +233,6 @@ class NativeWindowViews : public NativeWindow,
   // Memoized version of a11y check
   bool checked_for_a11y_support_;
 
-  // If true we have enabled a11y
-  bool enabled_a11y_support_;
-
   // Whether to show the WS_THICKFRAME style.
   bool thick_frame_;
 
