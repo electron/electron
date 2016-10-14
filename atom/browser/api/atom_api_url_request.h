@@ -94,9 +94,8 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 
-  static void BuildPrototype(
-      v8::Isolate* isolate,
-      v8::Local<v8::FunctionTemplate> prototype);
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype);
 
   // Methods for reporting events into JavaScript.
   void OnAuthenticationRequired(
@@ -109,8 +108,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   void OnResponseError(const std::string& error);
 
  protected:
-  explicit URLRequest(v8::Isolate* isolate,
-                      v8::Local<v8::Object> wrapper);
+  explicit URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
   ~URLRequest() override;
 
  private:
@@ -118,21 +116,23 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   class StateBase {
    public:
     void SetFlag(Flags flag);
+
    protected:
     explicit StateBase(Flags initialState);
     bool operator==(Flags flag) const;
     bool IsFlagSet(Flags flag) const;
+
    private:
-     Flags state_;
+    Flags state_;
   };
 
   enum class RequestStateFlags {
-      kNotStarted = 0x0,
-      kStarted  = 0x1,
-      kFinished = 0x2,
-      kCanceled = 0x4,
-      kFailed = 0x8,
-      kClosed = 0x10
+    kNotStarted = 0x0,
+    kStarted = 0x1,
+    kFinished = 0x2,
+    kCanceled = 0x4,
+    kFailed = 0x8,
+    kClosed = 0x10
   };
 
   class RequestState : public StateBase<RequestStateFlags> {
@@ -168,8 +168,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   bool Finished() const;
   bool Canceled() const;
   bool Failed() const;
-  bool Write(scoped_refptr<const net::IOBufferWithSize> buffer,
-             bool is_last);
+  bool Write(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
   void Cancel();
   bool SetExtraHeader(const std::string& name, const std::string& value);
   void RemoveExtraHeader(const std::string& name);
@@ -181,14 +180,14 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   uint32_t ResponseHttpVersionMajor() const;
   uint32_t ResponseHttpVersionMinor() const;
 
-  template <typename ... ArgTypes>
-  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)>
-  BuildArgsArray(ArgTypes... args) const;
+  template <typename... ArgTypes>
+  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> BuildArgsArray(
+      ArgTypes... args) const;
 
-  template <typename ... ArgTypes>
+  template <typename... ArgTypes>
   void EmitRequestEvent(ArgTypes... args);
 
-  template <typename ... ArgTypes>
+  template <typename... ArgTypes>
   void EmitResponseEvent(ArgTypes... args);
 
   void Close();
@@ -204,35 +203,34 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
   base::WeakPtrFactory<URLRequest> weak_ptr_factory_;
 
-
   DISALLOW_COPY_AND_ASSIGN(URLRequest);
 };
 
-template <typename ... ArgTypes>
+template <typename... ArgTypes>
 std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)>
 URLRequest::BuildArgsArray(ArgTypes... args) const {
-  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> result
-    = { { mate::ConvertToV8(isolate(), args)... } };
+  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> result = {
+      {mate::ConvertToV8(isolate(), args)...}};
   return result;
 }
 
-template <typename ... ArgTypes>
+template <typename... ArgTypes>
 void URLRequest::EmitRequestEvent(ArgTypes... args) {
   auto arguments = BuildArgsArray(args...);
   v8::Local<v8::Function> _emitRequestEvent;
   auto wrapper = GetWrapper();
   if (mate::Dictionary(isolate(), wrapper)
-      .Get("_emitRequestEvent", &_emitRequestEvent))
+          .Get("_emitRequestEvent", &_emitRequestEvent))
     _emitRequestEvent->Call(wrapper, arguments.size(), arguments.data());
 }
 
-template <typename ... ArgTypes>
+template <typename... ArgTypes>
 void URLRequest::EmitResponseEvent(ArgTypes... args) {
   auto arguments = BuildArgsArray(args...);
   v8::Local<v8::Function> _emitResponseEvent;
   auto wrapper = GetWrapper();
   if (mate::Dictionary(isolate(), wrapper)
-      .Get("_emitResponseEvent", &_emitResponseEvent))
+          .Get("_emitResponseEvent", &_emitResponseEvent))
     _emitResponseEvent->Call(wrapper, arguments.size(), arguments.data());
 }
 
