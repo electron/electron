@@ -36,8 +36,9 @@ struct Converter<scoped_refptr<net::X509Certificate>> {
 
 template<>
 struct Converter<scoped_refptr<net::HttpResponseHeaders>> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-    scoped_refptr<net::HttpResponseHeaders> headers);
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      scoped_refptr<net::HttpResponseHeaders> headers);
 };
 
 }  // namespace mate

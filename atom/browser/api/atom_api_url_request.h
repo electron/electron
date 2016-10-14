@@ -95,14 +95,14 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   static mate::WrappableBase* New(mate::Arguments* args);
 
   static void BuildPrototype(
-    v8::Isolate* isolate,
-    v8::Local<v8::FunctionTemplate> prototype);
+      v8::Isolate* isolate,
+      v8::Local<v8::FunctionTemplate> prototype);
 
   // Methods for reporting events into JavaScript.
   void OnAuthenticationRequired(
-    scoped_refptr<const net::AuthChallengeInfo> auth_info);
+      scoped_refptr<const net::AuthChallengeInfo> auth_info);
   void OnResponseStarted(
-    scoped_refptr<net::HttpResponseHeaders> response_headers);
+      scoped_refptr<net::HttpResponseHeaders> response_headers);
   void OnResponseData(scoped_refptr<const net::IOBufferWithSize> data);
   void OnResponseCompleted();
   void OnRequestError(const std::string& error);
@@ -110,7 +110,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
 
  protected:
   explicit URLRequest(v8::Isolate* isolate,
-             v8::Local<v8::Object> wrapper);
+                      v8::Local<v8::Object> wrapper);
   ~URLRequest() override;
 
  private:

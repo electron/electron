@@ -256,7 +256,7 @@ void URLRequest::Cancel() {
 }
 
 bool URLRequest::SetExtraHeader(const std::string& name,
-                           const std::string& value) {
+                                const std::string& value) {
   // Request state must be in the initial non started state.
   if (!request_state_.NotStarted()) {
     // Cannot change headers after send.
@@ -322,7 +322,7 @@ void URLRequest::OnAuthenticationRequired(
 }
 
 void URLRequest::OnResponseStarted(
-    scoped_refptr<net::HttpResponseHeaders> response_headers) {
+      scoped_refptr<net::HttpResponseHeaders> response_headers) {
   if (request_state_.Canceled() ||
       request_state_.Failed() ||
       request_state_.Closed()) {
@@ -335,7 +335,7 @@ void URLRequest::OnResponseStarted(
 }
 
 void URLRequest::OnResponseData(
-    scoped_refptr<const net::IOBufferWithSize> buffer) {
+      scoped_refptr<const net::IOBufferWithSize> buffer) {
   if (request_state_.Canceled() ||
       request_state_.Closed() ||
       request_state_.Failed() ||

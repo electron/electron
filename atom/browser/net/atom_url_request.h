@@ -25,27 +25,26 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
                        public net::URLRequest::Delegate {
  public:
   static scoped_refptr<AtomURLRequest> Create(
-    AtomBrowserContext* browser_context,
-    const std::string& method,
-    const std::string& url,
-    base::WeakPtr<api::URLRequest> delegate);
+      AtomBrowserContext* browser_context,
+      const std::string& method,
+      const std::string& url,
+      base::WeakPtr<api::URLRequest> delegate);
 
   bool Write(scoped_refptr<const net::IOBufferWithSize> buffer,
-                   bool is_last);
+             bool is_last);
   void SetChunkedUpload(bool is_chunked_upload);
   void Cancel() const;
   void SetExtraHeader(const std::string& name, const std::string& value) const;
   void RemoveExtraHeader(const std::string& name) const;
   void PassLoginInformation(const base::string16& username,
-    const base::string16& password) const;
+                            const base::string16& password) const;
 
  protected:
   // Overrides of net::URLRequest::Delegate
   void OnAuthRequired(net::URLRequest* request,
-                              net::AuthChallengeInfo* auth_info) override;
+                      net::AuthChallengeInfo* auth_info) override;
   void OnResponseStarted(net::URLRequest* request) override;
-  void OnReadCompleted(net::URLRequest* request,
-                               int bytes_read) override;
+  void OnReadCompleted(net::URLRequest* request, int bytes_read) override;
 
  private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
@@ -63,18 +62,18 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
                         const std::string& value) const;
   void DoRemoveExtraHeader(const std::string& name) const;
   void DoSetAuth(const base::string16& username,
-    const base::string16& password) const;
+                 const base::string16& password) const;
   void DoCancelAuth() const;
 
   void ReadResponse();
   bool CopyAndPostBuffer(int bytes_read);
 
   void InformDelegateAuthenticationRequired(
-    scoped_refptr<net::AuthChallengeInfo> auth_info) const;
+      scoped_refptr<net::AuthChallengeInfo> auth_info) const;
   void InformDelegateResponseStarted(
-    scoped_refptr<net::HttpResponseHeaders>) const;
+      scoped_refptr<net::HttpResponseHeaders>) const;
   void InformDelegateResponseData(
-    scoped_refptr<net::IOBufferWithSize> data) const;
+      scoped_refptr<net::IOBufferWithSize> data) const;
   void InformDelegateResponseCompleted() const;
   void InformDelegateRequestErrorOccured(const std::string& error) const;
   void InformDelegateResponseErrorOccured(const std::string& error) const;

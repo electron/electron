@@ -14,7 +14,6 @@
 #include "net/base/upload_bytes_element_reader.h"
 
 
-
 namespace {
 const int kBufferSize = 4096;
 }  // namespace
@@ -23,21 +22,19 @@ namespace atom {
 
 namespace internal {
 
-
 class UploadOwnedIOBufferElementReader : public net::UploadBytesElementReader {
  public:
   explicit UploadOwnedIOBufferElementReader(
-    scoped_refptr<const net::IOBufferWithSize> buffer)
-    : net::UploadBytesElementReader(buffer->data(), buffer->size())
-    , buffer_(buffer) {
+      scoped_refptr<const net::IOBufferWithSize> buffer)
+      : net::UploadBytesElementReader(buffer->data(), buffer->size()),
+        buffer_(buffer) {
   }
 
   ~UploadOwnedIOBufferElementReader() override {
   }
 
-
   static UploadOwnedIOBufferElementReader* CreateWithBuffer(
-    scoped_refptr<const net::IOBufferWithSize> buffer) {
+      scoped_refptr<const net::IOBufferWithSize> buffer) {
     return new UploadOwnedIOBufferElementReader(std::move(buffer));
   }
 
@@ -127,7 +124,7 @@ void AtomURLRequest::Cancel() const {
 }
 
 void AtomURLRequest::SetExtraHeader(const std::string& name,
-                               const std::string& value) const {
+                                    const std::string& value) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   content::BrowserThread::PostTask(
       content::BrowserThread::IO,
@@ -143,8 +140,9 @@ void AtomURLRequest::RemoveExtraHeader(const std::string& name) const {
       base::Bind(&AtomURLRequest::DoRemoveExtraHeader, this, name));
 }
 
-void AtomURLRequest::PassLoginInformation(const base::string16& username,
-  const base::string16& password) const {
+void AtomURLRequest::PassLoginInformation(
+    const base::string16& username,
+    const base::string16& password) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (username.empty() || password.empty()) {
     content::BrowserThread::PostTask(
@@ -158,8 +156,8 @@ void AtomURLRequest::PassLoginInformation(const base::string16& username,
 }
 
 void AtomURLRequest::DoWriteBuffer(
-  scoped_refptr<const net::IOBufferWithSize> buffer,
-  bool is_last) {
+    scoped_refptr<const net::IOBufferWithSize> buffer,
+    bool is_last) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
   if (is_chunked_upload_) {
@@ -223,8 +221,9 @@ void AtomURLRequest::DoRemoveExtraHeader(const std::string& name) const {
   request_->RemoveRequestHeaderByName(name);
 }
 
-void AtomURLRequest::DoSetAuth(const base::string16& username,
-  const base::string16& password) const {
+void AtomURLRequest::DoSetAuth(
+    const base::string16& username,
+    const base::string16& password) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   request_->SetAuth(net::AuthCredentials(username, password));
 }
@@ -234,8 +233,9 @@ void AtomURLRequest::DoCancelAuth() const {
   request_->CancelAuth();
 }
 
-void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
-                    net::AuthChallengeInfo* auth_info) {
+void AtomURLRequest::OnAuthRequired(
+    net::URLRequest* request,
+    net::AuthChallengeInfo* auth_info) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
   content::BrowserThread::PostTask(
@@ -351,7 +351,7 @@ bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
 
 
 void AtomURLRequest::InformDelegateAuthenticationRequired(
-  scoped_refptr<net::AuthChallengeInfo> auth_info) const {
+    scoped_refptr<net::AuthChallengeInfo> auth_info) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (delegate_)
     delegate_->OnAuthenticationRequired(auth_info);
@@ -365,7 +365,7 @@ void AtomURLRequest::InformDelegateResponseStarted(
 }
 
 void AtomURLRequest::InformDelegateResponseData(
-  scoped_refptr<net::IOBufferWithSize> data) const {
+    scoped_refptr<net::IOBufferWithSize> data) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   // Transfer ownership of the data buffer, data will be released
@@ -382,7 +382,7 @@ void AtomURLRequest::InformDelegateResponseCompleted() const {
 }
 
 void AtomURLRequest::InformDelegateRequestErrorOccured(
-  const std::string& error) const {
+    const std::string& error) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   if (delegate_)
@@ -390,7 +390,7 @@ void AtomURLRequest::InformDelegateRequestErrorOccured(
 }
 
 void AtomURLRequest::InformDelegateResponseErrorOccured(
-  const std::string& error) const {
+    const std::string& error) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   if (delegate_)
