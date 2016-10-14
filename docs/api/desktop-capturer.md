@@ -68,7 +68,7 @@ Starts gathering information about all available desktop media sources,
 and calls `callback(error, sources)` when finished.
 
 `sources` is an array of [`DesktopCapturerSource`](structures/desktop-capturer-source.md)
-objects, each `Source` represents a screen or an individual window that can be
+objects, each `DesktopCapturerSource` represents a screen or an individual window that can be
 captured.
 
 [`navigator.webkitGetUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/Navigator/getUserMedia
