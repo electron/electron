@@ -194,6 +194,20 @@ value will fail with a DOM exception.
 
 If "on", the guest page will be allowed to open new windows.
 
+### `webpreferences`
+
+```html
+<webview src="https://github.com" webpreferences="allowDisplayingInsecureContent, javascript=no"></webview>
+```
+
+A list of strings which specifies the web preferences to be set on the webview, separated by `,`.
+The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions)
+
+The string follows the same format as the features string in `window.open`.
+A name by itself is given a `true` boolean value.
+A preference can be set to another value by including an `=`, followed by the value.
+Special values `yes` and `1` are interpreted as true, while `no` and `0` are interpreted as false.  
+
 ### `blinkfeatures`
 
 ```html
