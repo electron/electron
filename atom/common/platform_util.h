@@ -5,8 +5,8 @@
 #ifndef ATOM_COMMON_PLATFORM_UTIL_H_
 #define ATOM_COMMON_PLATFORM_UTIL_H_
 
-#include "build/build_config.h"
 #include "base/callback_forward.h"
+#include "build/build_config.h"
 
 #if defined(OS_WIN)
 #include "base/strings/string16.h"

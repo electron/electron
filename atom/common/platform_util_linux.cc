@@ -88,8 +88,9 @@ bool OpenExternal(const GURL& url, bool activate) {
     return XDGOpen(url.spec(), false);
 }
 
-bool OpenExternal(const GURL& url, bool activate, const OpenExternalCallback& callback) {
-  // TODO: Implement async open if callback is specified
+bool OpenExternal(const GURL& url, bool activate,
+  const OpenExternalCallback& callback) {
+  // TODO(gabriel): Implement async open if callback is specified
   bool opened = OpenExternal(url, activate);
   callback.Run(opened);
   return opened;

@@ -60,7 +60,8 @@ bool OpenExternal(
   if (args->Length() >= 3) {
     v8::Local<v8::Value> peek = args->PeekNext();
     platform_util::OpenExternalCallback callback;
-    if (mate::Converter<platform_util::OpenExternalCallback>::FromV8(args->isolate(), peek, &callback)) {
+    if (mate::Converter<platform_util::OpenExternalCallback>::FromV8(
+      args->isolate(), peek, &callback)) {
       return platform_util::OpenExternal(url, activate, callback);
     }
     return false;

@@ -316,8 +316,9 @@ bool OpenExternal(const base::string16& url, bool activate) {
   return true;
 }
 
-bool OpenExternal(const base::string16& url, bool activate, const OpenExternalCallback& callback) {
-  // TODO: Implement async open if callback is specified
+bool OpenExternal(const base::string16& url, bool activate,
+  const OpenExternalCallback& callback) {
+  // // TODO(gabriel): Implement async open if callback is specified
   bool opened = OpenExternal(url, activate);
   callback.Run(opened);
   return opened;
