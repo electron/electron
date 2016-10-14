@@ -49,9 +49,6 @@ If callback is specified, it will return whether it was able to initiate the ope
 Open the given external protocol URL in the desktop's default manner. (For
 example, mailto: URLs in the user's default mail agent).
 
-If a `callback` is passed, the API call will be asynchronous and the result
-will be passed via `callback(opened)`.
-
 ### `shell.moveItemToTrash(fullPath)`
 
 * `fullPath` String
