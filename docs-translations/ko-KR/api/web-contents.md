@@ -2,7 +2,7 @@
 
 > 웹 페이지를 렌더링하고 제어합니다.
 
-`webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
+`webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_eventemitter)를
 상속받았습니다. 웹 페이지의 렌더링과 관리를 책임지며
 [`BrowserWindow`](browser-window.md)의 속성입니다. 다음은 `webContents` 객체에
 접근하는 예시입니다:

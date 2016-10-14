@@ -35,12 +35,13 @@ Electron 은 하드코딩 된 구글의 위치정보 웹서비스 요청을 위�
 process.env.GOOGLE_API_KEY = 'YOUR_KEY_HERE'
 ```
 
-구글 API 키를 획득하는 방법은 다음 페이지를 참고하세요.
-https://www.chromium.org/developers/how-tos/api-keys
+구글 API 키를 획득하는 방법은
+[이 페이지](https://www.chromium.org/developers/how-tos/api-keys)를 참고하세요.
 
 기본적으로, 새로 생성된 구글 API 키는 위치정보 요청이 허용되지 않습니다.
-위치정보 요청을 사용하려면 다음 페이지를 방문하세요:
-https://console.developers.google.com/apis/api/geolocation/overview
+위치정보 요청을 사용하려면
+[이 페이지](https://console.developers.google.com/apis/api/geolocation/overview)를
+방문하세요.
 
 ### `ELECTRON_NO_ASAR`
 
@@ -61,8 +62,9 @@ Chrome의 내부 로그를 콘솔에 출력합니다.
 
 ### `ELECTRON_LOG_ASAR_READS`
 
-Electron이 ASAR 파일을 읽을 때, 읽기 오프셋의 로그를 남기고 시스템 `tmpdir`에 파일로
-저장합니다. 결과 파일은 ASAR 모듈의 파일 순서를 최적화 하는데 사용할 수 있습니다.
+Electron이 ASAR 파일을 읽을 때, 읽기 오프셋의 로그를 남기고 시스템 `tmpdir`에
+파일로 저장합니다. 결과 파일은 ASAR 모듈의 파일 순서를 최적화 하는데 사용할 수
+있습니다.
 
 ### `ELECTRON_ENABLE_STACK_DUMPING`
 

@@ -5,7 +5,7 @@
 이 모듈은 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 포함하거나 사용할 수
 없습니다.
 
-`screen`은 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
+`screen`은 [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter)를
 상속 받았습니다.
 
 **참고:** 렌더러 / DevTools에선 이미 DOM 속성이 `window.screen`을 가지고 있으므로
