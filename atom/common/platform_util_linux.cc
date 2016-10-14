@@ -95,7 +95,7 @@ bool OpenExternal(const GURL& url, bool activate) {
 bool OpenExternal(const GURL& url, bool activate, const OpenExternalCallback& callback) {
   // TODO: Implement async open if callback is specified
   bool opened = openExternal(url, activate);
-  callback(opened);
+  callback.Run(opened);
   return opened;
 }
 
