@@ -3,23 +3,23 @@
 用一个 `Tray` 来表示一个图标,这个图标处于正在运行的系统的通知区 ，通常被添加到一个 context menu 上.
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const Menu = electron.Menu;
-const Tray = electron.Tray;
+const electron = require('electron')
+const app = electron.app
+const Menu = electron.Menu
+const Tray = electron.Tray
 
-var appIcon = null;
-app.on('ready', function(){
-  appIcon = new Tray('/path/to/my/icon');
+var appIcon = null
+app.on('ready', function () {
+  appIcon = new Tray('/path/to/my/icon')
   var contextMenu = Menu.buildFromTemplate([
     { label: 'Item1', type: 'radio' },
     { label: 'Item2', type: 'radio' },
     { label: 'Item3', type: 'radio', checked: true },
     { label: 'Item4', type: 'radio' }
-  ]);
-  appIcon.setToolTip('This is my application.');
-  appIcon.setContextMenu(contextMenu);
-});
+  ])
+  appIcon.setToolTip('This is my application.')
+  appIcon.setContextMenu(contextMenu)
+})
 
 ```
 
@@ -32,8 +32,8 @@ __平台限制:__
 * 在 Linux，为了让单独的 `MenuItem` 起效，需要再次调用 `setContextMenu` .例如:
 
 ```javascript
-contextMenu.items[2].checked = false;
-appIcon.setContextMenu(contextMenu);
+contextMenu.items[2].checked = false
+appIcon.setContextMenu(contextMenu)
 ```
 如果想在所有平台保持完全相同的行为，不应该依赖点击事件，而是一直将一个 context menu 添加到 tray icon.
 

@@ -78,3 +78,13 @@ _online-status.html_
 </body>
 </html>
 ```
+
+**NOTE:** If Electron is not able to connect to a local area network (LAN) or
+a router, it is considered offline; all other conditions return `true`.
+So while you can assume that Electron is offline when `navigator.onLine`
+returns a `false` value, you cannot assume that a `true` value necessarily
+means that Electron can access the internet. You could be getting false
+positives, such as in cases where the computer is running a virtualization
+software that has virtual ethernet adapters that are always "connected."
+Therefore, if you really want to determine the internet access status of Electron,
+you should develop additional means for checking.

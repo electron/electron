@@ -2,7 +2,7 @@
 
 > 웹 페이지를 렌더링하고 제어합니다.
 
-`webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를
+`webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_eventemitter)를
 상속받았습니다. 웹 페이지의 렌더링과 관리를 책임지며
 [`BrowserWindow`](browser-window.md)의 속성입니다. 다음은 `webContents` 객체에
 접근하는 예시입니다:
@@ -244,14 +244,7 @@ Returns:
 * `event` Event
 * `url` URL
 * `error` String - 에러 코드
-* `certificate` Object
-  * `data` String - PEM 인코딩된 데이터
-  * `issuerName` String - 인증서 발급자의 공통 이름
-  * `subjectName` String - 대상의 공통 이름
-  * `serialNumber` String - 문자열로 표현된 hex 값
-  * `validStart` Integer - 초 단위의 인증서가 유효하기 시작한 날짜
-  * `validExpiry` Integer - 초 단위의 인증서가 만료되는 날짜
-  * `fingerprint` String - 인증서의 지문
+* `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
 
 `url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
@@ -265,14 +258,7 @@ Returns:
 
 * `event` Event
 * `url` URL
-* `certificateList` [Objects]
-  * `data` String - PEM 인코딩된 데이터
-  * `issuerName` String - 인증서 발급자의 공통 이름
-  * `subjectName` String - 대상의 공통 이름
-  * `serialNumber` String - 문자열로 표현된 hex 값
-  * `validStart` Integer - 초 단위의 인증서가 유효하기 시작한 날짜
-  * `validExpiry` Integer - 초 단위의 인증서가 만료되는 날짜
-  * `fingerprint` String - 인증서의 지문
+* `certificateList` Certificate[]
 * `callback` Function
 
 클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
@@ -367,8 +353,8 @@ Returns:
 `not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
 
 만약 `type` 인수가 `custom` 이고 `image` 인수가 `NativeImage`를 통한 커스텀
-커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale`, `size` 그리고 `hotspot` 인수는
-커스텀 커서의 추가적인 정보를 포함합니다.
+커서를 지정했을 때, 해당 이미지로 커서가 변경됩니다. 또한 `scale`, `size` 그리고
+`hotspot` 인수는 커스텀 커서의 추가적인 정보를 포함합니다.
 
 #### Event: 'context-menu'
 

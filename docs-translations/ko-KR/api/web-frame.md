@@ -107,41 +107,11 @@ ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
 ### `webFrame.getResourceUsage()`
 
 Returns `Object`:
-* `images` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
-* `cssStyleSheets` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
-* `xslStyleSheets` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
-* `fonts` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
-* `other` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
+* `images` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `cssStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `xslStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `fonts` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `other` [MemoryUsageDetails](structures/memory-usage-details.md)
 
 Blink의 내부 메모리 캐시 사용 정보를 담고있는 객체를 반환합니다.
 
@@ -165,7 +135,7 @@ console.log(webFrame.getResourceUsage())
   cssStyleSheets: { /* same with "images" */ },
   xslStyleSheets: { /* same with "images" */ },
   fonts: { /* same with "images" */ },
-  other: { /* same with "images" */ },
+  other: { /* same with "images" */ }
 }
 ```
 

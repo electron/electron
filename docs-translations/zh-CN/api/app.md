@@ -5,10 +5,10 @@
 下面的这个例子将会展示如何在最后一个窗口被关闭时退出应用：
 
 ```javascript
-var app = require('app');
-app.on('window-all-closed', function() {
-  app.quit();
-});
+var app = require('app')
+app.on('window-all-closed', function () {
+  app.quit()
+})
 ```
 
 ## 事件列表
@@ -143,15 +143,15 @@ app.on('window-all-closed', function() {
 调用 `callback(true)`。
 
 ```javascript
-session.on('certificate-error', function(event, webContents, url, error, certificate, callback) {
-  if (url == "https://github.com") {
+session.on('certificate-error', function (event, webContents, url, error, certificate, callback) {
+  if (url === 'https://github.com') {
     // 验证逻辑。
-    event.preventDefault();
-    callback(true);
+    event.preventDefault()
+    callback(true)
   } else {
-    callback(false);
+    callback(false)
   }
-});
+})
 ```
 
 ### 事件：'select-client-certificate'
@@ -174,9 +174,9 @@ session.on('certificate-error', function(event, webContents, url, error, certifi
 需要通过调用 `event.preventDefault()` 来防止应用自动使用第一个证书进行验证。如下所示：
 
 ```javascript
-app.on('select-certificate', function(event, host, url, list, callback) {
-  event.preventDefault();
-  callback(list[0]);
+app.on('select-certificate', function (event, host, url, list, callback) {
+  event.preventDefault()
+  callback(list[0])
 })
 ```
 ### 事件: 'login'
@@ -203,9 +203,9 @@ app.on('select-certificate', function(event, host, url, list, callback) {
 用 `callback(username, password)` 来进行验证。
 
 ```javascript
-app.on('login', function(event, webContents, request, authInfo, callback) {
-  event.preventDefault();
-  callback('username', 'secret');
+app.on('login', function (event, webContents, request, authInfo, callback) {
+  event.preventDefault()
+  callback('username', 'secret')
 })
 ```
 ### 事件：'gpu-process-crashed'
@@ -363,29 +363,26 @@ app.on('login', function(event, webContents, request, authInfo, callback) {
 
 下面是一个简单的例子。我们可以通过这个例子了解如何确保应用为单实例运行状态。
 
-```js
-var myWindow = null;
+```javascript
+let myWindow = null
 
-var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+let shouldQuit = app.makeSingleInstance(function (commandLine, workingDirectory) {
   // 当另一个实例运行的时候，这里将会被调用，我们需要激活应用的窗口
   if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore();
-    myWindow.focus();
+    if (myWindow.isMinimized()) myWindow.restore()
+    myWindow.focus()
   }
-  return true;
-});
+  return true
+})
 
 // 这个实例是多余的实例，需要退出
-if (shouldQuit) {
-  app.quit();
-  return;
-}
+if (shouldQuit) app.quit()
 
-// 创建窗口、继续加载应用、应用逻辑等……
-app.on('ready', function() {
-});
-
+app.on('ready', function () {
+  // 创建窗口、继续加载应用、应用逻辑等……
+})
 ```
+
 ### `app.setAppUserModelId(id)` _Windows_
 
 * `id` String
@@ -400,24 +397,24 @@ app.on('ready', function() {
 
 举个例子：
 
-```js
-let browserOptions = {width: 1000, height: 800};
+```javascript
+let browserOptions = {width: 1000, height: 800}
 
 // 只有平台支持的时候才使用透明窗口
 if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
+  browserOptions.transparent = true
+  browserOptions.frame = false
 }
 
 // 创建窗口
-win = new BrowserWindow(browserOptions);
+win = new BrowserWindow(browserOptions)
 
 // 转到某个网页
 if (browserOptions.transparent) {
-  win.loadURL('file://' + __dirname + '/index.html');
+  win.loadURL(`file://${__dirname}/index.html`)
 } else {
   // 没有透明特效，我们应该用某个只包含基本样式的替代解决方案。
-  win.loadURL('file://' + __dirname + '/fallback.html');
+  win.loadURL(`file://${__dirname}/fallback.html`)
 }
 ```
 ### `app.commandLine.appendSwitch(switch[, value])`

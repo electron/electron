@@ -28,27 +28,36 @@ HTTP 요청 캐시를 비활성화합니다.
 
 HTTP/2와 SPDY/3.1 프로토콜을 비활성화합니다.
 
+## --debug=`port` and --debug-brk=`port`
+
+디버깅관련 플래그입니다. 자세한 내용은 [메인프로세스 디버깅하기]
+[debugging-main-process] 안내서를 보세요.
+
 ## --remote-debugging-port=`port`
 
 지정한 `port`에 HTTP 기반의 리모트 디버거를 활성화합니다. (개발자 도구)
 
 ## --js-flags=`flags`
 
-JS 엔진에 지정한 플래그를 전달합니다. `flags`를 메인 프로세스에서 활성화하고자 한다면,
-Electron이 시작되기 전에 스위치를 전달해야 합니다.
+Node JS 엔진에 지정한 플래그를 전달합니다. `flags`를 메인 프로세스에서
+활성화하고자 한다면, Electron이 시작되기 전에 스위치를 전달해야 합니다.
 
 ```bash
 $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 ```
 
+가능한 플래그 목록은 [Node 문서][node-cli]를 보거나 터미널에서 `node --help`
+명령을 실행하세요. 또한, 구체적으로 노드의 V8 자바스크립트 엔진과 관련있는
+플래그의 목록을 보려면 `node --v8-options` 를 실행하세요.
+
 ## --proxy-server=`address:port`
 
-시스템 설정의 프록시 서버를 무시하고 지정한 서버로 연결합니다. HTTP와 HTTPS 요청에만
-적용됩니다.
+시스템 설정의 프록시 서버를 무시하고 지정한 서버로 연결합니다. HTTP와 HTTPS
+요청에만 적용됩니다.
 
-시스템 프록시 서버 설정을 무시하고 지정한 서버로 연결합니다. 이 스위치는 HTTP와 HTTPS
-그리고 WebSocket 요청에만 적용됩니다. 그리고 모든 프록시 서버가 HTTPS가 WebSocket
-요청을 지원하지 않고 있을 수 있으므로 사용시 주의해야 합니다.
+시스템 프록시 서버 설정을 무시하고 지정한 서버로 연결합니다. 이 스위치는 HTTP와
+HTTPS 그리고 WebSocket 요청에만 적용됩니다. 그리고 모든 프록시 서버가 HTTPS가
+WebSocket 요청을 지원하지 않고 있을 수 있으므로 사용시 주의해야 합니다.
 
 ## --proxy-bypass-list=`hosts`
 
@@ -71,8 +80,8 @@ app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com
 
 ## --no-proxy-server
 
-프록시 서버를 사용하지 않습니다. 다른 프록시 서버 플래그 및 설정을 무시하고 언제나 직접
-연결을 사용합니다.
+프록시 서버를 사용하지 않습니다. 다른 프록시 서버 플래그 및 설정을 무시하고
+언제나 직접 연결을 사용합니다.
 
 ## --host-rules=`rules`
 
@@ -141,17 +150,17 @@ SSL 암호화를 비활성화할 대상 목록을 지정합니다. (`,`로 구�
 
 Chromium이 렌더러 프로세스의 보이지 않는 페이지의 우선순위를 낮추는 것을 방지합니다.
 
-이 플래그는 전역적이며 모든 렌더러 프로세스에 적용됩니다. 만약 하나의 윈도우창에만
-스로틀링을 비활성화하고 싶다면 [조용한 오디오를 재생하는][play-silent-audio] 핵을 사용할
-수 있습니다.
+이 플래그는 전역적이며 모든 렌더러 프로세스에 적용됩니다. 만약 하나의 윈도우
+창에만 스로틀링을 비활성화하고 싶다면 [조용한 오디오를 재생하는][play-silent-audio]
+핵을 사용할 수 있습니다.
 
 ## --enable-logging
 
 Chromium의 로그를 콘솔에 출력합니다.
 
 이 스위치는 애플리케이션이 로드되기 전에 분석 되므로 `app.commandLine.appendSwitch`
-메서드에선 사용할 수 없습니다. 하지만 `ELECTRON_ENABLE_LOGGING` 환경 변수를 설정하면
-본 스위치를 지정한 것과 같은 효과를 낼 수 있습니다.
+메서드에선 사용할 수 없습니다. 하지만 `ELECTRON_ENABLE_LOGGING` 환경 변수를
+설정하면 본 스위치를 지정한 것과 같은 효과를 낼 수 있습니다.
 
 ## --v=`log_level`
 
@@ -166,9 +175,9 @@ Chromium의 로그를 콘솔에 출력합니다.
 예를 들어 `my_module=2,foo*=3`는 `my_module.*`, `foo*.*`와 같은 파일 이름 패턴을
 가진 모든 소스 코드들의 로깅 레벨을 각각 2와 3으로 설정합니다.
 
-또한 슬래시(`/`) 또는 백슬래시(`\`)를 포함하는 패턴은 지정한 경로에 대해 패턴을 테스트
-합니다. 예를 들어 `*/foo/bar/*=2` 표현식은 `foo/bar` 디렉터리 안의 모든 소스 코드의
-로깅 레벨을 2로 지정합니다.
+또한 슬래시(`/`) 또는 백슬래시(`\`)를 포함하는 패턴은 지정한 경로에 대해 패턴을
+테스트 합니다. 예를 들어 `*/foo/bar/*=2` 표현식은 `foo/bar` 디렉터리 안의 모든
+소스 코드의 로깅 레벨을 2로 지정합니다.
 
 이 스위치는 `--enable-logging` 스위치를 같이 지정해야 작동합니다.
 
@@ -176,3 +185,5 @@ Chromium의 로그를 콘솔에 출력합니다.
 [append-switch]: app.md#appcommandlineappendswitchswitch-value
 [ready]: app.md#event-ready
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
+[debugging-main-process]: ../tutorial/debugging-main-process.md
+[node-cli]: https://nodejs.org/api/cli.html

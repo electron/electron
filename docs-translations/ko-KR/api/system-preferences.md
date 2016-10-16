@@ -18,6 +18,12 @@ Returns:
 * `event` Event
 * `newColor` String - 사용자에 의해 시스템 강조색으로 설정 된 새 RGBA 색상.
 
+### Event: 'color-changed' _Windows_
+
+Returns:
+
+* `event` Event
+
 ### Event: 'inverted-color-scheme-changed' _Windows_
 
 Returns:
@@ -145,9 +151,9 @@ if (browserOptions.transparent) {
 
 ### `systemPreferences.getAccentColor()` _Windows_
 
-사용자의 현재 시스템 전체 색상 환경설정을 RGBA 16진 문자열 형태로 반환합니다.
+Returns `String` - 사용자 현재 시스템 전체 강조 색상 설정의 16진수 형식 RGBA 값.
 
-```js
+```javascript
 const color = systemPreferences.getAccentColor() // `"aabbccdd"`
 const red = color.substr(0, 2) // "aa"
 const green = color.substr(2, 2) // "bb"
@@ -155,7 +161,50 @@ const blue = color.substr(4, 2) // "cc"
 const alpha = color.substr(6, 2) // "dd"
 ```
 
+### `systemPreferences.getColor(color)` _Windows_
+
+* `color` String - 다음 값 중 하나:
+  * `3d-dark-shadow` - 3차원 요소의 어두운 그림자 색.
+  * `3d-face` - 3차원 요소와 대화상자 배경의 표면 색.
+  * `3d-highlight` - 3차원 요소의 가장 밝은 색.
+  * `3d-light` - 3차원 요소의 밝은 색.
+  * `3d-shadow` - 3차원 요소의 그림자 색.
+  * `active-border` - 활성창의 테두리 색.
+  * `active-caption` - 활성창의 제목줄. 그라데이션 효과가 활성화 되있으면 활성창
+    제목줄 그라데이션의 좌측 색.
+  * `active-caption-gradient` - 그라데이션 효과가 활성화 되있으면 활성창 제목줄
+    그라데이션의 우측 색.
+  * `app-workspace` - 다중 문서 인터페이스 (MDI) 애플리케이션의 배경색.
+  * `button-text` - 버튼의 글자색.
+  * `caption-text` - 제목줄, 크기 상자, 스크롤바 화살표 상자의 글자색.
+  * `desktop` - 데스크탑 배경 색.
+  * `disabled-text` - 회색 (비활성) 글자색.
+  * `highlight` - 컨트롤에서 선택된 항목(들)의 색.
+  * `highlight-text` - 컨트롤에서 선택된 항목(들)의 글자색.
+  * `hotlight` - 하이퍼링크 또는 실시간 추적되는 항목의 색.
+  * `inactive-border` - 비활성창의 테두리 색.
+  * `inactive-caption` - 비활성창의 제목줄. 그라데이션 효과가 활성화 되있으면
+    비활성창 제목줄 그라데이션의 좌측 색.
+  * `inactive-caption-gradient` - 그라데이션 효과가 활성화 되있으면 비활성창
+    제목줄 그라데이션의 좌측 색.
+  * `inactive-caption-text` - 비활성 제목줄의 글자색.
+  * `info-background` - 툴팁 컨트롤의 배경색.
+  * `info-text` - 툴팁 컨트롤의 글자색.
+  * `menu` - 메뉴 배경색.
+  * `menu-highlight` - 평면 메뉴일때 메뉴 항목 강조 색.
+  * `menubar` - 평면 메뉴일때 메뉴 막대의 배경색.
+  * `menu-text` - 메뉴의 글자.
+  * `scrollbar` - 스크롤바 회색 영역.
+  * `window` - 창의 배경.
+  * `window-frame` - 창 테두리.
+  * `window-text` - 창의 글자.
+
+Returns `String` - 16진수 RGB 형식 (`#ABCDEF`) 의 시스템 색상 설정.
+자세한 내용은 [윈도우 문서][windows-colors]를 보세요.
+
 ### `systemPreferences.isInvertedColorScheme()` _Windows_
 
 Returns `Boolean` - 고대비 테마 같은 반전된 색상 스킴이 활성화 되있다면 `true`,
 아니면 `false`.
+
+[windows-colors]:https://msdn.microsoft.com/en-us/library/windows/desktop/ms724371(v=vs.85).aspx

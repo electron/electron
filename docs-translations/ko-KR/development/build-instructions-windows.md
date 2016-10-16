@@ -33,7 +33,7 @@ $ git clone https://github.com/electron/electron.git
 
 ## 부트 스트랩
 
-부트스트랩 스크립트는 필수적인 빌드 종속성 라이브러리들을 모두 다운로드하고 프로젝트
+부트스트랩 스크립트는 필수적인 빌드 의존성 라이브러리들을 모두 다운로드하고 프로젝트
 파일을 생성합니다. 참고로 Electron은 `ninja`를 빌드 툴체인으로 사용하므로 Visual
 Studio 프로젝트는 생성되지 않습니다.
 
@@ -88,26 +88,7 @@ $ npm run clean
 
 ## 테스트
 
-프로젝트 코딩 스타일을 확인하려면:
-
-```powershell
-$ python script\cpplint.py
-```
-
-테스트를 실행하려면:
-
-```powershell
-$ python script\test.py
-```
-
-테스트 실행시 `runas`와 같은 네이티브 모듈을 포함하는데 이 모듈은 디버그 빌드에서 같이
-사용할 수 없습니다. 하지만 여전히 릴리즈 빌드에선 사용할 수 있습니다.
-
-릴리즈 빌드로 테스트를 실행하려면 다음 커맨드를 사용하면 됩니다:
-
-```powershell
-$ python script\test.py -R
-```
+[빌드 시스템 개요: 테스트](build-system-overview.md#tests)를 보세요.
 
 ## 문제 해결
 

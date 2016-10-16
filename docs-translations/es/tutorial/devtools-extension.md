@@ -18,14 +18,14 @@ Luego cargas la aplicación en Electron, abriendo devtools en cualquier ventana,
 y ejecutando este código en la consola devtools:
 
 ```javascript
-require('remote').require('browser-window').addDevToolsExtension('/some-directory/react-devtools');
+require('remote').require('browser-window').addDevToolsExtension('/some-directory/react-devtools')
 ```
 
 Para remover una extensión, puedes utilizar `BrowserWindow.removeDevToolsExtension`
 especificando el nombre, y esta ya no se cargará la siguiente vez que abras devtools:
 
 ```javascript
-require('remote').require('browser-window').removeDevToolsExtension('React Developer Tools');
+require('remote').require('browser-window').removeDevToolsExtension('React Developer Tools')
 ```
 
 ## Formato de las extensiones devtools

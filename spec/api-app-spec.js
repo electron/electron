@@ -278,6 +278,10 @@ describe('app module', function () {
     const shouldFail = process.platform === 'win32' ||
                        (process.platform === 'linux' && !app.isUnityRunning())
 
+    afterEach(function () {
+      app.setBadgeCount(0)
+    })
+
     it('returns false when failed', function () {
       assert.equal(app.setBadgeCount(42), !shouldFail)
     })

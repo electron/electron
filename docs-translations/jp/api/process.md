@@ -12,14 +12,14 @@ Electronの`process`オブジェクトは次のようなAPIで拡張されてい
 
 Node統合がオフになっているとき、削除したNodeグローバルシンボルをグローバルスコープへ戻すために、プリロードスクリプトで使用できます。
 
-```js
+```javascript
 // preload.js
-var _setImmediate = setImmediate;
-var _clearImmediate = clearImmediate;
-process.once('loaded', function() {
-  global.setImmediate = _setImmediate;
-  global.clearImmediate = _clearImmediate;
-});
+var _setImmediate = setImmediate
+var _clearImmediate = clearImmediate
+process.once('loaded', function () {
+  global.setImmediate = _setImmediate
+  global.clearImmediate = _clearImmediate
+})
 ```
 
 ## プロパティ

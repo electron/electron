@@ -4,7 +4,8 @@
 
 `session` 모듈은 새로운 `Session` 객체를 만드는데 사용할 수 있습니다.
 
-또한 [`WebContents`](web-contents.md)의 `session` 속성이나 `session` 모듈을 통해 현재 존재하는 페이지의 `session`에 접근할 수 있습니다.
+또한 [`WebContents`](web-contents.md)의 `session` 속성이나 `session` 모듈을 통해
+현재 존재하는 페이지의 `session`에 접근할 수 있습니다.
 
 ```javascript
 const {session, BrowserWindow} = require('electron')

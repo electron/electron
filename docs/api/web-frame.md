@@ -110,41 +110,11 @@ this limitation.
 ### `webFrame.getResourceUsage()`
 
 Returns `Object`:
-* `images` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
-* `cssStyleSheets` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
-* `xslStyleSheets` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
-* `fonts` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
-* `other` Object
-  * `count` Integer
-  * `size` Integer
-  * `liveSize` Integer
-  * `decodedSize` Integer
-  * `purgedSize` Integer
-  * `purgeableSize` Integer
+* `images` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `cssStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `xslStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `fonts` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `other` [MemoryUsageDetails](structures/memory-usage-details.md)
 
 Returns an object describing usage information of Blink's internal memory
 caches.

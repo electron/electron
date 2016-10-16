@@ -75,6 +75,6 @@
   * :green_heart: `:green_heart:` CI 빌드를 고쳤을 때
   * :white_check_mark: `:white_check_mark:` 테스트를 추가했을 때
   * :lock: `:lock:` 보안 문제를 해결했을 때
-  * :arrow_up: `:arrow_up:` 종속성 라이브러리를 업데이트 했을 때
-  * :arrow_down: `:arrow_down:` 종속성 라이브러리를 다운그레이드 했을 때
+  * :arrow_up: `:arrow_up:` 의존성 라이브러리를 업데이트 했을 때
+  * :arrow_down: `:arrow_down:` 의존성 라이브러리를 다운그레이드 했을 때
   * :shirt: `:shirt:` linter(코드 검사기)의 경고를 제거했을 때

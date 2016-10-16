@@ -145,9 +145,9 @@
 **例如**
 
 ```javascript
-webview.addEventListener("dom-ready", function() {
-  webview.openDevTools();
-});
+webview.addEventListener('dom-ready', function () {
+  webview.openDevTools()
+})
 ```
 
 ### `<webview>.loadURL(url[, options])`
@@ -517,9 +517,9 @@ Returns:
 下面示例代码将所有信息输出到内置控制台，没有考虑到输出等级和其他属性。
 
 ```javascript
-webview.addEventListener('console-message', function(e) {
-  console.log('Guest page logged a message:', e.message);
-});
+webview.addEventListener('console-message', function (e) {
+  console.log('Guest page logged a message:', e.message)
+})
 ```
 
 ### Event: 'found-in-page'
@@ -536,12 +536,11 @@ webview.addEventListener('console-message', function(e) {
 在请求[`webview.findInPage`](web-view-tag.md#webviewtagfindinpage)结果有效时触发.
 
 ```javascript
-webview.addEventListener('found-in-page', function(e) {
-  if (e.result.finalUpdate)
-    webview.stopFindInPage("keepSelection");
-});
+webview.addEventListener('found-in-page', function (e) {
+  if (e.result.finalUpdate) webview.stopFindInPage('keepSelection')
+})
 
-const rquestId = webview.findInPage("test");
+const rquestId = webview.findInPage('test')
 ```
 
 ### Event: 'new-window'
@@ -560,9 +559,9 @@ const rquestId = webview.findInPage("test");
 下面示例代码在系统默认浏览器中打开了一个新的url.
 
 ```javascript
-webview.addEventListener('new-window', function(e) {
-  require('electron').shell.openExternal(e.url);
-});
+webview.addEventListener('new-window', function (e) {
+  require('electron').shell.openExternal(e.url)
+})
 ```
 
 ### Event: 'will-navigate'
@@ -606,9 +605,9 @@ webview.addEventListener('new-window', function(e) {
 下面的示例代码指示了在客户端试图关闭自己的时候将改变导航连接为`about:blank`.
 
 ```javascript
-webview.addEventListener('close', function() {
-  webview.src = 'about:blank';
-});
+webview.addEventListener('close', function () {
+  webview.src = 'about:blank'
+})
 ```
 
 ### Event: 'ipc-message'
@@ -624,19 +623,19 @@ webview.addEventListener('close', function() {
 
 ```javascript
 // In embedder page.
-webview.addEventListener('ipc-message', function(event) {
-  console.log(event.channel);
+webview.addEventListener('ipc-message', function (event) {
+  console.log(event.channel)
   // Prints "pong"
-});
-webview.send('ping');
+})
+webview.send('ping')
 ```
 
 ```javascript
 // In guest page.
-var ipcRenderer = require('electron').ipcRenderer;
-ipcRenderer.on('ping', function() {
-  ipcRenderer.sendToHost('pong');
-});
+var ipcRenderer = require('electron').ipcRenderer
+ipcRenderer.on('ping', function () {
+  ipcRenderer.sendToHost('pong')
+})
 ```
 
 ### Event: 'crashed'
@@ -670,7 +669,7 @@ ipcRenderer.on('ping', function() {
 
 ### Event: 'did-change-theme-color'
 
-在页面的主体色改变的时候触发. 
+在页面的主体色改变的时候触发.
 在使用 meta 标签的时候这就很常见了:
 
 ```html

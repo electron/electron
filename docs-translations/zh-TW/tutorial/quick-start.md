@@ -46,7 +46,7 @@ your-app/
 `package.json` 的格式與 Node 的模組完全一樣，並且有個腳本被指定為 `main` 是用來啟動你的應用程式，它運行在主行程上。
 你應用裡的 一個範例在你的 `package.json` 看起來可能像這樣：
 
-```json
+```javascripton
 {
   "name"    : "your-app",
   "version" : "0.1.0",
@@ -70,7 +70,7 @@ var mainWindow = null;
 app.on('window-all-closed', function() {
   // 在macOS 上，通常使用者在明確地按下 Cmd + Q 之前
   // 應用會保持活動狀態
-  if (process.platform != 'darwin') {
+  if (process.platform !== 'darwin') {
     app.quit();
   }
 });
@@ -82,7 +82,7 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 800, height: 600});
 
   // 載入應用程式的 index.html
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  mainWindow.loadURL(`file://${__dirname}/index.html`);
 
   // 打開開發者工具
   mainWindow.webContents.openDevTools();

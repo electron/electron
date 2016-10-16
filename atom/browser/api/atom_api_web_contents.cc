@@ -647,11 +647,7 @@ void WebContents::MediaStoppedPlaying(const MediaPlayerId& id) {
 }
 
 void WebContents::DidChangeThemeColor(SkColor theme_color) {
-  std::string hex_theme_color = base::StringPrintf("#%02X%02X%02X",
-    SkColorGetR(theme_color),
-    SkColorGetG(theme_color),
-    SkColorGetB(theme_color));
-  Emit("did-change-theme-color", hex_theme_color);
+  Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
 }
 
 void WebContents::DocumentLoadedInFrame(

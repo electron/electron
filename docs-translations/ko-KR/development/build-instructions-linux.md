@@ -47,7 +47,7 @@ $ git clone https://github.com/electron/electron.git
 
 ## 부트 스트랩
 
-부트스트랩 스크립트는 필수적인 빌드 종속성 라이브러리들을 모두 다운로드하고 프로젝트
+부트스트랩 스크립트는 필수적인 빌드 의존성 라이브러리들을 모두 다운로드하고 프로젝트
 파일을 생성합니다. 스크립트가 정상적으로 작동하기 위해선 Python 2.7.x 버전이
 필요합니다. 아마 다운로드 작업이 상당히 많은 시간을 소요할 것입니다. 참고로 Electron은
 `ninja`를 빌드 툴체인으로 사용하므로 `Makefile`은 생성되지 않습니다.
@@ -59,7 +59,7 @@ $ ./script/bootstrap.py -v
 
 ### 크로스 컴파일
 
-`arm` 아키텍쳐로 빌드 하려면 다음 종속성 라이브러리를 설치해야 합니다:
+`arm` 아키텍쳐로 빌드 하려면 다음 의존성 라이브러리를 설치해야 합니다:
 
 ```bash
 $ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
@@ -123,17 +123,7 @@ $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
 
 ## 테스트
 
-프로젝트 코딩 스타일을 확인하려면:
-
-```bash
-$ npm run lint
-```
-
-테스트를 실행하려면:
-
-```bash
-$ ./script/test.py
-```
+[빌드 시스템 개요: 테스트](build-system-overview.md#tests)를 보세요.
 
 ## 고급 주제
 

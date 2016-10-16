@@ -261,7 +261,18 @@ void Browser::ShowAboutPanel() {
 
 void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
   about_panel_options_.Clear();
-  about_panel_options_.MergeDictionary(&options);
+
+  // Upper case option keys for orderFrontStandardAboutPanelWithOptions format
+  for (base::DictionaryValue::Iterator iter(options);
+       !iter.IsAtEnd();
+       iter.Advance()) {
+    std::string key = iter.key();
+    std::string value;
+    if (!key.empty() && iter.value().GetAsString(&value)) {
+      key[0] = base::ToUpperASCII(key[0]);
+      about_panel_options_.SetString(key, value);
+    }
+  }
 }
 
 }  // namespace atom

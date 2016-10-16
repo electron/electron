@@ -71,7 +71,7 @@ O evento é uma cadeia que é utilizada após um `.on` em um método listner. Se
 crie algo parecido com o exemplo abaixo:
 
 ```javascript
-Alarm.on('wake-up', function(time) {
+Alarm.on('wake-up', function (time) {
   console.log(time)
 })
 ```

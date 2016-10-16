@@ -16,7 +16,7 @@ the following Python modules:
 ## Getting the Code
 
 ```bash
-$ git clone https://github.com/electron/electron.git
+$ git clone https://github.com/electron/electron
 ```
 
 ## Bootstrapping
@@ -61,14 +61,4 @@ $ npm run clean
 
 ## Tests
 
-Test your changes conform to the project coding style using:
-
-```bash
-$ ./script/cpplint.py
-```
-
-Test functionality using:
-
-```bash
-$ ./script/test.py
-```
+See [Build System Overview: Tests](build-system-overview.md#tests)

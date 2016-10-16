@@ -3,22 +3,22 @@
 `content-tracing`モジュールは、Chromiumコンテンツモジュールによって生成されるトーレスデータを収集するのに使われます。このモジュールはウェブインターフェイスを含んでいないので、Chromeブラウザーで `chrome://tracing/`を開いて、結果を表示するために生成されたファイルを読み込む必要があります。
 
 ```javascript
-const contentTracing = require('electron').contentTracing;
+const contentTracing = require('electron').contentTracing
 
 const options = {
   categoryFilter: '*',
   traceOptions: 'record-until-full,enable-sampling'
 }
 
-contentTracing.startRecording(options, function() {
-  console.log('Tracing started');
+contentTracing.startRecording(options, function () {
+  console.log('Tracing started')
 
-  setTimeout(function() {
-    contentTracing.stopRecording('', function(path) {
-      console.log('Tracing data recorded to ' + path);
-    });
-  }, 5000);
-});
+  setTimeout(function () {
+    contentTracing.stopRecording('', function (path) {
+      console.log('Tracing data recorded to ' + path)
+    })
+  }, 5000)
+})
 ```
 
 ## メソッド

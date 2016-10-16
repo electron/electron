@@ -18,14 +18,14 @@ $ git clone --recursive https://github.com/facebook/react-devtools.git
 複数のウィンドウで、DevToolsを開くために、Electronでエクステンションをロードし、DevToolsコンソールで次のコードを実行します。
 
 ```javascript
-const BrowserWindow = require('electron').remote.BrowserWindow;
-BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
+const BrowserWindow = require('electron').remote.BrowserWindow
+BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome')
 ```
 
 エクステンションをアンロードするために、`BrowserWindow.removeDevToolsExtension` APIを名前を指定してコールすると、次回DevToolsを開いた時にはロードされません。
 
 ```javascript
-BrowserWindow.removeDevToolsExtension('React Developer Tools');
+BrowserWindow.removeDevToolsExtension('React Developer Tools')
 ```
 
 ## DevTools エクステンションのフォーマット

@@ -22,17 +22,17 @@ Node.js の新しいバージョンがリリースされたとき、私たちは
 // In the main process.
 global.sharedObject = {
   someProperty: 'default value'
-};
+}
 ```
 
 ```javascript
 // In page 1.
-require('remote').getGlobal('sharedObject').someProperty = 'new value';
+require('remote').getGlobal('sharedObject').someProperty = 'new value'
 ```
 
 ```javascript
 // In page 2.
-console.log(require('remote').getGlobal('sharedObject').someProperty);
+console.log(require('remote').getGlobal('sharedObject').someProperty)
 ```
 
 ## 何分か経つと、アプリの Window/tray が消えてしまいます
@@ -49,17 +49,17 @@ console.log(require('remote').getGlobal('sharedObject').someProperty);
 変更前：
 
 ```javascript
-app.on('ready', function() {
-  var tray = new Tray('/path/to/icon.png');
+app.on('ready', function () {
+  var tray = new Tray('/path/to/icon.png')
 })
 ```
 
 変更後：
 
 ```javascript
-var tray = null;
-app.on('ready', function() {
-  tray = new Tray('/path/to/icon.png');
+var tray = null
+app.on('ready', function () {
+  tray = new Tray('/path/to/icon.png')
 })
 ```
 
@@ -75,7 +75,7 @@ var win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }
-});
+})
 ```
 
 しかし、Node.jsとElectron APIを使用した機能を維持したい場合は、ほかのライブラリを読み込む前に、ページのシンボルをリネームする必要があります。
@@ -106,7 +106,7 @@ Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
 正しい組み込みモジュールを使用しているかを確認するために、`electron`モジュールのパスを出力します。
 
 ```javascript
-console.log(require.resolve('electron'));
+console.log(require.resolve('electron'))
 ```
 
 そして、次の形式かどうかを確認します。

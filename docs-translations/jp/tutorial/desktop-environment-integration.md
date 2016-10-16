@@ -14,11 +14,11 @@
 ```javascript
 let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
-});
+})
 
 myNotification.onclick = () => {
-  console.log('Notification clicked');
-};
+  console.log('Notification clicked')
+}
 ```
 
 オペレーティングシステム間でコードとユーザ体験は似ていますが、細かい違いがあります。
@@ -57,13 +57,13 @@ __Application dock menu:__
 最近のドキュメントにファイルを追加するために、[app.addRecentDocument][addrecentdocument] APIを使用できます:
 
 ```javascript
-app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
+app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 
 [app.clearRecentDocuments][clearrecentdocuments] API を使用して、最近のドキュメント一覧を空にできます:
 
 ```javascript
-app.clearRecentDocuments();
+app.clearRecentDocuments()
 ```
 
 ### Windows 留意点
@@ -87,20 +87,20 @@ __Dock menu of Terminal.app:__
 カスタムドックメニューを設定するために、macOSのみに提供されている `app.dock.setMenu` APIを使用できます。
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const Menu = electron.Menu;
+const {app, Menu} = require('electron')
 
 const dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click() { console.log('New Window'); } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
+  {label: 'New Window', click () { console.log('New Window') }},
+  {label: 'New Window with Settings',
+  submenu: [
+    {label: 'Basic'},
+    {label: 'Pro'}
   ]},
-  { label: 'New Command...'}
-]);
-app.dock.setMenu(dockMenu);
+  {label: 'New Command...'}
+])
+app.dock.setMenu(dockMenu)
 ```
+
 
 ## ユーザータスク (Windows)
 
@@ -129,13 +129,13 @@ app.setUserTasks([
     title: 'New Window',
     description: 'Create a new window'
   }
-]);
+])
 ```
 
 タスクリストをクリアするために、`app.setUserTasks` をコールし、配列を空にします。
 
 ```javascript
-app.setUserTasks([]);
+app.setUserTasks([])
 ```
 
 アプリケーションを閉じた後もユーザータスクは表示されていてるので、アプリケーションをアンインストールするまではタスクに指定したアイコンとプログラムのパスは存在し続けてる必要があります。
@@ -156,32 +156,32 @@ __Windows Media Playerの縮小表示ツールバー:__
 アプリケーションに縮小表示ツールバーを設定するために、[BrowserWindow.setThumbarButtons][setthumbarbuttons]を使えます:
 
 ```javascript
-const {BrowserWindow} = require('electron');
-const path = require('path');
+const {BrowserWindow} = require('electron')
+const path = require('path')
 
 let win = new BrowserWindow({
   width: 800,
   height: 600
-});
+})
 win.setThumbarButtons([
   {
     tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click() { console.log("button2 clicked"); }
+    click () { console.log('button2 clicked') }
   },
   {
     tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
     flags: ['enabled', 'dismissonclick'],
-    click() { console.log("button2 clicked."); }
+    click () { console.log('button2 clicked.') }
   }
-]);
+])
 ```
 
 縮小表示ツールバーボタンをクリアするために、 `BrowserWindow.setThumbarButtons` をコールして配列を空にします：
 
 ```javascript
-win.setThumbarButtons([]);
+win.setThumbarButtons([])
 ```
 
 ## Unity ランチャーショートカット (Linux)
@@ -206,8 +206,8 @@ __タスクバーボタン上の進行状況バー:__
 ウィンドウに進行状況バーを設定するために、[BrowserWindow.setProgressBar][setprogressbar] APIを使えます:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setProgressBar(0.5);
+let win = new BrowserWindow()
+win.setProgressBar(0.5)
 ```
 
 ## タスクバーでアイコンをオーバーレイする (Windows)
@@ -223,8 +223,8 @@ __タスクバーボタンでのオーバーレイ:__
 ウィンドウでオーバーレイアイコンを設定するために、[BrowserWindow.setOverlayIcon][setoverlayicon] APIを使用できます。
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+let win = new BrowserWindow()
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 ```
 
 ##  Windowのファイル表示 (macOS)
@@ -240,9 +240,9 @@ __Represented file ポップアップメニュー:__
 ウィンドウにrepresented fileを設定するために、[BrowserWindow.setRepresentedFilename][setrepresentedfilename] と [BrowserWindow.setDocumentEdited][setdocumentedited] APIsを使えます:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setRepresentedFilename('/etc/passwd');
-win.setDocumentEdited(true);
+let win = new BrowserWindow()
+win.setRepresentedFilename('/etc/passwd')
+win.setDocumentEdited(true)
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows

@@ -281,6 +281,7 @@
               '-lwininet.lib',
               '-lwinmm.lib',
               '-lcrypt32.lib',
+              '-luiautomationcore.lib',
             ],
           },
           'dependencies': [

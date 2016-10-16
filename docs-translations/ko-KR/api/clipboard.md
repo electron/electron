@@ -97,7 +97,7 @@ Returns `Object`:
 **참고:** 윈도우의 대부분의 앱은 북마크 붙여넣기를 지원하지 않습니다.
 `clipboard.write` 를 통해 북마크와 대체 텍스트를 클립보드에 쓸 수 있습니다.
 
-```js
+```javascript
 clipboard.write({
   text: 'http://electron.atom.io',
   bookmark: 'Electron Homepage'

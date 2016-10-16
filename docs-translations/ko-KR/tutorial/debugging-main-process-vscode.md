@@ -4,11 +4,11 @@
 위해 크롬에서 사용할 수 있는 익숙한 개발도구 GUI 를 제공합니다. 그러나,
 `node-inspector` 가 네이티브 Node 모듈에 의존적이기 때문에 디버깅하려는
 Electron 버전에 맞춰 다시 빌드해야 합니다. `node-inspector` 다시 빌드하여
-종속성을 재구성하거나 [`electron-inspector`] 가 대신 하게 할 수 있으며, 두
+의존성을 재구성하거나 [`electron-inspector`] 가 대신 하게 할 수 있으며, 두
 방식이 이 문서에 나와있습니다.
 
 **참고**: 글쓴 시점 현재 `node-inspector` 최종버전 (0.12.8) 은 Electron 1.3.0
-이상에서 해당 종속성 중 하나를 패치하지 않고 빌드 할 수 없습니다.
+이상에서 해당 의존성 중 하나를 패치하지 않고 빌드 할 수 없습니다.
 `electron-inspector` 을 사용한다면 알아서 처리될 것 입니다.
 
 
@@ -57,7 +57,7 @@ node_modules\\.bin\\electron-inspector
 ```
 
 `electron-inspector` 는 첫 실행과 Electron 버전 변경시에 `node-inspector`
-종속성을 다시 빌드 할 것 입니다. 다시 빌드하는 과정에 Node 헤더와 라이브러리를
+의존성을 다시 빌드 할 것 입니다. 다시 빌드하는 과정에 Node 헤더와 라이브러리를
 다운받기 위해 인터넷 연결이 필요하며, 이 작업은 몇 분 정도 시간이 소요됩니다.
 
 ### 6. 디버거 UI 로드
