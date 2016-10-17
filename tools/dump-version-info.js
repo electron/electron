@@ -4,6 +4,8 @@ var request = require('request')
 
 var TARGET_URL = 'https://atom.io/download/atom-shell/index.json'
 
+//this is a function that gets the current date by using the Date constructor and then formatting it with the methods
+//that are a part of the date object
 function getDate () {
   var today = new Date()
   var year = today.getFullYear()
