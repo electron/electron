@@ -25,7 +25,7 @@ const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
 
 describe('net module', function () {
-  // this.timeout(0)
+   this.timeout(0)
   describe('HTTP basics', function () {
     let server
     beforeEach(function (done) {
@@ -1154,4 +1154,34 @@ describe('net module', function () {
       urlRequest.end()
     })
   })
+  describe('Stability and performance', function(done) {
+    let server
+    beforeEach(function (done) {
+        server = http.createServer()
+        server.listen(0, '127.0.0.1', function () {
+            server.url = 'http://127.0.0.1:' + server.address().port
+            done()
+        })
+    })
+
+    afterEach(function () {
+        server.close()
+        server = null
+    })
+
+    it.only('should free unreferenced, never-started request objects', function() {
+      const requestUrl = '/requestUrl'
+      const urlRequest = net.request( `${server.url}${requestUrl}`)
+      process.nextTick(function() {
+        net._RequestGarbageCollectionForTesting()
+        process.nextTick(done)
+      })
+    })
+    it.skip('should not collect on-going requests', function(done) {
+      assert(false)
+    })
+    it.skip('should collect unreferenced, ended requests', function(done) {
+      assert(false)
+    })
+  }
 })
