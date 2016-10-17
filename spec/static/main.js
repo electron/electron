@@ -8,7 +8,7 @@ const ipcMain = electron.ipcMain
 const dialog = electron.dialog
 const BrowserWindow = electron.BrowserWindow
 const protocol = electron.protocol
-const v8 = require('v8');
+const v8 = require('v8')
 
 const Coverage = require('electabul').Coverage
 const fs = require('fs')

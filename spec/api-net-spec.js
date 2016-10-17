@@ -26,7 +26,7 @@ const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
 
 describe('net module', function () {
-   this.timeout(0)
+  // this.timeout(0)
   describe('HTTP basics', function () {
     let server
     beforeEach(function (done) {
@@ -1155,42 +1155,108 @@ describe('net module', function () {
       urlRequest.end()
     })
   })
-  describe('Stability and performance', function(done) {
+  describe('Stability and performance', function (done) {
     let server
     beforeEach(function (done) {
-        server = http.createServer()
-        server.listen(0, '127.0.0.1', function () {
-            server.url = 'http://127.0.0.1:' + server.address().port
-            done()
-        })
+      server = http.createServer()
+      server.listen(0, '127.0.0.1', function () {
+        server.url = 'http://127.0.0.1:' + server.address().port
+        done()
+      })
     })
 
     afterEach(function () {
-        server.close()
-        server = null
+      server.close()
+      server = null
     })
 
-    it.only('should free unreferenced, never-started request objects', function(done) {
+    it('should free unreferenced, never-started request objects', function (done) {
       const requestUrl = '/requestUrl'
-      ipcRenderer.on('api-net-spec-done', function() {
+      ipcRenderer.once('api-net-spec-unused-done', function () {
         done()
       })
-      const testCode = `
-      // Load the net module in the main browser process.
-      const {net} = require('electron')
-      const urlRequest = net.request('${server.url}${requestUrl}')
-      process.nextTick(function() {
-        net._RequestGarbageCollectionForTesting()
-        event.sender.send('api-net-spec-done')
+      ipcRenderer.send('eval', `
+        const {net} = require('electron')
+        const urlRequest = net.request('${server.url}${requestUrl}')
+        process.nextTick(function () {
+          net._RequestGarbageCollectionForTesting()
+          event.sender.send('api-net-spec-unused-done')
+        })
+      `)
+    })
+    it('should not collect on-going requests', function (done) {
+      const requestUrl = '/requestUrl'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case requestUrl:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.write(randomString(kOneKiloByte))
+            ipcRenderer.once('api-net-spec-ongoing-resume-response', function () {
+              response.write(randomString(kOneKiloByte))
+              response.end()
+            })
+            break
+          default:
+            assert(false)
+        }
       })
-      `
-      ipcRenderer.send('eval', testCode)
+      ipcRenderer.once('api-net-spec-ongoing-done', function () {
+        done()
+      })
+      // Execute below code directly within the browser context without
+      // using the remote module.
+      ipcRenderer.send('eval', `
+        const {net} = require('electron')
+        const urlRequest = net.request('${server.url}${requestUrl}')
+        urlRequest.on('response', function (response) {
+          response.on('data', function () {
+          })
+          response.on('end', function () {
+            event.sender.send('api-net-spec-ongoing-done')
+          })
+          process.nextTick(function () {
+            // Trigger a garbage collection.
+            net._RequestGarbageCollectionForTesting()
+            event.sender.send('api-net-spec-ongoing-resume-response')
+          })
+        })
+        urlRequest.end()
+      `)
     })
-    it.skip('should not collect on-going requests', function(done) {
-      assert(false)
-    })
-    it.skip('should collect unreferenced, ended requests', function(done) {
-      assert(false)
+    it('should collect unreferenced, ended requests', function (done) {
+      const requestUrl = '/requestUrl'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case requestUrl:
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      ipcRenderer.once('api-net-spec-done', function () {
+        done()
+      })
+      ipcRenderer.send('eval', `
+        const {net} = require('electron')
+        const urlRequest = net.request('${server.url}${requestUrl}')
+        urlRequest.on('response', function (response) {
+          response.on('data', function () {
+          })
+          response.on('end', function () {
+          })
+        })
+        urlRequest.on('close', function () {
+          process.nextTick(function () {
+            net._RequestGarbageCollectionForTesting()
+            event.sender.send('api-net-spec-done')
+          })
+        })
+        urlRequest.end()
+      `)
     })
   })
 })

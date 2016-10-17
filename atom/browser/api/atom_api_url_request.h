@@ -215,6 +215,7 @@ URLRequest::BuildArgsArray(ArgTypes... args) const {
 
 template <typename... ArgTypes>
 void URLRequest::EmitRequestEvent(ArgTypes... args) {
+  v8::HandleScope handle_scope(isolate());
   auto arguments = BuildArgsArray(args...);
   v8::Local<v8::Function> _emitRequestEvent;
   auto wrapper = GetWrapper();
@@ -225,6 +226,7 @@ void URLRequest::EmitRequestEvent(ArgTypes... args) {
 
 template <typename... ArgTypes>
 void URLRequest::EmitResponseEvent(ArgTypes... args) {
+  v8::HandleScope handle_scope(isolate());
   auto arguments = BuildArgsArray(args...);
   v8::Local<v8::Function> _emitResponseEvent;
   auto wrapper = GetWrapper();
