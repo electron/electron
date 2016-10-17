@@ -1,5 +1,6 @@
 const assert = require('assert')
 const {remote} = require('electron')
+const {ipcRenderer} = require('electron')
 const http = require('http')
 const url = require('url')
 const {net} = remote
@@ -1169,13 +1170,21 @@ describe('net module', function () {
         server = null
     })
 
-    it.only('should free unreferenced, never-started request objects', function() {
+    it.only('should free unreferenced, never-started request objects', function(done) {
       const requestUrl = '/requestUrl'
-      const urlRequest = net.request( `${server.url}${requestUrl}`)
+      ipcRenderer.on('api-net-spec-done', function() {
+        done()
+      })
+      const testCode = `
+      // Load the net module in the main browser process.
+      const {net} = require('electron')
+      const urlRequest = net.request('${server.url}${requestUrl}')
       process.nextTick(function() {
         net._RequestGarbageCollectionForTesting()
-        process.nextTick(done)
+        event.sender.send('api-net-spec-done')
       })
+      `
+      ipcRenderer.send('eval', testCode)
     })
     it.skip('should not collect on-going requests', function(done) {
       assert(false)
@@ -1183,5 +1192,5 @@ describe('net module', function () {
     it.skip('should collect unreferenced, ended requests', function(done) {
       assert(false)
     })
-  }
+  })
 })
