@@ -830,7 +830,7 @@ Returns `Object`:
   closed. This setting is only supported on macOS.
 
 **Note:** This API has no effect on
-[MAS builds](docs/tutorial/mac-app-store-submission-guide.md).
+[MAS builds][mas-builds].
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
@@ -846,7 +846,7 @@ Returns `Object`:
 Set the app's login item settings.
 
 **Note:** This API has no effect on
-[MAS builds](docs/tutorial/mac-app-store-submission-guide.md).
+[MAS builds][mas-builds].
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
@@ -957,5 +957,6 @@ Sets the `image` associated with this dock icon.
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
 [unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux
+[mas-builds]: ../tutorial/mac-app-store-submission-guide.md
 [JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
 [about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc
