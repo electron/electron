@@ -306,6 +306,29 @@ let win = new BrowserWindow()
 win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 ```
 
+## Flash Frame (Windows)
+
+On Windows you can cause the taskbar button to become highlighted. This can be
+used similarly to macOS's Bounce Dock Icon to get the users attention. From the
+MSDN reference documentation:
+
+> Typically, a window is flashed to inform the user that the window requires
+> attention but that it does not currently have the keyboard focus.
+
+To flash the BrowserWindow taskbar button, you can use the
+[BrowserWindow.flashFrame][flashframe] API:
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.once('focus', () => win.flashFrame(false))
+win.flashFrame(true)
+```
+
+Don't forget to call the `flashFrame` method with false to turn off the flash. In
+the above example, it is called when the window comes into focus, but you might
+use a timeout or some other event to trigger it off.
+
 ## Represented File of Window (macOS)
 
 On macOS a window can set its represented file, so the file's icon can show in
