@@ -79,10 +79,6 @@ void FatalErrorCallback(const char* location, const char* message) {
   Crash();
 }
 
-void Log(const base::string16& message) {
-  std::cout << message << std::flush;
-}
-
 }  // namespace
 
 
@@ -155,6 +151,11 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
   }
 
   self->pending_next_ticks_.clear();
+}
+
+// static
+void AtomBindings::Log(const base::string16& message) {
+  std::cout << message << std::flush;
 }
 
 }  // namespace atom
