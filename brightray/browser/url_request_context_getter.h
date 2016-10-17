@@ -10,6 +10,7 @@
 #include "content/public/browser/content_browser_client.h"
 #include "net/cookies/cookie_monster.h"
 #include "net/http/http_cache.h"
+#include "net/http/transport_security_state.h"
 #include "net/http/url_security_manager.h"
 #include "net/url_request/url_request_context_getter.h"
 
@@ -52,6 +53,10 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual std::unique_ptr<net::CertVerifier> CreateCertVerifier();
     virtual net::SSLConfigService* CreateSSLConfigService();
     virtual std::vector<std::string> GetCookieableSchemes();
+    virtual net::TransportSecurityState::RequireCTDelegate*
+    GetRequireCTDelegate() {
+      return nullptr;
+    }
   };
 
   URLRequestContextGetter(

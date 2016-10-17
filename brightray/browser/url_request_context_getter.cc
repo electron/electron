@@ -267,9 +267,12 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         net::HttpAuthHandlerRegistryFactory::Create(
             http_auth_preferences_.get(), host_resolver.get());
 
+    std::unique_ptr<net::TransportSecurityState> transport_security_state =
+        base::WrapUnique(new net::TransportSecurityState);
+    transport_security_state->SetRequireCTDelegate(
+        delegate_->GetRequireCTDelegate());
+    storage_->set_transport_security_state(std::move(transport_security_state));
     storage_->set_cert_verifier(delegate_->CreateCertVerifier());
-    storage_->set_transport_security_state(
-        base::WrapUnique(new net::TransportSecurityState));
     storage_->set_ssl_config_service(delegate_->CreateSSLConfigService());
     storage_->set_http_auth_handler_factory(std::move(auth_handler_factory));
     std::unique_ptr<net::HttpServerProperties> server_properties(
