@@ -263,8 +263,8 @@ bool Converter<scoped_refptr<ResourceRequestBodyImpl>>::FromV8(
       (*out)->AppendBytes(bytes->GetBuffer(), bytes->GetSize());
     } else if (type == "file") {
       std::string file;
-      int offset, length;
-      double modification_time;
+      int offset = 0, length = -1;
+      double modification_time = 0.0;
       dict->GetStringWithoutPathExpansion("filePath", &file);
       dict->GetInteger("offset", &offset);
       dict->GetInteger("file", &length);
@@ -275,8 +275,8 @@ bool Converter<scoped_refptr<ResourceRequestBodyImpl>>::FromV8(
                               base::Time::FromDoubleT(modification_time));
     } else if (type == "fileSystem") {
       std::string file_system_url;
-      int offset, length;
-      double modification_time;
+      int offset = 0, length = -1;
+      double modification_time = 0.0;
       dict->GetStringWithoutPathExpansion("fileSystemURL", &file_system_url);
       dict->GetInteger("offset", &offset);
       dict->GetInteger("file", &length);
