@@ -1040,12 +1040,10 @@ describe('net module', function () {
       urlRequest.end()
     })
 
-    it.skip('should be able to pipe a net response into a writable stream', function (done) {
+    it('should be able to pipe a net response into a writable stream', function (done) {
       const nodeRequestUrl = '/nodeRequestUrl'
       const netRequestUrl = '/netRequestUrl'
       const bodyData = randomString(kOneMegaByte)
-      let nodeRequestReceived = false
-      let nodeRequestEnded = false
       server.on('request', function (request, response) {
         switch (request.url) {
           case netRequestUrl:
@@ -1055,13 +1053,11 @@ describe('net module', function () {
             response.end()
             break
           case nodeRequestUrl:
-            nodeRequestReceived = true
             let receivedBodyData = ''
             request.on('data', function (chunk) {
               receivedBodyData += chunk.toString()
             })
             request.on('end', function (chunk) {
-              nodeRequestEnded = true
               if (chunk) {
                 receivedBodyData += chunk.toString()
               }
@@ -1073,30 +1069,34 @@ describe('net module', function () {
             assert(false)
         }
       })
-
-      const netRequest = net.request(`${server.url}${netRequestUrl}`)
-      netRequest.on('response', function (netResponse) {
-        assert.equal(netResponse.statusCode, 200)
-        const serverUrl = url.parse(server.url)
-        const nodeOptions = {
-          method: 'POST',
-          path: nodeRequestUrl,
-          port: serverUrl.port
-        }
-        let nodeRequest = http.request(nodeOptions)
-
-        nodeRequest.on('response', function (nodeResponse) {
-          nodeResponse.on('data', function (chunk) {
-          })
-          nodeResponse.on('end', function (chunk) {
-            assert(nodeRequestReceived)
-            assert(nodeRequestEnded)
-            done()
-          })
-        })
-        netResponse.pipe(nodeRequest)
+      ipcRenderer.once('api-net-spec-done', function () {
+        done()
       })
-      netRequest.end()
+      // Execute below code directly within the browser context without
+      // using the remote module.
+      ipcRenderer.send('eval', `
+        const {net} = require('electron')
+        const http = require('http')
+        const netRequest = net.request('${server.url}${netRequestUrl}')
+        netRequest.on('response', function (netResponse) {
+          const serverUrl = url.parse('${server.url}')
+          const nodeOptions = {
+            method: 'POST',
+            path: '${nodeRequestUrl}',
+            port: serverUrl.port
+          }
+          let nodeRequest = http.request(nodeOptions)
+          nodeRequest.on('response', function (nodeResponse) {
+            nodeResponse.on('data', function (chunk) {
+            })
+            nodeResponse.on('end', function (chunk) {
+              event.sender.send('api-net-spec-done')
+            })
+          })
+          netResponse.pipe(nodeRequest)
+        })
+        netRequest.end()
+      `)
     })
 
     it('should not emit any event after close', function (done) {
@@ -1170,9 +1170,9 @@ describe('net module', function () {
       server = null
     })
 
-    it('should free unreferenced, never-started request objects', function (done) {
+    it('should free unreferenced, never-started request objects without crash', function (done) {
       const requestUrl = '/requestUrl'
-      ipcRenderer.once('api-net-spec-unused-done', function () {
+      ipcRenderer.once('api-net-spec-done', function () {
         done()
       })
       ipcRenderer.send('eval', `
@@ -1180,11 +1180,11 @@ describe('net module', function () {
         const urlRequest = net.request('${server.url}${requestUrl}')
         process.nextTick(function () {
           net._RequestGarbageCollectionForTesting()
-          event.sender.send('api-net-spec-unused-done')
+          event.sender.send('api-net-spec-done')
         })
       `)
     })
-    it('should not collect on-going requests', function (done) {
+    it('should not collect on-going requests without crash', function (done) {
       const requestUrl = '/requestUrl'
       server.on('request', function (request, response) {
         switch (request.url) {
@@ -1192,7 +1192,7 @@ describe('net module', function () {
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.write(randomString(kOneKiloByte))
-            ipcRenderer.once('api-net-spec-ongoing-resume-response', function () {
+            ipcRenderer.once('api-net-spec-resume', function () {
               response.write(randomString(kOneKiloByte))
               response.end()
             })
@@ -1201,7 +1201,7 @@ describe('net module', function () {
             assert(false)
         }
       })
-      ipcRenderer.once('api-net-spec-ongoing-done', function () {
+      ipcRenderer.once('api-net-spec-done', function () {
         done()
       })
       // Execute below code directly within the browser context without
@@ -1213,18 +1213,18 @@ describe('net module', function () {
           response.on('data', function () {
           })
           response.on('end', function () {
-            event.sender.send('api-net-spec-ongoing-done')
+            event.sender.send('api-net-spec-done')
           })
           process.nextTick(function () {
             // Trigger a garbage collection.
             net._RequestGarbageCollectionForTesting()
-            event.sender.send('api-net-spec-ongoing-resume-response')
+            event.sender.send('api-net-spec-resume')
           })
         })
         urlRequest.end()
       `)
     })
-    it('should collect unreferenced, ended requests', function (done) {
+    it('should collect unreferenced, ended requests without crash', function (done) {
       const requestUrl = '/requestUrl'
       server.on('request', function (request, response) {
         switch (request.url) {
