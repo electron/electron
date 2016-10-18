@@ -1,4 +1,4 @@
-# Bluetooth Device Object
+# BluetoothDevice Object
 
 * `deviceName` String
 * `deviceId` String
