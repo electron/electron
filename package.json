@@ -27,6 +27,7 @@
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
     "browserify": "browserify",
+    "bump-release": "./script/bump-release.py",
     "build": "python ./script/build.py -c D",
     "clean": "python ./script/clean.py",
     "coverage": "npm run instrument-code-coverage && npm test -- --use-instrumented-asar",
@@ -38,6 +39,7 @@
     "lint-api-docs-js": "standard-markdown docs && standard-markdown docs-translations",
     "lint-api-docs": "electron-docs-linter docs/api --version=$npm_package_version --outfile=out/electron-api.json",
     "preinstall": "node -e 'process.exit(0)'",
+    "release": "./script/upload.py -p",
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
     "test": "python ./script/test.py"
