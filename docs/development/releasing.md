@@ -6,9 +6,17 @@ This document describes the process for releasing a new version of Electron.
 
 The current process is to maintain a local file, keeping track of notable changes as pull requests are merged. For examples of how to format the notes, see previous releases on [the releases page].
 
-## Create a temporary branch (optional)
+## Create a temporary branch
 
-If there is any change to the build configuration, use a temporary branch with any name (e.g. `release`). Otherwise you can use `master`.
+Create a new branch from `master` named `release`.
+
+```sh
+git checkout master
+git pull
+git checkout -b release
+```
+
+This branch is created as a precaution to prevent any merged PRs from sneaking into a release between the time the temporary release branch is created and the CI builds are complete.
 
 ## Bump the version
 
@@ -18,9 +26,9 @@ Run the `bump-release` script, passing `major`, `minor`, or `patch` as an argume
 npm run bump-release -- patch
 ```
 
-This will bump the version number in a number of files. See [this bump commit] for an example.
+This will bump the version number in several files. See [this bump commit] for an example.
 
-Most releases will be `patch`-level. Upgrades to Chrome or other major changes should use `minor`. For more info, see [electron-versioning].
+Most releases will be `patch` level. Upgrades to Chrome or other major changes should use `minor`. For more info, see [electron-versioning].
 
 ## Edit the release draft
 
@@ -31,10 +39,19 @@ Most releases will be `patch`-level. Upgrades to Chrome or other major changes s
 
 ## Merge temporary branch
 
-If you created a temporary release branch, merge it back into master, without creating a merge commit:
+Merge the temporary back into master, without creating a merge commit:
 
 ```sh
 git merge release master --no-commit
+```
+
+If this fails, rebase with master and rebuild:
+
+```sh
+git pull
+git checkout release
+git rebase master
+git push origin HEAD
 ```
 
 ## Run local debug build
@@ -54,6 +71,14 @@ This script will download the binaries and generate the node headers and the .li
 
 ```sh
 npm run release
+```
+
+## Delete the temporary branch
+
+```sh
+git checkout master
+git branch -D release # delete local branch
+git push origin :release # delete remote branch
 ```
 
 [the releases page]: https://github.com/electron/electron/releases
