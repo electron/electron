@@ -72,6 +72,12 @@ const char* AppCommandToString(int command_id) {
   }
 }
 
+bool IsScreenReaderActive() {
+  UINT screenReader = 0;
+  SystemParametersInfo(SPI_GETSCREENREADER, 0, &screenReader, 0);
+  return screenReader && UiaClientsAreListening();
+}
+
 }  // namespace
 
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
@@ -91,20 +97,19 @@ bool NativeWindowViews::PreHandleMSG(
     // because we still want Chromium to handle returning the actual
     // accessibility object.
     case WM_GETOBJECT: {
+      if (checked_for_a11y_support_) return false;
+
       const DWORD obj_id = static_cast<DWORD>(l_param);
 
       if (obj_id != OBJID_CLIENT) {
         return false;
       }
 
-      if (checked_for_a11y_support_) return false;
-      checked_for_a11y_support_ = true;
-
-      UINT screenReader = 0;
-      SystemParametersInfo(SPI_GETSCREENREADER, 0, &screenReader, 0);
-      if (!screenReader || !UiaClientsAreListening()) {
+      if (!IsScreenReaderActive()) {
         return false;
       }
+
+      checked_for_a11y_support_ = true;
 
       const auto axState = content::BrowserAccessibilityState::GetInstance();
       if (axState && !axState->IsAccessibleBrowser()) {
