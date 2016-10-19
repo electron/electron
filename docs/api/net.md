@@ -10,24 +10,24 @@ Following is a non-exhaustive list of why you may need to use the `net` module i
 * Support for authenticating proxies using basic, digest, NTLM, Kerberos or negotiate authentication schemes.
 * Support for traffic monitoring proxies: Fiddler-like proxies used for access control and monitoring.
 
-The following example quickly shows how the net API mgiht be used:
+The following example quickly shows how the `net` API mgiht be used:
+
 ```javascript
 const {app} = require('electron')
-
 app.on('ready', () => {
-const {net} = require('electron')
-const request = net.request('https://github.com')
-request.on('response', (response) => {
-  console.log(`STATUS: ${response.statusCode}`);  
-  console.log(`HEADERS: ${JSON.stringify(response.headers)}`);
-  response.on('data', (chunk) => {
-    console.log(`BODY: ${chunk}`)
+  const {net} = require('electron')
+  const request = net.request('https://github.com')
+  request.on('response', (response) => {
+    console.log(`STATUS: ${response.statusCode}`);  
+    console.log(`HEADERS: ${JSON.stringify(response.headers)}`);
+    response.on('data', (chunk) => {
+      console.log(`BODY: ${chunk}`)
+    })
+    response.on('end', () => {
+      console.log('No more data in response.');
+    })
   })
-  response.on('end', () => {
-    console.log('No more data in response.');
-  })
-})
-request.end()
+  request.end()
 })
 ```
 
@@ -45,7 +45,7 @@ Create a `ClientRequest` instance using the provided `options` object.
 
 ## Class: ClientRequest
 
-`ClientRequest` is a [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams).
+`ClientRequest` implements the [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams) interface.
 
 ### `new ClientRequest(options)`
 
@@ -201,7 +201,11 @@ A String representing the HTTP status message.
 
 #### `response.headers`
 
-An Object representing the response HTTP headers. 
+An Object representing the response HTTP headers. The `headers` object is formatted as follows:
+
+* All header names are lowercased.
+* Each header name produces an array-valued property on the headers object.
+* Each header value is pushed into the array associated with its header name.
 
 #### `response.httpVersion`
 
