@@ -27,7 +27,7 @@
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
     "browserify": "browserify",
-    "bump-release": "./script/bump-release.py",
+    "bump-version": "./script/bump-version.py",
     "build": "python ./script/build.py -c D",
     "clean": "python ./script/clean.py",
     "coverage": "npm run instrument-code-coverage && npm test -- --use-instrumented-asar",

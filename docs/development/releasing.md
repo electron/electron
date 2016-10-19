@@ -20,10 +20,10 @@ This branch is created as a precaution to prevent any merged PRs from sneaking i
 
 ## Bump the version
 
-Run the `bump-release` script, passing `major`, `minor`, or `patch` as an argument:
+Run the `bump-version` script, passing `major`, `minor`, or `patch` as an argument:
 
 ```sh
-npm run bump-release -- patch
+npm run bump-version -- patch
 ```
 
 This will bump the version number in several files. See [this bump commit] for an example.
