@@ -93,6 +93,9 @@ class Protocol : public mate::TrackableObject<Protocol> {
   // Register schemes that can handle service worker.
   void RegisterServiceWorkerSchemes(const std::vector<std::string>& schemes);
 
+  // Register schemes that are secure.
+  void RegisterSecureSchemes(const std::vector<std::string>& schemes);
+
   // Register the protocol with certain request job.
   template<typename RequestJob>
   void RegisterProtocol(const std::string& scheme,

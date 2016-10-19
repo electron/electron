@@ -68,6 +68,17 @@ app.on('ready', () => {
 **Note:** This method can only be used before the `ready` event of the `app`
 module gets emitted.
 
+### `protocol.registerSecureSchemes(schemes)`
+
+* `schemes` String[] - Custom schemes to be registered as secure.
+
+This should be called on any scheme which is registered as secure using
+[webFrame.registerURLSchemeAsSecure](web-frame.md#webframeregisterurlschemeassecurescheme)
+or [webFrame.registerURLSchemeAsPrivileged](web-frame.md#webframeregisterurlschemeasprivilegedscheme)
+
+**Note:** This method can only be used before the `ready` event of the `app`
+module gets emitted.
+
 ### `protocol.registerServiceWorkerSchemes(schemes)`
 
 * `schemes` String[] - Custom schemes to be registered to handle service workers.
