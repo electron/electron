@@ -60,11 +60,13 @@ The `net` module has the following methods:
 Returns `ClientRequest`
 
 Create a `ClientRequest` instance using the provided `options` object which is directly
-passed to the `ClientRequest` constructor.
+passed to the `ClientRequest` constructor. The `net.request` method would be used to issue
+both secure and insecure HTTP requests according to the specified protocol scheme in the `options` object.
 
 ## Class: ClientRequest
 
-`ClientRequest` implements the [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams) interface.
+`ClientRequest` implements the [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams) interface
+and it is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 
 ### `new ClientRequest(options)`
 
@@ -189,7 +191,9 @@ it will emit the aborted event.
 
 ## Class: IncomingMessage
 
-`IncomingMessage` is a [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams). It represents an HTTP response message.
+`IncomingMessage` represents an HTTP response message.
+It is a [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams) and therefore 
+an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 
 ### Instance Events
 
@@ -198,6 +202,8 @@ it will emit the aborted event.
 Returns:
 
 * `chunk`: Buffer - A chunk of response body's data.
+
+The data event is the usual method of transferring response data into applicative code. 
 
 #### Event 'end'
 
@@ -211,9 +217,11 @@ Emitted when a request has been canceled during an ongoing HTTP transaction.
 
 Returns
 
-`error` Error 
+`error` Error - Typically holds an error string identifying failure root cause.
 
-Emitted if an error is encountered 
+Emitted if an error is encountered while streaming response data events. For instance, 
+if the server closes the underlying socket while streaming the response, an error event 
+will be emitted on the response object and a close event will subsequently follow in the request object.
 
 ### Instance properties
 
