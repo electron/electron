@@ -66,7 +66,7 @@ This is not bulletproof, but at the least, you should attempt the following:
 * Do not enable `experimentalFeatures` or `experimentalCanvasFeatures` unless
   you know what you're doing.
 * Do not use `blinkFeatures` unless you know what you're doing.
-* WebViews: When `nodeintegration` not added.
+* WebViews: Do not add the `nodeintegration` attribute.
 * WebViews: Do not use `disablewebsecurity`
 * WebViews: Do not use `allowpopups`
 * WebViews: Do not use `insertCSS` or `executeJavaScript` with remote CSS/JS.
@@ -77,8 +77,8 @@ is to display a website, a browser will be a more secure option.
 ## Buffer Global
 
 Node's [Buffer](https://nodejs.org/api/buffer.html) class is currently available
-as a global even when `nodeIntegration` is not added. You can delete this in
-your app by doing the following in your `preload` script:
+as a global even when the `nodeintegration` attribute is not added. You can
+delete this in your app by doing the following in your `preload` script:
 
 ```js
 delete global.Buffer
