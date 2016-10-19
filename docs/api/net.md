@@ -1,8 +1,10 @@
 # net
 
-> Issue HTTP/HTTPS requests
+> Issue HTTP/HTTPS requests.
 
-The `net` module is a client-side API for issuing HTTP requests. It is similar to the [HTTP](https://nodejs.org/api/http.html) and [HTTPS](https://nodejs.org/api/https.html) modules of Node.js but uses Chromium networking library instead of the Node.js stack offering therefore a much grater support regarding web proxies.
+The `net` module is a client-side API for issuing HTTP(S) requests. It is similar to the 
+[HTTP](https://nodejs.org/api/http.html)  and [HTTPS](https://nodejs.org/api/https.html) modules of Node.js 
+but uses Chromium networking library instead of the Node.js stack offering therefore a much grater support regarding web proxies.
 
 Following is a non-exhaustive list of why you may need to use the `net` module instead of Node.js [HTTP](https://nodejs.org/api/http.html):
 * Automatic management of system proxy configuration, support of the wpad protocol and proxy pac configuration files.
@@ -14,19 +16,28 @@ The following example quickly shows how the `net` API mgiht be used:
 
 ```javascript
 const {app} = require('electron')
+
 app.on('ready', () => {
+  
   const {net} = require('electron')
+
   const request = net.request('https://github.com')
+
   request.on('response', (response) => {
+
     console.log(`STATUS: ${response.statusCode}`);  
     console.log(`HEADERS: ${JSON.stringify(response.headers)}`);
+
     response.on('data', (chunk) => {
       console.log(`BODY: ${chunk}`)
     })
+
     response.on('end', () => {
       console.log('No more data in response.');
     })
+
   })
+
   request.end()
 })
 ```
@@ -49,7 +60,8 @@ Create a `ClientRequest` instance using the provided `options` object.
 
 ### `new ClientRequest(options)`
 
-* `options` Object or String - If `options` is a String, it is interpreted as the request URL. If it is an object, it is expected to fully specify an HTTP request via the following properties:
+* `options` Object or String - If `options` is a String, it is interpreted as the request URL. 
+If it is an object, it is expected to fully specify an HTTP request via the following properties:
   * `method` String (optional) - The HTTP request method. Defaults to the GET method.
   * `url` String (required) - The request URL. Must be provided in the absolute form with the protocol scheme specified as http or https.
   * `protocol` String (optional) - The protocol scheme in the form 'scheme:'. Current supported values are 'http:' or 'https:'. Defaults to 'http:'.
@@ -58,7 +70,8 @@ Create a `ClientRequest` instance using the provided `options` object.
   * `port` Integer (optional) - The server's listening port number.
   * `path` String (optional) - The path part of the request URL. 
   
-`options` properties `protocol`, `host`, `hostname`, `port` and `path` strictly follow the Node.js model as described in the [URL](https://nodejs.org/api/url.html) module.
+`options` properties `protocol`, `host`, `hostname`, `port` and `path` strictly 
+follow the Node.js model as described in the [URL](https://nodejs.org/api/url.html) module.
 
 ### Instance Events
 
@@ -97,21 +110,26 @@ Returns:
 
 * `error` Error - an error object providing some information about the failure.
 
-Emitted when the `net` module fails to issue a network request. Typically when the `request` object emits an error event, a close event will subsequently follow and no response object will be provided.
+Emitted when the `net` module fails to issue a network request. Typically when the `request`
+object emits an error event, a close event will subsequently follow and no response object will be provided.
 
 #### Event: 'close'
 
-Emitted as the last event in the HTTP request-response transaction. The close event indicates that no more events will be emitted on either the `request` or `response` objects.
+Emitted as the last event in the HTTP request-response transaction. The close event indicates
+that no more events will be emitted on either the `request` or `response` objects.
 
 ### Instance Properties
 
 #### `request.chunkedEncoding`
 
-A Boolean specifying whether the request will use HTTP chunked transfer encoding or not. Defaults to false. The property is readable and writable, 
-however it can be set only before the first write operation as the HTTP headers are not yet put on the wire. Trying to set the `chunkedEncoding` property
+A Boolean specifying whether the request will use HTTP chunked transfer encoding or
+not. Defaults to false. The property is readable and writable, 
+however it can be set only before the first write operation as the HTTP headers are
+not yet put on the wire. Trying to set the `chunkedEncoding` property
 after a write will throw an error.
 
-Using chunked encoding is strongly recommended if you need to send a large request body as data will be streamed as small chunks instead of being internally buffered 
+Using chunked encoding is strongly recommended if you need to send a large request body as
+data will be streamed as small chunks instead of being internally buffered 
 in Electron memory.
 
 ### Instance Methods
@@ -137,7 +155,8 @@ Removes a previously set extra header name.
 
 #### `request.write(chunk[, encoding][, callback])`
 
-* `chunk` String or Buffer - A chunk of the request body' data. If it is a string, it is converted into a Buffer object using the specified encoding.
+* `chunk` String or Buffer - A chunk of the request body' data. If it is a string,
+it is converted into a Buffer object using the specified encoding.
 * `encoding` String (optional) - Used to convert string chunks into Buffer objects. Defaults to 'utf-8'.
 * `callback` Function (optional) - Called after the write operation ends.
 
@@ -150,7 +169,8 @@ After the first write operation, it is not allowed to add or remove a custom hea
 * `encoding` String (optional)
 * `callback` Function (optional)
 
-Sends the last chunk of the request data. Subsequent write or end operations will not be allowed. The finish event is emitted just after the end operation.
+Sends the last chunk of the request data. Subsequent write or end operations will not
+be allowed. The finish event is emitted just after the end operation.
 
 #### `request.abort()`
 
