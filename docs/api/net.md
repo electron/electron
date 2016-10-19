@@ -4,15 +4,19 @@
 
 The `net` module is a client-side API for issuing HTTP(S) requests. It is similar to the 
 [HTTP](https://nodejs.org/api/http.html)  and [HTTPS](https://nodejs.org/api/https.html) modules of Node.js 
-but uses Chromium networking library instead of the Node.js stack offering therefore a much grater support regarding web proxies.
+but it uses Chromium native networking library instead of the Node.js implementation offering 
+therefore a much greater support regarding web proxies.
 
-Following is a non-exhaustive list of why you may need to use the `net` module instead of Node.js [HTTP](https://nodejs.org/api/http.html):
+Following is a non-exhaustive list of why you may consider using the `net` module instead of the native Node.js modules:
 * Automatic management of system proxy configuration, support of the wpad protocol and proxy pac configuration files.
 * Automatic tunneling of HTTPS requests.
 * Support for authenticating proxies using basic, digest, NTLM, Kerberos or negotiate authentication schemes.
 * Support for traffic monitoring proxies: Fiddler-like proxies used for access control and monitoring.
 
-The following example quickly shows how the `net` API mgiht be used:
+The `net` module API has been specifically designed to mimic, as much closely as possible, the familiar Node.js API.
+The API components including classes, methods, properties and event names are similar to those commonly used in Node.js.
+
+For instance, the following example quickly shows how the `net` API might be used:
 
 ```javascript
 const {app} = require('electron')
@@ -42,6 +46,9 @@ app.on('ready', () => {
 })
 ```
 
+By the way, it is almost identical to the way you would normally use the
+[HTTP](https://nodejs.org/api/http.html)/[HTTPS](https://nodejs.org/api/https.html) modules of Node.js
+
 ## Methods
 
 The `net` module has the following methods:
@@ -52,7 +59,8 @@ The `net` module has the following methods:
 
 Returns `ClientRequest`
 
-Create a `ClientRequest` instance using the provided `options` object.
+Create a `ClientRequest` instance using the provided `options` object which is directly
+passed to the `ClientRequest` constructor.
 
 ## Class: ClientRequest
 
