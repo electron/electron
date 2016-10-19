@@ -37,11 +37,15 @@ The `net` module has the following methods:
 
 ### `net.request(options)`
 
-Create a `ClientRequest` instance using the provided `options` object.
+* `options`: Object or String - The `ClientRequest` constructor options.
 
 Returns `ClientRequest`
 
+Create a `ClientRequest` instance using the provided `options` object.
+
 ## Class: ClientRequest
+
+`ClientRequest` is a [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams).
 
 ### `new ClientRequest(options)`
 
@@ -62,7 +66,7 @@ Returns `ClientRequest`
 
 Returns:
 
-* `response` IncomingMessage - An object representing the HTTP response message.
+* `response` IncomingMessage - An object representing an HTTP response message.
 
 #### Event: 'login'
 
@@ -99,6 +103,17 @@ Emitted when the `net` module fails to issue a network request. Typically when t
 
 Emitted as the last event in the HTTP request-response transaction. The close event indicates that no more events will be emitted on either the `request` or `response` objects.
 
+### Instance Properties
+
+#### `request.chunkedEncoding`
+
+A Boolean specifying whether the request will use HTTP chunked transfer encoding or not. Defaults to false. The property is readable and writable, 
+however it can be set only before the first write operation as the HTTP headers are not yet put on the wire. Trying to set the `chunkedEncoding` property
+after a write will throw an error.
+
+Using chunked encoding is strongly recommended if you need to send a large request body as data will be streamed as small chunks instead of being internally buffered 
+in Electron memory.
+
 ### Instance Methods
 
 #### `request.setHeader(name, value)`
@@ -120,7 +135,7 @@ Returns String - The value of a previously set extra header name.
 
 Removes a previously set extra header name. 
 
-#### `request.write(chunk, [encoding, callback])`
+#### `request.write(chunk[, encoding][, callback])`
 
 * `chunk` String or Buffer - A chunk of the request body' data. If it is a string, it is converted into a Buffer object using the specified encoding.
 * `encoding` String (optional) - Used to convert string chunks into Buffer objects. Defaults to 'utf-8'.
@@ -129,7 +144,7 @@ Removes a previously set extra header name.
 Adds a chunk of data to the request body. Generally, the first write operation causes the request headers to be issued on the wire. 
 After the first write operation, it is not allowed to add or remove a custom header.
 
-#### `request.end([chunk, encoding, callback])`
+#### `request.end([chunk][, encoding][, callback])`
 
 * `chunk` String or Buffer (optional)
 * `encoding` String (optional)
@@ -143,32 +158,55 @@ Cancels an ongoing HTTP transaction. If the request has already closed, the abor
 Otherwise an ongoing event will emit abort and close events. Additionally, if there is an ongoing response object,
 it will emit the aborted event.
 
-### Instance Properties
-
-#### `request.chunkedEncoding`
 
 ## Class: IncomingMessage
+
+`IncomingMessage` is a [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams). It represents an HTTP response message.
 
 ### Instance Events
 
 #### Event 'data'
 
+Returns:
+
+* `chunk`: Buffer - A chunk of response body's data.
+
 #### Event 'end'
+
+Indicates that response body has ended.
 
 #### Event 'aborted'
 
+Emitted when a request has been canceled during an ongoing HTTP transaction.
+
 #### Event 'error'
+
+Returns
+
+`error` Error 
+
+Emitted if an error is encountered 
 
 ### Instance properties
 
+An `IncomingMessage` instance has the following readable properties:
+
 #### `response.statusCode`
+
+An Integer indicating the HTTP response status code.
 
 #### `response.statusMessage`
 
+A String representing the HTTP status message.
+
 #### `response.headers`
+
+An Object representing the response HTTP headers. 
 
 #### `response.httpVersion`
 
+A String indicating the HTTP protocol version number. Typical values are '1.0' or '1.1'. Additionally `httpVersionMajor` and
+`httpVersionMinor` are two Integer-valued readable properties that return respectively the HTTP major and minor version numbers.
 
 
 
