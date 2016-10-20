@@ -82,6 +82,8 @@ following properties:
 method.
   * `url` String (optional) - The request URL. Must be provided in the absolute
 form with the protocol scheme specified as http or https.
+  * `session` String (optional) - The name of the [`Session`](session.md) 
+instance with which the request is associated. Defaults to the empty string.
   * `protocol` String (optional) - The protocol scheme in the form 'scheme:'.
 Currently supported values are 'http:' or 'https:'. Defaults to 'http:'.
   * `host` String (optional) - The server host provided as a concatenation of
