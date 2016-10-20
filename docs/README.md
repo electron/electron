@@ -99,4 +99,4 @@ an issue:
 * [Debug Instructions (macOS)](development/debug-instructions-macos.md)
 * [Debug Instructions (Windows)](development/debug-instructions-windows.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
-* [Documentation Styleguide](development/styleguide.md)
+* [Documentation Styleguide](./styleguide.md)
