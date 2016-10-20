@@ -85,6 +85,8 @@ This script will download the binaries and generate the node headers and the .li
 npm run release
 ```
 
+Note: Many distributions of Python still ship with old HTTPS certificates. You may see a `InsecureRequestWarning`, but it can be disregarded.
+
 ## Delete the temporary branch
 
 ```sh
