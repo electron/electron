@@ -153,7 +153,7 @@ Returns `WebContents` - The [`WebContents`](web-contents.md) object of this web 
 
 * `name` String
 
-Returns `any` - The global variable of `name` (e.g. `global[name]`) in the main
+Returns `Object` - The global variable of `name` (e.g. `global[name]`) in the main
 process.
 
 ## Properties
