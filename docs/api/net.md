@@ -4,7 +4,7 @@
 
 The `net` module is a client-side API for issuing HTTP(S) requests. It is
 similar to the  [HTTP](https://nodejs.org/api/http.html)  and
-[HTTPS](https://nodejs.org/api/https.html) modules of Node.js but it uses
+[HTTPS](https://nodejs.org/api/https.html) modules of Node.js but uses
 Chromium native networking library instead of the Node.js implementation
 offering therefore a much greater support regarding web proxies.
 
@@ -18,7 +18,7 @@ negotiate authentication schemes.
 * Support for traffic monitoring proxies: Fiddler-like proxies used for access
 control and monitoring.
 
-The `net` module API has been specifically designed to mimic, as much closely as
+The `net` module API has been specifically designed to mimic, as closely as
 possible, the familiar Node.js API. The API components including classes,
 methods, properties and event names are similar to those commonly used in
 Node.js.
@@ -48,6 +48,9 @@ app.on('ready', () => {
 By the way, it is almost identical to how you would normally use the
 [HTTP](https://nodejs.org/api/http.html)/[HTTPS](https://nodejs.org/api/https.html)
 modules of Node.js
+
+The `net` API can be used only after the application emits the `ready` event.
+Trying to use the module before the `ready` event will throw an error.
 
 ## Methods
 
