@@ -66,9 +66,14 @@ npm start
 
 Verify the window is displaying the current updated version.
 
-## Set `$ELECTRON_GITHUB_TOKEN`
+## Set environment variables
 
-Create a personal access token with "repo" scope, and set it in your environment as `ELECTRON_GITHUB_TOKEN`.
+You'll need to set the following environment variables to publish a release. Ask another team member for these credentials.
+
+- `$ELECTRON_S3_BUCKET`
+- `$ELECTRON_S3_ACCESS_KEY`
+- `$ELECTRON_S3_SECRET_KEY`
+- `$ELECTRON_GITHUB_TOKEN` - A personal access token with "repo" scope.
 
 You will only need to do this once.
 
