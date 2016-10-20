@@ -17,7 +17,7 @@ module.exports = function download (opts, cb) {
   var url = process.env.NPM_CONFIG_ELECTRON_MIRROR ||
     process.env.ELECTRON_MIRROR ||
     opts.mirror ||
-    'https://bams-sami.int.thomsonreuters.com/artifactory/default.npm.local/UniversalContainer/tr-electron-releases'
+    'https://bams-sami.int.thomsonreuters.com/artifactory/default.npm.global/UniversalContainer/tr-electron-releases'
   url += '/'
   url += process.env.ELECTRON_CUSTOM_FILENAME || opts.customFilename || filename
   
