@@ -95,6 +95,12 @@ Returns:
 
 Returns:
 
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
 * `callback` Function
 
 Emitted when an authenticating proxy is asking for user credentials.
@@ -104,7 +110,24 @@ The `callback` function is expected to be called back with user credentials:
 * `usrename` String
 * `password` String
 
-Providing empty credentials will cancel the request.
+```JavaScript
+request.on('login', (authInfo, callback) => {
+  callback('username', 'password')
+})
+```
+Providing empty credentials will cancel the request and report an authentication error on the response object:
+
+```JavaScript
+request.on('response', (response) => {
+  console.log(`STATUS: ${response.statusCode}`);
+  response.on('error', (error) => {
+    console.log(`ERROR: ${JSON.stringify(error)}`)
+  })
+})
+request.on('login', (authInfo, callback) => {
+  callback()
+})
+```
 
 #### Event: 'finish'
 
