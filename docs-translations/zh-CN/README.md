@@ -93,4 +93,4 @@
 * [调试步骤 (macOS)](development/debug-instructions-macos.md) 未翻译
 * [调试步骤 (Windows)](development/debug-instructions-windows.md) 未翻译
 * [在调试中使用 Symbol Server](development/setting-up-symbol-server.md)
-* [文档风格规范](./styleguide.md) 未翻译
+* [文档风格规范](styleguide.md) 未翻译
