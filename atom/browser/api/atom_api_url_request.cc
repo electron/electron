@@ -305,9 +305,8 @@ void URLRequest::OnAuthenticationRequired(
     return;
   }
 
-  EmitRequestEvent(
-      false, "login", auth_info.get(),
-      base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
+  Emit("login", auth_info.get(),
+       base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
 }
 
 void URLRequest::OnResponseStarted(
