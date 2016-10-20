@@ -43,6 +43,7 @@ Merge the temporary back into master, without creating a merge commit:
 
 ```sh
 git merge release master --no-commit
+git push origin master
 ```
 
 If this fails, rebase with master and rebuild:
@@ -64,6 +65,12 @@ npm start
 ```
 
 Verify the window is displaying the current updated version.
+
+## Set `$ELECTRON_GITHUB_TOKEN`
+
+Create a personal access token with "repo" scope, and set it in your environment as `ELECTRON_GITHUB_TOKEN`.
+
+You will only need to do this once.
 
 ## Publish the release
 
