@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 
+#include "base/callback_forward.h"
 #include "base/files/file_util.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
