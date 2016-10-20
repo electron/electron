@@ -5,6 +5,7 @@
 #include "atom/browser/atom_browser_context.h"
 
 #include "atom/browser/api/atom_api_protocol.h"
+#include "atom/browser/atom_blob_reader.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/atom_permission_manager.h"
@@ -30,7 +31,9 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_registry_simple.h"
+#include "content/browser/blob_storage/chrome_blob_storage_context.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/user_agent.h"
 #include "net/ftp/ftp_network_layer.h"
@@ -68,7 +71,8 @@ AtomBrowserContext::AtomBrowserContext(
     const std::string& partition, bool in_memory,
     const base::DictionaryValue& options)
     : brightray::BrowserContext(partition, in_memory),
-      network_delegate_(new AtomNetworkDelegate) {
+      network_delegate_(new AtomNetworkDelegate),
+      cookie_delegate_(new AtomCookieDelegate) {
   // Construct user agent string.
   Browser* browser = Browser::Get();
   std::string name = RemoveWhitespace(browser->GetName());
@@ -102,6 +106,10 @@ void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
 
 net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
   return network_delegate_;
+}
+
+net::CookieMonsterDelegate* AtomBrowserContext::CreateCookieDelegate() {
+  return cookie_delegate();
 }
 
 std::string AtomBrowserContext::GetUserAgent() {
@@ -205,6 +213,19 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                       download_dir);
   pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
+}
+
+AtomBlobReader* AtomBrowserContext::GetBlobReader() {
+  if (!blob_reader_.get()) {
+    content::ChromeBlobStorageContext* blob_context =
+        content::ChromeBlobStorageContext::GetFor(this);
+    storage::FileSystemContext* file_system_context =
+        content::BrowserContext::GetStoragePartition(
+            this, nullptr)->GetFileSystemContext();
+    blob_reader_.reset(new AtomBlobReader(blob_context,
+                                          file_system_context));
+  }
+  return blob_reader_.get();
 }
 
 // static

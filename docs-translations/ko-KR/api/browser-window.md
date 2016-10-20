@@ -2,21 +2,23 @@
 
 > 브라우저 윈도우를 생성하고 제어합니다.
 
-다음 예시는 윈도우를 생성합니다:
-
 ```javascript
 // 메인 프로세스에서
 const {BrowserWindow} = require('electron')
 
 // 또는 렌더러 프로세스에서
-const {BrowserWindow} = require('electron').remote
+// const {BrowserWindow} = require('electron').remote
 
 let win = new BrowserWindow({width: 800, height: 600})
 win.on('closed', () => {
-  win = null;
+  win = null
 })
 
-win.loadURL('https://github.com');
+// 원격 URL 로드
+win.loadURL('https://github.com')
+
+// 또는 로컬 HTML 로드
+win.loadURL(`file://${__dirname}/app/index.html`)
 ```
 
 ## Frameless 윈도우
@@ -37,6 +39,7 @@ Frameless 윈도우를 만들거나 일정한 모양의 투명한 윈도우를 �
 수 있습니다.
 
 ```javascript
+const {BrowserWindow} = require('electron')
 let win = new BrowserWindow({show: false})
 win.once('ready-to-show', () => {
   win.show()
@@ -55,6 +58,8 @@ win.once('ready-to-show', () => {
 통해 설정합니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
+
 let win = new BrowserWindow({backgroundColor: '#2e2c29'})
 win.loadURL('https://github.com')
 ```
@@ -67,17 +72,24 @@ win.loadURL('https://github.com')
 `parent` 옵션을 사용하면 자식 윈도우를 만들 수 있습니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
+
 let top = new BrowserWindow()
 let child = new BrowserWindow({parent: top})
+child.show()
+top.show()
 ```
 
 `child` 윈도우는 언제나 `top` 윈도우의 상위에 표시됩니다.
 
 ### 모달 윈도우
 
-모달 윈도우는 부모 윈도우를 비활성화 시키는 자식 윈도우입니다. 모달 윈도우를 만드려면 `parent`, `modal` 옵션을 동시에 설정해야 합니다:
+모달 윈도우는 부모 윈도우를 비활성화 시키는 자식 윈도우입니다. 모달 윈도우를 만드려면
+`parent`, `modal` 옵션을 동시에 설정해야 합니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
+
 let child = new BrowserWindow({parent: top, modal: true, show: false})
 child.loadURL('https://github.com')
 child.once('ready-to-show', () => {
@@ -87,12 +99,11 @@ child.once('ready-to-show', () => {
 
 ### 플랫폼별 특이사항
 
-* On macOS the child windows will keep the relative position to parent window
-  when parent window moves, while on Windows and Linux child windows will not
-  move.
-* On Windows it is not supported to change parent window dynamically.
-* On Linux the type of modal windows will be changed to `dialog`.
-* On Linux many desktop environments do not support hiding a modal window.
+* macOS 에서 부모창이 이동할 때 자식창은 부모창과의 상대적 위치를 유지합니다. 윈도우즈와
+  리눅스는 자식창이 움직이지 않습니다.
+* 윈도우즈에서 parent 를 동적으로 변경할 수 없습니다.
+* 리눅스에서 모달창의 타입이 `dialog`로 변경됩니다.
+* 리눅스에서 많은 데스크톱 환경이 모달창 숨김을 지원하지 않습니다.
 
 ## Class: BrowserWindow
 
@@ -204,14 +215,14 @@ On Windows it is
     수 없습니다. 하지만 편법으로 `globalShortcut`을 통해 키 입력을 받을 수 있습니다.
 * Windows의 경우, 가능한 타입으론 `toolbar`가 있습니다.
 
-`titleBarStyle` 속성은 macOS 10.10 Yosemite 이후 버전만 지원하며, 다음 3가지 종류의
-값을 사용할 수 있습니다:
+`titleBarStyle`의 속성은 다음과 같습니다:
 
 * `default` 또는 미지정: 표준 Mac 회색 불투명 스타일을 사용합니다.
 * `hidden`: 타이틀 바를 숨기고 콘텐츠 전체를 윈도우 크기에 맞춥니다.
   타이틀 바는 없어지지만 표준 창 컨트롤 ("신호등 버튼")은 왼쪽 상단에 유지됩니다.
 * `hidden-inset`: `hidden` 타이틀 바 속성과 함께 신호등 버튼이 윈도우 모서리로부터
-  약간 더 안쪽으로 들어가도록합니다.
+  약간 더 안쪽으로 들어가도록합니다. 10.9 Mavericks에선 지원되지 않고 `hidden`으로
+  폴백합니다.
 
 `webPreferences` 속성은 다음과 같은 속성을 가질 수 있습니다:
 
@@ -276,27 +287,32 @@ On Windows it is
 * `defaultEncoding` String - 기본값 `ISO-8859-1`.
 * `backgroundThrottling` Boolean - 페이지가 백그라운드 상태에 진입할 때 애니메이션과
   타이머에 스로틀을 적용할지 여부입니다. 기본값은 `true`입니다.
+* `offscreen` Boolean - 브라우저 윈도우에 오프 스크린 랜더링을 적용할지 여부를
+  지정합니다. 기본값은 `false`입니다.
+* `sandbox` Boolean - Chromium 운영체제 수준의 샌드박스 활성화 여부.
 
-## Events
+### Instance Events
 
-`BrowserWindow` 객체는 다음과 같은 이벤트를 발생시킵니다:
+`new BrowserWindow`로 생성된 객체는 다음과 같은 이벤트를 발생시킵니다:
 
 **참고:** 몇몇 이벤트는 라벨에 특정한 OS에서만 작동합니다.
 
-### Event: 'page-title-updated'
+#### Event: 'page-title-updated'
 
 Returns:
 
 * `event` Event
+* `title` String
 
 문서의 제목이 변경될 때 발생하는 이벤트입니다. `event.preventDefault()`를 호출하여
 네이티브 윈도우의 제목이 변경되는 것을 방지할 수 있습니다.
 
-### Event: 'close'
+#### Event: 'close'
 
 Returns:
 
 * `event` Event
+* `title` String
 
 윈도우가 닫히기 시작할 때 발생하는 이벤트입니다.
 이 이벤트는 DOM의 `beforeunload` 와 `unload` 이벤트 전에 발생합니다.
@@ -309,97 +325,97 @@ Electron에선 `undefined`가 아닌 이외의 값을 전달할 경우 윈도우
 
 ```javascript
 window.onbeforeunload = (e) => {
-  console.log('I do not want to be closed');
+  console.log('I do not want to be closed')
 
   // 일반적인 브라우저와는 달리 사용자에게 확인 창을 보여주지 않고, non-void 값을 반환하면
   // 조용히 닫기를 취소합니다.
   // Dialog API를 통해 사용자가 애플리케이션을 종료할지 정할 수 있도록 확인 창을 표시하는 것을
   // 추천합니다.
-  e.returnValue = false;
-};
+  e.returnValue = false
+}
 ```
 
-### Event: 'closed'
+#### Event: 'closed'
 
 윈도우 종료가 완료된 경우 발생하는 이벤트입니다. 이 이벤트가 발생했을 경우 반드시
 윈도우의 레퍼런스가 더 이상 사용되지 않도록 제거해야 합니다.
 
-### Event: 'unresponsive'
+#### Event: 'unresponsive'
 
 웹 페이지가 응답하지 않을 때 발생하는 이벤트입니다.
 
-### Event: 'responsive'
+#### Event: 'responsive'
 
 응답하지 않는 웹 페이지가 다시 응답하기 시작했을 때 발생하는 이벤트입니다.
 
-### Event: 'blur'
+#### Event: 'blur'
 
-윈도우가 포커스를 잃었을 떄 발생하는 이벤트입니다.
+윈도우가 포커스를 잃었을 때 발생하는 이벤트입니다.
 
-### Event: 'focus'
+#### Event: 'focus'
 
 윈도우가 포커스를 가졌을 때 발생하는 이벤트입니다.
 
-### Event: 'show'
+#### Event: 'show'
 
 윈도우가 보여진 상태일 때 발생하는 이벤트입니다.
 
-### Event: 'hide'
+#### Event: 'hide'
 
 윈도우가 숨겨진 상태일 때 발생하는 이벤트입니다.
 
-### Event: 'ready-to-show'
+#### Event: 'ready-to-show'
 
-웹 페이지가 완전히 랜더링되어 윈도우가 시각적인 깜빡임없이 컨텐츠를 보여줄 수 있을 때
+웹 페이지가 완전히 랜더링되어 윈도우가 시각적인 깜빡임없이 콘텐츠를 보여줄 수 있을 때
 발생하는 이벤트입니다.
 
-### Event: 'maximize'
+#### Event: 'maximize'
 
 윈도우가 최대화됐을 때 발생하는 이벤트입니다.
 
-### Event: 'unmaximize'
+#### Event: 'unmaximize'
 
 윈도우의 최대화 상태가 해제되었을 때 발생하는 이벤트입니다.
 
-### Event: 'minimize'
+#### Event: 'minimize'
 
 윈도우가 최소화됐을 때 발생하는 이벤트입니다.
 
-### Event: 'restore'
+#### Event: 'restore'
 
 윈도우가 최소화 상태에서 복구되었을 때 발생하는 이벤트입니다.
 
-### Event: 'resize'
+#### Event: 'resize'
 
 윈도우의 크기가 재조정될 때 발생하는 이벤트입니다.
 
-### Event: 'move'
+#### Event: 'move'
 
 윈도우가 새로운 위치로 이동될 때 발생하는 이벤트입니다.
 
 __참고__: macOS에선 이 이벤트가 그저 `moved` 이벤트의 별칭(alias)으로 사용됩니다.
 
-### Event: 'moved' _macOS_
+#### Event: 'moved' _macOS_
 
 윈도우가 새로운 위치로 이동되었을 때 발생하는 이벤트입니다. (한 번만)
 
-### Event: 'enter-full-screen'
+#### Event: 'enter-full-screen'
 
 윈도우가 풀 스크린 모드로 진입할 때 발생하는 이벤트입니다.
 
-### Event: 'leave-full-screen'
+#### Event: 'leave-full-screen'
 
 윈도우가 풀 스크린 모드에서 해제될 때 발생하는 이벤트입니다.
 
-### Event: 'enter-html-full-screen'
+#### Event: 'enter-html-full-screen'
 
 윈도우가 HTML API에 의해 풀 스크린 모드로 진입할 때 발생하는 이벤트입니다.
 
-### Event: 'leave-html-full-screen'
+#### Event: 'leave-html-full-screen'
 
 윈도우가 HTML API에 의해 풀 스크린 모드에서 해제될 때 발생하는 이벤트입니다.
 
-### Event: 'app-command' _Windows_
+#### Event: 'app-command' _Windows_
 
 Returns:
 
@@ -416,23 +432,29 @@ Returns:
 e.g. `APPCOMMAND_BROWSER_BACKWARD` 는 `browser-backward`와 같이 반환됩니다.
 
 ```javascript
-someWindow.on('app-command', (e, cmd) => {
-  // 마우스의 뒤로가기 버튼을 눌렀을 때 뒤로가기 탐색을 실행합니다
-  if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
-    someWindow.webContents.goBack();
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.on('app-command', (e, cmd) => {
+  // Navigate the window back when the user hits their mouse back button
+  if (cmd === 'browser-backward' && win.webContents.canGoBack()) {
+    win.webContents.goBack()
   }
-});
+})
 ```
 
-### Event: 'scroll-touch-begin' _macOS_
+#### Event: 'scroll-touch-begin' _macOS_
 
 스크롤 휠 이벤트가 동작하기 시작했을 때 발생하는 이벤트입니다.
 
-### Event: 'scroll-touch-end' _macOS_
+#### Event: 'scroll-touch-end' _macOS_
 
 스크롤 휠 이벤트가 동작을 멈췄을 때 발생하는 이벤트입니다.
 
-### Event: 'swipe' _macOS_
+#### Event: 'scroll-touch-edge' _macOS_
+
+스크롤 휠 이벤트로 요소의 끝에 도달했을 때 발생하는 이벤트입니다.
+
+#### Event: 'swipe' _macOS_
 
 Returns:
 
@@ -442,32 +464,31 @@ Returns:
 3-손가락 스와이프가 작동할 때 발생하는 이벤트입니다. 방향은 `up`, `right`, `down`,
 `left`가 될 수 있습니다.
 
-## Methods
+### Static Methods
 
-`BrowserWindow` 객체는 다음과 같은 메서드를 가지고 있습니다:
+`BrowserWindow` 클래스는 다음과 같은 정적 메서드를 가지고 있습니다:
 
-### `BrowserWindow.getAllWindows()`
+#### `BrowserWindow.getAllWindows()`
 
-열려있는 모든 브라우저 윈도우의 배열을 반환합니다.
+Returns `BrowserWindow[]` - 열려있는 모든 브라우저 윈도우의 배열.
 
-### `BrowserWindow.getFocusedWindow()`
+#### `BrowserWindow.getFocusedWindow()`
 
-애플리케이션에서 포커스된 윈도우를 반환합니다. 포커스된 윈도우가 없을 경우 `null`을
-반환합니다.
+Returns `BrowserWindow` - 애플리케이션에서 포커스된 윈도우. 없을 경우 `null`.
 
-### `BrowserWindow.fromWebContents(webContents)`
+#### `BrowserWindow.fromWebContents(webContents)`
 
 * `webContents` [WebContents](web-contents.md)
 
-`webContents`를 소유하고 있는 윈도우를 찾습니다.
+Returns `BrowserWindow` - `webContents` 를 소유한 윈도우.
 
-### `BrowserWindow.fromId(id)`
+#### `BrowserWindow.fromId(id)`
 
 * `id` Integer
 
-ID에 해당하는 윈도우를 찾습니다.
+Returns `BrowserWindow` - `id` 에 해당하는 윈도우.
 
-### `BrowserWindow.addDevToolsExtension(path)`
+#### `BrowserWindow.addDevToolsExtension(path)`
 
 * `path` String
 
@@ -479,7 +500,7 @@ ID에 해당하는 윈도우를 찾습니다.
 
 **참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
 
-### `BrowserWindow.removeDevToolsExtension(name)`
+#### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
@@ -487,29 +508,34 @@ ID에 해당하는 윈도우를 찾습니다.
 
 **참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
 
-### `BrowserWindow.getDevToolsExtensions()`
+#### `BrowserWindow.getDevToolsExtensions()`
 
-키는 확장 기능 이름을 값은 `name`과 `version` 속성을 포함하는 객체를 가지는 객체를
-반환합니다.
+Returns `Object` - 키는 확장 기능 이름을 값은 `name`과 `version` 속성을 포함하는
+객체를 가집니다.
 
 개발자 도구 확장 기능이 설치되었는지 확인하려면 다음과 같이 실행할 수 있습니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
+
 let installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
+console.log(installed)
 ```
 
 **참고:** 이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
 
-## Instance Properties
+### Instance Properties
 
 `new BrowserWindow`로 생성한 객체는 다음과 같은 속성을 가지고 있습니다:
 
 ```javascript
+const {BrowserWindow} = require('electron')
 // `win`은 BrowserWindow의 인스턴스입니다
-let win = new BrowserWindow({width: 800, height: 600});
+let win = new BrowserWindow({width: 800, height: 600})
+win.loadURL('https://github.com')
 ```
 
-### `win.webContents`
+#### `win.webContents`
 
 윈도우의 `WebContents` 객체입니다. 모든 웹 페이지와 관련된 이벤트와 작업이 이 객체를
 통해 수행됩니다.
@@ -517,97 +543,101 @@ let win = new BrowserWindow({width: 800, height: 600});
 메서드나 이벤트에 대한 자세한 내용은 [`webContents` 문서](web-contents.md)를
 참고하세요.
 
-### `win.id`
+#### `win.id`
 
-윈도우의 유일 ID입니다.
+`Integer` 형식의 윈도우 고유 ID 입니다.
 
-## Instance Methods
+### Instance Methods
 
 `new BrowserWindow`로 생성한 객체는 다음과 같은 메서드들을 가지고 있습니다:
 
 **참고:** 몇몇 메서드들은 라벨에서 특정한 운영체제 시스템에서만 작동합니다.
 
-### `win.destroy()`
+#### `win.destroy()`
 
 윈도우를 강제로 닫습니다. 웹 페이지의 `unload` 와 `beforeunload` 이벤트는 일어나지
 않습니다. 또한 이 윈도우의 `close`도 일어나지 않습니다. 하지만 `closed` 이벤트는
 반드시 발생함을 보장합니다.
 
-### `win.close()`
+#### `win.close()`
 
 윈도우의 종료를 시도합니다. 이 메서드는 사용자가 윈도우의 닫기 버튼을 클릭했을 때와
 같은 효과를 냅니다. 웹 페이지는 로드가 취소되고 종료됩니다. 자세한 내용은
 [close 이벤트](#event-close)를 참고하세요.
 
-### `win.focus()`
+#### `win.focus()`
 
 윈도우에 포커스를 맞춥니다.
 
-### `win.blur()`
+#### `win.blur()`
 
 윈도우의 포커스를 없앱니다.
 
-### `win.isFocused()`
+#### `win.isFocused()`
 
-윈도우가 포커스되었는지 여부를 반환합니다.
+Returns `Boolean` - 윈도우가 포커스되었는지 여부.
 
-### `win.show()`
+#### `win.isDestroyed()`
+
+Returns `Boolean` - 윈도우가 소멸되었는지 여부.
+
+#### `win.show()`
 
 윈도우를 표시하고 포커스합니다.
 
-### `win.showInactive()`
+#### `win.showInactive()`
 
 윈도우를 표시만 하고 포커스하지 않습니다.
 
-### `win.hide()`
+#### `win.hide()`
 
 윈도우를 숨깁니다.
 
-### `win.isVisible()`
+#### `win.isVisible()`
 
-윈도우가 사용자에게 표시되고 있는지 여부를 반환합니다.
+Returns `Boolean` - 윈도우가 사용자에게 표시되고 있는지 여부.
 
-### `win.isModal()`
+#### `win.isModal()`
 
-현재 윈도우가 모달 윈도우인지 여부를 반환합니다.
+Returns `Boolean` - 현재 윈도우가 모달 윈도우인지 여부.
 
-### `win.maximize()`
+#### `win.maximize()`
 
 윈도우를 최대화 시킵니다.
 
-### `win.unmaximize()`
+#### `win.unmaximize()`
 
 윈도우 최대화를 취소합니다.
 
-### `win.isMaximized()`
+#### `win.isMaximized()`
 
-윈도우가 최대화 되어있는지 여부를 반환합니다.
+Returns `Boolean` - 윈도우가 최대화 되어있는지 여부.
 
-### `win.minimize()`
+#### `win.minimize()`
 
 윈도우를 최소화 시킵니다. 어떤 플랫폼은 최소화된 윈도우가 Dock에 표시됩니다.
 
-### `win.restore()`
+#### `win.restore()`
 
 최소화된 윈도우를 이전 상태로 되돌립니다.
 
-### `win.isMinimized()`
+#### `win.isMinimized()`
 
-윈도우가 최소화되었는지 여부를 반환합니다.
+Returns `Boolean` - 윈도우가 최소화되었는지 여부.
 
-### `win.setFullScreen(flag)`
+#### `win.setFullScreen(flag)`
 
 * `flag` Boolean
 
 윈도우의 전체화면 상태를 지정합니다.
 
-### `win.isFullScreen()`
+#### `win.isFullScreen()`
 
-윈도우가 전체화면 모드 상태인지 여부를 반환합니다.
+Returns `Boolean` - 윈도우가 전체화면 모드인지 여부.
 
-### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
+#### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
-* `aspectRatio` 유지하려 하는 콘텐츠 뷰 일부의 종횡비
+* `aspectRatio` Float - 유지하려 하는 콘텐츠 뷰 일부의 종횡비.
 * `extraSize` Object (optional) - 종횡비를 유지하는 동안 포함되지 않을 엑스트라 크기.
   * `width` Integer
   * `height` Integer
@@ -624,24 +654,32 @@ let win = new BrowserWindow({width: 800, height: 600});
 크기는 관여하지 않습니다. 그저 전체 콘텐츠 뷰 내에 있는 모든 엑스트라 너비, 높이 영역이
 합해집니다.
 
-### `win.setBounds(options[, animate])`
+#### `win.setBounds(bounds[, animate])`
 
-* `options` Object
-
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
-
+* `bounds` [Rectangle](structures/rectangle.md)
 * `animate` Boolean (optional) _macOS_
 
-윈도우를 지정한 `width`, `height`, `x`, `y`로 크기 재조정 및 이동합니다.
+윈도우를 주어진 영역으로 크기 재조정 및 이동합니다.
 
-### `win.getBounds()`
+#### `win.getBounds()`
 
-윈도우의 width, height, x, y 값을 가지는 객체를 반환합니다.
+Returns [`Rectangle`](structures/rectangle.md)
 
-### `win.setSize(width, height[, animate])`
+#### `win.setContentBounds(bounds[, animate])`
+
+* `bounds` [Rectangle](structures/rectangle.md)
+* `animate` Boolean (optional) _macOS_
+
+윈도우의 내부 영역 (예. 웹페이지) 을 주어진 영역으로 크기 재조정 및 이동합니다.
+
+#### `win.getContentBounds()`
+
+* `bounds` [`Rectangle`](structures/rectangle.md)
+
+윈도우의 클라이언트 영역 (웹 페이지)의 너비, 높이, x, y 값을 포함하는 객체를
+반환합니다.
+
+#### `win.setSize(width, height[, animate])`
 
 * `width` Integer
 * `height` Integer
@@ -649,11 +687,11 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 `width`와 `height` 값으로 윈도우 크기를 재조정합니다. (너비, 높이)
 
-### `win.getSize()`
+#### `win.getSize()`
 
-윈도우의 너비, 높이값을 가지는 배열을 반환합니다.
+Returns `Integer[]` - 윈도우의 너비, 높이를 포함.
 
-### `win.setContentSize(width, height[, animate])`
+#### `win.setContentSize(width, height[, animate])`
 
 * `width` Integer
 * `height` Integer
@@ -661,118 +699,126 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 윈도우 클라이언트 영역(웹 페이지)의 크기를 `width`, `height`로 재조정합니다.
 
-### `win.getContentSize()`
+#### `win.getContentSize()`
 
-윈도우 클라이언트 영역의 너비, 높이 크기를 배열로 반환합니다.
+Returns `Integer[]` - 윈도우 내부 영역의 너비, 높이를 포함.
 
-### `win.setMinimumSize(width, height)`
+#### `win.setMinimumSize(width, height)`
 
 * `width` Integer
 * `height` Integer
 
 윈도우의 최소 `width`, `height` 크기를 지정합니다.
 
-### `win.getMinimumSize()`
+#### `win.getMinimumSize()`
 
-윈도우의 최소 너비, 높이 크기를 배열로 반환합니다.
+Returns `Integer[]` - 윈도우의 최소 너비, 높이를 포함.
 
-### `win.setMaximumSize(width, height)`
+#### `win.setMaximumSize(width, height)`
 
 * `width` Integer
 * `height` Integer
 
 윈도우의 최대 `width`, `height` 크기를 지정합니다.
 
-### `win.getMaximumSize()`
+#### `win.getMaximumSize()`
 
-윈도우의 최대 너비, 높이 크기를 배열로 반환합니다.
+Returns `Integer[]` - 윈도우의 최대 너비, 높이를 포함.
 
-### `win.setResizable(resizable)`
+#### `win.setResizable(resizable)`
 
 * `resizable` Boolean
 
 사용자에 의해 윈도우의 크기가 재조정될 수 있는지를 지정합니다.
 
-### `win.isResizable()`
+#### `win.isResizable()`
 
-사용자에 의해 윈도우의 크기가 재조정될 수 있는지 여부를 반환합니다.
+Returns `Boolean` - 사용자에 의해 윈도우의 크기가 재조정될 수 있는지 여부.
 
-### `win.setMovable(movable)` _macOS_ _Windows_
+#### `win.setMovable(movable)` _macOS_ _Windows_
 
 * `movable` Boolean
 
 사용자에 의해 윈도우를 이동시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isMovable()` _macOS_ _Windows_
+#### `win.isMovable()` _macOS_ _Windows_
 
-사용자에 의해 윈도우를 이동시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
-반환합니다.
+Returns `Boolean` - 사용자에 의해 윈도우를 이동시킬 수 있는지 여부.
 
-### `win.setMinimizable(minimizable)` _macOS_ _Windows_
+Linux에선 항상 `true`를 반환합니다.
+
+#### `win.setMinimizable(minimizable)` _macOS_ _Windows_
 
 * `minimizable` Boolean
 
 사용자에 의해 윈도우를 최소화시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isMinimizable()` _macOS_ _Windows_
+#### `win.isMinimizable()` _macOS_ _Windows_
 
-사용자에 의해 윈도우를 최소화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
-반환합니다.
+Returns `Boolean` - 사용자에 의해 윈도우를 최소화시킬 수 있는지 여부.
 
-### `win.setMaximizable(maximizable)` _macOS_ _Windows_
+Linux에선 항상 `true`를 반환합니다.
+
+#### `win.setMaximizable(maximizable)` _macOS_ _Windows_
 
 * `maximizable` Boolean
 
 사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isMaximizable()` _macOS_ _Windows_
+#### `win.isMaximizable()` _macOS_ _Windows_
 
-사용자에 의해 윈도우를 최대화시킬 수 있는지 여부를 반환합니다. Linux에선 항상 `true`를
-반환합니다.
+Returns `Boolean` - 사용자에 의해 윈도우를 최대화시킬 수 있는지 여부.
 
-### `win.setFullScreenable(fullscreenable)`
+Linux에선 항상 `true`를 반환합니다.
+
+#### `win.setFullScreenable(fullscreenable)`
 
 * `fullscreenable` Boolean
 
 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
 지정합니다.
 
-### `win.isFullScreenable()`
+#### `win.isFullScreenable()`
 
-최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할 수 있게 할지 여부를
-반환합니다.
+Returns `Boolean` - 최대화/줌 버튼이 전체화면 모드 또는 윈도우 최대화를 토글할
+수 있는지 여부.
 
-### `win.setClosable(closable)` _macOS_ _Windows_
+#### `win.setClosable(closable)` _macOS_ _Windows_
 
 * `closable` Boolean
 
 사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부를 지정합니다. Linux에선 아무 일도
 일어나지 않습니다.
 
-### `win.isClosable()` _macOS_ _Windows_
+#### `win.isClosable()` _macOS_ _Windows_
 
-사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부를 반환합니다. Linux에선 항상
-`true`를 반환합니다.
+Returns `Boolean` - 사용자에 의해 윈도우가 수동적으로 닫힐 수 있는지 여부.
 
-### `win.setAlwaysOnTop(flag)`
+Linux에선 항상 `true`를 반환합니다.
+
+#### `win.setAlwaysOnTop(flag[, level])`
 
 * `flag` Boolean
+* `level` String (optional) _macOS_ - 이 값은 `normal`, `floating`,
+  `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
+  `screen-saver`, `dock` 을 포함합니다. 기본값은 `floating` 입니다. 자세한
+  내용은 [macOS 문서][window-levels] 를 보세요.
 
 윈도우가 언제나 다른 윈도우들 위에 표시되는지 여부를 지정합니다. 이 설정을 활성화 하면
 윈도우는 포커스 될 수 없는 툴박스 윈도우가 아닌 일반 윈도우로 유지됩니다.
 
-### `win.isAlwaysOnTop()`
+#### `win.isAlwaysOnTop()`
 
 윈도우가 언제나 다른 윈도우들 위에 표시되는지 여부를 반환합니다.
 
-### `win.center()`
+#### `win.center()`
 
 윈도우를 화면 정 중앙으로 이동합니다.
 
-### `win.setPosition(x, y[, animate])`
+#### `win.setPosition(x, y[, animate])`
 
 * `x` Integer
 * `y` Integer
@@ -780,63 +826,69 @@ let win = new BrowserWindow({width: 800, height: 600});
 
 윈도우의 위치를 `x`, `y`로 이동합니다.
 
-### `win.getPosition()`
+#### `win.getPosition()`
 
-윈도우의 위치를 배열로 반환합니다.
+Returns `Integer[]` - 윈도우의 현재 위치.
 
-### `win.setTitle(title)`
+#### `win.setTitle(title)`
 
 * `title` String
 
 `title`을 네이티브 윈도우의 제목으로 지정합니다.
 
-### `win.getTitle()`
+#### `win.getTitle()`
 
-윈도우의 제목을 반환합니다.
+Returns `String` - 네이티브 윈도우의 제목.
 
 **참고:** 웹 페이지의 제목과 네이티브 윈도우의 제목은 서로 다를 수 있습니다.
 
-### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
+#### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
+
+* `offsetY` Float
+* `offsetX` Float (optional)
 
 macOS에서 시트를 부착할 위치를 지정합니다. 기본적으로 시트는 윈도우의 프레임 바로
 아래의 위치에 부착됩니다. 아마도 이 기능은 보통 다음과 같이 HTML 렌더링된 툴바 밑에
 표시하기 위해 사용할 것입니다:
 
 ```javascript
-let toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
-win.setSheetOffset(toolbarRect.height);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+
+let toolbarRect = document.getElementById('toolbar').getBoundingClientRect()
+win.setSheetOffset(toolbarRect.height)
 ```
 
-### `win.flashFrame(flag)`
+#### `win.flashFrame(flag)`
 
 * `flag` Boolean
 
 사용자가 윈도우에 관심을 가질 수 있도록 창을 깜빡이거나 이를 중지합니다.
 
-### `win.setSkipTaskbar(skip)`
+#### `win.setSkipTaskbar(skip)`
 
 * `skip` Boolean
 
 애플리케이션 아이콘을 작업표시줄에 보이지 않도록 설정합니다.
 
-### `win.setKiosk(flag)`
+#### `win.setKiosk(flag)`
 
 * `flag` Boolean
 
 Kiosk(키오스크) 모드를 설정합니다.
 
-### `win.isKiosk()`
+#### `win.isKiosk()`
 
-현재 윈도우가 kiosk 모드인지 여부를 반환합니다.
+Returns `Boolean' - 현재 윈도우가 kiosk 모드인지 여부.
 
-### `win.getNativeWindowHandle()`
+#### `win.getNativeWindowHandle()`
 
-`Buffer` 상의 플랫폼에 따른 윈도우 핸들을 반환합니다.
+Returns `Buffer` - 플랫폼 별 윈도우의 핸들.
 
 핸들의 타입에 따라 적절히 캐스팅됩니다. Windows의 `HWND`, macOS의 `NSView*`, Linux의
 `Window` (`unsigned long`)를 예로 들 수 있습니다.
 
-### `win.hookWindowMessage(message, callback)` _Windows_
+#### `win.hookWindowMessage(message, callback)` _Windows_
 
 * `message` Integer
 * `callback` Function
@@ -844,68 +896,97 @@ Kiosk(키오스크) 모드를 설정합니다.
 Windows 메시지 훅을 등록합니다. `callback`은 WndProc에서 메시지를 받았을 때
 호출됩니다.
 
-### `win.isWindowMessageHooked(message)` _Windows_
+#### `win.isWindowMessageHooked(message)` _Windows_
 
 * `message` Integer
 
-지정한 메시지가 후킹됬는지 여부를 반환합니다.
+Returns `Boolean` - 지정한 메시지가 후킹됐는지에 따라 `true` 또는 `false`.
 
-### `win.unhookWindowMessage(message)` _Windows_
+#### `win.unhookWindowMessage(message)` _Windows_
 
 * `message` Integer
 
 지정한 메시지 훅을 등록 해제합니다.
 
-### `win.unhookAllWindowMessages()` _Windows_
+#### `win.unhookAllWindowMessages()` _Windows_
 
 모든 메시지 훅을 등록 해제합니다.
 
-### `win.setRepresentedFilename(filename)` _macOS_
+#### `win.setRepresentedFilename(filename)` _macOS_
 
 * `filename` String
 
 윈도우 대표 파일의 경로명을 설정합니다. 파일의 아이콘이 윈도우 타이틀 바에 표시됩니다.
 
-### `win.getRepresentedFilename()` _macOS_
+#### `win.getRepresentedFilename()` _macOS_
 
-윈도우 대표 파일의 경로명을 반환합니다.
+Returns `String` - 윈도우 대표 파일의 경로.
 
-### `win.setDocumentEdited(edited)` _macOS_
+#### `win.setDocumentEdited(edited)` _macOS_
 
 * `edited` Boolean
 
 윈도우의 문서가 변경되었는지 여부를 설정합니다. 그리고 `true`로 설정했을 때 타이틀 바의
 아이콘이 회색으로 표시됩니다.
 
-### `win.isDocumentEdited()` _macOS_
+#### `win.isDocumentEdited()` _macOS_
 
-윈도우의 문서가 변경되었는지 여부를 반환합니다.
+Returns `Boolean` - 윈도우의 문서가 변경되었는지 여부.
 
-### `win.focusOnWebView()`
+#### `win.focusOnWebView()`
 
-### `win.blurWebView()`
+#### `win.blurWebView()`
 
-### `win.capturePage([rect, ]callback)`
+#### `win.capturePage([rect, ]callback)`
+
+* `rect` [Rectangle](structures/rectangle.md) (optional) - 캡쳐될 페이지의 영역
+* `callback` Function
 
 `webContents.capturePage([rect, ]callback)`와 같습니다.
 
-### `win.loadURL(url[, options])`
+#### `win.loadURL(url[, options])`
+
+* `url` URL
+* `options` Object (optional)
+  * `httpReferrer` String - HTTP 리퍼러 URL.
+  * `userAgent` String - 요청을 보낸 사용자의 user agent.
+  * `extraHeaders` String - "\n"로 구분된 부가적인 헤더
 
 `webContents.loadURL(url[, options])` API와 같습니다.
 
-### `win.reload()`
+`url`은 원격 주소 (e.g. `http://`)가 되거나 `file://` 프로토콜을 사용하는 로컬 HTML
+경로가 될 수 있습니다.
+
+파일 URL이 올바른 형식으로 지정되었는지 확인하려면 Node의
+[`url.format`](https://nodejs.org/api/url.html#url_url_format_urlobject) 메서드를
+사용하는 것을 권장합니다.
+
+```javascript
+let url = require('url').format({
+  protocol: 'file',
+  slashes: true,
+  pathname: require('path').join(__dirname, 'index.html')
+})
+
+win.loadURL(url)
+```
+
+#### `win.reload()`
 
 `webContents.reload` API와 같습니다.
 
-### `win.setMenu(menu)` _Linux_ _Windows_
+#### `win.setMenu(menu)` _Linux_ _Windows_
 
 * `menu` Menu
 
 지정한 `menu`를 윈도우의 메뉴로 설정합니다 `null`을 설정하면 메뉴를 제거합니다.
 
-### `win.setProgressBar(progress)`
+#### `win.setProgressBar(progress[, options])`
 
 * `progress` Double
+* `options` Object (optional)
+  * `mode` String _Windows_ - 프로그레스 막대의 모드 (`none`, `normal`,
+    `indeterminate`, `error`, `paused`)
 
 작업표시줄에 표시되고 있는 애플리케이션 아이콘에 진행 상태를 표시합니다. [0, 1.0]
 사이의 값을 지정할 수 있습니다.
@@ -917,7 +998,12 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 `*.desktop` 파일을 생성한 후 `package.json`의 `desktopName` 필드에 파일 이름을
 지정해야 합니다. 기본적으로 `app.getName().desktop`을 통해 접근합니다.
 
-### `win.setOverlayIcon(overlay, description)` _Windows 7+_
+Windows에선 모드를 전달할 수 있습니다. 사용할 수 있는 값은 `none`, `normal`,
+`indeterminate`, `error`, 그리고 `paused`가 있습니다. 만약 모드 설정 없이
+`setProgressBar`를 호출하면 (올바른 범위의 값을 전달했을 때), `normal`이 기본적으로
+설정됩니다.
+
+#### `win.setOverlayIcon(overlay, description)` _Windows_
 
 * `overlay` [NativeImage](native-image.md) - 작업표시줄 아이콘의 우측 하단에 표시될
 아이콘입니다. `null`로 지정하면 빈 오버레이가 사용됩니다
@@ -926,21 +1012,24 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 현재 작업표시줄 아이콘에 16 x 16 픽셀 크기의 오버레이를 지정합니다. 보통 이 기능은
 애플리케이션의 여러 상태를 사용자에게 소극적으로 알리기 위한 방법으로 사용됩니다.
 
-### `win.setHasShadow(hasShadow)` _macOS_
+#### `win.setHasShadow(hasShadow)` _macOS_
 
 * `hasShadow` Boolean
 
 윈도우가 그림자를 가질지 여부를 지정합니다. Windows와 Linux에선 아무 일도 일어나지
 않습니다.
 
-### `win.hasShadow()` _macOS_
+#### `win.hasShadow()` _macOS_
 
-윈도우가 그림자를 가지고 있는지 여부를 반환합니다. Windows와 Linux에선 항상 `true`를
-반환합니다.
+Returns `Boolean` - 윈도우가 그림자를 가지고 있는지 여부.
 
-### `win.setThumbarButtons(buttons)` _Windows 7+_
+Windows와 Linux에선 항상 `true`를 반환합니다.
 
-* `buttons` - Array
+#### `win.setThumbarButtons(buttons)` _Windows_
+
+* `buttons` [ThumbarButton[]](structures/thumbar-button.md)
+
+Returns `Boolean` - 버튼이 성공적으로 추가되었는지 여부
 
 윈도우 작업표시줄 버튼 레이아웃의 미리보기 이미지 영역에 미리보기 툴바와 버튼 세트를
 추가합니다. 반환되는 `Boolean` 값은 미리보기 툴바가 성공적으로 추가됬는지를 알려줍니다.
@@ -954,31 +1043,48 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 * `Button` 객체
   * `icon` [NativeImage](native-image.md) - 미리보기 툴바에 보여질 아이콘.
+  * `click` Function
   * `tooltip` String (optional) - 버튼의 툴팁 텍스트.
-  * `flags` Array (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로 `enabled`이
-    사용됩니다. 이 속성은 다음 문자열들을 포함할 수 있습니다:
-    * `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
-    * `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의
-      동작에 응답하지 않는 비활성화 상태로 표시됩니다.
-    * `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시
-      종료됩니다.
-    * `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
-    * `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
-    * `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도
-      눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
-      만들어졌습니다.
+  * `flags` String[] (optional) - 버튼의 특정 동작 및 상태 제어. 기본적으로
+    `enabled`이 사용됩니다.
 
-### `win.showDefinitionForSelection()` _macOS_
+`flags` 는 다음 `String` 들을 포함할 수 있는 배열입니다:
+* `enabled` - 사용자가 사용할 수 있도록 버튼이 활성화 됩니다.
+* `disabled` - 버튼이 비활성화 됩니다. 버튼은 표시되지만 시각적인 상태는 사용자의
+  동작에 응답하지 않는 비활성화 상태로 표시됩니다.
+* `dismissonclick` - 버튼이 클릭되면 작업표시줄 버튼의 미리보기(flyout)가 즉시
+  종료됩니다.
+* `nobackground` - 버튼의 테두리를 표시하지 않습니다. 이미지에만 사용할 수 있습니다.
+* `hidden` - 버튼을 사용자에게 표시되지 않도록 숨깁니다.
+* `noninteractive` - 버튼은 활성화되어 있지만 반응이 제거되며 버튼을 눌러도
+  눌려지지 않은 상태를 유지합니다. 이 값은 버튼을 알림의 용도로 사용하기 위해
+  만들어졌습니다.
+
+#### `win.setThumbnailClip(region)` _Windows_
+
+* `region` [Rectangle](structures/rectangle.md) - 윈도우의 영역
+
+작업 표시줄에 윈도우의 섬네일이 표시될 때 섬네일 이미지로 사용할 윈도우의 영역을
+지정합니다. 빈 영역을 지정하는 것으로 전체 윈도우의 섬네일로 초기화할 수 있습니다:
+`{x: 0, y: 0, width: 0, height: 0}`.
+
+#### `win.setThumbnailToolTip(toolTip)` _Windows_
+
+* `toolTip` String
+
+작업 표시줄의 윈도우 섬네일 위에 표시될 툴팁을 설정합니다.
+
+#### `win.showDefinitionForSelection()` _macOS_
 
 `webContents.showDefinitionForSelection()`와 같습니다.
 
-### `win.setIcon(icon)` _Windows_ _Linux_
+#### `win.setIcon(icon)` _Windows_ _Linux_
 
 * `icon` [NativeImage](native-image.md)
 
 윈도우 아이콘을 변경합니다.
 
-### `win.setAutoHideMenuBar(hide)`
+#### `win.setAutoHideMenuBar(hide)`
 
 * `hide` Boolean
 
@@ -988,11 +1094,11 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 메뉴 막대가 이미 표시되고 있을 때 `setAutoHideMenuBar(true)`를 호출한다고 해서
 메뉴가 즉시 숨겨지지는 않습니다.
 
-### `win.isMenuBarAutoHide()`
+#### `win.isMenuBarAutoHide()`
 
-메뉴 막대 자동 숨김 상태인지 여부를 반환합니다.
+Returns `Boolean` - 메뉴 막대 자동 숨김 상태 여부.
 
-### `win.setMenuBarVisibility(visible)`
+#### `win.setMenuBarVisibility(visible)`
 
 * `visible` Boolean
 
@@ -1002,11 +1108,11 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 **역자주:** 기본 메뉴 막대를 완전히 없애려면 `win.setMenu(null)`를 호출해야 합니다.
 단순히 이 API를 사용하면 여전히 메뉴에 등록된 핫 키가 작동합니다.
 
-### `win.isMenuBarVisible()`
+#### `win.isMenuBarVisible()`
 
-메뉴 막대가 표시되고 있는지 여부를 반환합니다.
+Returns `Boolean` - 메뉴 막대가 표시되고 있는지 여부.
 
-### `win.setVisibleOnAllWorkspaces(visible)`
+#### `win.setVisibleOnAllWorkspaces(visible)`
 
 * `visible` Boolean
 
@@ -1014,13 +1120,13 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 
 **참고:** 이 API는 Windows에서 아무 일도 하지 않습니다.
 
-### `win.isVisibleOnAllWorkspaces()`
+#### `win.isVisibleOnAllWorkspaces()`
 
-윈도우가 모든 워크스페이스에서 표시될지 여부를 반환합니다.
+Returns `Boolean` - 윈도우가 모든 워크스페이스에서 표시될지 여부.
 
 **참고:** 이 API는 Windows에서 언제나 false를 반환합니다.
 
-### `win.setIgnoreMouseEvents(ignore)`
+#### `win.setIgnoreMouseEvents(ignore)`
 
 * `ignore` Boolean
 
@@ -1029,32 +1135,35 @@ Linux 플랫폼에선 Unity 데스크톱 환경만 지원합니다. 그리고 �
 이 윈도우에서 일어나는 모든 마우스 이벤트가 이 윈도우 밑의 윈도우로 전달됩니다. 하지만
 이 윈도우가 포커스되어 있다면, 여전히 키보드 이벤트는 받을 수 있습니다.
 
-### `win.setContentProtection(enable)` _macOS_ _Windows_
+#### `win.setContentProtection(enable)` _macOS_ _Windows_
+
+* `enable` Boolean
 
 윈도우 콘텐츠가 외부 어플리케이션에 의해 캡쳐되는 것을 막습니다.
 
 macOS에선 NSWindow의 sharingType을 NSWindowSharingNone로 설정합니다.
-Windows에선 WDA_MONITOR와 함께 SetWindowDisplayAffinity를 호출합니다.
+Windows에선 `WDA_MONITOR`와 함께 SetWindowDisplayAffinity를 호출합니다.
 
-### `win.setFocusable(focusable)` _Windows_
+#### `win.setFocusable(focusable)` _Windows_
 
 * `focusable` Boolean
 
 윈도우가 포커스될 수 있는지 여부를 변경합니다.
 
-### `win.setParentWindow(parent)` _Linux_ _macOS_
+#### `win.setParentWindow(parent)` _Linux_ _macOS_
 
 * `parent` BrowserWindow
-
+`
 `parent` 인수를 현재 윈도우의 부모 윈도우로 설정합니다. `null`로 설정하면
 현재 윈도우를 상위 윈도우로 전환합니다.
 
-### `win.getParentWindow()`
+#### `win.getParentWindow()`
 
-모든 부모 윈도우를 반환합니다.
+Returns `BrowserWindow` - 부모 윈도우.
 
-### `win.getChildWindows()`
+#### `win.getChildWindows()`
 
-모든 자식 윈도우를 반환합니다.
+Returns `BrowserWindow[]` - 모든 자식 윈도우.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+[window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels

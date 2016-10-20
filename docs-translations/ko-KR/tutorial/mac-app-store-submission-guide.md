@@ -32,8 +32,8 @@ Electron은 v0.34.0 버전부터 앱 패키지를 Mac App Store(MAS)에 제출�
 준비 작업이 끝난 후, [애플리케이션 배포](application-distribution.md) 문서에 따라
 애플리케이션을 패키징한 후 애플리케이션에 서명합니다.
 
-먼저, Team ID를 키로 가지고 있는 애플리케이션의 `Info.plist`에 `ElectronTeamID` 키를
-추가해야 합니다:
+먼저, 앱의 `Info.plist` 에 Team ID 를 값으로 갖는 `ElectronTeamID` 키를 추가해야
+합니다:
 
 ```xml
 <plist version="1.0">
@@ -120,7 +120,6 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 문서를 참고하여 기본적인 개념을 이해해야 합니다. 그리고 자격(plist) 파일에
 애플리케이션에서 요구하는 권한의 키를 추가합니다.
 
-
 그 외에 별로도 [electron-osx-sign][electron-osx-sign] 모듈을 사용하여 직접 서명할
 수도 있습니다.
 
@@ -135,8 +134,9 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 
 참고로 네이티브 모듈이 의도하지 않게 중간 파일을 포함하는 경우도 있으며 이 파일은
 포함되어선 안됩니다. (해당 파일에도 서명해야 할 수도 있습니다)
-[electron-packager][electron-packager]를 사용한다면, 빌드 과정에 `--ignore=.+\.o$`
-인수를 추가하여 중간 파일을 무시할 수 있습니다.
+버전 8.1.0 전의 [electron-packager][electron-packager] 는, `--ignore=.+\.o$`
+를 추가하여 이 파일을 무시할 수 있습니다. 8.1.0 버전 이후에는 기본적으로
+무시됩니다.
 
 ### 애플리케이션 업로드
 
@@ -161,6 +161,8 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 * 비디오 캡쳐 기능은 몇몇 장치에서 작동하지 않을 수 있습니다.
 * 특정 접근성 기능이 작동하지 않을 수 있습니다.
 * 애플리케이션이 DNS의 변경을 감지하지 못할 수 있습니다.
+* 로그인할 때 앱을 시작하기 위한 API 는 비활성화 되어있습니다. 다음 문서를 보세요.
+https://github.com/electron/electron/issues/7312#issuecomment-249479237
 
 또한 애플리케이션 샌드박스 개념으로 인해 애플리케이션에서 접근할 수 있는 리소스는
 엄격하게 제한되어 있습니다. 자세한 내용은 [앱 샌드박싱][app-sandboxing] 문서를
@@ -170,6 +172,24 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 
 Mac 앱 스토어 빌드를 위해 앱에서 사용하는 Electron API에 따라 `parent.plist` 파일에
 추가적인 기능에 대한 권한을 추가해야 할 수도 있습니다.
+
+#### 네트워크 접근
+
+서버와 연결하기 위한 외부로 나가는 네트워크 연결 허용 활성화:
+
+```xml
+<key>com.apple.security.network.client</key>
+<true/>
+```
+
+네트워크 리스닝 소켓을 열기 위한 내부로 들어오는 네트워크 연결 허용 활성화:
+
+```xml
+<key>com.apple.security.network.server</key>
+<true/>
+```
+
+자세한 내용은 [네트워크 접근 활성화 문서][network-access] 를 참고하세요.
 
 #### dialog.showOpenDialog
 
@@ -222,7 +242,8 @@ Electron은 다음과 같은 암호화 알고리즘을 사용합니다:
 * RIPEMD - [ISO/IEC 10118-3](http://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
 
 ERN의 승인을 얻는 방법은, 다음 글을 참고하는 것이 좋습니다:
-[애플리케이션이 암호화를 사용할 때, 합법적으로 Apple의 앱 스토어에 제출하는 방법 (또는 ERN의 승인을 얻는 방법)][ern-tutorial].
+[애플리케이션이 암호화를 사용할 때, 합법적으로 Apple의 앱 스토어에 제출하는 방법 (또는
+ERN의 승인을 얻는 방법)][ern-tutorial].
 
 **역자주:** [Mac 앱 배포 가이드 공식 한국어 문서](https://developer.apple.com/osx/distribution/kr/)
 

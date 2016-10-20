@@ -3,15 +3,15 @@
 `clipboard`モジュールは、コピーとペースト操作を実行するメソッドを提供します。次の例は、クリップボードに文字列を書き込む方法を示しています：
 
 ```javascript
-const clipboard = require('electron').clipboard;
-clipboard.writeText('Example String');
+const clipboard = require('electron').clipboard
+clipboard.writeText('Example String')
 ```
 
 X Windowsシステム上では、セレクションクリップボードがあります。それを操作するために、それぞれのメソッドで、`selection`を通す必要があります。
 
 ```javascript
-clipboard.writeText('Example String', 'selection');
-console.log(clipboard.readText('selection'));
+clipboard.writeText('Example String', 'selection')
+console.log(clipboard.readText('selection'))
 ```
 
 ## メソッド
@@ -79,7 +79,7 @@ HTMLマークアップとして、クリップボードの内容を返します�
 `data`で指定したフォーマットをクリップボードがサポートしているかどうかを返します。
 
 ```javascript
-console.log(clipboard.has('<p>selection</p>'));
+console.log(clipboard.has('<p>selection</p>'))
 ```
 
 ### `clipboard.read(data[, type])` _実験_
@@ -98,6 +98,6 @@ console.log(clipboard.has('<p>selection</p>'));
 * `type` String (optional)
 
 ```javascript
-clipboard.write({text: 'test', html: "<b>test</b>"});
+clipboard.write({text: 'test', html: '<b>test</b>'})
 ```
 クリップボードに`data`を書き込みます。

@@ -18,22 +18,22 @@ macOSとLinuxでは、Pepper Flashプラグインの詳細は、Chromeブラウ�
 // On Windows, it might be /path/to/pepflashplayer.dll
 // On macOS, /path/to/PepperFlashPlayer.plugin
 // On Linux, /path/to/libpepflashplayer.so
-app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
+app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so')
 
 // Specify flash version, for example, v17.0.0.169
-app.commandLine.appendSwitch('ppapi-flash-version', '17.0.0.169');
+app.commandLine.appendSwitch('ppapi-flash-version', '17.0.0.169')
 
-app.on('ready', function() {
+app.on('ready', function () {
   mainWindow = new BrowserWindow({
     'width': 800,
     'height': 600,
     'web-preferences': {
       'plugins': true
     }
-  });
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  })
+  mainWindow.loadURL(`file://${__dirname}/index.html`)
   // Something else
-});
+})
 ```
 
 ##  `<webview>` タグでFlashプラグインを有効化

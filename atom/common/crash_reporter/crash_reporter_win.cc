@@ -149,15 +149,10 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
                                     const std::string& version,
                                     const std::string& company_name,
                                     const std::string& submit_url,
+                                    const base::FilePath& crashes_dir,
                                     bool auto_submit,
                                     bool skip_system_crash_handler) {
   skip_system_crash_handler_ = skip_system_crash_handler;
-
-  base::FilePath temp_dir;
-  if (!base::GetTempDir(&temp_dir)) {
-    LOG(ERROR) << "Cannot get temp directory";
-    return;
-  }
 
   base::string16 pipe_name = base::ReplaceStringPlaceholders(
       kPipeNameFormat, base::UTF8ToUTF16(product_name), NULL);
@@ -177,7 +172,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   breakpad_.reset();
 
   breakpad_.reset(new google_breakpad::ExceptionHandler(
-      temp_dir.value(),
+      crashes_dir.DirName().value(),
       FilterCallback,
       MinidumpCallback,
       this,

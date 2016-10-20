@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/macros.h"
 
 namespace crash_reporter {
@@ -24,12 +25,13 @@ class CrashReporter {
   void Start(const std::string& product_name,
              const std::string& company_name,
              const std::string& submit_url,
+             const base::FilePath& crashes_dir,
              bool auto_submit,
              bool skip_system_crash_handler,
              const StringMap& extra_parameters);
 
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
-      const std::string& path);
+      const base::FilePath& crashes_dir);
 
  protected:
   CrashReporter();
@@ -39,6 +41,7 @@ class CrashReporter {
                             const std::string& version,
                             const std::string& company_name,
                             const std::string& submit_url,
+                            const base::FilePath& crashes_dir,
                             bool auto_submit,
                             bool skip_system_crash_handler);
   virtual void SetUploadParameters();

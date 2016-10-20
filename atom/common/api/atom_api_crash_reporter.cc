@@ -6,6 +6,7 @@
 #include <string>
 
 #include "atom/common/crash_reporter/crash_reporter.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/bind.h"
 #include "native_mate/dictionary.h"
 

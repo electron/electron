@@ -1,4 +1,4 @@
-﻿# powerMonitor
+# powerMonitor
 
 > 파워의 상태 변경을 모니터링합니다.
 
@@ -8,18 +8,19 @@
 예시:
 
 ```javascript
-const {app} = require('electron');
+const electron = require('electron')
+const {app} = electron
 
 app.on('ready', () => {
-  require('electron').powerMonitor.on('suspend', () => {
-    console.log('절전모드로 진입합니다!');
-  });
-});
+  electron.powerMonitor.on('suspend', () => {
+    console.log('절전모드로 진입합니다!')
+  })
+})
 ```
 
 ## Events
 
-`power-monitor` 모듈은 다음과 같은 이벤트를 가지고 있습니다:
+`powerMonitor` 모듈은 다음과 같은 이벤트를 가지고 있습니다:
 
 ## Event: `suspend`
 

@@ -33,7 +33,7 @@ $ npm install selenium-webdriver
 在 Electron 下使用 `selenium-webdriver` 和其平时的用法并没有大的差异，只是你需要手动设置连接 ChromeDriver，以及 Electron 的路径：
 
 ```javascript
-const webdriver = require('selenium-webdriver');
+const webdriver = require('selenium-webdriver')
 
 var driver = new webdriver.Builder()
   // "9515" 是ChromeDriver使用的端口
@@ -41,22 +41,22 @@ var driver = new webdriver.Builder()
   .withCapabilities({
     chromeOptions: {
       // 这里设置Electron的路径
-      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom',
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom'
     }
   })
   .forBrowser('electron')
-  .build();
+  .build()
 
-driver.get('http://www.google.com');
-driver.findElement(webdriver.By.name('q')).sendKeys('webdriver');
-driver.findElement(webdriver.By.name('btnG')).click();
-driver.wait(function() {
- return driver.getTitle().then(function(title) {
-   return title === 'webdriver - Google Search';
- });
-}, 1000);
+driver.get('http://www.google.com')
+driver.findElement(webdriver.By.name('q')).sendKeys('webdriver')
+driver.findElement(webdriver.By.name('btnG')).click()
+driver.wait(function () {
+  return driver.getTitle().then(function (title) {
+    return title === 'webdriver - Google Search'
+  })
+}, 1000)
 
-driver.quit();
+driver.quit()
 ```
 
 ## 通过 WebdriverIO 配置
@@ -84,30 +84,30 @@ $ npm install webdriverio
 ### 3. 连接到 ChromeDriver
 
 ```javascript
-const webdriverio = require('webdriverio');
+const webdriverio = require('webdriverio')
 var options = {
-    host: "localhost", // 使用localhost作为ChromeDriver服务器
-    port: 9515,        // "9515"是ChromeDriver使用的端口
-    desiredCapabilities: {
-        browserName: 'chrome',
-        chromeOptions: {
-          binary: '/Path-to-Your-App/electron', // Electron的路径
-          args: [/* cli arguments */]           // 可选参数，类似：'app=' + /path/to/your/app/
-        }
+  host: 'localhost', // 使用localhost作为ChromeDriver服务器
+  port: 9515,        // "9515"是ChromeDriver使用的端口
+  desiredCapabilities: {
+    browserName: 'chrome',
+    chromeOptions: {
+      binary: '/Path-to-Your-App/electron', // Electron的路径
+      args: [/* cli arguments */]           // 可选参数，类似：'app=' + /path/to/your/app/
     }
-};
+  }
+}
 
-var client = webdriverio.remote(options);
+var client = webdriverio.remote(options)
 
 client
     .init()
     .url('http://google.com')
     .setValue('#q', 'webdriverio')
     .click('#btnG')
-    .getTitle().then(function(title) {
-        console.log('Title was: ' + title);
+    .getTitle().then(function (title) {
+      console.log('Title was: ' + title)
     })
-    .end();
+    .end()
 ```
 
 ## 工作流程

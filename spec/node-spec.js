@@ -92,6 +92,29 @@ describe('node feature', function () {
         })
       })
     })
+
+    describe('child_process.spawn', function () {
+      it('supports spawning Electron as a node process via the ELECTRON_RUN_AS_NODE env var', function (done) {
+        const child = ChildProcess.spawn(process.execPath, [path.join(__dirname, 'fixtures', 'module', 'run-as-node.js')], {
+          env: {
+            ELECTRON_RUN_AS_NODE: true
+          }
+        })
+
+        let output = ''
+        child.stdout.on('data', function (data) {
+          output += data
+        })
+        child.stdout.on('close', function () {
+          assert.deepEqual(JSON.parse(output), {
+            processLog: process.platform === 'win32' ? 'function' : 'undefined',
+            processType: 'undefined',
+            window: 'undefined'
+          })
+          done()
+        })
+      })
+    })
   })
 
   describe('contexts', function () {

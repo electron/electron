@@ -1,23 +1,23 @@
-﻿# nativeImage
+# nativeImage
 
 > PNG 또는 JPG 파일을 사용하여 트레이, 독, 애플리케이션 아이콘을 생성합니다.
 
-Electron은 파일 경로 또는 `nativeImage` 인스턴스를 통해 이미지를 사용할 수 있는 API를
+Electron은 파일 경로 또는 `NativeImage` 인스턴스를 통해 이미지를 사용할 수 있는 API를
 가지고 있습니다. `null`을 전달할 경우 빈 이미지가 생성됩니다.
 
 예를 들어 트레이 메뉴를 만들거나 윈도우의 아이콘을 설정할 때 다음과 같이 파일 경로를
 전달하여 이미지를 사용할 수 있습니다:
 
 ```javascript
-const appIcon = new Tray('/Users/somebody/images/icon.png');
-let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+const appIcon = new Tray('/Users/somebody/images/icon.png')
+let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'})
 ```
 
 이 예시는 클립보드로부터 가져온 `nativeImage`로 트레이 메뉴를 생성합니다:
 
 ```javascript
-const image = clipboard.readImage();
-const appIcon = new Tray(image);
+const image = clipboard.readImage()
+const appIcon = new Tray(image)
 ```
 
 ## 지원하는 포맷
@@ -26,17 +26,28 @@ const appIcon = new Tray(image);
 손실 없는 이미지 압축과 투명도 지원을 위해 `PNG` 사용을 권장합니다.
 
 Windows에서는 파일 경로로부터 `ICO` 포맷도 사용할 수 있으며, 가장 좋은 시각적 효과를
-얻기 위해 최소한 아이콘에 다음 사이즈를 포함하는 것을 권장합니다:
+얻기 위해 최소한 다음 사이즈를 포함하는 것을 권장합니다:
 
-* 16x16
-* 32x32
-* 64x64
+* 작은 아이콘
+ * 16x16 (100% DPI 스케일)
+ * 20x20 (125% DPI 스케일)
+ * 24x24 (150% DPI 스케일)
+ * 32x32 (200% DPI 스케일)
+* 큰 아이콘
+ * 32x32 (100% DPI 스케일)
+ * 40x40 (125% DPI 스케일)
+ * 48x48 (150% DPI 스케일)
+ * 64x64 (200% DPI 스케일)
 * 256x256
+
+[이 글][icons]의 *Size requirements* 섹션을 확인하세요.
+
+[icons]:https://msdn.microsoft.com/en-us/library/windows/desktop/dn742485(v=vs.85).aspx
 
 ## 고해상도 이미지
 
-플랫폼이 high-DPI를 지원하는 경우 `@2x`와 같이 이미지의 파일명 뒤에 접미사를 추가하여
-고해상도 이미지로 지정할 수 있습니다.
+플랫폼이 Apple Retina 디스플레이와 같이 high-DPI를 지원하는 경우 `@2x`와 같이
+이미지의 파일명 뒤에 접미사를 추가하는 것으로 고해상도 이미지를 지정할 수 있습니다.
 
 예를 들어 `icon.png` 라는 기본 해상도의 이미지를 기준으로 크기를 두 배로 늘린 이미지를
 `icon@2x.png` 처럼 지정하면 고해상도 이미지로 처리됩니다.
@@ -54,7 +65,7 @@ images/
 
 
 ```javascript
-let appIcon = new Tray('/Users/somebody/images/icon.png');
+let appIcon = new Tray('/Users/somebody/images/icon.png')
 ```
 
 지원하는 DPI 접미사는 다음과 같습니다:
@@ -89,22 +100,28 @@ let appIcon = new Tray('/Users/somebody/images/icon.png');
 
 ## Methods
 
-`nativeImage` 클래스는 다음과 같은 메서드를 가지고 있습니다:
+`nativeImage` 모듈은 다음과 같은 메서드를 가지고 있으며, 모든 메서드는
+`NativeImage` 클래스의 인스턴스를 반환합니다.
 
 ### `nativeImage.createEmpty()`
 
-빈 `nativeImage` 인스턴스를 만듭니다.
+Returns `NativeImage`
+
+빈 `NativeImage` 인스턴스를 만듭니다.
 
 ### `nativeImage.createFromPath(path)`
 
 * `path` String
 
-`path`로부터 이미지를 로드하여 새로운 `nativeImage` 인스턴스를 만듭니다.
+Returns `NativeImage`
+
+`path`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
+`path` 가 존재하지 않거나, 읽을 수 없거나, 유효한 이미지가 아니면 빈 이미지를
+반환합니다.
 
 ```javascript
-const nativeImage = require('electron').nativeImage;
-
-let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+const nativeImage = require('electron').nativeImage
+let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 ```
 
 ### `nativeImage.createFromBuffer(buffer[, scaleFactor])`
@@ -112,58 +129,110 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 * `buffer` [Buffer][buffer]
 * `scaleFactor` Double (optional)
 
-`buffer`로부터 이미지를 로드하여 새로운 `nativeImage` 인스턴스를 만듭니다.
+Returns `NativeImage`
+
+`buffer`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
 `scaleFactor`의 기본값은 1.0 입니다.
 
 ### `nativeImage.createFromDataURL(dataURL)`
 
 * `dataURL` String
 
-`dataURL`로부터 이미지를 로드하여 새로운 `nativeImage` 인스턴스를 만듭니다.
+`dataURL`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
 
-## Instance Methods
+## Class: NativeImage
 
-`nativeImage` 인스턴스 객체에서 사용할 수 있는 메서드입니다.
+네이티브로 랩핑된 트레이, dock, 애플리케이션 아이콘을 위한 이미지입니다.
 
-### `image.toPNG()`
+### Instance Methods
 
-`PNG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
+`NativeImage` 클래스 인스턴스 객체에서 사용할 수 있는 메서드입니다.
 
-### `image.toJPEG(quality)`
+#### `image.toPNG()`
+
+Return `Buffer` - `PNG` 로 인코딩된 데이터가 있는 [Buffer][buffer].
+
+#### `image.toJPEG(quality)`
 
 * `quality` Integer (**required**) 0 - 100 사이의 값
 
-`JPEG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
+Return `Buffer` - `JPEG` 로 인코딩된 데이터가 있는 [Buffer][buffer].
 
-### `image.toDataURL()`
+##### `image.toBitmap()`
 
-이미지를 data URL로 반환합니다.
+Return `Buffer` - 이미지의 raw 비트맵 픽셀 데이터가 있는 [Buffer][buffer]의
+복사본.
 
-### `image.getNativeHandle()` _macOS_
+#### `image.toDataURL()`
 
-이미지의 네이티브 핸들 밑에 있는 C 포인터를 담은 [Buffer][buffer]을 반환합니다.
-macOS에선, `NSImage` 인스턴스가 반환됩니다.
+Returns `String` - 이미지의 data URL.
+
+#### `image.getBitmap()`
+
+Returns `Buffer` - 이미지의 raw 비트맵 픽셀 데이터가 있는 [Buffer][buffer].
+
+`getBitmap()`과 `toBitmap()`의 차이는 `getBitmap()`은 비트맵 데이터를 복사하지
+않습니다. 그래서 버퍼를 현재 이벤트 루프 틱에 바로 반환해야 할 경우 유용하게
+사용할 수 있습니다. 그렇지 않은 경우 데이터가 변경되거나 소멸될 수 있습니다.
+
+#### `image.getNativeHandle()` _macOS_
+
+Returns `Buffer` - 이미지의 네이티브 핸들의 C 포인터를 담은 [Buffer][buffer].
+macOS에선, `NSImage` 인스턴스의 포인터가 반환됩니다.
 
 참고로 반환된 포인터는 복사본이 아닌 네이티브 이미지의 밑에 있는 약한 포인터이며,
 따라서 반드시 관련된 `nativeImage` 인스턴스가 확실하게 유지되고 있는지를 인지해야
 합니다.
 
-### `image.isEmpty()`
+#### `image.isEmpty()`
 
-이미지가 비었는지 확인합니다.
+Returns `Boolean` - 이미지가 비었는지 여부.
 
-### `image.getSize()`
+#### `image.getSize()`
 
-이미지의 사이즈를 반환합니다.
+Returns `Object`:
 
-### `image.setTemplateImage(option)`
+* `width` Integer
+* `height` Integer
+
+#### `image.setTemplateImage(option)`
 
 * `option` Boolean
 
 해당 이미지를 템플릿 이미지로 설정합니다.
 
-### `image.isTemplateImage()`
+#### `image.isTemplateImage()`
 
-이미지가 템플릿 이미지인지 확인합니다.
+Returns `Boolean` - 이미지가 템플릿 이미지인지 여부.
+
+#### `image.crop(rect)`
+
+* `rect` Object - 잘라내기 위한 이미지 영역
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+
+Returns `NativeImage` - 잘라낸 이미지.
+
+#### `image.resize(options)`
+
+* `options` Object
+  * `width` Integer (optional)
+  * `height` Integer (optional)
+  * `quality` String (optional) - 크기 변경된 이미지의 원하는 품질.
+    가능한 값은 `good`, `better`, `best` 이며, 기본값은 `best` 입니다.
+    이 값은 원하는 품질/속도 균형을 표현합니다. 이것은 기본이되는 플랫폼의 성능
+    (CPU, GPU) 에 의존하는 알고리즘에 특정 방법으로 변환됩니다. 주어진
+    플랫폼에서 세가지 방법이 모두 같은 알고리즘에 매핑될 수 있습니다.
+
+Returns `NativeImage` - 크기 변경된 이미지.
+
+`height` 또는 `width` 하나만 명시한다면 크기가 변경된 이미지에서도 종횡비가
+유지될 것 입니다.
+
+#### `image.getAspectRatio()`
+
+Returns `Float` - 이미지의 종횡비.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer

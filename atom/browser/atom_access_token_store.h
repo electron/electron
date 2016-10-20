@@ -21,11 +21,6 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
                        const base::string16& access_token) override;
 
  private:
-  void GetRequestContextOnUIThread();
-  void RespondOnOriginatingThread(const LoadAccessTokensCallback& callback);
-
-  scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
-
   DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);
 };
 

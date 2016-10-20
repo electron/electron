@@ -214,6 +214,21 @@ A list of strings which specifies the blink features to be disabled separated by
 The full list of supported feature strings can be found in the
 [RuntimeEnabledFeatures.in][blink-feature-string] file.
 
+### `guestinstance`
+
+```html
+<webview src="https://www.github.com/" guestinstance="3"></webview>
+```
+
+A value that links the webview to a specific webContents. When a webview
+first loads a new webContents is created and this attribute is set to its
+instance identifier. Setting this attribute on a new or existing webview
+connects it to the existing webContents that currently renders in a different
+webview.
+
+The existing webview will see the `destroy` event and will then create a new
+webContents when a new url is loaded.
+
 ## Methods
 
 The `webview` tag has the following methods:
@@ -242,19 +257,19 @@ e.g. the `http://` or `file://`.
 
 ### `<webview>.getURL()`
 
-Returns URL of guest page.
+Returns `String` - The URL of guest page.
 
 ### `<webview>.getTitle()`
 
-Returns the title of guest page.
+Returns `String` - The title of guest page.
 
 ### `<webview>.isLoading()`
 
-Returns a boolean whether guest page is still loading resources.
+Returns `Boolean` - Whether guest page is still loading resources.
 
 ### `<webview>.isWaitingForResponse()`
 
-Returns a boolean whether the guest page is waiting for a first-response for the
+Returns `Boolean` - Whether the guest page is waiting for a first-response for the
 main resource of the page.
 
 ### `<webview>.stop()`
@@ -271,17 +286,17 @@ Reloads the guest page and ignores cache.
 
 ### `<webview>.canGoBack()`
 
-Returns a boolean whether the guest page can go back.
+Returns `Boolean` - Whether the guest page can go back.
 
 ### `<webview>.canGoForward()`
 
-Returns a boolean whether the guest page can go forward.
+Returns `Boolean` - Whether the guest page can go forward.
 
 ### `<webview>.canGoToOffset(offset)`
 
 * `offset` Integer
 
-Returns a boolean whether the guest page can go to `offset`.
+Returns `Boolean` - Whether the guest page can go to `offset`.
 
 ### `<webview>.clearHistory()`
 
@@ -309,7 +324,7 @@ Navigates to the specified offset from the "current entry".
 
 ### `<webview>.isCrashed()`
 
-Whether the renderer process has crashed.
+Returns `Boolean` - Whether the renderer process has crashed.
 
 ### `<webview>.setUserAgent(userAgent)`
 
@@ -319,7 +334,7 @@ Overrides the user agent for the guest page.
 
 ### `<webview>.getUserAgent()`
 
-Returns a `String` representing the user agent for guest page.
+Returns `String` - The user agent for guest page.
 
 ### `<webview>.insertCSS(css)`
 
@@ -348,11 +363,11 @@ Closes the DevTools window of guest page.
 
 ### `<webview>.isDevToolsOpened()`
 
-Returns a boolean whether guest page has a DevTools window attached.
+Returns `Boolean` - Whether guest page has a DevTools window attached.
 
 ### `<webview>.isDevToolsFocused()`
 
-Returns a boolean whether DevTools window of guest page is focused.
+Returns `Boolean` - Whether DevTools window of guest page is focused.
 
 ### `<webview>.inspectElement(x, y)`
 
@@ -373,7 +388,7 @@ Set guest page muted.
 
 ### `<webview>.isAudioMuted()`
 
-Returns whether guest page has been muted.
+Returns `Boolean` - Whether guest page has been muted.
 
 ### `<webview>.undo()`
 
@@ -513,7 +528,7 @@ Shows pop-up dictionary that searches the selected word on the page.
 
 ### `<webview>.getWebContents()`
 
-Returns the [WebContents](web-contents.md) associated with this `webview`.
+Returns `WebContents` - The [WebContents](web-contents.md) associated with this `webview`.
 
 ## DOM events
 
@@ -607,7 +622,7 @@ title is synthesized from file url.
 
 Returns:
 
-* `favicons` Array - Array of URLs.
+* `favicons` String[] - Array of URLs.
 
 Fired when page receives favicon urls.
 
@@ -646,10 +661,9 @@ Returns:
 
 * `result` Object
   * `requestId` Integer
-  * `finalUpdate` Boolean - Indicates if more responses are to follow.
-  * `activeMatchOrdinal` Integer (optional) - Position of the active match.
-  * `matches` Integer (optional) - Number of Matches.
-  * `selectionArea` Object (optional) - Coordinates of first match region.
+  * `activeMatchOrdinal` Integer - Position of the active match.
+  * `matches` Integer - Number of Matches.
+  * `selectionArea` Object - Coordinates of first match region.
 
 Fired when a result is available for
 [`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
@@ -657,7 +671,7 @@ Fired when a result is available for
 ```javascript
 const webview = document.getElementById('foo')
 webview.addEventListener('found-in-page', (e) => {
-  if (e.result.finalUpdate) webview.stopFindInPage('keepSelection')
+  webview.stopFindInPage('keepSelection')
 })
 
 const requestId = webview.findInPage('test')
@@ -671,7 +685,7 @@ Returns:
 * `url` String
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
-  `new-window` and `other`.
+  `new-window`, `save-to-disk` and `other`.
 * `options` Object - The options which should be used for creating the new
   `BrowserWindow`.
 

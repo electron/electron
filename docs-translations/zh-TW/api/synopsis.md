@@ -13,15 +13,15 @@ Electron 也提供一些額外的內建模組用來開發原生桌面應用程�
 主行程 (main process) 腳本是一個像一般 Node.js 的腳本:
 
 ```javascript
-var app = require('app');
-var BrowserWindow = require('browser-window');
+var app = require('app')
+var BrowserWindow = require('browser-window')
 
-var window = null;
+var window = null
 
-app.on('ready', function() {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('https://github.com');
-});
+app.on('ready', function () {
+  window = new BrowserWindow({width: 800, height: 600})
+  window.loadURL('https://github.com')
+})
 ```
 
 渲染行程 (renderer process) 跟一般正常的網頁沒有差別，而且還能有使用 node 模組的能力:

@@ -118,7 +118,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsFullScreenable() = 0;
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() = 0;
-  virtual void SetAlwaysOnTop(bool top) = 0;
+  virtual void SetAlwaysOnTop(bool top,
+                              const std::string& level = "floating") = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
   virtual void SetTitle(const std::string& title) = 0;
@@ -207,6 +208,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMoved();
   void NotifyWindowScrollTouchBegin();
   void NotifyWindowScrollTouchEnd();
+  void NotifyWindowScrollTouchEdge();
   void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();

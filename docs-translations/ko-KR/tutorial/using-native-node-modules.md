@@ -13,20 +13,21 @@ Node의 버전과 전혀 다른 V8 버전을 사용하고 있을 가능성이 �
 몇 가지 환경 변수를 설치하는 것으로, 직접적으로 `npm`을 모듈을 설치하는데 사용할 수
 있습니다.
 
-다음 예시는 Electron에 대한 모든 종속성을 설치하는 예시입니다:
+다음 예시는 Electron에 대한 모든 의존성을 설치하는 예시입니다:
 
 ```bash
 # Electron의 버전.
 export npm_config_target=1.2.3
 # Electron의 아키텍쳐, ia32 또는 x64가 될 수 있습니다.
 export npm_config_arch=x64
+export npm_config_target_arch=x64
 # Electron에 대한 헤더 다운로드 링크.
 export npm_config_disturl=https://atom.io/download/atom-shell
 # node-pre-gyp에 Electron을 빌드한다는 것을 알려줍니다.
 export npm_config_runtime=electron
 # node-pre-gyp에 소스 코드로부터 모듈을 빌드한다는 것을 알려줍니다.
 export npm_config_build_from_source=true
-# 모든 종속성을 설치하고 캐시를 ~/.electron-gyp에 저장합니다.
+# 모든 의존성을 설치하고 캐시를 ~/.electron-gyp에 저장합니다.
 HOME=~/.electron-gyp npm install
 ```
 

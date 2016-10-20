@@ -278,6 +278,10 @@ describe('app module', function () {
     const shouldFail = process.platform === 'win32' ||
                        (process.platform === 'linux' && !app.isUnityRunning())
 
+    afterEach(function () {
+      app.setBadgeCount(0)
+    })
+
     it('returns false when failed', function () {
       assert.equal(app.setBadgeCount(42), !shouldFail)
     })
@@ -332,6 +336,25 @@ describe('app module', function () {
   describe('isAccessibilitySupportEnabled API', function () {
     it('returns whether the Chrome has accessibility APIs enabled', function () {
       assert.equal(typeof app.isAccessibilitySupportEnabled(), 'boolean')
+    })
+  })
+
+  describe('getPath(name)', function () {
+    it('returns paths that exist', function () {
+      assert.equal(fs.existsSync(app.getPath('exe')), true)
+      assert.equal(fs.existsSync(app.getPath('home')), true)
+      assert.equal(fs.existsSync(app.getPath('temp')), true)
+    })
+
+    it('throws an error when the name is invalid', function () {
+      assert.throws(function () {
+        app.getPath('does-not-exist')
+      }, /Failed to get 'does-not-exist' path/)
+    })
+
+    it('returns the overridden path', function () {
+      app.setPath('music', __dirname)
+      assert.equal(app.getPath('music'), __dirname)
     })
   })
 })

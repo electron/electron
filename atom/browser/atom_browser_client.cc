@@ -32,11 +32,13 @@
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
+#include "content/public/browser/geolocation_delegate.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
@@ -52,6 +54,19 @@ bool g_suppress_renderer_process_restart = false;
 
 // Custom schemes to be registered to handle service worker.
 std::string g_custom_service_worker_schemes = "";
+
+// A provider of Geolocation services to override AccessTokenStore.
+class AtomGeolocationDelegate : public content::GeolocationDelegate {
+ public:
+  AtomGeolocationDelegate() = default;
+
+  content::AccessTokenStore* CreateAccessTokenStore() final {
+    return new AtomAccessTokenStore();
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AtomGeolocationDelegate);
+};
 
 void Noop(scoped_refptr<content::SiteInstance>) {
 }
@@ -85,6 +100,44 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
   return WebContentsPreferences::GetWebContentsFromProcessID(process_id);
 }
 
+bool AtomBrowserClient::ShouldCreateNewSiteInstance(
+    content::BrowserContext* browser_context,
+    content::SiteInstance* current_instance,
+    const GURL& url) {
+
+  if (url.SchemeIs(url::kJavaScriptScheme))
+    // "javacript:" scheme should always use same SiteInstance
+    return false;
+
+  if (!IsRendererSandboxed(current_instance->GetProcess()->GetID()))
+    // non-sandboxed renderers should always create a new SiteInstance
+    return true;
+
+  // Create new a SiteInstance if navigating to a different site.
+  auto src_url = current_instance->GetSiteURL();
+  return
+      !content::SiteInstance::IsSameWebSite(browser_context, src_url, url) &&
+      // `IsSameWebSite` doesn't seem to work for some URIs such as `file:`,
+      // handle these scenarios by comparing only the site as defined by
+      // `GetSiteForURL`.
+      content::SiteInstance::GetSiteForURL(browser_context, url) != src_url;
+}
+
+void AtomBrowserClient::AddSandboxedRendererId(int process_id) {
+  base::AutoLock auto_lock(sandboxed_renderers_lock_);
+  sandboxed_renderers_.insert(process_id);
+}
+
+void AtomBrowserClient::RemoveSandboxedRendererId(int process_id) {
+  base::AutoLock auto_lock(sandboxed_renderers_lock_);
+  sandboxed_renderers_.erase(process_id);
+}
+
+bool AtomBrowserClient::IsRendererSandboxed(int process_id) {
+  base::AutoLock auto_lock(sandboxed_renderers_lock_);
+  return sandboxed_renderers_.count(process_id);
+}
+
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();
@@ -92,6 +145,13 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
   host->AddFilter(
       new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
+
+  content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
+  if (WebContentsPreferences::IsSandboxed(web_contents)) {
+    AddSandboxedRendererId(host->GetID());
+    // ensure the sandboxed renderer id is removed later
+    host->AddObserver(this);
+  }
 }
 
 content::SpeechRecognitionManagerDelegate*
@@ -99,8 +159,9 @@ content::SpeechRecognitionManagerDelegate*
   return new AtomSpeechRecognitionManagerDelegate;
 }
 
-content::AccessTokenStore* AtomBrowserClient::CreateAccessTokenStore() {
-  return new AtomAccessTokenStore;
+content::GeolocationDelegate*
+AtomBrowserClient::CreateGeolocationDelegate() {
+  return new AtomGeolocationDelegate();
 }
 
 void AtomBrowserClient::OverrideWebkitPrefs(
@@ -140,8 +201,7 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     return;
   }
 
-  // Restart renderer process for all navigations except "javacript:" scheme.
-  if (url.SchemeIs(url::kJavaScriptScheme))
+  if (!ShouldCreateNewSiteInstance(browser_context, current_instance, url))
     return;
 
   scoped_refptr<content::SiteInstance> site_instance =
@@ -173,6 +233,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // Copy following switches to child process.
   static const char* const kCommonSwitchNames[] = {
     switches::kStandardSchemes,
+    switches::kEnableSandbox
   };
   command_line->CopySwitchesFrom(
       *base::CommandLine::ForCurrentProcess(),
@@ -257,6 +318,7 @@ bool AtomBrowserClient::CanCreateWindow(
     const content::Referrer& referrer,
     WindowOpenDisposition disposition,
     const blink::WebWindowFeatures& features,
+    const std::vector<base::string16>& additional_features,
     bool user_gesture,
     bool opener_suppressed,
     content::ResourceContext* context,
@@ -266,6 +328,11 @@ bool AtomBrowserClient::CanCreateWindow(
     bool* no_javascript_access) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
+  if (IsRendererSandboxed(render_process_id)) {
+    *no_javascript_access = false;
+    return true;
+  }
+
   if (delegate_) {
     content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
         base::Bind(&api::App::OnCreateWindow,
@@ -273,6 +340,7 @@ bool AtomBrowserClient::CanCreateWindow(
                                     target_url,
                                     frame_name,
                                     disposition,
+                                    additional_features,
                                     render_process_id,
                                     opener_render_frame_id));
   }
@@ -287,6 +355,7 @@ void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     additional_schemes->insert(additional_schemes->end(),
                                schemes_list.begin(),
                                schemes_list.end());
+  additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
@@ -323,6 +392,7 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
       break;
     }
   }
+  RemoveSandboxedRendererId(process_id);
 }
 
 }  // namespace atom

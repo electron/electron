@@ -144,8 +144,8 @@ void NodeBindings::Initialize() {
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  if (env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
-    SetErrorMode(0);
+  if (is_browser_ || env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
+    SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 }
 

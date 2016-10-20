@@ -22,14 +22,14 @@ Para agregar un archivo a la lista de documentos recientes, puedes utilizar:
 [app.addRecentDocument][addrecentdocument] API:
 
 ```javascript
-var app = require('app');
-app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
+var app = require('app')
+app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 
 También puedes utilizar [app.clearRecentDocuments](clearrecentdocuments) para vaciar la lista de documentos recientes:
 
 ```javascript
-app.clearRecentDocuments();
+app.clearRecentDocuments()
 ```
 
 ### Notas sobre Windows
@@ -60,17 +60,19 @@ __Menú dock de Terminal.app:__
 Para establecer tu menú dock, puedes utilizar la API `app.dock.setMenu`, la cual sólo está disponible para macOS:
 
 ```javascript
-var app = require('app');
-var Menu = require('menu');
+var app = require('app')
+var Menu = require('menu')
 var dockMenu = Menu.buildFromTemplate([
-  { label: 'New Window', click: function() { console.log('New Window'); } },
-  { label: 'New Window with Settings', submenu: [
-    { label: 'Basic' },
-    { label: 'Pro'}
-  ]},
-  { label: 'New Command...'}
-]);
-app.dock.setMenu(dockMenu);
+  {label: 'New Window', click: function () { console.log('New Window') }},
+  {label: 'New Window with Settings',
+    submenu: [
+      {label: 'Basic'},
+      {label: 'Pro'}
+    ]
+  },
+  {label: 'New Command...'}
+])
+app.dock.setMenu(dockMenu)
 ```
 
 ## Tareas de usuario (Windows)
@@ -107,7 +109,7 @@ Para establecer las tareas de usuario en tu aplicación, puedes utilizar:
 [app.setUserTasks][setusertaskstasks] API:
 
 ```javascript
-var app = require('app');
+var app = require('app')
 app.setUserTasks([
   {
     program: process.execPath,
@@ -117,13 +119,13 @@ app.setUserTasks([
     title: 'New Window',
     description: 'Create a new window'
   }
-]);
+])
 ```
 
 Para purgar la lista de tareas, puedes llamar a `app.setUserTasks` con un array vacío:
 
 ```javascript
-app.setUserTasks([]);
+app.setUserTasks([])
 ```
 
 Las tareas de usuario aún serán visibles después de cerrar tu aplicación, por lo cual
@@ -157,8 +159,8 @@ Para establecer la barra de progreso de una ventana, puedes utilizar
 [BrowserWindow.setProgressBar][setprogressbar] API:
 
 ```javascript
-var window = new BrowserWindow({...});
-window.setProgressBar(0.5);
+var window = new BrowserWindow()
+window.setProgressBar(0.5)
 ```
 
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath

@@ -253,4 +253,26 @@ void Browser::DockSetIcon(const gfx::Image& image) {
       setApplicationIconImage:image.AsNSImage()];
 }
 
+void Browser::ShowAboutPanel() {
+  NSDictionary* options = DictionaryValueToNSDictionary(about_panel_options_);
+  [[AtomApplication sharedApplication]
+      orderFrontStandardAboutPanelWithOptions:options];
+}
+
+void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
+  about_panel_options_.Clear();
+
+  // Upper case option keys for orderFrontStandardAboutPanelWithOptions format
+  for (base::DictionaryValue::Iterator iter(options);
+       !iter.IsAtEnd();
+       iter.Advance()) {
+    std::string key = iter.key();
+    std::string value;
+    if (!key.empty() && iter.value().GetAsString(&value)) {
+      key[0] = base::ToUpperASCII(key[0]);
+      about_panel_options_.SetString(key, value);
+    }
+  }
+}
+
 }  // namespace atom

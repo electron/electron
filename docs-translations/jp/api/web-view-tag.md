@@ -185,15 +185,15 @@ Electronアプリ内でウェブページのような外部コンテンツを埋
 
 ```javascript
 webview.addEventListener('dom-ready', () => {
-  webview.openDevTools();
-});
+  webview.openDevTools()
+})
 ```
 
 ### `<webview>.loadURL(url[, options])`
 
 * `url` URL
 * `options` Object (optional)
-  * `httpReferrer` String - リファラURL 
+  * `httpReferrer` String - リファラURL
   * `userAgent` String - リクエストに使用されるUser agent
   * `extraHeaders` String - 追加のヘッダを"\n"で区切って指定します。
 
@@ -558,8 +558,8 @@ HTML APIでフルスクリーンでなくなった際に発生します。
 
 ```javascript
 webview.addEventListener('console-message', (e) => {
-  console.log('Guest page logged a message:', e.message);
-});
+  console.log('Guest page logged a message:', e.message)
+})
 ```
 
 ### Event: 'found-in-page'
@@ -577,11 +577,10 @@ webview.addEventListener('console-message', (e) => {
 
 ```javascript
 webview.addEventListener('found-in-page', (e) => {
-  if (e.result.finalUpdate)
-    webview.stopFindInPage('keepSelection');
-});
+  if (e.result.finalUpdate) webview.stopFindInPage('keepSelection')
+})
 
-const requestId = webview.findInPage('test');
+const requestId = webview.findInPage('test')
 ```
 
 ### Event: 'new-window'
@@ -599,14 +598,14 @@ const requestId = webview.findInPage('test');
 下記のサンプルは、新しいURLをシステムのデフォルトブラウザで開きます。
 
 ```javascript
-const {shell} = require('electron');
+const {shell} = require('electron')
 
 webview.addEventListener('new-window', (e) => {
-  const protocol = require('url').parse(e.url).protocol;
+  const protocol = require('url').parse(e.url).protocol
   if (protocol === 'http:' || protocol === 'https:') {
-    shell.openExternal(e.url);
+    shell.openExternal(e.url)
   }
-});
+})
 ```
 
 ### Event: 'will-navigate'
@@ -656,8 +655,8 @@ webview.addEventListener('new-window', (e) => {
 
 ```javascript
 webview.addEventListener('close', () => {
-  webview.src = 'about:blank';
-});
+  webview.src = 'about:blank'
+})
 ```
 
 ### Event: 'ipc-message'
@@ -674,18 +673,18 @@ webview.addEventListener('close', () => {
 ```javascript
 // 埋め込み元ページ(<webview>があるページ)で
 webview.addEventListener('ipc-message', (event) => {
-  console.log(event.channel);
+  console.log(event.channel)
   // Prints "pong"
-});
-webview.send('ping');
+})
+webview.send('ping')
 ```
 
 ```javascript
 // ゲストページ(<webview>内)で
-const {ipcRenderer} = require('electron');
+const {ipcRenderer} = require('electron')
 ipcRenderer.on('ping', () => {
-  ipcRenderer.sendToHost('pong');
-});
+  ipcRenderer.sendToHost('pong')
+})
 ```
 
 ### Event: 'crashed'

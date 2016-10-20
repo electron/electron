@@ -67,7 +67,7 @@ var template = [
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
         role: 'selectall'
-      },
+      }
     ]
   },
   {
@@ -76,37 +76,32 @@ var template = [
       {
         label: 'Reload',
         accelerator: 'CmdOrCtrl+R',
-        click: function(item, focusedWindow) {
-          if (focusedWindow)
-            focusedWindow.reload();
+        click: function (item, focusedWindow) {
+          if (focusedWindow) focusedWindow.reload()
         }
       },
       {
         label: 'Toggle Full Screen',
-        accelerator: (function() {
-          if (process.platform == 'darwin')
-            return 'Ctrl+Command+F';
-          else
-            return 'F11';
+        accelerator: (function () {
+          return (process.platform === 'darwin') ? 'Ctrl+Command+F' : 'F11'
         })(),
-        click: function(item, focusedWindow) {
-          if (focusedWindow)
-            focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+        click: function (item, focusedWindow) {
+          if (focusedWindow) focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
         }
       },
       {
         label: 'Toggle Developer Tools',
-        accelerator: (function() {
-          if (process.platform == 'darwin')
-            return 'Alt+Command+I';
-          else
-            return 'Ctrl+Shift+I';
+        accelerator: (function () {
+          if (process.platform === 'darwin') {
+            return 'Alt+Command+I'
+          } else {
+            return 'Ctrl+Shift+I'
+          }
         })(),
-        click: function(item, focusedWindow) {
-          if (focusedWindow)
-            focusedWindow.toggleDevTools();
+        click: function (item, focusedWindow) {
+          if (focusedWindow) focusedWindow.toggleDevTools()
         }
-      },
+      }
     ]
   },
   {
@@ -122,7 +117,7 @@ var template = [
         label: 'Close',
         accelerator: 'CmdOrCtrl+W',
         role: 'close'
-      },
+      }
     ]
   },
   {
@@ -131,14 +126,14 @@ var template = [
     submenu: [
       {
         label: 'Learn More',
-        click: function() { require('electron').shell.openExternal('http://electron.atom.io') }
-      },
+        click: function () { require('electron').shell.openExternal('http://electron.atom.io') }
+      }
     ]
-  },
-];
+  }
+]
 
-if (process.platform == 'darwin') {
-  var name = require('electron').remote.app.getName();
+if (process.platform === 'darwin') {
+  var name = require('electron').remote.app.getName()
   template.unshift({
     label: name,
     submenu: [
@@ -177,10 +172,10 @@ if (process.platform == 'darwin') {
       {
         label: 'Quit',
         accelerator: 'Command+Q',
-        click: function() { app.quit(); }
-      },
+        click: function () { app.quit() }
+      }
     ]
-  });
+  })
   // Window menu.
   template[3].submenu.push(
     {
@@ -190,11 +185,11 @@ if (process.platform == 'darwin') {
       label: 'Bring All to Front',
       role: 'front'
     }
-  );
+  )
 }
 
-var menu = Menu.buildFromTemplate(template);
-Menu.setApplicationMenu(menu);
+var menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
 ```
 
 ## 类: Menu

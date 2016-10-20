@@ -5,7 +5,7 @@ const path = require('path')
 const {closeWindow} = require('./window-helpers')
 
 const {remote} = require('electron')
-const {BrowserWindow, webContents} = remote
+const {BrowserWindow, webContents, ipcMain} = remote
 
 const isCi = remote.getGlobal('isCi')
 
@@ -95,6 +95,82 @@ describe('webContents module', function () {
       BrowserWindow.getAllWindows().forEach(function (window) {
         assert.equal(!window.isVisible() && window.webContents.isFocused(), false)
       })
+    })
+  })
+
+  describe('sendInputEvent(event)', function () {
+    beforeEach(function (done) {
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'key-events.html'))
+      w.webContents.once('did-finish-load', function () {
+        done()
+      })
+    })
+
+    it('can send keydown events', function (done) {
+      ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'a')
+        assert.equal(code, 'KeyA')
+        assert.equal(keyCode, 65)
+        assert.equal(shiftKey, false)
+        assert.equal(ctrlKey, false)
+        assert.equal(altKey, false)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
+    })
+
+    it('can send keydown events with modifiers', function (done) {
+      ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'Z')
+        assert.equal(code, 'KeyZ')
+        assert.equal(keyCode, 90)
+        assert.equal(shiftKey, true)
+        assert.equal(ctrlKey, true)
+        assert.equal(altKey, false)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
+    })
+
+    it('can send keydown events with special keys', function (done) {
+      ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'Tab')
+        assert.equal(code, 'Tab')
+        assert.equal(keyCode, 9)
+        assert.equal(shiftKey, false)
+        assert.equal(ctrlKey, false)
+        assert.equal(altKey, true)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Tab', modifiers: ['alt']})
+    })
+
+    it('can send char events', function (done) {
+      ipcMain.once('keypress', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'a')
+        assert.equal(code, 'KeyA')
+        assert.equal(keyCode, 65)
+        assert.equal(shiftKey, false)
+        assert.equal(ctrlKey, false)
+        assert.equal(altKey, false)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
+      w.webContents.sendInputEvent({type: 'char', keyCode: 'A'})
+    })
+
+    it('can send char events with modifiers', function (done) {
+      ipcMain.once('keypress', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'Z')
+        assert.equal(code, 'KeyZ')
+        assert.equal(keyCode, 90)
+        assert.equal(shiftKey, true)
+        assert.equal(ctrlKey, true)
+        assert.equal(altKey, false)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z'})
+      w.webContents.sendInputEvent({type: 'char', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
     })
   })
 })

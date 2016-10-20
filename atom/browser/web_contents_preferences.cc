@@ -97,6 +97,12 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration ? "true" : "false");
 
+  // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
+  // pass `--enable-sandbox` to the renderer so it won't have any node.js
+  // integration.
+  if (IsSandboxed(web_contents))
+    command_line->AppendSwitch(switches::kEnableSandbox);
+
   // The preload script.
   base::FilePath::StringType preload;
   if (web_preferences.GetString(options::kPreloadScript, &preload)) {
@@ -192,6 +198,21 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   bool offscreen;
   if (web_preferences.GetBoolean("offscreen", &offscreen) && offscreen)
     command_line->AppendSwitch(cc::switches::kEnableBeginFrameScheduling);
+}
+
+bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
+  WebContentsPreferences* self;
+  if (!web_contents)
+    return false;
+
+  self = FromWebContents(web_contents);
+  if (!self)
+    return false;
+
+  base::DictionaryValue& web_preferences = self->web_preferences_;
+  bool sandboxed = false;
+  web_preferences.GetBoolean("sandbox", &sandboxed);
+  return sandboxed;
 }
 
 // static

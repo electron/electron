@@ -9,7 +9,6 @@
 
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 #include "native_mate/dictionary.h"
@@ -20,6 +19,9 @@
 #include "net/cert/x509_certificate.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
+#include "storage/browser/blob/upload_blob_element_reader.h"
+
+#include "atom/common/node_includes.h"
 
 namespace mate {
 
@@ -95,6 +97,10 @@ void GetUploadData(base::ListValue* upload_data_list,
           reader->AsFileReader();
       auto file_path = file_reader->path().AsUTF8Unsafe();
       upload_data_dict->SetStringWithoutPathExpansion("file", file_path);
+    } else {
+      const storage::UploadBlobElementReader* blob_reader =
+          static_cast<storage::UploadBlobElementReader*>(reader.get());
+      upload_data_dict->SetString("blobUUID", blob_reader->uuid());
     }
     upload_data_list->Append(std::move(upload_data_dict));
   }

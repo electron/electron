@@ -74,6 +74,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowMoved() override;
   void OnWindowScrollTouchBegin() override;
   void OnWindowScrollTouchEnd() override;
+  void OnWindowScrollTouchEdge() override;
   void OnWindowSwipe(const std::string& direction) override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
@@ -88,6 +89,10 @@ class Window : public mate::TrackableObject<Window>,
   #endif
 
  private:
+  void Init(v8::Isolate* isolate,
+            v8::Local<v8::Object> wrapper,
+            const mate::Dictionary& options,
+            mate::Handle<class WebContents> web_contents);
   // APIs for NativeWindow.
   void Close();
   void Focus();
@@ -131,7 +136,7 @@ class Window : public mate::TrackableObject<Window>,
   bool IsFullScreenable();
   void SetClosable(bool closable);
   bool IsClosable();
-  void SetAlwaysOnTop(bool top);
+  void SetAlwaysOnTop(bool top, mate::Arguments* args);
   bool IsAlwaysOnTop();
   void Center();
   void SetPosition(int x, int y, mate::Arguments* args);

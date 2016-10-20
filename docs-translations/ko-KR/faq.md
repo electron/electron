@@ -9,7 +9,7 @@ Electron의 Chrome 버전은 보통 새로운 Chrome 안정 버전이 릴리즈 
 Electron은 크롬이 사용하는 안정된 채널만을 이용합니다, 만약 중요한 수정이 베타 또는
 개발 채널에 패치된 경우, 이전 버전의 채널로 롤백합니다.
 
-자세한 내용은 [보안 설명](../tutorial/security.md)을 참고하세요.
+자세한 내용은 [보안 설명](tutorial/security.md)을 참고하세요.
 
 ## Electron은 언제 최신 버전의 Node.js로 업그레이드 하나요?
 
@@ -36,17 +36,17 @@ Node.js의 새로운 기능은 보통 V8 업그레이드에서 가져옵니다. 
 // 메인 프로세스에서
 global.sharedObject = {
   someProperty: 'default value'
-};
+}
 ```
 
 ```javascript
 // 첫 번째 페이지에서
-require('electron').remote.getGlobal('sharedObject').someProperty = 'new value';
+require('electron').remote.getGlobal('sharedObject').someProperty = 'new value'
 ```
 
 ```javascript
 // 두 번째 페이지에서
-console.log(require('electron').remote.getGlobal('sharedObject').someProperty);
+console.log(require('electron').remote.getGlobal('sharedObject').someProperty)
 ```
 
 ## 제작한 애플리케이션의 윈도우/트레이가 몇 분 후에나 나타납니다.
@@ -63,17 +63,17 @@ console.log(require('electron').remote.getGlobal('sharedObject').someProperty);
 
 ```javascript
 app.on('ready', () => {
-  const tray = new Tray('/path/to/icon.png');
-});
+  const tray = new Tray('/path/to/icon.png')
+})
 ```
 
 를 이렇게:
 
 ```javascript
-let tray = null;
+let tray = null
 app.on('ready', () => {
-  tray = new Tray('/path/to/icon.png');
-});
+  tray = new Tray('/path/to/icon.png')
+})
 ```
 
 ## Electron에서 jQuery/RequireJS/Meteor/AngularJS를 사용할 수 없습니다.
@@ -90,7 +90,7 @@ let win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }
-});
+})
 ```
 
 하지만 Node.js의 기능과 Electron API를 유지하고 싶다면 페이지에 다른 라이브러리를
@@ -125,7 +125,7 @@ Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
 출력하는 방법이 있습니다:
 
 ```javascript
-console.log(require.resolve('electron'));
+console.log(require.resolve('electron'))
 ```
 
 그리고 다음과 같은 경로를 가지는지 점검하면 됩니다:

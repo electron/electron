@@ -6,13 +6,13 @@
 舉例來說:
 
 ```javascript
-var app = require('app');
+var app = require('app')
 
-app.on('ready', function() {
-  require('power-monitor').on('suspend', function() {
-    console.log('The system is going to sleep');
-  });
-});
+app.on('ready', function () {
+  require('power-monitor').on('suspend', function () {
+    console.log('The system is going to sleep')
+  })
+})
 ```
 
 ## 事件 (Events)

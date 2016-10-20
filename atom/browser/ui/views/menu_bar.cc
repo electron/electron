@@ -63,7 +63,9 @@ void MenuBar::SetMenu(AtomMenuModel* model) {
   RemoveAllChildViews(true);
 
   for (int i = 0; i < model->GetItemCount(); ++i) {
-    SubmenuButton* button = new SubmenuButton(this, model->GetLabelAt(i), this);
+    SubmenuButton* button = new SubmenuButton(model->GetLabelAt(i),
+                                              this,
+                                              background_color_);
     button->set_tag(i);
 
 #if defined(USE_X11)
@@ -129,9 +131,6 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
 
 const char* MenuBar::GetClassName() const {
   return kViewClassName;
-}
-
-void MenuBar::ButtonPressed(views::Button* sender, const ui::Event& event) {
 }
 
 void MenuBar::OnMenuButtonClicked(views::MenuButton* source,

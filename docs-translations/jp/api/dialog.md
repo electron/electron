@@ -5,9 +5,8 @@
 複数のファイルやディレクトリを選択するためのダイアログを表示する例です:
 
 ```javascript
-var win = ...;  // BrowserWindow in which to show the dialog
-const dialog = require('electron').dialog;
-console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
+const {dialog} = require('electron')
+console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}))
 ```
 
 **Note for macOS**: シートとしてダイアログを表示したい場合、唯一しなければならないことは、`browserWindow`パラメーターを参照する`BrowserWindow`を提供することです。

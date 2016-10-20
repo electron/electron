@@ -70,11 +70,7 @@ The `Tray` module emits the following events:
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
   * `metaKey` Boolean
-* `bounds` Object _macOS_ _Windows_ - the bounds of tray icon.
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
 
 Emitted when the tray icon is clicked.
 
@@ -85,11 +81,7 @@ Emitted when the tray icon is clicked.
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
   * `metaKey` Boolean
-* `bounds` Object - the bounds of tray icon.
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
 
 Emitted when the tray icon is right clicked.
 
@@ -100,11 +92,7 @@ Emitted when the tray icon is right clicked.
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
   * `metaKey` Boolean
-* `bounds` Object - the bounds of tray icon
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
 
 Emitted when the tray icon is double clicked.
 
@@ -128,7 +116,7 @@ Emitted when any dragged items are dropped on the tray icon.
 #### Event: 'drop-files' _macOS_
 
 * `event` Event
-* `files` Array - the file path of dropped files.
+* `files` String[] - The paths of the dropped files.
 
 Emitted when dragged files are dropped in the tray icon.
 
@@ -243,12 +231,12 @@ Sets the context menu for this icon.
 
 #### `tray.getBounds()` _macOS_ _Windows_
 
-Returns the `bounds` of this tray icon as `Object`.
+Returns [`Rectangle`](structures/rectangle.md)
 
-* `bounds` Object
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+The `bounds` of this tray icon as `Object`.
 
-[event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter
+#### `tray.isDestroyed()`
+
+Returns `Boolean` - Whether the tray icon is destroyed.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

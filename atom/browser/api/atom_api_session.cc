@@ -49,6 +49,7 @@
 #include "net/url_request/url_request_context_getter.h"
 #include "ui/base/l10n/l10n_util.h"
 
+using atom::api::Cookies;
 using content::BrowserThread;
 using content::StoragePartition;
 
@@ -335,7 +336,7 @@ void OnClearStorageDataDone(const base::Closure& callback) {
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : devtools_network_emulation_client_id_(base::GenerateGUID()),
       browser_context_(browser_context) {
-  // Observe DownloadManger to get download notifications.
+  // Observe DownloadManager to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
       AddObserver(this);
 
@@ -504,9 +505,24 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+void Session::GetBlobData(
+    const std::string& uuid,
+    const AtomBlobReader::CompletionCallback& callback) {
+  if (callback.is_null())
+    return;
+
+  AtomBlobReader* blob_reader =
+      browser_context()->GetBlobReader();
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomBlobReader::StartReading,
+                 base::Unretained(blob_reader),
+                 uuid,
+                 callback));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
-    auto handle = atom::api::Cookies::Create(isolate, browser_context());
+    auto handle = Cookies::Create(isolate, browser_context());
     cookies_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, cookies_);
@@ -586,6 +602,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                  &Session::AllowNTLMCredentialsForDomains)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("getBlobData", &Session::GetBlobData)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);
@@ -615,6 +632,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("Session", Session::GetConstructor(isolate)->GetFunction());
+  dict.Set("Cookies", Cookies::GetConstructor(isolate)->GetFunction());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 

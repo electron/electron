@@ -33,6 +33,7 @@
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
@@ -390,6 +391,10 @@ void NativeWindow::RequestToClosePage() {
   if (window_unresposive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);
 
+  if (!web_contents())
+    // Already closed by renderer
+    return;
+
   if (web_contents()->NeedToFireBeforeUnload())
     web_contents()->DispatchBeforeUnload();
   else
@@ -501,6 +506,11 @@ void NativeWindow::NotifyWindowScrollTouchBegin() {
 void NativeWindow::NotifyWindowScrollTouchEnd() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnWindowScrollTouchEnd());
+}
+
+void NativeWindow::NotifyWindowScrollTouchEdge() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowScrollTouchEdge());
 }
 
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {

@@ -109,8 +109,6 @@ class PdfToEmfUtilityProcessHostClient
 
  private:
   class GetPageCallbackData {
-    MOVE_ONLY_TYPE_FOR_CPP_03(GetPageCallbackData);
-
    public:
     GetPageCallbackData(int page_number,
                         PdfToEmfConverter::GetPageCallback callback)

@@ -8,8 +8,10 @@
 #include <map>
 #include <string>
 
+#include "base/values.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
+#include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
@@ -75,9 +77,14 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   v8::Local<v8::Value> GetNativeHandle(
     v8::Isolate* isolate,
     mate::Arguments* args);
+  mate::Handle<NativeImage> Resize(v8::Isolate* isolate,
+                                   const base::DictionaryValue& options);
+  mate::Handle<NativeImage> Crop(v8::Isolate* isolate,
+                                 const gfx::Rect& rect);
   std::string ToDataURL();
   bool IsEmpty();
   gfx::Size GetSize();
+  float GetAspectRatio();
 
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);

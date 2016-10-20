@@ -2,10 +2,10 @@
 
 > Retrieve information about screen size, displays, cursor position, etc.
 
-You cannot use this module until the `ready` event of the `app` module is
-emitted (by invoking or requiring it).
+You cannot require or use this module until the `ready` event of the `app`
+module is emitted.
 
-`screen` is an [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+`screen` is an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 
 **Note:** In the renderer / DevTools, `window.screen` is a reserved DOM
 property, so writing `let {screen} = require('electron')` will not work.
@@ -49,23 +49,6 @@ app.on('ready', () => {
 })
 ```
 
-## The `Display` object
-
-The `Display` object represents a physical display connected to the system. A
-fake `Display` may exist on a headless system, or a `Display` may correspond to
-a remote, virtual display.
-
-* `display` object
-  * `id` Integer - Unique identifier associated with the display.
-  * `rotation` Integer - Can be 0, 90, 180, 270, represents screen rotation in
-    clock-wise degrees.
-  * `scaleFactor` Number - Output device's pixel scale factor.
-  * `touchSupport` String - Can be `available`, `unavailable`, `unknown`.
-  * `bounds` Object
-  * `size` Object
-  * `workArea` Object
-  * `workAreaSize` Object
-
 ## Events
 
 The `screen` module emits the following events:
@@ -75,7 +58,7 @@ The `screen` module emits the following events:
 Returns:
 
 * `event` Event
-* `newDisplay` Object
+* `newDisplay` [Display](structures/display.md)
 
 Emitted when `newDisplay` has been added.
 
@@ -84,7 +67,7 @@ Emitted when `newDisplay` has been added.
 Returns:
 
 * `event` Event
-* `oldDisplay` Object
+* `oldDisplay` [Display](structures/display.md)
 
 Emitted when `oldDisplay` has been removed.
 
@@ -93,8 +76,8 @@ Emitted when `oldDisplay` has been removed.
 Returns:
 
 * `event` Event
-* `display` Object
-* `changedMetrics` Array
+* `display` [Display](structures/display.md)
+* `changedMetrics` String[]
 
 Emitted when one or more metrics change in a `display`. The `changedMetrics` is
 an array of strings that describe the changes. Possible changes are `bounds`,
@@ -106,15 +89,19 @@ The `screen` module has the following methods:
 
 ### `screen.getCursorScreenPoint()`
 
-Returns the current absolute position of the mouse pointer.
+Returns `Object`:
+* `x` Integer
+* `y` Integer
+
+The current absolute position of the mouse pointer.
 
 ### `screen.getPrimaryDisplay()`
 
-Returns the primary display.
+Returns `Display` - The primary display.
 
 ### `screen.getAllDisplays()`
 
-Returns an array of displays that are currently available.
+Returns `Display[]` - An array of displays that are currently available.
 
 ### `screen.getDisplayNearestPoint(point)`
 
@@ -122,14 +109,10 @@ Returns an array of displays that are currently available.
   * `x` Integer
   * `y` Integer
 
-Returns the display nearest the specified point.
+Returns `Display` - The display nearest the specified point.
 
 ### `screen.getDisplayMatching(rect)`
 
-* `rect` Object
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `rect` [Rectangle](structures/rectangle.md)
 
-Returns the display that most closely intersects the provided bounds.
+Returns `Display` - The display that most closely intersects the provided bounds.

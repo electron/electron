@@ -5,12 +5,12 @@
 例:
 
 ```javascript
-const powerSaveBlocker = require('electron').powerSaveBlocker;
+const powerSaveBlocker = require('electron').powerSaveBlocker
 
-var id = powerSaveBlocker.start('prevent-display-sleep');
-console.log(powerSaveBlocker.isStarted(id));
+var id = powerSaveBlocker.start('prevent-display-sleep')
+console.log(powerSaveBlocker.isStarted(id))
 
-powerSaveBlocker.stop(id);
+powerSaveBlocker.stop(id)
 ```
 
 ## メソッド

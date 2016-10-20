@@ -5,12 +5,12 @@
 你也可以通过使用 [`webContents`](web-contents.md) 的属性 `session` 来使用一个已有页面的 `session` ，`webContents` 是[`BrowserWindow`](browser-window.md) 的属性.
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
+const BrowserWindow = require('electron').BrowserWindow
 
-var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadURL("http://github.com");
+var win = new BrowserWindow({ width: 800, height: 600 })
+win.loadURL('http://github.com')
 
-var ses = win.webContents.session;
+var ses = win.webContents.session
 ```
 
 ## 方法
@@ -38,9 +38,9 @@ var ses = win.webContents.session;
 可以在 `session` 模块中创建一个 `Session` 对象 :
 
 ```javascript
-const session = require('electron').session;
+const session = require('electron').session
 
-var ses = session.fromPartition('persist:name');
+var ses = session.fromPartition('persist:name')
 ```
 
 ### 实例事件
@@ -58,12 +58,12 @@ var ses = session.fromPartition('persist:name');
 调用 `event.preventDefault()` 可以取消下载，并且在进程的下个 tick中，这个 `item` 也不可用.
 
 ```javascript
-session.defaultSession.on('will-download', function(event, item, webContents) {
-  event.preventDefault();
-  require('request')(item.getURL(), function(data) {
-    require('fs').writeFileSync('/somewhere', data);
-  });
-});
+session.defaultSession.on('will-download', function (event, item, webContents) {
+  event.preventDefault()
+  require('request')(item.getURL(), function (data) {
+    require('fs').writeFileSync('/somewhere', data)
+  })
+})
 ```
 
 ### 实例方法
@@ -76,28 +76,29 @@ session.defaultSession.on('will-download', function(event, item, webContents) {
 
 ```javascript
 // 查询所有 cookies.
-session.defaultSession.cookies.get({}, function(error, cookies) {
-  console.log(cookies);
-});
+session.defaultSession.cookies.get({}, function (error, cookies) {
+  if (error) console.error(error)
+  console.log(cookies)
+})
 
 // 查询与指定 url 相关的所有 cookies.
-session.defaultSession.cookies.get({ url : "http://www.github.com" }, function(error, cookies) {
-  console.log(cookies);
-});
+session.defaultSession.cookies.get({ url: 'http://www.github.com' }, function (error, cookies) {
+  if (error) console.error(error)
+  console.log(cookies)
+})
 
 // 设置 cookie;
 // may overwrite equivalent cookies if they exist.
-var cookie = { url : "http://www.github.com", name : "dummy_name", value : "dummy" };
-session.defaultSession.cookies.set(cookie, function(error) {
-  if (error)
-    console.error(error);
-});
+var cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy' }
+session.defaultSession.cookies.set(cookie, function (error) {
+  if (error) console.error(error)
+})
 ```
 
 #### `ses.cookies.get(filter, callback)`
 
 * `filter` Object
-  * `url` String (可选) - 与获取 cookies 相关的 
+  * `url` String (可选) - 与获取 cookies 相关的
     `url`.不设置的话就是从所有 url 获取 cookies .
   * `name` String (可选) - 通过 name 过滤 cookies.
   * `domain` String (可选) - 获取对应域名或子域名的 cookies .
@@ -106,7 +107,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
   * `session` Boolean (可选) - 过滤掉 session 或 持久的 cookies.
 * `callback` Function
 
-发送一个请求，希望获得所有匹配 `details` 的 cookies, 
+发送一个请求，希望获得所有匹配 `details` 的 cookies,
 在完成的时候，将通过 `callback(error, cookies)` 调用 `callback`.
 
 `cookies`是一个 `cookie` 对象.
@@ -126,7 +127,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
 #### `ses.cookies.set(details, callback)`
 
 * `details` Object
-  * `url` String - 与获取 cookies 相关的 
+  * `url` String - 与获取 cookies 相关的
     `url`.
   * `name` String - cookie 名. 忽略默认为空.
   * `value` String - cookie 值. 忽略默认为空.
@@ -142,7 +143,7 @@ session.defaultSession.cookies.set(cookie, function(error) {
 
 #### `ses.cookies.remove(url, name, callback)`
 
-* `url` String - 与 cookies 相关的 
+* `url` String - 与 cookies 相关的
     `url`.
 * `name` String - 需要删除的 cookie 名.
 * `callback` Function
@@ -203,7 +204,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 
 例子:
 
-* `http=foopy:80;ftp=foopy2` - 为 `http://` URL 使用 HTTP 代理 `foopy:80` , 和为 `ftp://` URL 
+* `http=foopy:80;ftp=foopy2` - 为 `http://` URL 使用 HTTP 代理 `foopy:80` , 和为 `ftp://` URL
   HTTP 代理 `foopy2:80` .
 * `foopy:80` - 为所有 URL 使用 HTTP 代理 `foopy:80` .
 * `foopy:80,bar,direct://` - 为所有 URL 使用 HTTP 代理 `foopy:80` , 如果 `foopy:80` 不可用，则切换使用  `bar`, 再往后就不使用代理了.
@@ -229,7 +230,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 
 * `options` Object
   * `offline` Boolean - 是否模拟网络故障.
-  * `latency` Double - 每毫秒的 RTT 
+  * `latency` Double - 每毫秒的 RTT
   * `downloadThroughput` Double - 每 Bps 的下载速率.
   * `uploadThroughput` Double - 每 Bps 的上载速率.
 
@@ -238,13 +239,13 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 ```javascript
 // 模拟 GPRS 连接，使用的 50kbps 流量，500 毫秒的 rtt.
 window.webContents.session.enableNetworkEmulation({
-    latency: 500,
-    downloadThroughput: 6400,
-    uploadThroughput: 6400
-});
+  latency: 500,
+  downloadThroughput: 6400,
+  uploadThroughput: 6400
+})
 
 // 模拟网络故障.
-window.webContents.session.enableNetworkEmulation({offline: true});
+window.webContents.session.enableNetworkEmulation({offline: true})
 ```
 
 #### `ses.disableNetworkEmulation()`
@@ -261,12 +262,9 @@ window.webContents.session.enableNetworkEmulation({offline: true});
 调用了 `setCertificateVerifyProc(null)` ，则将会回复到默认证书验证过程.
 
 ```javascript
-myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, callback) {
-  if (hostname == 'github.com')
-    callback(true);
-  else
-    callback(false);
-});
+myWindow.webContents.session.setCertificateVerifyProc(function (hostname, cert, callback) {
+  callback(hostname === 'github.com')
+})
 ```
 
 #### `ses.setPermissionRequestHandler(handler)`
@@ -279,16 +277,16 @@ myWindow.webContents.session.setCertificateVerifyProc(function(hostname, cert, c
 为对应 `session` 许可请求设置响应句柄.调用 `callback(true)` 接收许可，调用 `callback(false)` 禁止许可.
 
 ```javascript
-session.fromPartition(partition).setPermissionRequestHandler(function(webContents, permission, callback) {
+session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
   if (webContents.getURL() === host) {
-    if (permission == "notifications") {
-      callback(false); // denied.
-      return;
+    if (permission === 'notifications') {
+      callback(false) // denied.
+      return
     }
   }
 
-  callback(true);
-});
+  callback(true)
+})
 ```
 
 #### `ses.clearHostResolverCache([callback])`
@@ -310,13 +308,13 @@ session.fromPartition(partition).setPermissionRequestHandler(function(webContent
 ```javascript
 // 将所有请求的代理都修改为下列 url.
 var filter = {
-  urls: ["https://*.github.com/*", "*://electron.github.io"]
-};
+  urls: ['https://*.github.com/*', '*://electron.github.io']
+}
 
-session.defaultSession.webRequest.onBeforeSendHeaders(filter, function(details, callback) {
-  details.requestHeaders['User-Agent'] = "MyAgent";
-  callback({cancel: false, requestHeaders: details.requestHeaders});
-});
+session.defaultSession.webRequest.onBeforeSendHeaders(filter, function (details, callback) {
+  details.requestHeaders['User-Agent'] = 'MyAgent'
+  callback({cancel: false, requestHeaders: details.requestHeaders})
+})
 ```
 
 #### `ses.webRequest.onBeforeRequest([filter, ]listener)`
