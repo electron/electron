@@ -83,6 +83,18 @@ If it is an object, it is expected to fully specify an HTTP request via the foll
 `options` properties `protocol`, `host`, `hostname`, `port` and `path` strictly 
 follow the Node.js model as described in the [URL](https://nodejs.org/api/url.html) module.
 
+For instance, we could have created the same request to 'github.com' as follows:
+
+```JavaScript
+const request = net.request({
+  method: 'GET',
+  protocol: 'https:',
+  hostname: 'github.com',
+  port: 443,
+  path: '/'
+})
+```
+
 ### Instance Events
 
 #### Event: 'response'
