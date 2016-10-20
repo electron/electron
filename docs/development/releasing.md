@@ -24,6 +24,7 @@ Run the `bump-version` script, passing `major`, `minor`, or `patch` as an argume
 
 ```sh
 npm run bump-version -- patch
+git push origin HEAD
 ```
 
 This will bump the version number in several files. See [this bump commit] for an example.
