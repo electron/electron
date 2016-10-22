@@ -417,6 +417,38 @@ describe('menu module', function () {
       assert.equal(item.label, 'Hide Electron Test')
       assert.equal(item.accelerator, undefined)
       assert.equal(item.getDefaultRoleAccelerator(), 'Command+H')
+
+      item = new MenuItem({role: 'undo'})
+      assert.equal(item.label, 'Undo')
+      assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+Z')
+
+      item = new MenuItem({role: 'redo'})
+      assert.equal(item.label, 'Redo')
+      assert.equal(item.accelerator, undefined)
+      assert.equal(item.getDefaultRoleAccelerator(), process.platform === 'win32' ? 'Control+Y' : 'Shift+CommandOrControl+Z')
     })
+  })
+})
+
+describe('MenuItem with custom properties in constructor', function () {
+  it('preserves the custom properties', function () {
+    var template = [{
+      label: 'menu 1',
+      customProp: 'foo',
+      submenu: []
+    }]
+
+    var menu = Menu.buildFromTemplate(template)
+    menu.items[0].submenu.append(new MenuItem({
+      label: 'item 1',
+      customProp: 'bar',
+      overrideProperty: 'oops not allowed'
+    }))
+
+    assert.equal(menu.items[0].customProp, 'foo')
+    assert.equal(menu.items[0].submenu.items[0].label, 'item 1')
+    assert.equal(menu.items[0].submenu.items[0].customProp, 'bar')
+    assert.equal(typeof menu.items[0].submenu.items[0].overrideProperty, 'function')
   })
 })

@@ -7,9 +7,6 @@
 #include "build/build_config.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 
-const base::FilePath::CharType kWidevineCdmBaseDirectory[] =
-    FILE_PATH_LITERAL("WidevineCDM");
-
 const char kWidevineCdmPluginExtension[] = "";
 
 const int32_t kWidevineCdmPluginPermissions = ppapi::PERMISSION_DEV |

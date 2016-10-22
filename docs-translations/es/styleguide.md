@@ -94,7 +94,7 @@ regresa un valor, él y su tipo son denotados abajo. Si se estaba a la escucha y
 respondió a este evento se debería ver así:
 
 ```javascript
-Alarm.on('wake-up', function(time) {
+Alarm.on('wake-up', function (time) {
   console.log(time)
 })
 ```

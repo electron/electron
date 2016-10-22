@@ -86,6 +86,9 @@ def main():
   copy_chrome_binary('mksnapshot')
   copy_license()
 
+  if PLATFORM != 'win32':
+    copy_api_json_schema()
+
   if PLATFORM == 'linux':
     strip_binaries()
 
@@ -128,6 +131,8 @@ def copy_license():
                DIST_DIR)
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
+def copy_api_json_schema():
+  shutil.copy2(os.path.join(SOURCE_ROOT, 'out', 'electron-api.json'), DIST_DIR)
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:

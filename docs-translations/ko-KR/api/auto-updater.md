@@ -1,4 +1,4 @@
-﻿# autoUpdater
+# autoUpdater
 
 > 애플리케이션이 자동으로 업데이트를 진행할 수 있도록 기능을 활성화합니다.
 
@@ -103,6 +103,10 @@ Returns:
 * `requestHeaders` Object _macOS_ - HTTP 요청 헤더.
 
 `url`을 설정하고 자동 업데이터를 초기화합니다.
+
+### `autoUpdater.getFeedURL()`
+
+Returns `String` - 현재 업데이트 피드 URL.
 
 ### `autoUpdater.checkForUpdates()`
 

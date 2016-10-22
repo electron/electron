@@ -7,10 +7,11 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 

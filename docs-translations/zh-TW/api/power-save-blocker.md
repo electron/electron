@@ -6,12 +6,12 @@
 舉例來說:
 
 ```javascript
-var powerSaveBlocker = require('power-save-blocker');
+var powerSaveBlocker = require('power-save-blocker')
 
-var id = powerSaveBlocker.start('prevent-display-sleep');
-console.log(powerSaveBlocker.isStarted(id));
+var id = powerSaveBlocker.start('prevent-display-sleep')
+console.log(powerSaveBlocker.isStarted(id))
 
-powerSaveBlocker.stop(id);
+powerSaveBlocker.stop(id)
 ```
 
 ## 方法 (Methods)

@@ -12,6 +12,10 @@
 #include "base/values.h"
 #include "native_mate/handle.h"
 
+#if defined(OS_WIN)
+#include "ui/gfx/sys_color_change_listener.h"
+#endif
+
 namespace base {
 class DictionaryValue;
 }
@@ -20,7 +24,11 @@ namespace atom {
 
 namespace api {
 
-class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
+class SystemPreferences : public mate::EventEmitter<SystemPreferences>
+#if defined(OS_WIN)
+    , public gfx::SysColorChangeListener
+#endif
+  {
  public:
   static mate::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
@@ -29,6 +37,20 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
 
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
+
+  typedef HRESULT (STDAPICALLTYPE *DwmGetColorizationColor)(DWORD *, BOOL *);
+  DwmGetColorizationColor dwmGetColorizationColor =
+    (DwmGetColorizationColor) GetProcAddress(LoadLibraryW(L"dwmapi.dll"),
+                                            "DwmGetColorizationColor");
+
+  std::string GetAccentColor();
+  std::string GetColor(const std::string& color, mate::Arguments* args);
+
+  void InitializeWindow();
+
+  // gfx::SysColorChangeListener:
+  void OnSysColorChange() override;
+
 #elif defined(OS_MACOSX)
   using NotificationCallback = base::Callback<
     void(const std::string&, const base::DictionaryValue&)>;
@@ -48,6 +70,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
   bool IsSwipeTrackingFromScrollEventsEnabled();
 #endif
   bool IsDarkMode();
+  bool IsInvertedColorScheme();
 
  protected:
   explicit SystemPreferences(v8::Isolate* isolate);
@@ -64,6 +87,29 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences> {
 #endif
 
  private:
+#if defined(OS_WIN)
+  // Static callback invoked when a message comes in to our messaging window.
+  static LRESULT CALLBACK
+      WndProcStatic(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
+  LRESULT CALLBACK
+      WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
+  // The window class of |window_|.
+  ATOM atom_;
+
+  // The handle of the module that contains the window procedure of |window_|.
+  HMODULE instance_;
+
+  // The window used for processing events.
+  HWND window_;
+
+  std::string current_color_;
+
+  bool invertered_color_scheme_;
+
+  gfx::ScopedSysColorChangeListener color_change_listener_;
+#endif
   DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
 };
 

@@ -60,7 +60,7 @@ void AtomDownloadManagerDelegate::CreateDownloadPath(
                                               std::string(),
                                               suggested_filename,
                                               mime_type,
-                                              std::string());
+                                              "download");
 
   if (!base::PathExists(default_download_path))
     base::CreateDirectory(default_download_path);

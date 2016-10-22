@@ -1,4 +1,4 @@
-﻿# `File` 객체
+# `File` 객체
 
 > HTML5 `File` API를 기본적인 파일 시스템의 파일처럼 사용합니다.
 
@@ -23,8 +23,9 @@ API를 사용하여 작업할 때 선택된 파일의 경로를 알 수 있도�
   };
   holder.ondrop = (e) => {
     e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    console.log('File you dragged here is', file.path);
+    for (let f of e.dataTransfer.files) {
+      console.log('File(s) you dragged here: ', f.path);
+    }
     return false;
   };
 </script>

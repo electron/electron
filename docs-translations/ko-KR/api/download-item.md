@@ -78,13 +78,19 @@ Returns:
 통해 아무 경로도 설정하지 않을 경우 Electron은 기본 루틴 파일 저장을 실행합니다.
 (파일 대화 상자를 엽니다)
 
+### `downloadItem.getSavePath()`
+
+Returns `String` - 다운로드 아이템의 저장 경로. 이 경로는
+`downloadItem.setSavePath(path)`로 설정된 경로나 나타난 저장 대화상자에서 선택한
+경로 중 하나가 될 수 있습니다.
+
 ### `downloadItem.pause()`
 
 다운로드를 일시 중지합니다.
 
 ### `downloadItem.isPaused()`
 
-다운로드가 일시 중지되었는지 여부를 반환합니다.
+Returns `Boolean` - 다운로드가 일시 중지되었는지 여부.
 
 ### `downloadItem.resume()`
 
@@ -92,7 +98,7 @@ Returns:
 
 ### `downloadItem.canResume()`
 
-다운로드를 재개할 수 있는지 여부를 반환합니다.
+Returns `Boolean` - 다운로드를 재개할 수 있는지 여부.
 
 ### `downloadItem.cancel()`
 
@@ -100,19 +106,19 @@ Returns:
 
 ### `downloadItem.getURL()`
 
-다운로드 아이템의 URL을 표현하는 문자열을 반환합니다.
+Returns `String` - 아이템을 다운로드 한 URL.
 
 ### `downloadItem.getMimeType()`
 
-다우로드 아이템의 MIME 타입을 표현하는 문자열을 반환합니다.
+Returns `String` - 파일의 MIME 타입.
 
 ### `downloadItem.hasUserGesture()`
 
-현재 다운로드가 유저 제스쳐(작업)로인한 다운로드인지 여부를 반환합니다.
+Returns `Boolean` - 유저 제스쳐(작업)로인한 다운로드인지 여부.
 
 ### `downloadItem.getFilename()`
 
-다운로드 아이템의 파일 이름을 표현하는 문자열을 반환합니다.
+Returns `String` - 다운로드 아이템의 파일 이름.
 
 **참고:** 실제 파일 이름과 로컬 디스크에 저장되는 파일의 이름은 서로 다를 수 있습니다.
 예를 들어 만약 사용자가 파일을 저장할 때 파일 이름을 바꿨다면 실제 파일 이름과 저장
@@ -120,20 +126,20 @@ Returns:
 
 ### `downloadItem.getTotalBytes()`
 
-현재 아이템의 전체 다운로드 크기를 정수로 반환합니다. 크기가 unknown이면 0을
-반환합니다.
+Returns `Integer` - 다운로드 아이템의 바이트 단위의 전체 크기. 크기를 알 수
+없으면 0.
 
 ### `downloadItem.getReceivedBytes()`
 
-현재 아이템의 다운로드 완료된 바이트 값을 정수로 반환합니다.
+Returns `Integer` - 다운로드 아이템의 수신된 바이트.
 
 ### `downloadItem.getContentDisposition()`
 
-응답 헤더에서 Content-Disposition 필드를 문자열로 반환합니다.
+Return `String` - 응답 헤더의 Content-Disposition 필드.
 
 ### `downloadItem.getState()`
 
-현재 상태를 `String` 타입으로 가져옵니다.
+Return `String` - 현재 상태.
 
 값은 다음이 될 수 있습니다:
 

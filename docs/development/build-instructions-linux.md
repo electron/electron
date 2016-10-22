@@ -7,7 +7,7 @@ Follow the guidelines below for building Electron on Linux.
 * At least 25GB disk space and 8GB RAM.
 * Python 2.7.x. Some distributions like CentOS still use Python 2.6.x
   so you may need to check your Python version with `python -V`.
-* Node.js v0.12.x. There are various ways to install Node. You can download
+* Node.js. There are various ways to install Node. You can download
   source code from [Node.js](http://nodejs.org) and compile from source.
   Doing so permits installing Node on your own home directory as a standard user.
   Or try repositories such as [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories).
@@ -105,7 +105,7 @@ After building is done, you can find the `electron` debug binary under `out/D`.
 To clean the build files:
 
 ```bash
-$ ./script/clean.py
+$ npm run clean
 ```
 
 ## Troubleshooting
@@ -121,17 +121,7 @@ $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
 
 ## Tests
 
-Test your changes conform to the project coding style using:
-
-```bash
-$ npm run lint
-```
-
-Test functionality using:
-
-```bash
-$ ./script/test.py
-```
+See [Build System Overview: Tests](build-system-overview.md#tests)
 
 ## Advanced topics
 

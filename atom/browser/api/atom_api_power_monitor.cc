@@ -5,10 +5,11 @@
 #include "atom/browser/api/atom_api_power_monitor.h"
 
 #include "atom/browser/browser.h"
-#include "atom/common/node_includes.h"
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "native_mate/dictionary.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -43,7 +44,7 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate,
-        "Cannot initialize \"power-monitor\" module before app is ready")));
+        "Cannot require \"powerMonitor\" module before app is ready")));
     return v8::Null(isolate);
   }
 

@@ -24,8 +24,10 @@ class AtomBindings {
   virtual ~AtomBindings();
 
   // Add process.atomBinding function, which behaves like process.binding but
-  // load native code from atom-shell instead.
+  // load native code from Electron instead.
   void BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process);
+
+  static void Log(const base::string16& message);
 
  private:
   void ActivateUVLoop(v8::Isolate* isolate);

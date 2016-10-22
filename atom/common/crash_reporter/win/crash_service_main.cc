@@ -16,6 +16,7 @@ namespace crash_service {
 namespace {
 
 const char kApplicationName[] = "application-name";
+const char kCrashesDirectory[] = "crashes-directory";
 
 const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1 Crash Service";
 const wchar_t kStandardLogFile[] = L"operation_log.txt";
@@ -25,17 +26,11 @@ void InvalidParameterHandler(const wchar_t*, const wchar_t*, const wchar_t*,
   // noop.
 }
 
-bool GetCrashServiceDirectory(const std::wstring& application_name,
-                              base::FilePath* dir) {
-  base::FilePath temp_dir;
-  if (!base::GetTempDir(&temp_dir))
-    return false;
-  temp_dir = temp_dir.Append(application_name + L" Crashes");
+bool CreateCrashServiceDirectory(const base::FilePath& temp_dir) {
   if (!base::PathExists(temp_dir)) {
     if (!base::CreateDirectory(temp_dir))
       return false;
   }
-  *dir = temp_dir;
   return true;
 }
 
@@ -59,9 +54,16 @@ int Main(const wchar_t* cmd) {
   std::wstring application_name = cmd_line.GetSwitchValueNative(
       kApplicationName);
 
+  if (!cmd_line.HasSwitch(kCrashesDirectory)) {
+    LOG(ERROR) << "Crashes directory path must be specified with --"
+               << kCrashesDirectory;
+    return 1;
+  }
+
   // We use/create a directory under the user's temp folder, for logging.
-  base::FilePath operating_dir;
-  GetCrashServiceDirectory(application_name, &operating_dir);
+  base::FilePath operating_dir(
+      cmd_line.GetSwitchValueNative(kCrashesDirectory));
+  CreateCrashServiceDirectory(operating_dir);
   base::FilePath log_file = operating_dir.Append(kStandardLogFile);
 
   // Logging to stderr (to help with debugging failures on the

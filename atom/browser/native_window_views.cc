@@ -138,7 +138,7 @@ NativeWindowViews::NativeWindowViews(
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
 #if defined(OS_WIN)
-      enabled_a11y_support_(false),
+      checked_for_a11y_support_(false),
       thick_frame_(true),
 #endif
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
@@ -682,7 +682,7 @@ bool NativeWindowViews::IsClosable() {
 #endif
 }
 
-void NativeWindowViews::SetAlwaysOnTop(bool top) {
+void NativeWindowViews::SetAlwaysOnTop(bool top, const std::string& level) {
   window_->SetAlwaysOnTop(top);
 }
 

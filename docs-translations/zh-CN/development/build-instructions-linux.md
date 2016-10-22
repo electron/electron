@@ -121,3 +121,69 @@ $ ./script/cpplint.py
 ```bash
 $ ./script/test.py
 ```
+
+## Advanced topics
+
+默认编译配置是针对主流 Linux 桌面发行版而言, 对于其他特定发行版或平台, 以下信息可能会帮到你.
+
+### 本地编译 `libchromiumcontent`
+
+可以添加参数 `--build_libchromiumcontent` 给 `bootstrap.py` 脚本以避免使用预编译的
+`libchromiumcontent` 二进制文件:
+
+```bash
+$ ./script/bootstrap.py -v --build_libchromiumcontent
+```
+
+默认情况下不会以 `shared_library` 方式编译, 所以你如果使用以下模式的话, 只能编译 Electron
+的 `Release` 版本:
+
+```bash
+$ ./script/build.py -c R
+```
+
+### 使用系统提供的 `clang`
+
+默认情况下 Electron 使用 Chromium 项目提供的预编译的 `clang` 进行编译. 如果基于某些原因
+你想要使用已经安装到系统的 `clang` 进行编译, 可以添加 `--clang_dir=<path>` 参数给
+`bootstrap.py` 以指定 `clang` 安装路径. 上面参数告诉编译脚本, 在目录 `<path>/bin/` 下有
+ `clang` 程序.
+
+假设你的 `clang` 安装路径为 `/user/local/bin/clang`:
+
+```bash
+$ ./script/bootstrap.py -v --build_libchromiumcontent --clang_dir /usr/local
+$ ./script/build.py -c R
+```
+
+### 使用 `clang` 之外的编译器
+
+要使用其他编译器 (如: `g++`) 编译 Electron, 首先需要使用参数 `--disable_clang` 禁用 `clang`,
+然后设置 `CC` 及 `CXX` 环境变量.
+
+假设使用 GCC 工具链:
+
+```bash
+$ env CC=gcc CXX=g++ ./script/bootstrap.py -v --build_libchromiumcontent --disable_clang
+$ ./script/build.py -c R
+```
+
+### 环境变量
+
+除了 `CC` 及 `CXX`, 你还可以设置以下环境变量来自定以编译配置:
+
+* `CPPFLAGS`
+* `CPPFLAGS_host`
+* `CFLAGS`
+* `CFLAGS_host`
+* `CXXFLAGS`
+* `CXXFLAGS_host`
+* `AR`
+* `AR_host`
+* `CC`
+* `CC_host`
+* `CXX`
+* `CXX_host`
+* `LDFLAGS`
+
+以上环境变量需要在执行 `bootstrap.py` 前设置, 在执行 `build.py` 的时候再设置将无效.

@@ -17,7 +17,6 @@
 #include "base/logging.h"
 #include "base/memory/singleton.h"
 #include "base/process/memory.h"
-#include "base/strings/stringprintf.h"
 #include "vendor/breakpad/src/client/linux/handler/exception_handler.h"
 #include "vendor/breakpad/src/common/linux/linux_libc_support.h"
 
@@ -60,9 +59,10 @@ void CrashReporterLinux::InitBreakpad(const std::string& product_name,
                                       const std::string& version,
                                       const std::string& company_name,
                                       const std::string& submit_url,
+                                      const base::FilePath& crashes_dir,
                                       bool auto_submit,
                                       bool skip_system_crash_handler) {
-  EnableCrashDumping(product_name);
+  EnableCrashDumping(crashes_dir);
 
   crash_keys_.SetKeyValue("prod", ATOM_PRODUCT_NAME);
   crash_keys_.SetKeyValue("ver", version.c_str());
@@ -77,16 +77,13 @@ void CrashReporterLinux::SetUploadParameters() {
   upload_parameters_["platform"] = "linux";
 }
 
-void CrashReporterLinux::EnableCrashDumping(const std::string& product_name) {
-  std::string dump_dir = "/tmp/" + product_name + " Crashes";
-  base::FilePath dumps_path(dump_dir);
-  base::CreateDirectory(dumps_path);
+void CrashReporterLinux::EnableCrashDumping(const base::FilePath& crashes_dir) {
+  base::CreateDirectory(crashes_dir);
 
-  std::string log_file = base::StringPrintf(
-      "%s/%s", dump_dir.c_str(), "uploads.log");
+  std::string log_file = crashes_dir.Append("uploads.log").value();
   strncpy(g_crash_log_path, log_file.c_str(), sizeof(g_crash_log_path));
 
-  MinidumpDescriptor minidump_descriptor(dumps_path.value());
+  MinidumpDescriptor minidump_descriptor(crashes_dir.value());
   minidump_descriptor.set_size_limit(kMaxMinidumpFileSize);
 
   breakpad_.reset(new ExceptionHandler(

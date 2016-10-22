@@ -37,7 +37,7 @@ $ npm install selenium-webdriver
 與 Electron 一起使用 `selenium-webdriver` 的方法基本上與 upstream 相同，除了你需要手動指定如何連接 chrome driver 和去哪找 Electron 的執行檔：
 
 ```javascript
-const webdriver = require('selenium-webdriver');
+const webdriver = require('selenium-webdriver')
 
 var driver = new webdriver.Builder()
   // The "9515" is the port opened by chrome driver.
@@ -45,22 +45,22 @@ var driver = new webdriver.Builder()
   .withCapabilities({
     chromeOptions: {
       // Here is the path to your Electron binary.
-      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom',
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom'
     }
   })
   .forBrowser('electron')
-  .build();
+  .build()
 
-driver.get('http://www.google.com');
-driver.findElement(webdriver.By.name('q')).sendKeys('webdriver');
-driver.findElement(webdriver.By.name('btnG')).click();
-driver.wait(function() {
- return driver.getTitle().then(function(title) {
-   return title === 'webdriver - Google Search';
- });
-}, 1000);
+driver.get('http://www.google.com')
+driver.findElement(webdriver.By.name('q')).sendKeys('webdriver')
+driver.findElement(webdriver.By.name('btnG')).click()
+driver.wait(function () {
+  return driver.getTitle().then(function (title) {
+    return title === 'webdriver - Google Search'
+  })
+}, 1000)
 
-driver.quit();
+driver.quit()
 ```
 
 ## 透過 WebdriverIO 設定
@@ -88,30 +88,30 @@ $ npm install webdriverio
 ### 3. 連接到 chrome driver
 
 ```javascript
-const webdriverio = require('webdriverio');
+const webdriverio = require('webdriverio')
 var options = {
-    host: "localhost", // Use localhost as chrome driver server
-    port: 9515,        // "9515" is the port opened by chrome driver.
-    desiredCapabilities: {
-        browserName: 'chrome',
-        chromeOptions: {
-          binary: '/Path-to-Your-App/electron', // Path to your Electron binary.
-          args: [/* cli arguments */]           // Optional, perhaps 'app=' + /path/to/your/app/
-        }
+  host: 'localhost', // Use localhost as chrome driver server
+  port: 9515,        // "9515" is the port opened by chrome driver.
+  desiredCapabilities: {
+    browserName: 'chrome',
+    chromeOptions: {
+      binary: '/Path-to-Your-App/electron', // Path to your Electron binary.
+      args: [/* cli arguments */]           // Optional, perhaps 'app=' + /path/to/your/app/
     }
-};
+  }
+}
 
-var client = webdriverio.remote(options);
+var client = webdriverio.remote(options)
 
 client
     .init()
     .url('http://google.com')
     .setValue('#q', 'webdriverio')
     .click('#btnG')
-    .getTitle().then(function(title) {
-        console.log('Title was: ' + title);
+    .getTitle().then(function (title) {
+      console.log('Title was: ' + title)
     })
-    .end();
+    .end()
 ```
 
 ## 運作流程

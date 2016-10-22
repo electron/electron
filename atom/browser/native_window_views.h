@@ -18,6 +18,8 @@
 #include "atom/browser/ui/win/message_handler_delegate.h"
 #include "atom/browser/ui/win/taskbar_host.h"
 #include "base/win/scoped_gdi_object.h"
+#include "ui/base/win/accessibility_misc_utils.h"
+#include <UIAutomationCoreApi.h>
 #endif
 
 namespace views {
@@ -84,7 +86,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
-  void SetAlwaysOnTop(bool top) override;
+  void SetAlwaysOnTop(bool top, const std::string& level) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
   void SetTitle(const std::string& title) override;
@@ -228,8 +230,8 @@ class NativeWindowViews : public NativeWindow,
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 
-  // If true we have enabled a11y
-  bool enabled_a11y_support_;
+  // Memoized version of a11y check
+  bool checked_for_a11y_support_;
 
   // Whether to show the WS_THICKFRAME style.
   bool thick_frame_;

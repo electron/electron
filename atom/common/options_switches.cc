@@ -117,6 +117,9 @@ const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
 
 namespace switches {
 
+// Enable chromium sandbox.
+const char kEnableSandbox[] = "enable-sandbox";
+
 // Enable plugins.
 const char kEnablePlugins[] = "enable-plugins";
 

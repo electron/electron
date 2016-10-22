@@ -101,8 +101,11 @@ Using `autoUpdater` as an example:
 * Constructors must be listed with `###`-level titles.
 * [Static Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) must be listed under a `### Static Methods` chapter.
 * [Instance Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#Prototype_methods) must be listed under an `### Instance Methods` chapter.
+* All methods that have a return value must start their description with "Returns `[TYPE]` - Return description"
+  * If the method returns an `Object`, its structure can be specified using a colon followed by a newline then an unordered list of properties in the same style as function parameters.
 * Instance Events must be listed under an `### Instance Events` chapter.
 * Instance Properties must be listed under an `### Instance Properties` chapter.
+  * Instance properties must start with "A [Property Type] ..."
 
 Using the `Session` and `Cookies` classes as an example:
 
@@ -177,7 +180,7 @@ of argument is notated by either the common types:
 * [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)
 * [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
 * [`Boolean`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)
-* Or a custom type like Electron's [`WebContent`](api/web-content.md)
+* Or a custom type like Electron's [`WebContent`](api/web-contents.md)
 
 If an argument or a method is unique to certain platforms, those platforms are
 denoted using a space-delimited italicized list following the datatype. Values

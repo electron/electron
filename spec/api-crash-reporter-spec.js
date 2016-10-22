@@ -2,25 +2,30 @@ const assert = require('assert')
 const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')
+const temp = require('temp').track()
 const url = require('url')
 const {closeWindow} = require('./window-helpers')
 
-const remote = require('electron').remote
-const app = remote.require('electron').app
-const crashReporter = remote.require('electron').crashReporter
-const BrowserWindow = remote.require('electron').BrowserWindow
+const {remote} = require('electron')
+const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
 describe('crashReporter module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
+  var originalTempDirectory = null
+  var tempDirectory = null
 
   beforeEach(function () {
     w = new BrowserWindow({
       show: false
     })
+    tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
+    originalTempDirectory = app.getPath('temp')
+    app.setPath('temp', tempDirectory)
   })
 
   afterEach(function () {
+    app.setPath('temp', originalTempDirectory)
     return closeWindow(w).then(function () { w = null })
   })
 
@@ -54,11 +59,14 @@ describe('crashReporter module', function () {
         assert.equal(fields['_companyName'], 'Umbrella Corporation')
         assert.equal(fields['_version'], app.getVersion())
 
-        res.end('abc-123-def', () => {
-          assert.equal(crashReporter.getLastCrashReport().id, 'abc-123-def')
-          assert.notEqual(crashReporter.getUploadedReports().length, 0)
-          assert.equal(crashReporter.getUploadedReports()[0].id, 'abc-123-def')
-          done()
+        const reportId = 'abc-123-def-456-abc-789-abc-123-abcd'
+        res.end(reportId, () => {
+          waitForCrashReport().then(() => {
+            assert.equal(crashReporter.getLastCrashReport().id, reportId)
+            assert.notEqual(crashReporter.getUploadedReports().length, 0)
+            assert.equal(crashReporter.getUploadedReports()[0].id, reportId)
+            done()
+          }, done)
         })
       })
     })
@@ -110,3 +118,20 @@ describe('crashReporter module', function () {
     })
   })
 })
+
+const waitForCrashReport = () => {
+  return new Promise((resolve, reject) => {
+    let times = 0
+    const checkForReport = () => {
+      if (crashReporter.getLastCrashReport() != null) {
+        resolve()
+      } else if (times >= 10) {
+        reject(new Error('No crash report available'))
+      } else {
+        times++
+        setTimeout(checkForReport, 100)
+      }
+    }
+    checkForReport()
+  })
+}

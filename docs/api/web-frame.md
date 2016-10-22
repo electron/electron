@@ -23,7 +23,7 @@ zoom percent divided by 100, so 300% = 3.0.
 
 ### `webFrame.getZoomFactor()`
 
-Returns the current zoom factor.
+Returns `Number` - The current zoom factor.
 
 ### `webFrame.setZoomLevel(level)`
 
@@ -35,7 +35,7 @@ limits of 300% and 50% of original size, respectively.
 
 ### `webFrame.getZoomLevel()`
 
-Returns the current zoom level.
+Returns `Number` - The current zoom level.
 
 ### `webFrame.setZoomLevelLimits(minimumLevel, maximumLevel)`
 
@@ -108,6 +108,13 @@ invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
 ### `webFrame.getResourceUsage()`
+
+Returns `Object`:
+* `images` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `cssStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `xslStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `fonts` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `other` [MemoryUsageDetails](structures/memory-usage-details.md)
 
 Returns an object describing usage information of Blink's internal memory
 caches.

@@ -16,6 +16,7 @@ const ipcRenderer = require('electron').ipcRenderer
 const BrowserWindow = remote.require('electron').BrowserWindow
 
 const isCI = remote.getGlobal('isCi')
+const {protocol} = remote
 
 describe('browser-window module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
@@ -273,9 +274,7 @@ describe('browser-window module', function () {
     it('sets the window size', function (done) {
       var size = [300, 400]
       w.once('resize', function () {
-        var newSize = w.getSize()
-        assert.equal(newSize[0], size[0])
-        assert.equal(newSize[1], size[1])
+        assertBoundsEqual(w.getSize(), size)
         done()
       })
       w.setSize(size[0], size[1])
@@ -288,12 +287,12 @@ describe('browser-window module', function () {
       assert.deepEqual(w.getMaximumSize(), [0, 0])
 
       w.setMinimumSize(100, 100)
-      assert.deepEqual(w.getMinimumSize(), [100, 100])
-      assert.deepEqual(w.getMaximumSize(), [0, 0])
+      assertBoundsEqual(w.getMinimumSize(), [100, 100])
+      assertBoundsEqual(w.getMaximumSize(), [0, 0])
 
       w.setMaximumSize(900, 600)
-      assert.deepEqual(w.getMinimumSize(), [100, 100])
-      assert.deepEqual(w.getMaximumSize(), [900, 600])
+      assertBoundsEqual(w.getMinimumSize(), [100, 100])
+      assertBoundsEqual(w.getMaximumSize(), [900, 600])
     })
   })
 
@@ -303,9 +302,7 @@ describe('browser-window module', function () {
       w.setAspectRatio(1 / 2)
       w.setAspectRatio(0)
       w.once('resize', function () {
-        var newSize = w.getSize()
-        assert.equal(newSize[0], size[0])
-        assert.equal(newSize[1], size[1])
+        assertBoundsEqual(w.getSize(), size)
         done()
       })
       w.setSize(size[0], size[1])
@@ -354,7 +351,7 @@ describe('browser-window module', function () {
     it('sets the content size and position', function (done) {
       var bounds = {x: 10, y: 10, width: 250, height: 250}
       w.once('resize', function () {
-        assert.deepEqual(w.getContentBounds(), bounds)
+        assertBoundsEqual(w.getContentBounds(), bounds)
         done()
       })
       w.setContentBounds(bounds)
@@ -408,6 +405,18 @@ describe('browser-window module', function () {
       assert.doesNotThrow(function () {
         w.setProgressBar(0.5, {mode: 'normal'})
       })
+    })
+  })
+
+  describe('BrowserWindow.setAlwaysOnTop(flag, level)', function () {
+    it('sets the window as always on top', function () {
+      assert.equal(w.isAlwaysOnTop(), false)
+      w.setAlwaysOnTop(true, 'dock')
+      assert.equal(w.isAlwaysOnTop(), true)
+      w.setAlwaysOnTop(false)
+      assert.equal(w.isAlwaysOnTop(), false)
+      w.setAlwaysOnTop(true)
+      assert.equal(w.isAlwaysOnTop(), true)
     })
   })
 
@@ -515,9 +524,7 @@ describe('browser-window module', function () {
       size.width += 100
       size.height += 100
       w.setSize(size.width, size.height)
-      var after = w.getSize()
-      assert.equal(after[0], size.width)
-      assert.equal(after[1], size.height)
+      assertBoundsEqual(w.getSize(), [size.width, size.height])
     })
   })
 
@@ -578,6 +585,208 @@ describe('browser-window module', function () {
         w.loadURL('file://' + path.join(fixtures, 'api', 'blank.html'))
       })
     })
+
+    describe('"sandbox" option', function () {
+      function waitForEvents (emitter, events, callback) {
+        let count = events.length
+        for (let event of events) {
+          emitter.once(event, () => {
+            if (!--count) callback()
+          })
+        }
+      }
+
+      const preload = path.join(fixtures, 'module', 'preload-sandbox.js')
+
+      // http protocol to simulate accessing another domain. This is required
+      // because the code paths for cross domain popups is different.
+      function crossDomainHandler (request, callback) {
+        callback({
+          mimeType: 'text/html',
+          data: `<html><body><h1>${request.url}</h1></body></html>`
+        })
+      }
+
+      before(function (done) {
+        protocol.interceptStringProtocol('http', crossDomainHandler, function () {
+          done()
+        })
+      })
+
+      after(function (done) {
+        protocol.uninterceptProtocol('http', function () {
+          done()
+        })
+      })
+
+      it('exposes ipcRenderer to preload script', function (done) {
+        ipcMain.once('answer', function (event, test) {
+          assert.equal(test, 'preload')
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'))
+      })
+
+      it('exposes "exit" event to preload script', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload
+          }
+        })
+        let htmlPath = path.join(fixtures, 'api', 'sandbox.html?exit-event')
+        const pageUrl = 'file://' + htmlPath
+        w.loadURL(pageUrl)
+        ipcMain.once('answer', function (event, url) {
+          let expectedUrl = pageUrl
+          if (process.platform === 'win32') {
+            expectedUrl = 'file:///' + htmlPath.replace(/\\/g, '/')
+          }
+          assert.equal(url, expectedUrl)
+          done()
+        })
+      })
+
+      it('should open windows in same domain with cross-scripting enabled', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload
+          }
+        })
+        let htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open')
+        const pageUrl = 'file://' + htmlPath
+        w.loadURL(pageUrl)
+        w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
+          let expectedUrl = pageUrl
+          if (process.platform === 'win32') {
+            expectedUrl = 'file:///' + htmlPath.replace(/\\/g, '/')
+          }
+          assert.equal(url, expectedUrl)
+          assert.equal(frameName, 'popup!')
+          assert.equal(options.x, 50)
+          assert.equal(options.y, 60)
+          assert.equal(options.width, 500)
+          assert.equal(options.height, 600)
+          ipcMain.once('answer', function (event, html) {
+            assert.equal(html, '<h1>scripting from opener</h1>')
+            done()
+          })
+        })
+      })
+
+      it('should open windows in another domain with cross-scripting disabled', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload
+          }
+        })
+        let htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open-external')
+        const pageUrl = 'file://' + htmlPath
+        let popupWindow
+        w.loadURL(pageUrl)
+        w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
+          assert.equal(url, 'http://www.google.com/#q=electron')
+          assert.equal(options.x, 55)
+          assert.equal(options.y, 65)
+          assert.equal(options.width, 505)
+          assert.equal(options.height, 605)
+          ipcMain.once('child-loaded', function (event, openerIsNull, html) {
+            assert(openerIsNull)
+            assert.equal(html, '<h1>http://www.google.com/#q=electron</h1>')
+            ipcMain.once('answer', function (event, exceptionMessage) {
+              assert(/Blocked a frame with origin/.test(exceptionMessage))
+
+              // FIXME this popup window should be closed in sandbox.html
+              closeWindow(popupWindow).then(() => {
+                popupWindow = null
+                done()
+              })
+            })
+            w.webContents.send('child-loaded')
+          })
+        })
+
+        app.once('browser-window-created', function (event, window) {
+          popupWindow = window
+        })
+      })
+
+      it('should set ipc event sender correctly', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload
+          }
+        })
+        let htmlPath = path.join(fixtures, 'api', 'sandbox.html?verify-ipc-sender')
+        const pageUrl = 'file://' + htmlPath
+        w.loadURL(pageUrl)
+        w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
+          let parentWc = w.webContents
+          let childWc = options.webContents
+          assert.notEqual(parentWc, childWc)
+          ipcMain.once('parent-ready', function (event) {
+            assert.equal(parentWc, event.sender)
+            parentWc.send('verified')
+          })
+          ipcMain.once('child-ready', function (event) {
+            assert.equal(childWc, event.sender)
+            childWc.send('verified')
+          })
+          waitForEvents(ipcMain, [
+            'parent-answer',
+            'child-answer'
+          ], done)
+        })
+      })
+
+      describe('event handling', function () {
+        it('works for window events', function (done) {
+          waitForEvents(w, [
+            'page-title-updated'
+          ], done)
+          w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?window-events'))
+        })
+
+        it('works for web contents events', function (done) {
+          waitForEvents(w.webContents, [
+            'did-navigate',
+            'did-fail-load',
+            'did-stop-loading'
+          ], done)
+          w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?webcontents-stop'))
+          waitForEvents(w.webContents, [
+            'did-finish-load',
+            'did-frame-finish-load',
+            'did-navigate-in-page',
+            'will-navigate',
+            'did-start-loading',
+            'did-stop-loading',
+            'did-frame-finish-load',
+            'dom-ready'
+          ], done)
+          w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?webcontents-events'))
+        })
+      })
+    })
   })
 
   describe('beforeunload handler', function () {
@@ -609,10 +818,24 @@ describe('browser-window module', function () {
     }
 
     it('emits when window.open is called', function (done) {
-      w.webContents.once('new-window', function (e, url, frameName) {
+      w.webContents.once('new-window', function (e, url, frameName, disposition, options, additionalFeatures) {
         e.preventDefault()
         assert.equal(url, 'http://host/')
         assert.equal(frameName, 'host')
+        assert.equal(additionalFeatures[0], 'this-is-not-a-standard-feature')
+        done()
+      })
+      w.loadURL('file://' + fixtures + '/pages/window-open.html')
+    })
+
+    it('emits when window.open is called with no webPreferences', function (done) {
+      w.destroy()
+      w = new BrowserWindow({ show: false })
+      w.webContents.once('new-window', function (e, url, frameName, disposition, options, additionalFeatures) {
+        e.preventDefault()
+        assert.equal(url, 'http://host/')
+        assert.equal(frameName, 'host')
+        assert.equal(additionalFeatures[0], 'this-is-not-a-standard-feature')
         done()
       })
       w.loadURL('file://' + fixtures + '/pages/window-open.html')
@@ -1375,3 +1598,32 @@ describe('browser-window module', function () {
     })
   })
 })
+
+const assertBoundsEqual = (actual, expect) => {
+  if (!isScaleFactorRounding()) {
+    assert.deepEqual(expect, actual)
+  } else if (Array.isArray(actual)) {
+    assertWithinDelta(actual[0], expect[0], 1, 'x')
+    assertWithinDelta(actual[1], expect[1], 1, 'y')
+  } else {
+    assertWithinDelta(actual.x, expect.x, 1, 'x')
+    assertWithinDelta(actual.y, expect.y, 1, 'y')
+    assertWithinDelta(actual.width, expect.width, 1, 'width')
+    assertWithinDelta(actual.height, expect.height, 1, 'height')
+  }
+}
+
+const assertWithinDelta = (actual, expect, delta, label) => {
+  const result = Math.abs(actual - expect)
+  assert.ok(result <= delta, `${label} value of ${expect} was not within ${delta} of ${actual}`)
+}
+
+// Is the display's scale factor possibly causing rounding of pixel coordinate
+// values?
+const isScaleFactorRounding = () => {
+  const {scaleFactor} = screen.getPrimaryDisplay()
+  // Return true if scale factor is non-integer value
+  if (Math.round(scaleFactor) !== scaleFactor) return true
+  // Return true if scale factor is odd number above 2
+  return scaleFactor > 2 && scaleFactor % 2 === 1
+}

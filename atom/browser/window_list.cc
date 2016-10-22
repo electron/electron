@@ -71,7 +71,8 @@ void WindowList::RemoveObserver(WindowListObserver* observer) {
 void WindowList::CloseAllWindows() {
   WindowVector windows = GetInstance()->windows_;
   for (const auto& window : windows)
-    window->Close();
+    if (!window->IsClosed())
+      window->Close();
 }
 
 WindowList::WindowList() {

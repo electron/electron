@@ -18,15 +18,15 @@ Siga as instruções em  [`react-devtools/shells/chrome/Readme.md`](https://gith
 Agora você poderá carregar a extensão no Electron abrindo o   DevTools em qualquer janela, e executando o seguinte código no console do DevTools:
 
 ```javascript
-const BrowserWindow = require('electron').remote.BrowserWindow;
-BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
+const BrowserWindow = require('electron').remote.BrowserWindow
+BrowserWindow.addDevToolsExtension('/some-directory/react-devtools/shells/chrome')
 ```
 
 Para remover a extensão, você pode executar a chamada    `BrowserWindow.removeDevToolsExtension`
 com o nome da extensão e ela não será carregada na próxima vez que você abrir o DevTools:
 
 ```javascript
-BrowserWindow.removeDevToolsExtension('React Developer Tools');
+BrowserWindow.removeDevToolsExtension('React Developer Tools')
 ```
 
 ## Formato das extensões DevTools

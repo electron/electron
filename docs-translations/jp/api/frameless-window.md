@@ -7,8 +7,8 @@
 フレームの無いウィンドウを作成するために、[BrowserWindow](browser-window.md)の `options`で、`frame` を `false`に設定する必要があります。
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow;
-var win = new BrowserWindow({ width: 800, height: 600, frame: false });
+const BrowserWindow = require('electron').BrowserWindow
+var win = new BrowserWindow({ width: 800, height: 600, frame: false })
 ```
 
 ### macOSでの別の方法
@@ -16,7 +16,7 @@ var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 macOS 10.10 Yosemite以降では、Chrome無しのウィンドウを指定する方法があります。`frame`を`false`に設定しタイトルバーとウィンドウコントロールの両方を無効にする代わりに、タイトルバーを隠しコンテンツをフルウィンドウサイズに広げたいけど、標準的なウィンドウ操作用にウィンドウコントロール("トラフィックライト")を維持したいかもしれません。新しい`titleBarStyle`オプションを指定することで、そうできます。
 
 ```javascript
-var win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
+var win = new BrowserWindow({ 'titleBarStyle': 'hidden' })
 ```
 
 ## 透明なウィンドウ
@@ -24,7 +24,7 @@ var win = new BrowserWindow({ 'titleBarStyle': 'hidden' });
  `transparent`オプションを`true`に設定すると、フレームの無い透明なウィンドウを作成できます。
 
 ```javascript
-var win = new BrowserWindow({ transparent: true, frame: false });
+var win = new BrowserWindow({ transparent: true, frame: false })
 ```
 
 ### 制限

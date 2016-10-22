@@ -83,9 +83,7 @@ limit, whichever is lower for the current process.
 
 ### `process.getProcessMemoryInfo()`
 
-Returns an object giving memory usage statistics about the current process. Note
-that all statistics are reported in Kilobytes.
-
+Returns `Object`:
 * `workingSetSize` Integer - The amount of memory currently pinned to actual physical
   RAM.
 * `peakWorkingSetSize` Integer - The maximum amount of memory that has ever been pinned
@@ -95,11 +93,12 @@ that all statistics are reported in Kilobytes.
 * `sharedBytes` Integer - The amount of memory shared between processes, typically
   memory consumed by the Electron code itself
 
-### `process.getSystemMemoryInfo()`
-
-Returns an object giving memory usage statistics about the entire system. Note
+Returns an object giving memory usage statistics about the current process. Note
 that all statistics are reported in Kilobytes.
 
+### `process.getSystemMemoryInfo()`
+
+Returns `Object`:
 * `total` Integer - The total amount of physical memory in Kilobytes available to the
   system.
 * `free` Integer - The total amount of memory not being used by applications or disk
@@ -108,3 +107,6 @@ that all statistics are reported in Kilobytes.
   system.  _Windows_ _Linux_
 * `swapFree` Integer - The free amount of swap memory in Kilobytes available to the
   system.  _Windows_ _Linux_
+
+Returns an object giving memory usage statistics about the entire system. Note
+that all statistics are reported in Kilobytes.

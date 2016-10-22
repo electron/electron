@@ -7,9 +7,10 @@
 #include <memory>
 
 #include "base/bind.h"
-#include "components/prefs/pref_service.h"
+#include "base/memory/ref_counted_memory.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
+#include "components/prefs/pref_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/printing/print_job.h"
@@ -133,7 +134,8 @@ void PrintViewManagerBase::OnDidPrintPage(
     }
   }
 
-  std::unique_ptr<PdfMetafileSkia> metafile(new PdfMetafileSkia);
+  std::unique_ptr<PdfMetafileSkia> metafile(
+      new PdfMetafileSkia(PDF_SKIA_DOCUMENT_TYPE));
   if (metafile_must_be_valid) {
     if (!metafile->InitFromData(shared_buf.memory(), params.data_size)) {
       NOTREACHED() << "Invalid metafile header";

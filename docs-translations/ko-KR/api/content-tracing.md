@@ -1,4 +1,4 @@
-﻿# contentTracing
+# contentTracing
 
 > 성능상의 병목 현상과 느린 작업을 찾기 위해 Chromium의 콘텐츠 모듈에서 추적 데이터를
 수집합니다.
@@ -7,22 +7,22 @@
 `chrome://tracing/` 페이지를 열고 생성된 파일을 로드하면 결과를 볼 수 있습니다.
 
 ```javascript
-const {contentTracing} = require('electron');
+const {contentTracing} = require('electron')
 
 const options = {
   categoryFilter: '*',
   traceOptions: 'record-until-full,enable-sampling'
-};
+}
 
 contentTracing.startRecording(options, () => {
-  console.log('Tracing started');
+  console.log('Tracing started')
 
   setTimeout(() => {
     contentTracing.stopRecording('', (path) => {
-      console.log('Tracing data recorded to ' + path);
-    });
-  }, 5000);
-});
+      console.log('Tracing data recorded to ' + path)
+    })
+  }, 5000)
+})
 ```
 
 ## Methods

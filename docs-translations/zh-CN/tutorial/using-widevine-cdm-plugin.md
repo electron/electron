@@ -41,19 +41,19 @@ __注意:__ 虽然只有 `widevinecdmadapter` 的二进制文件传递给了  El
 // * `widevinecdmadapter.plugin` on macOS,
 // * `libwidevinecdmadapter.so` on Linux,
 // * `widevinecdmadapter.dll` on Windows.
-app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.plugin');
+app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.plugin')
 // The version of plugin can be got from `chrome://plugins` page in Chrome.
-app.commandLine.appendSwitch('widevine-cdm-version', '1.4.8.866');
+app.commandLine.appendSwitch('widevine-cdm-version', '1.4.8.866')
 
-var mainWindow = null;
-app.on('ready', function() {
+var mainWindow = null
+app.on('ready', function () {
   mainWindow = new BrowserWindow({
     webPreferences: {
       // The `plugins` have to be enabled.
       plugins: true
     }
   })
-});
+})
 ```
 
 ## 验证插件

@@ -3,7 +3,7 @@
 > Render and control web pages.
 
 `webContents` is an
-[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+[EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 It is responsible for rendering and controlling a web page and is a property of
 the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
@@ -29,19 +29,19 @@ console.log(webContents)
 
 ### `webContents.getAllWebContents()`
 
-Returns an array of all `WebContents` instances. This will contain web contents
+Returns `WebContents[]` - An array of all `WebContents` instances. This will contain web contents
 for all windows, webviews, opened devtools, and devtools extension background pages.
 
 ### `webContents.getFocusedWebContents()`
 
-Returns the web contents that is focused in this application, otherwise
+Returns `WebContents` - The web contents that is focused in this application, otherwise
 returns `null`.
 
 ### `webContents.fromId(id)`
 
 * `id` Integer
 
-Find a `WebContents` instance according to its ID.
+Returns `WebContents` - A WebContents instance with the given ID.
 
 ## Class: WebContents
 
@@ -132,7 +132,7 @@ Emitted when the document in the given frame is loaded.
 Returns:
 
 * `event` Event
-* `favicons` Array - Array of URLs
+* `favicons` String[] - Array of URLs
 
 Emitted when page receives favicon urls.
 
@@ -144,16 +144,20 @@ Returns:
 * `url` String
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
-  `new-window` and `other`.
+  `new-window`, `save-to-disk` and `other`.
 * `options` Object - The options which will be used for creating the new
   `BrowserWindow`.
+* `additionalFeatures` Array - The non-standard features (features not handled
+  by Chromium or Electron) given to `window.open()`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
 
 By default a new `BrowserWindow` will be created for the `url`.
 
-Calling `event.preventDefault()` will prevent creating new windows.
+Calling `event.preventDefault()` will prevent creating new windows. In such case, the
+`event.newGuest` may be set with a reference to a `BrowserWindow` instance to make it
+used by the Electron's runtime.
 
 #### Event: 'will-navigate'
 
@@ -203,7 +207,12 @@ are clicked or when the DOM `hashchange` event is triggered.
 
 #### Event: 'crashed'
 
-Emitted when the renderer process has crashed.
+Returns:
+
+* `event` Event
+* `killed` Boolean
+
+Emitted when the renderer process crashes or is killed.
 
 #### Event: 'plugin-crashed'
 
@@ -238,14 +247,7 @@ Returns:
 * `event` Event
 * `url` URL
 * `error` String - The error code
-* `certificate` Object
-  * `data` String - PEM encoded data
-  * `issuerName` String - Issuer's Common Name
-  * `subjectName` String - Subject's Common Name
-  * `serialNumber` String - Hex value represented string
-  * `validStart` Integer - Start date of the certificate being valid in seconds
-  * `validExpiry` Integer - End date of the certificate being valid in seconds
-  * `fingerprint` String - Fingerprint of the certificate
+* `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
 
 Emitted when failed to verify the `certificate` for `url`.
@@ -259,14 +261,7 @@ Returns:
 
 * `event` Event
 * `url` URL
-* `certificateList` [Objects]
-  * `data` String - PEM encoded data
-  * `issuerName` String - Issuer's Common Name
-  * `subjectName` String - Subject's Common Name
-  * `serialNumber` String - Hex value represented string
-  * `validStart` Integer - Start date of the certificate being valid in seconds
-  * `validExpiry` Integer - End date of the certificate being valid in seconds
-  * `fingerprint` String - Fingerprint of the certificate
+* `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
 
 Emitted when a client certificate is requested.
@@ -302,13 +297,12 @@ Returns:
 * `event` Event
 * `result` Object
   * `requestId` Integer
-  * `finalUpdate` Boolean - Indicates if more responses are to follow.
-  * `activeMatchOrdinal` Integer (optional) - Position of the active match.
-  * `matches` Integer (optional) - Number of Matches.
-  * `selectionArea` Object (optional) - Coordinates of first match region.
+  * `activeMatchOrdinal` Integer - Position of the active match.
+  * `matches` Integer - Number of Matches.
+  * `selectionArea` Object - Coordinates of first match region.
 
 Emitted when a result is available for
-[`webContents.findInPage`](web-contents.md#webcontentsfindinpage) request.
+[`webContents.findInPage`] request.
 
 #### Event: 'media-started-playing'
 
@@ -471,11 +465,7 @@ app.on('ready', () => {
 Returns:
 
 * `event` Event
-* `dirtyRect` Object
-  * `x` Integer - The x coordinate on the image.
-  * `y` Integer - The y coordinate on the image.
-  * `width` Integer - The width of the dirty area.
-  * `height` Integer - The height of the dirty area.
+* `dirtyRect` [Rectangle](structures/rectangle.md)
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
 Emitted when a new frame is generated. Only the dirty area is passed in the
@@ -513,14 +503,14 @@ webContents.loadURL('https://github.com', options)
 
 #### `contents.downloadURL(url)`
 
-* `url` URL
+* `url` String
 
 Initiates a download of the resource at `url` without navigating. The
 `will-download` event of `session` will be triggered.
 
 #### `contents.getURL()`
 
-Returns URL of the current web page.
+Returns `String` - The URL of the current web page.
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -533,28 +523,28 @@ console.log(currentURL)
 
 #### `contents.getTitle()`
 
-Returns the title of the current web page.
+Returns `String` - The title of the current web page.
 
 #### `contents.isDestroyed()`
 
-Returns a Boolean, whether the web page is destroyed.
+Returns `Boolean` - Whether the web page is destroyed.
 
 #### `contents.isFocused()`
 
-Returns a Boolean, whether the web page is focused.
+Returns `Boolean` - Whether the web page is focused.
 
 #### `contents.isLoading()`
 
-Returns whether web page is still loading resources.
+Returns `Boolean` - Whether web page is still loading resources.
 
 #### `contents.isLoadingMainFrame()`
 
-Returns whether the main frame (and not just iframes or frames within it) is
+Returns `Boolean` - Whether the main frame (and not just iframes or frames within it) is
 still loading.
 
 #### `contents.isWaitingForResponse()`
 
-Returns whether the web page is waiting for a first-response from the main
+Returns `Boolean` - Whether the web page is waiting for a first-response from the main
 resource of the page.
 
 #### `contents.stop()`
@@ -571,17 +561,17 @@ Reloads current page and ignores cache.
 
 #### `contents.canGoBack()`
 
-Returns whether the browser can go back to previous web page.
+Returns `Boolean` - Whether the browser can go back to previous web page.
 
 #### `contents.canGoForward()`
 
-Returns whether the browser can go forward to next web page.
+Returns `Boolean` - Whether the browser can go forward to next web page.
 
 #### `contents.canGoToOffset(offset)`
 
 * `offset` Integer
 
-Returns whether the web page can go to `offset`.
+Returns `Boolean` - Whether the web page can go to `offset`.
 
 #### `contents.clearHistory()`
 
@@ -609,7 +599,7 @@ Navigates to the specified offset from the "current entry".
 
 #### `contents.isCrashed()`
 
-Whether the renderer process has crashed.
+Returns `Boolean` - Whether the renderer process has crashed.
 
 #### `contents.setUserAgent(userAgent)`
 
@@ -619,7 +609,7 @@ Overrides the user agent for this web page.
 
 #### `contents.getUserAgent()`
 
-Returns a `String` representing the user agent for this web page.
+Returns `String` - The user agent for this web page.
 
 #### `contents.insertCSS(css)`
 
@@ -648,7 +638,7 @@ Mute the audio on the current web page.
 
 #### `contents.isAudioMuted()`
 
-Returns whether this page has been muted.
+Returns `Boolean` - Whether this page has been muted.
 
 #### `contents.setZoomFactor(factor)`
 
@@ -771,7 +761,7 @@ the request can be obtained by subscribing to
 #### `contents.stopFindInPage(action)`
 
 * `action` String - Specifies the action to take place when ending
-  [`webContents.findInPage`](web-contents.md#webcontentfindinpage) request.
+  [`webContents.findInPage`] request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
@@ -790,11 +780,7 @@ console.log(requestId)
 
 #### `contents.capturePage([rect, ]callback)`
 
-* `rect` Object (optional) - The area of the page to be captured
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured
 * `callback` Function
 
 Captures a snapshot of the page within `rect`. Upon completion `callback` will
@@ -921,11 +907,11 @@ Closes the devtools.
 
 #### `contents.isDevToolsOpened()`
 
-Returns whether the devtools is opened.
+Returns `Boolean` - Whether the devtools is opened.
 
 #### `contents.isDevToolsFocused()`
 
-Returns whether the devtools view is focused .
+Returns `Boolean` - Whether the devtools view is focused .
 
 #### `contents.toggleDevTools()`
 
@@ -1022,7 +1008,7 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
   * `type` String (**required**) - The type of the event, can be `mouseDown`,
     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
     `mouseMove`, `keyDown`, `keyUp`, `char`.
-  * `modifiers` Array - An array of modifiers of the event, can
+  * `modifiers` String[] - An array of modifiers of the event, can
     include `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
     `numLock`, `left`, `right`.
@@ -1122,7 +1108,7 @@ Shows pop-up dictionary that searches the selected word on the page.
 
 #### `contents.isOffscreen()`
 
-Indicates whether *offscreen rendering* is enabled.
+Returns `Boolean` - Indicates whether *offscreen rendering* is enabled.
 
 #### `contents.startPainting()`
 
@@ -1134,7 +1120,7 @@ If *offscreen rendering* is enabled and painting, stop painting.
 
 #### `contents.isPainting()`
 
-If *offscreen rendering* is enabled returns whether it is currently painting.
+Returns `Boolean` - If *offscreen rendering* is enabled returns whether it is currently painting.
 
 #### `contents.setFrameRate(fps)`
 
@@ -1145,32 +1131,37 @@ Only values between 1 and 60 are accepted.
 
 #### `contents.getFrameRate()`
 
-If *offscreen rendering* is enabled returns the current frame rate.
+Returns `Integer` - If *offscreen rendering* is enabled returns the current frame rate.
+
+#### `contents.invalidate()`
+
+If *offscreen rendering* is enabled invalidates the frame and generates a new
+one through the `'paint'` event.
 
 ### Instance Properties
 
 #### `contents.id`
 
-The unique ID of this WebContents.
+A Integer representing the unique ID of this WebContents.
 
 #### `contents.session`
 
-Returns the [session](session.md) object used by this webContents.
+A Session object ([session](session.md)) used by this webContents.
 
 #### `contents.hostWebContents`
 
-Returns the `WebContents` that might own this `WebContents`.
+A `WebContents` that might own this `WebContents`.
 
 #### `contents.devToolsWebContents`
 
-Get the `WebContents` of DevTools for this `WebContents`.
+A `WebContents` of DevTools for this `WebContents`.
 
 **Note:** Users should never store this object because it may become `null`
 when the DevTools has been closed.
 
 #### `contents.debugger`
 
-Get the debugger instance for this webContents.
+A Debugger instance for this webContents.
 
 ## Class: Debugger
 
@@ -1214,7 +1205,7 @@ Attaches the debugger to the `webContents`.
 
 #### `debugger.isAttached()`
 
-Returns a boolean indicating whether a debugger is attached to the `webContents`.
+Returns `Boolean` - Whether a debugger is attached to the `webContents`.
 
 #### `debugger.detach()`
 
@@ -1252,3 +1243,4 @@ Emitted when debugging session is terminated. This happens either when
 Emitted whenever debugging target issues instrumentation event.
 
 [rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol
+[`webContents.findInPage`]: web-contents.md#contentsfindinpagetext-options

@@ -5,15 +5,15 @@
 例如, 当创建一个 tray 或设置窗口的图标时候，你可以使用一个字符串的图片路径 :
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
-var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+var appIcon = new Tray('/Users/somebody/images/icon.png')
+var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'})
 ```
 
 或者从剪切板中读取图片，它返回的是 `nativeImage`:
 
 ```javascript
-var image = clipboard.readImage();
-var appIcon = new Tray(image);
+var image = clipboard.readImage()
+var appIcon = new Tray(image)
 ```
 
 ## 支持的格式
@@ -39,7 +39,7 @@ images/
 
 
 ```javascript
-var appIcon = new Tray('/Users/somebody/images/icon.png');
+var appIcon = new Tray('/Users/somebody/images/icon.png')
 ```
 
 也支持下面这些 DPI 后缀:
@@ -102,9 +102,9 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 `nativeImage` 有如下方法:
 
 ```javascript
-const nativeImage = require('electron').nativeImage;
+const nativeImage = require('electron').nativeImage
 
-var image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
+var image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 ```
 
 ### `image.toPNG()`

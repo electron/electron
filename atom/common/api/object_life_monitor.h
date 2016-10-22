@@ -22,7 +22,6 @@ class ObjectLifeMonitor {
   static void OnObjectGC(const v8::WeakCallbackInfo<ObjectLifeMonitor>& data);
   static void Free(const v8::WeakCallbackInfo<ObjectLifeMonitor>& data);
 
-  v8::Isolate* isolate_;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Object> target_;
 

@@ -40,10 +40,7 @@ void AtomCertVerifier::SetVerifyProc(const VerifyProc& proc) {
 }
 
 int AtomCertVerifier::Verify(
-    net::X509Certificate* cert,
-    const std::string& hostname,
-    const std::string& ocsp_response,
-    int flags,
+    const RequestParams& params,
     net::CRLSet* crl_set,
     net::CertVerifyResult* verify_result,
     const net::CompletionCallback& callback,
@@ -53,12 +50,11 @@ int AtomCertVerifier::Verify(
 
   if (verify_proc_.is_null())
     return default_cert_verifier_->Verify(
-        cert, hostname, ocsp_response, flags, crl_set, verify_result, callback,
-        out_req, net_log);
+        params, crl_set, verify_result, callback, out_req, net_log);
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(verify_proc_, hostname, make_scoped_refptr(cert),
+      base::Bind(verify_proc_, params.hostname(), params.certificate(),
                  base::Bind(OnResult, verify_result, callback)));
   return net::ERR_IO_PENDING;
 }

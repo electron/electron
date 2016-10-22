@@ -5,31 +5,31 @@
 **Note:** ショートカットはグローバルです。アプリがキーボードフォーカスを持っていなくても動作します。`app`モジュールの `ready`イベントが出力されるまでは使うべきではありません。
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const globalShortcut = electron.globalShortcut;
+const electron = require('electron')
+const app = electron.app
+const globalShortcut = electron.globalShortcut
 
-app.on('ready', function() {
+app.on('ready', function () {
   // Register a 'ctrl+x' shortcut listener.
-  var ret = globalShortcut.register('ctrl+x', function() {
-    console.log('ctrl+x is pressed');
-  });
+  var ret = globalShortcut.register('ctrl+x', function () {
+    console.log('ctrl+x is pressed')
+  })
 
   if (!ret) {
-    console.log('registration failed');
+    console.log('registration failed')
   }
 
   // Check whether a shortcut is registered.
-  console.log(globalShortcut.isRegistered('ctrl+x'));
-});
+  console.log(globalShortcut.isRegistered('ctrl+x'))
+})
 
-app.on('will-quit', function() {
+app.on('will-quit', function () {
   // Unregister a shortcut.
-  globalShortcut.unregister('ctrl+x');
+  globalShortcut.unregister('ctrl+x')
 
   // Unregister all shortcuts.
-  globalShortcut.unregisterAll();
-});
+  globalShortcut.unregisterAll()
+})
 ```
 
 ## メソッド

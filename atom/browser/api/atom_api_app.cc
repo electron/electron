@@ -37,6 +37,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
+#include "media/audio/audio_manager.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -490,6 +491,11 @@ void App::OnWillFinishLaunching() {
 }
 
 void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
+#if defined(OS_LINUX)
+  // Set the application name for audio streams shown in external
+  // applications. Only affects pulseaudio currently.
+  media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
+#endif
   Emit("ready", launch_info);
 }
 
@@ -525,6 +531,7 @@ void App::OnLogin(LoginHandler* login_handler,
 void App::OnCreateWindow(const GURL& target_url,
                          const std::string& frame_name,
                          WindowOpenDisposition disposition,
+                         const std::vector<base::string16>& features,
                          int render_process_id,
                          int render_frame_id) {
   v8::Locker locker(isolate());
@@ -535,7 +542,10 @@ void App::OnCreateWindow(const GURL& target_url,
       content::WebContents::FromRenderFrameHost(rfh);
   if (web_contents) {
     auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
-    api_web_contents->OnCreateWindow(target_url, frame_name, disposition);
+    api_web_contents->OnCreateWindow(target_url,
+                                     frame_name,
+                                     disposition,
+                                     features);
   }
 }
 
@@ -585,8 +595,9 @@ void App::SelectClientCertificate(
         cert_request_info->client_certs[0].get());
 }
 
-void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
-  Emit("gpu-process-crashed");
+void App::OnGpuProcessCrashed(base::TerminationStatus status) {
+  Emit("gpu-process-crashed",
+    status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
@@ -596,7 +607,7 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   if (key >= 0)
     succeed = PathService::Get(key, &path);
   if (!succeed)
-    args->ThrowError("Failed to get path");
+    args->ThrowError("Failed to get '" + name + "' path");
   return path;
 }
 
@@ -604,7 +615,7 @@ void App::SetPath(mate::Arguments* args,
                   const std::string& name,
                   const base::FilePath& path) {
   if (!path.IsAbsolute()) {
-    args->ThrowError("path must be absolute");
+    args->ThrowError("Path must be absolute");
     return;
   }
 
@@ -839,6 +850,8 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetUserActivity, browser))
       .SetMethod("getCurrentActivityType",
                  base::Bind(&Browser::GetCurrentActivityType, browser))
+      .SetMethod("setAboutPanelOptions",
+                 base::Bind(&Browser::SetAboutPanelOptions, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
