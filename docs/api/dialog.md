@@ -103,8 +103,8 @@ will be passed via `callback(filename)`
     instead of clicking the buttons of the dialog. By default it is the index
     of the buttons that have "cancel" or "no" as label, or 0 if there is no such
     buttons. On macOS and Windows the index of "Cancel" button will always be
-    used as `cancelId`, not matter whether it is already specified.
-  * `noLink` Boolean - On Windows Electron will try to figure out which one of
+    used as `cancelId`, no matter whether it is already specified.
+  * `noLink` Boolean - On Windows, Electron will try to figure out which one of
     the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
     others as command links in the dialog. This can make the dialog appear in
     the style of modern Windows apps. If you don't like this behavior, you can
