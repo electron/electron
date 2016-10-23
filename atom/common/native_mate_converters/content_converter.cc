@@ -251,7 +251,7 @@ bool Converter<scoped_refptr<ResourceRequestBodyImpl>>::FromV8(
   if (!ConvertFromV8(isolate, val, list.get()))
     return false;
   *out = new content::ResourceRequestBodyImpl();
-  for (int i = 0; i < list->GetSize(); ++i) {
+  for (size_t i = 0; i < list->GetSize(); ++i) {
     base::DictionaryValue* dict = nullptr;
     std::string type;
     if (!list->GetDictionary(i, &dict))
