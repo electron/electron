@@ -490,7 +490,7 @@ win.loadURL('http://github.com')
   * `httpReferrer` String - A HTTP Referrer url.
   * `userAgent` String - A user agent originating the request.
   * `extraHeaders` String - Extra headers separated by "\n"
-  * `postData` ([UploadData](structures/upload-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[]
+  * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[]
 
 Loads the `url` in the window. The `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`. If the load should bypass http cache then

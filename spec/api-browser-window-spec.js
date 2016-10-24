@@ -29,7 +29,7 @@ describe('browser-window module', function () {
     const fileStats = fs.statSync(filePath)
     postData = [
       {
-        'type': 'data',
+        'type': 'rawData',
         'bytes': new Buffer('username=test&file=')
       },
       {
