@@ -1463,9 +1463,9 @@ describe('browser-window module', function () {
   describe('window.webContents.executeJavaScript', function () {
     var expected = 'hello, world!'
     var expectedErrorMsg = 'woops!'
-    var code = '(() => "' + expected + '")()'
-    var asyncCode = '(() => new Promise(r => setTimeout(() => r("' + expected + '"), 500)))()'
-    var badAsyncCode = '(() => new Promise((r, e) => setTimeout(() => e("' + expectedErrorMsg + '"), 500)))()'
+    var code = `(() => "${expected}")()`
+    var asyncCode = `(() => new Promise(r => setTimeout(() => r("${expected}"), 500)))()`
+    var badAsyncCode = `(() => new Promise((r, e) => setTimeout(() => e("${expectedErrorMsg}"), 500)))()`
 
     it('doesnt throw when no calback is provided', function () {
       const result = ipcRenderer.sendSync('executeJavaScript', code, false)

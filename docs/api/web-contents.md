@@ -621,7 +621,7 @@ Injects CSS into the current web page.
   * `result` Any
 
 Returns `Promise` - A promise that resolves with the result of the executed code
-or is rejected if the result of the code is a rejected promise
+or is rejected if the result of the code is a rejected promise.
 
 Evaluates `code` in page.
 
