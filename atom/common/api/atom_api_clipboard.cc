@@ -2,24 +2,20 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <string>
-#include <vector>
+#include "atom/common/api/atom_api_clipboard.h"
 
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/strings/utf_string_conversions.h"
-#include "native_mate/arguments.h"
-#include "native_mate/dictionary.h"
-#include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/base/clipboard/clipboard.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
-#include "ui/gfx/image/image.h"
 
 #include "atom/common/node_includes.h"
 
-namespace {
+namespace atom {
 
-ui::ClipboardType GetClipboardType(mate::Arguments* args) {
+namespace api {
+
+ui::ClipboardType Clipboard::GetClipboardType(mate::Arguments* args) {
   std::string type;
   if (args->GetNext(&type) && type == "selection")
     return ui::CLIPBOARD_TYPE_SELECTION;
@@ -27,7 +23,7 @@ ui::ClipboardType GetClipboardType(mate::Arguments* args) {
     return ui::CLIPBOARD_TYPE_COPY_PASTE;
 }
 
-std::vector<base::string16> AvailableFormats(mate::Arguments* args) {
+std::vector<base::string16> Clipboard::AvailableFormats(mate::Arguments* args) {
   std::vector<base::string16> format_types;
   bool ignore;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
@@ -35,14 +31,14 @@ std::vector<base::string16> AvailableFormats(mate::Arguments* args) {
   return format_types;
 }
 
-bool Has(const std::string& format_string, mate::Arguments* args) {
+bool Clipboard::Has(const std::string& format_string, mate::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
   return clipboard->IsFormatAvailable(format, GetClipboardType(args));
 }
 
-std::string Read(const std::string& format_string,
-                 mate::Arguments* args) {
+std::string Clipboard::Read(const std::string& format_string,
+                            mate::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
 
@@ -51,8 +47,7 @@ std::string Read(const std::string& format_string,
   return data;
 }
 
-void Write(const mate::Dictionary& data,
-           mate::Arguments* args) {
+void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   base::string16 text, html, bookmark;
   gfx::Image image;
@@ -76,7 +71,7 @@ void Write(const mate::Dictionary& data,
     writer.WriteImage(image.AsBitmap());
 }
 
-base::string16 ReadText(mate::Arguments* args) {
+base::string16 Clipboard::ReadText(mate::Arguments* args) {
   base::string16 data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   auto type = GetClipboardType(args);
@@ -92,24 +87,24 @@ base::string16 ReadText(mate::Arguments* args) {
   return data;
 }
 
-void WriteText(const base::string16& text, mate::Arguments* args) {
+void Clipboard::WriteText(const base::string16& text, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteText(text);
 }
 
-base::string16 ReadRtf(mate::Arguments* args) {
+base::string16 Clipboard::ReadRtf(mate::Arguments* args) {
   std::string data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   clipboard->ReadRTF(GetClipboardType(args), &data);
   return base::UTF8ToUTF16(data);
 }
 
-void WriteRtf(const std::string& text, mate::Arguments* args) {
+void Clipboard::WriteRtf(const std::string& text, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteRTF(text);
 }
 
-base::string16 ReadHtml(mate::Arguments* args) {
+base::string16 Clipboard::ReadHtml(mate::Arguments* args) {
   base::string16 data;
   base::string16 html;
   std::string url;
@@ -121,12 +116,12 @@ base::string16 ReadHtml(mate::Arguments* args) {
   return data;
 }
 
-void WriteHtml(const base::string16& html, mate::Arguments* args) {
+void Clipboard::WriteHtml(const base::string16& html, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteHTML(html, std::string());
 }
 
-v8::Local<v8::Value> ReadBookmark(mate::Arguments* args) {
+v8::Local<v8::Value> Clipboard::ReadBookmark(mate::Arguments* args) {
   base::string16 title;
   std::string url;
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(args->isolate());
@@ -137,51 +132,65 @@ v8::Local<v8::Value> ReadBookmark(mate::Arguments* args) {
   return dict.GetHandle();
 }
 
-void WriteBookmark(const base::string16& title, const std::string& url,
-                   mate::Arguments* args) {
+void Clipboard::WriteBookmark(const base::string16& title,
+                              const std::string& url,
+                              mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteBookmark(title, url);
 }
 
-gfx::Image ReadImage(mate::Arguments* args) {
+gfx::Image Clipboard::ReadImage(mate::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   SkBitmap bitmap = clipboard->ReadImage(GetClipboardType(args));
   return gfx::Image::CreateFrom1xBitmap(bitmap);
 }
 
-void WriteImage(const gfx::Image& image, mate::Arguments* args) {
+void Clipboard::WriteImage(const gfx::Image& image, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteImage(image.AsBitmap());
 }
 
-void Clear(mate::Arguments* args) {
+#if !defined(OS_MACOSX)
+void Clipboard::WriteFindText(const base::string16& text) {}
+base::string16 Clipboard::ReadFindText() { return ""; }
+#endif
+
+void Clipboard::Clear(mate::Arguments* args) {
   ui::Clipboard::GetForCurrentThread()->Clear(GetClipboardType(args));
 }
+
+}  // namespace api
+
+}  // namespace atom
+
+namespace {
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("availableFormats", &AvailableFormats);
-  dict.SetMethod("has", &Has);
-  dict.SetMethod("read", &Read);
-  dict.SetMethod("write", &Write);
-  dict.SetMethod("readText", &ReadText);
-  dict.SetMethod("writeText", &WriteText);
-  dict.SetMethod("readRTF", &ReadRtf);
-  dict.SetMethod("writeRTF", &WriteRtf);
-  dict.SetMethod("readHTML", &ReadHtml);
-  dict.SetMethod("writeHTML", &WriteHtml);
-  dict.SetMethod("readBookmark", &ReadBookmark);
-  dict.SetMethod("writeBookmark", &WriteBookmark);
-  dict.SetMethod("readImage", &ReadImage);
-  dict.SetMethod("writeImage", &WriteImage);
-  dict.SetMethod("clear", &Clear);
+  dict.SetMethod("availableFormats", &atom::api::Clipboard::AvailableFormats);
+  dict.SetMethod("has", &atom::api::Clipboard::Has);
+  dict.SetMethod("read", &atom::api::Clipboard::Read);
+  dict.SetMethod("write", &atom::api::Clipboard::Write);
+  dict.SetMethod("readText", &atom::api::Clipboard::ReadText);
+  dict.SetMethod("writeText", &atom::api::Clipboard::WriteText);
+  dict.SetMethod("readRTF", &atom::api::Clipboard::ReadRtf);
+  dict.SetMethod("writeRTF", &atom::api::Clipboard::WriteRtf);
+  dict.SetMethod("readHTML", &atom::api::Clipboard::ReadHtml);
+  dict.SetMethod("writeHTML", &atom::api::Clipboard::WriteHtml);
+  dict.SetMethod("readBookmark", &atom::api::Clipboard::ReadBookmark);
+  dict.SetMethod("writeBookmark", &atom::api::Clipboard::WriteBookmark);
+  dict.SetMethod("readImage", &atom::api::Clipboard::ReadImage);
+  dict.SetMethod("writeImage", &atom::api::Clipboard::WriteImage);
+  dict.SetMethod("readFindText", &atom::api::Clipboard::ReadFindText);
+  dict.SetMethod("writeFindText", &atom::api::Clipboard::WriteFindText);
+  dict.SetMethod("clear", &atom::api::Clipboard::Clear);
 
   // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
-  dict.SetMethod("readRtf", &ReadRtf);
-  dict.SetMethod("writeRtf", &WriteRtf);
-  dict.SetMethod("readHtml", &ReadHtml);
-  dict.SetMethod("writeHtml", &WriteHtml);
+  dict.SetMethod("readRtf", &atom::api::Clipboard::ReadRtf);
+  dict.SetMethod("writeRtf", &atom::api::Clipboard::WriteRtf);
+  dict.SetMethod("readHtml", &atom::api::Clipboard::ReadHtml);
+  dict.SetMethod("writeHtml", &atom::api::Clipboard::WriteHtml);
 }
 
 }  // namespace
