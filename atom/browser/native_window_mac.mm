@@ -280,16 +280,16 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @interface AtomPreviewItem : NSObject <QLPreviewItem>
 
-@property (nonatomic, retain) NSURL *previewItemURL;
-@property (nonatomic, retain) NSString *previewItemTitle;
+@property (nonatomic, retain) NSURL* previewItemURL;
+@property (nonatomic, retain) NSString* previewItemTitle;
 
-- (id)initWithURL:(NSURL *)anURL title:(NSString *)aTitle;
+- (id)initWithURL:(NSURL*)url title:(NSString*)title;
 
 @end
 
 @implementation AtomPreviewItem
 
-- (id)initWithURL:(NSURL *)url title:(NSString *)title {
+- (id)initWithURL:(NSURL*)url title:(NSString*)title {
   self = [super init]; 
   if (self) {
     self.previewItemURL = url;
