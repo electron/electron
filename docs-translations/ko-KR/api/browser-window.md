@@ -941,6 +941,7 @@ Returns `Boolean` - 윈도우의 문서가 변경되었는지 여부.
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - 캡쳐될 페이지의 영역
 * `callback` Function
+  * `image` [NativeImage](native-image.md)
 
 `webContents.capturePage([rect, ]callback)`와 같습니다.
 

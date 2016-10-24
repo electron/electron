@@ -75,3 +75,7 @@ Pepper 플래시 플러그인의 구조는 Electron과 일치해야 합니다. W
 
 Windows에선 `--ppapi-flash-path`로 전달되는 경로의 분리자로 `\`를 사용해야 합니다.
 POSIX-스타일 경로는 작동하지 않을 것입니다.
+
+RTMP 를 사용한 미디어 스트리밍같은 일부 작업의 경우 플레이어의 `.swf` 파일에
+폭넓은 권한을 부여할 필요가 있습니다. 그러기 위한 한가지 방법은,
+[nw-flash-trust](https://github.com/szwacz/nw-flash-trust)를 사용하는 것입니다.

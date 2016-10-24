@@ -299,6 +299,29 @@ let win = new BrowserWindow()
 win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 ```
 
+## 프레임 깜빡이기 (윈도우즈)
+
+윈도우즈에서 사용자의 관심을 끌기 위해ㅣ 작업표시줄 버튼을 강조할 수 있습니다.
+이것은 macOS 의 독 아이콘을 튕기는 것과 유사합니다.
+MSDN에서 인용하자면 (영문):
+
+> Typically, a window is flashed to inform the user that the window requires
+> attention but that it does not currently have the keyboard focus.
+
+BrowserWindow 작업표시줄 버튼을 깜빡이려면, 
+[BrowserWindow.flashFrame][flashframe] API 를 사용하면됩니다:
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.once('focus', () => win.flashFrame(false))
+win.flashFrame(true)
+```
+
+`flashFrame` 메소드를 `false` 인자로 호출하여 깜빡임을 중단시키는 것을
+잊지마세요. 위의 예제에서, 윈도우가 포커스되었을 때 호출합니다. 그러나 타임아웃
+또는 다른 이벤트에서 비활성화할 수 있습니다.
+
 ## 대표 파일 제시 (macOS)
 
 macOS는 창에서 대표 파일을 설정할 수 있습니다. 타이틀바에서 파일 아이콘이 있고, 사용자가
@@ -364,3 +387,4 @@ ipcMain.on('ondragstart', (event, filePath) => {
 [tray-balloon]: ../api/tray.md#traydisplayballoonoptions-windows
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [notification-spec]: https://developer.gnome.org/notification-spec/
+[flashframe]: ../api/browser-window.md#winflashframeflag

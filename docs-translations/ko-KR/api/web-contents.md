@@ -246,6 +246,8 @@ Returns:
 * `error` String - 에러 코드
 * `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
+  * `isTrusted` Boolean - 인증서가 신뢰할 수 있는 것으로 간주할 수 있는지 여부를
+    나타냅니다
 
 `url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
 
@@ -258,8 +260,10 @@ Returns:
 
 * `event` Event
 * `url` URL
-* `certificateList` Certificate[]
+* `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
+  * `certificate` [Certificate](structures/certificate.md) - 인증서는 주어진
+    목록에 있어야합니다.
 
 클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
 
@@ -282,6 +286,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
+  * `username` String
+  * `password` String
 
 `webContents`가 기본 인증을 수행하길 원할 때 발생되는 이벤트입니다.
 
@@ -611,7 +617,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 * `code` String
 * `userGesture` Boolean (optional)
 * `callback` Function (optional) - 스크립트의 실행이 완료되면 호출됩니다.
-  * `result`
+  * `result` Any
 
 페이지에서 자바스크립트 코드를 실행합니다.
 
@@ -638,6 +644,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 #### `contents.getZoomFactor(callback)`
 
 * `callback` Function
+  * `zoomFactor` Number
 
 현재 줌 수치 값을 요청합니다. `callback`은 `callback(zoomFactor)` 형태로 호출됩니다.
 
@@ -651,6 +658,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 #### `contents.getZoomLevel(callback)`
 
 * `callback` Function
+  * `zoomLevel` Number
 
 현재 줌 수준 값을 요청합니다. `callback`은 `callback(zoomLevel)` 형태로 호출됩니다.
 
@@ -779,6 +787,7 @@ console.log(requestId)
 #### `contents.hasServiceWorker(callback)`
 
 * `callback` Function
+  * `hasWorker` Boolean
 
 ServiceWorker가 등록되어있는지 확인하고 `callback`에 대한 응답으로 boolean 값을
 반환합니다.
@@ -786,6 +795,7 @@ ServiceWorker가 등록되어있는지 확인하고 `callback`에 대한 응답�
 #### `contents.unregisterServiceWorker(callback)`
 
 * `callback` Function
+  * `success` Boolean
 
 ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족될 때 `callback`에
 대한 응답으로 boolean을 반환하거나 JS Promise가 만족되지 않을 때 `false`를 반환합니다.
@@ -817,6 +827,8 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
   * `landscape` Boolean - landscape을 위해선 `true`를, portrait를 위해선 `false`를
   	사용합니다.
 * `callback` Function - `(error, data) => {}`
+  * `error` Error
+  * `data` Buffer
 
 Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의 웹 페이지를 PDF로
 프린트합니다.
@@ -1034,6 +1046,8 @@ Input `event`를 웹 페이지로 전송합니다.
 
 * `onlyDirty` Boolean (optional) - 기본값은 `false`입니다.
 * `callback` Function
+  * `frameBuffer` Buffer
+  * `dirtyRect` [Rectangle](structures/rectangle.md)
 
 캡처된 프레임과 프레젠테이션 이벤트를 구독하기 시작합니다. `callback`은
 프레젠테이션 이벤트가 발생했을 때 `callback(frameBuffer, dirtyRect)` 형태로

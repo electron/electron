@@ -201,6 +201,7 @@ proxyURL = [<proxyScheme>"://"]<proxyHost>[":"<proxyPort>]
 
 * `url` URL
 * `callback` Function
+  * `proxy` Object
 
 `url`의 프록시 정보를 해석합니다. `callback`은 요청이 수행되었을 때
 `callback(proxy)` 형태로 호출됩니다.
@@ -244,7 +245,11 @@ window.webContents.session.enableNetworkEmulation({offline: true})
 
 #### `ses.setCertificateVerifyProc(proc)`
 
- * `proc` Function
+* `proc` Function
+  * `hostname` String
+  * `certificate` [Certificate](structures/certificate.md)
+  * `callback` Function
+    * `isTrusted` Boolean - 인증서를 신뢰해야하는지 결정
 
 `session`에 인증서의 유효성을 확인하는 프로세스(proc)를 등록합니다. `proc`은 서버
 인증서 유효성 검증 요청이 들어왔을 때 언제나 `proc(hostname, certificate, callback)`
@@ -267,7 +272,8 @@ win.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
   * `webContents` Object - [WebContents](web-contents.md) 권한을 요청.
   * `permission` String - 'media', 'geolocation', 'notifications',
     'midiSysex', 'pointerLock', 'fullscreen', 'openExternal'의 나열.
-  * `callback` Function - 권한 허용 및 거부.
+  * `callback` Function
+    * `permissionGranted` Boolean - 권한 허용 및 거부.
 
 `session`의 권한 요청에 응답을 하는데 사용하는 핸들러를 설정합니다.
 `callback(true)`를 호출하면 권한 제공을 허용하고 `callback(false)`를
@@ -423,6 +429,8 @@ session.defaultSession.cookies.set(cookie, (error) => {
   * `secure` Boolean (optional) - 보안 속성에 따라 쿠키를 필터링합니다.
   * `session` Boolean (optional) - 세션 또는 지속성 쿠키를 필터링합니다.
 * `callback` Function
+    * `error` Error
+    * `cookies` Cookies[]
 
 `details` 객체에서 묘사한 모든 쿠키를 요청합니다. 모든 작업이 끝나면 `callback`이
 `callback(error, cookies)` 형태로 호출됩니다.
@@ -458,6 +466,7 @@ session.defaultSession.cookies.set(cookie, (error) => {
     대한 초 단위 시간입니다. 생략되면 쿠키가 세션 쿠기가 되며 세션 사이에 유지되지
     않게 됩니다.
 * `callback` Function
+    * `error` Error
 
 `details` 객체에 따라 쿠키를 설정합니다. 작업이 완료되면 `callback`이
 `callback(error)` 형태로 호출됩니다.
@@ -521,24 +530,16 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback
   * `method` String
   * `resourceType` String
   * `timestamp` Double
-  * `uploadData` Array (optional)
+  * `uploadData` [UploadData[]](structures/upload-data.md)
 * `callback` Function
+  * `response` Object
+    * `cancel` Boolean (optional)
+    * `redirectURL` String (optional) - 원래 요청이 전송되거나 완료되는 것을
+      방지하고 지정된 URL 로 리디렉션됩니다.
 
-`uploadData`는 `data` 객체의 배열입니다:
+`uploadData`는 `uploadData` 객체의 배열입니다.
 
-* `data` Object
-  * `bytes` Buffer - 전송될 콘텐츠.
-  * `file` String - 업로드될 파일의 경로.
-  * `blobUUID` String - blob 데이터의 UUID. 데이터를 이용하기 위해
-    [ses.getBlobData](session.md#sesgetblobdataidentifier-callback) 메소드를
-    사용하세요.
-
-`callback`은 `response` 객체와 함께 호출되어야 합니다:
-
-* `response` Object
-  * `cancel` Boolean (optional)
-  * `redirectURL` String (optional) - 원래 요청은 전송과 완료가 방지되지만 이
-    속성을 지정하면 해당 URL로 리다이렉트됩니다.
+`callback`은 `response` 객체와 함께 호출되어야 합니다.
 
 #### `webRequest.onBeforeSendHeaders([filter, ]listener)`
 
@@ -557,30 +558,28 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `timestamp` Double
   * `requestHeaders` Object
 * `callback` Function
+  * `response` Object
+    * `cancel` Boolean (optional)
+    * `requestHeaders` Object (optional) - 이 속성이 제공되면, 요청은 이 헤더로
+      만들어 집니다.
 
-`callback`은 `response` 객체와 함께 호출되어야 합니다:
-
-* `response` Object
-  * `cancel` Boolean (optional)
-  * `requestHeaders` Object (optional) - 이 속성이 제공되면, 요청은 이 헤더로
-    만들어 집니다.
+`callback`은 `response` 객체와 함께 호출되어야 합니다.
 
 #### `webRequest.onSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `requestHeaders` Object
 
 서버에 요청이 전송되기 바로 전에 `listener`가 `listener(details)` 형태로 호출됩니다.
 이전 `onBeforeSendHeaders`의 response와 다른점은 리스너가 호출되는 시간으로 볼 수
 있습니다.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `requestHeaders` Object
 
 #### `webRequest.onHeadersReceived([filter, ]listener)`
 
@@ -600,86 +599,81 @@ HTTP 요청을 보내기 전 요청 헤더를 사용할 수 있을 때 `listener
   * `statusCode` Integer
   * `responseHeaders` Object
 * `callback` Function
+  * `response` Object
+    * `cancel` Boolean
+    * `responseHeaders` Object (optional) - 이 속성이 제공되면 서버는 이 헤더와
+      함께 응답합니다.
+    * `statusLine` String (optional) - `responseHeaders`를 덮어쓸 땐, 헤더의
+      상태를 변경하기 위해 반드시 지정되어야 합니다. 그렇지 않은 경우, 기존의
+      응답 헤더의 상태가 사용됩니다.
 
-`callback`은 `response` 객체와 함께 호출되어야 합니다:
-
-* `response` Object
-  * `cancel` Boolean
-  * `responseHeaders` Object (optional) - 이 속성이 제공되면 서버는 이 헤더와
-    함께 응답합니다.
-  * `statusLine` String (optional) - `responseHeaders`를 덮어쓸 땐, 헤더의 상태를
-    변경하기 위해 반드시 지정되어야 합니다. 그렇지 않은 경우, 기존의 응답 헤더의 상태가
-    사용됩니다.
+`callback`은 `response` 객체와 함께 호출되어야 합니다.
 
 #### `webRequest.onResponseStarted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `responseHeaders` Object
+    * `fromCache` Boolean  - 응답을 디스크 캐시에서 가져올지에 대한 여부.
+    * `statusCode` Integer
+    * `statusLine` String
 
 요청 본문의 첫 번째 바이트를 받았을 때 `listener`가 `listener(details)` 형태로
 호출됩니다. 이는 HTTP 요청에서 상태 줄과 요청 헤더가 사용 가능한 상태를 의미합니다.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `responseHeaders` Object
-  * `fromCache` Boolean  - 응답을 디스크 캐시에서 가져올지에 대한 여부.
-  * `statusCode` Integer
-  * `statusLine` String
 
 #### `webRequest.onBeforeRedirect([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` String
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `redirectURL` String
+    * `statusCode` Integer
+    * `ip` String (optional) - 요청이 실질적으로 전송될 서버 아이피 주소.
+    * `fromCache` Boolean
+    * `responseHeaders` Object
 
 서버에서 시작된 리다이렉트가 발생했을 때 `listener`가 `listener(details)` 형태로
 호출됩니다.
-
-* `details` Object
-  * `id` String
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `redirectURL` String
-  * `statusCode` Integer
-  * `ip` String (optional) - 요청이 실질적으로 전송될 서버 아이피 주소.
-  * `fromCache` Boolean
-  * `responseHeaders` Object
 
 #### `webRequest.onCompleted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `responseHeaders` Object
+    * `fromCache` Boolean
+    * `statusCode` Integer
+    * `statusLine` String
 
 요청이 완료되면 `listener`가 `listener(details)` 형태로 호출됩니다.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `responseHeaders` Object
-  * `fromCache` Boolean
-  * `statusCode` Integer
-  * `statusLine` String
 
 #### `webRequest.onErrorOccurred([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `fromCache` Boolean
+    * `error` String - 에러 설명.
 
 에러가 발생하면 `listener`가 `listener(details)` 형태로 호출됩니다.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `fromCache` Boolean
-  * `error` String - 에러 설명.
