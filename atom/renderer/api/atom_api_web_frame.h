@@ -63,10 +63,8 @@ class WebFrame : public mate::Wrappable<WebFrame> {
 
   void RegisterURLSchemeAsSecure(const std::string& scheme);
   void RegisterURLSchemeAsBypassingCSP(const std::string& scheme);
-  void RegisterURLSchemeAsPrivileged(
-      const std::string& scheme,
-      mate::Arguments* args
-  );
+  void RegisterURLSchemeAsPrivileged(const std::string& scheme,
+                                     mate::Arguments* args);
 
   // Editing.
   void InsertText(const std::string& text);
