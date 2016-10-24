@@ -402,7 +402,7 @@ session.defaultSession.cookies.set(cookie, (error) => {
 #### Event: 'changed'
 
 * `event` Event
-* `cookie` Object - 변경된 쿠키
+* `cookie` [Cookie](structures/cookie.md) - 변경된 쿠키
 * `cause` String - 다음 값 중 하나인 변경된 이유:
   * `explicit` - 쿠키가 소비자의 행위에 의해 직접 변경되었습니다.
   * `overwrite` - 쿠키를 덮어쓰는 삽입 동작에 의해 자동으로 제거되었습니다.
@@ -435,20 +435,7 @@ session.defaultSession.cookies.set(cookie, (error) => {
 `details` 객체에서 묘사한 모든 쿠키를 요청합니다. 모든 작업이 끝나면 `callback`이
 `callback(error, cookies)` 형태로 호출됩니다.
 
-`cookies`는 `cookie` 객체의 배열입니다.
-
-* `cookie` Object
-  *  `name` String - 쿠키의 이름.
-  *  `value` String - 쿠키의 값.
-  *  `domain` String - 쿠키의 도메인.
-  *  `hostOnly` String - 쿠키가 호스트 전용인가에 대한 여부.
-  *  `path` String - 쿠키의 경로.
-  *  `secure` Boolean - 쿠키가 안전한 것으로 표시되는지에 대한 여부.
-  *  `httpOnly` Boolean - 쿠키가 HTTP로만 표시되는지에 대한 여부.
-  *  `session` Boolean - 쿠키가 세션 쿠키 또는 만료일이 있는 영구 쿠키인지에 대한
-    여부.
-  *  `expirationDate` Double - (Option) UNIX 시간으로 표시되는 쿠키의 만료일에
-    대한 초 단위 시간. 세션 쿠키는 지원되지 않음.
+`cookies`는 [`cookie`](structures/cookie.md) 객체의 배열입니다.
 
 #### `ses.cookies.set(details, callback)`
 
