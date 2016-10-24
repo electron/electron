@@ -488,11 +488,11 @@ bool ScopedDisableResize::disable_resize_ = false;
   return 1;
 }
 
-- (id <QLPreviewItem>)previewPanel:(QLPreviewPanel *)panel previewItemAtIndex:(NSInteger)index {
+- (id <QLPreviewItem>)previewPanel:(QLPreviewPanel*)panel previewItemAtIndex:(NSInteger)index {
   return [self quickLookItem];
 }
 
-- (void)previewFileAtPath:(NSString *)path  withName:(NSString *) fileName {
+- (void)previewFileAtPath:(NSString*)path  withName:(NSString*) fileName {
   NSURL * url = [[[NSURL alloc] initFileURLWithPath:path] autorelease];
   [self setQuickLookItem:[[[AtomPreviewItem alloc] initWithURL:url title:fileName] autorelease]];
   [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
