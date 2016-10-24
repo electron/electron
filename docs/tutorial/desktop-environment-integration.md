@@ -396,3 +396,4 @@ ipcMain.on('ondragstart', (event, filePath) => {
 [tray-balloon]: ../api/tray.md#traydisplayballoonoptions-windows
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [notification-spec]: https://developer.gnome.org/notification-spec/
+[flashframe]: ../api/browser-window.md#winflashframeflag
