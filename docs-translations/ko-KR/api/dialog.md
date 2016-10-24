@@ -34,6 +34,7 @@ console.log(dialog)
     다음을 포함할 수 있습니다: `openFile`, `openDirectory`, `multiSelections`,
     `createDirectory`, `showHiddenFiles`.
 * `callback` Function (optional)
+  * `filePaths` String[] - 사용자가 선택한 파일 경로의 배열
 
 사용할 대화 상자의 기능이 담긴 배열입니다. 다음을 포함할 수 있습니다: `openFile`,
 `openDirectory`, `multiSelections`, `createDirectory`
@@ -77,6 +78,7 @@ console.log(dialog)
     라벨이 사용됩니다.
   * `filters` String[]
 * `callback` Function (optional)
+  * `filename` String
 
 작업에 성공하면 콜백으로 유저가 선택한 파일의 경로를 포함한 배열을 반환합니다. 그 외엔
 `undefined`를 반환합니다.
@@ -112,6 +114,7 @@ console.log(dialog)
     만듭니다. 이 기능으로 앱을 좀 더 현대적인 Windows 앱처럼 만들 수 있습니다. 이
     기능을 원하지 않으면 `noLink`를 true로 지정하면 됩니다.
 * `callback` Function (optional)
+  * `response` Number - 눌려진 버튼의 인덱스
 
 대화 상자를 표시합니다. `browserWindow`를 지정하면 대화 상자가 완전히 닫힐 때까지
 지정한 창을 사용할 수 없습니다. 완료 시 유저가 선택한 버튼의 인덱스를 반환합니다.

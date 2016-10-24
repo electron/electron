@@ -338,7 +338,7 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 * `code` String
 * `userGesture` Boolean
 * `callback` Function (optional) - 스크립트의 실행이 완료되면 호출됩니다.
-  * `result`
+  * `result` Any
 
 페이지에서 자바스크립트 코드를 실행합니다.
 
