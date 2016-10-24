@@ -184,14 +184,7 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
 * `error` String - The error code
-* `certificate` Object
-  * `data` String - PEM encoded data
-  * `issuerName` String - Issuer's Common Name
-  * `subjectName` String - Subject's Common Name
-  * `serialNumber` String - Hex value represented string
-  * `validStart` Integer - Start date of the certificate being valid in seconds
-  * `validExpiry` Integer - End date of the certificate being valid in seconds
-  * `fingerprint` String - Fingerprint of the certificate
+* `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
   * `isTrusted` Boolean - Whether to consider the certificate as trusted
 
