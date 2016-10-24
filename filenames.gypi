@@ -227,6 +227,8 @@
       'atom/browser/net/asar/url_request_asar_job.h',
       'atom/browser/net/atom_cert_verifier.cc',
       'atom/browser/net/atom_cert_verifier.h',
+      'atom/browser/net/atom_ct_delegate.cc',
+      'atom/browser/net/atom_ct_delegate.h',
       'atom/browser/net/atom_cookie_delegate.cc',
       'atom/browser/net/atom_cookie_delegate.h',
       'atom/browser/net/atom_network_delegate.cc',
