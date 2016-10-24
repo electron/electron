@@ -140,17 +140,44 @@ void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
       blink::WebString::fromUTF8(scheme));
 }
 
-void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme) {
+void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
+                                             mate::Arguments* args) {
+  // Read optional flags
+  bool secure = true;
+  bool bypassCSP = true;
+  bool allowServiceWorkers = true;
+  bool supportFetchAPI = true;
+  bool corsEnabled = true;
+  if (args->Length() == 2) {
+    mate::Dictionary options;
+    if (args->GetNext(&options)) {
+      options.Get("secure", &secure);
+      options.Get("bypassCSP", &bypassCSP);
+      options.Get("allowServiceWorkers", &allowServiceWorkers);
+      options.Get("supportFetchAPI", &supportFetchAPI);
+      options.Get("corsEnabled", &corsEnabled);
+    }
+  }
   // Register scheme to privileged list (https, wss, data, chrome-extension)
   blink::WebString privileged_scheme(blink::WebString::fromUTF8(scheme));
-  blink::WebSecurityPolicy::registerURLSchemeAsSecure(privileged_scheme);
-  blink::WebSecurityPolicy::registerURLSchemeAsBypassingContentSecurityPolicy(
-      privileged_scheme);
-  blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers(
-      privileged_scheme);
-  blink::WebSecurityPolicy::registerURLSchemeAsSupportingFetchAPI(
-      privileged_scheme);
-  blink::WebSecurityPolicy::registerURLSchemeAsCORSEnabled(privileged_scheme);
+  if (secure) {
+    blink::WebSecurityPolicy::registerURLSchemeAsSecure(privileged_scheme);
+  }
+  if (bypassCSP) {
+    blink::WebSecurityPolicy::registerURLSchemeAsBypassingContentSecurityPolicy(
+        privileged_scheme);
+  }
+  if (allowServiceWorkers) {
+    blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers(
+        privileged_scheme);
+  }
+  if (supportFetchAPI) {
+    blink::WebSecurityPolicy::registerURLSchemeAsSupportingFetchAPI(
+        privileged_scheme);
+  }
+  if (corsEnabled) {
+    blink::WebSecurityPolicy::registerURLSchemeAsCORSEnabled(privileged_scheme);
+  }
 }
 
 void WebFrame::InsertText(const std::string& text) {
