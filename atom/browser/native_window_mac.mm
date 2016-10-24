@@ -470,21 +470,21 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 // Quicklook methods
 
-- (BOOL)acceptsPreviewPanelControl:(QLPreviewPanel *)panel {
+- (BOOL)acceptsPreviewPanelControl:(QLPreviewPanel*)panel {
   return YES;
 }
 
-- (void)beginPreviewPanelControl:(QLPreviewPanel *)panel {
+- (void)beginPreviewPanelControl:(QLPreviewPanel*)panel {
   panel.delegate = self;
   panel.dataSource = self;
 }
 
-- (void)endPreviewPanelControl:(QLPreviewPanel *)panel {
+- (void)endPreviewPanelControl:(QLPreviewPanel*)panel {
   panel.delegate = nil;
   panel.dataSource = nil;
 }
 
-- (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel *)panel {
+- (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel*)panel {
   return 1;
 }
 
