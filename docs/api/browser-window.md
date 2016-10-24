@@ -950,6 +950,7 @@ Whether `Boolean` - Whether the window's document has been edited.
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
 * `callback` Function
+  * `image` [NativeImage](native-image.md)
 
 Same as `webContents.capturePage([rect, ]callback)`.
 
