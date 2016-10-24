@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 
+#include "atom/browser/native_window.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "ui/views/controls/button/menu_button_listener.h"
 #include "ui/views/view.h"
@@ -20,7 +21,7 @@ class MenuDelegate;
 class MenuBar : public views::View,
                 public views::MenuButtonListener {
  public:
-  MenuBar();
+  explicit MenuBar(NativeWindow* window);
   virtual ~MenuBar();
 
   // Replaces current menu with a new one.
@@ -66,6 +67,7 @@ class MenuBar : public views::View,
   SkColor hover_color_;
 #endif
 
+  NativeWindow* window_;
   AtomMenuModel* menu_model_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuBar);
