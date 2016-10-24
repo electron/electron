@@ -308,9 +308,9 @@ win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 
 ## Flash Frame (Windows)
 
-On Windows you can cause the taskbar button to become highlighted. This can be
-used similarly to macOS's Bounce Dock Icon to get the users attention. From the
-MSDN reference documentation:
+On Windows you can highlight the taskbar button to get the user's attention.
+This is similar to bouncing the dock icon on macOS.
+From the MSDN reference documentation:
 
 > Typically, a window is flashed to inform the user that the window requires
 > attention but that it does not currently have the keyboard focus.
@@ -325,9 +325,9 @@ win.once('focus', () => win.flashFrame(false))
 win.flashFrame(true)
 ```
 
-Don't forget to call the `flashFrame` method with false to turn off the flash. In
+Don't forget to call the `flashFrame` method with `false` to turn off the flash. In
 the above example, it is called when the window comes into focus, but you might
-use a timeout or some other event to trigger it off.
+use a timeout or some other event to disable it.
 
 ## Represented File of Window (macOS)
 
