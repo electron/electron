@@ -9,6 +9,6 @@
   title.
 * `thumbnail` [NativeImage](../native-image.md) - A thumbnail image. **Note:**
   There is no guarantee that the size of the thumbnail is the same as the
-  `thumnbailSize` specified in the `options` passed to
+  `thumbnailSize` specified in the `options` passed to
   `desktopCapturer.getSources`. The actual size depends on the scale of the
   screen or window.
