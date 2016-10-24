@@ -286,7 +286,6 @@ which sends a new HTTP request as a response.
 * `completion` Function (optional)
   * `error` Error
 
-
 Remove the interceptor installed for `scheme` and restore its original handler.
 
 [net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h

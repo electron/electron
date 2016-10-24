@@ -549,9 +549,9 @@ The following methods are available on instances of `WebRequest`:
 The `listener` will be called with `listener(details, callback)` when a request
 is about to occur.
 
-The `uploadData` is an array of `UploadData` objects:
+The `uploadData` is an array of `UploadData` objects.
 
-The `callback` has to be called with an `response` object:
+The `callback` has to be called with an `response` object.
 
 #### `webRequest.onBeforeSendHeaders([filter, ]listener)`
 
@@ -575,7 +575,7 @@ TCP connection is made to the server, but before any http data is sent.
     * `requestHeaders` Object (optional) - When provided, request will be made
       with these headers.
 
-The `callback` has to be called with an `response` object:
+The `callback` has to be called with an `response` object.
 
 #### `webRequest.onSendHeaders([filter, ]listener)`
 
