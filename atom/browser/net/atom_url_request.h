@@ -30,7 +30,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
       AtomBrowserContext* browser_context,
       const std::string& method,
       const std::string& url,
-      base::WeakPtr<api::URLRequest> delegate);
+      api::URLRequest* delegate);
   void Terminate();
 
   bool Write(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
@@ -54,7 +54,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
  private:
   friend class base::RefCountedThreadSafe<AtomURLRequest>;
 
-  explicit AtomURLRequest(base::WeakPtr<api::URLRequest> delegate);
+  explicit AtomURLRequest(api::URLRequest* delegate);
   ~AtomURLRequest() override;
 
   void DoInitialize(scoped_refptr<net::URLRequestContextGetter>,
@@ -85,7 +85,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   void InformDelegateErrorOccured(const std::string& error,
                                   bool isRequestError) const;
 
-  base::WeakPtr<api::URLRequest> delegate_;
+  api::URLRequest* delegate_;
   std::unique_ptr<net::URLRequest> request_;
   scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
 

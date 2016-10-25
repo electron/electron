@@ -200,7 +200,6 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   // Used to implement pin/unpin.
   v8::Global<v8::Object> wrapper_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
-  base::WeakPtrFactory<URLRequest> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequest);
 };

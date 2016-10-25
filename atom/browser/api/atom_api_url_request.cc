@@ -158,8 +158,7 @@ bool URLRequest::ResponseState::Failed() const {
   return IsFlagSet(ResponseStateFlags::kFailed);
 }
 
-URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : weak_ptr_factory_(this) {
+URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
   InitWith(isolate, wrapper);
 }
 
@@ -188,9 +187,8 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
 
   auto browser_context = session->browser_context();
   auto api_url_request = new URLRequest(args->isolate(), args->GetThis());
-  auto weak_ptr = api_url_request->weak_ptr_factory_.GetWeakPtr();
   auto atom_url_request =
-      AtomURLRequest::Create(browser_context, method, url, weak_ptr);
+      AtomURLRequest::Create(browser_context, method, url, api_url_request);
 
   api_url_request->atom_request_ = atom_url_request;
 

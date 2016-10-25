@@ -43,7 +43,7 @@ class UploadOwnedIOBufferElementReader : public net::UploadBytesElementReader {
 
 }  // namespace internal
 
-AtomURLRequest::AtomURLRequest(base::WeakPtr<api::URLRequest> delegate)
+AtomURLRequest::AtomURLRequest(api::URLRequest* delegate)
     : delegate_(delegate),
       is_chunked_upload_(false),
       response_read_buffer_(new net::IOBuffer(kBufferSize)) {}
@@ -57,7 +57,7 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
     AtomBrowserContext* browser_context,
     const std::string& method,
     const std::string& url,
-    base::WeakPtr<api::URLRequest> delegate) {
+    api::URLRequest* delegate) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   DCHECK(browser_context);
@@ -83,6 +83,7 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
 
 void AtomURLRequest::Terminate() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  delegate_ = nullptr;
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&AtomURLRequest::DoTerminate, this));
