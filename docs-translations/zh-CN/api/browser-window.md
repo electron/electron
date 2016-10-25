@@ -720,7 +720,7 @@ windows上句柄类型为 `HWND` ，macOS `NSView*` ， Linux `Window`.
 
 返回 boolean,窗口的菜单栏是否可以自动隐藏.
 
-### `win.setMenuBarVisibility(visible)`
+### `win.setMenuBarVisibility(visible)` _Windows_ _Linux_
 
 * `visible` Boolean
 

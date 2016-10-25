@@ -1099,7 +1099,7 @@ Returns `Boolean` - 버튼이 성공적으로 추가되었는지 여부
 
 Returns `Boolean` - 메뉴 막대 자동 숨김 상태 여부.
 
-#### `win.setMenuBarVisibility(visible)`
+#### `win.setMenuBarVisibility(visible)` _Windows_ _Linux_
 
 * `visible` Boolean
 
