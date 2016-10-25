@@ -152,7 +152,7 @@ void Clipboard::WriteImage(const gfx::Image& image, mate::Arguments* args) {
 
 #if !defined(OS_MACOSX)
 void Clipboard::WriteFindText(const base::string16& text) {}
-base::string16 Clipboard::ReadFindText() { return ""; }
+base::string16 Clipboard::ReadFindText() { return base::string16(); }
 #endif
 
 void Clipboard::Clear(mate::Arguments* args) {
