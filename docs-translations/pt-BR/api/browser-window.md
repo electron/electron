@@ -597,7 +597,7 @@ Se a barra de menu já estiver visível, chamar `setAutoHideMenuBar(true)` não 
 
 Retorna um boolean indicando se a barra de menu se esconde automaticamente.
 
-### `win.setMenuBarVisibility(visible)`
+### `win.setMenuBarVisibility(visible)` _Windows_ _Linux_
 
 * `visible` Boolean
 

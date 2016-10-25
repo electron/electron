@@ -1114,7 +1114,7 @@ hide it immediately.
 
 Returns `Boolean` - Whether menu bar automatically hides itself.
 
-#### `win.setMenuBarVisibility(visible)`
+#### `win.setMenuBarVisibility(visible)` _Windows_ _Linux_
 
 * `visible` Boolean
 
