@@ -90,6 +90,7 @@ The `screen` module has the following methods:
 ### `screen.getCursorScreenPoint()`
 
 Returns `Object`:
+
 * `x` Integer
 * `y` Integer
 

@@ -84,6 +84,7 @@ limit, whichever is lower for the current process.
 ### `process.getProcessMemoryInfo()`
 
 Returns `Object`:
+
 * `workingSetSize` Integer - The amount of memory currently pinned to actual physical
   RAM.
 * `peakWorkingSetSize` Integer - The maximum amount of memory that has ever been pinned
@@ -99,6 +100,7 @@ that all statistics are reported in Kilobytes.
 ### `process.getSystemMemoryInfo()`
 
 Returns `Object`:
+
 * `total` Integer - The total amount of physical memory in Kilobytes available to the
   system.
 * `free` Integer - The total amount of memory not being used by applications or disk

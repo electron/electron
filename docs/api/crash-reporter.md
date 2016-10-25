@@ -57,6 +57,7 @@ crash reports.
 ### `crashReporter.getLastCrashReport()`
 
 Returns `Object`:
+
 * `date` String
 * `ID` Integer
 
@@ -66,6 +67,7 @@ sent or the crash reporter has not been started, `null` is returned.
 ### `crashReporter.getUploadedReports()`
 
 Returns `Object[]`:
+
 * `date` String
 * `ID` Integer
 

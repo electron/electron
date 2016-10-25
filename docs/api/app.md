@@ -542,6 +542,7 @@ Returns `Boolean` - Whether the call succeeded.
 ### `app.getJumpListSettings()` _Windows_
 
 Returns `Object`:
+
 * `minItems` Integer - The minimum number of items that will be shown in the
   Jump List (for a more detailed description of this value see the
   [MSDN docs][JumpListBeginListMSDN]).
