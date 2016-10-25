@@ -82,8 +82,10 @@ LibnotifyNotification::LibnotifyNotification(NotificationDelegate* delegate,
 }
 
 LibnotifyNotification::~LibnotifyNotification() {
-  g_signal_handlers_disconnect_by_data(notification_, this);
-  g_object_unref(notification_);
+  if (notification_) {
+    g_signal_handlers_disconnect_by_data(notification_, this);
+    g_object_unref(notification_);
+  }
 }
 
 void LibnotifyNotification::Show(const base::string16& title,

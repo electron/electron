@@ -34,6 +34,9 @@ class Notification {
   void NotificationDismissed();
   void NotificationFailed();
 
+  // delete this.
+  void Destroy();
+
   base::WeakPtr<Notification> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -45,9 +48,6 @@ class Notification {
   Notification(NotificationDelegate* delegate,
                NotificationPresenter* presenter);
   virtual ~Notification();
-
-  // delete this.
-  void Destroy();
 
  private:
   friend class NotificationPresenter;

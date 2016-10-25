@@ -21,28 +21,17 @@ void RemoveNotification(base::WeakPtr<Notification> notification) {
     notification->Dismiss();
 }
 
-void OnWebNotificationAllowed(
-    brightray::BrowserClient* browser_client,
-    const SkBitmap& icon,
-    const content::PlatformNotificationData& data,
-    std::unique_ptr<content::DesktopNotificationDelegate> delegate,
-    base::Closure* cancel_callback,
-    bool audio_muted,
-    bool allowed) {
-  if (!allowed)
+void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
+                              const SkBitmap& icon,
+                              const content::PlatformNotificationData& data,
+                              bool audio_muted,
+                              bool allowed) {
+  if (!allowed) {
+    notification->Destroy();
     return;
-  auto presenter = browser_client->GetNotificationPresenter();
-  if (!presenter)
-    return;
-  std::unique_ptr<NotificationDelegateAdapter> adapter(
-      new NotificationDelegateAdapter(std::move(delegate)));
-  auto notification = presenter->CreateNotification(adapter.get());
-  if (notification) {
-    ignore_result(adapter.release());  // it will release itself automatically.
-    notification->Show(data.title, data.body, data.tag, data.icon, icon,
-                       audio_muted ? true : data.silent);
-    *cancel_callback = base::Bind(&RemoveNotification, notification);
   }
+  notification->Show(data.title, data.body, data.tag, data.icon, icon,
+                     audio_muted ? true : data.silent);
 }
 
 }  // namespace
@@ -77,14 +66,20 @@ void PlatformNotificationService::DisplayNotification(
     const content::NotificationResources& notification_resources,
     std::unique_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
-  browser_client_->WebNotificationAllowed(
-      render_process_id_,
-      base::Bind(&OnWebNotificationAllowed,
-                 browser_client_,
-                 notification_resources.notification_icon,
-                 notification_data,
-                 base::Passed(&delegate),
-                 cancel_callback));
+  auto presenter = browser_client_->GetNotificationPresenter();
+  if (!presenter)
+    return;
+  std::unique_ptr<NotificationDelegateAdapter> adapter(
+      new NotificationDelegateAdapter(std::move(delegate)));
+  auto notification = presenter->CreateNotification(adapter.get());
+  if (notification) {
+    ignore_result(adapter.release());  // it will release itself automatically.
+    *cancel_callback = base::Bind(&RemoveNotification, notification);
+    browser_client_->WebNotificationAllowed(
+        render_process_id_, base::Bind(&OnWebNotificationAllowed, notification,
+                                       notification_resources.notification_icon,
+                                       notification_data));
+  }
 }
 
 void PlatformNotificationService::DisplayPersistentNotification(
