@@ -86,9 +86,10 @@ namespace api {
 // more complex.
 //
 // We chose to split the implementation into two classes linked via a
-// strong/weak pointers. A URLRequest instance is deleted if it is unpinned and
-// the corresponding JS wrapper object is garbage collected. On the other hand,
-// an AtmURLRequest instance lifetime is totally governed by reference counting.
+// reference counted/raw pointers. A URLRequest instance is deleted if it is
+// unpinned and the corresponding JS wrapper object is garbage collected. On the
+// other hand, an AtmURLRequest instance lifetime is totally governed by
+// reference counting.
 //
 class URLRequest : public mate::EventEmitter<URLRequest> {
  public:
@@ -178,16 +179,6 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   net::HttpResponseHeaders* RawResponseHeaders() const;
   uint32_t ResponseHttpVersionMajor() const;
   uint32_t ResponseHttpVersionMinor() const;
-
-  // template <typename... ArgTypes>
-  // std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> BuildArgsArray(
-  //    ArgTypes... args) const;
-
-  // template <typename... ArgTypes>
-  // void EmitRequestEvent(ArgTypes... args);
-
-  // template <typename... ArgTypes>
-  // void EmitResponseEvent(ArgTypes... args);
 
   void Close();
   void Pin();

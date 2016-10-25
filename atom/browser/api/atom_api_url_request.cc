@@ -173,9 +173,9 @@ URLRequest::~URLRequest() {
 
 // static
 mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
+  auto isolate = args->isolate();
   v8::Local<v8::Object> options;
   args->GetNext(&options);
-  auto isolate = args->isolate();
   mate::Dictionary dict(isolate, options);
   std::string method;
   dict.Get("method", &method);

@@ -797,7 +797,79 @@ describe('net module', function () {
       urlRequest.end()
     })
 
-    it('should to able to create and intercept a request using a custom parition name', function (done) {
+    it('should to able to create and intercept a request using a custom session object', function (done) {
+      const requestUrl = '/requestUrl'
+      const redirectUrl = '/redirectUrl'
+      const customPartitionName = 'custom-partition'
+      let requestIsRedirected = false
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case requestUrl:
+            assert(false)
+            break
+          case redirectUrl:
+            requestIsRedirected = true
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+
+      session.defaultSession.webRequest.onBeforeRequest(
+        function (details, callback) {
+          assert(false, 'Request should not be intercepted by the default session')
+        })
+
+      let customSession = session.fromPartition(customPartitionName, {
+        cache: false
+      })
+      let requestIsIntercepted = false
+      customSession.webRequest.onBeforeRequest(
+        function (details, callback) {
+          if (details.url === `${server.url}${requestUrl}`) {
+            requestIsIntercepted = true
+            callback({
+              redirectURL: `${server.url}${redirectUrl}`
+            })
+          } else {
+            callback({
+              cancel: false
+            })
+          }
+        })
+
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`,
+        session: customSession
+      })
+      urlRequest.on('response', function (response) {
+        assert.equal(response.statusCode, 200)
+        response.pause()
+        response.on('data', function (chunk) {
+        })
+        response.on('end', function () {
+          assert(requestIsRedirected, 'The server should receive a request to the forward URL')
+          assert(requestIsIntercepted, 'The request should be intercepted by the webRequest module')
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.end()
+    })
+
+    it('should throw if given an invalid session option', function (done) {
+      try {
+        const urlRequest = net.request({
+          url: `${server.url}${requestUrl}`,
+          session: 1
+        })
+      } catch (exception) {
+        done()
+      }
+    })
+
+    it('should to able to create and intercept a request using a custom partition name', function (done) {
       const requestUrl = '/requestUrl'
       const redirectUrl = '/redirectUrl'
       const customPartitionName = 'custom-partition'
@@ -856,6 +928,17 @@ describe('net module', function () {
         response.resume()
       })
       urlRequest.end()
+    })
+
+    it('should throw if given an invalid partition option', function (done) {
+      try {
+        const urlRequest = net.request({
+          url: `${server.url}${requestUrl}`,
+          partition: 1
+        })
+      } catch (exception) {
+        done()
+      }
     })
 
     it('should be able to create a request with options', function (done) {
