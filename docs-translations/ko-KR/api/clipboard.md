@@ -80,6 +80,7 @@ Returns `String` - RTF 형식의 클립보드 내용.
 ### `clipboard.readBookmark()` _macOS_ _Windows_
 
 Returns `Object`:
+
 * `title` String
 * `url` String
 

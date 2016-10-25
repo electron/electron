@@ -53,6 +53,7 @@ crashReporter.start({
 ### `crashReporter.getLastCrashReport()`
 
 Returns `Object`:
+
 * `date` String
 * `ID` Integer
 
@@ -62,6 +63,7 @@ Returns `Object`:
 ### `crashReporter.getUploadedReports()`
 
 Returns `Object[]`:
+
 * `date` String
 * `ID` Integer
 

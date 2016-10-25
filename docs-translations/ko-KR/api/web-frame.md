@@ -121,6 +121,7 @@ webFrame.registerURLSchemeAsPrivileged('foo', { bypassCSP: false })
 ### `webFrame.getResourceUsage()`
 
 Returns `Object`:
+
 * `images` [MemoryUsageDetails](structures/memory-usage-details.md)
 * `cssStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
 * `xslStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
