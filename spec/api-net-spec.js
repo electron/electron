@@ -859,11 +859,13 @@ describe('net module', function () {
     })
 
     it('should throw if given an invalid session option', function (done) {
+      const requestUrl = '/requestUrl'
       try {
         const urlRequest = net.request({
           url: `${server.url}${requestUrl}`,
           session: 1
         })
+        urlRequest
       } catch (exception) {
         done()
       }
@@ -931,11 +933,13 @@ describe('net module', function () {
     })
 
     it('should throw if given an invalid partition option', function (done) {
+      const requestUrl = '/requestUrl'
       try {
         const urlRequest = net.request({
           url: `${server.url}${requestUrl}`,
           partition: 1
         })
+        urlRequest
       } catch (exception) {
         done()
       }
