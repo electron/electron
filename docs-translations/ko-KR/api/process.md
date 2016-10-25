@@ -84,6 +84,7 @@ Mac App Store 빌드에선 이 속성이 `true`가 됩니다. 다른 빌드에�
 ### `process.getProcessMemoryInfo()`
 
 Returns `Object`:
+
 * `workingSetSize` Integer - 현재 실제 물리적 RAM에 예약된 메모리의 양.
 * `peakWorkingSetSize` Integer - 물리적 RAM에 예약된 메모리의 최대 사용량.
 * `privateBytes` Integer - 다른 프로세스에 공유되지 않은 JS 힙 또는 HTML 콘텐츠와
@@ -97,6 +98,7 @@ Returns `Object`:
 ### `process.getSystemMemoryInfo()`
 
 Returns `Object`:
+
 * `total` Integer - 시스템에서 사용할 수 있는 킬로바이트 단위의 전체 물리적 메모리의
   양.
 * `free` Integer - 애플리케이션이나 디스크 캐시로 사용되지 않은 메모리의 양.

@@ -90,6 +90,7 @@ Returns:
 ### `screen.getCursorScreenPoint()`
 
 Returns `Object`:
+
 * `x` Integer
 * `y` Integer
 

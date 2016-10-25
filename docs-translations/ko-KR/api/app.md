@@ -546,6 +546,7 @@ Returns `Boolean` - 호출 성공 여부.
 ### `app.getJumpListSettings()` _Windows_
 
 Returns `Object`:
+
 * `minItems` Integer - 점프 목록에서 보여질 항목의 최소 수 (이 값에 대한 자세한
   설명은 [MSDN 문서][JumpListBeginListMSDN])를 보세요.
 * `removedItems` [JumpListItem[]](structures/jump-list-item.md) - 점프 목록의 사용자 정의 카테고리에서 사용자가 삭제한
