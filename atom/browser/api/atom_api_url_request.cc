@@ -175,16 +175,21 @@ URLRequest::~URLRequest() {
 mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
   v8::Local<v8::Object> options;
   args->GetNext(&options);
-  mate::Dictionary dict(args->isolate(), options);
+  auto isolate = args->isolate();
+  mate::Dictionary dict(isolate, options);
   std::string method;
   dict.Get("method", &method);
   std::string url;
   dict.Get("url", &url);
-  std::string session_name;
-  dict.Get("session", &session_name);
-
-  auto session = Session::FromPartition(args->isolate(), session_name);
-
+  std::string partition;
+  mate::Handle<api::Session> session;
+  if (dict.Get("session", &session)) {
+  } else if (dict.Get("partition", &partition)) {
+    session = Session::FromPartition(isolate, partition);
+  } else {
+    // Use the default session if not specified.
+    session = Session::FromPartition(isolate, "");
+  }
   auto browser_context = session->browser_context();
   auto api_url_request = new URLRequest(args->isolate(), args->GetThis());
   auto atom_url_request =

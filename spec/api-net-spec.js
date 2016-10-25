@@ -797,10 +797,10 @@ describe('net module', function () {
       urlRequest.end()
     })
 
-    it('should to able to create and intercept a request on a custom session', function (done) {
+    it('should to able to create and intercept a request using a custom parition name', function (done) {
       const requestUrl = '/requestUrl'
       const redirectUrl = '/redirectUrl'
-      const customSessionName = 'custom-session'
+      const customPartitionName = 'custom-partition'
       let requestIsRedirected = false
       server.on('request', function (request, response) {
         switch (request.url) {
@@ -821,7 +821,7 @@ describe('net module', function () {
           assert(false, 'Request should not be intercepted by the default session')
         })
 
-      let customSession = session.fromPartition(customSessionName, {
+      let customSession = session.fromPartition(customPartitionName, {
         cache: false
       })
       let requestIsIntercepted = false
@@ -841,7 +841,7 @@ describe('net module', function () {
 
       const urlRequest = net.request({
         url: `${server.url}${requestUrl}`,
-        session: customSessionName
+        partition: customPartitionName
       })
       urlRequest.on('response', function (response) {
         assert.equal(response.statusCode, 200)
