@@ -48,6 +48,7 @@
       'lib/common/api/native-image.js',
       'lib/common/api/shell.js',
       'lib/common/init.js',
+      'lib/common/parse-features-string.js',
       'lib/common/reset-search-paths.js',
       'lib/renderer/chrome-api.js',
       'lib/renderer/content-scripts-injector.js',

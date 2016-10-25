@@ -406,6 +406,33 @@ describe('<webview> tag', function () {
     })
   })
 
+  describe('webpreferences attribute', function () {
+    it('can enable nodeintegration', function (done) {
+      webview.addEventListener('console-message', function (e) {
+        assert.equal(e.message, 'function object object')
+        done()
+      })
+      webview.setAttribute('webpreferences', 'nodeIntegration')
+      webview.src = 'file://' + fixtures + '/pages/d.html'
+      document.body.appendChild(webview)
+    })
+
+    it('can disables web security and enable nodeintegration', function (done) {
+      var jqueryPath = path.join(__dirname, '/static/jquery-2.0.3.min.js')
+      var src = `<script src='file://${jqueryPath}'></script> <script>console.log('ok '+(typeof require));</script>`
+      var encoded = btoa(unescape(encodeURIComponent(src)))
+      var listener = function (e) {
+        assert.equal(e.message, 'ok function')
+        webview.removeEventListener('console-message', listener)
+        done()
+      }
+      webview.addEventListener('console-message', listener)
+      webview.setAttribute('webpreferences', 'webSecurity=no, nodeIntegration=yes')
+      webview.src = 'data:text/html;base64,' + encoded
+      document.body.appendChild(webview)
+    })
+  })
+
   describe('new-window event', function () {
     if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
       return
