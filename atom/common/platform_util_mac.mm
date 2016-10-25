@@ -17,6 +17,44 @@
 #include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
 
+namespace {
+
+bool OpenURLInWorkspace(NSURL* ns_url, NSUInteger launchOptions) {
+  return [[NSWorkspace sharedWorkspace] openURLs: @[ns_url]
+                                        withAppBundleIdentifier: nil
+                                        options: launchOptions
+                                        additionalEventParamDescriptor: NULL
+                                        launchIdentifiers: NULL];
+}
+
+typedef bool(^OpenExternalBlock)(NSURL* ns_url, NSUInteger launchOptions);
+
+bool OpenExternalWithBlock(const GURL& url, bool activate, OpenExternalBlock open) {
+  DCHECK([NSThread isMainThread]);
+  NSURL* ns_url = net::NSURLWithGURL(url);
+  if (!ns_url) {
+    return false;
+  }
+
+  CFURLRef openingApp = NULL;
+  OSStatus status = LSGetApplicationForURL((CFURLRef)ns_url,
+                                           kLSRolesAll,
+                                           NULL,
+                                           &openingApp);
+  if (status != noErr) {
+    return false;
+  }
+  CFRelease(openingApp);  // NOT A BUG; LSGetApplicationForURL retains for us
+
+  NSUInteger launchOptions = NSWorkspaceLaunchDefault;
+  if (!activate)
+    launchOptions |= NSWorkspaceLaunchWithoutActivation;
+
+  return open(ns_url, launchOptions);
+}
+
+}  // namespace
+
 namespace platform_util {
 
 bool ShowItemInFolder(const base::FilePath& path) {
@@ -129,51 +167,17 @@ bool OpenItem(const base::FilePath& full_path) {
   return status == noErr;
 }
 
-bool openURLInWorkspace(NSURL* ns_url, NSUInteger launchOptions) {
-  return [[NSWorkspace sharedWorkspace] openURLs: @[ns_url]
-                                        withAppBundleIdentifier: nil
-                                        options: launchOptions
-                                        additionalEventParamDescriptor: NULL
-                                        launchIdentifiers: NULL];
-}
-
-typedef bool(^OpenExternalBlock)(NSURL* ns_url, NSUInteger launchOptions);
-
-bool openExternal(const GURL& url, bool activate, OpenExternalBlock open) {
-  DCHECK([NSThread isMainThread]);
-  NSURL* ns_url = net::NSURLWithGURL(url);
-  if (!ns_url) {
-    return false;
-  }
-
-  CFURLRef openingApp = NULL;
-  OSStatus status = LSGetApplicationForURL((CFURLRef)ns_url,
-                                           kLSRolesAll,
-                                           NULL,
-                                           &openingApp);
-  if (status != noErr) {
-    return false;
-  }
-  CFRelease(openingApp);  // NOT A BUG; LSGetApplicationForURL retains for us
-
-  NSUInteger launchOptions = NSWorkspaceLaunchDefault;
-  if (!activate)
-    launchOptions |= NSWorkspaceLaunchWithoutActivation;
-
-  return open(ns_url, launchOptions);
-}
-
 bool OpenExternal(const GURL& url, bool activate) {
-  return openExternal(url, activate, ^bool(NSURL* ns_url, NSUInteger launchOptions) {
-    return openURLInWorkspace(ns_url, launchOptions);
+  return OpenExternalWithBlock(url, activate, ^bool(NSURL* ns_url, NSUInteger launchOptions) {
+    return OpenURLInWorkspace(ns_url, launchOptions);
   });
 }
 
 bool OpenExternal(const GURL& url, bool activate, const OpenExternalCallback& c) {
   __block OpenExternalCallback callback = c;
-  return openExternal(url, activate, ^bool(NSURL* ns_url, NSUInteger launchOptions) {
+  return OpenExternalWithBlock(url, activate, ^bool(NSURL* ns_url, NSUInteger launchOptions) {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-      bool opened = openURLInWorkspace(ns_url, launchOptions);
+      bool opened = OpenURLInWorkspace(ns_url, launchOptions);
       dispatch_async(dispatch_get_main_queue(), ^{
         callback.Run(opened);
       });
