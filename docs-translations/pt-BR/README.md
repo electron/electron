@@ -9,7 +9,7 @@ selecione a *tag* que corresponde à sua versão.
 ## FAQ
 
 Existem muitas perguntas comuns que são feitas, verifique antes de criar uma issue.
-* [Electron FAQ](../../docs/faq.md)
+* [Electron FAQ](faq.md)
 
 ## Guias
 
@@ -40,15 +40,15 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 
 ### Elementos DOM Personalizados:
 
-* [Objeto `File`](../../docs-translations/pt-BR/api/file-object.md)
+* [Objeto `File`](api/file-object.md)
 * [Tag `<webview>`](../../docs/api/web-view-tag.md)
-* [Função `window.open`](../../docs/api/window-open.md)
+* [Função `window.open`](api/window-open.md)
 
 ### Módulos para o Processo Principal:
 
 * [app](api/app.md)
 * [autoUpdater](api/auto-updater.md)
-* [BrowserWindow](../../docs/api/browser-window.md)
+* [BrowserWindow](api/browser-window.md)
 * [contentTracing](../../docs/api/content-tracing.md)
 * [dialog](../../docs/api/dialog.md)
 * [globalShortcut](../../docs/api/global-shortcut.md)
@@ -85,5 +85,5 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [Visão Geral do Build](../../docs/development/build-system-overview.md)
 * [Instrução de Build (Mac)](development/build-instructions-osx.md)
 * [Instrução de Build (Windows)](../../docs/development/build-instructions-windows.md)
-* [Instrução de Build (Linux)](../../docs/development/build-instructions-linux.md)
+* [Instrução de Build (Linux)](development/build-instructions-linux.md)
 * [Configurando um Symbol Server no Debugger](../../docs/development/setting-up-symbol-server.md)
