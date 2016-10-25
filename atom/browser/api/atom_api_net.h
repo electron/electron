@@ -1,4 +1,4 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -25,7 +25,6 @@ class Net : public mate::EventEmitter<Net> {
   ~Net() override;
 
  private:
-  void RequestGarbageCollectionForTesting();
   DISALLOW_COPY_AND_ASSIGN(Net);
 };
 

@@ -664,7 +664,7 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       details.headers,
+       details.headers.get(),
        ResourceTypeToString(details.resource_type));
 }
 
@@ -678,7 +678,7 @@ void WebContents::DidGetRedirectForResourceRequest(
        details.http_response_code,
        details.method,
        details.referrer,
-       details.headers);
+       details.headers.get());
 }
 
 void WebContents::DidFinishNavigation(

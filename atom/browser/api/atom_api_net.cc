@@ -1,4 +1,4 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -27,18 +27,11 @@ void Net::BuildPrototype(v8::Isolate* isolate,
                          v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Net"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetProperty("URLRequest", &Net::URLRequest)
-      .SetMethod("_RequestGarbageCollectionForTesting",
-                 &Net::RequestGarbageCollectionForTesting);
+      .SetProperty("URLRequest", &Net::URLRequest);
 }
 
 v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
   return URLRequest::GetConstructor(isolate)->GetFunction();
-}
-
-void Net::RequestGarbageCollectionForTesting() {
-  isolate()->RequestGarbageCollectionForTesting(
-      v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
 }
 
 }  // namespace api

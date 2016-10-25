@@ -1,4 +1,4 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -175,23 +175,23 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
 
   int StatusCode() const;
   std::string StatusMessage() const;
-  scoped_refptr<net::HttpResponseHeaders> RawResponseHeaders() const;
+  net::HttpResponseHeaders* RawResponseHeaders() const;
   uint32_t ResponseHttpVersionMajor() const;
   uint32_t ResponseHttpVersionMinor() const;
 
-  template <typename... ArgTypes>
-  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> BuildArgsArray(
-      ArgTypes... args) const;
+  // template <typename... ArgTypes>
+  // std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> BuildArgsArray(
+  //    ArgTypes... args) const;
 
-  template <typename... ArgTypes>
-  void EmitRequestEvent(ArgTypes... args);
+  // template <typename... ArgTypes>
+  // void EmitRequestEvent(ArgTypes... args);
 
-  template <typename... ArgTypes>
-  void EmitResponseEvent(ArgTypes... args);
+  // template <typename... ArgTypes>
+  // void EmitResponseEvent(ArgTypes... args);
 
   void Close();
-  void pin();
-  void unpin();
+  void Pin();
+  void Unpin();
 
   scoped_refptr<AtomURLRequest> atom_request_;
   RequestState request_state_;
@@ -204,36 +204,6 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
 
   DISALLOW_COPY_AND_ASSIGN(URLRequest);
 };
-
-template <typename... ArgTypes>
-std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)>
-URLRequest::BuildArgsArray(ArgTypes... args) const {
-  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> result = {
-      {mate::ConvertToV8(isolate(), args)...}};
-  return result;
-}
-
-template <typename... ArgTypes>
-void URLRequest::EmitRequestEvent(ArgTypes... args) {
-  v8::HandleScope handle_scope(isolate());
-  auto arguments = BuildArgsArray(args...);
-  v8::Local<v8::Function> _emitRequestEvent;
-  auto wrapper = GetWrapper();
-  if (mate::Dictionary(isolate(), wrapper)
-          .Get("_emitRequestEvent", &_emitRequestEvent))
-    _emitRequestEvent->Call(wrapper, arguments.size(), arguments.data());
-}
-
-template <typename... ArgTypes>
-void URLRequest::EmitResponseEvent(ArgTypes... args) {
-  v8::HandleScope handle_scope(isolate());
-  auto arguments = BuildArgsArray(args...);
-  v8::Local<v8::Function> _emitResponseEvent;
-  auto wrapper = GetWrapper();
-  if (mate::Dictionary(isolate(), wrapper)
-          .Get("_emitResponseEvent", &_emitResponseEvent))
-    _emitResponseEvent->Call(wrapper, arguments.size(), arguments.data());
-}
 
 }  // namespace api
 

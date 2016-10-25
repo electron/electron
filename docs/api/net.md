@@ -226,6 +226,11 @@ string, it is converted into a Buffer using the specified encoding.
 * `encoding` String (optional) - Used to convert string chunks into Buffer
 objects. Defaults to 'utf-8'.
 * `callback` Function (optional) - Called after the write operation ends.
+`callback` is essentially a dummy function introduced in the purpose of keeping
+similarity with the Node.js API. It is called asynchronously in the next tick
+after `chunk` content have been delivered to the Chromium networking layer.
+Contrary to the Node.js implementation, it is not guaranteed that `chunk`
+content have been flushed on the wire before `callback` is called.
 
 Adds a chunk of data to the request body. The first write operation may cause
 the request headers to be issued on the wire. After the first write operation,
@@ -311,10 +316,3 @@ A String indicating the HTTP protocol version number. Typical values are '1.0'
 or '1.1'. Additionally `httpVersionMajor` and `httpVersionMinor` are two
 Integer-valued readable properties that return respectively the HTTP major and
 minor version numbers.
-
-
-
-
-
-
-

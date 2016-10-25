@@ -1,4 +1,4 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -42,21 +42,52 @@ struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
       return false;
     }
 
-    auto io_buffer = new net::IOBufferWithSize(size);
-    if (!io_buffer) {
-      // Assuming allocation failed.
-      return false;
-    }
-
+    *out = new net::IOBufferWithSize(size);
     // We do a deep copy. We could have used Buffer's internal memory
     // but that is much more complicated to be properly handled.
-    memcpy(io_buffer->data(), data, size);
-    *out = io_buffer;
+    memcpy((*out)->data(), data, size);
     return true;
   }
 };
 
 }  // namespace mate
+
+namespace {
+
+template <typename... ArgTypes>
+std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> BuildArgsArray(
+    v8::Isolate* isolate,
+    ArgTypes... args) {
+  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> result = {
+      {mate::ConvertToV8(isolate, args)...}};
+  return result;
+}
+
+template <typename... ArgTypes>
+void EmitRequestEvent(v8::Isolate* isolate,
+                      v8::Local<v8::Object> object,
+                      ArgTypes... args) {
+  v8::HandleScope handle_scope(isolate);
+  auto arguments = BuildArgsArray(isolate, args...);
+  v8::Local<v8::Function> _emitRequestEvent;
+  if (mate::Dictionary(isolate, object)
+          .Get("_emitRequestEvent", &_emitRequestEvent))
+    _emitRequestEvent->Call(object, arguments.size(), arguments.data());
+}
+
+template <typename... ArgTypes>
+void EmitResponseEvent(v8::Isolate* isolate,
+                       v8::Local<v8::Object> object,
+                       ArgTypes... args) {
+  v8::HandleScope handle_scope(isolate);
+  auto arguments = BuildArgsArray(isolate, args...);
+  v8::Local<v8::Function> _emitResponseEvent;
+  if (mate::Dictionary(isolate, object)
+          .Get("_emitResponseEvent", &_emitResponseEvent))
+    _emitResponseEvent->Call(object, arguments.size(), arguments.data());
+}
+
+}  // namespace
 
 namespace atom {
 namespace api {
@@ -210,12 +241,12 @@ bool URLRequest::Write(scoped_refptr<const net::IOBufferWithSize> buffer,
   if (request_state_.NotStarted()) {
     request_state_.SetFlag(RequestStateFlags::kStarted);
     // Pin on first write.
-    pin();
+    Pin();
   }
 
   if (is_last) {
     request_state_.SetFlag(RequestStateFlags::kFinished);
-    EmitRequestEvent(true, "finish");
+    EmitRequestEvent(isolate(), GetWrapper(), true, "finish");
   }
 
   DCHECK(atom_request_);
@@ -239,10 +270,10 @@ void URLRequest::Cancel() {
     // Really cancel if it was started.
     atom_request_->Cancel();
   }
-  EmitRequestEvent(true, "abort");
+  EmitRequestEvent(isolate(), GetWrapper(), true, "abort");
 
   if (response_state_.Started() && !response_state_.Ended()) {
-    EmitResponseEvent(true, "aborted");
+    EmitResponseEvent(isolate(), GetWrapper(), true, "aborted");
   }
   Close();
 }
@@ -351,10 +382,10 @@ void URLRequest::OnError(const std::string& error, bool isRequestError) {
   auto error_object = v8::Exception::Error(mate::StringToV8(isolate(), error));
   if (isRequestError) {
     request_state_.SetFlag(RequestStateFlags::kFailed);
-    EmitRequestEvent(false, "error", error_object);
+    EmitRequestEvent(isolate(), GetWrapper(), false, "error", error_object);
   } else {
     response_state_.SetFlag(ResponseStateFlags::kFailed);
-    EmitResponseEvent(false, "error", error_object);
+    EmitResponseEvent(isolate(), GetWrapper(), false, "error", error_object);
   }
   Close();
 }
@@ -374,8 +405,8 @@ std::string URLRequest::StatusMessage() const {
   return result;
 }
 
-scoped_refptr<net::HttpResponseHeaders> URLRequest::RawResponseHeaders() const {
-  return response_headers_;
+net::HttpResponseHeaders* URLRequest::RawResponseHeaders() const {
+  return response_headers_.get();
 }
 
 uint32_t URLRequest::ResponseHttpVersionMajor() const {
@@ -397,11 +428,11 @@ void URLRequest::Close() {
     request_state_.SetFlag(RequestStateFlags::kClosed);
     if (response_state_.Started()) {
       // Emit a close event if we really have a response object.
-      EmitResponseEvent(true, "close");
+      EmitResponseEvent(isolate(), GetWrapper(), true, "close");
     }
-    EmitRequestEvent(true, "close");
+    EmitRequestEvent(isolate(), GetWrapper(), true, "close");
   }
-  unpin();
+  Unpin();
   if (atom_request_) {
     // A request has been created in JS, used and then it ended.
     // We release unneeded net resources.
@@ -410,13 +441,13 @@ void URLRequest::Close() {
   atom_request_ = nullptr;
 }
 
-void URLRequest::pin() {
+void URLRequest::Pin() {
   if (wrapper_.IsEmpty()) {
     wrapper_.Reset(isolate(), GetWrapper());
   }
 }
 
-void URLRequest::unpin() {
+void URLRequest::Unpin() {
   wrapper_.Reset();
 }
 

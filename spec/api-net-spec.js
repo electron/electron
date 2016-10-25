@@ -1179,7 +1179,8 @@ describe('net module', function () {
         const {net} = require('electron')
         const urlRequest = net.request('${server.url}${requestUrl}')
         process.nextTick(function () {
-          net._RequestGarbageCollectionForTesting()
+          const v8Util = process.atomBinding('v8_util')
+          v8Util.requestGarbageCollectionForTesting()
           event.sender.send('api-net-spec-done')
         })
       `)
@@ -1217,7 +1218,8 @@ describe('net module', function () {
           })
           process.nextTick(function () {
             // Trigger a garbage collection.
-            net._RequestGarbageCollectionForTesting()
+            const v8Util = process.atomBinding('v8_util')
+            v8Util.requestGarbageCollectionForTesting()
             event.sender.send('api-net-spec-resume')
           })
         })
@@ -1251,7 +1253,8 @@ describe('net module', function () {
         })
         urlRequest.on('close', function () {
           process.nextTick(function () {
-            net._RequestGarbageCollectionForTesting()
+            const v8Util = process.atomBinding('v8_util')
+            v8Util.requestGarbageCollectionForTesting()
             event.sender.send('api-net-spec-done')
           })
         })
