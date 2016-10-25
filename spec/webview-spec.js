@@ -2,11 +2,11 @@ const assert = require('assert')
 const path = require('path')
 const http = require('http')
 const url = require('url')
-const {app, session, getGuestWebContents, ipcMain, BrowserWindow} = require('electron').remote
+const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} = require('electron').remote
 const {closeWindow} = require('./window-helpers')
 
 describe('<webview> tag', function () {
-  this.timeout(20000)
+  this.timeout(60000)
 
   var fixtures = path.join(__dirname, 'fixtures')
 
@@ -1344,6 +1344,116 @@ describe('<webview> tag', function () {
       webview.src = `file://${fixtures}/pages/a.html`
       div.appendChild(webview)
       document.body.appendChild(div)
+    })
+  })
+
+  describe('disableguestresize attribute', () => {
+    it('does not have attribute by default', () => {
+      document.body.appendChild(webview)
+      assert(!webview.hasAttribute('disableguestresize'))
+    })
+
+    it('resizes guest when attribute is not present', done => {
+      w = new BrowserWindow({ show: false, width: 200, height: 200 })
+      w.loadURL('file://' + fixtures + '/pages/webview-guest-resize.html')
+
+      w.webContents.once('did-finish-load', () => {
+        const CONTENT_SIZE = 300
+
+        const elementResizePromise = new Promise(resolve => {
+          ipcMain.once('webview-element-resize', (event, width, height) => {
+            assert.equal(width, CONTENT_SIZE)
+            resolve()
+          })
+        })
+
+        const guestResizePromise = new Promise(resolve => {
+          ipcMain.once('webview-guest-resize', (event, width, height) => {
+            assert.equal(width, CONTENT_SIZE)
+            resolve()
+          })
+        })
+
+        Promise.all([elementResizePromise, guestResizePromise]).then(() => done())
+
+        w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
+      })
+    })
+
+    it('does not resize guest when attribute is present', done => {
+      w = new BrowserWindow({ show: false, width: 200, height: 200 })
+      w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
+
+      w.webContents.once('did-finish-load', () => {
+        const CONTENT_SIZE = 300
+
+        const elementResizePromise = new Promise(resolve => {
+          ipcMain.once('webview-element-resize', (event, width, height) => {
+            assert.equal(width, CONTENT_SIZE)
+            resolve()
+          })
+        })
+
+        const noGuestResizePromise = new Promise(resolve => {
+          const onGuestResize = (event, width, height) => {
+            assert(false, 'unexpected guest resize message')
+          }
+          ipcMain.once('webview-guest-resize', onGuestResize)
+
+          setTimeout(() => {
+            ipcMain.removeListener('webview-guest-resize', onGuestResize)
+            resolve()
+          }, 500)
+        })
+
+        Promise.all([elementResizePromise, noGuestResizePromise]).then(() => done())
+
+        w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
+      })
+    })
+
+    it('dispatches element resize event even when attribute is present', done => {
+      w = new BrowserWindow({ show: false, width: 200, height: 200 })
+      w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
+
+      w.webContents.once('did-finish-load', () => {
+        const CONTENT_SIZE = 300
+
+        ipcMain.once('webview-element-resize', (event, width, height) => {
+          assert.equal(width, CONTENT_SIZE)
+          done()
+        })
+
+        w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
+      })
+    })
+
+    it('can be manually resized with setSize even when attribute is present', done => {
+      w = new BrowserWindow({ show: false, width: 200, height: 200 })
+      w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
+
+      w.webContents.once('did-finish-load', () => {
+        const GUEST_WIDTH = 10
+        const GUEST_HEIGHT = 20
+
+        ipcMain.once('webview-guest-resize', (event, width, height) => {
+          assert.equal(width, GUEST_WIDTH)
+          assert.equal(height, GUEST_HEIGHT)
+          done()
+        })
+
+        for (let wc of webContents.getAllWebContents()) {
+          if (wc.hostWebContents &&
+              wc.hostWebContents.id === w.webContents.id) {
+            wc.setSize({
+              normal: {
+                width: GUEST_WIDTH,
+                height: GUEST_HEIGHT
+              }
+            })
+          }
+        }
+      })
     })
   })
 })
