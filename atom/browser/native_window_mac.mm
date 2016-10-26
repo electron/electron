@@ -4,8 +4,8 @@
 
 #include "atom/browser/native_window_mac.h"
 
-#include <string>
 #include <Quartz/Quartz.h>
+#include <string>
 
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"

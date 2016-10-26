@@ -664,11 +664,11 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Just sum any extra width and
 height areas you have within the overall content view.
 
-#### `win.previewFile(pathname[, displayName])` _macOS_
+#### `win.previewFile(path[, displayName])` _macOS_
 
 * `path` String - The absolute path to the file to preview with QuickLook. This
-  is important as Quick Look uses the file name and file extension on the path to
-  determine the content type of the file to open.
+  is important as Quick Look uses the file name and file extension on the path
+  to determine the content type of the file to open.
 * `displayName` String (Optional) - The name of the file to display on the
   Quick Look modal view. This is purely visual and does not affect the content
   type of the file. Defaults to `path`.
