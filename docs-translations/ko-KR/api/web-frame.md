@@ -85,11 +85,11 @@ webFrame.setSpellCheckProvider('en-US', true, {
 
 * `scheme` String
 * `options` Object(optional)
-  * `secure` (optional) 기본값 참.
-  * `bypassCSP` (optional) 기본값 참.
-  * `allowServiceWorkers` (optional) 기본값 참.
-  * `supportFetchAPI` (optional) 기본값 참.
-  * `corsEnabled` (optional) 기본값 참.
+  * `secure` Boolean - (optional) 기본값 참.
+  * `bypassCSP` Boolean - (optional) 기본값 참.
+  * `allowServiceWorkers` Boolean - (optional) 기본값 참.
+  * `supportFetchAPI` Boolean - (optional) 기본값 참.
+  * `corsEnabled` Boolean - (optional) 기본값 참.
 
 `scheme`를 보안된 스킴으로 등록합니다. 리소스에 대해 보안 정책을 우회하며,
 ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
