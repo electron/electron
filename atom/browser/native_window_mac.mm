@@ -102,6 +102,52 @@ bool ScopedDisableResize::disable_resize_ = false;
    }
 }
 
+// Called when the user clicks the zoom button or selects it from the Window
+// menu) to determine the "standard size" of the window.
+- (NSRect)windowWillUseStandardFrame:(NSWindow*)window
+                        defaultFrame:(NSRect)frame {
+  if (!shell_->zoom_to_content_size())
+    return frame;
+
+  // If the shift key is down, maximize.
+  if ([[NSApp currentEvent] modifierFlags] & NSShiftKeyMask)
+    return frame;
+
+  // To prevent strange results on portrait displays, the basic minimum zoomed
+  // width is the larger of: 60% of available width, 60% of available height
+  // (bounded by available width).
+  const CGFloat kProportion = 0.6;
+  CGFloat zoomedWidth =
+      std::max(kProportion * NSWidth(frame),
+               std::min(kProportion * NSHeight(frame), NSWidth(frame)));
+
+  content::WebContents* web_contents = shell_->web_contents();
+  if (web_contents) {
+    // If the intrinsic width is bigger, then make it the zoomed width.
+    const int kScrollbarWidth = 16;  // TODO(viettrungluu): ugh.
+    CGFloat intrinsicWidth = static_cast<CGFloat>(
+        web_contents->GetPreferredSize().width() + kScrollbarWidth);
+    zoomedWidth = std::max(zoomedWidth,
+                           std::min(intrinsicWidth, NSWidth(frame)));
+  }
+
+  // Never shrink from the current size on zoom (see above).
+  NSRect currentFrame = [shell_->GetNativeWindow() frame];
+  zoomedWidth = std::max(zoomedWidth, NSWidth(currentFrame));
+
+  // |frame| determines our maximum extents. We need to set the origin of the
+  // frame -- and only move it left if necessary.
+  if (currentFrame.origin.x + zoomedWidth > NSMaxX(frame))
+    frame.origin.x = NSMaxX(frame) - zoomedWidth;
+  else
+    frame.origin.x = currentFrame.origin.x;
+
+  // Set the width. Don't touch y or height.
+  frame.size.width = zoomedWidth;
+
+  return frame;
+}
+
 - (void)windowDidBecomeMain:(NSNotification*)notification {
   content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)
@@ -584,6 +630,7 @@ NativeWindowMac::NativeWindowMac(
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
+      zoom_to_content_size_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
   int width = 800, height = 600;
@@ -705,6 +752,8 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kUseContentSize, &use_content_size);
   if (!has_frame() || !use_content_size)
     SetSize(gfx::Size(width, height));
+
+  options.Get(options::kZoomToContentSize, &zoom_to_content_size_);
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;

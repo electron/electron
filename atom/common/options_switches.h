@@ -34,6 +34,7 @@ extern const char kKiosk[];
 extern const char kAlwaysOnTop[];
 extern const char kAcceptFirstMouse[];
 extern const char kUseContentSize[];
+extern const char kZoomToContentSize[];
 extern const char kTitleBarStyle[];
 extern const char kAutoHideMenuBar[];
 extern const char kEnableLargerThanScreen[];
