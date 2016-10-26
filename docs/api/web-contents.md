@@ -398,7 +398,7 @@ Returns:
   * `menuSourceType` String - Input source that invoked the context menu.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`.
   * `mediaFlags` Object - The flags for the media element the context menu was
-    invoked on. See more about this below.
+    invoked on.
     * `inError` Boolean - Whether the media element has crashed.
     * `isPaused` Boolean - Whether the media element is paused.
     * `isMuted` Boolean - Whether the media element is muted.
@@ -409,8 +409,8 @@ Returns:
     * `canToggleControls` Boolean - Whether the media element's controls are
       toggleable.
     * `canRotate` Boolean - Whether the media element can be rotated.
-  * `editFlags` Object - These flags indicate whether the renderer believes it is
-    able to perform the corresponding action. See more about this below.
+  * `editFlags` Object - These flags indicate whether the renderer believes it
+    is able to perform the corresponding action.
     * `canUndo` Boolean - Whether the renderer believes it can undo.
     * `canRedo` Boolean - Whether the renderer believes it can redo.
     * `canCut` Boolean - Whether the renderer believes it can cut.
