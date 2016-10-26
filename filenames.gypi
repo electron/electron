@@ -340,6 +340,8 @@
       'atom/common/api/api_messages.h',
       'atom/common/api/atom_api_asar.cc',
       'atom/common/api/atom_api_clipboard.cc',
+      'atom/common/api/atom_api_clipboard.h',
+      'atom/common/api/atom_api_clipboard_mac.mm',
       'atom/common/api/atom_api_crash_reporter.cc',
       'atom/common/api/atom_api_key_weak_map.h',
       'atom/common/api/atom_api_native_image.cc',

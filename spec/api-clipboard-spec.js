@@ -84,4 +84,13 @@ describe('clipboard module', function () {
       }
     })
   })
+
+  describe('clipboard.read/writeFindText(text)', function () {
+    it('reads and write text to the find pasteboard', function () {
+      if (process.platform !== 'darwin') return this.skip()
+
+      clipboard.writeFindText('find this')
+      assert.equal(clipboard.readFindText(), 'find this')
+    })
+  })
 })
