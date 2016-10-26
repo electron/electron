@@ -55,6 +55,8 @@ class NativeWindowMac : public NativeWindow,
   void SetMovable(bool movable) override;
   void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size)
     override;
+  void PreviewFile(const std::string& path, const std::string& display_name)
+    override;
   bool IsMovable() override;
   void SetMinimizable(bool minimizable) override;
   bool IsMinimizable() override;

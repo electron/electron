@@ -664,6 +664,17 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Just sum any extra width and
 height areas you have within the overall content view.
 
+#### `win.previewFile(path[, displayName])` _macOS_
+
+* `path` String - The absolute path to the file to preview with QuickLook. This
+  is important as Quick Look uses the file name and file extension on the path
+  to determine the content type of the file to open.
+* `displayName` String (Optional) - The name of the file to display on the
+  Quick Look modal view. This is purely visual and does not affect the content
+  type of the file. Defaults to `path`.
+
+Uses [Quick Look][quick-look] to preview a file at a given path.
+
 #### `win.setBounds(bounds[, animate])`
 
 * `bounds` [Rectangle](structures/rectangle.md)
@@ -1182,3 +1193,4 @@ Returns `BrowserWindow` - The parent window.
 Returns `BrowserWindow[]` - All child windows.
 
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
+[quick-look]: https://en.wikipedia.org/wiki/Quick_Look
