@@ -1,67 +1,96 @@
-# The `window.open` function
+# Função `window.open`
 
-Qunado `window.open` é chamado para criar uma nova janela de uma pagina web uma nova instância de `BrowserWindow` será criado para a `url` e um proxy será devolvido para o `windows.open`, para permitir que a página tenha limitado controle sobre ele.
+> Abre uma nova janela e carrega uma URL.
 
-O proxy tem funcionalidade limitada padrão implementada para ser compatível com as páginas web tradicionais.
-Para controle total da nova janela você deveria criar um `BrowserWindow` diretamente
+Quando `window.open` é chamada para criar uma nova janela de uma página web, uma
+nova instância de `BrowserWindow` será criada para a `url` e um proxy será
+devolvido para o `window.open` para permitir que a página tenha controle
+limitado sobre ele.
 
+O proxy tem uma funcionalidade padrão implementada de forma limitada para ser
+compatível com páginas web tradicionais. Para ter controle total de uma nova
+janela, você deverá criar diretamente um `BrowserWindow`.
 
-The newly created `BrowserWindow` will inherit parent window's options by
-default, to override inherited options you can set them in the `features`
-string.
+O `BrowserWindow` recém-criado herdará as opções da janela pai por padrão. Para
+substituir as opções herdadas, você poderá defini-las na string `features`.
 
-O recém-criado `BrowserWindow` herdará as opções da janela pai por padrão, para substituir as opções herdadas você pode definilos no `features`(string).
 ### `window.open(url[, frameName][, features])`
 
 * `url` String
 * `frameName` String (opcional)
 * `features` String (opcional)
 
-Cria uma nova janela e retorna uma instância da classe `BrowserWindowProxy'.
+Retorna `BrowserWindowProxy` - Cria uma nova janela e retorna uma instância da
+classe `BrowserWindowProxy`.
 
-A string `features` segue o formato padrão do browser, mas cada recurso (feature) tem que ser um campo de opções do `BrowserWindow`.
+A string `features` segue o formato de um navegador padrão, mas cada recurso
+(feature) tem de ser um campo das opções do `BrowserWindow`.
+
+**Notas:**
+
+* Integração com Node sempre estará desativada no `window` aberto se ela
+  estiver desativada na janela pai.
+* Recursos fora do padrão (que não são manipulados pelo Chromium ou pelo
+  Electron) fornecidos em `features` serão passados para qualquer manipulador
+  de eventos `new-window` do `webContent` registrado no argumento
+  `additionalFeatures`.
 
 ### `window.opener.postMessage(message, targetOrigin)`
 
 * `message` String
 * `targetOrigin` String
 
-Envia uma mensagem para a janela pai com a origem especificada ou `*` preferência de origem não especificada.
-Sends a message to the parent window with the specified origin or `*`
-origin preference.
+Envia uma mensagem para a janela pai com a origem especificada ou `*` para
+nenhuma preferência de origem.
 
-## Class: BrowserWindowProxy
+## Classe: BrowserWindowProxy
 
-O objeto `BrowserWindowProxy` é retornado de `window.open` e fornece uma funcionalidade limitada para a janela filha.
+> Manipula a janela de navegador filha
 
-### `BrowserWindowProxy.blur()`
+O objeto `BrowserWindowProxy` é retornado de `window.open` e fornece uma
+funcionalidade limitada para a janela filha.
+
+### Métodos de Instância
+
+O objeto `BrowserWindowProxy` possui os seguintes métodos de instância:
+
+#### `win.blur()`
 
 Remove o foco da janela filha.
 
-### `BrowserWindowProxy.close()`
+#### `win.close()`
 
-Forçadamente fecha a janela filha sem chamar o evento de descarregamento.
+Fecha forçadamente a janela filha sem chamar seu evento de descarregamento.
 
-### `BrowserWindowProxy.closed`
-
-Define como true após a janela filha ficar fechada.
-
-### `BrowserWindowProxy.eval(code)`
+#### `win.eval(code)`
 
 * `code` String
 
-Avalia o código na jánela filha.
+Avalia o código na janela filha.
 
-### `BrowserWindowProxy.focus()`
+#### `win.focus()`
 
-Concentra-se a janela filha (traz a janela para frente)
-### `BrowserWindowProxy.postMessage(message, targetOrigin)`
+Foca na janela filha (traz a janela para frente).
+
+#### `win.print()`
+
+Invoca o diálogo de impressão na janela filha.
+
+#### `win.postMessage(message, targetOrigin)`
 
 * `message` String
 * `targetOrigin` String
 
-Sends a message to the child window with the specified origin or `*` for no
-origin preference.
+Envia uma mensagem para a janela filha com a origem especificada ou `*` para
+nenhuma preferência de origem.
 
-In addition to these methods, the child window implements `window.opener` object
-with no properties and a single method.
+Além desses métodos, a janela filha implementa o objeto `window.opener` sem
+propriedades e com apenas um método.
+
+### Propriedades de Instância
+
+O objeto `BrowserWindowProxy` possui as seguintes propriedades de instância:
+
+#### `win.closed`
+
+Um booleano que é definido como true após a janela filha ser fechada.
