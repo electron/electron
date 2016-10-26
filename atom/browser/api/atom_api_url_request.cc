@@ -6,6 +6,7 @@
 #include <string>
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/net/atom_url_request.h"
+#include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -51,43 +52,6 @@ struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
 };
 
 }  // namespace mate
-
-namespace {
-
-template <typename... ArgTypes>
-std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> BuildArgsArray(
-    v8::Isolate* isolate,
-    ArgTypes... args) {
-  std::array<v8::Local<v8::Value>, sizeof...(ArgTypes)> result = {
-      {mate::ConvertToV8(isolate, args)...}};
-  return result;
-}
-
-template <typename... ArgTypes>
-void EmitRequestEvent(v8::Isolate* isolate,
-                      v8::Local<v8::Object> object,
-                      ArgTypes... args) {
-  v8::HandleScope handle_scope(isolate);
-  auto arguments = BuildArgsArray(isolate, args...);
-  v8::Local<v8::Function> _emitRequestEvent;
-  if (mate::Dictionary(isolate, object)
-          .Get("_emitRequestEvent", &_emitRequestEvent))
-    _emitRequestEvent->Call(object, arguments.size(), arguments.data());
-}
-
-template <typename... ArgTypes>
-void EmitResponseEvent(v8::Isolate* isolate,
-                       v8::Local<v8::Object> object,
-                       ArgTypes... args) {
-  v8::HandleScope handle_scope(isolate);
-  auto arguments = BuildArgsArray(isolate, args...);
-  v8::Local<v8::Function> _emitResponseEvent;
-  if (mate::Dictionary(isolate, object)
-          .Get("_emitResponseEvent", &_emitResponseEvent))
-    _emitResponseEvent->Call(object, arguments.size(), arguments.data());
-}
-
-}  // namespace
 
 namespace atom {
 namespace api {
@@ -249,7 +213,7 @@ bool URLRequest::Write(scoped_refptr<const net::IOBufferWithSize> buffer,
 
   if (is_last) {
     request_state_.SetFlag(RequestStateFlags::kFinished);
-    EmitRequestEvent(isolate(), GetWrapper(), true, "finish");
+    EmitRequestEvent(true, "finish");
   }
 
   DCHECK(atom_request_);
@@ -273,10 +237,10 @@ void URLRequest::Cancel() {
     // Really cancel if it was started.
     atom_request_->Cancel();
   }
-  EmitRequestEvent(isolate(), GetWrapper(), true, "abort");
+  EmitRequestEvent(true, "abort");
 
   if (response_state_.Started() && !response_state_.Ended()) {
-    EmitResponseEvent(isolate(), GetWrapper(), true, "aborted");
+    EmitResponseEvent(true, "aborted");
   }
   Close();
 }
@@ -385,10 +349,10 @@ void URLRequest::OnError(const std::string& error, bool isRequestError) {
   auto error_object = v8::Exception::Error(mate::StringToV8(isolate(), error));
   if (isRequestError) {
     request_state_.SetFlag(RequestStateFlags::kFailed);
-    EmitRequestEvent(isolate(), GetWrapper(), false, "error", error_object);
+    EmitRequestEvent(false, "error", error_object);
   } else {
     response_state_.SetFlag(ResponseStateFlags::kFailed);
-    EmitResponseEvent(isolate(), GetWrapper(), false, "error", error_object);
+    EmitResponseEvent(false, "error", error_object);
   }
   Close();
 }
@@ -431,9 +395,9 @@ void URLRequest::Close() {
     request_state_.SetFlag(RequestStateFlags::kClosed);
     if (response_state_.Started()) {
       // Emit a close event if we really have a response object.
-      EmitResponseEvent(isolate(), GetWrapper(), true, "close");
+      EmitResponseEvent(true, "close");
     }
-    EmitRequestEvent(isolate(), GetWrapper(), true, "close");
+    EmitRequestEvent(true, "close");
   }
   Unpin();
   if (atom_request_) {
@@ -452,6 +416,18 @@ void URLRequest::Pin() {
 
 void URLRequest::Unpin() {
   wrapper_.Reset();
+}
+
+template <typename... Args>
+void URLRequest::EmitRequestEvent(Args... args) {
+  v8::HandleScope handle_scope(isolate());
+  mate::CustomEmit(isolate(), GetWrapper(), "_emitRequestEvent", args...);
+}
+
+template <typename... Args>
+void URLRequest::EmitResponseEvent(Args... args) {
+  v8::HandleScope handle_scope(isolate());
+  mate::CustomEmit(isolate(), GetWrapper(), "_emitResponseEvent", args...);
 }
 
 }  // namespace api

@@ -183,6 +183,10 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   void Close();
   void Pin();
   void Unpin();
+  template <typename... Args>
+  void EmitRequestEvent(Args... args);
+  template <typename... Args>
+  void EmitResponseEvent(Args... args);
 
   scoped_refptr<AtomURLRequest> atom_request_;
   RequestState request_state_;
