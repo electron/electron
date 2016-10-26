@@ -375,7 +375,7 @@ void NativeWindow::SetAspectRatio(double aspect_ratio,
 }
 
 void NativeWindow::PreviewFile(const std::string& path,
-                               const std::string& fileName) {
+                               const std::string& display_name) {
 }
 
 void NativeWindow::RequestToClosePage() {

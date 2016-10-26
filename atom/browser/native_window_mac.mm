@@ -290,11 +290,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 @implementation AtomPreviewItem
 
 - (id)initWithURL:(NSURL*)url title:(NSString*)title {
-  self = [super init]; 
+  self = [super init];
   if (self) {
     self.previewItemURL = url;
     self.previewItemTitle = title;
-  }  
+  }
   return self;
 }
 
@@ -953,11 +953,11 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
     [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
 }
 
-void NativeWindowMac::PreviewFile(const std::string& path, const std::string& fileName) {
-  NSString* pathStr = [NSString stringWithUTF8String:path.c_str()];
-  NSString* nameStr = [NSString stringWithUTF8String:fileName.c_str()];
-
-  [window_ previewFileAtPath:pathStr withName:nameStr];
+void NativeWindowMac::PreviewFile(const std::string& path,
+                                  const std::string& display_name) {
+  NSString* path_ns = [NSString stringWithUTF8String:path.c_str()];
+  NSString* name_ns = [NSString stringWithUTF8String:display_name.c_str()];
+  [window_ previewFileAtPath:path_ns withName:name_ns];
 }
 
 void NativeWindowMac::SetMovable(bool movable) {
