@@ -185,13 +185,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     Default is `false`.
   * `type` String - The type of window, default is normal window. See more about
     this below.
-  * `titleBarStyle` String - The style of window title bar.  Possible values are:
-    * `default` or not specified, results in the standard gray opaque Mac title
+  * `titleBarStyle` String - The style of window title bar. Default is `default`. Possible values are:
+    * `default` - Results in the standard gray opaque Mac title
       bar.
-    * `hidden` results in a hidden title bar and a full size content window, yet
+    * `hidden` - Results in a hidden title bar and a full size content window, yet
       the title bar still has the standard window controls ("traffic lights") in
       the top left.
-    * `hidden-inset` results in a hidden title bar with an alternative look
+    * `hidden-inset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
   * `thickFrame` Boolean - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
