@@ -106,7 +106,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 // menu) to determine the "standard size" of the window.
 - (NSRect)windowWillUseStandardFrame:(NSWindow*)window
                         defaultFrame:(NSRect)frame {
-  if (!shell_->zoom_to_content_size())
+  if (!shell_->zoom_to_page_width())
     return frame;
 
   // If the shift key is down, maximize.
@@ -630,7 +630,7 @@ NativeWindowMac::NativeWindowMac(
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
-      zoom_to_content_size_(false),
+      zoom_to_page_width_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
   int width = 800, height = 600;
@@ -753,7 +753,7 @@ NativeWindowMac::NativeWindowMac(
   if (!has_frame() || !use_content_size)
     SetSize(gfx::Size(width, height));
 
-  options.Get(options::kZoomToContentSize, &zoom_to_content_size_);
+  options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;

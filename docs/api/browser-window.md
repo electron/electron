@@ -205,7 +205,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `vibrancy` String - Add a type of vibrancy effect to the window, only on
     macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
     `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.
-  * `zoomToContentSize` Boolean - The zoom behavior on macOS, accessible by
+  * `zoomToPageWidth` Boolean - The zoom behavior on macOS, accessible by
     option-clicking the green stoplight button on the toolbar or running the
     Window > Zoom menu item. If `true`, the window will grow to the width of the
     web page, `false` will cause it to zoom to the width of the screen. This
