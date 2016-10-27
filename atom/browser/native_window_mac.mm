@@ -117,13 +117,12 @@ bool ScopedDisableResize::disable_resize_ = false;
   if (!web_contents)
     return frame;
 
-  CGFloat intrinsicWidth = static_cast<CGFloat>(
+  CGFloat pageWidth = static_cast<CGFloat>(
       web_contents->GetPreferredSize().width());
-
   NSRect currentFrame = [window frame];
 
   // Never shrink from the current size on zoom.
-  CGFloat zoomedWidth = std::max(intrinsicWidth, NSWidth(currentFrame));
+  CGFloat zoomedWidth = std::max(pageWidth, NSWidth(currentFrame));
 
   // |frame| determines our maximum extents. We need to set the origin of the
   // frame -- and only move it left if necessary.
