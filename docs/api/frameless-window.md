@@ -48,8 +48,6 @@ let win = new BrowserWindow({titleBarStyle: 'hidden-inset'})
 win.show()
 ```
 
-
-
 ## Transparent window
 
 By setting the `transparent` option to `true`, you can also make the frameless
