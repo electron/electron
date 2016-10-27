@@ -327,7 +327,6 @@ NativeWindowViews::NativeWindowViews(
     last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
   else
     last_window_state_ = ui::SHOW_STATE_NORMAL;
-  last_normal_bounds_ = GetBounds();
 #endif
 }
 

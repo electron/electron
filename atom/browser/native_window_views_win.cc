@@ -125,7 +125,6 @@ bool NativeWindowViews::PreHandleMSG(
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
     case WM_SIZE: {
-      consecutive_moves_ = false;
       // Handle window state change.
       HandleSizeEvent(w_param, l_param);
       return false;
@@ -133,15 +132,6 @@ bool NativeWindowViews::PreHandleMSG(
     case WM_MOVING: {
       if (!movable_)
         ::GetWindowRect(GetAcceleratedWidget(), (LPRECT)l_param);
-      return false;
-    }
-    case WM_MOVE: {
-      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
-        if (consecutive_moves_)
-          last_normal_bounds_ = last_normal_bounds_candidate_;
-        last_normal_bounds_candidate_ = GetBounds();
-        consecutive_moves_ = true;
-      }
       return false;
     }
     default:
@@ -162,35 +152,20 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       NotifyWindowMinimize();
       break;
     case SIZE_RESTORED:
-      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
-        // Window was resized so we save it's new size.
-        last_normal_bounds_ = GetBounds();
-      } else {
-        switch (last_window_state_) {
-          case ui::SHOW_STATE_MAXIMIZED:
+      switch (last_window_state_) {
+        case ui::SHOW_STATE_MAXIMIZED:
+          last_window_state_ = ui::SHOW_STATE_NORMAL;
+          NotifyWindowUnmaximize();
+          break;
+        case ui::SHOW_STATE_MINIMIZED:
+          if (IsFullscreen()) {
+            last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+            NotifyWindowEnterFullScreen();
+          } else {
             last_window_state_ = ui::SHOW_STATE_NORMAL;
-
-            // When the window is restored we resize it to the previous known
-            // normal size.
-            SetBounds(last_normal_bounds_, false);
-
-            NotifyWindowUnmaximize();
-            break;
-          case ui::SHOW_STATE_MINIMIZED:
-            if (IsFullscreen()) {
-              last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
-              NotifyWindowEnterFullScreen();
-            } else {
-              last_window_state_ = ui::SHOW_STATE_NORMAL;
-
-              // When the window is restored we resize it to the previous known
-              // normal size.
-              SetBounds(last_normal_bounds_, false);
-
-              NotifyWindowRestore();
-            }
-            break;
-        }
+            NotifyWindowRestore();
+          }
+          break;
       }
       break;
   }

@@ -211,22 +211,6 @@ class NativeWindowViews : public NativeWindow,
 
   ui::WindowShowState last_window_state_;
 
-  // There's an issue with restore on Windows, that sometimes causes the Window
-  // to receive the wrong size (#2498). To circumvent that, we keep tabs on the
-  // size of the window while in the normal state (not maximized, minimized or
-  // fullscreen), so we restore it correctly.
-  gfx::Rect last_normal_bounds_;
-
-  // last_normal_bounds_ may or may not require update on WM_MOVE. When a
-  // window is maximized, it is moved (WM_MOVE) to maximum size first and then
-  // sized (WM_SIZE). In this case, last_normal_bounds_ should not update. We
-  // keep last_normal_bounds_candidate_ as a candidate which will become valid
-  // last_normal_bounds_ if the moves are consecutive with no WM_SIZE event in
-  // between.
-  gfx::Rect last_normal_bounds_candidate_;
-
-  bool consecutive_moves_;
-
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 
