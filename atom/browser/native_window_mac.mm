@@ -117,22 +117,22 @@ bool ScopedDisableResize::disable_resize_ = false;
   if (!web_contents)
     return frame;
 
-  CGFloat pageWidth = static_cast<CGFloat>(
+  CGFloat page_width = static_cast<CGFloat>(
       web_contents->GetPreferredSize().width());
-  NSRect currentFrame = [window frame];
+  NSRect window_frame = [window frame];
 
   // Never shrink from the current size on zoom.
-  CGFloat zoomedWidth = std::max(pageWidth, NSWidth(currentFrame));
+  CGFloat zoomed_width = std::max(page_width, NSWidth(window_frame));
 
   // |frame| determines our maximum extents. We need to set the origin of the
   // frame -- and only move it left if necessary.
-  if (currentFrame.origin.x + zoomedWidth > NSMaxX(frame))
-    frame.origin.x = NSMaxX(frame) - zoomedWidth;
+  if (window_frame.origin.x + zoomed_width > NSMaxX(frame))
+    frame.origin.x = NSMaxX(frame) - zoomed_width;
   else
-    frame.origin.x = currentFrame.origin.x;
+    frame.origin.x = window_frame.origin.x;
 
   // Set the width. Don't touch y or height.
-  frame.size.width = zoomedWidth;
+  frame.size.width = zoomed_width;
 
   return frame;
 }
