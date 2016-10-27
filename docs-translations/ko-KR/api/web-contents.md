@@ -391,31 +391,24 @@ Returns:
     종류. 값은 `none`, `plainText`, `password`, `other` 중 한 가지가 될 수 있습니다.
   * `menuSourceType` String - 컨텍스트 메뉴를 호출한 입력 소스. 값은 `none`,
     `mouse`, `keyboard`, `touch`, `touchMenu` 중 한 가지가 될 수 있습니다.
-  * `mediaFlags` Object - 컨텍스트 메뉴가 호출된 미디어 요소에 대한 플래그. 자세한
-    사항은 아래를 참고하세요.
+  * `mediaFlags` Object - 컨텍스트 메뉴가 호출된 미디어 요소에 대한 플래그.
+    * `inError` Boolean - 미디어 객체가 크래시되었는지 여부.
+    * `isPaused` Boolean - 미디어 객체가 일시중지되었는지 여부.
+    * `isMuted` Boolean - 미디어 객체가 음소거되었는지 여부.
+    * `hasAudio` Boolean - 미디어 객체가 오디오를 가지고 있는지 여부.
+    * `isLooping` Boolean - 미디어 객체가 루프중인지 여부.
+    * `isControlsVisible` Boolean - 미디어 객체의 컨트롤이 보이는지 여부.
+    * `canToggleControls` Boolean - 미디어 객체의 컨트롤을 토글할 수 있는지 여부.
+    * `canRotate` Boolean - 미디어 객체를 돌릴 수 있는지 여부.
   * `editFlags` Object - 이 플래그는 렌더러가 어떤 행동을 이행할 수 있는지 여부를
-    표시합니다. 자세한 사항은 아래를 참고하세요.
-
-`mediaFlags`는 다음과 같은 속성을 가지고 있습니다:
-
-* `inError` Boolean - 미디어 객체가 크래시되었는지 여부.
-* `isPaused` Boolean - 미디어 객체가 일시중지되었는지 여부.
-* `isMuted` Boolean - 미디어 객체가 음소거되었는지 여부.
-* `hasAudio` Boolean - 미디어 객체가 오디오를 가지고 있는지 여부.
-* `isLooping` Boolean - 미디어 객체가 루프중인지 여부.
-* `isControlsVisible` Boolean - 미디어 객체의 컨트롤이 보이는지 여부.
-* `canToggleControls` Boolean - 미디어 객체의 컨트롤을 토글할 수 있는지 여부.
-* `canRotate` Boolean - 미디어 객체를 돌릴 수 있는지 여부.
-
-`editFlags`는 다음과 같은 속성을 가지고 있습니다:
-
-* `canUndo` Boolean - 렌더러에서 실행 취소할 수 있는지 여부.
-* `canRedo` Boolean - 렌더러에서 다시 실행할 수 있는지 여부.
-* `canCut` Boolean - 렌더러에서 잘라내기를 실행할 수 있는지 여부.
-* `canCopy` Boolean - 렌더러에서 복사를 실행할 수 있는지 여부.
-* `canPaste` Boolean - 렌더러에서 붙여넣기를 실행할 수 있는지 여부.
-* `canDelete` Boolean - 렌더러에서 삭제를 실행할 수 있는지 여부.
-* `canSelectAll` Boolean - 렌더러에서 모두 선택을 실행할 수 있는지 여부.
+    표시합니다.
+    * `canUndo` Boolean - 렌더러에서 실행 취소할 수 있는지 여부.
+    * `canRedo` Boolean - 렌더러에서 다시 실행할 수 있는지 여부.
+    * `canCut` Boolean - 렌더러에서 잘라내기를 실행할 수 있는지 여부.
+    * `canCopy` Boolean - 렌더러에서 복사를 실행할 수 있는지 여부.
+    * `canPaste` Boolean - 렌더러에서 붙여넣기를 실행할 수 있는지 여부.
+    * `canDelete` Boolean - 렌더러에서 삭제를 실행할 수 있는지 여부.
+    * `canSelectAll` Boolean - 렌더러에서 모두 선택을 실행할 수 있는지 여부.
 
 새로운 컨텍스트 메뉴의 제어가 필요할 때 발생하는 이벤트입니다.
 
