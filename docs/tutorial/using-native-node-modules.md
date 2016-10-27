@@ -1,6 +1,6 @@
 # Using Native Node Modules
 
-The native Node modules are supported by Electron, but since Electron is very
+Native Node modules are supported by Electron, but since Electron is very
 likely to use a different V8 version from the Node binary installed in your
 system, you have to manually specify the location of Electron's headers when
 building native modules.
@@ -53,19 +53,19 @@ npm install --save-dev electron-rebuild
 
 ### Manually building for Electron
 
-If you are a developer developing a native module and want to test it against
+If you are developing a native module and want to test it against
 Electron, you might want to rebuild the module for Electron manually. You can
 use `node-gyp` directly to build for Electron:
 
 ```bash
 cd /path-to-module/
-HOME=~/.electron-gyp node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://atom.io/download/atom-shell
+node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://atom.io/download/atom-shell --devdir=~/.electron-gyp
 ```
 
-The `HOME=~/.electron-gyp` changes where to find development headers. The
-`--target=1.2.3` is version of Electron. The `--dist-url=...` specifies
-where to download the headers. The `--arch=x64` says the module is built for
-64bit system.
+* `--devdir` specifies where to find development headers.
+* `--target` is the version of Electron.
+* `--dist-url` specifies where to download the headers.
+* `--arch=x64` says the module is built for a 64bit system.
 
 ## Troubleshooting
 
@@ -87,8 +87,8 @@ happen. So in general it is recommended to always build native modules from
 source code.
 
 If you are following the `npm` way of installing modules, then this is done
-by default, if not, you have to pass `--build-from-source` to `npm`, or set the
+by default. If not, you have to pass `--build-from-source` to `npm`, or set the
 `npm_config_build_from_source` environment variable.
 
-[electron-rebuild]: https://github.com/paulcbetts/electron-rebuild
+[electron-rebuild]: https://github.com/electron/electron-rebuild
 [node-pre-gyp]: https://github.com/mapbox/node-pre-gyp
