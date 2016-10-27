@@ -18,7 +18,7 @@ propose changes to this document in a pull request.
 but before doing that please read the notes below and include as many details as
 possible with your report. If you can, please include:
   * The version of Electron you are using
-  * The operating system you are using
+  * The specifications of the operating system you are using
   * If applicable, what you were doing when the issue arose and what you
   expected to happen
 * Other things that will help resolve your issue:
