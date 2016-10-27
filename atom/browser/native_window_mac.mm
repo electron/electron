@@ -103,7 +103,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 // Called when the user clicks the zoom button or selects it from the Window
-// menu) to determine the "standard size" of the window.
+// menu to determine the "standard size" of the window.
 - (NSRect)windowWillUseStandardFrame:(NSWindow*)window
                         defaultFrame:(NSRect)frame {
   if (!shell_->zoom_to_page_width())
@@ -113,27 +113,17 @@ bool ScopedDisableResize::disable_resize_ = false;
   if ([[NSApp currentEvent] modifierFlags] & NSShiftKeyMask)
     return frame;
 
-  // To prevent strange results on portrait displays, the basic minimum zoomed
-  // width is the larger of: 60% of available width, 60% of available height
-  // (bounded by available width).
-  const CGFloat kProportion = 0.6;
-  CGFloat zoomedWidth =
-      std::max(kProportion * NSWidth(frame),
-               std::min(kProportion * NSHeight(frame), NSWidth(frame)));
-
   content::WebContents* web_contents = shell_->web_contents();
-  if (web_contents) {
-    // If the intrinsic width is bigger, then make it the zoomed width.
-    const int kScrollbarWidth = 16;  // TODO(viettrungluu): ugh.
-    CGFloat intrinsicWidth = static_cast<CGFloat>(
-        web_contents->GetPreferredSize().width() + kScrollbarWidth);
-    zoomedWidth = std::max(zoomedWidth,
-                           std::min(intrinsicWidth, NSWidth(frame)));
-  }
+  if (!web_contents)
+    return frame;
 
-  // Never shrink from the current size on zoom (see above).
-  NSRect currentFrame = [shell_->GetNativeWindow() frame];
-  zoomedWidth = std::max(zoomedWidth, NSWidth(currentFrame));
+  CGFloat intrinsicWidth = static_cast<CGFloat>(
+      web_contents->GetPreferredSize().width());
+
+  NSRect currentFrame = [window frame];
+
+  // Never shrink from the current size on zoom.
+  CGFloat zoomedWidth = std::max(intrinsicWidth, NSWidth(currentFrame));
 
   // |frame| determines our maximum extents. We need to set the origin of the
   // frame -- and only move it left if necessary.
