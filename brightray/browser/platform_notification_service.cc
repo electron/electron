@@ -26,12 +26,13 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
                               const content::PlatformNotificationData& data,
                               bool audio_muted,
                               bool allowed) {
-  if (!allowed) {
-    notification->Destroy();
+  if (!notification)
     return;
-  }
-  notification->Show(data.title, data.body, data.tag, data.icon, icon,
-                     audio_muted ? true : data.silent);
+  if (allowed)
+    notification->Show(data.title, data.body, data.tag, data.icon, icon,
+                       audio_muted ? true : data.silent);
+  else
+    notification->Destroy();
 }
 
 }  // namespace
