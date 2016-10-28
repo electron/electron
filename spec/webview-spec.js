@@ -959,7 +959,9 @@ describe('<webview> tag', function () {
       session.fromPartition(webview.partition).setPermissionRequestHandler(function (webContents, permission, callback) {
         if (webContents.getId() === webview.getId()) {
           assert.equal(permission, 'notifications')
-          callback(true)
+          setTimeout(function () {
+            callback(true)
+          }, 10)
         }
       })
       document.body.appendChild(webview)
