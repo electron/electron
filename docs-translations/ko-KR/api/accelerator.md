@@ -2,12 +2,28 @@
 
 > 키보드 단축키를 정의합니다.
 
-Accelerator는 `+` 문자를 통해 여러 혼합키와 키코드를 결합할 수 있습니다.
+Accelerator 는 `+` 문자로 결합된 여러 수식어와 키 코드를 포함할 수 있는
+문자열입니다. 그리고 애플리케이션의 키보드 단축키를 정의하는데 사용됩니다.
 
 예시:
 
 * `CommandOrControl+A`
 * `CommandOrControl+Shift+Z`
+
+단축키는 [`globalShortcut`](global-shortcut.md) 모듈의
+[`register`](global-shortcut.md#globalshortcutregisteraccelerator-callback)
+메소드로 등록됩니다. 예시:
+
+```javascript
+const {app, globalShortcut} = require('electron')
+
+app.on('ready', () => {
+  // '커맨드 또는 컨트롤+Y' 단축키 리스너 등록.
+  globalShortcut.register('CommandOrControl+Y', () => {
+    // 커맨드/컨트롤과 Y 가 눌렸을 때 할 동작.
+  })
+})
+```
 
 ## 플랫폼에 관련하여 주의할 점
 

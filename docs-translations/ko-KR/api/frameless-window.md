@@ -24,8 +24,26 @@ macOS 10.9 Mavericks 이후의 최신 버전부터는 테두리가 없는 창을
 비활성화하는 대신 새로운 `titleBarStyle` 옵션을 통해 제목만 숨기고 창 구성 요소
 ("신호등 버튼")의 기능과 창 크기를 그대로 유지할 수 있습니다:
 
+#### `hidden`
+
+제목 표시줄을 숨기고 컨텐츠 창을 전체 크기로 합니다. 제목 표시줄은 여전히 왼쪽
+상단에 표준 창 컨트롤 (“신호등”) 을 가지고 있습니다.
+
 ```javascript
+const {BrowserWindow} = require('electron')
 let win = new BrowserWindow({titleBarStyle: 'hidden'})
+win.show()
+```
+
+#### `hidden-inset`
+
+제목 표시줄을 숨기고 창 가장자리에 약간 더 들어간 신호등 버튼 모양으로
+대체합니다.
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({titleBarStyle: 'hidden-inset'})
+win.show()
 ```
 
 ## 투명한 창 만들기
