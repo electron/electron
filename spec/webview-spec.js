@@ -946,6 +946,24 @@ describe('<webview> tag', function () {
       setUpRequestHandler(webview, 'openExternal', done)
       document.body.appendChild(webview)
     })
+
+    it('emits when using Notification.requestPermission', function (done) {
+      webview.addEventListener('ipc-message', function (e) {
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['granted'])
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/permissions/notification.html'
+      webview.partition = 'permissionTest'
+      webview.setAttribute('nodeintegration', 'on')
+      session.fromPartition(webview.partition).setPermissionRequestHandler(function (webContents, permission, callback) {
+        if (webContents.getId() === webview.getId()) {
+          assert.equal(permission, 'notifications')
+          callback(true)
+        }
+      })
+      document.body.appendChild(webview)
+    })
   })
 
   describe('<webview>.getWebContents', function () {
