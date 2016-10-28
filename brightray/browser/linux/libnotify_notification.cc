@@ -146,6 +146,11 @@ void LibnotifyNotification::Show(const base::string16& title,
 }
 
 void LibnotifyNotification::Dismiss() {
+  if (!notification_) {
+    Destroy();
+    return;
+  }
+
   GError* error = nullptr;
   libnotify_loader_.notify_notification_close(notification_, &error);
   if (error) {
