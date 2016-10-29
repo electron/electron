@@ -3,7 +3,7 @@
 * `name` 字串 - cookie 的名字.
 * `value` 字串 - cookie 的值.
 * `domain` 字串 - cookie 的域名.
-* `hostOnly` 字串 - cookie 是否為Host-Only.
+* `hostOnly` 字串 - cookie 是否為 Host-Only.
 * `path` 字串 - cookie 的路徑.
 * `secure` 布林 - cookie 的網域是否安全 （https).
 * `httpOnly` 布林 - cookie 是否只能運行在 HTTP.
