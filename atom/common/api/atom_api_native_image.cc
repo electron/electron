@@ -301,6 +301,12 @@ gfx::Size NativeImage::GetSize() {
   return image_.Size();
 }
 
+void NativeImage::CreateFromFileIcon(v8::Isolate* isolate,
+                                     const base::FilePath& path,
+                                     const IconLoadedCallback& callback) {
+  callback.Run(CreateEmpty(isolate));
+}
+
 float NativeImage::GetAspectRatio() {
   gfx::Size size = GetSize();
   if (size.IsEmpty())
@@ -514,6 +520,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
   dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
+  dict.SetMethod("createFromFileIcon",
+                 &atom::api::NativeImage::CreateFromFileIcon);
   dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
   dict.SetMethod("createFromDataURL",
                  &atom::api::NativeImage::CreateFromDataURL);
