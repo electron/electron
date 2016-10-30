@@ -28,11 +28,11 @@ The `dialog` module has the following methods:
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
   * `title` String
-  * `defaultPath` String
-  * `buttonLabel` String - Custom label for the confirmation button, when
+  * `defaultPath` String (optional)
+  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
-  * `filters` String[]
-  * `properties` String[] - Contains which features the dialog should use, can
+  * `filters` String[] (optional)
+  * `properties` String[] (optional) - Contains which features the dialog should use, can
     contain `openFile`, `openDirectory`, `multiSelections`, `createDirectory`
     and `showHiddenFiles`.
 * `callback` Function (optional)
@@ -72,10 +72,10 @@ shown.
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
   * `title` String
-  * `defaultPath` String
-  * `buttonLabel` String - Custom label for the confirmation button, when
+  * `defaultPath` String (optional)
+  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
-  * `filters` String[]
+  * `filters` String[] (optional)
 * `callback` Function (optional)
   * `filename` String
 
@@ -92,23 +92,23 @@ will be passed via `callback(filename)`
 
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
-  * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or
+  * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, "question" displays the same icon as "info", unless
   you set an icon using the "icon" option.
-  * `buttons` String[] - Array of texts for buttons. On Windows, an empty array
+  * `buttons` String[] (optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
-  * `defaultId` Integer - Index of the button in the buttons array which will
+  * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
-  * `title` String - Title of the message box, some platforms will not show it.
+  * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `message` String - Content of the message box.
-  * `detail` String - Extra information of the message.
-  * `icon` [NativeImage](native-image.md)
-  * `cancelId` Integer - The value will be returned when user cancels the dialog
+  * `detail` String (optional) - Extra information of the message.
+  * `icon` [NativeImage](native-image.md) (optional)
+  * `cancelId` Integer (optional) - The value will be returned when user cancels the dialog
     instead of clicking the buttons of the dialog. By default it is the index
     of the buttons that have "cancel" or "no" as label, or 0 if there is no such
     buttons. On macOS and Windows the index of "Cancel" button will always be
     used as `cancelId`, not matter whether it is already specified.
-  * `noLink` Boolean - On Windows Electron will try to figure out which one of
+  * `noLink` Boolean (optional) - On Windows Electron will try to figure out which one of
     the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
     others as command links in the dialog. This can make the dialog appear in
     the style of modern Windows apps. If you don't like this behavior, you can

@@ -155,11 +155,11 @@ Returns `String` - Reads `data` from the clipboard.
 ### `clipboard.write(data[, type])`
 
 * `data` Object
-  * `text` String
-  * `html` String
-  * `image` [NativeImage](native-image.md)
-  * `rtf` String
-  * `bookmark` String - The title of the url at `text`.
+  * `text` String (optional)
+  * `html` String (optional)
+  * `image` [NativeImage](native-image.md) (optional)
+  * `rtf` String (optional)
+  * `bookmark` String (optional) - The title of the url at `text`.
 * `type` String (optional)
 
 ```javascript
