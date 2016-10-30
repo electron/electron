@@ -42,7 +42,7 @@ class FileIconFetcher {
                                       gfx::Image* icon);
 
   // Tracks tasks requesting file icons.
-  base::CancelableTaskTracker cancelable_task_tracker_;
+  static base::CancelableTaskTracker cancelable_task_tracker_;
 };
 
 #endif  // ATOM_COMMON_API_FILEICON_FETCHER_H_
