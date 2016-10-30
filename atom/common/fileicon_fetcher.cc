@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/ui/webui/fileicon_source.h"
+#include "atom/common/fileicon_fetcher.h"
 
 #include "base/bind.h"
 #include "base/callback.h"
