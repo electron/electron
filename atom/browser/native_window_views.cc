@@ -574,7 +574,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
   if (thick_frame_) {
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
-    thick_frame_ = !thick_frame_;
+    thick_frame_ = false;
   }
 #elif defined(USE_X11)
   if (resizable != resizable_) {
