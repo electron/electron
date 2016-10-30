@@ -308,7 +308,9 @@ void NativeImage::CreateFromFileIcon(v8::Isolate* isolate,
                                      const IconLoadedCallback& callback) {
   IconLoader::IconSize icon_size = IconLoader::IconSize::NORMAL;
   float scale_factor = 1.0f;
-  auto onready = base::Bind(&NativeImage::OnIconLoaded, isolate, callback);
+  auto onready = base::Bind(&NativeImage::OnIconLoaded,
+                            base::Unretained(isolate),
+                            callback);
   FileIconFetcher::FetchFileIcon(path, scale_factor, icon_size, onready);
 }
 

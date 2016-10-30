@@ -90,7 +90,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   gfx::Size GetSize();
   float GetAspectRatio();
 
-  void OnIconLoaded(v8::Isolate* isolate,
+  static void OnIconLoaded(v8::Isolate* isolate,
                     const IconLoadedCallback& callback,
                     gfx::Image& image);
   // Mark the image as template image.
