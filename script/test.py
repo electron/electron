@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# importing all dependencies
 import os
 import shutil
 import subprocess
@@ -7,13 +8,13 @@ import sys
 
 from lib.util import electron_gyp, rm_rf
 
-
+# declare and define theenvironment variables.
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 PROJECT_NAME = electron_gyp()['project_name%']
 PRODUCT_NAME = electron_gyp()['product_name%']
 
-
+# main function
 def main():
   os.chdir(SOURCE_ROOT)
 
