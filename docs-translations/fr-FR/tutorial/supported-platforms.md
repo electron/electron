@@ -4,11 +4,11 @@ Les plateformes suivantes sont supportées par Electron:
 
 ### macOS
 
-Seulement les binaires en 64bit  sont fournis sur macOS, et la version minimale de macOS suportée est macOS 10.9.
+Seulement les binaires en 64bit sont fournis sur macOS, et la version minimale de macOS suportée est macOS 10.9.
 
 ### Windows
 
-Windows 7 et suivants sont supportés, les systèmes d'exploitation plus ancien de sont pas supporté
+Windows 7 et suivants sont supportés, les systèmes d'exploitation plus ancien ne sont pas supporté
 (et ne marchent pas).
 
 Les binaires `ia32` (`x86`) et `x64` (`amd64`) sont fournis pour Windows.
