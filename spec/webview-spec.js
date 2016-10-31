@@ -903,8 +903,8 @@ describe('<webview> tag', function () {
 
     it('emits when using navigator.getUserMedia api', function (done) {
       webview.addEventListener('ipc-message', function (e) {
-        assert(e.channel, 'message')
-        assert(e.args, ['PermissionDeniedError'])
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['PermissionDeniedError'])
         done()
       })
       webview.src = 'file://' + fixtures + '/pages/permissions/media.html'
@@ -916,8 +916,8 @@ describe('<webview> tag', function () {
 
     it('emits when using navigator.geolocation api', function (done) {
       webview.addEventListener('ipc-message', function (e) {
-        assert(e.channel, 'message')
-        assert(e.args, ['ERROR(1): User denied Geolocation'])
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['User denied Geolocation'])
         done()
       })
       webview.src = 'file://' + fixtures + '/pages/permissions/geolocation.html'
@@ -929,8 +929,8 @@ describe('<webview> tag', function () {
 
     it('emits when using navigator.requestMIDIAccess api', function (done) {
       webview.addEventListener('ipc-message', function (e) {
-        assert(e.channel, 'message')
-        assert(e.args, ['SecurityError'])
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['SecurityError'])
         done()
       })
       webview.src = 'file://' + fixtures + '/pages/permissions/midi.html'
@@ -944,6 +944,26 @@ describe('<webview> tag', function () {
       webview.src = 'magnet:test'
       webview.partition = 'permissionTest'
       setUpRequestHandler(webview, 'openExternal', done)
+      document.body.appendChild(webview)
+    })
+
+    it('emits when using Notification.requestPermission', function (done) {
+      webview.addEventListener('ipc-message', function (e) {
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['granted'])
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/permissions/notification.html'
+      webview.partition = 'permissionTest'
+      webview.setAttribute('nodeintegration', 'on')
+      session.fromPartition(webview.partition).setPermissionRequestHandler(function (webContents, permission, callback) {
+        if (webContents.getId() === webview.getId()) {
+          assert.equal(permission, 'notifications')
+          setTimeout(function () {
+            callback(true)
+          }, 10)
+        }
+      })
       document.body.appendChild(webview)
     })
   })
