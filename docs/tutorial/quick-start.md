@@ -91,6 +91,8 @@ function createWindow () {
   win = new BrowserWindow({width: 800, height: 600})
 
   // and load the index.html of the app.
+  // Note that backticks are required because the arg is an ES6 template literal
+  // and substituting single or double quotes will cause the load to fail.
   win.loadURL(`file://${__dirname}/index.html`)
 
   // Open the DevTools.
