@@ -82,8 +82,10 @@ LibnotifyNotification::LibnotifyNotification(NotificationDelegate* delegate,
 }
 
 LibnotifyNotification::~LibnotifyNotification() {
-  g_signal_handlers_disconnect_by_data(notification_, this);
-  g_object_unref(notification_);
+  if (notification_) {
+    g_signal_handlers_disconnect_by_data(notification_, this);
+    g_object_unref(notification_);
+  }
 }
 
 void LibnotifyNotification::Show(const base::string16& title,
@@ -144,6 +146,11 @@ void LibnotifyNotification::Show(const base::string16& title,
 }
 
 void LibnotifyNotification::Dismiss() {
+  if (!notification_) {
+    Destroy();
+    return;
+  }
+
   GError* error = nullptr;
   libnotify_loader_.notify_notification_close(notification_, &error);
   if (error) {
