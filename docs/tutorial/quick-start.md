@@ -81,6 +81,8 @@ example being:
 
 ```javascript
 const {app, BrowserWindow} = require('electron')
+const path = require('path')
+const url = require('url')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -91,7 +93,11 @@ function createWindow () {
   win = new BrowserWindow({width: 800, height: 600})
 
   // and load the index.html of the app.
-  win.loadURL(`file://${__dirname}/index.html`)
+  win.loadURL(url.format({
+    pathname: path.join(__dirname, 'index.html'),
+    protocol: 'file:',
+    slashes: true
+  }))
 
   // Open the DevTools.
   win.webContents.openDevTools()
@@ -225,8 +231,10 @@ repository.
 $ git clone https://github.com/electron/electron-quick-start
 # Go into the repository
 $ cd electron-quick-start
-# Install dependencies and run the app
-$ npm install && npm start
+# Install dependencies
+$ npm install
+# Run the app
+$ npm start
 ```
 
 For more example apps, see the
