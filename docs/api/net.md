@@ -74,7 +74,7 @@ interface and it is therefore an [EventEmitter](https://nodejs.org/api/events.ht
 
 ### `new ClientRequest(options)`
 
-* `options` Object or String - If `options` is a String, it is interpreted as
+* `options` (Object | String) - If `options` is a String, it is interpreted as
 the request URL. 
 If it is an object, it is expected to fully specify an HTTP request via the
 following properties:
@@ -225,11 +225,12 @@ before first write. Trying to call it after the first write will throw an error.
 
 #### `request.write(chunk[, encoding][, callback])`
 
-* `chunk` String or Buffer - A chunk of the request body's data. If it is a
+* `chunk` (String | Buffer) - A chunk of the request body's data. If it is a
 string, it is converted into a Buffer using the specified encoding.
 * `encoding` String (optional) - Used to convert string chunks into Buffer
 objects. Defaults to 'utf-8'.
-* `callback` Function (optional) - Called after the write operation ends.
+* `callback` Function (optional) - Called after the write operation ends.  
+
 `callback` is essentially a dummy function introduced in the purpose of keeping
 similarity with the Node.js API. It is called asynchronously in the next tick
 after `chunk` content have been delivered to the Chromium networking layer.
@@ -242,7 +243,7 @@ it is not allowed to add or remove a custom header.
 
 #### `request.end([chunk][, encoding][, callback])`
 
-* `chunk` String or Buffer (optional)
+* `chunk` (String | Buffer) (optional)
 * `encoding` String (optional)
 * `callback` Function (optional)
 
