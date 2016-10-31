@@ -73,7 +73,7 @@ This environment variable will not work if the `crashReporter` is started.
 
 ### `ELECTRON_DEFAULT_ERROR_MODE` _Windows_
 
-Shows the Windows's crash dialog when Electron crashes.
+Shows the Windows crash dialog when Electron crashes.
 
 This environment variable will not work if the `crashReporter` is started.
 
