@@ -118,6 +118,13 @@ describe('browser-window module', function () {
       w.loadURL('about:blank')
     })
 
+    it('should emit ready-to-show event', function (done) {
+      w.on('ready-to-show', function () {
+        done()
+      })
+      w.loadURL('about:blank')
+    })
+
     it('should emit did-get-response-details event', function (done) {
       // expected {fileName: resourceType} pairs
       var expectedResources = {
