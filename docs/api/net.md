@@ -136,7 +136,7 @@ Emitted when an authenticating proxy is asking for user credentials.
 
 The `callback` function is expected to be called back with user credentials:
 
-* `usrename` String
+* `username` String
 * `password` String
 
 ```JavaScript
