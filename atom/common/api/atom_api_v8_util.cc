@@ -92,6 +92,11 @@ void TakeHeapSnapshot(v8::Isolate* isolate) {
   isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
 
+void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
+  isolate->RequestGarbageCollectionForTesting(
+    v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
@@ -105,6 +110,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("createIDWeakMap", &atom::api::KeyWeakMap<int32_t>::Create);
   dict.SetMethod("createDoubleIDWeakMap",
                  &atom::api::KeyWeakMap<std::pair<int64_t, int32_t>>::Create);
+  dict.SetMethod("requestGarbageCollectionForTesting",
+                 &RequestGarbageCollectionForTesting);
 }
 
 }  // namespace
