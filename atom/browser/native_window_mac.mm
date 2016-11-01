@@ -309,6 +309,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @property BOOL acceptsFirstMouse;
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
+@property BOOL hideAfterFullscreenExit;
 @property NSPoint windowButtonsOffset;
 @property (nonatomic, retain) AtomPreviewItem* quickLookItem;
 
@@ -818,7 +819,22 @@ void NativeWindowMac::Hide() {
     return;
   }
 
-  SetFullScreen(false);
+  if (IsFullscreen()) {
+    __block __weak id fullcreenObserver;
+    fullcreenObserver = [[NSNotificationCenter defaultCenter]
+        addObserverForName:NSWindowDidExitFullScreenNotification
+        object:nil
+        queue:nil
+        usingBlock:^(NSNotification *note) {
+            [window_ orderOut:nil];
+            [[NSNotificationCenter defaultCenter] removeObserver:fullcreenObserver];
+        }
+    ];
+
+    SetFullScreen(false);
+    return;
+  }
+
   [window_ orderOut:nil];
 }
 
