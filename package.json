@@ -5,7 +5,7 @@
     "asar": "^0.11.0",
     "browserify": "^13.1.0",
     "electabul": "~0.0.4",
-    "electron-docs-linter": "^1.13.1",
+    "electron-docs-linter": "^1.13.2",
     "request": "*",
     "standard": "^8.4.0",
     "standard-markdown": "^2.1.1"
