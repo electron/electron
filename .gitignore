@@ -26,5 +26,4 @@ node_modules/
 *.vcxproj.user
 *.vcxproj.filters
 *.sln
-debug.log
-npm-debug.log
+*.log
