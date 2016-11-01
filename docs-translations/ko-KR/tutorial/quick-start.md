@@ -61,7 +61,7 @@ your-app/
 파일을 지정하면 메인 프로세스의 엔트리 포인트로 사용합니다. 예를 들어 사용할 수 있는
 `package.json`은 다음과 같습니다:
 
-```javascripton
+```json
 {
   "name"    : "your-app",
   "version" : "0.1.0",
@@ -76,11 +76,9 @@ __알림__: 만약 `main` 필드가 `package.json`에 설정되어 있지 않으
 다음과 같이 작성할 수 있습니다:
 
 ```javascript
-const electron = require('electron')
-// 애플리케이션 생명주기를 조작 하는 모듈.
-const {app} = electron
-// 네이티브 브라우저 창을 만드는 모듈.
-const {BrowserWindow} = electron
+const {app, BrowserWindow} = require('electron')
+const path = require('path')
+const url = require('url')
 
 // 윈도우 객체를 전역에 유지합니다. 만약 이렇게 하지 않으면
 // 자바스크립트 GC가 일어날 때 창이 멋대로 닫혀버립니다.
@@ -91,7 +89,11 @@ function createWindow () {
   win = new BrowserWindow({width: 800, height: 600})
 
   // 그리고 현재 디렉터리의 index.html을 로드합니다.
-  win.loadURL(`file://${__dirname}/index.html`)
+  win.loadURL(url.format({
+    pathname: path.join(__dirname, 'index.html'),
+    protocol: 'file:',
+    slashes: true
+  }))
 
   // 개발자 도구를 엽니다.
   win.webContents.openDevTools()
@@ -234,8 +236,10 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 $ git clone https://github.com/electron/electron-quick-start
 # 저장소 안으로 들어갑니다
 $ cd electron-quick-start
-# 애플리케이션의 의존성 모듈을 설치한 후 실행합니다
-$ npm install && npm start
+# 의존성 모듈을 설치합니다
+$ npm install
+# 앱을 실행합니다
+$ npm start
 ```
 
 더 많은 예시 앱을 보려면 대단한 Electron 커뮤니티에 의해 만들어진
