@@ -1,15 +1,16 @@
 # net
 
-> Issue HTTP/HTTPS requests.
+> Issue HTTP/HTTPS requests using Chromium's native networking library
 
 The `net` module is a client-side API for issuing HTTP(S) requests. It is
 similar to the  [HTTP](https://nodejs.org/api/http.html)  and
 [HTTPS](https://nodejs.org/api/https.html) modules of Node.js but uses
-Chromium native networking library instead of the Node.js implementation
-offering therefore a much greater support regarding web proxies.
+Chromium's native networking library instead of the Node.js implementation,
+offering better support for web proxies.
 
-Following is a non-exhaustive list of why you may consider using the `net`
+The following is a non-exhaustive list of why you may consider using the `net`
 module instead of the native Node.js modules:
+
 * Automatic management of system proxy configuration, support of the wpad
 protocol and proxy pac configuration files.
 * Automatic tunneling of HTTPS requests.
@@ -58,7 +59,7 @@ The `net` module has the following methods:
 
 ### `net.request(options)`
 
-* `options`: Object or String - The `ClientRequest` constructor options.
+* `options` (Object | String) - The `ClientRequest` constructor options.
 
 Returns `ClientRequest`
 
@@ -69,14 +70,15 @@ specified protocol scheme in the `options` object.
 
 ## Class: ClientRequest
 
+> Make HTTP/HTTPS requests.
+
 `ClientRequest` implements the [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams)
-interface and it is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
+interface and is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 
 ### `new ClientRequest(options)`
 
 * `options` (Object | String) - If `options` is a String, it is interpreted as
-the request URL. 
-If it is an object, it is expected to fully specify an HTTP request via the
+the request URL. If it is an object, it is expected to fully specify an HTTP request via the
 following properties:
   * `method` String (optional) - The HTTP request method. Defaults to the GET
 method.
@@ -94,8 +96,8 @@ Currently supported values are 'http:' or 'https:'. Defaults to 'http:'.
 the hostname and the port number 'hostname:port'
   * `hostname` String (optional) - The server host name.
   * `port` Integer (optional) - The server's listening port number.
-  * `path` String (optional) - The path part of the request URL. 
-  
+  * `path` String (optional) - The path part of the request URL.
+
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the
 [URL](https://nodejs.org/api/url.html) module.
@@ -260,30 +262,31 @@ response object,it will emit the `aborted` event.
 
 ## Class: IncomingMessage
 
-`IncomingMessage` represents an HTTP response message.
-It is a [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams)
-and consequently an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
+> Handle responses to HTTP/HTTPS requests.
+
+`IncomingMessage` implements the [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams)
+interface and is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 
 ### Instance Events
 
-#### Event 'data'
+#### Event: 'data'
 
 Returns:
 
-* `chunk`: Buffer - A chunk of response body's data.
+* `chunk` Buffer - A chunk of response body's data.
 
 The `data` event is the usual method of transferring response data into
-applicative code. 
+applicative code.
 
-#### Event 'end'
+#### Event: 'end'
 
 Indicates that response body has ended.
 
-#### Event 'aborted'
+#### Event: 'aborted'
 
 Emitted when a request has been canceled during an ongoing HTTP transaction.
 
-#### Event 'error'
+#### Event: 'error'
 
 Returns:
 
@@ -294,7 +297,7 @@ instance, if the server closes the underlying while the response is still
 streaming, an `error` event will be emitted on the response object and a `close`
 event will subsequently follow on the request object.
 
-### Instance properties
+### Instance Properties
 
 An `IncomingMessage` instance has the following readable properties:
 
