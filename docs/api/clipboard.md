@@ -2,6 +2,8 @@
 
 > Perform copy and paste operations on the system clipboard.
 
+Processes: [Main](../tutorial/quick-start.md#main-process), [Renderer](../tutorial/quick-start.md#renderer-process)
+
 The following example shows how to write a string to the clipboard:
 
 ```javascript
