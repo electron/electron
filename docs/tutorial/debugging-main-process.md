@@ -16,6 +16,10 @@ Electron will listen for V8 debugger protocol messages on the specified `port`,
 an external debugger will need to connect on this port. The default `port` is
 `5858`.
 
+```shell
+electron --debug=5858 your/app
+```
+
 ### `--debug-brk=[port]`
 
 Like `--debug` but pauses execution on the first line of JavaScript.

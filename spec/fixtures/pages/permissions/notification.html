@@ -1,0 +1,10 @@
+<script>
+var n1 = new Notification('Electron Notification.requestPermission test 1')
+var n2 = new Notification('Electron Notification.requestPermission test 2')
+Notification.requestPermission().then((result) => {
+  n1.close()
+  n2.close()
+
+  require('electron').ipcRenderer.sendToHost('message', result)
+})
+</script>

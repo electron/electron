@@ -13,6 +13,9 @@
 * `options` Object
   * `click` Function - 메뉴 아이템이 클릭될 때 `click(menuItem, browserWindow,
     event)` 형태로 호출 되는 콜백 함수.
+    * `menuItem` MenuItem
+    * `browserWindow` BrowserWindow
+    * `event` Event
   * `role` String - 메뉴 아이템의 액션을 정의합니다. 이 속성을 지정하면 `click`
     속성이 무시됩니다.
   * `type` String - `MenuItem`의 타입 `normal`, `separator`, `submenu`,

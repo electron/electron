@@ -17,7 +17,7 @@ using content::BrowserThread;
 
 namespace atom {
 
-namespace {
+namespace internal {
 
 // Loads access tokens and other necessary data on the UI thread, and
 // calls back to the originator on the originating thread.
@@ -27,12 +27,15 @@ class TokenLoadingJob : public base::RefCountedThreadSafe<TokenLoadingJob> {
       const content::AccessTokenStore::LoadAccessTokensCallback& callback)
       : callback_(callback), request_context_getter_(nullptr) {}
 
-  void Run() {
-    BrowserThread::PostTaskAndReply(
-        BrowserThread::UI,
-        FROM_HERE,
-        base::Bind(&TokenLoadingJob::PerformWorkOnUIThread, this),
-        base::Bind(&TokenLoadingJob::RespondOnOriginatingThread, this));
+  void Run(AtomBrowserContext* browser_context) {
+    DCHECK_CURRENTLY_ON(BrowserThread::UI);
+    request_context_getter_ = browser_context->GetRequestContext();
+    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    if (!env->GetVar("GOOGLE_API_KEY", &api_key_))
+      api_key_ = GOOGLEAPIS_API_KEY;
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::Bind(&TokenLoadingJob::RespondOnIOThread, this));
   }
 
  private:
@@ -40,16 +43,7 @@ class TokenLoadingJob : public base::RefCountedThreadSafe<TokenLoadingJob> {
 
   ~TokenLoadingJob() {}
 
-  void PerformWorkOnUIThread() {
-    DCHECK_CURRENTLY_ON(BrowserThread::UI);
-    auto browser_context = AtomBrowserContext::From("", false);
-    request_context_getter_ = browser_context->GetRequestContext();
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
-    if (!env->GetVar("GOOGLE_API_KEY", &api_key_))
-      api_key_ = GOOGLEAPIS_API_KEY;
-  }
-
-  void RespondOnOriginatingThread() {
+  void RespondOnIOThread() {
     // Equivalent to access_token_map[kGeolocationProviderURL].
     // Somehow base::string16 is causing compilation errors when used in a pair
     // of std::map on Linux, this can work around it.
@@ -66,9 +60,10 @@ class TokenLoadingJob : public base::RefCountedThreadSafe<TokenLoadingJob> {
   std::string api_key_;
 };
 
-}  // namespace
+}  // namespace internal
 
 AtomAccessTokenStore::AtomAccessTokenStore() {
+  browser_context_ = AtomBrowserContext::From("", false);
   content::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
 }
 
@@ -77,8 +72,16 @@ AtomAccessTokenStore::~AtomAccessTokenStore() {
 
 void AtomAccessTokenStore::LoadAccessTokens(
     const LoadAccessTokensCallback& callback) {
-  scoped_refptr<TokenLoadingJob> job(new TokenLoadingJob(callback));
-  job->Run();
+  scoped_refptr<internal::TokenLoadingJob> job(
+      new internal::TokenLoadingJob(callback));
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+                          base::Bind(&AtomAccessTokenStore::RunTokenLoadingJob,
+                                     this, base::RetainedRef(job)));
+}
+
+void AtomAccessTokenStore::RunTokenLoadingJob(
+    scoped_refptr<internal::TokenLoadingJob> job) {
+  job->Run(browser_context_.get());
 }
 
 void AtomAccessTokenStore::SaveAccessToken(const GURL& server_url,

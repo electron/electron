@@ -47,9 +47,10 @@ void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
 
 }  // namespace
 
-MenuBar::MenuBar()
+MenuBar::MenuBar(NativeWindow* window)
     : background_color_(kDefaultColor),
-      menu_model_(NULL) {
+      menu_model_(NULL),
+      window_(window) {
   UpdateMenuBarColor();
   SetLayoutManager(new views::BoxLayout(
       views::BoxLayout::kHorizontal, 0, 0, 0));
@@ -141,6 +142,9 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
 
   if (!menu_model_)
     return;
+
+  if (!window_->IsFocused())
+    window_->Focus(true);
 
   int id = source->tag();
   AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);

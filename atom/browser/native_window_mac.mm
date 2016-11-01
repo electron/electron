@@ -4,6 +4,7 @@
 
 #include "atom/browser/native_window_mac.h"
 
+#include <Quartz/Quartz.h>
 #include <string>
 
 #include "atom/browser/window_list.h"
@@ -277,7 +278,29 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : EventDispatchingWindow {
+@interface AtomPreviewItem : NSObject <QLPreviewItem>
+
+@property (nonatomic, retain) NSURL* previewItemURL;
+@property (nonatomic, retain) NSString* previewItemTitle;
+
+- (id)initWithURL:(NSURL*)url title:(NSString*)title;
+
+@end
+
+@implementation AtomPreviewItem
+
+- (id)initWithURL:(NSURL*)url title:(NSString*)title {
+  self = [super init];
+  if (self) {
+    self.previewItemURL = url;
+    self.previewItemTitle = title;
+  }
+  return self;
+}
+
+@end
+
+@interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate> {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
@@ -287,6 +310,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
 @property NSPoint windowButtonsOffset;
+@property (nonatomic, retain) AtomPreviewItem* quickLookItem;
 
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
@@ -442,6 +466,36 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (NSView*)frameView {
   return [[self contentView] superview];
+}
+
+// Quicklook methods
+
+- (BOOL)acceptsPreviewPanelControl:(QLPreviewPanel*)panel {
+  return YES;
+}
+
+- (void)beginPreviewPanelControl:(QLPreviewPanel*)panel {
+  panel.delegate = self;
+  panel.dataSource = self;
+}
+
+- (void)endPreviewPanelControl:(QLPreviewPanel*)panel {
+  panel.delegate = nil;
+  panel.dataSource = nil;
+}
+
+- (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel*)panel {
+  return 1;
+}
+
+- (id <QLPreviewItem>)previewPanel:(QLPreviewPanel*)panel previewItemAtIndex:(NSInteger)index {
+  return [self quickLookItem];
+}
+
+- (void)previewFileAtPath:(NSString*)path  withName:(NSString*) fileName {
+  NSURL* url = [[[NSURL alloc] initFileURLWithPath:path] autorelease];
+  [self setQuickLookItem:[[[AtomPreviewItem alloc] initWithURL:url title:fileName] autorelease]];
+  [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
 }
 
 @end
@@ -897,6 +951,13 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
     [window_ setAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
   else
     [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
+}
+
+void NativeWindowMac::PreviewFile(const std::string& path,
+                                  const std::string& display_name) {
+  NSString* path_ns = [NSString stringWithUTF8String:path.c_str()];
+  NSString* name_ns = [NSString stringWithUTF8String:display_name.c_str()];
+  [window_ previewFileAtPath:path_ns withName:name_ns];
 }
 
 void NativeWindowMac::SetMovable(bool movable) {

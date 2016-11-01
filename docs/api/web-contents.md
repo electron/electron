@@ -147,7 +147,7 @@ Returns:
   `new-window`, `save-to-disk` and `other`.
 * `options` Object - The options which will be used for creating the new
   `BrowserWindow`.
-* `additionalFeatures` Array - The non-standard features (features not handled
+* `additionalFeatures` String[] - The non-standard features (features not handled
   by Chromium or Electron) given to `window.open()`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
@@ -249,6 +249,7 @@ Returns:
 * `error` String - The error code
 * `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
+  * `isTrusted` Boolean - Indicates whether the certificate can be considered trusted
 
 Emitted when failed to verify the `certificate` for `url`.
 
@@ -263,6 +264,7 @@ Returns:
 * `url` URL
 * `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
+  * `certificate` [Certificate](structures/certificate.md) - Must be a certificate from the given list
 
 Emitted when a client certificate is requested.
 
@@ -285,6 +287,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
+  * `username` String
+  * `password` String
 
 Emitted when `webContents` wants to do basic auth.
 
@@ -394,32 +398,26 @@ Returns:
   * `menuSourceType` String - Input source that invoked the context menu.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`.
   * `mediaFlags` Object - The flags for the media element the context menu was
-    invoked on. See more about this below.
-  * `editFlags` Object - These flags indicate whether the renderer believes it is
-    able to perform the corresponding action. See more about this below.
-
-The `mediaFlags` is an object with the following properties:
-
-* `inError` Boolean - Whether the media element has crashed.
-* `isPaused` Boolean - Whether the media element is paused.
-* `isMuted` Boolean - Whether the media element is muted.
-* `hasAudio` Boolean - Whether the media element has audio.
-* `isLooping` Boolean - Whether the media element is looping.
-* `isControlsVisible` Boolean - Whether the media element's controls are
-  visible.
-* `canToggleControls` Boolean - Whether the media element's controls are
-  toggleable.
-* `canRotate` Boolean - Whether the media element can be rotated.
-
-The `editFlags` is an object with the following properties:
-
-* `canUndo` Boolean - Whether the renderer believes it can undo.
-* `canRedo` Boolean - Whether the renderer believes it can redo.
-* `canCut` Boolean - Whether the renderer believes it can cut.
-* `canCopy` Boolean - Whether the renderer believes it can copy
-* `canPaste` Boolean - Whether the renderer believes it can paste.
-* `canDelete` Boolean - Whether the renderer believes it can delete.
-* `canSelectAll` Boolean - Whether the renderer believes it can select all.
+    invoked on.
+    * `inError` Boolean - Whether the media element has crashed.
+    * `isPaused` Boolean - Whether the media element is paused.
+    * `isMuted` Boolean - Whether the media element is muted.
+    * `hasAudio` Boolean - Whether the media element has audio.
+    * `isLooping` Boolean - Whether the media element is looping.
+    * `isControlsVisible` Boolean - Whether the media element's controls are
+      visible.
+    * `canToggleControls` Boolean - Whether the media element's controls are
+      toggleable.
+    * `canRotate` Boolean - Whether the media element can be rotated.
+  * `editFlags` Object - These flags indicate whether the renderer believes it
+    is able to perform the corresponding action.
+    * `canUndo` Boolean - Whether the renderer believes it can undo.
+    * `canRedo` Boolean - Whether the renderer believes it can redo.
+    * `canCut` Boolean - Whether the renderer believes it can cut.
+    * `canCopy` Boolean - Whether the renderer believes it can copy
+    * `canPaste` Boolean - Whether the renderer believes it can paste.
+    * `canDelete` Boolean - Whether the renderer believes it can delete.
+    * `canSelectAll` Boolean - Whether the renderer believes it can select all.
 
 Emitted when there is a new context menu that needs to be handled.
 
@@ -428,9 +426,7 @@ Emitted when there is a new context menu that needs to be handled.
 Returns:
 
 * `event` Event
-* `devices` [Objects]
-  * `deviceName` String
-  * `deviceId` String
+* `devices` [BluetoothDevice[]](structures/bluetooth-device.md)
 * `callback` Function
   * `deviceId` String
 
@@ -622,7 +618,7 @@ Injects CSS into the current web page.
 * `code` String
 * `userGesture` Boolean (optional)
 * `callback` Function (optional) - Called after script has been executed.
-  * `result`
+  * `result` Any
 
 Evaluates `code` in page.
 
@@ -650,6 +646,7 @@ zoom percent divided by 100, so 300% = 3.0.
 #### `contents.getZoomFactor(callback)`
 
 * `callback` Function
+  * `zoomFactor` Number
 
 Sends a request to get current zoom factor, the `callback` will be called with
 `callback(zoomFactor)`.
@@ -665,6 +662,7 @@ limits of 300% and 50% of original size, respectively.
 #### `contents.getZoomLevel(callback)`
 
 * `callback` Function
+  * `zoomLevel` Number
 
 Sends a request to get current zoom level, the `callback` will be called with
 `callback(zoomLevel)`.
@@ -782,6 +780,7 @@ console.log(requestId)
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured
 * `callback` Function
+  * `image` [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Upon completion `callback` will
 be called with `callback(image)`. The `image` is an instance of
@@ -791,6 +790,7 @@ be called with `callback(image)`. The `image` is an instance of
 #### `contents.hasServiceWorker(callback)`
 
 * `callback` Function
+  * `hasWorker` Boolean
 
 Checks if any ServiceWorker is registered and returns a boolean as
 response to `callback`.
@@ -798,6 +798,7 @@ response to `callback`.
 #### `contents.unregisterServiceWorker(callback)`
 
 * `callback` Function
+  * `success` Boolean
 
 Unregisters any ServiceWorker if present and returns a boolean as
 response to `callback` when the JS promise is fulfilled or false
@@ -830,6 +831,8 @@ Use `page-break-before: always; ` CSS style to force to print to a new page.
   * `printSelectionOnly` Boolean - Whether to print selection only.
   * `landscape` Boolean - `true` for landscape, `false` for portrait.
 * `callback` Function
+  * `error` Error
+  * `data` Buffer
 
 Prints window's web page as PDF with Chromium's preview printing custom
 settings.
@@ -973,8 +976,8 @@ app.on('ready', () => {
 * `parameters` Object
   * `screenPosition` String - Specify the screen type to emulate
       (default: `desktop`)
-    * `desktop` String - Desktop screen type
-    * `mobile` String - Mobile screen type
+    * `desktop` - Desktop screen type
+    * `mobile` - Mobile screen type
   * `screenSize` Object - Set the emulated screen size (screenPosition == mobile)
     * `width` Integer - Set the emulated screen width
     * `height` Integer - Set the emulated screen height
@@ -1047,6 +1050,8 @@ For the `mouseWheel` event, the `event` object also have following properties:
 
 * `onlyDirty` Boolean (optional) - Defaults to `false`
 * `callback` Function
+  * `frameBuffer` Buffer
+  * `dirtyRect` [Rectangle](structures/rectangle.md)
 
 Begin subscribing for presentation events and captured frames, the `callback`
 will be called with `callback(frameBuffer, dirtyRect)` when there is a
@@ -1069,7 +1074,7 @@ End subscribing for frame presentation events.
 
 #### `contents.startDrag(item)`
 
-* `item` object
+* `item` Object
   * `file` String
   * `icon` [NativeImage](native-image.md)
 
@@ -1218,7 +1223,7 @@ Detaches the debugger from the `webContents`.
 * `commandParams` Object (optional) - JSON object with request parameters.
 * `callback` Function (optional) - Response
   * `error` Object - Error message indicating the failure of the command.
-  * `result` Object - Response defined by the 'returns' attribute of
+  * `result` Any - Response defined by the 'returns' attribute of
      the command description in the remote debugging protocol.
 
 Send given command to the debugging target.

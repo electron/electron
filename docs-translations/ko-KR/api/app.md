@@ -194,6 +194,7 @@ Returns:
   * `validExpiry` Integer - 초 단위의 인증서가 만료되는 날짜
   * `fingerprint` String - 인증서의 지문
 * `callback` Function
+  * `isTrusted` Boolean - 인증서를 신뢰할지 여부
 
 `url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
 인증서를 신뢰한다면 `event.preventDefault()` 와 `callback(true)`를 호출하여
@@ -222,6 +223,7 @@ Returns:
 * `url` URL
 * `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
+  * `certificate` [Certificate](structures/certificate.md)
 
 클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
 
@@ -256,6 +258,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
+  * `username` String
+  * `password` String
 
 `webContents`가 기본 인증을 요청할 때 발생하는 이벤트입니다.
 
@@ -542,6 +546,7 @@ Returns `Boolean` - 호출 성공 여부.
 ### `app.getJumpListSettings()` _Windows_
 
 Returns `Object`:
+
 * `minItems` Integer - 점프 목록에서 보여질 항목의 최소 수 (이 값에 대한 자세한
   설명은 [MSDN 문서][JumpListBeginListMSDN])를 보세요.
 * `removedItems` [JumpListItem[]](structures/jump-list-item.md) - 점프 목록의 사용자 정의 카테고리에서 사용자가 삭제한
@@ -682,6 +687,8 @@ app.setJumpList([
 ### `app.makeSingleInstance(callback)`
 
 * `callback` Function
+  * `argv` String[] - 두번째 인스턴스의 명령줄 인수의 배열
+  * `workingDirectory` String - 두번째 인스턴스의 작업 디렉토리
 
 현재 애플리케이션을 단일 인스턴스 애플리케이션으로 만들어줍니다. 이 메서드는
 애플리케이션이 여러 번 실행됐을 때 다중 인스턴스가 생성되는 대신 한 개의 주
@@ -814,8 +821,7 @@ Returns `Object`:
   열려있었는지 여부. 이는 앱이 마지막으로 종료되었던 때에 열려있었던 윈도우를
   복원하는 것을 표시합니다. 이 설정은 macOS에서만 지원됩니다.
 
-**참고:** 이 API 는 [MAS 빌드](docs/tutorial/mac-app-store-submission-guide.md)
-에 영향을 주지 않습니다.
+**참고:** 이 API 는 [MAS 빌드][mas-builds]에 영향을 주지 않습니다.
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
@@ -830,8 +836,7 @@ Returns `Object`:
 
 앱의 로그인 항목 설정을 지정합니다.
 
-**참고:** 이 API 는 [MAS 빌드](docs/tutorial/mac-app-store-submission-guide.md)
-에 영향을 주지 않습니다.
+**참고:** 이 API 는 [MAS 빌드][mas-builds]에 영향을 주지 않습니다.
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
@@ -939,5 +944,6 @@ dock 아이콘의 `image`를 설정합니다.
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
 [unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux
+[mas-builds]: docs/tutorial/mac-app-store-submission-guide.md
 [JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
 [about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc

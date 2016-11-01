@@ -81,12 +81,26 @@ webFrame.setSpellCheckProvider('en-US', true, {
 
 현재 페이지 콘텐츠의 보안 정책에 상관없이 `scheme`로부터 리소스가 로드됩니다.
 
-### `webFrame.registerURLSchemeAsPrivileged(scheme)`
+### `webFrame.registerURLSchemeAsPrivileged(scheme[, options])`
 
- * `scheme` String
+* `scheme` String
+* `options` Object(optional)
+  * `secure` Boolean - (optional) 기본값 참.
+  * `bypassCSP` Boolean - (optional) 기본값 참.
+  * `allowServiceWorkers` Boolean - (optional) 기본값 참.
+  * `supportFetchAPI` Boolean - (optional) 기본값 참.
+  * `corsEnabled` Boolean - (optional) 기본값 참.
 
 `scheme`를 보안된 스킴으로 등록합니다. 리소스에 대해 보안 정책을 우회하며,
 ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
+
+등록에서 그것을 빼려면 `false` 값으로 옵션을 지정하세요.
+콘텐츠 보안 정책을 우회하지 않고, 특권 스킴을 등록하는 예:
+
+```javascript
+const {webFrame} = require('electron')
+webFrame.registerURLSchemeAsPrivileged('foo', { bypassCSP: false })
+```
 
 ### `webFrame.insertText(text)`
 
@@ -107,6 +121,7 @@ ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
 ### `webFrame.getResourceUsage()`
 
 Returns `Object`:
+
 * `images` [MemoryUsageDetails](structures/memory-usage-details.md)
 * `cssStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
 * `xslStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)

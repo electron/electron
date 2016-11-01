@@ -79,6 +79,7 @@ Writes the `text` into the clipboard in RTF.
 ### `clipboard.readBookmark()` _macOS_ _Windows_
 
 Returns `Object`:
+
 * `title` String
 * `url` String
 
@@ -104,6 +105,19 @@ clipboard.write({
   bookmark: 'Electron Homepage'
 })
 ```
+
+### `clipboard.readFindText()` _macOS_
+
+Returns `String` - The text on the find pasteboard. This method uses synchronous
+IPC when called from the renderer process. The cached value is reread from the
+find pasteboard whenever the application is activated.
+
+### `clipboard.writeFindText(text)` _macOS_
+
+* `text` String
+
+Writes the `text` into the find pasteboard as plain text. This method uses
+synchronous IPC when called from the renderer process.
 
 ### `clipboard.clear([type])`
 

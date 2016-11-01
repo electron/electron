@@ -8,6 +8,7 @@ const ipcMain = electron.ipcMain
 const dialog = electron.dialog
 const BrowserWindow = electron.BrowserWindow
 const protocol = electron.protocol
+const v8 = require('v8')
 
 const Coverage = require('electabul').Coverage
 const fs = require('fs')
@@ -24,6 +25,7 @@ var argv = require('yargs')
 var window = null
 process.port = 0 // will be used by crash-reporter spec.
 
+v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
 app.commandLine.appendSwitch('ignore-certificate-errors')
 app.commandLine.appendSwitch('disable-renderer-backgrounding')

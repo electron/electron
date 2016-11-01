@@ -80,6 +80,7 @@ Returns `String` - RTF 형식의 클립보드 내용.
 ### `clipboard.readBookmark()` _macOS_ _Windows_
 
 Returns `Object`:
+
 * `title` String
 * `url` String
 
@@ -103,6 +104,19 @@ clipboard.write({
   bookmark: 'Electron Homepage'
 })
 ```
+
+### `clipboard.readFindText()` _macOS_
+
+Returns `String` - FindPasteboard 의 텍스트. 이 메소드는 렌더러 프로세스에서
+호출되었을 떄 동기 IPC 를 사용합니다. 캐시된 값은 애플리케이션이 활성화될 때
+마다 FindPasteboard 에서 다시 읽습니다.
+
+### `clipboard.writeFindText(text)` _macOS_
+
+* `text` String
+
+`text` 를 FindPasteboard 에 일반 텍스트로 씁니다. 이 메소드는 렌더러
+프로세스에서 호출되었을 떄 동기 IPC 를 사용합니다.
 
 ### `clipboard.clear([type])`
 
