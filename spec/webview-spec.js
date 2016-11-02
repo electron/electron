@@ -1253,6 +1253,25 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/api/blank.html'
       document.body.appendChild(webview)
     })
+
+    it('does not destroy the webContents when hiding/showing the webview (regression)', function (done) {
+      webview.addEventListener('dom-ready', function domReadyListener () {
+        const instance = webview.getAttribute('guestinstance')
+
+        // Wait for event directly since attach happens asynchronously over IPC
+        ipcMain.once('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', function () {
+          assert(webview.getWebContents() != null)
+          assert.equal(instance, webview.getAttribute('guestinstance'))
+          done()
+        })
+
+        webview.style.display = 'none'
+        webview.offsetHeight
+        webview.style.display = 'block'
+      })
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+      document.body.appendChild(webview)
+    })
   })
 
   describe('DOM events', function () {
