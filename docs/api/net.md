@@ -104,7 +104,7 @@ strictly follow the Node.js model as described in the
 
 For instance, we could have created the same request to 'github.com' as follows:
 
-```JavaScript
+```javascript
 const request = net.request({
   method: 'GET',
   protocol: 'https:',
@@ -141,7 +141,7 @@ The `callback` function is expected to be called back with user credentials:
 * `username` String
 * `password` String
 
-```JavaScript
+```javascript
 request.on('login', (authInfo, callback) => {
   callback('username', 'password')
 })
@@ -150,9 +150,9 @@ request.on('login', (authInfo, callback) => {
 Providing empty credentials will cancel the request and report an authentication
 error on the response object:
 
-```JavaScript
+```javascript
 request.on('response', (response) => {
-  console.log(`STATUS: ${response.statusCode}`);
+  console.log(`STATUS: ${response.statusCode}`)
   response.on('error', (error) => {
     console.log(`ERROR: ${JSON.stringify(error)}`)
   })
