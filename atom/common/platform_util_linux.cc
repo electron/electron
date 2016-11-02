@@ -93,6 +93,7 @@ void OpenExternal(const GURL& url, bool activate,
                   const OpenExternalCallback& callback) {
   // TODO(gabriel): Implement async open if callback is specified
   bool opened = OpenExternal(url, activate);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   if (!opened) {
     callback.Run(v8::Exception::Error(
       v8::String::NewFromUtf8(isolate, "Failed to open")));
