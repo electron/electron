@@ -25,7 +25,7 @@ NSError *PlatformError(NSString* message) {
                   userInfo:@{NSLocalizedDescriptionKey: message}];
 }
 
-NSString *MessageForOSStatus(OSStatus status) {
+NSString *MessageForOSStatus(OSStatus status, NSString* defaultMessage) {
   switch (status) {
     case kLSAppInTrashErr: return @"The application cannot be run because it is inside a Trash folder.";
     case kLSUnknownErr: return @"An unknown error has occurred.";
@@ -42,7 +42,7 @@ NSString *MessageForOSStatus(OSStatus status) {
     case kLSNoExecutableErr: return @"The executable file is missing or has an unusable format.";
     case kLSNoClassicEnvironmentErr: return @"The Classic emulation environment was required but is not available.";
     case kLSMultipleSessionsNotSupportedErr: return @"The application to be launched cannot run simultaneously in two different user sessions.";
-    default: return [NSString stringWithFormat:@"Failed to open (%@)", @(status)];
+    default: return [NSString stringWithFormat:@"%@ (%@)", defaultMessage, @(status)];
   }
 }
 
@@ -55,7 +55,7 @@ NSError* OpenURL(NSURL* ns_url, bool activate) {
                                            NULL,
                                            &openingApp);
   if (status != noErr) {
-    return PlatformError(MessageForOSStatus(status));
+    return PlatformError(MessageForOSStatus(status, @"Failed to open"));
   }
   CFRelease(openingApp);  // NOT A BUG; LSGetApplicationForURL retains for us
 
