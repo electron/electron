@@ -202,8 +202,7 @@ bool OpenExternal(const GURL& url, bool activate) {
   if (!ns_url) {
     return false;
   }
-  NSError *error = OpenURL(ns_url, activate);
-  return error ? false : true;
+  return !OpenURL(ns_url, activate);
 }
 
 void OpenExternal(const GURL& url, bool activate, const OpenExternalCallback& c) {
