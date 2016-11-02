@@ -322,9 +322,9 @@ void OpenExternal(const base::string16& url, bool activate,
   bool opened = OpenExternal(url, activate);
   if (!opened) {
     callback.Run(v8::Exception::Error(
-      v8::String::NewFromUtf8(isolate, @"Failed to open")));
+      v8::String::NewFromUtf8(isolate, "Failed to open")));
   } else {
-    callback.Run(v8::Null(isolate);)
+    callback.Run(v8::Null(isolate));
   }
 }
 
