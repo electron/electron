@@ -19,30 +19,43 @@
 
 namespace {
 
-bool OpenURLInWorkspace(NSURL* ns_url, NSUInteger launchOptions) {
-  return [[NSWorkspace sharedWorkspace] openURLs: @[ns_url]
-                                        withAppBundleIdentifier: nil
-                                        options: launchOptions
-                                        additionalEventParamDescriptor: NULL
-                                        launchIdentifiers: NULL];
+NSError *PlatformError(NSString* message) {
+  return [NSError errorWithDomain:@"Electron"
+                  code:0
+                  userInfo:@{NSLocalizedDescriptionKey: message}];
 }
 
-typedef bool(^OpenExternalBlock)(NSURL* ns_url, NSUInteger launchOptions);
-
-bool OpenExternalWithBlock(const GURL& url, bool activate, OpenExternalBlock open) {
-  DCHECK([NSThread isMainThread]);
-  NSURL* ns_url = net::NSURLWithGURL(url);
-  if (!ns_url) {
-    return false;
+NSString *MessageForOSStatus(OSStatus status) {
+  switch (status) {
+    case kLSAppInTrashErr: return @"The application cannot be run because it is inside a Trash folder.";
+    case kLSUnknownErr: return @"An unknown error has occurred.";
+    case kLSNotAnApplicationErr: return @"The item to be registered is not an application.";
+    case kLSNotInitializedErr: return @"Formerly returned by LSInit on initialization failure; no longer used.";
+    case kLSDataUnavailableErr: return @"Data of the desired type is not available (for example, there is no kind string).";
+    case kLSApplicationNotFoundErr: return @"No application in the Launch Services database matches the input criteria.";
+    case kLSDataErr: return @"Data is structured improperly (for example, an item’s information property list is malformed). Not used in macOS 10.4.";
+    case kLSLaunchInProgressErr: return @"A launch of the application is already in progress.";
+    case kLSServerCommunicationErr: return @"There is a problem communicating with the server process that maintains the Launch Services database.";
+    case kLSCannotSetInfoErr: return @"The filename extension to be hidden cannot be hidden.";
+    case kLSIncompatibleSystemVersionErr: return @"The application to be launched cannot run on the current Mac OS version.";
+    case kLSNoLaunchPermissionErr: return @"The user does not have permission to launch the application (on a managed network).";
+    case kLSNoExecutableErr: return @"The executable file is missing or has an unusable format.";
+    case kLSNoClassicEnvironmentErr: return @"The Classic emulation environment was required but is not available.";
+    case kLSMultipleSessionsNotSupportedErr: return @"The application to be launched cannot run simultaneously in two different user sessions.";
+    default: return [NSString stringWithFormat:@"Failed to open (%@)", @(status)];
   }
+}
 
+// This may be called from a global dispatch queue, the methods used here are thread safe,
+// including LSGetApplicationForURL (> 10.2) and NSWorkspace#openURLs.
+NSError* OpenURL(NSURL* ns_url, bool activate) {
   CFURLRef openingApp = NULL;
   OSStatus status = LSGetApplicationForURL((CFURLRef)ns_url,
                                            kLSRolesAll,
                                            NULL,
                                            &openingApp);
   if (status != noErr) {
-    return false;
+    return PlatformError(MessageForOSStatus(status));
   }
   CFRelease(openingApp);  // NOT A BUG; LSGetApplicationForURL retains for us
 
@@ -50,7 +63,23 @@ bool OpenExternalWithBlock(const GURL& url, bool activate, OpenExternalBlock ope
   if (!activate)
     launchOptions |= NSWorkspaceLaunchWithoutActivation;
 
-  return open(ns_url, launchOptions);
+  bool opened = [[NSWorkspace sharedWorkspace] openURLs: @[ns_url]
+                                               withAppBundleIdentifier: nil
+                                               options: launchOptions
+                                               additionalEventParamDescriptor: nil
+                                               launchIdentifiers: nil];
+  if (!opened) return PlatformError(@"Failed to open URL");
+  return nil;
+}
+
+v8::Local<v8::Value> ConvertNSError(v8::Isolate* isolate, NSError* platformError) {
+  if (!platformError) {
+    return v8::Null(isolate);
+  } else {
+    v8::Local<v8::String> error_message =
+      v8::String::NewFromUtf8(isolate, platformError.localizedDescription.UTF8String);
+    return v8::Exception::Error(error_message);
+  }
 }
 
 }  // namespace
@@ -168,21 +197,30 @@ bool OpenItem(const base::FilePath& full_path) {
 }
 
 bool OpenExternal(const GURL& url, bool activate) {
-  return OpenExternalWithBlock(url, activate, ^bool(NSURL* ns_url, NSUInteger launchOptions) {
-    return OpenURLInWorkspace(ns_url, launchOptions);
-  });
+  DCHECK([NSThread isMainThread]);
+  NSURL* ns_url = net::NSURLWithGURL(url);
+  if (!ns_url) {
+    return false;
+  }
+  NSError *error = OpenURL(ns_url, activate);
+  return error ? false : true;
 }
 
-bool OpenExternal(const GURL& url, bool activate, const OpenExternalCallback& c) {
+void OpenExternal(const GURL& url, bool activate, const OpenExternalCallback& c) {
+  NSURL* ns_url = net::NSURLWithGURL(url);
+  if (!ns_url) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    c.Run(ConvertNSError(isolate, PlatformError(@"Invalid URL")));
+    return;
+  }
+
   __block OpenExternalCallback callback = c;
-  return OpenExternalWithBlock(url, activate, ^bool(NSURL* ns_url, NSUInteger launchOptions) {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-      bool opened = OpenURLInWorkspace(ns_url, launchOptions);
-      dispatch_async(dispatch_get_main_queue(), ^{
-        callback.Run(opened);
-      });
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    NSError *openError = OpenURL(ns_url, activate);
+    dispatch_async(dispatch_get_main_queue(), ^{
+      v8::Isolate* isolate = v8::Isolate::GetCurrent();
+      callback.Run(ConvertNSError(isolate, openError));
     });
-    return YES;
   });
 }
 

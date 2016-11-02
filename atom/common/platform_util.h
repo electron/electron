@@ -7,6 +7,7 @@
 
 #include "base/callback_forward.h"
 #include "build/build_config.h"
+#include "v8/include/v8.h"
 
 #if defined(OS_WIN)
 #include "base/strings/string16.h"
@@ -28,7 +29,7 @@ bool ShowItemInFolder(const base::FilePath& full_path);
 // Must be called from the UI thread.
 bool OpenItem(const base::FilePath& full_path);
 
-typedef base::Callback<void(bool opened)> OpenExternalCallback;
+typedef base::Callback<void(v8::Local<v8::Value> error)> OpenExternalCallback;
 
 // Open the given external protocol URL in the desktop's default manner.
 // (For example, mailto: URLs in the default mail user agent.)
@@ -40,7 +41,7 @@ bool OpenExternal(
 #endif
     bool activate);
 
-bool OpenExternal(
+void OpenExternal(
 #if defined(OS_WIN)
     const base::string16& url,
 #else

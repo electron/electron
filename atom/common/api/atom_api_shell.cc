@@ -62,7 +62,8 @@ bool OpenExternal(
     platform_util::OpenExternalCallback callback;
     if (mate::Converter<platform_util::OpenExternalCallback>::FromV8(
       args->isolate(), peek, &callback)) {
-      return platform_util::OpenExternal(url, activate, callback);
+      platform_util::OpenExternal(url, activate, callback);
+      return true;
     }
     return false;
   }
