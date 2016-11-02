@@ -1272,6 +1272,25 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/pages/a.html'
       document.body.appendChild(webview)
     })
+
+    it('does not reload the webContents when hiding/showing the webview (regression)', function (done) {
+      webview.addEventListener('dom-ready', function domReadyListener () {
+        webview.addEventListener('did-start-loading', function () {
+          done(new Error('webview started loading unexpectedly'))
+        })
+
+        // Wait for event directly since attach happens asynchronously over IPC
+        webview.addEventListener('did-attach', function () {
+          done()
+        })
+
+        webview.style.display = 'none'
+        webview.offsetHeight
+        webview.style.display = 'block'
+      })
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+      document.body.appendChild(webview)
+    })
   })
 
   describe('DOM events', function () {
