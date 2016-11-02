@@ -49,15 +49,13 @@
 
 #include "base/files/file_path.h"
 #include "base/macros.h"
-#include "base/task/cancelable_task_tracker.h"
+#include "base/memory/singleton.h"
 #include "chrome/browser/icon_loader.h"
 #include "ui/gfx/image/image.h"
 
 class IconManager : public IconLoader::Delegate {
  public:
-  IconManager();
-  ~IconManager() override;
-
+  static IconManager* GetInstance();
   // Synchronous call to examine the internal caches for the icon. Returns the
   // icon if we have already loaded it, NULL if we don't have it and must load
   // it via 'LoadIcon'. The returned bitmap is owned by the IconManager and must
@@ -78,11 +76,9 @@ class IconManager : public IconLoader::Delegate {
   //    should never keep it or delete it.
   // 3. The gfx::Image pointer passed to the callback may be NULL if decoding
   //    failed.
-  base::CancelableTaskTracker::TaskId LoadIcon(
-      const base::FilePath& file_name,
-      IconLoader::IconSize size,
-      const IconRequestCallback& callback,
-      base::CancelableTaskTracker* tracker);
+  void LoadIcon(const base::FilePath& file_name,
+                IconLoader::IconSize size,
+                const IconRequestCallback& callback);
 
   // IconLoader::Delegate interface.
   bool OnGroupLoaded(IconLoader* loader, const IconGroupID& group) override;
@@ -91,11 +87,16 @@ class IconManager : public IconLoader::Delegate {
                      const IconGroupID& group) override;
 
  private:
+  friend struct base::DefaultSingletonTraits<IconManager>;
+
+  IconManager();
+  ~IconManager() override;
+
   struct CacheKey {
     CacheKey(const IconGroupID& group, IconLoader::IconSize size);
 
     // Used as a key in the map below, so we need this comparator.
-    bool operator<(const CacheKey &other) const;
+    bool operator<(const CacheKey& other) const;
 
     IconGroupID group;
     IconLoader::IconSize size;

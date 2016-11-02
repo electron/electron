@@ -30,6 +30,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "brightray/browser/brightray_paths.h"
+#include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -314,6 +315,26 @@ struct Converter<Browser::LoginItemSettings> {
   }
 };
 
+template <>
+struct Converter<IconLoader::IconSize> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     IconLoader::IconSize* out) {
+    std::string icon_size_string;
+    if (!ConvertFromV8(isolate, val, &icon_size_string))
+      return false;
+    if (icon_size_string == "small")
+      *out = IconLoader::IconSize::SMALL;
+    else if (icon_size_string == "normal")
+      *out = IconLoader::IconSize::NORMAL;
+    else if (icon_size_string == "large")
+      *out = IconLoader::IconSize::LARGE;
+    else
+      return false;
+    return true;
+  }
+};
+
 template<>
 struct Converter<content::CertificateRequestResultType> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
@@ -461,6 +482,11 @@ int ImportIntoCertStore(
   return rv;
 }
 #endif
+
+void OnIconDataAvailable(const App::FileIconCallback& callback,
+                         gfx::Image* icon) {
+  callback.Run(icon ? *icon : gfx::Image());
+}
 
 }  // namespace
 
@@ -841,6 +867,19 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 }
 #endif  // defined(OS_WIN)
 
+void App::GetFileIcon(const base::FilePath& path,
+                      IconLoader::IconSize icon_size,
+                      const FileIconCallback& callback) {
+  IconManager* icon_manager = IconManager::GetInstance();
+  gfx::Image* icon = icon_manager->LookupIconFromFilepath(path, icon_size);
+  if (icon) {
+    callback.Run(*icon);
+  } else {
+    icon_manager->LoadIcon(path, icon_size,
+                           base::Bind(&OnIconDataAvailable, callback));
+  }
+}
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -909,7 +948,8 @@ void App::BuildPrototype(
       .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
-                 &App::DisableHardwareAcceleration);
+                 &App::DisableHardwareAcceleration)
+      .SetMethod("getFileIcon", &App::GetFileIcon);
 }
 
 }  // namespace api

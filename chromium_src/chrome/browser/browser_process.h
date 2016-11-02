@@ -31,11 +31,9 @@ class BrowserProcess {
   std::string GetApplicationLocale();
 
   printing::PrintJobManager* print_job_manager();
-  IconManager* icon_manager();
 
  private:
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
-  std::unique_ptr<IconManager> icon_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcess);
 };

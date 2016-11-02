@@ -13,30 +13,21 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 
-namespace {
-
-void RunCallbackIfNotCanceled(
-    const base::CancelableTaskTracker::IsCanceledCallback& is_canceled,
-    const IconManager::IconRequestCallback& callback,
-    gfx::Image* image) {
-  if (is_canceled.Run())
-    return;
-  callback.Run(image);
-}
-
-}  // namespace
-
 struct IconManager::ClientRequest {
   IconRequestCallback callback;
   base::FilePath file_path;
   IconLoader::IconSize size;
 };
 
-IconManager::IconManager() {
+// static
+IconManager* IconManager::GetInstance() {
+  return base::Singleton<IconManager>::get();
 }
 
+IconManager::IconManager() {}
+
 IconManager::~IconManager() {
-  base::STLDeleteValues(&icon_cache_);
+  STLDeleteValues(&icon_cache_);
 }
 
 gfx::Image* IconManager::LookupIconFromFilepath(const base::FilePath& file_name,
@@ -54,33 +45,23 @@ gfx::Image* IconManager::LookupIconFromGroup(const IconGroupID& group,
   if (it != icon_cache_.end())
     return it->second;
 
-  return NULL;
+  return nullptr;
 }
 
-base::CancelableTaskTracker::TaskId IconManager::LoadIcon(
-    const base::FilePath& file_name,
-    IconLoader::IconSize size,
-    const IconRequestCallback& callback,
-    base::CancelableTaskTracker* tracker) {
+void IconManager::LoadIcon(const base::FilePath& file_name,
+                           IconLoader::IconSize size,
+                           const IconRequestCallback& callback) {
   IconLoader* loader = new IconLoader(file_name, size, this);
   loader->AddRef();
   loader->Start();
 
-  base::CancelableTaskTracker::IsCanceledCallback is_canceled;
-  base::CancelableTaskTracker::TaskId id =
-      tracker->NewTrackedTaskId(&is_canceled);
-  IconRequestCallback callback_runner = base::Bind(
-      &RunCallbackIfNotCanceled, is_canceled, callback);
-
-  ClientRequest client_request = { callback_runner, file_name, size };
+  ClientRequest client_request = {callback, file_name, size};
   requests_[loader] = client_request;
-  return id;
 }
 
 // IconLoader::Delegate implementation -----------------------------------------
 
-bool IconManager::OnGroupLoaded(IconLoader* loader,
-                                const IconGroupID& group) {
+bool IconManager::OnGroupLoaded(IconLoader* loader, const IconGroupID& group) {
   ClientRequests::iterator rit = requests_.find(loader);
   if (rit == requests_.end()) {
     NOTREACHED();
@@ -95,8 +76,9 @@ bool IconManager::OnGroupLoaded(IconLoader* loader,
   return OnImageLoaded(loader, result, group);
 }
 
-bool IconManager::OnImageLoaded(
-    IconLoader* loader, gfx::Image* result, const IconGroupID& group) {
+bool IconManager::OnImageLoaded(IconLoader* loader,
+                                gfx::Image* result,
+                                const IconGroupID& group) {
   ClientRequests::iterator rit = requests_.find(loader);
 
   // Balances the AddRef() in LoadIcon().
@@ -139,10 +121,8 @@ bool IconManager::OnImageLoaded(
 
 IconManager::CacheKey::CacheKey(const IconGroupID& group,
                                 IconLoader::IconSize size)
-    : group(group),
-      size(size) {
-}
+    : group(group), size(size) {}
 
-bool IconManager::CacheKey::operator<(const CacheKey &other) const {
+bool IconManager::CacheKey::operator<(const CacheKey& other) const {
   return std::tie(group, size) < std::tie(other.group, other.size);
 }

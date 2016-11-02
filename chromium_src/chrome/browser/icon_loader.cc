@@ -18,15 +18,14 @@ IconLoader::IconLoader(const base::FilePath& file_path,
       icon_size_(size),
       delegate_(delegate) {}
 
-IconLoader::~IconLoader() {
-}
+IconLoader::~IconLoader() {}
 
 void IconLoader::Start() {
   target_task_runner_ = base::ThreadTaskRunnerHandle::Get();
 
   BrowserThread::PostTaskAndReply(BrowserThread::FILE, FROM_HERE,
-      base::Bind(&IconLoader::ReadGroup, this),
-      base::Bind(&IconLoader::OnReadGroup, this));
+                                  base::Bind(&IconLoader::ReadGroup, this),
+                                  base::Bind(&IconLoader::OnReadGroup, this));
 }
 
 void IconLoader::ReadGroup() {
@@ -37,7 +36,7 @@ void IconLoader::OnReadGroup() {
   if (IsIconMutableFromFilepath(file_path_) ||
       !delegate_->OnGroupLoaded(this, group_)) {
     BrowserThread::PostTask(ReadIconThreadID(), FROM_HERE,
-        base::Bind(&IconLoader::ReadIcon, this));
+                            base::Bind(&IconLoader::ReadIcon, this));
   }
 }
 

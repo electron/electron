@@ -17,7 +17,6 @@
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
-#include "atom/common/fileicon_fetcher.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/data_url.h"
@@ -303,23 +302,6 @@ gfx::Size NativeImage::GetSize() {
   return image_.Size();
 }
 
-void NativeImage::CreateFromFileIcon(v8::Isolate* isolate,
-                                     const base::FilePath& path,
-                                     const IconLoadedCallback& callback) {
-  IconLoader::IconSize icon_size = IconLoader::IconSize::NORMAL;
-  float scale_factor = 1.0f;
-  auto onready = base::Bind(&NativeImage::OnIconLoaded,
-                            base::Unretained(isolate),
-                            callback);
-  FileIconFetcher::FetchFileIcon(path, scale_factor, icon_size, onready);
-}
-
-void NativeImage::OnIconLoaded(v8::Isolate* isolate,
-                               const IconLoadedCallback& callback,
-                               gfx::Image& image) {
-  callback.Run(Create(isolate, image));
-}
-
 float NativeImage::GetAspectRatio() {
   gfx::Size size = GetSize();
   if (size.IsEmpty())
@@ -533,8 +515,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
   dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
-  dict.SetMethod("createFromFileIcon",
-                 &atom::api::NativeImage::CreateFromFileIcon);
   dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
   dict.SetMethod("createFromDataURL",
                  &atom::api::NativeImage::CreateFromDataURL);

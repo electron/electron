@@ -38,7 +38,6 @@ namespace atom {
 namespace api {
 
 class NativeImage : public mate::Wrappable<NativeImage> {
- using IconLoadedCallback = base::Callback<void(mate::Handle<NativeImage>)>;
  public:
   static mate::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static mate::Handle<NativeImage> Create(
@@ -53,9 +52,6 @@ class NativeImage : public mate::Wrappable<NativeImage> {
       mate::Arguments* args, v8::Local<v8::Value> buffer);
   static mate::Handle<NativeImage> CreateFromDataURL(
       v8::Isolate* isolate, const GURL& url);
-  static void CreateFromFileIcon(v8::Isolate* isolate,
-                                 const base::FilePath& path,
-                                 const IconLoadedCallback& callback);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -90,9 +86,6 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   gfx::Size GetSize();
   float GetAspectRatio();
 
-  static void OnIconLoaded(v8::Isolate* isolate,
-                    const IconLoadedCallback& callback,
-                    gfx::Image& image);
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);
   // Determine if the image is a template image.
