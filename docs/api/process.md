@@ -64,7 +64,7 @@ property is `true` in the main process, otherwise it is `undefined`.
 
 ### `process.platform`
 
-Returns the name of the platform the app is running on. `darwin` for MacOS, `linux` for Linux and `win32` for Windows.
+Returns the name of the platform the app is running on. `darwin` for macOS, `linux` for Linux and `win32` for Windows.
 
 ### `process.argv`
 
