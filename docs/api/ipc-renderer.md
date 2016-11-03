@@ -10,7 +10,7 @@ main process.
 
 See [ipcMain](ipc-main.md) for code examples.
 
-## Listening for Messages
+## Methods
 
 The `ipcRenderer` module has the following method to listen for events:
 
