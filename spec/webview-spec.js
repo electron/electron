@@ -3,6 +3,7 @@ const path = require('path')
 const http = require('http')
 const url = require('url')
 const {app, session, getGuestWebContents, ipcMain, BrowserWindow} = require('electron').remote
+const {closeWindow} = require('./window-helpers')
 
 describe('<webview> tag', function () {
   this.timeout(20000)
@@ -21,10 +22,7 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     }
     webview.remove()
-    if (w) {
-      w.destroy()
-      w = null
-    }
+    return closeWindow(w).then(function () { w = null })
   })
 
   it('works without script tag in page', function (done) {
