@@ -2,6 +2,8 @@
 
 > Create native application menus and context menus.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 Each `Menu` consists of multiple [`MenuItem`](menu-item.md)s and each `MenuItem`
 can have a submenu.
 

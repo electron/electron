@@ -2,6 +2,8 @@
 
 > Issue HTTP/HTTPS requests using Chromium's native networking library
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 The `net` module is a client-side API for issuing HTTP(S) requests. It is
 similar to the [HTTP](https://nodejs.org/api/http.html) and
 [HTTPS](https://nodejs.org/api/https.html) modules of Node.js but uses
@@ -71,6 +73,8 @@ specified protocol scheme in the `options` object.
 ## Class: ClientRequest
 
 > Make HTTP/HTTPS requests.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 `ClientRequest` implements the [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams)
 interface and is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
@@ -263,6 +267,8 @@ response object,it will emit the `aborted` event.
 ## Class: IncomingMessage
 
 > Handle responses to HTTP/HTTPS requests.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 `IncomingMessage` implements the [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams)
 interface and is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).

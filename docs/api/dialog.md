@@ -2,6 +2,8 @@
 
 > Display native system dialogs for opening and saving files, alerting, etc.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 An example of showing a dialog to select multiple files and directories:
 
 ```javascript

@@ -2,6 +2,8 @@
 
 > Extensions to process object.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 The `process` object is extended in Electron with following APIs:
 
 ## Events

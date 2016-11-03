@@ -2,6 +2,8 @@
 
 > Render and control web pages.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 `webContents` is an
 [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 It is responsible for rendering and controlling a web page and is a property of
@@ -46,6 +48,8 @@ Returns `WebContents` - A WebContents instance with the given ID.
 ## Class: WebContents
 
 > Render and control the contents of a BrowserWindow instance.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 ### Instance Events
 
@@ -1185,6 +1189,8 @@ A Debugger instance for this webContents.
 ## Class: Debugger
 
 > An alternate transport for Chrome's remote debugging protocol.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 Chrome Developer Tools has a [special binding][rdp] available at JavaScript
 runtime that allows interacting with pages and instrumenting them.

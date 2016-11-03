@@ -2,6 +2,8 @@
 
 > Enable apps to automatically update themselves.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 The `autoUpdater` module provides an interface for the
 [Squirrel](https://github.com/Squirrel) framework.
 

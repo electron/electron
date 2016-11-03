@@ -2,6 +2,8 @@
 
 > Use main process modules from the renderer process.
 
+Process: [Renderer](../tutorial/quick-start.md#renderer-process)
+
 The `remote` module provides a simple way to do inter-process communication
 (IPC) between the renderer process (web page) and the main process.
 
