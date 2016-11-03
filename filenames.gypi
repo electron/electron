@@ -73,6 +73,7 @@
       'lib/renderer/extensions/web-navigation.js',
     ],
     'browserify_entries': [
+      'lib/renderer/api/ipc-renderer-setup.js',
       'lib/sandboxed_renderer/init.js',
     ],
     'js2c_sources': [

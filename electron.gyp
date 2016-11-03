@@ -436,10 +436,6 @@
           'action_name': 'atom_browserify',
           'inputs': [
             '<@(browserify_entries)',
-            # Any js file under `lib/` can be included in the preload bundle.
-            # Add all js sources as dependencies so any change to a js file will
-            # trigger a rebuild of the bundle(and consequently of js2c).
-            '<@(js_sources)',
           ],
           'outputs': [
             '<(js2c_input_dir)/preload_bundle.js',
@@ -449,7 +445,7 @@
             'run',
             'browserify',
             '--',
-            '<@(browserify_entries)',
+            'lib/sandboxed_renderer/init.js',
             '-o',
             '<@(_outputs)',
           ],
