@@ -401,6 +401,14 @@ You can request the following paths by the name:
 * `videos` Directory for a user's videos.
 * `pepperFlashSystemPlugin`  Full path to the system version of the Pepper Flash plugin.
 
+### `app.getFileIcon(path, [options], callback)`
+
+* `path` String
+* `options` Object (optional)
+  * `size` String - Defaults to `normal`. Can be `small`, `normal`, `large`
+* `callback` Function
+  * `Icon` [NativeImage](native-image.md)
+
 ### `app.setPath(name, path)`
 
 * `name` String
