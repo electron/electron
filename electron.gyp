@@ -443,6 +443,7 @@
           'action': [
             'npm',
             'run',
+            '--silent',
             'browserify',
             '--',
             'lib/sandboxed_renderer/init.js',
