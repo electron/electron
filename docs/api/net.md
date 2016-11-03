@@ -74,6 +74,8 @@ specified protocol scheme in the `options` object.
 
 > Make HTTP/HTTPS requests.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 `ClientRequest` implements the [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams)
 interface and is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 
@@ -265,6 +267,8 @@ response object,it will emit the `aborted` event.
 ## Class: IncomingMessage
 
 > Handle responses to HTTP/HTTPS requests.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 `IncomingMessage` implements the [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams)
 interface and is therefore an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).

@@ -157,6 +157,8 @@ Creates a new `NativeImage` instance from `dataURL`.
 
 > Natively wrap images such as tray, dock, and application icons.
 
+Process: [Main](../tutorial/quick-start.md#main-process), [Renderer](../tutorial/quick-start.md#renderer-process)
+
 ### Instance Methods
 
 The following methods are available on instances of the `NativeImage` class:

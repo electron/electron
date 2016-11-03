@@ -54,6 +54,8 @@ A `Session` object, the default session object of the app.
 
 > Get and set properties of a session.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 You can create a `Session` object in the `session` module:
 
 ```javascript
@@ -377,6 +379,8 @@ app.on('ready', function () {
 
 > Query and modify a session's cookies.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 Instances of the `Cookies` class are accessed by using `cookies` property of
 a `Session`.
 
@@ -481,6 +485,8 @@ Removes the cookies matching `url` and `name`, `callback` will called with
 ## Class: WebRequest
 
 > Intercept and modify the contents of a request at various stages of its lifetime.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 Instances of the `WebRequest` class are accessed by using the `webRequest`
 property of a `Session`.
