@@ -343,7 +343,7 @@ IconLoader::IconSize GetIconSizeByString(std::string size) {
     return IconLoader::IconSize::LARGE;
   }
   return IconLoader::IconSize::NORMAL;
-};
+}
 
 // Return the path constant from string.
 int GetPathConstant(const std::string& name) {
