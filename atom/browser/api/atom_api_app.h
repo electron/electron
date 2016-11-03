@@ -133,8 +133,7 @@ class App : public AtomBrowserClient::Delegate,
                          const net::CompletionCallback& callback);
 #endif
   void GetFileIcon(const base::FilePath& path,
-                   IconLoader::IconSize icon_size,
-                   const FileIconCallback& callback);
+                   mate::Arguments* args);
 
 #if defined(OS_WIN)
   // Get the current Jump List settings.

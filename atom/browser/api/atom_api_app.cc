@@ -868,8 +868,19 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 #endif  // defined(OS_WIN)
 
 void App::GetFileIcon(const base::FilePath& path,
-                      IconLoader::IconSize icon_size,
-                      const FileIconCallback& callback) {
+                      mate::Arguments* args) {
+  IconLoader::IconSize icon_size;
+  FileIconCallback callback;
+
+  if (!args->GetNext(&icon_size)) {
+    icon_size = IconLoader::IconSize::NORMAL;
+  }
+
+  if (!args->GetNext(&callback)) {
+    args->ThrowError();
+    return;
+  }
+
   IconManager* icon_manager = IconManager::GetInstance();
   gfx::Image* icon = icon_manager->LookupIconFromFilepath(path, icon_size);
   if (icon) {
