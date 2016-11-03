@@ -2,8 +2,7 @@
 
 > Retrieve information about screen size, displays, cursor position, etc.
 
-Process: [Main](../tutorial/quick-start.md#main-process),
-[Renderer](../tutorial/quick-start.md#renderer-process)
+Process: [Main](../tutorial/quick-start.md#main-process), [Renderer](../tutorial/quick-start.md#renderer-process)
 
 You cannot require or use this module until the `ready` event of the `app`
 module is emitted.
