@@ -328,6 +328,7 @@
         }],  # OS=="mac" and mas_build==1
         ['OS=="linux"', {
           'sources': [
+            '<@(lib_sources_linux)',
             '<@(lib_sources_nss)',
           ],
           'link_settings': {

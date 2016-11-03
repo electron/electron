@@ -474,7 +474,6 @@
       'chromium_src/chrome/browser/browser_process.h',
       'chromium_src/chrome/browser/chrome_process_finder_win.cc',
       'chromium_src/chrome/browser/chrome_process_finder_win.h',
-      'chromium_src/chrome/browser/icon_loader_auralinux.cc',
       'chromium_src/chrome/browser/icon_loader_mac.mm',
       'chromium_src/chrome/browser/icon_loader_win.cc',
       'chromium_src/chrome/browser/icon_loader.cc',
@@ -607,6 +606,9 @@
       'chromium_src/net/test/embedded_test_server/tcp_listen_socket.h',
       '<@(native_mate_files)',
       '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
+    ],
+    'lib_sources_linux': [
+      'chromium_src/chrome/browser/icon_loader_auralinux.cc',
     ],
     'lib_sources_nss': [
       'chromium_src/chrome/browser/certificate_manager_model.cc',
