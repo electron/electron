@@ -62,6 +62,10 @@ for otherwise it is `undefined`.
 When app is started by being passed as parameter to the default app, this
 property is `true` in the main process, otherwise it is `undefined`.
 
+### `process.platform`
+
+Returns the name of the platform the app is running on. Darwin for MacOS, linux for Linux and win32 for Windows.
+
 ## Methods
 
 The `process` object has the following method:
