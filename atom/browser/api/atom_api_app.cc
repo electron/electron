@@ -315,26 +315,6 @@ struct Converter<Browser::LoginItemSettings> {
   }
 };
 
-template <>
-struct Converter<IconLoader::IconSize> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     IconLoader::IconSize* out) {
-    std::string icon_size_string;
-    if (!ConvertFromV8(isolate, val, &icon_size_string))
-      return false;
-    if (icon_size_string == "small")
-      *out = IconLoader::IconSize::SMALL;
-    else if (icon_size_string == "normal")
-      *out = IconLoader::IconSize::NORMAL;
-    else if (icon_size_string == "large")
-      *out = IconLoader::IconSize::LARGE;
-    else
-      return false;
-    return true;
-  }
-};
-
 template<>
 struct Converter<content::CertificateRequestResultType> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
@@ -355,6 +335,15 @@ namespace atom {
 namespace api {
 
 namespace {
+
+IconLoader::IconSize GetIconSizeByString(std::string size) {
+  if (size == "small") {
+    return IconLoader::IconSize::SMALL;
+  } else if (size == "large") {
+    return IconLoader::IconSize::LARGE;
+  }
+  return IconLoader::IconSize::NORMAL;
+};
 
 // Return the path constant from string.
 int GetPathConstant(const std::string& name) {
@@ -869,11 +858,16 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 
 void App::GetFileIcon(const base::FilePath& path,
                       mate::Arguments* args) {
+  base::DictionaryValue options;
   IconLoader::IconSize icon_size;
   FileIconCallback callback;
 
-  if (!args->GetNext(&icon_size)) {
+  if (!args->GetNext(&options)) {
     icon_size = IconLoader::IconSize::NORMAL;
+  } else {
+    std::string icon_size_string;
+    options.GetString("size", &icon_size_string);
+    icon_size = GetIconSizeByString(icon_size_string);
   }
 
   if (!args->GetNext(&callback)) {
