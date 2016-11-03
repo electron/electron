@@ -1256,4 +1256,40 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
   })
+
+  describe('DOM events', function () {
+    let div
+
+    beforeEach(function () {
+      div = document.createElement('div')
+      div.style.width = '100px'
+      div.style.height = '10px'
+      div.style.overflow = 'hidden'
+      webview.style.height = '100%'
+      webview.style.width = '100%'
+    })
+
+    afterEach(function () {
+      if (div != null) div.remove()
+    })
+
+    it('emits resize events', function (done) {
+      webview.addEventListener('dom-ready', function () {
+        div.style.width = '1234px'
+        div.style.height = '789px'
+      })
+
+      webview.addEventListener('resize', function onResize (event) {
+        webview.removeEventListener('resize', onResize)
+        assert.equal(event.newWidth, 1234)
+        assert.equal(event.newHeight, 789)
+        assert.equal(event.target, webview)
+        done()
+      })
+
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+      div.appendChild(webview)
+      document.body.appendChild(div)
+    })
+  })
 })
