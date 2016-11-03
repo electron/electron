@@ -2,6 +2,8 @@
 
 > Submit crash reports to a remote server.
 
+Process: [Main](../tutorial/quick-start.md#main-process), [Renderer](../tutorial/quick-start.md#renderer-process)
+
 The following is an example of automatically submitting a crash report to a
 remote server:
 

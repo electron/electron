@@ -2,6 +2,9 @@
 
 > Manage files and URLs using their default applications.
 
+Process: [Main](../tutorial/quick-start.md#main-process),
+[Renderer](../tutorial/quick-start.md#renderer-process)
+
 The `shell` module provides functions related to desktop integration.
 
 An example of opening a URL in the user's default browser:

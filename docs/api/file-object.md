@@ -7,7 +7,7 @@ let users work on native files directly with the HTML5 file API. Electron has
 added a `path` attribute to the `File` interface which exposes the file's real
 path on filesystem.
 
-Example on getting a real path from a dragged-onto-the-app file:
+Example of getting a real path from a dragged-onto-the-app file:
 
 ```html
 <div id="holder">

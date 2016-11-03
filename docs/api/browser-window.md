@@ -2,6 +2,8 @@
 
 > Create and control browser windows.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 ```javascript
 // In the main process.
 const {BrowserWindow} = require('electron')

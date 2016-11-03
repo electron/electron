@@ -2,6 +2,8 @@
 
 > Add items to native application menus and context menus.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 See [`Menu`](menu.md) for examples.
 
 ## Class: MenuItem

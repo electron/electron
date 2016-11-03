@@ -2,6 +2,8 @@
 
 > Monitor power state changes.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 You cannot require or use this module until the `ready` event of the `app`
 module is emitted.
 

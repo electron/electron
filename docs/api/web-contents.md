@@ -2,6 +2,8 @@
 
 > Render and control web pages.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 `webContents` is an
 [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 It is responsible for rendering and controlling a web page and is a property of
