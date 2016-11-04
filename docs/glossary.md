@@ -60,7 +60,7 @@ building native modules.
 
 See also [Using Native Node Modules].
 
-# process
+## process
 
 A process is an instance of a computer program that is being executed. Electron
 apps that make use of the [main] and one or many [renderer] process are
