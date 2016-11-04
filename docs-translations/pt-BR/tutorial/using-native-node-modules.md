@@ -46,7 +46,7 @@ os mesmos com os módulos Node, exceto que você precisa configurar algumas
 variáveis da ambiente:
 
 ```bash
-export npm_config_disturl=https://atom.io/download/atom-shell
+export npm_config_disturl=https://atom.io/download/electron
 export npm_config_target=0.33.1
 export npm_config_arch=x64
 export npm_config_runtime=electron
@@ -60,7 +60,7 @@ ao `node-gyp` onde baixar as headers e qual versão usar:
 
 ```bash
 $ cd /path-to-module/
-$ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=https://atom.io/download/atom-shell
+$ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=https://atom.io/download/electron
 ```
 
 A tag `HOME=~/.electron-gyp` altera onde encontrar as headers de desenvolvimento.

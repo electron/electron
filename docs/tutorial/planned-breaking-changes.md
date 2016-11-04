@@ -85,3 +85,12 @@ webContents.openDevTools({detach: true})
 // Replace with
 webContents.openDevTools({mode: 'detach'})
 ```
+
+## Node Headers URL
+
+This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
+command line flag when building native Node modules.
+
+Deprecated: https://atom.io/download/atom-shell
+
+Replace with: https://atom.io/download/electron
