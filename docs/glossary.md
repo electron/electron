@@ -29,7 +29,7 @@ serialized JSON messages between the [main] and [renderer] processes.
 A single, shared library that includes the Chromium Content module and all its
 dependencies (e.g., Blink, [V8], etc.).
 
-## Main Process
+## main process
 
 The main process, commonly a file named `main.js`, is the entry point to every
 Electron app. It controls the life of the app, from open to close. It also
@@ -45,9 +45,9 @@ Every app's main process file is specified in the `main` property in
 Acronym for Apple's Mac App Store. For details on submitting your app to the
 MAS, see the [Mac App Store Submission Guide].
 
-## Native Modules
+## native modules
 
-Native Modules (also called [addons] in
+Native modules (also called [addons] in
 Node.js) are modules written in C or C++ that can be loaded into Node.js or
 Electron using the require() function, and used just as if they were an
 ordinary Node.js module. They are used primarily to provide an interface
@@ -58,9 +58,20 @@ likely to use a different V8 version from the Node binary installed in your
 system, you have to manually specify the location of Electron’s headers when
 building native modules.
 
-See also [Using Native Node Modules]
+See also [Using Native Node Modules].
 
-## Renderer Process
+# process
+
+A process is an instance of a computer program that is being executed. Electron
+apps that make use of the [main] and one or many [renderer] process are
+actually running several programs simultaneously.
+
+In Node.js and Electron, each running process has a `process` object. This
+object is a global that provides information about, and control over, the
+current process. As a global, it is always available to applications without
+using require().
+
+## renderer process
 
 The renderer process is a browser window in your app. Unlike the main process,
 there can be multiple of these and each is run in a separate process.
@@ -97,6 +108,15 @@ available in "core".
 V8 is Google's open source JavaScript engine. It is written in C++ and is
 used in Google Chrome, the open source browser from Google. V8 can run
 standalone, or can be embedded into any C++ application.
+
+## webview
+
+`webview` tags are used to embed 'guest' content (such as external web pages) in
+your Electron app. They are similar to `iframe`s, but differ in that each
+webview runs in a separate process. It doesn't have the same
+permissions as your web page and all interactions between your app and
+embedded content will be asynchronous. This keeps your app safe from the
+embedded content.
 
 [addons]: https://nodejs.org/api/addons.html
 [autoUpdater]: api/auto-updater.md
