@@ -2,7 +2,7 @@
 
 This page defines some terminology that is commonly used in Electron development.
 
-## ASAR
+### ASAR
 
 ASAR stands for Atom Shell Archive Format. An [asar][asar] archive is a simple
 `tar`-like format that concatenates files into a single file. Electron can read
@@ -10,7 +10,7 @@ arbitrary files from it without unpacking the whole file.
 
 The ASAR format was created primarily to improve performance on Windows... TODO
 
-## Brightray
+### Brightray
 
 Brightray is a static library that makes [libchromiumcontent] easier to use in
 applications. It was created specifically for Electron, but can be used to
@@ -19,17 +19,17 @@ enable Chromium's renderer in native apps that are not based on Electron.
 Brightray is a low-level dependency of Electron that does not concern the
 majority of Electron users.
 
-## IPC
+### IPC
 
 IPC stands for Inter-Process Communication. Electron uses IPC to send
 serialized JSON messages between the [main] and [renderer] processes.
 
-## libchromiumcontent
+### libchromiumcontent
 
 A single, shared library that includes the Chromium Content module and all its
 dependencies (e.g., Blink, [V8], etc.).
 
-## main process
+### main process
 
 The main process, commonly a file named `main.js`, is the entry point to every
 Electron app. It controls the life of the app, from open to close. It also
@@ -40,12 +40,12 @@ The full Node API is built in.
 Every app's main process file is specified in the `main` property in
 `package.json`. This is how `electron .` knows what file to execute at startup.
 
-## MAS
+### MAS
 
 Acronym for Apple's Mac App Store. For details on submitting your app to the
 MAS, see the [Mac App Store Submission Guide].
 
-## native modules
+### native modules
 
 Native modules (also called [addons] in
 Node.js) are modules written in C or C++ that can be loaded into Node.js or
@@ -60,7 +60,7 @@ building native modules.
 
 See also [Using Native Node Modules].
 
-## process
+### process
 
 A process is an instance of a computer program that is being executed. Electron
 apps that make use of the [main] and one or many [renderer] process are
@@ -71,7 +71,7 @@ object is a global that provides information about, and control over, the
 current process. As a global, it is always available to applications without
 using require().
 
-## renderer process
+### renderer process
 
 The renderer process is a browser window in your app. Unlike the main process,
 there can be multiple of these and each is run in a separate process.
@@ -82,13 +82,13 @@ allowed access to native resources. Electron users, however, have the power to
 use Node.js APIs in web pages allowing lower level operating system
 interactions.
 
-## Squirrel
+### Squirrel
 
 Squirrel is an open-source framework that enables Electron apps to update
 automatically as new versions are released. See the [autoUpdater] API for
 info about getting started with Squirrel.
 
-## userland
+### userland
 
 This term originated in the Unix community, where "userland" or "userspace"
 referred to programs that run outside of the operating system kernel. More
@@ -103,13 +103,13 @@ overly prescriptive about how it should be used. Userland enables users to
 create and share tools that provide additional functionality on top of what is
 available in "core".
 
-## V8
+### V8
 
 V8 is Google's open source JavaScript engine. It is written in C++ and is
 used in Google Chrome, the open source browser from Google. V8 can run
 standalone, or can be embedded into any C++ application.
 
-## webview
+### webview
 
 `webview` tags are used to embed 'guest' content (such as external web pages) in
 your Electron app. They are similar to `iframe`s, but differ in that each
