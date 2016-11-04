@@ -1,7 +1,7 @@
 # Utilizando módulos Node nativos
 
 Los módulos Node nativos son soportados por Electron, pero dado que Electron
-está utilizando una versión distinta de V8, debes especificar manualmente la 
+está utilizando una versión distinta de V8, debes especificar manualmente la
 ubicación de las cabeceras de Electron a la hora de compilar módulos nativos.
 
 ## Compatibilidad de módulos nativos
@@ -19,8 +19,8 @@ En el caso de los módulos antiguos que sólo soportan Node v0.10.x, debes usar 
 
 ### La forma fácil
 
-La forma más sencilla de recompilar módulos nativos es a través del paquete 
-[`electron-rebuild`](https://github.com/paulcbetts/electron-rebuild), 
+La forma más sencilla de recompilar módulos nativos es a través del paquete
+[`electron-rebuild`](https://github.com/paulcbetts/electron-rebuild),
 el cual abstrae y maneja los pasos de descargar las cabeceras y compilar los módulos nativos:
 
 ```sh
@@ -37,7 +37,7 @@ desde dónde descargar las cabeceras y cuál versión usar:
 
 ```bash
 $ cd /path-to-module/
-$ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=https://atom.io/download/atom-shell
+$ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=https://atom.io/download/electron
 ```
 
 Los cambios en `HOME=~/.electron-gyp` fueron para especificar la ruta de las cabeceras.
@@ -50,7 +50,7 @@ También puedes usar `npm` para instalar módulos, los pasos son exactamente igu
 con la excepción de que necesitas establecer algunas variables de entorno primero:
 
 ```bash
-export npm_config_disturl=https://atom.io/download/atom-shell
+export npm_config_disturl=https://atom.io/download/electron
 export npm_config_target=0.29.1
 export npm_config_arch=x64
 HOME=~/.electron-gyp npm install module-name

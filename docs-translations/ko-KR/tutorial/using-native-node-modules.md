@@ -22,7 +22,7 @@ export npm_config_target=1.2.3
 export npm_config_arch=x64
 export npm_config_target_arch=x64
 # Electron에 대한 헤더 다운로드 링크.
-export npm_config_disturl=https://atom.io/download/atom-shell
+export npm_config_disturl=https://atom.io/download/electron
 # node-pre-gyp에 Electron을 빌드한다는 것을 알려줍니다.
 export npm_config_runtime=electron
 # node-pre-gyp에 소스 코드로부터 모듈을 빌드한다는 것을 알려줍니다.
@@ -60,7 +60,7 @@ npm install --save-dev electron-rebuild
 
 ```bash
 cd /path-to-module/
-HOME=~/.electron-gyp node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://atom.io/download/atom-shell
+HOME=~/.electron-gyp node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://atom.io/download/electron
 ```
 
 `HOME=~/.electron-gyp`은 변경할 헤더의 위치를 찾습니다. `--target=0.29.1`은

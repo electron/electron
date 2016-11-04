@@ -31,7 +31,7 @@ npm install --save-dev electron-rebuild
 モジュールをインストールするために`npm` を使用できます。環境変数の設定を除いて、Nodeモジュールと完全に同じ手順です。
 
 ```bash
-export npm_config_disturl=https://atom.io/download/atom-shell
+export npm_config_disturl=https://atom.io/download/electron
 export npm_config_target=0.33.1
 export npm_config_arch=x64
 export npm_config_runtime=electron
@@ -44,7 +44,7 @@ ElectronのヘッダーでNodeモジュールをビルドするために、ど�
 
 ```bash
 $ cd /path-to-module/
-$ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=https://atom.io/download/atom-shell
+$ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=https://atom.io/download/electron
 ```
 
 開発ヘッダーを探し、 `HOME=~/.electron-gyp` を変更します。`--target=0.29.1`がElectronのバージョンです。 `--dist-url=...` で、どこからヘッダーをダウンロードするかを指定します。`--arch=x64`を使用して、64bit システム用にモジュールをビルドします。
