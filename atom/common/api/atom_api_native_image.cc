@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "atom/common/asar/asar_util.h"
-#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"

@@ -19,8 +19,6 @@ namespace printing {
 class PrintJobManager;
 }
 
-class IconManager;
-
 // NOT THREAD SAFE, call only from the main thread.
 // These functions shouldn't return NULL unless otherwise noted.
 class BrowserProcess {
