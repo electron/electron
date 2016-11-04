@@ -68,7 +68,7 @@ A String representing the name of the platform the app is running on.  Can be `d
 
 ### `process.argv`
 
-An array containing the arguments passed to the application when started. To get the arguments from the renderer process use `require('electron').remote.process.argv`
+A String[] array containing the arguments passed to the application when started. To get the arguments from the renderer process use `require('electron').remote.process.argv`
 
 ## Methods
 
