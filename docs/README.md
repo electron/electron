@@ -16,6 +16,7 @@ an issue:
 
 ## Guides
 
+* [Glossary of Terms](glossary.md)
 * [Supported Platforms](tutorial/supported-platforms.md)
 * [Security](tutorial/security.md)
 * [Electron Versioning](tutorial/electron-versioning.md)
