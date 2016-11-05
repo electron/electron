@@ -407,7 +407,8 @@ You can request the following paths by the name:
 * `options` Object (optional)
   * `size` String - Defaults to `normal`. Can be `small`, `normal`, `large`
 * `callback` Function
-  * `Icon` [NativeImage](native-image.md)
+  * `error` `Error`
+  * `icon` [NativeImage](native-image.md)
 
 ### `app.setPath(name, path)`
 
