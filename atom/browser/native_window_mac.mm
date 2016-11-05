@@ -309,7 +309,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 @property BOOL acceptsFirstMouse;
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
-@property BOOL hideAfterFullscreenExit;
 @property NSPoint windowButtonsOffset;
 @property (nonatomic, retain) AtomPreviewItem* quickLookItem;
 
