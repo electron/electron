@@ -45,7 +45,8 @@ class App : public AtomBrowserClient::Delegate,
             public BrowserObserver,
             public content::GpuDataManagerObserver {
  public:
-  using FileIconCallback = base::Callback<void(v8::Local<v8::Value>, const gfx::Image&)>;
+  using FileIconCallback = base::Callback<void(v8::Local<v8::Value>,
+                                               const gfx::Image&)>;
 
   static mate::Handle<App> Create(v8::Isolate* isolate);
 
