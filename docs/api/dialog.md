@@ -27,19 +27,19 @@ The `dialog` module has the following methods:
 
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
-  * `title` String
+  * `title` String (optional)
   * `defaultPath` String (optional)
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
-  * `filters` String[] (optional)
+  * `filters` [FileFilter[]](structrs/file-filter.md) (optional)
   * `properties` String[] (optional) - Contains which features the dialog should use, can
     contain `openFile`, `openDirectory`, `multiSelections`, `createDirectory`
     and `showHiddenFiles`.
 * `callback` Function (optional)
   * `filePaths` String[] - An array of file paths chosen by the user
 
-On success this method returns an array of file paths chosen by the user,
-otherwise it returns `undefined`.
+Returns `String[]`, an array of file paths chosen by the user,
+if the callback is provided it returns `undefined`.
 
 The `filters` specifies an array of file types that can be displayed or
 selected when you want to limit the user to a specific type. For example:
@@ -71,16 +71,16 @@ shown.
 
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
-  * `title` String
+  * `title` String (optional)
   * `defaultPath` String (optional)
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
-  * `filters` String[] (optional)
+  * `filters` [FileFilter[]](structrs/file-filter.md) (optional)
 * `callback` Function (optional)
   * `filename` String
 
-On success this method returns the path of the file chosen by the user,
-otherwise it returns `undefined`.
+Returns `String`, the path of the file chosen by the user,
+if a callback is provided it returns `undefined`.
 
 The `filters` specifies an array of file types that can be displayed, see
 `dialog.showOpenDialog` for an example.
@@ -113,8 +113,11 @@ will be passed via `callback(filename)`
     others as command links in the dialog. This can make the dialog appear in
     the style of modern Windows apps. If you don't like this behavior, you can
     set `noLink` to `true`.
-* `callback` Function
+* `callback` Function (optional)
   * `response` Number - The index of the button that was clicked
+
+Returns `Integer`, the index of the clicked button, if a callback is provided
+it returns undefined.
 
 Shows a message box, it will block the process until the message box is closed.
 It returns the index of the clicked button.

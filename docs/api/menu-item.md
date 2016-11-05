@@ -13,31 +13,31 @@ Create a new `MenuItem` with the following method:
 ### `new MenuItem(options)`
 
 * `options` Object
-  * `click` Function - Will be called with
+  * `click` Function - (optional) Will be called with
     `click(menuItem, browserWindow, event)` when the menu item is clicked.
     * `menuItem` MenuItem
     * `browserWindow` BrowserWindow
     * `event` Event
-  * `role` String - Define the action of the menu item, when specified the
+  * `role` String - (optional) Define the action of the menu item, when specified the
     `click` property will be ignored.
-  * `type` String - Can be `normal`, `separator`, `submenu`, `checkbox` or
+  * `type` String - (optional) Can be `normal`, `separator`, `submenu`, `checkbox` or
     `radio`.
-  * `label` String
-  * `sublabel` String
-  * `accelerator` [Accelerator](accelerator.md)
-  * `icon` [NativeImage](native-image.md)
-  * `enabled` Boolean - If false, the menu item will be greyed out and
+  * `label` String - (optional)
+  * `sublabel` String - (optional)
+  * `accelerator` [Accelerator](accelerator.md) - (optional)
+  * `icon` ([NativeImage](native-image.md) | String) - (optional)
+  * `enabled` Boolean - (optional) If false, the menu item will be greyed out and
     unclickable.
-  * `visible` Boolean - If false, the menu item will be entirely hidden.
-  * `checked` Boolean - Should only be specified for `checkbox` or `radio` type
+  * `visible` Boolean - (optional) If false, the menu item will be entirely hidden.
+  * `checked` Boolean - (optional) Should only be specified for `checkbox` or `radio` type
     menu items.
-  * `submenu` Menu - Should be specified for `submenu` type menu items. If
+  * `submenu` Menu - (optional) Should be specified for `submenu` type menu items. If
     `submenu` is specified, the `type: 'submenu'` can be omitted. If the value
     is not a `Menu` then it will be automatically converted to one using
     `Menu.buildFromTemplate`.
-  * `id` String - Unique within a single menu. If defined then it can be used
+  * `id` String - (optional) Unique within a single menu. If defined then it can be used
     as a reference to this item by the position attribute.
-  * `position` String - This field allows fine-grained definition of the
+  * `position` String - (optional) This field allows fine-grained definition of the
     specific location within a given menu.
 
 It is best to specify `role` for any menu item that matches a standard role,
