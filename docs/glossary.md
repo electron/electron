@@ -19,6 +19,12 @@ enable Chromium's renderer in native apps that are not based on Electron.
 Brightray is a low-level dependency of Electron that does not concern the
 majority of Electron users.
 
+### DMG
+
+An Apple Disk Image is a packaging format used by macOS. DMG files are
+commonly used for distributing application "installers". [electron-builder]
+supports `dmg` as a build target.
+
 ### IPC
 
 IPC stands for Inter-Process Communication. Electron uses IPC to send
@@ -60,6 +66,14 @@ building native modules.
 
 See also [Using Native Node Modules].
 
+## NSIS
+
+Nullsoft Scriptable Install System is a script-driven Installer
+authoring tool for Microsoft Windows. It is released under a combination of
+free software licenses, and is a widely-used alternative to commercial
+proprietary products like InstallShield. [electron-builder] supports NSIS
+as a build target.
+
 ### process
 
 A process is an instance of a computer program that is being executed. Electron
@@ -96,8 +110,8 @@ recently, the term has been popularized in the Node and npm community to
 distinguish between the features available in "Node core" versus packages
 published to the npm registry by the much larger "user" community.
 
-Just like Node, Electron is focused on having a small set of APIs that provide
-all the necessary primitives for developing multi-platform Desktop applications.
+Like Node, Electron is focused on having a small set of APIs that provide
+all the necessary primitives for developing multi-platform desktop applications.
 This design philosophy allows Electron to remain a flexible tool without being
 overly prescriptive about how it should be used. Userland enables users to
 create and share tools that provide additional functionality on top of what is
@@ -120,6 +134,7 @@ embedded content.
 
 [addons]: https://nodejs.org/api/addons.html
 [autoUpdater]: api/auto-updater.md
+[electron-builder]: https://github.com/electron-userland/electron-builder
 [libchromiumcontent]: #libchromiumcontent
 [Mac App Store Submission Guide]: tutorials/mac-app-store-submission-guide.md
 [main]: #main-process
