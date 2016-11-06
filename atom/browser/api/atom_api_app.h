@@ -12,7 +12,6 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_observer.h"
-#include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "chrome/browser/icon_loader.h"
 #include "chrome/browser/process_singleton.h"

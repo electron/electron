@@ -475,9 +475,10 @@ int ImportIntoCertStore(
 void OnIconDataAvailable(const App::FileIconCallback& callback,
                          gfx::Image* icon) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+
   if (icon && !icon->IsEmpty()) {
-    v8::Locker locker(isolate);
-    v8::HandleScope handle_scope(isolate);
     callback.Run(v8::Null(isolate), *icon);
   } else {
     v8::Local<v8::String> error_message =
@@ -871,6 +872,10 @@ void App::GetFileIcon(const base::FilePath& path,
   IconLoader::IconSize icon_size;
   FileIconCallback callback;
 
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
   if (!args->GetNext(&options)) {
@@ -890,9 +895,6 @@ void App::GetFileIcon(const base::FilePath& path,
   gfx::Image* icon = icon_manager->LookupIconFromFilepath(normalized_path,
                                                           icon_size);
   if (icon) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    v8::Locker locker(isolate);
-    v8::HandleScope handle_scope(isolate);
     callback.Run(v8::Null(isolate), *icon);
   } else {
     icon_manager->LoadIcon(normalized_path, icon_size,
