@@ -456,4 +456,62 @@ describe('app module', function () {
       assert.equal(app.isDefaultProtocolClient(protocol), false)
     })
   })
+
+  describe('getFileIcon() API', function() {
+    const iconPath = path.join(process.cwd(), 'fixtures/assets/icon.ico')
+    const sizes = {
+      small: 16,
+      normal: 32,
+      large: 48
+    };
+
+    it('fetches non-empty icon', function(done) {
+      app.getFileIcon(iconPath, function(err, icon) {
+        assert.equal(err, null)
+        assert.equal(icon.isEmpty(), false)
+        done()
+      })
+    })
+
+    it('fetches normal size by default', function(done) {
+      app.getFileIcon(iconPath, function(err, icon) {
+        const size = icon.getSize()
+        assert.equal(size.height, sizes.normal)
+        assert.equal(size.width, sizes.normal)
+        done()
+      })
+    })
+
+    describe('size option', function() {
+      it('fetches small icons', function(done) {
+        app.getFileIcon(iconPath, { size: 'small' }, function(err, icon) {
+          const size = icon.getSize()
+          assert.equal(size.height, sizes.small)
+          assert.equal(size.width, sizes.small)
+          done()
+        })
+      })
+
+      it('fetches normal icons', function(done) {
+        app.getFileIcon(iconPath, { size: 'normal' }, function(err, icon) {
+          const size = icon.getSize()
+          assert.equal(size.height, sizes.normal)
+          assert.equal(size.width, sizes.normal)
+          done()
+        })
+      })
+
+      it('fetches large icons', function(done) {
+        if (process.platform === 'darwin') {
+          done() // macOS does not support large icons
+        }
+        app.getFileIcon(iconPath, { size: 'normal' }, function(err, icon) {
+          const size = icon.getSize()
+          assert.equal(size.height, sizes.normal)
+          assert.equal(size.width, sizes.normal)
+          done()
+        })
+      })
+    })
+  })
 })
