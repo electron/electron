@@ -1,6 +1,7 @@
 # Certificate Object
 
 * `data` String - PEM encoded data
+* `chain` String[] - PEM encoded chain
 * `issuerName` String - Issuer's Common Name
 * `subjectName` String - Subject's Common Name
 * `serialNumber` String - Hex value represented string

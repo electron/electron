@@ -45,7 +45,11 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   std::string encoded_data;
   net::X509Certificate::GetPEMEncoded(
       val->os_cert_handle(), &encoded_data);
+  std::vector<std::string> encoded_chain;
+  val->GetPEMEncodedChain(&encoded_chain);
+
   dict.Set("data", encoded_data);
+  dict.Set("chain", encoded_chain);
   dict.Set("issuerName", val->issuer().GetDisplayName());
   dict.Set("subjectName", val->subject().GetDisplayName());
   dict.Set("serialNumber", base::HexEncode(val->serial_number().data(),
