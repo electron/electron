@@ -405,7 +405,7 @@ You can request the following paths by the name:
 
 * `path` String
 * `options` Object (optional)
-  * `size` String - Defaults to `normal`. Can be `small`, `normal`, `large`
+  * `size` String - Can be `small`, `normal`, `large`. Except for `large` on _macOS_
 * `callback` Function
   * `error` `Error`
   * `icon` [NativeImage](native-image.md)
