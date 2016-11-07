@@ -2,6 +2,8 @@
 
 > process 객체에 대한 확장 기능.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 `process` 객체는 Electron에서 약간 추가적인 기능이 있으며 API는 다음과 같습니다:
 
 ## Events

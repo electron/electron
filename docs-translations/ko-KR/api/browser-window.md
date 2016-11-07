@@ -2,6 +2,8 @@
 
 > 브라우저 윈도우를 생성하고 제어합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 ```javascript
 // 메인 프로세스에서
 const {BrowserWindow} = require('electron')

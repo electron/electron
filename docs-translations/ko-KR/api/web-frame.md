@@ -2,6 +2,8 @@
 
 > 현재 웹 페이지의 렌더링 상태를 커스터마이즈합니다.
 
+프로세스: [렌더러](../tutorial/quick-start.md#renderer-process)
+
 다음 예시는 현재 페이지를 200% 줌 합니다:
 
 ```javascript

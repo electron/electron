@@ -44,6 +44,8 @@
 
 > 자식 브라우저 윈도우를 조작합니다
 
+프로세스: [렌더러](../tutorial/quick-start.md#renderer-process)
+
 ### Instance Methods
 
 `BrowserWindowProxy` 객체는 다음과 같은 인스턴스 메서드를 가지고 있습니다:
