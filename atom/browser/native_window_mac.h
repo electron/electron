@@ -92,6 +92,8 @@ class NativeWindowMac : public NativeWindow,
                       const std::string& description) override;
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
+  void SetVibrancy(const std::string& type) override;
+  void RemoveVibrancy() override;
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;
@@ -161,6 +163,9 @@ class NativeWindowMac : public NativeWindow,
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_;
+
+  // Vibrancy view
+  NSView* vibrant_view_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };

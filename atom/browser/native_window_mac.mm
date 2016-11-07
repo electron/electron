@@ -1205,6 +1205,63 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
   return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
 }
 
+void NativeWindowMac::SetVibrancy(const std::string& type) {
+  if (!(base::mac::IsOSMavericks() || base::mac::IsOSYosemiteOrLater())) return;
+
+  NSVisualEffectView *vview = (NSVisualEffectView *)vibrant_view_;
+  if (vview == nil) {
+    vview = [[NSVisualEffectView alloc] initWithFrame:
+      [[window_ contentView] bounds]];
+    vibrant_view_ = (NSView *)vview;
+
+    [vview setAutoresizingMask:
+      NSViewWidthSizable | NSViewHeightSizable];
+
+    [vview setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+    [vview setState:NSVisualEffectStateActive];
+    [[window_ contentView] addSubview:vview
+                           positioned:NSWindowBelow
+                           relativeTo:nil];
+  }
+
+  NSVisualEffectMaterial vibrancyType = NSVisualEffectMaterialLight;
+
+  if (type == "appearance-based") {
+    vibrancyType = NSVisualEffectMaterialAppearanceBased;
+  } else if (type == "light") {
+    vibrancyType = NSVisualEffectMaterialLight;
+  } else if (type == "dark") {
+    vibrancyType = NSVisualEffectMaterialDark;
+  } else if (type == "titlebar") {
+    vibrancyType = NSVisualEffectMaterialTitlebar;
+  }
+
+  if (base::mac::IsOSYosemiteOrLater()) {
+    if (type == "selection") {
+      vibrancyType = NSVisualEffectMaterialSelection;
+    } else if (type == "menu") {
+      vibrancyType = NSVisualEffectMaterialMenu;
+    } else if (type == "popover") {
+      vibrancyType = NSVisualEffectMaterialPopover;
+    } else if (type == "sidebar") {
+      vibrancyType = NSVisualEffectMaterialSidebar;
+    } else if (type == "medium-light") {
+      vibrancyType = NSVisualEffectMaterialMediumLight;
+    } else if (type == "ultra-dark") {
+      vibrancyType = NSVisualEffectMaterialUltraDark;
+    }
+  }
+
+  [vview setMaterial:vibrancyType];
+}
+
+void NativeWindowMac::RemoveVibrancy() {
+  if (vibrant_view_ == nil) return;
+
+  [vibrant_view_ removeFromSuperview];
+  vibrant_view_ = nil;
+}
+
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
   switch (event.type) {
     case blink::WebInputEvent::GestureScrollBegin:

@@ -201,6 +201,13 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   options.Get(options::kShow, &show);
   if (show)
     Show();
+
+#if defined(OS_MACOSX)
+  std::string type;
+  if (options.Get(options::kVibrancyType, &type)) {
+    SetVibrancy(type);
+  }
+#endif
 }
 
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {

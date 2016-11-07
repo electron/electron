@@ -786,6 +786,14 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
+void Window::SetVibrancy(const std::string& type) {
+  window_->SetVibrancy(type);
+}
+
+void Window::RemoveVibrancy() {
+  window_->RemoveVibrancy();
+}
+
 int32_t Window::ID() const {
   return weak_map_id();
 }
@@ -901,6 +909,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
+      .SetMethod("setVibrancy", &Window::SetVibrancy)
+      .SetMethod("removeVibrancy", &Window::RemoveVibrancy)
 #if defined(OS_WIN)
       .SetMethod("hookWindowMessage", &Window::HookWindowMessage)
       .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
