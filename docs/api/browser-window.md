@@ -1193,10 +1193,11 @@ Returns `BrowserWindow[]` - All child windows.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` String - Adds a vibrancy effect to the browser window. Values include
-  `appearance-based`, `light`, `dark`, `titlebar`, `selection`, `menu`,
-  `popover`, `sidebar`, `medium-light`, `ultra-dark`. See the
-  [macOS documentation][vibrancy-docs] for more details.
+* `type` String - Values include `appearance-based`, `light`, `dark`, `titlebar`,
+  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`. See
+  the [macOS documentation][vibrancy-docs] for more details.
+
+Adds a vibrancy effect to the browser window.
 
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
 
