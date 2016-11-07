@@ -31,7 +31,7 @@ Create a new `MenuItem` with the following method:
   * `visible` Boolean - (optional) If false, the menu item will be entirely hidden.
   * `checked` Boolean - (optional) Should only be specified for `checkbox` or `radio` type
     menu items.
-  * `submenu` Menu - (optional) Should be specified for `submenu` type menu items. If
+  * `submenu` MenuItemConstructorOptions[] - (optional) Should be specified for `submenu` type menu items. If
     `submenu` is specified, the `type: 'submenu'` can be omitted. If the value
     is not a `Menu` then it will be automatically converted to one using
     `Menu.buildFromTemplate`.
