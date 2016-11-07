@@ -265,6 +265,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `offscreen` Boolean - Whether to enable offscreen rendering for the browser
       window. Defaults to `false`.
     * `sandbox` Boolean - Whether to enable Chromium OS-level sandbox.
+    * `vibrancy` String - Add a type of vibrancy effect to the window, only on
+      macOS. See supported types at the `setVibrancy` method.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -1188,3 +1190,16 @@ Returns `BrowserWindow[]` - All child windows.
 
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
+
+#### `win.setVibrancy(type)` _macOS_
+
+* `type` String - Adds a vibrancy effect to the browser window. Values include
+  `appearance-based`, `light`, `dark`, `titlebar`, `selection`, `menu`,
+  `popover`, `sidebar`, `medium-light`, `ultra-dark`. See the
+  [macOS documentation][vibrancy-docs] for more details.
+
+[vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
+
+#### `win.removeVibrancy()` _macOS_
+
+Removes the vibrancy effect on the window.

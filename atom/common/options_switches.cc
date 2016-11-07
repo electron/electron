@@ -81,6 +81,9 @@ const char kFocusable[] = "focusable";
 // The WebPreferences.
 const char kWebPreferences[] = "webPreferences";
 
+// Add a vibrancy effect to the browser window
+const char kVibrancyType[] = "vibrancy";
+
 // The factor of which page should be zoomed.
 const char kZoomFactor[] = "zoomFactor";
 

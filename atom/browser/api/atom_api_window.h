@@ -196,6 +196,9 @@ class Window : public mate::TrackableObject<Window>,
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
 
+  void SetVibrancy(const std::string& type);
+  void RemoveVibrancy();
+
   int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
 
