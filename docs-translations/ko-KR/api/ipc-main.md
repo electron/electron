@@ -2,6 +2,8 @@
 
 > 메인 프로세스에서 렌더러 프로세스로 비동기 통신을 합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 `ipcMain` 모듈은 [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter)
 클래스의 인스턴스입니다. 메인 프로세스에서 사용하면, 렌더러
 프로세스(웹 페이지)에서 전달된 동기, 비동기 메시지를 주고 받는 방법을
@@ -44,7 +46,7 @@ ipcRenderer.on('asynchronous-reply', (arg) => {
 ipcRenderer.send('asynchronous-message', 'ping')
 ```
 
-## 메시지 리스닝
+## Methods
 
 `ipcMain`은 다음과 같은 이벤트 리스닝 메서드를 가지고 있습니다:
 

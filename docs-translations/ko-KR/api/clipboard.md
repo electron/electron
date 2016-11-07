@@ -2,6 +2,8 @@
 
 > 시스템 클립보드에 복사와 붙여넣기를 수행합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process), [렌더러](../tutorial/quick-start.md#renderer-process)
+
 다음 예시는 클립보드에 문자열을 쓰는 방법을 보여줍니다:
 
 ```javascript

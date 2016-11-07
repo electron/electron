@@ -9,7 +9,7 @@ $ code electron-quick-start
 
 ### 2. 다음 설정으로 `.vscode/launch.json` 파일 추가하기:
 
-```javascripton
+```json
 {
   "version": "0.2.0",
   "configurations": [

@@ -2,6 +2,8 @@
 
 > 브라우저 세션, 쿠키, 캐시, 프록시 설정 등을 관리합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 `session` 모듈은 새로운 `Session` 객체를 만드는데 사용할 수 있습니다.
 
 또한 [`WebContents`](web-contents.md)의 `session` 속성이나 `session` 모듈을 통해
@@ -50,6 +52,8 @@ Returns `Session` - `partition` 문자열로부터 만들어진 `Session` 인스
 ## Class: Session
 
 > 세션의 속성을 가져오거나 설정합니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 `session` 모듈을 사용하여 `Session` 객체를 생성할 수 있습니다:
 
@@ -372,6 +376,8 @@ app.on('ready', function () {
 
 > 세션의 쿠키를 변경하거나 요청합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 `Cookies` 클래스의 인스턴스는 `Session`의 `cookies` 속성을 통해 접근합니다.
 
 예를 들어:
@@ -470,6 +476,8 @@ session.defaultSession.cookies.set(cookie, (error) => {
 ## Class: WebRequest
 
 > 생명주기 동안의 다양한 단계를 가지는 요청의 콘텐츠를 가로채고 변경합니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 `WebRequest` 클래스의 인스턴스는 `Session`의 `webRequest` 속성을 통해 접근할 수
 있습니다.

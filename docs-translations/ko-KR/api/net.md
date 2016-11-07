@@ -2,6 +2,8 @@
 
 > Chromium 의 네이티브 네트워크 라이브러리를 사용한 HTTP/HTTPS 요청 실행.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 `net` 모듈은 HTTP(S) 요청을 실행하기 위한 클라이언트 측 API 입니다. 이것은
 Node.js 의 [HTTP](https://nodejs.org/api/http.html) 와
 [HTTPS](https://nodejs.org/api/https.html) 모듈과 유사합니다. 하지만 Node.js
@@ -69,6 +71,8 @@ Returns `ClientRequest`
 
 > HTTP/HTTPS 요청을 합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 `ClientRequest` 는
 [Writable Stream](https://nodejs.org/api/stream.html#stream_writable_streams)
 인터페이스를 구현하였고 따라서
@@ -100,7 +104,7 @@ Returns `ClientRequest`
 
 예를 들어, 다음과 같이 'github.com' 에 대한 같은 요청을 만들 수 있습니다:
 
-```JavaScript
+```javascript
 const request = net.request({
   method: 'GET',
   protocol: 'https:',
@@ -137,7 +141,7 @@ Returns:
 * `username` String
 * `password` String
 
-```JavaScript
+```javascript
 request.on('login', (authInfo, callback) => {
   callback('username', 'password')
 })
@@ -146,9 +150,9 @@ request.on('login', (authInfo, callback) => {
 빈 자격증명을 제공하면 요청이 취소되고 응답 객체에서 인증 오류가 보고될 것
 입니다:
 
-```JavaScript
+```javascript
 request.on('response', (response) => {
-  console.log(`STATUS: ${response.statusCode}`);
+  console.log(`STATUS: ${response.statusCode}`)
   response.on('error', (error) => {
     console.log(`ERROR: ${JSON.stringify(error)}`)
   })
@@ -253,6 +257,8 @@ Returns String - 이전에 설정된 추가 헤더 이름에 대한 값.
 ## Class: IncomingMessage
 
 > HTTP/HTTPS 요청에 대한 응답을 처리합니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 `IncomingMessage` 는
 [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams)

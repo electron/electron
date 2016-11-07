@@ -2,6 +2,8 @@
 
 > 아이콘과 컨텍스트 메뉴를 시스템 알림 영역에 추가합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 ```javascript
 const {app, Menu, Tray} = require('electron')
 

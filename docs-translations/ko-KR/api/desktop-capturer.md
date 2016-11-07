@@ -3,6 +3,8 @@
 > 멀티미디어 소스에 대해 접근하고 [`navigator.webkitGetUserMedia`] API를 통해
 > 오디오나 비디오를 데스크톱으로부터 캡쳐할 수 있도록 합니다.
 
+프로세스: [렌더러](../tutorial/quick-start.md#renderer-process)
+
 다음 예시는 창 제목이 `Electron`인 데스크톱 창에 대해 비디오 캡쳐하는 방법을
 보여줍니다.
 
