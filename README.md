@@ -82,4 +82,8 @@ for a community maintained list of useful example apps, tools and resources.
 
 ## License
 
-MIT © 2016 Github
+© 2016 Github, Inc.
+
+When using the Electron or GitHub logos, be sure to follow the [GitHub logo guidelines](https://github.com/logos).
+
+*Code license:* [MIT](https://github.com/electron/electron/blob/master/LICENSE)
