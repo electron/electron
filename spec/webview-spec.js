@@ -1253,6 +1253,62 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/api/blank.html'
       document.body.appendChild(webview)
     })
+
+    it('does not delete the guestinstance attribute when moving the webview to another parent node', function (done) {
+      webview.addEventListener('dom-ready', function domReadyListener () {
+        webview.addEventListener('did-attach', function () {
+          assert(webview.guestinstance != null)
+          assert(webview.getWebContents() != null)
+          done()
+        })
+
+        document.body.replaceChild(webview, div)
+      })
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+
+      const div = document.createElement('div')
+      div.appendChild(webview)
+      document.body.appendChild(div)
+    })
+
+    it('does not destroy the webContents when hiding/showing the webview (regression)', function (done) {
+      webview.addEventListener('dom-ready', function domReadyListener () {
+        const instance = webview.getAttribute('guestinstance')
+        assert(instance != null)
+
+        // Wait for event directly since attach happens asynchronously over IPC
+        ipcMain.once('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', function () {
+          assert(webview.getWebContents() != null)
+          assert.equal(instance, webview.getAttribute('guestinstance'))
+          done()
+        })
+
+        webview.style.display = 'none'
+        webview.offsetHeight
+        webview.style.display = 'block'
+      })
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+      document.body.appendChild(webview)
+    })
+
+    it('does not reload the webContents when hiding/showing the webview (regression)', function (done) {
+      webview.addEventListener('dom-ready', function domReadyListener () {
+        webview.addEventListener('did-start-loading', function () {
+          done(new Error('webview started loading unexpectedly'))
+        })
+
+        // Wait for event directly since attach happens asynchronously over IPC
+        webview.addEventListener('did-attach', function () {
+          done()
+        })
+
+        webview.style.display = 'none'
+        webview.offsetHeight
+        webview.style.display = 'block'
+      })
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+      document.body.appendChild(webview)
+    })
   })
 
   describe('DOM events', function () {
