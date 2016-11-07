@@ -1285,7 +1285,7 @@ describe('<webview> tag', function () {
         done()
       })
 
-      webview.src = 'file://' + fixtures + '/pages/a.html'
+      webview.src = `file://${fixtures}/pages/a.html`
       div.appendChild(webview)
       document.body.appendChild(div)
     })
