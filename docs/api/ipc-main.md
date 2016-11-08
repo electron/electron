@@ -99,5 +99,5 @@ Returns the `ipcRenderer` that sent the message, you can call
 ### `event.senderWebContentsId`
 
 In the Main process only, returns the WebContents ID of the sender of
-the message, this can be compared to `webContents.id` to securely determine
+the message, this can be compared to `webContents.getId()` to securely determine
 the sender of a message.
