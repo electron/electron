@@ -33,6 +33,7 @@ class CrashReporterMac : public CrashReporter {
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
   void SetShouldUpload(bool should_upload) override;
+  bool GetShouldUpload() override;
 
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterMac>;

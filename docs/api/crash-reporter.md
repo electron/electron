@@ -75,11 +75,15 @@ ID.
 Returns `Boolean` - Whether reports should be submitted to the server.  Set through
 the `start` method or `setShouldUpload`.
 
+**NOTE:** This API can only be used from the main process
+
 ### `crashReporter.setShouldUpload(shouldUpload)` _macOS_
 
 * `shouldUpload` Boolean _macOS_ - Whether reports should be submitted to the server
 
 This would normally be controlled by user preferences.
+
+**NOTE:** This API can only be used from the main process
 
 ## Crash Report Payload
 

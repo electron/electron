@@ -75,10 +75,16 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   if (is_browser_) {
     database_ =
         crashpad::CrashReportDatabase::Initialize(crashes_dir);
-    if (database_) {
-      database_->GetSettings()->SetUploadsEnabled(should_upload);
-    }
+    SetShouldUpload(should_upload);
   }
+}
+
+bool CrashReporterMac::GetShouldUpload() {
+  bool enabled = true;
+  if (database_) {
+    database_->GetSettings()->GetUploadsEnabled(&enabled);
+  }
+  return enabled;
 }
 
 void CrashReporterMac::SetShouldUpload(const bool should_upload) {

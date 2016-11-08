@@ -47,6 +47,10 @@ void CrashReporter::SetShouldUpload(const bool should_upload) {
 
 }
 
+bool CrashReporter::GetShouldUpload() {
+  return true;
+}
+
 std::vector<CrashReporter::UploadReportResult>
 CrashReporter::GetUploadedReports(const base::FilePath& crashes_dir) {
   std::string file_content;

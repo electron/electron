@@ -34,6 +34,7 @@ class CrashReporter {
       const base::FilePath& crashes_dir);
 
   virtual void SetShouldUpload(bool should_upload);
+  virtual bool GetShouldUpload();
 
  protected:
   CrashReporter();

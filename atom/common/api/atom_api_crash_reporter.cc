@@ -42,6 +42,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                  base::Bind(&CrashReporter::GetUploadedReports, report));
   dict.SetMethod("_setShouldUpload",
                  base::Bind(&CrashReporter::SetShouldUpload, report));
+  dict.SetMethod("_getShouldUpload",
+                 base::Bind(&CrashReporter::GetShouldUpload, report));
 }
 
 }  // namespace
