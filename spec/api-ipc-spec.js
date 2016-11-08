@@ -324,6 +324,17 @@ describe('ipc module', function () {
     })
   })
 
+  describe('ipc.senderWebContentsId', function() {
+    it('should reply with the sender web contents', function (done) {
+      ipcRenderer.once('replyWithSender', function (event, message) {
+        assert.equal(message, remote.getCurrentWindow().webContents.getId())
+        done()
+      })
+
+      ipcRenderer.send('replyWithSender')
+    })
+  })
+
   describe('ipc.sender.send', function () {
     it('should work when sending an object containing id property', function (done) {
       var obj = {
