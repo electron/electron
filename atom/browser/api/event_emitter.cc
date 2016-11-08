@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/api/event_emitter.h"
 
 #include "atom/browser/api/event.h"
@@ -9,6 +10,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "ui/events/event_constants.h"
+#include "content/public/browser/web_contents.h"
 
 #include "atom/common/node_includes.h"
 
@@ -55,6 +57,11 @@ v8::Local<v8::Object> CreateJSEvent(
     event = CreateEventObject(isolate);
   }
   mate::Dictionary(isolate, event).Set("sender", object);
+  if (sender) {
+    mate::Dictionary(isolate, event).Set("senderWebContentsId", atom::api::WebContents::GetIDFromWebContents(sender));
+  } else {
+    mate::Dictionary(isolate, event).Set("senderWebContentsId", 0);
+  }
   return event;
 }
 
