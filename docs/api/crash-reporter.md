@@ -58,20 +58,14 @@ crash reports.
 
 ### `crashReporter.getLastCrashReport()`
 
-Returns `Object`:
-
-* `date` String
-* `ID` Integer
+Returns [`CrashReport`](structures/crash-report.md):
 
 Returns the date and ID of the last crash report. If no crash reports have been
 sent or the crash reporter has not been started, `null` is returned.
 
 ### `crashReporter.getUploadedReports()`
 
-Returns `Object[]`:
-
-* `date` String
-* `ID` Integer
+Returns [`CrashReport[]`](structures/crash-report.md):
 
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
