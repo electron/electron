@@ -33,7 +33,7 @@ class CrashReporter {
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
       const base::FilePath& crashes_dir);
 
-  virtual void SetShouldUpload();
+  virtual void SetShouldUpload(bool should_upload);
 
  protected:
   CrashReporter();

@@ -11,6 +11,7 @@
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
 #include "base/strings/string_piece.h"
+#include "vendor/crashpad/client/crash_report_database.h"
 #include "vendor/crashpad/client/simple_string_dictionary.h"
 
 namespace base {
@@ -31,6 +32,7 @@ class CrashReporterMac : public CrashReporter {
                     bool should_upload,
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
+  void SetShouldUpload(bool should_upload) override;
 
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterMac>;
