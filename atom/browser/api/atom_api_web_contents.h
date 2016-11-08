@@ -61,6 +61,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, content::WebContents* web_contents, Type type);
 
+  static int64_t GetIDFromWebContents(content::WebContents* web_contents);
+
   // Create a new WebContents.
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);

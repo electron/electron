@@ -839,10 +839,7 @@ void WebContents::NavigationEntryCommitted(
 }
 
 int64_t WebContents::GetID() const {
-  int64_t process_id = web_contents()->GetRenderProcessHost()->GetID();
-  int64_t routing_id = web_contents()->GetRoutingID();
-  int64_t rv = (process_id << 32) + routing_id;
-  return rv;
+  return WebContents::GetIDFromWebContents(web_contents());
 }
 
 int WebContents::GetProcessID() const {
@@ -1631,7 +1628,7 @@ AtomBrowserContext* WebContents::GetBrowserContext() const {
 void WebContents::OnRendererMessage(const base::string16& channel,
                                     const base::ListValue& args) {
   // webContents.emit(channel, new Event(), args...);
-  Emit(base::UTF16ToUTF8(channel), args);
+  EmitWithSender(base::UTF16ToUTF8(channel), web_contents(), nullptr, args);
 }
 
 void WebContents::OnRendererMessageSync(const base::string16& channel,
@@ -1665,6 +1662,17 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
   return mate::CreateHandle(isolate, new WebContents(isolate, options));
+}
+
+
+int64_t WebContents::GetIDFromWebContents(
+    content::WebContents* web_contents) {
+
+  int64_t process_id = web_contents->GetRenderProcessHost()->GetID();
+  int64_t routing_id = web_contents->GetRoutingID();
+  int64_t rv = (process_id << 32) + routing_id;
+
+  return rv;
 }
 
 }  // namespace api
