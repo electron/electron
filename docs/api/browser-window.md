@@ -198,6 +198,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `thickFrame` Boolean - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
+  * `vibrancy` String - Add a type of vibrancy effect to the window, only on
+    macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
+    `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.
   * `webPreferences` Object - Settings of web page's features.
     * `devTools` Boolean - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean - Whether node integration is enabled. Default
@@ -265,8 +268,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `offscreen` Boolean - Whether to enable offscreen rendering for the browser
       window. Defaults to `false`.
     * `sandbox` Boolean - Whether to enable Chromium OS-level sandbox.
-    * `vibrancy` String - Add a type of vibrancy effect to the window, only on
-      macOS. See supported types at the `setVibrancy` method.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -1193,8 +1194,8 @@ Returns `BrowserWindow[]` - All child windows.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` String - Values include `appearance-based`, `light`, `dark`, `titlebar`,
-  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`. See
+* `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,
+  `selection`, `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
 Adds a vibrancy effect to the browser window.
