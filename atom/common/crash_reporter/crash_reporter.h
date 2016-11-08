@@ -33,6 +33,8 @@ class CrashReporter {
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
       const base::FilePath& crashes_dir);
 
+  virtual void SetShouldUpload();
+
  protected:
   CrashReporter();
   virtual ~CrashReporter();
@@ -45,8 +47,6 @@ class CrashReporter {
                             bool should_upload,
                             bool skip_system_crash_handler);
   virtual void SetUploadParameters();
-
-  virtual void SetShouldUpload();
 
   StringMap upload_parameters_;
   bool is_browser_;
