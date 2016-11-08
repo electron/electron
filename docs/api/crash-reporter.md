@@ -70,6 +70,11 @@ Returns [`CrashReport[]`](structures/crash-report.md):
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
+### `crashReporter.getShouldUpload()`
+
+Returns `Boolean` - Whether reports should be submitted to the server.  Set through
+the `start` method or `setShouldUpload`.
+
 ### `crashReporter.setShouldUpload(shouldUpload)`
 
 * `shouldUpload` Boolean _macOS_ - Whether reports should be submitted to the server
