@@ -44,7 +44,6 @@ ipcMain.on('replyWithSender', function (event, ...args) {
   event.sender.send('replyWithSender', event.senderWebContentsId)
 })
 
-
 // Set productName so getUploadedReports() uses the right directory in specs
 if (process.platform !== 'darwin') {
   crashReporter.productName = 'Zombies'
