@@ -90,8 +90,14 @@ Set this to the value to be returned in a synchronous message.
 
 ### `event.sender`
 
-Returns the `webContents` that sent the message, you can call
+Returns the `ipcRenderer` that sent the message, you can call
 `event.sender.send` to reply to the asynchronous message, see
 [webContents.send][web-contents-send] for more information.
 
 [web-contents-send]: web-contents.md#webcontentssendchannel-arg1-arg2-
+
+### `event.senderWebContentsId`
+
+In the Main process only, returns the WebContents ID of the sender of
+the message, this can be compared to `webContents.id` to securely determine
+the sender of a message.
