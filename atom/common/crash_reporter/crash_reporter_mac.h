@@ -28,7 +28,7 @@ class CrashReporterMac : public CrashReporter {
                     const std::string& company_name,
                     const std::string& submit_url,
                     const base::FilePath& crashes_dir,
-                    bool auto_submit,
+                    bool should_upload,
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
 
@@ -46,6 +46,7 @@ class CrashReporterMac : public CrashReporter {
       const base::FilePath& crashes_dir) override;
 
   std::unique_ptr<crashpad::SimpleStringDictionary> simple_string_dictionary_;
+  std::unique_ptr<crashpad::CrashReportDatabase> database_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterMac);
 };

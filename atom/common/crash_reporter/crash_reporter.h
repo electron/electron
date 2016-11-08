@@ -26,7 +26,7 @@ class CrashReporter {
              const std::string& company_name,
              const std::string& submit_url,
              const base::FilePath& crashes_dir,
-             bool auto_submit,
+             bool should_upload,
              bool skip_system_crash_handler,
              const StringMap& extra_parameters);
 
@@ -42,9 +42,11 @@ class CrashReporter {
                             const std::string& company_name,
                             const std::string& submit_url,
                             const base::FilePath& crashes_dir,
-                            bool auto_submit,
+                            bool should_upload,
                             bool skip_system_crash_handler);
   virtual void SetUploadParameters();
+
+  virtual void SetShouldUpload();
 
   StringMap upload_parameters_;
   bool is_browser_;

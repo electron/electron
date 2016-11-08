@@ -26,13 +26,13 @@ void CrashReporter::Start(const std::string& product_name,
                           const std::string& company_name,
                           const std::string& submit_url,
                           const base::FilePath& crashes_dir,
-                          bool auto_submit,
+                          bool should_upload,
                           bool skip_system_crash_handler,
                           const StringMap& extra_parameters) {
   SetUploadParameters(extra_parameters);
 
   InitBreakpad(product_name, ATOM_VERSION_STRING, company_name, submit_url,
-               crashes_dir, auto_submit, skip_system_crash_handler);
+               crashes_dir, should_upload, skip_system_crash_handler);
 }
 
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
@@ -41,6 +41,10 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
 
   // Setting platform dependent parameters.
   SetUploadParameters();
+}
+
+void CrashReporter::SetShouldUpload(const bool should_upload) {
+
 }
 
 std::vector<CrashReporter::UploadReportResult>
