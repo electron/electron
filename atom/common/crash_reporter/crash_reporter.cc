@@ -44,7 +44,6 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
 }
 
 void CrashReporter::SetShouldUpload(const bool should_upload) {
-
 }
 
 bool CrashReporter::GetShouldUpload() {
