@@ -319,6 +319,7 @@ bool AtomBrowserClient::CanCreateWindow(
     WindowOpenDisposition disposition,
     const blink::WebWindowFeatures& features,
     const std::vector<base::string16>& additional_features,
+    const scoped_refptr<ResourceRequestBodyImpl>& body,
     bool user_gesture,
     bool opener_suppressed,
     content::ResourceContext* context,

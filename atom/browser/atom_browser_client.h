@@ -13,6 +13,8 @@
 #include "brightray/browser/browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
 
+using content::ResourceRequestBodyImpl;
+
 namespace content {
 class QuotaPermissionContext;
 class ClientCertificateDelegate;
@@ -89,6 +91,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
                        WindowOpenDisposition disposition,
                        const blink::WebWindowFeatures& features,
                        const std::vector<base::string16>& additional_features,
+                       const scoped_refptr<ResourceRequestBodyImpl>& body,
                        bool user_gesture,
                        bool opener_suppressed,
                        content::ResourceContext* context,
