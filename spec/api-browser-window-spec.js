@@ -227,7 +227,7 @@ describe('browser-window module', function () {
 
     it('can initiate POST navigation', function (done) {
       w.webContents.on('did-finish-load', () => done())
-      w.loadURL(server.url, {'postData': postData})
+      w.loadURL(server.url, {postData: postData})
     })
   })
 
