@@ -10,6 +10,7 @@
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/net/about_protocol_handler.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/browser/net/atom_ct_delegate.h"
@@ -130,6 +131,8 @@ AtomBrowserContext::CreateURLRequestJobFactory(
   }
   protocol_handlers->clear();
 
+  job_factory->SetProtocolHandler(url::kAboutScheme,
+                                  base::WrapUnique(new AboutProtocolHandler));
   job_factory->SetProtocolHandler(
       url::kDataScheme, base::WrapUnique(new net::DataProtocolHandler));
   job_factory->SetProtocolHandler(
