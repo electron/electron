@@ -27,7 +27,7 @@ win.loadURL('https://github.com')
 而是在主进程中创建了 `BrowserWindow` 对象，并在渲染进程中返回了对应的远程对象，即
 `win` 对象。
 
-请注意只有 [可枚举属性](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties) 才能通过 remote 进行访问.
+请注意只有 [可枚举属性](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Enumerability_and_ownership_of_properties) 才能通过 remote 进行访问.
 
 ## 远程对象的生命周期
 
