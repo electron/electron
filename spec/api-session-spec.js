@@ -557,8 +557,8 @@ describe('session module', function () {
     })
 
     it('accepts the request when the callback is called with true', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
-        callback(true)
+      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, error, callback) {
+        callback(0)
       })
 
       w.webContents.once('did-finish-load', function () {
@@ -569,7 +569,7 @@ describe('session module', function () {
     })
 
     it('rejects the request when the callback is called with false', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, error, callback) {
         assert.equal(hostname, '127.0.0.1')
         assert.equal(certificate.issuerName, 'Intermediate CA')
         assert.equal(certificate.subjectName, 'localhost')
@@ -580,7 +580,7 @@ describe('session module', function () {
         assert.equal(certificate.issuerCert.issuerCert.issuer.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.subject.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.issuerCert, undefined)
-        callback(false)
+        callback(-2)
       })
 
       var url = `https://127.0.0.1:${server.address().port}`
