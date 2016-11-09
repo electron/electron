@@ -16,7 +16,7 @@ class AtomCTDelegate;
 
 class AtomCertVerifier : public net::CertVerifier {
  public:
-  explicit AtomCertVerifier();
+  AtomCertVerifier();
   virtual ~AtomCertVerifier();
 
   using VerifyProc =
