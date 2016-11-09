@@ -515,12 +515,12 @@ Inserts `text` to the focused element.
 
 Starts a request to find all matches for the `text` in the web page and returns an `Integer`
 representing the request id used for the request. The result of the request can be
-obtained by subscribing to [`found-in-page`](web-view-tag.md#event-found-in-page) event.
+obtained by subscribing to [`found-in-page`](webview-tag.md#event-found-in-page) event.
 
 ### `<webview>.stopFindInPage(action)`
 
 * `action` String - Specifies the action to take place when ending
-  [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
+  [`<webview>.findInPage`](webview-tag.md#webviewtagfindinpage) request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
@@ -720,7 +720,7 @@ Returns:
   * `selectionArea` Object - Coordinates of first match region.
 
 Fired when a result is available for
-[`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
+[`webview.findInPage`](webview-tag.md#webviewtagfindinpage) request.
 
 ```javascript
 const webview = document.getElementById('foo')

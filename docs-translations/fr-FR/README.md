@@ -43,7 +43,7 @@ dans la FAQ :
 ### Eléments DOM Personnalisés:
 
 * [Objet `File`](api/file-object.md)
-* [Tag `<webview>`](api/web-view-tag.md)
+* [Tag `<webview>`](api/webview-tag.md)
 * [Fonction `window.open`](api/window-open.md)
 
 ### Modules pour le Processus Principal :

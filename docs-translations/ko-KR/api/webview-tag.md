@@ -473,12 +473,12 @@ Returns `Boolean` - 게스트 페이지 음소거 여부.
 
 웹 페이지에서 `text`에 일치하는 모든 대상을 찾는 요청을 시작하고 요청에 사용된 요청을
 표현하는 `정수(integer)`를 반환합니다. 요청의 결과는
-[`found-in-page`](web-view-tag.md#event-found-in-page) 이벤트를 통해 취득할 수
+[`found-in-page`](webview-tag.md#event-found-in-page) 이벤트를 통해 취득할 수
 있습니다.
 
 ### `webContents.stopFindInPage(action)`
 
-* `action` String - [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage)
+* `action` String - [`<webview>.findInPage`](webview-tag.md#webviewtagfindinpage)
   요청이 종료되었을 때 일어날 수 있는 작업을 지정합니다.
   * `clearSelection` - 선택을 취소합니다.
   * `keepSelection` - 선택을 일반 선택으로 변경합니다.

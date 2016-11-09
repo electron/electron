@@ -359,12 +359,12 @@ guest page 导航到指定的相对位置.
     默认为 `false`.
   * `medialCapitalAsWordStart` Boolean - 当配合 `wordStart`的时候,接受一个文字中的匹配项，要求匹配项是以大写字母开头后面跟小写字母或者没有字母。可以接受一些其他单词内部匹配, 默认为 `false`.
 
-发起一个请求来寻找页面中的所有匹配 `text` 的地方并且返回一个 `Integer`来表示这个请求用的请求Id. 这个请求结果可以通过订阅[`found-in-page`](web-view-tag.md#event-found-in-page) 事件来取得.
+发起一个请求来寻找页面中的所有匹配 `text` 的地方并且返回一个 `Integer`来表示这个请求用的请求Id. 这个请求结果可以通过订阅[`found-in-page`](webview-tag.md#event-found-in-page) 事件来取得.
 
 ### `<webview>.stopFindInPage(action)`
 
 * `action` String - 指定一个行为来接替停止
-  [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage) 请求.
+  [`<webview>.findInPage`](webview-tag.md#webviewtagfindinpage) 请求.
   * `clearSelection` - 转变为一个普通的 selection.
   * `keepSelection` - 清除 selection.
   * `activateSelection` - 聚焦并点击 selection node.
@@ -533,7 +533,7 @@ webview.addEventListener('console-message', function (e) {
   * `matches` Integer (optional) - 匹配数量.
   * `selectionArea` Object (optional) - 整合第一个匹配域.
 
-在请求[`webview.findInPage`](web-view-tag.md#webviewtagfindinpage)结果有效时触发.
+在请求[`webview.findInPage`](webview-tag.md#webviewtagfindinpage)结果有效时触发.
 
 ```javascript
 webview.addEventListener('found-in-page', function (e) {

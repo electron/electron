@@ -50,7 +50,7 @@ an issue:
 ### Custom DOM Elements:
 
 * [`File` Object](api/file-object.md)
-* [`<webview>` Tag](api/web-view-tag.md)
+* [`<webview>` Tag](api/webview-tag.md)
 * [`window.open` Function](api/window-open.md)
 
 ### Modules for the Main Process:
