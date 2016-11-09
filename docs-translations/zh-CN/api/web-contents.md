@@ -32,7 +32,7 @@ var webContents = win.webContents
 * `validatedURL` String
 * `isMainFrame` Boolean
 
-这个事件类似 `did-finish-load` ，但是是在加载失败或取消加载时发出, 例如， `window.stop()` 请求结束.错误代码的完整列表和它们的含义都可以在 [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h) 找到.
+这个事件类似 `did-finish-load` ，但是是在加载失败或取消加载时发出, 例如， `window.stop()` 请求结束.错误代码的完整列表和它们的含义都可以在 [这里](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h) 找到.
 
 ### Event: 'did-frame-finish-load'
 
