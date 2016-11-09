@@ -187,6 +187,21 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 
 "on"으로 지정하면 페이지에서 새로운 창을 열 수 있도록 허용합니다.
 
+### `webpreferences`
+
+```html
+<webview src="https://github.com" webpreferences="allowDisplayingInsecureContent, javascript=no"></webview>
+```
+웹뷰에 설정될 웹 환경설정을 나타내는 `,` 로 구분된 문자열의 목록입니다.
+지원되는 환경설정 문자열의 전체 목록은
+[BrowserWindow](browser-window.md#new-browserwindowoptions) 에서 찾을 수
+있습니다.
+
+문자열은 `window.open` 의 기능 문자열과 같은 형식을 따릅니다. 이름만 있으면
+`true` 불린 값이 주어집니다. 환경설정은 뒤에 값이 오는 `=` 을 넣어서 다른 값을
+설정할 수 있습니다. 특별한 값 `yes` 와 `1` 는 `true` 로 해석되고, `no` 와 `0` 은
+`false` 로 해석됩니다.
+
 ### `blinkfeatures`
 
 ```html
@@ -338,7 +353,7 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 * `code` String
 * `userGesture` Boolean
 * `callback` Function (optional) - 스크립트의 실행이 완료되면 호출됩니다.
-  * `result`
+  * `result` Any
 
 페이지에서 자바스크립트 코드를 실행합니다.
 

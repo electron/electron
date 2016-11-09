@@ -2,6 +2,8 @@
 
 > 원격 서버에 오류 보고를 제출합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process), [렌더러](../tutorial/quick-start.md#renderer-process)
+
 다음은 윈격 서버에 애플리케이션 오류 보고를 자동으로 제출하는 예시입니다:
 
 ```javascript
@@ -53,6 +55,7 @@ crashReporter.start({
 ### `crashReporter.getLastCrashReport()`
 
 Returns `Object`:
+
 * `date` String
 * `ID` Integer
 
@@ -62,6 +65,7 @@ Returns `Object`:
 ### `crashReporter.getUploadedReports()`
 
 Returns `Object[]`:
+
 * `date` String
 * `ID` Integer
 

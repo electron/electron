@@ -2,6 +2,8 @@
 
 > 시스템 설정을 가져옵니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 ```javascript
 const {systemPreferences} = require('electron')
 console.log(systemPreferences.isDarkMode())
@@ -62,6 +64,8 @@ macOS 의 기본 알림으로 `event` 를 전달합니다. `userInfo` 는 알림
 
 * `event` String
 * `callback` Function
+  * `event` String
+  * `userInfo` Object
 
 macOS의 기본 알림을 구독하며, 해당하는 `event`가 발생하면 `callback`이
 `callback(event, userInfo)` 형태로 호출됩니다. `userInfo`는 알림과 함께 전송되는
@@ -87,6 +91,8 @@ macOS의 기본 알림을 구독하며, 해당하는 `event`가 발생하면 `ca
 
 * `event` String
 * `callback` Function
+  * `event` String
+  * `userInfo` Object
 
 `subscribeNotification`와 같습니다. 하지만 로컬 기본값에 대해
 `NSNotificationCenter`를 사용합니다. 이는 `NSUserDefaultsDidChangeNotification`와

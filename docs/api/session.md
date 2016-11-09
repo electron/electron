@@ -2,6 +2,8 @@
 
 > Manage browser sessions, cookies, cache, proxy settings, etc.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 The `session` module can be used to create new `Session` objects.
 
 You can also access the `session` of existing pages by using the `session`
@@ -51,6 +53,8 @@ A `Session` object, the default session object of the app.
 ## Class: Session
 
 > Get and set properties of a session.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 You can create a `Session` object in the `session` module:
 
@@ -200,6 +204,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
 
 * `url` URL
 * `callback` Function
+  * `proxy` Object
 
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
@@ -245,6 +250,10 @@ the original network configuration.
 #### `ses.setCertificateVerifyProc(proc)`
 
 * `proc` Function
+  * `hostname` String
+  * `certificate` [Certificate](structures/certificate.md)
+  * `callback` Function
+    * `isTrusted` Boolean - Determines if the certificate should be trusted
 
 Sets the certificate verify proc for `session`, the `proc` will be called with
 `proc(hostname, certificate, callback)` whenever a server certificate
@@ -269,7 +278,8 @@ win.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
   * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
   * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
     'pointerLock', 'fullscreen', 'openExternal'.
-  * `callback` Function - Allow or deny the permission.
+  * `callback` Function
+    * `permissionGranted` Boolean - Allow or deny the permission
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
@@ -369,6 +379,8 @@ app.on('ready', function () {
 
 > Query and modify a session's cookies.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 Instances of the `Cookies` class are accessed by using `cookies` property of
 a `Session`.
 
@@ -402,7 +414,7 @@ The following events are available on instances of `Cookies`:
 #### Event: 'changed'
 
 * `event` Event
-* `cookie` Object - The cookie that was changed
+* `cookie` [Cookie](structures/cookie.md) - The cookie that was changed
 * `cause` String - The cause of the change with one of the following values:
   * `explicit` - The cookie was changed directly by a consumer's action.
   * `overwrite` - The cookie was automatically removed due to an insert
@@ -432,25 +444,13 @@ The following methods are available on instances of `Cookies`:
   * `secure` Boolean (optional) - Filters cookies by their Secure property.
   * `session` Boolean (optional) - Filters out session or persistent cookies.
 * `callback` Function
+  * `error` Error
+  * `cookies` Cookies[]
 
 Sends a request to get all cookies matching `details`, `callback` will be called
 with `callback(error, cookies)` on complete.
 
-`cookies` is an Array of `cookie` objects.
-
-* `cookie` Object
-  *  `name` String - The name of the cookie.
-  *  `value` String - The value of the cookie.
-  *  `domain` String - The domain of the cookie.
-  *  `hostOnly` String - Whether the cookie is a host-only cookie.
-  *  `path` String - The path of the cookie.
-  *  `secure` Boolean - Whether the cookie is marked as secure.
-  *  `httpOnly` Boolean - Whether the cookie is marked as HTTP only.
-  *  `session` Boolean - Whether the cookie is a session cookie or a persistent
-     cookie with an expiration date.
-  *  `expirationDate` Double (optional) - The expiration date of the cookie as
-     the number of seconds since the UNIX epoch. Not provided for session
-     cookies.
+`cookies` is an Array of [`cookie`](structures/cookie.md) objects.
 
 #### `cookies.set(details, callback)`
 
@@ -468,6 +468,7 @@ with `callback(error, cookies)` on complete.
     seconds since the UNIX epoch. If omitted then the cookie becomes a session
     cookie and will not be retained between sessions.
 * `callback` Function
+  * `error` Error
 
 Sets a cookie with `details`, `callback` will be called with `callback(error)`
 on complete.
@@ -484,6 +485,8 @@ Removes the cookies matching `url` and `name`, `callback` will called with
 ## Class: WebRequest
 
 > Intercept and modify the contents of a request at various stages of its lifetime.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 Instances of the `WebRequest` class are accessed by using the `webRequest`
 property of a `Session`.
@@ -524,33 +527,25 @@ The following methods are available on instances of `WebRequest`:
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `response` Object
+      * `cancel` Boolean (optional)
+      * `redirectURL` String (optional) - The original request is prevented from
+        being sent or completed and is instead redirected to the given URL.
 
 The `listener` will be called with `listener(details, callback)` when a request
 is about to occur.
 
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `uploadData` Array (optional)
-* `callback` Function
+The `uploadData` is an array of `UploadData` objects.
 
-The `uploadData` is an array of `data` objects:
-
-* `data` Object
-  * `bytes` Buffer - Content being sent.
-  * `file` String - Path of file being uploaded.
-  * `blobUUID` String - UUID of blob data. Use [ses.getBlobData](session.md#sesgetblobdataidentifier-callback) method
-    to retrieve the data.
-
-The `callback` has to be called with an `response` object:
-
-* `response` Object
-  * `cancel` Boolean (optional)
-  * `redirectURL` String (optional) - The original request is prevented from
-    being sent or completed, and is instead redirected to the given URL.
+The `callback` has to be called with an `response` object.
 
 #### `webRequest.onBeforeSendHeaders([filter, ]listener)`
 
@@ -569,30 +564,28 @@ TCP connection is made to the server, but before any http data is sent.
   * `timestamp` Double
   * `requestHeaders` Object
 * `callback` Function
+  * `response` Object
+    * `cancel` Boolean (optional)
+    * `requestHeaders` Object (optional) - When provided, request will be made
+      with these headers.
 
-The `callback` has to be called with an `response` object:
-
-* `response` Object
-  * `cancel` Boolean (optional)
-  * `requestHeaders` Object (optional) - When provided, request will be made
-    with these headers.
+The `callback` has to be called with an `response` object.
 
 #### `webRequest.onSendHeaders([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `requestHeaders` Object
 
 The `listener` will be called with `listener(details)` just before a request is
 going to be sent to the server, modifications of previous `onBeforeSendHeaders`
 response are visible by the time this listener is fired.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `requestHeaders` Object
 
 #### `webRequest.onHeadersReceived([filter, ]listener)`
 
@@ -612,90 +605,85 @@ response headers of a request have been received.
   * `statusCode` Integer
   * `responseHeaders` Object
 * `callback` Function
+  * `response` Object
+    * `cancel` Boolean
+    * `responseHeaders` Object (optional) - When provided, the server is assumed
+      to have responded with these headers.
+    * `statusLine` String (optional) - Should be provided when overriding
+      `responseHeaders` to change header status otherwise original response
+      header's status will be used.
 
-The `callback` has to be called with an `response` object:
-
-* `response` Object
-  * `cancel` Boolean
-  * `responseHeaders` Object (optional) - When provided, the server is assumed
-    to have responded with these headers.
-  * `statusLine` String (optional) - Should be provided when overriding
-    `responseHeaders` to change header status otherwise original response
-    header's status will be used.
+The `callback` has to be called with an `response` object.
 
 #### `webRequest.onResponseStarted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `responseHeaders` Object
+    * `fromCache` Boolean - Indicates whether the response was fetched from disk
+      cache.
+    * `statusCode` Integer
+    * `statusLine` String
 
 The `listener` will be called with `listener(details)` when first byte of the
 response body is received. For HTTP requests, this means that the status line
 and response headers are available.
 
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `responseHeaders` Object
-  * `fromCache` Boolean - Indicates whether the response was fetched from disk
-    cache.
-  * `statusCode` Integer
-  * `statusLine` String
-
 #### `webRequest.onBeforeRedirect([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` String
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `redirectURL` String
+    * `statusCode` Integer
+    * `ip` String (optional) - The server IP address that the request was
+      actually sent to.
+    * `fromCache` Boolean
+    * `responseHeaders` Object
 
 The `listener` will be called with `listener(details)` when a server initiated
 redirect is about to occur.
-
-* `details` Object
-  * `id` String
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `redirectURL` String
-  * `statusCode` Integer
-  * `ip` String (optional) - The server IP address that the request was
-    actually sent to.
-  * `fromCache` Boolean
-  * `responseHeaders` Object
 
 #### `webRequest.onCompleted([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `responseHeaders` Object
+    * `fromCache` Boolean
+    * `statusCode` Integer
+    * `statusLine` String
 
 The `listener` will be called with `listener(details)` when a request is
 completed.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `responseHeaders` Object
-  * `fromCache` Boolean
-  * `statusCode` Integer
-  * `statusLine` String
 
 #### `webRequest.onErrorOccurred([filter, ]listener)`
 
 * `filter` Object
 * `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `fromCache` Boolean
+    * `error` String - The error description.
 
 The `listener` will be called with `listener(details)` when an error occurs.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `fromCache` Boolean
-  * `error` String - The error description.

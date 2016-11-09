@@ -374,6 +374,10 @@ void NativeWindow::SetAspectRatio(double aspect_ratio,
   aspect_ratio_extraSize_ = extra_size;
 }
 
+void NativeWindow::PreviewFile(const std::string& path,
+                               const std::string& display_name) {
+}
+
 void NativeWindow::RequestToClosePage() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,

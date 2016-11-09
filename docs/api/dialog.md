@@ -2,6 +2,8 @@
 
 > Display native system dialogs for opening and saving files, alerting, etc.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 An example of showing a dialog to select multiple files and directories:
 
 ```javascript
@@ -34,6 +36,7 @@ The `dialog` module has the following methods:
     contain `openFile`, `openDirectory`, `multiSelections`, `createDirectory`
     and `showHiddenFiles`.
 * `callback` Function (optional)
+  * `filePaths` String[] - An array of file paths chosen by the user
 
 On success this method returns an array of file paths chosen by the user,
 otherwise it returns `undefined`.
@@ -74,6 +77,7 @@ shown.
     left empty the default label will be used.
   * `filters` String[]
 * `callback` Function (optional)
+  * `filename` String
 
 On success this method returns the path of the file chosen by the user,
 otherwise it returns `undefined`.
@@ -110,6 +114,7 @@ will be passed via `callback(filename)`
     the style of modern Windows apps. If you don't like this behavior, you can
     set `noLink` to `true`.
 * `callback` Function
+  * `response` Number - The index of the button that was clicked
 
 Shows a message box, it will block the process until the message box is closed.
 It returns the index of the clicked button.

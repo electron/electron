@@ -14,6 +14,10 @@ Electron 브라우저 창의 개발자 도구는 웹 페이지 같은 창에서 
 이 스위치를 사용하면 Electron은 지정한 `port`에 V8 디버거 프로토콜을 리스닝합니다.
 기본 `port`는 `5858` 입니다.
 
+```shell
+electron --debug=5858 your/app
+```
+
 ### `--debug-brk=[port]`
 
 `--debug`와 비슷하지만 스크립트의 첫번째 라인에서 일시정지합니다.

@@ -26,6 +26,7 @@ The `features` string follows the format of standard browser, but each feature
 has to be a field of `BrowserWindow`'s options.
 
 **Notes:**
+
 * Node integration will always be disabled in the opened `window` if it is
   disabled on the parent window.
 * Non-standard features (that are not handled by Chromium or Electron) given in
@@ -43,6 +44,8 @@ origin preference.
 ## Class: BrowserWindowProxy
 
 > Manipulate the child browser window
+
+Process: [Renderer](../tutorial/quick-start.md#renderer-process)
 
 The `BrowserWindowProxy` object is returned from `window.open` and provides
 limited functionality with the child window.

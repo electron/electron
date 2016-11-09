@@ -2,6 +2,8 @@
 
 > 웹 페이지를 렌더링하고 제어합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 `webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_eventemitter)를
 상속받았습니다. 웹 페이지의 렌더링과 관리를 책임지며
 [`BrowserWindow`](browser-window.md)의 속성입니다. 다음은 `webContents` 객체에
@@ -46,6 +48,8 @@ Returns `WebContents` - ID 에 해당하는 WebContens 인스턴스.
 ## Class: WebContents
 
 > BrowserWindow 인스턴스의 콘텐츠를 표시하고 제어합니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 ### Instance Events
 
@@ -145,9 +149,10 @@ Returns:
 * `frameName` String
 * `disposition` String - `default`, `foreground-tab`, `background-tab`,
   `new-window`, `save-to-disk`, `other`중 하나일 수 있습니다.
-* `options` Object - 새로운 `BrowserWindow` 객체를 만들 때 사용되는 옵션 객체입니다.
-* `additionalFeatures` Array - `window.open()` 에 주어진 (Chromium 또는 Electron
-  에 의해 처리되지 않는) 비표준 기능.
+* `options` Object - 새로운 `BrowserWindow` 객체를 만들 때 사용되는 옵션
+  객체입니다.
+* `additionalFeatures` String[] - `window.open()` 에 주어진 (Chromium 또는
+  Electron 에 의해 처리되지 않는) 비표준 기능.
 
 페이지가 `url`에 대하여 새로운 윈도우를 열기위해 요청한 경우 발생하는 이벤트입니다.
 `window.open`이나 `<a target='_blank'>`과 같은 외부 링크에 의해 요청될 수 있습니다.
@@ -246,6 +251,8 @@ Returns:
 * `error` String - 에러 코드
 * `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
+  * `isTrusted` Boolean - 인증서가 신뢰할 수 있는 것으로 간주할 수 있는지 여부를
+    나타냅니다
 
 `url`에 대한 `certificate` 인증서의 유효성 검증에 실패했을 때 발생하는 이벤트입니다.
 
@@ -258,8 +265,10 @@ Returns:
 
 * `event` Event
 * `url` URL
-* `certificateList` Certificate[]
+* `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
+  * `certificate` [Certificate](structures/certificate.md) - 인증서는 주어진
+    목록에 있어야합니다.
 
 클라이언트 인증이 요청되었을 때 발생하는 이벤트입니다.
 
@@ -282,6 +291,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
+  * `username` String
+  * `password` String
 
 `webContents`가 기본 인증을 수행하길 원할 때 발생되는 이벤트입니다.
 
@@ -384,31 +395,24 @@ Returns:
     종류. 값은 `none`, `plainText`, `password`, `other` 중 한 가지가 될 수 있습니다.
   * `menuSourceType` String - 컨텍스트 메뉴를 호출한 입력 소스. 값은 `none`,
     `mouse`, `keyboard`, `touch`, `touchMenu` 중 한 가지가 될 수 있습니다.
-  * `mediaFlags` Object - 컨텍스트 메뉴가 호출된 미디어 요소에 대한 플래그. 자세한
-    사항은 아래를 참고하세요.
+  * `mediaFlags` Object - 컨텍스트 메뉴가 호출된 미디어 요소에 대한 플래그.
+    * `inError` Boolean - 미디어 객체가 크래시되었는지 여부.
+    * `isPaused` Boolean - 미디어 객체가 일시중지되었는지 여부.
+    * `isMuted` Boolean - 미디어 객체가 음소거되었는지 여부.
+    * `hasAudio` Boolean - 미디어 객체가 오디오를 가지고 있는지 여부.
+    * `isLooping` Boolean - 미디어 객체가 루프중인지 여부.
+    * `isControlsVisible` Boolean - 미디어 객체의 컨트롤이 보이는지 여부.
+    * `canToggleControls` Boolean - 미디어 객체의 컨트롤을 토글할 수 있는지 여부.
+    * `canRotate` Boolean - 미디어 객체를 돌릴 수 있는지 여부.
   * `editFlags` Object - 이 플래그는 렌더러가 어떤 행동을 이행할 수 있는지 여부를
-    표시합니다. 자세한 사항은 아래를 참고하세요.
-
-`mediaFlags`는 다음과 같은 속성을 가지고 있습니다:
-
-* `inError` Boolean - 미디어 객체가 크래시되었는지 여부.
-* `isPaused` Boolean - 미디어 객체가 일시중지되었는지 여부.
-* `isMuted` Boolean - 미디어 객체가 음소거되었는지 여부.
-* `hasAudio` Boolean - 미디어 객체가 오디오를 가지고 있는지 여부.
-* `isLooping` Boolean - 미디어 객체가 루프중인지 여부.
-* `isControlsVisible` Boolean - 미디어 객체의 컨트롤이 보이는지 여부.
-* `canToggleControls` Boolean - 미디어 객체의 컨트롤을 토글할 수 있는지 여부.
-* `canRotate` Boolean - 미디어 객체를 돌릴 수 있는지 여부.
-
-`editFlags`는 다음과 같은 속성을 가지고 있습니다:
-
-* `canUndo` Boolean - 렌더러에서 실행 취소할 수 있는지 여부.
-* `canRedo` Boolean - 렌더러에서 다시 실행할 수 있는지 여부.
-* `canCut` Boolean - 렌더러에서 잘라내기를 실행할 수 있는지 여부.
-* `canCopy` Boolean - 렌더러에서 복사를 실행할 수 있는지 여부.
-* `canPaste` Boolean - 렌더러에서 붙여넣기를 실행할 수 있는지 여부.
-* `canDelete` Boolean - 렌더러에서 삭제를 실행할 수 있는지 여부.
-* `canSelectAll` Boolean - 렌더러에서 모두 선택을 실행할 수 있는지 여부.
+    표시합니다.
+    * `canUndo` Boolean - 렌더러에서 실행 취소할 수 있는지 여부.
+    * `canRedo` Boolean - 렌더러에서 다시 실행할 수 있는지 여부.
+    * `canCut` Boolean - 렌더러에서 잘라내기를 실행할 수 있는지 여부.
+    * `canCopy` Boolean - 렌더러에서 복사를 실행할 수 있는지 여부.
+    * `canPaste` Boolean - 렌더러에서 붙여넣기를 실행할 수 있는지 여부.
+    * `canDelete` Boolean - 렌더러에서 삭제를 실행할 수 있는지 여부.
+    * `canSelectAll` Boolean - 렌더러에서 모두 선택을 실행할 수 있는지 여부.
 
 새로운 컨텍스트 메뉴의 제어가 필요할 때 발생하는 이벤트입니다.
 
@@ -417,9 +421,7 @@ Returns:
 Returns:
 
 * `event` Event
-* `devices` [Objects]
-  * `deviceName` String
-  * `deviceId` String
+* `devices` [BluetoothDevice[]](structures/bluetooth-device.md)
 * `callback` Function
   * `deviceId` String
 
@@ -611,13 +613,27 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 * `code` String
 * `userGesture` Boolean (optional)
 * `callback` Function (optional) - 스크립트의 실행이 완료되면 호출됩니다.
-  * `result`
+  * `result` Any
 
-페이지에서 자바스크립트 코드를 실행합니다.
+Returns `Promise` - 프로미스는 실행된 코드의 결과와 함께 해결되거나 코드의
+결과가 거절된 프로미스라면 거절된다.
 
-기본적으로 `requestFullScreen`와 같은 몇몇 HTML API들은 사용자의 조작에 의해서만
-호출될 수 있습니다. `userGesture`를 `true`로 설정하면 이러한 제약을 무시할 수
-있습니다.
+페이지의 `code` 를 실행합니다.
+
+브라우저 창에서 `requestFullScreen` 같은 일부 HTML API 들은 사용자 조작에
+의해서만 호출될 수 있습니다. `userGesture` 를 `true` 로 설정하면 이러한 제약을
+없앨 수 있습니다.
+
+실행된 코드의 결과가 프로미스라면 콜백 결과는 프로미스의 결과 값입니다.
+프로미스의 반환된 결과 코드를 처리하기위해 반환된 프로미스를 사용하는 것이
+좋습니다.
+
+```js
+contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
+  .then((result) => {
+    console.log(result) // fetch 호출의 결과인 JSON 객체가 올 것 입니다
+  })
+```
 
 #### `contents.setAudioMuted(muted)`
 
@@ -638,6 +654,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 #### `contents.getZoomFactor(callback)`
 
 * `callback` Function
+  * `zoomFactor` Number
 
 현재 줌 수치 값을 요청합니다. `callback`은 `callback(zoomFactor)` 형태로 호출됩니다.
 
@@ -651,6 +668,7 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 #### `contents.getZoomLevel(callback)`
 
 * `callback` Function
+  * `zoomLevel` Number
 
 현재 줌 수준 값을 요청합니다. `callback`은 `callback(zoomLevel)` 형태로 호출됩니다.
 
@@ -779,6 +797,7 @@ console.log(requestId)
 #### `contents.hasServiceWorker(callback)`
 
 * `callback` Function
+  * `hasWorker` Boolean
 
 ServiceWorker가 등록되어있는지 확인하고 `callback`에 대한 응답으로 boolean 값을
 반환합니다.
@@ -786,6 +805,7 @@ ServiceWorker가 등록되어있는지 확인하고 `callback`에 대한 응답�
 #### `contents.unregisterServiceWorker(callback)`
 
 * `callback` Function
+  * `success` Boolean
 
 ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족될 때 `callback`에
 대한 응답으로 boolean을 반환하거나 JS Promise가 만족되지 않을 때 `false`를 반환합니다.
@@ -817,6 +837,8 @@ ServiceWorker가 존재하면 모두 등록을 해제하고 JS Promise가 만족
   * `landscape` Boolean - landscape을 위해선 `true`를, portrait를 위해선 `false`를
   	사용합니다.
 * `callback` Function - `(error, data) => {}`
+  * `error` Error
+  * `data` Buffer
 
 Chromium의 미리보기 프린팅 커스텀 설정을 이용하여 윈도우의 웹 페이지를 PDF로
 프린트합니다.
@@ -1034,6 +1056,8 @@ Input `event`를 웹 페이지로 전송합니다.
 
 * `onlyDirty` Boolean (optional) - 기본값은 `false`입니다.
 * `callback` Function
+  * `frameBuffer` Buffer
+  * `dirtyRect` [Rectangle](structures/rectangle.md)
 
 캡처된 프레임과 프레젠테이션 이벤트를 구독하기 시작합니다. `callback`은
 프레젠테이션 이벤트가 발생했을 때 `callback(frameBuffer, dirtyRect)` 형태로
@@ -1055,7 +1079,7 @@ Input `event`를 웹 페이지로 전송합니다.
 
 #### `contents.startDrag(item)`
 
-* `item` object
+* `item` Object
   * `file` String
   * `icon` [NativeImage](native-image.md)
 
@@ -1152,6 +1176,8 @@ win.webContents.on('did-finish-load', () => {
 ## Class: Debugger
 
 > Chrome의 원격 디버깅 프로토콜에 대한 대체 접근자입니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 ```javascript
 const {BrowserWindow} = require('electron')

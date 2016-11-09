@@ -2,6 +2,8 @@
 
 > Create and control browser windows.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 ```javascript
 // In the main process.
 const {BrowserWindow} = require('electron')
@@ -185,13 +187,84 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     Default is `false`.
   * `type` String - The type of window, default is normal window. See more about
     this below.
-  * `titleBarStyle` String - The style of window title bar. See more about this
-    below.
+  * `titleBarStyle` String - The style of window title bar. Default is `default`. Possible values are:
+    * `default` - Results in the standard gray opaque Mac title
+      bar.
+    * `hidden` - Results in a hidden title bar and a full size content window, yet
+      the title bar still has the standard window controls ("traffic lights") in
+      the top left.
+    * `hidden-inset` - Results in a hidden title bar with an alternative look
+      where the traffic light buttons are slightly more inset from the window edge.
   * `thickFrame` Boolean - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
-  * `webPreferences` Object - Settings of web page's features. See more about
-    this below.
+  * `webPreferences` Object - Settings of web page's features.
+    * `devTools` Boolean - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
+    * `nodeIntegration` Boolean - Whether node integration is enabled. Default
+      is `true`.
+    * `preload` String - Specifies a script that will be loaded before other
+      scripts run in the page. This script will always have access to node APIs
+      no matter whether node integration is turned on or off. The value should
+      be the absolute file path to the script.
+      When node integration is turned off, the preload script can reintroduce
+      Node global symbols back to the global scope. See example
+      [here](process.md#event-loaded).
+    * `session` [Session](session.md#class-session) - Sets the session used by the
+      page. Instead of passing the Session object directly, you can also choose to
+      use the `partition` option instead, which accepts a partition string. When
+      both `session` and `partition` are provided, `session` will be preferred.
+      Default is the default session.
+    * `partition` String - Sets the session used by the page according to the
+      session's partition string. If `partition` starts with `persist:`, the page
+      will use a persistent session available to all pages in the app with the
+      same `partition`. If there is no `persist:` prefix, the page will use an
+      in-memory session. By assigning the same `partition`, multiple pages can share
+      the same session. Default is the default session.
+    * `zoomFactor` Number - The default zoom factor of the page, `3.0` represents
+      `300%`. Default is `1.0`.
+    * `javascript` Boolean - Enables JavaScript support. Default is `true`.
+    * `webSecurity` Boolean - When `false`, it will disable the
+      same-origin policy (usually using testing websites by people), and set
+      `allowDisplayingInsecureContent` and `allowRunningInsecureContent` to
+      `true` if these two options are not set by user. Default is `true`.
+    * `allowDisplayingInsecureContent` Boolean - Allow an https page to display
+      content like images from http URLs. Default is `false`.
+    * `allowRunningInsecureContent` Boolean - Allow an https page to run
+      JavaScript, CSS or plugins from http URLs. Default is `false`.
+    * `images` Boolean - Enables image support. Default is `true`.
+    * `textAreasAreResizable` Boolean - Make TextArea elements resizable. Default
+      is `true`.
+    * `webgl` Boolean - Enables WebGL support. Default is `true`.
+    * `webaudio` Boolean - Enables WebAudio support. Default is `true`.
+    * `plugins` Boolean - Whether plugins should be enabled. Default is `false`.
+    * `experimentalFeatures` Boolean - Enables Chromium's experimental features.
+      Default is `false`.
+    * `experimentalCanvasFeatures` Boolean - Enables Chromium's experimental
+      canvas features. Default is `false`.
+    * `scrollBounce` Boolean - Enables scroll bounce (rubber banding) effect on
+      macOS. Default is `false`.
+    * `blinkFeatures` String - A list of feature strings separated by `,`, like
+      `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
+      strings can be found in the [RuntimeEnabledFeatures.in][blink-feature-string]
+      file.
+    * `disableBlinkFeatures` String - A list of feature strings separated by `,`,
+      like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
+      feature strings can be found in the
+      [RuntimeEnabledFeatures.in][blink-feature-string] file.
+    * `defaultFontFamily` Object - Sets the default font for the font-family.
+      * `standard` String - Defaults to `Times New Roman`.
+      * `serif` String - Defaults to `Times New Roman`.
+      * `sansSerif` String - Defaults to `Arial`.
+      * `monospace` String - Defaults to `Courier New`.
+    * `defaultFontSize` Integer - Defaults to `16`.
+    * `defaultMonospaceFontSize` Integer - Defaults to `13`.
+    * `minimumFontSize` Integer - Defaults to `0`.
+    * `defaultEncoding` String - Defaults to `ISO-8859-1`.
+    * `backgroundThrottling` Boolean - Whether to throttle animations and timers
+      when the page becomes background. Defaults to `true`.
+    * `offscreen` Boolean - Whether to enable offscreen rendering for the browser
+      window. Defaults to `false`.
+    * `sandbox` Boolean - Whether to enable Chromium OS-level sandbox.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -211,85 +284,6 @@ Possible values are:
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive
     input sparingly.
 * On Windows, possible type is `toolbar`.
-
-Possible values of the `titleBarStyle` option are:
-
-* `default` or not specified, results in the standard gray opaque Mac title
-  bar.
-* `hidden` results in a hidden title bar and a full size content window, yet
-  the title bar still has the standard window controls ("traffic lights") in
-  the top left.
-* `hidden-inset` results in a hidden title bar with an alternative look
-  where the traffic light buttons are slightly more inset from the window edge.
-
-The `webPreferences` option is an object that can have the following properties:
-
-* `devTools` Boolean - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
-* `nodeIntegration` Boolean - Whether node integration is enabled. Default
-  is `true`.
-* `preload` String - Specifies a script that will be loaded before other
-  scripts run in the page. This script will always have access to node APIs
-  no matter whether node integration is turned on or off. The value should
-  be the absolute file path to the script.
-  When node integration is turned off, the preload script can reintroduce
-  Node global symbols back to the global scope. See example
-  [here](process.md#event-loaded).
-* `session` [Session](session.md#class-session) - Sets the session used by the
-  page. Instead of passing the Session object directly, you can also choose to
-  use the `partition` option instead, which accepts a partition string. When
-  both `session` and `partition` are provided, `session` will be preferred.
-  Default is the default session.
-* `partition` String - Sets the session used by the page according to the
-  session's partition string. If `partition` starts with `persist:`, the page
-  will use a persistent session available to all pages in the app with the
-  same `partition`. If there is no `persist:` prefix, the page will use an
-  in-memory session. By assigning the same `partition`, multiple pages can share
-  the same session. Default is the default session.
-* `zoomFactor` Number - The default zoom factor of the page, `3.0` represents
-  `300%`. Default is `1.0`.
-* `javascript` Boolean - Enables JavaScript support. Default is `true`.
-* `webSecurity` Boolean - When `false`, it will disable the
-  same-origin policy (usually using testing websites by people), and set
-  `allowDisplayingInsecureContent` and `allowRunningInsecureContent` to
-  `true` if these two options are not set by user. Default is `true`.
-* `allowDisplayingInsecureContent` Boolean - Allow an https page to display
-  content like images from http URLs. Default is `false`.
-* `allowRunningInsecureContent` Boolean - Allow an https page to run
-  JavaScript, CSS or plugins from http URLs. Default is `false`.
-* `images` Boolean - Enables image support. Default is `true`.
-* `textAreasAreResizable` Boolean - Make TextArea elements resizable. Default
-  is `true`.
-* `webgl` Boolean - Enables WebGL support. Default is `true`.
-* `webaudio` Boolean - Enables WebAudio support. Default is `true`.
-* `plugins` Boolean - Whether plugins should be enabled. Default is `false`.
-* `experimentalFeatures` Boolean - Enables Chromium's experimental features.
-  Default is `false`.
-* `experimentalCanvasFeatures` Boolean - Enables Chromium's experimental
-  canvas features. Default is `false`.
-* `scrollBounce` Boolean - Enables scroll bounce (rubber banding) effect on
-  macOS. Default is `false`.
-* `blinkFeatures` String - A list of feature strings separated by `,`, like
-  `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
-  strings can be found in the [RuntimeEnabledFeatures.in][blink-feature-string]
-  file.
-* `disableBlinkFeatures` String - A list of feature strings separated by `,`,
-  like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
-  feature strings can be found in the
-  [RuntimeEnabledFeatures.in][blink-feature-string] file.
-* `defaultFontFamily` Object - Sets the default font for the font-family.
-  * `standard` String - Defaults to `Times New Roman`.
-  * `serif` String - Defaults to `Times New Roman`.
-  * `sansSerif` String - Defaults to `Arial`.
-  * `monospace` String - Defaults to `Courier New`.
-* `defaultFontSize` Integer - Defaults to `16`.
-* `defaultMonospaceFontSize` Integer - Defaults to `13`.
-* `minimumFontSize` Integer - Defaults to `0`.
-* `defaultEncoding` String - Defaults to `ISO-8859-1`.
-* `backgroundThrottling` Boolean - Whether to throttle animations and timers
-  when the page becomes background. Defaults to `true`.
-* `offscreen` Boolean - Whether to enable offscreen rendering for the browser
-  window. Defaults to `false`.
-* `sandbox` Boolean - Whether to enable Chromium OS-level sandbox.
 
 ### Instance Events
 
@@ -664,6 +658,17 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Just sum any extra width and
 height areas you have within the overall content view.
 
+#### `win.previewFile(path[, displayName])` _macOS_
+
+* `path` String - The absolute path to the file to preview with QuickLook. This
+  is important as Quick Look uses the file name and file extension on the path
+  to determine the content type of the file to open.
+* `displayName` String (Optional) - The name of the file to display on the
+  Quick Look modal view. This is purely visual and does not affect the content
+  type of the file. Defaults to `path`.
+
+Uses [Quick Look][quick-look] to preview a file at a given path.
+
 #### `win.setBounds(bounds[, animate])`
 
 * `bounds` [Rectangle](structures/rectangle.md)
@@ -950,6 +955,7 @@ Whether `Boolean` - Whether the window's document has been edited.
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
 * `callback` Function
+  * `image` [NativeImage](native-image.md)
 
 Same as `webContents.capturePage([rect, ]callback)`.
 
@@ -1113,7 +1119,7 @@ hide it immediately.
 
 Returns `Boolean` - Whether menu bar automatically hides itself.
 
-#### `win.setMenuBarVisibility(visible)`
+#### `win.setMenuBarVisibility(visible)` _Windows_ _Linux_
 
 * `visible` Boolean
 
@@ -1181,3 +1187,4 @@ Returns `BrowserWindow` - The parent window.
 Returns `BrowserWindow[]` - All child windows.
 
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
+[quick-look]: https://en.wikipedia.org/wiki/Quick_Look

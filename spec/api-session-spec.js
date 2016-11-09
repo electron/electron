@@ -1,5 +1,6 @@
 const assert = require('assert')
 const http = require('http')
+const https = require('https')
 const path = require('path')
 const fs = require('fs')
 const {closeWindow} = require('./window-helpers')
@@ -457,7 +458,7 @@ describe('session module', function () {
     })
   })
 
-  describe('ses.getblobData(identifier, callback)', function () {
+  describe('ses.getBlobData(identifier, callback)', function () {
     it('returns blob data for uuid', function (done) {
       const scheme = 'temp'
       const protocol = session.defaultSession.protocol
@@ -505,6 +506,62 @@ describe('session module', function () {
         if (error) return done(error)
         w.loadURL(url)
       })
+    })
+  })
+
+  describe('ses.setCertificateVerifyProc(callback)', function () {
+    var server = null
+
+    beforeEach(function (done) {
+      var certPath = path.join(__dirname, 'fixtures', 'certificates')
+      var options = {
+        key: fs.readFileSync(path.join(certPath, 'server.key')),
+        cert: fs.readFileSync(path.join(certPath, 'server.pem')),
+        ca: [
+          fs.readFileSync(path.join(certPath, 'rootCA.pem')),
+          fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
+        ],
+        requestCert: true,
+        rejectUnauthorized: false
+      }
+
+      server = https.createServer(options, function (req, res) {
+        res.writeHead(200)
+        res.end('<title>hello</title>')
+      })
+      server.listen(0, '127.0.0.1', done)
+    })
+
+    afterEach(function () {
+      session.defaultSession.setCertificateVerifyProc(null)
+      server.close()
+    })
+
+    it('accepts the request when the callback is called with true', function (done) {
+      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+        callback(true)
+      })
+
+      w.webContents.once('did-finish-load', function () {
+        assert.equal(w.webContents.getTitle(), 'hello')
+        done()
+      })
+      w.loadURL(`https://127.0.0.1:${server.address().port}`)
+    })
+
+    it('rejects the request when the callback is called with false', function (done) {
+      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+        assert.equal(hostname, '127.0.0.1')
+        assert.equal(certificate.issuerName, 'Intermediate CA')
+        callback(false)
+      })
+
+      var url = `https://127.0.0.1:${server.address().port}`
+      w.webContents.once('did-finish-load', function () {
+        assert.equal(w.webContents.getTitle(), url)
+        done()
+      })
+      w.loadURL(url)
     })
   })
 })

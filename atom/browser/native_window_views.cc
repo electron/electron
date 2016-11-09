@@ -327,7 +327,6 @@ NativeWindowViews::NativeWindowViews(
     last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
   else
     last_window_state_ = ui::SHOW_STATE_NORMAL;
-  last_normal_bounds_ = GetBounds();
 #endif
 }
 
@@ -846,7 +845,7 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
 
   if (!menu_bar_) {
     gfx::Size content_size = GetContentSize();
-    menu_bar_.reset(new MenuBar);
+    menu_bar_.reset(new MenuBar(this));
     menu_bar_->set_owned_by_client();
 
     if (!menu_bar_autohide_) {

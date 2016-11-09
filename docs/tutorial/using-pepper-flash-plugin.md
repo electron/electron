@@ -78,3 +78,5 @@ Electron.
 
 On Windows the path passed to `--ppapi-flash-path` has to use `\` as path
 delimiter, using POSIX-style paths will not work.
+
+For some operations, such as streaming media using RTMP, it is necessary to grant wider permissions to players’ `.swf` files. One way of accomplishing this, is to use [nw-flash-trust](https://github.com/szwacz/nw-flash-trust).

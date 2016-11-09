@@ -2,6 +2,8 @@
 
 > 화면 크기, 디스플레이, 커서 위치 등의 정보를 가져옵니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process), [렌더러](../tutorial/quick-start.md#renderer-process)
+
 이 모듈은 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 포함하거나 사용할 수
 없습니다.
 
@@ -90,6 +92,7 @@ Returns:
 ### `screen.getCursorScreenPoint()`
 
 Returns `Object`:
+
 * `x` Integer
 * `y` Integer
 

@@ -2,6 +2,8 @@
 
 > 커스텀 프로토콜을 등록하거나 이미 존재하능 프로토콜의 요청의 동작을 변경합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 다음 예시는 `file://` 프로토콜과 비슷한 일을 하는 커스텀 프로토콜을 설정합니다:
 
 ```javascript
@@ -75,28 +77,20 @@ app.on('ready', () => {
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme`에 파일을 응답으로 보내는 프로토콜을 등록합니다. `handler`는 `scheme`와 함께
 `request`가 생성될 때 `handler(request, callback)` 형식으로 호출됩니다.
 `completion` 콜백은 `scheme`가 성공적으로 등록되었을 때 `completion(null)` 형식으로
 호출되고, 등록에 실패했을 땐 `completion(error)` 형식으로 에러 내용을 담아 호출됩니다.
-
-* `request` Object
-  * `url` String
-  * `referrer` String
-  * `method` String
-  * `uploadData` Array (optional)
-* `callback` Function
-
-`uploadData` 는 `data` 객체의 배열입니다:
-
-* `data` Object
-  * `bytes` Buffer - 전송될 콘텐츠.
-  * `file` String - 업로드될 파일의 경로.
-  * `blobUUID` String - blob 데이터의 UUID. 데이터를 이용하기 위해
-    [ses.getBlobData](session.md#sesgetblobdataidentifier-callback) 메소드를
-    사용하세요.
 
 `request`를 처리할 때 반드시 파일 경로 또는 `path` 속성을 포함하는 객체를 인수에
 포함하여 `callback`을 호출해야 합니다. 예: `callback(filePath)` 또는
@@ -114,7 +108,15 @@ app.on('ready', () => {
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `buffer` Buffer (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 `Buffer`를 응답으로 전송하는 `scheme`의 프로토콜을 등록합니다.
 
@@ -138,7 +140,15 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `buffer` Buffer (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 `String`을 응답으로 전송할 `scheme`의 프로토콜을 등록합니다.
 
@@ -150,7 +160,21 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `redirectRequest` Object
+      * `url` String
+      * `method` String
+      * `session` Object (optional)
+      * `uploadData` Object (optional)
+        * `contentType` String - 콘텐츠의 MIME 타입.
+        * `data` String - 전송할 콘텐츠.
 * `completion` Function (optional)
+  * `error` Error
 
 HTTP 요청을 응답으로 전송할 `scheme`의 프로토콜을 등록합니다.
 
@@ -158,25 +182,16 @@ HTTP 요청을 응답으로 전송할 `scheme`의 프로토콜을 등록합니�
 `session` 속성을 포함하는 `redirectRequest` 객체와 함께 호출되어야 한다는 점을
 제외하면 `registerFileProtocol`과 사용법이 같습니다.
 
-* `redirectRequest` Object
-  * `url` String
-  * `method` String
-  * `session` Object (optional)
-  * `uploadData` Object (optional)
-
 기본적으로 HTTP 요청은 현재 세션을 재사용합니다. 만약 서로 다른 세션에 요청을 보내고
 싶으면 `session`을 `null`로 지정해야 합니다.
 
 POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
-* `uploadData` object
-  * `contentType` String - 콘텐츠의 MIME 타입.
-  * `data` String - 전송할 콘텐츠.
-
 ### `protocol.unregisterProtocol(scheme[, completion])`
 
 * `scheme` String
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme`의 커스텀 프로토콜 등록을 해제합니다.
 
@@ -184,6 +199,7 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `callback` Function
+  * `error` Error
 
 `scheme`에 동작(handler)이 등록되어 있는지 여부를 확인합니다. `callback`으로
 결과(boolean)가 반환됩니다.
@@ -192,7 +208,15 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme` 프로토콜을 가로채고 `handler`를 파일 전송에 대한 새로운 동작으로 사용합니다.
 
@@ -200,7 +224,15 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme` 프로토콜을 가로채고 `handler`를 문자열 전송에 대한 새로운 동작으로 사용합니다.
 
@@ -208,7 +240,15 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme` 프로토콜을 가로채고 `handler`를 `Buffer` 전송에 대한 새로운 동작으로
 사용합니다.
@@ -217,7 +257,21 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `redirectRequest` Object
+      * `url` String
+      * `method` String
+      * `session` Object (optional)
+      * `uploadData` Object (optional)
+        * `contentType` String - 콘텐츠의 MIME 타입.
+        * `data` String - 전송할 콘텐츠.
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme` 프로토콜을 가로채고 `handler`를 HTTP 프로토콜의 요청에 대한 새로운 동작으로
 사용합니다.
@@ -226,6 +280,7 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `completion` Function (optional)
+  * `error` Error
 
 가로챈 `scheme`를 삭제하고 기본 핸들러로 복구합니다.
 

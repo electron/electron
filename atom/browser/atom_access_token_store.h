@@ -9,6 +9,12 @@
 
 namespace atom {
 
+class AtomBrowserContext;
+
+namespace internal {
+class TokenLoadingJob;
+}
+
 class AtomAccessTokenStore : public content::AccessTokenStore {
  public:
   AtomAccessTokenStore();
@@ -21,6 +27,9 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
                        const base::string16& access_token) override;
 
  private:
+  void RunTokenLoadingJob(scoped_refptr<internal::TokenLoadingJob> job);
+
+  scoped_refptr<AtomBrowserContext> browser_context_;
   DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);
 };
 

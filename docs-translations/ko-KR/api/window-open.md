@@ -25,6 +25,7 @@
 옵션이어야 합니다.
 
 **참고:**
+
 * Node 통합 기능은 열린 `window` 에서 부모 윈도우가 해당 옵션이 비활성화
   되어있는 경우 항상 비활성화됩니다.
 * `features` 에 있는 (Chromium 또는 Electron 에 의해 처리되지 않는) 비표준
@@ -42,6 +43,8 @@
 ## Class: BrowserWindowProxy
 
 > 자식 브라우저 윈도우를 조작합니다
+
+프로세스: [렌더러](../tutorial/quick-start.md#renderer-process)
 
 ### Instance Methods
 

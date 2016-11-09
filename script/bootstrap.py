@@ -186,7 +186,7 @@ def update_electron_modules(dirname, target_arch):
   env = os.environ.copy()
   env['npm_config_arch']    = target_arch
   env['npm_config_target']  = get_electron_version()
-  env['npm_config_disturl'] = 'https://atom.io/download/atom-shell'
+  env['npm_config_disturl'] = 'https://atom.io/download/electron'
   update_node_modules(dirname, env)
 
 

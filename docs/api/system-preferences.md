@@ -2,6 +2,8 @@
 
 > Get system preferences.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 ```javascript
 const {systemPreferences} = require('electron')
 console.log(systemPreferences.isDarkMode())
@@ -63,6 +65,8 @@ that contains the user information dictionary sent along with the notification.
 
 * `event` String
 * `callback` Function
+  * `event` String
+  * `userInfo` Object
 
 Subscribes to native notifications of macOS, `callback` will be called with
 `callback(event, userInfo)` when the corresponding `event` happens. The
@@ -90,6 +94,8 @@ Removes the subscriber with `id`.
 
 * `event` String
 * `callback` Function
+  * `event` String
+  * `userInfo` Object
 
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
 This is necessary for events such as `NSUserDefaultsDidChangeNotification`

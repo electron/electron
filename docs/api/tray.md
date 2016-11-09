@@ -2,6 +2,8 @@
 
 > Add icons and context menus to the system's notification area.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 ```javascript
 const {app, Menu, Tray} = require('electron')
 

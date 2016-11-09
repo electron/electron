@@ -3,6 +3,8 @@
 > 멀티미디어 소스에 대해 접근하고 [`navigator.webkitGetUserMedia`] API를 통해
 > 오디오나 비디오를 데스크톱으로부터 캡쳐할 수 있도록 합니다.
 
+프로세스: [렌더러](../tutorial/quick-start.md#renderer-process)
+
 다음 예시는 창 제목이 `Electron`인 데스크톱 창에 대해 비디오 캡쳐하는 방법을
 보여줍니다.
 
@@ -62,21 +64,14 @@ function handleError (e) {
   * `thumbnailSize` Object (optional) -  미디어 소스 섬네일의 크기가 맞춰져야 할
     제안된 크기, 기본값은 `{width: 150, height: 150}`입니다.
 * `callback` Function
+  * `error` Error
+  * `sources` [DesktopCapturerSource[]](structures/desktop-capturer-source.md)
 
 사용할 수 있는 데스크톱 미디어 소스를 가져오기 시작하고 작업이 완료되면
 `callback(error, sources)`가 호출됩니다.
 
-`sources`는 `Source`객체의 배열이며, 각 `Source`는 캡쳐될 수 있는 스크린과 각기
-윈도우를 표현합니다. 그리고 다음과 같은 속성을 가지고 있습니다:
-
-* `id` String - 윈도우 또는 스크린의 식별자로써 [`navigator.webkitGetUserMedia`]를
-  호출할 때 `chromeMediaSourceId` 속성에 사용될 수 있습니다. 식별자의 형식은
-  `window:XX` 또는 `screen:XX` 이며 `XX` 부분은 무작위로 생성된 숫자입니다.
-* `name` String - `Entire Screen` 또는 `Screen <index>`로 이름지어질 스크린
-  소스이며, 이는 윈도우 제목에 일치하는 윈도우 소스의 이름이 됩니다.
-* `thumbnail` [NativeImage](native-image.md) - 섬네일 이미지입니다. **참고:**
-  `desktopCapturer.getSources`로 전달된 `options` 객체의 `thumnbailSize` 속성과
-  같이 이 섬네일의 사이즈가 완전히 같을 것이라고 보장하지 않습니다. 실질적인 크기는
-  스크린과 윈도우의 비율에 따라 달라질 수 있습니다.
+`sources` 는 [`DesktopCapturerSource`](structures/desktop-capturer-source.md)
+객체의 배열이며, 각 `DesktopCapturerSource` 는 캡쳐 가능한 화면 또는 개별
+윈도우입니다.
 
 [`navigator.webkitGetUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/Navigator/getUserMedia
