@@ -16,13 +16,14 @@ class AtomCTDelegate;
 
 class AtomCertVerifier : public net::CertVerifier {
  public:
-  explicit AtomCertVerifier(AtomCTDelegate* ct_delegate);
+  explicit AtomCertVerifier();
   virtual ~AtomCertVerifier();
 
   using VerifyProc =
       base::Callback<void(const std::string& hostname,
                           scoped_refptr<net::X509Certificate>,
-                          const base::Callback<void(bool)>&)>;
+                          const base::Callback<void(bool)>&,
+                          bool default_result)>;
 
   void SetVerifyProc(const VerifyProc& proc);
 
@@ -39,7 +40,6 @@ class AtomCertVerifier : public net::CertVerifier {
  private:
   VerifyProc verify_proc_;
   std::unique_ptr<net::CertVerifier> default_cert_verifier_;
-  AtomCTDelegate* ct_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomCertVerifier);
 };
