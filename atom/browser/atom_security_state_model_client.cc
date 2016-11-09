@@ -81,7 +81,7 @@ void AtomSecurityStateModelClient::GetVisibleSecurityState(
     return;
   }
 
-  state->initialized = true;
+  state->connection_info_initialized = true;
   state->url = entry->GetURL();
   const content::SSLStatus& ssl = entry->GetSSL();
   state->initial_security_level =
