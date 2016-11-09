@@ -56,7 +56,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [Menu](../../docs/api/menu.md)
 * [MenuItem](../../docs/api/menu-item.md)
 * [powerMonitor](api/power-monitor.md)
-* [powerSaveBlocker](../../docs/api/power-save-blocker.md)
+* [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](../../docs/api/protocol.md)
 * [session](../../docs/api/session.md)
 * [webContents](../../docs/api/web-contents.md)
