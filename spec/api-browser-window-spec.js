@@ -427,6 +427,18 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setVibrancy(type)', function () {
+    it('allows setting, changing, and removing the vibrancy', function () {
+      assert.doesNotThrow(function () {
+        w.setVibrancy('light')
+        w.setVibrancy('dark')
+        w.setVibrancy(null)
+        w.setVibrancy('ultra-dark')
+        w.setVibrancy('')
+      })
+    })
+  })
+
   describe('BrowserWindow.fromId(id)', function () {
     it('returns the window with id', function () {
       assert.equal(w.id, BrowserWindow.fromId(w.id).id)

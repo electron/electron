@@ -786,16 +786,11 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
-void Window::SetVibrancy(v8::Local<v8::Value> value, mate::Arguments* args) {
+void Window::SetVibrancy(mate::Arguments* args) {
   std::string type;
 
-  if (value->IsNull()) {
-    window_->SetVibrancy(std::string());
-  } else if (mate::ConvertFromV8(isolate(), value, &type)) {
-    window_->SetVibrancy(type);
-  } else {
-    args->ThrowError("Must pass a string or null");
-  }
+  args->GetNext(&type);
+  window_->SetVibrancy(type);
 }
 
 int32_t Window::ID() const {

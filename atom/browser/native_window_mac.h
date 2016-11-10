@@ -163,9 +163,6 @@ class NativeWindowMac : public NativeWindow,
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_;
 
-  // Vibrancy view
-  NSView* vibrant_view_;
-
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
 
