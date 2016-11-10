@@ -340,6 +340,9 @@ void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
 
+void NativeWindow::SetVibrancy(const std::string& filename) {
+}
+
 void NativeWindow::FocusOnWebView() {
   web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }

@@ -162,8 +162,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
   // Vibrancy API
-  virtual void SetVibrancy(const std::string& type) = 0;
-  virtual void RemoveVibrancy() = 0;
+  virtual void SetVibrancy(const std::string& type);
 
   // Webview APIs.
   virtual void FocusOnWebView();

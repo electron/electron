@@ -1198,10 +1198,7 @@ Returns `BrowserWindow[]` - All child windows.
   `selection`, `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
-Adds a vibrancy effect to the browser window.
+Adds a vibrancy effect to the browser window. Passing `null` or an empty string
+will remove the vibrancy effect on the window.
 
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
-
-#### `win.removeVibrancy()` _macOS_
-
-Removes the vibrancy effect on the window.

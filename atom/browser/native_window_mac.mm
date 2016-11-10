@@ -1208,18 +1208,27 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
 void NativeWindowMac::SetVibrancy(const std::string& type) {
   if (!(base::mac::IsOSMavericks() || base::mac::IsOSYosemiteOrLater())) return;
 
-  NSVisualEffectView *vview = (NSVisualEffectView *)vibrant_view_;
-  if (vview == nil) {
-    vview = [[NSVisualEffectView alloc] initWithFrame:
-      [[window_ contentView] bounds]];
-    vibrant_view_ = (NSView *)vview;
+  if (type.empty()) {
+    if (vibrant_view_ == nil) return;
 
-    [vview setAutoresizingMask:
+    [vibrant_view_ removeFromSuperview];
+    vibrant_view_ = nil;
+
+    return;
+  }
+
+  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view_;
+  if (effect_view == nil) {
+    effect_view = [[NSVisualEffectView alloc] initWithFrame:
+      [[window_ contentView] bounds]];
+    vibrant_view_ = (NSView*)effect_view;
+
+    [effect_view setAutoresizingMask:
       NSViewWidthSizable | NSViewHeightSizable];
 
-    [vview setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
-    [vview setState:NSVisualEffectStateActive];
-    [[window_ contentView] addSubview:vview
+    [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+    [effect_view setState:NSVisualEffectStateActive];
+    [[window_ contentView] addSubview:effect_view
                            positioned:NSWindowBelow
                            relativeTo:nil];
   }
@@ -1252,14 +1261,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     }
   }
 
-  [vview setMaterial:vibrancyType];
-}
-
-void NativeWindowMac::RemoveVibrancy() {
-  if (vibrant_view_ == nil) return;
-
-  [vibrant_view_ removeFromSuperview];
-  vibrant_view_ = nil;
+  [effect_view setMaterial:vibrancyType];
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
