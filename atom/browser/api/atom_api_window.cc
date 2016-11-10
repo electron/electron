@@ -786,12 +786,16 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
-void Window::SetVibrancy(const std::string& type) {
-  window_->SetVibrancy(type);
-}
+void Window::SetVibrancy(v8::Local<v8::Value> value, mate::Arguments* args) {
+  std::string type;
 
-void Window::RemoveVibrancy() {
-  window_->RemoveVibrancy();
+  if (value->IsNull()) {
+    window_->SetVibrancy(std::string());
+  } else if (mate::ConvertFromV8(isolate(), value, &type)) {
+    window_->SetVibrancy(type);
+  } else {
+    args->ThrowError("Must pass a string or null");
+  }
 }
 
 int32_t Window::ID() const {
@@ -910,7 +914,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
       .SetMethod("setVibrancy", &Window::SetVibrancy)
-      .SetMethod("removeVibrancy", &Window::RemoveVibrancy)
 #if defined(OS_WIN)
       .SetMethod("hookWindowMessage", &Window::HookWindowMessage)
       .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
