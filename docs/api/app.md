@@ -407,7 +407,7 @@ You can request the following paths by the name:
 * `options` Object (optional)
   * `size` String - Can be `small`, `normal`, `large`. The `large` size is not supported on _macOS_
 * `callback` Function
-  * `error` `Error`
+  * `error` Error
   * `icon` [NativeImage](native-image.md)
 
 Fetches associated icon for using OS rules for handling icons.
