@@ -311,6 +311,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @property BOOL disableKeyOrMainWindow;
 @property NSPoint windowButtonsOffset;
 @property (nonatomic, retain) AtomPreviewItem* quickLookItem;
+@property (nonatomic, retain) NSView* vibrantView;
 
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
@@ -742,6 +743,11 @@ NativeWindowMac::NativeWindowMac(
   }];
 
   InstallView();
+
+  std::string type;
+  if (options.Get(options::kVibrancyType, &type)) {
+    SetVibrancy(type);
+  }
 
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
@@ -1208,20 +1214,22 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
 void NativeWindowMac::SetVibrancy(const std::string& type) {
   if (!(base::mac::IsOSMavericks() || base::mac::IsOSYosemiteOrLater())) return;
 
-  if (type.empty()) {
-    if (vibrant_view_ == nil) return;
+  NSView* vibrant_view = [window_ vibrantView];
 
-    [vibrant_view_ removeFromSuperview];
-    vibrant_view_ = nil;
+  if (type.empty()) {
+    if (vibrant_view == nil) return;
+
+    [vibrant_view removeFromSuperview];
+    [window_ setVibrantView:nil];
 
     return;
   }
 
-  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view_;
+  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
   if (effect_view == nil) {
     effect_view = [[NSVisualEffectView alloc] initWithFrame:
       [[window_ contentView] bounds]];
-    vibrant_view_ = (NSView*)effect_view;
+    [window_ setVibrantView:(NSView*)effect_view];
 
     [effect_view setAutoresizingMask:
       NSViewWidthSizable | NSViewHeightSizable];
