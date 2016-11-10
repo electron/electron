@@ -458,7 +458,7 @@ describe('app module', function () {
   })
 
   describe('getFileIcon() API', function () {
-    const iconPath = path.join(process.cwd(), 'fixtures/assets/icon.ico')
+    const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
     const sizes = {
       small: 16,
       normal: 32,
@@ -484,7 +484,7 @@ describe('app module', function () {
     })
 
     describe('size option', function () {
-      it('fetches small icons', function (done) {
+      it('fetches small icon', function (done) {
         app.getFileIcon(iconPath, { size: 'small' }, function (err, icon) {
           const size = icon.getSize()
           assert.equal(err, null)
@@ -494,7 +494,7 @@ describe('app module', function () {
         })
       })
 
-      it('fetches normal icons', function (done) {
+      it('fetches normal icon', function (done) {
         app.getFileIcon(iconPath, { size: 'normal' }, function (err, icon) {
           const size = icon.getSize()
           assert.equal(err, null)
@@ -504,7 +504,7 @@ describe('app module', function () {
         })
       })
 
-      it('fetches large icons', function (done) {
+      it('fetches large icon', function (done) {
         if (process.platform === 'darwin') {
           return this.skip() // macOS does not support large icons
         }

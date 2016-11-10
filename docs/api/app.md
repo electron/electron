@@ -405,10 +405,16 @@ You can request the following paths by the name:
 
 * `path` String
 * `options` Object (optional)
-  * `size` String - Can be `small`, `normal`, `large`. Except for `large` on _macOS_
+  * `size` String - Can be `small`, `normal`, `large`. The `large` size is not supported on _macOS_
 * `callback` Function
   * `error` `Error`
   * `icon` [NativeImage](native-image.md)
+
+Fetches associated icon for using OS rules for handling icons.
+On _Windows_, there a 2 kinds of icons:
+- icons associated with certain file extension - `.mp3`, `.png`, etc.
+- icons inside file itself, like `.exe`, `.dll`, `.ico`.
+On _Linux_ and _macOS_, icons depend on application associated with file mime type.
 
 ### `app.setPath(name, path)`
 

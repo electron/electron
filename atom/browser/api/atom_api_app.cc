@@ -886,7 +886,7 @@ void App::GetFileIcon(const base::FilePath& path,
   }
 
   if (!args->GetNext(&callback)) {
-    args->ThrowError();
+    args->ThrowError("Missing required callback function");
     return;
   }
 
