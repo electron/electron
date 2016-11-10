@@ -1,6 +1,6 @@
 # Tray
 
-用一个 `Tray` 来表示一个图标,这个图标处于正在运行的系统的通知区 ，通常被添加到一个 context menu 上.
+> 通过 `Tray` 向系统的通知区添加一个带有右键菜单的图标.
 
 ```javascript
 const electron = require('electron')
