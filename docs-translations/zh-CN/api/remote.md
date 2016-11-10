@@ -34,7 +34,7 @@ win.loadURL('https://github.com')
 Electron 确保在渲染进程中的远程对象存在（换句话说，没有被垃圾收集），那主进程中的对应对象也不会被释放。
 当远程对象被垃圾收集之后，主进程中的对应对象才会被取消关联。
 
-如果远程对象在渲染进程泄露了（即，存在某个表中但永远不会释放），那么主进程中的对应对象也一样会泄露，
+如果远程对象在渲染进程泄露了（例如，存在某个表中但永远不会释放），那么主进程中的对应对象也一样会泄露，
 所以你必须小心不要泄露了远程对象。If the remote object is leaked in the renderer process (e.g. stored in a map but
 never freed), the corresponding object in the main process will also be leaked,
 so you should be very careful not to leak remote objects.
@@ -95,7 +95,7 @@ remote.getCurrentWindow().on('close', function () {
 
 更严重的是，由于前面安装了回调函数的上下文已经被释放，所以当主进程的 `close` 事件触发的时候，会抛出异常。
 
-为了避免这个问题，要确保对传递给主进程的渲染器的回调函数进行清理。可以清理事件处理器，或者明确告诉主进行取消来自已经退出的渲染器进程中的回调函数。
+为了避免这个问题，要确保对传递给主进程的渲染器的回调函数进行清理。可以清理事件处理器，或者明确告诉主进程取消来自已经退出的渲染器进程中的回调函数。
 
 ## 访问主进程中的内置模块
 
