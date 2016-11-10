@@ -37,7 +37,7 @@ win.webContents.session.on('will-download', (event, item, webContents) => {
 
 ### 事件: 'updated'
 
-当`downloadItem`获得更新时发射。
+当`downloadItem`获得更新时触发。
 
 ### 事件: 'done'
 
@@ -47,7 +47,7 @@ win.webContents.session.on('will-download', (event, item, webContents) => {
   * `cancelled` - 下载被取消。
   * `interrupted` - 与文件服务器错误的中断连接。
 
-当下载处于一个终止状态时发射。这包括了一个完成的下载，一个被取消的下载(via `downloadItem.cancel()`),
+当下载处于一个终止状态时触发。这包括了一个完成的下载，一个被取消的下载(via `downloadItem.cancel()`),
 和一个被意外中断的下载(无法恢复)。
 
 ## 方法
