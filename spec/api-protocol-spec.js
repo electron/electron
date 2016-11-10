@@ -570,6 +570,13 @@ describe('protocol module', function () {
   })
 
   describe('protocol.isProtocolHandled', function () {
+    it('returns true for about:', function (done) {
+      protocol.isProtocolHandled('about', function (result) {
+        assert.equal(result, true)
+        done()
+      })
+    })
+
     it('returns true for file:', function (done) {
       protocol.isProtocolHandled('file', function (result) {
         assert.equal(result, true)
