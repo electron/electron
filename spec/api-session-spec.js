@@ -553,6 +553,14 @@ describe('session module', function () {
       session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
         assert.equal(hostname, '127.0.0.1')
         assert.equal(certificate.issuerName, 'Intermediate CA')
+        assert.equal(certificate.subjectName, 'localhost')
+        assert(certificate.issuer);
+        assert.equal(certificate.issuer.commonName, 'Intermediate CA')
+        assert(certificate.subject);
+        assert.equal(certificate.subject.commonName, 'localhost')
+        assert(certificate.issuerCert)
+        assert(certificate.issuerCert.subject)
+        assert.equal(certificate.issuerCert.subject.commonName, 'Intermediate CA')
         callback(false)
       })
 
