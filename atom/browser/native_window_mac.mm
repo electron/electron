@@ -1231,9 +1231,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
         initWithFrame: [[window_ contentView] bounds]] autorelease];
     [window_ setVibrantView:(NSView*)effect_view];
 
-    [effect_view setAutoresizingMask:
-      NSViewWidthSizable | NSViewHeightSizable];
-
+    [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
     [effect_view setState:NSVisualEffectStateActive];
     [[window_ contentView] addSubview:effect_view
