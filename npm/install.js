@@ -41,7 +41,7 @@ download({
   platform: process.env.npm_config_platform,
   arch: process.env.npm_config_arch,
   strictSSL: process.env.npm_config_strict_ssl === 'true',
-  quiet: ['info', 'verbose', 'silly'].indexOf(process.env.npm_config_loglevel) === -1
+  quiet: ['info', 'verbose', 'silly', 'http'].indexOf(process.env.npm_config_loglevel) === -1
 }, extractFile)
 
 // unzips and makes path.txt point at the correct executable
