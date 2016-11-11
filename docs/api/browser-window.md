@@ -1172,8 +1172,6 @@ On Windows it calls SetWindowDisplayAffinity with `WDA_MONITOR`.
 
 Changes whether the window can be focused.
 
-[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
-
 #### `win.setParentWindow(parent)` _Linux_ _macOS_
 
 * `parent` BrowserWindow
@@ -1189,9 +1187,6 @@ Returns `BrowserWindow` - The parent window.
 
 Returns `BrowserWindow[]` - All child windows.
 
-[window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
-[quick-look]: https://en.wikipedia.org/wiki/Quick_Look
-
 #### `win.setVibrancy(type)` _macOS_
 
 * `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,
@@ -1201,4 +1196,7 @@ Returns `BrowserWindow[]` - All child windows.
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+[quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
+[window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
