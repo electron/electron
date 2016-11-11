@@ -26,7 +26,10 @@ still some subtle differences on each platform.
 
 On macOS, the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac],
 meaning you don't need any special setup to make it work. For server-side
-requirements, you can read [Server Support][server-support].
+requirements, you can read [Server Support][server-support]. Note that [App
+Transport Security](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/CocoaKeys.html#//apple_ref/doc/uid/TP40009251-SW35) (ATS) applies to all requests made as part of the
+update process. Apps that need to disable ATS can add the
+`NSAllowsArbitraryLoads` key to their app's plist.
 
 **Note:** Your application must be signed for automatic updates on macOS.
 This is a requirement of `Squirrel.Mac`.
