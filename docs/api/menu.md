@@ -238,7 +238,7 @@ will be set as each window's top menu.
 
 #### `Menu.getApplicationMenu()`
 
-Returns `Menu` the application menu (an instance of `Menu`), if set, or `null`, if not set.
+Returns `Menu` - The application menu, if set, or `null`, if not set.
 
 #### `Menu.sendActionToFirstResponder(action)` _macOS_
 
