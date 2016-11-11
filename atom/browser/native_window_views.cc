@@ -571,7 +571,7 @@ void NativeWindowViews::SetContentSizeConstraints(
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  if(has_frame()) {
+  if (has_frame()) {
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
   }
 #elif defined(USE_X11)
