@@ -57,7 +57,7 @@ rely on the `click` event and always attach a context menu to the tray icon.
 
 ### `new Tray(image)`
 
-* `image` [NativeImage](native-image.md)
+* `image` ([NativeImage](native-image.md) | String)
 
 Creates a new tray icon associated with the `image`.
 

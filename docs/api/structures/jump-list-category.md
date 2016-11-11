@@ -10,9 +10,9 @@
     of the category and its items are set by Windows. Items may be added to
     this category indirectly using `app.addRecentDocument(path)`.
   * `custom` - Displays tasks or file links, `name` must be set by the app.
-* `name` String - Must be set if `type` is `custom`, otherwise it should be
+* `name` String - (optional) Must be set if `type` is `custom`, otherwise it should be
   omitted.
-* `items` JumpListItem[] - Array of [`JumpListItem`](jump-list-item.md) objects if `type` is `tasks` or
+* `items` JumpListItem[] - (optional) Array of [`JumpListItem`](jump-list-item.md) objects if `type` is `tasks` or
   `custom`, otherwise it should be omitted.
 
 **Note:** If a `JumpListCategory` object has neither the `type` nor the `name`

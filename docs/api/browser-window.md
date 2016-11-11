@@ -116,78 +116,78 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 
 ### `new BrowserWindow([options])`
 
-* `options` Object
-  * `width` Integer - Window's width in pixels. Default is `800`.
-  * `height` Integer - Window's height in pixels. Default is `600`.
-  * `x` Integer (**required** if y is used) - Window's left offset from screen.
+* `options` Object (optional)
+  * `width` Integer (optional) - Window's width in pixels. Default is `800`.
+  * `height` Integer (optional) - Window's height in pixels. Default is `600`.
+  * `x` Integer (optional) (**required** if y is used) - Window's left offset from screen.
     Default is to center the window.
-  * `y` Integer (**required** if x is used) - Window's top offset from screen.
+  * `y` Integer (optional) (**required** if x is used) - Window's top offset from screen.
     Default is to center the window.
-  * `useContentSize` Boolean - The `width` and `height` would be used as web
+  * `useContentSize` Boolean (optional) - The `width` and `height` would be used as web
     page's size, which means the actual window's size will include window
     frame's size and be slightly larger. Default is `false`.
-  * `center` Boolean - Show window in the center of the screen.
-  * `minWidth` Integer - Window's minimum width. Default is `0`.
-  * `minHeight` Integer - Window's minimum height. Default is `0`.
-  * `maxWidth` Integer - Window's maximum width. Default is no limit.
-  * `maxHeight` Integer - Window's maximum height. Default is no limit.
-  * `resizable` Boolean - Whether window is resizable. Default is `true`.
-  * `movable` Boolean - Whether window is movable. This is not implemented
+  * `center` Boolean (optional) - Show window in the center of the screen.
+  * `minWidth` Integer (optional) - Window's minimum width. Default is `0`.
+  * `minHeight` Integer (optional) - Window's minimum height. Default is `0`.
+  * `maxWidth` Integer (optional) - Window's maximum width. Default is no limit.
+  * `maxHeight` Integer (optional) - Window's maximum height. Default is no limit.
+  * `resizable` Boolean (optional) - Whether window is resizable. Default is `true`.
+  * `movable` Boolean (optional) - Whether window is movable. This is not implemented
     on Linux. Default is `true`.
-  * `minimizable` Boolean - Whether window is minimizable. This is not
+  * `minimizable` Boolean (optional) - Whether window is minimizable. This is not
     implemented on Linux. Default is `true`.
-  * `maximizable` Boolean - Whether window is maximizable. This is not
+  * `maximizable` Boolean (optional) - Whether window is maximizable. This is not
     implemented on Linux. Default is `true`.
-  * `closable` Boolean - Whether window is closable. This is not implemented
+  * `closable` Boolean (optional) - Whether window is closable. This is not implemented
     on Linux. Default is `true`.
-  * `focusable` Boolean - Whether the window can be focused. Default is
+  * `focusable` Boolean (optional) - Whether the window can be focused. Default is
     `true`. On Windows setting `focusable: false` also implies setting
     `skipTaskbar: true`. On Linux setting `focusable: false` makes the window
     stop interacting with wm, so the window will always stay on top in all
     workspaces.
-  * `alwaysOnTop` Boolean - Whether the window should always stay on top of
+  * `alwaysOnTop` Boolean (optional) - Whether the window should always stay on top of
     other windows. Default is `false`.
-  * `fullscreen` Boolean - Whether the window should show in fullscreen. When
+  * `fullscreen` Boolean (optional) - Whether the window should show in fullscreen. When
     explicitly set to `false` the fullscreen button will be hidden or disabled
     on macOS. Default is `false`.
-  * `fullscreenable` Boolean - Whether the window can be put into fullscreen
+  * `fullscreenable` Boolean (optional) - Whether the window can be put into fullscreen
     mode. On macOS, also whether the maximize/zoom button should toggle full
     screen mode or maximize window. Default is `true`.
-  * `skipTaskbar` Boolean - Whether to show the window in taskbar. Default is
+  * `skipTaskbar` Boolean (optional) - Whether to show the window in taskbar. Default is
     `false`.
-  * `kiosk` Boolean - The kiosk mode. Default is `false`.
-  * `title` String - Default window title. Default is `"Electron"`.
-  * `icon` [NativeImage](native-image.md) - The window icon. On Windows it is
+  * `kiosk` Boolean (optional) - The kiosk mode. Default is `false`.
+  * `title` String (optional) - Default window title. Default is `"Electron"`.
+  * `icon` ([NativeImage](native-image.md) | String) (optional) - The window icon. On Windows it is
     recommended to use `ICO` icons to get best visual effects, you can also
     leave it undefined so the executable's icon will be used.
-  * `show` Boolean - Whether window should be shown when created. Default is
+  * `show` Boolean (optional) - Whether window should be shown when created. Default is
     `true`.
-  * `frame` Boolean - Specify `false` to create a
+  * `frame` Boolean (optional) - Specify `false` to create a
     [Frameless Window](frameless-window.md). Default is `true`.
-  * `parent` BrowserWindow - Specify parent window. Default is `null`.
-  * `modal` Boolean - Whether this is a modal window. This only works when the
+  * `parent` BrowserWindow (optional) - Specify parent window. Default is `null`.
+  * `modal` Boolean (optional) - Whether this is a modal window. This only works when the
     window is a child window. Default is `false`.
-  * `acceptFirstMouse` Boolean - Whether the web view accepts a single
+  * `acceptFirstMouse` Boolean (optional) - Whether the web view accepts a single
     mouse-down event that simultaneously activates the window. Default is
     `false`.
-  * `disableAutoHideCursor` Boolean - Whether to hide cursor when typing.
+  * `disableAutoHideCursor` Boolean (optional) - Whether to hide cursor when typing.
     Default is `false`.
-  * `autoHideMenuBar` Boolean - Auto hide the menu bar unless the `Alt`
+  * `autoHideMenuBar` Boolean (optional) - Auto hide the menu bar unless the `Alt`
     key is pressed. Default is `false`.
-  * `enableLargerThanScreen` Boolean - Enable the window to be resized larger
+  * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
     than screen. Default is `false`.
-  * `backgroundColor` String - Window's background color as Hexadecimal value,
+  * `backgroundColor` String (optional) - Window's background color as Hexadecimal value,
     like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported). Default is
     `#FFF` (white).
-  * `hasShadow` Boolean - Whether window should have a shadow. This is only
+  * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
     implemented on macOS. Default is `true`.
-  * `darkTheme` Boolean - Forces using dark theme for the window, only works on
+  * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
-  * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
+  * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md).
     Default is `false`.
-  * `type` String - The type of window, default is normal window. See more about
+  * `type` String (optional) - The type of window, default is normal window. See more about
     this below.
-  * `titleBarStyle` String - The style of window title bar. Default is `default`. Possible values are:
+  * `titleBarStyle` String (optional) - The style of window title bar. Default is `default`. Possible values are:
     * `default` - Results in the standard gray opaque Mac title
       bar.
     * `hidden` - Results in a hidden title bar and a full size content window, yet
@@ -195,79 +195,79 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       the top left.
     * `hidden-inset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
-  * `thickFrame` Boolean - Use `WS_THICKFRAME` style for frameless windows on
+  * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
   * `vibrancy` String - Add a type of vibrancy effect to the window, only on
     macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
     `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.
-  * `webPreferences` Object - Settings of web page's features.
-    * `devTools` Boolean - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
-    * `nodeIntegration` Boolean - Whether node integration is enabled. Default
+  * `webPreferences` Object (optional) - Settings of web page's features.
+    * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
+    * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
       is `true`.
-    * `preload` String - Specifies a script that will be loaded before other
+    * `preload` String (optional) - Specifies a script that will be loaded before other
       scripts run in the page. This script will always have access to node APIs
       no matter whether node integration is turned on or off. The value should
       be the absolute file path to the script.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](process.md#event-loaded).
-    * `session` [Session](session.md#class-session) - Sets the session used by the
+    * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
       page. Instead of passing the Session object directly, you can also choose to
       use the `partition` option instead, which accepts a partition string. When
       both `session` and `partition` are provided, `session` will be preferred.
       Default is the default session.
-    * `partition` String - Sets the session used by the page according to the
+    * `partition` String (optional) - Sets the session used by the page according to the
       session's partition string. If `partition` starts with `persist:`, the page
       will use a persistent session available to all pages in the app with the
       same `partition`. If there is no `persist:` prefix, the page will use an
       in-memory session. By assigning the same `partition`, multiple pages can share
       the same session. Default is the default session.
-    * `zoomFactor` Number - The default zoom factor of the page, `3.0` represents
+    * `zoomFactor` Number (optional) - The default zoom factor of the page, `3.0` represents
       `300%`. Default is `1.0`.
-    * `javascript` Boolean - Enables JavaScript support. Default is `true`.
-    * `webSecurity` Boolean - When `false`, it will disable the
+    * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
+    * `webSecurity` Boolean (optional) - When `false`, it will disable the
       same-origin policy (usually using testing websites by people), and set
       `allowDisplayingInsecureContent` and `allowRunningInsecureContent` to
       `true` if these two options are not set by user. Default is `true`.
-    * `allowDisplayingInsecureContent` Boolean - Allow an https page to display
+    * `allowDisplayingInsecureContent` Boolean (optional) - Allow an https page to display
       content like images from http URLs. Default is `false`.
-    * `allowRunningInsecureContent` Boolean - Allow an https page to run
+    * `allowRunningInsecureContent` Boolean (optional) - Allow an https page to run
       JavaScript, CSS or plugins from http URLs. Default is `false`.
-    * `images` Boolean - Enables image support. Default is `true`.
-    * `textAreasAreResizable` Boolean - Make TextArea elements resizable. Default
+    * `images` Boolean (optional) - Enables image support. Default is `true`.
+    * `textAreasAreResizable` Boolean (optional) - Make TextArea elements resizable. Default
       is `true`.
-    * `webgl` Boolean - Enables WebGL support. Default is `true`.
-    * `webaudio` Boolean - Enables WebAudio support. Default is `true`.
-    * `plugins` Boolean - Whether plugins should be enabled. Default is `false`.
-    * `experimentalFeatures` Boolean - Enables Chromium's experimental features.
+    * `webgl` Boolean (optional) - Enables WebGL support. Default is `true`.
+    * `webaudio` Boolean (optional) - Enables WebAudio support. Default is `true`.
+    * `plugins` Boolean (optional) - Whether plugins should be enabled. Default is `false`.
+    * `experimentalFeatures` Boolean (optional) - Enables Chromium's experimental features.
       Default is `false`.
-    * `experimentalCanvasFeatures` Boolean - Enables Chromium's experimental
+    * `experimentalCanvasFeatures` Boolean (optional) - Enables Chromium's experimental
       canvas features. Default is `false`.
-    * `scrollBounce` Boolean - Enables scroll bounce (rubber banding) effect on
+    * `scrollBounce` Boolean (optional) - Enables scroll bounce (rubber banding) effect on
       macOS. Default is `false`.
-    * `blinkFeatures` String - A list of feature strings separated by `,`, like
+    * `blinkFeatures` String (optional) - A list of feature strings separated by `,`, like
       `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
       strings can be found in the [RuntimeEnabledFeatures.in][blink-feature-string]
       file.
-    * `disableBlinkFeatures` String - A list of feature strings separated by `,`,
+    * `disableBlinkFeatures` String (optional) - A list of feature strings separated by `,`,
       like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
       feature strings can be found in the
       [RuntimeEnabledFeatures.in][blink-feature-string] file.
-    * `defaultFontFamily` Object - Sets the default font for the font-family.
-      * `standard` String - Defaults to `Times New Roman`.
-      * `serif` String - Defaults to `Times New Roman`.
-      * `sansSerif` String - Defaults to `Arial`.
-      * `monospace` String - Defaults to `Courier New`.
-    * `defaultFontSize` Integer - Defaults to `16`.
-    * `defaultMonospaceFontSize` Integer - Defaults to `13`.
-    * `minimumFontSize` Integer - Defaults to `0`.
-    * `defaultEncoding` String - Defaults to `ISO-8859-1`.
-    * `backgroundThrottling` Boolean - Whether to throttle animations and timers
+    * `defaultFontFamily` Object (optional) - Sets the default font for the font-family.
+      * `standard` String (optional) - Defaults to `Times New Roman`.
+      * `serif` String (optional) - Defaults to `Times New Roman`.
+      * `sansSerif` String (optional) - Defaults to `Arial`.
+      * `monospace` String (optional) - Defaults to `Courier New`.
+    * `defaultFontSize` Integer (optional) - Defaults to `16`.
+    * `defaultMonospaceFontSize` Integer (optional) - Defaults to `13`.
+    * `minimumFontSize` Integer (optional) - Defaults to `0`.
+    * `defaultEncoding` String (optional) - Defaults to `ISO-8859-1`.
+    * `backgroundThrottling` Boolean (optional) - Whether to throttle animations and timers
       when the page becomes background. Defaults to `true`.
-    * `offscreen` Boolean - Whether to enable offscreen rendering for the browser
+    * `offscreen` Boolean (optional) - Whether to enable offscreen rendering for the browser
       window. Defaults to `false`.
-    * `sandbox` Boolean - Whether to enable Chromium OS-level sandbox.
+    * `sandbox` Boolean (optional) - Whether to enable Chromium OS-level sandbox.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -948,7 +948,7 @@ bar will become gray when set to `true`.
 
 #### `win.isDocumentEdited()` _macOS_
 
-Whether `Boolean` - Whether the window's document has been edited.
+Returns `Boolean` - Whether the window's document has been edited.
 
 #### `win.focusOnWebView()`
 
@@ -964,11 +964,11 @@ Same as `webContents.capturePage([rect, ]callback)`.
 
 #### `win.loadURL(url[, options])`
 
-* `url` URL
+* `url` String
 * `options` Object (optional)
-  * `httpReferrer` String - A HTTP Referrer url.
-  * `userAgent` String - A user agent originating the request.
-  * `extraHeaders` String - Extra headers separated by "\n"
+  * `httpReferrer` String (optional) - A HTTP Referrer url.
+  * `userAgent` String (optional) - A user agent originating the request.
+  * `extraHeaders` String (optional) - Extra headers separated by "\n"
 
 Same as `webContents.loadURL(url[, options])`.
 
@@ -1004,7 +1004,7 @@ menu bar.
 
 * `progress` Double
 * `options` Object (optional)
-  * `mode` String _Windows_ - Mode for the progress bar (`none`, `normal`, `indeterminate`, `error`, or `paused`)
+  * `mode` String _Windows_ - Mode for the progress bar. Can be `none`, `normal`, `indeterminate`, `error`, or `paused`.
 
 Sets progress value in progress bar. Valid range is [0, 1.0].
 

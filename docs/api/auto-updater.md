@@ -103,7 +103,7 @@ The `autoUpdater` object has the following methods:
 ### `autoUpdater.setFeedURL(url[, requestHeaders])`
 
 * `url` String
-* `requestHeaders` Object _macOS_ - HTTP request headers.
+* `requestHeaders` Object _macOS_ (optional) - HTTP request headers.
 
 Sets the `url` and initialize the auto updater.
 

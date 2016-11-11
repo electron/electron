@@ -140,7 +140,7 @@ The `remote` module has the following methods:
 
 * `module` String
 
-Returns `Object` - The object returned by `require(module)` in the main process.
+Returns `any` - The object returned by `require(module)` in the main process.
 
 ### `remote.getCurrentWindow()`
 
