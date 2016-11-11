@@ -29,15 +29,15 @@ describe('browser-window module', function () {
     const fileStats = fs.statSync(filePath)
     postData = [
       {
-        'type': 'rawData',
-        'bytes': new Buffer('username=test&file=')
+        type: 'rawData',
+        bytes: new Buffer('username=test&file=')
       },
       {
-        'type': 'file',
-        'filePath': filePath,
-        'offset': 0,
-        'length': fileStats.size,
-        'modificationTime': fileStats.mtime.getTime() / 1000
+        type: 'file',
+        filePath: filePath,
+        offset: 0,
+        length: fileStats.size,
+        modificationTime: fileStats.mtime.getTime() / 1000
       }
     ]
     server = http.createServer(function (req, res) {
