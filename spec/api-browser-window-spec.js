@@ -9,8 +9,7 @@ const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
-const {app, ipcMain, BrowserWindow} = remote.require('electron')
-const {protocol, session} = remote
+const {app, ipcMain, BrowserWindow, protocol} = remote
 
 const isCI = remote.getGlobal('isCi')
 
