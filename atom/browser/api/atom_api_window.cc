@@ -21,7 +21,6 @@
 #include "content/public/common/content_switches.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
-#include "ui/base/win/shell.h"
 #include "ui/gfx/geometry/rect.h"
 
 #if defined(TOOLKIT_VIEWS)
@@ -30,6 +29,7 @@
 
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/taskbar_host.h"
+#include "ui/base/win/shell.h"
 #endif
 
 #include "atom/common/node_includes.h"
