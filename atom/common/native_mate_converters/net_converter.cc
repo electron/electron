@@ -47,9 +47,9 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
       val->os_cert_handle(), &encoded_data);
 
   dict.Set("data", encoded_data);
-  dict.Set("issuer", mate::ConvertToV8(isolate, val->issuer()));
+  dict.Set("issuer", val->issuer());
   dict.Set("issuerName", val->issuer().GetDisplayName());
-  dict.Set("subject", mate::ConvertToV8(isolate, val->subject()));
+  dict.Set("subject", val->subject());
   dict.Set("subjectName", val->subject().GetDisplayName());
   dict.Set("serialNumber", base::HexEncode(val->serial_number().data(),
                                            val->serial_number().size()));
@@ -67,7 +67,7 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
         net::X509Certificate::CreateFromHandle(
             val->GetIntermediateCertificates().front(),
             issuer_intermediates);
-    dict.Set("issuerCert", mate::ConvertToV8(isolate, issuer_cert));
+    dict.Set("issuerCert", issuer_cert);
   }
 
   return dict.GetHandle();
@@ -79,9 +79,8 @@ v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
 
   dict.Set("commonName", val.common_name);
-  dict.Set("organizations", mate::ConvertToV8(isolate, val.organization_names));
-  dict.Set("organizationUnits",
-           mate::ConvertToV8(isolate, val.organization_unit_names));
+  dict.Set("organizations", val.organization_names);
+  dict.Set("organizationUnits", val.organization_unit_names);
   dict.Set("locality", val.locality_name);
   dict.Set("state", val.state_or_province_name);
   dict.Set("country", val.country_name);
