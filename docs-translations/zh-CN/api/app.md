@@ -1,12 +1,14 @@
 # app
 
-`app` 模块是为了控制整个应用的生命周期设计的。
+> `app` 模块是为了控制整个应用的生命周期设计的。
+
+进程: [主进程](../tutorial/quick-start.md#main-process)
 
 下面的这个例子将会展示如何在最后一个窗口被关闭时退出应用：
 
 ```javascript
-var app = require('app')
-app.on('window-all-closed', function () {
+const {app} = require('electron')
+app.on('window-all-closed', () => {
   app.quit()
 })
 ```
@@ -19,22 +21,29 @@ app.on('window-all-closed', function () {
 
 当应用程序完成基础的启动的时候被触发。在 Windows 和 Linux 中，
 `will-finish-launching` 事件与 `ready` 事件是相同的； 在 macOS 中，
-这个时间相当于 `NSApplication` 中的 `applicationWillFinishLaunching` 提示。
+这个事件相当于 `NSApplication` 中的 `applicationWillFinishLaunching` 提示。
 你应该经常在这里为 `open-file` 和 `open-url` 设置监听器，并启动崩溃报告和自动更新。
 
 在大多数的情况下，你应该只在 `ready` 事件处理器中完成所有的业务。
 
 ### 事件：'ready'
 
-当 Electron 完成初始化时被触发。
+返回:
+
+* `launchInfo` Object _macOS_
+
+当 Electron 完成初始化时被触发。在 macOs 中， 如果从通知中心中启动，那么`launchInfo` 中的`userInfo`包含
+用来打开应用程序的 `NSUserNotification` 信息。你可以通过调用 `app.isReady()` 
+方法来检查此事件是否已触发。
 
 ### 事件：'window-all-closed'
 
 当所有的窗口都被关闭时触发。
 
-这个事件仅在应用还没有退出时才能触发。 如果用户按下了 `Cmd + Q`，
-或者开发者调用了 `app.quit()` ，Electron 将会先尝试关闭所有的窗口再触发 `will-quit` 事件，
-在这种情况下 `window-all-closed` 不会被触发。
+如果您没有监听此事件，当所有窗口都已关闭时，默认值行为是退出应用程序。但如果你监听此事件，
+将由你来控制应用程序是否退出。 如果用户按下了 `Cmd + Q`，或者开发者调用了 `app.quit()` ，
+Electron 将会先尝试关闭所有的窗口再触发 `will-quit` 事件，在这种情况下 `window-all-closed`
+ 不会被触发。
 
 ### 事件：'before-quit'
 
@@ -99,6 +108,19 @@ app.on('window-all-closed', function () {
 
 当应用被激活时触发，常用于点击应用的 dock 图标的时候。
 
+### 事件: 'continue-activity' _macOS_
+
+返回:
+
+* `event` Event
+* `type` String - 标识当前状态的字符串。 映射到[`NSUserActivity.activityType`] [activity-type]。
+* `userInfo` Object - 包含由另一个设备上的活动所存储的应用程序特定的状态。
+
+当来自不同设备的活动通过 [Handoff][handoff] 想要恢复时触发。如果需要处理这个事件，
+调用 `event.preventDefault()` 方法。
+只有具有支持相应的活动类型并且相同的开发团队ID作为启动程序时，用户行为才会进行。
+所支持活动类型已在应用的`Info.plist`中的`NSUserActivityTypes`明确定义。
+
 ### 事件：'browser-window-blur'
 
 返回：
@@ -126,6 +148,16 @@ app.on('window-all-closed', function () {
 
 当一个 [BrowserWindow](browser-window.md) 被创建的时候触发。
 
+### 事件: 'web-contents-created'
+
+Returns:
+
+* `event` Event
+* `webContents` WebContents
+
+在新的 [webContents](web-contents.md) 创建后触发.
+
+
 ### 事件：'certificate-error'
 
 返回：
@@ -143,9 +175,11 @@ app.on('window-all-closed', function () {
 调用 `callback(true)`。
 
 ```javascript
-session.on('certificate-error', function (event, webContents, url, error, certificate, callback) {
+const {app} = require('electron')
+
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
   if (url === 'https://github.com') {
-    // 验证逻辑。
+    // Verification logic.
     event.preventDefault()
     callback(true)
   } else {
@@ -203,20 +237,38 @@ app.on('select-certificate', function (event, host, url, list, callback) {
 用 `callback(username, password)` 来进行验证。
 
 ```javascript
-app.on('login', function (event, webContents, request, authInfo, callback) {
+const {app} = require('electron')
+
+app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault()
   callback('username', 'secret')
 })
 ```
 ### 事件：'gpu-process-crashed'
 
+返回:
+
+* `event` Event
+* `killed` Boolean
+
 当 GPU 进程崩溃时触发。
+
+### 事件: 'accessibility-support-changed' _macOS_ _Windows_
+
+返回:
+
+* `event` Event
+* `accessibilitySupportEnabled` Boolean - 当启用Chrome的辅助功能时候为`true`, 其他情况为 `false`.
+
+当 Chrome 的辅助功能状态改变时触发，比如屏幕阅读被启用或被禁用。
+点此 https://www.chromium.org/developers/design-documents/accessibility 查看更多详情。
+
 
 ## 方法列表
 
 `app` 对象拥有以下的方法：
 
-**请注意** 有的方法只能用于特定的操作系统。
+**请注意** 有的方法只能用于特定的操作系统，并被标注。
 
 ### `app.quit()`
 
@@ -237,9 +289,39 @@ app.on('login', function (event, webContents, request, authInfo, callback) {
 
 * `exitCode` 整数
 
-带着`exitCode`退出应用.
+带着`exitCode`退出应用，`exitCode` 默认为0
 
 所有的窗口会被立刻关闭，不会询问用户。`before-quit` 和 `will-quit` 这2个事件不会被触发
+
+### `app.relaunch([options])`
+
+* `options` Object (optional)
+  * `args` String[] (optional)
+  * `execPath` String (optional)
+
+当前实例退出，重启应用。
+
+默认情况下，新的实例会和当前实例使用相同的工作目录以及命令行参数。指定 `args` 参数，
+`args` 将会被作为替换的命令行参数。指定 `execPath` 参数，`execPath` 将会作为执行的目录。
+
+记住，这个方法不会退出正在执行的应用。你需要在调用`app.relaunch`方法后再执行`app.quit`或者`app.exit`
+来让应用重启。
+
+
+调用多次`app.relaunch`方法，当前实例退出后多个实例会被启动。
+
+例子：立即重启当前实例并向新的实例添加一个新的命令行参数
+
+```javascript
+const {app} = require('electron')
+
+app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
+app.exit(0)
+```
+
+### `app.isReady()`
+
+返回 `Boolean` - `true` 如果Electron 初始化完成, `false` 其他情况.
 
 ### `app.getAppPath()`
 
@@ -317,6 +399,54 @@ app.on('login', function (event, webContents, request, authInfo, callback) {
 
 清除最近访问的文档列表。
 
+### `app.setAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
+
+* `protocol` String - 协议的名字, 不包含 `://`.如果你希望你的应用处理链接 `electron://` ,
+ 将 `electron` 作为该方法的参数.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` String[] (optional) _Windows_ - Defaults to an empty array
+
+返回 `Boolean` - 无论调用是否成功.
+
+此方法将当前可执行程序设置为协议(亦称 URI scheme)的默认处理程序。 
+这允许您将应用程序更深入地集成到操作系统中. 一旦注册成功,
+所有 `your-protocol://` 格式的链接都会使用你的程序打开。整个链接（包括协议）将作为参数传递到应用程序中。
+
+在Windows系统中，你可以提供可选参数path，到执行文件的地址；args,一个在启动时传递给可执行文件的参数数组
+
+**注意:** 在macOS上，您只能注册已添加到应用程序的`info.plist`的协议，该协议不能在运行时修改。 
+但是，您可以在构建时使用简单的文本编辑器或脚本更改文件。 有关详细信息，请参阅 [Apple's documentation][CFBundleURLTypes] 
+
+该API在内部使用Windows注册表和lssetdefaulthandlerforurlscheme。
+
+### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
+
+* `protocol` String - 协议的名字, 不包含 `://`.
+* `path` String (optional) _Windows_ - 默认为 `process.execPath`
+* `args` String[] (optional) _Windows_ - 默认为空数组
+
+返回 `Boolean` - 无论调用是否成功.
+
+此方法检查当前程序是否为协议（也称为URI scheme）的默认处理程序。
+如果是，它会移除程序默认处理该协议。
+
+### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
+
+* `protocol` String - 协议的名字, 不包含 `://`.
+* `path` String (optional) _Windows_ - 默认值  `process.execPath`
+* `args` String[] (optional) _Windows_ - 默认为空数组
+
+返回 `Boolean`
+
+此方法检查当前程序是否为协议（也称为URI scheme）的默认处理程序。
+是则返回true 否则返回false
+
+**提示:** 在 macOS 系统中, 您可以使用此方法检查应用程序是否已注册为协议的默认处理程序。
+同时可以通过查看 `~/Library/Preferences/com.apple.LaunchServices.plist` 来确认。 
+有关详细信息，请参阅 [Apple's documentation][LSCopyDefaultHandlerForURLScheme] 。
+
+该API在内部使用Windows注册表和lssetdefaulthandlerforurlscheme。
+
 ### `app.setUserTasks(tasks)` _Windows_
 
 * `tasks` [Task] - 一个由 Task 对象构成的数组
@@ -364,22 +494,23 @@ app.on('login', function (event, webContents, request, authInfo, callback) {
 下面是一个简单的例子。我们可以通过这个例子了解如何确保应用为单实例运行状态。
 
 ```javascript
+const {app} = require('electron')
 let myWindow = null
 
-let shouldQuit = app.makeSingleInstance(function (commandLine, workingDirectory) {
-  // 当另一个实例运行的时候，这里将会被调用，我们需要激活应用的窗口
+const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
+  // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore()
     myWindow.focus()
   }
-  return true
 })
 
-// 这个实例是多余的实例，需要退出
-if (shouldQuit) app.quit()
+if (shouldQuit) {
+  app.quit()
+}
 
-app.on('ready', function () {
-  // 创建窗口、继续加载应用、应用逻辑等……
+// Create myWindow, load the rest of the app, etc...
+app.on('ready', () => {
 })
 ```
 
