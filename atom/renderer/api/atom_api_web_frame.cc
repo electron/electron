@@ -4,6 +4,8 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
+#include <iostream>
+
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -137,6 +139,7 @@ void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
   // Register scheme to secure list (https, wss, data).
   blink::WebSecurityPolicy::registerURLSchemeAsSecure(
       blink::WebString::fromUTF8(scheme));
+  std::cout << "webFrame.registerURLSchemeAsSecure is deprecated. Use protocol.registerStandardSchemes with {secure:true}" << std::endl;
 }
 
 void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
@@ -167,6 +170,7 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
   blink::WebString privileged_scheme(blink::WebString::fromUTF8(scheme));
   if (secure) {
     // TODO(pfrazee): Remove 2.0
+    std::cout << "webFrame.registerURLSchemeAsPrivileged with {secure:true} is deprecated. Use protocol.registerStandardSchemes with {secure:true}" << std::endl;
     blink::WebSecurityPolicy::registerURLSchemeAsSecure(privileged_scheme);
   }
   if (bypassCSP) {
