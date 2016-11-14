@@ -4,28 +4,59 @@ const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const qs = require('querystring')
 const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
-const remote = require('electron').remote
-const screen = require('electron').screen
-
-const app = remote.require('electron').app
-const ipcMain = remote.require('electron').ipcMain
-const ipcRenderer = require('electron').ipcRenderer
-const BrowserWindow = remote.require('electron').BrowserWindow
+const {ipcRenderer, remote, screen} = require('electron')
+const {app, ipcMain, BrowserWindow, protocol} = remote
 
 const isCI = remote.getGlobal('isCi')
-const {protocol} = remote
 
 describe('browser-window module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
-  var server
+  var server, postData
 
   before(function (done) {
+    const filePath = path.join(fixtures, 'pages', 'a.html')
+    const fileStats = fs.statSync(filePath)
+    postData = [
+      {
+        type: 'rawData',
+        bytes: new Buffer('username=test&file=')
+      },
+      {
+        type: 'file',
+        filePath: filePath,
+        offset: 0,
+        length: fileStats.size,
+        modificationTime: fileStats.mtime.getTime() / 1000
+      }
+    ]
     server = http.createServer(function (req, res) {
-      function respond () { res.end('') }
+      function respond () {
+        if (req.method === 'POST') {
+          let body = ''
+          req.on('data', (data) => {
+            if (data) {
+              body += data
+            }
+          })
+          req.on('end', () => {
+            let parsedData = qs.parse(body)
+            fs.readFile(filePath, (err, data) => {
+              if (err) return
+              if (parsedData.username === 'test' &&
+                  parsedData.file === data.toString()) {
+                res.end()
+              }
+            })
+          })
+        } else {
+          res.end()
+        }
+      }
       setTimeout(respond, req.url.includes('slow') ? 200 : 0)
     })
     server.listen(0, '127.0.0.1', function () {
@@ -186,6 +217,54 @@ describe('browser-window module', function () {
         done()
       })
       w.loadURL('http://127.0.0.1:11111')
+    })
+
+    describe('POST navigations', function () {
+      afterEach(() => {
+        w.webContents.session.webRequest.onBeforeSendHeaders(null)
+      })
+
+      it('supports specifying POST data', function (done) {
+        w.webContents.on('did-finish-load', () => done())
+        w.loadURL(server.url, {postData: postData})
+      })
+
+      it('sets the content type header on URL encoded forms', function (done) {
+        w.webContents.on('did-finish-load', () => {
+          w.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
+            assert.equal(details.requestHeaders['content-type'], 'application/x-www-form-urlencoded')
+            done()
+          })
+          w.webContents.executeJavaScript(`
+            form = document.createElement('form')
+            form.method = 'POST'
+            form.target = '_blank'
+            form.submit()
+          `)
+        })
+        w.loadURL(server.url)
+      })
+
+      it('sets the content type header on multi part forms', function (done) {
+        w.webContents.on('did-finish-load', () => {
+          w.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
+            assert(details.requestHeaders['content-type'].startsWith('multipart/form-data; boundary=----WebKitFormBoundary'))
+            done()
+          })
+          w.webContents.executeJavaScript(`
+            form = document.createElement('form')
+            form.method = 'POST'
+            form.target = '_blank'
+            form.enctype = 'multipart/form-data'
+            file = document.createElement('input')
+            file.type = 'file'
+            file.name = 'file'
+            form.appendChild(file)
+            form.submit()
+          `)
+        })
+        w.loadURL(server.url)
+      })
     })
   })
 
