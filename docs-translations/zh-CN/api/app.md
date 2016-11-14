@@ -277,14 +277,6 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 
 这个方法保证了所有的 `beforeunload` 和 `unload` 事件处理器被正确执行。假如一个窗口的 `beforeunload` 事件处理器返回 `false`，那么整个应用可能会取消退出。
 
-### `app.hide()` _macOS_
-
-隐藏所有的应用窗口，不是最小化.
-
-### `app.show()` _macOS_
-
-隐藏后重新显示所有的窗口，不会自动选中他们。
-
 ### `app.exit(exitCode)`
 
 * `exitCode` 整数
@@ -322,6 +314,19 @@ app.exit(0)
 ### `app.isReady()`
 
 返回 `Boolean` - `true` 如果Electron 初始化完成, `false` 其他情况.
+
+### `app.focus()`
+
+在Linux系统中, 使第一个可见窗口获取焦点. macOS, 让该应用成为活动应用程序。
+Windows, 使应用的第一个窗口获取焦点.
+
+### `app.hide()` _macOS_
+
+隐藏所有的应用窗口，不是最小化.
+
+### `app.show()` _macOS_
+
+隐藏后重新显示所有的窗口，不会自动选中他们。
 
 ### `app.getAppPath()`
 
@@ -406,7 +411,7 @@ app.exit(0)
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
 * `args` String[] (optional) _Windows_ - Defaults to an empty array
 
-返回 `Boolean` - 无论调用是否成功.
+返回 `Boolean` - 调用是否成功.
 
 此方法将当前可执行程序设置为协议(亦称 URI scheme)的默认处理程序。 
 这允许您将应用程序更深入地集成到操作系统中. 一旦注册成功,
@@ -425,7 +430,7 @@ app.exit(0)
 * `path` String (optional) _Windows_ - 默认为 `process.execPath`
 * `args` String[] (optional) _Windows_ - 默认为空数组
 
-返回 `Boolean` - 无论调用是否成功.
+返回 `Boolean` - 调用是否成功.
 
 此方法检查当前程序是否为协议（也称为URI scheme）的默认处理程序。
 如果是，它会移除程序默认处理该协议。
@@ -464,13 +469,147 @@ app.exit(0)
 * `iconIndex` Integer - 图标文件中的采用的图标位置。如果一个图标文件包括了多个图标，就需要设置这个值以确定使用的是哪一个图标。
 如果这个图标文件中只包含一个图标，那么这个值为 0。
 
-### `app.allowNTLMCredentialsForAllDomains(allow)`
+返回 `Boolean` - 执行是否成功.
 
-* `allow` Boolean
+**提示:** 如果希望更多的定制任务栏跳转列表，请使用 `app.setJumpList(categories)` 。
 
-动态设置是否总是为 HTTP NTLM 或 Negotiate 认证发送证书。通常来说，Electron 只会对本地网络（比如和你处在一个域中的计算机）发
-送 NTLM / Kerberos 证书。但是假如网络设置得不太好，可能这个自动探测会失效，所以你可以通过这个接口自定义 Electron 对所有 URL
-的行为。
+### `app.getJumpListSettings()` _Windows_
+
+返回 `Object`:
+
+* `minItems` Integer - 将在跳转列表中显示项目的最小数量 (有关此值的更详细描述，请参阅
+  [MSDN docs][JumpListBeginListMSDN]).
+* `removedItems` [JumpListItem[]](structures/jump-list-item.md) -  `JumpListItem` 对象数组，对应用户在跳转列表中明确删除的项目。
+这些项目不能在 **接下来**调用`app.setJumpList()` 时重新添加到跳转列表中,
+Windows不会显示任何包含已删除项目的自定义类别.
+
+### `app.setJumpList(categories)` _Windows_
+
+* `categories` [JumpListCategory[]](structures/jump-list-category.md) 或者 `null` - `JumpListCategory` 对象的数组.
+
+设置或删除应用程序的自定义跳转列表，并返回以下字符串之一：
+
+* `ok` - 没有出现错误。
+* `error` - 发生一个或多个错误，启用运行日志记录找出可能的原因。
+* `invalidSeparatorError` -尝试向跳转列表中的自定义跳转列表添加分隔符。 分隔符只允许在标准的 `Tasks` 类别中。
+* `fileTypeRegistrationError` - 尝试向自定义跳转列表添加一个文件链接，但是该应用未注册处理该应用类型。
+* `customCategoryAccessDeniedError` - 由于用户隐私或策略组设置，自定义类别无法添加到跳转列表。
+
+如果`categories` 值为 `null` ，之前设定的自定义跳转列表(如果存在)将被替换为
+标准的应用跳转列表(由windows生成)
+
+`JumpListCategory` 对象需要包含以下属性：
+
+* `type` String - 以下其中一个：
+  * `tasks` - 此类别中的项目将被放置到标准的`Tasks`类别中。只能有一个这样的类别，
+    将总是显示在跳转列表的底部。
+  * `frequent` - 显示应用常用文件列表，类别的名称及其项目由Windows设置。
+  * `recent` - 显示应用最近打开的文件的列表，类别的名称及其项目由Windows设置。 
+    可以使用`app.addRecentDocument（path）`间接添加到项目到此类别。
+  * `custom` - 显示任务或文件链接，`name`必须由应用程序设置。
+* `name` String - 当`type` 为 `custom` 时此值为必填项,否则应省略。
+* `items` Array - `JumpListItem` 对象数组，如果 `type` 值为 `tasks` 或
+  `custom` 时必填，否则应省略。
+
+**Note:** 如果`JumpListCategory`对象没有设置`type`和`name`属性，
+那么`type`默认为`tasks`。 如果设置`name`属性，省略`type`属性，
+则`type`默认为`custom`。
+
+**Note:** Users can remove items from custom categories, and Windows will not
+allow a removed item to be added back into a custom category until **after**
+the next successful call to `app.setJumpList(categories)`. Any attempt to
+re-add a removed item to a custom category earlier than that will result in the
+entire custom category being omitted from the Jump List. The list of removed
+items can be obtained using `app.getJumpListSettings()`.
+
+`JumpListItem` objects should have the following properties:
+
+* `type` String - One of the following:
+  * `task` - A task will launch an app with specific arguments.
+  * `separator` - Can be used to separate items in the standard `Tasks`
+    category.
+  * `file` - A file link will open a file using the app that created the
+    Jump List, for this to work the app must be registered as a handler for
+    the file type (though it doesn't have to be the default handler).
+* `path` String - Path of the file to open, should only be set if `type` is
+  `file`.
+* `program` String - Path of the program to execute, usually you should
+  specify `process.execPath` which opens the current program. Should only be
+  set if `type` is `task`.
+* `args` String - The command line arguments when `program` is executed. Should
+  only be set if `type` is `task`.
+* `title` String - The text to be displayed for the item in the Jump List.
+  Should only be set if `type` is `task`.
+* `description` String - Description of the task (displayed in a tooltip).
+  Should only be set if `type` is `task`.
+* `iconPath` String - The absolute path to an icon to be displayed in a
+  Jump List, which can be an arbitrary resource file that contains an icon
+  (e.g. `.ico`, `.exe`, `.dll`). You can usually specify `process.execPath` to
+  show the program icon.
+* `iconIndex` Integer - The index of the icon in the resource file. If a
+  resource file contains multiple icons this value can be used to specify the
+  zero-based index of the icon that should be displayed for this task. If a
+  resource file contains only one icon, this property should be set to zero.
+
+以下是一个创建一个自定义跳转列表的简单例子
+
+```javascript
+const {app} = require('electron')
+
+app.setJumpList([
+  {
+    type: 'custom',
+    name: 'Recent Projects',
+    items: [
+      { type: 'file', path: 'C:\\Projects\\project1.proj' },
+      { type: 'file', path: 'C:\\Projects\\project2.proj' }
+    ]
+  },
+  { // has a name so `type` is assumed to be "custom"
+    name: 'Tools',
+    items: [
+      {
+        type: 'task',
+        title: 'Tool A',
+        program: process.execPath,
+        args: '--run-tool-a',
+        icon: process.execPath,
+        iconIndex: 0,
+        description: 'Runs Tool A'
+      },
+      {
+        type: 'task',
+        title: 'Tool B',
+        program: process.execPath,
+        args: '--run-tool-b',
+        icon: process.execPath,
+        iconIndex: 0,
+        description: 'Runs Tool B'
+      }
+    ]
+  },
+  { type: 'frequent' },
+  { // has no name and no type so `type` is assumed to be "tasks"
+    items: [
+      {
+        type: 'task',
+        title: 'New Project',
+        program: process.execPath,
+        args: '--new-project',
+        description: 'Create a new project.'
+      },
+      { type: 'separator' },
+      {
+        type: 'task',
+        title: 'Recover Project',
+        program: process.execPath,
+        args: '--recover-project',
+        description: 'Recover Project'
+      }
+    ]
+  }
+])
+```
 
 ### `app.makeSingleInstance(callback)`
 
@@ -514,40 +653,128 @@ app.on('ready', () => {
 })
 ```
 
+### `app.releaseSingleInstance()`
+
+释放所有由 `makeSingleInstance` 创建的限制. 
+这将允许应用程序的多个实例依次运行.
+
+### `app.setUserActivity(type, userInfo[, webpageURL])` _macOS_
+
+* `type` String - Uniquely identifies the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+* `userInfo` Object - App-specific state to store for use by another device.
+* `webpageURL` String - The webpage to load in a browser if no suitable app is
+  installed on the resuming device. The scheme must be `http` or `https`.
+
+Creates an `NSUserActivity` and sets it as the current activity. The activity
+is eligible for [Handoff][handoff] to another device afterward.
+
+### `app.getCurrentActivityType()` _macOS_
+
+Returns `String` - The type of the currently running activity.
+
 ### `app.setAppUserModelId(id)` _Windows_
 
 * `id` String
 
 改变当前应用的 [Application User Model ID][app-user-model-id] 为 `id`.
 
-### `app.isAeroGlassEnabled()` _Windows_
+### `app.importCertificate(options, callback)` _LINUX_
 
-如果 [DWM composition](https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx)(Aero Glass) 启用
-了，那么这个方法会返回 `true`，否则是 `false`。你可以用这个方法来决定是否要开启透明窗口特效，因为如果用户没开启 DWM，那么透明窗
-口特效是无效的。
+* `options` Object
+  * `certificate` String - Path for the pkcs12 file.
+  * `password` String - Passphrase for the certificate.
+* `callback` Function
+  * `result` Integer - Result of import.
 
-举个例子：
+Imports the certificate in pkcs12 format into the platform certificate store.
+`callback` is called with the `result` of import operation, a value of `0`
+indicates success while any other value indicates failure according to chromium [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
-```javascript
-let browserOptions = {width: 1000, height: 800}
+### `app.disableHardwareAcceleration()`
 
-// 只有平台支持的时候才使用透明窗口
-if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
-  browserOptions.transparent = true
-  browserOptions.frame = false
-}
+Disables hardware acceleration for current app.
 
-// 创建窗口
-win = new BrowserWindow(browserOptions)
+This method can only be called before app is ready.
 
-// 转到某个网页
-if (browserOptions.transparent) {
-  win.loadURL(`file://${__dirname}/index.html`)
-} else {
-  // 没有透明特效，我们应该用某个只包含基本样式的替代解决方案。
-  win.loadURL(`file://${__dirname}/fallback.html`)
-}
-```
+### `app.setBadgeCount(count)` _Linux_ _macOS_
+
+* `count` Integer
+
+Returns `Boolean` - Whether the call succeeded.
+
+Sets the counter badge for current app. Setting the count to `0` will hide the
+badge.
+
+On macOS it shows on the dock icon. On Linux it only works for Unity launcher,
+
+**Note:** Unity launcher requires the exsistence of a `.desktop` file to work,
+for more information please read [Desktop Environment Integration][unity-requiremnt].
+
+### `app.getBadgeCount()` _Linux_ _macOS_
+
+Returns `Integer` - The current value displayed in the counter badge.
+
+### `app.isUnityRunning()` _Linux_
+
+Returns `Boolean` - Whether the current desktop environment is Unity launcher.
+
+### `app.getLoginItemSettings()` _macOS_ _Windows_
+
+Returns `Object`:
+
+* `openAtLogin` Boolean - `true` if the app is set to open at login.
+* `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
+  This setting is only supported on macOS.
+* `wasOpenedAtLogin` Boolean - `true` if the app was opened at login
+  automatically. This setting is only supported on macOS.
+* `wasOpenedAsHidden` Boolean - `true` if the app was opened as a hidden login
+  item. This indicates that the app should not open any windows at startup.
+  This setting is only supported on macOS.
+* `restoreState` Boolean - `true` if the app was opened as a login item that
+  should restore the state from the previous session. This indicates that the
+  app should restore the windows that were open the last time the app was
+  closed. This setting is only supported on macOS.
+
+**Note:** This API has no effect on
+[MAS builds][mas-builds].
+
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
+
+* `settings` Object
+  * `openAtLogin` Boolean - `true` to open the app at login, `false` to remove
+    the app as a login item. Defaults to `false`.
+  * `openAsHidden` Boolean - `true` to open the app as hidden. Defaults to
+    `false`. The user can edit this setting from the System Preferences so
+    `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
+    is opened to know the current value. This setting is only supported on
+    macOS.
+
+Set the app's login item settings.
+
+**Note:** This API has no effect on
+[MAS builds][mas-builds].
+
+### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
+
+Returns `Boolean` - `true` if Chrome's accessibility support is enabled,
+`false` otherwise. This API will return `true` if the use of assistive
+technologies, such as screen readers, has been detected. See
+https://www.chromium.org/developers/design-documents/accessibility for more
+details.
+
+### `app.setAboutPanelOptions(options)` _macOS_
+
+* `options` Object
+  * `applicationName` String (optional) - The app's name.
+  * `applicationVersion` String (optional) - The app's version.
+  * `copyright` String (optional) - Copyright information.
+  * `credits` String (optional) - Credit information.
+  * `version` String (optional) - The app's build version number.
+
+Set the about panel options. This will override the values defined in the app's
+`.plist` file. See the [Apple docs][about-panel-options] for more details.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 通过可选的参数 `value` 给 Chromium 中添加一个命令行开关。
@@ -576,6 +803,12 @@ if (browserOptions.transparent) {
 
 取消这个 `id` 对应的请求。
 
+### `app.dock.downloadFinished(filePath)` _macOS_
+
+* `filePath` String
+
+Bounces the Downloads stack if the filePath is inside the Downloads folder.
+
 ### `app.dock.setBadge(text)` _macOS_
 
 * `text` String
@@ -594,6 +827,11 @@ if (browserOptions.transparent) {
 
 显示应用在 dock 中的图标。
 
+### `app.dock.isVisible()` _macOS_
+
+Returns `Boolean` - dock 图标是否可见.
+`app.dock.show()` 是异步方法，因此此方法可能无法在调用之后立即返回true.
+
 ### `app.dock.setMenu(menu)` _macOS_
 
 * `menu` [Menu](menu.md)
@@ -606,6 +844,15 @@ if (browserOptions.transparent) {
 
 设置应用在 dock 中显示的图标。
 
+
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
+[LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
+[handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
+[activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
+[unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux
+[mas-builds]: ../tutorial/mac-app-store-submission-guide.md
+[JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
+[about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc
