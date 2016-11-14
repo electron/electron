@@ -209,7 +209,7 @@ void AtomContentClient::AddSecureSchemesAndOrigins(
     std::set<GURL>* secure_origins) {
   std::vector<std::string> schemes;
   ConvertStringWithSeparatorToVector(&schemes, ",",
-                                     switches::kRegisterSecureSchemes);                        
+                                     switches::kSecureSchemes);                        
   if (!schemes.empty()) {
     for (const std::string& scheme : schemes) {
       secure_schemes->insert(scheme);

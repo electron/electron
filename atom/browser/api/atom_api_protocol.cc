@@ -64,7 +64,7 @@ void RegisterStandardSchemes(const std::vector<std::string>& schemes, mate::Argu
   if (args->GetNext(&opts) && opts.Get("secure", &secure) && secure) {
     // add switches to register as secure
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-      atom::switches::kRegisterSecureSchemes, base::JoinString(schemes, ","));
+      atom::switches::kSecureSchemes, base::JoinString(schemes, ","));
   }
 }
 
