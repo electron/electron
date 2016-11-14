@@ -22,7 +22,7 @@ behavior to electron@github.com.
 ## Downloads
 
 To install prebuilt Electron binaries, use
-[`npm`](https://docs.npmjs.com/) (or [`yarn`](https://yarnpkg.com/)):
+[`npm`](https://docs.npmjs.com/) (or [`yarn`](https://yarnpkg.com/en/docs/managing-dependencies)):
 
 ```sh
 # Install as a development dependency
