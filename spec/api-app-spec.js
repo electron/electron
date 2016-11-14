@@ -208,9 +208,9 @@ describe('app module', function () {
         assert.equal(list.length, 1)
         assert.equal(list[0].issuerName, 'Intermediate CA')
         assert.equal(list[0].subjectName, 'localhost')
-        assert(list[0].issuer);
+        assert(list[0].issuer)
         assert.equal(list[0].issuer.commonName, 'Intermediate CA')
-        assert(list[0].subject);
+        assert(list[0].subject)
         assert.equal(list[0].subject.commonName, 'localhost')
         assert(list[0].issuerCert)
         assert(list[0].issuerCert.subject)
