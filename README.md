@@ -21,19 +21,19 @@ behavior to electron@github.com.
 
 ## Downloads
 
-Prebuilt binaries and debug symbols of Electron for Linux, Windows and macOS can
-be found on the [releases](https://github.com/electron/electron/releases) page.
-
-You can also use [`npm`](https://docs.npmjs.com/) to install prebuilt electron
-binaries:
+To install prebuilt Electron binaries, use
+[`npm`](https://docs.npmjs.com/) (or [`yarn`](https://yarnpkg.com/)):
 
 ```sh
-# Install the `electron` command globally in your $PATH
-npm install electron -g
-
 # Install as a development dependency
 npm install electron --save-dev
+
+# Install the `electron` command globally in your $PATH
+npm install electron -g
 ```
+
+See the [releases page](https://github.com/electron/electron/releases) for
+prebuilt binaries, debug symbols, and more.
 
 ### Mirrors
 
