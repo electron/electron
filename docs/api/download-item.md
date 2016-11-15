@@ -1,4 +1,4 @@
-# DownloadItem
+## Class: DownloadItem
 
 > Control file downloads from remote sources.
 
@@ -36,8 +36,6 @@ win.webContents.session.on('will-download', (event, item, webContents) => {
   })
 })
 ```
-
-## Class: DownloadItem
 
 ### Instance Events
 
