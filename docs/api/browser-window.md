@@ -109,6 +109,10 @@ child.once('ready-to-show', () => {
 
 ## Class: BrowserWindow
 
+> Create and control browser windows.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 `BrowserWindow` is an
 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
