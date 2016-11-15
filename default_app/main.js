@@ -84,11 +84,7 @@ app.once('ready', () => {
       label: 'View',
       submenu: [
         {
-          label: 'Reload',
-          accelerator: 'CmdOrCtrl+R',
-          click (item, focusedWindow) {
-            if (focusedWindow) focusedWindow.reload()
-          }
+          role: 'reload'
         },
         {
           label: 'Toggle Developer Tools',
