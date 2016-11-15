@@ -1,12 +1,14 @@
 # app
 
-`app` 模块是为了控制整个应用的生命周期设计的。
+> `app` 模块是为了控制整个应用的生命周期设计的。
+
+进程: [主进程](../tutorial/quick-start.md#main-process)
 
 下面的这个例子将会展示如何在最后一个窗口被关闭时退出应用：
 
 ```javascript
-var app = require('app')
-app.on('window-all-closed', function () {
+const {app} = require('electron')
+app.on('window-all-closed', () => {
   app.quit()
 })
 ```
@@ -19,22 +21,29 @@ app.on('window-all-closed', function () {
 
 当应用程序完成基础的启动的时候被触发。在 Windows 和 Linux 中，
 `will-finish-launching` 事件与 `ready` 事件是相同的； 在 macOS 中，
-这个时间相当于 `NSApplication` 中的 `applicationWillFinishLaunching` 提示。
+这个事件相当于 `NSApplication` 中的 `applicationWillFinishLaunching` 提示。
 你应该经常在这里为 `open-file` 和 `open-url` 设置监听器，并启动崩溃报告和自动更新。
 
 在大多数的情况下，你应该只在 `ready` 事件处理器中完成所有的业务。
 
 ### 事件：'ready'
 
-当 Electron 完成初始化时被触发。
+返回:
+
+* `launchInfo` Object _macOS_
+
+当 Electron 完成初始化时被触发。在 macOs 中， 如果从通知中心中启动，那么`launchInfo` 中的`userInfo`包含
+用来打开应用程序的 `NSUserNotification` 信息。你可以通过调用 `app.isReady()` 
+方法来检查此事件是否已触发。
 
 ### 事件：'window-all-closed'
 
 当所有的窗口都被关闭时触发。
 
-这个事件仅在应用还没有退出时才能触发。 如果用户按下了 `Cmd + Q`，
-或者开发者调用了 `app.quit()` ，Electron 将会先尝试关闭所有的窗口再触发 `will-quit` 事件，
-在这种情况下 `window-all-closed` 不会被触发。
+如果您没有监听此事件，当所有窗口都已关闭时，默认值行为是退出应用程序。但如果你监听此事件，
+将由你来控制应用程序是否退出。 如果用户按下了 `Cmd + Q`，或者开发者调用了 `app.quit()` ，
+Electron 将会先尝试关闭所有的窗口再触发 `will-quit` 事件，在这种情况下 `window-all-closed`
+ 不会被触发。
 
 ### 事件：'before-quit'
 
@@ -99,6 +108,19 @@ app.on('window-all-closed', function () {
 
 当应用被激活时触发，常用于点击应用的 dock 图标的时候。
 
+### 事件: 'continue-activity' _macOS_
+
+返回:
+
+* `event` Event
+* `type` String - 标识当前状态的字符串。 映射到[`NSUserActivity.activityType`] [activity-type]。
+* `userInfo` Object - 包含由另一个设备上的活动所存储的应用程序特定的状态。
+
+当来自不同设备的活动通过 [Handoff][handoff] 想要恢复时触发。如果需要处理这个事件，
+调用 `event.preventDefault()` 方法。
+只有具有支持相应的活动类型并且相同的开发团队ID作为启动程序时，用户行为才会进行。
+所支持活动类型已在应用的`Info.plist`中的`NSUserActivityTypes`明确定义。
+
 ### 事件：'browser-window-blur'
 
 返回：
@@ -126,6 +148,16 @@ app.on('window-all-closed', function () {
 
 当一个 [BrowserWindow](browser-window.md) 被创建的时候触发。
 
+### 事件: 'web-contents-created'
+
+Returns:
+
+* `event` Event
+* `webContents` WebContents
+
+在新的 [webContents](web-contents.md) 创建后触发.
+
+
 ### 事件：'certificate-error'
 
 返回：
@@ -143,9 +175,11 @@ app.on('window-all-closed', function () {
 调用 `callback(true)`。
 
 ```javascript
-session.on('certificate-error', function (event, webContents, url, error, certificate, callback) {
+const {app} = require('electron')
+
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
   if (url === 'https://github.com') {
-    // 验证逻辑。
+    // Verification logic.
     event.preventDefault()
     callback(true)
   } else {
@@ -203,20 +237,38 @@ app.on('select-certificate', function (event, host, url, list, callback) {
 用 `callback(username, password)` 来进行验证。
 
 ```javascript
-app.on('login', function (event, webContents, request, authInfo, callback) {
+const {app} = require('electron')
+
+app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault()
   callback('username', 'secret')
 })
 ```
 ### 事件：'gpu-process-crashed'
 
+返回:
+
+* `event` Event
+* `killed` Boolean
+
 当 GPU 进程崩溃时触发。
+
+### 事件: 'accessibility-support-changed' _macOS_ _Windows_
+
+返回:
+
+* `event` Event
+* `accessibilitySupportEnabled` Boolean - 当启用Chrome的辅助功能时候为`true`, 其他情况为 `false`.
+
+当 Chrome 的辅助功能状态改变时触发，比如屏幕阅读被启用或被禁用。
+点此 https://www.chromium.org/developers/design-documents/accessibility 查看更多详情。
+
 
 ## 方法列表
 
 `app` 对象拥有以下的方法：
 
-**请注意** 有的方法只能用于特定的操作系统。
+**请注意** 有的方法只能用于特定的操作系统，并被标注。
 
 ### `app.quit()`
 
@@ -225,6 +277,49 @@ app.on('login', function (event, webContents, request, authInfo, callback) {
 
 这个方法保证了所有的 `beforeunload` 和 `unload` 事件处理器被正确执行。假如一个窗口的 `beforeunload` 事件处理器返回 `false`，那么整个应用可能会取消退出。
 
+### `app.exit(exitCode)`
+
+* `exitCode` 整数
+
+带着`exitCode`退出应用，`exitCode` 默认为0
+
+所有的窗口会被立刻关闭，不会询问用户。`before-quit` 和 `will-quit` 这2个事件不会被触发
+
+### `app.relaunch([options])`
+
+* `options` Object (optional)
+  * `args` String[] (optional)
+  * `execPath` String (optional)
+
+当前实例退出，重启应用。
+
+默认情况下，新的实例会和当前实例使用相同的工作目录以及命令行参数。指定 `args` 参数，
+`args` 将会被作为替换的命令行参数。指定 `execPath` 参数，`execPath` 将会作为执行的目录。
+
+记住，这个方法不会退出正在执行的应用。你需要在调用`app.relaunch`方法后再执行`app.quit`或者`app.exit`
+来让应用重启。
+
+
+调用多次`app.relaunch`方法，当前实例退出后多个实例会被启动。
+
+例子：立即重启当前实例并向新的实例添加一个新的命令行参数
+
+```javascript
+const {app} = require('electron')
+
+app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
+app.exit(0)
+```
+
+### `app.isReady()`
+
+返回 `Boolean` - `true` 如果Electron 初始化完成, `false` 其他情况.
+
+### `app.focus()`
+
+在Linux系统中, 使第一个可见窗口获取焦点. macOS, 让该应用成为活动应用程序。
+Windows, 使应用的第一个窗口获取焦点.
+
 ### `app.hide()` _macOS_
 
 隐藏所有的应用窗口，不是最小化.
@@ -232,14 +327,6 @@ app.on('login', function (event, webContents, request, authInfo, callback) {
 ### `app.show()` _macOS_
 
 隐藏后重新显示所有的窗口，不会自动选中他们。
-
-### `app.exit(exitCode)`
-
-* `exitCode` 整数
-
-带着`exitCode`退出应用.
-
-所有的窗口会被立刻关闭，不会询问用户。`before-quit` 和 `will-quit` 这2个事件不会被触发
 
 ### `app.getAppPath()`
 
@@ -317,6 +404,54 @@ app.on('login', function (event, webContents, request, authInfo, callback) {
 
 清除最近访问的文档列表。
 
+### `app.setAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
+
+* `protocol` String - 协议的名字, 不包含 `://`.如果你希望你的应用处理链接 `electron://` ,
+ 将 `electron` 作为该方法的参数.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` String[] (optional) _Windows_ - Defaults to an empty array
+
+返回 `Boolean` - 调用是否成功.
+
+此方法将当前可执行程序设置为协议(亦称 URI scheme)的默认处理程序。 
+这允许您将应用程序更深入地集成到操作系统中. 一旦注册成功,
+所有 `your-protocol://` 格式的链接都会使用你的程序打开。整个链接（包括协议）将作为参数传递到应用程序中。
+
+在Windows系统中，你可以提供可选参数path，到执行文件的地址；args,一个在启动时传递给可执行文件的参数数组
+
+**注意:** 在macOS上，您只能注册已添加到应用程序的`info.plist`的协议，该协议不能在运行时修改。 
+但是，您可以在构建时使用简单的文本编辑器或脚本更改文件。 有关详细信息，请参阅 [Apple's documentation][CFBundleURLTypes] 
+
+该API在内部使用Windows注册表和lssetdefaulthandlerforurlscheme。
+
+### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
+
+* `protocol` String - 协议的名字, 不包含 `://`.
+* `path` String (optional) _Windows_ - 默认为 `process.execPath`
+* `args` String[] (optional) _Windows_ - 默认为空数组
+
+返回 `Boolean` - 调用是否成功.
+
+此方法检查当前程序是否为协议（也称为URI scheme）的默认处理程序。
+如果是，它会移除程序默认处理该协议。
+
+### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
+
+* `protocol` String - 协议的名字, 不包含 `://`.
+* `path` String (optional) _Windows_ - 默认值  `process.execPath`
+* `args` String[] (optional) _Windows_ - 默认为空数组
+
+返回 `Boolean`
+
+此方法检查当前程序是否为协议（也称为URI scheme）的默认处理程序。
+是则返回true 否则返回false
+
+**提示:** 在 macOS 系统中, 您可以使用此方法检查应用程序是否已注册为协议的默认处理程序。
+同时可以通过查看 `~/Library/Preferences/com.apple.LaunchServices.plist` 来确认。 
+有关详细信息，请参阅 [Apple's documentation][LSCopyDefaultHandlerForURLScheme] 。
+
+该API在内部使用Windows注册表和lssetdefaulthandlerforurlscheme。
+
 ### `app.setUserTasks(tasks)` _Windows_
 
 * `tasks` [Task] - 一个由 Task 对象构成的数组
@@ -334,13 +469,135 @@ app.on('login', function (event, webContents, request, authInfo, callback) {
 * `iconIndex` Integer - 图标文件中的采用的图标位置。如果一个图标文件包括了多个图标，就需要设置这个值以确定使用的是哪一个图标。
 如果这个图标文件中只包含一个图标，那么这个值为 0。
 
-### `app.allowNTLMCredentialsForAllDomains(allow)`
+返回 `Boolean` - 执行是否成功.
 
-* `allow` Boolean
+**提示:** 如果希望更多的定制任务栏跳转列表，请使用 `app.setJumpList(categories)` 。
 
-动态设置是否总是为 HTTP NTLM 或 Negotiate 认证发送证书。通常来说，Electron 只会对本地网络（比如和你处在一个域中的计算机）发
-送 NTLM / Kerberos 证书。但是假如网络设置得不太好，可能这个自动探测会失效，所以你可以通过这个接口自定义 Electron 对所有 URL
-的行为。
+### `app.getJumpListSettings()` _Windows_
+
+返回 `Object`:
+
+* `minItems` Integer - 将在跳转列表中显示项目的最小数量 (有关此值的更详细描述，请参阅
+  [MSDN docs][JumpListBeginListMSDN]).
+* `removedItems` [JumpListItem[]](structures/jump-list-item.md) -  `JumpListItem` 对象数组，对应用户在跳转列表中明确删除的项目。
+这些项目不能在 **接下来**调用`app.setJumpList()` 时重新添加到跳转列表中,
+Windows不会显示任何包含已删除项目的自定义类别.
+
+### `app.setJumpList(categories)` _Windows_
+
+* `categories` [JumpListCategory[]](structures/jump-list-category.md) 或者 `null` - `JumpListCategory` 对象的数组.
+
+设置或删除应用程序的自定义跳转列表，并返回以下字符串之一：
+
+* `ok` - 没有出现错误。
+* `error` - 发生一个或多个错误，启用运行日志记录找出可能的原因。
+* `invalidSeparatorError` -尝试向跳转列表中的自定义跳转列表添加分隔符。 分隔符只允许在标准的 `Tasks` 类别中。
+* `fileTypeRegistrationError` - 尝试向自定义跳转列表添加一个文件链接，但是该应用未注册处理该应用类型。
+* `customCategoryAccessDeniedError` - 由于用户隐私或策略组设置，自定义类别无法添加到跳转列表。
+
+如果`categories` 值为 `null` ，之前设定的自定义跳转列表(如果存在)将被替换为
+标准的应用跳转列表(由windows生成)
+
+`JumpListCategory` 对象需要包含以下属性：
+
+* `type` String - 以下其中一个：
+  * `tasks` - 此类别中的项目将被放置到标准的`Tasks`类别中。只能有一个这样的类别，
+    将总是显示在跳转列表的底部。
+  * `frequent` - 显示应用常用文件列表，类别的名称及其项目由Windows设置。
+  * `recent` - 显示应用最近打开的文件的列表，类别的名称及其项目由Windows设置。 
+    可以使用`app.addRecentDocument（path）`间接添加到项目到此类别。
+  * `custom` - 显示任务或文件链接，`name`必须由应用程序设置。
+* `name` String - 当`type` 为 `custom` 时此值为必填项,否则应省略。
+* `items` Array - `JumpListItem` 对象数组，如果 `type` 值为 `tasks` 或
+  `custom` 时必填，否则应省略。
+
+**注意:** 如果`JumpListCategory`对象没有设置`type`和`name`属性，
+那么`type`默认为`tasks`。 如果设置`name`属性，省略`type`属性，
+则`type`默认为`custom`。
+
+**注意:** 用户可以从自定义类别中移除项目，**下次**调用`app.setJumpList(categories)`方法之前，
+Windows不允许删除的项目添加回自定义类别。 尝试提前将删除的项目重新添加
+到自定义类别中，将导致整个自定义类别被隐藏。 删除的项目可以使用 `app.getJumpListSettings()`获取。
+
+`JumpListItem` 对象需要包含以下属性:
+
+* `type` String - 以下其中一个值:
+  * `task` - 带有特殊参数的方式启动一个应用；
+  * `separator` - 可以用于标准的 `Tasks`类别中的独立项目；
+  * `file` - 一个链接将使用创建跳转列表的应用程序打开一个文件,对应的应用程序必须
+   注册为这个文件类型的处理程序（不必是默认的处理程序）
+* `path` String - 要打开的文件的路径， 只有当 `type` 值为 `file`时设置
+* `program` String - 要执行程序的路径, 通常需要指定`process.execPath` 打开当前的应用程序.
+ 只有当 `type` 值为 `task`时设置
+* `args` String -  `program` 运行时的命令参数， 只有当 `type` 值为 `task`时设置
+* `title` String - 跳转列表中项目的展示文本.
+  只有当 `type` 值为 `task`时设置
+* `description` String - 任务说明（显示在工具提示中）.
+  只有当 `type` 值为 `task`时设置
+* `iconPath` String - 要显示在跳转列表中的图标的绝对路径，可以是包含图标的
+任意资源文件（例如`.ico`，`.exe`，`.dll`）。 你通常可以指定`process.execPath`来显示程序图标。
+* `iconIndex` Integer - 资源文件中图标的索引。 如果资源文件包含多个图标，
+则此值可用于指定此任务图标的（从0开始）索引，如果资源文件只包含一个图标，则此属性应设置为0
+
+以下是一个创建一个自定义跳转列表的简单例子：
+
+```javascript
+const {app} = require('electron')
+
+app.setJumpList([
+  {
+    type: 'custom',
+    name: 'Recent Projects',
+    items: [
+      { type: 'file', path: 'C:\\Projects\\project1.proj' },
+      { type: 'file', path: 'C:\\Projects\\project2.proj' }
+    ]
+  },
+  { // has a name so `type` is assumed to be "custom"
+    name: 'Tools',
+    items: [
+      {
+        type: 'task',
+        title: 'Tool A',
+        program: process.execPath,
+        args: '--run-tool-a',
+        icon: process.execPath,
+        iconIndex: 0,
+        description: 'Runs Tool A'
+      },
+      {
+        type: 'task',
+        title: 'Tool B',
+        program: process.execPath,
+        args: '--run-tool-b',
+        icon: process.execPath,
+        iconIndex: 0,
+        description: 'Runs Tool B'
+      }
+    ]
+  },
+  { type: 'frequent' },
+  { // has no name and no type so `type` is assumed to be "tasks"
+    items: [
+      {
+        type: 'task',
+        title: 'New Project',
+        program: process.execPath,
+        args: '--new-project',
+        description: 'Create a new project.'
+      },
+      { type: 'separator' },
+      {
+        type: 'task',
+        title: 'Recover Project',
+        program: process.execPath,
+        args: '--recover-project',
+        description: 'Recover Project'
+      }
+    ]
+  }
+])
+```
 
 ### `app.makeSingleInstance(callback)`
 
@@ -364,24 +621,45 @@ app.on('login', function (event, webContents, request, authInfo, callback) {
 下面是一个简单的例子。我们可以通过这个例子了解如何确保应用为单实例运行状态。
 
 ```javascript
+const {app} = require('electron')
 let myWindow = null
 
-let shouldQuit = app.makeSingleInstance(function (commandLine, workingDirectory) {
-  // 当另一个实例运行的时候，这里将会被调用，我们需要激活应用的窗口
+const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
+  // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore()
     myWindow.focus()
   }
-  return true
 })
 
-// 这个实例是多余的实例，需要退出
-if (shouldQuit) app.quit()
+if (shouldQuit) {
+  app.quit()
+}
 
-app.on('ready', function () {
-  // 创建窗口、继续加载应用、应用逻辑等……
+// Create myWindow, load the rest of the app, etc...
+app.on('ready', () => {
 })
 ```
+
+### `app.releaseSingleInstance()`
+
+释放所有由 `makeSingleInstance` 创建的限制. 
+这将允许应用程序的多个实例依次运行.
+
+### `app.setUserActivity(type, userInfo[, webpageURL])` _macOS_
+
+* `type` String - 唯一标识活动. 映射到
+  [`NSUserActivity.activityType`][activity-type].
+* `userInfo` Object - 应用程序特定状态，供其他设备使用
+* `webpageURL` String - 如果在恢复设备上未安装合适的应用程序，则会在浏览器中加载网页。 
+该格式必须是“http”或“https”。
+
+创建一个 `NSUserActivity` 并将其设置为当前activity,该 Activity
+有资格进行 [Handoff][handoff] 到另一个设备.
+
+### `app.getCurrentActivityType()` _macOS_
+
+返回： `String` - 正在运行的 activity 的类型.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
@@ -389,34 +667,91 @@ app.on('ready', function () {
 
 改变当前应用的 [Application User Model ID][app-user-model-id] 为 `id`.
 
-### `app.isAeroGlassEnabled()` _Windows_
+### `app.importCertificate(options, callback)` _LINUX_
 
-如果 [DWM composition](https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx)(Aero Glass) 启用
-了，那么这个方法会返回 `true`，否则是 `false`。你可以用这个方法来决定是否要开启透明窗口特效，因为如果用户没开启 DWM，那么透明窗
-口特效是无效的。
+* `options` Object
+  * `certificate` String - pkcs12 文件的路径.
+  * `password` String - 证书的密码.
+* `callback` Function
+  * `result` Integer - 导入结果.
 
-举个例子：
+将pkcs12格式的证书导入证书库. 导入操作的回调函数，带有的`result`参数,
+`0` 表示成功，其他值表示失败，参照 [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
-```javascript
-let browserOptions = {width: 1000, height: 800}
+### `app.disableHardwareAcceleration()`
 
-// 只有平台支持的时候才使用透明窗口
-if (process.platform !== 'win32' || app.isAeroGlassEnabled()) {
-  browserOptions.transparent = true
-  browserOptions.frame = false
-}
+为当前应用程序禁用硬件加速
 
-// 创建窗口
-win = new BrowserWindow(browserOptions)
+该方法只能在应用ready之前调用
 
-// 转到某个网页
-if (browserOptions.transparent) {
-  win.loadURL(`file://${__dirname}/index.html`)
-} else {
-  // 没有透明特效，我们应该用某个只包含基本样式的替代解决方案。
-  win.loadURL(`file://${__dirname}/fallback.html`)
-}
-```
+### `app.setBadgeCount(count)` _Linux_ _macOS_
+
+* `count` Integer
+
+返回 `Boolean` - 执行是否成功.
+
+设置当前app的badge上的值. `0` 将会隐藏该badge
+
+macOS系统中，这会展示在dock图标上，在Linux系统中，仅仅在 Unity launcher上有效。
+
+**注意:** Unity launcher工作依赖于 `.desktop`文件,
+详细信息请参阅 [Desktop Environment Integration][unity-requiremnt].
+
+### `app.getBadgeCount()` _Linux_ _macOS_
+
+返回 `Integer` - 当前展示在badge上的值.
+
+### `app.isUnityRunning()` _Linux_
+
+返回 `Boolean` - 当前工作环境是否为 Unity launcher.
+
+### `app.getLoginItemSettings()` _macOS_ _Windows_
+
+返回 `Object`:
+
+* `openAtLogin` Boolean -  `true` 如果程序设置的在登录时启动.
+* `openAsHidden` Boolean - `true` 如果程序设置在登录时隐藏启动.
+  该设定仅支持macOS.
+* `wasOpenedAtLogin` Boolean - `true` 如果程序在登录时已自动启动. 该设定仅支持macOS.
+* `wasOpenedAsHidden` Boolean - `true` 如果该程序在登录时已经隐藏启动.
+这表示该程序不应在启动时打开任何窗口.该设定仅支持macOS.
+* `restoreState` Boolean - `true` 如果该程序作为登录启动项并且需要回复之前的会话状态，
+这表示程序应该还原上次关闭时打开的窗口。该设定仅支持macOS.
+
+**注意:** 该 API 不影响
+[MAS builds][mas-builds].
+
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
+
+* `settings` Object
+  * `openAtLogin` Boolean - `true` 在登录时启动程序, `false` 移除程序作为登录启动项. 默认为 `false`.
+  * `openAsHidden` Boolean - `true` 登录时隐藏启动程序.默认为
+    `false`. 用户可以从系统首选项编辑此设置。因此程序启动后可以通过
+    `app.getLoginItemStatus().wasOpenedAsHidden` 检查当前值. 该设置仅适用于macOS
+
+设定应用的登录选项。
+
+**注意:** 该 API 不影响
+[MAS builds][mas-builds].
+
+### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
+
+返回： `Boolean` - 如果开启了Chrome的辅助功能，则返回`true`,
+其他情况返回 `false`. 如果使用了辅助技术，将会返回 `true` , 比如检测到使用屏幕阅读功能。详细信息请参阅
+https://www.chromium.org/developers/design-documents/accessibility 
+
+### `app.setAboutPanelOptions(options)` _macOS_
+
+* `options` Object
+  * `applicationName` String (optional) - 应用名.
+  * `applicationVersion` String (optional) - 应用版本.
+  * `copyright` String (optional) - Copyright 信息.
+  * `credits` String (optional) - 信誉信息.
+  * `version` String (optional) - 开发版本号.
+
+设置关于面板的选项，这将覆盖应用程序`.plist`文件中定义的值。
+详细信息，请参阅 [Apple docs][about-panel-options] .
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 通过可选的参数 `value` 给 Chromium 中添加一个命令行开关。
@@ -445,6 +780,12 @@ if (browserOptions.transparent) {
 
 取消这个 `id` 对应的请求。
 
+### `app.dock.downloadFinished(filePath)` _macOS_
+
+* `filePath` String
+
+如果filePath位于Downloads文件夹中，则弹出下载队列。
+
 ### `app.dock.setBadge(text)` _macOS_
 
 * `text` String
@@ -463,6 +804,11 @@ if (browserOptions.transparent) {
 
 显示应用在 dock 中的图标。
 
+### `app.dock.isVisible()` _macOS_
+
+返回 `Boolean` - dock 图标是否可见.
+`app.dock.show()` 是异步方法，因此此方法可能无法在调用之后立即返回true.
+
 ### `app.dock.setMenu(menu)` _macOS_
 
 * `menu` [Menu](menu.md)
@@ -475,6 +821,15 @@ if (browserOptions.transparent) {
 
 设置应用在 dock 中显示的图标。
 
+
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
+[LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
+[handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
+[activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
+[unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux
+[mas-builds]: ../tutorial/mac-app-store-submission-guide.md
+[JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
+[about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc
