@@ -93,7 +93,7 @@ bool TriggerAcceleratorTableCommand(AcceleratorTable* table,
     if (item.model->IsEnabledAt(item.position)) {
       item.model->ActivatedAt(item.position);
       return true;
-    } 
+    }
   }
   return false;
 }
