@@ -1384,8 +1384,16 @@ describe('browser-window module', function () {
             assert.equal(message.tabId, w.webContents.id)
             assert.equal(message.i18nString, 'foo - bar (baz)')
             assert.deepEqual(message.storageItems, {
-              local: {hello: 'world'},
-              sync: {foo: 'bar'}
+              local: {
+                set: {hello: 'world', world: 'hello'},
+                remove: {world: 'hello'},
+                clear: {}
+              },
+              sync: {
+                set: {foo: 'bar', bar: 'foo'},
+                remove: {foo: 'bar'},
+                clear: {}
+              }
             })
             done()
           })
