@@ -253,8 +253,8 @@ Prevents the webview contents from resizing when the webview element itself is
 resized.
 
 This can be used in combination with
-[`webContents.setSize`](web-view-tag.md#contentssetsize) to manually
-resize the webview contents in reaction to e.g. window size changes. This can
+[`webContents.setSize`](web-contents.md#contentssetsizeoptions) to manually
+resize the webview contents in reaction to a window size change. This can
 make resizing faster compared to relying on the webview element bounds to
 automatically resize the contents.
 

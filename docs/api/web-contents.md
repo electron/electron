@@ -1133,10 +1133,12 @@ Shows pop-up dictionary that searches the selected word on the page.
 
 #### `contents.setSize(options)`
 
-Controls the bounds of the [`<webview>`](web-view-tag.md) guest.
+Set the size of the page. This is only supported for `<webview>` guest contents.
 
 * `options` Object
-  * `normal` Object (optional) - New size of the webview guest. This is can be used in combination with the [`disableguestresize`](web-view-tag.md#disableguestresize) attribute to manually resize the webview guest.
+  * `normal` Object (optional) - Normal size of the page. This can be used in
+    combination with the [`disableguestresize`](web-view-tag.md#disableguestresize)
+    attribute to manually resize the webview guest contents.
     * `width` Integer
     * `height` Integer
 
