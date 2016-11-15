@@ -87,11 +87,7 @@ app.once('ready', () => {
           role: 'reload'
         },
         {
-          label: 'Toggle Developer Tools',
-          accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-          click (item, focusedWindow) {
-            if (focusedWindow) focusedWindow.toggleDevTools()
-          }
+          role: 'toggledevtools'
         },
         {
           type: 'separator'
