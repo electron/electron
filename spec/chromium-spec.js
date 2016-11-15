@@ -283,11 +283,11 @@ describe('chromium feature', function () {
   describe('window.opener', function () {
     this.timeout(10000)
 
-    var url = 'file://' + fixtures + '/pages/window-opener.html'
-    var w = null
+    let url = 'file://' + fixtures + '/pages/window-opener.html'
+    let w = null
 
     afterEach(function () {
-      w != null ? w.destroy() : void 0
+      if (w) w.destroy()
     })
 
     it('is null for main window', function (done) {
@@ -302,7 +302,7 @@ describe('chromium feature', function () {
     })
 
     it('is not null for window opened by window.open', function (done) {
-      var b
+      let b
       listener = function (event) {
         assert.equal(event.data, 'object')
         b.close()
@@ -310,6 +310,48 @@ describe('chromium feature', function () {
       }
       window.addEventListener('message', listener)
       b = window.open(url, '', 'show=no')
+    })
+  })
+
+  describe('window.opener security', function () {
+    this.timeout(10000)
+
+    let scheme = 'other'
+    let url = `${scheme}://${fixtures}/pages/window-opener-location.html`
+    let w = null
+
+    before(function () {
+      protocol.registerFileProtocol(scheme, function (request, callback) {
+        callback(`${fixtures}/pages/window-opener-location.html`)
+      }, function (error) {
+        if (error) done(error)
+      })
+    })
+
+    after(function() {
+      protocol.unregisterProtocol(scheme)
+    })
+
+    afterEach(function () {
+      w.close()
+    })
+
+    it('does nothing when origin of current window does not match opener', function (done) {
+      listener = function (event) {
+        assert.equal(event.data, undefined)
+        done()
+      }
+      window.addEventListener('message', listener)
+      w = window.open(url, '', 'show=no')
+    })
+
+    it('works when origin does not match opener but has node integration', function (done) {
+      listener = function (event) {
+        assert.equal(event.data, location.href)
+        done()
+      }
+      window.addEventListener('message', listener)
+      w = window.open(url, '', 'show=no,nodeIntegration=yes')
     })
   })
 
