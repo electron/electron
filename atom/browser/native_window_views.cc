@@ -571,9 +571,8 @@ void NativeWindowViews::SetContentSizeConstraints(
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  if (has_frame()) {
+  if (has_frame())
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
-  }
 #elif defined(USE_X11)
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set
@@ -595,11 +594,10 @@ void NativeWindowViews::SetResizable(bool resizable) {
 
 bool NativeWindowViews::IsResizable() {
 #if defined(OS_WIN)
-  if (has_frame()) {
+  if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
-  } else {
+  else
     return CanResize();
-  }
 #else
   return CanResize();
 #endif
