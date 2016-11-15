@@ -1354,7 +1354,7 @@ describe('<webview> tag', function () {
     })
 
     it('resizes guest when attribute is not present', done => {
-      w = new BrowserWindow({ show: false, width: 200, height: 200 })
+      w = new BrowserWindow({show: false, width: 200, height: 200})
       w.loadURL('file://' + fixtures + '/pages/webview-guest-resize.html')
 
       w.webContents.once('did-finish-load', () => {
@@ -1363,6 +1363,7 @@ describe('<webview> tag', function () {
         const elementResizePromise = new Promise(resolve => {
           ipcMain.once('webview-element-resize', (event, width, height) => {
             assert.equal(width, CONTENT_SIZE)
+            assert.equal(height, CONTENT_SIZE)
             resolve()
           })
         })
@@ -1370,6 +1371,7 @@ describe('<webview> tag', function () {
         const guestResizePromise = new Promise(resolve => {
           ipcMain.once('webview-guest-resize', (event, width, height) => {
             assert.equal(width, CONTENT_SIZE)
+            assert.equal(height, CONTENT_SIZE)
             resolve()
           })
         })
@@ -1381,7 +1383,7 @@ describe('<webview> tag', function () {
     })
 
     it('does not resize guest when attribute is present', done => {
-      w = new BrowserWindow({ show: false, width: 200, height: 200 })
+      w = new BrowserWindow({show: false, width: 200, height: 200})
       w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
 
       w.webContents.once('did-finish-load', () => {
@@ -1390,13 +1392,14 @@ describe('<webview> tag', function () {
         const elementResizePromise = new Promise(resolve => {
           ipcMain.once('webview-element-resize', (event, width, height) => {
             assert.equal(width, CONTENT_SIZE)
+            assert.equal(height, CONTENT_SIZE)
             resolve()
           })
         })
 
         const noGuestResizePromise = new Promise(resolve => {
           const onGuestResize = (event, width, height) => {
-            assert(false, 'unexpected guest resize message')
+            done(new Error('Unexpected guest resize message'))
           }
           ipcMain.once('webview-guest-resize', onGuestResize)
 
@@ -1413,7 +1416,7 @@ describe('<webview> tag', function () {
     })
 
     it('dispatches element resize event even when attribute is present', done => {
-      w = new BrowserWindow({ show: false, width: 200, height: 200 })
+      w = new BrowserWindow({show: false, width: 200, height: 200})
       w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
 
       w.webContents.once('did-finish-load', () => {
@@ -1429,7 +1432,7 @@ describe('<webview> tag', function () {
     })
 
     it('can be manually resized with setSize even when attribute is present', done => {
-      w = new BrowserWindow({ show: false, width: 200, height: 200 })
+      w = new BrowserWindow({show: false, width: 200, height: 200})
       w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
 
       w.webContents.once('did-finish-load', () => {
@@ -1442,7 +1445,7 @@ describe('<webview> tag', function () {
           done()
         })
 
-        for (let wc of webContents.getAllWebContents()) {
+        for (const wc of webContents.getAllWebContents()) {
           if (wc.hostWebContents &&
               wc.hostWebContents.id === w.webContents.id) {
             wc.setSize({
