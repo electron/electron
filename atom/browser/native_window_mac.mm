@@ -1212,7 +1212,7 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
-  if (!(base::mac::IsOSMavericks() || base::mac::IsOSYosemiteOrLater())) return;
+  if (!base::mac::IsOSYosemiteOrLater()) return;
 
   NSView* vibrant_view = [window_ vibrantView];
 
@@ -1251,19 +1251,27 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancyType = NSVisualEffectMaterialTitlebar;
   }
 
-  if (base::mac::IsOSYosemiteOrLater()) {
+  if (base::mac::IsOSElCapitanOrLater()) {
+    // TODO(kevinsawicki): Use NSVisualEffectMaterial* constants directly once
+    // they are available in the minimum SDK version
     if (type == "selection") {
-      vibrancyType = NSVisualEffectMaterialSelection;
+      // NSVisualEffectMaterialSelection
+      vibrancyType = (NSVisualEffectMaterial) 4;
     } else if (type == "menu") {
-      vibrancyType = NSVisualEffectMaterialMenu;
+      // NSVisualEffectMaterialMenu
+      vibrancyType = (NSVisualEffectMaterial) 5;
     } else if (type == "popover") {
-      vibrancyType = NSVisualEffectMaterialPopover;
+      // NSVisualEffectMaterialPopover
+      vibrancyType = (NSVisualEffectMaterial) 6;
     } else if (type == "sidebar") {
-      vibrancyType = NSVisualEffectMaterialSidebar;
+      // NSVisualEffectMaterialSidebar
+      vibrancyType = (NSVisualEffectMaterial) 7;
     } else if (type == "medium-light") {
-      vibrancyType = NSVisualEffectMaterialMediumLight;
+      // NSVisualEffectMaterialMediumLight
+      vibrancyType = (NSVisualEffectMaterial) 8;
     } else if (type == "ultra-dark") {
-      vibrancyType = NSVisualEffectMaterialUltraDark;
+      // NSVisualEffectMaterialUltraDark
+      vibrancyType = (NSVisualEffectMaterial) 9;
     }
   }
 
