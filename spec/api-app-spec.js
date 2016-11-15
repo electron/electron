@@ -207,11 +207,11 @@ describe('app module', function () {
       app.on('select-client-certificate', function (event, webContents, url, list, callback) {
         assert.equal(list.length, 1)
         assert.equal(list[0].issuerName, 'Intermediate CA')
-        assert.equal(list[0].subjectName, 'localhost')
+        assert.equal(list[0].subjectName, 'Client Cert')
         assert(list[0].issuer)
         assert.equal(list[0].issuer.commonName, 'Intermediate CA')
         assert(list[0].subject)
-        assert.equal(list[0].subject.commonName, 'localhost')
+        assert.equal(list[0].subject.commonName, 'Client Cert')
         assert(list[0].issuerCert)
         assert(list[0].issuerCert.subject)
         assert.equal(list[0].issuerCert.subject.commonName, 'Intermediate CA')
