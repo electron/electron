@@ -9,9 +9,11 @@
 #include "atom/common/api/remote_callback_freer.h"
 #include "atom/common/api/remote_object_freer.h"
 #include "atom/common/native_mate_converters/content_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/hash.h"
 #include "native_mate/dictionary.h"
+#include "url/origin.h"
 #include "v8/include/v8-profiler.h"
 
 namespace std {
@@ -97,6 +99,10 @@ void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
     v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
 }
 
+bool IsSameOrigin(const GURL& l, const GURL& r) {
+  return url::Origin(l).IsSameOriginWith(url::Origin(r));
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
@@ -112,6 +118,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                  &atom::api::KeyWeakMap<std::pair<int64_t, int32_t>>::Create);
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
+  dict.SetMethod("isSameOrigin", &IsSameOrigin);
 }
 
 }  // namespace
