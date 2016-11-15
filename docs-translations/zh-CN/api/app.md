@@ -511,47 +511,35 @@ Windows不会显示任何包含已删除项目的自定义类别.
 * `items` Array - `JumpListItem` 对象数组，如果 `type` 值为 `tasks` 或
   `custom` 时必填，否则应省略。
 
-**Note:** 如果`JumpListCategory`对象没有设置`type`和`name`属性，
+**注意:** 如果`JumpListCategory`对象没有设置`type`和`name`属性，
 那么`type`默认为`tasks`。 如果设置`name`属性，省略`type`属性，
 则`type`默认为`custom`。
 
-**Note:** Users can remove items from custom categories, and Windows will not
-allow a removed item to be added back into a custom category until **after**
-the next successful call to `app.setJumpList(categories)`. Any attempt to
-re-add a removed item to a custom category earlier than that will result in the
-entire custom category being omitted from the Jump List. The list of removed
-items can be obtained using `app.getJumpListSettings()`.
+**注意:** 用户可以从自定义类别中移除项目，**下次**调用`app.setJumpList(categories)`方法之前，
+Windows不允许删除的项目添加回自定义类别。 尝试提前将删除的项目重新添加
+到自定义类别中，将导致整个自定义类别被隐藏。 删除的项目可以使用 `app.getJumpListSettings()`获取。
 
-`JumpListItem` objects should have the following properties:
+`JumpListItem` 对象需要包含以下属性:
 
-* `type` String - One of the following:
-  * `task` - A task will launch an app with specific arguments.
-  * `separator` - Can be used to separate items in the standard `Tasks`
-    category.
-  * `file` - A file link will open a file using the app that created the
-    Jump List, for this to work the app must be registered as a handler for
-    the file type (though it doesn't have to be the default handler).
-* `path` String - Path of the file to open, should only be set if `type` is
-  `file`.
-* `program` String - Path of the program to execute, usually you should
-  specify `process.execPath` which opens the current program. Should only be
-  set if `type` is `task`.
-* `args` String - The command line arguments when `program` is executed. Should
-  only be set if `type` is `task`.
-* `title` String - The text to be displayed for the item in the Jump List.
-  Should only be set if `type` is `task`.
-* `description` String - Description of the task (displayed in a tooltip).
-  Should only be set if `type` is `task`.
-* `iconPath` String - The absolute path to an icon to be displayed in a
-  Jump List, which can be an arbitrary resource file that contains an icon
-  (e.g. `.ico`, `.exe`, `.dll`). You can usually specify `process.execPath` to
-  show the program icon.
-* `iconIndex` Integer - The index of the icon in the resource file. If a
-  resource file contains multiple icons this value can be used to specify the
-  zero-based index of the icon that should be displayed for this task. If a
-  resource file contains only one icon, this property should be set to zero.
+* `type` String - 以下其中一个值:
+  * `task` - 带有特殊参数的方式启动一个应用；
+  * `separator` - 可以用于标准的 `Tasks`类别中的独立项目；
+  * `file` - 一个链接将使用创建跳转列表的应用程序打开一个文件,对应的应用程序必须
+   注册为这个文件类型的处理程序（不必是默认的处理程序）
+* `path` String - 要打开的文件的路径， 只有当 `type` 值为 `file`时设置
+* `program` String - 要执行程序的路径, 通常需要指定`process.execPath` 打开当前的应用程序.
+ 只有当 `type` 值为 `task`时设置
+* `args` String -  `program` 运行时的命令参数， 只有当 `type` 值为 `task`时设置
+* `title` String - 跳转列表中项目的展示文本.
+  只有当 `type` 值为 `task`时设置
+* `description` String - 任务说明（显示在工具提示中）.
+  只有当 `type` 值为 `task`时设置
+* `iconPath` String - 要显示在跳转列表中的图标的绝对路径，可以是包含图标的
+任意资源文件（例如`.ico`，`.exe`，`.dll`）。 你通常可以指定`process.execPath`来显示程序图标。
+* `iconIndex` Integer - 资源文件中图标的索引。 如果资源文件包含多个图标，
+则此值可用于指定此任务图标的（从0开始）索引，如果资源文件只包含一个图标，则此属性应设置为0
 
-以下是一个创建一个自定义跳转列表的简单例子
+以下是一个创建一个自定义跳转列表的简单例子：
 
 ```javascript
 const {app} = require('electron')
@@ -660,18 +648,18 @@ app.on('ready', () => {
 
 ### `app.setUserActivity(type, userInfo[, webpageURL])` _macOS_
 
-* `type` String - Uniquely identifies the activity. Maps to
+* `type` String - 唯一标识活动. 映射到
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - App-specific state to store for use by another device.
-* `webpageURL` String - The webpage to load in a browser if no suitable app is
-  installed on the resuming device. The scheme must be `http` or `https`.
+* `userInfo` Object - 应用程序特定状态，供其他设备使用
+* `webpageURL` String - 如果在恢复设备上未安装合适的应用程序，则会在浏览器中加载网页。 
+该格式必须是“http”或“https”。
 
-Creates an `NSUserActivity` and sets it as the current activity. The activity
-is eligible for [Handoff][handoff] to another device afterward.
+创建一个 `NSUserActivity` 并将其设置为当前activity,该 Activity
+有资格进行 [Handoff][handoff] 到另一个设备.
 
 ### `app.getCurrentActivityType()` _macOS_
 
-Returns `String` - The type of the currently running activity.
+返回： `String` - 正在运行的 activity 的类型.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
@@ -682,98 +670,87 @@ Returns `String` - The type of the currently running activity.
 ### `app.importCertificate(options, callback)` _LINUX_
 
 * `options` Object
-  * `certificate` String - Path for the pkcs12 file.
-  * `password` String - Passphrase for the certificate.
+  * `certificate` String - pkcs12 文件的路径.
+  * `password` String - 证书的密码.
 * `callback` Function
-  * `result` Integer - Result of import.
+  * `result` Integer - 导入结果.
 
-Imports the certificate in pkcs12 format into the platform certificate store.
-`callback` is called with the `result` of import operation, a value of `0`
-indicates success while any other value indicates failure according to chromium [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+将pkcs12格式的证书导入证书库. 导入操作的回调函数，带有的`result`参数,
+`0` 表示成功，其他值表示失败，参照 [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
 ### `app.disableHardwareAcceleration()`
 
-Disables hardware acceleration for current app.
+为当前应用程序禁用硬件加速
 
-This method can only be called before app is ready.
+该方法只能在应用ready之前调用
 
 ### `app.setBadgeCount(count)` _Linux_ _macOS_
 
 * `count` Integer
 
-Returns `Boolean` - Whether the call succeeded.
+返回 `Boolean` - 执行是否成功.
 
-Sets the counter badge for current app. Setting the count to `0` will hide the
-badge.
+设置当前app的badge上的值. `0` 将会隐藏该badge
 
-On macOS it shows on the dock icon. On Linux it only works for Unity launcher,
+macOS系统中，这会展示在dock图标上，在Linux系统中，仅仅在 Unity launcher上有效。
 
-**Note:** Unity launcher requires the exsistence of a `.desktop` file to work,
-for more information please read [Desktop Environment Integration][unity-requiremnt].
+**注意:** Unity launcher工作依赖于 `.desktop`文件,
+详细信息请参阅 [Desktop Environment Integration][unity-requiremnt].
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
-Returns `Integer` - The current value displayed in the counter badge.
+返回 `Integer` - 当前展示在badge上的值.
 
 ### `app.isUnityRunning()` _Linux_
 
-Returns `Boolean` - Whether the current desktop environment is Unity launcher.
+返回 `Boolean` - 当前工作环境是否为 Unity launcher.
 
 ### `app.getLoginItemSettings()` _macOS_ _Windows_
 
-Returns `Object`:
+返回 `Object`:
 
-* `openAtLogin` Boolean - `true` if the app is set to open at login.
-* `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
-  This setting is only supported on macOS.
-* `wasOpenedAtLogin` Boolean - `true` if the app was opened at login
-  automatically. This setting is only supported on macOS.
-* `wasOpenedAsHidden` Boolean - `true` if the app was opened as a hidden login
-  item. This indicates that the app should not open any windows at startup.
-  This setting is only supported on macOS.
-* `restoreState` Boolean - `true` if the app was opened as a login item that
-  should restore the state from the previous session. This indicates that the
-  app should restore the windows that were open the last time the app was
-  closed. This setting is only supported on macOS.
+* `openAtLogin` Boolean -  `true` 如果程序设置的在登录时启动.
+* `openAsHidden` Boolean - `true` 如果程序设置在登录时隐藏启动.
+  该设定仅支持macOS.
+* `wasOpenedAtLogin` Boolean - `true` 如果程序在登录时已自动启动. 该设定仅支持macOS.
+* `wasOpenedAsHidden` Boolean - `true` 如果该程序在登录时已经隐藏启动.
+这表示该程序不应在启动时打开任何窗口.该设定仅支持macOS.
+* `restoreState` Boolean - `true` 如果该程序作为登录启动项并且需要回复之前的会话状态，
+这表示程序应该还原上次关闭时打开的窗口。该设定仅支持macOS.
 
-**Note:** This API has no effect on
+**注意:** 该 API 不影响
 [MAS builds][mas-builds].
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
-  * `openAtLogin` Boolean - `true` to open the app at login, `false` to remove
-    the app as a login item. Defaults to `false`.
-  * `openAsHidden` Boolean - `true` to open the app as hidden. Defaults to
-    `false`. The user can edit this setting from the System Preferences so
-    `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
-    is opened to know the current value. This setting is only supported on
-    macOS.
+  * `openAtLogin` Boolean - `true` 在登录时启动程序, `false` 移除程序作为登录启动项. 默认为 `false`.
+  * `openAsHidden` Boolean - `true` 登录时隐藏启动程序.默认为
+    `false`. 用户可以从系统首选项编辑此设置。因此程序启动后可以通过
+    `app.getLoginItemStatus().wasOpenedAsHidden` 检查当前值. 该设置仅适用于macOS
 
-Set the app's login item settings.
+设定应用的登录选项。
 
-**Note:** This API has no effect on
+**注意:** 该 API 不影响
 [MAS builds][mas-builds].
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
-Returns `Boolean` - `true` if Chrome's accessibility support is enabled,
-`false` otherwise. This API will return `true` if the use of assistive
-technologies, such as screen readers, has been detected. See
-https://www.chromium.org/developers/design-documents/accessibility for more
-details.
+返回： `Boolean` - 如果开启了Chrome的辅助功能，则返回`true`,
+其他情况返回 `false`. 如果使用了辅助技术，将会返回 `true` , 比如检测到使用屏幕阅读功能。详细信息请参阅
+https://www.chromium.org/developers/design-documents/accessibility 
 
 ### `app.setAboutPanelOptions(options)` _macOS_
 
 * `options` Object
-  * `applicationName` String (optional) - The app's name.
-  * `applicationVersion` String (optional) - The app's version.
-  * `copyright` String (optional) - Copyright information.
-  * `credits` String (optional) - Credit information.
-  * `version` String (optional) - The app's build version number.
+  * `applicationName` String (optional) - 应用名.
+  * `applicationVersion` String (optional) - 应用版本.
+  * `copyright` String (optional) - Copyright 信息.
+  * `credits` String (optional) - 信誉信息.
+  * `version` String (optional) - 开发版本号.
 
-Set the about panel options. This will override the values defined in the app's
-`.plist` file. See the [Apple docs][about-panel-options] for more details.
+设置关于面板的选项，这将覆盖应用程序`.plist`文件中定义的值。
+详细信息，请参阅 [Apple docs][about-panel-options] .
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
@@ -807,7 +784,7 @@ Set the about panel options. This will override the values defined in the app's
 
 * `filePath` String
 
-Bounces the Downloads stack if the filePath is inside the Downloads folder.
+如果filePath位于Downloads文件夹中，则弹出下载队列。
 
 ### `app.dock.setBadge(text)` _macOS_
 
@@ -829,7 +806,7 @@ Bounces the Downloads stack if the filePath is inside the Downloads folder.
 
 ### `app.dock.isVisible()` _macOS_
 
-Returns `Boolean` - dock 图标是否可见.
+返回 `Boolean` - dock 图标是否可见.
 `app.dock.show()` 是异步方法，因此此方法可能无法在调用之后立即返回true.
 
 ### `app.dock.setMenu(menu)` _macOS_
