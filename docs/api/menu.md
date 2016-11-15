@@ -1,4 +1,4 @@
-# Menu
+## Class: Menu
 
 > Create native application menus and context menus.
 
@@ -216,8 +216,6 @@ window.addEventListener('contextmenu', (e) => {
 }, false)
 </script>
 ```
-
-## Class: Menu
 
 ### `new Menu()`
 

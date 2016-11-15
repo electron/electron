@@ -1,8 +1,10 @@
-# Tray
+## Class: Tray
 
 > Add icons and context menus to the system's notification area.
 
 Process: [Main](../tutorial/quick-start.md#main-process)
+
+`Tray` is an [EventEmitter][event-emitter].
 
 ```javascript
 const {app, Menu, Tray} = require('electron')
@@ -55,9 +57,6 @@ app.on('ready', () => {
 If you want to keep exact same behaviors on all platforms, you should not
 rely on the `click` event and always attach a context menu to the tray icon.
 
-## Class: Tray
-
-`Tray` is an [EventEmitter][event-emitter].
 
 ### `new Tray(image)`
 
