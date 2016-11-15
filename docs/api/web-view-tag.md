@@ -243,6 +243,44 @@ webview.
 The existing webview will see the `destroy` event and will then create a new
 webContents when a new url is loaded.
 
+### `disableguestresize`
+
+```html
+<webview src="https://www.github.com/" disableguestresize></webview>
+```
+
+Prevents the webview contents from resizing when the webview element itself is
+resized.
+
+This can be used in combination with
+[`webContents.setSize`](web-contents.md#contentssetsizeoptions) to manually
+resize the webview contents in reaction to a window size change. This can
+make resizing faster compared to relying on the webview element bounds to
+automatically resize the contents.
+
+```javascript
+const {webContents} = require('electron')
+
+// We assume that `win` points to a `BrowserWindow` instance containing a
+// `<webview>` with `disableguestresize`.
+
+win.on('resize', () => {
+  const [width, height] = win.getContentSize()
+  for (let wc of webContents.getAllWebContents()) {
+    // Check if `wc` belongs to a webview in the `win` window.
+    if (wc.hostWebContents &&
+        wc.hostWebContents.id === win.webContents.id) {
+      wc.setSize({
+        normal: {
+          width: width,
+          height: height
+        }
+      })
+    }
+  }
+})
+```
+
 ## Methods
 
 The `webview` tag has the following methods:

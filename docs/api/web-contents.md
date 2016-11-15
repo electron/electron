@@ -1131,6 +1131,17 @@ win.webContents.on('did-finish-load', () => {
 
 Shows pop-up dictionary that searches the selected word on the page.
 
+#### `contents.setSize(options)`
+
+Set the size of the page. This is only supported for `<webview>` guest contents.
+
+* `options` Object
+  * `normal` Object (optional) - Normal size of the page. This can be used in
+    combination with the [`disableguestresize`](web-view-tag.md#disableguestresize)
+    attribute to manually resize the webview guest contents.
+    * `width` Integer
+    * `height` Integer
+
 #### `contents.isOffscreen()`
 
 Returns `Boolean` - Indicates whether *offscreen rendering* is enabled.
