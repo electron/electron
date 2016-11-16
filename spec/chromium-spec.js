@@ -316,7 +316,7 @@ describe('chromium feature', function () {
   describe('window.opener security', function () {
     this.timeout(10000)
 
-    let scheme = 'other'
+    const scheme = 'other'
     let url = `${scheme}://${fixtures}/pages/window-opener-location.html`
     let w = null
 
