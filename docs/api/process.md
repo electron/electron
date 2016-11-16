@@ -4,7 +4,7 @@
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
-The `process` object is extended in Electron with following APIs:
+The [`process`](https://nodejs.org/api/process.html) object is extended in Electron with following APIs:
 
 ## Events
 
