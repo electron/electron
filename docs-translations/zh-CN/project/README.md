@@ -5,8 +5,8 @@
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron#info=devDependencies)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
-Electron框架，让您可使用JavaScript, HTML 及 CSS 编写桌面程序。
-它基于[Node.js](https://nodejs.org/)及[Chromium](http://www.chromium.org)
+Electron框架，让您可使用JavaScript, HTML 及 CSS 编写跨平台桌面程序。
+它基于[Node.js](https://nodejs.org/)及[Chromium](http://www.chromium.org)，
 [Atom editor](https://github.com/atom/atom)以及很多其他的[apps](http://electron.atom.io/apps)就是使用Electron编写的。
 
 请关注Twitter [@ElectronJS](https://twitter.com/electronjs) 以获得重要通告。
@@ -44,7 +44,7 @@ ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron --s
 ## 文档
 
 开发指南及API文档位于
-[docs](https://github.com/electron/electron/tree/master/docs)
+[docs](https://github.com/electron/electron/tree/master/docs-translations/zh-CN)
 它也包括如何编译和改进Electron
 
 ## 翻译版文档
@@ -78,7 +78,7 @@ Clone 并 run 这个 [`electron/electron-quick-start`](https://github.com/electr
 - [`electron-id`](https://electron-id.slack.com) *(印度尼西亚)*
 
 查看 [awesome-electron](https://github.com/sindresorhus/awesome-electron)
-来获得被社会维持的应用件例子，工具和资源列表。
+来获得由社区维护有用的应用例子、工具和资源列表。
 
 ## 执照
 
