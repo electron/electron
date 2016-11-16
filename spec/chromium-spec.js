@@ -324,7 +324,7 @@ describe('chromium feature', function () {
       protocol.registerFileProtocol(scheme, function (request, callback) {
         callback(`${fixtures}/pages/window-opener-location.html`)
       }, function (error) {
-        if (error) done(error)
+        done(error)
       })
     })
 
