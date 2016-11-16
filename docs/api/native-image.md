@@ -18,7 +18,7 @@ let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'})
 console.log(appIcon, win)
 ```
 
-Or read the image from the clipboard which returns a `nativeImage`:
+Or read the image from the clipboard which returns a `NativeImage`:
 
 ```javascript
 const {clipboard, Tray} = require('electron')
