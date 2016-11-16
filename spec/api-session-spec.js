@@ -556,7 +556,11 @@ describe('session module', function () {
         assert.equal(certificate.subjectName, 'localhost')
         assert.equal(certificate.issuer.commonName, 'Intermediate CA')
         assert.equal(certificate.subject.commonName, 'localhost')
+        assert.equal(certificate.issuerCert.issuer.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.subject.commonName, 'Intermediate CA')
+        assert.equal(certificate.issuerCert.issuerCert.issuer.commonName, 'Root CA')
+        assert.equal(certificate.issuerCert.issuerCert.subject.commonName, 'Root CA')
+        assert.equal(certificate.issuerCert.issuerCert.issuerCert, undefined)
         callback(false)
       })
 
