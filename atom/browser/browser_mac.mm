@@ -255,6 +255,16 @@ void Browser::DockSetIcon(const gfx::Image& image) {
 
 void Browser::ShowAboutPanel() {
   NSDictionary* options = DictionaryValueToNSDictionary(about_panel_options_);
+
+  // Credits must be a NSAttributedString instead of NSString
+  id credits = options[@"Credits"];
+  if (credits != nil) {
+    NSMutableDictionary* mutable_options = [options mutableCopy];
+    mutable_options[@"Credits"] = [[[NSAttributedString alloc]
+        initWithString:(NSString*)credits] autorelease];
+    options = [NSDictionary dictionaryWithDictionary:mutable_options];
+  }
+
   [[AtomApplication sharedApplication]
       orderFrontStandardAboutPanelWithOptions:options];
 }
