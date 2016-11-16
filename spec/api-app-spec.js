@@ -210,7 +210,6 @@ describe('app module', function () {
         assert.equal(list[0].subjectName, 'Client Cert')
         assert.equal(list[0].issuer.commonName, 'Intermediate CA')
         assert.equal(list[0].subject.commonName, 'Client Cert')
-        assert.equal(list[0].issuerCert.subject.commonName, 'Intermediate CA')
         callback(list[0])
       })
 
