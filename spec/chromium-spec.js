@@ -320,7 +320,7 @@ describe('chromium feature', function () {
     let url = `${scheme}://${fixtures}/pages/window-opener-location.html`
     let w = null
 
-    before(function () {
+    before(function (done) {
       protocol.registerFileProtocol(scheme, function (request, callback) {
         callback(`${fixtures}/pages/window-opener-location.html`)
       }, function (error) {
@@ -328,7 +328,7 @@ describe('chromium feature', function () {
       })
     })
 
-    after(function() {
+    after(function () {
       protocol.unregisterProtocol(scheme)
     })
 
