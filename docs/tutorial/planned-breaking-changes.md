@@ -121,12 +121,12 @@ webFrame.setVisualZoomLevelLimits(1, 2)
 // Deprecated
 webFrame.registerURLSchemeAsSecure('app')
 // Replace with
-protocol.registerStandardSchemes('app', {secure: true})
+protocol.registerStandardSchemes(['app'], {secure: true})
 
 // Deprecated
 webFrame.registerURLSchemeAsPrivileged('app', {secure: true})
 // Replace with
-protocol.registerStandardSchemes('app', {secure: true})
+protocol.registerStandardSchemes(['app'], {secure: true})
 ```
 
 ## `<webview>`
