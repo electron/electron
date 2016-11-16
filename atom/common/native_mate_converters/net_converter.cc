@@ -45,8 +45,11 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   std::string encoded_data;
   net::X509Certificate::GetPEMEncoded(
       val->os_cert_handle(), &encoded_data);
+
   dict.Set("data", encoded_data);
+  dict.Set("issuer", val->issuer());
   dict.Set("issuerName", val->issuer().GetDisplayName());
+  dict.Set("subject", val->subject());
   dict.Set("subjectName", val->subject().GetDisplayName());
   dict.Set("serialNumber", base::HexEncode(val->serial_number().data(),
                                            val->serial_number().size()));
@@ -55,6 +58,32 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   dict.Set("fingerprint",
            net::HashValue(
               val->CalculateFingerprint256(val->os_cert_handle())).ToString());
+
+  if (!val->GetIntermediateCertificates().empty()) {
+    net::X509Certificate::OSCertHandles issuer_intermediates(
+        val->GetIntermediateCertificates().begin() + 1,
+        val->GetIntermediateCertificates().end());
+    const scoped_refptr<net::X509Certificate>& issuer_cert =
+        net::X509Certificate::CreateFromHandle(
+            val->GetIntermediateCertificates().front(),
+            issuer_intermediates);
+    dict.Set("issuerCert", issuer_cert);
+  }
+
+  return dict.GetHandle();
+}
+
+// static
+v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
+    v8::Isolate* isolate, const net::CertPrincipal& val) {
+  mate::Dictionary dict(isolate, v8::Object::New(isolate));
+
+  dict.Set("commonName", val.common_name);
+  dict.Set("organizations", val.organization_names);
+  dict.Set("organizationUnits", val.organization_unit_names);
+  dict.Set("locality", val.locality_name);
+  dict.Set("state", val.state_or_province_name);
+  dict.Set("country", val.country_name);
 
   return dict.GetHandle();
 }

@@ -37,9 +37,11 @@ win.webContents.session.on('will-download', (event, item, webContents) => {
 })
 ```
 
-## Events
+## Class: DownloadItem
 
-### Event: 'updated'
+### Instance Events
+
+#### Event: 'updated'
 
 Returns:
 
@@ -53,7 +55,7 @@ The `state` can be one of following:
 * `progressing` - The download is in-progress.
 * `interrupted` - The download has interrupted and can be resumed.
 
-### Event: 'done'
+#### Event: 'done'
 
 Returns:
 
@@ -70,11 +72,11 @@ The `state` can be one of following:
 * `cancelled` - The download has been cancelled.
 * `interrupted` - The download has interrupted and can not resume.
 
-## Methods
+### Instance Methods
 
 The `downloadItem` object has the following methods:
 
-### `downloadItem.setSavePath(path)`
+#### `downloadItem.setSavePath(path)`
 
 * `path` String - Set the save file path of the download item.
 
@@ -82,45 +84,45 @@ The API is only available in session's `will-download` callback function.
 If user doesn't set the save path via the API, Electron will use the original
 routine to determine the save path(Usually prompts a save dialog).
 
-### `downloadItem.getSavePath()`
+#### `downloadItem.getSavePath()`
 
 Returns `String` - The save path of the download item. This will be either the path
 set via `downloadItem.setSavePath(path)` or the path selected from the shown
 save dialog.
 
-### `downloadItem.pause()`
+#### `downloadItem.pause()`
 
 Pauses the download.
 
-### `downloadItem.isPaused()`
+#### `downloadItem.isPaused()`
 
 Returns `Boolean` - Whether the download is paused.
 
-### `downloadItem.resume()`
+#### `downloadItem.resume()`
 
 Resumes the download that has been paused.
 
-### `downloadItem.canResume()`
+#### `downloadItem.canResume()`
 
 Resumes `Boolean` - Whether the download can resume.
 
-### `downloadItem.cancel()`
+#### `downloadItem.cancel()`
 
 Cancels the download operation.
 
-### `downloadItem.getURL()`
+#### `downloadItem.getURL()`
 
 Returns `String` - The origin url where the item is downloaded from.
 
-### `downloadItem.getMimeType()`
+#### `downloadItem.getMimeType()`
 
 Returns `String` - The files mime type.
 
-### `downloadItem.hasUserGesture()`
+#### `downloadItem.hasUserGesture()`
 
 Returns `Boolean` - Whether the download has user gesture.
 
-### `downloadItem.getFilename()`
+#### `downloadItem.getFilename()`
 
 Returns `String` - The file name of the download item.
 
@@ -128,28 +130,21 @@ Returns `String` - The file name of the download item.
 disk. If user changes the file name in a prompted download saving dialog, the
 actual name of saved file will be different.
 
-### `downloadItem.getTotalBytes()`
+#### `downloadItem.getTotalBytes()`
 
 Returns `Integer` - The total size in bytes of the download item.
 
 If the size is unknown, it returns 0.
 
-### `downloadItem.getReceivedBytes()`
+#### `downloadItem.getReceivedBytes()`
 
 Returns `Integer` - The received bytes of the download item.
 
-### `downloadItem.getContentDisposition()`
+#### `downloadItem.getContentDisposition()`
 
 Returns `String` - The Content-Disposition field from the response
 header.
 
-### `downloadItem.getState()`
+#### `downloadItem.getState()`
 
-Returns `String` - The current state.
-
-Possible values are:
-
-* `progressing` - The download is in-progress.
-* `completed` - The download completed successfully.
-* `cancelled` - The download has been cancelled.
-* `interrupted` - The download has interrupted.
+Returns `String` - The current state.  Can be `progressing`, `completed`, `cancelled` or `interrupted`.

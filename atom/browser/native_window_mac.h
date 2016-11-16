@@ -92,6 +92,7 @@ class NativeWindowMac : public NativeWindow,
                       const std::string& description) override;
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
+  void SetVibrancy(const std::string& type) override;
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;

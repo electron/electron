@@ -27,19 +27,19 @@ The `dialog` module has the following methods:
 
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
-  * `title` String
-  * `defaultPath` String
-  * `buttonLabel` String - Custom label for the confirmation button, when
+  * `title` String (optional)
+  * `defaultPath` String (optional)
+  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
-  * `filters` String[]
-  * `properties` String[] - Contains which features the dialog should use, can
+  * `filters` [FileFilter[]](structrs/file-filter.md) (optional)
+  * `properties` String[] (optional) - Contains which features the dialog should use, can
     contain `openFile`, `openDirectory`, `multiSelections`, `createDirectory`
     and `showHiddenFiles`.
 * `callback` Function (optional)
   * `filePaths` String[] - An array of file paths chosen by the user
 
-On success this method returns an array of file paths chosen by the user,
-otherwise it returns `undefined`.
+Returns `String[]`, an array of file paths chosen by the user,
+if the callback is provided it returns `undefined`.
 
 The `filters` specifies an array of file types that can be displayed or
 selected when you want to limit the user to a specific type. For example:
@@ -71,16 +71,16 @@ shown.
 
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
-  * `title` String
-  * `defaultPath` String
-  * `buttonLabel` String - Custom label for the confirmation button, when
+  * `title` String (optional)
+  * `defaultPath` String (optional)
+  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
-  * `filters` String[]
+  * `filters` [FileFilter[]](structrs/file-filter.md) (optional)
 * `callback` Function (optional)
   * `filename` String
 
-On success this method returns the path of the file chosen by the user,
-otherwise it returns `undefined`.
+Returns `String`, the path of the file chosen by the user,
+if a callback is provided it returns `undefined`.
 
 The `filters` specifies an array of file types that can be displayed, see
 `dialog.showOpenDialog` for an example.
@@ -92,29 +92,32 @@ will be passed via `callback(filename)`
 
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
-  * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or
+  * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, "question" displays the same icon as "info", unless
   you set an icon using the "icon" option.
-  * `buttons` String[] - Array of texts for buttons. On Windows, an empty array
+  * `buttons` String[] (optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
-  * `defaultId` Integer - Index of the button in the buttons array which will
+  * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
-  * `title` String - Title of the message box, some platforms will not show it.
+  * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `message` String - Content of the message box.
-  * `detail` String - Extra information of the message.
-  * `icon` [NativeImage](native-image.md)
-  * `cancelId` Integer - The value will be returned when user cancels the dialog
+  * `detail` String (optional) - Extra information of the message.
+  * `icon` [NativeImage](native-image.md) (optional)
+  * `cancelId` Integer (optional) - The value will be returned when user cancels the dialog
     instead of clicking the buttons of the dialog. By default it is the index
     of the buttons that have "cancel" or "no" as label, or 0 if there is no such
     buttons. On macOS and Windows the index of "Cancel" button will always be
     used as `cancelId`, not matter whether it is already specified.
-  * `noLink` Boolean - On Windows Electron will try to figure out which one of
+  * `noLink` Boolean (optional) - On Windows Electron will try to figure out which one of
     the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
     others as command links in the dialog. This can make the dialog appear in
     the style of modern Windows apps. If you don't like this behavior, you can
     set `noLink` to `true`.
-* `callback` Function
+* `callback` Function (optional)
   * `response` Number - The index of the button that was clicked
+
+Returns `Integer`, the index of the clicked button, if a callback is provided
+it returns undefined.
 
 Shows a message box, it will block the process until the message box is closed.
 It returns the index of the clicked button.

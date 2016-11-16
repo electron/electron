@@ -26,6 +26,10 @@ namespace brightray {
 class InspectableWebContents;
 }
 
+namespace content {
+class ResourceRequestBodyImpl;
+}
+
 namespace mate {
 class Arguments;
 class Dictionary;
@@ -176,10 +180,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
                                    bool allowed);
 
   // Create window with the given disposition.
-  void OnCreateWindow(const GURL& target_url,
-                      const std::string& frame_name,
-                      WindowOpenDisposition disposition,
-                      const std::vector<base::string16>& features);
+  void OnCreateWindow(
+      const GURL& target_url,
+      const std::string& frame_name,
+      WindowOpenDisposition disposition,
+      const std::vector<base::string16>& features,
+      const scoped_refptr<content::ResourceRequestBodyImpl>& body);
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);

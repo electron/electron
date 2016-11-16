@@ -26,7 +26,10 @@ still some subtle differences on each platform.
 
 On macOS, the `autoUpdater` module is built upon [Squirrel.Mac][squirrel-mac],
 meaning you don't need any special setup to make it work. For server-side
-requirements, you can read [Server Support][server-support].
+requirements, you can read [Server Support][server-support]. Note that [App
+Transport Security](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/CocoaKeys.html#//apple_ref/doc/uid/TP40009251-SW35) (ATS) applies to all requests made as part of the
+update process. Apps that need to disable ATS can add the
+`NSAllowsArbitraryLoads` key to their app's plist.
 
 **Note:** Your application must be signed for automatic updates on macOS.
 This is a requirement of `Squirrel.Mac`.
@@ -37,7 +40,7 @@ On Windows, you have to install your app into a user's machine before you can
 use the `autoUpdater`, so it is recommended that you use the
 [electron-winstaller][installer-lib], [electron-builder][electron-builder-lib] or the [grunt-electron-installer][installer] package to generate a Windows installer.
 
-When using [electron-winstaller][installer-lib] or [electron-builder][electron-builder-lib] make sure you do not try to update your app [the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events) (Also see [this issue for more info](https://github.com/electron/electron/issues/7155)). It's also recommended to use [electron-squirrel-startup](electron-squirrel-startup) to get desktop shortcuts for your app.
+When using [electron-winstaller][installer-lib] or [electron-builder][electron-builder-lib] make sure you do not try to update your app [the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events) (Also see [this issue for more info](https://github.com/electron/electron/issues/7155)). It's also recommended to use [electron-squirrel-startup](https://github.com/mongodb-js/electron-squirrel-startup) to get desktop shortcuts for your app.
 
 The installer generated with Squirrel will create a shortcut icon with an
 [Application User Model ID][app-user-model-id] in the format of
@@ -100,7 +103,7 @@ The `autoUpdater` object has the following methods:
 ### `autoUpdater.setFeedURL(url[, requestHeaders])`
 
 * `url` String
-* `requestHeaders` Object _macOS_ - HTTP request headers.
+* `requestHeaders` Object _macOS_ (optional) - HTTP request headers.
 
 Sets the `url` and initialize the auto updater.
 

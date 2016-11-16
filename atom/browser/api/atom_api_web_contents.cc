@@ -387,12 +387,14 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
   }
 }
 
-void WebContents::OnCreateWindow(const GURL& target_url,
-                                 const std::string& frame_name,
-                                 WindowOpenDisposition disposition,
-                                 const std::vector<base::string16>& features) {
+void WebContents::OnCreateWindow(
+    const GURL& target_url,
+    const std::string& frame_name,
+    WindowOpenDisposition disposition,
+    const std::vector<base::string16>& features,
+    const scoped_refptr<content::ResourceRequestBodyImpl>& body) {
   if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
-    Emit("-new-window", target_url, frame_name, disposition, features);
+    Emit("-new-window", target_url, frame_name, disposition, features, body);
   else
     Emit("new-window", target_url, frame_name, disposition, features);
 }
@@ -854,6 +856,12 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
     params.extra_headers = extra_headers;
+
+  scoped_refptr<content::ResourceRequestBodyImpl> body;
+  if (options.Get("postData", &body)) {
+    params.post_data = body;
+    params.load_type = content::NavigationController::LOAD_TYPE_HTTP_POST;
+  }
 
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;

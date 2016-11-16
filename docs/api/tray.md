@@ -33,18 +33,22 @@ __Platform limitations:__
   you have to call `setContextMenu` again. For example:
 
 ```javascript
-const {Menu, Tray} = require('electron')
-const appIcon = new Tray('/path/to/my/icon')
-const contextMenu = Menu.buildFromTemplate([
-  {label: 'Item1', type: 'radio'},
-  {label: 'Item2', type: 'radio'}
-])
+const {app, Menu, Tray} = require('electron')
 
-// Make a change to the context menu
-contextMenu.items[2].checked = false
+let appIcon = null
+app.on('ready', () => {
+  appIcon = new Tray('/path/to/my/icon')
+  const contextMenu = Menu.buildFromTemplate([
+    {label: 'Item1', type: 'radio'},
+    {label: 'Item2', type: 'radio'}
+  ])
 
-// Call this again for Linux because we modified the context menu
-appIcon.setContextMenu(contextMenu)
+  // Make a change to the context menu
+  contextMenu.items[1].checked = false
+
+  // Call this again for Linux because we modified the context menu
+  appIcon.setContextMenu(contextMenu)
+})
 ```
 * On Windows it is recommended to use `ICO` icons to get best visual effects.
 
@@ -57,7 +61,7 @@ rely on the `click` event and always attach a context menu to the tray icon.
 
 ### `new Tray(image)`
 
-* `image` [NativeImage](native-image.md)
+* `image` ([NativeImage](native-image.md) | String)
 
 Creates a new tray icon associated with the `image`.
 
