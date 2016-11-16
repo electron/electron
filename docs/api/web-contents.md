@@ -218,6 +218,17 @@ When in-page navigation happens, the page URL changes but does not cause
 navigation outside of the page. Examples of this occurring are when anchor links
 are clicked or when the DOM `hashchange` event is triggered.
 
+#### Event: 'will-create-webview'
+
+Returns:
+
+* `event` Event
+* `params` Object
+
+Emitted when web-view will be created.
+
+Use this event to remove preload scripts or stop creating webviews.
+
 #### Event: 'crashed'
 
 Returns:
