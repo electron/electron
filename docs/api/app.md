@@ -60,6 +60,10 @@ Emitted before the application starts closing its windows.
 Calling `event.preventDefault()` will prevent the default behaviour, which is
 terminating the application.
 
+**Note:** If application quit was initiated by `autoUpdater.quitAndInstall()`
+then `before-quit` is emitted *after* emitting `close` event on all windows and
+closing them.
+
 ### Event: 'will-quit'
 
 Returns:
