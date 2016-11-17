@@ -37,13 +37,25 @@ describe('systemPreferences module', function () {
     }
 
     it('returns values for known user defaults', function () {
-      let locale = systemPreferences.getUserDefault('AppleLocale', 'string')
-      assert.notEqual(locale, null)
+      const locale = systemPreferences.getUserDefault('AppleLocale', 'string')
+      assert.equal(typeof locale, 'string')
       assert(locale.length > 0)
 
-      let languages = systemPreferences.getUserDefault('AppleLanguages', 'array')
-      assert.notEqual(languages, null)
+      const languages = systemPreferences.getUserDefault('AppleLanguages', 'array')
+      assert(Array.isArray(languages))
       assert(languages.length > 0)
+    })
+
+    it('returns values for unknown user defaults', function () {
+      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'boolean'), false)
+      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'integer'), 0)
+      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'float'), 0)
+      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'double'), 0)
+      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'string'), '')
+      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'url'), '')
+      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype'), undefined)
+      assert.deepEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'array'), [])
+      assert.deepEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'dictionary'), {})
     })
   })
 
