@@ -5,9 +5,10 @@
 #ifndef ATOM_COMMON_PLATFORM_UTIL_H_
 #define ATOM_COMMON_PLATFORM_UTIL_H_
 
+#include <string>
+
 #include "base/callback_forward.h"
 #include "build/build_config.h"
-#include "v8/include/v8.h"
 
 #if defined(OS_WIN)
 #include "base/strings/string16.h"
@@ -21,6 +22,8 @@ class FilePath;
 
 namespace platform_util {
 
+typedef base::Callback<void(const std::string&)> OpenExternalCallback;
+
 // Show the given file in a file manager. If possible, select the file.
 // Must be called from the UI thread.
 bool ShowItemInFolder(const base::FilePath& full_path);
@@ -28,8 +31,6 @@ bool ShowItemInFolder(const base::FilePath& full_path);
 // Open the given file in the desktop's default manner.
 // Must be called from the UI thread.
 bool OpenItem(const base::FilePath& full_path);
-
-typedef base::Callback<void(v8::Local<v8::Value> error)> OpenExternalCallback;
 
 // Open the given external protocol URL in the desktop's default manner.
 // (For example, mailto: URLs in the default mail user agent.)
@@ -41,6 +42,7 @@ bool OpenExternal(
 #endif
     bool activate);
 
+// The asynchronous version of OpenExternal.
 void OpenExternal(
 #if defined(OS_WIN)
     const base::string16& url,

@@ -42,6 +42,16 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
+void OnOpenExternalFinished(
+    v8::Isolate* isolate,
+    const base::Callback<void(v8::Local<v8::Value>)>& callback,
+    const std::string& error) {
+  if (error.empty())
+    callback.Run(v8::Null(isolate));
+  else
+    callback.Run(v8::String::NewFromUtf8(isolate, error.c_str()));
+}
+
 bool OpenExternal(
 #if defined(OS_WIN)
     const base::string16& url,
@@ -58,9 +68,11 @@ bool OpenExternal(
   }
 
   if (args->Length() >= 3) {
-    platform_util::OpenExternalCallback callback;
+    base::Callback<void(v8::Local<v8::Value>)> callback;
     if (args->GetNext(&callback)) {
-      platform_util::OpenExternal(url, activate, callback);
+      platform_util::OpenExternal(
+          url, activate,
+          base::Bind(&OnOpenExternalFinished, args->isolate(), callback));
       return true;
     }
   }
