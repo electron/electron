@@ -28,17 +28,17 @@ std::map<int, id> g_id_map;
 
 }  // namespace
 
-void SystemPreferences::PostNotification(const std::string& name, 
+void SystemPreferences::PostNotification(const std::string& name,
     const base::DictionaryValue& user_info) {
   DoPostNotification(name, user_info, false);
 }
 
-void SystemPreferences::PostLocalNotification(const std::string& name, 
+void SystemPreferences::PostLocalNotification(const std::string& name,
     const base::DictionaryValue& user_info) {
   DoPostNotification(name, user_info, true);
 }
 
-void SystemPreferences::DoPostNotification(const std::string& name, 
+void SystemPreferences::DoPostNotification(const std::string& name,
     const base::DictionaryValue& user_info, bool is_local) {
   NSNotificationCenter* center = is_local ?
     [NSNotificationCenter defaultCenter] :
@@ -128,11 +128,17 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
     return mate::ConvertToV8(isolate(),
       net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
-    return mate::ConvertToV8(isolate(),
-      *NSArrayToListValue([defaults arrayForKey:key]));
+    std::unique_ptr<base::ListValue> list =
+        NSArrayToListValue([defaults arrayForKey:key]);
+    if (list == nullptr)
+      list.reset(new base::ListValue());
+    return mate::ConvertToV8(isolate(), *list);
   } else if (type == "dictionary") {
-    return mate::ConvertToV8(isolate(),
-      *NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]));
+    std::unique_ptr<base::DictionaryValue> dictionary =
+        NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]);
+    if (dictionary == nullptr)
+      dictionary.reset(new base::DictionaryValue());
+    return mate::ConvertToV8(isolate(), *dictionary);
   } else {
     return v8::Undefined(isolate());
   }
