@@ -34,14 +34,17 @@ Returns `Boolean` - Whether the item was successfully opened.
 
 Open the given file in the desktop's default manner.
 
-### `shell.openExternal(url[, options])`
+### `shell.openExternal(url[, options, callback])`
 
 * `url` String
 * `options` Object (optional) _macOS_
   * `activate` Boolean - `true` to bring the opened application to the
     foreground. The default is `true`.
+* `callback` Function (optional) - If specified will perform the open asynchronously. _macOS_
+  * `error` Error
 
 Returns `Boolean` - Whether an application was available to open the URL.
+If callback is specified, always returns true.
 
 Open the given external protocol URL in the desktop's default manner. (For
 example, mailto: URLs in the user's default mail agent).

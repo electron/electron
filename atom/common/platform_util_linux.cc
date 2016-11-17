@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 
+#include "base/cancelable_callback.h"
 #include "base/files/file_util.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
@@ -86,6 +87,12 @@ bool OpenExternal(const GURL& url, bool activate) {
     return XDGEmail(url.spec(), false);
   else
     return XDGOpen(url.spec(), false);
+}
+
+void OpenExternal(const GURL& url, bool activate,
+                  const OpenExternalCallback& callback) {
+  // TODO(gabriel): Implement async open if callback is specified
+  callback.Run(OpenExternal(url, activate) ? "" : "Failed to open");
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {

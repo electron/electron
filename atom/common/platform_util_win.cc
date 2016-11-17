@@ -316,6 +316,12 @@ bool OpenExternal(const base::string16& url, bool activate) {
   return true;
 }
 
+void OpenExternal(const base::string16& url, bool activate,
+                  const OpenExternalCallback& callback) {
+  // TODO(gabriel): Implement async open if callback is specified
+  callback.Run(OpenExternal(url, activate) ? "" : "Failed to open");
+}
+
 bool MoveItemToTrash(const base::FilePath& path) {
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.succeeded())

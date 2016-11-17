@@ -4,6 +4,7 @@
 
 #include <string>
 
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -41,6 +42,16 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
+void OnOpenExternalFinished(
+    v8::Isolate* isolate,
+    const base::Callback<void(v8::Local<v8::Value>)>& callback,
+    const std::string& error) {
+  if (error.empty())
+    callback.Run(v8::Null(isolate));
+  else
+    callback.Run(v8::String::NewFromUtf8(isolate, error.c_str()));
+}
+
 bool OpenExternal(
 #if defined(OS_WIN)
     const base::string16& url,
@@ -49,12 +60,23 @@ bool OpenExternal(
 #endif
     mate::Arguments* args) {
   bool activate = true;
-  if (args->Length() == 2) {
+  if (args->Length() >= 2) {
     mate::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("activate", &activate);
     }
   }
+
+  if (args->Length() >= 3) {
+    base::Callback<void(v8::Local<v8::Value>)> callback;
+    if (args->GetNext(&callback)) {
+      platform_util::OpenExternal(
+          url, activate,
+          base::Bind(&OnOpenExternalFinished, args->isolate(), callback));
+      return true;
+    }
+  }
+
   return platform_util::OpenExternal(url, activate);
 }
 
