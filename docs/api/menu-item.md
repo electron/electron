@@ -56,6 +56,8 @@ The `role` property can have following values:
 * `minimize` - Minimize current window
 * `close` - Close current window
 * `quit`- Quit the application
+* `reload` - Reload the current window
+* `toggledevtools` - Toggle developer tools in the current window
 * `togglefullscreen`- Toggle full screen mode on the current window
 * `resetzoom` - Reset the focused page's zoom level to the original size
 * `zoomin` - Zoom in the focused page by 10%
