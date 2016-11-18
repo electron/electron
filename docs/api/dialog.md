@@ -32,7 +32,7 @@ The `dialog` module has the following methods:
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structrs/file-filter.md) (optional)
-  * `properties` String[] (optional) - Contains which features the dialog should use, can
+  * `properties` String[] - (optional) - Contains which features the dialog should use, can
     contain `openFile`, `openDirectory`, `multiSelections`, `createDirectory`
     and `showHiddenFiles`.
 * `callback` Function (optional)
@@ -95,7 +95,7 @@ will be passed via `callback(filename)`
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, "question" displays the same icon as "info", unless
   you set an icon using the "icon" option.
-  * `buttons` String[] (optional) - Array of texts for buttons. On Windows, an empty array
+  * `buttons` String[] - (optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
