@@ -146,6 +146,10 @@ const GURL& DownloadItem::GetURL() const {
   return download_item_->GetURL();
 }
 
+const std::vector<GURL>& DownloadItem::GetURLChain() const {
+  return download_item_->GetUrlChain();
+}
+
 content::DownloadItem::DownloadState DownloadItem::GetState() const {
   return download_item_->GetState();
 }
@@ -160,6 +164,18 @@ void DownloadItem::SetSavePath(const base::FilePath& path) {
 
 base::FilePath DownloadItem::GetSavePath() const {
   return save_path_;
+}
+
+std::string DownloadItem::GetLastModifiedTime() const {
+  return download_item_->GetLastModifiedTime();
+}
+
+std::string DownloadItem::GetETag() const {
+  return download_item_->GetETag();
+}
+
+double DownloadItem::GetStartTime() const {
+  return download_item_->GetStartTime().ToDoubleT();
 }
 
 // static
@@ -180,10 +196,14 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getFilename", &DownloadItem::GetFilename)
       .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition)
       .SetMethod("getURL", &DownloadItem::GetURL)
+      .SetMethod("getURLChain", &DownloadItem::GetURLChain)
       .SetMethod("getState", &DownloadItem::GetState)
       .SetMethod("isDone", &DownloadItem::IsDone)
       .SetMethod("setSavePath", &DownloadItem::SetSavePath)
-      .SetMethod("getSavePath", &DownloadItem::GetSavePath);
+      .SetMethod("getSavePath", &DownloadItem::GetSavePath)
+      .SetMethod("getLastModifiedTime", &DownloadItem::GetLastModifiedTime)
+      .SetMethod("getETag", &DownloadItem::GetETag)
+      .SetMethod("getStartTime", &DownloadItem::GetStartTime);
 }
 
 // static
