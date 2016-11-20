@@ -40,7 +40,7 @@ ipcMain.on('synchronous-message', (event, arg) => {
 const {ipcRenderer} = require('electron')
 console.log(ipc.sendSync('synchronous-message', 'ping')) // "pong" 출력
 
-ipcRenderer.on('asynchronous-reply', (arg) => {
+ipcRenderer.on('asynchronous-reply', (event, arg) => {
   console.log(arg) // "pong" 출력
 })
 ipcRenderer.send('asynchronous-message', 'ping')
