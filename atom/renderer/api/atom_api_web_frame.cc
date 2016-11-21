@@ -201,7 +201,8 @@ void WebFrame::BuildPrototype(
       .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
       .SetMethod("setZoomLevelLimits", &WebFrame::SetZoomLevelLimits)
-      .SetMethod("setLayoutZoomLevelLimits", &WebFrame::SetLayoutZoomLevelLimits)
+      .SetMethod("setLayoutZoomLevelLimits",
+                 &WebFrame::SetLayoutZoomLevelLimits)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
       .SetMethod("registerElementResizeCallback",
