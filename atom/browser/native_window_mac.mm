@@ -102,6 +102,41 @@ bool ScopedDisableResize::disable_resize_ = false;
    }
 }
 
+// Called when the user clicks the zoom button or selects it from the Window
+// menu to determine the "standard size" of the window.
+- (NSRect)windowWillUseStandardFrame:(NSWindow*)window
+                        defaultFrame:(NSRect)frame {
+  if (!shell_->zoom_to_page_width())
+    return frame;
+
+  // If the shift key is down, maximize.
+  if ([[NSApp currentEvent] modifierFlags] & NSShiftKeyMask)
+    return frame;
+
+  content::WebContents* web_contents = shell_->web_contents();
+  if (!web_contents)
+    return frame;
+
+  CGFloat page_width = static_cast<CGFloat>(
+      web_contents->GetPreferredSize().width());
+  NSRect window_frame = [window frame];
+
+  // Never shrink from the current size on zoom.
+  CGFloat zoomed_width = std::max(page_width, NSWidth(window_frame));
+
+  // |frame| determines our maximum extents. We need to set the origin of the
+  // frame -- and only move it left if necessary.
+  if (window_frame.origin.x + zoomed_width > NSMaxX(frame))
+    frame.origin.x = NSMaxX(frame) - zoomed_width;
+  else
+    frame.origin.x = window_frame.origin.x;
+
+  // Set the width. Don't touch y or height.
+  frame.size.width = zoomed_width;
+
+  return frame;
+}
+
 - (void)windowDidBecomeMain:(NSNotification*)notification {
   content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)
@@ -584,6 +619,7 @@ NativeWindowMac::NativeWindowMac(
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
+      zoom_to_page_width_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
   int width = 800, height = 600;
@@ -705,6 +741,8 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kUseContentSize, &use_content_size);
   if (!has_frame() || !use_content_size)
     SetSize(gfx::Size(width, height));
+
+  options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;

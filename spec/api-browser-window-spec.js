@@ -626,6 +626,22 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('"zoomToPageWidth" option', function () {
+    it('sets the window width to the page width when used', function () {
+      if (process.platform !== 'darwin') return this.skip()
+
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        width: 500,
+        height: 400,
+        zoomToPageWidth: true
+      })
+      w.maximize()
+      assert.equal(w.getSize()[0], 500)
+    })
+  })
+
   describe('"web-preferences" option', function () {
     afterEach(function () {
       ipcMain.removeAllListeners('answer')

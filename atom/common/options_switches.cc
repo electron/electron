@@ -45,6 +45,9 @@ const char kAcceptFirstMouse[] = "acceptFirstMouse";
 // Whether window size should include window frame.
 const char kUseContentSize[] = "useContentSize";
 
+// Whether window zoom should be to page width.
+const char kZoomToPageWidth[] = "zoomToPageWidth";
+
 // The requested title bar style for the window
 const char kTitleBarStyle[] = "titleBarStyle";
 
