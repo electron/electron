@@ -42,7 +42,18 @@ Returns the current zoom level.
 * `minimumLevel` Number
 * `maximumLevel` Number
 
-Sets the maximum and minimum zoom level.
+Sets the maximum and minimum pinch-to-zoom level. In future versions of Electron
+this method will be called `setVisualZoomLevelLimits`.
+
+### `webFrame.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+Sets the maximum and minimum layout-based (i.e. non-visual only) zoom level. In 
+future versions of Electron this will be renamed `setZoomLevelLimits`, but the
+current naming is kept for backwards-compatibility purposes.
+
 
 ### `webFrame.setSpellCheckProvider(language, autoCorrectWord, provider)`
 
