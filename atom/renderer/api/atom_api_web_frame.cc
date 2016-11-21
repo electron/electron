@@ -92,6 +92,10 @@ void WebFrame::SetZoomLevelLimits(double min_level, double max_level) {
   web_frame_->view()->setDefaultPageScaleLimits(min_level, max_level);
 }
 
+void WebFrame::SetLayoutZoomLevelLimits(double min_level, double max_level) {
+  web_frame_->view()->zoomLimitsChanged(min_level, max_level);
+}
+
 v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
     const base::string16& name, v8::Local<v8::Object> options) {
   blink::WebExceptionCode c = 0;
@@ -197,6 +201,7 @@ void WebFrame::BuildPrototype(
       .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
       .SetMethod("setZoomLevelLimits", &WebFrame::SetZoomLevelLimits)
+      .SetMethod("setLayoutZoomLevelLimits", &WebFrame::SetLayoutZoomLevelLimits)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
       .SetMethod("registerElementResizeCallback",
