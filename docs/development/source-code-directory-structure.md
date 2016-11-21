@@ -39,7 +39,7 @@ Electron
 |       └── native_mate_converters/ - Convert C++ types to Javascript types. Defines converters for each type. Can implement ToV8 and/or FromV8
 |   |   └── resources/ - Icons, platform-dependent files, etc.
 |   └── utility/ - Utility process is used for running dangerous and async tasks. (Unsure of purpose; created by a contributor; maybe created for printing?)
-├── chromium_src/ - Source code that is copied from Chromium. (Modified to work with electron; built separately; vendored files that are extracted from chrome and modified; surface are of chrome that is not in libchromiumcontent; e.g. certain parts of DevTools, spell check, prerendering are not included in libchromiumcontent; things can break in here when chrome is upgraded)
+├── chromium_src/ - Source code that is copied from Chromium. (Modified to work with electron; built separately; vendored files that are extracted from chrome and modified; surface area of chrome that is not in libchromiumcontent; e.g. certain parts of DevTools, spell check, prerendering are not included in libchromiumcontent; things can break in here when chrome is upgraded)
 ├── default_app/ - The default page to show when Electron is started without
 |   providing an app.
 ├── docs/ - Documentation in English.
