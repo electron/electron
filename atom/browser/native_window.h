@@ -179,8 +179,11 @@ class NativeWindow : public base::SupportsUserData,
   double GetAspectRatio();
   gfx::Size GetAspectRatioExtraSize();
   virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
+
+  // File preview APIs.
   virtual void PreviewFile(const std::string& path,
                            const std::string& display_name);
+  virtual void CloseFilePreview();
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

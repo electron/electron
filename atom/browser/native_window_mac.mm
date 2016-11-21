@@ -1004,6 +1004,12 @@ void NativeWindowMac::PreviewFile(const std::string& path,
   [window_ previewFileAtPath:path_ns withName:name_ns];
 }
 
+void NativeWindowMac::CloseFilePreview() {
+  if ([QLPreviewPanel sharedPreviewPanelExists]) {
+    [[QLPreviewPanel sharedPreviewPanel] close];
+  }
+}
+
 void NativeWindowMac::SetMovable(bool movable) {
   [window_ setMovable:movable];
 }

@@ -682,6 +682,10 @@ height areas you have within the overall content view.
 
 Uses [Quick Look][quick-look] to preview a file at a given path.
 
+#### `win.closeFilePreview()` _macOS_
+
+Closes the currently open [Quick Look][quick-look] panel.
+
 #### `win.setBounds(bounds[, animate])`
 
 * `bounds` [Rectangle](structures/rectangle.md)
