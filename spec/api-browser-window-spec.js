@@ -1764,10 +1764,11 @@ describe('browser-window module', function () {
       })
     })
 
-    it('should set the correct width when minWidth is used', function () {
+    it('should restore the correct bounds when minWidth is used', function () {
+      const initialSize = w.getSize()
       w.minimize()
       w.restore()
-      assert.equal(w.getSize()[0], 800)
+      assertBoundsEqual(w.getSize(), initialSize)
     })
   })
 
@@ -1781,7 +1782,7 @@ describe('browser-window module', function () {
       const initialPosition = w.getPosition()
       w.maximize()
       w.unmaximize()
-      assertBoundsEqual(initialPosition, w.getPosition())
+      assertBoundsEqual(w.getPosition(), initialPosition)
     })
   })
 })
