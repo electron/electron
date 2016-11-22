@@ -31,7 +31,7 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
                                     const std::string& company_name,
                                     const std::string& submit_url,
                                     const base::FilePath& crashes_dir,
-                                    bool should_upload,
+                                    bool upload_to_server,
                                     bool skip_system_crash_handler) {
   // check whether crashpad has been initialized.
   // Only need to initialize once.
@@ -75,11 +75,11 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   if (is_browser_) {
     database_ =
         crashpad::CrashReportDatabase::Initialize(crashes_dir);
-    SetShouldUpload(should_upload);
+    SetUploadToServer(upload_to_server);
   }
 }
 
-bool CrashReporterMac::GetShouldUpload() {
+bool CrashReporterMac::GetUploadToServer() {
   bool enabled = true;
   if (database_) {
     database_->GetSettings()->GetUploadsEnabled(&enabled);
@@ -87,9 +87,9 @@ bool CrashReporterMac::GetShouldUpload() {
   return enabled;
 }
 
-void CrashReporterMac::SetShouldUpload(const bool should_upload) {
+void CrashReporterMac::SetUploadToServer(const bool upload_to_server) {
   if (database_) {
-    database_->GetSettings()->SetUploadsEnabled(should_upload);
+    database_->GetSettings()->SetUploadsEnabled(upload_to_server);
   }
 }
 
