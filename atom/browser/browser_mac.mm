@@ -16,6 +16,7 @@
 #include "base/mac/mac_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "brightray/common/application_info.h"
 #include "net/base/mac/url_conversions.h"
 #include "ui/gfx/image/image.h"
@@ -128,7 +129,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 }
 
 base::string16 Browser::GetDefaultProtocolClient(const std::string& protocol) {
-  return L"";
+  return base::UTF8ToUTF16("");
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {}
