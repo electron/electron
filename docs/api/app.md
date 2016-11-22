@@ -109,7 +109,7 @@ Returns:
 * `url` String
 
 Emitted when the user wants to open a URL with the application. Your application's
-Info.plist file must define the url scheme within the `CFBundleURLTypes` key, and 
+`Info.plist` file must define the url scheme within the `CFBundleURLTypes` key, and 
 set `NSPrincipalClass` to `AtomApplication`.
 
 You should call `event.preventDefault()` if you want to handle this event.
