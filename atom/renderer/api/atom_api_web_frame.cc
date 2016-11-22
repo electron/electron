@@ -88,7 +88,7 @@ double WebFrame::GetZoomFactor() const {
   return blink::WebView::zoomLevelToZoomFactor(GetZoomLevel());
 }
 
-void WebFrame::SetZoomLevelLimits(double min_level, double max_level) {
+void WebFrame::SetVisualZoomLevelLimits(double min_level, double max_level) {
   web_frame_->view()->setDefaultPageScaleLimits(min_level, max_level);
 }
 
@@ -231,7 +231,9 @@ void WebFrame::BuildPrototype(
       .SetMethod("getZoomLevel", &WebFrame::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
-      .SetMethod("setZoomLevelLimits", &WebFrame::SetZoomLevelLimits)
+      .SetMethod("setZoomLevelLimits", &WebFrame::SetVisualZoomLevelLimits)
+      .SetMethod("setVisualZoomLevelLimits",
+                 &WebFrame::SetVisualZoomLevelLimits)
       .SetMethod("setLayoutZoomLevelLimits",
                  &WebFrame::SetLayoutZoomLevelLimits)
       .SetMethod("registerEmbedderCustomElement",
