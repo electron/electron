@@ -1774,7 +1774,7 @@ describe('browser-window module', function () {
     })
   })
 
-  describe.only('window position', function () {
+  describe('window position', function () {
     beforeEach(function () {
       if (w != null) w.destroy()
       w = new BrowserWindow()
