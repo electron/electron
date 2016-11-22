@@ -76,3 +76,28 @@ webContents.openDevTools({detach: true})
 // Replace with
 webContents.openDevTools({mode: 'detach'})
 ```
+
+```js
+// Deprecated
+webContents.setZoomLevelLimits(1, 2)
+// Replace with
+webContents.setVisualZoomLevelLimits(1, 2)
+```
+
+## `webFrame`
+
+```js
+// Deprecated
+webFrame.setZoomLevelLimits(1, 2)
+// Replace with
+webFrame.setVisualZoomLevelLimits(1, 2)
+```
+
+## `<webview>`
+
+```js
+// Deprecated
+webview.setZoomLevelLimits(1, 2)
+// Replace with
+webview.setVisualZoomLevelLimits(1, 2)
+```
