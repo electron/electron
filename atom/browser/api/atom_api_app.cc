@@ -1225,6 +1225,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::Bind(&Browser::ClearRecentDocuments, browser))
       .SetMethod("setAppUserModelId",
                  base::Bind(&Browser::SetAppUserModelID, browser))
+      .SetMethod("_onOpenURL", &App::OnOpenURL)
       .SetMethod("getDefaultProtocolClient",
                  base::Bind(&Browser::GetDefaultProtocolClient, browser))
       .SetMethod("isDefaultProtocolClient",
