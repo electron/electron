@@ -88,8 +88,12 @@ double WebFrame::GetZoomFactor() const {
   return blink::WebView::zoomLevelToZoomFactor(GetZoomLevel());
 }
 
-void WebFrame::SetZoomLevelLimits(double min_level, double max_level) {
+void WebFrame::SetVisualZoomLevelLimits(double min_level, double max_level) {
   web_frame_->view()->setDefaultPageScaleLimits(min_level, max_level);
+}
+
+void WebFrame::SetLayoutZoomLevelLimits(double min_level, double max_level) {
+  web_frame_->view()->zoomLimitsChanged(min_level, max_level);
 }
 
 v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
@@ -227,7 +231,10 @@ void WebFrame::BuildPrototype(
       .SetMethod("getZoomLevel", &WebFrame::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
-      .SetMethod("setZoomLevelLimits", &WebFrame::SetZoomLevelLimits)
+      .SetMethod("setVisualZoomLevelLimits",
+                 &WebFrame::SetVisualZoomLevelLimits)
+      .SetMethod("setLayoutZoomLevelLimits",
+                 &WebFrame::SetLayoutZoomLevelLimits)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
       .SetMethod("registerElementResizeCallback",
@@ -244,7 +251,9 @@ void WebFrame::BuildPrototype(
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
-      .SetMethod("clearCache", &WebFrame::ClearCache);
+      .SetMethod("clearCache", &WebFrame::ClearCache)
+      // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
+      .SetMethod("setZoomLevelLimits", &WebFrame::SetVisualZoomLevelLimits);
 }
 
 }  // namespace api

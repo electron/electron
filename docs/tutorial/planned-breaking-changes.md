@@ -86,6 +86,31 @@ webContents.openDevTools({detach: true})
 webContents.openDevTools({mode: 'detach'})
 ```
 
+```js
+// Deprecated
+webContents.setZoomLevelLimits(1, 2)
+// Replace with
+webContents.setVisualZoomLevelLimits(1, 2)
+```
+
+## `webFrame`
+
+```js
+// Deprecated
+webFrame.setZoomLevelLimits(1, 2)
+// Replace with
+webFrame.setVisualZoomLevelLimits(1, 2)
+```
+
+## `<webview>`
+
+```js
+// Deprecated
+webview.setZoomLevelLimits(1, 2)
+// Replace with
+webview.setVisualZoomLevelLimits(1, 2)
+```
+
 ## Node Headers URL
 
 This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
