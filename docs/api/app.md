@@ -108,8 +108,9 @@ Returns:
 * `event` Event
 * `url` String
 
-Emitted when the user wants to open a URL with the application. The URL scheme
-must be registered to be opened by your application.
+Emitted when the user wants to open a URL with the application. Your application's
+Info.plist file must define the url scheme within the `CFBundleURLTypes` key, and 
+set `NSPrincipalClass` to `AtomApplication`.
 
 You should call `event.preventDefault()` if you want to handle this event.
 
