@@ -216,6 +216,7 @@ class NativeWindowViews : public NativeWindow,
   // size of the window while in the normal state (not maximized, minimized or
   // fullscreen), so we restore it correctly.
   gfx::Rect last_normal_bounds_;
+  gfx::Rect last_normal_bounds_before_move_;
 
   // last_normal_bounds_ may or may not require update on WM_MOVE. When a
   // window is maximized, it is moved (WM_MOVE) to maximum size first and then

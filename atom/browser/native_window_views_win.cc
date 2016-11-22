@@ -125,9 +125,12 @@ bool NativeWindowViews::PreHandleMSG(
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
     case WM_SIZE: {
-      consecutive_moves_ = false;
       // Handle window state change.
       HandleSizeEvent(w_param, l_param);
+
+      consecutive_moves_ = false;
+      last_normal_bounds_before_move_ = last_normal_bounds_;
+
       return false;
     }
     case WM_MOVING: {
@@ -155,6 +158,9 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   switch (w_param) {
     case SIZE_MAXIMIZED:
       last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
+      if (consecutive_moves_) {
+        last_normal_bounds_ = last_normal_bounds_before_move_;
+      }
       NotifyWindowMaximize();
       break;
     case SIZE_MINIMIZED:
@@ -165,14 +171,14 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
         // Window was resized so we save it's new size.
         last_normal_bounds_ = GetBounds();
+        last_normal_bounds_before_move_ = last_normal_bounds_;
       } else {
         switch (last_window_state_) {
           case ui::SHOW_STATE_MAXIMIZED:
             last_window_state_ = ui::SHOW_STATE_NORMAL;
 
-            // When the window is restored we resize it to the previous known
-            // normal size.
-            SetBounds(last_normal_bounds_, false);
+            // Don't force out last known bounds onto the window as Windows
+            // actually gets these correct
 
             NotifyWindowUnmaximize();
             break;
