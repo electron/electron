@@ -200,7 +200,6 @@ void WebFrame::BuildPrototype(
       .SetMethod("getZoomLevel", &WebFrame::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
-      .SetMethod("setZoomLevelLimits", &WebFrame::SetVisualZoomLevelLimits)
       .SetMethod("setVisualZoomLevelLimits",
                  &WebFrame::SetVisualZoomLevelLimits)
       .SetMethod("setLayoutZoomLevelLimits",
@@ -220,7 +219,9 @@ void WebFrame::BuildPrototype(
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
-      .SetMethod("clearCache", &WebFrame::ClearCache);
+      .SetMethod("clearCache", &WebFrame::ClearCache)
+      // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
+      .SetMethod("setZoomLevelLimits", &WebFrame::SetVisualZoomLevelLimits);
 }
 
 }  // namespace api
