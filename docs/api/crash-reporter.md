@@ -32,7 +32,7 @@ API before starting the crash reporter.
 
 ## Methods
 
-The `crash-reporter` module has the following methods:
+The `crashReporter` module has the following methods:
 
 ### `crashReporter.start(options)`
 
@@ -70,7 +70,7 @@ Returns [`CrashReport[]`](structures/crash-report.md):
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
-## crash-reporter Payload
+## Crash Report Payload
 
 The crash reporter will send the following data to the `submitURL` as
 a `multipart/form-data` `POST`:
