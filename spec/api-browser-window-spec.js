@@ -1765,12 +1765,12 @@ describe('browser-window module', function () {
     })
 
     it('should not affect the bounds when restoring the window', function (done) {
-      w.minimize();
+      w.minimize()
       setTimeout(() => {
-        w.restore();
-        assert.equal(w.getSize()[0], 800);
-        done();
-      }, 200);
+        w.restore()
+        assert.equal(w.getSize()[0], 800)
+        done()
+      }, 200)
     })
   })
 
@@ -1781,13 +1781,13 @@ describe('browser-window module', function () {
     })
 
     it('should not affect the bounds when restoring the window', function (done) {
-      const originalPos = w.getPosition();
-      w.maximize();
+      const originalPos = w.getPosition()
+      w.maximize()
       setTimeout(() => {
-        w.unmaximize();
-        assertBoundsEqual(originalPos, w.getPosition());
-        done();
-      }, 200);
+        w.unmaximize()
+        assertBoundsEqual(originalPos, w.getPosition())
+        done()
+      }, 200)
     })
   })
 })
