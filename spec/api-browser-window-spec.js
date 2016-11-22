@@ -1754,6 +1754,25 @@ describe('browser-window module', function () {
       })
     })
   })
+
+  describe.only('minWidth', function () {
+    beforeEach(function () {
+      if (w != null) w.destroy()
+      w = new BrowserWindow({
+        minWidth: 800,
+        width: 800
+      })
+    })
+
+    it('should persist when restoring the window', function (done) {
+      w.minimize();
+      setTimeout(() => {
+        w.restore();
+        assert.equal(w.getSize()[0], 800);
+        done();
+      }, 200);
+    })
+  })
 })
 
 const assertBoundsEqual = (actual, expect) => {
