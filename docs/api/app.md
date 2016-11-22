@@ -114,7 +114,7 @@ You should call `event.preventDefault()` if you want to handle this event.
 On Windows, you have to parse `process.argv` (in the main process) to get the
 filepath.
 
-### Event: 'open-url' _macOS_
+### Event: 'open-url' _macOS_ _Windows_
 
 Returns:
 
@@ -126,6 +126,8 @@ Emitted when the user wants to open a URL with the application. Your application
 set `NSPrincipalClass` to `AtomApplication`.
 
 You should call `event.preventDefault()` if you want to handle this event.
+
+**NOTE:** This is only emitted on windows if `app.makeSingleInstance` has been called
 
 ### Event: 'activate' _macOS_
 
