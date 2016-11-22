@@ -34,11 +34,6 @@ void JavascriptEnvironment::OnMessageLoopDestroying() {
 
 bool JavascriptEnvironment::Initialize() {
   auto cmd = base::CommandLine::ForCurrentProcess();
-  if (cmd->HasSwitch("debug-brk")) {
-    // Need to be called before v8::Initialize().
-    const char expose_debug_as[] = "--expose_debug_as=v8debug";
-    v8::V8::SetFlagsFromString(expose_debug_as, sizeof(expose_debug_as) - 1);
-  }
 
   // --js-flags.
   std::string js_flags = cmd->GetSwitchValueASCII(switches::kJavaScriptFlags);

@@ -10,8 +10,9 @@
 #include <string>
 #include <vector>
 
-#include "base/mac/scoped_nsobject.h"
 #include "atom/browser/native_window.h"
+#include "base/mac/scoped_nsobject.h"
+#include "content/public/browser/render_widget_host.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
@@ -19,7 +20,8 @@
 
 namespace atom {
 
-class NativeWindowMac : public NativeWindow {
+class NativeWindowMac : public NativeWindow,
+                        public content::RenderWidgetHost::InputEventObserver {
  public:
   NativeWindowMac(brightray::InspectableWebContents* inspectable_web_contents,
                   const mate::Dictionary& options,
@@ -53,6 +55,8 @@ class NativeWindowMac : public NativeWindow {
   void SetMovable(bool movable) override;
   void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size)
     override;
+  void PreviewFile(const std::string& path, const std::string& display_name)
+    override;
   bool IsMovable() override;
   void SetMinimizable(bool minimizable) override;
   bool IsMinimizable() override;
@@ -62,7 +66,7 @@ class NativeWindowMac : public NativeWindow {
   bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
-  void SetAlwaysOnTop(bool top) override;
+  void SetAlwaysOnTop(bool top, const std::string& level) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
   void SetTitle(const std::string& title) override;
@@ -83,12 +87,19 @@ class NativeWindowMac : public NativeWindow {
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
-  void SetProgressBar(double progress) override;
+  void SetProgressBar(double progress, const ProgressState state) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
-
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
+  void SetVibrancy(const std::string& type) override;
+
+  // content::RenderWidgetHost::InputEventObserver:
+  void OnInputEvent(const blink::WebInputEvent& event) override;
+
+  // content::WebContentsObserver:
+  void RenderViewHostChanged(content::RenderViewHost* old_host,
+                             content::RenderViewHost* new_host) override;
 
   // Refresh the DraggableRegion views.
   void UpdateDraggableRegionViews() {
@@ -106,6 +117,8 @@ class NativeWindowMac : public NativeWindow {
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
+  bool zoom_to_page_width() const { return zoom_to_page_width_; }
+
  protected:
   // Return a vector of non-draggable regions that fill a window of size
   // |width| by |height|, but leave gaps where the window should be draggable.
@@ -114,10 +127,12 @@ class NativeWindowMac : public NativeWindow {
 
  private:
   // NativeWindow:
-  gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
-  gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds);
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds);
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
+
+  void ShowWindowButton(NSWindowButton button);
 
   void InstallView();
   void UninstallView();
@@ -125,6 +140,9 @@ class NativeWindowMac : public NativeWindow {
   // Install the drag view, which will cover the whole window and decides
   // whehter we can drag.
   void UpdateDraggableRegionViews(const std::vector<DraggableRegion>& regions);
+
+  void RegisterInputEventObserver(content::RenderViewHost* host);
+  void UnregisterInputEventObserver(content::RenderViewHost* host);
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
@@ -138,6 +156,8 @@ class NativeWindowMac : public NativeWindow {
   std::vector<DraggableRegion> draggable_regions_;
 
   bool is_kiosk_;
+
+  bool zoom_to_page_width_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
 

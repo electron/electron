@@ -5,9 +5,9 @@
 例子，放大当前页到 200%.
 
 ```javascript
-var webFrame = require('electron').webFrame;
+var webFrame = require('electron').webFrame
 
-webFrame.setZoomFactor(2);
+webFrame.setZoomFactor(2)
 ```
 
 ## 方法
@@ -54,11 +54,11 @@ webFrame.setZoomFactor(2);
 例子，使用 [node-spellchecker][spellchecker] 作为一个 provider:
 
 ```javascript
-webFrame.setSpellCheckProvider("en-US", true, {
-  spellCheck: function(text) {
-    return !(require('spellchecker').isMisspelled(text));
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck: function (text) {
+    return !(require('spellchecker').isMisspelled(text))
   }
-});
+})
 ```
 
 ### `webFrame.registerURLSchemeAsSecure(scheme)`

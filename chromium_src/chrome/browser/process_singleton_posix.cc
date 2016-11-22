@@ -348,6 +348,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
   return (cookie == ReadLink(path));
 }
 
+bool IsAppSandboxed() {
+#if defined(OS_MACOSX)
+  // NB: There is no sane API for this, we have to just guess by
+  // reading tea leaves
+  base::FilePath home_dir;
+  if (!base::PathService::Get(base::DIR_HOME, &home_dir)) {
+    return false;
+  }
+
+  return home_dir.value().find("Library/Containers") != std::string::npos;
+#else
+  return false;
+#endif  // defined(OS_MACOSX)
+}
+
 bool ConnectSocket(ScopedSocket* socket,
                    const base::FilePath& socket_path,
                    const base::FilePath& cookie_path) {
@@ -946,27 +961,27 @@ bool ProcessSingleton::Create() {
 #endif
   }
 
-#if defined(MAS_BUILD)
-  // For Mac App Store build, the tmp dir could be too long to fit
-  // addr->sun_path, so we need to make it as short as possible.
-  base::FilePath tmp_dir;
-  if (!base::GetTempDir(&tmp_dir)) {
-    LOG(ERROR) << "Failed to get temporary directory.";
-    return false;
+  if (IsAppSandboxed()) {
+    // For sandboxed applications, the tmp dir could be too long to fit
+    // addr->sun_path, so we need to make it as short as possible.
+    base::FilePath tmp_dir;
+    if (!base::GetTempDir(&tmp_dir)) {
+      LOG(ERROR) << "Failed to get temporary directory.";
+      return false;
+    }
+    if (!socket_dir_.Set(tmp_dir.Append("S"))) {
+      LOG(ERROR) << "Failed to set socket directory.";
+      return false;
+    }
+  } else {
+    // Create the socket file somewhere in /tmp which is usually mounted as a
+    // normal filesystem. Some network filesystems (notably AFS) are screwy and
+    // do not support Unix domain sockets.
+    if (!socket_dir_.CreateUniqueTempDir()) {
+      LOG(ERROR) << "Failed to create socket directory.";
+      return false;
+    }
   }
-  if (!socket_dir_.Set(tmp_dir.Append("S"))) {
-    LOG(ERROR) << "Failed to set socket directory.";
-    return false;
-  }
-#else
-  // Create the socket file somewhere in /tmp which is usually mounted as a
-  // normal filesystem. Some network filesystems (notably AFS) are screwy and
-  // do not support Unix domain sockets.
-  if (!socket_dir_.CreateUniqueTempDir()) {
-    LOG(ERROR) << "Failed to create socket directory.";
-    return false;
-  }
-#endif
 
   // Check that the directory was created with the correct permissions.
   int dir_mode = 0;

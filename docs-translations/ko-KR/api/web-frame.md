@@ -2,12 +2,14 @@
 
 > 현재 웹 페이지의 렌더링 상태를 커스터마이즈합니다.
 
+프로세스: [렌더러](../tutorial/quick-start.md#renderer-process)
+
 다음 예시는 현재 페이지를 200% 줌 합니다:
 
 ```javascript
-const {webFrame} = require('electron');
+const {webFrame} = require('electron')
 
-webFrame.setZoomFactor(2);
+webFrame.setZoomFactor(2)
 ```
 
 ## Methods
@@ -23,7 +25,7 @@ webFrame.setZoomFactor(2);
 
 ### `webFrame.getZoomFactor()`
 
-현재 줌 값을 반환합니다.
+Returns `Number` - 현재 줌 값.
 
 ### `webFrame.setZoomLevel(level)`
 
@@ -35,7 +37,7 @@ webFrame.setZoomFactor(2);
 
 ### `webFrame.getZoomLevel()`
 
-현재 줌 레벨을 반환합니다.
+Returns `Number` - 현재 줌 레벨.
 
 ### `webFrame.setZoomLevelLimits(minimumLevel, maximumLevel)`
 
@@ -58,11 +60,12 @@ Input field나 text area에 철자 검사(spell checking) 제공자를 설정합
 [node-spellchecker][spellchecker]를 철자 검사 제공자로 사용하는 예시입니다:
 
 ```javascript
+const {webFrame} = require('electron')
 webFrame.setSpellCheckProvider('en-US', true, {
-  spellCheck(text) {
-    return !(require('spellchecker').isMisspelled(text));
+  spellCheck (text) {
+    return !(require('spellchecker').isMisspelled(text))
   }
-});
+})
 ```
 
 ### `webFrame.registerURLSchemeAsSecure(scheme)`
@@ -80,12 +83,26 @@ webFrame.setSpellCheckProvider('en-US', true, {
 
 현재 페이지 콘텐츠의 보안 정책에 상관없이 `scheme`로부터 리소스가 로드됩니다.
 
-### `webFrame.registerURLSchemeAsPrivileged(scheme)`
+### `webFrame.registerURLSchemeAsPrivileged(scheme[, options])`
 
- * `scheme` String
+* `scheme` String
+* `options` Object(optional)
+  * `secure` Boolean - (optional) 기본값 참.
+  * `bypassCSP` Boolean - (optional) 기본값 참.
+  * `allowServiceWorkers` Boolean - (optional) 기본값 참.
+  * `supportFetchAPI` Boolean - (optional) 기본값 참.
+  * `corsEnabled` Boolean - (optional) 기본값 참.
 
 `scheme`를 보안된 스킴으로 등록합니다. 리소스에 대해 보안 정책을 우회하며,
 ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
+
+등록에서 그것을 빼려면 `false` 값으로 옵션을 지정하세요.
+콘텐츠 보안 정책을 우회하지 않고, 특권 스킴을 등록하는 예:
+
+```javascript
+const {webFrame} = require('electron')
+webFrame.registerURLSchemeAsPrivileged('foo', { bypassCSP: false })
+```
 
 ### `webFrame.insertText(text)`
 
@@ -105,9 +122,18 @@ ServiceWorker의 등록과 fetch API를 사용할 수 있도록 지원합니다.
 
 ### `webFrame.getResourceUsage()`
 
+Returns `Object`:
+
+* `images` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `cssStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `xslStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `fonts` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `other` [MemoryUsageDetails](structures/memory-usage-details.md)
+
 Blink의 내부 메모리 캐시 사용 정보를 담고있는 객체를 반환합니다.
 
 ```javascript
+const {webFrame} = require('electron')
 console.log(webFrame.getResourceUsage())
 ```
 
@@ -126,13 +152,13 @@ console.log(webFrame.getResourceUsage())
   cssStyleSheets: { /* same with "images" */ },
   xslStyleSheets: { /* same with "images" */ },
   fonts: { /* same with "images" */ },
-  other: { /* same with "images" */ },
+  other: { /* same with "images" */ }
 }
 ```
 
 ### `webFrame.clearCache()`
 
-사용하지 않는 메모리 비우기를 시도합니다. (이전 페이지의 이미지 등)
+(이전 페이지의 이미지 등) 사용하지 않는 메모리 해제를 시도합니다.
 
 참고로 맹목적으로 이 메서드를 호출하는 것은 이 빈 캐시를 다시 채워야하기 때문에
 Electron을 느리게 만듭니다. 따라서 이 메서드는 페이지가 예상했던 것 보다 실질적으로 더

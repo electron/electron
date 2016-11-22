@@ -53,6 +53,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
       int element_instance_id,
       const GuestViewContainer::ResizeCallback& callback);
   void AttachGuest(int element_instance_id);
+  void DetachGuest(int element_instance_id);
 
   // Set the provider that will be used by SpellCheckClient for spell check.
   void SetSpellCheckProvider(mate::Arguments* args,
@@ -62,7 +63,8 @@ class WebFrame : public mate::Wrappable<WebFrame> {
 
   void RegisterURLSchemeAsSecure(const std::string& scheme);
   void RegisterURLSchemeAsBypassingCSP(const std::string& scheme);
-  void RegisterURLSchemeAsPrivileged(const std::string& scheme);
+  void RegisterURLSchemeAsPrivileged(const std::string& scheme,
+                                     mate::Arguments* args);
 
   // Editing.
   void InsertText(const std::string& text);

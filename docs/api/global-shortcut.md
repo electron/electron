@@ -2,6 +2,8 @@
 
 > Detect keyboard events when the application does not have keyboard focus.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 The `globalShortcut` module can register/unregister a global keyboard shortcut
 with the operating system so that you can customize the operations for various
 shortcuts.
@@ -56,7 +58,7 @@ want applications to fight for global shortcuts.
 
 * `accelerator` [Accelerator](accelerator.md)
 
-Returns whether this application has registered `accelerator`.
+Returns `Boolean` - Whether this application has registered `accelerator`.
 
 When the accelerator is already taken by other applications, this call will
 still return `false`. This behavior is intended by operating systems, since they

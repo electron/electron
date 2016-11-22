@@ -17,6 +17,8 @@ namespace net {
 class AuthChallengeInfo;
 class URLRequest;
 class X509Certificate;
+class HttpResponseHeaders;
+struct CertPrincipal;
 }
 
 namespace mate {
@@ -31,6 +33,18 @@ template<>
 struct Converter<scoped_refptr<net::X509Certificate>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
       const scoped_refptr<net::X509Certificate>& val);
+};
+
+template<>
+struct Converter<net::CertPrincipal> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::CertPrincipal& val);
+};
+
+template <>
+struct Converter<net::HttpResponseHeaders*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   net::HttpResponseHeaders* headers);
 };
 
 }  // namespace mate

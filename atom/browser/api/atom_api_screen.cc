@@ -97,7 +97,7 @@ v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
     isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
         isolate,
-        "Cannot initialize \"screen\" module before app is ready")));
+        "Cannot require \"screen\" module before app is ready")));
     return v8::Null(isolate);
   }
 

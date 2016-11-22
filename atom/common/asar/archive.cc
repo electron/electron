@@ -10,9 +10,9 @@
 #include "atom/common/asar/scoped_temporary_file.h"
 #include "base/files/file.h"
 #include "base/files/file_util.h"
+#include "base/json/json_reader.h"
 #include "base/logging.h"
 #include "base/pickle.h"
-#include "base/json/json_reader.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 

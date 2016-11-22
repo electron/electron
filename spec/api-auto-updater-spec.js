@@ -50,5 +50,19 @@ if (!process.mas) {
         done()
       })
     })
+
+    describe('quitAndInstall', function () {
+      it('emits an error on Windows when no update is available', function (done) {
+        if (process.platform !== 'win32') {
+          return done()
+        }
+
+        ipcRenderer.once('auto-updater-error', function (event, message) {
+          assert.equal(message, 'No update available, can\'t quit and install')
+          done()
+        })
+        autoUpdater.quitAndInstall()
+      })
+    })
   })
 }

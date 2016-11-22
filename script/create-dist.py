@@ -10,7 +10,7 @@ import stat
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
                        get_target_arch, get_chromedriver_version, \
-                       get_platform_key
+                       get_zip_name
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
                      execute, electron_gyp
 
@@ -86,6 +86,9 @@ def main():
   copy_chrome_binary('mksnapshot')
   copy_license()
 
+  if PLATFORM != 'win32':
+    copy_api_json_schema()
+
   if PLATFORM == 'linux':
     strip_binaries()
 
@@ -128,6 +131,8 @@ def copy_license():
                DIST_DIR)
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
+def copy_api_json_schema():
+  shutil.copy2(os.path.join(SOURCE_ROOT, 'out', 'electron-api.json'), DIST_DIR)
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:
@@ -165,9 +170,7 @@ def create_symbols():
 
 
 def create_dist_zip():
-  dist_name = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME, ELECTRON_VERSION,
-                                           get_platform_key(),
-                                           get_target_arch())
+  dist_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
@@ -178,8 +181,7 @@ def create_dist_zip():
 
 
 def create_chrome_binary_zip(binary, version):
-  dist_name = '{0}-{1}-{2}-{3}.zip'.format(binary, version, get_platform_key(),
-                                           get_target_arch())
+  dist_name = get_zip_name(binary, version)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
@@ -192,8 +194,7 @@ def create_chrome_binary_zip(binary, version):
 
 
 def create_ffmpeg_zip():
-  dist_name = 'ffmpeg-{0}-{1}-{2}.zip'.format(
-      ELECTRON_VERSION, get_platform_key(), get_target_arch())
+  dist_name = get_zip_name('ffmpeg', ELECTRON_VERSION)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   if PLATFORM == 'darwin':
@@ -214,10 +215,7 @@ def create_ffmpeg_zip():
 
 
 def create_symbols_zip():
-  dist_name = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
-                                                   ELECTRON_VERSION,
-                                                   get_platform_key(),
-                                                   get_target_arch())
+  dist_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
   zip_file = os.path.join(DIST_DIR, dist_name)
   licenses = ['LICENSE', 'LICENSES.chromium.html', 'version']
 
@@ -226,18 +224,12 @@ def create_symbols_zip():
     make_zip(zip_file, licenses, dirs)
 
   if PLATFORM == 'darwin':
-    dsym_name = '{0}-{1}-{2}-{3}-dsym.zip'.format(PROJECT_NAME,
-                                                  ELECTRON_VERSION,
-                                                  get_platform_key(),
-                                                  get_target_arch())
+    dsym_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
     with scoped_cwd(DIST_DIR):
       dsyms = glob.glob('*.dSYM')
       make_zip(os.path.join(DIST_DIR, dsym_name), licenses, dsyms)
   elif PLATFORM == 'win32':
-    pdb_name = '{0}-{1}-{2}-{3}-pdb.zip'.format(PROJECT_NAME,
-                                                ELECTRON_VERSION,
-                                                get_platform_key(),
-                                                get_target_arch())
+    pdb_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
     with scoped_cwd(DIST_DIR):
       pdbs = glob.glob('*.pdb')
       make_zip(os.path.join(DIST_DIR, pdb_name), pdbs + licenses, [])

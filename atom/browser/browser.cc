@@ -48,7 +48,10 @@ void Browser::Quit() {
   window_list->CloseAllWindows();
 }
 
-void Browser::Exit(int code) {
+void Browser::Exit(mate::Arguments* args) {
+  int code = 0;
+  args->GetNext(&code);
+
   if (!AtomBrowserMainParts::Get()->SetExitCode(code)) {
     // Message loop is not ready, quit directly.
     exit(code);
@@ -145,14 +148,15 @@ void Browser::WillFinishLaunching() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillFinishLaunching());
 }
 
-void Browser::DidFinishLaunching() {
+void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   // Make sure the userData directory is created.
   base::FilePath user_data;
   if (PathService::Get(brightray::DIR_USER_DATA, &user_data))
     base::CreateDirectoryAndGetError(user_data, nullptr);
 
   is_ready_ = true;
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
+  FOR_EACH_OBSERVER(BrowserObserver, observers_,
+    OnFinishLaunching(launch_info));
 }
 
 void Browser::OnAccessibilitySupportChanged() {

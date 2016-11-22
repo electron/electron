@@ -68,3 +68,50 @@ Electron은 `Release`와 `Debug` 빌드가 서로 다른 라이브러리 링크 
 
 이 문제는 개발자에게만 영향을 미칩니다. 만약 단순히 Electron을 rebranding 하기 위해
 빌드 하는 것이라면 이 문제에 신경 쓸 필요가 없습니다.
+
+## 테스트
+
+변경사항이 프로젝트 코딩 스타일을 준수하는지 테스트하려면 다음 명령을 사용하세요:
+
+```bash
+$ npm run lint
+```
+
+기능을 테스트하려면 다음 명령을 사용하세요:
+
+```bash
+$ npm test
+```
+
+Electron 소스 코드를 변경할 때 마다, 테스트 전에 빌드를 다시 실행해야 합니다:
+
+```bash
+$ npm run build && npm test
+```
+
+모카의 [전용 테스트](https://mochajs.org/#exclusive-tests) 기능을 사용해서 특정
+테스트 또는 블록을 분리하여 테스트 세트 실행을 빠르게 할 수 있습니다.`describe`
+또는 `it` 함수 호출에 `.only` 만 붙이세요:
+
+```js
+describe.only('some feature', function () {
+  // ... 이 블록에서는 테스트만 실행될 것 입니다.
+})
+```
+
+또는, 주어진 정규 표현 패턴에 일치하는 경우에만 테스트를 실행하기 위해 모카의
+`grep` 을 사용할 수 있습니다:
+
+```sh
+$ npm test -- --grep child_process
+```
+
+테스트시 (`runas` 같은) 네이티브 모듈을 포함하면 디버그 빌드에서 실행할 수
+없습니다. (자세한 것은 [#2558](https://github.com/electron/electron/issues/2558)
+를 보세요). 그러나 릴리즈 빌드에서는 작동할 것 입니다.
+
+릴리즈 빌드로 테스트를 실행하려면 다음 명령을 사용하세요:
+
+```bash
+$ npm test -- -R
+```

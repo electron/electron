@@ -1,6 +1,10 @@
-# Tray
+## Class: Tray
 
 > Add icons and context menus to the system's notification area.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
+
+`Tray` is an [EventEmitter][event-emitter].
 
 ```javascript
 const {app, Menu, Tray} = require('electron')
@@ -31,31 +35,32 @@ __Platform limitations:__
   you have to call `setContextMenu` again. For example:
 
 ```javascript
-const {Menu, Tray} = require('electron')
-const appIcon = new Tray('/path/to/my/icon')
-const contextMenu = Menu.buildFromTemplate([
-  {label: 'Item1', type: 'radio'},
-  {label: 'Item2', type: 'radio'}
-])
+const {app, Menu, Tray} = require('electron')
 
-// Make a change to the context menu
-contextMenu.items[2].checked = false
+let appIcon = null
+app.on('ready', () => {
+  appIcon = new Tray('/path/to/my/icon')
+  const contextMenu = Menu.buildFromTemplate([
+    {label: 'Item1', type: 'radio'},
+    {label: 'Item2', type: 'radio'}
+  ])
 
-// Call this again for Linux because we modified the context menu
-appIcon.setContextMenu(contextMenu)
+  // Make a change to the context menu
+  contextMenu.items[1].checked = false
+
+  // Call this again for Linux because we modified the context menu
+  appIcon.setContextMenu(contextMenu)
+})
 ```
 * On Windows it is recommended to use `ICO` icons to get best visual effects.
 
 If you want to keep exact same behaviors on all platforms, you should not
 rely on the `click` event and always attach a context menu to the tray icon.
 
-## Class: Tray
-
-`Tray` is an [EventEmitter][event-emitter].
 
 ### `new Tray(image)`
 
-* `image` [NativeImage](native-image.md)
+* `image` ([NativeImage](native-image.md) | String)
 
 Creates a new tray icon associated with the `image`.
 
@@ -70,11 +75,7 @@ The `Tray` module emits the following events:
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
   * `metaKey` Boolean
-* `bounds` Object _macOS_ _Windows_ - the bounds of tray icon.
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
 
 Emitted when the tray icon is clicked.
 
@@ -85,11 +86,7 @@ Emitted when the tray icon is clicked.
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
   * `metaKey` Boolean
-* `bounds` Object - the bounds of tray icon.
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
 
 Emitted when the tray icon is right clicked.
 
@@ -100,11 +97,7 @@ Emitted when the tray icon is right clicked.
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
   * `metaKey` Boolean
-* `bounds` Object - the bounds of tray icon
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
 
 Emitted when the tray icon is double clicked.
 
@@ -128,7 +121,7 @@ Emitted when any dragged items are dropped on the tray icon.
 #### Event: 'drop-files' _macOS_
 
 * `event` Event
-* `files` Array - the file path of dropped files.
+* `files` String[] - The paths of the dropped files.
 
 Emitted when dragged files are dropped in the tray icon.
 
@@ -185,11 +178,11 @@ Sets the title displayed aside of the tray icon in the status bar.
 
 #### `tray.setHighlightMode(mode)` _macOS_
 
-* `mode` String highlight mode with one of the following values:
-  * `'selection'` - Highlight the tray icon when it is clicked and also when
+* `mode` String - Highlight mode with one of the following values:
+  * `selection` - Highlight the tray icon when it is clicked and also when
     its context menu is open. This is the default.
-  * `'always'` - Always highlight the tray icon.
-  * `'never'` - Never highlight the tray icon.
+  * `always` - Always highlight the tray icon.
+  * `never` - Never highlight the tray icon.
 
 Sets when the tray's icon background becomes highlighted (in blue).
 
@@ -197,7 +190,7 @@ Sets when the tray's icon background becomes highlighted (in blue).
 by toggling between `'never'` and `'always'` modes when the window visibility
 changes.
 
-```js
+```javascript
 const {BrowserWindow, Tray} = require('electron')
 
 const win = new BrowserWindow({width: 800, height: 600})
@@ -243,12 +236,12 @@ Sets the context menu for this icon.
 
 #### `tray.getBounds()` _macOS_ _Windows_
 
-Returns the `bounds` of this tray icon as `Object`.
+Returns [`Rectangle`](structures/rectangle.md)
 
-* `bounds` Object
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+The `bounds` of this tray icon as `Object`.
 
-[event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter
+#### `tray.isDestroyed()`
+
+Returns `Boolean` - Whether the tray icon is destroyed.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

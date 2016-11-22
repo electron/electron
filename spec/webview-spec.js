@@ -2,10 +2,11 @@ const assert = require('assert')
 const path = require('path')
 const http = require('http')
 const url = require('url')
-const {app, session, ipcMain, BrowserWindow} = require('electron').remote
+const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} = require('electron').remote
+const {closeWindow} = require('./window-helpers')
 
 describe('<webview> tag', function () {
-  this.timeout(20000)
+  this.timeout(60000)
 
   var fixtures = path.join(__dirname, 'fixtures')
 
@@ -17,13 +18,11 @@ describe('<webview> tag', function () {
   })
 
   afterEach(function () {
-    if (document.body.contains(webview)) {
-      document.body.removeChild(webview)
+    if (!document.body.contains(webview)) {
+      document.body.appendChild(webview)
     }
-    if (w) {
-      w.destroy()
-      w = null
-    }
+    webview.remove()
+    return closeWindow(w).then(function () { w = null })
   })
 
   it('works without script tag in page', function (done) {
@@ -74,6 +73,27 @@ describe('<webview> tag', function () {
       webview.addEventListener('did-finish-load', listener)
       webview.src = 'file://' + fixtures + '/pages/a.html'
       document.body.appendChild(webview)
+    })
+
+    it('resolves relative URLs', function (done) {
+      var listener = function (e) {
+        assert.equal(e.message, 'Window script is loaded before preload script')
+        webview.removeEventListener('console-message', listener)
+        done()
+      }
+      webview.addEventListener('console-message', listener)
+      webview.src = '../fixtures/pages/e.html'
+      document.body.appendChild(webview)
+    })
+
+    it('ignores empty values', function () {
+      assert.equal(webview.src, '')
+      webview.src = ''
+      assert.equal(webview.src, '')
+      webview.src = null
+      assert.equal(webview.src, '')
+      webview.src = undefined
+      assert.equal(webview.src, '')
     })
   })
 
@@ -197,6 +217,28 @@ describe('<webview> tag', function () {
       webview.setAttribute('preload', fixtures + '/module/preload.js')
       webview.src = 'file://' + fixtures + '/pages/base-page.html'
       document.body.appendChild(webview)
+    })
+
+    it('resolves relative URLs', function (done) {
+      var listener = function (e) {
+        assert.equal(e.message, 'function object object')
+        webview.removeEventListener('console-message', listener)
+        done()
+      }
+      webview.addEventListener('console-message', listener)
+      webview.src = 'file://' + fixtures + '/pages/e.html'
+      webview.preload = '../fixtures/module/preload.js'
+      document.body.appendChild(webview)
+    })
+
+    it('ignores empty values', function () {
+      assert.equal(webview.preload, '')
+      webview.preload = ''
+      assert.equal(webview.preload, '')
+      webview.preload = null
+      assert.equal(webview.preload, '')
+      webview.preload = undefined
+      assert.equal(webview.preload, '')
     })
   })
 
@@ -358,6 +400,33 @@ describe('<webview> tag', function () {
       webview.addEventListener('console-message', listener)
       webview.setAttribute('allowpopups', 'on')
       webview.src = 'file://' + fixtures + '/pages/window-open-hide.html'
+      document.body.appendChild(webview)
+    })
+  })
+
+  describe('webpreferences attribute', function () {
+    it('can enable nodeintegration', function (done) {
+      webview.addEventListener('console-message', function (e) {
+        assert.equal(e.message, 'function object object')
+        done()
+      })
+      webview.setAttribute('webpreferences', 'nodeIntegration')
+      webview.src = 'file://' + fixtures + '/pages/d.html'
+      document.body.appendChild(webview)
+    })
+
+    it('can disables web security and enable nodeintegration', function (done) {
+      var jqueryPath = path.join(__dirname, '/static/jquery-2.0.3.min.js')
+      var src = `<script src='file://${jqueryPath}'></script> <script>console.log('ok '+(typeof require));</script>`
+      var encoded = btoa(unescape(encodeURIComponent(src)))
+      var listener = function (e) {
+        assert.equal(e.message, 'ok function')
+        webview.removeEventListener('console-message', listener)
+        done()
+      }
+      webview.addEventListener('console-message', listener)
+      webview.setAttribute('webpreferences', 'webSecurity=no, nodeIntegration=yes')
+      webview.src = 'data:text/html;base64,' + encoded
       document.body.appendChild(webview)
     })
   })
@@ -580,6 +649,53 @@ describe('<webview> tag', function () {
     })
   })
 
+  describe('<webview>.goForward()', function () {
+    it('should work after a replaced history entry', function (done) {
+      var loadCount = 1
+      var listener = function (e) {
+        if (loadCount === 1) {
+          assert.equal(e.channel, 'history')
+          assert.equal(e.args[0], 1)
+          assert(!webview.canGoBack())
+          assert(!webview.canGoForward())
+        } else if (loadCount === 2) {
+          assert.equal(e.channel, 'history')
+          assert.equal(e.args[0], 2)
+          assert(!webview.canGoBack())
+          assert(webview.canGoForward())
+          webview.removeEventListener('ipc-message', listener)
+        }
+      }
+
+      var loadListener = function (e) {
+        if (loadCount === 1) {
+          webview.src = 'file://' + fixtures + '/pages/base-page.html'
+        } else if (loadCount === 2) {
+          assert(webview.canGoBack())
+          assert(!webview.canGoForward())
+
+          webview.goBack()
+        } else if (loadCount === 3) {
+          webview.goForward()
+        } else if (loadCount === 4) {
+          assert(webview.canGoBack())
+          assert(!webview.canGoForward())
+
+          webview.removeEventListener('did-finish-load', loadListener)
+          done()
+        }
+
+        loadCount++
+      }
+
+      webview.addEventListener('ipc-message', listener)
+      webview.addEventListener('did-finish-load', loadListener)
+      webview.setAttribute('nodeintegration', 'on')
+      webview.src = 'file://' + fixtures + '/pages/history-replace.html'
+      document.body.appendChild(webview)
+    })
+  })
+
   describe('<webview>.clearHistory()', function () {
     it('should clear the navigation history', function (done) {
       var listener = function (e) {
@@ -685,7 +801,7 @@ describe('<webview> tag', function () {
     it('can send keyboard event', function (done) {
       webview.addEventListener('ipc-message', function (e) {
         assert.equal(e.channel, 'keyup')
-        assert.deepEqual(e.args, [67, true, false])
+        assert.deepEqual(e.args, ['C', 'KeyC', 67, true, false])
         done()
       })
       webview.addEventListener('dom-ready', function () {
@@ -737,25 +853,21 @@ describe('<webview> tag', function () {
 
   describe('found-in-page event', function () {
     it('emits when a request is made', function (done) {
-      var requestId = null
-      var totalMatches = null
-      var activeMatchOrdinal = []
-      var listener = function (e) {
+      let requestId = null
+      let activeMatchOrdinal = []
+      const listener = function (e) {
         assert.equal(e.result.requestId, requestId)
-        if (e.result.finalUpdate) {
-          assert.equal(e.result.matches, 3)
-          totalMatches = e.result.matches
-          listener2()
+        assert.equal(e.result.matches, 3)
+        activeMatchOrdinal.push(e.result.activeMatchOrdinal)
+        if (e.result.activeMatchOrdinal === e.result.matches) {
+          assert.deepEqual(activeMatchOrdinal, [1, 2, 3])
+          webview.stopFindInPage('clearSelection')
+          done()
         } else {
-          activeMatchOrdinal.push(e.result.activeMatchOrdinal)
-          if (e.result.activeMatchOrdinal === totalMatches) {
-            assert.deepEqual(activeMatchOrdinal, [1, 2, 3])
-            webview.stopFindInPage('clearSelection')
-            done()
-          }
+          listener2()
         }
       }
-      var listener2 = function () {
+      const listener2 = function () {
         requestId = webview.findInPage('virtual')
       }
       webview.addEventListener('found-in-page', listener)
@@ -789,8 +901,8 @@ describe('<webview> tag', function () {
 
     it('emits when using navigator.getUserMedia api', function (done) {
       webview.addEventListener('ipc-message', function (e) {
-        assert(e.channel, 'message')
-        assert(e.args, ['PermissionDeniedError'])
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['PermissionDeniedError'])
         done()
       })
       webview.src = 'file://' + fixtures + '/pages/permissions/media.html'
@@ -802,8 +914,8 @@ describe('<webview> tag', function () {
 
     it('emits when using navigator.geolocation api', function (done) {
       webview.addEventListener('ipc-message', function (e) {
-        assert(e.channel, 'message')
-        assert(e.args, ['ERROR(1): User denied Geolocation'])
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['User denied Geolocation'])
         done()
       })
       webview.src = 'file://' + fixtures + '/pages/permissions/geolocation.html'
@@ -815,8 +927,8 @@ describe('<webview> tag', function () {
 
     it('emits when using navigator.requestMIDIAccess api', function (done) {
       webview.addEventListener('ipc-message', function (e) {
-        assert(e.channel, 'message')
-        assert(e.args, ['SecurityError'])
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['SecurityError'])
         done()
       })
       webview.src = 'file://' + fixtures + '/pages/permissions/midi.html'
@@ -830,6 +942,26 @@ describe('<webview> tag', function () {
       webview.src = 'magnet:test'
       webview.partition = 'permissionTest'
       setUpRequestHandler(webview, 'openExternal', done)
+      document.body.appendChild(webview)
+    })
+
+    it('emits when using Notification.requestPermission', function (done) {
+      webview.addEventListener('ipc-message', function (e) {
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['granted'])
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/permissions/notification.html'
+      webview.partition = 'permissionTest'
+      webview.setAttribute('nodeintegration', 'on')
+      session.fromPartition(webview.partition).setPermissionRequestHandler(function (webContents, permission, callback) {
+        if (webContents.getId() === webview.getId()) {
+          assert.equal(permission, 'notifications')
+          setTimeout(function () {
+            callback(true)
+          }, 10)
+        }
+      })
       document.body.appendChild(webview)
     })
   })
@@ -930,6 +1062,401 @@ describe('<webview> tag', function () {
       assert.equal(message.runtimeId, 'foo')
       assert.notEqual(message.tabId, w.webContents.id)
       done()
+    })
+  })
+
+  describe('guestinstance attribute', function () {
+    it('before loading there is no attribute', function () {
+      document.body.appendChild(webview)
+      assert(!webview.hasAttribute('guestinstance'))
+    })
+
+    it('loading a page sets the guest view', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var instance = webview.getAttribute('guestinstance')
+        assert.equal(instance, parseInt(instance))
+
+        var guest = getGuestWebContents(parseInt(instance))
+        assert.equal(guest, webview.getWebContents())
+        done()
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('deleting the attribute destroys the webview', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var destroyListener = function () {
+          webview.removeEventListener('destroyed', destroyListener, false)
+          assert.equal(getGuestWebContents(instance), null)
+          done()
+        }
+        webview.addEventListener('destroyed', destroyListener, false)
+
+        var instance = parseInt(webview.getAttribute('guestinstance'))
+        webview.removeAttribute('guestinstance')
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('setting the attribute on a new webview moves the contents', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var webContents = webview.getWebContents()
+        var instance = webview.getAttribute('guestinstance')
+
+        var destroyListener = function () {
+          webview.removeEventListener('destroyed', destroyListener, false)
+          assert.equal(webContents, webview2.getWebContents())
+          // Make sure that events are hooked up to the right webview now
+          webview2.addEventListener('console-message', function (e) {
+            assert.equal(e.message, 'a')
+            document.body.removeChild(webview2)
+            done()
+          })
+
+          webview2.src = 'file://' + fixtures + '/pages/a.html'
+        }
+        webview.addEventListener('destroyed', destroyListener, false)
+
+        var webview2 = new WebView()
+        webview2.setAttribute('guestinstance', instance)
+        document.body.appendChild(webview2)
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('setting the attribute to an invalid guestinstance does nothing', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        webview.setAttribute('guestinstance', 55)
+
+        // Make sure that events are still hooked up to the webview
+        webview.addEventListener('console-message', function (e) {
+          assert.equal(e.message, 'a')
+          done()
+        })
+
+        webview.src = 'file://' + fixtures + '/pages/a.html'
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('setting the attribute on an existing webview moves the contents', function (done) {
+      var load1Listener = function () {
+        webview.removeEventListener('did-finish-load', load1Listener, false)
+        var webContents = webview.getWebContents()
+        var instance = webview.getAttribute('guestinstance')
+        var destroyedInstance
+
+        var destroyListener = function () {
+          webview.removeEventListener('destroyed', destroyListener, false)
+          assert.equal(webContents, webview2.getWebContents())
+          assert.equal(null, getGuestWebContents(parseInt(destroyedInstance)))
+
+          // Make sure that events are hooked up to the right webview now
+          webview2.addEventListener('console-message', function (e) {
+            assert.equal(e.message, 'a')
+            document.body.removeChild(webview2)
+            done()
+          })
+
+          webview2.src = 'file://' + fixtures + '/pages/a.html'
+        }
+        webview.addEventListener('destroyed', destroyListener, false)
+
+        var webview2 = new WebView()
+        var load2Listener = function () {
+          webview2.removeEventListener('did-finish-load', load2Listener, false)
+          destroyedInstance = webview2.getAttribute('guestinstance')
+          assert.notEqual(instance, destroyedInstance)
+
+          webview2.setAttribute('guestinstance', instance)
+        }
+        webview2.addEventListener('did-finish-load', load2Listener, false)
+        webview2.src = 'file://' + fixtures + '/api/blank.html'
+        document.body.appendChild(webview2)
+      }
+      webview.addEventListener('did-finish-load', load1Listener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('moving a guest back to its original webview should work', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var webContents = webview.getWebContents()
+        var instance = webview.getAttribute('guestinstance')
+
+        var destroy1Listener = function () {
+          webview.removeEventListener('destroyed', destroy1Listener, false)
+          assert.equal(webContents, webview2.getWebContents())
+          assert.equal(null, webview.getWebContents())
+
+          var destroy2Listener = function () {
+            webview2.removeEventListener('destroyed', destroy2Listener, false)
+            assert.equal(webContents, webview.getWebContents())
+            assert.equal(null, webview2.getWebContents())
+
+            // Make sure that events are hooked up to the right webview now
+            webview.addEventListener('console-message', function (e) {
+              assert.equal(e.message, 'a')
+              document.body.removeChild(webview2)
+              done()
+            })
+
+            webview.src = 'file://' + fixtures + '/pages/a.html'
+          }
+          webview2.addEventListener('destroyed', destroy2Listener, false)
+
+          webview.setAttribute('guestinstance', instance)
+        }
+        webview.addEventListener('destroyed', destroy1Listener, false)
+
+        var webview2 = new WebView()
+        webview2.setAttribute('guestinstance', instance)
+        document.body.appendChild(webview2)
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('setting the attribute on a webview in a different window moves the contents', function (done) {
+      var loadListener = function () {
+        webview.removeEventListener('did-finish-load', loadListener, false)
+        var instance = webview.getAttribute('guestinstance')
+
+        w = new BrowserWindow({ show: false })
+        w.webContents.once('did-finish-load', function () {
+          ipcMain.once('pong', function () {
+            assert(!webview.hasAttribute('guestinstance'))
+
+            done()
+          })
+
+          w.webContents.send('guestinstance', instance)
+        })
+        w.loadURL('file://' + fixtures + '/pages/webview-move-to-window.html')
+      }
+      webview.addEventListener('did-finish-load', loadListener, false)
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('does not delete the guestinstance attribute when moving the webview to another parent node', function (done) {
+      webview.addEventListener('dom-ready', function domReadyListener () {
+        webview.addEventListener('did-attach', function () {
+          assert(webview.guestinstance != null)
+          assert(webview.getWebContents() != null)
+          done()
+        })
+
+        document.body.replaceChild(webview, div)
+      })
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+
+      const div = document.createElement('div')
+      div.appendChild(webview)
+      document.body.appendChild(div)
+    })
+
+    it('does not destroy the webContents when hiding/showing the webview (regression)', function (done) {
+      webview.addEventListener('dom-ready', function domReadyListener () {
+        const instance = webview.getAttribute('guestinstance')
+        assert(instance != null)
+
+        // Wait for event directly since attach happens asynchronously over IPC
+        ipcMain.once('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', function () {
+          assert(webview.getWebContents() != null)
+          assert.equal(instance, webview.getAttribute('guestinstance'))
+          done()
+        })
+
+        webview.style.display = 'none'
+        webview.offsetHeight
+        webview.style.display = 'block'
+      })
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+      document.body.appendChild(webview)
+    })
+
+    it('does not reload the webContents when hiding/showing the webview (regression)', function (done) {
+      webview.addEventListener('dom-ready', function domReadyListener () {
+        webview.addEventListener('did-start-loading', function () {
+          done(new Error('webview started loading unexpectedly'))
+        })
+
+        // Wait for event directly since attach happens asynchronously over IPC
+        webview.addEventListener('did-attach', function () {
+          done()
+        })
+
+        webview.style.display = 'none'
+        webview.offsetHeight
+        webview.style.display = 'block'
+      })
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+      document.body.appendChild(webview)
+    })
+  })
+
+  describe('DOM events', function () {
+    let div
+
+    beforeEach(function () {
+      div = document.createElement('div')
+      div.style.width = '100px'
+      div.style.height = '10px'
+      div.style.overflow = 'hidden'
+      webview.style.height = '100%'
+      webview.style.width = '100%'
+    })
+
+    afterEach(function () {
+      if (div != null) div.remove()
+    })
+
+    it('emits resize events', function (done) {
+      webview.addEventListener('dom-ready', function () {
+        div.style.width = '1234px'
+        div.style.height = '789px'
+      })
+
+      webview.addEventListener('resize', function onResize (event) {
+        webview.removeEventListener('resize', onResize)
+        assert.equal(event.newWidth, 1234)
+        assert.equal(event.newHeight, 789)
+        assert.equal(event.target, webview)
+        done()
+      })
+
+      webview.src = `file://${fixtures}/pages/a.html`
+      div.appendChild(webview)
+      document.body.appendChild(div)
+    })
+  })
+
+  describe('disableguestresize attribute', () => {
+    it('does not have attribute by default', () => {
+      document.body.appendChild(webview)
+      assert(!webview.hasAttribute('disableguestresize'))
+    })
+
+    it('resizes guest when attribute is not present', done => {
+      w = new BrowserWindow({show: false, width: 200, height: 200})
+      w.loadURL('file://' + fixtures + '/pages/webview-guest-resize.html')
+
+      w.webContents.once('did-finish-load', () => {
+        const CONTENT_SIZE = 300
+
+        const elementResizePromise = new Promise(resolve => {
+          ipcMain.once('webview-element-resize', (event, width, height) => {
+            assert.equal(width, CONTENT_SIZE)
+            assert.equal(height, CONTENT_SIZE)
+            resolve()
+          })
+        })
+
+        const guestResizePromise = new Promise(resolve => {
+          ipcMain.once('webview-guest-resize', (event, width, height) => {
+            assert.equal(width, CONTENT_SIZE)
+            assert.equal(height, CONTENT_SIZE)
+            resolve()
+          })
+        })
+
+        Promise.all([elementResizePromise, guestResizePromise]).then(() => done())
+
+        w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
+      })
+    })
+
+    it('does not resize guest when attribute is present', done => {
+      w = new BrowserWindow({show: false, width: 200, height: 200})
+      w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
+
+      w.webContents.once('did-finish-load', () => {
+        const CONTENT_SIZE = 300
+
+        const elementResizePromise = new Promise(resolve => {
+          ipcMain.once('webview-element-resize', (event, width, height) => {
+            assert.equal(width, CONTENT_SIZE)
+            assert.equal(height, CONTENT_SIZE)
+            resolve()
+          })
+        })
+
+        const noGuestResizePromise = new Promise(resolve => {
+          const onGuestResize = (event, width, height) => {
+            done(new Error('Unexpected guest resize message'))
+          }
+          ipcMain.once('webview-guest-resize', onGuestResize)
+
+          setTimeout(() => {
+            ipcMain.removeListener('webview-guest-resize', onGuestResize)
+            resolve()
+          }, 500)
+        })
+
+        Promise.all([elementResizePromise, noGuestResizePromise]).then(() => done())
+
+        w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
+      })
+    })
+
+    it('dispatches element resize event even when attribute is present', done => {
+      w = new BrowserWindow({show: false, width: 200, height: 200})
+      w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
+
+      w.webContents.once('did-finish-load', () => {
+        const CONTENT_SIZE = 300
+
+        ipcMain.once('webview-element-resize', (event, width, height) => {
+          assert.equal(width, CONTENT_SIZE)
+          done()
+        })
+
+        w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
+      })
+    })
+
+    it('can be manually resized with setSize even when attribute is present', done => {
+      w = new BrowserWindow({show: false, width: 200, height: 200})
+      w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
+
+      w.webContents.once('did-finish-load', () => {
+        const GUEST_WIDTH = 10
+        const GUEST_HEIGHT = 20
+
+        ipcMain.once('webview-guest-resize', (event, width, height) => {
+          assert.equal(width, GUEST_WIDTH)
+          assert.equal(height, GUEST_HEIGHT)
+          done()
+        })
+
+        for (const wc of webContents.getAllWebContents()) {
+          if (wc.hostWebContents &&
+              wc.hostWebContents.id === w.webContents.id) {
+            wc.setSize({
+              normal: {
+                width: GUEST_WIDTH,
+                height: GUEST_HEIGHT
+              }
+            })
+          }
+        }
+      })
     })
   })
 })

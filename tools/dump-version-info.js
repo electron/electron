@@ -2,7 +2,7 @@ var app = require('electron').app
 var fs = require('fs')
 var request = require('request')
 
-var TARGET_URL = 'https://atom.io/download/atom-shell/index.json'
+var TARGET_URL = 'https://atom.io/download/electron/index.json'
 
 function getDate () {
   var today = new Date()

@@ -6,10 +6,12 @@
 
 #include <string>
 
+#include "atom/browser/native_window.h"
 #include "base/stl_util.h"
-#include "base/win/scoped_gdi_object.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/scoped_gdi_object.h"
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/display/win/screen_win.h"
 #include "ui/gfx/icon_util.h"
 
 namespace atom {
@@ -114,21 +116,47 @@ bool TaskbarHost::SetThumbarButtons(
     r = taskbar_->ThumbBarAddButtons(window, kMaxButtonsCount, thumb_buttons);
 
   thumbar_buttons_added_ = true;
+  last_buttons_ = buttons;
   return SUCCEEDED(r);
 }
 
-bool TaskbarHost::SetProgressBar(HWND window, double value) {
+void TaskbarHost::RestoreThumbarButtons(HWND window) {
+  if (thumbar_buttons_added_) {
+    thumbar_buttons_added_ = false;
+    SetThumbarButtons(window, last_buttons_);
+  }
+}
+
+bool TaskbarHost::SetProgressBar(
+    HWND window, double value, const NativeWindow::ProgressState state) {
   if (!InitializeTaskbar())
     return false;
 
-  HRESULT r;
-  if (value > 1.0)
-    r = taskbar_->SetProgressState(window, TBPF_INDETERMINATE);
-  else if (value < 0)
-    r = taskbar_->SetProgressState(window, TBPF_NOPROGRESS);
-  else
-    r = taskbar_->SetProgressValue(window, static_cast<int>(value * 100), 100);
-  return SUCCEEDED(r);
+  bool success;
+  if (value > 1.0 || state == NativeWindow::PROGRESS_INDETERMINATE) {
+    success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_INDETERMINATE));
+  } else if (value < 0 || state == NativeWindow::PROGRESS_NONE) {
+    success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_NOPROGRESS));
+  } else {
+    // Unless SetProgressState set a blocking state (TBPF_ERROR, TBPF_PAUSED)
+    // for the window, a call to SetProgressValue assumes the TBPF_NORMAL
+    // state even if it is not explicitly set.
+    // SetProgressValue overrides and clears the TBPF_INDETERMINATE state.
+    if (state == NativeWindow::PROGRESS_ERROR) {
+      success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_ERROR));
+    } else if (state == NativeWindow::PROGRESS_PAUSED) {
+      success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_PAUSED));
+    } else {
+      success = SUCCEEDED(taskbar_->SetProgressState(window, TBPF_NORMAL));
+    }
+
+    if (success) {
+      int val = static_cast<int>(value * 100);
+      success = SUCCEEDED(taskbar_->SetProgressValue(window, val, 100));
+    }
+  }
+
+  return success;
 }
 
 bool TaskbarHost::SetOverlayIcon(
@@ -149,13 +177,19 @@ bool TaskbarHost::SetThumbnailClip(HWND window, const gfx::Rect& region) {
   if (region.IsEmpty()) {
     return SUCCEEDED(taskbar_->SetThumbnailClip(window, NULL));
   } else {
-    RECT rect;
-    rect.left = region.x();
-    rect.right = region.right();
-    rect.top = region.y();
-    rect.bottom = region.bottom();
+    RECT rect = display::win::ScreenWin::DIPToScreenRect(window, region)
+        .ToRECT();
     return SUCCEEDED(taskbar_->SetThumbnailClip(window, &rect));
   }
+}
+
+bool TaskbarHost::SetThumbnailToolTip(
+    HWND window, const std::string& tooltip) {
+  if (!InitializeTaskbar())
+    return false;
+
+  return SUCCEEDED(taskbar_->SetThumbnailTooltip(
+      window, base::UTF8ToUTF16(tooltip).c_str()));
 }
 
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {

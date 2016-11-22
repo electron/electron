@@ -9,7 +9,7 @@ selecione a *tag* que corresponde à sua versão.
 ## FAQ
 
 Existem muitas perguntas comuns que são feitas, verifique antes de criar uma issue.
-* [Electron FAQ](../../docs/faq.md)
+* [Electron FAQ](faq.md)
 
 ## Guias
 
@@ -32,7 +32,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 
 ## API - Referências
 
-* [Sinopse](../../docs/api/synopsis.md)
+* [Sinopse](api/synopsis.md)
 * [Processos](api/process.md)
 * [Aceleradores (Teclas de Atalho)](api/accelerator.md)
 * [Parâmetros CLI suportados (Chrome)](../../docs/api/chrome-command-line-switches.md)
@@ -40,15 +40,15 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 
 ### Elementos DOM Personalizados:
 
-* [Objeto `File`](../../docs/api/file-object.md)
+* [Objeto `File`](api/file-object.md)
 * [Tag `<webview>`](../../docs/api/web-view-tag.md)
-* [Função `window.open`](../../docs/api/window-open.md)
+* [Função `window.open`](api/window-open.md)
 
 ### Módulos para o Processo Principal:
 
 * [app](api/app.md)
 * [autoUpdater](api/auto-updater.md)
-* [BrowserWindow](../../docs/api/browser-window.md)
+* [BrowserWindow](api/browser-window.md)
 * [contentTracing](../../docs/api/content-tracing.md)
 * [dialog](../../docs/api/dialog.md)
 * [globalShortcut](../../docs/api/global-shortcut.md)
@@ -56,7 +56,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [Menu](../../docs/api/menu.md)
 * [MenuItem](../../docs/api/menu-item.md)
 * [powerMonitor](api/power-monitor.md)
-* [powerSaveBlocker](../../docs/api/power-save-blocker.md)
+* [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](../../docs/api/protocol.md)
 * [session](../../docs/api/session.md)
 * [webContents](../../docs/api/web-contents.md)
@@ -80,10 +80,10 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 ## Desenvolvimento
 
 * [Estilo de Código](development/coding-style.md)
-* [Estrutura de Diretórios de Código Fonte](../../docs/development/source-code-directory-structure.md)
+* [Estrutura de Diretórios de Código Fonte](development/source-code-directory-structure.md)
 * [Diferenças Técnicas do NW.js (antigo node-webkit)](../../docs/development/atom-shell-vs-node-webkit.md)
 * [Visão Geral do Build](../../docs/development/build-system-overview.md)
-* [Instrução de Build (Mac)](../../docs/development/build-instructions-osx.md)
+* [Instrução de Build (Mac)](development/build-instructions-osx.md)
 * [Instrução de Build (Windows)](../../docs/development/build-instructions-windows.md)
-* [Instrução de Build (Linux)](../../docs/development/build-instructions-linux.md)
+* [Instrução de Build (Linux)](development/build-instructions-linux.md)
 * [Configurando um Symbol Server no Debugger](../../docs/development/setting-up-symbol-server.md)

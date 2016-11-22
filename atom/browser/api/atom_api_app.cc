@@ -37,6 +37,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
+#include "media/audio/audio_manager.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -44,6 +45,7 @@
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
+#include "atom/browser/ui/win/jump_list.h"
 #include "base/strings/utf_string_conversions.h"
 #endif
 
@@ -68,6 +70,220 @@ struct Converter<Browser::UserTask> {
     dict.Get("arguments", &(out->arguments));
     dict.Get("description", &(out->description));
     return true;
+  }
+};
+
+using atom::JumpListItem;
+using atom::JumpListCategory;
+using atom::JumpListResult;
+
+template<>
+struct Converter<JumpListItem::Type> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     JumpListItem::Type* out) {
+    std::string item_type;
+    if (!ConvertFromV8(isolate, val, &item_type))
+      return false;
+
+    if (item_type == "task")
+      *out = JumpListItem::Type::TASK;
+    else if (item_type == "separator")
+      *out = JumpListItem::Type::SEPARATOR;
+    else if (item_type == "file")
+      *out = JumpListItem::Type::FILE;
+    else
+      return false;
+
+    return true;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   JumpListItem::Type val) {
+    std::string item_type;
+    switch (val) {
+      case JumpListItem::Type::TASK:
+        item_type = "task";
+        break;
+
+      case JumpListItem::Type::SEPARATOR:
+        item_type = "separator";
+        break;
+
+      case JumpListItem::Type::FILE:
+        item_type = "file";
+        break;
+    }
+    return mate::ConvertToV8(isolate, item_type);
+  }
+};
+
+template<>
+struct Converter<JumpListItem> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     JumpListItem* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+
+    if (!dict.Get("type", &(out->type)))
+      return false;
+
+    switch (out->type) {
+      case JumpListItem::Type::TASK:
+        if (!dict.Get("program", &(out->path)) ||
+            !dict.Get("title", &(out->title)))
+          return false;
+
+        if (dict.Get("iconPath", &(out->icon_path)) &&
+            !dict.Get("iconIndex", &(out->icon_index)))
+          return false;
+
+        dict.Get("args", &(out->arguments));
+        dict.Get("description", &(out->description));
+        return true;
+
+      case JumpListItem::Type::SEPARATOR:
+        return true;
+
+      case JumpListItem::Type::FILE:
+        return dict.Get("path", &(out->path));
+    }
+
+    assert(false);
+    return false;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const JumpListItem& val) {
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    dict.Set("type", val.type);
+
+    switch (val.type) {
+      case JumpListItem::Type::TASK:
+        dict.Set("program", val.path);
+        dict.Set("args", val.arguments);
+        dict.Set("title", val.title);
+        dict.Set("iconPath", val.icon_path);
+        dict.Set("iconIndex", val.icon_index);
+        dict.Set("description", val.description);
+        break;
+
+      case JumpListItem::Type::SEPARATOR:
+        break;
+
+      case JumpListItem::Type::FILE:
+        dict.Set("path", val.path);
+        break;
+    }
+    return dict.GetHandle();
+  }
+};
+
+template<>
+struct Converter<JumpListCategory::Type> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     JumpListCategory::Type* out) {
+    std::string category_type;
+    if (!ConvertFromV8(isolate, val, &category_type))
+      return false;
+
+    if (category_type == "tasks")
+      *out = JumpListCategory::Type::TASKS;
+    else if (category_type == "frequent")
+      *out = JumpListCategory::Type::FREQUENT;
+    else if (category_type == "recent")
+      *out = JumpListCategory::Type::RECENT;
+    else if (category_type == "custom")
+      *out = JumpListCategory::Type::CUSTOM;
+    else
+      return false;
+
+    return true;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   JumpListCategory::Type val) {
+    std::string category_type;
+    switch (val) {
+      case JumpListCategory::Type::TASKS:
+        category_type = "tasks";
+        break;
+
+      case JumpListCategory::Type::FREQUENT:
+        category_type = "frequent";
+        break;
+
+      case JumpListCategory::Type::RECENT:
+        category_type = "recent";
+        break;
+
+      case JumpListCategory::Type::CUSTOM:
+        category_type = "custom";
+        break;
+    }
+    return mate::ConvertToV8(isolate, category_type);
+  }
+};
+
+template<>
+struct Converter<JumpListCategory> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     JumpListCategory* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+
+    if (dict.Get("name", &(out->name)) && out->name.empty())
+      return false;
+
+    if (!dict.Get("type", &(out->type))) {
+      if (out->name.empty())
+        out->type = JumpListCategory::Type::TASKS;
+      else
+        out->type = JumpListCategory::Type::CUSTOM;
+    }
+
+    if ((out->type == JumpListCategory::Type::TASKS) ||
+        (out->type == JumpListCategory::Type::CUSTOM)) {
+      if (!dict.Get("items", &(out->items)))
+        return false;
+    }
+
+    return true;
+  }
+};
+
+// static
+template<>
+struct Converter<JumpListResult> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, JumpListResult val) {
+    std::string result_code;
+    switch (val) {
+      case JumpListResult::SUCCESS:
+        result_code = "ok";
+        break;
+
+      case JumpListResult::ARGUMENT_ERROR:
+        result_code = "argumentError";
+        break;
+
+      case JumpListResult::GENERIC_ERROR:
+        result_code = "error";
+        break;
+
+      case JumpListResult::CUSTOM_CATEGORY_SEPARATOR_ERROR:
+        result_code = "invalidSeparatorError";
+        break;
+
+      case JumpListResult::MISSING_FILE_TYPE_REGISTRATION_ERROR:
+        result_code = "fileTypeRegistrationError";
+        break;
+
+      case JumpListResult::CUSTOM_CATEGORY_ACCESS_DENIED_ERROR:
+        result_code = "customCategoryAccessDeniedError";
+        break;
+    }
+    return ConvertToV8(isolate, result_code);
   }
 };
 #endif
@@ -168,13 +384,12 @@ void OnClientCertificateSelected(
     return;
   }
 
-  v8::Local<v8::Object> data;
+  std::string data;
   if (!cert_data.Get("data", &data))
     return;
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
-      node::Buffer::Data(data), node::Buffer::Length(data),
-      net::X509Certificate::FORMAT_AUTO);
+      data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
   if (certs.size() > 0)
     delegate->ContinueWithCertificate(certs[0].get());
 }
@@ -275,8 +490,13 @@ void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }
 
-void App::OnFinishLaunching() {
-  Emit("ready");
+void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
+#if defined(OS_LINUX)
+  // Set the application name for audio streams shown in external
+  // applications. Only affects pulseaudio currently.
+  media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
+#endif
+  Emit("ready", launch_info);
 }
 
 void App::OnAccessibilitySupportChanged() {
@@ -308,11 +528,14 @@ void App::OnLogin(LoginHandler* login_handler,
     login_handler->CancelAuth();
 }
 
-void App::OnCreateWindow(const GURL& target_url,
-                         const std::string& frame_name,
-                         WindowOpenDisposition disposition,
-                         int render_process_id,
-                         int render_frame_id) {
+void App::OnCreateWindow(
+    const GURL& target_url,
+    const std::string& frame_name,
+    WindowOpenDisposition disposition,
+    const std::vector<base::string16>& features,
+    const scoped_refptr<content::ResourceRequestBodyImpl>& body,
+    int render_process_id,
+    int render_frame_id) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   content::RenderFrameHost* rfh =
@@ -321,7 +544,11 @@ void App::OnCreateWindow(const GURL& target_url,
       content::WebContents::FromRenderFrameHost(rfh);
   if (web_contents) {
     auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
-    api_web_contents->OnCreateWindow(target_url, frame_name, disposition);
+    api_web_contents->OnCreateWindow(target_url,
+                                     frame_name,
+                                     disposition,
+                                     features,
+                                     body);
   }
 }
 
@@ -371,8 +598,9 @@ void App::SelectClientCertificate(
         cert_request_info->client_certs[0].get());
 }
 
-void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
-  Emit("gpu-process-crashed");
+void App::OnGpuProcessCrashed(base::TerminationStatus status) {
+  Emit("gpu-process-crashed",
+    status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
@@ -382,7 +610,7 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   if (key >= 0)
     succeed = PathService::Get(key, &path);
   if (!succeed)
-    args->ThrowError("Failed to get path");
+    args->ThrowError("Failed to get '" + name + "' path");
   return path;
 }
 
@@ -390,7 +618,7 @@ void App::SetPath(mate::Arguments* args,
                   const std::string& name,
                   const base::FilePath& path) {
   if (!path.IsAbsolute()) {
-    args->ThrowError("path must be absolute");
+    args->ThrowError("Path must be absolute");
     return;
   }
 
@@ -524,6 +752,63 @@ void App::OnCertificateManagerModelCreated(
 }
 #endif
 
+#if defined(OS_WIN)
+v8::Local<v8::Value> App::GetJumpListSettings() {
+  JumpList jump_list(Browser::Get()->GetAppUserModelID());
+
+  int min_items = 10;
+  std::vector<JumpListItem> removed_items;
+  if (jump_list.Begin(&min_items, &removed_items)) {
+    // We don't actually want to change anything, so abort the transaction.
+    jump_list.Abort();
+  } else {
+    LOG(ERROR) << "Failed to begin Jump List transaction.";
+  }
+
+  auto dict = mate::Dictionary::CreateEmpty(isolate());
+  dict.Set("minItems", min_items);
+  dict.Set("removedItems", mate::ConvertToV8(isolate(), removed_items));
+  return dict.GetHandle();
+}
+
+JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
+                                mate::Arguments* args) {
+  std::vector<JumpListCategory> categories;
+  bool delete_jump_list = val->IsNull();
+  if (!delete_jump_list &&
+    !mate::ConvertFromV8(args->isolate(), val, &categories)) {
+    args->ThrowError("Argument must be null or an array of categories");
+    return JumpListResult::ARGUMENT_ERROR;
+  }
+
+  JumpList jump_list(Browser::Get()->GetAppUserModelID());
+
+  if (delete_jump_list) {
+    return jump_list.Delete()
+      ? JumpListResult::SUCCESS
+      : JumpListResult::GENERIC_ERROR;
+  }
+
+  // Start a transaction that updates the JumpList of this application.
+  if (!jump_list.Begin())
+    return JumpListResult::GENERIC_ERROR;
+
+  JumpListResult result = jump_list.AppendCategories(categories);
+  // AppendCategories may have failed to add some categories, but it's better
+  // to have something than nothing so try to commit the changes anyway.
+  if (!jump_list.Commit()) {
+    LOG(ERROR) << "Failed to commit changes to custom Jump List.";
+    // It's more useful to return the earlier error code that might give
+    // some indication as to why the transaction actually failed, so don't
+    // overwrite it with a "generic error" code here.
+    if (result == JumpListResult::SUCCESS)
+      result = JumpListResult::GENERIC_ERROR;
+  }
+
+  return result;
+}
+#endif  // defined(OS_WIN)
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -568,9 +853,13 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetUserActivity, browser))
       .SetMethod("getCurrentActivityType",
                  base::Bind(&Browser::GetCurrentActivityType, browser))
+      .SetMethod("setAboutPanelOptions",
+                 base::Bind(&Browser::SetAboutPanelOptions, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
+      .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
+      .SetMethod("setJumpList", &App::SetJumpList)
 #endif
 #if defined(OS_LINUX)
       .SetMethod("isUnityRunning",

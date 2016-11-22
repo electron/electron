@@ -5,6 +5,7 @@ const net = require('net')
 const fs = require('fs')
 const path = require('path')
 const {remote} = require('electron')
+const {closeWindow} = require('./window-helpers')
 
 const {app, BrowserWindow, ipcMain} = remote
 
@@ -19,9 +20,6 @@ describe('electron module', function () {
     let window = null
 
     beforeEach(function () {
-      if (window != null) {
-        window.destroy()
-      }
       window = new BrowserWindow({
         show: false,
         width: 400,
@@ -30,10 +28,7 @@ describe('electron module', function () {
     })
 
     afterEach(function () {
-      if (window != null) {
-        window.destroy()
-      }
-      window = null
+      return closeWindow(window).then(function () { window = null })
     })
 
     it('always returns the internal electron module', function (done) {
@@ -191,10 +186,7 @@ describe('app module', function () {
     })
 
     afterEach(function () {
-      if (w != null) {
-        w.destroy()
-      }
-      w = null
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('can import certificate into platform cert store', function (done) {
@@ -215,6 +207,9 @@ describe('app module', function () {
       app.on('select-client-certificate', function (event, webContents, url, list, callback) {
         assert.equal(list.length, 1)
         assert.equal(list[0].issuerName, 'Intermediate CA')
+        assert.equal(list[0].subjectName, 'Client Cert')
+        assert.equal(list[0].issuer.commonName, 'Intermediate CA')
+        assert.equal(list[0].subject.commonName, 'Client Cert')
         callback(list[0])
       })
 
@@ -232,10 +227,7 @@ describe('app module', function () {
     var w = null
 
     afterEach(function () {
-      if (w != null) {
-        w.destroy()
-      }
-      w = null
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('should emit browser-window-focus event when window is focused', function (done) {
@@ -288,6 +280,10 @@ describe('app module', function () {
   describe('app.setBadgeCount API', function () {
     const shouldFail = process.platform === 'win32' ||
                        (process.platform === 'linux' && !app.isUnityRunning())
+
+    afterEach(function () {
+      app.setBadgeCount(0)
+    })
 
     it('returns false when failed', function () {
       assert.equal(app.setBadgeCount(42), !shouldFail)
@@ -343,6 +339,25 @@ describe('app module', function () {
   describe('isAccessibilitySupportEnabled API', function () {
     it('returns whether the Chrome has accessibility APIs enabled', function () {
       assert.equal(typeof app.isAccessibilitySupportEnabled(), 'boolean')
+    })
+  })
+
+  describe('getPath(name)', function () {
+    it('returns paths that exist', function () {
+      assert.equal(fs.existsSync(app.getPath('exe')), true)
+      assert.equal(fs.existsSync(app.getPath('home')), true)
+      assert.equal(fs.existsSync(app.getPath('temp')), true)
+    })
+
+    it('throws an error when the name is invalid', function () {
+      assert.throws(function () {
+        app.getPath('does-not-exist')
+      }, /Failed to get 'does-not-exist' path/)
+    })
+
+    it('returns the overridden path', function () {
+      app.setPath('music', __dirname)
+      assert.equal(app.getPath('music'), __dirname)
     })
   })
 })

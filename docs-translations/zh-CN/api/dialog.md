@@ -5,9 +5,8 @@
 对话框例子，展示了选择文件和目录:
 
 ```javascript
-var win = ...;  // BrowserWindow in which to show the dialog
-const dialog = require('electron').dialog;
-console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
+const {dialog} = require('electron')
+console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}))
 ```
 
 **macOS 上的注意事项**: 如果你想像sheets一样展示对话框，只需要在`browserWindow` 参数中提供一个 `BrowserWindow` 的引用对象.

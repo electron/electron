@@ -18,6 +18,7 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/base/clipboard/clipboard.h"
+#include "ui/events/keycodes/keyboard_code_conversion.h"
 
 namespace {
 
@@ -166,15 +167,25 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
     return false;
 
   std::string str;
-  bool shifted = false;
-  if (dict.Get("keyCode", &str))
-    out->windowsKeyCode = atom::KeyboardCodeFromStr(str, &shifted);
-  else
+  if (!dict.Get("keyCode", &str))
     return false;
 
+  bool shifted = false;
+  ui::KeyboardCode keyCode = atom::KeyboardCodeFromStr(str, &shifted);
+  out->windowsKeyCode = keyCode;
   if (shifted)
     out->modifiers |= blink::WebInputEvent::ShiftKey;
   out->setKeyIdentifierFromWindowsKeyCode();
+
+  ui::DomCode domCode = ui::UsLayoutKeyboardCodeToDomCode(keyCode);
+  out->domCode = static_cast<int>(domCode);
+
+  ui::DomKey domKey;
+  ui::KeyboardCode dummy_code;
+  int flags = atom::WebEventModifiersToEventFlags(out->modifiers);
+  if (ui::DomCodeToUsLayoutDomKey(domCode, flags, &domKey, &dummy_code))
+    out->domKey = static_cast<int>(domKey);
+
   if ((out->type == blink::WebInputEvent::Char ||
        out->type == blink::WebInputEvent::RawKeyDown)) {
     // Make sure to not read beyond the buffer in case some bad code doesn't
@@ -238,7 +249,15 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   dict.Get("accelerationRatioX", &out->accelerationRatioX);
   dict.Get("accelerationRatioY", &out->accelerationRatioY);
   dict.Get("hasPreciseScrollingDeltas", &out->hasPreciseScrollingDeltas);
-  dict.Get("canScroll", &out->canScroll);
+
+#if defined(USE_AURA)
+  // Matches the behavior of ui/events/blink/web_input_event_traits.cc:
+  bool can_scroll = true;
+  if (dict.Get("canScroll", &can_scroll) && !can_scroll) {
+    out->hasPreciseScrollingDeltas = false;
+    out->modifiers &= ~blink::WebInputEvent::ControlKey;
+  }
+#endif
   return true;
 }
 

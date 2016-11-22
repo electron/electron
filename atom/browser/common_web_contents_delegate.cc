@@ -16,12 +16,12 @@
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/common/atom_constants.h"
 #include "base/files/file_util.h"
-#include "components/prefs/pref_service.h"
-#include "components/prefs/scoped_user_pref_update.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ui/browser_dialogs.h"
 #include "chrome/common/pref_names.h"
+#include "components/prefs/pref_service.h"
+#include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
@@ -252,11 +252,11 @@ content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
 }
 
 void CommonWebContentsDelegate::RunFileChooser(
-    content::WebContents* guest,
+    content::RenderFrameHost* render_frame_host,
     const content::FileChooserParams& params) {
   if (!web_dialog_helper_)
     web_dialog_helper_.reset(new WebDialogHelper(owner_window()));
-  web_dialog_helper_->RunFileChooser(guest, params);
+  web_dialog_helper_->RunFileChooser(render_frame_host, params);
 }
 
 void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,

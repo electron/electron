@@ -3,11 +3,14 @@ process.throwDeprecation = true
 
 const electron = require('electron')
 const app = electron.app
+const crashReporter = electron.crashReporter
 const ipcMain = electron.ipcMain
 const dialog = electron.dialog
 const BrowserWindow = electron.BrowserWindow
 const protocol = electron.protocol
+const v8 = require('v8')
 
+const Coverage = require('electabul').Coverage
 const fs = require('fs')
 const path = require('path')
 const url = require('url')
@@ -22,6 +25,7 @@ var argv = require('yargs')
 var window = null
 process.port = 0 // will be used by crash-reporter spec.
 
+v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
 app.commandLine.appendSwitch('ignore-certificate-errors')
 app.commandLine.appendSwitch('disable-renderer-backgrounding')
@@ -34,9 +38,14 @@ process.stdout
 // Access console to reproduce #3482.
 console
 
-ipcMain.on('message', function (event, arg) {
-  event.sender.send('message', arg)
+ipcMain.on('message', function (event, ...args) {
+  event.sender.send('message', ...args)
 })
+
+// Set productName so getUploadedReports() uses the right directory in specs
+if (process.platform !== 'darwin') {
+  crashReporter.productName = 'Zombies'
+}
 
 // Write output to file if OUTPUT_TO_FILE is defined.
 const outputToFile = process.env.OUTPUT_TO_FILE
@@ -61,6 +70,15 @@ ipcMain.on('eval', function (event, script) {
 
 ipcMain.on('echo', function (event, msg) {
   event.returnValue = msg
+})
+
+const coverage = new Coverage({
+  outputPath: path.join(__dirname, '..', '..', 'out', 'coverage')
+})
+coverage.setup()
+
+ipcMain.on('get-main-process-coverage', function (event) {
+  event.returnValue = global.__coverage__ || null
 })
 
 global.isCi = !!argv.ci
@@ -91,7 +109,7 @@ app.on('ready', function () {
 
   window = new BrowserWindow({
     title: 'Electron Tests',
-    show: false,
+    show: !global.isCi,
     width: 800,
     height: 600,
     webPreferences: {
@@ -155,6 +173,10 @@ app.on('ready', function () {
     if (hasCallback) {
       window.webContents.executeJavaScript(code, (result) => {
         window.webContents.send('executeJavaScript-response', result)
+      }).then((result) => {
+        window.webContents.send('executeJavaScript-promise-response', result)
+      }).catch((err) => {
+        window.webContents.send('executeJavaScript-promise-error', err)
       })
     } else {
       window.webContents.executeJavaScript(code)

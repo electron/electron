@@ -9,10 +9,10 @@
 #include <string>
 #include <vector>
 
-#include "brightray/browser/inspectable_web_contents_impl.h"
-#include "brightray/browser/inspectable_web_contents_delegate.h"
-#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "brightray/browser/devtools_file_system_indexer.h"
+#include "brightray/browser/inspectable_web_contents_delegate.h"
+#include "brightray/browser/inspectable_web_contents_impl.h"
+#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 
 using brightray::DevToolsFileSystemIndexer;
@@ -71,7 +71,7 @@ class CommonWebContentsDelegate
       content::WebContents* web_contents,
       SkColor color,
       const std::vector<content::ColorSuggestion>& suggestions) override;
-  void RunFileChooser(content::WebContents* web_contents,
+  void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       const content::FileChooserParams& params) override;
   void EnumerateDirectory(content::WebContents* web_contents,
                           int request_id,

@@ -1,6 +1,8 @@
- # session
+# session
 
 > Manage browser sessions, cookies, cache, proxy settings, etc.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 The `session` module can be used to create new `Session` objects.
 
@@ -21,13 +23,13 @@ console.log(ses.getUserAgent())
 
 The `session` module has the following methods:
 
-### session.fromPartition(partition[, options])
+### `session.fromPartition(partition[, options])`
 
 * `partition` String
 * `options` Object
   * `cache` Boolean - Whether to enable cache.
 
-Returns a `Session` instance from `partition` string. When there is an existing
+Returns `Session` - A session instance from `partition` string. When there is an existing
 `Session` with the same `partition`, it will be returned; othewise a new
 `Session` instance will be created with `options`.
 
@@ -44,11 +46,15 @@ of an existing `Session` object.
 
 The `session` module has the following properties:
 
-### session.defaultSession
+### `session.defaultSession`
 
-Returns the default session object of the app.
+A `Session` object, the default session object of the app.
 
 ## Class: Session
+
+> Get and set properties of a session.
+
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 You can create a `Session` object in the `session` module:
 
@@ -105,10 +111,10 @@ Clears the session’s HTTP cache.
 * `options` Object (optional)
   * `origin` String - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
-  * `storages` Array - The types of storages to clear, can contain:
+  * `storages` String[] - The types of storages to clear, can contain:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `local storage`,
     `shadercache`, `websql`, `serviceworkers`
-  * `quotas` Array - The types of quotas to clear, can contain:
+  * `quotas` String[] - The types of quotas to clear, can contain:
     `temporary`, `persistent`, `syncable`.
 * `callback` Function (optional) - Called when operation is done.
 
@@ -198,6 +204,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
 
 * `url` URL
 * `callback` Function
+  * `proxy` Object
 
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
@@ -212,10 +219,14 @@ Sets download saving directory. By default, the download directory will be the
 #### `ses.enableNetworkEmulation(options)`
 
 * `options` Object
-  * `offline` Boolean - Whether to emulate network outage.
-  * `latency` Double - RTT in ms
-  * `downloadThroughput` Double - Download rate in Bps
-  * `uploadThroughput` Double - Upload rate in Bps
+  * `offline` Boolean (optional) - Whether to emulate network outage. Defaults
+    to false.
+  * `latency` Double (optional) - RTT in ms. Defaults to 0 which will disable
+    latency throttling.
+  * `downloadThroughput` Double (optional) - Download rate in Bps. Defaults to 0
+    which will disable download throttling.
+  * `uploadThroughput` Double (optional) - Upload rate in Bps. Defaults to 0
+    which will disable upload throttling.
 
 Emulates network with the given configuration for the `session`.
 
@@ -239,6 +250,10 @@ the original network configuration.
 #### `ses.setCertificateVerifyProc(proc)`
 
 * `proc` Function
+  * `hostname` String
+  * `certificate` [Certificate](structures/certificate.md)
+  * `callback` Function
+    * `isTrusted` Boolean - Determines if the certificate should be trusted
 
 Sets the certificate verify proc for `session`, the `proc` will be called with
 `proc(hostname, certificate, callback)` whenever a server certificate
@@ -263,7 +278,8 @@ win.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
   * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
   * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
     'pointerLock', 'fullscreen', 'openExternal'.
-  * `callback` Function - Allow or deny the permission.
+  * `callback` Function
+    * `permissionGranted` Boolean - Allow or deny the permission
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
@@ -318,7 +334,15 @@ This doesn't affect existing `WebContents`, and each `WebContents` can use
 
 #### `ses.getUserAgent()`
 
-Returns a `String` representing the user agent for this session.
+Returns `String` - The user agent for this session.
+
+#### `ses.getBlobData(identifier, callback)`
+
+* `identifier` String - Valid UUID.
+* `callback` Function
+  * `result` Buffer - Blob data.
+
+Returns `Blob` - The blob data associated with the `identifier`.
 
 ### Instance Properties
 
@@ -326,15 +350,15 @@ The following properties are available on instances of `Session`:
 
 #### `ses.cookies`
 
-Returns an instance of `Cookies` class for this session.
+A Cookies object for this session.
 
 #### `ses.webRequest`
 
-Returns an instance of `WebRequest` class for this session.
+A WebRequest object for this session.
 
 #### `ses.protocol`
 
-Returns an instance of [protocol](protocol.md) module for this session.
+A Protocol object (an instance of [protocol](protocol.md) module) for this session.
 
 ```javascript
 const {app, session} = require('electron')
@@ -350,312 +374,3 @@ app.on('ready', function () {
   })
 })
 ```
-
-## Class: Cookies
-
-The `Cookies` class gives you ability to query and modify cookies. Instances of
-`Cookies` class must be received by using `cookies` property of `Session` class.
-
-For example:
-
-```javascript
-const {session} = require('electron')
-
-// Query all cookies.
-session.defaultSession.cookies.get({}, (error, cookies) => {
-  console.log(error, cookies)
-})
-
-// Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({url: 'http://www.github.com'}, (error, cookies) => {
-  console.log(error, cookies)
-})
-
-// Set a cookie with the given cookie data;
-// may overwrite equivalent cookies if they exist.
-const cookie = {url: 'http://www.github.com', name: 'dummy_name', value: 'dummy'}
-session.defaultSession.cookies.set(cookie, (error) => {
-  if (error) console.error(error)
-})
-```
-
-### Instance Methods
-
-The following methods are available on instances of `Cookies`:
-
-#### `cookies.get(filter, callback)`
-
-* `filter` Object
-  * `url` String (optional) - Retrieves cookies which are associated with
-    `url`. Empty implies retrieving cookies of all urls.
-  * `name` String (optional) - Filters cookies by name.
-  * `domain` String (optional) - Retrieves cookies whose domains match or are
-    subdomains of `domains`
-  * `path` String (optional) - Retrieves cookies whose path matches `path`.
-  * `secure` Boolean (optional) - Filters cookies by their Secure property.
-  * `session` Boolean (optional) - Filters out session or persistent cookies.
-* `callback` Function
-
-Sends a request to get all cookies matching `details`, `callback` will be called
-with `callback(error, cookies)` on complete.
-
-`cookies` is an Array of `cookie` objects.
-
-* `cookie` Object
-  *  `name` String - The name of the cookie.
-  *  `value` String - The value of the cookie.
-  *  `domain` String - The domain of the cookie.
-  *  `hostOnly` String - Whether the cookie is a host-only cookie.
-  *  `path` String - The path of the cookie.
-  *  `secure` Boolean - Whether the cookie is marked as secure.
-  *  `httpOnly` Boolean - Whether the cookie is marked as HTTP only.
-  *  `session` Boolean - Whether the cookie is a session cookie or a persistent
-     cookie with an expiration date.
-  *  `expirationDate` Double (optional) - The expiration date of the cookie as
-     the number of seconds since the UNIX epoch. Not provided for session
-     cookies.
-
-#### `cookies.set(details, callback)`
-
-* `details` Object
-  * `url` String - The url to associate the cookie with.
-  * `name` String - The name of the cookie. Empty by default if omitted.
-  * `value` String - The value of the cookie. Empty by default if omitted.
-  * `domain` String - The domain of the cookie. Empty by default if omitted.
-  * `path` String - The path of the cookie. Empty by default if omitted.
-  * `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to
-    false.
-  * `httpOnly` Boolean - Whether the cookie should be marked as HTTP only.
-    Defaults to false.
-  * `expirationDate` Double -	The expiration date of the cookie as the number of
-    seconds since the UNIX epoch. If omitted then the cookie becomes a session
-    cookie and will not be retained between sessions.
-* `callback` Function
-
-Sets a cookie with `details`, `callback` will be called with `callback(error)`
-on complete.
-
-#### `cookies.remove(url, name, callback)`
-
-* `url` String - The URL associated with the cookie.
-* `name` String - The name of cookie to remove.
-* `callback` Function
-
-Removes the cookies matching `url` and `name`, `callback` will called with
-`callback()` on complete.
-
-## Class: WebRequest
-
-The `WebRequest` class allows to intercept and modify contents of a request at
-various stages of its lifetime. Instances of `WebRequest` class must be received
-by using `webRequest` property of `Session` class.
-
-The methods of `WebRequest` accept an optional `filter` and a `listener`, the
-`listener` will be called with `listener(details)` when the API's event has
-happened, the `details` is an object that describes the request. Passing `null`
-as `listener` will unsubscribe from the event.
-
-The `filter` is an object that has an `urls` property, which is an Array of URL
-patterns that will be used to filter out the requests that do not match the URL
-patterns. If the `filter` is omitted then all requests will be matched.
-
-For certain events the `listener` is passed with a `callback`, which should be
-called with an `response` object when `listener` has done its work.
-
-An example of adding `User-Agent` header for requests:
-
-```javascript
-const {session} = require('electron')
-
-// Modify the user agent for all requests to the following urls.
-const filter = {
-  urls: ['https://*.github.com/*', '*://electron.github.io']
-}
-
-session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
-  details.requestHeaders['User-Agent'] = 'MyAgent'
-  callback({cancel: false, requestHeaders: details.requestHeaders})
-})
-```
-
-### Instance Methods
-
-The following methods are available on instances of `WebRequest`:
-
-#### `webRequest.onBeforeRequest([filter, ]listener)`
-
-* `filter` Object
-* `listener` Function
-
-The `listener` will be called with `listener(details, callback)` when a request
-is about to occur.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `uploadData` Array (optional)
-* `callback` Function
-
-The `uploadData` is an array of `data` objects:
-
-* `data` Object
-  * `bytes` Buffer - Content being sent.
-  * `file` String - Path of file being uploaded.
-
-The `callback` has to be called with an `response` object:
-
-* `response` Object
-  * `cancel` Boolean (optional)
-  * `redirectURL` String (optional) - The original request is prevented from
-    being sent or completed, and is instead redirected to the given URL.
-
-#### `webRequest.onBeforeSendHeaders([filter, ]listener)`
-
-* `filter` Object
-* `listener` Function
-
-The `listener` will be called with `listener(details, callback)` before sending
-an HTTP request, once the request headers are available. This may occur after a
-TCP connection is made to the server, but before any http data is sent.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `requestHeaders` Object
-* `callback` Function
-
-The `callback` has to be called with an `response` object:
-
-* `response` Object
-  * `cancel` Boolean (optional)
-  * `requestHeaders` Object (optional) - When provided, request will be made
-    with these headers.
-
-#### `webRequest.onSendHeaders([filter, ]listener)`
-
-* `filter` Object
-* `listener` Function
-
-The `listener` will be called with `listener(details)` just before a request is
-going to be sent to the server, modifications of previous `onBeforeSendHeaders`
-response are visible by the time this listener is fired.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `requestHeaders` Object
-
-#### `webRequest.onHeadersReceived([filter,]listener)`
-
-* `filter` Object
-* `listener` Function
-
-The `listener` will be called with `listener(details, callback)` when HTTP
-response headers of a request have been received.
-
-* `details` Object
-  * `id` String
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `statusLine` String
-  * `statusCode` Integer
-  * `responseHeaders` Object
-* `callback` Function
-
-The `callback` has to be called with an `response` object:
-
-* `response` Object
-  * `cancel` Boolean
-  * `responseHeaders` Object (optional) - When provided, the server is assumed
-    to have responded with these headers.
-  * `statusLine` String (optional) - Should be provided when overriding
-    `responseHeaders` to change header status otherwise original response
-    header's status will be used.
-
-#### `webRequest.onResponseStarted([filter, ]listener)`
-
-* `filter` Object
-* `listener` Function
-
-The `listener` will be called with `listener(details)` when first byte of the
-response body is received. For HTTP requests, this means that the status line
-and response headers are available.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `responseHeaders` Object
-  * `fromCache` Boolean - Indicates whether the response was fetched from disk
-    cache.
-  * `statusCode` Integer
-  * `statusLine` String
-
-#### `webRequest.onBeforeRedirect([filter, ]listener)`
-
-* `filter` Object
-* `listener` Function
-
-The `listener` will be called with `listener(details)` when a server initiated
-redirect is about to occur.
-
-* `details` Object
-  * `id` String
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `redirectURL` String
-  * `statusCode` Integer
-  * `ip` String (optional) - The server IP address that the request was
-    actually sent to.
-  * `fromCache` Boolean
-  * `responseHeaders` Object
-
-#### `webRequest.onCompleted([filter, ]listener)`
-
-* `filter` Object
-* `listener` Function
-
-The `listener` will be called with `listener(details)` when a request is
-completed.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `responseHeaders` Object
-  * `fromCache` Boolean
-  * `statusCode` Integer
-  * `statusLine` String
-
-#### `webRequest.onErrorOccurred([filter, ]listener)`
-
-* `filter` Object
-* `listener` Function
-
-The `listener` will be called with `listener(details)` when an error occurs.
-
-* `details` Object
-  * `id` Integer
-  * `url` String
-  * `method` String
-  * `resourceType` String
-  * `timestamp` Double
-  * `fromCache` Boolean
-  * `error` String - The error description.

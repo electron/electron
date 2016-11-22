@@ -46,12 +46,13 @@ void Browser::ClearRecentDocuments() {
   [[NSDocumentController sharedDocumentController] clearRecentDocuments:nil];
 }
 
-bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
+                                            mate::Arguments* args) {
   NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
   if (!identifier)
     return false;
 
-  if (!Browser::IsDefaultProtocolClient(protocol))
+  if (!Browser::IsDefaultProtocolClient(protocol, args))
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
@@ -74,7 +75,8 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol) {
   return return_code == noErr;
 }
 
-bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
+                                         mate::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -89,7 +91,8 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol) {
   return return_code == noErr;
 }
 
-bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::IsDefaultProtocolClient(const std::string& protocol,
+                                      mate::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -248,6 +251,38 @@ void Browser::DockSetMenu(AtomMenuModel* model) {
 void Browser::DockSetIcon(const gfx::Image& image) {
   [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
+}
+
+void Browser::ShowAboutPanel() {
+  NSDictionary* options = DictionaryValueToNSDictionary(about_panel_options_);
+
+  // Credits must be a NSAttributedString instead of NSString
+  id credits = options[@"Credits"];
+  if (credits != nil) {
+    NSMutableDictionary* mutable_options = [options mutableCopy];
+    mutable_options[@"Credits"] = [[[NSAttributedString alloc]
+        initWithString:(NSString*)credits] autorelease];
+    options = [NSDictionary dictionaryWithDictionary:mutable_options];
+  }
+
+  [[AtomApplication sharedApplication]
+      orderFrontStandardAboutPanelWithOptions:options];
+}
+
+void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
+  about_panel_options_.Clear();
+
+  // Upper case option keys for orderFrontStandardAboutPanelWithOptions format
+  for (base::DictionaryValue::Iterator iter(options);
+       !iter.IsAtEnd();
+       iter.Advance()) {
+    std::string key = iter.key();
+    std::string value;
+    if (!key.empty() && iter.value().GetAsString(&value)) {
+      key[0] = base::ToUpperASCII(key[0]);
+      about_panel_options_.SetString(key, value);
+    }
+  }
 }
 
 }  // namespace atom

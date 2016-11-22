@@ -14,10 +14,7 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
 PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
 
-if os.environ.has_key('CI'):
-  NPM = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
-else:
-  NPM = 'npm'
+NPM = 'npm'
 if sys.platform in ['win32', 'cygwin']:
   NPM += '.cmd'
 
@@ -103,11 +100,13 @@ def parse_args():
                       help='The shared library path of libchromiumcontent.')
   parser.add_argument('--libcc_static_library_path', required=False,
                       help='The static library path of libchromiumcontent.')
+  parser.add_argument('--defines', default='',
+                      help='The build variables passed to gyp')
   return parser.parse_args()
 
 
 def args_to_defines(args):
-  defines = ''
+  defines = args.defines
   if args.disable_clang:
     defines += ' clang=0'
   if args.clang_dir:
@@ -187,7 +186,7 @@ def update_electron_modules(dirname, target_arch):
   env = os.environ.copy()
   env['npm_config_arch']    = target_arch
   env['npm_config_target']  = get_electron_version()
-  env['npm_config_disturl'] = 'https://atom.io/download/atom-shell'
+  env['npm_config_disturl'] = 'https://atom.io/download/electron'
   update_node_modules(dirname, env)
 
 

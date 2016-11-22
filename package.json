@@ -1,11 +1,14 @@
 {
   "name": "electron",
-  "version": "1.3.1",
+  "version": "1.4.7",
   "devDependencies": {
     "asar": "^0.11.0",
+    "browserify": "^13.1.0",
+    "electabul": "~0.0.4",
+    "electron-docs-linter": "^1.15.0",
     "request": "*",
-    "standard": "^7.1.2",
-    "standard-markdown": "^1.1.1"
+    "standard": "^8.4.0",
+    "standard-markdown": "^2.1.1"
   },
   "optionalDependencies": {
     "runas": "^3.0.0"
@@ -23,12 +26,20 @@
   "private": true,
   "scripts": {
     "bootstrap": "python ./script/bootstrap.py",
+    "browserify": "browserify",
+    "bump-version": "./script/bump-version.py",
     "build": "python ./script/build.py -c D",
-    "lint": "npm run lint-js && npm run lint-cpp && npm run lint-docs",
+    "clean": "python ./script/clean.py",
+    "coverage": "npm run instrument-code-coverage && npm test -- --use-instrumented-asar",
+    "instrument-code-coverage": "electabul instrument --input-path ./lib --output-path ./out/coverage/electron.asar",
+    "lint": "npm run lint-js && npm run lint-cpp && npm run lint-py && npm run lint-api-docs-js && npm run lint-api-docs",
     "lint-js": "standard && cd spec && standard",
     "lint-cpp": "python ./script/cpplint.py",
-    "lint-docs": "standard-markdown docs",
+    "lint-py": "python ./script/pylint.py",
+    "lint-api-docs-js": "standard-markdown docs && standard-markdown docs-translations",
+    "lint-api-docs": "electron-docs-linter docs/api --version=$npm_package_version --outfile=out/electron-api.json",
     "preinstall": "node -e 'process.exit(0)'",
+    "release": "./script/upload.py -p",
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
     "test": "python ./script/test.py"

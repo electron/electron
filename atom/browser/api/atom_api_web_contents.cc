@@ -17,6 +17,9 @@
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
+#include "atom/browser/osr/osr_output_device.h"
+#include "atom/browser/osr/osr_render_widget_host_view.h"
+#include "atom/browser/osr/osr_web_contents_view.h"
 #include "atom/browser/ui/drag_util.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
@@ -32,16 +35,17 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
-#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
-#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
+#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -56,17 +60,20 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/service_worker_context.h"
-#include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "net/http/http_response_headers.h"
 #include "net/url_request/url_request_context.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
+#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/display/screen.h"
+
+#if !defined(OS_MACOSX)
+#include "ui/aura/window.h"
+#endif
 
 #include "atom/common/node_includes.h"
 
@@ -126,35 +133,10 @@ struct Converter<WindowOpenDisposition> {
       case NEW_FOREGROUND_TAB: disposition = "foreground-tab"; break;
       case NEW_BACKGROUND_TAB: disposition = "background-tab"; break;
       case NEW_POPUP: case NEW_WINDOW: disposition = "new-window"; break;
+      case SAVE_TO_DISK: disposition = "save-to-disk"; break;
       default: break;
     }
     return mate::ConvertToV8(isolate, disposition);
-  }
-};
-
-template<>
-struct Converter<net::HttpResponseHeaders*> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   net::HttpResponseHeaders* headers) {
-    base::DictionaryValue response_headers;
-    if (headers) {
-      size_t iter = 0;
-      std::string key;
-      std::string value;
-      while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-        key = base::ToLowerASCII(key);
-        if (response_headers.HasKey(key)) {
-          base::ListValue* values = nullptr;
-          if (response_headers.GetList(key, &values))
-            values->AppendString(value);
-        } else {
-          std::unique_ptr<base::ListValue> values(new base::ListValue());
-          values->AppendString(value);
-          response_headers.Set(key, std::move(values));
-        }
-      }
-    }
-    return ConvertToV8(isolate, response_headers);
   }
 };
 
@@ -190,6 +172,7 @@ struct Converter<atom::api::WebContents::Type> {
       case Type::BROWSER_WINDOW: type = "window"; break;
       case Type::REMOTE: type = "remote"; break;
       case Type::WEB_VIEW: type = "webview"; break;
+      case Type::OFF_SCREEN: type = "offscreen"; break;
       default: break;
     }
     return mate::ConvertToV8(isolate, type);
@@ -205,6 +188,8 @@ struct Converter<atom::api::WebContents::Type> {
       *out = Type::WEB_VIEW;
     } else if (type == "backgroundPage") {
       *out = Type::BACKGROUND_PAGE;
+    } else if (type == "offscreen") {
+      *out = Type::OFF_SCREEN;
     } else {
       return false;
     }
@@ -246,16 +231,25 @@ void OnCapturePageDone(base::Callback<void(const gfx::Image&)> callback,
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
-                         content::WebContents* web_contents)
+                         content::WebContents* web_contents,
+                         Type type)
     : content::WebContentsObserver(web_contents),
       embedder_(nullptr),
-      type_(REMOTE),
+      type_(type),
       request_id_(0),
-      background_throttling_(true) {
-  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+      background_throttling_(true),
+      enable_devtools_(true) {
 
-  Init(isolate);
-  AttachAsUserData(web_contents);
+  if (type == REMOTE) {
+    web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+    Init(isolate);
+    AttachAsUserData(web_contents);
+  } else {
+    const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
+    auto session = Session::CreateFrom(isolate, GetBrowserContext());
+    session_.Reset(isolate, session.ToV8());
+    InitWithSessionAndOptions(isolate, web_contents, session, options);
+  }
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -263,7 +257,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     : embedder_(nullptr),
       type_(BROWSER_WINDOW),
       request_id_(0),
-      background_throttling_(true) {
+      background_throttling_(true),
+      enable_devtools_(true) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
@@ -277,6 +272,11 @@ WebContents::WebContents(v8::Isolate* isolate,
     type_ = WEB_VIEW;
   else if (options.Get("isBackgroundPage", &b) && b)
     type_ = BACKGROUND_PAGE;
+  else if (options.Get("offscreen", &b) && b)
+    type_ = OFF_SCREEN;
+
+  // Whether to enable DevTools.
+  options.Get("devTools", &enable_devtools_);
 
   // Obtain the session.
   std::string partition;
@@ -300,11 +300,30 @@ WebContents::WebContents(v8::Isolate* isolate,
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
+  } else if (IsOffScreen()) {
+    bool transparent = false;
+    options.Get("transparent", &transparent);
+
+    content::WebContents::CreateParams params(session->browser_context());
+    auto* view = new OffScreenWebContentsView(
+        transparent, base::Bind(&WebContents::OnPaint, base::Unretained(this)));
+    params.view = view;
+    params.delegate_view = view;
+
+    web_contents = content::WebContents::Create(params);
+    view->SetWebContents(web_contents);
   } else {
     content::WebContents::CreateParams params(session->browser_context());
     web_contents = content::WebContents::Create(params);
   }
 
+  InitWithSessionAndOptions(isolate, web_contents, session, options);
+}
+
+void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
+                                            content::WebContents *web_contents,
+                                            mate::Handle<api::Session> session,
+                                            const mate::Dictionary& options) {
   Observe(web_contents);
   InitWithWebContents(web_contents, session->browser_context());
 
@@ -360,7 +379,7 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
                                       const base::string16& message,
                                       int32_t line_no,
                                       const base::string16& source_id) {
-  if (type_ == BROWSER_WINDOW) {
+  if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) {
     return false;
   } else {
     Emit("console-message", level, message, line_no, source_id);
@@ -368,20 +387,48 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
   }
 }
 
-void WebContents::OnCreateWindow(const GURL& target_url,
-                                 const std::string& frame_name,
-                                 WindowOpenDisposition disposition) {
-  if (type_ == BROWSER_WINDOW)
-    Emit("-new-window", target_url, frame_name, disposition);
+void WebContents::OnCreateWindow(
+    const GURL& target_url,
+    const std::string& frame_name,
+    WindowOpenDisposition disposition,
+    const std::vector<base::string16>& features,
+    const scoped_refptr<content::ResourceRequestBodyImpl>& body) {
+  if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
+    Emit("-new-window", target_url, frame_name, disposition, features, body);
   else
-    Emit("new-window", target_url, frame_name, disposition);
+    Emit("new-window", target_url, frame_name, disposition, features);
+}
+
+void WebContents::WebContentsCreated(content::WebContents* source_contents,
+                                     int opener_render_frame_id,
+                                     const std::string& frame_name,
+                                     const GURL& target_url,
+                                     content::WebContents* new_contents) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto api_web_contents = CreateFrom(isolate(), new_contents, BROWSER_WINDOW);
+  Emit("-web-contents-created", api_web_contents, target_url, frame_name);
+}
+
+void WebContents::AddNewContents(content::WebContents* source,
+                                 content::WebContents* new_contents,
+                                 WindowOpenDisposition disposition,
+                                 const gfx::Rect& initial_rect,
+                                 bool user_gesture,
+                                 bool* was_blocked) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto api_web_contents = CreateFrom(isolate(), new_contents);
+  Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
+      initial_rect.x(), initial_rect.y(), initial_rect.width(),
+      initial_rect.height());
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != CURRENT_TAB) {
-    if (type_ == BROWSER_WINDOW)
+    if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
       Emit("-new-window", params.url, "", params.disposition);
     else
       Emit("new-window", params.url, "", params.disposition);
@@ -398,7 +445,7 @@ content::WebContents* WebContents::OpenURLFromTab(
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
-  if (type_ == BROWSER_WINDOW)
+  if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
     *proceed_to_fire_unload = proceed;
   else
     *proceed_to_fire_unload = true;
@@ -411,7 +458,8 @@ void WebContents::MoveContents(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-  if (type_ == BROWSER_WINDOW && owner_window())
+
+  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->CloseContents(source);
 }
 
@@ -465,13 +513,13 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 
 void WebContents::RendererUnresponsive(content::WebContents* source) {
   Emit("unresponsive");
-  if (type_ == BROWSER_WINDOW && owner_window())
+  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->RendererUnresponsive(source);
 }
 
 void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
-  if (type_ == BROWSER_WINDOW && owner_window())
+  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->RendererResponsive(source);
 }
 
@@ -497,22 +545,18 @@ void WebContents::FindReply(content::WebContents* web_contents,
                             const gfx::Rect& selection_rect,
                             int active_match_ordinal,
                             bool final_update) {
+  if (!final_update)
+    return;
+
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-
   mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate());
-  if (number_of_matches == -1) {
-    result.Set("requestId", request_id);
-    result.Set("selectionArea", selection_rect);
-    result.Set("finalUpdate", final_update);
-    result.Set("activeMatchOrdinal", active_match_ordinal);
-    Emit("found-in-page", result);
-  } else if (final_update) {
-    result.Set("requestId", request_id);
-    result.Set("matches", number_of_matches);
-    result.Set("finalUpdate", final_update);
-    Emit("found-in-page", result);
-  }
+  result.Set("requestId", request_id);
+  result.Set("matches", number_of_matches);
+  result.Set("selectionArea", selection_rect);
+  result.Set("activeMatchOrdinal", active_match_ordinal);
+  result.Set("finalUpdate", final_update);  // Deprecate after 2.0
+  Emit("found-in-page", result);
 }
 
 bool WebContents::CheckMediaAccessPermission(
@@ -558,7 +602,7 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
-  Emit("crashed");
+  Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,
@@ -578,11 +622,7 @@ void WebContents::MediaStoppedPlaying(const MediaPlayerId& id) {
 }
 
 void WebContents::DidChangeThemeColor(SkColor theme_color) {
-  std::string hex_theme_color = base::StringPrintf("#%02X%02X%02X",
-    SkColorGetR(theme_color),
-    SkColorGetG(theme_color),
-    SkColorGetB(theme_color));
-  Emit("did-change-theme-color", hex_theme_color);
+  Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
 }
 
 void WebContents::DocumentLoadedInFrame(
@@ -652,7 +692,7 @@ void WebContents::DidFinishNavigation(
     if (is_main_frame && !is_in_page) {
       Emit("did-navigate", url);
     } else if (is_in_page) {
-      Emit("did-navigate-in-page", url);
+      Emit("did-navigate-in-page", url, is_main_frame);
     }
   } else {
     auto url = navigation_handle->GetURL();
@@ -729,7 +769,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_DidCommitCompositorFrame, OnViewPainted)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
       handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -774,20 +813,20 @@ void WebContents::NavigationEntryCommitted(
        details.is_in_page, details.did_replace_entry);
 }
 
-int WebContents::GetID() const {
+int64_t WebContents::GetID() const {
+  int64_t process_id = web_contents()->GetRenderProcessHost()->GetID();
+  int64_t routing_id = web_contents()->GetRoutingID();
+  int64_t rv = (process_id << 32) + routing_id;
+  return rv;
+}
+
+int WebContents::GetProcessID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
 WebContents::Type WebContents::GetType() const {
   return type_;
 }
-
-#if !defined(OS_MACOSX)
-bool WebContents::IsFocused() const {
-  auto view = web_contents()->GetRenderWidgetHostView();
-  return view && view->HasFocus();
-}
-#endif
 
 bool WebContents::Equal(const WebContents* web_contents) const {
   return GetID() == web_contents->GetID();
@@ -817,6 +856,12 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
     params.extra_headers = extra_headers;
+
+  scoped_refptr<content::ResourceRequestBodyImpl> body;
+  if (options.Get("postData", &body)) {
+    params.post_data = body;
+    params.load_type = content::NavigationController::LOAD_TYPE_HTTP_POST;
+  }
 
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
@@ -849,7 +894,8 @@ void WebContents::DownloadURL(const GURL& url) {
     content::BrowserContext::GetDownloadManager(browser_context);
 
   download_manager->DownloadUrl(
-    content::DownloadUrlParameters::FromWebContents(web_contents(), url));
+      content::DownloadUrlParameters::CreateForWebContentsMainFrame(
+          web_contents(), url));
 }
 
 GURL WebContents::GetURL() const {
@@ -923,6 +969,9 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   if (type_ == REMOTE)
     return;
 
+  if (!enable_devtools_)
+    return;
+
   std::string state;
   if (type_ == WEB_VIEW || !owner_window()) {
     state = "detach";
@@ -931,6 +980,8 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
     mate::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
+
+      // TODO(kevinsawicki) Remove in 2.0
       options.Get("detach", &detach);
       if (state.empty() && detach)
         state = "detach";
@@ -987,7 +1038,11 @@ void WebContents::InspectElement(int x, int y) {
   if (type_ == REMOTE)
     return;
 
-  OpenDevTools(nullptr);
+  if (!enable_devtools_)
+    return;
+
+  if (!managed_web_contents()->GetDevToolsWebContents())
+    OpenDevTools(nullptr);
   scoped_refptr<content::DevToolsAgentHost> agent(
     content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
   agent->InspectElement(x, y);
@@ -995,6 +1050,9 @@ void WebContents::InspectElement(int x, int y) {
 
 void WebContents::InspectServiceWorker() {
   if (type_ == REMOTE)
+    return;
+
+  if (!enable_devtools_)
     return;
 
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
@@ -1143,7 +1201,7 @@ void WebContents::ShowDefinitionForSelection() {
 }
 
 void WebContents::CopyImageAt(int x, int y) {
-  const auto host = web_contents()->GetRenderViewHost();
+  const auto host = web_contents()->GetMainFrame();
   if (host)
     host->CopyImageAt(x, y);
 }
@@ -1151,6 +1209,21 @@ void WebContents::CopyImageAt(int x, int y) {
 void WebContents::Focus() {
   web_contents()->Focus();
 }
+
+#if !defined(OS_MACOSX)
+bool WebContents::IsFocused() const {
+  auto view = web_contents()->GetRenderWidgetHostView();
+  if (!view) return false;
+
+  if (GetType() != BACKGROUND_PAGE) {
+    auto window = web_contents()->GetNativeView()->GetToplevelWindow();
+    if (window && !window->IsVisible())
+      return false;
+  }
+
+  return view->HasFocus();
+}
+#endif
 
 void WebContents::TabTraverse(bool reverse) {
   web_contents()->FocusThroughTabTraversal(reverse);
@@ -1303,10 +1376,6 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   }
 }
 
-void WebContents::OnViewPainted() {
-  Emit("view-painted");
-}
-
 void WebContents::SetSize(const SetSizeParams& params) {
   if (guest_delegate_)
     guest_delegate_->SetSize(params);
@@ -1314,6 +1383,74 @@ void WebContents::SetSize(const SetSizeParams& params) {
 
 bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
+}
+
+bool WebContents::IsOffScreen() const {
+  return type_ == OFF_SCREEN;
+}
+
+void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {
+  mate::Handle<NativeImage> image =
+      NativeImage::Create(isolate(), gfx::Image::CreateFrom1xBitmap(bitmap));
+  Emit("paint", dirty_rect, image);
+}
+
+void WebContents::StartPainting() {
+  if (!IsOffScreen())
+    return;
+
+  auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  if (osr_rwhv)
+    osr_rwhv->SetPainting(true);
+}
+
+void WebContents::StopPainting() {
+  if (!IsOffScreen())
+    return;
+
+  auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  if (osr_rwhv)
+    osr_rwhv->SetPainting(false);
+}
+
+bool WebContents::IsPainting() const {
+  if (!IsOffScreen())
+    return false;
+
+  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  return osr_rwhv && osr_rwhv->IsPainting();
+}
+
+void WebContents::SetFrameRate(int frame_rate) {
+  if (!IsOffScreen())
+    return;
+
+  auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  if (osr_rwhv)
+    osr_rwhv->SetFrameRate(frame_rate);
+}
+
+int WebContents::GetFrameRate() const {
+  if (!IsOffScreen())
+    return 0;
+
+  const auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  return osr_rwhv ? osr_rwhv->GetFrameRate() : 0;
+}
+
+void WebContents::Invalidate() {
+  if (!IsOffScreen())
+    return;
+
+  auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+  if (osr_rwhv)
+    osr_rwhv->Invalidate();
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
@@ -1343,6 +1480,25 @@ content::WebContents* WebContents::HostWebContents() {
   return embedder_->web_contents();
 }
 
+void WebContents::SetEmbedder(const WebContents* embedder) {
+  if (embedder) {
+    NativeWindow* owner_window = nullptr;
+    auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+    if (relay) {
+      owner_window = relay->window.get();
+    }
+    if (owner_window)
+      SetOwnerWindow(owner_window);
+
+    content::RenderWidgetHostView* rwhv =
+        web_contents()->GetRenderWidgetHostView();
+    if (rwhv) {
+      rwhv->Hide();
+      rwhv->Show();
+    }
+  }
+}
+
 v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
   if (devtools_web_contents_.IsEmpty())
     return v8::Null(isolate);
@@ -1365,6 +1521,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("getId", &WebContents::GetID)
+      .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
@@ -1408,6 +1565,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("findInPage", &WebContents::FindInPage)
       .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
+      .SetMethod("isFocused", &WebContents::IsFocused)
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
@@ -1417,6 +1575,13 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
+      .SetMethod("isOffscreen", &WebContents::IsOffScreen)
+      .SetMethod("startPainting", &WebContents::StartPainting)
+      .SetMethod("stopPainting", &WebContents::StopPainting)
+      .SetMethod("isPainting", &WebContents::IsPainting)
+      .SetMethod("setFrameRate", &WebContents::SetFrameRate)
+      .SetMethod("getFrameRate", &WebContents::GetFrameRate)
+      .SetMethod("invalidate", &WebContents::Invalidate)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
@@ -1432,7 +1597,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
-      .SetMethod("isFocused", &WebContents::IsFocused)
+      .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
@@ -1466,7 +1631,15 @@ mate::Handle<WebContents> WebContents::CreateFrom(
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 
   // Otherwise create a new WebContents wrapper object.
-  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents));
+  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents,
+        REMOTE));
+}
+
+mate::Handle<WebContents> WebContents::CreateFrom(
+    v8::Isolate* isolate, content::WebContents* web_contents, Type type) {
+  // Otherwise create a new WebContents wrapper object.
+  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents,
+        type));
 }
 
 // static

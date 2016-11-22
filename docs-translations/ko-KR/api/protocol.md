@@ -1,22 +1,23 @@
-﻿# protocol
+# protocol
 
 > 커스텀 프로토콜을 등록하거나 이미 존재하능 프로토콜의 요청의 동작을 변경합니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 다음 예시는 `file://` 프로토콜과 비슷한 일을 하는 커스텀 프로토콜을 설정합니다:
 
 ```javascript
-const {app, protocol} = require('electron');
-const path = require('path');
+const {app, protocol} = require('electron')
+const path = require('path')
 
 app.on('ready', () => {
-  protocol.registerFileProtocol('atom', function (request, callback) {
-    const url = request.url.substr(7);
-    callback({path: path.normalize(__dirname + '/' + url)});
+  protocol.registerFileProtocol('atom', (request, callback) => {
+    const url = request.url.substr(7)
+    callback({path: path.normalize(`${__dirname}/${url}`)})
   }, function (error) {
-    if (error)
-      console.error('Failed to register protocol');
-  });
-});
+    if (error) console.error('프로토콜 등록 실패')
+  })
+})
 ```
 
 **참고:** 모든 메서드는 따로 표기하지 않는 한 `app` 모듈의 `ready` 이벤트가 발생한
@@ -28,7 +29,7 @@ app.on('ready', () => {
 
 ### `protocol.registerStandardSchemes(schemes)`
 
-* `schemes` Array - 표준 스킴으로 등록할 커스텀 스킴 리스트
+* `schemes` String[] - 표준 스킴으로 등록할 커스텀 스킴 리스트
 
 표준 스킴의 형식은 RFC 3986 [일반 URI 문법](https://tools.ietf.org/html/rfc3986#section-3)
 표준을 따릅니다. 예를 들어 `http`와 `https` 같은 표준 스킴과 `file`과 같은 표준이
@@ -48,14 +49,21 @@ app.on('ready', () => {
 </body>
 ```
 
-따라서 커스텀 프로토콜을 등록하여 `http` 프로토콜을 덮어 쓰려면, 표준 스킴으로
-등록해야만 합니다:
+표준 스킴으로 등록하는 것은 [파일 시스템 API][file-system-api]를 통해 파일에 접근하는
+것을 허용할 것입니다. 그렇지 않은 경우 렌더러는 해당 스킴에 대해 보안 에러를 발생 할
+것입니다.
+
+표준 스킴에는 기본적으로 저장 API (localStorage, sessionStorage, webSQL,
+indexedDB, cookies) 가 비활성화 되어있습니다. 일반적으로 `http` 프로토콜을
+대체하는 커스텀 프로토콜을 등록하고 싶다면, 표준 스킴으로 등록해야 합니다:
 
 ```javascript
-protocol.registerStandardSchemes(['atom']);
+const {app, protocol} = require('electron')
+
+protocol.registerStandardSchemes(['atom'])
 app.on('ready', () => {
-  protocol.registerHttpProtocol('atom', ...);
-});
+  protocol.registerHttpProtocol('atom', '...')
+})
 ```
 
 **참고:** 이 메서드는 `app` 모듈의 `ready` 이벤트가 발생하기 이전에만 사용할 수
@@ -63,31 +71,26 @@ app.on('ready', () => {
 
 ### `protocol.registerServiceWorkerSchemes(schemes)`
 
-* `schemes` Array - 서비스 워커를 제어하기 위해 등록될 커스텀 스킴.
+* `schemes` String[] - 서비스 워커를 제어하기 위해 등록될 커스텀 스킴.
 
 ### `protocol.registerFileProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme`에 파일을 응답으로 보내는 프로토콜을 등록합니다. `handler`는 `scheme`와 함께
 `request`가 생성될 때 `handler(request, callback)` 형식으로 호출됩니다.
 `completion` 콜백은 `scheme`가 성공적으로 등록되었을 때 `completion(null)` 형식으로
 호출되고, 등록에 실패했을 땐 `completion(error)` 형식으로 에러 내용을 담아 호출됩니다.
-
-* `request` Object
-  * `url` String
-  * `referrer` String
-  * `method` String
-  * `uploadData` Array (optional)
-* `callback` Function
-
-The `uploadData` is an array of `data` objects:
-
-* `data` Object
-  * `bytes` Buffer - Content being sent.
-  * `file` String - Path of file being uploaded.
 
 `request`를 처리할 때 반드시 파일 경로 또는 `path` 속성을 포함하는 객체를 인수에
 포함하여 `callback`을 호출해야 합니다. 예: `callback(filePath)` 또는
@@ -105,7 +108,15 @@ The `uploadData` is an array of `data` objects:
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `buffer` Buffer (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 `Buffer`를 응답으로 전송하는 `scheme`의 프로토콜을 등록합니다.
 
@@ -116,19 +127,28 @@ The `uploadData` is an array of `data` objects:
 예시:
 
 ```javascript
+const {protocol} = require('electron')
+
 protocol.registerBufferProtocol('atom', (request, callback) => {
-  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')});
+  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
 }, (error) => {
-  if (error)
-    console.error('Failed to register protocol');
-});
+  if (error) console.error('Failed to register protocol')
+})
 ```
 
 ### `protocol.registerStringProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `buffer` Buffer (optional)
 * `completion` Function (optional)
+  * `error` Error
 
 `String`을 응답으로 전송할 `scheme`의 프로토콜을 등록합니다.
 
@@ -140,7 +160,21 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `redirectRequest` Object
+      * `url` String
+      * `method` String
+      * `session` Object (optional)
+      * `uploadData` Object (optional)
+        * `contentType` String - 콘텐츠의 MIME 타입.
+        * `data` String - 전송할 콘텐츠.
 * `completion` Function (optional)
+  * `error` Error
 
 HTTP 요청을 응답으로 전송할 `scheme`의 프로토콜을 등록합니다.
 
@@ -148,25 +182,16 @@ HTTP 요청을 응답으로 전송할 `scheme`의 프로토콜을 등록합니�
 `session` 속성을 포함하는 `redirectRequest` 객체와 함께 호출되어야 한다는 점을
 제외하면 `registerFileProtocol`과 사용법이 같습니다.
 
-* `redirectRequest` Object
-  * `url` String
-  * `method` String
-  * `session` Object (optional)
-  * `uploadData` Object (optional)
-
 기본적으로 HTTP 요청은 현재 세션을 재사용합니다. 만약 서로 다른 세션에 요청을 보내고
 싶으면 `session`을 `null`로 지정해야 합니다.
 
 POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
-* `uploadData` object
-  * `contentType` String - 콘텐츠의 MIME 타입.
-  * `data` String - 전송할 콘텐츠.
-
 ### `protocol.unregisterProtocol(scheme[, completion])`
 
 * `scheme` String
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme`의 커스텀 프로토콜 등록을 해제합니다.
 
@@ -174,6 +199,7 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `callback` Function
+  * `error` Error
 
 `scheme`에 동작(handler)이 등록되어 있는지 여부를 확인합니다. `callback`으로
 결과(boolean)가 반환됩니다.
@@ -182,7 +208,15 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme` 프로토콜을 가로채고 `handler`를 파일 전송에 대한 새로운 동작으로 사용합니다.
 
@@ -190,7 +224,15 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme` 프로토콜을 가로채고 `handler`를 문자열 전송에 대한 새로운 동작으로 사용합니다.
 
@@ -198,7 +240,15 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `filePath` String
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme` 프로토콜을 가로채고 `handler`를 `Buffer` 전송에 대한 새로운 동작으로
 사용합니다.
@@ -207,7 +257,21 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `handler` Function
+  * `request` Object
+    * `url` String
+    * `referrer` String
+    * `method` String
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `redirectRequest` Object
+      * `url` String
+      * `method` String
+      * `session` Object (optional)
+      * `uploadData` Object (optional)
+        * `contentType` String - 콘텐츠의 MIME 타입.
+        * `data` String - 전송할 콘텐츠.
 * `completion` Function (optional)
+  * `error` Error
 
 `scheme` 프로토콜을 가로채고 `handler`를 HTTP 프로토콜의 요청에 대한 새로운 동작으로
 사용합니다.
@@ -216,7 +280,9 @@ POST 요청에는 반드시 `uploadData` 객체가 제공되어야 합니다.
 
 * `scheme` String
 * `completion` Function (optional)
+  * `error` Error
 
 가로챈 `scheme`를 삭제하고 기본 핸들러로 복구합니다.
 
 [net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h
+[file-system-api]: https://developer.mozilla.org/en-US/docs/Web/API/LocalFileSystem

@@ -1,20 +1,22 @@
-﻿# dialog
+# dialog
 
 > 파일을 열거나 저장하고, 알림을 표시하기 위한 네이티브 시스템 대화 상자를 표시합니다.
 
-다음 예시는 파일과 디렉터리를 다중으로 선택하는 대화 상자를 표시하는 예시입니다:
+다음 예시는 파일과 디렉터리를 다중으로 선택프로세스: [메인](../tutorial/quick-start.md#main-process)
+
+하는 대화 상자를 표시하는 예시입니다:
 
 ```javascript
-let win = ...;  // 대화 상자를 사용할 BrowserWindow 객체
-const {dialog} = require('electron');
-console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}));
+const {dialog} = require('electron')
+console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'multiSelections']}))
 ```
 
 대화 상자는 Electron의 메인 스레드에서 열립니다. 만약 렌더러 프로세스에서 대화 상자
 객체를 사용하고 싶다면, `remote`를 통해 접근하는 방법을 고려해야 합니다:
 
 ```javascript
-const {dialog} = require('electron').remote;
+const {dialog} = require('electron').remote
+console.log(dialog)
 ```
 
 ## Methods
@@ -29,11 +31,12 @@ const {dialog} = require('electron').remote;
   * `defaultPath` String
   * `buttonLabel` String - 확인 버튼을 위한 커스텀 라벨이며, 빈칸으로 둘 경우 기본
     라벨이 사용됩니다.
-  * `filters` Array
-  * `properties` Array - 대화 상자가 사용할 기능(모드)이 담긴 배열입니다.
+  * `filters` String[]
+  * `properties` String[] - 대화 상자가 사용할 기능(모드)이 담긴 배열입니다.
     다음을 포함할 수 있습니다: `openFile`, `openDirectory`, `multiSelections`,
     `createDirectory`, `showHiddenFiles`.
 * `callback` Function (optional)
+  * `filePaths` String[] - 사용자가 선택한 파일 경로의 배열
 
 사용할 대화 상자의 기능이 담긴 배열입니다. 다음을 포함할 수 있습니다: `openFile`,
 `openDirectory`, `multiSelections`, `createDirectory`
@@ -75,8 +78,9 @@ const {dialog} = require('electron').remote;
   * `defaultPath` String
   * `buttonLabel` String - 확인 버튼을 위한 커스텀 라벨이며, 빈칸으로 둘 경우 기본
     라벨이 사용됩니다.
-  * `filters` Array
+  * `filters` String[]
 * `callback` Function (optional)
+  * `filename` String
 
 작업에 성공하면 콜백으로 유저가 선택한 파일의 경로를 포함한 배열을 반환합니다. 그 외엔
 `undefined`를 반환합니다.
@@ -94,7 +98,7 @@ const {dialog} = require('electron').remote;
   * `type` String - `"none"`, `"info"`, `"error"`, `"question"`, `"warning"` 중
     하나를 사용할 수 있습니다. Windows에선 따로 `icon`을 설정하지 않은 이상
     "question"과 "info"는 같은 아이콘으로 표시됩니다.
-  * `buttons` Array - 버튼들의 라벨을 포함한 배열입니다. Windows에서 빈 배열로 둘
+  * `buttons` String[] - 버튼들의 라벨을 포함한 배열입니다. Windows에서 빈 배열로 둘
     경우, "OK" 버튼 하나가 포함됩니다.
   * `defaultId` Integer - 메시지 박스가 열렸을 때 기본적으로 선택될 버튼 배열의
     버튼 인덱스입니다.
@@ -112,6 +116,7 @@ const {dialog} = require('electron').remote;
     만듭니다. 이 기능으로 앱을 좀 더 현대적인 Windows 앱처럼 만들 수 있습니다. 이
     기능을 원하지 않으면 `noLink`를 true로 지정하면 됩니다.
 * `callback` Function (optional)
+  * `response` Number - 눌려진 버튼의 인덱스
 
 대화 상자를 표시합니다. `browserWindow`를 지정하면 대화 상자가 완전히 닫힐 때까지
 지정한 창을 사용할 수 없습니다. 완료 시 유저가 선택한 버튼의 인덱스를 반환합니다.
@@ -126,6 +131,9 @@ macOS 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지�
 전달됩니다.
 
 ### `dialog.showErrorBox(title, content)`
+
+* `title` String - 오류 상자에서 표시할 제목
+* `content` String - 오류 상자에서 표시할 텍스트
 
 에러 메시지를 보여주는 대화 상자를 표시합니다.
 

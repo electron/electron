@@ -8,11 +8,11 @@ Electron中, 与GUI相关的模块（如 `dialog`, `menu` 等)只存在于主进
 下面是从渲染进程创建一个浏览器窗口的例子：
 
 ```javascript
-const remote = require('electron').remote;
-const BrowserWindow = remote.BrowserWindow;
+const remote = require('electron').remote
+const BrowserWindow = remote.BrowserWindow
 
-var win = new BrowserWindow({ width: 800, height: 600 });
-win.loadURL('https://github.com');
+var win = new BrowserWindow({ width: 800, height: 600 })
+win.loadURL('https://github.com')
 ```
 
 **注意:** 反向操作（从主进程访问渲染进程），可以使用[webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture).
@@ -27,14 +27,14 @@ win.loadURL('https://github.com');
 而是在主进程中创建了 `BrowserWindow` 对象，并在渲染进程中返回了对应的远程对象，即
 `win` 对象。
 
-请注意只有 [可枚举属性](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties) 才能通过 remote 进行访问.
+请注意只有 [可枚举属性](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Enumerability_and_ownership_of_properties) 才能通过 remote 进行访问.
 
 ## 远程对象的生命周期
 
 Electron 确保在渲染进程中的远程对象存在（换句话说，没有被垃圾收集），那主进程中的对应对象也不会被释放。
 当远程对象被垃圾收集之后，主进程中的对应对象才会被取消关联。
 
-如果远程对象在渲染进程泄露了（即，存在某个表中但永远不会释放），那么主进程中的对应对象也一样会泄露，
+如果远程对象在渲染进程泄露了（例如，存在某个表中但永远不会释放），那么主进程中的对应对象也一样会泄露，
 所以你必须小心不要泄露了远程对象。If the remote object is leaked in the renderer process (e.g. stored in a map but
 never freed), the corresponding object in the main process will also be leaked,
 so you should be very careful not to leak remote objects.
@@ -55,23 +55,23 @@ get the return value of the passed callbacks.
 
 ```javascript
 // 主进程 mapNumbers.js
-exports.withRendererCallback = function(mapper) {
-  return [1,2,3].map(mapper);
+exports.withRendererCallback = function (mapper) {
+  return [1, 2, 3].map(mapper)
 }
 
-exports.withLocalCallback = function() {
-  return exports.mapNumbers(function(x) {
-    return x + 1;
-  });
+exports.withLocalCallback = function () {
+  return exports.mapNumbers(function (x) {
+    return x + 1
+  })
 }
 ```
 
 ```javascript
 // 渲染进程
-var mapNumbers = require("remote").require("./mapNumbers");
+var mapNumbers = require('remote').require('./mapNumbers')
 
-var withRendererCb = mapNumbers.withRendererCallback(function(x) {
-  return x + 1;
+var withRendererCb = mapNumbers.withRendererCallback(function (x) {
+  return x + 1
 })
 
 var withLocalCb = mapNumbers.withLocalCallback()
@@ -86,23 +86,23 @@ console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
 例如，下面的代码第一眼看上去毫无问题。给远程对象的`close`事件绑定了一个回调函数：
 
 ```javascript
-remote.getCurrentWindow().on('close', function() {
+remote.getCurrentWindow().on('close', function () {
   // blabla...
-});
+})
 ```
 
 但记住主进程会一直保持对这个回调函数的引用，除非明确的卸载它。如果不卸载，每次重新载入窗口都会再次绑定，这样每次重启就会泄露一个回调函数。
 
 更严重的是，由于前面安装了回调函数的上下文已经被释放，所以当主进程的 `close` 事件触发的时候，会抛出异常。
 
-为了避免这个问题，要确保对传递给主进程的渲染器的回调函数进行清理。可以清理事件处理器，或者明确告诉主进行取消来自已经退出的渲染器进程中的回调函数。
+为了避免这个问题，要确保对传递给主进程的渲染器的回调函数进行清理。可以清理事件处理器，或者明确告诉主进程取消来自已经退出的渲染器进程中的回调函数。
 
 ## 访问主进程中的内置模块
 
 在主进程中的内置模块已经被添加为`remote`模块中的属性，所以可以直接像使用`electron`模块一样直接使用它们。
 
 ```javascript
-const app = remote.app;
+const app = remote.app
 ```
 
 ## 方法

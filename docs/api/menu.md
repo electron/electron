@@ -1,184 +1,8 @@
-# Menu
+## Class: Menu
 
 > Create native application menus and context menus.
 
-This module is a main process module which can be used in a render process via
-the `remote` module.
-
-Each menu consists of multiple [menu items](menu-item.md) and each menu item can
-have a submenu.
-
-Below is an example of creating a menu dynamically in a web page
-(render process) by using the [remote](remote.md) module, and showing it when
-the user right clicks the page:
-
-```html
-<!-- index.html -->
-<script>
-const {remote} = require('electron')
-const {Menu, MenuItem} = remote;
-
-const menu = new Menu()
-menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked') }}))
-menu.append(new MenuItem({type: 'separator'}))
-menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
-
-window.addEventListener('contextmenu', (e) => {
-  e.preventDefault()
-  menu.popup(remote.getCurrentWindow())
-}, false)
-</script>
-```
-
-An example of creating the application menu in the render process with the
-simple template API:
-
-```javascript
-const {Menu} = require('electron')
-
-const template = [
-  {
-    label: 'Edit',
-    submenu: [
-      {
-        role: 'undo'
-      },
-      {
-        role: 'redo'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'cut'
-      },
-      {
-        role: 'copy'
-      },
-      {
-        role: 'paste'
-      },
-      {
-        role: 'pasteandmatchstyle'
-      },
-      {
-        role: 'delete'
-      },
-      {
-        role: 'selectall'
-      }
-    ]
-  },
-  {
-    label: 'View',
-    submenu: [
-      {
-        label: 'Reload',
-        accelerator: 'CmdOrCtrl+R',
-        click (item, focusedWindow) {
-          if (focusedWindow) focusedWindow.reload()
-        }
-      },
-      {
-        role: 'togglefullscreen'
-      },
-      {
-        label: 'Toggle Developer Tools',
-        accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-        click (item, focusedWindow) {
-          if (focusedWindow) focusedWindow.webContents.toggleDevTools()
-        }
-      }
-    ]
-  },
-  {
-    role: 'window',
-    submenu: [
-      {
-        role: 'minimize'
-      },
-      {
-        role: 'close'
-      }
-    ]
-  },
-  {
-    role: 'help',
-    submenu: [
-      {
-        label: 'Learn More',
-        click () { require('electron').shell.openExternal('http://electron.atom.io') }
-      }
-    ]
-  }
-]
-
-if (process.platform === 'darwin') {
-  const name = require('electron').remote.app.getName()
-  template.unshift({
-    label: name,
-    submenu: [
-      {
-        role: 'about'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'services',
-        submenu: []
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'hide'
-      },
-      {
-        role: 'hideothers'
-      },
-      {
-        role: 'unhide'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'quit'
-      }
-    ]
-  })
-  // Window menu.
-  template[3].submenu = [
-    {
-      label: 'Close',
-      accelerator: 'CmdOrCtrl+W',
-      role: 'close'
-    },
-    {
-      label: 'Minimize',
-      accelerator: 'CmdOrCtrl+M',
-      role: 'minimize'
-    },
-    {
-      label: 'Zoom',
-      role: 'zoom'
-    },
-    {
-      type: 'separator'
-    },
-    {
-      label: 'Bring All to Front',
-      role: 'front'
-    }
-  ]
-}
-
-const menu = Menu.buildFromTemplate(template)
-Menu.setApplicationMenu(menu)
-```
-
-## Class: Menu
+Process: [Main](../tutorial/quick-start.md#main-process)
 
 ### `new Menu()`
 
@@ -199,7 +23,7 @@ will be set as each window's top menu.
 
 #### `Menu.getApplicationMenu()`
 
-Returns the application menu (an instance of `Menu`), if set, or `null`, if not set.
+Returns `Menu` - The application menu, if set, or `null`, if not set.
 
 #### `Menu.sendActionToFirstResponder(action)` _macOS_
 
@@ -214,7 +38,9 @@ for more information on macOS' native actions.
 
 #### `Menu.buildFromTemplate(template)`
 
-* `template` Array
+* `template` MenuItemConstructorOptions[]
+
+Returns `Menu`
 
 Generally, the `template` is just an array of `options` for constructing a
 [MenuItem](menu-item.md). The usage can be referenced above.
@@ -256,7 +82,213 @@ Inserts the `menuItem` to the `pos` position of the menu.
 
 #### `menu.items`
 
-Get an array containing the menu's items.
+A MenuItem[] array containing the menu's items.
+
+Each `Menu` consists of multiple [`MenuItem`](menu-item.md)s and each `MenuItem`
+can have a submenu.
+
+## Examples
+
+The `Menu` class is only available in the main process, but you can also use it
+in the render process via the [`remote`](remote.md) module.
+
+### Main process
+
+An example of creating the application menu in the main process with the
+simple template API:
+
+```javascript
+const {app, Menu} = require('electron')
+
+const template = [
+  {
+    label: 'Edit',
+    submenu: [
+      {
+        role: 'undo'
+      },
+      {
+        role: 'redo'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        role: 'cut'
+      },
+      {
+        role: 'copy'
+      },
+      {
+        role: 'paste'
+      },
+      {
+        role: 'pasteandmatchstyle'
+      },
+      {
+        role: 'delete'
+      },
+      {
+        role: 'selectall'
+      }
+    ]
+  },
+  {
+    label: 'View',
+    submenu: [
+      {
+        role: 'reload'
+      },
+      {
+        role: 'toggledevtools'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        role: 'resetzoom'
+      },
+      {
+        role: 'zoomin'
+      },
+      {
+        role: 'zoomout'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        role: 'togglefullscreen'
+      }
+    ]
+  },
+  {
+    role: 'window',
+    submenu: [
+      {
+        role: 'minimize'
+      },
+      {
+        role: 'close'
+      }
+    ]
+  },
+  {
+    role: 'help',
+    submenu: [
+      {
+        label: 'Learn More',
+        click () { require('electron').shell.openExternal('http://electron.atom.io') }
+      }
+    ]
+  }
+]
+
+if (process.platform === 'darwin') {
+  template.unshift({
+    label: app.getName(),
+    submenu: [
+      {
+        role: 'about'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        role: 'services',
+        submenu: []
+      },
+      {
+        type: 'separator'
+      },
+      {
+        role: 'hide'
+      },
+      {
+        role: 'hideothers'
+      },
+      {
+        role: 'unhide'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        role: 'quit'
+      }
+    ]
+  })
+  // Edit menu.
+  template[1].submenu.push(
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Speech',
+      submenu: [
+        {
+          role: 'startspeaking'
+        },
+        {
+          role: 'stopspeaking'
+        }
+      ]
+    }
+  )
+  // Window menu.
+  template[3].submenu = [
+    {
+      label: 'Close',
+      accelerator: 'CmdOrCtrl+W',
+      role: 'close'
+    },
+    {
+      label: 'Minimize',
+      accelerator: 'CmdOrCtrl+M',
+      role: 'minimize'
+    },
+    {
+      label: 'Zoom',
+      role: 'zoom'
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Bring All to Front',
+      role: 'front'
+    }
+  ]
+}
+
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
+```
+
+### Render process
+
+Below is an example of creating a menu dynamically in a web page
+(render process) by using the [`remote`](remote.md) module, and showing it when
+the user right clicks the page:
+
+```html
+<!-- index.html -->
+<script>
+const {remote} = require('electron')
+const {Menu, MenuItem} = remote
+
+const menu = new Menu()
+menu.append(new MenuItem({label: 'MenuItem1', click() { console.log('item 1 clicked') }}))
+menu.append(new MenuItem({type: 'separator'}))
+menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
+
+window.addEventListener('contextmenu', (e) => {
+  e.preventDefault()
+  menu.popup(remote.getCurrentWindow())
+}, false)
+</script>
+```
+
 
 ## Notes on macOS Application Menu
 
@@ -321,7 +353,7 @@ the first item.
 
 Template:
 
-```
+```javascript
 [
   {label: '4', id: '4'},
   {label: '5', id: '5'},
@@ -343,7 +375,7 @@ Menu:
 
 Template:
 
-```
+```javascript
 [
   {label: 'a', position: 'endof=letters'},
   {label: '1', position: 'endof=numbers'},

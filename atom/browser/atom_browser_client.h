@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -49,7 +50,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
   content::SpeechRecognitionManagerDelegate*
       CreateSpeechRecognitionManagerDelegate() override;
-  content::AccessTokenStore* CreateAccessTokenStore() override;
+  content::GeolocationDelegate* CreateGeolocationDelegate() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                            content::WebPreferences* prefs) override;
   std::string GetApplicationLocale() override;
@@ -78,22 +79,27 @@ class AtomBrowserClient : public brightray::BrowserClient,
       net::SSLCertRequestInfo* cert_request_info,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
   void ResourceDispatcherHostCreated() override;
-  bool CanCreateWindow(const GURL& opener_url,
-                       const GURL& opener_top_level_frame_url,
-                       const GURL& source_origin,
-                       WindowContainerType container_type,
-                       const std::string& frame_name,
-                       const GURL& target_url,
-                       const content::Referrer& referrer,
-                       WindowOpenDisposition disposition,
-                       const blink::WebWindowFeatures& features,
-                       bool user_gesture,
-                       bool opener_suppressed,
-                       content::ResourceContext* context,
-                       int render_process_id,
-                       int opener_render_view_id,
-                       int opener_render_frame_id,
-                       bool* no_javascript_access) override;
+  bool CanCreateWindow(
+      const GURL& opener_url,
+      const GURL& opener_top_level_frame_url,
+      const GURL& source_origin,
+      WindowContainerType container_type,
+      const std::string& frame_name,
+      const GURL& target_url,
+      const content::Referrer& referrer,
+      WindowOpenDisposition disposition,
+      const blink::WebWindowFeatures& features,
+      const std::vector<base::string16>& additional_features,
+      const scoped_refptr<content::ResourceRequestBodyImpl>& body,
+      bool user_gesture,
+      bool opener_suppressed,
+      content::ResourceContext* context,
+      int render_process_id,
+      int opener_render_view_id,
+      int opener_render_frame_id,
+      bool* no_javascript_access) override;
+  void GetAdditionalAllowedSchemesForFileSystem(
+      std::vector<std::string>* schemes) override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
@@ -106,8 +112,19 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
 
  private:
+  bool ShouldCreateNewSiteInstance(content::BrowserContext* browser_context,
+                                   content::SiteInstance* current_instance,
+                                   const GURL& dest_url);
+  // Add/remove a process id to `sandboxed_renderers_`.
+  void AddSandboxedRendererId(int process_id);
+  void RemoveSandboxedRendererId(int process_id);
+  bool IsRendererSandboxed(int process_id);
+
   // pending_render_process => current_render_process.
   std::map<int, int> pending_processes_;
+  // Set that contains the process ids of all sandboxed renderers
+  std::set<int> sandboxed_renderers_;
+  base::Lock sandboxed_renderers_lock_;
 
   std::unique_ptr<AtomResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;

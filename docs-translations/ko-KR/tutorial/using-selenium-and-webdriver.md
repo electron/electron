@@ -1,4 +1,4 @@
-﻿# Selenium 과 WebDriver 사용하기
+# Selenium 과 WebDriver 사용하기
 
 [ChromeDriver - WebDriver for Chrome][chrome-driver]로부터 인용:
 
@@ -18,7 +18,7 @@
 $ npm install --save-dev spectron
 ```
 
-```js
+```javascript
 // 윈도우가 제목과 함께 보이는지 검증하는 간단한 테스트.
 var Application = require('spectron').Application
 var assert = require('assert')
@@ -79,7 +79,7 @@ $ npm install selenium-webdriver
 실행파일의 위치를 전달합니다:
 
 ```javascript
-const webdriver = require('selenium-webdriver');
+const webdriver = require('selenium-webdriver')
 
 const driver = new webdriver.Builder()
   // 작동하고 있는 크롬 드라이버의 포트 "9515"를 사용합니다.
@@ -87,22 +87,22 @@ const driver = new webdriver.Builder()
   .withCapabilities({
     chromeOptions: {
       // 여기에 사용중인 Electron 바이너리의 경로를 지정하세요.
-      binary: '/Path-to-Your-App.app/Contents/MacOS/Electron',
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Electron'
     }
   })
   .forBrowser('electron')
-  .build();
+  .build()
 
-driver.get('http://www.google.com');
-driver.findElement(webdriver.By.name('q')).sendKeys('webdriver');
-driver.findElement(webdriver.By.name('btnG')).click();
+driver.get('http://www.google.com')
+driver.findElement(webdriver.By.name('q')).sendKeys('webdriver')
+driver.findElement(webdriver.By.name('btnG')).click()
 driver.wait(() => {
- return driver.getTitle().then((title) => {
-   return title === 'webdriver - Google Search';
- });
-}, 1000);
+  return driver.getTitle().then((title) => {
+    return title === 'webdriver - Google Search'
+  })
+}, 1000)
 
-driver.quit();
+driver.quit()
 ```
 
 ## WebdriverIO 설정하기
@@ -131,7 +131,7 @@ $ npm install webdriverio
 
 ### 3. 크롬 드라이버에 연결
 ```javascript
-const webdriverio = require('webdriverio');
+const webdriverio = require('webdriverio')
 let options = {
   host: 'localhost', // localhost에서 작동중인 크롬 드라이버 서버를 사용합니다.
   port: 9515,        // 연결할 크롬 드라이버 서버의 포트를 설정합니다.
@@ -142,9 +142,9 @@ let options = {
       args: [/* cli arguments */]           // 선택 사항, 'app=' + /path/to/your/app/
     }
   }
-};
+}
 
-let client = webdriverio.remote(options);
+let client = webdriverio.remote(options)
 
 client
   .init()
@@ -152,9 +152,9 @@ client
   .setValue('#q', 'webdriverio')
   .click('#btnG')
   .getTitle().then((title) => {
-    console.log('Title was: ' + title);
+    console.log('Title was: ' + title)
   })
-  .end();
+  .end()
 ```
 
 ## 작업 환경

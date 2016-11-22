@@ -19,11 +19,11 @@ Windows, Linux, macOS 운영체제 모두 기본적으로 애플리케이션에�
 ```javascript
 let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
-});
+})
 
 myNotification.onclick = () => {
-  console.log('Notification clicked');
-};
+  console.log('Notification clicked')
+}
 ```
 
 위 코드를 통해 생성한 데스크톱 알림은 각 운영체제 모두 비슷한 사용자 경험을 제공하지만,
@@ -35,8 +35,8 @@ myNotification.onclick = () => {
 * Windows 8.1과 8에선 [Application User Model ID][app-user-model-id]로 바로가기를
   만들어 놔야 합니다. 이 바로가기는 반드시 시작 화면에 설치되어 있어야 합니다. 참고로
   반드시 시작 화면에 고정 할 필요는 없습니다.
-* Windows 7과 그 이하 버전은 데스크톱 알림을 지원하지 않습니다.
-  혹시 "풍선 팝업 알림" 기능을 찾는다면 [Tray API][tray-balloon]를 사용하세요.
+* Windows 7은 데스크톱 알림을 지원하지 않습니다. 혹시 "풍선 팝업 알림" 기능을 찾는다면
+  [Tray API][tray-balloon]를 사용하세요.
 
 또한 알림 본문의 최대 길이는 250자 입니다. Windows 개발팀에선 알림 문자열을 200자
 이하로 유지하는 것을 권장합니다.
@@ -73,14 +73,16 @@ __애플리케이션 dock menu:__
 사용할 수 있습니다:
 
 ```javascript
-app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
+const {app} = require('electron')
+app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 
 그리고 [app.clearRecentDocuments][clearrecentdocuments] API로 최근 문서 리스트를
 비울 수 있습니다:
 
 ```javascript
-app.clearRecentDocuments();
+const {app} = require('electron')
+app.clearRecentDocuments()
 ```
 
 ### Windows에서 주의할 점
@@ -110,18 +112,19 @@ __Terminal.app의 dock menu:__
 macOS에서만 사용 가능합니다:
 
 ```javascript
-const {app, Menu} = require('electron');
+const {app, Menu} = require('electron')
 
 const dockMenu = Menu.buildFromTemplate([
-  {label: 'New Window', click() { console.log('New Window'); }},
-  {label: 'New Window with Settings', submenu: [
-    {label: 'Basic'},
-    {label: 'Pro'}
-  ]},
+  {label: 'New Window', click () { console.log('New Window') }},
+  {label: 'New Window with Settings',
+    submenu: [
+      {label: 'Basic'},
+      {label: 'Pro'}
+    ]
+  },
   {label: 'New Command...'}
-]);
-
-app.dock.setMenu(dockMenu);
+])
+app.dock.setMenu(dockMenu)
 ```
 
 ## 사용자 작업 (Windows)
@@ -155,6 +158,7 @@ macOS의 dock menu(진짜 메뉴)와는 달리 Windows의 사용자 작업은 �
 수 있습니다:
 
 ```javascript
+const {app} = require('electron')
 app.setUserTasks([
   {
     program: process.execPath,
@@ -164,14 +168,15 @@ app.setUserTasks([
     title: 'New Window',
     description: 'Create a new window'
   }
-]);
+])
 ```
 
 작업 리스트를 비우려면 간단히 `app.setUserTasks` 메서드의 첫번째 인수에 빈 배열을 넣어
 호출하면 됩니다:
 
 ```javascript
-app.setUserTasks([]);
+const {app} = require('electron')
+app.setUserTasks([])
 ```
 
 
@@ -202,34 +207,36 @@ __Windows Media Player의 미리보기 툴바:__
 미리보기 툴바를 설정할 수 있습니다:
 
 ```javascript
-const {BrowserWindow} = require('electron');
-const path = require('path');
+const {BrowserWindow} = require('electron')
+const path = require('path')
 
 let win = new BrowserWindow({
   width: 800,
   height: 600
-});
+})
 
 win.setThumbarButtons([
   {
     tooltip: 'button1',
     icon: path.join(__dirname, 'button1.png'),
-    click() { console.log('button1 clicked'); }
+    click () { console.log('button1 clicked') }
   },
   {
     tooltip: 'button2',
     icon: path.join(__dirname, 'button2.png'),
-    flags:['enabled', 'dismissonclick'],
-    click() { console.log('button2 clicked.'); }
+    flags: ['enabled', 'dismissonclick'],
+    click () { console.log('button2 clicked.') }
   }
-]);
+])
 ```
 
 미리보기 툴바를 비우려면 간단히 `BrowserWindow.setThumbarButtons` API에 빈 배열을
 전달하면 됩니다:
 
 ```javascript
-win.setThumbarButtons([]);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setThumbarButtons([])
 ```
 
 ## Unity 런처 숏컷 기능 (Linux)
@@ -241,17 +248,17 @@ __Audacious의 런처 숏컷:__
 
 ![audacious](https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png)
 
-## 작업 표시줄 안의 프로그래스 바 (Windows, macOS, Unity)
+## 작업 표시줄 안의 프로그레스 바 (Windows, macOS, Unity)
 
-Windows에선 작업 표시줄의 애플리케이션 버튼에 프로그래스 바를 추가할 수 있습니다.
+Windows에선 작업 표시줄의 애플리케이션 버튼에 프로그레스 바를 추가할 수 있습니다.
 이 기능은 사용자가 애플리케이션의 창을 열지 않고도 애플리케이션의 작업의 상태 정보를
 시각적으로 보여줄 수 있도록 해줍니다.
 
-macOS에선 프로그래스바가 dock 아이콘의 일부에 표시됩니다.
+macOS에선 프로그레스바가 dock 아이콘의 일부에 표시됩니다.
 
-또한 Unity DE도 런처에 프로그래스 바를 부착할 수 있습니다.
+또한 Unity DE도 런처에 프로그레스 바를 부착할 수 있습니다.
 
-__작업 표시줄 버튼의 프로그래스 바:__
+__작업 표시줄 버튼의 프로그레스 바:__
 
 ![Taskbar Progress Bar](https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png)
 
@@ -259,8 +266,9 @@ __작업 표시줄 버튼의 프로그래스 바:__
 있습니다:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setProgressBar(0.5);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setProgressBar(0.5)
 ```
 
 ## 작업 표시줄의 아이콘 오버레이 (Windows)
@@ -286,9 +294,33 @@ __작업 표시줄 버튼 위의 오버레이:__
 API를 사용할 수 있습니다:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setOverlayIcon('path/to/overlay.png', 'Description for overlay');
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 ```
+
+## 프레임 깜빡이기 (윈도우즈)
+
+윈도우즈에서 사용자의 관심을 끌기 위해ㅣ 작업표시줄 버튼을 강조할 수 있습니다.
+이것은 macOS 의 독 아이콘을 튕기는 것과 유사합니다.
+MSDN에서 인용하자면 (영문):
+
+> Typically, a window is flashed to inform the user that the window requires
+> attention but that it does not currently have the keyboard focus.
+
+BrowserWindow 작업표시줄 버튼을 깜빡이려면, 
+[BrowserWindow.flashFrame][flashframe] API 를 사용하면됩니다:
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.once('focus', () => win.flashFrame(false))
+win.flashFrame(true)
+```
+
+`flashFrame` 메소드를 `false` 인자로 호출하여 깜빡임을 중단시키는 것을
+잊지마세요. 위의 예제에서, 윈도우가 포커스되었을 때 호출합니다. 그러나 타임아웃
+또는 다른 이벤트에서 비활성화할 수 있습니다.
 
 ## 대표 파일 제시 (macOS)
 
@@ -305,9 +337,10 @@ __대표 파일 팝업 메뉴:__
 [BrowserWindow.setDocumentEdited][setdocumentedited]를 사용할 수 있습니다:
 
 ```javascript
-let win = new BrowserWindow({...});
-win.setRepresentedFilename('/etc/passwd');
-win.setDocumentEdited(true);
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setRepresentedFilename('/etc/passwd')
+win.setDocumentEdited(true)
 ```
 
 ## 파일을 윈도우 밖으로 드래그할 수 있도록 만들기
@@ -332,6 +365,7 @@ win.setDocumentEdited(true);
 메인 프로세스에서:
 
 ```javascript
+const {ipcMain} = require('electron')
 ipcMain.on('ondragstart', (event, filePath) => {
   event.sender.startDrag({
     file: filePath,
@@ -353,3 +387,4 @@ ipcMain.on('ondragstart', (event, filePath) => {
 [tray-balloon]: ../api/tray.md#traydisplayballoonoptions-windows
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [notification-spec]: https://developer.gnome.org/notification-spec/
+[flashframe]: ../api/browser-window.md#winflashframeflag

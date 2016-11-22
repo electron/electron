@@ -13,9 +13,9 @@
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_view_observer.h"
+#include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/node_array_buffer_bridge.h"
 #include "atom/renderer/preferences_manager.h"
@@ -34,12 +34,12 @@
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
+#include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
-#include "third_party/WebKit/public/web/WebKit.h"
+#include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
-#include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
 #if defined(OS_MACOSX)
@@ -50,6 +50,8 @@
 #if defined(OS_WIN)
 #include <shlobj.h>
 #endif
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -83,6 +85,10 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     if (world_id_ != world_id)
       return;
     renderer_client_->WillReleaseScriptContext(context, render_frame_);
+  }
+
+  void OnDestruct() override {
+    delete this;
   }
 
  private:
@@ -171,6 +177,7 @@ void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
   new AtomRenderFrameObserver(render_frame, this);
+  new ContentSettingsObserver(render_frame);
 
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
@@ -261,7 +268,7 @@ void AtomRendererClient::DidCreateScriptContext(
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
 
-  // Add atom-shell extended APIs.
+  // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
   AddRenderBindings(env->isolate(), env->process_object(),
                     preferences_manager_.get());

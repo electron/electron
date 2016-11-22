@@ -55,19 +55,19 @@ Linux에선 플러그인 바이너리들이 Chrome 브라우저와 함께 제공
 // * macOS에선 `widevinecdmadapter.plugin`로 지정합니다,
 // * Linux에선 `libwidevinecdmadapter.so`로 지정합니다,
 // * Windows에선 `widevinecdmadapter.dll`로 지정합니다.
-app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.plugin');
+app.commandLine.appendSwitch('widevine-cdm-path', '/path/to/widevinecdmadapter.plugin')
 // 플러그인의 버전은 크롬의 `chrome://plugins` 페이지에서 취득할 수 있습니다.
-app.commandLine.appendSwitch('widevine-cdm-version', '1.4.8.866');
+app.commandLine.appendSwitch('widevine-cdm-version', '1.4.8.866')
 
-let win = null;
+let win = null
 app.on('ready', () => {
   win = new BrowserWindow({
     webPreferences: {
       // `plugins`은 활성화되어야 합니다.
       plugins: true
     }
-  });
-});
+  })
+})
 ```
 
 ## 플러그인 작동 확인

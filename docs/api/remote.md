@@ -2,6 +2,8 @@
 
 > Use main process modules from the renderer process.
 
+Process: [Renderer](../tutorial/quick-start.md#renderer-process)
+
 The `remote` module provides a simple way to do inter-process communication
 (IPC) between the renderer process (web page) and the main process.
 
@@ -19,8 +21,8 @@ let win = new BrowserWindow({width: 800, height: 600})
 win.loadURL('https://github.com')
 ```
 
-**Note:** for the reverse (access the renderer process from the main process),
-you can use [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture-callback).
+**Note:** For the reverse (access the renderer process from the main process),
+you can use [webContents.executeJavascript](web-contents.md#contentsexecutejavascriptcode-usergesture-callback).
 
 ## Remote Objects
 
@@ -36,8 +38,12 @@ process. Instead, it created a `BrowserWindow` object in the main process and
 returned the corresponding remote object in the renderer process, namely the
 `win` object.
 
-Please note that only [enumerable properties](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties) which are present when the remote object is first referenced are
-accessible via remote.
+**Note:** Only [enumerable properties][enumerable-properties] which are present
+when the remote object is first referenced are accessible via remote.
+
+**Note:** Arrays and Buffers are copied over IPC when accessed via the `remote`
+module. Modifying them in the renderer process does not modify them in the main
+process and vice versa.
 
 ## Lifetime of Remote Objects
 
@@ -134,27 +140,30 @@ The `remote` module has the following methods:
 
 * `module` String
 
-Returns the object returned by `require(module)` in the main process.
+Returns `any` - The object returned by `require(module)` in the main process.
 
 ### `remote.getCurrentWindow()`
 
-Returns the [`BrowserWindow`](browser-window.md) object to which this web page
+Returns `BrowserWindow` - The [`BrowserWindow`](browser-window.md) object to which this web page
 belongs.
 
 ### `remote.getCurrentWebContents()`
 
-Returns the [`WebContents`](web-contents.md) object of this web page.
+Returns `WebContents` - The [`WebContents`](web-contents.md) object of this web page.
 
 ### `remote.getGlobal(name)`
 
 * `name` String
 
-Returns the global variable of `name` (e.g. `global[name]`) in the main
+Returns `any` - The global variable of `name` (e.g. `global[name]`) in the main
 process.
+
+## Properties
 
 ### `remote.process`
 
-Returns the `process` object in the main process. This is the same as
+The `process` object in the main process. This is the same as
 `remote.getGlobal('process')` but is cached.
 
 [rmi]: http://en.wikipedia.org/wiki/Java_remote_method_invocation
+[enumerable-properties]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties

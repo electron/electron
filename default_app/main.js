@@ -84,21 +84,28 @@ app.once('ready', () => {
       label: 'View',
       submenu: [
         {
-          label: 'Reload',
-          accelerator: 'CmdOrCtrl+R',
-          click (item, focusedWindow) {
-            if (focusedWindow) focusedWindow.reload()
-          }
+          role: 'reload'
+        },
+        {
+          role: 'toggledevtools'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'resetzoom'
+        },
+        {
+          role: 'zoomin'
+        },
+        {
+          role: 'zoomout'
+        },
+        {
+          type: 'separator'
         },
         {
           role: 'togglefullscreen'
-        },
-        {
-          label: 'Toggle Developer Tools',
-          accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-          click (item, focusedWindow) {
-            if (focusedWindow) focusedWindow.toggleDevTools()
-          }
         }
       ]
     },
@@ -180,6 +187,22 @@ app.once('ready', () => {
         }
       ]
     })
+    template[1].submenu.push(
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Speech',
+        submenu: [
+          {
+            role: 'startspeaking'
+          },
+          {
+            role: 'stopspeaking'
+          }
+        ]
+      }
+    )
     template[3].submenu = [
       {
         role: 'close'

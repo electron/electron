@@ -5,8 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_PROTOCOL_H_
 #define ATOM_BROWSER_API_ATOM_API_PROTOCOL_H_
 
-#include <string>
 #include <map>
+#include <string>
 #include <vector>
 
 #include "atom/browser/api/trackable_object.h"
@@ -27,6 +27,9 @@ class DictionaryValue;
 namespace atom {
 
 namespace api {
+
+std::vector<std::string> GetStandardSchemes();
+void RegisterStandardSchemes(const std::vector<std::string>& schemes);
 
 class Protocol : public mate::TrackableObject<Protocol> {
  public:

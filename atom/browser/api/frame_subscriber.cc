@@ -4,10 +4,13 @@
 
 #include "atom/browser/api/frame_subscriber.h"
 
-#include "base/bind.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
-#include "atom/common/node_includes.h"
+#include "base/bind.h"
 #include "content/public/browser/render_widget_host.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -39,6 +42,17 @@ bool FrameSubscriber::ShouldCaptureFrame(
   gfx::Rect rect = gfx::Rect(view_->GetVisibleViewportSize());
   if (only_dirty_)
     rect = dirty_rect;
+
+  gfx::Size view_size = rect.size();
+  gfx::Size bitmap_size = view_size;
+  const gfx::NativeView native_view = view_->GetNativeView();
+  const float scale =
+      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
+  if (scale > 1.0f)
+    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+
+  rect = gfx::Rect(rect.origin(), bitmap_size);
 
   host->CopyFromBackingStore(
       rect,

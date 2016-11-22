@@ -30,8 +30,7 @@ applications.
 To compile any existing Electron app, ensure that you have the following
 requirements:
 
-* Windows 10 Anniversary Update (until the update is released to the general public,
-developers can use the Windows Insider Preview)
+* Windows 10 with Anniversary Update (released August 2nd, 2016)
 * The Windows 10 SDK, [downloadable here][windows-sdk]
 * At least Node 4 (to check, run `node -v`)
 
@@ -105,11 +104,15 @@ automatically install the package on your machine.
 
 ## Step 3: Using the AppX Package
 
-Since the Windows Anniversary Update (codenamed Windows Redstone) has not been
-released to consumers yet, you won't be able to release your app to the Windows
-Store until later this year - but you can already use the `Add-AppxPackage`
-[PowerShell Cmdlet to install it on machines][add-appxpackage]
-in developer or enterprise environments.
+In order to run your package, your users will need Windows 10 with the so-called
+"Anniversary Update" - details on how to update Windows can be found [here][how-to-update].
+
+In opposition to traditional UWP apps, packaged apps currently need to undergo a
+manual verification process, for which you can apply [here][centennial-campaigns].
+In the meantime, all users will be able to just install your package by double-clicking it,
+so a submission to the store might not be necessary if you're simply looking for an 
+easier installation method. In managed environments (usually enterprises), the
+`Add-AppxPackage` [PowerShell Cmdlet can be used to install it in an automated fashion][add-appxpackage].
 
 Another important limitation is that the compiled AppX package still contains a
 win32 executable - and will therefore not run on Xbox, HoloLens, or Phones.
@@ -154,3 +157,5 @@ Once installation succeeded, you can move on to compiling your Electron app.
 [electron-packager]: https://github.com/electron-userland/electron-packager
 [electron-windows-store]: https://github.com/catalystcode/electron-windows-store
 [background-task]: https://github.com/felixrieseberg/electron-uwp-background
+[centennial-campaigns]: https://developer.microsoft.com/en-us/windows/projects/campaigns/desktop-bridge
+[how-to-update]: https://blogs.windows.com/windowsexperience/2016/08/02/how-to-get-the-windows-10-anniversary-update

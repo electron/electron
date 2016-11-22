@@ -5,7 +5,7 @@ const ws = require('ws')
 const url = require('url')
 const remote = require('electron').remote
 
-const {BrowserWindow, session, webContents} = remote
+const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
@@ -54,7 +54,7 @@ describe('chromium feature', function () {
       w = new BrowserWindow({
         show: false
       })
-      w.webContents.on('ipc-message', function (event, args) {
+      w.webContents.once('ipc-message', function (event, args) {
         assert.deepEqual(args, ['hidden', true])
         done()
       })
@@ -69,7 +69,7 @@ describe('chromium feature', function () {
       w = new BrowserWindow({
         show: false
       })
-      w.webContents.on('ipc-message', function (event, args) {
+      w.webContents.once('ipc-message', function (event, args) {
         assert.deepEqual(args, ['hidden', false])
         done()
       })
@@ -250,8 +250,7 @@ describe('chromium feature', function () {
 
     it('defines a window.location setter', function (done) {
       // Load a page that definitely won't redirect
-      var b
-      b = window.open('about:blank')
+      var b = window.open('about:blank')
       webContents.fromId(b.guestId).once('did-finish-load', function () {
         // When it loads, redirect
         b.location = 'file://' + fixtures + '/pages/base-page.html'
@@ -262,23 +261,40 @@ describe('chromium feature', function () {
         })
       })
     })
+
+    it('open a blank page when no URL is specified', function (done) {
+      let b = window.open()
+      webContents.fromId(b.guestId).once('did-finish-load', function () {
+        const {location} = b
+        b.close()
+        assert.equal(location, 'about:blank')
+
+        let c = window.open('')
+        webContents.fromId(c.guestId).once('did-finish-load', function () {
+          const {location} = c
+          c.close()
+          assert.equal(location, 'about:blank')
+          done()
+        })
+      })
+    })
   })
 
   describe('window.opener', function () {
     this.timeout(10000)
 
-    var url = 'file://' + fixtures + '/pages/window-opener.html'
-    var w = null
+    let url = 'file://' + fixtures + '/pages/window-opener.html'
+    let w = null
 
     afterEach(function () {
-      w != null ? w.destroy() : void 0
+      if (w) w.destroy()
     })
 
     it('is null for main window', function (done) {
       w = new BrowserWindow({
         show: false
       })
-      w.webContents.on('ipc-message', function (event, args) {
+      w.webContents.once('ipc-message', function (event, args) {
         assert.deepEqual(args, ['opener', null])
         done()
       })
@@ -286,7 +302,7 @@ describe('chromium feature', function () {
     })
 
     it('is not null for window opened by window.open', function (done) {
-      var b
+      let b
       listener = function (event) {
         assert.equal(event.data, 'object')
         b.close()
@@ -294,6 +310,48 @@ describe('chromium feature', function () {
       }
       window.addEventListener('message', listener)
       b = window.open(url, '', 'show=no')
+    })
+  })
+
+  describe('window.opener security', function () {
+    this.timeout(10000)
+
+    const scheme = 'other'
+    let url = `${scheme}://${fixtures}/pages/window-opener-location.html`
+    let w = null
+
+    before(function (done) {
+      protocol.registerFileProtocol(scheme, function (request, callback) {
+        callback(`${fixtures}/pages/window-opener-location.html`)
+      }, function (error) {
+        done(error)
+      })
+    })
+
+    after(function () {
+      protocol.unregisterProtocol(scheme)
+    })
+
+    afterEach(function () {
+      w.close()
+    })
+
+    it('does nothing when origin of current window does not match opener', function (done) {
+      listener = function (event) {
+        assert.equal(event.data, undefined)
+        done()
+      }
+      window.addEventListener('message', listener)
+      w = window.open(url, '', 'show=no')
+    })
+
+    it('works when origin does not match opener but has node integration', function (done) {
+      listener = function (event) {
+        assert.equal(event.data, location.href)
+        done()
+      }
+      window.addEventListener('message', listener)
+      w = window.open(url, '', 'show=no,nodeIntegration=yes')
     })
   })
 
@@ -426,6 +484,88 @@ describe('chromium feature', function () {
         done()
       })
     })
+
+    describe('custom non standard schemes', function () {
+      const protocolName = 'storage'
+      let contents = null
+      before(function (done) {
+        const handler = function (request, callback) {
+          let parsedUrl = url.parse(request.url)
+          let filename
+          switch (parsedUrl.pathname) {
+            case '/localStorage' : filename = 'local_storage.html'; break
+            case '/sessionStorage' : filename = 'session_storage.html'; break
+            case '/WebSQL' : filename = 'web_sql.html'; break
+            case '/indexedDB' : filename = 'indexed_db.html'; break
+            case '/cookie' : filename = 'cookie.html'; break
+            default : filename = ''
+          }
+          callback({path: fixtures + '/pages/storage/' + filename})
+        }
+        protocol.registerFileProtocol(protocolName, handler, function (error) {
+          done(error)
+        })
+      })
+
+      after(function (done) {
+        protocol.unregisterProtocol(protocolName, () => done())
+      })
+
+      beforeEach(function () {
+        contents = webContents.create({})
+      })
+
+      afterEach(function () {
+        contents.destroy()
+        contents = null
+      })
+
+      it('cannot access localStorage', function (done) {
+        ipcMain.once('local-storage-response', function (event, error) {
+          assert.equal(
+            error,
+            'Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.')
+          done()
+        })
+        contents.loadURL(protocolName + '://host/localStorage')
+      })
+
+      it('cannot access sessionStorage', function (done) {
+        ipcMain.once('session-storage-response', function (event, error) {
+          assert.equal(
+            error,
+            'Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.')
+          done()
+        })
+        contents.loadURL(protocolName + '://host/sessionStorage')
+      })
+
+      it('cannot access WebSQL database', function (done) {
+        ipcMain.once('web-sql-response', function (event, error) {
+          assert.equal(
+            error,
+            'An attempt was made to break through the security policy of the user agent.')
+          done()
+        })
+        contents.loadURL(protocolName + '://host/WebSQL')
+      })
+
+      it('cannot access indexedDB', function (done) {
+        ipcMain.once('indexed-db-response', function (event, error) {
+          assert.equal(error, 'The user denied permission to access the database.')
+          done()
+        })
+        contents.loadURL(protocolName + '://host/indexedDB')
+      })
+
+      it('cannot access cookie', function (done) {
+        ipcMain.once('cookie-response', function (event, cookie) {
+          assert(!cookie)
+          done()
+        })
+        contents.loadURL(protocolName + '://host/cookie')
+      })
+    })
   })
 
   describe('websockets', function () {
@@ -493,6 +633,28 @@ describe('chromium feature', function () {
         })
         document.createElement('y-element')
         called = true
+      })
+    })
+  })
+
+  describe('fetch', function () {
+    it('does not crash', function (done) {
+      const server = http.createServer(function (req, res) {
+        res.end('test')
+        server.close()
+      })
+      server.listen(0, '127.0.0.1', function () {
+        const port = server.address().port
+        fetch(`http://127.0.0.1:${port}`).then((res) => {
+          return res.body.getReader()
+        }).then((reader) => {
+          reader.read().then((r) => {
+            reader.cancel()
+            done()
+          })
+        }).catch(function (e) {
+          done(e)
+        })
       })
     })
   })

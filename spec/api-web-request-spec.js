@@ -164,10 +164,14 @@ describe('webRequest module', function () {
     it('receives details object', function (done) {
       ses.webRequest.onBeforeSendHeaders(function (details, callback) {
         assert.equal(typeof details.requestHeaders, 'object')
+        assert.equal(details.requestHeaders['Foo.Bar'], 'baz')
         callback({})
       })
       $.ajax({
         url: defaultURL,
+        headers: {
+          'Foo.Bar': 'baz'
+        },
         success: function (data) {
           assert.equal(data, '/')
           done()

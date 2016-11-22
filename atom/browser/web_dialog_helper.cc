@@ -13,12 +13,14 @@
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
-#include "components/prefs/pref_service.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"
+#include "components/prefs/pref_service.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/file_chooser_file_info.h"
+#include "content/public/common/file_chooser_params.h"
 #include "net/base/mime_util.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
@@ -75,8 +77,9 @@ WebDialogHelper::~WebDialogHelper() {
 }
 
 
-void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
-                                     const content::FileChooserParams& params) {
+void WebDialogHelper::RunFileChooser(
+    content::RenderFrameHost* render_frame_host,
+    const content::FileChooserParams& params) {
   std::vector<content::FileChooserFileInfo> result;
   file_dialog::Filters filters = GetFileTypesFromAcceptType(
       params.accept_types);
@@ -133,8 +136,7 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
     }
   }
 
-  web_contents->GetRenderViewHost()->FilesSelectedInChooser(
-      result, params.mode);
+  render_frame_host->FilesSelectedInChooser(result, params.mode);
 }
 
 void WebDialogHelper::EnumerateDirectory(content::WebContents* web_contents,

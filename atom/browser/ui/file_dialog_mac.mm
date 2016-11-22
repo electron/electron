@@ -71,7 +71,6 @@ void SetupDialog(NSSavePanel* dialog,
   if (default_filename)
     [dialog setNameFieldStringValue:default_filename];
 
-  [dialog setCanSelectHiddenExtension:YES];
   if (filters.empty())
     [dialog setAllowsOtherFileTypes:YES];
   else
@@ -196,6 +195,7 @@ void ShowSaveDialog(atom::NativeWindow* parent_window,
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, title, button_label, default_path, filters);
+  [dialog setCanSelectHiddenExtension:YES];
 
   __block SaveDialogCallback callback = c;
 

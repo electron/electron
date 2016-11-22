@@ -47,9 +47,10 @@ void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
 
 }  // namespace
 
-MenuBar::MenuBar()
+MenuBar::MenuBar(NativeWindow* window)
     : background_color_(kDefaultColor),
-      menu_model_(NULL) {
+      menu_model_(NULL),
+      window_(window) {
   UpdateMenuBarColor();
   SetLayoutManager(new views::BoxLayout(
       views::BoxLayout::kHorizontal, 0, 0, 0));
@@ -63,7 +64,9 @@ void MenuBar::SetMenu(AtomMenuModel* model) {
   RemoveAllChildViews(true);
 
   for (int i = 0; i < model->GetItemCount(); ++i) {
-    SubmenuButton* button = new SubmenuButton(this, model->GetLabelAt(i), this);
+    SubmenuButton* button = new SubmenuButton(model->GetLabelAt(i),
+                                              this,
+                                              background_color_);
     button->set_tag(i);
 
 #if defined(USE_X11)
@@ -131,9 +134,6 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::ButtonPressed(views::Button* sender, const ui::Event& event) {
-}
-
 void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
                                   const gfx::Point& point,
                                   const ui::Event* event) {
@@ -142,6 +142,9 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
 
   if (!menu_model_)
     return;
+
+  if (!window_->IsFocused())
+    window_->Focus(true);
 
   int id = source->tag();
   AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);

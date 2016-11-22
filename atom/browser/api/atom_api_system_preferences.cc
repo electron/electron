@@ -8,33 +8,35 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
-
-#if defined(OS_WIN)
-#include "ui/base/win/shell.h"
-#endif
+#include "ui/gfx/color_utils.h"
 
 namespace atom {
 
 namespace api {
 
-SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
+SystemPreferences::SystemPreferences(v8::Isolate* isolate)
+#if defined(OS_WIN)
+    : color_change_listener_(this)
+#endif
+    {
   Init(isolate);
+#if defined(OS_WIN)
+  InitializeWindow();
+#endif
 }
 
 SystemPreferences::~SystemPreferences() {
 }
-
-#if defined(OS_WIN)
-bool SystemPreferences::IsAeroGlassEnabled() {
-  return ui::win::IsAeroGlassEnabled();
-}
-#endif
 
 #if !defined(OS_MACOSX)
 bool SystemPreferences::IsDarkMode() {
   return false;
 }
 #endif
+
+bool SystemPreferences::IsInvertedColorScheme() {
+  return color_utils::IsInvertedColorScheme();
+}
 
 // static
 mate::Handle<SystemPreferences> SystemPreferences::Create(
@@ -48,8 +50,14 @@ void SystemPreferences::BuildPrototype(
   prototype->SetClassName(mate::StringToV8(isolate, "SystemPreferences"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
 #if defined(OS_WIN)
+      .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
+      .SetMethod("getColor", &SystemPreferences::GetColor)
 #elif defined(OS_MACOSX)
+      .SetMethod("postNotification",
+                 &SystemPreferences::PostNotification)
+      .SetMethod("postLocalNotification",
+                 &SystemPreferences::PostLocalNotification)
       .SetMethod("subscribeNotification",
                  &SystemPreferences::SubscribeNotification)
       .SetMethod("unsubscribeNotification",
@@ -59,7 +67,11 @@ void SystemPreferences::BuildPrototype(
       .SetMethod("unsubscribeLocalNotification",
                  &SystemPreferences::UnsubscribeLocalNotification)
       .SetMethod("getUserDefault", &SystemPreferences::GetUserDefault)
+      .SetMethod("isSwipeTrackingFromScrollEventsEnabled",
+                 &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
 #endif
+      .SetMethod("isInvertedColorScheme",
+                 &SystemPreferences::IsInvertedColorScheme)
       .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode);
 }
 

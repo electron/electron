@@ -12,9 +12,11 @@
 
 namespace atom {
 
+class AtomCTDelegate;
+
 class AtomCertVerifier : public net::CertVerifier {
  public:
-  AtomCertVerifier();
+  explicit AtomCertVerifier(AtomCTDelegate* ct_delegate);
   virtual ~AtomCertVerifier();
 
   using VerifyProc =
@@ -26,10 +28,7 @@ class AtomCertVerifier : public net::CertVerifier {
 
  protected:
   // net::CertVerifier:
-  int Verify(net::X509Certificate* cert,
-             const std::string& hostname,
-             const std::string& ocsp_response,
-             int flags,
+  int Verify(const RequestParams& params,
              net::CRLSet* crl_set,
              net::CertVerifyResult* verify_result,
              const net::CompletionCallback& callback,
@@ -40,6 +39,7 @@ class AtomCertVerifier : public net::CertVerifier {
  private:
   VerifyProc verify_proc_;
   std::unique_ptr<net::CertVerifier> default_cert_verifier_;
+  AtomCTDelegate* ct_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomCertVerifier);
 };

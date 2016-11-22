@@ -1,4 +1,4 @@
-﻿# `<webview>` 태그
+# `<webview>` 태그
 
 > 외부 웹 콘텐츠를 고립된 프레임과 프로세스에서 표시합니다.
 
@@ -32,20 +32,20 @@
 ```html
 <script>
   onload = () => {
-    const webview = document.getElementById('foo');
-    const indicator = document.querySelector('.indicator');
+    const webview = document.getElementById('foo')
+    const indicator = document.querySelector('.indicator')
 
     const loadstart = () => {
-      indicator.innerText = 'loading...';
-    };
+      indicator.innerText = 'loading...'
+    }
 
     const loadstop = () => {
-      indicator.innerText = '';
-    };
+      indicator.innerText = ''
+    }
 
-    webview.addEventListener('did-start-loading', loadstart);
-    webview.addEventListener('did-stop-loading', loadstop);
-  };
+    webview.addEventListener('did-start-loading', loadstart)
+    webview.addEventListener('did-stop-loading', loadstop)
+  }
 </script>
 ```
 
@@ -115,9 +115,6 @@
 
 "on"으로 지정하면 `webview` 페이지 내에서 `require`와 `process 객체`같은 node.js
 API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨 리소스에 접근할 수 있습니다.
-
-**참고:** Node 통합 기능은 `webview`에서 부모 윈도우가 해당 옵션이 비활성화되어있는
-경우 항상 비활성화됩니다.
 
 ### `plugins`
 
@@ -190,6 +187,21 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 
 "on"으로 지정하면 페이지에서 새로운 창을 열 수 있도록 허용합니다.
 
+### `webpreferences`
+
+```html
+<webview src="https://github.com" webpreferences="allowDisplayingInsecureContent, javascript=no"></webview>
+```
+웹뷰에 설정될 웹 환경설정을 나타내는 `,` 로 구분된 문자열의 목록입니다.
+지원되는 환경설정 문자열의 전체 목록은
+[BrowserWindow](browser-window.md#new-browserwindowoptions) 에서 찾을 수
+있습니다.
+
+문자열은 `window.open` 의 기능 문자열과 같은 형식을 따릅니다. 이름만 있으면
+`true` 불린 값이 주어집니다. 환경설정은 뒤에 값이 오는 `=` 을 넣어서 다른 값을
+설정할 수 있습니다. 특별한 값 `yes` 와 `1` 는 `true` 로 해석되고, `no` 와 `0` 은
+`false` 로 해석됩니다.
+
 ### `blinkfeatures`
 
 ```html
@@ -210,6 +222,20 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 문자열의 전체 목록은 [RuntimeEnabledFeatures.in][blink-feature-string] 파일에서
 찾을 수 있습니다.
 
+### `guestinstance`
+
+```html
+<webview src="https://www.github.com/" guestinstance="3"></webview>
+```
+
+webview 를 특정 webContents 와 연결해주는 값 입니다. webview 가 처음 로드될 때
+새 webContents 가 생성되고 이 속성이 그 인스턴스의 식별자로 설정됩니다. 새로운
+또는 기존 webview 에 이 속성을 설정하면 다른 webview 에서 현재 렌더링하는 기존
+webContents 와 연결합니다.
+
+기존 webview 는 `destroy` 이벤트가 발생하고 새 URL 이 로드될 때 새 webContens
+가 생성될 것 입니다.
+
 ## Methods
 
 `webview` 태그는 다음과 같은 메서드를 가지고 있습니다:
@@ -219,9 +245,10 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 **예시**
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('dom-ready', () => {
-  webview.openDevTools();
-});
+  webview.openDevTools()
+})
 ```
 
 ### `<webview>.loadURL(url[, options])`
@@ -326,7 +353,7 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 * `code` String
 * `userGesture` Boolean
 * `callback` Function (optional) - 스크립트의 실행이 완료되면 호출됩니다.
-  * `result`
+  * `result` Any
 
 페이지에서 자바스크립트 코드를 실행합니다.
 
@@ -363,6 +390,16 @@ Webview에 웹 페이지 `url`을 로드합니다. `url`은 `http://`, `file://`
 ### `<webview>.inspectServiceWorker()`
 
 Service worker에 대한 개발자 도구를 엽니다.
+
+### `<webview>.setAudioMuted(muted)`
+
+* `muted` Boolean
+
+게스트 페이지 음소거 설정.
+
+### `<webview>.isAudioMuted()`
+
+Returns `Boolean` - 게스트 페이지 음소거 여부.
 
 ### `<webview>.undo()`
 
@@ -483,6 +520,19 @@ Service worker에 대한 개발자 도구를 엽니다.
 `event` 객체에 대해 자세히 알아보려면 [webContents.sendInputEvent](web-contents.md#webcontentssendinputeventevent)를
 참고하세요.
 
+### `<webview>.setZoomFactor(factor)`
+
+* `factor` Number - 줌 수치.
+
+지정한 수치로 줌 수치를 변경합니다. 줌 수치는 100으로 나눈 값이며 300%는 3.0이 됩니다.
+
+### `<webview>.setZoomLevel(level)`
+
+* `level` Number - 줌 레벨.
+
+지정한 수준으로 줌 수준을 변경합니다. 원본 크기는 0이고 각 값의 증가와 감소는 현재 줌을
+20% 크거나 작게 표현하고 각 크기는 원본 크기의 300%와 50%로 제한됩니다.
+
 ### `<webview>.showDefinitionForSelection()` _macOS_
 
 페이지에서 선택된 단어에 대한 사전 검색 결과 팝업을 표시합니다.
@@ -584,7 +634,7 @@ URL에서 합성(synthesised)된 제목인 경우 false로 표시됩니다.
 
 Returns:
 
-* `favicons` Array - URL 배열
+* `favicons` String[] - URL 배열
 
 페이지가 favicon URL을 받았을 때 발생하는 이벤트입니다.
 
@@ -611,9 +661,10 @@ Returns:
 콘솔에 다시 로깅하는 예시입니다.
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('console-message', (e) => {
-  console.log('Guest page logged a message:', e.message);
-});
+  console.log('Guest page logged a message:', e.message)
+})
 ```
 
 ### Event: 'found-in-page'
@@ -631,12 +682,13 @@ Returns:
 사용할 수 있을 때 발생하는 이벤트입니다.
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('found-in-page', (e) => {
-  if (e.result.finalUpdate)
-    webview.stopFindInPage('keepSelection');
-});
+  webview.stopFindInPage('keepSelection')
+})
 
-const requestId = webview.findInPage('test');
+const requestId = webview.findInPage('test')
+console.log(requestId)
 ```
 
 ### Event: 'new-window'
@@ -646,7 +698,7 @@ Returns:
 * `url` String
 * `frameName` String
 * `disposition` String - `default`, `foreground-tab`, `background-tab`,
-  `new-window`, `other`를 사용할 수 있습니다.
+  `new-window`, `save-to-disk`, `other`를 사용할 수 있습니다.
 * `options` Object - 새로운 `BrowserWindow`를 만들 때 사용되어야 하는 옵션.
 
 페이지가 새로운 브라우저 창을 생성할 때 발생하는 이벤트입니다.
@@ -654,14 +706,15 @@ Returns:
 다음 예시 코드는 새 URL을 시스템의 기본 브라우저로 여는 코드입니다.
 
 ```javascript
-const {shell} = require('electron');
+const {shell} = require('electron')
+const webview = document.getElementById('foo')
 
 webview.addEventListener('new-window', (e) => {
-  const protocol = require('url').parse(e.url).protocol;
+  const protocol = require('url').parse(e.url).protocol
   if (protocol === 'http:' || protocol === 'https:') {
-    shell.openExternal(e.url);
+    shell.openExternal(e.url)
   }
-});
+})
 ```
 
 ### Event: 'will-navigate'
@@ -697,6 +750,7 @@ Returns:
 Returns:
 
 * `url` String
+* `isMainFrame` Boolean
 
 페이지 내의 탐색이 완료되면 발생하는 이벤트입니다.
 
@@ -712,9 +766,10 @@ Returns:
 이동시키는 예시입니다.
 
 ```javascript
+const webview = document.getElementById('foo')
 webview.addEventListener('close', () => {
-  webview.src = 'about:blank';
-});
+  webview.src = 'about:blank'
+})
 ```
 
 ### Event: 'ipc-message'
@@ -731,19 +786,20 @@ Returns:
 
 ```javascript
 // In embedder page.
+const webview = document.getElementById('foo')
 webview.addEventListener('ipc-message', (event) => {
-  console.log(event.channel);
+  console.log(event.channel)
   // Prints "pong"
-});
-webview.send('ping');
+})
+webview.send('ping')
 ```
 
 ```javascript
 // In guest page.
-const {ipcRenderer} = require('electron');
+const {ipcRenderer} = require('electron')
 ipcRenderer.on('ping', () => {
-  ipcRenderer.sendToHost('pong');
-});
+  ipcRenderer.sendToHost('pong')
+})
 ```
 
 ### Event: 'crashed'
@@ -765,7 +821,7 @@ Returns:
 
 ### Event: 'destroyed'
 
-WebContents가 파괴될 때 발생하는 이벤트입니다.
+WebContents가 소멸될 때 발생하는 이벤트입니다.
 
 ### Event: 'media-started-playing'
 

@@ -81,6 +81,8 @@ example being:
 
 ```javascript
 const {app, BrowserWindow} = require('electron')
+const path = require('path')
+const url = require('url')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -91,7 +93,11 @@ function createWindow () {
   win = new BrowserWindow({width: 800, height: 600})
 
   // and load the index.html of the app.
-  win.loadURL(`file://${__dirname}/index.html`)
+  win.loadURL(url.format({
+    pathname: path.join(__dirname, 'index.html'),
+    protocol: 'file:',
+    slashes: true
+  }))
 
   // Open the DevTools.
   win.webContents.openDevTools()
@@ -155,9 +161,9 @@ Once you've created your initial `main.js`, `index.html`, and `package.json` fil
 you'll probably want to try running your app locally to test it and make sure it's
 working as expected.
 
-### electron-prebuilt
+### `electron`
 
-[`electron-prebuilt`](https://github.com/electron-userland/electron-prebuilt) is
+[`electron`](https://github.com/electron-userland/electron-prebuilt) is
 an `npm` module that contains pre-compiled versions of Electron.
 
 If you've installed it globally with `npm`, then you will only need to run the
@@ -169,8 +175,16 @@ electron .
 
 If you've installed it locally, then run:
 
+#### macOS / Linux
+
 ```bash
-./node_modules/.bin/electron .
+$ ./node_modules/.bin/electron .
+```
+
+#### Windows
+
+```bash
+$ .\node_modules\.bin\electron .
 ```
 
 ### Manually Downloaded Electron Binary
@@ -217,8 +231,10 @@ repository.
 $ git clone https://github.com/electron/electron-quick-start
 # Go into the repository
 $ cd electron-quick-start
-# Install dependencies and run the app
-$ npm install && npm start
+# Install dependencies
+$ npm install
+# Run the app
+$ npm start
 ```
 
 For more example apps, see the

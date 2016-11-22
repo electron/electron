@@ -9,14 +9,14 @@ Follow the guidelines below for building Electron on macOS.
 * [node.js](http://nodejs.org) (external)
 
 If you are using the Python downloaded by Homebrew, you also need to install
-following python modules:
+the following Python modules:
 
-* pyobjc
+* [pyobjc](https://pythonhosted.org/pyobjc/install.html)
 
 ## Getting the Code
 
 ```bash
-$ git clone https://github.com/electron/electron.git
+$ git clone https://github.com/electron/electron
 ```
 
 ## Bootstrapping
@@ -49,18 +49,16 @@ After building is done, you can find `Electron.app` under `out/D`.
 ## 32bit Support
 
 Electron can only be built for a 64bit target on macOS and there is no plan to
-support 32bit macOS in future.
+support 32bit macOS in the future.
+
+## Cleaning
+
+To clean the build files:
+
+```bash
+$ npm run clean
+```
 
 ## Tests
 
-Test your changes conform to the project coding style using:
-
-```bash
-$ ./script/cpplint.py
-```
-
-Test functionality using:
-
-```bash
-$ ./script/test.py
-```
+See [Build System Overview: Tests](build-system-overview.md#tests)

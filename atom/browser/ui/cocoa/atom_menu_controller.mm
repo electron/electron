@@ -35,6 +35,8 @@ Role kRolesMap[] = {
   { @selector(delete:), "delete" },
   { @selector(pasteAndMatchStyle:), "pasteandmatchstyle" },
   { @selector(selectAll:), "selectall" },
+  { @selector(startSpeaking:), "startspeaking" },
+  { @selector(stopSpeaking:), "stopspeaking" },
   { @selector(performMiniaturize:), "minimize" },
   { @selector(performClose:), "close" },
   { @selector(performZoom:), "zoom" },
@@ -179,11 +181,11 @@ Role kRolesMap[] = {
 
     // Set menu item's role.
     base::string16 role = model->GetRoleAt(index);
-    if (role.empty()) {
-      [item setTarget:self];
-    } else {
+    [item setTarget:self];
+    if (!role.empty()) {
       for (const Role& pair : kRolesMap) {
         if (role == base::ASCIIToUTF16(pair.role)) {
+          [item setTarget:nil];
           [item setAction:pair.selector];
           break;
         }

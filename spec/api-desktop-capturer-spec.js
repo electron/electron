@@ -18,6 +18,13 @@ describe('desktopCapturer', function () {
     })
   })
 
+  it('throws an error for invalid options', function (done) {
+    desktopCapturer.getSources(['window', 'screen'], function (error) {
+      assert.equal(error.message, 'Invalid options')
+      done()
+    })
+  })
+
   it('does not throw an error when called more than once (regression)', function (done) {
     var callCount = 0
     var callback = function (error, sources) {

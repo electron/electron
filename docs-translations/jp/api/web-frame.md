@@ -5,9 +5,9 @@
 現在のページの倍率を200%にする例です。
 
 ```javascript
-var webFrame = require('electron').webFrame;
+var webFrame = require('electron').webFrame
 
-webFrame.setZoomFactor(2);
+webFrame.setZoomFactor(2)
 ```
 
 ## メソッド
@@ -55,11 +55,11 @@ inputフィールドやtextエリアでスペルチェックの提供を設定�
 プロバイダーとして[node-spellchecker][spellchecker]を使用する例です:
 
 ```javascript
-webFrame.setSpellCheckProvider("en-US", true, {
-  spellCheck: function(text) {
-    return !(require('spellchecker').isMisspelled(text));
+webFrame.setSpellCheckProvider('en-US', true, {
+  spellCheck: function (text) {
+    return !(require('spellchecker').isMisspelled(text))
   }
-});
+})
 ```
 
 ### `webFrame.registerURLSchemeAsSecure(scheme)`

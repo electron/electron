@@ -14,6 +14,12 @@
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 
+#if defined(OS_WIN)
+#include "atom/common/api/atom_bindings.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "native_mate/dictionary.h"
+#endif
+
 #include "atom/common/node_includes.h"
 
 namespace atom {
@@ -50,6 +56,11 @@ int NodeMain(int argc, char *argv[]) {
     NodeDebugger node_debugger(gin_env.isolate());
     if (node_debugger.IsRunning())
       env->AssignToContext(v8::Debug::GetDebugContext());
+
+#if defined(OS_WIN)
+    mate::Dictionary process(gin_env.isolate(), env->process_object());
+    process.SetMethod("log", &AtomBindings::Log);
+#endif
 
     node::LoadEnvironment(env);
 

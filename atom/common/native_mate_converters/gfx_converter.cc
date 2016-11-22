@@ -5,11 +5,11 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 
 #include "native_mate/dictionary.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
-#include "ui/display/display.h"
-#include "ui/display/screen.h"
 
 namespace mate {
 

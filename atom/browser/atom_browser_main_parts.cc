@@ -17,6 +17,7 @@
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
+#include "content/public/browser/child_process_security_policy.h"
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
@@ -43,6 +44,9 @@ AtomBrowserMainParts::AtomBrowserMainParts()
       gc_timer_(true, true) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
+  // Register extension scheme as web safe scheme.
+  content::ChildProcessSecurityPolicy::GetInstance()->
+      RegisterWebSafeScheme("chrome-extension");
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
@@ -113,7 +117,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   if (node_debugger_->IsRunning())
     env->AssignToContext(v8::Debug::GetDebugContext());
 
-  // Add atom-shell extended APIs.
+  // Add Electron extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
   // Load everything.
@@ -152,7 +156,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 #if !defined(OS_MACOSX)
   // The corresponding call in macOS is in AtomApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
-  Browser::Get()->DidFinishLaunching();
+  std::unique_ptr<base::DictionaryValue> empty_info(new base::DictionaryValue);
+  Browser::Get()->DidFinishLaunching(*empty_info);
 #endif
 }
 

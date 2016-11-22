@@ -12,9 +12,9 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
+#include "content/common/cursors/webcursor.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
-#include "content/common/cursors/webcursor.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
@@ -24,6 +24,10 @@ struct WebDeviceEmulationParams;
 
 namespace brightray {
 class InspectableWebContents;
+}
+
+namespace content {
+class ResourceRequestBodyImpl;
 }
 
 namespace mate {
@@ -48,6 +52,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
     BROWSER_WINDOW,  // Used by BrowserWindow.
     REMOTE,  // Thin wrap around an existing WebContents.
     WEB_VIEW,  // Used by <webview>.
+    OFF_SCREEN,  // Used for offscreen rendering
   };
 
   // For node.js callback function type: function(error, buffer)
@@ -57,6 +62,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, content::WebContents* web_contents);
+  static mate::Handle<WebContents> CreateFrom(
+      v8::Isolate* isolate, content::WebContents* web_contents, Type type);
 
   // Create a new WebContents.
   static mate::Handle<WebContents> Create(
@@ -65,9 +72,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  int GetID() const;
+  int64_t GetID() const;
+  int GetProcessID() const;
   Type GetType() const;
-  bool IsFocused() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   void DownloadURL(const GURL& url);
@@ -102,6 +109,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   void Print(mate::Arguments* args);
+  void SetEmbedder(const WebContents* embedder);
 
   // Print current page as PDF.
   void PrintToPDF(const base::DictionaryValue& setting,
@@ -130,6 +138,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Focus.
   void Focus();
+  bool IsFocused() const;
   void TabTraverse(bool reverse);
 
   // Send messages to browser.
@@ -155,15 +164,28 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
 
+  // Methods for offscreen rendering
+  bool IsOffScreen() const;
+  void OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap);
+  void StartPainting();
+  void StopPainting();
+  bool IsPainting() const;
+  void SetFrameRate(int frame_rate);
+  int GetFrameRate() const;
+  void Invalidate();
+
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
                                    const GURL& origin,
                                    bool allowed);
 
   // Create window with the given disposition.
-  void OnCreateWindow(const GURL& target_url,
-                      const std::string& frame_name,
-                      WindowOpenDisposition disposition);
+  void OnCreateWindow(
+      const GURL& target_url,
+      const std::string& frame_name,
+      WindowOpenDisposition disposition,
+      const std::vector<base::string16>& features,
+      const scoped_refptr<content::ResourceRequestBodyImpl>& body);
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
@@ -179,9 +201,16 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
  protected:
-  WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
+  WebContents(v8::Isolate* isolate,
+              content::WebContents* web_contents,
+              Type type);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
+
+  void InitWithSessionAndOptions(v8::Isolate* isolate,
+                                 content::WebContents *web_contents,
+                                 mate::Handle<class Session> session,
+                                 const mate::Dictionary& options);
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
@@ -189,6 +218,17 @@ class WebContents : public mate::TrackableObject<WebContents>,
                            const base::string16& message,
                            int32_t line_no,
                            const base::string16& source_id) override;
+  void WebContentsCreated(content::WebContents* source_contents,
+                          int opener_render_frame_id,
+                          const std::string& frame_name,
+                          const GURL& target_url,
+                          content::WebContents* new_contents) override;
+  void AddNewContents(content::WebContents* source,
+                      content::WebContents* new_contents,
+                      WindowOpenDisposition disposition,
+                      const gfx::Rect& initial_rect,
+                      bool user_gesture,
+                      bool* was_blocked) override;
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
@@ -295,9 +335,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
-  // Called when the hosted view gets graphical updates.
-  void OnViewPainted();
-
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
@@ -315,6 +352,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether background throttling is disabled.
   bool background_throttling_;
+
+  // Whether to enable devtools.
+  bool enable_devtools_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

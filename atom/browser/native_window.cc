@@ -18,11 +18,11 @@
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
 #include "base/json/json_writer.h"
-#include "components/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "components/prefs/pref_service.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/plugin_service.h"
@@ -33,6 +33,7 @@
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
@@ -219,34 +220,50 @@ gfx::Point NativeWindow::GetPosition() {
 }
 
 void NativeWindow::SetContentSize(const gfx::Size& size, bool animate) {
-  SetSize(ContentSizeToWindowSize(size), animate);
+  SetSize(ContentBoundsToWindowBounds(gfx::Rect(size)).size(), animate);
 }
 
 gfx::Size NativeWindow::GetContentSize() {
-  return WindowSizeToContentSize(GetSize());
+  return GetContentBounds().size();
+}
+
+void NativeWindow::SetContentBounds(const gfx::Rect& bounds, bool animate) {
+  SetBounds(ContentBoundsToWindowBounds(bounds), animate);
+}
+
+gfx::Rect NativeWindow::GetContentBounds() {
+  return WindowBoundsToContentBounds(GetBounds());
 }
 
 void NativeWindow::SetSizeConstraints(
     const extensions::SizeConstraints& window_constraints) {
   extensions::SizeConstraints content_constraints(GetContentSizeConstraints());
-  if (window_constraints.HasMaximumSize())
-    content_constraints.set_maximum_size(
-        WindowSizeToContentSize(window_constraints.GetMaximumSize()));
-  if (window_constraints.HasMinimumSize())
-    content_constraints.set_minimum_size(
-        WindowSizeToContentSize(window_constraints.GetMinimumSize()));
+  if (window_constraints.HasMaximumSize()) {
+    gfx::Rect max_bounds = WindowBoundsToContentBounds(
+        gfx::Rect(window_constraints.GetMaximumSize()));
+    content_constraints.set_maximum_size(max_bounds.size());
+  }
+  if (window_constraints.HasMinimumSize()) {
+    gfx::Rect min_bounds = WindowBoundsToContentBounds(
+        gfx::Rect(window_constraints.GetMinimumSize()));
+    content_constraints.set_minimum_size(min_bounds.size());
+  }
   SetContentSizeConstraints(content_constraints);
 }
 
 extensions::SizeConstraints NativeWindow::GetSizeConstraints() {
   extensions::SizeConstraints content_constraints = GetContentSizeConstraints();
   extensions::SizeConstraints window_constraints;
-  if (content_constraints.HasMaximumSize())
-    window_constraints.set_maximum_size(
-        ContentSizeToWindowSize(content_constraints.GetMaximumSize()));
-  if (content_constraints.HasMinimumSize())
-    window_constraints.set_minimum_size(
-        ContentSizeToWindowSize(content_constraints.GetMinimumSize()));
+  if (content_constraints.HasMaximumSize()) {
+    gfx::Rect max_bounds = ContentBoundsToWindowBounds(
+        gfx::Rect(content_constraints.GetMaximumSize()));
+    window_constraints.set_maximum_size(max_bounds.size());
+  }
+  if (content_constraints.HasMinimumSize()) {
+    gfx::Rect min_bounds = ContentBoundsToWindowBounds(
+        gfx::Rect(content_constraints.GetMinimumSize()));
+    window_constraints.set_minimum_size(min_bounds.size());
+  }
   return window_constraints;
 }
 
@@ -316,6 +333,9 @@ void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
 
+void NativeWindow::SetVibrancy(const std::string& filename) {
+}
+
 void NativeWindow::FocusOnWebView() {
   web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }
@@ -357,6 +377,10 @@ void NativeWindow::SetAspectRatio(double aspect_ratio,
   aspect_ratio_extraSize_ = extra_size;
 }
 
+void NativeWindow::PreviewFile(const std::string& path,
+                               const std::string& display_name) {
+}
+
 void NativeWindow::RequestToClosePage() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
@@ -374,6 +398,10 @@ void NativeWindow::RequestToClosePage() {
   if (window_unresposive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);
 
+  if (!web_contents())
+    // Already closed by renderer
+    return;
+
   if (web_contents()->NeedToFireBeforeUnload())
     web_contents()->DispatchBeforeUnload();
   else
@@ -389,7 +417,7 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   Observe(nullptr);
 
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    WillDestoryNativeObject());
+                    WillDestroyNativeObject());
 
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
@@ -485,6 +513,11 @@ void NativeWindow::NotifyWindowScrollTouchBegin() {
 void NativeWindow::NotifyWindowScrollTouchEnd() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnWindowScrollTouchEnd());
+}
+
+void NativeWindow::NotifyWindowScrollTouchEdge() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowScrollTouchEdge());
 }
 
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {

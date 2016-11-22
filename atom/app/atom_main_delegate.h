@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "brightray/common/main_delegate.h"
 #include "brightray/common/content_client.h"
+#include "brightray/common/main_delegate.h"
 
 namespace atom {
 

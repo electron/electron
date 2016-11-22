@@ -9,16 +9,16 @@ Electron也提供了一些额外的内置组件来开发传统桌面应用。一
 主进程脚本看起来像个普通的nodejs脚本
 
 ```javascript
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+const electron = require('electron')
+const app = electron.app
+const BrowserWindow = electron.BrowserWindow
 
-var window = null;
+var window = null
 
-app.on('ready', function() {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadURL('https://github.com');
-});
+app.on('ready', function () {
+  window = new BrowserWindow({width: 800, height: 600})
+  window.loadURL('https://github.com')
+})
 ```
 
 渲染进程和传统的web界面一样，除了它具有使用node模块的能力：
@@ -42,7 +42,7 @@ app.on('ready', function() {
 如果你使用的是CoffeeScript或Babel，你可以使用[destructuring assignment][4]来让使用内置模块更简单:
 
 ```javascript
-const {app, BrowserWindow} = require('electron');
+const {app, BrowserWindow} = require('electron')
 ```
 
 然而如果你使用的是普通的JavaScript，你就需要等到Chrome支持ES6了。

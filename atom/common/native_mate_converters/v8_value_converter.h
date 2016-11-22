@@ -5,8 +5,8 @@
 #ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_
 
-#include "base/macros.h"
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "v8/include/v8.h"
 
 namespace base {
@@ -32,6 +32,7 @@ class V8ValueConverter {
 
  private:
   class FromV8ValueState;
+  class ScopedUniquenessGuard;
 
   v8::Local<v8::Value> ToV8ValueImpl(v8::Isolate* isolate,
                                      const base::Value* value) const;

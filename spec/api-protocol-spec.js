@@ -2,8 +2,9 @@ const assert = require('assert')
 const http = require('http')
 const path = require('path')
 const qs = require('querystring')
+const {closeWindow} = require('./window-helpers')
 const remote = require('electron').remote
-const {BrowserWindow, protocol, webContents} = remote
+const {BrowserWindow, ipcMain, protocol, webContents} = remote
 
 describe('protocol module', function () {
   var protocolName = 'sp'
@@ -569,6 +570,13 @@ describe('protocol module', function () {
   })
 
   describe('protocol.isProtocolHandled', function () {
+    it('returns true for about:', function (done) {
+      protocol.isProtocolHandled('about', function (result) {
+        assert.equal(result, true)
+        done()
+      })
+    })
+
     it('returns true for file:', function (done) {
       protocol.isProtocolHandled('file', function (result) {
         assert.equal(result, true)
@@ -590,7 +598,7 @@ describe('protocol module', function () {
       })
     })
 
-    it('returns false when scheme is not registred', function (done) {
+    it('returns false when scheme is not registered', function (done) {
       protocol.isProtocolHandled('no-exist', function (result) {
         assert.equal(result, false)
         done()
@@ -896,11 +904,10 @@ describe('protocol module', function () {
 
     afterEach(function (done) {
       protocol.unregisterProtocol(standardScheme, function () {
-        if (w != null) {
-          w.destroy()
-        }
-        w = null
-        done()
+        closeWindow(w).then(function () {
+          w = null
+          done()
+        })
       })
     })
 
@@ -964,6 +971,19 @@ describe('protocol module', function () {
         })
         w.loadURL(origin)
       })
+    })
+
+    it('can access files through the FileSystem API', function (done) {
+      let filePath = path.join(__dirname, 'fixtures', 'pages', 'filesystem.html')
+      const handler = function (request, callback) {
+        callback({path: filePath})
+      }
+      protocol.registerFileProtocol(standardScheme, handler, function (error) {
+        if (error) return done(error)
+        w.loadURL(origin)
+      })
+      ipcMain.once('file-system-error', (event, err) => done(err))
+      ipcMain.once('file-system-write-end', () => done())
     })
   })
 })

@@ -45,6 +45,9 @@ const char kAcceptFirstMouse[] = "acceptFirstMouse";
 // Whether window size should include window frame.
 const char kUseContentSize[] = "useContentSize";
 
+// Whether window zoom should be to page width.
+const char kZoomToPageWidth[] = "zoomToPageWidth";
+
 // The requested title bar style for the window
 const char kTitleBarStyle[] = "titleBarStyle";
 
@@ -81,6 +84,9 @@ const char kFocusable[] = "focusable";
 // The WebPreferences.
 const char kWebPreferences[] = "webPreferences";
 
+// Add a vibrancy effect to the browser window
+const char kVibrancyType[] = "vibrancy";
+
 // The factor of which page should be zoomed.
 const char kZoomFactor[] = "zoomFactor";
 
@@ -116,6 +122,9 @@ const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
 }  // namespace options
 
 namespace switches {
+
+// Enable chromium sandbox.
+const char kEnableSandbox[] = "enable-sandbox";
 
 // Enable plugins.
 const char kEnablePlugins[] = "enable-plugins";

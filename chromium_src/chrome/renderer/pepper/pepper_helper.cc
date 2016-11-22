@@ -24,3 +24,7 @@ void PepperHelper::DidCreatePepperPlugin(content::RendererPpapiHost* host) {
       std::unique_ptr<ppapi::host::InstanceMessageFilter>(
           new PepperSharedMemoryMessageFilter(host)));
 }
+
+void PepperHelper::OnDestruct() {
+  delete this;
+}

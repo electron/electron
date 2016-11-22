@@ -1,6 +1,8 @@
-﻿# MenuItem
+# MenuItem
 
 > 네이티브 애플리케이션 메뉴와 컨텍스트 메뉴에 아이템을 추가합니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 [`Menu`](menu.md)에서 예시를 확인할 수 있습니다.
 
@@ -8,11 +10,14 @@
 
 `MenuItem` 인스턴스 객체에서 사용할 수 있는 메서드입니다:
 
-### new MenuItem(options)
+### `new MenuItem(options)`
 
 * `options` Object
   * `click` Function - 메뉴 아이템이 클릭될 때 `click(menuItem, browserWindow,
     event)` 형태로 호출 되는 콜백 함수.
+    * `menuItem` MenuItem
+    * `browserWindow` BrowserWindow
+    * `event` Event
   * `role` String - 메뉴 아이템의 액션을 정의합니다. 이 속성을 지정하면 `click`
     속성이 무시됩니다.
   * `type` String - `MenuItem`의 타입 `normal`, `separator`, `submenu`,
@@ -52,10 +57,13 @@
 * `pasteandmatchstyle`
 * `selectall`
 * `delete`
-* `minimize` - 현재 윈도우를 최소화합니다
-* `close` - 현재 윈도우를 닫습니다
-* `quit`- 애플리케이션을 닫습니다
-* `togglefullscreen` - 현재 윈도우에서 전체 화면 모드를 토글합니다
+* `minimize` - 현재 윈도우를 최소화합니다.
+* `close` - 현재 윈도우를 닫습니다.
+* `quit`- 애플리케이션을 닫습니다.
+* `togglefullscreen` - 현재 윈도우에서 전체 화면 모드를 토글합니다.
+* `resetzoom` - 포커스된 페이지의 줌 레벨을 기본 크기로 초기화합니다.
+* `zoomin` - 포커스된 페이지를 10% 줌인합니다.
+* `zoomout` - 포커스된 페이지를 10% 줌아웃합니다.
 
 macOS에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 
@@ -63,6 +71,8 @@ macOS에서의 `role`은 다음 값을 추가로 가질 수 있습니다:
 * `hide` - `hide` 액션에 대응
 * `hideothers` - `hideOtherApplications` 액션에 대응
 * `unhide` - `unhideAllApplications` 액션에 대응
+* `startspeaking` - `startSpeaking` 액션에 대응
+* `stopspeaking` - `stopSpeaking` 액션에 대응
 * `front` - `arrangeInFront` 액션에 대응
 * `zoom` - `performZoom` 액션에 대응
 * `window` - 부 메뉴를 가지는 "Window" 메뉴

@@ -4,10 +4,11 @@
 
 #include "atom/common/platform_util.h"
 
-#include <windows.h>
+#include <windows.h>  // windows.h must be included first
+
 #include <atlbase.h>
-#include <commdlg.h>
 #include <comdef.h>
+#include <commdlg.h>
 #include <dwmapi.h>
 #include <shellapi.h>
 #include <shlobj.h>
@@ -202,15 +203,15 @@ HRESULT DeleteFileProgressSink::ResumeTimer() {
 
 namespace platform_util {
 
-void ShowItemInFolder(const base::FilePath& full_path) {
+bool ShowItemInFolder(const base::FilePath& full_path) {
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.succeeded())
-    return;
+    return false;
 
   base::FilePath dir = full_path.DirName().AsEndingWithSeparator();
   // ParseDisplayName will fail if the directory is "C:", it must be "C:\\".
   if (dir.empty())
-    return;
+    return false;
 
   typedef HRESULT (WINAPI *SHOpenFolderAndSelectItemsFuncPtr)(
       PCIDLIST_ABSOLUTE pidl_Folder,
@@ -231,29 +232,27 @@ void ShowItemInFolder(const base::FilePath& full_path) {
     HMODULE shell32_base = GetModuleHandle(L"shell32.dll");
     if (!shell32_base) {
       NOTREACHED() << " " << __FUNCTION__ << "(): Can't open shell32.dll";
-      return;
+      return false;
     }
     open_folder_and_select_itemsPtr =
         reinterpret_cast<SHOpenFolderAndSelectItemsFuncPtr>
             (GetProcAddress(shell32_base, "SHOpenFolderAndSelectItems"));
   }
   if (!open_folder_and_select_itemsPtr) {
-    ui::win::OpenFolderViaShell(dir);
-    return;
+    return ui::win::OpenFolderViaShell(dir);
   }
 
   base::win::ScopedComPtr<IShellFolder> desktop;
   HRESULT hr = SHGetDesktopFolder(desktop.Receive());
   if (FAILED(hr))
-    return;
+    return false;
 
   base::win::ScopedCoMem<ITEMIDLIST> dir_item;
   hr = desktop->ParseDisplayName(NULL, NULL,
                                  const_cast<wchar_t *>(dir.value().c_str()),
                                  NULL, &dir_item, NULL);
   if (FAILED(hr)) {
-    ui::win::OpenFolderViaShell(dir);
-    return;
+    return ui::win::OpenFolderViaShell(dir);
   }
 
   base::win::ScopedCoMem<ITEMIDLIST> file_item;
@@ -261,44 +260,43 @@ void ShowItemInFolder(const base::FilePath& full_path) {
       const_cast<wchar_t *>(full_path.value().c_str()),
       NULL, &file_item, NULL);
   if (FAILED(hr)) {
-    ui::win::OpenFolderViaShell(dir);
-    return;
+    return ui::win::OpenFolderViaShell(dir);
   }
 
   const ITEMIDLIST* highlight[] = { file_item };
 
   hr = (*open_folder_and_select_itemsPtr)(dir_item, arraysize(highlight),
                                           highlight, NULL);
+  if (!FAILED(hr))
+    return true;
 
-  if (FAILED(hr)) {
-    // On some systems, the above call mysteriously fails with "file not
-    // found" even though the file is there.  In these cases, ShellExecute()
-    // seems to work as a fallback (although it won't select the file).
-    if (hr == ERROR_FILE_NOT_FOUND) {
-      ui::win::OpenFolderViaShell(dir);
-    } else {
-      LPTSTR message = NULL;
-      DWORD message_length = FormatMessage(
-          FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-          0, hr, 0, reinterpret_cast<LPTSTR>(&message), 0, NULL);
-      LOG(WARNING) << " " << __FUNCTION__
-                   << "(): Can't open full_path = \""
-                   << full_path.value() << "\""
-                   << " hr = " << hr
-                   << " " << reinterpret_cast<LPTSTR>(&message);
-      if (message)
-        LocalFree(message);
+  // On some systems, the above call mysteriously fails with "file not
+  // found" even though the file is there.  In these cases, ShellExecute()
+  // seems to work as a fallback (although it won't select the file).
+  if (hr == ERROR_FILE_NOT_FOUND) {
+    return ui::win::OpenFolderViaShell(dir);
+  } else {
+    LPTSTR message = NULL;
+    DWORD message_length = FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+        0, hr, 0, reinterpret_cast<LPTSTR>(&message), 0, NULL);
+    LOG(WARNING) << " " << __FUNCTION__
+                 << "(): Can't open full_path = \""
+                 << full_path.value() << "\""
+                 << " hr = " << hr
+                 << " " << reinterpret_cast<LPTSTR>(&message);
+    if (message)
+      LocalFree(message);
 
-      ui::win::OpenFolderViaShell(dir);
-    }
+    return ui::win::OpenFolderViaShell(dir);
   }
 }
 
-void OpenItem(const base::FilePath& full_path) {
+bool OpenItem(const base::FilePath& full_path) {
   if (base::DirectoryExists(full_path))
-    ui::win::OpenFolderViaShell(full_path);
+    return ui::win::OpenFolderViaShell(full_path);
   else
-    ui::win::OpenFileViaShell(full_path);
+    return ui::win::OpenFileViaShell(full_path);
 }
 
 bool OpenExternal(const base::string16& url, bool activate) {
@@ -316,6 +314,12 @@ bool OpenExternal(const base::string16& url, bool activate) {
     return false;
   }
   return true;
+}
+
+void OpenExternal(const base::string16& url, bool activate,
+                  const OpenExternalCallback& callback) {
+  // TODO(gabriel): Implement async open if callback is specified
+  callback.Run(OpenExternal(url, activate) ? "" : "Failed to open");
 }
 
 bool MoveItemToTrash(const base::FilePath& path) {

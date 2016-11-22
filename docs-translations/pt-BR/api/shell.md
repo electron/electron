@@ -5,8 +5,8 @@ O módulo `shell` fornece funções relacionadas à integração com o desktop.
 Um exemplo para abrir uma URL no browser padrão do usuário:
 
 ```javascript
-const shell = require('shell');
-shell.openExternal('https://github.com');
+const shell = require('shell')
+shell.openExternal('https://github.com')
 ```
 
 ## Métodos

@@ -9,9 +9,9 @@ Por exemplo:
 ```javascript
 app.on('ready', () => {
   require('electron').powerMonitor.on('suspend', () => {
-    console.log('O sistema está indo dormir');
-  });
-});
+    console.log('O sistema está indo dormir')
+  })
+})
 ```
 
 ## Eventos

@@ -21,8 +21,9 @@ An example of installing all dependencies for Electron:
 export npm_config_target=1.2.3
 # The architecture of Electron, can be ia32 or x64.
 export npm_config_arch=x64
+export npm_config_target_arch=x64
 # Download headers for Electron.
-export npm_config_disturl=https://atom.io/download/atom-shell
+export npm_config_disturl=https://atom.io/download/electron
 # Tell node-pre-gyp that we are building for Electron.
 export npm_config_runtime=electron
 # Tell node-pre-gyp to build module from source code.
@@ -36,7 +37,7 @@ HOME=~/.electron-gyp npm install
 You can also choose to install modules like other Node projects, and then
 rebuild the modules for Electron with the [`electron-rebuild`][electron-rebuild]
 package. This module can get the version of Electron and handle the manual steps
-of downloading headers and building native modules for your.
+of downloading headers and building native modules for your app.
 
 An example of installing `electron-rebuild` and then rebuild modules with it:
 
@@ -58,7 +59,7 @@ use `node-gyp` directly to build for Electron:
 
 ```bash
 cd /path-to-module/
-HOME=~/.electron-gyp node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://atom.io/download/atom-shell
+HOME=~/.electron-gyp node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://atom.io/download/electron
 ```
 
 The `HOME=~/.electron-gyp` changes where to find development headers. The

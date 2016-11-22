@@ -10,7 +10,7 @@ Electron 可以让你使用纯 JavaScript 调用丰富的原生 APIs 来创造�
 ## 渲染进程
 由于 Electron 使用 Chromium 来展示页面，所以 Chromium 的多进程结构也被充分利用。每个 Electron 的页面都在运行着自己的进程，这样的进程我们称之为**渲染进程**。
 
-在一般浏览器中，网页通常会在沙盒环境下运行，并且不允许访问原生资源。然而，Electron 用户拥有在网页中调用 io.js 的 APIs 的能力，可以与底层操作系统直接交互。
+在一般浏览器中，网页通常会在沙盒环境下运行，并且不允许访问原生资源。然而，Electron 用户拥有在网页中调用 Node.js 的 APIs 的能力，可以与底层操作系统直接交互。
 
 ## 主进程与渲染进程的区别
 主进程使用 `BrowserWindow` 实例创建页面。每个 `BrowserWindow` 实例都在自己的渲染进程里运行页面。当一个 `BrowserWindow` 实例被销毁后，相应的渲染进程也会被终止。
@@ -30,7 +30,7 @@ your-app/
 └── index.html
 ````
 `package.json `的格式和 Node 的完全一致，并且那个被 `main` 字段声明的脚本文件是你的应用的启动脚本，它运行在主进程上。你应用里的 `package.json` 看起来应该像：
-```json
+```javascripton
 {
   "name"    : "your-app",
   "version" : "0.1.0",
@@ -41,56 +41,56 @@ your-app/
 
 `main.js` 应该用于创建窗口和处理系统事件，一个典型的例子如下：
 ```javascript
-const electron = require('electron');
+const electron = require('electron')
 // 控制应用生命周期的模块。
-const {app} = electron;
+const {app} = electron
 // 创建原生浏览器窗口的模块。
-const {BrowserWindow} = electron;
+const {BrowserWindow} = electron
 
 // 保持一个对于 window 对象的全局引用，如果你不这样做，
 // 当 JavaScript 对象被垃圾回收， window 会被自动地关闭
-let mainWindow;
+let mainWindow
 
-function createWindow() {
+function createWindow () {
   // 创建浏览器窗口。
-  mainWindow = new BrowserWindow({width: 800, height: 600});
+  mainWindow = new BrowserWindow({width: 800, height: 600})
 
   // 加载应用的 index.html。
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.loadURL(`file://${__dirname}/index.html`)
 
   // 启用开发工具。
-  mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools()
 
   // 当 window 被关闭，这个事件会被触发。
   mainWindow.on('closed', () => {
     // 取消引用 window 对象，如果你的应用支持多窗口的话，
     // 通常会把多个 window 对象存放在一个数组里面，
     // 与此同时，你应该删除相应的元素。
-    mainWindow = null;
-  });
+    mainWindow = null
+  })
 }
 
 // Electron 会在初始化后并准备
 // 创建浏览器窗口时，调用这个函数。
 // 部分 API 在 ready 事件触发后才能使用。
-app.on('ready', createWindow);
+app.on('ready', createWindow)
 
 // 当全部窗口关闭时退出。
 app.on('window-all-closed', () => {
   // 在 macOS 上，除非用户用 Cmd + Q 确定地退出，
   // 否则绝大部分应用及其菜单栏会保持激活。
   if (process.platform !== 'darwin') {
-    app.quit();
+    app.quit()
   }
-});
+})
 
 app.on('activate', () => {
   // 在 macOS 上，当点击 dock 图标并且该应用没有打开的窗口时，
   // 绝大部分应用会重新创建一个窗口。
   if (mainWindow === null) {
-    createWindow();
+    createWindow()
   }
-});
+})
 
 // 在这文件，你可以续写应用剩下主进程代码。
 // 也可以拆分成几个文件，然后用 require 导入。

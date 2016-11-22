@@ -12,27 +12,27 @@
 #include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/api/atom_api_web_request.h"
-#include "atom/browser/browser.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_permission_manager.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/content_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
-#include "components/prefs/pref_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "chrome/common/pref_names.h"
+#include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
@@ -42,13 +42,14 @@
 #include "net/dns/host_cache.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
-#include "net/proxy/proxy_service.h"
 #include "net/proxy/proxy_config_service_fixed.h"
+#include "net/proxy/proxy_service.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "ui/base/l10n/l10n_util.h"
 
+using atom::api::Cookies;
 using content::BrowserThread;
 using content::StoragePartition;
 
@@ -335,7 +336,7 @@ void OnClearStorageDataDone(const base::Closure& callback) {
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : devtools_network_emulation_client_id_(base::GenerateGUID()),
       browser_context_(browser_context) {
-  // Observe DownloadManger to get download notifications.
+  // Observe DownloadManager to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
       AddObserver(this);
 
@@ -416,7 +417,7 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
   std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   bool offline = false;
-  double latency, download_throughput, upload_throughput;
+  double latency = 0.0, download_throughput = 0.0, upload_throughput = 0.0;
   if (options.Get("offline", &offline) && offline) {
     conditions.reset(new brightray::DevToolsNetworkConditions(offline));
   } else {
@@ -504,9 +505,24 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+void Session::GetBlobData(
+    const std::string& uuid,
+    const AtomBlobReader::CompletionCallback& callback) {
+  if (callback.is_null())
+    return;
+
+  AtomBlobReader* blob_reader =
+      browser_context()->GetBlobReader();
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomBlobReader::StartReading,
+                 base::Unretained(blob_reader),
+                 uuid,
+                 callback));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
-    auto handle = atom::api::Cookies::Create(isolate, browser_context());
+    auto handle = Cookies::Create(isolate, browser_context());
     cookies_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, cookies_);
@@ -586,6 +602,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
                  &Session::AllowNTLMCredentialsForDomains)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("getBlobData", &Session::GetBlobData)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);
@@ -615,6 +632,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("Session", Session::GetConstructor(isolate)->GetFunction());
+  dict.Set("Cookies", Cookies::GetConstructor(isolate)->GetFunction());
   dict.SetMethod("fromPartition", &FromPartition);
 }
 

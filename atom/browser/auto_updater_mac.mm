@@ -104,11 +104,18 @@ void AutoUpdater::CheckForUpdates() {
           delegate->OnUpdateNotAvailable();
         }
       } error:^(NSError *error) {
-        NSString* failureString = error.localizedFailureReason ?
-            [NSString stringWithFormat:@"%@: %@",
-                                       error.localizedDescription,
-                                       error.localizedFailureReason] :
-            [NSString stringWithString:error.localizedDescription];
+        NSMutableString* failureString =
+          [NSMutableString stringWithString:error.localizedDescription];
+        if (error.localizedFailureReason) {
+          [failureString appendString:@": "];
+          [failureString appendString:error.localizedFailureReason];
+        }
+        if (error.localizedRecoverySuggestion) {
+          if (![failureString hasSuffix:@"."])
+            [failureString appendString:@"."];
+          [failureString appendString:@" "];
+          [failureString appendString:error.localizedRecoverySuggestion];
+        }
         delegate->OnError(base::SysNSStringToUTF8(failureString));
       }];
 }

@@ -22,8 +22,7 @@ static base::LazyInstance<GuestViewContainerMap> g_guest_view_container_map =
 }  // namespace
 
 GuestViewContainer::GuestViewContainer(content::RenderFrame* render_frame)
-    : render_frame_(render_frame),
-      weak_ptr_factory_(this) {
+    : weak_ptr_factory_(this) {
 }
 
 GuestViewContainer::~GuestViewContainer() {

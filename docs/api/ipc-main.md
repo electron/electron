@@ -2,8 +2,10 @@
 
 > Communicate asynchronously from the main process to renderer processes.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 The `ipcMain` module is an instance of the
-[EventEmitter](https://nodejs.org/api/events.html) class. When used in the main
+[EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter) class. When used in the main
 process, it handles asynchronous and synchronous messages sent from a renderer
 process (web page). Messages sent from a renderer will be emitted to this
 module.
@@ -46,7 +48,7 @@ ipcRenderer.on('asynchronous-reply', (event, arg) => {
 ipcRenderer.send('asynchronous-message', 'ping')
 ```
 
-## Listening for Messages
+## Methods
 
 The `ipcMain` module has the following method to listen for events:
 

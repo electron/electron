@@ -6,29 +6,38 @@
 
 ```javascript
 // In the main process.
-win.webContents.session.on('will-download', function(event, item, webContents) {
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.webContents.session.on('will-download', (event, item, webContents) => {
   // Set the save path, making Electron not to prompt a save dialog.
-  item.setSavePath('/tmp/save.pdf');
-  console.log(item.getMimeType());
-  console.log(item.getFilename());
-  console.log(item.getTotalBytes());
-  item.on('updated', function() {
-    console.log('Received bytes: ' + item.getReceivedBytes());
-  });
-  item.on('done', function(e, state) {
-    if (state == "completed") {
-      console.log("Download successfully");
-    } else {
-      console.log("Download is cancelled or interrupted that can't be resumed");
+  item.setSavePath('/tmp/save.pdf')
+
+  item.on('updated', (event, state) => {
+    if (state === 'interrupted') {
+      console.log('Download is interrupted but can be resumed')
+    } else if (state === 'progressing') {
+      if (item.isPaused()) {
+        console.log('Download is paused')
+      } else {
+        console.log(`Received bytes: ${item.getReceivedBytes()}`)
+      }
     }
-  });
+  })
+  item.once('done', (event, state) => {
+    if (state === 'completed') {
+      console.log('Download successfully')
+    } else {
+      console.log(`Download failed: ${state}`)
+    }
+  })
+})
 ```
 
 ## 事件
 
 ### 事件: 'updated'
 
-当`downloadItem`获得更新时发射。
+当`downloadItem`获得更新时触发。
 
 ### 事件: 'done'
 
@@ -38,7 +47,7 @@ win.webContents.session.on('will-download', function(event, item, webContents) {
   * `cancelled` - 下载被取消。
   * `interrupted` - 与文件服务器错误的中断连接。
 
-当下载处于一个终止状态时发射。这包括了一个完成的下载，一个被取消的下载(via `downloadItem.cancel()`),
+当下载处于一个终止状态时触发。这包括了一个完成的下载，一个被取消的下载(via `downloadItem.cancel()`),
 和一个被意外中断的下载(无法恢复)。
 
 ## 方法

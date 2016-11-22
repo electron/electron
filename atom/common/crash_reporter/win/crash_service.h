@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "base/macros.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/synchronization/lock.h"
 
 namespace google_breakpad {

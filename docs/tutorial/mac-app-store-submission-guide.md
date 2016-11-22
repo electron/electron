@@ -33,7 +33,7 @@ After finishing the preparation work, you can package your app by following
 signing your app.
 
 First, you have to add a `ElectronTeamID` key to your app's `Info.plist`, which
-has your Team ID as key:
+has your Team ID as value:
 
 ```xml
 <plist version="1.0">
@@ -135,8 +135,9 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 
 Also note that native modules may have intermediate files produced which should
 not be included (as they would also need to be signed). If you use
-[electron-packager][electron-packager], add `--ignore=.+\.o$` to build step to
-ignore these files.
+[electron-packager][electron-packager] before version 8.1.0, add
+`--ignore=.+\.o$` to your build step to ignore these files. Versions 8.1.0 and
+later ignores those files by default.
 
 ### Upload Your App
 
@@ -161,6 +162,8 @@ and the following behaviors have been changed:
 * Video capture may not work for some machines.
 * Certain accessibility features may not work.
 * Apps will not be aware of DNS changes.
+* APIs for launching apps at login are disabled. See
+https://github.com/electron/electron/issues/7312#issuecomment-249479237
 
 Also, due to the usage of app sandboxing, the resources which can be accessed by
 the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for
@@ -171,6 +174,26 @@ more information.
 Depending on which Electron APIs your app uses, you may need to add additional
 entitlements to your `parent.plist` file to be able to use these APIs from your
 app's Mac App Store build.
+
+#### Network Access
+
+Enable outgoing network connections to allow your app to connect to a server:
+
+```xml
+<key>com.apple.security.network.client</key>
+<true/>
+```
+
+Enable incoming network connections to allow your app to open a network
+listening socket:
+
+```xml
+<key>com.apple.security.network.server</key>
+<true/>
+```
+
+See the [Enabling Network Access documentation][network-access] for more
+details.
 
 #### dialog.showOpenDialog
 
@@ -240,3 +263,4 @@ ERN)][ern-tutorial].
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
 [temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html
 [user-selected]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6
+[network-access]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW9

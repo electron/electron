@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_APP_H_
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/atom_browser_client.h"
@@ -26,9 +27,13 @@ class FilePath;
 
 namespace mate {
 class Arguments;
-}
+}  // namespace mate
 
 namespace atom {
+
+#if defined(OS_WIN)
+enum class JumpListResult : int;
+#endif
 
 namespace api {
 
@@ -43,11 +48,14 @@ class App : public AtomBrowserClient::Delegate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Called when window with disposition needs to be created.
-  void OnCreateWindow(const GURL& target_url,
-                      const std::string& frame_name,
-                      WindowOpenDisposition disposition,
-                      int render_process_id,
-                      int render_frame_id);
+  void OnCreateWindow(
+      const GURL& target_url,
+      const std::string& frame_name,
+      WindowOpenDisposition disposition,
+      const std::vector<base::string16>& features,
+      const scoped_refptr<content::ResourceRequestBodyImpl>& body,
+      int render_process_id,
+      int render_frame_id);
 
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
@@ -69,7 +77,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnOpenURL(const std::string& url) override;
   void OnActivate(bool has_visible_windows) override;
   void OnWillFinishLaunching() override;
-  void OnFinishLaunching() override;
+  void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
   void OnLogin(LoginHandler* login_handler,
                const base::DictionaryValue& request_details) override;
   void OnAccessibilitySupportChanged() override;
@@ -98,7 +106,7 @@ class App : public AtomBrowserClient::Delegate,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
 
   // content::GpuDataManagerObserver:
-  void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
+  void OnGpuProcessCrashed(base::TerminationStatus status) override;
 
  private:
   // Get/Set the pre-defined path in PathService.
@@ -119,6 +127,14 @@ class App : public AtomBrowserClient::Delegate,
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);
 #endif
+
+#if defined(OS_WIN)
+  // Get the current Jump List settings.
+  v8::Local<v8::Value> GetJumpListSettings();
+
+  // Set or remove a custom Jump List for the application.
+  JumpListResult SetJumpList(v8::Local<v8::Value> val, mate::Arguments* args);
+#endif  // defined(OS_WIN)
 
   std::unique_ptr<ProcessSingleton> process_singleton_;
 

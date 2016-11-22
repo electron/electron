@@ -34,6 +34,7 @@ extern const char kKiosk[];
 extern const char kAlwaysOnTop[];
 extern const char kAcceptFirstMouse[];
 extern const char kUseContentSize[];
+extern const char kZoomToPageWidth[];
 extern const char kTitleBarStyle[];
 extern const char kAutoHideMenuBar[];
 extern const char kEnableLargerThanScreen[];
@@ -46,6 +47,7 @@ extern const char kBackgroundColor[];
 extern const char kHasShadow[];
 extern const char kFocusable[];
 extern const char kWebPreferences[];
+extern const char kVibrancyType[];
 
 // WebPreferences.
 extern const char kZoomFactor[];
@@ -67,6 +69,7 @@ extern const char kDisableBlinkFeatures[];
 
 namespace switches {
 
+extern const char kEnableSandbox[];
 extern const char kEnablePlugins[];
 extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];

@@ -2,9 +2,10 @@
 
 const assert = require('assert')
 const path = require('path')
+const {closeWindow} = require('./window-helpers')
 
 const {remote} = require('electron')
-const {BrowserWindow, webContents} = remote
+const {BrowserWindow, webContents, ipcMain} = remote
 
 const isCi = remote.getGlobal('isCi')
 
@@ -13,9 +14,6 @@ describe('webContents module', function () {
   let w
 
   beforeEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -27,10 +25,7 @@ describe('webContents module', function () {
   })
 
   afterEach(function () {
-    if (w != null) {
-      w.destroy()
-    }
-    w = null
+    return closeWindow(w).then(function () { w = null })
   })
 
   describe('getAllWebContents() API', function () {
@@ -40,11 +35,10 @@ describe('webContents module', function () {
           return a.getId() - b.getId()
         })
 
-        assert.equal(all.length, 4)
+        assert.ok(all.length >= 4)
         assert.equal(all[0].getType(), 'window')
-        assert.equal(all[1].getType(), 'window')
-        assert.equal(all[2].getType(), 'remote')
-        assert.equal(all[3].getType(), 'webview')
+        assert.equal(all[all.length - 2].getType(), 'remote')
+        assert.equal(all[all.length - 1].getType(), 'webview')
 
         done()
       })
@@ -55,11 +49,9 @@ describe('webContents module', function () {
   })
 
   describe('getFocusedWebContents() API', function () {
-    if (isCi) {
-      return
-    }
-
     it('returns the focused web contents', function (done) {
+      if (isCi) return done()
+
       const specWebContents = remote.getCurrentWebContents()
       assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
 
@@ -74,6 +66,111 @@ describe('webContents module', function () {
       })
 
       specWebContents.openDevTools()
+    })
+
+    it('does not crash when called on a detached dev tools window', function (done) {
+      const specWebContents = w.webContents
+
+      specWebContents.once('devtools-opened', function () {
+        assert.doesNotThrow(function () {
+          webContents.getFocusedWebContents()
+        })
+        specWebContents.closeDevTools()
+      })
+
+      specWebContents.once('devtools-closed', function () {
+        assert.doesNotThrow(function () {
+          webContents.getFocusedWebContents()
+        })
+        done()
+      })
+
+      specWebContents.openDevTools({mode: 'detach'})
+      w.inspectElement(100, 100)
+    })
+  })
+
+  describe('isFocused() API', function () {
+    it('returns false when the window is hidden', function () {
+      BrowserWindow.getAllWindows().forEach(function (window) {
+        assert.equal(!window.isVisible() && window.webContents.isFocused(), false)
+      })
+    })
+  })
+
+  describe('sendInputEvent(event)', function () {
+    beforeEach(function (done) {
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'key-events.html'))
+      w.webContents.once('did-finish-load', function () {
+        done()
+      })
+    })
+
+    it('can send keydown events', function (done) {
+      ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'a')
+        assert.equal(code, 'KeyA')
+        assert.equal(keyCode, 65)
+        assert.equal(shiftKey, false)
+        assert.equal(ctrlKey, false)
+        assert.equal(altKey, false)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
+    })
+
+    it('can send keydown events with modifiers', function (done) {
+      ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'Z')
+        assert.equal(code, 'KeyZ')
+        assert.equal(keyCode, 90)
+        assert.equal(shiftKey, true)
+        assert.equal(ctrlKey, true)
+        assert.equal(altKey, false)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
+    })
+
+    it('can send keydown events with special keys', function (done) {
+      ipcMain.once('keydown', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'Tab')
+        assert.equal(code, 'Tab')
+        assert.equal(keyCode, 9)
+        assert.equal(shiftKey, false)
+        assert.equal(ctrlKey, false)
+        assert.equal(altKey, true)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Tab', modifiers: ['alt']})
+    })
+
+    it('can send char events', function (done) {
+      ipcMain.once('keypress', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'a')
+        assert.equal(code, 'KeyA')
+        assert.equal(keyCode, 65)
+        assert.equal(shiftKey, false)
+        assert.equal(ctrlKey, false)
+        assert.equal(altKey, false)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
+      w.webContents.sendInputEvent({type: 'char', keyCode: 'A'})
+    })
+
+    it('can send char events with modifiers', function (done) {
+      ipcMain.once('keypress', function (event, key, code, keyCode, shiftKey, ctrlKey, altKey) {
+        assert.equal(key, 'Z')
+        assert.equal(code, 'KeyZ')
+        assert.equal(keyCode, 90)
+        assert.equal(shiftKey, true)
+        assert.equal(ctrlKey, true)
+        assert.equal(altKey, false)
+        done()
+      })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z'})
+      w.webContents.sendInputEvent({type: 'char', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
     })
   })
 })

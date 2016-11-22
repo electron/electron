@@ -36,6 +36,7 @@
     'node_use_perfctr': 'false',
     'node_use_v8_platform': 'false',
     'node_use_bundled_v8': 'false',
+    'node_enable_d8': 'false',
     'uv_library': 'static_library',
     'uv_parent_path': 'vendor/node/deps/uv',
     'uv_use_dtrace': 'false',
@@ -102,6 +103,7 @@
             '-Wno-return-type',
             '-Wno-gnu-folding-constant',
             '-Wno-shift-negative-value',
+            '-Wno-varargs', # https://git.io/v6Olj
           ],
         },
         'conditions': [
@@ -117,6 +119,7 @@
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
               '-Wno-shift-negative-value',
+              '-Wno-varargs', # https://git.io/v6Olj
               # Required when building as shared library.
               '-fPIC',
             ],
@@ -224,6 +227,17 @@
               'BUILDING_UV_SHARED=1',
             ],
           }],  # OS=="win"
+        ],
+      }],
+      ['_target_name.startswith("crashpad")', {
+        'conditions': [
+          ['OS=="mac"', {
+            'xcode_settings': {
+              'WARNING_CFLAGS': [
+                '-Wno-unused-private-field',
+              ],
+            },
+          }],  # OS=="mac"
         ],
       }],
       ['_target_name.startswith("breakpad") or _target_name in ["crash_report_sender", "dump_syms"]', {

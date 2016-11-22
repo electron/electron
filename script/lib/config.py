@@ -8,7 +8,8 @@ import sys
 
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
     'https://s3.amazonaws.com/github-janky-artifacts/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = '658edcb9509cfa03eea321977d060769467891e0'
+LIBCHROMIUMCONTENT_COMMIT = os.getenv('LIBCHROMIUMCONTENT_COMMIT') or \
+    '76bb29da18cbeec0051e0690bc1b95e78034a422'
 
 PLATFORM = {
   'cygwin': 'win32',
@@ -73,3 +74,13 @@ def enable_verbose_mode():
 
 def is_verbose_mode():
   return verbose_mode
+
+
+def get_zip_name(name, version, suffix=''):
+  arch = get_target_arch()
+  if arch == 'arm':
+    arch += 'v7l'
+  zip_name = '{0}-{1}-{2}-{3}'.format(name, version, get_platform_key(), arch)
+  if suffix:
+    zip_name += '-' + suffix
+  return zip_name + '.zip'

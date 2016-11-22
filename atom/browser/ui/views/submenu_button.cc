@@ -7,7 +7,10 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/gfx/canvas.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/gfx/text_utils.h"
+#include "ui/views/animation/flood_fill_ink_drop_ripple.h"
+#include "ui/views/animation/ink_drop_host_view.h"
 #include "ui/views/controls/button/label_button_border.h"
 
 namespace atom {
@@ -23,9 +26,9 @@ base::string16 FilterAccelerator(const base::string16& label) {
 
 }  // namespace
 
-SubmenuButton::SubmenuButton(views::ButtonListener* listener,
-                             const base::string16& title,
-                             views::MenuButtonListener* menu_button_listener)
+SubmenuButton::SubmenuButton(const base::string16& title,
+                             views::MenuButtonListener* menu_button_listener,
+                             const SkColor& background_color)
     : views::MenuButton(FilterAccelerator(title),
                         menu_button_listener, false),
       accelerator_(0),
@@ -34,7 +37,8 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
       underline_end_(-1),
       text_width_(0),
       text_height_(0),
-      underline_color_(SK_ColorBLACK) {
+      underline_color_(SK_ColorBLACK),
+      background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
   SetBorder(std::move(CreateDefaultBorder()));
@@ -44,9 +48,39 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
                            &underline_end_))
     gfx::Canvas::SizeStringInt(GetText(), GetFontList(), &text_width_,
                                &text_height_, 0, 0);
+
+  SetHasInkDrop(true);
+  set_ink_drop_base_color(
+      color_utils::BlendTowardOppositeLuma(background_color_, 0x61));
 }
 
 SubmenuButton::~SubmenuButton() {
+}
+
+std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
+    const {
+  return base::MakeUnique<views::FloodFillInkDropRipple>(
+      GetLocalBounds(),
+      GetInkDropCenterBasedOnLastEvent(),
+      GetInkDropBaseColor(),
+      ink_drop_visible_opacity());
+}
+
+std::unique_ptr<views::InkDropHighlight>
+    SubmenuButton::CreateInkDropHighlight() const {
+  if (!ShouldShowInkDropHighlight())
+    return nullptr;
+
+  gfx::Size size = GetLocalBounds().size();
+  return base::MakeUnique<views::InkDropHighlight>(
+      size,
+      kInkDropSmallCornerRadius,
+      gfx::RectF(gfx::SizeF(size)).CenterPoint(),
+      GetInkDropBaseColor());
+}
+
+bool SubmenuButton::ShouldShowInkDropForFocus() const {
+  return false;
 }
 
 void SubmenuButton::SetAcceleratorVisibility(bool visible) {

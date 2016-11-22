@@ -5,17 +5,16 @@
 #include "atom/common/api/atom_bindings.h"
 
 #include <algorithm>
-#include <string>
 #include <iostream>
+#include <string>
 
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/logging.h"
 #include "base/process/process_metrics.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -80,10 +79,6 @@ void FatalErrorCallback(const char* location, const char* message) {
   Crash();
 }
 
-void Log(const base::string16& message) {
-  std::cout << message << std::flush;
-}
-
 }  // namespace
 
 
@@ -118,8 +113,10 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {
     versions.Set(ATOM_PROJECT_NAME, ATOM_VERSION_STRING);
-    versions.Set("atom-shell", ATOM_VERSION_STRING);  // For compatibility.
     versions.Set("chrome", CHROME_VERSION_STRING);
+
+    // TODO(kevinsawicki): Remove in 2.0
+    versions.Set("atom-shell", ATOM_VERSION_STRING);
   }
 }
 
@@ -154,6 +151,11 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
   }
 
   self->pending_next_ticks_.clear();
+}
+
+// static
+void AtomBindings::Log(const base::string16& message) {
+  std::cout << message << std::flush;
 }
 
 }  // namespace atom

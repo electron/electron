@@ -2,6 +2,8 @@
 
 > Customize the rendering of the current web page.
 
+Process: [Renderer](../tutorial/quick-start.md#renderer-process)
+
 An example of zooming current page to 200%.
 
 ```javascript
@@ -23,7 +25,7 @@ zoom percent divided by 100, so 300% = 3.0.
 
 ### `webFrame.getZoomFactor()`
 
-Returns the current zoom factor.
+Returns `Number` - The current zoom factor.
 
 ### `webFrame.setZoomLevel(level)`
 
@@ -35,7 +37,7 @@ limits of 300% and 50% of original size, respectively.
 
 ### `webFrame.getZoomLevel()`
 
-Returns the current zoom level.
+Returns `Number` - The current zoom level.
 
 ### `webFrame.setZoomLevelLimits(minimumLevel, maximumLevel)`
 
@@ -83,12 +85,26 @@ attackers.
 Resources will be loaded from this `scheme` regardless of the current page's
 Content Security Policy.
 
-### `webFrame.registerURLSchemeAsPrivileged(scheme)`
+### `webFrame.registerURLSchemeAsPrivileged(scheme[, options])`
 
 * `scheme` String
+* `options` Object (optional)
+  * `secure` Boolean - (optional) Default true.
+  * `bypassCSP` Boolean - (optional) Default true.
+  * `allowServiceWorkers` Boolean - (optional) Default true.
+  * `supportFetchAPI` Boolean - (optional) Default true.
+  * `corsEnabled` Boolean - (optional) Default true.
 
 Registers the `scheme` as secure, bypasses content security policy for resources,
 allows registering ServiceWorker and supports fetch API.
+
+Specify an option with the value of `false` to omit it from the registration.
+An example of registering a privileged scheme, without bypassing Content Security Policy:
+
+```javascript
+const {webFrame} = require('electron')
+webFrame.registerURLSchemeAsPrivileged('foo', { bypassCSP: false })
+```
 
 ### `webFrame.insertText(text)`
 
@@ -109,6 +125,14 @@ this limitation.
 
 ### `webFrame.getResourceUsage()`
 
+Returns `Object`:
+
+* `images` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `cssStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `xslStyleSheets` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `fonts` [MemoryUsageDetails](structures/memory-usage-details.md)
+* `other` [MemoryUsageDetails](structures/memory-usage-details.md)
+
 Returns an object describing usage information of Blink's internal memory
 caches.
 
@@ -119,7 +143,7 @@ console.log(webFrame.getResourceUsage())
 
 This will generate:
 
-```
+```javascript
 {
   images: {
     count: 22,
@@ -133,7 +157,7 @@ This will generate:
   xslStyleSheets: { /* same with "images" */ },
   fonts: { /* same with "images" */ },
   other: { /* same with "images" */ }
-})
+}
 ```
 
 ### `webFrame.clearCache()`

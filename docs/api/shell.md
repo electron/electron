@@ -2,6 +2,8 @@
 
 > Manage files and URLs using their default applications.
 
+Process: [Main](../tutorial/quick-start.md#main-process), [Renderer](../tutorial/quick-start.md#renderer-process)
+
 The `shell` module provides functions related to desktop integration.
 
 An example of opening a URL in the user's default browser:
@@ -20,28 +22,38 @@ The `shell` module has the following methods:
 
 * `fullPath` String
 
+Returns `Boolean` - Whether the item was successfully shown
+
 Show the given file in a file manager. If possible, select the file.
 
 ### `shell.openItem(fullPath)`
 
 * `fullPath` String
 
+Returns `Boolean` - Whether the item was successfully opened.
+
 Open the given file in the desktop's default manner.
 
-### `shell.openExternal(url[, options])`
+### `shell.openExternal(url[, options, callback])`
 
 * `url` String
 * `options` Object (optional) _macOS_
   * `activate` Boolean - `true` to bring the opened application to the
     foreground. The default is `true`.
+* `callback` Function (optional) - If specified will perform the open asynchronously. _macOS_
+  * `error` Error
+
+Returns `Boolean` - Whether an application was available to open the URL.
+If callback is specified, always returns true.
 
 Open the given external protocol URL in the desktop's default manner. (For
-example, mailto: URLs in the user's default mail agent.) Returns true if an
-application was available to open the URL, false otherwise.
+example, mailto: URLs in the user's default mail agent).
 
 ### `shell.moveItemToTrash(fullPath)`
 
 * `fullPath` String
+
+Returns `Boolean` - Whether the item was successfully moved to the trash
 
 Move the given file to trash and returns a boolean status for the operation.
 
@@ -52,33 +64,23 @@ Play the beep sound.
 ### `shell.writeShortcutLink(shortcutPath[, operation], options)` _Windows_
 
 * `shortcutPath` String
-* `operation` String (optional) - Default is `create`, can be one of followings:
+* `operation` String (optional) - Default is `create`, can be one of following:
   * `create` - Creates a new shortcut, overwriting if necessary.
   * `update` - Updates specified properties only on an existing shortcut.
   * `replace` - Overwrites an existing shortcut, fails if the shortcut doesn't
     exist.
-* `options` Object
-  * `target` String - The target to launch from this shortcut.
-  * `cwd` String (optional) - The target to launch from this shortcut. Default
-    is empty.
-  * `args` String (optional) - The arguments to be applied to `target` when
-    launching from this shortcut. Default is empty.
-  * `description` String (optional) - The description of the shortcut. Default
-    is empty.
-  * `icon` String (optional) - The path to the icon, can be a DLL or EXE. `icon`
-    and `iconIndex` have to be set together. Default is empty, which uses the
-    target's icon.
-  * `iconIndex` Integer (optional) - The resource ID of icon when `icon` is a
-    DLL or EXE. Default is 0.
-  * `appUserModelId` String (optional) - The Application User Model ID. Default
-    is empty.
+* `options` [ShortcutDetails](structures/shortcut-details.md)
 
-Creates or updates a shortcut link at `shortcutPath`. On success `true` is
-returned, otherwise `false` is returned.
+Returns `Boolean` - Whether the shortcut was created successfully
+
+Creates or updates a shortcut link at `shortcutPath`.
 
 ### `shell.readShortcutLink(shortcutPath)` _Windows_
 
-Resolves the shortcut link at `shortcutPath`, an object is returned with the
-fields described in the `options` of `shell.writeShortcutLink`.
+* `shortcutPath` String
+
+Returns [`ShortcutDetails`](structures/shortcut-details.md)
+
+Resolves the shortcut link at `shortcutPath`.
 
 An exception will be thrown when any error happens.

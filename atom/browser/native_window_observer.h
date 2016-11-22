@@ -34,7 +34,7 @@ class NativeWindowObserver {
   virtual void WillCloseWindow(bool* prevent_default) {}
 
   // Called before the native window object is going to be destroyed.
-  virtual void WillDestoryNativeObject() {}
+  virtual void WillDestroyNativeObject() {}
 
   // Called when the window is closed.
   virtual void OnWindowClosed() {}
@@ -64,6 +64,7 @@ class NativeWindowObserver {
   virtual void OnWindowMoved() {}
   virtual void OnWindowScrollTouchBegin() {}
   virtual void OnWindowScrollTouchEnd() {}
+  virtual void OnWindowScrollTouchEdge() {}
   virtual void OnWindowSwipe(const std::string& direction) {}
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}

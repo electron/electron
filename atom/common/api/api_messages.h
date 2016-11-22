@@ -39,7 +39,5 @@ IPC_MESSAGE_ROUTED3(AtomViewMsg_Message,
 IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
                     std::vector<atom::DraggableRegion> /* regions */)
 
-IPC_MESSAGE_ROUTED0(AtomViewHostMsg_DidCommitCompositorFrame)
-
 // Update renderer process preferences.
 IPC_MESSAGE_CONTROL1(AtomMsg_UpdatePreferences, base::ListValue)

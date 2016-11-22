@@ -3,13 +3,13 @@
 这页列出了Chrome浏览器和Electron支持的命令行开关. 你也可以在[app][app]模块的[ready][ready]事件发出之前使用[app.commandLine.appendSwitch][append-switch] 来添加它们到你应用的main脚本里面:
 
 ```javascript
-const app = require('electron').app;
-app.commandLine.appendSwitch('remote-debugging-port', '8315');
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+const app = require('electron').app
+app.commandLine.appendSwitch('remote-debugging-port', '8315')
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
 
-app.on('ready', function() {
+app.on('ready', function () {
   // Your code here
-});
+})
 ```
 
 ## --client-certificate=`path`

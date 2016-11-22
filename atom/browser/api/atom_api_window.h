@@ -10,13 +10,13 @@
 #include <string>
 #include <vector>
 
-#include "ui/gfx/image/image.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
 #include "native_mate/handle.h"
+#include "ui/gfx/image/image.h"
 
 class GURL;
 
@@ -58,7 +58,7 @@ class Window : public mate::TrackableObject<Window>,
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
-  void WillDestoryNativeObject() override;
+  void WillDestroyNativeObject() override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
@@ -74,6 +74,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowMoved() override;
   void OnWindowScrollTouchBegin() override;
   void OnWindowScrollTouchEnd() override;
+  void OnWindowScrollTouchEdge() override;
   void OnWindowSwipe(const std::string& direction) override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
@@ -88,6 +89,10 @@ class Window : public mate::TrackableObject<Window>,
   #endif
 
  private:
+  void Init(v8::Isolate* isolate,
+            v8::Local<v8::Object> wrapper,
+            const mate::Dictionary& options,
+            mate::Handle<class WebContents> web_contents);
   // APIs for NativeWindow.
   void Close();
   void Focus();
@@ -112,6 +117,8 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<int> GetSize();
   void SetContentSize(int width, int height, mate::Arguments* args);
   std::vector<int> GetContentSize();
+  void SetContentBounds(const gfx::Rect& bounds, mate::Arguments* args);
+  gfx::Rect GetContentBounds();
   void SetMinimumSize(int width, int height);
   std::vector<int> GetMinimumSize();
   void SetMaximumSize(int width, int height);
@@ -129,7 +136,7 @@ class Window : public mate::TrackableObject<Window>,
   bool IsFullScreenable();
   void SetClosable(bool closable);
   bool IsClosable();
-  void SetAlwaysOnTop(bool top);
+  void SetAlwaysOnTop(bool top, mate::Arguments* args);
   bool IsAlwaysOnTop();
   void Center();
   void SetPosition(int x, int y, mate::Arguments* args);
@@ -153,7 +160,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetIgnoreMouseEvents(bool ignore);
   void SetContentProtection(bool enable);
   void SetFocusable(bool focusable);
-  void SetProgressBar(double progress);
+  void SetProgressBar(double progress, mate::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
   bool SetThumbarButtons(mate::Arguments* args);
@@ -163,6 +170,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
+  void PreviewFile(const std::string& path, mate::Arguments* args);
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
   v8::Local<v8::Value> GetParentWindow() const;
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
@@ -178,6 +186,7 @@ class Window : public mate::TrackableObject<Window>,
   void UnhookWindowMessage(UINT message);
   void UnhookAllWindowMessages();
   bool SetThumbnailClip(const gfx::Rect& region);
+  bool SetThumbnailToolTip(const std::string& tooltip);
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -186,6 +195,8 @@ class Window : public mate::TrackableObject<Window>,
 
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
+
+  void SetVibrancy(mate::Arguments* args);
 
   int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);

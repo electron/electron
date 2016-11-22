@@ -1,15 +1,15 @@
 Please make sure that you use the documents that match your Electron version.
 The version number should be a part of the page URL. If it's not, you are
 probably using the documentation of a development branch which may contain API
-changes that are not compatible with your Electron version. If that's the case,
-you can switch to a different version of the documentation at the
-[available versions](http://electron.atom.io/docs/) list on atom.io, or if
-you're using the GitHub interface, open the "Switch branches/tags" dropdown and
-select the tag that matches your version.
+changes that are not compatible with your Electron version. To view older
+versions of the documentation, you can
+[browse by tag](https://github.com/electron/electron/tree/v1.4.0)
+on GitHub by opening the "Switch branches/tags" dropdown and selecting the tag
+that matches your version.
 
 ## FAQ
 
-There are questions that are asked quite often, check this out before creating
+There are questions that are asked quite often. Check this out before creating
 an issue:
 
 * [Electron FAQ](faq.md)
@@ -30,12 +30,14 @@ an issue:
 * [Using Pepper Flash Plugin](tutorial/using-pepper-flash-plugin.md)
 * [Using Widevine CDM Plugin](tutorial/using-widevine-cdm-plugin.md)
 * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
+* [Offscreen Rendering](tutorial/offscreen-rendering.md)
 
 ## Tutorials
 
 * [Quick Start](tutorial/quick-start.md)
 * [Desktop Environment Integration](tutorial/desktop-environment-integration.md)
 * [Online/Offline Event Detection](tutorial/online-offline-events.md)
+* [REPL](tutorial/repl.md)
 
 ## API References
 
@@ -61,6 +63,7 @@ an issue:
 * [ipcMain](api/ipc-main.md)
 * [Menu](api/menu.md)
 * [MenuItem](api/menu-item.md)
+* [net](api/net.md)
 * [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
@@ -87,12 +90,14 @@ an issue:
 ## Development
 
 * [Coding Style](development/coding-style.md)
+* [Using clang-format on C++ Code](development/clang-format.md)
 * [Source Code Directory Structure](development/source-code-directory-structure.md)
 * [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Build System Overview](development/build-system-overview.md)
 * [Build Instructions (macOS)](development/build-instructions-osx.md)
 * [Build Instructions (Windows)](development/build-instructions-windows.md)
 * [Build Instructions (Linux)](development/build-instructions-linux.md)
-* [Debug Instructions (macOS)](development/debug-instructions-macos.md)
+* [Debug Instructions (macOS)](development/debugging-instructions-macos.md)
 * [Debug Instructions (Windows)](development/debug-instructions-windows.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
+* [Documentation Styleguide](styleguide.md)

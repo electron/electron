@@ -11,8 +11,8 @@
 #include "atom/common/api/locker.h"
 #include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "base/command_line.h"
 #include "base/base_paths.h"
+#include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/message_loop/message_loop.h"
@@ -39,6 +39,7 @@ REFERENCE_MODULE(atom_browser_debugger);
 REFERENCE_MODULE(atom_browser_desktop_capturer);
 REFERENCE_MODULE(atom_browser_download_item);
 REFERENCE_MODULE(atom_browser_menu);
+REFERENCE_MODULE(atom_browser_net);
 REFERENCE_MODULE(atom_browser_power_monitor);
 REFERENCE_MODULE(atom_browser_power_save_blocker);
 REFERENCE_MODULE(atom_browser_protocol);
@@ -72,10 +73,6 @@ const int Function::kLineOffsetNotFound = -1;
 namespace atom {
 
 namespace {
-
-// Empty callback for async handle.
-void UvNoOp(uv_async_t* handle) {
-}
 
 // Convert the given vector to an array of C-strings. The strings in the
 // returned vector are only guaranteed valid so long as the vector of strings
@@ -148,8 +145,8 @@ void NodeBindings::Initialize() {
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  if (env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
-    SetErrorMode(0);
+  if (is_browser_ || env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
+    SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 }
 
@@ -173,6 +170,12 @@ node::Environment* NodeBindings::CreateEnvironment(
       context->GetIsolate(), uv_default_loop(), context,
       args.size(), c_argv.get(), 0, nullptr);
 
+  // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should switch
+  // to use the scoped policy to match blink's behavior.
+  if (!is_browser_) {
+    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
+  }
+
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.Set("type", process_type);
   process.Set("resourcesPath", resources_path);
@@ -183,6 +186,13 @@ node::Environment* NodeBindings::CreateEnvironment(
   base::FilePath helper_exec_path;
   PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
+
+  // Set process._debugWaitConnect if --debug-brk was specified to stop
+  // the debugger on the first line
+  if (is_browser_ &&
+      base::CommandLine::ForCurrentProcess()->HasSwitch("debug-brk"))
+    process.Set("_debugWaitConnect", true);
+
   return env;
 }
 
@@ -196,7 +206,7 @@ void NodeBindings::PrepareMessageLoop() {
 
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
-  uv_async_init(uv_loop_, &dummy_uv_handle_, UvNoOp);
+  uv_async_init(uv_loop_, &dummy_uv_handle_, nullptr);
 
   // Start worker that will interrupt main loop when having uv events.
   uv_sem_init(&embed_sem_, 0);
@@ -231,7 +241,7 @@ void NodeBindings::UvRunOnce() {
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
-  if (r == 0 || uv_loop_->stop_flag != 0)
+  if (r == 0)
     message_loop_->QuitWhenIdle();  // Quit from uv.
 
   // Tell the worker thread to continue polling.

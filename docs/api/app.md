@@ -2,6 +2,8 @@
 
 > Control your application's event lifecycle.
 
+Process: [Main](../tutorial/quick-start.md#main-process)
+
 The following example shows how to quit the application when the last window is
 closed:
 
@@ -28,7 +30,14 @@ In most cases, you should just do everything in the `ready` event handler.
 
 ### Event: 'ready'
 
-Emitted when Electron has finished initialization.
+Returns:
+
+* `launchInfo` Object _macOS_
+
+Emitted when Electron has finished initializing. On macOS, `launchInfo` holds
+the `userInfo` of the `NSUserNotification` that was used to open the application,
+if it was launched from Notification Center. You can call `app.isReady()` to
+check if this event has already fired.
 
 ### Event: 'window-all-closed'
 
@@ -177,15 +186,9 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
 * `error` String - The error code
-* `certificate` Object
-  * `data` Buffer - PEM encoded data
-  * `issuerName` String - Issuer's Common Name
-  * `subjectName` String - Subject's Common Name
-  * `serialNumber` String - Hex value represented string
-  * `validStart` Integer - Start date of the certificate being valid in seconds
-  * `validExpiry` Integer - End date of the certificate being valid in seconds
-  * `fingerprint` String - Fingerprint of the certificate
+* `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
+  * `isTrusted` Boolean - Whether to consider the certificate as trusted
 
 Emitted when failed to verify the `certificate` for `url`, to trust the
 certificate you should prevent the default behavior with
@@ -212,15 +215,9 @@ Returns:
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
-* `certificateList` [Objects]
-  * `data` Buffer - PEM encoded data
-  * `issuerName` String - Issuer's Common Name
-  * `subjectName` String - Subject's Common Name
-  * `serialNumber` String - Hex value represented string
-  * `validStart` Integer - Start date of the certificate being valid in seconds
-  * `validExpiry` Integer - End date of the certificate being valid in seconds
-  * `fingerprint` String - Fingerprint of the certificate
+* `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
+  * `certificate` [Certificate](structures/certificate.md)
 
 Emitted when a client certificate is requested.
 
@@ -255,6 +252,8 @@ Returns:
   * `port` Integer
   * `realm` String
 * `callback` Function
+  * `username` String
+  * `password` String
 
 Emitted when `webContents` wants to do basic auth.
 
@@ -273,7 +272,12 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 
 ### Event: 'gpu-process-crashed'
 
-Emitted when the gpu process crashes.
+Returns:
+
+* `event` Event
+* `killed` Boolean
+
+Emitted when the gpu process crashes or is killed.
 
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
 
@@ -305,11 +309,11 @@ This method guarantees that all `beforeunload` and `unload` event handlers are
 correctly executed. It is possible that a window cancels the quitting by
 returning `false` in the `beforeunload` event handler.
 
-### `app.exit(exitCode)`
+### `app.exit([exitCode])`
 
-* `exitCode` Integer
+* `exitCode` Integer (optional)
 
-Exits immediately with `exitCode`.
+Exits immediately with `exitCode`.  `exitCode` defaults to 0.
 
 All windows will be closed immediately without asking user and the `before-quit`
 and `will-quit` events will not be emitted.
@@ -317,7 +321,7 @@ and `will-quit` events will not be emitted.
 ### `app.relaunch([options])`
 
 * `options` Object (optional)
-  * `args` Array (optional)
+  * `args` String[] - (optional)
   * `execPath` String (optional)
 
 Relaunches the app when current instance exits.
@@ -339,9 +343,13 @@ line argument to the new instance:
 ```javascript
 const {app} = require('electron')
 
-app.relaunch({args: process.argv.slice(1) + ['--relaunch']})
+app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
 app.exit(0)
 ```
+
+### `app.isReady()`
+
+Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
 
 ### `app.focus()`
 
@@ -359,13 +367,13 @@ them.
 
 ### `app.getAppPath()`
 
-Returns the current application directory.
+Returns `String` - The current application directory.
 
 ### `app.getPath(name)`
 
 * `name` String
 
-Retrieves a path to a special directory or file associated with `name`. On
+Returns `String` - A path to a special directory or file associated with `name`. On
 failure an `Error` is thrown.
 
 You can request the following paths by the name:
@@ -405,13 +413,13 @@ directory. If you want to change this location, you have to override the
 
 ### `app.getVersion()`
 
-Returns the version of the loaded application. If no version is found in the
+Returns `String` - The version of the loaded application. If no version is found in the
 application's `package.json` file, the version of the current bundle or
 executable is returned.
 
 ### `app.getName()`
 
-Returns the current application's name, which is the name in the application's
+Returns `String` - The current application's name, which is the name in the application's
 `package.json` file.
 
 Usually the `name` field of `package.json` is a short lowercased name, according
@@ -427,7 +435,7 @@ Overrides the current application's name.
 
 ### `app.getLocale()`
 
-Returns the current application locale. Possible return values are documented
+Returns `String` - The current application locale. Possible return values are documented
 [here](locales.md).
 
 **Note:** When distributing your packaged app, you have to also ship the
@@ -448,17 +456,24 @@ bar, and on macOS you can visit it from dock menu.
 
 Clears the recent documents list.
 
-### `app.setAsDefaultProtocolClient(protocol)` _macOS_ _Windows_
+### `app.setAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`. If you want your
   app to handle `electron://` links, call this method with `electron` as the
   parameter.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` String[] - (optional) _Windows_ - Defaults to an empty array
+
+Returns `Boolean` - Whether the call succeeded.
 
 This method sets the current executable as the default handler for a protocol
 (aka URI scheme). It allows you to integrate your app deeper into the operating
 system. Once registered, all links with `your-protocol://` will be opened with
 the current executable. The whole link, including protocol, will be passed to
 your application as a parameter.
+
+On Windows you can provide optional parameters path, the path to your executable,
+and args, an array of arguments to be passed to your executable when it launches.
 
 **Note:** On macOS, you can only register protocols that have been added to
 your app's `info.plist`, which can not be modified at runtime. You can however
@@ -467,16 +482,25 @@ Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 
 The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally.
 
-### `app.removeAsDefaultProtocolClient(protocol)` _macOS_ _Windows_
+### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` String[] - (optional) _Windows_ - Defaults to an empty array
+
+Returns `Boolean` - Whether the call succeeded.
 
 This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
 
-### `app.isDefaultProtocolClient(protocol)` _macOS_ _Windows_
+
+### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
 * `protocol` String - The name of your protocol, without `://`.
+* `path` String (optional) _Windows_ - Defaults to `process.execPath`
+* `args` String[] - (optional) _Windows_ - Defaults to an empty array
+
+Returns `Boolean`
 
 This method checks if the current executable is the default handler for a protocol
 (aka URI scheme). If so, it will return true. Otherwise, it will return false.
@@ -491,30 +515,128 @@ The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internall
 
 ### `app.setUserTasks(tasks)` _Windows_
 
-* `tasks` Array - Array of `Task` objects
+* `tasks` [Task[]](structures/task.md) - Array of `Task` objects
 
 Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 
-`tasks` is an array of `Task` objects in the following format:
+`tasks` is an array of [`Task`](structures/task.md) objects.
 
-`Task` Object:
+Returns `Boolean` - Whether the call succeeded.
 
-* `program` String - Path of the program to execute, usually you should
-  specify `process.execPath` which opens the current program.
-* `arguments` String - The command line arguments when `program` is
-  executed.
-* `title` String - The string to be displayed in a JumpList.
-* `description` String - Description of this task.
-* `iconPath` String - The absolute path to an icon to be displayed in a
-  JumpList, which can be an arbitrary resource file that contains an icon. You
-  can usually specify `process.execPath` to show the icon of the program.
-* `iconIndex` Integer - The icon index in the icon file. If an icon file
-  consists of two or more icons, set this value to identify the icon. If an
-  icon file consists of one icon, this value is 0.
+**Note:** If you'd like to customize the Jump List even more use
+`app.setJumpList(categories)` instead.
+
+### `app.getJumpListSettings()` _Windows_
+
+Returns `Object`:
+
+* `minItems` Integer - The minimum number of items that will be shown in the
+  Jump List (for a more detailed description of this value see the
+  [MSDN docs][JumpListBeginListMSDN]).
+* `removedItems` [JumpListItem[]](structures/jump-list-item.md) - Array of `JumpListItem` objects that correspond to
+  items that the user has explicitly removed from custom categories in the
+  Jump List. These items must not be re-added to the Jump List in the **next**
+  call to `app.setJumpList()`, Windows will not display any custom category
+  that contains any of the removed items.
+
+### `app.setJumpList(categories)` _Windows_
+
+* `categories` [JumpListCategory[]](structures/jump-list-category.md) or `null` - Array of `JumpListCategory` objects.
+
+Sets or removes a custom Jump List for the application, and returns one of the
+following strings:
+
+* `ok` - Nothing went wrong.
+* `error` - One or more errors occurred, enable runtime logging to figure out
+  the likely cause.
+* `invalidSeparatorError` - An attempt was made to add a separator to a
+  custom category in the Jump List. Separators are only allowed in the
+  standard `Tasks` category.
+* `fileTypeRegistrationError` - An attempt was made to add a file link to
+  the Jump List for a file type the app isn't registered to handle.
+* `customCategoryAccessDeniedError` - Custom categories can't be added to the
+  Jump List due to user privacy or group policy settings.
+
+If `categories` is `null` the previously set custom Jump List (if any) will be
+replaced by the standard Jump List for the app (managed by Windows).
+
+**Note:** If a `JumpListCategory` object has neither the `type` nor the `name`
+property set then its `type` is assumed to be `tasks`. If the `name` property
+is set but the `type` property is omitted then the `type` is assumed to be
+`custom`.
+
+**Note:** Users can remove items from custom categories, and Windows will not
+allow a removed item to be added back into a custom category until **after**
+the next successful call to `app.setJumpList(categories)`. Any attempt to
+re-add a removed item to a custom category earlier than that will result in the
+entire custom category being omitted from the Jump List. The list of removed
+items can be obtained using `app.getJumpListSettings()`.
+
+Here's a very simple example of creating a custom Jump List:
+
+```javascript
+const {app} = require('electron')
+
+app.setJumpList([
+  {
+    type: 'custom',
+    name: 'Recent Projects',
+    items: [
+      { type: 'file', path: 'C:\\Projects\\project1.proj' },
+      { type: 'file', path: 'C:\\Projects\\project2.proj' }
+    ]
+  },
+  { // has a name so `type` is assumed to be "custom"
+    name: 'Tools',
+    items: [
+      {
+        type: 'task',
+        title: 'Tool A',
+        program: process.execPath,
+        args: '--run-tool-a',
+        icon: process.execPath,
+        iconIndex: 0,
+        description: 'Runs Tool A'
+      },
+      {
+        type: 'task',
+        title: 'Tool B',
+        program: process.execPath,
+        args: '--run-tool-b',
+        icon: process.execPath,
+        iconIndex: 0,
+        description: 'Runs Tool B'
+      }
+    ]
+  },
+  { type: 'frequent' },
+  { // has no name and no type so `type` is assumed to be "tasks"
+    items: [
+      {
+        type: 'task',
+        title: 'New Project',
+        program: process.execPath,
+        args: '--new-project',
+        description: 'Create a new project.'
+      },
+      { type: 'separator' },
+      {
+        type: 'task',
+        title: 'Recover Project',
+        program: process.execPath,
+        args: '--recover-project',
+        description: 'Recover Project'
+      }
+    ]
+  }
+])
+```
 
 ### `app.makeSingleInstance(callback)`
 
 * `callback` Function
+  * `argv` String[] - An array of the second instance's command line arguments
+  * `workingDirectory` String - The second instance's working directory
 
 This method makes your application a Single Instance Application - instead of
 allowing multiple instances of your app to run, this will ensure that only a
@@ -575,7 +697,7 @@ multiple instances of the application to once again run side by side.
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` Object - App-specific state to store for use by another device.
-* `webpageURL` String - The webpage to load in a browser if no suitable app is
+* `webpageURL` String (optional) - The webpage to load in a browser if no suitable app is
   installed on the resuming device. The scheme must be `http` or `https`.
 
 Creates an `NSUserActivity` and sets it as the current activity. The activity
@@ -583,7 +705,7 @@ is eligible for [Handoff][handoff] to another device afterward.
 
 ### `app.getCurrentActivityType()` _macOS_
 
-Returns the type of the currently running activity.
+Returns `String` - The type of the currently running activity.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
@@ -613,8 +735,10 @@ This method can only be called before app is ready.
 
 * `count` Integer
 
+Returns `Boolean` - Whether the call succeeded.
+
 Sets the counter badge for current app. Setting the count to `0` will hide the
-badge. Returns `true` when the call succeeded, otherwise returns `false`.
+badge.
 
 On macOS it shows on the dock icon. On Linux it only works for Unity launcher,
 
@@ -623,15 +747,15 @@ for more information please read [Desktop Environment Integration][unity-require
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
-Returns the current value displayed in the counter badge.
+Returns `Integer` - The current value displayed in the counter badge.
 
 ### `app.isUnityRunning()` _Linux_
 
-Returns whether current desktop environment is Unity launcher.
+Returns `Boolean` - Whether the current desktop environment is Unity launcher.
 
 ### `app.getLoginItemSettings()` _macOS_ _Windows_
 
-Return an Object with the login item settings of the app.
+Returns `Object`:
 
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
 * `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
@@ -646,12 +770,15 @@ Return an Object with the login item settings of the app.
   app should restore the windows that were open the last time the app was
   closed. This setting is only supported on macOS.
 
+**Note:** This API has no effect on
+[MAS builds][mas-builds].
+
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
-  * `openAtLogin` Boolean - `true` to open the app at login, `false` to remove
+  * `openAtLogin` Boolean (optional) - `true` to open the app at login, `false` to remove
     the app as a login item. Defaults to `false`.
-  * `openAsHidden` Boolean - `true` to open the app as hidden. Defaults to
+  * `openAsHidden` Boolean (optional) - `true` to open the app as hidden. Defaults to
     `false`. The user can edit this setting from the System Preferences so
     `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
     is opened to know the current value. This setting is only supported on
@@ -659,15 +786,33 @@ Return an Object with the login item settings of the app.
 
 Set the app's login item settings.
 
+**Note:** This API has no effect on
+[MAS builds][mas-builds].
+
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
-Returns a `Boolean`, `true` if Chrome's accessibility support is enabled,
+Returns `Boolean` - `true` if Chrome's accessibility support is enabled,
 `false` otherwise. This API will return `true` if the use of assistive
 technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
 details.
 
+### `app.setAboutPanelOptions(options)` _macOS_
+
+* `options` Object
+  * `applicationName` String (optional) - The app's name.
+  * `applicationVersion` String (optional) - The app's version.
+  * `copyright` String (optional) - Copyright information.
+  * `credits` String (optional) - Credit information.
+  * `version` String (optional) - The app's build version number.
+
+Set the about panel options. This will override the values defined in the app's
+`.plist` file. See the [Apple docs][about-panel-options] for more details.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
+
+* `switch` String - A command-line switch
+* `value` String (optional) - A value for the given switch
 
 Append a switch (with optional `value`) to Chromium's command line.
 
@@ -675,6 +820,8 @@ Append a switch (with optional `value`) to Chromium's command line.
 to control some low-level Chromium behaviors.
 
 ### `app.commandLine.appendArgument(value)`
+
+* `value` String - The argument to append to the command line
 
 Append an argument to Chromium's command line. The argument will be quoted
 correctly.
@@ -715,7 +862,7 @@ Sets the string to be displayed in the dock’s badging area.
 
 ### `app.dock.getBadge()` _macOS_
 
-Returns the badge string of the dock.
+Returns `String` - The badge string of the dock.
 
 ### `app.dock.hide()` _macOS_
 
@@ -727,7 +874,7 @@ Shows the dock icon.
 
 ### `app.dock.isVisible()` _macOS_
 
-Returns whether the dock icon is visible.
+Returns `Boolean` - Whether the dock icon is visible.
 The `app.dock.show()` call is asynchronous so this method might not
 return true immediately after that call.
 
@@ -751,3 +898,6 @@ Sets the `image` associated with this dock icon.
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
 [unity-requiremnt]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux
+[mas-builds]: ../tutorial/mac-app-store-submission-guide.md
+[JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
+[about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc

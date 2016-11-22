@@ -10,6 +10,10 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 
+@interface NSWindow (SierraSDK)
+@property(class) BOOL allowsAutomaticWindowTabbing;
+@end
+
 @implementation AtomApplicationDelegate
 
 - (void)setApplicationDockMenu:(atom::AtomMenuModel*)model {
@@ -21,11 +25,24 @@
   // Don't add the "Enter Full Screen" menu item automatically.
   [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"NSFullScreenMenuItemEverywhere"];
 
+  // Don't add the "Show Tab Bar" menu item.
+  if ([NSWindow respondsToSelector:@selector(allowsAutomaticWindowTabbing)])
+    NSWindow.allowsAutomaticWindowTabbing = NO;
+
   atom::Browser::Get()->WillFinishLaunching();
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
-  atom::Browser::Get()->DidFinishLaunching();
+  NSUserNotification *user_notification = [notify userInfo][(id)@"NSApplicationLaunchUserNotificationKey"];
+
+  if (user_notification.userInfo != nil) {
+    std::unique_ptr<base::DictionaryValue> launch_info =
+      atom::NSDictionaryToDictionaryValue(user_notification.userInfo);
+    atom::Browser::Get()->DidFinishLaunching(*launch_info);
+  } else {
+    std::unique_ptr<base::DictionaryValue> empty_info(new base::DictionaryValue);
+    atom::Browser::Get()->DidFinishLaunching(*empty_info);
+  }
 }
 
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
@@ -64,7 +81,7 @@ continueUserActivity:(NSUserActivity*)userActivity
   restorationHandler:(void (^)(NSArray*restorableObjects))restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
   std::unique_ptr<base::DictionaryValue> user_info =
-      atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+    atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
   if (!user_info)
     return NO;
 

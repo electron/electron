@@ -91,6 +91,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Point GetPosition();
   virtual void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize();
+  virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
+  virtual gfx::Rect GetContentBounds();
   virtual void SetSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
   virtual extensions::SizeConstraints GetSizeConstraints();
@@ -116,7 +118,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsFullScreenable() = 0;
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() = 0;
-  virtual void SetAlwaysOnTop(bool top) = 0;
+  virtual void SetAlwaysOnTop(bool top,
+                              const std::string& level = "floating") = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
   virtual void SetTitle(const std::string& title) = 0;
@@ -141,13 +144,25 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
   // Taskbar/Dock APIs.
-  virtual void SetProgressBar(double progress) = 0;
+  enum ProgressState {
+    PROGRESS_NONE,               // no progress, no marking
+    PROGRESS_INDETERMINATE,      // progress, indeterminate
+    PROGRESS_ERROR,              // progress, errored (red)
+    PROGRESS_PAUSED,             // progress, paused (yellow)
+    PROGRESS_NORMAL,             // progress, not marked (green)
+  };
+
+  virtual void SetProgressBar(double progress,
+                              const ProgressState state) = 0;
   virtual void SetOverlayIcon(const gfx::Image& overlay,
                               const std::string& description) = 0;
 
   // Workspace APIs.
   virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
   virtual bool IsVisibleOnAllWorkspaces() = 0;
+
+  // Vibrancy API
+  virtual void SetVibrancy(const std::string& type);
 
   // Webview APIs.
   virtual void FocusOnWebView();
@@ -164,6 +179,8 @@ class NativeWindow : public base::SupportsUserData,
   double GetAspectRatio();
   gfx::Size GetAspectRatioExtraSize();
   virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
+  virtual void PreviewFile(const std::string& path,
+                           const std::string& display_name);
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -196,6 +213,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMoved();
   void NotifyWindowScrollTouchBegin();
   void NotifyWindowScrollTouchEnd();
+  void NotifyWindowScrollTouchEdge();
   void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
@@ -238,9 +256,9 @@ class NativeWindow : public base::SupportsUserData,
   std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
       const std::vector<DraggableRegion>& regions);
 
-  // Converts between content size to window size.
-  virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size) = 0;
-  virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size) = 0;
+  // Converts between content bounds and window bounds.
+  virtual gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) = 0;
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(

@@ -6,18 +6,19 @@
 
 #include <string>
 
-#include "atom/common/node_includes.h"
-#include "content/public/browser/power_save_blocker.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
+
+#include "atom/common/node_includes.h"
 
 namespace mate {
 
 template<>
-struct Converter<content::PowerSaveBlocker::PowerSaveBlockerType> {
+struct Converter<device::PowerSaveBlocker::PowerSaveBlockerType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     content::PowerSaveBlocker::PowerSaveBlockerType* out) {
-    using content::PowerSaveBlocker;
+                     device::PowerSaveBlocker::PowerSaveBlockerType* out) {
+    using device::PowerSaveBlocker;
     std::string type;
     if (!ConvertFromV8(isolate, val, &type))
       return false;
@@ -39,7 +40,7 @@ namespace api {
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_blocker_type_(
-          content::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension) {
+          device::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension) {
   Init(isolate);
 }
 
@@ -58,30 +59,34 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
   // higher precedence level than |kPowerSaveBlockPreventAppSuspension|.
   //
   // Only the highest-precedence blocker type takes effect.
-  content::PowerSaveBlocker::PowerSaveBlockerType new_blocker_type =
-      content::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension;
+  device::PowerSaveBlocker::PowerSaveBlockerType new_blocker_type =
+      device::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension;
   for (const auto& element : power_save_blocker_types_) {
     if (element.second ==
-        content::PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep) {
+        device::PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep) {
       new_blocker_type =
-          content::PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep;
+          device::PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep;
       break;
     }
   }
 
   if (!power_save_blocker_ || new_blocker_type != current_blocker_type_) {
-    std::unique_ptr<content::PowerSaveBlocker> new_blocker =
-        content::PowerSaveBlocker::Create(
+    std::unique_ptr<device::PowerSaveBlocker> new_blocker(
+        new device::PowerSaveBlocker(
             new_blocker_type,
-            content::PowerSaveBlocker::kReasonOther,
-            ATOM_PRODUCT_NAME);
+            device::PowerSaveBlocker::kReasonOther,
+            ATOM_PRODUCT_NAME,
+            content::BrowserThread::GetMessageLoopProxyForThread(
+                content::BrowserThread::UI),
+            content::BrowserThread::GetMessageLoopProxyForThread(
+                content::BrowserThread::FILE)));
     power_save_blocker_.swap(new_blocker);
     current_blocker_type_ = new_blocker_type;
   }
 }
 
 int PowerSaveBlocker::Start(
-    content::PowerSaveBlocker::PowerSaveBlockerType type) {
+    device::PowerSaveBlocker::PowerSaveBlockerType type) {
   static int count = 0;
   power_save_blocker_types_[count] = type;
   UpdatePowerSaveBlocker();

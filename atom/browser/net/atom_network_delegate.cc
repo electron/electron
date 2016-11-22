@@ -85,7 +85,7 @@ void ToDictionary(base::DictionaryValue* details,
   std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
   net::HttpRequestHeaders::Iterator it(headers);
   while (it.GetNext())
-    dict->SetString(it.name(), it.value());
+    dict->SetStringWithoutPathExpansion(it.name(), it.value());
   details->Set("requestHeaders", std::move(dict));
 }
 
@@ -239,7 +239,7 @@ int AtomNetworkDelegate::OnBeforeURLRequest(
   return HandleResponseEvent(kOnBeforeRequest, request, callback, new_url);
 }
 
-int AtomNetworkDelegate::OnBeforeSendHeaders(
+int AtomNetworkDelegate::OnBeforeStartTransaction(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
@@ -254,18 +254,18 @@ int AtomNetworkDelegate::OnBeforeSendHeaders(
         DevToolsNetworkTransaction::kDevToolsEmulateNetworkConditionsClientId,
         client_id);
   if (!ContainsKey(response_listeners_, kOnBeforeSendHeaders))
-    return brightray::NetworkDelegate::OnBeforeSendHeaders(
+    return brightray::NetworkDelegate::OnBeforeStartTransaction(
         request, callback, headers);
 
   return HandleResponseEvent(
       kOnBeforeSendHeaders, request, callback, headers, *headers);
 }
 
-void AtomNetworkDelegate::OnSendHeaders(
+void AtomNetworkDelegate::OnStartTransaction(
     net::URLRequest* request,
     const net::HttpRequestHeaders& headers) {
   if (!ContainsKey(simple_listeners_, kOnSendHeaders)) {
-    brightray::NetworkDelegate::OnSendHeaders(request, headers);
+    brightray::NetworkDelegate::OnStartTransaction(request, headers);
     return;
   }
 
