@@ -1320,6 +1320,34 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.restore()', function () {
+    it('should restore the previous window size', function () {
+      if (w != null) w.destroy()
+
+      w = new BrowserWindow({
+        minWidth: 800,
+        width: 800
+      })
+
+      const initialSize = w.getSize()
+      w.minimize()
+      w.restore()
+      assertBoundsEqual(w.getSize(), initialSize)
+    })
+  })
+
+  describe('BrowserWindow.unmaximize()', function () {
+    it('should restore the previous window position', function () {
+      if (w != null) w.destroy()
+      w = new BrowserWindow()
+
+      const initialPosition = w.getPosition()
+      w.maximize()
+      w.unmaximize()
+      assertBoundsEqual(w.getPosition(), initialPosition)
+    })
+  })
+
   describe('parent window', function () {
     let c = null
 
@@ -1752,37 +1780,6 @@ describe('browser-window module', function () {
         })
         w.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
       })
-    })
-  })
-
-  describe('Restoring the window', function () {
-    beforeEach(function () {
-      if (w != null) w.destroy()
-      w = new BrowserWindow({
-        minWidth: 800,
-        width: 800
-      })
-    })
-
-    it('should restore the correct bounds when minWidth is used', function () {
-      const initialSize = w.getSize()
-      w.minimize()
-      w.restore()
-      assertBoundsEqual(w.getSize(), initialSize)
-    })
-  })
-
-  describe('Unmaximizing the window', function () {
-    beforeEach(function () {
-      if (w != null) w.destroy()
-      w = new BrowserWindow()
-    })
-
-    it('should set the correct position', function () {
-      const initialPosition = w.getPosition()
-      w.maximize()
-      w.unmaximize()
-      assertBoundsEqual(w.getPosition(), initialPosition)
     })
   })
 })
