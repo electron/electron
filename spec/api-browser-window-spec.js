@@ -1755,7 +1755,7 @@ describe('browser-window module', function () {
     })
   })
 
-  describe('minWidth', function () {
+  describe('Restoring the window', function () {
     beforeEach(function () {
       if (w != null) w.destroy()
       w = new BrowserWindow({
@@ -1764,30 +1764,24 @@ describe('browser-window module', function () {
       })
     })
 
-    it('should not affect the bounds when restoring the window', function (done) {
+    it('should set the correct width when minWidth is used', function () {
       w.minimize()
-      setTimeout(() => {
-        w.restore()
-        assert.equal(w.getSize()[0], 800)
-        done()
-      }, 200)
+      w.restore()
+      assert.equal(w.getSize()[0], 800)
     })
   })
 
-  describe('window position', function () {
+  describe('Unmaximizing the window', function () {
     beforeEach(function () {
       if (w != null) w.destroy()
       w = new BrowserWindow()
     })
 
-    it('should not affect the bounds when restoring the window', function (done) {
-      const originalPos = w.getPosition()
+    it('should set the correct position', function () {
+      const initialPosition = w.getPosition()
       w.maximize()
-      setTimeout(() => {
-        w.unmaximize()
-        assertBoundsEqual(originalPos, w.getPosition())
-        done()
-      }, 200)
+      w.unmaximize()
+      assertBoundsEqual(initialPosition, w.getPosition())
     })
   })
 })
