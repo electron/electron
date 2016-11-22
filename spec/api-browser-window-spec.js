@@ -1320,6 +1320,34 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.restore()', function () {
+    it('should restore the previous window size', function () {
+      if (w != null) w.destroy()
+
+      w = new BrowserWindow({
+        minWidth: 800,
+        width: 800
+      })
+
+      const initialSize = w.getSize()
+      w.minimize()
+      w.restore()
+      assertBoundsEqual(w.getSize(), initialSize)
+    })
+  })
+
+  describe('BrowserWindow.unmaximize()', function () {
+    it('should restore the previous window position', function () {
+      if (w != null) w.destroy()
+      w = new BrowserWindow()
+
+      const initialPosition = w.getPosition()
+      w.maximize()
+      w.unmaximize()
+      assertBoundsEqual(w.getPosition(), initialPosition)
+    })
+  })
+
   describe('parent window', function () {
     let c = null
 
