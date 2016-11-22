@@ -6,6 +6,7 @@ const {BrowserWindow, protocol, ipcMain} = remote
 
 describe('webFrame module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
+
   describe('webFrame.registerURLSchemeAsPrivileged', function () {
     it('supports fetch api', function (done) {
       webFrame.registerURLSchemeAsPrivileged('file')
@@ -59,6 +60,14 @@ describe('webFrame module', function () {
         })
         w.loadURL(url)
       })
+    })
+  })
+
+  it('supports setting the visual and layout zoom level limits', function () {
+    assert.doesNotThrow(function () {
+      webFrame.setZoomLevelLimits(1, 100)
+      webFrame.setVisualZoomLevelLimits(1, 50)
+      webFrame.setLayoutZoomLevelLimits(0, 25)
     })
   })
 })
