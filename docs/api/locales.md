@@ -14,7 +14,7 @@ values are listed below:
 | ar-BH | Arabic (Bahrain) |
 | ar-DZ | Arabic (Algeria) |
 | ar-EG | Arabic (Egypt) |
-| ar | Aragonese |
+| an | Aragonese |
 | ar-JO | Arabic (Jordan) |
 | ar-KW | Arabic (Kuwait) |
 | ar-LB | Arabic (Lebanon) |
