@@ -2,7 +2,7 @@
 
 > Create and control browser windows.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 ```javascript
 // In the main process.
@@ -111,7 +111,7 @@ child.once('ready-to-show', () => {
 
 > Create and control browser windows.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 `BrowserWindow` is an
 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).

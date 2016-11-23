@@ -2,7 +2,7 @@
 
 > loquear o sistema de entrar no modo de pouca energia (suspenso).
 
-Processo: [Main](../tutorial/quick-start.md#main-process)
+Processo: [Main](../glossary.md#main-process)
 
 Por exemplo:
 

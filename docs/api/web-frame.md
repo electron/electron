@@ -2,7 +2,7 @@
 
 > Customize the rendering of the current web page.
 
-Process: [Renderer](../tutorial/quick-start.md#renderer-process)
+Process: [Renderer](../glossary.md#renderer-process)
 
 An example of zooming current page to 200%.
 

@@ -2,7 +2,7 @@
 
 > Manipulate the child browser window
 
-Process: [Renderer](../tutorial/quick-start.md#renderer-process)
+Process: [Renderer](../glossary.md#renderer-process)
 
 The `BrowserWindowProxy` object is returned from `window.open` and provides
 limited functionality with the child window.
