@@ -481,6 +481,10 @@ win.webContents.on('paint', (event, dirty, image) => {
 win.loadURL('http://github.com')
 ```
 
+#### Event: 'devtools-reload-page'
+
+Emitted when the devtools window instructs the webContents to reload
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
