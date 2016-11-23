@@ -5,7 +5,7 @@
     "asar": "^0.11.0",
     "browserify": "^13.1.0",
     "electabul": "~0.0.4",
-    "electron-docs-linter": "^1.16.0",
+    "electron-docs-linter": "^1.16.1",
     "request": "*",
     "standard": "^8.4.0",
     "standard-markdown": "^2.1.1"
@@ -37,7 +37,7 @@
     "lint-cpp": "python ./script/cpplint.py",
     "lint-py": "python ./script/pylint.py",
     "lint-api-docs-js": "standard-markdown docs && standard-markdown docs-translations",
-    "lint-api-docs": "electron-docs-linter docs/api --version=$npm_package_version --outfile=out/electron-api.json",
+    "lint-api-docs": "electron-docs-linter --outfile=out/electron-api.json",
     "preinstall": "node -e 'process.exit(0)'",
     "release": "./script/upload.py -p",
     "repl": "python ./script/start.py --interactive",

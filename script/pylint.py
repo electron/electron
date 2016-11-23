@@ -14,8 +14,9 @@ def main():
   pylint = os.path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'pylint.py')
   settings = ['--rcfile=vendor/depot_tools/pylintrc']
   pys = glob.glob('script/*.py')
-  subprocess.check_call([sys.executable, pylint] + settings + pys,
-                        env=dict(PYTHONPATH='script'))
+  env = os.environ.copy()
+  env['PYTHONPATH'] = 'script'
+  subprocess.check_call([sys.executable, pylint] + settings + pys, env=env)
 
 
 if __name__ == '__main__':
