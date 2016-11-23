@@ -1,9 +1,10 @@
-// Type definitions for Electron 0.0.6
+// Type definitions for Electron 1.4.8
 // Project: http://electron.atom.io/
 
 
+
 declare namespace Electron {
-  class EventEmitter extends NodeJS.EventEmitter {
+  class EventEmitter {
     addListener(event: string, listener: Function): this;
     on(event: string, listener: Function): this;
     once(event: string, listener: Function): this;
@@ -14,93 +15,13 @@ declare namespace Electron {
     listeners(event: string): Function[];
     emit(event: string, ...args: any[]): boolean;
     listenerCount(type: string): number;
+    prependListener(event: string, listener: Function): this;
+    prependOnceListener(event: string, listener: Function): this;
+    eventNames(): string[];
   }
 
   class Accelerator extends String {
 
-  }
-
-  /**
-   * DownloadItem represents a download item in Electron.
-   */
-  interface DownloadItem extends NodeJS.EventEmitter {
-    /**
-    * Emitted when the download has been updated and is not done.
-    */
-    on(event: 'updated', listener: (event: Event, state: 'progressing' | 'interrupted') => void): this;
-    /**
-    * Emits when the download is in a terminal state. This includes a completed download,
-    * a cancelled download (via downloadItem.cancel()), and interrupted download that can’t be resumed.
-    */
-    on(event: 'done', listener: (event: Event, state: 'completed' | 'cancelled' | 'interrupted') => void): this;
-    on(event: string, listener: Function): this;
-    /**
-    * Set the save file path of the download item.
-    * Note: The API is only available in session’s will-download callback function.
-    * If user doesn’t set the save path via the API, Electron will use the original
-    * routine to determine the save path (Usually prompts a save dialog).
-    */
-    setSavePath(path: string): void;
-    /**
-    * @returns The save path of the download item.
-    * This will be either the path set via downloadItem.setSavePath(path) or the path selected from the shown save dialog.
-    */
-    getSavePath(): string;
-    /**
-    * Pauses the download.
-    */
-    pause(): void;
-    /**
-    * @returns Whether the download is paused.
-    */
-    isPaused(): boolean;
-    /**
-    * Resumes the download that has been paused.
-    */
-    resume(): void;
-    /**
-    * @returns Whether the download can resume.
-    */
-    canResume(): boolean;
-    /**
-    * Cancels the download operation.
-    */
-    cancel(): void;
-    /**
-    * @returns The origin url where the item is downloaded from.
-    */
-    getURL(): string;
-    /**
-    * @returns The mime type.
-    */
-    getMimeType(): string;
-    /**
-    * @returns Whether the download has user gesture.
-    */
-    hasUserGesture(): boolean;
-    /**
-    * @returns The file name of the download item.
-    * Note: The file name is not always the same as the actual one saved in local disk.
-    * If user changes the file name in a prompted download saving dialog,
-    * the actual name of saved file will be different.
-    */
-    getFilename(): string;
-    /**
-    * @returns The total size in bytes of the download item. If the size is unknown, it returns 0.
-    */
-    getTotalBytes(): number;
-    /**
-    * @returns The received bytes of the download item.
-    */
-    getReceivedBytes(): number;
-    /**
-    * @returns The Content-Disposition field from the response header.
-    */
-    getContentDisposition(): string;
-    /**
-    * @returns The current state.
-    */
-    getState(): 'progressing' | 'completed' | 'cancelled' | 'interrupted';
   }
 
   interface Event {
@@ -109,111 +30,89 @@ declare namespace Electron {
     returnValue?: any;
   }
 
+
+
   interface CommonInterface {
     clipboard: Electron.Clipboard;
     crashReporter: Electron.CrashReporter;
     nativeImage: typeof Electron.NativeImage;
     NativeImage: typeof Electron.NativeImage;
-    shell: Electron.Shell;
+    process: Electron.Process;
     screen: Electron.Screen;
-    BluetoothDevice: Electron.BluetoothDevice;
-    Certificate: Electron.Certificate;
-    Cookie: Electron.Cookie;
-    DesktopCapturerSource: Electron.DesktopCapturerSource;
-    Display: Electron.Display;
-    JumpListCategory: Electron.JumpListCategory;
-    JumpListItem: Electron.JumpListItem;
-    MemoryUsageDetails: Electron.MemoryUsageDetails;
-    Rectangle: Electron.Rectangle;
-    ShortcutDetails: Electron.ShortcutDetails;
-    Task: Electron.Task;
-    ThumbarButton: Electron.ThumbarButton;
-    UploadData: Electron.UploadData;
+    shell: Electron.Shell;
   }
 
   interface MainInterface extends CommonInterface {
     app: Electron.App;
     autoUpdater: Electron.AutoUpdater;
     BrowserWindow: typeof Electron.BrowserWindow;
-    contentTracing: Electron.ContentTracing;
-    dialog: Electron.Dialog;
-    ipcMain: Electron.IpcMain;
-    globalShortcut: Electron.GlobalShortcut;
-    Menu: typeof Electron.Menu;
-    net: Electron.Net;
     ClientRequest: typeof Electron.ClientRequest;
+    contentTracing: Electron.ContentTracing;
+    Cookies: typeof Electron.Cookies;
+    Debugger: typeof Electron.Debugger;
+    dialog: Electron.Dialog;
+    DownloadItem: typeof Electron.DownloadItem;
+    globalShortcut: Electron.GlobalShortcut;
     IncomingMessage: typeof Electron.IncomingMessage;
+    ipcMain: Electron.IpcMain;
+    Menu: typeof Electron.Menu;
     MenuItem: typeof Electron.MenuItem;
+    net: Electron.Net;
     powerMonitor: Electron.PowerMonitor;
     powerSaveBlocker: Electron.PowerSaveBlocker;
     protocol: Electron.Protocol;
     session: typeof Electron.Session;
     Session: typeof Electron.Session;
-    Cookies: typeof Electron.Cookies;
-    WebRequest: typeof Electron.WebRequest;
     systemPreferences: Electron.SystemPreferences;
     Tray: typeof Electron.Tray;
     webContents: typeof Electron.WebContents;
     WebContents: typeof Electron.WebContents;
-    Debugger: typeof Electron.Debugger;
-    process: Electron.Process;
+    WebRequest: typeof Electron.WebRequest;
   }
 
   interface RendererInterface extends CommonInterface {
+    BrowserWindowProxy: typeof Electron.BrowserWindowProxy;
     desktopCapturer: Electron.DesktopCapturer;
     ipcRenderer: Electron.IpcRenderer;
     remote: Electron.Remote;
     webFrame: Electron.WebFrame;
-    BrowserWindowProxy: typeof Electron.BrowserWindowProxy;
   }
 
   interface AllElectron {
-    clipboard: Electron.Clipboard;
-    crashReporter: Electron.CrashReporter;
-    nativeImage: typeof Electron.NativeImage;
-    shell: Electron.Shell;
     app: Electron.App;
     autoUpdater: Electron.AutoUpdater;
     BrowserWindow: typeof Electron.BrowserWindow;
-    contentTracing: Electron.ContentTracing;
-    dialog: Electron.Dialog;
-    ipcMain: Electron.IpcMain;
-    globalShortcut: Electron.GlobalShortcut;
-    Menu: typeof Electron.Menu;
-    net: Electron.Net;
+    BrowserWindowProxy: typeof Electron.BrowserWindowProxy;
     ClientRequest: typeof Electron.ClientRequest;
+    clipboard: Electron.Clipboard;
+    contentTracing: Electron.ContentTracing;
+    Cookies: typeof Electron.Cookies;
+    crashReporter: Electron.CrashReporter;
+    Debugger: typeof Electron.Debugger;
+    desktopCapturer: Electron.DesktopCapturer;
+    dialog: Electron.Dialog;
+    DownloadItem: typeof Electron.DownloadItem;
+    globalShortcut: Electron.GlobalShortcut;
     IncomingMessage: typeof Electron.IncomingMessage;
+    ipcMain: Electron.IpcMain;
+    ipcRenderer: Electron.IpcRenderer;
+    Menu: typeof Electron.Menu;
     MenuItem: typeof Electron.MenuItem;
+    nativeImage: typeof Electron.NativeImage;
+    net: Electron.Net;
     powerMonitor: Electron.PowerMonitor;
     powerSaveBlocker: Electron.PowerSaveBlocker;
+    process: Electron.Process;
     protocol: Electron.Protocol;
+    remote: Electron.Remote;
     screen: Electron.Screen;
     session: typeof Electron.Session;
-    Cookies: typeof Electron.Cookies;
-    WebRequest: typeof Electron.WebRequest;
+    shell: Electron.Shell;
     systemPreferences: Electron.SystemPreferences;
     Tray: typeof Electron.Tray;
     webContents: typeof Electron.WebContents;
-    Debugger: typeof Electron.Debugger;
-    process: Electron.Process;
-    desktopCapturer: Electron.DesktopCapturer;
-    ipcRenderer: Electron.IpcRenderer;
-    remote: Electron.Remote;
     webFrame: Electron.WebFrame;
-    BrowserWindowProxy: typeof Electron.BrowserWindowProxy;
-    BluetoothDevice: Electron.BluetoothDevice;
-    Certificate: Electron.Certificate;
-    Cookie: Electron.Cookie;
-    DesktopCapturerSource: Electron.DesktopCapturerSource;
-    Display: Electron.Display;
-    JumpListCategory: Electron.JumpListCategory;
-    JumpListItem: Electron.JumpListItem;
-    MemoryUsageDetails: Electron.MemoryUsageDetails;
-    Rectangle: Electron.Rectangle;
-    ShortcutDetails: Electron.ShortcutDetails;
-    Task: Electron.Task;
-    ThumbarButton: Electron.ThumbarButton;
-    UploadData: Electron.UploadData;
+    WebRequest: typeof Electron.WebRequest;
   }
 
   interface App extends EventEmitter {
@@ -240,7 +139,9 @@ declare namespace Electron {
     /**
      * Emitted before the application starts closing its windows. Calling
      * event.preventDefault() will prevent the default behaviour, which is terminating
-     * the application.
+     * the application. Note: If application quit was initiated by
+     * autoUpdater.quitAndInstall() then before-quit is emitted after emitting close
+     * event on all windows and closing them.
      */
     on(event: 'before-quit', listener: (event: Event) => void): this;
     /**
@@ -318,9 +219,10 @@ declare namespace Electron {
     on(event: 'open-file', listener: (event: Event,
                                       path: string) => void): this;
     /**
-     * Emitted when the user wants to open a URL with the application. The URL scheme
-     * must be registered to be opened by your application. You should call
-     * event.preventDefault() if you want to handle this event.
+     * Emitted when the user wants to open a URL with the application. Your
+     * application's Info.plist file must define the url scheme within the
+     * CFBundleURLTypes key, and set NSPrincipalClass to AtomApplication. You should
+     * call event.preventDefault() if you want to handle this event.
      */
     on(event: 'open-url', listener: (event: Event,
                                      url: string) => void): this;
@@ -384,29 +286,6 @@ declare namespace Electron {
      */
     addRecentDocument(path: string): void;
     /**
-     * Append an argument to Chromium's command line. The argument will be quoted
-     * correctly. Note: This will not affect process.argv.
-     */
-    appendArgument(value: string): void;
-    /**
-     * Append a switch (with optional value) to Chromium's command line. Note: This
-     * will not affect process.argv, and is mainly used by developers to control some
-     * low-level Chromium behaviors.
-     */
-    appendSwitch(the_switch: string, value?: string): void;
-    /**
-     * When critical is passed, the dock icon will bounce until either the application
-     * becomes active or the request is canceled. When informational is passed, the
-     * dock icon will bounce for one second. However, the request remains active until
-     * either the application becomes active or the request is canceled. Returns an ID
-     * representing the request.
-     */
-    bounce(type?: 'critical' | 'informational'): void;
-    /**
-     * Cancel the bounce of id.
-     */
-    cancelBounce(id: number): void;
-    /**
      * Clears the recent documents list.
      */
     clearRecentDocuments(): void;
@@ -416,22 +295,17 @@ declare namespace Electron {
      */
     disableHardwareAcceleration(): void;
     /**
-     * Bounces the Downloads stack if the filePath is inside the Downloads folder.
-     */
-    downloadFinished(filePath: string): void;
-    /**
      * Exits immediately with exitCode.  exitCode defaults to 0. All windows will be
      * closed immediately without asking user and the before-quit and will-quit events
      * will not be emitted.
      */
-    exit(exitCode?: number): void;
+    exit(exitCode: number): void;
     /**
      * On Linux, focuses on the first visible window. On macOS, makes the application
      * the active app. On Windows, focuses on the application's first window.
      */
     focus(): void;
     getAppPath(): string;
-    getBadge(): string;
     getBadgeCount(): number;
     getCurrentActivityType(): string;
     getJumpListSettings(): JumpListSettings;
@@ -462,10 +336,6 @@ declare namespace Electron {
      */
     hide(): void;
     /**
-     * Hides the dock icon.
-     */
-    hide(): void;
-    /**
      * Imports the certificate in pkcs12 format into the platform certificate store.
      * callback is called with the result of import operation, a value of 0 indicates
      * success while any other value indicates failure according to chromium
@@ -482,10 +352,9 @@ declare namespace Electron {
      * macOS machine. Please refer to Apple's documentation for details. The API uses
      * the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
      */
-    isDefaultProtocolClient(protocol: string, path?: string, args?: string[]): boolean;
+    isDefaultProtocolClient(protocol: string, path: string, args?: string[]): boolean;
     isReady(): boolean;
     isUnityRunning(): boolean;
-    isVisible(): boolean;
     /**
      * This method makes your application a Single Instance Application - instead of
      * allowing multiple instances of your app to run, this will ensure that only a
@@ -527,7 +396,7 @@ declare namespace Electron {
      * restarting current instance immediately and adding a new command line argument
      * to the new instance:
      */
-    relaunch(options?: RelaunchOptions): void;
+    relaunch(options: RelaunchOptions): void;
     /**
      * Releases all locks that were created by makeSingleInstance. This will allow
      * multiple instances of the application to once again run side by side.
@@ -537,7 +406,7 @@ declare namespace Electron {
      * This method checks if the current executable as the default handler for a
      * protocol (aka URI scheme). If so, it will remove the app as the default handler.
      */
-    removeAsDefaultProtocolClient(protocol: string, path?: string, args?: string[]): boolean;
+    removeAsDefaultProtocolClient(protocol: string, path: string, args?: string[]): boolean;
     /**
      * Set the about panel options. This will override the values defined in the app's
      * .plist file. See the Apple docs for more details.
@@ -561,11 +430,7 @@ declare namespace Electron {
      * The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme
      * internally.
      */
-    setAsDefaultProtocolClient(protocol: string, path?: string, args?: string[]): boolean;
-    /**
-     * Sets the string to be displayed in the dock’s badging area.
-     */
-    setBadge(text: string): void;
+    setAsDefaultProtocolClient(protocol: string, path: string, args?: string[]): boolean;
     /**
      * Sets the counter badge for current app. Setting the count to 0 will hide the
      * badge. On macOS it shows on the dock icon. On Linux it only works for Unity
@@ -574,34 +439,25 @@ declare namespace Electron {
      */
     setBadgeCount(count: number): boolean;
     /**
-     * Sets the image associated with this dock icon.
-     */
-    setIcon(image: NativeImage): void;
-    /**
      * Sets or removes a custom Jump List for the application, and returns one of the
      * following strings: If categories is null the previously set custom Jump List (if
      * any) will be replaced by the standard Jump List for the app (managed by
-     * Windows). JumpListCategory objects should have the following properties: Note:
-     * If a JumpListCategory object has neither the type nor the name property set then
-     * its type is assumed to be tasks. If the name property is set but the type
-     * property is omitted then the type is assumed to be custom. Note: Users can
-     * remove items from custom categories, and Windows will not allow a removed item
-     * to be added back into a custom category until after the next successful call to
-     * app.setJumpList(categories). Any attempt to re-add a removed item to a custom
-     * category earlier than that will result in the entire custom category being
-     * omitted from the Jump List. The list of removed items can be obtained using
-     * app.getJumpListSettings(). JumpListItem objects should have the following
-     * properties: Here's a very simple example of creating a custom Jump List:
+     * Windows). Note: If a JumpListCategory object has neither the type nor the name
+     * property set then its type is assumed to be tasks. If the name property is set
+     * but the type property is omitted then the type is assumed to be custom. Note:
+     * Users can remove items from custom categories, and Windows will not allow a
+     * removed item to be added back into a custom category until after the next
+     * successful call to app.setJumpList(categories). Any attempt to re-add a removed
+     * item to a custom category earlier than that will result in the entire custom
+     * category being omitted from the Jump List. The list of removed items can be
+     * obtained using app.getJumpListSettings(). Here's a very simple example of
+     * creating a custom Jump List:
      */
     setJumpList(categories: JumpListCategory[]): void;
     /**
      * Set the app's login item settings. Note: This API has no effect on MAS builds.
      */
     setLoginItemSettings(settings: Settings): void;
-    /**
-     * Sets the application's dock menu.
-     */
-    setMenu(menu: Menu): void;
     /**
      * Overrides the current application's name.
      */
@@ -623,19 +479,17 @@ declare namespace Electron {
     setUserActivity(type: string, userInfo: any, webpageURL: string): void;
     /**
      * Adds tasks to the Tasks category of the JumpList on Windows. tasks is an array
-     * of Task objects in the following format: Task Object: Note: If you'd like to
-     * customize the Jump List even more use app.setJumpList(categories) instead.
+     * of Task objects. Note: If you'd like to customize the Jump List even more use
+     * app.setJumpList(categories) instead.
      */
     setUserTasks(tasks: Task[]): boolean;
-    /**
-     * Shows the dock icon.
-     */
-    show(): void;
     /**
      * Shows application windows after they were hidden. Does not automatically focus
      * them.
      */
     show(): void;
+    commandLine: CommandLine;
+    dock: Dock;
   }
 
   interface AutoUpdater extends EventEmitter {
@@ -676,7 +530,10 @@ declare namespace Electron {
     getFeedURL(): string;
     /**
      * Restarts the app and installs the update after it has been downloaded. It should
-     * only be called after update-downloaded has been emitted.
+     * only be called after update-downloaded has been emitted. Note:
+     * autoUpdater.quitAndInstall() will close all application windows first and only
+     * emit before-quit event on app after that. This is different from the normal quit
+     * event sequence.
      */
     quitAndInstall(): void;
     /**
@@ -850,10 +707,6 @@ declare namespace Electron {
     /**
      * Same as webContents.capturePage([rect, ]callback).
      */
-    capturePage(callback: (image: NativeImage) => void): void;
-    /**
-     * Same as webContents.capturePage([rect, ]callback).
-     */
     capturePage(rect: Rectangle, callback: (image: NativeImage) => void): void;
     /**
      * Moves window to the center of the screen.
@@ -919,10 +772,7 @@ declare namespace Electron {
      */
     isClosable(): boolean;
     isDestroyed(): boolean;
-    /**
-     * Whether Boolean - Whether the window's document has been edited.
-     */
-    isDocumentEdited(): void;
+    isDocumentEdited(): boolean;
     isFocused(): boolean;
     isFullScreen(): boolean;
     isFullScreenable(): boolean;
@@ -957,7 +807,7 @@ declare namespace Electron {
      * ensure that file URLs are properly formatted, it is recommended to use Node's
      * url.format method:
      */
-    loadURL(url: URL, options?: LoadURLOptions): void;
+    loadURL(url: string, options: LoadURLOptions): void;
     /**
      * Maximizes the window.
      */
@@ -970,7 +820,7 @@ declare namespace Electron {
     /**
      * Uses Quick Look to preview a file at a given path.
      */
-    previewFile(path: string, displayName?: string): void;
+    previewFile(path: string, displayName: string): void;
     /**
      * Same as webContents.reload.
      */
@@ -984,7 +834,7 @@ declare namespace Electron {
      * setting this, the window is still a normal window, not a toolbox window which
      * can not be focused on.
      */
-    setAlwaysOnTop(flag: boolean, level?: 'normal' | 'floating' | 'torn-off-menu' | 'modal-panel' | 'main-menu' | 'status' | 'pop-up-menu' | 'screen-saver'): void;
+    setAlwaysOnTop(flag: boolean, level: 'normal' | 'floating' | 'torn-off-menu' | 'modal-panel' | 'main-menu' | 'status' | 'pop-up-menu' | 'screen-saver'): void;
     /**
      * This will make a window maintain an aspect ratio. The extra size allows a
      * developer to have space, specified in pixels, not included within the aspect
@@ -999,7 +849,7 @@ declare namespace Electron {
      * Just sum any extra width and height areas you have within the overall content
      * view.
      */
-    setAspectRatio(aspectRatio: number, extraSize?: ExtraSize): void;
+    setAspectRatio(aspectRatio: number, extraSize: ExtraSize): void;
     /**
      * Sets whether the window menu bar should hide itself automatically. Once set the
      * menu bar will only show when users press the single Alt key. If the menu bar is
@@ -1009,7 +859,7 @@ declare namespace Electron {
     /**
      * Resizes and moves the window to the supplied bounds
      */
-    setBounds(bounds: Rectangle, animate?: boolean): void;
+    setBounds(bounds: Rectangle, animate: boolean): void;
     /**
      * Sets whether the window can be manually closed by user. On Linux does nothing.
      */
@@ -1018,7 +868,7 @@ declare namespace Electron {
      * Resizes and moves the window's client area (e.g. the web page) to the supplied
      * bounds.
      */
-    setContentBounds(bounds: Rectangle, animate?: boolean): void;
+    setContentBounds(bounds: Rectangle, animate: boolean): void;
     /**
      * Prevents the window contents from being captured by other apps. On macOS it sets
      * the NSWindow's sharingType to NSWindowSharingNone. On Windows it calls
@@ -1028,7 +878,7 @@ declare namespace Electron {
     /**
      * Resizes the window's client area (e.g. the web page) to width and height.
      */
-    setContentSize(width: number, height: number, animate?: boolean): void;
+    setContentSize(width: number, height: number, animate: boolean): void;
     /**
      * Specifies whether the window’s document has been edited, and the icon in title
      * bar will become gray when set to true.
@@ -1110,7 +960,7 @@ declare namespace Electron {
     /**
      * Moves window to x and y.
      */
-    setPosition(x: number, y: number, animate?: boolean): void;
+    setPosition(x: number, y: number, animate: boolean): void;
     /**
      * Sets progress value in progress bar. Valid range is [0, 1.0]. Remove progress
      * bar when progress < 0; Change to indeterminate mode when progress > 1. On Linux
@@ -1121,7 +971,7 @@ declare namespace Electron {
      * without a mode set (but with a value within the valid range), normal will be
      * assumed.
      */
-    setProgressBar(progress: number, options?: ProgressBarOptions): void;
+    setProgressBar(progress: number, options: ProgressBarOptions): void;
     /**
      * Sets the pathname of the file the window represents, and the icon of the file
      * will show in window's title bar.
@@ -1136,11 +986,11 @@ declare namespace Electron {
      * attached just below the window frame, but you may want to display them beneath a
      * HTML-rendered toolbar. For example:
      */
-    setSheetOffset(offsetY: number, offsetX?: number): void;
+    setSheetOffset(offsetY: number, offsetX: number): void;
     /**
      * Resizes the window to width and height.
      */
-    setSize(width: number, height: number, animate?: boolean): void;
+    setSize(width: number, height: number, animate: boolean): void;
     /**
      * Makes the window not show in the taskbar.
      */
@@ -1171,6 +1021,11 @@ declare namespace Electron {
      * Changes the title of native window to title.
      */
     setTitle(title: string): void;
+    /**
+     * Adds a vibrancy effect to the browser window. Passing null or an empty string
+     * will remove the vibrancy effect on the window.
+     */
+    setVibrancy(type: 'appearance-based' | 'light' | 'dark' | 'titlebar' | 'selection' | 'menu' | 'popover' | 'sidebar' | 'medium-light' | 'ultra-dark'): void;
     /**
      * Sets whether the window should be visible on all workspaces. Note: This API does
      * nothing on Windows.
@@ -1243,11 +1098,26 @@ declare namespace Electron {
 
     data: string;
     fingerprint: string;
+    issuer: CertificatePrincipal;
+    issuerCert: Certificate;
     issuerName: string;
     serialNumber: string;
+    subject: CertificatePrincipal;
     subjectName: string;
     validExpiry: number;
     validStart: number;
+  }
+
+  type CertificatePrincipal = {
+
+    // Docs: http://electron.atom.io/docs/api/structures/certificate-principal
+
+    commonName: string;
+    country: string;
+    locality: string;
+    organizations: string[];
+    organizationUnits: string[];
+    state: string;
   }
 
   class ClientRequest extends EventEmitter {
@@ -1303,7 +1173,7 @@ declare namespace Electron {
      * Sends the last chunk of the request data. Subsequent write or end operations
      * will not be allowed. The finish event is emitted just after the end operation.
      */
-    end(chunk?: string | Buffer, encoding?: string, callback?: Function): void;
+    end(chunk: string | Buffer, encoding: string, callback: Function): void;
     /**
      * Returns String - The value of a previously set extra header name.
      */
@@ -1329,7 +1199,7 @@ declare namespace Electron {
      * issued on the wire. After the first write operation, it is not allowed to add or
      * remove a custom header.
      */
-    write(chunk: string | Buffer, encoding?: string, callback?: Function): void;
+    write(chunk: string | Buffer, encoding: string, callback: Function): void;
     chunkedEncoding: boolean;
   }
 
@@ -1337,13 +1207,13 @@ declare namespace Electron {
 
     // Docs: http://electron.atom.io/docs/api/clipboard
 
-    availableFormats(type?: string): string[];
+    availableFormats(type: string): string[];
     /**
      * Clears the clipboard content.
      */
-    clear(type?: string): void;
-    has(data: string, type?: string): boolean;
-    read(data: string, type?: string): string;
+    clear(type: string): void;
+    has(data: string, type: string): boolean;
+    read(data: string, type: string): string;
     /**
      * Returns an Object containing title and url keys representing the bookmark in the
      * clipboard. The title and url values will be empty strings when the bookmark is
@@ -1351,20 +1221,20 @@ declare namespace Electron {
      */
     readBookmark(): ReadBookmark;
     readFindText(): string;
-    readHTML(type?: string): string;
-    readImage(type?: string): NativeImage;
-    readRTF(type?: string): string;
-    readText(type?: string): string;
+    readHTML(type: string): string;
+    readImage(type: string): NativeImage;
+    readRTF(type: string): string;
+    readText(type: string): string;
     /**
      * Writes data to the clipboard.
      */
-    write(data: Data, type?: string): void;
+    write(data: Data, type: string): void;
     /**
      * Writes the title and url into the clipboard as a bookmark. Note: Most apps on
      * Windows don't support pasting bookmarks into them so you can use clipboard.write
      * to write both a bookmark and fallback text to the clipboard.
      */
-    writeBookmark(title: string, url: string, type?: string): void;
+    writeBookmark(title: string, url: string, type: string): void;
     /**
      * Writes the text into the find pasteboard as plain text. This method uses
      * synchronous IPC when called from the renderer process.
@@ -1373,19 +1243,19 @@ declare namespace Electron {
     /**
      * Writes markup to the clipboard.
      */
-    writeHTML(markup: string, type?: string): void;
+    writeHTML(markup: string, type: string): void;
     /**
      * Writes image to the clipboard.
      */
-    writeImage(image: NativeImage, type?: string): void;
+    writeImage(image: NativeImage, type: string): void;
     /**
      * Writes the text into the clipboard in RTF.
      */
-    writeRTF(text: string, type?: string): void;
+    writeRTF(text: string, type: string): void;
     /**
      * Writes the text into the clipboard as plain text.
      */
-    writeText(text: string, type?: string): void;
+    writeText(text: string, type: string): void;
   }
 
   interface ContentTracing extends EventEmitter {
@@ -1472,7 +1342,7 @@ declare namespace Electron {
     // Docs: http://electron.atom.io/docs/api/structures/cookie
 
     domain: string;
-    expirationDate?: number;
+    expirationDate: number;
     hostOnly: string;
     httpOnly: boolean;
     name: string;
@@ -1521,6 +1391,14 @@ declare namespace Electron {
     set(details: Details, callback: (error: Error) => void): void;
   }
 
+  type CrashReport = {
+
+    // Docs: http://electron.atom.io/docs/api/structures/crash-report
+
+    date: string;
+    ID: number;
+  }
+
   interface CrashReporter extends EventEmitter {
 
     // Docs: http://electron.atom.io/docs/api/crash-reporter
@@ -1529,12 +1407,12 @@ declare namespace Electron {
      * Returns the date and ID of the last crash report. If no crash reports have been
      * sent or the crash reporter has not been started, null is returned.
      */
-    getLastCrashReport(): LastCrashReport;
+    getLastCrashReport(): CrashReport;
     /**
      * Returns all uploaded crash reports. Each report contains the date and uploaded
      * ID.
      */
-    getUploadedReports(): Object[];
+    getUploadedReports(): CrashReport[];
     /**
      * You are required to call this method before using other crashReporter APIs.
      * Note: On macOS, Electron uses a new crashpad client, which is different from
@@ -1575,7 +1453,7 @@ declare namespace Electron {
     /**
      * Attaches the debugger to the webContents.
      */
-    attach(protocolVersion?: string): void;
+    attach(protocolVersion: string): void;
     /**
      * Detaches the debugger from the webContents.
      */
@@ -1584,7 +1462,7 @@ declare namespace Electron {
     /**
      * Send given command to the debugging target.
      */
-    sendCommand(method: string, commandParams?: any, callback?: (error: any, result: any) => void): void;
+    sendCommand(method: string, commandParams: any, callback: (error: any, result: any) => void): void;
   }
 
   interface DesktopCapturer extends EventEmitter {
@@ -1625,61 +1503,25 @@ declare namespace Electron {
      * It returns the index of the clicked button. If a callback is passed, the API
      * call will be asynchronous and the result will be passed via callback(response).
      */
-    showMessageBox(browserWindow: BrowserWindow, options: MessageBoxOptions, callback: (response: number) => void): void;
+    showMessageBox(browserWindow: BrowserWindow, options: MessageBoxOptions, callback: (response: number) => void): number;
     /**
-     * Shows a message box, it will block the process until the message box is closed.
-     * It returns the index of the clicked button. If a callback is passed, the API
-     * call will be asynchronous and the result will be passed via callback(response).
+     * The filters specifies an array of file types that can be displayed or selected
+     * when you want to limit the user to a specific type. For example: The extensions
+     * array should contain extensions without wildcards or dots (e.g. 'png' is good
+     * but '.png' and '*.png' are bad). To show all files, use the '*' wildcard (no
+     * other wildcard is supported). If a callback is passed, the API call will be
+     * asynchronous and the result will be passed via callback(filenames) Note: On
+     * Windows and Linux an open dialog can not be both a file selector and a directory
+     * selector, so if you set properties to ['openFile', 'openDirectory'] on these
+     * platforms, a directory selector will be shown.
      */
-    showMessageBox(options: MessageBoxOptions, callback: (response: number) => void): void;
+    showOpenDialog(browserWindow: BrowserWindow, options: OpenDialogOptions, callback: (filePaths: string[]) => void): string[];
     /**
-     * Shows a message box, it will block the process until the message box is closed.
-     * It returns the index of the clicked button. If a callback is passed, the API
-     * call will be asynchronous and the result will be passed via callback(response).
+     * The filters specifies an array of file types that can be displayed, see
+     * dialog.showOpenDialog for an example. If a callback is passed, the API call will
+     * be asynchronous and the result will be passed via callback(filename)
      */
-    showMessageBox(browserWindow: BrowserWindow, options: MessageBoxOptions, callback: (response: number) => void): void;
-    /**
-     * On success this method returns an array of file paths chosen by the user,
-     * otherwise it returns undefined. The filters specifies an array of file types
-     * that can be displayed or selected when you want to limit the user to a specific
-     * type. For example: The extensions array should contain extensions without
-     * wildcards or dots (e.g. 'png' is good but '.png' and '*.png' are bad). To show
-     * all files, use the '*' wildcard (no other wildcard is supported). If a callback
-     * is passed, the API call will be asynchronous and the result will be passed via
-     * callback(filenames) Note: On Windows and Linux an open dialog can not be both a
-     * file selector and a directory selector, so if you set properties to ['openFile',
-     * 'openDirectory'] on these platforms, a directory selector will be shown.
-     */
-    showOpenDialog(browserWindow: BrowserWindow, options: OpenDialogOptions, callback?: (filePaths: string[]) => void): void;
-    /**
-     * On success this method returns an array of file paths chosen by the user,
-     * otherwise it returns undefined. The filters specifies an array of file types
-     * that can be displayed or selected when you want to limit the user to a specific
-     * type. For example: The extensions array should contain extensions without
-     * wildcards or dots (e.g. 'png' is good but '.png' and '*.png' are bad). To show
-     * all files, use the '*' wildcard (no other wildcard is supported). If a callback
-     * is passed, the API call will be asynchronous and the result will be passed via
-     * callback(filenames) Note: On Windows and Linux an open dialog can not be both a
-     * file selector and a directory selector, so if you set properties to ['openFile',
-     * 'openDirectory'] on these platforms, a directory selector will be shown.
-     */
-    showOpenDialog(options: OpenDialogOptions, callback?: (filePaths: string[]) => void): void;
-    /**
-     * On success this method returns the path of the file chosen by the user,
-     * otherwise it returns undefined. The filters specifies an array of file types
-     * that can be displayed, see dialog.showOpenDialog for an example. If a callback
-     * is passed, the API call will be asynchronous and the result will be passed via
-     * callback(filename)
-     */
-    showSaveDialog(browserWindow: BrowserWindow, options: SaveDialogOptions, callback?: (filename: string) => void): void;
-    /**
-     * On success this method returns the path of the file chosen by the user,
-     * otherwise it returns undefined. The filters specifies an array of file types
-     * that can be displayed, see dialog.showOpenDialog for an example. If a callback
-     * is passed, the API call will be asynchronous and the result will be passed via
-     * callback(filename)
-     */
-    showSaveDialog(options: SaveDialogOptions, callback?: (filename: string) => void): void;
+    showSaveDialog(browserWindow: BrowserWindow, options: SaveDialogOptions, callback: (filename: string) => void): string;
   }
 
   type Display = {
@@ -1694,6 +1536,73 @@ declare namespace Electron {
     touchSupport: string;
     workArea: Rectangle;
     workAreaSize: WorkAreaSize;
+  }
+
+  class DownloadItem extends EventEmitter {
+
+    // Docs: http://electron.atom.io/docs/api/download-item
+
+    /**
+     * Emitted when the download is in a terminal state. This includes a completed
+     * download, a cancelled download (via downloadItem.cancel()), and interrupted
+     * download that can't be resumed. The state can be one of following:
+     */
+    on(event: 'done', listener: (event: Event,
+                                 state: string) => void): this;
+    /**
+     * Emitted when the download has been updated and is not done. The state can be one
+     * of following:
+     */
+    on(event: 'updated', listener: (event: Event,
+                                    state: string) => void): this;
+    /**
+     * Cancels the download operation.
+     */
+    cancel(): void;
+    /**
+     * Resumes Boolean - Whether the download can resume.
+     */
+    canResume(): void;
+    getContentDisposition(): string;
+    /**
+     * Note: The file name is not always the same as the actual one saved in local
+     * disk. If user changes the file name in a prompted download saving dialog, the
+     * actual name of saved file will be different.
+     */
+    getFilename(): string;
+    getMimeType(): string;
+    getReceivedBytes(): number;
+    getSavePath(): string;
+    getState(): string;
+    /**
+     * If the size is unknown, it returns 0.
+     */
+    getTotalBytes(): number;
+    getURL(): string;
+    hasUserGesture(): boolean;
+    isPaused(): boolean;
+    /**
+     * Pauses the download.
+     */
+    pause(): void;
+    /**
+     * Resumes the download that has been paused.
+     */
+    resume(): void;
+    /**
+     * The API is only available in session's will-download callback function. If user
+     * doesn't set the save path via the API, Electron will use the original routine to
+     * determine the save path(Usually prompts a save dialog).
+     */
+    setSavePath(path: string): void;
+  }
+
+  type FileFilter = {
+
+    // Docs: http://electron.atom.io/docs/api/structures/file-filter
+
+    extensions: string[];
+    name: string;
   }
 
   interface GlobalShortcut extends EventEmitter {
@@ -1762,20 +1671,79 @@ declare namespace Electron {
 
     // Docs: http://electron.atom.io/docs/api/ipc-main
 
+    /**
+     * Listens to channel, when a new message arrives listener would be called with
+     * listener(event, args...).
+     */
+    on(channel: string, listener: Function): this;
+    /**
+     * Adds a one time listener function for the event. This listener is invoked only
+     * the next time a message is sent to channel, after which it is removed.
+     */
+    once(channel: string, listener: Function): this;
+    /**
+     * Removes all listeners, or those of the specified channel.
+     */
+    removeAllListeners(channel: string): this;
+    /**
+     * Removes the specified listener from the listener array for the specified
+     * channel.
+     */
+    removeListener(channel: string, listener: Function): this;
   }
 
   interface IpcRenderer extends EventEmitter {
 
     // Docs: http://electron.atom.io/docs/api/ipc-renderer
 
+    /**
+     * Listens to channel, when a new message arrives listener would be called with
+     * listener(event, args...).
+     */
+    on(channel: string, listener: Function): this;
+    /**
+     * Adds a one time listener function for the event. This listener is invoked only
+     * the next time a message is sent to channel, after which it is removed.
+     */
+    once(channel: string, listener: Function): this;
+    /**
+     * Removes all listeners, or those of the specified channel.
+     */
+    removeAllListeners(channel: string): this;
+    /**
+     * Removes the specified listener from the listener array for the specified
+     * channel.
+     */
+    removeListener(channel: string, listener: Function): this;
+    /**
+     * Send a message to the main process asynchronously via channel, you can also send
+     * arbitrary arguments. Arguments will be serialized in JSON internally and hence
+     * no functions or prototype chain will be included. The main process handles it by
+     * listening for channel with ipcMain module.
+     */
+    send(channel: string, ...args: any[]): void;
+    /**
+     * Send a message to the main process synchronously via channel, you can also send
+     * arbitrary arguments. Arguments will be serialized in JSON internally and hence
+     * no functions or prototype chain will be included. The main process handles it by
+     * listening for channel with ipcMain module, and replies by setting
+     * event.returnValue. Note: Sending a synchronous message will block the whole
+     * renderer process, unless you know what you are doing you should never use it.
+     */
+    sendSync(channel: string, ...args: any[]): void;
+    /**
+     * Like ipcRenderer.send but the event will be sent to the <webview> element in the
+     * host page instead of the main process.
+     */
+    sendToHost(channel: string, ...args: any[]): void;
   }
 
   type JumpListCategory = {
 
     // Docs: http://electron.atom.io/docs/api/structures/jump-list-category
 
-    items: JumpListItem[];
-    name: string;
+    items?: JumpListItem[];
+    name?: string;
     type: string;
   }
 
@@ -1783,13 +1751,13 @@ declare namespace Electron {
 
     // Docs: http://electron.atom.io/docs/api/structures/jump-list-item
 
-    args: string;
-    description: string;
+    args?: string;
+    description?: string;
     iconIndex: number;
     iconPath: string;
-    path: string;
-    program: string;
-    title: string;
+    path?: string;
+    program?: string;
+    title?: string;
     type: string;
   }
 
@@ -1816,11 +1784,8 @@ declare namespace Electron {
      * element of the template and they will become properties of the constructed menu
      * items.
      */
-    static buildFromTemplate(template: MenuItem[]): void;
-    /**
-     * Returns the application menu (an instance of Menu), if set, or null, if not set.
-     */
-    static getApplicationMenu(): void;
+    static buildFromTemplate(template: MenuItemConstructorOptions[]): Menu;
+    static getApplicationMenu(): Menu;
     /**
      * Sends the action to the first responder of application. This is used for
      * emulating default Cocoa menu behaviors, usually you would just use the role
@@ -1845,7 +1810,11 @@ declare namespace Electron {
     /**
      * Pops up this menu as a context menu in the browserWindow.
      */
-    popup(browserWindow?: BrowserWindow, x?: number, y?: number, positioningItem?: number): void;
+    popup(browserWindow: BrowserWindow, x: number, y?: number, positioningItem: number): void;
+    /**
+     * Pops up this menu as a context menu in the browserWindow.
+     */
+    popup(browserWindow: BrowserWindow, x: number, positioningItem: number): void;
     items: MenuItem[];
   }
 
@@ -1870,7 +1839,7 @@ declare namespace Electron {
     /**
      * Creates a new NativeImage instance from buffer. The default scaleFactor is 1.0.
      */
-    static createFromBuffer(buffer: Buffer, scaleFactor?: number): NativeImage;
+    static createFromBuffer(buffer: Buffer, scaleFactor: number): NativeImage;
     /**
      * Creates a new NativeImage instance from dataURL.
      */
@@ -2004,6 +1973,14 @@ declare namespace Electron {
      * whichever is lower for the current process.
      */
     setFdLimit(maxDescriptors: number): void;
+    chrome: any;
+    defaultApp: any;
+    electron: any;
+    mas: any;
+    noAsar: any;
+    resourcesPath: any;
+    type: any;
+    windowsStore: any;
   }
 
   interface Protocol extends EventEmitter {
@@ -2014,22 +1991,22 @@ declare namespace Electron {
      * Intercepts scheme protocol and uses handler as the protocol's new handler which
      * sends a Buffer as a response.
      */
-    interceptBufferProtocol(scheme: string, handler: (request: InterceptBufferProtocolRequest, callback: (buffer?: Buffer) => void) => void, completion?: (error: Error) => void): void;
+    interceptBufferProtocol(scheme: string, handler: (request: InterceptBufferProtocolRequest, callback: (buffer: Buffer) => void) => void, completion: (error: Error) => void): void;
     /**
      * Intercepts scheme protocol and uses handler as the protocol's new handler which
      * sends a file as a response.
      */
-    interceptFileProtocol(scheme: string, handler: (request: InterceptFileProtocolRequest, callback: (filePath: string) => void) => void, completion?: (error: Error) => void): void;
+    interceptFileProtocol(scheme: string, handler: (request: InterceptFileProtocolRequest, callback: (filePath: string) => void) => void, completion: (error: Error) => void): void;
     /**
      * Intercepts scheme protocol and uses handler as the protocol's new handler which
      * sends a new HTTP request as a response.
      */
-    interceptHttpProtocol(scheme: string, handler: (request: InterceptHttpProtocolRequest, callback: (redirectRequest: RedirectRequest) => void) => void, completion?: (error: Error) => void): void;
+    interceptHttpProtocol(scheme: string, handler: (request: InterceptHttpProtocolRequest, callback: (redirectRequest: RedirectRequest) => void) => void, completion: (error: Error) => void): void;
     /**
      * Intercepts scheme protocol and uses handler as the protocol's new handler which
      * sends a String as a response.
      */
-    interceptStringProtocol(scheme: string, handler: (request: InterceptStringProtocolRequest, callback: (data?: string) => void) => void, completion?: (error: Error) => void): void;
+    interceptStringProtocol(scheme: string, handler: (request: InterceptStringProtocolRequest, callback: (data: string) => void) => void, completion: (error: Error) => void): void;
     /**
      * The callback will be called with a boolean that indicates whether there is
      * already a handler for scheme.
@@ -2041,7 +2018,7 @@ declare namespace Electron {
      * with either a Buffer object or an object that has the data, mimeType, and
      * charset properties. Example:
      */
-    registerBufferProtocol(scheme: string, handler: (request: RegisterBufferProtocolRequest, callback: (buffer?: Buffer) => void) => void, completion?: (error: Error) => void): void;
+    registerBufferProtocol(scheme: string, handler: (request: RegisterBufferProtocolRequest, callback: (buffer: Buffer) => void) => void, completion: (error: Error) => void): void;
     /**
      * Registers a protocol of scheme that will send the file as a response. The
      * handler will be called with handler(request, callback) when a request is going
@@ -2057,7 +2034,7 @@ declare namespace Electron {
      * want to call protocol.registerStandardSchemes to have your scheme treated as a
      * standard scheme.
      */
-    registerFileProtocol(scheme: string, handler: (request: RegisterFileProtocolRequest, callback: (filePath?: string) => void) => void, completion?: (error: Error) => void): void;
+    registerFileProtocol(scheme: string, handler: (request: RegisterFileProtocolRequest, callback: (filePath: string) => void) => void, completion: (error: Error) => void): void;
     /**
      * Registers a protocol of scheme that will send an HTTP request as a response. The
      * usage is the same with registerFileProtocol, except that the callback should be
@@ -2066,7 +2043,7 @@ declare namespace Electron {
      * current session. If you want the request to have a different session you should
      * set session to null. For POST requests the uploadData object must be provided.
      */
-    registerHttpProtocol(scheme: string, handler: (request: RegisterHttpProtocolRequest, callback: (redirectRequest: RedirectRequest) => void) => void, completion?: (error: Error) => void): void;
+    registerHttpProtocol(scheme: string, handler: (request: RegisterHttpProtocolRequest, callback: (redirectRequest: RedirectRequest) => void) => void, completion: (error: Error) => void): void;
     registerServiceWorkerSchemes(schemes: string[]): void;
     /**
      * A standard scheme adheres to what RFC 3986 calls generic URI syntax. For example
@@ -2091,15 +2068,15 @@ declare namespace Electron {
      * with either a String or an object that has the data, mimeType, and charset
      * properties.
      */
-    registerStringProtocol(scheme: string, handler: (request: RegisterStringProtocolRequest, callback: (data?: string) => void) => void, completion?: (error: Error) => void): void;
+    registerStringProtocol(scheme: string, handler: (request: RegisterStringProtocolRequest, callback: (data: string) => void) => void, completion: (error: Error) => void): void;
     /**
      * Remove the interceptor installed for scheme and restore its original handler.
      */
-    uninterceptProtocol(scheme: string, completion?: (error: Error) => void): void;
+    uninterceptProtocol(scheme: string, completion: (error: Error) => void): void;
     /**
      * Unregisters the custom protocol of scheme.
      */
-    unregisterProtocol(scheme: string, completion?: (error: Error) => void): void;
+    unregisterProtocol(scheme: string, completion: (error: Error) => void): void;
   }
 
   type Rectangle = {
@@ -2119,7 +2096,8 @@ declare namespace Electron {
     getCurrentWebContents(): WebContents;
     getCurrentWindow(): BrowserWindow;
     getGlobal(name: string): any;
-    require(module: string): Require;
+    require(module: string): any;
+    process: any;
   }
 
   interface Screen extends EventEmitter {
@@ -2167,6 +2145,7 @@ declare namespace Electron {
      * before. There is no way to change the options of an existing Session object.
      */
     static fromPartition(partition: string, options: FromPartitionOptions): Session;
+    static defaultSession: Session;
     /**
      * Emitted when Electron is about to download item in webContents. Calling
      * event.preventDefault() will cancel the download and item will not be available
@@ -2182,7 +2161,7 @@ declare namespace Electron {
     /**
      * Clears the data of web storages.
      */
-    clearStorageData(options?: ClearStorageDataOptions, callback?: Function): void;
+    clearStorageData(options: ClearStorageDataOptions, callback: Function): void;
     /**
      * Writes any unwritten DOMStorage data to disk.
      */
@@ -2219,7 +2198,7 @@ declare namespace Electron {
      * Open the given external protocol URL in the desktop's default manner. (For
      * example, mailto: URLs in the user's default mail agent).
      */
-    openExternal(url: string, options?: OpenExternalOptions): boolean;
+    openExternal(url: string, options: OpenExternalOptions, callback: (error: Error) => void): boolean;
     /**
      * Open the given file in the desktop's default manner.
      */
@@ -2237,22 +2216,18 @@ declare namespace Electron {
      * Creates or updates a shortcut link at shortcutPath.
      */
     writeShortcutLink(shortcutPath: string, operation: 'create' | 'update' | 'replace', options: ShortcutDetails): boolean;
-    /**
-     * Creates or updates a shortcut link at shortcutPath.
-     */
-    writeShortcutLink(shortcutPath: string, options: ShortcutDetails): boolean;
   }
 
   type ShortcutDetails = {
 
     // Docs: http://electron.atom.io/docs/api/structures/shortcut-details
 
-    appUserModelId?: string;
-    args?: string;
-    cwd?: string;
-    description?: string;
-    icon?: string;
-    iconIndex?: number;
+    appUserModelId: string;
+    args: string;
+    cwd: string;
+    description: string;
+    icon: string;
+    iconIndex: number;
     target: string;
   }
 
@@ -2343,7 +2318,7 @@ declare namespace Electron {
     click: Function;
     flags?: string[];
     icon: NativeImage;
-    tooltip?: string;
+    tooltip: string;
   }
 
   class Tray extends EventEmitter {
@@ -2419,7 +2394,7 @@ declare namespace Electron {
                                          * The bounds of tray icon
                                          */
                                         bounds: Rectangle) => void): this;
-    constructor(image: NativeImage);
+    constructor(image: NativeImage | string);
     /**
      * Destroys the tray icon immediately.
      */
@@ -2438,7 +2413,7 @@ declare namespace Electron {
      * shown instead of the tray icon's context menu. The position is only available on
      * Windows, and it is (0, 0) by default.
      */
-    popUpContextMenu(menu?: Menu, position?: Position): void;
+    popUpContextMenu(menu: Menu, position: Position): void;
     /**
      * Sets the context menu for this icon.
      */
@@ -2467,6 +2442,14 @@ declare namespace Electron {
     setToolTip(toolTip: string): void;
   }
 
+  type UploadBlob = {
+
+    // Docs: http://electron.atom.io/docs/api/structures/upload-blob
+
+    blobUUID: string;
+    type: string;
+  }
+
   type UploadData = {
 
     // Docs: http://electron.atom.io/docs/api/structures/upload-data
@@ -2474,6 +2457,36 @@ declare namespace Electron {
     blobUUID: string;
     bytes: Buffer;
     file: string;
+  }
+
+  type UploadFile = {
+
+    // Docs: http://electron.atom.io/docs/api/structures/upload-file
+
+    filePath: string;
+    length: number;
+    modificationTime: number;
+    offset: number;
+    type: string;
+  }
+
+  type UploadFileSystem = {
+
+    // Docs: http://electron.atom.io/docs/api/structures/upload-file-system
+
+    filsSystemURL: string;
+    length: number;
+    modificationTime: number;
+    offset: number;
+    type: string;
+  }
+
+  type UploadRawData = {
+
+    // Docs: http://electron.atom.io/docs/api/structures/upload-raw-data
+
+    bytes: Buffer;
+    type: string;
   }
 
   class WebContents extends EventEmitter {
@@ -2519,19 +2532,19 @@ declare namespace Electron {
      */
     on(event: 'cursor-changed', listener: (event: Event,
                                            type: string,
-                                           image?: NativeImage,
+                                           image: NativeImage,
                                            /**
                                             * scaling factor for the custom cursor
                                             */
-                                           scale?: number,
+                                           scale: number,
                                            /**
                                             * the size of the `image`
                                             */
-                                           size?: Size,
+                                           size: Size,
                                            /**
                                             * coordinates of the custom cursor's hotspot
                                             */
-                                           hotspot?: Hotspot) => void): this;
+                                           hotspot: Hotspot) => void): this;
     /**
      * Emitted when webContents is destroyed.
      */
@@ -2548,6 +2561,10 @@ declare namespace Electron {
      * Emitted when DevTools is opened.
      */
     on(event: 'devtools-opened', listener: Function): this;
+    /**
+     * Emitted when the devtools window instructs the webContents to reload
+     */
+    on(event: 'devtools-reload-page', listener: Function): this;
     /**
      * Emitted when a page's theme color changes. This is usually due to encountering a
      * meta tag:
@@ -2627,7 +2644,7 @@ declare namespace Electron {
      */
     on(event: 'dom-ready', listener: (event: Event) => void): this;
     /**
-     * Emitted when a result is available for webContents.findInPage request.
+     * Emitted when a result is available for [webContents.findInPage] request.
      */
     on(event: 'found-in-page', listener: (event: Event,
                                           result: Result) => void): this;
@@ -2747,19 +2764,6 @@ declare namespace Electron {
      * set to true, frameBuffer will only contain the repainted area. onlyDirty
      * defaults to false.
      */
-    beginFrameSubscription(callback: (frameBuffer: Buffer, dirtyRect: Rectangle) => void): void;
-    /**
-     * Begin subscribing for presentation events and captured frames, the callback will
-     * be called with callback(frameBuffer, dirtyRect) when there is a presentation
-     * event. The frameBuffer is a Buffer that contains raw pixel data. On most
-     * machines, the pixel data is effectively stored in 32bit BGRA format, but the
-     * actual representation depends on the endianness of the processor (most modern
-     * processors are little-endian, on machines with big-endian processors the data is
-     * in 32bit ARGB format). The dirtyRect is an object with x, y, width, height
-     * properties that describes which part of the page was repainted. If onlyDirty is
-     * set to true, frameBuffer will only contain the repainted area. onlyDirty
-     * defaults to false.
-     */
     beginFrameSubscription(onlyDirty: boolean, callback: (frameBuffer: Buffer, dirtyRect: Rectangle) => void): void;
     canGoBack(): boolean;
     canGoForward(): boolean;
@@ -2770,12 +2774,6 @@ declare namespace Electron {
      * data of the snapshot. Omitting rect will capture the whole visible page.
      */
     capturePage(rect: Rectangle, callback: (image: NativeImage) => void): void;
-    /**
-     * Captures a snapshot of the page within rect. Upon completion callback will be
-     * called with callback(image). The image is an instance of NativeImage that stores
-     * data of the snapshot. Omitting rect will capture the whole visible page.
-     */
-    capturePage(callback: (image: NativeImage) => void): void;
     /**
      * Clears the navigation history.
      */
@@ -2820,15 +2818,18 @@ declare namespace Electron {
     /**
      * Evaluates code in page. In the browser window some HTML APIs like
      * requestFullScreen can only be invoked by a gesture from the user. Setting
-     * userGesture to true will remove this limitation.
+     * userGesture to true will remove this limitation. If the result of the executed
+     * code is a promise the callback result will be the resolved value of the promise.
+     *  We recommend that you use the returned Promise to handle code that results in a
+     * Promise.
      */
-    executeJavaScript(code: string, userGesture?: boolean, callback?: (result: any) => void): void;
+    executeJavaScript(code: string, userGesture: boolean, callback: (result: any) => void): Promise<any>;
     /**
      * Starts a request to find all matches for the text in the web page and returns an
      * Integer representing the request id used for the request. The result of the
      * request can be obtained by subscribing to found-in-page event.
      */
-    findInPage(text: string, options?: FindInPageOptions): void;
+    findInPage(text: string, options: FindInPageOptions): void;
     getFrameRate(): number;
     getTitle(): string;
     getURL(): string;
@@ -2901,11 +2902,11 @@ declare namespace Electron {
      * http:// or file://. If the load should bypass http cache then use the pragma
      * header to achieve it.
      */
-    loadURL(url: URL, options?: LoadURLOptions): void;
+    loadURL(url: URL, options: LoadURLOptions): void;
     /**
      * Opens the devtools.
      */
-    openDevTools(options?: OpenDevToolsOptions): void;
+    openDevTools(options: OpenDevToolsOptions): void;
     /**
      * Executes the editing command paste in web page.
      */
@@ -2921,7 +2922,7 @@ declare namespace Electron {
      * false, printBackground: false}). Use page-break-before: always; CSS style to
      * force to print to a new page.
      */
-    print(options?: PrintOptions): void;
+    print(options: PrintOptions): void;
     /**
      * Prints window's web page as PDF with Chromium's preview printing custom
      * settings. The callback will be called with callback(error, data) on completion.
@@ -2969,7 +2970,7 @@ declare namespace Electron {
      * handle the message by listening to channel with the ipcRenderer module. An
      * example of sending messages from the main process to the renderer process:
      */
-    send(channel: string): void;
+    send(channel: string, ...args: any[]): void;
     /**
      * Sends an input event to the page. For keyboard events, the event object also
      * have following properties: For mouse events, the event object also have
@@ -2987,9 +2988,21 @@ declare namespace Electron {
      */
     setFrameRate(fps: number): void;
     /**
+     * Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
+     */
+    setLayoutZoomLevelLimits(minimumLevel: number, maximumLevel: number): void;
+    /**
+     * Set the size of the page. This is only supported for <webview> guest contents.
+     */
+    setSize(options: SizeOptions): void;
+    /**
      * Overrides the user agent for this web page.
      */
     setUserAgent(userAgent: string): void;
+    /**
+     * Sets the maximum and minimum pinch-to-zoom level.
+     */
+    setVisualZoomLevelLimits(minimumLevel: number, maximumLevel: number): void;
     /**
      * Changes the zoom factor to the specified factor. Zoom factor is zoom percent
      * divided by 100, so 300% = 3.0.
@@ -3002,7 +3015,8 @@ declare namespace Electron {
      */
     setZoomLevel(level: number): void;
     /**
-     * Sets the maximum and minimum zoom level.
+     * Deprecated: Call setVisualZoomLevelLimits instead to set the visual zoom level
+     * limits. This method will be removed in Electron 2.0.
      */
     setZoomLevelLimits(minimumLevel: number, maximumLevel: number): void;
     /**
@@ -3074,7 +3088,7 @@ declare namespace Electron {
      * requestFullScreen can only be invoked by a gesture from the user. Setting
      * userGesture to true will remove this limitation.
      */
-    executeJavaScript(code: string, userGesture?: boolean): void;
+    executeJavaScript(code: string, userGesture: boolean): void;
     /**
      * Returns an object describing usage information of Blink's internal memory
      * caches. This will generate:
@@ -3097,7 +3111,7 @@ declare namespace Electron {
      * the value of false to omit it from the registration. An example of registering a
      * privileged scheme, without bypassing Content Security Policy:
      */
-    registerURLSchemeAsPrivileged(scheme: string, options?: RegisterURLSchemeAsPrivilegedOptions): void;
+    registerURLSchemeAsPrivileged(scheme: string, options: RegisterURLSchemeAsPrivilegedOptions): void;
     /**
      * Registers the scheme as secure scheme. Secure schemes do not trigger mixed
      * content warnings. For example, https and data are secure schemes because they
@@ -3105,11 +3119,19 @@ declare namespace Electron {
      */
     registerURLSchemeAsSecure(scheme: string): void;
     /**
+     * Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
+     */
+    setLayoutZoomLevelLimits(minimumLevel: number, maximumLevel: number): void;
+    /**
      * Sets a provider for spell checking in input fields and text areas. The provider
      * must be an object that has a spellCheck method that returns whether the word
      * passed is correctly spelled. An example of using node-spellchecker as provider:
      */
     setSpellCheckProvider(language: string, autoCorrectWord: boolean, provider: any): void;
+    /**
+     * Sets the maximum and minimum pinch-to-zoom level.
+     */
+    setVisualZoomLevelLimits(minimumLevel: number, maximumLevel: number): void;
     /**
      * Changes the zoom factor to the specified factor. Zoom factor is zoom percent
      * divided by 100, so 300% = 3.0.
@@ -3122,7 +3144,8 @@ declare namespace Electron {
      */
     setZoomLevel(level: number): void;
     /**
-     * Sets the maximum and minimum zoom level.
+     * Deprecated: Call setVisualZoomLevelLimits instead to set the visual zoom level
+     * limits. This method will be removed in Electron 2.0.
      */
     setZoomLevelLimits(minimumLevel: number, maximumLevel: number): void;
   }
@@ -3181,23 +3204,23 @@ declare namespace Electron {
     /**
      * The app's name.
      */
-    applicationName?: string;
+    applicationName: string;
     /**
      * The app's version.
      */
-    applicationVersion?: string;
+    applicationVersion: string;
     /**
      * Copyright information.
      */
-    copyright?: string;
+    copyright: string;
     /**
      * Credit information.
      */
-    credits?: string;
+    credits: string;
     /**
      * The app's build version number.
      */
-    version?: string;
+    version: string;
   }
 
   interface AuthInfo {
@@ -3218,12 +3241,12 @@ declare namespace Electron {
      */
     height: number;
     /**
-     * ( if y is used) - Window's left offset from screen. Default is to center the
+     * ( if y is used) Window's left offset from screen. Default is to center the
      * window.
      */
     x?: number;
     /**
-     * ( if x is used) - Window's top offset from screen. Default is to center the
+     * ( if x is used) Window's top offset from screen. Default is to center the
      * window.
      */
     y?: number;
@@ -3309,7 +3332,7 @@ declare namespace Electron {
      * The window icon. On Windows it is recommended to use icons to get best visual
      * effects, you can also leave it undefined so the executable's icon will be used.
      */
-    icon: NativeImage;
+    icon: NativeImage | string;
     /**
      * Whether window should be shown when created. Default is .
      */
@@ -3377,6 +3400,19 @@ declare namespace Electron {
      */
     thickFrame: boolean;
     /**
+     * Add a type of vibrancy effect to the window, only on macOS. Can be , , , , , , ,
+     * , or .
+     */
+    vibrancy: string;
+    /**
+     * Controls the behavior on macOS when option-clicking the green stoplight button
+     * on the toolbar or by clicking the Window > Zoom menu item. If , the window will
+     * grow to the preferred width of the web page when zoomed, will cause it to zoom
+     * to the width of the screen. This will also affect the behavior when calling
+     * directly. Default is .
+     */
+    zoomToPageWidth: boolean;
+    /**
      * Settings of web page's features.
      */
     webPreferences: WebPreferences;
@@ -3395,6 +3431,20 @@ declare namespace Electron {
      * The types of quotas to clear, can contain: , , .
      */
     quotas: string[];
+  }
+
+  interface CommandLine {
+    /**
+     * Append a switch (with optional value) to Chromium's command line. Note: This
+     * will not affect process.argv, and is mainly used by developers to control some
+     * low-level Chromium behaviors.
+     */
+    appendSwitch?: (the_switch: string, value: string) => void;
+    /**
+     * Append an argument to Chromium's command line. The argument will be quoted
+     * correctly. Note: This will not affect process.argv.
+     */
+    appendArgument: (value: string) => void;
   }
 
   interface Config {
@@ -3500,7 +3550,7 @@ declare namespace Electron {
     /**
      * Defaults to .
      */
-    productName?: string;
+    productName: string;
     /**
      * Send the crash report without user interaction. Default is .
      */
@@ -3578,6 +3628,47 @@ declare namespace Electron {
     content: string;
   }
 
+  interface Dock {
+    /**
+     * When critical is passed, the dock icon will bounce until either the application
+     * becomes active or the request is canceled. When informational is passed, the
+     * dock icon will bounce for one second. However, the request remains active until
+     * either the application becomes active or the request is canceled. Returns an ID
+     * representing the request.
+     */
+    bounce: (type: 'critical' | 'informational') => void;
+    /**
+     * Cancel the bounce of id.
+     */
+    cancelBounce: (id: number) => void;
+    /**
+     * Bounces the Downloads stack if the filePath is inside the Downloads folder.
+     */
+    downloadFinished: (filePath: string) => void;
+    /**
+     * Sets the string to be displayed in the dock’s badging area.
+     */
+    setBadge: (text: string) => void;
+    getBadge: () => string;
+    /**
+     * Hides the dock icon.
+     */
+    hide: () => void;
+    /**
+     * Shows the dock icon.
+     */
+    show: () => void;
+    isVisible: () => boolean;
+    /**
+     * Sets the application's dock menu.
+     */
+    setMenu: (menu: Menu) => void;
+    /**
+     * Sets the image associated with this dock icon.
+     */
+    setIcon: (image: NativeImage) => void;
+  }
+
   interface ExtraSize {
     width: number;
     height: number;
@@ -3588,27 +3679,27 @@ declare namespace Electron {
      * Retrieves cookies which are associated with . Empty implies retrieving cookies
      * of all urls.
      */
-    url?: string;
+    url: string;
     /**
      * Filters cookies by name.
      */
-    name?: string;
+    name: string;
     /**
      * Retrieves cookies whose domains match or are subdomains of
      */
-    domain?: string;
+    domain: string;
     /**
      * Retrieves cookies whose path matches .
      */
-    path?: string;
+    path: string;
     /**
      * Filters cookies by their Secure property.
      */
-    secure?: boolean;
+    secure: boolean;
     /**
      * Filters out session or persistent cookies.
      */
-    session?: boolean;
+    session: boolean;
   }
 
   interface FindInPageOptions {
@@ -3713,11 +3804,6 @@ declare namespace Electron {
     removedItems: JumpListItem[];
   }
 
-  interface LastCrashReport {
-    date: string;
-    ID: number;
-  }
-
   interface LoadURLOptions {
     /**
      * A HTTP Referrer url.
@@ -3731,6 +3817,10 @@ declare namespace Electron {
      * Extra headers separated by "\n"
      */
     extraHeaders: string;
+    /**
+     * [] (optional)
+     */
+    postData?: UploadRawData | UploadFile | UploadFileSystem | UploadBlob;
   }
 
   interface LoginItemSettings {
@@ -3766,46 +3856,46 @@ declare namespace Electron {
     /**
      * Will be called with when the menu item is clicked.
      */
-    click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: Event) => void;
+    click?: (menuItem: MenuItem, browserWindow: BrowserWindow, event: Event) => void;
     /**
      * Define the action of the menu item, when specified the property will be ignored.
      */
-    role: string;
+    role?: string;
     /**
      * Can be , , , or .
      */
-    type: string;
-    label: string;
-    sublabel: string;
-    accelerator: Accelerator;
-    icon: NativeImage;
+    type?: string;
+    label?: string;
+    sublabel?: string;
+    accelerator?: Accelerator;
+    icon?: NativeImage | string;
     /**
      * If false, the menu item will be greyed out and unclickable.
      */
-    enabled: boolean;
+    enabled?: boolean;
     /**
      * If false, the menu item will be entirely hidden.
      */
-    visible: boolean;
+    visible?: boolean;
     /**
      * Should only be specified for or type menu items.
      */
-    checked: boolean;
+    checked?: boolean;
     /**
      * Should be specified for type menu items. If is specified, the can be omitted. If
      * the value is not a then it will be automatically converted to one using .
      */
-    submenu: Menu;
+    submenu?: MenuItemConstructorOptions[] | Menu;
     /**
      * Unique within a single menu. If defined then it can be used as a reference to
      * this item by the position attribute.
      */
-    id: string;
+    id?: string;
     /**
      * This field allows fine-grained definition of the specific location within a
      * given menu.
      */
-    position: string;
+    position?: string;
   }
 
   interface MessageBoxOptions {
@@ -3818,7 +3908,7 @@ declare namespace Electron {
      * Array of texts for buttons. On Windows, an empty array will result in one button
      * labeled "OK".
      */
-    buttons: string[];
+    buttons?: string[];
     /**
      * Index of the button in the buttons array which will be selected by default when
      * the message box opens.
@@ -3865,7 +3955,7 @@ declare namespace Electron {
     /**
      * The server IP address that the request was actually sent to.
      */
-    ip?: string;
+    ip: string;
     fromCache: boolean;
     responseHeaders: ResponseHeaders;
   }
@@ -3944,11 +4034,11 @@ declare namespace Electron {
      * be used.
      */
     buttonLabel: string;
-    filters: string[];
+    filters: FileFilter[];
     /**
      * Contains which features the dialog should use, can contain , , , and .
      */
-    properties: string[];
+    properties?: string[];
   }
 
   interface OpenExternalOptions {
@@ -4066,7 +4156,7 @@ declare namespace Electron {
 
   interface ProgressBarOptions {
     /**
-     * - Mode for the progress bar (, , , , or )
+     * Mode for the progress bar. Can be , , , , or .
      */
     mode: string;
   }
@@ -4086,8 +4176,8 @@ declare namespace Electron {
   interface RedirectRequest {
     url: string;
     method: string;
-    session?: Session;
-    uploadData?: UploadData;
+    session: Session;
+    uploadData: UploadData;
   }
 
   interface RegisterBufferProtocolRequest {
@@ -4143,7 +4233,7 @@ declare namespace Electron {
 
   interface RelaunchOptions {
     args?: string[];
-    execPath?: string;
+    execPath: string;
   }
 
   interface Request {
@@ -4152,13 +4242,9 @@ declare namespace Electron {
     referrer: URL;
   }
 
-  interface Require {
-    module: string;
-  }
-
   interface ResizeOptions {
-    width?: number;
-    height?: number;
+    width: number;
+    height: number;
     /**
      * The desired quality of the resize image. Possible values are , or . The default
      * is . These values express a desired quality/speed tradeoff. They are translated
@@ -4166,7 +4252,7 @@ declare namespace Electron {
      * the underlying platform. It is possible for all three methods to be mapped to
      * the same algorithm on a given platform.
      */
-    quality?: string;
+    quality: string;
   }
 
   interface ResourceUsage {
@@ -4178,12 +4264,12 @@ declare namespace Electron {
   }
 
   interface Response {
-    cancel?: boolean;
+    cancel: boolean;
     /**
      * The original request is prevented from being sent or completed and is instead
      * redirected to the given URL.
      */
-    redirectURL?: string;
+    redirectURL: string;
   }
 
   interface Result {
@@ -4210,7 +4296,7 @@ declare namespace Electron {
      * be used.
      */
     buttonLabel: string;
-    filters: string[];
+    filters: FileFilter[];
   }
 
   interface Settings {
@@ -4231,6 +4317,14 @@ declare namespace Electron {
     height: number;
   }
 
+  interface SizeOptions {
+    /**
+     * Normal size of the page. This can be used in combination with the attribute to
+     * manually resize the webview guest contents.
+     */
+    normal: Normal;
+  }
+
   interface SourcesOptions {
     /**
      * An array of Strings that lists the types of desktop sources to be captured,
@@ -4241,7 +4335,7 @@ declare namespace Electron {
      * The suggested size that the media source thumbnail should be scaled to, defaults
      * to .
      */
-    thumbnailSize?: ThumbnailSize;
+    thumbnailSize: ThumbnailSize;
   }
 
   interface StartMonitoringOptions {
@@ -4345,6 +4439,11 @@ declare namespace Electron {
      * Whether the media element can be rotated.
      */
     canRotate: boolean;
+  }
+
+  interface Normal {
+    width: number;
+    height: number;
   }
 
   interface Offset {
@@ -4577,3 +4676,4 @@ declare module 'original-fs' {
 
   export = fs;
 }
+
