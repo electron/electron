@@ -313,7 +313,7 @@ describe('chromium feature', function () {
     })
   })
 
-  describe('window.opener security', function () {
+  describe('window.opener access from BrowserWindow', function () {
     this.timeout(10000)
 
     const scheme = 'other'
@@ -352,6 +352,69 @@ describe('chromium feature', function () {
       }
       window.addEventListener('message', listener)
       w = window.open(url, '', 'show=no,nodeIntegration=yes')
+    })
+  })
+
+  describe('window.opener access from <webview>', function () {
+    this.timeout(10000)
+
+    const scheme = 'other'
+    const srcPath = `${fixtures}/pages/webview-opener-postMessage.html`
+    const pageURL = `file://${fixtures}/pages/window-opener-location.html`
+    let webview = null
+
+    before(function (done) {
+      protocol.registerFileProtocol(scheme, function (request, callback) {
+        callback(srcPath)
+      }, function (error) {
+        done(error)
+      })
+    })
+
+    after(function () {
+      protocol.unregisterProtocol(scheme)
+    })
+
+    afterEach(function () {
+      if (webview != null) webview.remove()
+    })
+
+    it('does nothing when origin of webview src URL does not match opener', function (done) {
+      webview = new WebView()
+      webview.addEventListener('console-message', function (e) {
+        assert.equal(e.message, 'null')
+        done()
+      })
+      webview.setAttribute('allowpopups', 'on')
+      webview.src = url.format({
+        pathname: srcPath,
+        protocol: scheme,
+        query: {
+          p: pageURL
+        },
+        slashes: true
+      })
+      document.body.appendChild(webview)
+    })
+
+    it('works when origin does not match opener but has node integration', function (done) {
+      webview = new WebView()
+      webview.addEventListener('console-message', function (e) {
+        webview.remove()
+        assert.equal(e.message, location.href)
+        done()
+      })
+      webview.setAttribute('allowpopups', 'on')
+      webview.setAttribute('nodeintegration', 'on')
+      webview.src = url.format({
+        pathname: srcPath,
+        protocol: scheme,
+        query: {
+          p: pageURL
+        },
+        slashes: true
+      })
+      document.body.appendChild(webview)
     })
   })
 
