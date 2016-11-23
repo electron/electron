@@ -104,7 +104,7 @@ binary. Use this to spawn Electron from Node scripts:
 var electron = require('electron')
 var proc = require('child_process')
 
-// will something similar to print /Users/maf/.../Electron
+// will print something similar to /Users/maf/.../Electron
 console.log(electron)
 
 // spawn Electron
