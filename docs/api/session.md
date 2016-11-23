@@ -344,6 +344,25 @@ Returns `String` - The user agent for this session.
 
 Returns `Blob` - The blob data associated with the `identifier`.
 
+#### `ses.createInterruptedDownload(options)`
+
+* `options` Object
+  * `path` String - Absolute path of the download.
+  * `urlChain` String[] - Complete URL chain for the download.
+  * `mimeType` String (optional)
+  * `offset` Integer - Start range for the download.
+  * `length` Integer - Total length of the download.
+  * `lastModified` String - Last-Modified header value.
+  * `eTag` String - ETag header value.
+  * `startTime` Double (optional) - Time when download was started in
+    number of seconds since UNIX epoch.
+
+Allows resuming `cancelled` or `interrupted` downloads from previous `Session`.
+The API will generate a [DownloadItem](download-item.md) that can be accessed with the [will-download](#event-will-download)
+event. The [DownloadItem](download-item.md) will not have any `WebContents` associated with it and
+the initial state will be `interrupted`. The download will start only when the
+`resume` API is called on the [DownloadItem](download-item.md).
+
 ### Instance Properties
 
 The following properties are available on instances of `Session`:
