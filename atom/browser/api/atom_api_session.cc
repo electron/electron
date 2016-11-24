@@ -342,7 +342,7 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
                         const std::string& etag,
                         const base::Time& start_time,
                         uint32_t id) {
-  content::DownloadItem* item = download_manager->CreateDownloadItem(
+  download_manager->CreateDownloadItem(
       base::GenerateGUID(), id, path, path, url_chain, GURL(), GURL(), GURL(),
       GURL(), mime_type, mime_type, start_time, base::Time(), etag,
       last_modified, offset, length, std::string(),
@@ -554,7 +554,7 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
   options.Get("lastModified", &last_modified);
   options.Get("eTag", &etag);
   options.Get("startTime", &start_time);
-  if (path.empty() || length == 0 || offset >= length)
+  if (path.empty() || url_chain.empty() || length == 0 || offset >= length)
     return;
   auto download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
