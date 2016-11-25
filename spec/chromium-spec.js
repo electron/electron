@@ -401,7 +401,7 @@ describe('chromium feature', function () {
       webview = new WebView()
       webview.addEventListener('console-message', function (e) {
         webview.remove()
-        assert.equal(e.message, location.href)
+        assert.equal(e.message, webview.src)
         done()
       })
       webview.setAttribute('allowpopups', 'on')
