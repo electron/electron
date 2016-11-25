@@ -202,7 +202,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
-  * `vibrancy` String - Add a type of vibrancy effect to the window, only on
+  * `vibrancy` String - (optional) Add a type of vibrancy effect to the window, only on
     macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
     `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.
   * `zoomToPageWidth` Boolean - Controls the behavior on macOS when
