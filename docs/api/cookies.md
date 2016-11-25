@@ -79,15 +79,15 @@ with `callback(error, cookies)` on complete.
 
 * `details` Object
   * `url` String - The url to associate the cookie with.
-  * `name` String - The name of the cookie. Empty by default if omitted.
-  * `value` String - The value of the cookie. Empty by default if omitted.
-  * `domain` String - The domain of the cookie. Empty by default if omitted.
-  * `path` String - The path of the cookie. Empty by default if omitted.
-  * `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to
+  * `name` String - (optional) The name of the cookie. Empty by default if omitted.
+  * `value` String - (optional) The value of the cookie. Empty by default if omitted.
+  * `domain` String - (optional) The domain of the cookie. Empty by default if omitted.
+  * `path` String - (optional) The path of the cookie. Empty by default if omitted.
+  * `secure` Boolean - (optional) Whether the cookie should be marked as Secure. Defaults to
     false.
-  * `httpOnly` Boolean - Whether the cookie should be marked as HTTP only.
+  * `httpOnly` Boolean - (optional) Whether the cookie should be marked as HTTP only.
     Defaults to false.
-  * `expirationDate` Double -	The expiration date of the cookie as the number of
+  * `expirationDate` Double -	(optional) The expiration date of the cookie as the number of
     seconds since the UNIX epoch. If omitted then the cookie becomes a session
     cookie and will not be retained between sessions.
 * `callback` Function
