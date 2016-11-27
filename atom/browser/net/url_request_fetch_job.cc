@@ -7,9 +7,12 @@
 #include <algorithm>
 #include <string>
 
+#include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/atom_browser_context.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
+#include "native_mate/handle.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_response_headers.h"
@@ -89,15 +92,20 @@ void URLRequestFetchJob::BeforeStartInUI(
     return;
 
   // When |session| is set to |null| we use a new request context for fetch job.
-  // TODO(zcbenz): Handle the case when it is not null.
-  v8::Local<v8::Value> session;
-  if (options.Get("session", &session) && session->IsNull()) {
-    // We have to create the URLRequestContextGetter on UI thread.
-    url_request_context_getter_ = new brightray::URLRequestContextGetter(
-        this, nullptr, nullptr, base::FilePath(), true,
-        BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
-        BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
-        nullptr, content::URLRequestInterceptorScopedVector());
+  mate::Handle<api::Session> session;
+  if (options.Get("session", &session)) {
+    if (session.IsEmpty()) {
+      // We have to create the URLRequestContextGetter on UI thread.
+      url_request_context_getter_ = new brightray::URLRequestContextGetter(
+          this, nullptr, nullptr, base::FilePath(), true,
+          BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
+          BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
+          nullptr, content::URLRequestInterceptorScopedVector());
+    } else {
+      AtomBrowserContext* browser_context = session->browser_context();
+      url_request_context_getter_ =
+          browser_context->url_request_context_getter();
+    }
   }
 }
 

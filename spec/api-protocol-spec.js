@@ -4,7 +4,7 @@ const path = require('path')
 const qs = require('querystring')
 const {closeWindow} = require('./window-helpers')
 const remote = require('electron').remote
-const {BrowserWindow, ipcMain, protocol, webContents} = remote
+const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
 
 describe('protocol module', function () {
   var protocolName = 'sp'
@@ -867,6 +867,33 @@ describe('protocol module', function () {
               done(error)
             }
           })
+        })
+      })
+    })
+
+    it('can use custom session', function (done) {
+      const customSession = session.fromPartition('custom-ses', {
+        cache: false
+      })
+      customSession.webRequest.onBeforeRequest(function (details, callback) {
+        assert.equal(details.url, 'http://fake-host/')
+        callback({cancel: true})
+      })
+      const handler = function (request, callback) {
+        callback({
+          url: request.url,
+          session: customSession
+        })
+      }
+      protocol.interceptHttpProtocol('http', handler, function (error) {
+        if (error) {
+          return done(error)
+        }
+        fetch('http://fake-host').then(function () {
+          done('request succeeded but it should not')
+        }).catch(function () {
+          customSession.webRequest.onBeforeRequest(null)
+          done()
         })
       })
     })
