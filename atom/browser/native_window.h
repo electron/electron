@@ -23,6 +23,7 @@
 #include "extensions/browser/app_window/size_constraints.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
+#include "native_mate/constructor.h"
 
 class SkRegion;
 
@@ -170,7 +171,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVibrancy(const std::string& type);
 
   // Touchbar API
-  virtual void InitTouchBar();
+  virtual void DestroyTouchBar();
+  virtual void SetTouchBar(mate::Arguments* args);
 
   // Webview APIs.
   virtual void FocusOnWebView();

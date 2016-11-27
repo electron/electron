@@ -204,7 +204,8 @@ class Window : public mate::TrackableObject<Window>,
   void SetAutoHideCursor(bool auto_hide);
 
   void SetVibrancy(mate::Arguments* args);
-  void InitTouchBar();
+  void DestroyTouchBar();
+  void SetTouchBar(mate::Arguments* args);
 
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
 

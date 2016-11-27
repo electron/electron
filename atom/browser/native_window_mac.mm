@@ -352,6 +352,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)enableWindowButtonsOffset;
 - (void)reloadTouchBar;
+- (void)resetTouchBar;
+- (NSTouchBar*)touchBarFromMutatableArray:(NSMutableArray<NSTouchBarItemIdentifier>*)items;
 @end
 
 @interface AtomNSWindow () <NSTouchBarDelegate>
@@ -359,6 +361,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @implementation AtomNSWindow
   NSMutableArray<NSTouchBarItemIdentifier>* bar_items_ = [[NSMutableArray alloc] init];
+  std::map<std::string, std::string> button_labels;
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
@@ -368,24 +371,52 @@ bool ScopedDisableResize::disable_resize_ = false;
   enable_larger_than_screen_ = enable;
 }
 
+- (void)resetTouchBar {
+  bar_items_ = [[NSMutableArray alloc] init];
+  self.touchBar = nil;
+  NSLog(@"Destroying TouchBar");
+}
+
 - (void)reloadTouchBar {
   bar_items_ = [[NSMutableArray alloc] init];
-  [bar_items_ addObject:@"com.electron.tb.button.1"];
-  [bar_items_ addObject:@"com.electron.tb.button.2"];
+  std::vector<mate::Dictionary> items = shell_->GetTouchBarItems();
+  std::map<std::string, std::string> new_button_labels;
+  button_labels = new_button_labels;
+
+  NSLog(@"reload");
+  for (mate::Dictionary &item : items ) {
+    NSLog(@"reload iter");
+    std::string type;
+    std::string item_id;
+    if (item.Get("type", &type) && item.Get("id", &item_id)) {
+      NSLog(@"type: %@", [NSString stringWithUTF8String:type.c_str()]);
+      NSLog(@"id: %@", [NSString stringWithUTF8String:item_id.c_str()]);
+      if (type == "button") {
+        std::string label;
+        if (item.Get("label", &label)) {
+          [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+          button_labels.insert(make_pair(item_id, label));
+        }
+      }
+    }
+  }
+  // [bar_items_ addObject:@"com.electron.tb.button.1"];
+  // [bar_items_ addObject:@"com.electron.tb.button.2"];
   [bar_items_ addObject:NSTouchBarItemIdentifierOtherItemsProxy];
-  NSLog(@"Reloading Touch Bar --> '%@'", bar_items_[1]);
+  // NSLog(@"Reloading Touch Bar --> '%@'", bar_items_[1]);
   self.touchBar = nil;
 }
 
 - (NSTouchBar *)makeTouchBar {
   NSLog(@"Making Touch Bar");
+  return [self touchBarFromMutatableArray:bar_items_];
+}
+
+- (NSTouchBar *)touchBarFromMutatableArray:(NSMutableArray<NSTouchBarItemIdentifier>*)items {
   NSTouchBar* bar = [[NSTouchBar alloc] init];
   bar.delegate = self;
 
-  // Set the default ordering of items.
-
-  // NSLog(@"%@", bar_items_[1]);
-  bar.defaultItemIdentifiers = [bar_items_ copy];
+  bar.defaultItemIdentifiers = [items copy];
 
   return bar;
 }
@@ -412,7 +443,7 @@ static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.tb.label.";
   if ([identifier hasPrefix:ButtonIdentifier]) {
     NSString *idCopy = [identifier copy];
     idCopy = [identifier substringFromIndex:[ButtonIdentifier length]];
-    NSButton *theButton = [NSButton buttonWithTitle:@"Electron Button" target:self action:@selector(buttonAction:)];
+    NSButton *theButton = [NSButton buttonWithTitle:[NSString stringWithUTF8String:button_labels[std::string([idCopy UTF8String])].c_str()] target:self action:@selector(buttonAction:)];
     theButton.tag = [idCopy floatValue];
 
     NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
@@ -1420,8 +1451,22 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   [effect_view setMaterial:vibrancyType];
 }
 
-void NativeWindowMac::InitTouchBar() {
-  [window_ reloadTouchBar];
+void NativeWindowMac::DestroyTouchBar() {
+  [window_ resetTouchBar];
+}
+
+void NativeWindowMac::SetTouchBar(mate::Arguments* args) {
+  std::vector<mate::Dictionary> items;
+  LOG(ERROR) << "FOO";
+  if (args->GetNext(&items)) {
+    LOG(ERROR) << "BAR";
+    touch_bar_items_ = items;
+    [window_ reloadTouchBar];
+  }
+}
+
+std::vector<mate::Dictionary> NativeWindowMac::GetTouchBarItems() {
+  return touch_bar_items_;
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {

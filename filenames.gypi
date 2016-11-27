@@ -30,6 +30,7 @@
       'lib/browser/api/session.js',
       'lib/browser/api/screen.js',
       'lib/browser/api/system-preferences.js',
+      'lib/browser/api/touch-bar.js',
       'lib/browser/api/tray.js',
       'lib/browser/api/web-contents.js',
       'lib/browser/chrome-extension.js',

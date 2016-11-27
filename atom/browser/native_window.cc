@@ -33,6 +33,7 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_message_macros.h"
+#include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/codec/png_codec.h"
@@ -340,7 +341,10 @@ void NativeWindow::SetAutoHideCursor(bool auto_hide) {
 void NativeWindow::SetVibrancy(const std::string& filename) {
 }
 
-void NativeWindow::InitTouchBar() {
+void NativeWindow::DestroyTouchBar() {
+}
+
+void NativeWindow::SetTouchBar(mate::Arguments* args) {
 }
 
 void NativeWindow::FocusOnWebView() {

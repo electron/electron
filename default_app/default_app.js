@@ -1,4 +1,4 @@
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow,TouchBar} = require('electron')
 const path = require('path')
 
 let mainWindow = null
@@ -24,5 +24,14 @@ exports.load = (appUrl) => {
     mainWindow = new BrowserWindow(options)
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
+
+    mainWindow.setTouchBar(new TouchBar([
+      new (TouchBar.Button)({
+        label: 'Hello World!',
+        click: () => {
+          console.log('Hello World Clicked')
+        }
+      })
+    ]))
   })
 }
