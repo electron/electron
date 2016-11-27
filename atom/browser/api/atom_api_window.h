@@ -85,6 +85,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
+  void OnTouchBarItemResult(const std::string& item_type, const std::string& item_id) override;
 
   #if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
@@ -203,6 +204,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetAutoHideCursor(bool auto_hide);
 
   void SetVibrancy(mate::Arguments* args);
+  void InitTouchBar();
 
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
 

@@ -351,9 +351,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)enableWindowButtonsOffset;
+- (void)reloadTouchBar;
+@end
+
+@interface AtomNSWindow () <NSTouchBarDelegate>
 @end
 
 @implementation AtomNSWindow
+  NSMutableArray<NSTouchBarItemIdentifier>* bar_items_ = [[NSMutableArray alloc] init];
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
@@ -362,6 +367,75 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setEnableLargerThanScreen:(bool)enable {
   enable_larger_than_screen_ = enable;
 }
+
+- (void)reloadTouchBar {
+  bar_items_ = [[NSMutableArray alloc] init];
+  [bar_items_ addObject:@"com.electron.tb.button.1"];
+  [bar_items_ addObject:@"com.electron.tb.button.2"];
+  [bar_items_ addObject:NSTouchBarItemIdentifierOtherItemsProxy];
+  NSLog(@"Reloading Touch Bar --> '%@'", bar_items_[1]);
+  self.touchBar = nil;
+}
+
+- (NSTouchBar *)makeTouchBar {
+  NSLog(@"Making Touch Bar");
+  NSTouchBar* bar = [[NSTouchBar alloc] init];
+  bar.delegate = self;
+
+  // Set the default ordering of items.
+
+  // NSLog(@"%@", bar_items_[1]);
+  bar.defaultItemIdentifiers = [bar_items_ copy];
+
+  return bar;
+}
+
+- (void)buttonAction:(id)sender {
+    NSString* item_id = [NSString stringWithFormat:@"com.electron.tb.button.%d", (int)((NSButton *)sender).tag];
+    NSLog(@"Button with ID: '%@' was pressed", item_id);
+    shell_->NotifyTouchBarItemInteraction("button", std::string([item_id UTF8String]));
+}
+
+- (void)colorPickerAction:(id)sender {
+    NSString* item_id = ((NSColorPickerTouchBarItem *)sender).identifier;
+    NSLog(@"ColorPicker with ID: '%@' was updated with color '%@'", item_id, ((NSColorPickerTouchBarItem *)sender).color);
+    shell_->NotifyTouchBarItemInteraction("color_picker", std::string([item_id UTF8String]));
+}
+
+static NSTouchBarItemIdentifier ButtonIdentifier = @"com.electron.tb.button.";
+static NSTouchBarItemIdentifier ColorPickerIdentifier = @"com.electron.tb.colorpicker.";
+// static NSTouchBarItemIdentifier ListIdentifier = @"com.electron.tb.list.";
+static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.tb.label.";
+// static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.tb.slider.";
+
+- (nullable NSTouchBarItem *)touchBar:(NSTouchBar *)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+  if ([identifier hasPrefix:ButtonIdentifier]) {
+    NSString *idCopy = [identifier copy];
+    idCopy = [identifier substringFromIndex:[ButtonIdentifier length]];
+    NSButton *theButton = [NSButton buttonWithTitle:@"Electron Button" target:self action:@selector(buttonAction:)];
+    theButton.tag = [idCopy floatValue];
+
+    NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
+    customItem.view = theButton;
+
+    return customItem;
+  } else if ([identifier hasPrefix:LabelIdentifier]) {
+    NSTextField *theLabel = [NSTextField labelWithString:@"Hello From Electron"];
+
+    NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
+    customItem.view = theLabel;
+
+    return customItem;
+  } else if ([identifier hasPrefix:ColorPickerIdentifier]) {
+    NSColorPickerTouchBarItem *colorPickerItem = [[NSColorPickerTouchBarItem alloc] initWithIdentifier:identifier];
+    colorPickerItem.target = self;
+    colorPickerItem.action = @selector(colorPickerAction:);
+    return colorPickerItem;
+  }
+
+  return nil;
+}
+
 
 // NSWindow overrides.
 
@@ -1344,6 +1418,10 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   }
 
   [effect_view setMaterial:vibrancyType];
+}
+
+void NativeWindowMac::InitTouchBar() {
+  [window_ reloadTouchBar];
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {

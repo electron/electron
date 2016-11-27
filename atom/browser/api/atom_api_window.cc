@@ -282,6 +282,10 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 
+void Window::OnTouchBarItemResult(const std::string& item_type, const std::string& item_id) {
+  Emit("_touch-bar-interaction", item_type, item_id);
+}
+
 #if defined(OS_WIN)
 void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
@@ -840,6 +844,10 @@ void Window::SetVibrancy(mate::Arguments* args) {
   window_->SetVibrancy(type);
 }
 
+void Window::InitTouchBar()  {
+  window_->InitTouchBar();
+}
+
 int32_t Window::ID() const {
   return weak_map_id();
 }
@@ -960,6 +968,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &Window::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &Window::SetVibrancy)
+      .SetMethod("initTouchBar", &Window::InitTouchBar)
 #if defined(OS_WIN)
       .SetMethod("hookWindowMessage", &Window::HookWindowMessage)
       .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)

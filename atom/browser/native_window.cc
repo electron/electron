@@ -340,6 +340,9 @@ void NativeWindow::SetAutoHideCursor(bool auto_hide) {
 void NativeWindow::SetVibrancy(const std::string& filename) {
 }
 
+void NativeWindow::InitTouchBar() {
+}
+
 void NativeWindow::FocusOnWebView() {
   web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }
@@ -564,6 +567,13 @@ void NativeWindow::NotifyWindowExecuteWindowsCommand(
   for (NativeWindowObserver& observer : observers_)
     observer.OnExecuteWindowsCommand(command);
 }
+
+void NativeWindow::NotifyTouchBarItemInteraction(
+  const std::string& type,
+  const std::string& item_id) {
+    FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                      OnTouchBarItemResult(type, item_id));
+  }
 
 #if defined(OS_WIN)
 void NativeWindow::NotifyWindowMessage(
