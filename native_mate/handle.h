@@ -48,6 +48,10 @@ struct Converter<mate::Handle<T> > {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      mate::Handle<T>* out) {
     T* object = NULL;
+    if (val->IsNull() || val->IsUndefined()) {
+      *out = mate::Handle<T>();
+      return true;
+    }
     if (!Converter<T*>::FromV8(isolate, val, &object)) {
       return false;
     }
