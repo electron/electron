@@ -12,7 +12,6 @@
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/handle.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_response_headers.h"
@@ -92,9 +91,9 @@ void URLRequestFetchJob::BeforeStartInUI(
     return;
 
   // When |session| is set to |null| we use a new request context for fetch job.
-  mate::Handle<api::Session> session;
-  if (options.Get("session", &session)) {
-    if (session.IsEmpty()) {
+  v8::Local<v8::Value> val;
+  if (options.Get("session", &val)) {
+    if (val->IsNull()) {
       // We have to create the URLRequestContextGetter on UI thread.
       url_request_context_getter_ = new brightray::URLRequestContextGetter(
           this, nullptr, nullptr, base::FilePath(), true,
@@ -102,9 +101,12 @@ void URLRequestFetchJob::BeforeStartInUI(
           BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
           nullptr, content::URLRequestInterceptorScopedVector());
     } else {
-      AtomBrowserContext* browser_context = session->browser_context();
-      url_request_context_getter_ =
-          browser_context->url_request_context_getter();
+      mate::Handle<api::Session> session;
+      if (mate::ConvertFromV8(isolate, val, &session) && !session.IsEmpty()) {
+        AtomBrowserContext* browser_context = session->browser_context();
+        url_request_context_getter_ =
+            browser_context->url_request_context_getter();
+      }
     }
   }
 }
@@ -245,21 +247,21 @@ int URLRequestFetchJob::GetResponseCode() const {
 }
 
 void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
-  if (!response_info_) {
-    // Since we notify header completion only after first write there will be
-    // no response object constructed for http respones with no content 204.
-    // We notify header completion here.
-    HeadersCompleted();
-    return;
-  }
-
   ClearPendingBuffer();
   ClearWriteBuffer();
 
-  if (fetcher_->GetStatus().is_success())
+  if (fetcher_->GetStatus().is_success()) {
+    if (!response_info_) {
+      // Since we notify header completion only after first write there will be
+      // no response object constructed for http respones with no content 204.
+      // We notify header completion here.
+      HeadersCompleted();
+      return;
+    }
     ReadRawDataComplete(0);
-  else
+  } else {
     NotifyStartError(fetcher_->GetStatus());
+  }
 }
 
 int URLRequestFetchJob::BufferCopy(net::IOBuffer* source, int num_bytes,
