@@ -297,7 +297,6 @@ const CGFloat kVerticalTitleMargin = 2;
 
   if (NSPointInRect([sender draggingLocation], self.frame)) {
     trayIcon_->NotifyDrop();
-    [self handleDrop:sender];
   }
 }
 
@@ -325,6 +324,7 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
+  [self handleDrop:sender];
   return YES;
 }
 
