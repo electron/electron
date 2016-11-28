@@ -40,6 +40,23 @@ clipboard.writeHtml()
 clipboard.writeHTML()
 ```
 
+## `crashReporter`
+
+```js
+// Deprecated
+crashReporter.start({
+  companyName: 'Crashly',
+  submitURL: 'https://crash.server.com',
+  autoSubmit: true
+})
+// Replace with
+crashReporter.start({
+  companyName: 'Crashly',
+  submitURL: 'https://crash.server.com',
+  uploadToServer: true
+})
+```
+
 ## `nativeImage`
 
 ```js

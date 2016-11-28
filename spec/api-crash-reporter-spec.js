@@ -117,6 +117,27 @@ describe('crashReporter module', function () {
       })
     })
   })
+
+  describe('.get/setUploadToServer', function () {
+    it('throws an error when called from the renderer process', function () {
+      assert.throws(() => require('electron').crashReporter.getUploadToServer())
+    })
+
+    it('can be read/set from the main process', function () {
+      if (process.platform === 'darwin') {
+        crashReporter.start({
+          companyName: 'Umbrella Corporation',
+          submitURL: 'http://127.0.0.1/crashes',
+          autoSubmit: true
+        })
+        assert.equal(crashReporter.getUploadToServer(), true)
+        crashReporter.setUploadToServer(false)
+        assert.equal(crashReporter.getUploadToServer(), false)
+      } else {
+        assert.equal(crashReporter.getUploadToServer(), true)
+      }
+    })
+  })
 })
 
 const waitForCrashReport = () => {
