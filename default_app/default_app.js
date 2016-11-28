@@ -31,6 +31,14 @@ exports.load = (appUrl) => {
         click: () => {
           console.log('Hello World Clicked')
         }
+      }),
+      new (TouchBar.Label)({
+        label: 'This is a Label'
+      }),
+      new (TouchBar.ColorPicker)({
+        change: (...args) => {
+          console.log('Color was changed', ...args)
+        }
       })
     ]))
   })

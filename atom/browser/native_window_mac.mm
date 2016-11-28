@@ -361,7 +361,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @implementation AtomNSWindow
   NSMutableArray<NSTouchBarItemIdentifier>* bar_items_ = [[NSMutableArray alloc] init];
-  std::map<std::string, std::string> button_labels;
+  std::map<std::string, std::string> item_labels;
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
@@ -380,8 +380,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)reloadTouchBar {
   bar_items_ = [[NSMutableArray alloc] init];
   std::vector<mate::Dictionary> items = shell_->GetTouchBarItems();
-  std::map<std::string, std::string> new_button_labels;
-  button_labels = new_button_labels;
+  std::map<std::string, std::string> new_labels;
+  item_labels = new_labels;
 
   NSLog(@"reload");
   for (mate::Dictionary &item : items ) {
@@ -395,8 +395,16 @@ bool ScopedDisableResize::disable_resize_ = false;
         std::string label;
         if (item.Get("label", &label)) {
           [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
-          button_labels.insert(make_pair(item_id, label));
+          item_labels.insert(make_pair(item_id, label));
         }
+      } else if (type == "label") {
+        std::string label;
+        if (item.Get("label", &label)) {
+          [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+          item_labels.insert(make_pair(item_id, label));
+        }
+      } else if (type == "colorpicker") {
+        [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", ColorPickerIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       }
     }
   }
@@ -424,13 +432,17 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)buttonAction:(id)sender {
     NSString* item_id = [NSString stringWithFormat:@"com.electron.tb.button.%d", (int)((NSButton *)sender).tag];
     NSLog(@"Button with ID: '%@' was pressed", item_id);
-    shell_->NotifyTouchBarItemInteraction("button", std::string([item_id UTF8String]));
+    shell_->NotifyTouchBarItemInteraction("button", { std::string([item_id UTF8String]) });
 }
 
 - (void)colorPickerAction:(id)sender {
     NSString* item_id = ((NSColorPickerTouchBarItem *)sender).identifier;
-    NSLog(@"ColorPicker with ID: '%@' was updated with color '%@'", item_id, ((NSColorPickerTouchBarItem *)sender).color);
-    shell_->NotifyTouchBarItemInteraction("color_picker", std::string([item_id UTF8String]));
+    NSColor* color = ((NSColorPickerTouchBarItem *)sender).color;
+    NSString* colorHexString = [NSString stringWithFormat:@"#%02X%02X%02X",
+      (int) (color.redComponent * 0xFF), (int) (color.greenComponent * 0xFF),
+      (int) (color.blueComponent * 0xFF)];
+    NSLog(@"ColorPicker with ID: '%@' was updated with color '%@'", item_id, colorHexString);
+    shell_->NotifyTouchBarItemInteraction("color_picker", { std::string([item_id UTF8String]), std::string([colorHexString UTF8String]) });
 }
 
 static NSTouchBarItemIdentifier ButtonIdentifier = @"com.electron.tb.button.";
@@ -439,19 +451,31 @@ static NSTouchBarItemIdentifier ColorPickerIdentifier = @"com.electron.tb.colorp
 static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.tb.label.";
 // static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.tb.slider.";
 
+- (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix {
+  NSString *idCopy = [identifier copy];
+  idCopy = [identifier substringFromIndex:[prefix length]];
+  return idCopy;
+}
+
+- (bool)hasLabel:(NSString*)id {
+  return item_labels.find(std::string([id UTF8String])) != item_labels.end();
+}
+
 - (nullable NSTouchBarItem *)touchBar:(NSTouchBar *)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
   if ([identifier hasPrefix:ButtonIdentifier]) {
-    NSString *idCopy = [identifier copy];
-    idCopy = [identifier substringFromIndex:[ButtonIdentifier length]];
-    NSButton *theButton = [NSButton buttonWithTitle:[NSString stringWithUTF8String:button_labels[std::string([idCopy UTF8String])].c_str()] target:self action:@selector(buttonAction:)];
-    theButton.tag = [idCopy floatValue];
+    NSString* id = [self idFromIdentifier:identifier withPrefix:ButtonIdentifier];
+    if (![self hasLabel:id]) return nil;
+    NSButton *theButton = [NSButton buttonWithTitle:[NSString stringWithUTF8String:item_labels[std::string([id UTF8String])].c_str()] target:self action:@selector(buttonAction:)];
+    theButton.tag = [id floatValue];
 
     NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
     customItem.view = theButton;
 
     return customItem;
   } else if ([identifier hasPrefix:LabelIdentifier]) {
-    NSTextField *theLabel = [NSTextField labelWithString:@"Hello From Electron"];
+    NSString* id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
+    if (![self hasLabel:id]) return nil;
+    NSTextField *theLabel = [NSTextField labelWithString:[NSString stringWithUTF8String:item_labels[std::string([id UTF8String])].c_str()]];
 
     NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
     customItem.view = theLabel;

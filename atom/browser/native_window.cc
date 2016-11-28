@@ -574,9 +574,9 @@ void NativeWindow::NotifyWindowExecuteWindowsCommand(
 
 void NativeWindow::NotifyTouchBarItemInteraction(
   const std::string& type,
-  const std::string& item_id) {
+  const std::vector<std::string>& args) {
     FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                      OnTouchBarItemResult(type, item_id));
+                      OnTouchBarItemResult(type, args));
   }
 
 #if defined(OS_WIN)

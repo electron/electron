@@ -85,7 +85,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
-  void OnTouchBarItemResult(const std::string& item_type, const std::string& item_id) override;
+  void OnTouchBarItemResult(const std::string& item_type, const std::vector<std::string>& args) override;
 
   #if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
