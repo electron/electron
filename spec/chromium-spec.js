@@ -345,6 +345,15 @@ describe('chromium feature', function () {
       w = window.open(url, '', 'show=no')
     })
 
+    it('works when origin matches', function (done) {
+      listener = function (event) {
+        assert.equal(event.data, location.href)
+        done()
+      }
+      window.addEventListener('message', listener)
+      w = window.open(`file://${fixtures}/pages/window-opener-location.html`, '', 'show=no')
+    })
+
     it('works when origin does not match opener but has node integration', function (done) {
       listener = function (event) {
         assert.equal(event.data, location.href)
@@ -397,11 +406,29 @@ describe('chromium feature', function () {
       document.body.appendChild(webview)
     })
 
+    it('works when origin matches', function (done) {
+      webview = new WebView()
+      webview.addEventListener('console-message', function (e) {
+        assert.equal(e.message, webview.src)
+        done()
+      })
+      webview.setAttribute('allowpopups', 'on')
+      webview.src = url.format({
+        pathname: srcPath,
+        protocol: 'file',
+        query: {
+          p: pageURL
+        },
+        slashes: true
+      })
+      document.body.appendChild(webview)
+    })
+
     it('works when origin does not match opener but has node integration', function (done) {
       webview = new WebView()
       webview.addEventListener('console-message', function (e) {
         webview.remove()
-        assert.equal(e.message, location.href)
+        assert.equal(e.message, webview.src)
         done()
       })
       webview.setAttribute('allowpopups', 'on')
