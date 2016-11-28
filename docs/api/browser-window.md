@@ -1218,6 +1218,12 @@ Returns `BrowserWindow` - The parent window.
 
 Returns `BrowserWindow[]` - All child windows.
 
+#### `win.setAutoHideCursor(autoHide)` _macOS_
+
+* `autoHide` Boolean
+
+Controls whether to hide cursor when typing.
+
 #### `win.setVibrancy(type)` _macOS_
 
 * `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,

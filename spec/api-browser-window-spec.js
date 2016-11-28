@@ -506,6 +506,23 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
+    if (process.platform !== 'darwin') {
+      it('is not available on non-macOS platforms', () => {
+        assert.ok(!w.setAutoHideCursor)
+      })
+
+      return
+    }
+
+    it('allows changing cursor auto-hiding', () => {
+      assert.doesNotThrow(() => {
+        w.setAutoHideCursor(false)
+        w.setAutoHideCursor(true)
+      })
+    })
+  })
+
   describe('BrowserWindow.setVibrancy(type)', function () {
     it('allows setting, changing, and removing the vibrancy', function () {
       assert.doesNotThrow(function () {

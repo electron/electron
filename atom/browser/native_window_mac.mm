@@ -1255,6 +1255,10 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
   return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
 }
 
+void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
+  [window_ setDisableAutoHideCursor:!auto_hide];
+}
+
 void NativeWindowMac::SetVibrancy(const std::string& type) {
   if (!base::mac::IsOSYosemiteOrLater()) return;
 

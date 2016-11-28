@@ -161,6 +161,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
+  virtual void SetAutoHideCursor(bool auto_hide);
+
   // Vibrancy API
   virtual void SetVibrancy(const std::string& type);
 
