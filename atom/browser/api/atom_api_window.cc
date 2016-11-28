@@ -757,6 +757,10 @@ void Window::PreviewFile(const std::string& path, mate::Arguments* args) {
   window_->PreviewFile(path, display_name);
 }
 
+void Window::CloseFilePreview() {
+  window_->CloseFilePreview();
+}
+
 void Window::SetParentWindow(v8::Local<v8::Value> value,
                              mate::Arguments* args) {
   if (IsModal()) {
@@ -861,6 +865,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
       .SetMethod("previewFile", &Window::PreviewFile)
+      .SetMethod("closeFilePreview", &Window::CloseFilePreview)
 #if !defined(OS_WIN)
       .SetMethod("setParentWindow", &Window::SetParentWindow)
 #endif

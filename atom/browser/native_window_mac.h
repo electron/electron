@@ -57,6 +57,7 @@ class NativeWindowMac : public NativeWindow,
     override;
   void PreviewFile(const std::string& path, const std::string& display_name)
     override;
+  void CloseFilePreview() override;
   bool IsMovable() override;
   void SetMinimizable(bool minimizable) override;
   bool IsMinimizable() override;
