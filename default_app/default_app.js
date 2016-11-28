@@ -28,6 +28,8 @@ exports.load = (appUrl) => {
     mainWindow.setTouchBar(new TouchBar([
       new (TouchBar.Button)({
         label: 'Hello World!',
+        backgroundColor: "DDDDDD",
+        labelColor: "000000",
         click: () => {
           console.log('Hello World Clicked')
         }
@@ -36,10 +38,18 @@ exports.load = (appUrl) => {
         label: 'This is a Label'
       }),
       new (TouchBar.ColorPicker)({
-        change: (...args) => {
-          console.log('Color was changed', ...args)
+        change: (newColor) => {
+          console.log('Color was changed', newColor)
         }
-      })
+      }),
+      new (TouchBar.Slider)({
+        label: 'Slider 123',
+        minValue: 50,
+        maxValue: 1000,
+        change: (newVal) => {
+          console.log('Slider was changed', newVal, typeof newVal)
+        }
+      }),
     ]))
   })
 }

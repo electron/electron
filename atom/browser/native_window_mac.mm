@@ -10,6 +10,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
@@ -361,7 +362,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @implementation AtomNSWindow
   NSMutableArray<NSTouchBarItemIdentifier>* bar_items_ = [[NSMutableArray alloc] init];
-  std::map<std::string, std::string> item_labels;
+  std::map<std::string, mate::PersistentDictionary> item_id_map;
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
@@ -379,39 +380,29 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)reloadTouchBar {
   bar_items_ = [[NSMutableArray alloc] init];
-  std::vector<mate::Dictionary> items = shell_->GetTouchBarItems();
-  std::map<std::string, std::string> new_labels;
-  item_labels = new_labels;
+  std::vector<mate::PersistentDictionary> items = shell_->GetTouchBarItems();
+  std::map<std::string, mate::PersistentDictionary> new_map;
+  item_id_map = new_map;
 
-  NSLog(@"reload");
-  for (mate::Dictionary &item : items ) {
-    NSLog(@"reload iter");
+  for (mate::PersistentDictionary &item : items ) {
     std::string type;
     std::string item_id;
     if (item.Get("type", &type) && item.Get("id", &item_id)) {
       NSLog(@"type: %@", [NSString stringWithUTF8String:type.c_str()]);
       NSLog(@"id: %@", [NSString stringWithUTF8String:item_id.c_str()]);
+      item_id_map.insert(make_pair(item_id, item));
       if (type == "button") {
-        std::string label;
-        if (item.Get("label", &label)) {
-          [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
-          item_labels.insert(make_pair(item_id, label));
-        }
+        [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       } else if (type == "label") {
-        std::string label;
-        if (item.Get("label", &label)) {
-          [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
-          item_labels.insert(make_pair(item_id, label));
-        }
+        [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       } else if (type == "colorpicker") {
         [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", ColorPickerIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+      } else if (type == "slider") {
+        [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", SliderIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       }
     }
   }
-  // [bar_items_ addObject:@"com.electron.tb.button.1"];
-  // [bar_items_ addObject:@"com.electron.tb.button.2"];
   [bar_items_ addObject:NSTouchBarItemIdentifierOtherItemsProxy];
-  // NSLog(@"Reloading Touch Bar --> '%@'", bar_items_[1]);
   self.touchBar = nil;
 }
 
@@ -445,11 +436,11 @@ bool ScopedDisableResize::disable_resize_ = false;
     shell_->NotifyTouchBarItemInteraction("color_picker", { std::string([item_id UTF8String]), std::string([colorHexString UTF8String]) });
 }
 
-static NSTouchBarItemIdentifier ButtonIdentifier = @"com.electron.tb.button.";
-static NSTouchBarItemIdentifier ColorPickerIdentifier = @"com.electron.tb.colorpicker.";
-// static NSTouchBarItemIdentifier ListIdentifier = @"com.electron.tb.list.";
-static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.tb.label.";
-// static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.tb.slider.";
+- (void)sliderAction:(id)sender {
+    NSString* item_id = ((NSSliderTouchBarItem *)sender).identifier;
+    NSLog(@"Slider with ID: '%@' was changed", item_id);
+    shell_->NotifyTouchBarItemInteraction("slider", { std::string([item_id UTF8String]), std::to_string([((NSSliderTouchBarItem *)sender).slider intValue]) });
+}
 
 - (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix {
   NSString *idCopy = [identifier copy];
@@ -457,35 +448,164 @@ static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.tb.label.";
   return idCopy;
 }
 
-- (bool)hasLabel:(NSString*)id {
-  return item_labels.find(std::string([id UTF8String])) != item_labels.end();
+- (bool)hasTBDict:(std::string)id {
+  return item_id_map.find(id) != item_id_map.end();
 }
 
-- (nullable NSTouchBarItem *)touchBar:(NSTouchBar *)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
-  if ([identifier hasPrefix:ButtonIdentifier]) {
-    NSString* id = [self idFromIdentifier:identifier withPrefix:ButtonIdentifier];
-    if (![self hasLabel:id]) return nil;
-    NSButton *theButton = [NSButton buttonWithTitle:[NSString stringWithUTF8String:item_labels[std::string([id UTF8String])].c_str()] target:self action:@selector(buttonAction:)];
+- (NSColor*)colorFromHexColorString:(NSString*)inColorString {
+  NSColor* result = nil;
+  unsigned colorCode = 0;
+  unsigned char redByte, greenByte, blueByte;
+
+  if (nil != inColorString)
+  {
+       NSScanner* scanner = [NSScanner scannerWithString:inColorString];
+       (void) [scanner scanHexInt:&colorCode]; // ignore error
+  }
+  redByte = (unsigned char)(colorCode >> 16);
+  greenByte = (unsigned char)(colorCode >> 8);
+  blueByte = (unsigned char)(colorCode); // masks off high bits
+
+  result = [NSColor
+  colorWithCalibratedRed:(CGFloat)redByte / 0xff
+  green:(CGFloat)greenByte / 0xff
+  blue:(CGFloat)blueByte / 0xff
+  alpha:1.0];
+  return result;
+}
+
+- (nullable NSTouchBarItem *)makeButtonForID:(NSString*)id withIdentifier:(NSString*)identifier {
+  std::string s_id = std::string([id UTF8String]);
+  if (![self hasTBDict:s_id]) return nil;
+  mate::PersistentDictionary item = item_id_map[s_id];
+  std::string label;
+  if (item.Get("label", &label)) {
+    NSButton *theButton = [NSButton buttonWithTitle:[NSString stringWithUTF8String:label.c_str()] target:self action:@selector(buttonAction:)];
     theButton.tag = [id floatValue];
 
     NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
     customItem.view = theButton;
 
+    std::string customizationLabel;
+    if (item.Get("customizationLabel", &customizationLabel)) {
+      customItem.customizationLabel = [NSString stringWithUTF8String:customizationLabel.c_str()];
+    }
+
+    std::string backgroundColor;
+    if (item.Get("backgroundColor", &backgroundColor)) {
+      theButton.bezelColor = [self colorFromHexColorString:[NSString stringWithUTF8String:backgroundColor.c_str()]];
+    }
+
+    std::string labelColor;
+    if (item.Get("labelColor", &labelColor)) {
+      NSMutableAttributedString *attrTitle = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithUTF8String:label.c_str()]];
+      NSUInteger len = [attrTitle length];
+      NSRange range = NSMakeRange(0, len);
+      [attrTitle addAttribute:NSForegroundColorAttributeName value:[self colorFromHexColorString:[NSString stringWithUTF8String:labelColor.c_str()]] range:range];
+      [attrTitle fixAttributesInRange:range];
+      [theButton setAttributedTitle:attrTitle];
+    }
+
+    gfx::Image image;
+    if (item.Get("image", &image)) {
+      theButton.image = image.AsNSImage();
+    }
+
     return customItem;
-  } else if ([identifier hasPrefix:LabelIdentifier]) {
-    NSString* id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
-    if (![self hasLabel:id]) return nil;
-    NSTextField *theLabel = [NSTextField labelWithString:[NSString stringWithUTF8String:item_labels[std::string([id UTF8String])].c_str()]];
+  }
+  return nil;
+}
+
+- (nullable NSTouchBarItem*) makeLabelForID:(NSString*)id withIdentifier:(NSString*)identifier {
+  std::string s_id = std::string([id UTF8String]);
+  NSLog(@"Making label: '%@'", id);
+  if (![self hasTBDict:s_id]) return nil;
+  mate::PersistentDictionary item = item_id_map[s_id];
+  std::string label;
+  if (item.Get("label", &label)) {
+    NSTextField *theLabel = [NSTextField labelWithString:[NSString stringWithUTF8String:label.c_str()]];
 
     NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
     customItem.view = theLabel;
 
+    std::string customizationLabel;
+    if (item.Get("customizationLabel", &customizationLabel)) {
+      customItem.customizationLabel = [NSString stringWithUTF8String:customizationLabel.c_str()];
+    }
+
     return customItem;
+  }
+  return nil;
+}
+
+- (nullable NSTouchBarItem*) makeColorPickerForID:(NSString*)id withIdentifier:(NSString*)identifier {
+  std::string s_id = std::string([id UTF8String]);
+  if (![self hasTBDict:s_id]) return nil;
+  mate::PersistentDictionary item = item_id_map[s_id];
+
+  NSColorPickerTouchBarItem *colorPickerItem = [[NSColorPickerTouchBarItem alloc] initWithIdentifier:identifier];
+  colorPickerItem.target = self;
+  colorPickerItem.action = @selector(colorPickerAction:);
+
+  std::string customizationLabel;
+  if (item.Get("customizationLabel", &customizationLabel)) {
+    colorPickerItem.customizationLabel = [NSString stringWithUTF8String:customizationLabel.c_str()];
+  }
+
+  return colorPickerItem;
+}
+
+- (nullable NSTouchBarItem*) makeSliderForID:(NSString*)id withIdentifier:(NSString*)identifier {
+  std::string s_id = std::string([id UTF8String]);
+  if (![self hasTBDict:s_id]) return nil;
+  mate::PersistentDictionary item = item_id_map[s_id];
+
+  NSSliderTouchBarItem *sliderItem = [[NSSliderTouchBarItem alloc] initWithIdentifier:identifier];
+  sliderItem.target = self;
+  sliderItem.action = @selector(sliderAction:);
+
+  std::string customizationLabel;
+  if (item.Get("customizationLabel", &customizationLabel)) {
+    sliderItem.customizationLabel = [NSString stringWithUTF8String:customizationLabel.c_str()];
+  }
+
+  std::string label;
+  if (item.Get("label", &label)) {
+    sliderItem.label = [NSString stringWithUTF8String:label.c_str()];
+  }
+
+  int maxValue = 100;
+  int minValue = 0;
+  int initialValue = 50;
+  if (item.Get("minValue", &minValue) && item.Get("maxValue", &maxValue)) {
+    item.Get("initialValue", &initialValue);
+  }
+  sliderItem.slider.minValue = minValue;
+  sliderItem.slider.maxValue = maxValue;
+  sliderItem.slider.doubleValue = initialValue;
+
+  return sliderItem;
+}
+
+static NSTouchBarItemIdentifier ButtonIdentifier = @"com.electron.tb.button.";
+static NSTouchBarItemIdentifier ColorPickerIdentifier = @"com.electron.tb.colorpicker.";
+// static NSTouchBarItemIdentifier ListIdentifier = @"com.electron.tb.list.";
+static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.tb.label.";
+static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.tb.slider.";
+
+- (nullable NSTouchBarItem *)touchBar:(NSTouchBar *)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+  if ([identifier hasPrefix:ButtonIdentifier]) {
+    NSString* id = [self idFromIdentifier:identifier withPrefix:ButtonIdentifier];
+    return [self makeButtonForID:id withIdentifier:identifier];
+  } else if ([identifier hasPrefix:LabelIdentifier]) {
+    NSString* id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
+    return [self makeLabelForID:id withIdentifier:identifier];
   } else if ([identifier hasPrefix:ColorPickerIdentifier]) {
-    NSColorPickerTouchBarItem *colorPickerItem = [[NSColorPickerTouchBarItem alloc] initWithIdentifier:identifier];
-    colorPickerItem.target = self;
-    colorPickerItem.action = @selector(colorPickerAction:);
-    return colorPickerItem;
+    NSString* id = [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
+    return [self makeColorPickerForID:id withIdentifier:identifier];
+  } else if ([identifier hasPrefix:SliderIdentifier]) {
+    NSString* id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
+    return [self makeSliderForID:id withIdentifier:identifier];
   }
 
   return nil;
@@ -1480,16 +1600,14 @@ void NativeWindowMac::DestroyTouchBar() {
 }
 
 void NativeWindowMac::SetTouchBar(mate::Arguments* args) {
-  std::vector<mate::Dictionary> items;
-  LOG(ERROR) << "FOO";
+  std::vector<mate::PersistentDictionary> items;
   if (args->GetNext(&items)) {
-    LOG(ERROR) << "BAR";
     touch_bar_items_ = items;
     [window_ reloadTouchBar];
   }
 }
 
-std::vector<mate::Dictionary> NativeWindowMac::GetTouchBarItems() {
+std::vector<mate::PersistentDictionary> NativeWindowMac::GetTouchBarItems() {
   return touch_bar_items_;
 }
 
