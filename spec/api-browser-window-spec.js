@@ -519,9 +519,9 @@ describe('browser-window module', function () {
   })
 
   describe('BrowserWindow.setAppDetails(options)', function () {
-    if (process.platform !== 'win32') return
-
     it('supports setting the app details', function () {
+      if (process.platform !== 'win32') return this.skip()
+
       const iconPath = path.join(fixtures, 'assets', 'icon.ico')
 
       assert.doesNotThrow(function () {
@@ -540,9 +540,10 @@ describe('browser-window module', function () {
         })
         w.setAppDetails({})
       })
+
       assert.throws(function () {
         w.setAppDetails()
-      }, /Insufficient number of arguments./)
+      }, /Insufficient number of arguments\./)
     })
   })
 
