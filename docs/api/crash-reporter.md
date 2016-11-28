@@ -75,7 +75,7 @@ ID.
 Returns `Boolean` - Whether reports should be submitted to the server.  Set through
 the `start` method or `setUploadToServer`.
 
-**Note:** This API can only be used from the main process.
+**Note:** This API can only be called from the main process.
 
 ### `crashReporter.setUploadToServer(uploadToServer)` _macOS_
 
@@ -84,7 +84,7 @@ the `start` method or `setUploadToServer`.
 This would normally be controlled by user preferences. This has no effect if
 called before `start` is called.
 
-**Note:** This API can only be used from the main process.
+**Note:** This API can only be called from the main process.
 
 ## Crash Report Payload
 
