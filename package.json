@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "1.4.9",
+  "version": "1.4.10",
   "devDependencies": {
     "asar": "^0.11.0",
     "browserify": "^13.1.0",
