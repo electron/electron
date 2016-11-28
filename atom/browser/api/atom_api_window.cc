@@ -714,7 +714,7 @@ bool Window::SetThumbnailToolTip(const std::string& tooltip) {
 void Window::SetAppDetails(const mate::Dictionary& options) {
   base::string16 app_id;
   base::FilePath app_icon_path;
-  int app_icon_index;
+  int app_icon_index = 0;
   base::string16 relaunch_command;
   base::string16 relaunch_display_name;
 
