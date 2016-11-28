@@ -1689,6 +1689,17 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('previewFile', function () {
+    it('opens the path in Quick Look on macOS', function () {
+      if (process.platform !== 'darwin') return this.skip()
+
+      assert.doesNotThrow(function () {
+        w.previewFile(__filename)
+        w.closeFilePreview()
+      })
+    })
+  })
+
   describe('offscreen rendering', function () {
     this.timeout(10000)
 
