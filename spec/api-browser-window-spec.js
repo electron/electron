@@ -518,6 +518,35 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setAppDetails(options)', function () {
+    it('supports setting the app details', function () {
+      if (process.platform !== 'win32') return this.skip()
+
+      const iconPath = path.join(fixtures, 'assets', 'icon.ico')
+
+      assert.doesNotThrow(function () {
+        w.setAppDetails({appId: 'my.app.id'})
+        w.setAppDetails({appIconPath: iconPath, appIconIndex: 0})
+        w.setAppDetails({appIconPath: iconPath})
+        w.setAppDetails({relaunchCommand: 'my-app.exe arg1 arg2', relaunchDisplayName: 'My app name'})
+        w.setAppDetails({relaunchCommand: 'my-app.exe arg1 arg2'})
+        w.setAppDetails({relaunchDisplayName: 'My app name'})
+        w.setAppDetails({
+          appId: 'my.app.id',
+          appIconPath: iconPath,
+          appIconIndex: 0,
+          relaunchCommand: 'my-app.exe arg1 arg2',
+          relaunchDisplayName: 'My app name'
+        })
+        w.setAppDetails({})
+      })
+
+      assert.throws(function () {
+        w.setAppDetails()
+      }, /Insufficient number of arguments\./)
+    })
+  })
+
   describe('BrowserWindow.fromId(id)', function () {
     it('returns the window with id', function () {
       assert.equal(w.id, BrowserWindow.fromId(w.id).id)

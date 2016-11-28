@@ -10,6 +10,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
@@ -28,6 +29,7 @@
 
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/taskbar_host.h"
+#include "ui/base/win/shell.h"
 #endif
 
 #include "atom/common/node_includes.h"
@@ -708,6 +710,25 @@ bool Window::SetThumbnailToolTip(const std::string& tooltip) {
   return window->taskbar_host().SetThumbnailToolTip(
       window_->GetAcceleratedWidget(), tooltip);
 }
+
+void Window::SetAppDetails(const mate::Dictionary& options) {
+  base::string16 app_id;
+  base::FilePath app_icon_path;
+  int app_icon_index = 0;
+  base::string16 relaunch_command;
+  base::string16 relaunch_display_name;
+
+  options.Get("appId", &app_id);
+  options.Get("appIconPath", &app_icon_path);
+  options.Get("appIconIndex", &app_icon_index);
+  options.Get("relaunchCommand", &relaunch_command);
+  options.Get("relaunchDisplayName", &relaunch_display_name);
+
+  ui::win::SetAppDetailsForWindow(
+      app_id, app_icon_path, app_icon_index,
+      relaunch_command, relaunch_display_name,
+      window_->GetAcceleratedWidget());
+}
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -916,6 +937,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
       .SetMethod("setThumbnailClip", &Window::SetThumbnailClip)
       .SetMethod("setThumbnailToolTip", &Window::SetThumbnailToolTip)
+      .SetMethod("setAppDetails", &Window::SetAppDetails)
 #endif
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &Window::SetIcon)

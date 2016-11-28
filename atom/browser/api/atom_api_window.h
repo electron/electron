@@ -187,6 +187,7 @@ class Window : public mate::TrackableObject<Window>,
   void UnhookAllWindowMessages();
   bool SetThumbnailClip(const gfx::Rect& region);
   bool SetThumbnailToolTip(const std::string& tooltip);
+  void SetAppDetails(const mate::Dictionary& options);
 #endif
 
 #if defined(TOOLKIT_VIEWS)
