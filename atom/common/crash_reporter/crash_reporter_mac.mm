@@ -13,7 +13,6 @@
 #include "base/strings/string_piece.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "vendor/crashpad/client/crash_report_database.h"
 #include "vendor/crashpad/client/crashpad_client.h"
 #include "vendor/crashpad/client/crashpad_info.h"
 #include "vendor/crashpad/client/settings.h"
