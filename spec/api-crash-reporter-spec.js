@@ -134,7 +134,7 @@ describe('crashReporter module', function () {
         crashReporter.setUploadToServer(false)
         assert.equal(crashReporter.getUploadToServer(), false)
       } else {
-        assert.equal(crashReporter.getUploadToServer(), false)
+        assert.equal(crashReporter.getUploadToServer(), true)
       }
     })
   })
