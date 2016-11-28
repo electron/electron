@@ -139,9 +139,13 @@ Specifies a script that will be loaded before other scripts run in the guest
 page. The protocol of script's URL must be either `file:` or `asar:`, because it
 will be loaded by `require` in guest page under the hood.
 
-When the guest page doesn't have node integration this script will still have
+When the guest page doesn't have `nodeIntegration` enabled, this script will still have
 access to all Node APIs, but global objects injected by Node will be deleted
 after this script has finished executing.
+
+**Note:** Globals created by preload scripts can be modified by untrusted remote sites,
+even if `nodeIntegration` is disabled. Use caution when using preload scripts
+in conjunction with untrusted webview content.
 
 ### `httpreferrer`
 

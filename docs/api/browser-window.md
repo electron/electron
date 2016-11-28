@@ -217,11 +217,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       is `true`.
     * `preload` String (optional) - Specifies a script that will be loaded before other
       scripts run in the page. This script will always have access to node APIs
-      no matter whether node integration is turned on or off. The value should
+      no matter whether `nodeIntegration` is turned on or off. The value should
       be the absolute file path to the script.
-      When node integration is turned off, the preload script can reintroduce
+      When `nodeIntegration` is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
-      [here](process.md#event-loaded).
+      [here](process.md#event-loaded). **Note:** Globals created by preload scripts
+      can be modified by untrusted remote sites, even if `nodeIntegration` is disabled.
+      Use caution when using preload scripts in conjunction with untrusted content.
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
       page. Instead of passing the Session object directly, you can also choose to
       use the `partition` option instead, which accepts a partition string. When
