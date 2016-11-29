@@ -82,10 +82,7 @@ describe('browser-window module', function () {
   })
 
   afterEach(function () {
-    return closeWindow(w).then(function () {
-      w = null
-      assert.equal(BrowserWindow.getAllWindows().length, 1)
-    })
+    return closeWindow(w).then(function () { w = null })
   })
 
   describe('BrowserWindow.close()', function () {
@@ -859,7 +856,7 @@ describe('browser-window module', function () {
               assert(/Blocked a frame with origin/.test(exceptionMessage))
 
               // FIXME this popup window should be closed in sandbox.html
-              closeWindow(popupWindow).then(() => {
+              closeWindow(popupWindow, {assertSingleWindow: false}).then(() => {
                 popupWindow = null
                 done()
               })
