@@ -81,7 +81,7 @@ describe('app module', function () {
     var appProcess = null
 
     afterEach(function () {
-      appProcess != null ? appProcess.kill() : void 0
+      if (appProcess != null) appProcess.kill()
     })
 
     it('emits a process exit event with the code', function (done) {
