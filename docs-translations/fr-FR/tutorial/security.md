@@ -27,8 +27,7 @@ Les Pull requests et les contributions supportant cet effort sont toujours les b
 
 ## Ignorer les conseils précédents
 
-A security issue exists whenever you receive code from a remote destination and
-execute it locally. Prenons comme exemple l'affichage d'un site web distant affiché à l'intérieur d'une fenêtre de navigateur.
+Un problème de sécurité existe quand vous recevez du code depuis une source distante puis l'exécutez localement. Prenons comme exemple l'affichage d'un site web distant affiché à l'intérieur d'une fenêtre de navigateur.
 Si un attaquant parvient d'une quelconque façon de changer son contenu
 (soit en attaquant la source directement, ou bien en se placant entre votre application et sa destination actuelle), ils seront capables d'executer du code natif sur la machine de l'utilisateur.
 
