@@ -236,18 +236,13 @@ describe('session module', function () {
   })
 
   describe('will-download event', function () {
-    var w = null
-
     beforeEach(function () {
+      if (w != null) w.destroy()
       w = new BrowserWindow({
         show: false,
         width: 400,
         height: 400
       })
-    })
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
     })
 
     it('can cancel default download behavior', function (done) {
