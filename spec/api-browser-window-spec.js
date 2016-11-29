@@ -82,7 +82,10 @@ describe('browser-window module', function () {
   })
 
   afterEach(function () {
-    return closeWindow(w).then(function () { w = null })
+    return closeWindow(w).then(function () {
+      w = null
+      assert.equal(BrowserWindow.getAllWindows().length, 1)
+    })
   })
 
   describe('BrowserWindow.close()', function () {
