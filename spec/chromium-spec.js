@@ -61,11 +61,9 @@ describe('chromium feature', function () {
       w.loadURL(url)
     })
 
-    if (isCI && process.platform === 'win32') {
-      return
-    }
-
     it('is set correctly when window is inactive', function (done) {
+      if (isCI && process.platform === 'win32') return done()
+
       w = new BrowserWindow({
         show: false
       })
