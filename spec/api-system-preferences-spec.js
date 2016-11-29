@@ -59,6 +59,47 @@ describe('systemPreferences module', function () {
     })
   })
 
+  describe('systemPreferences.setUserDefault(key, type, value)', () => {
+    if (process.platform !== 'darwin') {
+      return
+    }
+
+    const KEY = 'SystemPreferencesTest'
+
+    const TEST_CASES = [
+      ['string', 'abc'],
+      ['boolean', true],
+      ['float', 2.5],
+      ['double', 10.1],
+      ['integer', 11],
+      ['url', 'https://github.com/electron'],
+      ['array', [1, 2, 3]],
+      ['dictionary', {'a': 1, 'b': 2}]
+    ]
+
+    it('sets values', () => {
+      for (const [type, value] of TEST_CASES) {
+        systemPreferences.setUserDefault(KEY, type, value)
+        const retrievedValue = systemPreferences.getUserDefault(KEY, type)
+        assert.deepEqual(retrievedValue, value)
+      }
+    })
+
+    it('throws when type and value conflict', () => {
+      for (const [type, value] of TEST_CASES) {
+        assert.throws(() => {
+          systemPreferences.setUserDefault(KEY, type, typeof value === 'string' ? {} : 'foo')
+        }, `Unable to convert value to: ${type}`)
+      }
+    })
+
+    it('throws when type is not valid', () => {
+      assert.throws(() => {
+        systemPreferences.setUserDefault(KEY, 'abc', 'foo')
+      }, 'Invalid type: abc')
+    })
+  })
+
   describe('systemPreferences.isInvertedColorScheme()', function () {
     it('returns a boolean', function () {
       assert.equal(typeof systemPreferences.isInvertedColorScheme(), 'boolean')

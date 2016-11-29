@@ -10,6 +10,18 @@
 
 namespace atom {
 
+NSArray* ListValueToNSArray(const base::ListValue& value) {
+  std::string json;
+  if (!base::JSONWriter::Write(value, &json))
+    return nil;
+  NSData* jsonData = [NSData dataWithBytes:json.c_str() length:json.length()];
+  id obj =
+      [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
+  if (![obj isKindOfClass:[NSArray class]])
+    return nil;
+  return obj;
+}
+
 std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
   if (!arr)
     return nullptr;
