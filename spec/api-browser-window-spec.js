@@ -523,7 +523,7 @@ describe('browser-window module', function () {
 
   describe('BrowserWindow.setAppDetails(options)', function () {
     it('supports setting the app details', function () {
-      if (process.platform !== 'win32') return this.skip()
+      if (process.platform !== 'win32') return
 
       const iconPath = path.join(fixtures, 'assets', 'icon.ico')
 
@@ -660,7 +660,7 @@ describe('browser-window module', function () {
 
   describe('"zoomToPageWidth" option', function () {
     it('sets the window width to the page width when used', function () {
-      if (process.platform !== 'darwin') return this.skip()
+      if (process.platform !== 'darwin') return
 
       w.destroy()
       w = new BrowserWindow({
@@ -1723,7 +1723,7 @@ describe('browser-window module', function () {
 
   describe('previewFile', function () {
     it('opens the path in Quick Look on macOS', function () {
-      if (process.platform !== 'darwin') return this.skip()
+      if (process.platform !== 'darwin') return
 
       assert.doesNotThrow(function () {
         w.previewFile(__filename)
