@@ -375,39 +375,42 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)resetTouchBar {
   bar_items_ = [[NSMutableArray alloc] init];
   self.touchBar = nil;
-  NSLog(@"Destroying TouchBar");
 }
 
-- (void)reloadTouchBar {
-  bar_items_ = [[NSMutableArray alloc] init];
-  std::vector<mate::PersistentDictionary> items = shell_->GetTouchBarItems();
-  std::map<std::string, mate::PersistentDictionary> new_map;
-  item_id_map = new_map;
+- (NSMutableArray<NSTouchBarItemIdentifier>*)identifierArrayFromDicts:(std::vector<mate::PersistentDictionary>)dicts {
+  NSMutableArray<NSTouchBarItemIdentifier>* idents = [[NSMutableArray alloc] init];
 
-  for (mate::PersistentDictionary &item : items ) {
+  for (mate::PersistentDictionary &item : dicts) {
     std::string type;
     std::string item_id;
     if (item.Get("type", &type) && item.Get("id", &item_id)) {
-      NSLog(@"type: %@", [NSString stringWithUTF8String:type.c_str()]);
-      NSLog(@"id: %@", [NSString stringWithUTF8String:item_id.c_str()]);
       item_id_map.insert(make_pair(item_id, item));
       if (type == "button") {
-        [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       } else if (type == "label") {
-        [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       } else if (type == "colorpicker") {
-        [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", ColorPickerIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", ColorPickerIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       } else if (type == "slider") {
-        [bar_items_ addObject:[NSString stringWithFormat:@"%@%@", SliderIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", SliderIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+      } else if (type == "popover") {
+        [idents addObject:[NSString stringWithFormat:@"%@%@", PopOverIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       }
     }
   }
-  [bar_items_ addObject:NSTouchBarItemIdentifierOtherItemsProxy];
+  [idents addObject:NSTouchBarItemIdentifierOtherItemsProxy];
+
+  return idents;
+}
+
+- (void)reloadTouchBar {
+  std::map<std::string, mate::PersistentDictionary> new_map;
+  item_id_map = new_map;
+  bar_items_ = [self identifierArrayFromDicts:shell_->GetTouchBarItems()];
   self.touchBar = nil;
 }
 
 - (NSTouchBar *)makeTouchBar {
-  NSLog(@"Making Touch Bar");
   return [self touchBarFromMutatableArray:bar_items_];
 }
 
@@ -422,7 +425,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)buttonAction:(id)sender {
     NSString* item_id = [NSString stringWithFormat:@"com.electron.tb.button.%d", (int)((NSButton *)sender).tag];
-    NSLog(@"Button with ID: '%@' was pressed", item_id);
     shell_->NotifyTouchBarItemInteraction("button", { std::string([item_id UTF8String]) });
 }
 
@@ -432,13 +434,11 @@ bool ScopedDisableResize::disable_resize_ = false;
     NSString* colorHexString = [NSString stringWithFormat:@"#%02X%02X%02X",
       (int) (color.redComponent * 0xFF), (int) (color.greenComponent * 0xFF),
       (int) (color.blueComponent * 0xFF)];
-    NSLog(@"ColorPicker with ID: '%@' was updated with color '%@'", item_id, colorHexString);
     shell_->NotifyTouchBarItemInteraction("color_picker", { std::string([item_id UTF8String]), std::string([colorHexString UTF8String]) });
 }
 
 - (void)sliderAction:(id)sender {
     NSString* item_id = ((NSSliderTouchBarItem *)sender).identifier;
-    NSLog(@"Slider with ID: '%@' was changed", item_id);
     shell_->NotifyTouchBarItemInteraction("slider", { std::string([item_id UTF8String]), std::to_string([((NSSliderTouchBarItem *)sender).slider intValue]) });
 }
 
@@ -474,13 +474,38 @@ bool ScopedDisableResize::disable_resize_ = false;
   return result;
 }
 
+- (NSButton*)makeButtonForDict:(mate::PersistentDictionary)dict withLabel:(std::string)label {
+  NSButton *theButton = [NSButton buttonWithTitle:[NSString stringWithUTF8String:label.c_str()] target:self action:@selector(buttonAction:)];
+
+  std::string backgroundColor;
+  if (dict.Get("backgroundColor", &backgroundColor)) {
+    theButton.bezelColor = [self colorFromHexColorString:[NSString stringWithUTF8String:backgroundColor.c_str()]];
+  }
+
+  std::string labelColor;
+  if (dict.Get("labelColor", &labelColor)) {
+    NSMutableAttributedString *attrTitle = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithUTF8String:label.c_str()]];
+    NSUInteger len = [attrTitle length];
+    NSRange range = NSMakeRange(0, len);
+    [attrTitle addAttribute:NSForegroundColorAttributeName value:[self colorFromHexColorString:[NSString stringWithUTF8String:labelColor.c_str()]] range:range];
+    [attrTitle fixAttributesInRange:range];
+    [theButton setAttributedTitle:attrTitle];
+  }
+
+  gfx::Image image;
+  if (dict.Get("image", &image)) {
+    theButton.image = image.AsNSImage();
+  }
+  return theButton;
+}
+
 - (nullable NSTouchBarItem *)makeButtonForID:(NSString*)id withIdentifier:(NSString*)identifier {
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
   std::string label;
   if (item.Get("label", &label)) {
-    NSButton *theButton = [NSButton buttonWithTitle:[NSString stringWithUTF8String:label.c_str()] target:self action:@selector(buttonAction:)];
+    NSButton* theButton = [self makeButtonForDict:item withLabel:label];
     theButton.tag = [id floatValue];
 
     NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
@@ -491,26 +516,6 @@ bool ScopedDisableResize::disable_resize_ = false;
       customItem.customizationLabel = [NSString stringWithUTF8String:customizationLabel.c_str()];
     }
 
-    std::string backgroundColor;
-    if (item.Get("backgroundColor", &backgroundColor)) {
-      theButton.bezelColor = [self colorFromHexColorString:[NSString stringWithUTF8String:backgroundColor.c_str()]];
-    }
-
-    std::string labelColor;
-    if (item.Get("labelColor", &labelColor)) {
-      NSMutableAttributedString *attrTitle = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithUTF8String:label.c_str()]];
-      NSUInteger len = [attrTitle length];
-      NSRange range = NSMakeRange(0, len);
-      [attrTitle addAttribute:NSForegroundColorAttributeName value:[self colorFromHexColorString:[NSString stringWithUTF8String:labelColor.c_str()]] range:range];
-      [attrTitle fixAttributesInRange:range];
-      [theButton setAttributedTitle:attrTitle];
-    }
-
-    gfx::Image image;
-    if (item.Get("image", &image)) {
-      theButton.image = image.AsNSImage();
-    }
-
     return customItem;
   }
   return nil;
@@ -518,7 +523,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (nullable NSTouchBarItem*) makeLabelForID:(NSString*)id withIdentifier:(NSString*)identifier {
   std::string s_id = std::string([id UTF8String]);
-  NSLog(@"Making label: '%@'", id);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
   std::string label;
@@ -577,9 +581,10 @@ bool ScopedDisableResize::disable_resize_ = false;
   int maxValue = 100;
   int minValue = 0;
   int initialValue = 50;
-  if (item.Get("minValue", &minValue) && item.Get("maxValue", &maxValue)) {
-    item.Get("initialValue", &initialValue);
-  }
+  item.Get("minValue", &minValue);
+  item.Get("maxValue", &maxValue);
+  item.Get("initialValue", &initialValue);
+
   sliderItem.slider.minValue = minValue;
   sliderItem.slider.maxValue = maxValue;
   sliderItem.slider.doubleValue = initialValue;
@@ -587,10 +592,46 @@ bool ScopedDisableResize::disable_resize_ = false;
   return sliderItem;
 }
 
+- (nullable NSTouchBarItem*) makePopOverForID:(NSString*)id withIdentifier:(NSString*)identifier {
+  std::string s_id = std::string([id UTF8String]);
+  if (![self hasTBDict:s_id]) return nil;
+  mate::PersistentDictionary item = item_id_map[s_id];
+
+  NSPopoverTouchBarItem *popOverItem = [[NSPopoverTouchBarItem alloc] initWithIdentifier:identifier];
+
+  std::string customizationLabel;
+  if (item.Get("customizationLabel", &customizationLabel)) {
+    popOverItem.customizationLabel = [NSString stringWithUTF8String:customizationLabel.c_str()];
+  }
+
+  std::string label;
+  gfx::Image image;
+  if (item.Get("label", &label)) {
+    popOverItem.collapsedRepresentationLabel = [NSString stringWithUTF8String:label.c_str()];
+  } else if (item.Get("image", &image)) {
+    popOverItem.collapsedRepresentationImage = image.AsNSImage();
+  }
+
+  bool showCloseButton;
+  if (item.Get("showCloseButton", &showCloseButton)) {
+    popOverItem.showsCloseButton = showCloseButton;
+  }
+
+  std::vector<mate::PersistentDictionary> touchBar;
+  if (item.Get("touchBar", &touchBar)) {
+    popOverItem.popoverTouchBar = [self touchBarFromMutatableArray:[self identifierArrayFromDicts:touchBar]];
+  } else {
+    return nil;
+  }
+
+  return popOverItem;
+}
+
 static NSTouchBarItemIdentifier ButtonIdentifier = @"com.electron.tb.button.";
 static NSTouchBarItemIdentifier ColorPickerIdentifier = @"com.electron.tb.colorpicker.";
 // static NSTouchBarItemIdentifier ListIdentifier = @"com.electron.tb.list.";
 static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.tb.label.";
+static NSTouchBarItemIdentifier PopOverIdentifier = @"com.electron.tb.popover.";
 static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.tb.slider.";
 
 - (nullable NSTouchBarItem *)touchBar:(NSTouchBar *)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
@@ -606,6 +647,9 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.tb.slider.";
   } else if ([identifier hasPrefix:SliderIdentifier]) {
     NSString* id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
     return [self makeSliderForID:id withIdentifier:identifier];
+  } else if ([identifier hasPrefix:PopOverIdentifier]) {
+    NSString* id = [self idFromIdentifier:identifier withPrefix:PopOverIdentifier];
+    return [self makePopOverForID:id withIdentifier:identifier];
   }
 
   return nil;

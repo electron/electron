@@ -28,6 +28,7 @@ exports.load = (appUrl) => {
     mainWindow.setTouchBar(new TouchBar([
       new (TouchBar.Button)({
         label: 'Hello World!',
+        // image: '/path/to/image',
         backgroundColor: "FF0000",
         labelColor: "0000FF",
         click: () => {
@@ -41,6 +42,19 @@ exports.load = (appUrl) => {
         change: (newColor) => {
           console.log('Color was changed', newColor)
         }
+      }),
+      new (TouchBar.PopOver)({
+        // image: '/path/to/image',
+        label: 'foo',
+        showCloseButton: true,
+        touchBar: new TouchBar([
+          new (TouchBar.Button)({
+            label: 'Sub Button',
+            click: () => {
+              console.log('Sub Button Clicked')
+            }
+          })
+        ])
       }),
       new (TouchBar.Slider)({
         label: 'Slider 123',
