@@ -36,7 +36,7 @@ describe('crashReporter module', function () {
   }
 
   it('should send minidump when renderer crashes', function (done) {
-    if (isCI) return
+    if (isCI) return done()
 
     this.timeout(120000)
 
