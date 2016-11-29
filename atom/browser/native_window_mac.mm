@@ -395,6 +395,8 @@ bool ScopedDisableResize::disable_resize_ = false;
         [idents addObject:[NSString stringWithFormat:@"%@%@", SliderIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       } else if (type == "popover") {
         [idents addObject:[NSString stringWithFormat:@"%@%@", PopOverIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+      } else if (type == "group") {
+        [idents addObject:[NSString stringWithFormat:@"%@%@", GroupIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
       }
     }
   }
@@ -627,14 +629,43 @@ bool ScopedDisableResize::disable_resize_ = false;
   return popOverItem;
 }
 
+- (nullable NSTouchBarItem*) makeGroupForID:(NSString*)id withIdentifier:(NSString*)identifier {
+  std::string s_id = std::string([id UTF8String]);
+  if (![self hasTBDict:s_id]) return nil;
+  mate::PersistentDictionary item = item_id_map[s_id];
+
+  std::vector<mate::PersistentDictionary> items;
+  if (!item.Get("items", &items)) {
+    return nil;
+  }
+
+  NSMutableArray<NSTouchBarItem*>* generatedItems = [[NSMutableArray alloc] init];
+  NSMutableArray<NSString*>* identList = [self identifierArrayFromDicts:items];
+  for (NSUInteger i = 0; i < [identList count]; i++) {
+    NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identList objectAtIndex:i]];
+    if (generatedItem) {
+      [generatedItems addObject:generatedItem];
+    }
+  }
+  NSGroupTouchBarItem *groupItem = [NSGroupTouchBarItem groupItemWithIdentifier:identifier items:generatedItems];
+
+  std::string customizationLabel;
+  if (item.Get("customizationLabel", &customizationLabel)) {
+    groupItem.customizationLabel = [NSString stringWithUTF8String:customizationLabel.c_str()];
+  }
+
+  return groupItem;
+}
+
 static NSTouchBarItemIdentifier ButtonIdentifier = @"com.electron.tb.button.";
 static NSTouchBarItemIdentifier ColorPickerIdentifier = @"com.electron.tb.colorpicker.";
 // static NSTouchBarItemIdentifier ListIdentifier = @"com.electron.tb.list.";
+static NSTouchBarItemIdentifier GroupIdentifier = @"com.electron.tb.group.";
 static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.tb.label.";
 static NSTouchBarItemIdentifier PopOverIdentifier = @"com.electron.tb.popover.";
 static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.tb.slider.";
 
-- (nullable NSTouchBarItem *)touchBar:(NSTouchBar *)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+- (nullable NSTouchBarItem *)makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
   if ([identifier hasPrefix:ButtonIdentifier]) {
     NSString* id = [self idFromIdentifier:identifier withPrefix:ButtonIdentifier];
     return [self makeButtonForID:id withIdentifier:identifier];
@@ -650,9 +681,16 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.tb.slider.";
   } else if ([identifier hasPrefix:PopOverIdentifier]) {
     NSString* id = [self idFromIdentifier:identifier withPrefix:PopOverIdentifier];
     return [self makePopOverForID:id withIdentifier:identifier];
+  } else if ([identifier hasPrefix:GroupIdentifier]) {
+    NSString* id = [self idFromIdentifier:identifier withPrefix:GroupIdentifier];
+    return [self makeGroupForID:id withIdentifier:identifier];
   }
 
   return nil;
+}
+
+- (nullable NSTouchBarItem *)touchBar:(NSTouchBar *)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+  return [self makeItemForIdentifier:identifier];
 }
 
 

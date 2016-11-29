@@ -48,11 +48,15 @@ exports.load = (appUrl) => {
         label: 'foo',
         showCloseButton: true,
         touchBar: new TouchBar([
-          new (TouchBar.Button)({
-            label: 'Sub Button',
-            click: () => {
-              console.log('Sub Button Clicked')
-            }
+          new (TouchBar.Group)({
+            items: new TouchBar(
+              [1, 2, 3].map((i) => new (TouchBar.Button)({
+                label: `Button ${i}`,
+                click: () => {
+                  console.log(`Button ${i} (group) Clicked`)
+                }
+              }))
+            )
           })
         ])
       }),
