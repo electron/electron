@@ -659,7 +659,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 static NSTouchBarItemIdentifier ButtonIdentifier = @"com.electron.tb.button.";
 static NSTouchBarItemIdentifier ColorPickerIdentifier = @"com.electron.tb.colorpicker.";
-// static NSTouchBarItemIdentifier ListIdentifier = @"com.electron.tb.list.";
 static NSTouchBarItemIdentifier GroupIdentifier = @"com.electron.tb.group.";
 static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.tb.label.";
 static NSTouchBarItemIdentifier PopOverIdentifier = @"com.electron.tb.popover.";
