@@ -811,6 +811,10 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
+void Window::SetAutoHideCursor(bool auto_hide) {
+  window_->SetAutoHideCursor(auto_hide);
+}
+
 void Window::SetVibrancy(mate::Arguments* args) {
   std::string type;
 
@@ -934,6 +938,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
+#if defined(OS_MACOSX)
+      .SetMethod("setAutoHideCursor", &Window::SetAutoHideCursor)
+#endif
       .SetMethod("setVibrancy", &Window::SetVibrancy)
 #if defined(OS_WIN)
       .SetMethod("hookWindowMessage", &Window::HookWindowMessage)

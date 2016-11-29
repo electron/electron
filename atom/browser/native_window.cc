@@ -333,6 +333,9 @@ void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
 
+void NativeWindow::SetAutoHideCursor(bool auto_hide) {
+}
+
 void NativeWindow::SetVibrancy(const std::string& filename) {
 }
 

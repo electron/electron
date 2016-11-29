@@ -198,6 +198,8 @@ class Window : public mate::TrackableObject<Window>,
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
 
+  void SetAutoHideCursor(bool auto_hide);
+
   void SetVibrancy(mate::Arguments* args);
 
   int32_t ID() const;

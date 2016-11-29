@@ -91,8 +91,12 @@ class NativeWindowMac : public NativeWindow,
   void SetProgressBar(double progress, const ProgressState state) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
+
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
+
+  void SetAutoHideCursor(bool auto_hide) override;
+
   void SetVibrancy(const std::string& type) override;
 
   // content::RenderWidgetHost::InputEventObserver:
