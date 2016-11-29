@@ -21,9 +21,9 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
+#include "native_mate/constructor.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
-#include "native_mate/constructor.h"
 
 class SkRegion;
 
@@ -233,7 +233,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
-  void NotifyTouchBarItemInteraction(const std::string& item_type, const std::vector<std::string>& args);
+  void NotifyTouchBarItemInteraction(const std::string& item_type,
+                                     const std::vector<std::string>& args);
 
   #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);

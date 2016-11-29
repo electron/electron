@@ -282,7 +282,8 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 
-void Window::OnTouchBarItemResult(const std::string& item_type, const std::vector<std::string>& args) {
+void Window::OnTouchBarItemResult(const std::string& item_type,
+                                  const std::vector<std::string>& args) {
   Emit("-touch-bar-interaction", item_type, args);
 }
 

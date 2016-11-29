@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NATIVE_WINDOW_OBSERVER_H_
 
 #include <string>
+#include <vector>
 
 #include "base/strings/string16.h"
 #include "ui/base/window_open_disposition.h"
@@ -70,7 +71,8 @@ class NativeWindowObserver {
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}
   virtual void OnWindowLeaveHtmlFullScreen() {}
-  virtual void OnTouchBarItemResult(const std::string& item_type, const std::vector<std::string>& args) {}
+  virtual void OnTouchBarItemResult(const std::string& item_type,
+                                    const std::vector<std::string>& args) {}
 
   // Called when window message received
   #if defined(OS_WIN)
