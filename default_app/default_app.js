@@ -1,4 +1,4 @@
-const {app, BrowserWindow,TouchBar} = require('electron')
+const {app, BrowserWindow, TouchBar} = require('electron')
 const path = require('path')
 
 let mainWindow = null
@@ -29,8 +29,8 @@ exports.load = (appUrl) => {
       new (TouchBar.Button)({
         label: 'Hello World!',
         // image: '/path/to/image',
-        backgroundColor: "FF0000",
-        labelColor: "0000FF",
+        backgroundColor: 'FF0000',
+        labelColor: '0000FF',
         click: () => {
           console.log('Hello World Clicked')
         }
@@ -68,7 +68,7 @@ exports.load = (appUrl) => {
         change: (newVal) => {
           console.log('Slider was changed', newVal, typeof newVal)
         }
-      }),
+      })
     ]))
   })
 }
