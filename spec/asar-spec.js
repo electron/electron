@@ -792,6 +792,11 @@ describe('asar package', function () {
 
   describe('asar protocol', function () {
     var url = require('url')
+    var w = null
+
+    afterEach(function () {
+      return closeWindow(w).then(function () { w = null })
+    })
 
     it('can request a file in package', function (done) {
       var p = path.resolve(fixtures, 'asar', 'a.asar', 'file1')
@@ -839,10 +844,9 @@ describe('asar package', function () {
     it('sets __dirname correctly', function (done) {
       after(function () {
         ipcMain.removeAllListeners('dirname')
-        return closeWindow(w).then(function () { w = null })
       })
 
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         width: 400,
         height: 400
@@ -863,10 +867,9 @@ describe('asar package', function () {
     it('loads script tag in html', function (done) {
       after(function () {
         ipcMain.removeAllListeners('ping')
-        return closeWindow(w).then(function () { w = null })
       })
 
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         width: 400,
         height: 400
@@ -889,10 +892,9 @@ describe('asar package', function () {
 
       after(function () {
         ipcMain.removeAllListeners('asar-video')
-        return closeWindow(w).then(function () { w = null })
       })
 
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         width: 400,
         height: 400
