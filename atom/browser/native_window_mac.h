@@ -95,7 +95,7 @@ class NativeWindowMac : public NativeWindow,
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
 
-  void SetAutoHideCursor(bool auto_hide);
+  void SetAutoHideCursor(bool auto_hide) override;
 
   void SetVibrancy(const std::string& type) override;
 
