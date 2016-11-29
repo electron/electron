@@ -152,8 +152,6 @@ describe('chromium feature', function () {
       return
     }
 
-    this.timeout(20000)
-
     it('returns a BrowserWindowProxy object', function () {
       var b = window.open('about:blank', '', 'show=no')
       assert.equal(b.closed, false)

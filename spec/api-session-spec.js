@@ -9,8 +9,6 @@ const {ipcRenderer, remote} = require('electron')
 const {ipcMain, session, BrowserWindow} = remote
 
 describe('session module', function () {
-  this.timeout(10000)
-
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
   var url = 'http://127.0.0.1'

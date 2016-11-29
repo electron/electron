@@ -127,7 +127,8 @@ describe('app module', function () {
     })
 
     it('relaunches the app', function (done) {
-      this.timeout(100000)
+      this.timeout(120000)
+
       let state = 'none'
       server.once('error', (error) => {
         done(error)
