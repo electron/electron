@@ -163,8 +163,6 @@ describe('app module', function () {
   describe('app.importCertificate', function () {
     if (process.platform !== 'linux') return
 
-    this.timeout(5000)
-
     var w = null
     var certPath = path.join(__dirname, 'fixtures', 'certificates')
     var options = {

@@ -28,8 +28,6 @@ describe('chromium feature', function () {
 
   describe('sending request of http protocol urls', function () {
     it('does not crash', function (done) {
-      this.timeout(5000)
-
       var server = http.createServer(function (req, res) {
         res.end()
         server.close()
@@ -78,8 +76,6 @@ describe('chromium feature', function () {
 
   xdescribe('navigator.webkitGetUserMedia', function () {
     it('calls its callbacks', function (done) {
-      this.timeout(5000)
-
       navigator.webkitGetUserMedia({
         audio: true,
         video: false
@@ -279,8 +275,6 @@ describe('chromium feature', function () {
   })
 
   describe('window.opener', function () {
-    this.timeout(10000)
-
     let url = 'file://' + fixtures + '/pages/window-opener.html'
     let w = null
 
@@ -312,8 +306,6 @@ describe('chromium feature', function () {
   })
 
   describe('window.opener access from BrowserWindow', function () {
-    this.timeout(10000)
-
     const scheme = 'other'
     let url = `${scheme}://${fixtures}/pages/window-opener-location.html`
     let w = null
@@ -363,8 +355,6 @@ describe('chromium feature', function () {
   })
 
   describe('window.opener access from <webview>', function () {
-    this.timeout(10000)
-
     const scheme = 'other'
     const srcPath = `${fixtures}/pages/webview-opener-postMessage.html`
     const pageURL = `file://${fixtures}/pages/window-opener-location.html`
