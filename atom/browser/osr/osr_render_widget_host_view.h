@@ -61,7 +61,9 @@ class MacHelper;
 class OffScreenRenderWidgetHostView
     : public content::RenderWidgetHostViewBase,
       public ui::CompositorDelegate,
+#if !defined(OS_MACOSX)
       public content::DelegatedFrameHostClient,
+#endif
       public NativeWindowObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
@@ -92,6 +94,7 @@ class OffScreenRenderWidgetHostView
   void SetBackgroundColor(SkColor color) override;
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
+  void SetNeedsBeginFrames(bool needs_begin_frames) override;
 #if defined(OS_MACOSX)
   ui::AcceleratedWidgetMac* GetAcceleratedWidgetMac() const override;
   void SetActive(bool active) override;
@@ -137,8 +140,6 @@ class OffScreenRenderWidgetHostView
     std::unique_ptr<content::RenderWidgetHostViewFrameSubscriber>) override;
   void EndFrameSubscription() override;
   bool HasAcceleratedSurface(const gfx::Size &) override;
-  void GetScreenInfo(blink::WebScreenInfo *) override;
-  bool GetScreenColorProfile(blink::WebVector<char>*);
   gfx::Rect GetBoundsInRootWindow(void) override;
   void LockCompositingSurface(void) override;
   void UnlockCompositingSurface(void) override;
@@ -147,6 +148,7 @@ class OffScreenRenderWidgetHostView
   gfx::Size GetPhysicalBackingSize() const override;
   gfx::Size GetRequestedRendererSize() const override;
 
+#if !defined(OS_MACOSX)
   // content::DelegatedFrameHostClient:
   int DelegatedFrameHostGetGpuMemoryBufferClientId(void) const;
   ui::Layer *DelegatedFrameHostGetLayer(void) const override;
@@ -157,14 +159,15 @@ class OffScreenRenderWidgetHostView
   std::unique_ptr<content::ResizeLock> DelegatedFrameHostCreateResizeLock(
     bool defer_compositor_lock) override;
   void DelegatedFrameHostResizeLockWasReleased(void) override;
-  void DelegatedFrameHostSendCompositorSwapAck(
-    int, const cc::CompositorFrameAck &) override;
   void DelegatedFrameHostSendReclaimCompositorResources(
-    int, const cc::CompositorFrameAck &) override;
+    int output_surface_id,
+    bool is_swap_ack,
+    const cc::ReturnedResourceArray& resources) override;
   void DelegatedFrameHostOnLostCompositorResources(void) override;
   void DelegatedFrameHostUpdateVSyncParameters(
     const base::TimeTicks &, const base::TimeDelta &) override;
   void SetBeginFrameSource(cc::BeginFrameSource* source) override;
+#endif  // !defined(OS_MACOSX)
 
   // ui::CompositorDelegate:
   std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(

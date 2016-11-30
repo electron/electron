@@ -50,7 +50,6 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
   content::SpeechRecognitionManagerDelegate*
       CreateSpeechRecognitionManagerDelegate() override;
-  device::GeolocationDelegate* CreateGeolocationDelegate() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                            content::WebPreferences* prefs) override;
   std::string GetApplicationLocale() override;
@@ -72,8 +71,8 @@ class AtomBrowserClient : public brightray::BrowserClient,
       bool overridable,
       bool strict_enforcement,
       bool expired_previous_decision,
-      const base::Callback<void(bool)>& callback,
-      content::CertificateRequestResultType* request) override;
+      const base::Callback<void(content::CertificateRequestResultType)>&
+          callback) override;
   void SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
@@ -84,9 +83,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
       const GURL& opener_top_level_frame_url,
       const GURL& source_origin,
       WindowContainerType container_type,
-      const std::string& frame_name,
       const GURL& target_url,
       const content::Referrer& referrer,
+      const std::string& frame_name,
       WindowOpenDisposition disposition,
       const blink::WebWindowFeatures& features,
       const std::vector<base::string16>& additional_features,

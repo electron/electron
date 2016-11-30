@@ -44,6 +44,7 @@
 #include "atom/common/options_switches.h"
 #include "base/strings/string16.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
@@ -866,7 +867,8 @@ void WebContents::WebContentsDestroyed() {
   Emit("destroyed");
 
   // Destroy the native class in next tick.
-  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, GetDestroyClosure());
 }
 
 void WebContents::NavigationEntryCommitted(
@@ -1012,7 +1014,7 @@ std::string WebContents::GetUserAgent() {
 }
 
 void WebContents::InsertCSS(const std::string& css) {
-  web_contents()->InsertCSS(css);
+  // FIXME(zcbenz): Redirect this method to webFrame.
 }
 
 bool WebContents::SavePage(const base::FilePath& full_file_path,
@@ -1102,7 +1104,8 @@ void WebContents::InspectElement(int x, int y) {
     OpenDevTools(nullptr);
   scoped_refptr<content::DevToolsAgentHost> agent(
     content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
-  agent->InspectElement(x, y);
+  // FIXME(zcbenz): Figure out how to implement this for Chrome 54.
+  agent->InspectElement(nullptr, x, y);
 }
 
 void WebContents::InspectServiceWorker() {

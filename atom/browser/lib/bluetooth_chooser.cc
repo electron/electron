@@ -89,8 +89,12 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
   }
 }
 
-void BluetoothChooser::AddDevice(const std::string& device_id,
-                                 const base::string16& device_name) {
+void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
+                                         bool should_update_name,
+                                         const base::string16& device_name,
+                                         bool is_gatt_connected,
+                                         bool is_paired,
+                                         int signal_strength_level) {
   DeviceInfo info = {device_id, device_name};
   device_list_.push_back(info);
 }

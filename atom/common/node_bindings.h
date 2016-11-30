@@ -64,7 +64,7 @@ class NodeBindings {
   bool is_browser_;
 
   // Main thread's MessageLoop.
-  base::MessageLoop* message_loop_;
+  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
 
   // Main thread's libuv loop.
   uv_loop_t* uv_loop_;

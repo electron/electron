@@ -110,16 +110,16 @@ PepperFlashClipboardMessageFilter::OverrideTaskRunnerForMessage(
   // restrictions of various platform APIs. In general, the clipboard is not
   // thread-safe, so all clipboard calls should be serviced from the UI thread.
   if (msg.type() == PpapiHostMsg_FlashClipboard_WriteData::ID)
-    return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::UI);
+    return BrowserThread::GetTaskRunnerForThread(BrowserThread::UI);
 
 // Windows needs clipboard reads to be serviced from the IO thread because
 // these are sync IPCs which can result in deadlocks with plugins if serviced
 // from the UI thread. Note that Windows clipboard calls ARE thread-safe so it
 // is ok for reads and writes to be serviced from different threads.
 #if !defined(OS_WIN)
-  return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::UI);
+  return BrowserThread::GetTaskRunnerForThread(BrowserThread::UI);
 #else
-  return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO);
+  return BrowserThread::GetTaskRunnerForThread(BrowserThread::IO);
 #endif
 }
 

@@ -254,8 +254,8 @@ class ResolveProxyHelper {
 
     // Start the request.
     int result = proxy_service->ResolveProxy(
-        url, "GET", net::LOAD_NORMAL, &proxy_info_, completion_callback,
-        &pac_req_, nullptr, net::BoundNetLog());
+        url, "GET", &proxy_info_, completion_callback, &pac_req_, nullptr,
+        net::BoundNetLog());
 
     // Completed synchronously.
     if (result != net::ERR_IO_PENDING)
