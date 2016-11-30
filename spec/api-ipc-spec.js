@@ -434,8 +434,6 @@ describe('ipc module', function () {
     })
 
     it('does not crash when reply is not sent and browser is destroyed', function (done) {
-      this.timeout(10000)
-
       w = new BrowserWindow({
         show: false
       })

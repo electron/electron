@@ -211,7 +211,6 @@ describe('browser-window module', function () {
     })
 
     it('does not crash in did-fail-provisional-load handler', function (done) {
-      this.timeout(10000)
       w.webContents.once('did-fail-provisional-load', function () {
         w.loadURL('http://127.0.0.1:11111')
         done()
@@ -284,7 +283,6 @@ describe('browser-window module', function () {
     })
 
     it('emits when window is shown', function (done) {
-      this.timeout(10000)
       w.once('show', function () {
         assert.equal(w.isVisible(), true)
         done()
@@ -310,7 +308,6 @@ describe('browser-window module', function () {
     })
 
     it('emits when window is hidden', function (done) {
-      this.timeout(10000)
       w.show()
       w.once('hide', function () {
         assert.equal(w.isVisible(), false)
@@ -1002,7 +999,6 @@ describe('browser-window module', function () {
     })
 
     it('emits when link with target is called', function (done) {
-      this.timeout(10000)
       w.webContents.once('new-window', function (e, url, frameName) {
         e.preventDefault()
         assert.equal(url, 'http://host/')
@@ -1019,7 +1015,6 @@ describe('browser-window module', function () {
     }
 
     it('emits when window is maximized', function (done) {
-      this.timeout(10000)
       w.once('maximize', function () {
         done()
       })
@@ -1034,7 +1029,6 @@ describe('browser-window module', function () {
     }
 
     it('emits when window is unmaximized', function (done) {
-      this.timeout(10000)
       w.once('unmaximize', function () {
         done()
       })
@@ -1050,7 +1044,6 @@ describe('browser-window module', function () {
     }
 
     it('emits when window is minimized', function (done) {
-      this.timeout(10000)
       w.once('minimize', function () {
         done()
       })
@@ -1062,8 +1055,6 @@ describe('browser-window module', function () {
   describe('beginFrameSubscription method', function () {
     // This test is too slow, only test it on CI.
     if (!isCI) return
-
-    this.timeout(20000)
 
     it('subscribes to frame updates', function (done) {
       let called = false
@@ -1513,7 +1504,6 @@ describe('browser-window module', function () {
   describe('dev tool extensions', function () {
     describe('BrowserWindow.addDevToolsExtension', function () {
       let showPanelIntevalId
-      this.timeout(10000)
 
       beforeEach(function () {
         BrowserWindow.removeDevToolsExtension('foo')
@@ -1595,8 +1585,6 @@ describe('browser-window module', function () {
     })
 
     it('works when used with partitions', function (done) {
-      this.timeout(10000)
-
       if (w != null) {
         w.destroy()
       }
@@ -1747,8 +1735,6 @@ describe('browser-window module', function () {
   })
 
   describe('offscreen rendering', function () {
-    this.timeout(10000)
-
     beforeEach(function () {
       if (w != null) w.destroy()
       w = new BrowserWindow({

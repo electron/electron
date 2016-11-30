@@ -9,6 +9,8 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
+const isCI = remote.getGlobal('isCi')
+
 describe('crashReporter module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
@@ -33,12 +35,9 @@ describe('crashReporter module', function () {
     return
   }
 
-  var isCI = remote.getGlobal('isCi')
-  if (isCI) {
-    return
-  }
-
   it('should send minidump when renderer crashes', function (done) {
+    if (isCI) return done()
+
     this.timeout(120000)
 
     var called = false
