@@ -1045,8 +1045,6 @@ describe('<webview> tag', function () {
   })
 
   it('loads devtools extensions registered on the parent window', function (done) {
-    this.timeout(10000)
-
     w = new BrowserWindow({
       show: false
     })
