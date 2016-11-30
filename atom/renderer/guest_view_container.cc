@@ -8,7 +8,7 @@
 
 #include "base/bind.h"
 #include "base/lazy_instance.h"
-#include "base/message_loop/message_loop.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "ui/gfx/geometry/size.h"
 
 namespace atom {
@@ -53,7 +53,7 @@ void GuestViewContainer::DidResizeElement(const gfx::Size& new_size) {
   if (element_resize_callback_.is_null())
     return;
 
-  base::MessageLoop::current()->PostTask(
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::Bind(element_resize_callback_, new_size));
 }
 

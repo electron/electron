@@ -106,6 +106,10 @@ void OffScreenWebContentsView::RenderViewSwappedIn(
 void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {
 }
 
+void OffScreenWebContentsView::GetScreenInfo(
+    blink::WebScreenInfo* web_screen_info) const {
+}
+
 #if defined(OS_MACOSX)
 void OffScreenWebContentsView::SetAllowOtherViews(bool allow) {
 }

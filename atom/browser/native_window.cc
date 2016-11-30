@@ -20,6 +20,7 @@
 #include "base/json/json_writer.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "components/prefs/pref_service.h"
@@ -604,7 +605,7 @@ void NativeWindow::DidFirstVisuallyNonEmptyPaint() {
   view->SetSize(GetContentSize());
 
   // Emit the ReadyToShow event in next tick in case of pending drawing work.
-  base::MessageLoop::current()->PostTask(
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
       base::Bind(&NativeWindow::NotifyReadyToShow, GetWeakPtr()));
 }
@@ -635,7 +636,7 @@ void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
   window_unresposive_closure_.Reset(
       base::Bind(&NativeWindow::NotifyWindowUnresponsive,
                  weak_factory_.GetWeakPtr()));
-  base::MessageLoop::current()->PostDelayedTask(
+  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
       FROM_HERE,
       window_unresposive_closure_.callback(),
       base::TimeDelta::FromMilliseconds(ms));
