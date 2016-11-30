@@ -90,11 +90,11 @@ struct Converter<blink::WebMouseEvent::Button> {
                      blink::WebMouseEvent::Button* out) {
     std::string button = base::ToLowerASCII(V8ToString(val));
     if (button == "left")
-      *out = blink::WebMouseEvent::Button::ButtonLeft;
+      *out = blink::WebMouseEvent::Button::Left;
     else if (button == "middle")
-      *out = blink::WebMouseEvent::Button::ButtonMiddle;
+      *out = blink::WebMouseEvent::Button::Middle;
     else if (button == "right")
-      *out = blink::WebMouseEvent::Button::ButtonRight;
+      *out = blink::WebMouseEvent::Button::Right;
     else
       return false;
     return true;
@@ -176,7 +176,6 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
   out->windowsKeyCode = keyCode;
   if (shifted)
     out->modifiers |= blink::WebInputEvent::ShiftKey;
-  out->setKeyIdentifierFromWindowsKeyCode();
 
   ui::DomCode domCode = ui::UsLayoutKeyboardCodeToDomCode(keyCode);
   out->domCode = static_cast<int>(domCode);
@@ -246,7 +245,7 @@ bool Converter<blink::WebMouseEvent>::FromV8(
   if (!dict.Get("x", &out->x) || !dict.Get("y", &out->y))
     return false;
   if (!dict.Get("button", &out->button))
-    out->button = blink::WebMouseEvent::Button::ButtonLeft;
+    out->button = blink::WebMouseEvent::Button::Left;
   dict.Get("globalX", &out->globalX);
   dict.Get("globalY", &out->globalY);
   dict.Get("movementX", &out->movementX);

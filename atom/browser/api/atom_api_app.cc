@@ -312,8 +312,21 @@ struct Converter<Browser::LoginItemSettings> {
     return dict.GetHandle();
   }
 };
-}  // namespace mate
 
+template<>
+struct Converter<content::CertificateRequestResultType> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     content::CertificateRequestResultType* out) {
+    bool b;
+    if (!ConvertFromV8(isolate, val, &b))
+      return false;
+    *out = b ? content::CERTIFICATE_REQUEST_RESULT_TYPE_CONTINUE :
+               content::CERTIFICATE_REQUEST_RESULT_TYPE_CANCEL;
+    return true;
+  }
+};
+
+}  // namespace mate
 
 namespace atom {
 
@@ -573,8 +586,8 @@ void App::AllowCertificateError(
     bool overridable,
     bool strict_enforcement,
     bool expired_previous_decision,
-    const base::Callback<void(bool)>& callback,
-    content::CertificateRequestResultType* request) {
+    const base::Callback<void(content::CertificateRequestResultType)>&
+        callback) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   bool prevent_default = Emit("certificate-error",
@@ -586,7 +599,7 @@ void App::AllowCertificateError(
 
   // Deny the certificate by default.
   if (!prevent_default)
-    *request = content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY;
+    callback.Run(content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY);
 }
 
 void App::SelectClientCertificate(

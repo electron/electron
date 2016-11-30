@@ -10,8 +10,8 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 
@@ -80,7 +80,8 @@ void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
     Emit("done", item->GetState());
 
     // Destroy the item once item is downloaded.
-    base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE, GetDestroyClosure());
   } else {
     Emit("updated", item->GetState());
   }

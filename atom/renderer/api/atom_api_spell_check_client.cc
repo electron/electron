@@ -64,19 +64,6 @@ void SpellCheckClient::spellCheck(
   }
 }
 
-void SpellCheckClient::checkTextOfParagraph(
-    const blink::WebString& text,
-    blink::WebTextCheckingTypeMask mask,
-    blink::WebVector<blink::WebTextCheckingResult>* results) {
-  if (!results)
-    return;
-
-  if (!(mask & blink::WebTextCheckingTypeSpelling))
-    return;
-
-  NOTREACHED() << "checkTextOfParagraph should never be called";
-}
-
 void SpellCheckClient::requestCheckingOfText(
     const blink::WebString& textToCheck,
     const blink::WebVector<uint32_t>& markersInText,

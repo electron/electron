@@ -51,6 +51,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void RenderViewCreated(content::RenderViewHost* host) override;
   void RenderViewSwappedIn(content::RenderViewHost* host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
+  void GetScreenInfo(blink::WebScreenInfo* web_screen_info) const override;
 
 #if defined(OS_MACOSX)
   void SetAllowOtherViews(bool allow) override;

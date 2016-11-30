@@ -51,6 +51,7 @@ int AtomPermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
+    bool user_gesture,
     const ResponseCallback& response_callback) {
   int process_id = render_frame_host->GetProcess()->GetID();
 
@@ -81,8 +82,9 @@ int AtomPermissionManager::RequestPermissions(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
+    bool user_gesture,
     const base::Callback<void(
-    const std::vector<blink::mojom::PermissionStatus>&)>& callback) {
+        const std::vector<blink::mojom::PermissionStatus>&)>& callback) {
   // FIXME(zcbenz): Just ignore multiple permissions request for now.
   std::vector<blink::mojom::PermissionStatus> permissionStatuses;
   for (auto permission : permissions) {

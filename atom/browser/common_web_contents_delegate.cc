@@ -331,14 +331,14 @@ content::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
 
   explanations->ran_insecure_content =
       security_info.mixed_content_status ==
-          SecurityStateModel::RAN_MIXED_CONTENT ||
+          security_state::SecurityStateModel::CONTENT_STATUS_RAN ||
       security_info.mixed_content_status ==
-          SecurityStateModel::RAN_AND_DISPLAYED_MIXED_CONTENT;
+          security_state::SecurityStateModel::CONTENT_STATUS_DISPLAYED_AND_RAN;
   explanations->displayed_insecure_content =
       security_info.mixed_content_status ==
-          SecurityStateModel::DISPLAYED_MIXED_CONTENT ||
+          security_state::SecurityStateModel::CONTENT_STATUS_DISPLAYED ||
       security_info.mixed_content_status ==
-          SecurityStateModel::RAN_AND_DISPLAYED_MIXED_CONTENT;
+          security_state::SecurityStateModel::CONTENT_STATUS_DISPLAYED_AND_RAN;
 
   if (net::IsCertStatusError(security_info.cert_status)) {
     std::string error_string = net::ErrorToString(
@@ -362,13 +362,6 @@ content::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
               kValidCertificateDescription,
               security_info.cert_id));
     }
-  }
-
-  if (security_info.is_secure_protocol_and_ciphersuite) {
-    explanations->secure_explanations.push_back(
-        content::SecurityStyleExplanation(
-            kSecureProtocol,
-            kSecureProtocolDescription));
   }
 
   return security_style;
