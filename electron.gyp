@@ -568,7 +568,7 @@
               'action': [
                 'install_name_tool',
                 '-change',
-                '/usr/local/lib/libffmpeg.dylib',
+                './libffmpeg.dylib',
                 '@rpath/libffmpeg.dylib',
                 '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
               ],
