@@ -14,7 +14,7 @@ describe('dialog module', () => {
 
       assert.throws(() => {
         dialog.showOpenDialog({buttonLabel: []})
-      }, /buttonLabel must be a string/)
+      }, /Button label must be a string/)
 
       assert.throws(() => {
         dialog.showOpenDialog({defaultPath: {}})
@@ -30,7 +30,7 @@ describe('dialog module', () => {
 
       assert.throws(() => {
         dialog.showSaveDialog({buttonLabel: []})
-      }, /buttonLabel must be a string/)
+      }, /Button label must be a string/)
 
       assert.throws(() => {
         dialog.showSaveDialog({defaultPath: {}})
