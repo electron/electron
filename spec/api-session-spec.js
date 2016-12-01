@@ -673,9 +673,7 @@ describe('session module', function () {
           res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"')
           res.end()
         } else {
-          res.statusCode = 200
-          res.write('authenticated')
-          res.end()
+          res.end('authenticated')
         }
       })
       server.listen(0, '127.0.0.1', function () {
@@ -697,6 +695,7 @@ describe('session module', function () {
           })
           request.on('response', function (response) {
             let data = ''
+            response.pause()
             response.on('data', function (chunk) {
               data += chunk
             })
@@ -709,6 +708,7 @@ describe('session module', function () {
             response.on('error', function (error) {
               done(error)
             })
+            response.resume()
           })
           // Internal api to bypass cache for testing.
           request.urlRequest._setLoadFlags(1 << 1)
