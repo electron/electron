@@ -106,8 +106,8 @@ will be passed via `callback(filename)`
   * `cancelId` Integer (optional) - The value will be returned when user cancels the dialog
     instead of clicking the buttons of the dialog. By default it is the index
     of the buttons that have "cancel" or "no" as label, or 0 if there is no such
-    buttons. On macOS and Windows the index of "Cancel" button will always be
-    used as `cancelId`, not matter whether it is already specified.
+    buttons. On macOS and Windows the index of the "Cancel" button will always
+    be used as `cancelId` even if it is specified.
   * `noLink` Boolean (optional) - On Windows Electron will try to figure out which one of
     the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
     others as command links in the dialog. This can make the dialog appear in
