@@ -495,4 +495,26 @@ describe('ipc module', function () {
       assert.equal(w.listenerCount('test'), 0)
     })
   })
+
+  it('throws an error when removing all the listeners', () => {
+    ipcMain.on('test-event', () => {})
+    assert.equal(ipcMain.listenerCount('test-event'), 1)
+
+    ipcRenderer.on('test-event', () => {})
+    assert.equal(ipcRenderer.listenerCount('test-event'), 1)
+
+    assert.throws(() => {
+      ipcMain.removeAllListeners()
+    }, /Removing all listeners from ipcMain will make Electron internals stop working/)
+
+    assert.throws(() => {
+      ipcRenderer.removeAllListeners()
+    }, /Removing all listeners from ipcRenderer will make Electron internals stop working/)
+
+    ipcMain.removeAllListeners('test-event')
+    assert.equal(ipcMain.listenerCount('test-event'), 0)
+
+    ipcRenderer.removeAllListeners('test-event')
+    assert.equal(ipcRenderer.listenerCount('test-event'), 0)
+  })
 })
