@@ -761,10 +761,6 @@ void OffScreenRenderWidgetHostView::SetBeginFrameSource(
     cc::BeginFrameSource* source) {
 }
 
-bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
-  return render_widget_host_->auto_resize_enabled();
-}
-
 #endif  // !defined(OS_MACOSX)
 
 std::unique_ptr<cc::SoftwareOutputDevice>
