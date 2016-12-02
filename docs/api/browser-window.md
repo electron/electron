@@ -1266,6 +1266,12 @@ Controls whether to hide cursor when typing.
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
+#### `win.setTouchBar(touchBar)` _macOS_
+
+* `touchBar` TouchBar
+
+Sets the touchBar layout for the current window.
+
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
