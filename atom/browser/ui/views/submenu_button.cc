@@ -49,7 +49,7 @@ SubmenuButton::SubmenuButton(const base::string16& title,
     gfx::Canvas::SizeStringInt(GetText(), GetFontList(), &text_width_,
                                &text_height_, 0, 0);
 
-  SetHasInkDrop(true);
+  SetInkDropMode(InkDropMode::ON);
   set_ink_drop_base_color(
       color_utils::BlendTowardOppositeLuma(background_color_, 0x61));
 }
