@@ -11,6 +11,7 @@ const protocol = electron.protocol
 const v8 = require('v8')
 
 const Coverage = require('electabul').Coverage
+const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 const url = require('url')
@@ -183,4 +184,21 @@ app.on('ready', function () {
       event.returnValue = 'success'
     }
   })
+})
+
+ipcMain.on('set-client-certificate-option', function (event, skip) {
+  app.once('select-client-certificate', function (event, webContents, url, list, callback) {
+    event.preventDefault()
+    if (skip) {
+      callback()
+    } else {
+      assert.equal(list.length, 1)
+      assert.equal(list[0].issuerName, 'Intermediate CA')
+      assert.equal(list[0].subjectName, 'Client Cert')
+      assert.equal(list[0].issuer.commonName, 'Intermediate CA')
+      assert.equal(list[0].subject.commonName, 'Client Cert')
+      callback(list[0])
+    }
+  })
+  event.returnValue = 'done'
 })
