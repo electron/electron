@@ -6,10 +6,12 @@
 
 #include <algorithm>
 #include <iostream>
+#include <map>
 #include <string>
 
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
+#include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
@@ -22,10 +24,6 @@ namespace {
 
 // Dummy class type that used for crashing the program.
 struct DummyClass { bool crash; };
-
-void Crash() {
-  static_cast<DummyClass*>(nullptr)->crash = true;
-}
 
 void Hang() {
   for (;;)
@@ -76,7 +74,7 @@ v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
 // we can get the stack trace.
 void FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
-  Crash();
+  AtomBindings::Crash();
 }
 
 }  // namespace
@@ -95,7 +93,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   v8::V8::SetFatalErrorHandler(FatalErrorCallback);
 
   mate::Dictionary dict(isolate, process);
-  dict.SetMethod("crash", &Crash);
+  dict.SetMethod("crash", &AtomBindings::Crash);
   dict.SetMethod("hang", &Hang);
   dict.SetMethod("log", &Log);
   dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
@@ -157,6 +155,31 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
 // static
 void AtomBindings::Log(const base::string16& message) {
   std::cout << message << std::flush;
+}
+
+void AtomBindings::Crash() {
+  static_cast<DummyClass*>(nullptr)->crash = true;
+}
+
+void AtomBindings::StartCrashReporter(
+    const std::string& productName,
+    const std::string& companyName,
+    const std::string& submitUrl,
+    const std::string& tmpPath,
+    const std::map<std::string, std::string>& extra_parameters) {
+  std::map<std::string, std::string> allParameters;
+  allParameters.insert(std::make_pair("_productName", productName));
+  allParameters.insert(std::make_pair("_companyName", companyName));
+  allParameters.insert(extra_parameters.begin(), extra_parameters.end());
+
+  auto reporter = crash_reporter::CrashReporter::GetInstance();
+  reporter->Start(productName,
+                  companyName,
+                  submitUrl,
+                  base::FilePath(tmpPath),
+                  true,
+                  false,
+                  allParameters);
 }
 
 }  // namespace atom

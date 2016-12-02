@@ -14,11 +14,11 @@
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 
-#if defined(OS_WIN)
+
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/dictionary.h"
-#endif
+
 
 #include "atom/common/node_includes.h"
 
@@ -58,10 +58,12 @@ int NodeMain(int argc, char *argv[]) {
     if (node_debugger.IsRunning())
       env->AssignToContext(v8::Debug::GetDebugContext(gin_env.isolate()));
 
-#if defined(OS_WIN)
     mate::Dictionary process(gin_env.isolate(), env->process_object());
+#if defined(OS_WIN)
     process.SetMethod("log", &AtomBindings::Log);
 #endif
+    process.SetMethod("startCrashReporter", &AtomBindings::StartCrashReporter);
+    process.SetMethod("crash", &AtomBindings::Crash);
 
     node::LoadEnvironment(env);
 
