@@ -99,6 +99,8 @@
       'atom/app/uv_task_runner.h',
       'atom/browser/api/atom_api_app.cc',
       'atom/browser/api/atom_api_app.h',
+      'atom/browser/api/atom_api_app_mac.mm',
+      'atom/browser/api/atom_api_app_mac.h',
       'atom/browser/api/atom_api_auto_updater.cc',
       'atom/browser/api/atom_api_auto_updater.h',
       'atom/browser/api/atom_api_content_tracing.cc',

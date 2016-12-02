@@ -108,6 +108,9 @@ class App : public AtomBrowserClient::Delegate,
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus status) override;
 
+  virtual void InitializeAsMediaPlayer();
+  virtual void SetNowPlaying(mate::Arguments* args);
+
  private:
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);
@@ -127,6 +130,7 @@ class App : public AtomBrowserClient::Delegate,
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);
 #endif
+  bool media_controller_initialized_ = false;
 
 #if defined(OS_WIN)
   // Get the current Jump List settings.
