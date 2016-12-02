@@ -380,7 +380,7 @@ void OnClientCertificateSelected(
     mate::Arguments* args) {
   mate::Dictionary cert_data;
   if (!args->GetNext(&cert_data)) {
-    args->ThrowError();
+    delegate->ContinueWithCertificate(nullptr);
     return;
   }
 
