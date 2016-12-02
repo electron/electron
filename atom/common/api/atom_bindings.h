@@ -6,6 +6,8 @@
 #define ATOM_COMMON_API_ATOM_BINDINGS_H_
 
 #include <list>
+#include <map>
+#include <string>
 
 #include "base/macros.h"
 #include "base/strings/string16.h"
@@ -28,6 +30,13 @@ class AtomBindings {
   void BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process);
 
   static void Log(const base::string16& message);
+  static void Crash();
+  static void StartCrashReporter(
+    const std::string& productName,
+    const std::string& companyName,
+    const std::string& submitUrl,
+    const std::string& tmpPath,
+    const std::map<std::string, std::string>& extra_parameters);
 
  private:
   void ActivateUVLoop(v8::Isolate* isolate);

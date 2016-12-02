@@ -1,4 +1,4 @@
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow, crashReporter} = require('electron')
 const path = require('path')
 
 let mainWindow = null
@@ -20,6 +20,11 @@ exports.load = (appUrl) => {
     if (process.platform === 'linux') {
       options.icon = path.join(__dirname, 'icon.png')
     }
+    crashReporter.start({
+      submitURL: "http://localhost:8080/uploadDump/mainDump",
+      companyName: "Main Company",
+      productName: "Main Product"
+    })
 
     mainWindow = new BrowserWindow(options)
     mainWindow.loadURL(appUrl)
