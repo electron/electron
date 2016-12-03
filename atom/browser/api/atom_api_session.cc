@@ -29,6 +29,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "brightray/browser/media/media_device_id_salt.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "chrome/common/pref_names.h"
@@ -389,6 +390,11 @@ void Session::ClearStorageData(mate::Arguments* args) {
 
   auto storage_partition =
       content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
+  if (options.storage_types & StoragePartition::REMOVE_DATA_MASK_COOKIES) {
+    // Reset media device id salt when cookies are cleared.
+    // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
+    brightray::MediaDeviceIDSalt::Reset(browser_context()->prefs());
+  }
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin,
       content::StoragePartition::OriginMatcherFunction(),
