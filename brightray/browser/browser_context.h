@@ -24,6 +24,7 @@ class SpecialStoragePolicy;
 
 namespace brightray {
 
+class MediaDeviceIDSalt;
 class PermissionManager;
 
 class BrowserContext : public base::RefCounted<BrowserContext>,
@@ -87,6 +88,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
 
   // URLRequestContextGetter::Delegate:
   net::NetworkDelegate* CreateNetworkDelegate() override;
+  MediaDeviceIDSalt* GetMediaDeviceIDSalt() override;
 
   base::FilePath GetPath() const override;
 
@@ -128,6 +130,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
   std::unique_ptr<PrefService> prefs_;
   std::unique_ptr<PermissionManager> permission_manager_;
+  std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
 
   base::WeakPtrFactory<BrowserContext> weak_factory_;
 
