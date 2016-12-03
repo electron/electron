@@ -4,6 +4,7 @@ const path = require('path')
 const ws = require('ws')
 const url = require('url')
 const remote = require('electron').remote
+const {closeWindow} = require('./window-helpers')
 
 const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
 
@@ -108,6 +109,38 @@ describe('chromium feature', function () {
           done('No device labels found: ' + JSON.stringify(labels))
         }
       }).catch(done)
+    })
+
+    it('can return new device id when cookie storage is cleared', function (done) {
+      const options = {
+        origin: null,
+        storages: ['cookies']
+      }
+      let deviceIds = []
+      const ses = session.fromPartition('persist:media-device-id')
+      let w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: ses
+        }
+      })
+      w.webContents.on('ipc-message', function (event, args) {
+        if (args[0] === 'deviceIds') {
+          deviceIds.push(args[1])
+        }
+        if (deviceIds.length === 2) {
+          assert.notDeepEqual(deviceIds[0], deviceIds[1])
+          closeWindow(w).then(function () {
+            w = null
+            done()
+          })
+        } else {
+          ses.clearStorageData(options, function () {
+            w.webContents.reload()
+          })
+        }
+      })
+      w.loadURL('file://' + fixtures + '/pages/media-id-reset.html')
     })
   })
 
