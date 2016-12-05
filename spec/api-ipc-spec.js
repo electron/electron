@@ -500,7 +500,7 @@ describe('ipc module', function () {
       })
 
       ipcMain.once('error-message', (event, message) => {
-        assert(message.startsWith('Cannot call function \'getURL\' on missing remote object'), message)
+        assert(message.startsWith('Cannot read property \'object\' of undefined'), message)
         done()
       })
 
