@@ -807,6 +807,10 @@ int WebContents::GetID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
+int WebContents::GetProcessID() const {
+  return web_contents()->GetRenderProcessHost()->GetID();
+}
+
 WebContents::Type WebContents::GetType() const {
   return type_;
 }
@@ -1469,6 +1473,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("getId", &WebContents::GetID)
+      .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
