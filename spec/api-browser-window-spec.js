@@ -584,6 +584,28 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('BrowserWindow.fromDevToolsWebContents(webContents)', function () {
+    let contents = null
+
+    beforeEach(function () {
+      contents = webContents.create({})
+    })
+
+    afterEach(function () {
+      contents.destroy()
+    })
+
+    it('returns the window with the webContents', function (done) {
+      w.webContents.once('devtools-opened', () => {
+        assert.equal(BrowserWindow.fromDevToolsWebContents(w.devToolsWebContents).id, w.id)
+        assert.equal(BrowserWindow.fromDevToolsWebContents(w.webContents), undefined)
+        assert.equal(BrowserWindow.fromDevToolsWebContents(contents), undefined)
+        done()
+      })
+      w.webContents.openDevTools()
+    })
+  })
+
   describe('"useContentSize" option', function () {
     it('make window created with content size when used', function () {
       w.destroy()
