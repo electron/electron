@@ -1619,8 +1619,8 @@ describe('browser-window module', function () {
       w.webContents.openDevTools({mode: 'bottom'})
 
       ipcMain.once('answer', function (event, message) {
-        assert.equal(message.runtimeId, 'foo')
         clearInterval(showPanelIntervalId)
+        assert.equal(message.runtimeId, 'foo')
         done()
       })
     })
