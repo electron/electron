@@ -492,4 +492,19 @@ describe('ipc module', function () {
       assert.equal(w.listenerCount('test'), 0)
     })
   })
+
+  describe('remote objects registry', function () {
+    it('does not dereference until the render view is deleted (regression)', function (done) {
+      w = new BrowserWindow({
+        show: false
+      })
+
+      ipcMain.once('error-message', (event, message) => {
+        assert(message.startsWith('Cannot read property \'object\' of undefined'), message)
+        done()
+      })
+
+      w.loadURL('file://' + path.join(fixtures, 'api', 'render-view-deleted.html'))
+    })
+  })
 })

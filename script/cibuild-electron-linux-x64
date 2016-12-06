@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+export TARGET_ARCH=x64
+
+script/cibuild-linux
