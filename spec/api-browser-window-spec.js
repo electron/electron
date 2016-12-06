@@ -1599,8 +1599,10 @@ describe('browser-window module', function () {
       BrowserWindow.removeDevToolsExtension('foo')
       BrowserWindow.addDevToolsExtension(extensionPath)
 
-      w.webContents.on('devtools-opened', function () {
-        var showPanelIntevalId = setInterval(function () {
+      let showPanelIntervalId = null
+
+      w.webContents.once('devtools-opened', function () {
+        showPanelIntervalId = setInterval(function () {
           if (w && w.devToolsWebContents) {
             var showLastPanel = function () {
               var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
@@ -1608,7 +1610,7 @@ describe('browser-window module', function () {
             }
             w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
           } else {
-            clearInterval(showPanelIntevalId)
+            clearInterval(showPanelIntervalId)
           }
         }, 100)
       })
@@ -1618,6 +1620,7 @@ describe('browser-window module', function () {
 
       ipcMain.once('answer', function (event, message) {
         assert.equal(message.runtimeId, 'foo')
+        clearInterval(showPanelIntervalId)
         done()
       })
     })
