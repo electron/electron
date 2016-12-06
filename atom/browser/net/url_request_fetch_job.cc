@@ -9,6 +9,7 @@
 
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
+#include "brightray/browser/browser_context.h"
 #include "native_mate/dictionary.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
@@ -91,13 +92,34 @@ void URLRequestFetchJob::BeforeStartInUI(
   // When |session| is set to |null| we use a new request context for fetch job.
   // TODO(zcbenz): Handle the case when it is not null.
   v8::Local<v8::Value> session;
-  if (options.Get("session", &session) && session->IsNull()) {
-    // We have to create the URLRequestContextGetter on UI thread.
-    url_request_context_getter_ = new brightray::URLRequestContextGetter(
-        this, nullptr, nullptr, base::FilePath(), true,
-        BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
-        BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
-        nullptr, content::URLRequestInterceptorScopedVector());
+  if (options.Get("session", &session)) {
+    if (session->IsNull()) {
+      // We have to create the URLRequestContextGetter on UI thread.
+      url_request_context_getter_ = new brightray::URLRequestContextGetter(
+          this, nullptr, nullptr, base::FilePath(), true,
+          BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
+          BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
+          nullptr, content::URLRequestInterceptorScopedVector());
+    } else if (session->IsString()) {
+      std::string partition;
+      if (!mate::ConvertFromV8(isolate, session, &partition))
+        return;
+
+      scoped_refptr<brightray::BrowserContext> browser_context;
+      if (partition.empty())
+        browser_context = brightray::BrowserContext::Get("", false);
+      else if (base::StartsWith(partition, "persist:",
+                                base::CompareCase::SENSITIVE))
+        browser_context =
+          brightray::BrowserContext::Get(partition.substr(8), false);
+      else
+        browser_context = brightray::BrowserContext::Get(partition, true);
+      if (!browser_context)
+        return;
+
+      url_request_context_getter_ =
+        browser_context->url_request_context_getter();
+    }
   }
 }
 
