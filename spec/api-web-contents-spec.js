@@ -98,6 +98,124 @@ describe('webContents module', function () {
     })
   })
 
+  describe('will-navigate event', function () {
+    it('can be prevented', (done) => {
+      const targetURL = 'file://' + path.join(__dirname, 'fixtures', 'pages', 'location-change.html')
+      w.loadURL(targetURL)
+      w.webContents.once('did-finish-load', () => {
+
+      w.webContents.on('will-navigate', (event, url) => {
+        assert.ok(url, targetURL)
+      })
+
+      setTimeout(done, 5000)
+
+      w.webContents.on('did-navigate', (event, url) => {
+        assert.ok(url, targetURL)
+      })
+      })
+    })
+  })
+
+  describe('before-input-event event', () => {
+    it('can prevent document keyboard events', (done) => {
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'key-events.html'))
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.once('before-input-event', (event, input) => {
+          assert.equal(input.key, 'a')
+          event.preventDefault()
+        })
+
+        ipcMain.once('keydown', (event, key) => {
+          assert.equal(key, 'b')
+          done()
+        })
+
+        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'a'})
+        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'b'})
+      })
+    })
+
+    it('has the correct properties', (done) => {
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'base-page.html'))
+      w.webContents.once('did-finish-load', () => {
+        const testBeforeInput = (opts) => {
+          return new Promise((resolve, reject) => {
+            w.webContents.once('before-input-event', (event, input) => {
+              assert.equal(input.type, opts.type)
+              assert.equal(input.key, opts.key)
+              assert.equal(input.isAutoRepeat, opts.isAutoRepeat)
+              assert.equal(input.shift, opts.shift)
+              assert.equal(input.control, opts.control)
+              assert.equal(input.alt, opts.alt)
+              assert.equal(input.meta, opts.meta)
+              resolve()
+            })
+
+            const modifiers = []
+            if (opts.shift) modifiers.push('shift')
+            if (opts.control) modifiers.push('control')
+            if (opts.alt) modifiers.push('alt')
+            if (opts.meta) modifiers.push('meta')
+            if (opts.isAutoRepeat) modifiers.push('isAutoRepeat')
+
+            w.webContents.sendInputEvent({
+              type: opts.type,
+              keyCode: opts.keyCode,
+              modifiers: modifiers
+            })
+          })
+        }
+
+        Promise.resolve().then(() => {
+          return testBeforeInput({
+            type: 'keyDown',
+            key: 'A',
+            keyCode: 'a',
+            shift: true,
+            control: true,
+            alt: true,
+            meta: true,
+            isAutoRepeat: true
+          })
+        }).then(() => {
+          return testBeforeInput({
+            type: 'keyUp',
+            key: '.',
+            keyCode: '.',
+            shift: false,
+            control: true,
+            alt: true,
+            meta: false,
+            isAutoRepeat: false
+          })
+        }).then(() => {
+          return testBeforeInput({
+            type: 'keyUp',
+            key: '!',
+            keyCode: '1',
+            shift: true,
+            control: false,
+            alt: false,
+            meta: true,
+            isAutoRepeat: false
+          })
+        }).then(() => {
+          return testBeforeInput({
+            type: 'keyUp',
+            key: 'Tab',
+            keyCode: 'Tab',
+            shift: false,
+            control: true,
+            alt: false,
+            meta: false,
+            isAutoRepeat: true
+          })
+        }).then(done).catch(done)
+      })
+    })
+  })
+
   describe('sendInputEvent(event)', function () {
     beforeEach(function (done) {
       w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'key-events.html'))

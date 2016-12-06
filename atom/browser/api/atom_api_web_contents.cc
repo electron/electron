@@ -70,6 +70,7 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/display/screen.h"
+#include "ui/events/keycodes/dom/keycode_converter.h"
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -486,6 +487,34 @@ void WebContents::HandleKeyboardEvent(
     // Go to the default keyboard handling.
     CommonWebContentsDelegate::HandleKeyboardEvent(source, event);
   }
+}
+
+bool WebContents::PreHandleKeyboardEvent(
+    content::WebContents* source,
+    const content::NativeWebKeyboardEvent& event,
+    bool* is_keyboard_shortcut) {
+  const char* type =
+    event.type == blink::WebInputEvent::Type::RawKeyDown ? "keyDown" :
+    event.type == blink::WebInputEvent::Type::KeyUp ? "keyUp" :
+    nullptr;
+  if (!type) {
+    // This should never happen.
+    assert(false);
+    return false;
+  }
+
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate());
+  dict.Set("type", type);
+  dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(event.domKey));
+
+  using Modifiers = blink::WebInputEvent::Modifiers;
+  dict.Set("isAutoRepeat", (event.modifiers & Modifiers::IsAutoRepeat) != 0);
+  dict.Set("shift", (event.modifiers & Modifiers::ShiftKey) != 0);
+  dict.Set("control", (event.modifiers & Modifiers::ControlKey) != 0);
+  dict.Set("alt", (event.modifiers & Modifiers::AltKey) != 0);
+  dict.Set("meta", (event.modifiers & Modifiers::MetaKey) != 0);
+
+  return Emit("before-input-event", dict);
 }
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
