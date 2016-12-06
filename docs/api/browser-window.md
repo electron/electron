@@ -100,6 +100,7 @@ child.once('ready-to-show', () => {
 
 ### Platform notices
 
+* On macOS modal windows will be displayed as sheets attached to the parent window.
 * On macOS the child windows will keep the relative position to parent window
   when parent window moves, while on Windows and Linux child windows will not
   move.
