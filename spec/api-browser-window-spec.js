@@ -9,11 +9,11 @@ const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
-const {app, ipcMain, BrowserWindow, protocol} = remote
+const {app, ipcMain, BrowserWindow, protocol, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
-describe('browser-window module', function () {
+describe('BrowserWindow module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
   var server, postData
@@ -133,10 +133,10 @@ describe('browser-window module', function () {
 
   describe('BrowserWindow.destroy()', function () {
     it('prevents users to access methods of webContents', function () {
-      var webContents = w.webContents
+      const contents = w.webContents
       w.destroy()
       assert.throws(function () {
-        webContents.getId()
+        contents.getId()
       }, /Object has been destroyed/)
     })
   })
@@ -564,6 +564,23 @@ describe('browser-window module', function () {
   describe('BrowserWindow.fromId(id)', function () {
     it('returns the window with id', function () {
       assert.equal(w.id, BrowserWindow.fromId(w.id).id)
+    })
+  })
+
+  describe('BrowserWindow.fromWebContents(webContents)', function () {
+    let contents = null
+
+    beforeEach(function () {
+      contents = webContents.create({})
+    })
+
+    afterEach(function () {
+      contents.destroy()
+    })
+
+    it('returns the window with the webContents', function () {
+      assert.equal(BrowserWindow.fromWebContents(w.webContents).id, w.id)
+      assert.equal(BrowserWindow.fromWebContents(contents), undefined)
     })
   })
 
