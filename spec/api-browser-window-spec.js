@@ -1503,7 +1503,7 @@ describe('browser-window module', function () {
 
   describe('dev tool extensions', function () {
     describe('BrowserWindow.addDevToolsExtension', function () {
-      let showPanelIntevalId
+      let showPanelIntervalId
 
       beforeEach(function () {
         BrowserWindow.removeDevToolsExtension('foo')
@@ -1514,7 +1514,7 @@ describe('browser-window module', function () {
         assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), true)
 
         w.webContents.on('devtools-opened', function () {
-          showPanelIntevalId = setInterval(function () {
+          showPanelIntervalId = setInterval(function () {
             if (w && w.devToolsWebContents) {
               var showLastPanel = function () {
                 var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
@@ -1522,7 +1522,7 @@ describe('browser-window module', function () {
               }
               w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
             } else {
-              clearInterval(showPanelIntevalId)
+              clearInterval(showPanelIntervalId)
             }
           }, 100)
         })
@@ -1531,7 +1531,7 @@ describe('browser-window module', function () {
       })
 
       afterEach(function () {
-        clearInterval(showPanelIntevalId)
+        clearInterval(showPanelIntervalId)
       })
 
       it('throws errors for missing manifest.json files', function () {
@@ -1599,8 +1599,10 @@ describe('browser-window module', function () {
       BrowserWindow.removeDevToolsExtension('foo')
       BrowserWindow.addDevToolsExtension(extensionPath)
 
-      w.webContents.on('devtools-opened', function () {
-        var showPanelIntevalId = setInterval(function () {
+      let showPanelIntervalId = null
+
+      w.webContents.once('devtools-opened', function () {
+        showPanelIntervalId = setInterval(function () {
           if (w && w.devToolsWebContents) {
             var showLastPanel = function () {
               var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
@@ -1608,7 +1610,7 @@ describe('browser-window module', function () {
             }
             w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
           } else {
-            clearInterval(showPanelIntevalId)
+            clearInterval(showPanelIntervalId)
           }
         }, 100)
       })
@@ -1617,6 +1619,7 @@ describe('browser-window module', function () {
       w.webContents.openDevTools({mode: 'bottom'})
 
       ipcMain.once('answer', function (event, message) {
+        clearInterval(showPanelIntervalId)
         assert.equal(message.runtimeId, 'foo')
         done()
       })
