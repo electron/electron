@@ -521,7 +521,7 @@ describe('ipc module', function () {
   describe('remote objects registry', function () {
     it('does not dereference until the render view is deleted (regression)', function (done) {
       w = new BrowserWindow({
-        show: true
+        show: false
       })
 
       ipcMain.once('error-message', (event, message) => {
