@@ -220,6 +220,16 @@ describe('app module', function () {
         done()
       })
 
+      ipcRenderer.once('select-client-certificate', function (event, webContentsId, list) {
+        assert.equal(webContentsId, w.webContents.id)
+        assert.equal(list.length, 1)
+        assert.equal(list[0].issuerName, 'Intermediate CA')
+        assert.equal(list[0].subjectName, 'Client Cert')
+        assert.equal(list[0].issuer.commonName, 'Intermediate CA')
+        assert.equal(list[0].subject.commonName, 'Client Cert')
+        event.sender.send('client-certificate-response', list[0])
+      })
+
       app.importCertificate(options, function (result) {
         assert(!result)
         ipcRenderer.sendSync('set-client-certificate-option', false)
