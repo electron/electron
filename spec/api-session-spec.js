@@ -601,7 +601,7 @@ describe('session module', function () {
                                                      totalBytes, filename,
                                                      savePath) {
         assert.equal(state, 'interrupted')
-        assert.equal(urlChain, urlChain)
+        assert.deepEqual(urlChain, urlChain)
         assert.equal(mimeType, 'application/pdf')
         assert.equal(receivedBytes, 0)
         assert.equal(totalBytes, 5242880)

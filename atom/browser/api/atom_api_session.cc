@@ -554,8 +554,16 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
   options.Get("lastModified", &last_modified);
   options.Get("eTag", &etag);
   options.Get("startTime", &start_time);
-  if (path.empty() || url_chain.empty() || length == 0 || offset >= length)
+  if (path.empty() || url_chain.empty() || length == 0) {
+    isolate()->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate(), "Must pass non-empty path, urlChain and length.")));
     return;
+  }
+  if (offset >= length) {
+    isolate()->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate(), "Must pass an offset value less than length.")));
+    return;
+  }
   auto download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
   download_manager->GetDelegate()->GetNextId(base::Bind(
