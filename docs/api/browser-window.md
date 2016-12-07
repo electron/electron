@@ -1004,6 +1004,19 @@ let url = require('url').format({
 win.loadURL(url)
 ```
 
+You can load a URL using a `POST` request with URL-encoded data by doing
+the following:
+
+```javascript
+win.loadURL('http://localhost:8000/post', {
+  postData: [{
+    type: 'rawData',
+    bytes: Buffer.from('hello=world')
+  }],
+  extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
+})
+```
+
 #### `win.reload()`
 
 Same as `webContents.reload`.
