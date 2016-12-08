@@ -1401,10 +1401,10 @@ void NativeWindowMac::ShowWindowButton(NSWindowButton button) {
 }
 
 void NativeWindowMac::InstallView() {
-  // Make sure the bottom corner is rounded: http://crbug.com/396264.
+  // Make sure the bottom corner is rounded for non-modal windows: http://crbug.com/396264.
   // But do not enable it on OS X 10.9 for transparent window, otherwise a
   // semi-transparent frame would show.
-  if (!(transparent() && base::mac::IsOSMavericks()))
+  if (!(transparent() && base::mac::IsOSMavericks()) && !is_modal())
     [[window_ contentView] setWantsLayer:YES];
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
