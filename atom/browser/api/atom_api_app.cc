@@ -840,6 +840,8 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetAsDefaultProtocolClient, browser))
       .SetMethod("removeAsDefaultProtocolClient",
                  base::Bind(&Browser::RemoveAsDefaultProtocolClient, browser))
+      .SetMethod("getDefaultProtocolClient",
+                 base::Bind(&Browser::GetDefaultProtocolClient, browser))
       .SetMethod("setBadgeCount", base::Bind(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount", base::Bind(&Browser::GetBadgeCount, browser))
       .SetMethod("getLoginItemSettings",

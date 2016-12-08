@@ -518,6 +518,17 @@ macOS machine. Please refer to
 
 The API uses the Windows Registry and LSCopyDefaultHandlerForURLScheme internally.
 
+### `app.getDefaultProtocolClient(protocol)` _Windows_
+
+* `protocol` String - The name of your protocol, without `://`.
+
+Returns `String`
+
+This method returns the current default handler for a given protocol. If the
+default handler does not exist, it returns an empty string.
+
+The API uses the Windows Registry internally.
+
 ### `app.setUserTasks(tasks)` _Windows_
 
 * `tasks` [Task[]](structures/task.md) - Array of `Task` objects

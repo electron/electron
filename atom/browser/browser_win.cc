@@ -222,6 +222,13 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
+  return base::UTF16ToUTF8(exe) == GetDefaultProtocolClient(protocol);
+}
+
+std::string Browser::GetDefaultProtocolClient(const std::string& protocol) {
+  if (protocol.empty())
+    return "";
+
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
   base::string16 keyPath = base::UTF8ToUTF16("Software\\Classes\\" + protocol);
@@ -233,19 +240,18 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   base::win::RegKey commandKey;
   if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
     // Key doesn't exist, we can confirm that it is not set
-    return false;
+    return "";
 
   if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
     // Key doesn't exist, we can confirm that it is not set
-    return false;
+    return "";
 
   base::string16 keyVal;
   if (FAILED(commandKey.ReadValue(L"", &keyVal)))
     // Default value not set, we can confirm that it is not set
-    return false;
+    return "";
 
-  // Default value is the same as current file path
-  return keyVal == exe;
+  return base::UTF16ToUTF8(keyVal);
 }
 
 bool Browser::SetBadgeCount(int count) {
