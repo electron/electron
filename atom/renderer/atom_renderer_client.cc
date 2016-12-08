@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
+#include "atom/renderer/atom_isolated_world.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/guest_view_container.h"
@@ -147,6 +148,8 @@ void AtomRendererClient::RenderThreadStarted() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
+  isolated_world_.reset(AtomIsolatedWorld::Create(node_bindings_.get()));
+
   OverrideNodeArrayBuffer();
 
   preferences_manager_.reset(new PreferencesManager);
@@ -275,7 +278,7 @@ void AtomRendererClient::DidCreateScriptContext(
   }
 
   // Setup node environment for each window.
-  node::Environment* env = node_bindings_->CreateEnvironment(context);
+  node::Environment* env = isolated_world_->CreateEnvironment(render_frame);
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
