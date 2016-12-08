@@ -15,16 +15,15 @@ node::Environment* AtomIsolatedWorld::env_ = nullptr;
 AtomIsolatedWorld::AtomIsolatedWorld(NodeBindings* node_bindings) :
     v8::Extension("AtomIsolatedWorld", "native function SetupNode();") {
   node_bindings_ = node_bindings;
-  env_ = nullptr;
 }
 
 AtomIsolatedWorld::~AtomIsolatedWorld() {
   node_bindings_ = nullptr;
-  env_ = nullptr;
 }
 
 node::Environment* AtomIsolatedWorld::CreateEnvironment(
     content::RenderFrame* frame) {
+  env_ = nullptr;
   blink::WebScriptSource source("SetupNode()");
   frame->GetWebFrame()->executeScriptInIsolatedWorld(
       1,
@@ -46,8 +45,9 @@ v8::Local<v8::FunctionTemplate> AtomIsolatedWorld::GetNativeFunctionTemplate(
 // static
 void AtomIsolatedWorld::SetupNode(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
-  env_ = node_bindings_->CreateEnvironment(
-      args.GetIsolate()->GetCurrentContext());
+  if (node_bindings_ != nullptr)
+    env_ = node_bindings_->CreateEnvironment(
+        args.GetIsolate()->GetCurrentContext());
 }
 
 // static
