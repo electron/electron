@@ -163,6 +163,7 @@ const char kZoomFactor[]      = "zoom-factor";
 const char kPreloadScript[]   = "preload";
 const char kPreloadURL[]      = "preload-url";
 const char kNodeIntegration[] = "node-integration";
+const char kIsolatedWorld[]   = "isolated-world";
 const char kGuestInstanceID[] = "guest-instance-id";
 const char kOpenerID[]        = "opener-id";
 const char kScrollBounce[]    = "scroll-bounce";

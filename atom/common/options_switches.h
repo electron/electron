@@ -86,6 +86,7 @@ extern const char kZoomFactor[];
 extern const char kPreloadScript[];
 extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
+extern const char kIsolatedWorld[];
 extern const char kGuestInstanceID[];
 extern const char kOpenerID[];
 extern const char kScrollBounce[];

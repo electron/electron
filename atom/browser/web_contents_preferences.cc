@@ -119,6 +119,11 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       LOG(ERROR) << "preload url must be file:// protocol.";
   }
 
+  // Run Electron APIs and preload script in isolated world
+  bool isolated;
+  if (web_preferences.GetBoolean("isolated", &isolated) && isolated)
+    command_line->AppendSwitch(switches::kIsolatedWorld);
+
   // --background-color.
   std::string color;
   if (web_preferences.GetString(options::kBackgroundColor, &color))
