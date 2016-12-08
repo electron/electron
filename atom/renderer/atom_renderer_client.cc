@@ -14,7 +14,6 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
-#include "atom/renderer/atom_isolated_world.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/guest_view_container.h"
@@ -62,10 +61,13 @@ namespace {
 class AtomRenderFrameObserver : public content::RenderFrameObserver {
  public:
   AtomRenderFrameObserver(content::RenderFrame* frame,
-                          AtomRendererClient* renderer_client)
+                          AtomRendererClient* renderer_client,
+                          bool isolated_world)
       : content::RenderFrameObserver(frame),
         render_frame_(frame),
-        world_id_(-1),
+        isolated_world_(isolated_world),
+        main_context_created_(false),
+        isolated_context_created_(false),
         renderer_client_(renderer_client) {}
 
   // content::RenderFrameObserver:
@@ -73,19 +75,51 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     renderer_client_->DidClearWindowObject(render_frame_);
   }
 
+  void CreateIsolatedWorldContext() {
+    blink::WebScriptSource source("void 0");
+    render_frame_->GetWebFrame()->executeScriptInIsolatedWorld(
+        1,
+        &source,
+        1,
+        1,
+        nullptr);
+  }
+
+  bool IsMainWorld(int world_id) {
+    return world_id == 0;
+  }
+
+  bool IsIsolatedWorld(int world_id) {
+    return world_id == 1;
+  }
+
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
                               int world_id) override {
-    if (world_id_ != -1 && world_id_ != world_id)
-      return;
-    world_id_ = world_id;
-    renderer_client_->DidCreateScriptContext(context, render_frame_);
+    if (!main_context_created_ && IsMainWorld(world_id)) {
+      main_context_created_ = true;
+      if (isolated_world_) {
+        CreateIsolatedWorldContext();
+      } else {
+        renderer_client_->DidCreateScriptContext(context, render_frame_);
+      }
+    }
+
+    if (isolated_world_ && !isolated_context_created_
+                        && IsIsolatedWorld(world_id)) {
+      isolated_context_created_ = true;
+      renderer_client_->DidCreateScriptContext(context, render_frame_);
+    }
   }
+
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
-    if (world_id_ != world_id)
-      return;
-    renderer_client_->WillReleaseScriptContext(context, render_frame_);
+    if (isolated_world_) {
+      if (IsIsolatedWorld(world_id))
+        renderer_client_->WillReleaseScriptContext(context, render_frame_);
+    } else if (IsMainWorld(world_id)) {
+      renderer_client_->WillReleaseScriptContext(context, render_frame_);
+    }
   }
 
   void OnDestruct() override {
@@ -94,7 +128,9 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
  private:
   content::RenderFrame* render_frame_;
-  int world_id_;
+  bool isolated_world_;
+  bool main_context_created_;
+  bool isolated_context_created_;
   AtomRendererClient* renderer_client_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
@@ -148,8 +184,6 @@ void AtomRendererClient::RenderThreadStarted() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
-  isolated_world_.reset(AtomIsolatedWorld::Create(node_bindings_.get()));
-
   OverrideNodeArrayBuffer();
 
   preferences_manager_.reset(new PreferencesManager);
@@ -181,7 +215,11 @@ void AtomRendererClient::RenderThreadStarted() {
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
-  new AtomRenderFrameObserver(render_frame, this);
+
+  bool isolated_world = base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kIsolatedWorld);
+  new AtomRenderFrameObserver(render_frame, this, isolated_world);
+
   new ContentSettingsObserver(render_frame);
 
   // Allow file scheme to handle service worker by default.
@@ -278,7 +316,7 @@ void AtomRendererClient::DidCreateScriptContext(
   }
 
   // Setup node environment for each window.
-  node::Environment* env = isolated_world_->CreateEnvironment(render_frame);
+  node::Environment* env = node_bindings_->CreateEnvironment(context);
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
