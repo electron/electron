@@ -13,8 +13,7 @@ NodeBindings* AtomIsolatedWorld::node_bindings_ = nullptr;
 node::Environment* AtomIsolatedWorld::env_ = nullptr;
 
 AtomIsolatedWorld::AtomIsolatedWorld(NodeBindings* node_bindings) :
-    v8::Extension("ElectronIsolatedWorldExtension",
-                  "native function SetupNode();") {
+    v8::Extension("AtomIsolatedWorld", "native function SetupNode();") {
   node_bindings_ = node_bindings;
   env_ = nullptr;
 }
