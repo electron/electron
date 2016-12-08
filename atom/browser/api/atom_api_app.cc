@@ -840,8 +840,6 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetAsDefaultProtocolClient, browser))
       .SetMethod("removeAsDefaultProtocolClient",
                  base::Bind(&Browser::RemoveAsDefaultProtocolClient, browser))
-      .SetMethod("getDefaultProtocolClient",
-                 base::Bind(&Browser::GetDefaultProtocolClient, browser))
       .SetMethod("setBadgeCount", base::Bind(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount", base::Bind(&Browser::GetBadgeCount, browser))
       .SetMethod("getLoginItemSettings",
@@ -859,6 +857,8 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetAboutPanelOptions, browser))
 #endif
 #if defined(OS_WIN)
+      .SetMethod("getDefaultProtocolClient",
+                 base::Bind(&Browser::GetDefaultProtocolClient, browser))
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
       .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
       .SetMethod("setJumpList", &App::SetJumpList)
