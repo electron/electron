@@ -4,10 +4,11 @@ const https = require('https')
 const path = require('path')
 const fs = require('fs')
 const send = require('send')
+const auth = require('basic-auth')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote} = require('electron')
-const {ipcMain, session, BrowserWindow} = remote
+const {ipcMain, session, BrowserWindow, net} = remote
 
 describe('session module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
@@ -658,6 +659,62 @@ describe('session module', function () {
         }
         ipcRenderer.on('download-done', callback)
         w.webContents.downloadURL(downloadUrl)
+      })
+    })
+  })
+
+  describe('ses.clearAuthCache(options[, callback])', function () {
+    it('can clear http auth info from cache', function (done) {
+      const ses = session.fromPartition('auth-cache')
+      const server = http.createServer(function (req, res) {
+        var credentials = auth(req)
+        if (!credentials || credentials.name !== 'test' || credentials.pass !== 'test') {
+          res.statusCode = 401
+          res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"')
+          res.end()
+        } else {
+          res.end('authenticated')
+        }
+      })
+      server.listen(0, '127.0.0.1', function () {
+        const port = server.address().port
+        function issueLoginRequest (attempt = 1) {
+          if (attempt > 2) {
+            server.close()
+            return done()
+          }
+          const request = net.request({
+            url: `http://127.0.0.1:${port}`,
+            session: ses
+          })
+          request.on('login', function (info, callback) {
+            attempt++
+            assert.equal(info.scheme, 'basic')
+            assert.equal(info.realm, 'Restricted')
+            callback('test', 'test')
+          })
+          request.on('response', function (response) {
+            let data = ''
+            response.pause()
+            response.on('data', function (chunk) {
+              data += chunk
+            })
+            response.on('end', function () {
+              assert.equal(data, 'authenticated')
+              ses.clearAuthCache({type: 'password'}, function () {
+                issueLoginRequest(attempt)
+              })
+            })
+            response.on('error', function (error) {
+              done(error)
+            })
+            response.resume()
+          })
+          // Internal api to bypass cache for testing.
+          request.urlRequest._setLoadFlags(1 << 1)
+          request.end()
+        }
+        issueLoginRequest()
       })
     })
   })

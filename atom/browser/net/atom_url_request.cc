@@ -177,6 +177,13 @@ void AtomURLRequest::PassLoginInformation(
   }
 }
 
+void AtomURLRequest::SetLoadFlags(int flags) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomURLRequest::DoSetLoadFlags, this, flags));
+}
+
 void AtomURLRequest::DoWriteBuffer(
     scoped_refptr<const net::IOBufferWithSize> buffer,
     bool is_last) {
@@ -244,6 +251,7 @@ void AtomURLRequest::DoSetExtraHeader(const std::string& name,
   }
   request_->SetExtraRequestHeaderByName(name, value, true);
 }
+
 void AtomURLRequest::DoRemoveExtraHeader(const std::string& name) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   if (!request_) {
@@ -276,6 +284,14 @@ void AtomURLRequest::DoCancelWithError(const std::string& error,
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&AtomURLRequest::InformDelegateErrorOccured, this, error,
                  isRequestError));
+}
+
+void AtomURLRequest::DoSetLoadFlags(int flags) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (!request_) {
+    return;
+  }
+  request_->SetLoadFlags(request_->load_flags() | flags);
 }
 
 void AtomURLRequest::OnAuthRequired(net::URLRequest* request,

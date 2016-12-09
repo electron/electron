@@ -62,6 +62,15 @@ struct ClearStorageDataOptions {
   uint32_t quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
 };
 
+struct ClearAuthCacheOptions {
+  std::string type;
+  GURL origin;
+  std::string realm;
+  base::string16 username;
+  base::string16 password;
+  net::HttpAuth::Scheme auth_scheme;
+};
+
 uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
   uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
@@ -100,6 +109,18 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   return quota_mask;
 }
 
+net::HttpAuth::Scheme GetAuthSchemeFromString(const std::string& scheme) {
+  if (scheme == "basic")
+    return net::HttpAuth::AUTH_SCHEME_BASIC;
+  if (scheme == "digest")
+    return net::HttpAuth::AUTH_SCHEME_DIGEST;
+  if (scheme == "ntlm")
+    return net::HttpAuth::AUTH_SCHEME_NTLM;
+  if (scheme == "negotiate")
+    return net::HttpAuth::AUTH_SCHEME_NEGOTIATE;
+  return net::HttpAuth::AUTH_SCHEME_MAX;
+}
+
 void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
                       const std::string& accept_lang,
                       const std::string& user_agent) {
@@ -131,7 +152,27 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
-template<>
+template <>
+struct Converter<ClearAuthCacheOptions> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     ClearAuthCacheOptions* out) {
+    mate::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+    options.Get("type", &out->type);
+    options.Get("origin", &out->origin);
+    options.Get("realm", &out->realm);
+    options.Get("username", &out->username);
+    options.Get("password", &out->password);
+    std::string scheme;
+    if (options.Get("scheme", &scheme))
+      out->auth_scheme = GetAuthSchemeFromString(scheme);
+    return true;
+  }
+};
+
+template <>
 struct Converter<net::ProxyConfig> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -312,6 +353,33 @@ void ClearHostResolverCacheInIO(
     if (!callback.is_null())
       RunCallbackInUI(callback);
   }
+}
+
+void ClearAuthCacheInIO(
+    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
+    const ClearAuthCacheOptions& options,
+    const base::Closure& callback) {
+  auto request_context = context_getter->GetURLRequestContext();
+  auto network_session =
+      request_context->http_transaction_factory()->GetSession();
+  if (network_session) {
+    if (options.type == "password") {
+      auto auth_cache = network_session->http_auth_cache();
+      if (!options.origin.is_empty()) {
+        auth_cache->Remove(
+            options.origin, options.realm, options.auth_scheme,
+            net::AuthCredentials(options.username, options.password));
+      } else {
+        auth_cache->Clear();
+      }
+    } else if (options.type == "clientCertificate") {
+      auto client_auth_cache = network_session->ssl_client_auth_cache();
+      client_auth_cache->Remove(net::HostPortPair::FromURL(options.origin));
+    }
+    network_session->CloseAllConnections();
+  }
+  if (!callback.is_null())
+    RunCallbackInUI(callback);
 }
 
 void AllowNTLMCredentialsForDomainsInIO(
@@ -501,6 +569,22 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
                  callback));
 }
 
+void Session::ClearAuthCache(mate::Arguments* args) {
+  ClearAuthCacheOptions options;
+  if (!args->GetNext(&options)) {
+    args->ThrowError("Must specify options object");
+    return;
+  }
+  base::Closure callback;
+  args->GetNext(&callback);
+
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(&ClearAuthCacheInIO,
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
+                 options, callback));
+}
+
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&AllowNTLMCredentialsForDomainsInIO,
@@ -649,6 +733,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPermissionRequestHandler",
                  &Session::SetPermissionRequestHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
+      .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",
                  &Session::AllowNTLMCredentialsForDomains)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
