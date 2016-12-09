@@ -32,10 +32,10 @@ class AtomBindings {
   static void Log(const base::string16& message);
   static void Crash();
   static void StartCrashReporter(
-    const std::string& productName,
-    const std::string& companyName,
-    const std::string& submitUrl,
-    const std::string& tmpPath,
+    const std::string& product_name,
+    const std::string& company_name,
+    const std::string& submit_url,
+    const std::string& tmp_path,
     const std::map<std::string, std::string>& extra_parameters);
 
  private:

@@ -162,24 +162,23 @@ void AtomBindings::Crash() {
 }
 
 void AtomBindings::StartCrashReporter(
-    const std::string& productName,
-    const std::string& companyName,
-    const std::string& submitUrl,
-    const std::string& tmpPath,
+    const std::string& product_name,
+    const std::string& company_name,
+    const std::string& submit_url,
+    const std::string& tmp_path,
     const std::map<std::string, std::string>& extra_parameters) {
-  std::map<std::string, std::string> allParameters;
-  allParameters.insert(std::make_pair("_productName", productName));
-  allParameters.insert(std::make_pair("_companyName", companyName));
-  allParameters.insert(extra_parameters.begin(), extra_parameters.end());
+  auto all_parameters = extra_parameters;
+  all_parameters["_productName"] = product_name;
+  all_parameters["_companyName"] = company_name;
 
   auto reporter = crash_reporter::CrashReporter::GetInstance();
-  reporter->Start(productName,
-                  companyName,
-                  submitUrl,
-                  base::FilePath(tmpPath),
+  reporter->Start(product_name,
+                  company_name,
+                  submit_url,
+                  base::FilePath(tmp_path),
                   true,
                   false,
-                  allParameters);
+                  all_parameters);
 }
 
 }  // namespace atom
