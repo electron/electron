@@ -334,6 +334,10 @@ void AtomRendererClient::DidCreateScriptContext(
   }
 }
 
+v8::Local<v8::Context> AtomRendererClient::GetContext() {
+  return node_bindings_->uv_env()->context();
+}
+
 void AtomRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
   // Only allow node integration for the main frame, unless it is a devtools
