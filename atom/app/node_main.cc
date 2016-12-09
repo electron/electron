@@ -62,8 +62,12 @@ int NodeMain(int argc, char *argv[]) {
 #if defined(OS_WIN)
     process.SetMethod("log", &AtomBindings::Log);
 #endif
-    process.SetMethod("startCrashReporter", &AtomBindings::StartCrashReporter);
     process.SetMethod("crash", &AtomBindings::Crash);
+
+    v8::Local<v8::Object> crashReporterObj = v8::Object::New(env->isolate());
+    mate::Dictionary crashReporterDict(gin_env.isolate(), crashReporterObj);
+    crashReporterDict.SetMethod("start", &AtomBindings::StartCrashReporter);
+    process.Set("crashReporter", crashReporterObj);
 
     node::LoadEnvironment(env);
 
