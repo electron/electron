@@ -25,6 +25,9 @@ describe('nativeImage module', () => {
 
       const imageC = nativeImage.createFromBuffer(imageA.toJPEG(100))
       assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
+
+      const imageD = nativeImage.createFromBuffer(imageA.toBitmap(), 538, 190)
+      assert.deepEqual(imageD.getSize(), {width: 538, height: 190})
     })
   })
 
