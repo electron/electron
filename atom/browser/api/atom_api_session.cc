@@ -571,7 +571,10 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
 
 void Session::ClearAuthCache(mate::Arguments* args) {
   ClearAuthCacheOptions options;
-  args->GetNext(&options);
+  if (!args->GetNext(&options)) {
+    args->ThrowError("Must specify options object");
+    return;
+  }
   base::Closure callback;
   args->GetNext(&callback);
 
