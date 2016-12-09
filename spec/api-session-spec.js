@@ -587,10 +587,9 @@ describe('session module', function () {
     it('can create an interrupted download item', function (done) {
       ipcRenderer.sendSync('set-download-option', true, false)
       const filePath = path.join(__dirname, 'fixtures', 'mock.pdf')
-      const urlChain = ['http://127.0.0.1/']
       const options = {
         path: filePath,
-        urlChain: urlChain,
+        urlChain: ['http://127.0.0.1/'],
         mimeType: 'application/pdf',
         offset: 0,
         length: 5242880
@@ -601,7 +600,7 @@ describe('session module', function () {
                                                      totalBytes, filename,
                                                      savePath) {
         assert.equal(state, 'interrupted')
-        assert.deepEqual(urlChain, urlChain)
+        assert.deepEqual(urlChain, ['http://127.0.0.1/'])
         assert.equal(mimeType, 'application/pdf')
         assert.equal(receivedBytes, 0)
         assert.equal(totalBytes, 5242880)
