@@ -34,6 +34,7 @@
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -331,6 +332,25 @@ void OnClearStorageDataDone(const base::Closure& callback) {
     callback.Run();
 }
 
+void DownloadIdCallback(content::DownloadManager* download_manager,
+                        const base::FilePath& path,
+                        const std::vector<GURL>& url_chain,
+                        const std::string& mime_type,
+                        int64_t offset,
+                        int64_t length,
+                        const std::string& last_modified,
+                        const std::string& etag,
+                        const base::Time& start_time,
+                        uint32_t id) {
+  download_manager->CreateDownloadItem(
+      base::GenerateGUID(), id, path, path, url_chain, GURL(), GURL(), GURL(),
+      GURL(), mime_type, mime_type, start_time, base::Time(), etag,
+      last_modified, offset, length, std::string(),
+      content::DownloadItem::INTERRUPTED,
+      content::DownloadDangerType::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+      content::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false);
+}
+
 }  // namespace
 
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -357,10 +377,10 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
 
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  bool prevent_default = Emit(
-      "will-download",
-      DownloadItem::Create(isolate(), item),
-      item->GetWebContents());
+  auto handle = DownloadItem::Create(isolate(), item);
+  if (item->GetState() == content::DownloadItem::INTERRUPTED)
+    handle->SetSavePath(item->GetTargetFilePath());
+  bool prevent_default = Emit("will-download", handle, item->GetWebContents());
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -520,6 +540,37 @@ void Session::GetBlobData(
                  callback));
 }
 
+void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
+  int64_t offset = 0, length = 0;
+  double start_time = 0.0;
+  std::string mime_type, last_modified, etag;
+  base::FilePath path;
+  std::vector<GURL> url_chain;
+  options.Get("path", &path);
+  options.Get("urlChain", &url_chain);
+  options.Get("mimeType", &mime_type);
+  options.Get("offset", &offset);
+  options.Get("length", &length);
+  options.Get("lastModified", &last_modified);
+  options.Get("eTag", &etag);
+  options.Get("startTime", &start_time);
+  if (path.empty() || url_chain.empty() || length == 0) {
+    isolate()->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate(), "Must pass non-empty path, urlChain and length.")));
+    return;
+  }
+  if (offset >= length) {
+    isolate()->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate(), "Must pass an offset value less than length.")));
+    return;
+  }
+  auto download_manager =
+      content::BrowserContext::GetDownloadManager(browser_context());
+  download_manager->GetDelegate()->GetNextId(base::Bind(
+      &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
+      length, last_modified, etag, base::Time::FromDoubleT(start_time)));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = Cookies::Create(isolate, browser_context());
@@ -603,6 +654,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
       .SetMethod("getBlobData", &Session::GetBlobData)
+      .SetMethod("createInterruptedDownload",
+                 &Session::CreateInterruptedDownload)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);

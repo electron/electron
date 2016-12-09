@@ -79,6 +79,7 @@ class Session: public mate::TrackableObject<Session>,
   std::string GetUserAgent();
   void GetBlobData(const std::string& uuid,
                    const AtomBlobReader::CompletionCallback& callback);
+  void CreateInterruptedDownload(const mate::Dictionary& options);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);

@@ -137,8 +137,16 @@ app.on('ready', function () {
   // For session's download test, listen 'will-download' event in browser, and
   // reply the result to renderer for verifying
   var downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
-  ipcMain.on('set-download-option', function (event, needCancel, preventDefault) {
+  ipcMain.on('set-download-option', function (event, needCancel, preventDefault, filePath = downloadFilePath) {
     window.webContents.session.once('will-download', function (e, item) {
+      window.webContents.send('download-created',
+        item.getState(),
+        item.getURLChain(),
+        item.getMimeType(),
+        item.getReceivedBytes(),
+        item.getTotalBytes(),
+        item.getFilename(),
+        item.getSavePath())
       if (preventDefault) {
         e.preventDefault()
         const url = item.getURL()
@@ -151,7 +159,11 @@ app.on('ready', function () {
           }
         })
       } else {
-        item.setSavePath(downloadFilePath)
+        if (item.getState() === 'interrupted' && !needCancel) {
+          item.resume()
+        } else {
+          item.setSavePath(filePath)
+        }
         item.on('done', function (e, state) {
           window.webContents.send('download-done',
             state,
@@ -161,7 +173,10 @@ app.on('ready', function () {
             item.getTotalBytes(),
             item.getContentDisposition(),
             item.getFilename(),
-            item.getSavePath())
+            item.getSavePath(),
+            item.getURLChain(),
+            item.getLastModifiedTime(),
+            item.getETag())
         })
         if (needCancel) item.cancel()
       }
