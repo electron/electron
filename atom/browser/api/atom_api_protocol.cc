@@ -223,11 +223,24 @@ void RegisterStandardSchemes(
   atom::api::RegisterStandardSchemes(schemes);
 }
 
+void RegisterSecureSchemes(
+    const std::vector<std::string>& schemes, mate::Arguments* args) {
+  if (atom::Browser::Get()->is_ready()) {
+    args->ThrowError("protocol.registerSecureSchemes should be called before "
+                     "app is ready");
+    return;
+  }
+
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      atom::switches::kRegisterSecureSchemes, base::JoinString(schemes, ","));
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("registerStandardSchemes", &RegisterStandardSchemes);
+  dict.SetMethod("registerSecureSchemes", &RegisterSecureSchemes);
   dict.SetMethod("getStandardSchemes", &atom::api::GetStandardSchemes);
 }
 
