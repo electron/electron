@@ -124,10 +124,7 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
-  if (!custom_schemes.empty()) {
-    return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  }
-  return std::vector<std::string>();
+  return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 }
 
 }  // namespace
@@ -186,7 +183,7 @@ void AtomRendererClient::RenderFrameCreated(
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
-  
+
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list = ParseSchemesCLISwitch(switches::kSecureSchemes);
   for (const std::string& secure_scheme : secure_schemes_list) {
