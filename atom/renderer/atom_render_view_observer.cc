@@ -19,7 +19,6 @@
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"
-#include "base/trace_event/trace_event_argument.h"
 #include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
@@ -104,9 +103,7 @@ void AtomRenderViewObserver::EmitIPCEvent(blink::WebFrame* frame,
 
   v8::Local<v8::Object> ipc;
   if (GetIPCObject(isolate, context, &ipc)) {
-    TRACE_EVENT1("devtools.timeline", "FunctionCall", "data",
-                 std::unique_ptr<base::trace_event::TracedValue>(
-                     new base::trace_event::TracedValue()));
+    TRACE_EVENT0("devtools.timeline", "FunctionCall");
     auto args_vector = ListValueToVector(isolate, args);
     // Insert the Event object, event.sender is ipc.
     mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
