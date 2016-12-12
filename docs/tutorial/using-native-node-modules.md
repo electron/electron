@@ -76,6 +76,16 @@ following things:
 * After you upgraded Electron, you usually need to rebuild the modules.
 * When in doubt, run `electron-rebuild` first.
 
+## Modules that rely on `prebuild`
+
+[`prebuild`](https://github.com/mafintosh/prebuild) provides a way to easily
+publish native Node modules with prebuilt binaries for multiple versions of Node
+and Electron.
+
+If modules provide binaries for the usage in Electron, make sure to omit
+`--build-from-source` and the `npm_config_build_from_source` environment
+variable in order to take full advantage of the prebuilt binaries.
+
 ## Modules that rely on `node-pre-gyp`
 
 The [`node-pre-gyp` tool][node-pre-gyp] provides a way to deploy native Node
