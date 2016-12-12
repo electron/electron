@@ -15,6 +15,7 @@
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "base/command_line.h"
+#include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_view.h"
@@ -126,6 +127,7 @@ void AtomSandboxedRendererClient::RenderFrameCreated(
 
 void AtomSandboxedRendererClient::RenderViewCreated(
     content::RenderView* render_view) {
+  new printing::PrintWebViewHelper(render_view);
   new AtomSandboxedRenderViewObserver(render_view, this);
 }
 

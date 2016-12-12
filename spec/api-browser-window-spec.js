@@ -982,6 +982,26 @@ describe('BrowserWindow module', function () {
           w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?webcontents-events'))
         })
       })
+
+      it('can print to PDF', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload
+          }
+        })
+        w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+        w.webContents.once('did-finish-load', function () {
+          w.webContents.printToPDF({}, function (error, data) {
+            assert.equal(error, null)
+            assert.equal(data instanceof Buffer, true)
+            assert.notEqual(data.length, 0)
+            done()
+          })
+        })
+      })
     })
   })
 
