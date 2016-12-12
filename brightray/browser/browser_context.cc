@@ -4,6 +4,7 @@
 
 #include "browser/browser_context.h"
 
+#include "browser/media/media_device_id_salt.h"
 #include "browser/brightray_paths.h"
 #include "browser/browser_client.h"
 #include "browser/inspectable_web_contents_impl.h"
@@ -54,6 +55,13 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
 
   net::URLRequestContext* GetRequestContext() override {
     return getter_->GetURLRequestContext();
+  }
+
+  std::string GetMediaDeviceIDSalt() override {
+    auto media_device_id_salt_ = getter_->GetMediaDeviceIDSalt();
+    if (media_device_id_salt_)
+      return media_device_id_salt_->GetSalt();
+    return content::ResourceContext::GetMediaDeviceIDSalt();
   }
 
   URLRequestContextGetter* getter_;
@@ -114,6 +122,7 @@ void BrowserContext::InitPrefs() {
 
 void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
   InspectableWebContentsImpl::RegisterPrefs(registry);
+  MediaDeviceIDSalt::RegisterPrefs(registry);
 }
 
 URLRequestContextGetter* BrowserContext::GetRequestContext() {
@@ -141,6 +150,14 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
 
 net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
   return new NetworkDelegate;
+}
+
+MediaDeviceIDSalt* BrowserContext::GetMediaDeviceIDSalt() {
+  if (IsOffTheRecord())
+    return nullptr;
+  if (!media_device_id_salt_.get())
+    media_device_id_salt_.reset(new MediaDeviceIDSalt(prefs_.get()));
+  return media_device_id_salt_.get();
 }
 
 base::FilePath BrowserContext::GetPath() const {

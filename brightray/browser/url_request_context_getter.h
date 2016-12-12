@@ -31,6 +31,7 @@ class URLRequestJobFactory;
 namespace brightray {
 
 class DevToolsNetworkControllerHandle;
+class MediaDeviceIDSalt;
 class NetLog;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
@@ -57,6 +58,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     GetRequireCTDelegate() {
       return nullptr;
     }
+    virtual MediaDeviceIDSalt* GetMediaDeviceIDSalt() { return nullptr; }
   };
 
   URLRequestContextGetter(
@@ -77,6 +79,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   net::HostResolver* host_resolver();
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }
+  MediaDeviceIDSalt* GetMediaDeviceIDSalt() const {
+    return delegate_->GetMediaDeviceIDSalt();
+  }
 
  private:
   Delegate* delegate_;
