@@ -4,8 +4,6 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
-#include <iostream>
-
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
