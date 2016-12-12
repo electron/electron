@@ -116,7 +116,7 @@ describe('chromium feature', function () {
         origin: null,
         storages: ['cookies']
       }
-      let deviceIds = []
+      const deviceIds = []
       const ses = session.fromPartition('persist:media-device-id')
       let w = new BrowserWindow({
         show: false,
