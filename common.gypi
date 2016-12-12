@@ -147,8 +147,13 @@
             'include_dirs': [
               '<(DEPTH)/atom/node',
             ],
-            # Node is using networking API but linking with this itself.
-            'libraries': [ '-lwinmm.lib' ],
+            'libraries': [
+              # Node is using networking API but linking with this itself.
+              '-lwinmm.lib',
+              # Needed by V8.
+              '-ldbghelp.lib',
+              '-lshlwapi.lib',
+            ],
             # Fix the linking error with icu.
             'conditions': [
               ['libchromiumcontent_component==0', {

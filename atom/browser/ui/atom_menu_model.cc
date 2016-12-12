@@ -23,7 +23,7 @@ void AtomMenuModel::SetRole(int index, const base::string16& role) {
 
 base::string16 AtomMenuModel::GetRoleAt(int index) {
   int command_id = GetCommandIdAt(index);
-  if (ContainsKey(roles_, command_id))
+  if (base::ContainsKey(roles_, command_id))
     return roles_[command_id];
   else
     return base::string16();
