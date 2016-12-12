@@ -144,6 +144,9 @@ const char kStandardSchemes[] = "standard-schemes";
 // Register schemes to handle service worker.
 const char kRegisterServiceWorkerSchemes[] = "register-service-worker-schemes";
 
+// Register schemes as secure.
+const char kSecureSchemes[] = "secure-schemes";
+
 // The minimum SSL/TLS version ("tls1", "tls1.1", or "tls1.2") that
 // TLS fallback will accept.
 const char kSSLVersionFallbackMin[] = "ssl-version-fallback-min";

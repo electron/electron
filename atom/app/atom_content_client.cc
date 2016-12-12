@@ -197,11 +197,20 @@ void AtomContentClient::AddServiceWorkerSchemes(
   std::vector<std::string> schemes;
   ConvertStringWithSeparatorToVector(&schemes, ",",
                                      switches::kRegisterServiceWorkerSchemes);
-  if (!schemes.empty()) {
-    for (const std::string& scheme : schemes)
-      service_worker_schemes->insert(scheme);
-  }
+  for (const std::string& scheme : schemes)
+    service_worker_schemes->insert(scheme);
+
   service_worker_schemes->insert(url::kFileScheme);
 }
+
+void AtomContentClient::AddSecureSchemesAndOrigins(
+    std::set<std::string>* secure_schemes,
+    std::set<GURL>* secure_origins) {
+  std::vector<std::string> schemes;
+  ConvertStringWithSeparatorToVector(&schemes, ",", switches::kSecureSchemes);
+  for (const std::string& scheme : schemes)
+    secure_schemes->insert(scheme);
+}
+
 
 }  // namespace atom

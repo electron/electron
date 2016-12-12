@@ -985,5 +985,19 @@ describe('protocol module', function () {
       ipcMain.once('file-system-error', (event, err) => done(err))
       ipcMain.once('file-system-write-end', () => done())
     })
+
+    it('registers secure, when {secure: true}', function (done) {
+      // the CacheStorage API will only work if secure == true
+      let filePath = path.join(__dirname, 'fixtures', 'pages', 'cache-storage.html')
+      const handler = function (request, callback) {
+        callback({path: filePath})
+      }
+      ipcMain.once('success', () => done())
+      ipcMain.once('failure', (event, err) => done(err))
+      protocol.registerFileProtocol(standardScheme, handler, function (error) {
+        if (error) return done(error)
+        w.loadURL(origin)
+      })
+    })
   })
 })
