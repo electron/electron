@@ -17,6 +17,7 @@
 #include "base/files/file_path.h"
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
+#include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "native_mate/dictionary.h"
@@ -239,8 +240,15 @@ void NodeBindings::UvRunOnce() {
   v8::MicrotasksScope script_scope(env->isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);
 
+  if (!is_browser_)
+    TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
+
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+
+  if (!is_browser_)
+    TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
+
   if (r == 0)
     message_loop_->QuitWhenIdle();  // Quit from uv.
 
