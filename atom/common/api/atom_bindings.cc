@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <iostream>
-#include <map>
 #include <string>
 
 #include "atom/common/atom_version.h"
@@ -157,28 +156,14 @@ void AtomBindings::Log(const base::string16& message) {
   std::cout << message << std::flush;
 }
 
+// static
 void AtomBindings::Crash() {
   static_cast<DummyClass*>(nullptr)->crash = true;
 }
 
-void AtomBindings::StartCrashReporter(
-    const std::string& product_name,
-    const std::string& company_name,
-    const std::string& submit_url,
-    const std::string& tmp_path,
-    const std::map<std::string, std::string>& extra_parameters) {
-  auto all_parameters = extra_parameters;
-  all_parameters["_productName"] = product_name;
-  all_parameters["_companyName"] = company_name;
-
-  auto reporter = crash_reporter::CrashReporter::GetInstance();
-  reporter->Start(product_name,
-                  company_name,
-                  submit_url,
-                  base::FilePath(tmp_path),
-                  true,
-                  false,
-                  all_parameters);
+// static
+void AtomBindings::StartCrashReporter(const mate::Dictionary& options) {
+  crash_reporter::CrashReporter::GetInstance()->StartWithOptions(options);
 }
 
 }  // namespace atom

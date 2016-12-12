@@ -12,6 +12,7 @@
 
 #include "base/files/file_path.h"
 #include "base/macros.h"
+#include "native_mate/dictionary.h"
 
 namespace crash_reporter {
 
@@ -29,6 +30,7 @@ class CrashReporter {
              bool upload_to_server,
              bool skip_system_crash_handler,
              const StringMap& extra_parameters);
+  void StartWithOptions(const mate::Dictionary& options);
 
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
       const base::FilePath& crashes_dir);
