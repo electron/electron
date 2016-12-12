@@ -49,15 +49,15 @@ describe('dialog module', () => {
       }, /Buttons must be an array/)
 
       assert.throws(() => {
-        dialog.showMessageBox({title: 300, buttons: ['OK']})
+        dialog.showMessageBox({title: 300})
       }, /Title must be a string/)
 
       assert.throws(() => {
-        dialog.showMessageBox({message: [], buttons: ['OK']})
+        dialog.showMessageBox({message: []})
       }, /Message must be a string/)
 
       assert.throws(() => {
-        dialog.showMessageBox({detail: 3.14, buttons: ['OK']})
+        dialog.showMessageBox({detail: 3.14})
       }, /Detail must be a string/)
     })
   })
