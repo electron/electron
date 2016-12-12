@@ -494,7 +494,7 @@ describe('BrowserWindow module', function () {
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', function () {
     it('sets the window as always on top', function () {
       assert.equal(w.isAlwaysOnTop(), false)
-      w.setAlwaysOnTop(true, 'dock')
+      w.setAlwaysOnTop(true, 'screen-saver')
       assert.equal(w.isAlwaysOnTop(), true)
       w.setAlwaysOnTop(false)
       assert.equal(w.isAlwaysOnTop(), false)

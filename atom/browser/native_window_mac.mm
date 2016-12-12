@@ -1073,6 +1073,7 @@ void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level) {
     } else if (level == "screen-saver") {
       windowLevel = NSScreenSaverWindowLevel;
     } else if (level == "dock") {
+      // Deprecated by macOS, but kept for backwards compatibility
       windowLevel = NSDockWindowLevel;
     }
   }

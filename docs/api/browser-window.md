@@ -833,7 +833,7 @@ On Linux always returns `true`.
 * `flag` Boolean
 * `level` String (optional) _macOS_ - Values include `normal`, `floating`,
   `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
-  `screen-saver`, and `dock`. The default is `floating`. See the
+  `screen-saver`, and ~~`dock`~~ (Deprecated). The default is `floating`. See the
   [macOS docs][window-levels] for more details.
 
 Sets whether the window should show always on top of other windows. After
