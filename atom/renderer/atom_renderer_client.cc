@@ -124,7 +124,8 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
-  return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+  return base::SplitString(
+      custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 }
 
 }  // namespace
@@ -133,10 +134,10 @@ AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
       atom_bindings_(new AtomBindings) {
   // Parse --standard-schemes=scheme1,scheme2
-  std::vector<std::string> standard_schemes_list = ParseSchemesCLISwitch(switches::kStandardSchemes);
-  for (const std::string& scheme : standard_schemes_list) {
+  std::vector<std::string> standard_schemes_list =
+      ParseSchemesCLISwitch(switches::kStandardSchemes);
+  for (const std::string& scheme : standard_schemes_list)
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
-  }
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -185,10 +186,11 @@ void AtomRendererClient::RenderFrameCreated(
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
 
   // Parse --secure-schemes=scheme1,scheme2
-  std::vector<std::string> secure_schemes_list = ParseSchemesCLISwitch(switches::kSecureSchemes);
-  for (const std::string& secure_scheme : secure_schemes_list) {
-    blink::WebSecurityPolicy::registerURLSchemeAsSecure(blink::WebString::fromUTF8(secure_scheme));
-  }
+  std::vector<std::string> secure_schemes_list =
+      ParseSchemesCLISwitch(switches::kSecureSchemes);
+  for (const std::string& secure_scheme : secure_schemes_list)
+    blink::WebSecurityPolicy::registerURLSchemeAsSecure(
+        blink::WebString::fromUTF8(secure_scheme));
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {

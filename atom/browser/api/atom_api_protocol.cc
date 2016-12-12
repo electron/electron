@@ -46,7 +46,8 @@ std::vector<std::string> GetStandardSchemes() {
   return g_standard_schemes;
 }
 
-void RegisterStandardSchemes(const std::vector<std::string>& schemes, mate::Arguments* args) {
+void RegisterStandardSchemes(const std::vector<std::string>& schemes,
+                             mate::Arguments* args) {
   g_standard_schemes = schemes;
 
   auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
