@@ -6,6 +6,7 @@
 
 #include "atom/browser/browser.h"
 #include "atom/common/atom_version.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_number_conversions.h"
@@ -20,6 +21,25 @@ CrashReporter::CrashReporter() {
 }
 
 CrashReporter::~CrashReporter() {
+}
+
+void CrashReporter::StartWithOptions(const mate::Dictionary& options) {
+  std::string product_name;
+  options.Get("productName", &product_name);
+  std::string company_name;
+  options.Get("companyName", &company_name);
+  std::string submit_url;
+  options.Get("submitURL", &submit_url);
+  base::FilePath crashes_dir;
+  options.Get("crashesDirectory", &crashes_dir);
+  StringMap extra_parameters;
+  options.Get("extra", &extra_parameters);
+
+  extra_parameters["_productName"] = product_name;
+  extra_parameters["_companyName"] = company_name;
+
+  Start(product_name, company_name, submit_url, crashes_dir, true, false,
+        extra_parameters);
 }
 
 void CrashReporter::Start(const std::string& product_name,
