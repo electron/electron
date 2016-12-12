@@ -173,7 +173,13 @@ should be called with either a `String` or an object that has the `data`,
     * `redirectRequest` Object
       * `url` String
       * `method` String
-      * `session` Object (optional)
+      * `session` String or Null (optional) - When this value is not specified, 
+        the HTTP request will reuse the current session. When this value is a 
+        String, it reprensents a [session partition]
+        (session.md#sessionfrompartitionpartition-options). The requuest will 
+        use the identified session if it exists, otherwise it will reuse the 
+        current session. When this value is `null`, the request will use a new 
+        session.
       * `uploadData` Object (optional)
         * `contentType` String - MIME type of the content.
         * `data` String - Content to be sent.
@@ -185,9 +191,6 @@ Registers a protocol of `scheme` that will send an HTTP request as a response.
 The usage is the same with `registerFileProtocol`, except that the `callback`
 should be called with a `redirectRequest` object that has the `url`, `method`,
 `referrer`, `uploadData` and `session` properties.
-
-By default the HTTP request will reuse the current session. If you want the
-request to have a different session you should set `session` to `null`.
 
 For POST requests the `uploadData` object must be provided.
 
