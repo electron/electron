@@ -133,6 +133,8 @@ describe('chromium feature', function () {
           closeWindow(w).then(function () {
             w = null
             done()
+          }).catch(function (error) {
+            done(error)
           })
         } else {
           ses.clearStorageData(options, function () {
