@@ -61,10 +61,10 @@ int NodeMain(int argc, char *argv[]) {
 #endif
     process.SetMethod("crash", &AtomBindings::Crash);
 
-    v8::Local<v8::Object> crashReporterObj = v8::Object::New(env->isolate());
-    mate::Dictionary crashReporterDict(gin_env.isolate(), crashReporterObj);
-    crashReporterDict.SetMethod("start", &AtomBindings::StartCrashReporter);
-    process.Set("crashReporter", crashReporterObj);
+    mate::Dictionary crashReporter =
+        mate::Dictionary::CreateEmpty(gin_env.isolate());
+    crashReporter.SetMethod("start", &AtomBindings::StartCrashReporter);
+    process.Set("crashReporter", crashReporter);
 
     node::LoadEnvironment(env);
 
