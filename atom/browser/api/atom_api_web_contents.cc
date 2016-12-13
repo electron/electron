@@ -497,9 +497,8 @@ bool WebContents::PreHandleKeyboardEvent(
     event.type == blink::WebInputEvent::Type::RawKeyDown ? "keyDown" :
     event.type == blink::WebInputEvent::Type::KeyUp ? "keyUp" :
     nullptr;
+  DCHECK(type);
   if (!type) {
-    // This should never happen.
-    assert(false);
     return false;
   }
 
