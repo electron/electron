@@ -34,13 +34,16 @@ describe('nativeImage module', () => {
         {width: 100, height: 200})
       assert.deepEqual(imageE.getSize(), {width: 100, height: 200})
 
-      const imageF = nativeImage.createFromBuffer(imageA.toPNG(),
-        {width: 100, height: 200})
-      assert.deepEqual(imageF.getSize(), {width: 538, height: 190})
+      const imageF = nativeImage.createFromBuffer(imageA.toBitmap())
+      assert(imageF.isEmpty())
 
-      const imageG = nativeImage.createFromBuffer(imageA.toJPEG(100),
+      const imageG = nativeImage.createFromBuffer(imageA.toPNG(),
         {width: 100, height: 200})
       assert.deepEqual(imageG.getSize(), {width: 538, height: 190})
+
+      const imageH = nativeImage.createFromBuffer(imageA.toJPEG(100),
+        {width: 100, height: 200})
+      assert.deepEqual(imageH.getSize(), {width: 538, height: 190})
     })
   })
 
