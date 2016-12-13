@@ -21,9 +21,9 @@ exports.load = (appUrl) => {
       options.icon = path.join(__dirname, 'icon.png')
     }
     crashReporter.start({
-      submitURL: "http://localhost:8080/uploadDump/mainDump",
-      companyName: "Main Company",
-      productName: "Main Product"
+      submitURL: 'http://localhost:8080/uploadDump/mainDump',
+      companyName: 'Main Company',
+      productName: 'Main Product'
     })
 
     mainWindow = new BrowserWindow(options)
