@@ -77,7 +77,7 @@ shown.
   * `defaultPath` String (optional)
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
-  * `filters` [FileFilter[]](structrs/file-filter.md) (optional)
+  * `filters` [FileFilter[]](structures/file-filter.md) (optional)
 * `callback` Function (optional)
   * `filename` String
 
