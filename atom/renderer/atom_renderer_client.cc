@@ -66,8 +66,6 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
       : content::RenderFrameObserver(frame),
         render_frame_(frame),
         isolated_world_(isolated_world),
-        main_context_created_(false),
-        isolated_context_created_(false),
         renderer_client_(renderer_client) {}
 
   // content::RenderFrameObserver:
@@ -92,26 +90,19 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
                               int world_id) override {
-    if (!main_context_created_ && IsMainWorld(world_id)) {
-      main_context_created_ = true;
-      if (isolated_world_) {
-        CreateIsolatedWorldContext();
-      } else {
-        renderer_client_->DidCreateScriptContext(context, render_frame_);
-      }
-    }
-
-    if (isolated_world_ && !isolated_context_created_
-                        && IsIsolatedWorld(world_id)) {
-      isolated_context_created_ = true;
+    bool notify_client =
+        isolated_world_ ? IsIsolatedWorld(world_id) : IsMainWorld(world_id);
+    if (notify_client)
       renderer_client_->DidCreateScriptContext(context, render_frame_);
-    }
+
+    if (isolated_world_ && IsMainWorld(world_id))
+      CreateIsolatedWorldContext();
   }
 
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
     bool notify_client =
-      isolated_world_ ? IsIsolatedWorld(world_id) : IsMainWorld(world_id);
+        isolated_world_ ? IsIsolatedWorld(world_id) : IsMainWorld(world_id);
     if (notify_client)
       renderer_client_->WillReleaseScriptContext(context, render_frame_);
   }
@@ -123,8 +114,6 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
  private:
   content::RenderFrame* render_frame_;
   bool isolated_world_;
-  bool main_context_created_;
-  bool isolated_context_created_;
   AtomRendererClient* renderer_client_;
 
   const int kMainWorldId = 0;
