@@ -110,12 +110,10 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
-    if (isolated_world_) {
-      if (IsIsolatedWorld(world_id))
-        renderer_client_->WillReleaseScriptContext(context, render_frame_);
-    } else if (IsMainWorld(world_id)) {
+    bool notify_client =
+      isolated_world_ ? IsIsolatedWorld(world_id) : IsMainWorld(world_id);
+    if (notify_client)
       renderer_client_->WillReleaseScriptContext(context, render_frame_);
-    }
   }
 
   void OnDestruct() override {
