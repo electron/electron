@@ -250,8 +250,6 @@ Emitted before dispatching the `keydown` and `keyup` events in the page.
 Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
 from being dispatched.
 
-[keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
-
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
@@ -1237,3 +1235,5 @@ when the DevTools has been closed.
 #### `contents.debugger`
 
 A [Debugger](debugger.md) instance for this webContents.
+
+[keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
