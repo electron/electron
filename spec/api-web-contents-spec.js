@@ -4,7 +4,7 @@ const assert = require('assert')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
 
-const {remote} = require('electron')
+const {ipcRenderer, remote} = require('electron')
 const {BrowserWindow, webContents, ipcMain} = remote
 
 const isCi = remote.getGlobal('isCi')
@@ -102,16 +102,12 @@ describe('webContents module', function () {
     it('can prevent document keyboard events', (done) => {
       w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'key-events.html'))
       w.webContents.once('did-finish-load', () => {
-        w.webContents.once('before-input-event', (event, input) => {
-          assert.equal(input.key, 'a')
-          event.preventDefault()
-        })
-
         ipcMain.once('keydown', (event, key) => {
           assert.equal(key, 'b')
           done()
         })
 
+        ipcRenderer.send('prevent-next-input-event', 'a', w.webContents.id)
         w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'a'})
         w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'b'})
       })

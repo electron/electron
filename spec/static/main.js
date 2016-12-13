@@ -8,6 +8,7 @@ const ipcMain = electron.ipcMain
 const dialog = electron.dialog
 const BrowserWindow = electron.BrowserWindow
 const protocol = electron.protocol
+const webContents = electron.webContents
 const v8 = require('v8')
 
 const Coverage = require('electabul').Coverage
@@ -182,6 +183,12 @@ app.on('ready', function () {
       }
     })
     event.returnValue = 'done'
+  })
+
+  ipcMain.on('prevent-next-input-event', (event, key, id) => {
+    webContents.fromId(id).once('before-input-event', (event, input) => {
+      if (key === input.key) event.preventDefault()
+    })
   })
 
   ipcMain.on('executeJavaScript', function (event, code, hasCallback) {
