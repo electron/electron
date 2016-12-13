@@ -98,25 +98,6 @@ describe('webContents module', function () {
     })
   })
 
-  describe('will-navigate event', function () {
-    it('can be prevented', (done) => {
-      const targetURL = 'file://' + path.join(__dirname, 'fixtures', 'pages', 'location-change.html')
-      w.loadURL(targetURL)
-      w.webContents.once('did-finish-load', () => {
-
-      w.webContents.on('will-navigate', (event, url) => {
-        assert.ok(url, targetURL)
-      })
-
-      setTimeout(done, 5000)
-
-      w.webContents.on('did-navigate', (event, url) => {
-        assert.ok(url, targetURL)
-      })
-      })
-    })
-  })
-
   describe('before-input-event event', () => {
     it('can prevent document keyboard events', (done) => {
       w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'key-events.html'))
