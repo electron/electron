@@ -76,15 +76,15 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void CreateIsolatedWorldContext() {
     blink::WebScriptSource source("void 0");
     render_frame_->GetWebFrame()->executeScriptInIsolatedWorld(
-        kIsolatedWorldId, &source, 1, 1);
+        World::ISOLATED, &source, 1, 1);
   }
 
   bool IsMainWorld(int world_id) {
-    return world_id == kMainWorldId;
+    return world_id == World::MAIN;
   }
 
   bool IsIsolatedWorld(int world_id) {
-    return world_id == kIsolatedWorldId;
+    return world_id == World::ISOLATED;
   }
 
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
@@ -116,8 +116,10 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   bool isolated_world_;
   AtomRendererClient* renderer_client_;
 
-  const int kMainWorldId = 0;
-  const int kIsolatedWorldId = 999;
+  enum World {
+    MAIN = 0,
+    ISOLATED = 999
+  };
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
 };
