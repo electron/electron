@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Isolated World</title>
+    <script>
+      window.hello = 'world'
+      window.postMessage({
+        preloadProperty: typeof window.foo,
+        pageProperty: typeof window.hello,
+        typeofRequire: typeof require,
+        typeofProcess: typeof process
+      }, '*')
+    </script>
+  </head>
+  <body>
+
+  </body>
+</html>

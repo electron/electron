@@ -1835,6 +1835,39 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('isolated option', () => {
+    it('separates the page context from the Electron/preload context', (done) => {
+      if (w != null) w.destroy()
+
+      ipcMain.once('isolated-world', (event, data) => {
+        assert.deepEqual(data, {
+          preloadContext: {
+            preloadProperty: 'number',
+            pageProperty: 'undefined',
+            typeofRequire: 'function',
+            typeofProcess: 'object'
+          },
+          pageContext: {
+            preloadProperty: 'undefined',
+            pageProperty: 'string',
+            typeofRequire: 'undefined',
+            typeofProcess: 'undefined'
+          }
+        })
+        done()
+      })
+
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          isolated: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+      w.loadURL('file://' + fixtures + '/api/isolated.html')
+    })
+  })
+
   describe('offscreen rendering', function () {
     beforeEach(function () {
       if (w != null) w.destroy()
