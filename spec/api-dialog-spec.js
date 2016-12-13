@@ -41,11 +41,11 @@ describe('dialog module', () => {
   describe('showMessageBox', () => {
     it('throws errors when the options are invalid', () => {
       assert.throws(() => {
-        dialog.showMessageBox({type: 'not-a-valid-type'})
+        dialog.showMessageBox(undefined, {type: 'not-a-valid-type'})
       }, /Invalid message box type/)
 
       assert.throws(() => {
-        dialog.showMessageBox({buttons: false})
+        dialog.showMessageBox(null, {buttons: false})
       }, /Buttons must be an array/)
 
       assert.throws(() => {
