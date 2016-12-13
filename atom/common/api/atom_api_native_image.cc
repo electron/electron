@@ -408,13 +408,16 @@ mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
     mate::Arguments* args, v8::Local<v8::Value> buffer) {
   int width = 0;
   int height = 0;
-  if (args->Length() >= 3) {
-    args->GetNext(&width);
-    args->GetNext(&height);
-  }
-
   double scale_factor = 1.;
+
   args->GetNext(&scale_factor);
+
+  mate::Dictionary options;
+  if (args->GetNext(&options)) {
+    options.Get("width", &width);
+    options.Get("height", &height);
+    options.Get("scaleFactor", &scale_factor);
+  }
 
   gfx::ImageSkia image_skia;
   AddImageSkiaRep(&image_skia,
