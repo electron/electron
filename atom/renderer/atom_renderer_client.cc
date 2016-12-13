@@ -292,6 +292,9 @@ void AtomRendererClient::DidCreateScriptContext(
   if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
     return;
 
+  api_context_.Reset(context->GetIsolate(), context);
+  api_context_.SetWeak();
+
   // Whether the node binding has been initialized.
   bool first_time = node_bindings_->uv_env() == nullptr;
 
@@ -319,10 +322,6 @@ void AtomRendererClient::DidCreateScriptContext(
     // Give the node loop a run to make sure everything is ready.
     node_bindings_->RunMessageLoop();
   }
-}
-
-v8::Local<v8::Context> AtomRendererClient::GetContext() {
-  return node_bindings_->uv_env()->context();
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
@@ -365,6 +364,10 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
 void AtomRendererClient::AddSupportedKeySystems(
     std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
   AddChromeKeySystems(key_systems);
+}
+
+v8::Local<v8::Context> AtomRendererClient::GetAPIContext(v8::Isolate* isolate) {
+  return api_context_.Get(isolate);
 }
 
 }  // namespace atom
