@@ -70,7 +70,6 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/display/screen.h"
-#include "ui/events/keycodes/dom/keycode_converter.h"
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
