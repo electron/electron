@@ -137,15 +137,17 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 console.log(image)
 ```
 
-### `nativeImage.createFromBuffer(buffer[, scaleFactor])`
+### `nativeImage.createFromBuffer(buffer[, options])`
 
 * `buffer` [Buffer][buffer]
-* `scaleFactor` Double (optional)
+* `options` Object (optional)
+  * `width` Integer (optional) - Required for bitmap buffers.
+  * `height` Integer (optional) - Required for bitmap buffers.
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `NativeImage`
 
-Creates a new `NativeImage` instance from `buffer`. The default `scaleFactor` is
-1.0.
+Creates a new `NativeImage` instance from `buffer`.
 
 ### `nativeImage.createFromDataURL(dataURL)`
 

@@ -69,6 +69,13 @@ nativeImage.toPNG()
 nativeImage.toJpeg()
 // Replace with
 nativeImage.toJPEG()
+
+// Deprecated
+nativeImage.createFromBuffer(buffer, 1.0)
+// Replace with
+nativeImage.createFromBuffer(buffer, {
+  scaleFactor: 1.0
+})
 ```
 
 ## `process`

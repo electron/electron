@@ -79,6 +79,8 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
 bool AddImageSkiaRep(gfx::ImageSkia* image,
                      const unsigned char* data,
                      size_t size,
+                     int width,
+                     int height,
                      double scale_factor) {
   std::unique_ptr<SkBitmap> decoded(new SkBitmap());
 
@@ -87,8 +89,17 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
     // Try JPEG.
     decoded = gfx::JPEGCodec::Decode(data, size);
 
-  if (!decoded)
-    return false;
+  if (!decoded) {
+    // Try Bitmap
+    if (width > 0 && height > 0) {
+      decoded.reset(new SkBitmap);
+      decoded->allocN32Pixels(width, height, false);
+      decoded->setPixels(
+        const_cast<void*>(reinterpret_cast<const void*>(data)));
+    } else {
+      return false;
+    }
+  }
 
   image->AddRepresentation(gfx::ImageSkiaRep(*decoded, scale_factor));
   return true;
@@ -104,7 +115,7 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
   const unsigned char* data =
       reinterpret_cast<const unsigned char*>(file_contents.data());
   size_t size = file_contents.size();
-  return AddImageSkiaRep(image, data, size, scale_factor);
+  return AddImageSkiaRep(image, data, size, 0, 0, scale_factor);
 }
 
 bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
@@ -395,13 +406,26 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
 // static
 mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
     mate::Arguments* args, v8::Local<v8::Value> buffer) {
+  int width = 0;
+  int height = 0;
   double scale_factor = 1.;
-  args->GetNext(&scale_factor);
+
+  mate::Dictionary options;
+  if (args->GetNext(&options)) {
+    options.Get("width", &width);
+    options.Get("height", &height);
+    options.Get("scaleFactor", &scale_factor);
+  } else {
+    // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
+    args->GetNext(&scale_factor);
+  }
 
   gfx::ImageSkia image_skia;
   AddImageSkiaRep(&image_skia,
                   reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
                   node::Buffer::Length(buffer),
+                  width,
+                  height,
                   scale_factor);
   return Create(args->isolate(), gfx::Image(image_skia));
 }
