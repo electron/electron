@@ -141,15 +141,13 @@ console.log(image)
 
 * `buffer` [Buffer][buffer]
 * `options` Object (optional)
-  * `width` Integer (optional)
-  * `height` Integer (optional)
-  * `scaleFactor` Double (optional)
+  * `width` Integer (optional) - Required for bitmap buffers.
+  * `height` Integer (optional) - Required for bitmap buffers.
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `NativeImage`
 
-Creates a new `NativeImage` instance from `buffer`. The default `scaleFactor` is
-1.0. The `width` and `height` options are **required** and only used for bitmap
-buffers.
+Creates a new `NativeImage` instance from `buffer`.
 
 ### `nativeImage.createFromDataURL(dataURL)`
 
