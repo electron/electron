@@ -18,6 +18,7 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/base/clipboard/clipboard.h"
+#include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
 
 namespace {
@@ -213,6 +214,26 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
     return false;
   dict.Get("skipInBrowser", &out->skip_in_browser);
   return true;
+}
+
+v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
+    v8::Isolate* isolate, const content::NativeWebKeyboardEvent& in) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+
+  if (in.type == blink::WebInputEvent::Type::RawKeyDown)
+    dict.Set("type", "keyDown");
+  else if (in.type == blink::WebInputEvent::Type::KeyUp)
+    dict.Set("type", "keyUp");
+  dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.domKey));
+
+  using Modifiers = blink::WebInputEvent::Modifiers;
+  dict.Set("isAutoRepeat", (in.modifiers & Modifiers::IsAutoRepeat) != 0);
+  dict.Set("shift", (in.modifiers & Modifiers::ShiftKey) != 0);
+  dict.Set("control", (in.modifiers & Modifiers::ControlKey) != 0);
+  dict.Set("alt", (in.modifiers & Modifiers::AltKey) != 0);
+  dict.Set("meta", (in.modifiers & Modifiers::MetaKey) != 0);
+
+  return dict.GetHandle();
 }
 
 bool Converter<blink::WebMouseEvent>::FromV8(

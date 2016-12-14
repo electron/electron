@@ -232,6 +232,24 @@ Emitted when a plugin process has crashed.
 
 Emitted when `webContents` is destroyed.
 
+#### Event: 'before-input-event'
+
+Returns:
+
+* `event` Event
+* `input` Object - Input properties
+  * `type` String - Either `keyUp` or `keyDown`
+  * `key` String - Equivalent to [KeyboardEvent.key](keyboardevent)
+  * `isAutoRepeat` Boolean - Equivalent to [KeyboardEvent.repeat](keyboardevent)
+  * `shift` Boolean - Equivalent to [KeyboardEvent.shiftKey](keyboardevent)
+  * `control` Boolean - Equivalent to [KeyboardEvent.controlKey](keyboardevent)
+  * `alt` Boolean - Equivalent to [KeyboardEvent.altKey](keyboardevent)
+  * `meta` Boolean - Equivalent to [KeyboardEvent.metaKey](keyboardevent)
+
+Emitted before dispatching the `keydown` and `keyup` events in the page.
+Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
+from being dispatched.
+
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
@@ -1217,3 +1235,5 @@ when the DevTools has been closed.
 #### `contents.debugger`
 
 A [Debugger](debugger.md) instance for this webContents.
+
+[keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
