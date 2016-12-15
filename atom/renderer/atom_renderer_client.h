@@ -28,7 +28,9 @@ class AtomRendererClient : public content::ContentRendererClient {
       v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
 
   // Get the context that the Electron API is running in.
-  v8::Local<v8::Context> GetAPIContext(v8::Isolate* isolate);
+  v8::Local<v8::Context> GetContext(
+      blink::WebFrame* frame, v8::Isolate* isolate);
+  bool isolated_world() { return isolated_world_; }
 
  private:
   enum NodeIntegration {
@@ -67,7 +69,7 @@ class AtomRendererClient : public content::ContentRendererClient {
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;
   std::unique_ptr<PreferencesManager> preferences_manager_;
-  v8::Persistent<v8::Context> api_context_;
+  bool isolated_world_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };

@@ -94,7 +94,7 @@ void AtomRenderViewObserver::EmitIPCEvent(blink::WebFrame* frame,
   v8::Isolate* isolate = blink::mainThreadIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  v8::Local<v8::Context> context = renderer_client_->GetAPIContext(isolate);
+  v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
   v8::Context::Scope context_scope(context);
 
   // Only emit IPC event for context with node integration.

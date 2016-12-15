@@ -57,15 +57,22 @@ namespace atom {
 
 namespace {
 
+enum World {
+  MAIN_WORLD = 0,
+  ISOLATED_WORLD = 999
+};
+
+enum ExtensionGroup {
+  MAIN_GROUP = 1
+};
+
 // Helper class to forward the messages to the client.
 class AtomRenderFrameObserver : public content::RenderFrameObserver {
  public:
   AtomRenderFrameObserver(content::RenderFrame* frame,
-                          AtomRendererClient* renderer_client,
-                          bool isolated_world)
+                          AtomRendererClient* renderer_client)
       : content::RenderFrameObserver(frame),
         render_frame_(frame),
-        isolated_world_(isolated_world),
         renderer_client_(renderer_client) {}
 
   // content::RenderFrameObserver:
@@ -76,34 +83,37 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void CreateIsolatedWorldContext() {
     blink::WebScriptSource source("void 0");
     render_frame_->GetWebFrame()->executeScriptInIsolatedWorld(
-        World::ISOLATED, &source, 1, 1);
+        World::ISOLATED_WORLD, &source, 1, ExtensionGroup::MAIN_GROUP);
   }
 
   bool IsMainWorld(int world_id) {
-    return world_id == World::MAIN;
+    return world_id == World::MAIN_WORLD;
   }
 
   bool IsIsolatedWorld(int world_id) {
-    return world_id == World::ISOLATED;
+    return world_id == World::ISOLATED_WORLD;
+  }
+
+  bool NotifyClient(int world_id) {
+    if (renderer_client_->isolated_world())
+      return IsIsolatedWorld(world_id);
+    else
+      return IsMainWorld(world_id);
   }
 
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
                               int world_id) override {
-    bool notify_client =
-        isolated_world_ ? IsIsolatedWorld(world_id) : IsMainWorld(world_id);
-    if (notify_client)
+    if (NotifyClient(world_id))
       renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-    if (isolated_world_ && IsMainWorld(world_id))
+    if (renderer_client_->isolated_world() && IsMainWorld(world_id))
       CreateIsolatedWorldContext();
   }
 
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
-    bool notify_client =
-        isolated_world_ ? IsIsolatedWorld(world_id) : IsMainWorld(world_id);
-    if (notify_client)
+    if (NotifyClient(world_id))
       renderer_client_->WillReleaseScriptContext(context, render_frame_);
   }
 
@@ -113,13 +123,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
  private:
   content::RenderFrame* render_frame_;
-  bool isolated_world_;
   AtomRendererClient* renderer_client_;
-
-  enum World {
-    MAIN = 0,
-    ISOLATED = 999
-  };
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
 };
@@ -158,6 +162,8 @@ std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
       atom_bindings_(new AtomBindings) {
+  isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kIsolatedWorld);
   // Parse --standard-schemes=scheme1,scheme2
   std::vector<std::string> standard_schemes_list =
       ParseSchemesCLISwitch(switches::kStandardSchemes);
@@ -203,10 +209,7 @@ void AtomRendererClient::RenderThreadStarted() {
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
-
-  bool isolated_world = base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kIsolatedWorld);
-  new AtomRenderFrameObserver(render_frame, this, isolated_world);
+  new AtomRenderFrameObserver(render_frame, this);
 
   new ContentSettingsObserver(render_frame);
 
@@ -294,9 +297,6 @@ void AtomRendererClient::DidCreateScriptContext(
   if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
     return;
 
-  api_context_.Reset(context->GetIsolate(), context);
-  api_context_.SetWeak();
-
   // Whether the node binding has been initialized.
   bool first_time = node_bindings_->uv_env() == nullptr;
 
@@ -368,8 +368,13 @@ void AtomRendererClient::AddSupportedKeySystems(
   AddChromeKeySystems(key_systems);
 }
 
-v8::Local<v8::Context> AtomRendererClient::GetAPIContext(v8::Isolate* isolate) {
-  return api_context_.Get(isolate);
+v8::Local<v8::Context> AtomRendererClient::GetContext(
+    blink::WebFrame* frame, v8::Isolate* isolate) {
+  if (isolated_world_)
+    return frame->worldScriptContext(
+        isolate, World::ISOLATED_WORLD, ExtensionGroup::MAIN_GROUP);
+  else
+    return frame->mainWorldScriptContext();
 }
 
 }  // namespace atom
