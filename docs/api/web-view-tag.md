@@ -168,6 +168,54 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 
 If "on", the guest page will have web security disabled.
 
+### `disableimages`
+
+```html
+<webview src="https://www.github.com/" disableimages></webview>
+```
+
+If "on", the guest page will have image support disabled.
+
+### `disablejavascript`
+
+```html
+<webview src="https://www.github.com/" disablejavascript></webview>
+```
+
+If "on", the guest page will have JavaScript support disabled.
+
+### `disablewebgl`
+
+```html
+<webview src="https://www.github.com/" disablewebgl></webview>
+```
+
+If "on", the guest page will have WebGL support disabled.
+
+### `disablewebaudio`
+
+```html
+<webview src="https://www.github.com/" disablewebaudio></webview>
+```
+
+If "on", the guest page will have WebAudio support disabled.
+
+### `displayinsecurecontent`
+
+```html
+<webview src="https://www.github.com/" displayinsecurecontent></webview>
+```
+
+If "on", the guest page will allow an https page to display content like images from http URLs.
+
+### `runinsecurecontent`
+
+```html
+<webview src="https://www.github.com/" runinsecurecontent></webview>
+```
+
+If "on", the guest page will allow an https page to run JavaScript, CSS or plugins from http URLs.
+
 ### `partition`
 
 ```html
