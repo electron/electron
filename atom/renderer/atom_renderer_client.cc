@@ -210,7 +210,6 @@ void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
   new AtomRenderFrameObserver(render_frame, this);
-
   new ContentSettingsObserver(render_frame);
 
   // Allow file scheme to handle service worker by default.
