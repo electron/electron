@@ -163,7 +163,7 @@ AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
       atom_bindings_(new AtomBindings) {
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kIsolatedWorld);
+      switches::kContextIsolation);
   // Parse --standard-schemes=scheme1,scheme2
   std::vector<std::string> standard_schemes_list =
       ParseSchemesCLISwitch(switches::kStandardSchemes);

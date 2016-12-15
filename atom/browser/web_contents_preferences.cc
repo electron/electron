@@ -121,8 +121,9 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   // Run Electron APIs and preload script in isolated world
   bool isolated;
-  if (web_preferences.GetBoolean("isolated", &isolated) && isolated)
-    command_line->AppendSwitch(switches::kIsolatedWorld);
+  if (web_preferences.GetBoolean(options::kContextIsolation, &isolated) &&
+      isolated)
+    command_line->AppendSwitch(switches::kContextIsolation);
 
   // --background-color.
   std::string color;
