@@ -4,7 +4,7 @@ const https = require('https')
 const net = require('net')
 const fs = require('fs')
 const path = require('path')
-const {remote} = require('electron')
+const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
 const {app, BrowserWindow, ipcMain} = remote
@@ -41,6 +41,41 @@ describe('electron module', function () {
 })
 
 describe('app module', function () {
+  let server, secureUrl
+  const certPath = path.join(__dirname, 'fixtures', 'certificates')
+
+  before(function () {
+    const options = {
+      key: fs.readFileSync(path.join(certPath, 'server.key')),
+      cert: fs.readFileSync(path.join(certPath, 'server.pem')),
+      ca: [
+        fs.readFileSync(path.join(certPath, 'rootCA.pem')),
+        fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
+      ],
+      requestCert: true,
+      rejectUnauthorized: false
+    }
+
+    server = https.createServer(options, function (req, res) {
+      if (req.client.authorized) {
+        res.writeHead(200)
+        res.end('<title>authorized</title>')
+      } else {
+        res.writeHead(401)
+        res.end('<title>denied</title>')
+      }
+    })
+
+    server.listen(0, '127.0.0.1', function () {
+      const port = server.address().port
+      secureUrl = `https://127.0.0.1:${port}`
+    })
+  })
+
+  after(function () {
+    server.close()
+  })
+
   describe('app.getVersion()', function () {
     it('returns the version field of package.json', function () {
       assert.equal(app.getVersion(), '0.1.0')
@@ -165,24 +200,6 @@ describe('app module', function () {
     if (process.platform !== 'linux') return
 
     var w = null
-    var certPath = path.join(__dirname, 'fixtures', 'certificates')
-    var options = {
-      key: fs.readFileSync(path.join(certPath, 'server.key')),
-      cert: fs.readFileSync(path.join(certPath, 'server.pem')),
-      ca: [
-        fs.readFileSync(path.join(certPath, 'rootCA.pem')),
-        fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
-      ],
-      requestCert: true,
-      rejectUnauthorized: false
-    }
-
-    var server = https.createServer(options, function (req, res) {
-      if (req.client.authorized) {
-        res.writeHead(200)
-        res.end('authorized')
-      }
-    })
 
     afterEach(function () {
       return closeWindow(w).then(function () { w = null })
@@ -199,25 +216,24 @@ describe('app module', function () {
       })
 
       w.webContents.on('did-finish-load', function () {
-        server.close()
+        assert.equal(w.webContents.getTitle(), 'authorized')
         done()
       })
 
-      app.on('select-client-certificate', function (event, webContents, url, list, callback) {
+      ipcRenderer.once('select-client-certificate', function (event, webContentsId, list) {
+        assert.equal(webContentsId, w.webContents.id)
         assert.equal(list.length, 1)
         assert.equal(list[0].issuerName, 'Intermediate CA')
         assert.equal(list[0].subjectName, 'Client Cert')
         assert.equal(list[0].issuer.commonName, 'Intermediate CA')
         assert.equal(list[0].subject.commonName, 'Client Cert')
-        callback(list[0])
+        event.sender.send('client-certificate-response', list[0])
       })
 
       app.importCertificate(options, function (result) {
         assert(!result)
-        server.listen(0, '127.0.0.1', function () {
-          var port = server.address().port
-          w.loadURL(`https://127.0.0.1:${port}`)
-        })
+        ipcRenderer.sendSync('set-client-certificate-option', false)
+        w.loadURL(secureUrl)
       })
     })
   })
@@ -357,6 +373,34 @@ describe('app module', function () {
     it('returns the overridden path', function () {
       app.setPath('music', __dirname)
       assert.equal(app.getPath('music'), __dirname)
+    })
+  })
+
+  describe('select-client-certificate event', function () {
+    let w = null
+
+    beforeEach(function () {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'empty-certificate'
+        }
+      })
+    })
+
+    afterEach(function () {
+      return closeWindow(w).then(function () { w = null })
+    })
+
+    it('can respond with empty certificate list', function (done) {
+      w.webContents.on('did-finish-load', function () {
+        assert.equal(w.webContents.getTitle(), 'denied')
+        server.close()
+        done()
+      })
+
+      ipcRenderer.sendSync('set-client-certificate-option', true)
+      w.webContents.loadURL(secureUrl)
     })
   })
 })

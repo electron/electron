@@ -206,3 +206,18 @@ app.on('ready', function () {
     }
   })
 })
+
+ipcMain.on('set-client-certificate-option', function (event, skip) {
+  app.once('select-client-certificate', function (event, webContents, url, list, callback) {
+    event.preventDefault()
+    if (skip) {
+      callback()
+    } else {
+      ipcMain.on('client-certificate-response', function (event, certificate) {
+        callback(certificate)
+      })
+      window.webContents.send('select-client-certificate', webContents.id, list)
+    }
+  })
+  event.returnValue = 'done'
+})

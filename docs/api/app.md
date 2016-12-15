@@ -113,7 +113,7 @@ Returns:
 * `url` String
 
 Emitted when the user wants to open a URL with the application. Your application's
-`Info.plist` file must define the url scheme within the `CFBundleURLTypes` key, and 
+`Info.plist` file must define the url scheme within the `CFBundleURLTypes` key, and
 set `NSPrincipalClass` to `AtomApplication`.
 
 You should call `event.preventDefault()` if you want to handle this event.
@@ -222,12 +222,12 @@ Returns:
 * `url` URL
 * `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
-  * `certificate` [Certificate](structures/certificate.md)
+  * `certificate` [Certificate](structures/certificate.md) (optional)
 
 Emitted when a client certificate is requested.
 
 The `url` corresponds to the navigation entry requesting the client certificate
-and `callback` needs to be called with an entry filtered from the list. Using
+and `callback` can be called with an entry filtered from the list. Using
 `event.preventDefault()` prevents the application from using the first
 certificate from the store.
 

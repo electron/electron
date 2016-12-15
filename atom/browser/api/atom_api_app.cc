@@ -378,9 +378,21 @@ void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     mate::Arguments* args) {
+  if (args->Length() == 2) {
+    delegate->ContinueWithCertificate(nullptr);
+    return;
+  }
+
+  v8::Local<v8::Value> val;
+  args->GetNext(&val);
+  if (val->IsNull()) {
+    delegate->ContinueWithCertificate(nullptr);
+    return;
+  }
+
   mate::Dictionary cert_data;
-  if (!args->GetNext(&cert_data)) {
-    args->ThrowError();
+  if (!mate::ConvertFromV8(isolate, val, &cert_data)) {
+    args->ThrowError("Must pass valid certificate object.");
     return;
   }
 
