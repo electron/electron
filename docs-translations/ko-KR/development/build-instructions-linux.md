@@ -5,7 +5,7 @@
 ## 빌드전 요구사양
 
 * 최소한 25GB 이상의 디스크 공간과 8GB 램이 필요합니다.
-* Python 2.7.x. 몇몇 CentOS와 같은 배포판들은 아직도 Python 2.6.x 버전을 사용합니다.
+* Python 2.7.x. 몇몇 CentOS 6.x와 같은 배포판들은 아직도 Python 2.6.x 버전을 사용합니다.
   그래서 먼저 `python -V`를 통해 버전을 확인할 필요가 있습니다.
 * Node.js v0.12.x. Node를 설치하는 방법은 여러 가지가 있습니다. 먼저,
   [Node.js](http://nodejs.org) 사이트에서 소스 코드를 받아 빌드하는 방법입니다.
@@ -26,13 +26,22 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        gperf bison
 ```
 
+RHEL / CentOS를 사용하고 있다면 다음과 같이 라이브러리를 설치해야 합니다:
+
+```bash
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
+```
+
 Fedora를 사용하고 있다면 다음과 같이 라이브러리를 설치해야 합니다:
 
 ```bash
-$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
-                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
-                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel bison \
-                   gperf
+$ sudo dnf install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
 ```
 
 다른 배포판의 경우 pacman 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다.

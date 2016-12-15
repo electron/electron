@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* Python 2.7.x. 一些发行版如 CentOS 仍然使用 Python 2.6.x ，所以或许需要 check 你的 Python 版本，使用 `python -V`.
+* Python 2.7.x. 一些发行版如 CentOS 6.x 仍然使用 Python 2.6.x ，所以或许需要 check 你的 Python 版本，使用 `python -V`.
 * Node.js v0.12.x. 有很多方法来安装 Node. 可以从 [Node.js](http://nodejs.org)下载原文件并且编译它 .也可以作为一个标准的用户在 home 目录下安装 node .或者尝试使用仓库 [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories).
 * Clang 3.4 或更新的版本.
 * GTK+开发头文件和libnotify.
@@ -18,15 +18,25 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib
 ```
 
+On RHEL / CentOS, 安装下面的库 :
+
+```bash
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
+```
+
 在 Fedora, 安装下面的库 :
 
 ```bash
-$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
-                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
-                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+$ sudo dnf install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
 ```
 
-其它版本的也许提供了相似的包来安装，通过包管理器，例如 pacman. 
+其它版本的也许提供了相似的包来安装，通过包管理器，例如 pacman.
 或一个可以编译源文件的.
 
 ## 使用虚拟机  
