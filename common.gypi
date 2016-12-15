@@ -119,6 +119,7 @@
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
               '-Wno-shift-negative-value',
+              '-Wno-format',
               '-Wno-varargs', # https://git.io/v6Olj
               # Required when building as shared library.
               '-fPIC',
