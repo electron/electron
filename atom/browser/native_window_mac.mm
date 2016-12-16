@@ -413,9 +413,18 @@ bool ScopedDisableResize::disable_resize_ = false;
   mate::PersistentDictionary dict;
   if (args->GetNext(&dict) && dict.Get("type", &type) && dict.Get("id", &item_id)) {
     if (item_map.find(item_id) != item_map.end()) {
-      if (type == "slider") {
-        NSSliderTouchBarItem* item = (NSSliderTouchBarItem *)item_map[item_id];
-        [self updateSlider:item withOpts:dict];
+      if (type == "button") {
+        [self updateButton:(NSCustomTouchBarItem *)item_map[item_id] withOpts:dict withID:[NSString stringWithUTF8String:item_id.c_str()] andCreate:false];
+      } else if (type == "label") {
+        [self updateLabel:(NSCustomTouchBarItem *)item_map[item_id] withOpts:dict];
+      } else if (type == "colorpicker") {
+        [self updateColorPicker:(NSColorPickerTouchBarItem *)item_map[item_id] withOpts:dict];
+      } else if (type == "slider") {
+        [self updateSlider:(NSSliderTouchBarItem *)item_map[item_id] withOpts:dict];
+      } else if (type == "popover") {
+        [self updatePopOver:(NSPopoverTouchBarItem *)item_map[item_id] withOpts:dict];
+      } else if (type == "group") {
+        args->ThrowError("You can not update the config of a group.  Update the individual items or replace the group");
       }
     }
   }
@@ -495,6 +504,10 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (NSButton*)makeButtonForDict:(mate::PersistentDictionary)dict withLabel:(std::string)label {
   NSButton *theButton = [NSButton buttonWithTitle:[NSString stringWithUTF8String:label.c_str()] target:self action:@selector(buttonAction:)];
 
+  return [self updateNSButton:theButton forDict:dict withLabel:label];
+}
+
+- (NSButton*)updateNSButton:(NSButton*)theButton forDict:(mate::PersistentDictionary)dict withLabel:(std::string)label {
   std::string backgroundColor;
   if (dict.Get("backgroundColor", &backgroundColor)) {
     theButton.bezelColor = [self colorFromHexColorString:[NSString stringWithUTF8String:backgroundColor.c_str()]];
@@ -522,13 +535,19 @@ bool ScopedDisableResize::disable_resize_ = false;
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
   NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
-  return [self updateButton:customItem withOpts:item withID:id];
+  return [self updateButton:customItem withOpts:item withID:id andCreate:true];
 }
 
-- (nullable NSTouchBarItem *)updateButton:(NSCustomTouchBarItem*)customItem withOpts:(mate::PersistentDictionary)item withID:(NSString*)id {
+- (nullable NSTouchBarItem *)updateButton:(NSCustomTouchBarItem*)customItem withOpts:(mate::PersistentDictionary)item withID:(NSString*)id andCreate:(bool)create {
   std::string label;
   if (item.Get("label", &label)) {
-    NSButton* theButton = [self makeButtonForDict:item withLabel:label];
+    NSButton* theButton = nil;
+    if (!create) {
+      theButton = (NSButton*)customItem.view;
+      [self updateNSButton:theButton forDict:item withLabel:label];
+    } else {
+      theButton = [self makeButtonForDict:item withLabel:label];
+    }
     theButton.tag = [id floatValue];
 
     customItem.view = theButton;

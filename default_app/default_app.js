@@ -36,17 +36,18 @@ exports.load = (appUrl) => {
     });
 
     global.slider = slider;
+    global.button = new (TouchBar.Button)({
+      label: 'Hello World!',
+      // image: '/path/to/image',
+      backgroundColor: 'FF0000',
+      labelColor: '0000FF',
+      click: () => {
+        console.log('Hello World Clicked')
+      }
+    });
 
     mainWindow.setTouchBar(new TouchBar([
-      new (TouchBar.Button)({
-        label: 'Hello World!',
-        // image: '/path/to/image',
-        backgroundColor: 'FF0000',
-        labelColor: '0000FF',
-        click: () => {
-          console.log('Hello World Clicked')
-        }
-      }),
+      button,
       new (TouchBar.Label)({
         label: 'This is a Label'
       }),
