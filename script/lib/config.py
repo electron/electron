@@ -7,7 +7,7 @@ import sys
 
 
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
-    'https://s3.amazonaws.com/gh-contractor-zcbenz/libchromiumcontent'
+    'https://s3.amazonaws.com/github-janky-artifacts/libchromiumcontent'
 LIBCHROMIUMCONTENT_COMMIT = os.getenv('LIBCHROMIUMCONTENT_COMMIT') or \
     '474446e3661c91faa91dad3c6681e38b43900d3b'
 
