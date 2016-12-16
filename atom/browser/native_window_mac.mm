@@ -693,9 +693,11 @@ bool ScopedDisableResize::disable_resize_ = false;
   NSMutableArray<NSTouchBarItem*>* generatedItems = [[NSMutableArray alloc] init];
   NSMutableArray<NSString*>* identList = [self identifierArrayFromDicts:items];
   for (NSUInteger i = 0; i < [identList count]; i++) {
-    NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identList objectAtIndex:i]];
-    if (generatedItem) {
-      [generatedItems addObject:generatedItem];
+    if ([identList objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
+      NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identList objectAtIndex:i]];
+      if (generatedItem) {
+        [generatedItems addObject:generatedItem];
+      }
     }
   }
   NSGroupTouchBarItem *groupItem = [NSGroupTouchBarItem groupItemWithIdentifier:identifier items:generatedItems];
