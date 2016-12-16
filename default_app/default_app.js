@@ -25,6 +25,18 @@ exports.load = (appUrl) => {
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
 
+    const slider = new (TouchBar.Slider)({
+      label: 'Slider 123',
+      minValue: 50,
+      maxValue: 1000,
+      initialValue: 300,
+      change: (newVal) => {
+        console.log('Slider was changed', newVal, typeof newVal)
+      }
+    });
+
+    global.slider = slider;
+
     mainWindow.setTouchBar(new TouchBar([
       new (TouchBar.Button)({
         label: 'Hello World!',
@@ -60,15 +72,7 @@ exports.load = (appUrl) => {
           })
         ])
       }),
-      new (TouchBar.Slider)({
-        label: 'Slider 123',
-        minValue: 50,
-        maxValue: 1000,
-        initialValue: 300,
-        change: (newVal) => {
-          console.log('Slider was changed', newVal, typeof newVal)
-        }
-      })
+      slider,
     ]))
   })
 }

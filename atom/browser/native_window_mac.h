@@ -104,6 +104,7 @@ class NativeWindowMac : public NativeWindow,
   void SetVibrancy(const std::string& type) override;
   void DestroyTouchBar() override;
   void SetTouchBar(mate::Arguments* args) override;
+  void RefreshTouchBarItem(mate::Arguments* args) override;
   std::vector<mate::PersistentDictionary> GetTouchBarItems();
 
   // content::RenderWidgetHost::InputEventObserver:

@@ -353,6 +353,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)enableWindowButtonsOffset;
 - (void)reloadTouchBar;
+- (void)refreshTouchBarItem:(mate::Arguments*)args;
 - (void)resetTouchBar;
 - (NSTouchBar*)touchBarFromMutatableArray:(NSMutableArray<NSTouchBarItemIdentifier>*)items;
 @end
@@ -363,6 +364,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @implementation AtomNSWindow
   NSMutableArray<NSTouchBarItemIdentifier>* bar_items_ = [[NSMutableArray alloc] init];
   std::map<std::string, mate::PersistentDictionary> item_id_map;
+  std::map<std::string, NSTouchBarItem*> item_map;
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
@@ -403,6 +405,20 @@ bool ScopedDisableResize::disable_resize_ = false;
   [idents addObject:NSTouchBarItemIdentifierOtherItemsProxy];
 
   return idents;
+}
+
+- (void)refreshTouchBarItem:(mate::Arguments*)args {
+  std::string item_id;
+  std::string type;
+  mate::PersistentDictionary dict;
+  if (args->GetNext(&dict) && dict.Get("type", &type) && dict.Get("id", &item_id)) {
+    if (item_map.find(item_id) != item_map.end()) {
+      if (type == "slider") {
+        NSSliderTouchBarItem* item = (NSSliderTouchBarItem *)item_map[item_id];
+        [self updateSlider:item withOpts:dict];
+      }
+    }
+  }
 }
 
 - (void)reloadTouchBar {
@@ -505,12 +521,16 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
+  NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
+  return [self updateButton:customItem withOpts:item withID:id];
+}
+
+- (nullable NSTouchBarItem *)updateButton:(NSCustomTouchBarItem*)customItem withOpts:(mate::PersistentDictionary)item withID:(NSString*)id {
   std::string label;
   if (item.Get("label", &label)) {
     NSButton* theButton = [self makeButtonForDict:item withLabel:label];
     theButton.tag = [id floatValue];
 
-    NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
     customItem.view = theButton;
 
     std::string customizationLabel;
@@ -527,11 +547,15 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
+  NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
+  return [self updateLabel:customItem withOpts:item];
+}
+
+- (nullable NSTouchBarItem*) updateLabel:(NSCustomTouchBarItem*)customItem withOpts:(mate::PersistentDictionary)item {
   std::string label;
   if (item.Get("label", &label)) {
     NSTextField *theLabel = [NSTextField labelWithString:[NSString stringWithUTF8String:label.c_str()]];
 
-    NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
     customItem.view = theLabel;
 
     std::string customizationLabel;
@@ -548,8 +572,11 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
-
   NSColorPickerTouchBarItem *colorPickerItem = [[NSColorPickerTouchBarItem alloc] initWithIdentifier:identifier];
+  return [self updateColorPicker:colorPickerItem withOpts:item];
+}
+
+- (nullable NSTouchBarItem*) updateColorPicker:(NSColorPickerTouchBarItem*)colorPickerItem withOpts:(mate::PersistentDictionary)item {
   colorPickerItem.target = self;
   colorPickerItem.action = @selector(colorPickerAction:);
 
@@ -565,8 +592,11 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
-
   NSSliderTouchBarItem *sliderItem = [[NSSliderTouchBarItem alloc] initWithIdentifier:identifier];
+  return [self updateSlider:sliderItem withOpts:item];
+}
+
+- (nullable NSTouchBarItem*) updateSlider:(NSSliderTouchBarItem*)sliderItem withOpts:(mate::PersistentDictionary)item {
   sliderItem.target = self;
   sliderItem.action = @selector(sliderAction:);
 
@@ -598,9 +628,11 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
-
   NSPopoverTouchBarItem *popOverItem = [[NSPopoverTouchBarItem alloc] initWithIdentifier:identifier];
+  return [self updatePopOver:popOverItem withOpts:item];
+}
 
+- (nullable NSTouchBarItem*) updatePopOver:(NSPopoverTouchBarItem*)popOverItem withOpts:(mate::PersistentDictionary)item {
   std::string customizationLabel;
   if (item.Get("customizationLabel", &customizationLabel)) {
     popOverItem.customizationLabel = [NSString stringWithUTF8String:customizationLabel.c_str()];
@@ -665,27 +697,31 @@ static NSTouchBarItemIdentifier PopOverIdentifier = @"com.electron.tb.popover.";
 static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.tb.slider.";
 
 - (nullable NSTouchBarItem *)makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+  NSTouchBarItem * item = nil;
+  NSString * id = nil;
   if ([identifier hasPrefix:ButtonIdentifier]) {
-    NSString* id = [self idFromIdentifier:identifier withPrefix:ButtonIdentifier];
-    return [self makeButtonForID:id withIdentifier:identifier];
+    id = [self idFromIdentifier:identifier withPrefix:ButtonIdentifier];
+    item = [self makeButtonForID:id withIdentifier:identifier];
   } else if ([identifier hasPrefix:LabelIdentifier]) {
-    NSString* id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
-    return [self makeLabelForID:id withIdentifier:identifier];
+    id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
+    item = [self makeLabelForID:id withIdentifier:identifier];
   } else if ([identifier hasPrefix:ColorPickerIdentifier]) {
-    NSString* id = [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
-    return [self makeColorPickerForID:id withIdentifier:identifier];
+    id = [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
+    item = [self makeColorPickerForID:id withIdentifier:identifier];
   } else if ([identifier hasPrefix:SliderIdentifier]) {
-    NSString* id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
-    return [self makeSliderForID:id withIdentifier:identifier];
+    id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
+    item = [self makeSliderForID:id withIdentifier:identifier];
   } else if ([identifier hasPrefix:PopOverIdentifier]) {
-    NSString* id = [self idFromIdentifier:identifier withPrefix:PopOverIdentifier];
-    return [self makePopOverForID:id withIdentifier:identifier];
+    id = [self idFromIdentifier:identifier withPrefix:PopOverIdentifier];
+    item = [self makePopOverForID:id withIdentifier:identifier];
   } else if ([identifier hasPrefix:GroupIdentifier]) {
-    NSString* id = [self idFromIdentifier:identifier withPrefix:GroupIdentifier];
-    return [self makeGroupForID:id withIdentifier:identifier];
+    id = [self idFromIdentifier:identifier withPrefix:GroupIdentifier];
+    item = [self makeGroupForID:id withIdentifier:identifier];
   }
 
-  return nil;
+  item_map.insert(make_pair(std::string([id UTF8String]), item));
+
+  return item;
 }
 
 - (nullable NSTouchBarItem *)touchBar:(NSTouchBar *)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
@@ -1686,6 +1722,10 @@ void NativeWindowMac::SetTouchBar(mate::Arguments* args) {
     touch_bar_items_ = items;
     [window_ reloadTouchBar];
   }
+}
+
+void NativeWindowMac::RefreshTouchBarItem(mate::Arguments* args) {
+  [window_ refreshTouchBarItem:args];
 }
 
 std::vector<mate::PersistentDictionary> NativeWindowMac::GetTouchBarItems() {

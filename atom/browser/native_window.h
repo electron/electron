@@ -173,6 +173,7 @@ class NativeWindow : public base::SupportsUserData,
   // Touchbar API
   virtual void DestroyTouchBar();
   virtual void SetTouchBar(mate::Arguments* args);
+  virtual void RefreshTouchBarItem(mate::Arguments* args);
 
   // Webview APIs.
   virtual void FocusOnWebView();
