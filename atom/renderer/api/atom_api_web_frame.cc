@@ -190,6 +190,11 @@ void WebFrame::InsertText(const std::string& text) {
   web_frame_->insertText(blink::WebString::fromUTF8(text));
 }
 
+void WebFrame::InsertCSS(const std::string& css) {
+  web_frame_->document().insertStyleSheet(blink::WebString::fromUTF8(css));
+}
+
+
 void WebFrame::ExecuteJavaScript(const base::string16& code,
                                  mate::Arguments* args) {
   bool has_user_gesture = false;
@@ -251,6 +256,7 @@ void WebFrame::BuildPrototype(
       .SetMethod("registerURLSchemeAsPrivileged",
                  &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
+      .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)
