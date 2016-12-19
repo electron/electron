@@ -102,7 +102,7 @@ describe('debugger module', function () {
       }
       w.webContents.debugger.on('message', function (e, method, params) {
         if (method === 'Console.messageAdded') {
-          assert.equal(params.message.type, 'log')
+          assert.equal(params.message.level, 'log')
           assert.equal(params.message.url, url)
           assert.equal(params.message.text, 'a')
           w.webContents.debugger.detach()
