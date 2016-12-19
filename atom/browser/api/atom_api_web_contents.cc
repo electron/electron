@@ -977,10 +977,6 @@ std::string WebContents::GetUserAgent() {
   return web_contents()->GetUserAgentOverride();
 }
 
-void WebContents::InsertCSS(const std::string& css) {
-  // FIXME(zcbenz): Redirect this method to webFrame.
-}
-
 bool WebContents::SavePage(const base::FilePath& full_file_path,
                            const content::SavePageType& save_type,
                            const SavePageHandler::SavePageCallback& callback) {
@@ -1561,7 +1557,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("setUserAgent", &WebContents::SetUserAgent)
       .SetMethod("getUserAgent", &WebContents::GetUserAgent)
-      .SetMethod("insertCSS", &WebContents::InsertCSS)
       .SetMethod("savePage", &WebContents::SavePage)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
