@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/id_map.h"
 #include "content/public/browser/permission_manager.h"
 
 namespace content {
@@ -22,12 +23,14 @@ class AtomPermissionManager : public content::PermissionManager {
   AtomPermissionManager();
   ~AtomPermissionManager() override;
 
-  using ResponseCallback =
+  using StatusCallback =
       base::Callback<void(blink::mojom::PermissionStatus)>;
+  using StatusesCallback =
+      base::Callback<void(const std::vector<blink::mojom::PermissionStatus>&)>;
   using RequestHandler =
       base::Callback<void(content::WebContents*,
                           content::PermissionType,
-                          const ResponseCallback&)>;
+                          const StatusCallback&)>;
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
@@ -51,8 +54,7 @@ class AtomPermissionManager : public content::PermissionManager {
 
  protected:
   void OnPermissionResponse(int request_id,
-                            const GURL& url,
-                            const ResponseCallback& callback,
+                            int permission_id,
                             blink::mojom::PermissionStatus status);
 
   // content::PermissionManager:
@@ -76,16 +78,12 @@ class AtomPermissionManager : public content::PermissionManager {
   void UnsubscribePermissionStatusChange(int subscription_id) override;
 
  private:
-  struct RequestInfo {
-    int render_process_id;
-    ResponseCallback callback;
-  };
+  class PendingRequest;
+  using PendingRequestsMap = IDMap<PendingRequest, IDMapOwnPointer>;
 
   RequestHandler request_handler_;
 
-  std::map<int, RequestInfo> pending_requests_;
-
-  int request_id_;
+  PendingRequestsMap pending_requests_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomPermissionManager);
 };
