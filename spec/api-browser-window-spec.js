@@ -236,6 +236,7 @@ describe('BrowserWindow module', function () {
           })
           w.webContents.executeJavaScript(`
             form = document.createElement('form')
+            document.body.appendChild(form)
             form.method = 'POST'
             form.target = '_blank'
             form.submit()
@@ -252,6 +253,7 @@ describe('BrowserWindow module', function () {
           })
           w.webContents.executeJavaScript(`
             form = document.createElement('form')
+            document.body.appendChild(form)
             form.method = 'POST'
             form.target = '_blank'
             form.enctype = 'multipart/form-data'
