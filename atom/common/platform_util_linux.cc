@@ -129,4 +129,9 @@ void Beep() {
   fclose(console);
 }
 
+void SetProcessTitleActivityMonitor(const std::string& name) {
+  setproctitle(name.c_str());
+}
+
+
 }  // namespace platform_util

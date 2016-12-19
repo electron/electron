@@ -376,4 +376,8 @@ void Beep() {
   MessageBeep(MB_OK);
 }
 
+void SetProcessTitleActivityMonitor(const std::string& name) {
+  // NB: Can't implement this on Windows
+}
+
 }  // namespace platform_util
