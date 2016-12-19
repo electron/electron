@@ -63,7 +63,7 @@ The `net` module has the following methods:
 
 * `options` (Object | String) - The `ClientRequest` constructor options.
 
-Returns `ClientRequest`
+Returns [`ClientRequest`](./client-request.md)
 
 Creates a [`ClientRequest`](./client-request.md) instance using the provided
 `options` which are directly forwarded to the `ClientRequest` constructor.
