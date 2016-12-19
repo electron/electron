@@ -581,7 +581,8 @@ Shows pop-up dictionary that searches the selected word on the page.
 
 ### `<webview>.getWebContents()`
 
-Returns `WebContents` - The [WebContents](web-contents.md) associated with this `webview`.
+Returns [`WebContents`](web-contents.md) - The web contents associated with
+this `webview`.
 
 ## DOM events
 

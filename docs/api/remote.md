@@ -144,12 +144,12 @@ Returns `any` - The object returned by `require(module)` in the main process.
 
 ### `remote.getCurrentWindow()`
 
-Returns `BrowserWindow` - The [`BrowserWindow`](browser-window.md) object to which this web page
+Returns [`BrowserWindow`](browser-window.md) - The window to which this web page
 belongs.
 
 ### `remote.getCurrentWebContents()`
 
-Returns `WebContents` - The [`WebContents`](web-contents.md) object of this web page.
+Returns [`WebContents`](web-contents.md) - The web contents of this web page.
 
 ### `remote.getGlobal(name)`
 

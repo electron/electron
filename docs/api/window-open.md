@@ -20,7 +20,8 @@ string.
 * `frameName` String (optional)
 * `features` String (optional)
 
-Returns `BrowserWindowProxy` - Creates a new window and returns an instance of `BrowserWindowProxy` class.
+Returns [`BrowserWindowProxy`](browser-window-proxy.md) - Creates a new window
+and returns an instance of `BrowserWindowProxy` class.
 
 The `features` string follows the format of standard browser, but each feature
 has to be a field of `BrowserWindow`'s options.

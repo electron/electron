@@ -56,7 +56,7 @@ Writes `markup` to the clipboard.
 
 * `type` String (optional)
 
-Returns `NativeImage` - The content in the clipboard as a [NativeImage](native-image.md).
+Returns [`NativeImage`](native-image.md) - The image content in the clipboard.
 
 ### `clipboard.writeImage(image[, type])`
 
