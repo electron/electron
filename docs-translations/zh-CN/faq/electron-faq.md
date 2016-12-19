@@ -16,7 +16,7 @@ Node.js 的新特性通常是由新版本的 V8 带来的。由于 Electron 使�
 
 ## 如何在两个网页间共享数据？
 
-在两个网页（渲染进程）间共享数据最简单的方法是使用浏览器中已经实现的 HTML5 API，比较好的方案是用 [Storage API][storage]，
+在两个网页（渲染进程）间共享数据最简单的方法是使用浏览器中已经实现的 HTML5 API，其中比较好的方案是用 [Storage API][storage]，
 [`localStorage`][local-storage]，[`sessionStorage`][session-storage] 或者 [IndexedDB][indexed-db]。
 
 你还可以用 Electron 内的 IPC 机制实现。将数据存在主进程的某个全局变量中，然后在多个渲染进程中使用 `remote` 模块来访问它。
@@ -30,12 +30,12 @@ global.sharedObject = {
 
 ```javascript
 // 在第一个页面中
-require('remote').getGlobal('sharedObject').someProperty = 'new value'
+require('electron').remote.getGlobal('sharedObject').someProperty = 'new value'
 ```
 
 ```javascript
 // 在第二个页面中
-console.log(require('remote').getGlobal('sharedObject').someProperty)
+console.log(require('electron').remote.getGlobal('sharedObject').someProperty)
 ```
 
 ## 为什么应用的窗口、托盘在一段时间后不见了？
@@ -52,17 +52,21 @@ console.log(require('remote').getGlobal('sharedObject').someProperty)
 从
 
 ```javascript
-app.on('ready', function () {
-  var tray = new Tray('/path/to/icon.png')
+const {app, Tray} = require('electron')
+app.on('ready', () => {
+  const tray = new Tray('/path/to/icon.png')
+  tray.setTitle('hello world')
 })
 ```
 
 改为
 
 ```javascript
-var tray = null
-app.on('ready', function () {
+const {app, Tray} = require('electron')
+let tray = null
+app.on('ready', () => {
   tray = new Tray('/path/to/icon.png')
+  tray.setTitle('hello world')
 })
 ```
 
