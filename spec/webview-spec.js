@@ -891,6 +891,12 @@ describe('<webview> tag', function () {
     function setUpRequestHandler (webview, requestedPermission, completed) {
       var listener = function (webContents, permission, callback) {
         if (webContents.getId() === webview.getId()) {
+          // requestMIDIAccess with sysex requests both midi and midiSysex so
+          // grant the first midi one and then reject the midiSysex one
+          if (requestedPermission == 'midiSysex' && permission == 'midi') {
+            return callback(true)
+          }
+
           assert.equal(permission, requestedPermission)
           callback(false)
           if (completed) completed()
@@ -925,13 +931,26 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
-    it('emits when using navigator.requestMIDIAccess api', function (done) {
+    it('emits when using navigator.requestMIDIAccess without sysex api', function (done) {
       webview.addEventListener('ipc-message', function (e) {
         assert.equal(e.channel, 'message')
         assert.deepEqual(e.args, ['SecurityError'])
         done()
       })
       webview.src = 'file://' + fixtures + '/pages/permissions/midi.html'
+      webview.partition = 'permissionTest'
+      webview.setAttribute('nodeintegration', 'on')
+      setUpRequestHandler(webview, 'midi')
+      document.body.appendChild(webview)
+    })
+
+    it('emits when using navigator.requestMIDIAccess with sysex api', function (done) {
+      webview.addEventListener('ipc-message', function (e) {
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['SecurityError'])
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/permissions/midi-sysex.html'
       webview.partition = 'permissionTest'
       webview.setAttribute('nodeintegration', 'on')
       setUpRequestHandler(webview, 'midiSysex')
