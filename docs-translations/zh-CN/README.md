@@ -6,7 +6,7 @@
 
 这里是一些被经常问到的问题，再提 issue 之前请先看一下这里。
 
-+ [Electron 常见问题](faq/electron-faq.md) 需要更新
++ [Electron 常见问题](faq/electron-faq.md)
 
 ## 向导
 
@@ -83,7 +83,7 @@
 ## 开发
 
 * [代码规范](development/coding-style.md)
-* [在 C++ 代码中试用 clang格式化工具](development/clang-format.md) 未翻译
+* [在 C++ 代码中使用 clang格式化工具](development/clang-format.md) 未翻译
 * [源码目录结构](development/source-code-directory-structure.md)
 * [与 NW.js（原 node-webkit）在技术上的差异](development/atom-shell-vs-node-webkit.md)
 * [构建系统概览](development/build-system-overview.md)
