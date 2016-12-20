@@ -550,6 +550,13 @@ void OffScreenRenderWidgetHostView::UnlockMouse() {
 
 void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
     bool needs_begin_frames) {
+  SetupFrameRate(false);
+
+  begin_frame_timer_->SetActive(needs_begin_frames);
+
+  if (software_output_device_) {
+    software_output_device_->SetActive(needs_begin_frames && painting_);
+  }
 }
 
 void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
@@ -795,13 +802,7 @@ bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
 }
 
 void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
-  SetupFrameRate(false);
-
-  begin_frame_timer_->SetActive(enabled);
-
-  if (software_output_device_) {
-    software_output_device_->SetActive(enabled && painting_);
-  }
+  SetNeedsBeginFrames(enabled);
 }
 
 void OffScreenRenderWidgetHostView::OnPaint(
