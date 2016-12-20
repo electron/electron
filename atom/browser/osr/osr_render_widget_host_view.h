@@ -207,6 +207,8 @@ class OffScreenRenderWidgetHostView
   content::RenderWidgetHostImpl* render_widget_host() const
       { return render_widget_host_; }
   NativeWindow* window() const { return native_window_; }
+  gfx::Size size() const { return size_; }
+  float scale_factor() const { return scale_factor_; }
 
  private:
   void SetupFrameRate(bool force);

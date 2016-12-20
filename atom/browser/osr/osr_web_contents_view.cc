@@ -4,6 +4,8 @@
 
 #include "atom/browser/osr/osr_web_contents_view.h"
 
+#include "third_party/WebKit/public/platform/WebScreenInfo.h"
+
 namespace atom {
 
 OffScreenWebContentsView::OffScreenWebContentsView(
@@ -108,6 +110,14 @@ void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {
 
 void OffScreenWebContentsView::GetScreenInfo(
     blink::WebScreenInfo* web_screen_info) const {
+  web_screen_info->rect = gfx::Rect(view_->size());
+  web_screen_info->availableRect = gfx::Rect(view_->size());
+  web_screen_info->depth = 24;
+  web_screen_info->depthPerComponent = 8;
+  web_screen_info->deviceScaleFactor = view_->scale_factor();
+  web_screen_info->orientationAngle = 0;
+  web_screen_info->orientationType =
+      blink::WebScreenOrientationLandscapePrimary;
 }
 
 #if defined(OS_MACOSX)
