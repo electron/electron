@@ -194,7 +194,6 @@ void WebFrame::InsertCSS(const std::string& css) {
   web_frame_->document().insertStyleSheet(blink::WebString::fromUTF8(css));
 }
 
-
 void WebFrame::ExecuteJavaScript(const base::string16& code,
                                  mate::Arguments* args) {
   bool has_user_gesture = false;
