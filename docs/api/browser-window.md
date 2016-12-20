@@ -30,8 +30,7 @@ you can use the [Frameless Window](frameless-window.md) API.
 
 ## Showing window gracefully
 
-When loading a page in window directly, users will see the progress of loading
-page, which is not good experience for native app. To make the window display
+When loading a page in the window directly, users may see the page load incrementally, which is not a good experience for a native app. To make the window display
 without visual flash, there are two solutions for different situations.
 
 ### Using `ready-to-show` event
