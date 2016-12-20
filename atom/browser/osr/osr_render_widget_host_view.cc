@@ -424,7 +424,7 @@ bool OffScreenRenderWidgetHostView::OnMessageReceived(
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(OffScreenRenderWidgetHostView, message)
     IPC_MESSAGE_HANDLER(ViewHostMsg_SetNeedsBeginFrames,
-                        OnSetNeedsBeginFrames)
+                        SetNeedsBeginFrames)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -546,17 +546,6 @@ bool OffScreenRenderWidgetHostView::LockMouse() {
 }
 
 void OffScreenRenderWidgetHostView::UnlockMouse() {
-}
-
-void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
-    bool needs_begin_frames) {
-  SetupFrameRate(false);
-
-  begin_frame_timer_->SetActive(needs_begin_frames);
-
-  if (software_output_device_) {
-    software_output_device_->SetActive(needs_begin_frames && painting_);
-  }
 }
 
 void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
@@ -801,8 +790,15 @@ bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
   return false;
 }
 
-void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
-  SetNeedsBeginFrames(enabled);
+void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
+    bool needs_begin_frames) {
+  SetupFrameRate(false);
+
+  begin_frame_timer_->SetActive(needs_begin_frames);
+
+  if (software_output_device_) {
+    software_output_device_->SetActive(needs_begin_frames && painting_);
+  }
 }
 
 void OffScreenRenderWidgetHostView::OnPaint(
