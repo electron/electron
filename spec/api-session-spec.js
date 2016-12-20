@@ -25,10 +25,12 @@ describe('session module', function () {
   })
 
   afterEach(function () {
-    if (!document.body.contains(webview)) {
-      document.body.appendChild(webview)
+    if (webview != null) {
+      if (!document.body.contains(webview)) {
+        document.body.appendChild(webview)
+      }
+      webview.remove()
     }
-    webview.remove()
 
     return closeWindow(w).then(function () { w = null })
   })
