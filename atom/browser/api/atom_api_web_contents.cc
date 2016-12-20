@@ -1062,10 +1062,7 @@ void WebContents::InspectElement(int x, int y) {
 
   if (!managed_web_contents()->GetDevToolsWebContents())
     OpenDevTools(nullptr);
-  scoped_refptr<content::DevToolsAgentHost> agent(
-    content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
-  // FIXME(zcbenz): Figure out how to implement this for Chrome 54.
-  agent->InspectElement(nullptr, x, y);
+  managed_web_contents()->InspectElement(x, y);
 }
 
 void WebContents::InspectServiceWorker() {
