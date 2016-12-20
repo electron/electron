@@ -277,4 +277,12 @@ describe('webContents module', function () {
       done()
     })
   })
+
+  it('supports inspecting an element in the devtools', function (done) {
+    w.loadURL('about:blank')
+    w.webContents.once('devtools-opened', function () {
+      done()
+    })
+    w.webContents.inspectElement(10, 10)
+  })
 })
