@@ -175,7 +175,6 @@ class OffScreenRenderWidgetHostView
 
   bool InstallTransparency();
   bool IsAutoResizeEnabled() const;
-  void OnSetNeedsBeginFrames(bool enabled);
 
   // NativeWindowObserver:
   void OnWindowResize() override;
