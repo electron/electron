@@ -893,7 +893,7 @@ describe('<webview> tag', function () {
         if (webContents.getId() === webview.getId()) {
           // requestMIDIAccess with sysex requests both midi and midiSysex so
           // grant the first midi one and then reject the midiSysex one
-          if (requestedPermission == 'midiSysex' && permission == 'midi') {
+          if (requestedPermission === 'midiSysex' && permission === 'midi') {
             return callback(true)
           }
 
