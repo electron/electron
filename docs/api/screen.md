@@ -118,5 +118,5 @@ Returns [`Display`](structures/display.md) - The display nearest the specified p
 
 * `rect` [Rectangle](structures/rectangle.md)
 
-Returns `Display`](structures/display.md) - The display that most closely
+Returns [`Display`](structures/display.md) - The display that most closely
 intersects the provided bounds.
