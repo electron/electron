@@ -76,7 +76,9 @@ ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted) {
     case '|': *shifted = true; case '\\': return ui::VKEY_OEM_5;
     case '}': *shifted = true; case ']': return ui::VKEY_OEM_6;
     case '"': *shifted = true; case '\'': return ui::VKEY_OEM_7;
-    case '±': *shifted = true; case '§': return ui::VKEY_OEM_8;
+    
+    // ± and § respectively (from Apple UK keyboard)
+    case '\xB1': *shifted = true; case '\xA7': return ui::VKEY_OEM_8;
 
     default: return ui::VKEY_UNKNOWN;
   }
