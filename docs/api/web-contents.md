@@ -2,7 +2,7 @@
 
 > Render and control web pages.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 `webContents` is an
 [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
@@ -49,7 +49,7 @@ Returns `WebContents` - A WebContents instance with the given ID.
 
 > Render and control the contents of a BrowserWindow instance.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 ### Instance Events
 
