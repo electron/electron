@@ -11,6 +11,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/base/elements_upload_data_stream.h"
 #include "net/base/io_buffer.h"
+#include "net/base/load_flags.h"
 #include "net/base/upload_bytes_element_reader.h"
 
 namespace {
@@ -113,6 +114,8 @@ void AtomURLRequest::DoInitialize(
     return;
   }
   request_->set_method(method);
+  // Do not send cookies from the cookie store.
+  DoSetLoadFlags(net::LOAD_DO_NOT_SEND_COOKIES);
 }
 
 void AtomURLRequest::DoTerminate() {
