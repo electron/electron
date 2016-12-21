@@ -46,6 +46,8 @@ The full Node API is built in.
 Every app's main process file is specified in the `main` property in
 `package.json`. This is how `electron .` knows what file to execute at startup.
 
+See also: [process](#process), [renderer process](#renderer-process)
+
 ### MAS
 
 Acronym for Apple's Mac App Store. For details on submitting your app to the
@@ -85,6 +87,8 @@ object is a global that provides information about, and control over, the
 current process. As a global, it is always available to applications without
 using require().
 
+See also: [main process](#main-process), [renderer process](#renderer-process)
+
 ### renderer process
 
 The renderer process is a browser window in your app. Unlike the main process,
@@ -95,6 +99,8 @@ In normal browsers, web pages usually run in a sandboxed environment and are not
 allowed access to native resources. Electron users, however, have the power to
 use Node.js APIs in web pages allowing lower level operating system
 interactions.
+
+See also: [process](#process), [main process](#main-process)
 
 ### Squirrel
 
