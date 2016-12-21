@@ -5,7 +5,7 @@ Follow the guidelines below for building Electron on Linux.
 ## Prerequisites
 
 * At least 25GB disk space and 8GB RAM.
-* Python 2.7.x. Some distributions like CentOS still use Python 2.6.x
+* Python 2.7.x. Some distributions like CentOS 6.x still use Python 2.6.x
   so you may need to check your Python version with `python -V`.
 * Node.js. There are various ways to install Node. You can download
   source code from [Node.js](http://nodejs.org) and compile from source.
@@ -24,13 +24,22 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        gperf bison
 ```
 
+On RHEL / CentOS, install the following libraries:
+
+```bash
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
+```
+
 On Fedora, install the following libraries:
 
 ```bash
-$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
-                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
-                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel bison \
-                   gperf
+$ sudo dnf install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
 ```
 
 Other distributions may offer similar packages for installation via package

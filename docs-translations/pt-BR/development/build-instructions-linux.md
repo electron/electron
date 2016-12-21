@@ -4,11 +4,11 @@ Siga as orientações abaixo pra fazer o build do Electron no Linux.
 
 ## Pré-requisitos
 
-* Python 2.7.x. Algumas distribuições como CentOS ainda usam Python 2.6.x,
+* Python 2.7.x. Algumas distribuições como CentOS 6.x ainda usam Python 2.6.x,
   então você precisa checar a sua versão do Python com `python -V`.
 * Node.js v0.12.x. Há várias maneiras de instalar o Node. Você pode baixar o
   código fonte do [Node.js](http://nodejs.org) e compilar a partir dele.
-  Fazer isto permite que você instale o Node no seu próprio diretório home 
+  Fazer isto permite que você instale o Node no seu próprio diretório home
   como um usuário comum.
   Ou tente repositórios como [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories).
 * Clang 3.4 ou mais recente.
@@ -23,12 +23,22 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib
 ```
 
+No RHEL / CentOS, instale as seguintes bibliotecas:
+
+```bash
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
+```
+
 No Fedora, instale as seguintes bibliotecas:
 
 ```bash
-$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
-                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
-                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+$ sudo dnf install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
 ```
 
 Outras distribuições podem oferecer pacotes similares para instalação através
@@ -121,7 +131,7 @@ Certifique-se de que você tenha instalado todas as dependências do build.
 ### Error While Loading Shared Libraries: libtinfo.so.5
 
 O `clang` prebuilt irá tentar fazer o link com `libtinfo.so.5`. Dependendo
-da arquitetura do host, faça um link simbólico para o `libncurses` apropriado: 
+da arquitetura do host, faça um link simbólico para o `libncurses` apropriado:
 
 ```bash
 $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
