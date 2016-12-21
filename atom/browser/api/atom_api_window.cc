@@ -92,11 +92,9 @@ Window::Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
 
     // Offscreen windows are always created frameless.
     bool offscreen;
-    if (web_preferences.Get("offscreen", &offscreen)) {
-      if (offscreen) {
-        auto window_options = const_cast<mate::Dictionary&>(options);
-        window_options.Set(options::kFrame, false);
-      }
+    if (web_preferences.Get("offscreen", &offscreen) && offscreen) {
+      auto window_options = const_cast<mate::Dictionary&>(options);
+      window_options.Set(options::kFrame, false);
     }
 
     // Creates the WebContents used by BrowserWindow.
