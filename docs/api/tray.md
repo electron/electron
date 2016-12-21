@@ -154,7 +154,7 @@ Destroys the tray icon immediately.
 
 #### `tray.setImage(image)`
 
-* `image` [NativeImage](native-image.md)
+* `image` ([NativeImage](native-image.md) | String)
 
 Sets the `image` associated with this tray icon.
 
@@ -210,9 +210,9 @@ win.on('hide', () => {
 #### `tray.displayBalloon(options)` _Windows_
 
 * `options` Object
-  * `icon` [NativeImage](native-image.md)
-  * `title` String
-  * `content` String
+  * `icon` ([NativeImage](native-image.md) | String) - (optional)
+  * `title` String - (optional)
+  * `content` String - (optional)
 
 Displays a tray balloon.
 

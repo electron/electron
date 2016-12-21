@@ -189,7 +189,7 @@ Returns:
 
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
-* `url` URL
+* `url` String
 * `error` String - The error code
 * `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
@@ -845,7 +845,7 @@ When `informational` is passed, the dock icon will bounce for one second.
 However, the request remains active until either the application becomes active
 or the request is canceled.
 
-Returns an ID representing the request.
+Returns `Integer` an ID representing the request.
 
 ### `app.dock.cancelBounce(id)` _macOS_
 
@@ -891,7 +891,7 @@ Sets the application's [dock menu][dock-menu].
 
 ### `app.dock.setIcon(image)` _macOS_
 
-* `image` [NativeImage](native-image.md)
+* `image` ([NativeImage](native-image.md) | String)
 
 Sets the `image` associated with this dock icon.
 

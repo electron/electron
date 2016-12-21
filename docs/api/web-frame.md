@@ -66,6 +66,8 @@ Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 * `language` String
 * `autoCorrectWord` Boolean
 * `provider` Object
+  * `spellCheck` Function - Returns `Boolean`
+    * `text` String
 
 Sets a provider for spell checking in input fields and text areas.
 
@@ -127,10 +129,12 @@ webFrame.registerURLSchemeAsPrivileged('foo', { bypassCSP: false })
 
 Inserts `text` to the focused element.
 
-### `webFrame.executeJavaScript(code[, userGesture])`
+### `webFrame.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
 * `userGesture` Boolean (optional) - Default is `false`.
+* `callback` Function (optional) - Called after script has been executed.
+  * `result` Any
 
 Evaluates `code` in page.
 

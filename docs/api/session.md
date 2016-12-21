@@ -200,7 +200,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Match local addresses. The meaning of `<local>` is whether the
    host matches one of: "127.0.0.1", "::1", "localhost".
 
-### `ses.resolveProxy(url, callback)`
+#### `ses.resolveProxy(url, callback)`
 
 * `url` URL
 * `callback` Function
