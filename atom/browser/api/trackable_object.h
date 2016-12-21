@@ -65,6 +65,12 @@ class TrackableObject : public TrackableObjectBase,
     Wrappable<T>::GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
   }
 
+  bool IsDestroyed() {
+    v8::Local<v8::Object> wrapper = Wrappable<T>::GetWrapper();
+    return wrapper->InternalFieldCount() == 0 ||
+           wrapper->GetAlignedPointerFromInternalField(0) == nullptr;
+  }
+
   // Finds out the TrackableObject from its ID in weak map.
   static T* FromWeakMapID(v8::Isolate* isolate, int32_t id) {
     if (!weak_map_)
