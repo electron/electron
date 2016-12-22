@@ -39,7 +39,7 @@ app.on('ready', () => {
 
 也就是说，它对于你使用过 Node.js 的 [HTTP](https://nodejs.org/api/http.html)/[HTTPS](https://nodejs.org/api/https.html) 模块来说是非常的相似的。
 
-`net` API 只有在应用触发 `ready` 事件后才可以使用。如果再 `ready` 事件前尝试使用会抛出一个错误。
+`net` API 只有在应用触发 `ready` 事件后才可以使用。如果在 `ready` 事件前尝试使用会抛出一个错误。
 
 ## 方法
 
