@@ -18,7 +18,7 @@ The `systemPreferences` object emits the following events:
 Returns:
 
 * `event` Event
-* `newColor` String - The new RGBA color the user assigned to be there system
+* `newColor` String - The new RGBA color the user assigned to be their system
   accent color.
 
 ### Event: 'color-changed' _Windows_
