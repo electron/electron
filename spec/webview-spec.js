@@ -6,7 +6,7 @@ const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} =
 const {closeWindow} = require('./window-helpers')
 
 describe('<webview> tag', function () {
-  this.timeout(60000)
+  this.timeout(3 * 60 * 1000)
 
   var fixtures = path.join(__dirname, 'fixtures')
 

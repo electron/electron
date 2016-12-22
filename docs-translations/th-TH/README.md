@@ -25,7 +25,7 @@
 ### การปรับแต่ง DOM:
 
 * [วัตถุ `File`](api/file-object.md)
-* [แท็ก `<webview>`](api/web-view-tag.md)
+* [แท็ก `<webview>`](api/webview-tag.md)
 * [ฟังก์ชัน `window.open`](api/window-open.md)
 
 ### โมดูลสำหรับกระบวนการหลัก :
