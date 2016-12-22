@@ -46,14 +46,23 @@ geocoding requests. To enable geocoding requests, visit [this page](https://cons
 Disables ASAR support. This variable is only supported in forked child processes
 and spawned child processes that set `ELECTRON_RUN_AS_NODE`.
 
+### `ELECTRON_RUN_AS_NODE`
+
+Starts the process as a normal Node.js process.
+
+### `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
+
+Don't attach to the current console session.
+
+### `ELECTRON_FORCE_WINDOW_MENU_BAR` _Linux_
+
+Don't use the global menu bar on Linux.
+
 ## Development Variables
 
 The following environment variables are intended primarily for development and
 debugging purposes.
 
-### `ELECTRON_RUN_AS_NODE`
-
-Starts the process as a normal Node.js process.
 
 ### `ELECTRON_ENABLE_LOGGING`
 
@@ -76,11 +85,3 @@ This environment variable will not work if the `crashReporter` is started.
 Shows the Windows's crash dialog when Electron crashes.
 
 This environment variable will not work if the `crashReporter` is started.
-
-### `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
-
-Don't attach to the current console session.
-
-### `ELECTRON_FORCE_WINDOW_MENU_BAR` _Linux_
-
-Don't use the global menu bar on Linux.
