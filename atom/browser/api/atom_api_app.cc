@@ -672,7 +672,7 @@ void App::ReleaseSingleInstance() {
 
 #if defined(OS_MACOSX)
 #else
-void App::InitializeAsMediaPlayer() {}
+void App::InitializeAsMediaPlayer(mate::Arguments* args) {}
 void App::SetNowPlaying(mate::Arguments* args) {}
 #endif
 
