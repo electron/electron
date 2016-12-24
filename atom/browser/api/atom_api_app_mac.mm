@@ -13,12 +13,19 @@
 #include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
 
+#include "MediaPlayer/MPNowPlayingInfoCenter.h"
+#include "MediaPlayer/MPRemoteCommandCenter.h"
+#include "MediaPlayer/MPRemoteCommand.h"
+#include "MediaPlayer/MPMediaItem.h"
+#include "MediaPlayer/MPRemoteCommandEvent.h"
+
 #include "atom/common/node_includes.h"
 
 @interface ElectronMediaController : NSObject {
 }
 - (void)setApp:(atom::api::App*)atomApp;
-- (void)setOptions:(mate::Dictionary)opts;
+- (void)setNowPlaying:(mate::Dictionary)dict withArgs:(mate::Arguments*)args;
+- (void)initialize;
 @end
 
 @implementation ElectronMediaController
@@ -26,50 +33,67 @@
 
 - (void)setApp:(atom::api::App*)atomApp {
   _app = atomApp;
-  _app->Emit("foo");
 }
 
-- (void)setOptions:(mate::Dictionary)opts {
-  bool skipB = false;
-  opts.Get("skipBackward", &skipB);
-  bool skipF = false;
-  opts.Get("skipForward", &skipF);
-  bool seekB = false;
-  opts.Get("seekBackward", &seekB);
-  bool seekF = false;
-  opts.Get("seekForward", &seekF);
-  bool togglePP = false;
-  opts.Get("togglePlayPause", &togglePP);
-  bool pause = false;
-  opts.Get("pause", &pause);
-  bool play = false;
-  opts.Get("play", &play);
-  bool stop = false;
-  opts.Get("stop", &stop);
-  bool changeRate = false;
-  opts.Get("changeRate", &changeRate);
-  bool nextTrack = false;
-  opts.Get("nextTrack", &nextTrack);
-  bool prevTrack = false;
-  opts.Get("previousTrack", &prevTrack);
-  bool changeRating = false;
-  opts.Get("rating", &changeRating);
-  bool changeLike = false;
-  opts.Get("like", &changeLike);
-  bool changeDislike = false;
-  opts.Get("dislike", &changeDislike);
-
+- (void)initialize {
   MPRemoteCommandCenter *remoteCommandCenter = [MPRemoteCommandCenter sharedCommandCenter];
-  if (play) [[remoteCommandCenter playCommand] addTarget:self action:@selector(remotePlay)];
+  [remoteCommandCenter playCommand].enabled = true;
+  [remoteCommandCenter pauseCommand].enabled = true;
+  [remoteCommandCenter togglePlayPauseCommand].enabled = true;
+  [remoteCommandCenter changePlaybackPositionCommand].enabled = true;
 
-  // [[remoteCommandCenter skipForwardCommand] addTarget:self action:@selector(remoteSkipForward)];
-  // [[remoteCommandCenter skipForwardCommand] addTarget:self action:@selector(remoteSkipForward)];
-  // [[remoteCommandCenter togglePlayPauseCommand] addTarget:self action:@selector(remoteTogglePlayPause)];
-  // [[remoteCommandCenter pauseCommand] addTarget:self action:@selector(remotePause)];
-  // [[remoteCommandCenter stopCommand] addTarget:self action:@selector(remoteStop)];
+  [[remoteCommandCenter playCommand] addTarget:self action:@selector(remotePlay)];
+  [[remoteCommandCenter pauseCommand] addTarget:self action:@selector(remotePause)];
+  [[remoteCommandCenter togglePlayPauseCommand] addTarget:self action:@selector(remoteTogglePlayPause)];
+  [[remoteCommandCenter changePlaybackPositionCommand] addTarget:self action:@selector(remoteChangePlaybackPosition:)];
 }
 
-- (void)remotePlay { NSLog("@play"); }
+- (void)remotePlay { _app->Emit("playback-play"); }
+- (void)remotePause { _app->Emit("playback-pause"); }
+- (void)remoteTogglePlayPause { _app->Emit("playback-play-pause"); }
+
+- (void)remoteChangePlaybackPosition:(MPChangePlaybackPositionCommandEvent*)event {
+  _app->Emit("playback-change-position", event.positionTime);
+}
+
+- (MPRemoteCommandHandlerStatus)move:(MPChangePlaybackPositionCommandEvent*)event {
+  return MPRemoteCommandHandlerStatusSuccess;
+}
+
+- (void)setNowPlaying:(mate::Dictionary)dict withArgs:(mate::Arguments*)args {
+  NSMutableDictionary *songInfo = [[NSMutableDictionary alloc] init];
+
+  int songID;
+  int currentTime;
+  int duration;
+  std::string title;
+  std::string artist;
+  std::string album;
+  std::string state;
+
+  if (!dict.Get("currentTime", &currentTime) || !dict.Get("duration", &duration) ||
+      !dict.Get("title", &title) || !dict.Get("artist", &artist) || !dict.Get("album", &album) ||
+      !dict.Get("id", &songID) || !dict.Get("state", &state)) {
+    args->ThrowError("Missing required property on the Nowplaying object");
+    return;
+  }
+
+  [songInfo setObject:[NSString stringWithUTF8String:title.c_str()] forKey:MPMediaItemPropertyTitle];
+  [songInfo setObject:[NSString stringWithUTF8String:artist.c_str()] forKey:MPMediaItemPropertyArtist];
+  [songInfo setObject:[NSString stringWithUTF8String:album.c_str()] forKey:MPMediaItemPropertyAlbumTitle];
+  [songInfo setObject:[NSNumber numberWithFloat:currentTime] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
+  [songInfo setObject:[NSNumber numberWithFloat:duration] forKey:MPMediaItemPropertyPlaybackDuration];
+  [songInfo setObject:[NSNumber numberWithFloat:songID] forKey:MPMediaItemPropertyPersistentID];
+
+  if (state == "playing") {
+    [MPNowPlayingInfoCenter defaultCenter].playbackState = MPNowPlayingPlaybackStatePlaying;
+  } else if (state == "paused") {
+    [MPNowPlayingInfoCenter defaultCenter].playbackState = MPNowPlayingPlaybackStatePaused;
+  } else {
+    [MPNowPlayingInfoCenter defaultCenter].playbackState = MPNowPlayingPlaybackStateStopped;
+  }
+  [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:songInfo];
+}
 
 @end
 
@@ -84,29 +108,28 @@ namespace api {
       args->ThrowError("You can only initialize the app as a media player once");
       return;
     }
-    mate::Dictionary opts;
-    if (!args->GetNext(&opts)) {
-      args->ThrowError("The first argument must be an options object");
-      return;
-    }
+
     if (!controller) {
       controller = [[ElectronMediaController alloc] init];
       [controller setApp:this];
-      [controller setOptions:opts];
+      [controller initialize];
     }
     media_controller_initialized_ = true;
   }
 
   void App::SetNowPlaying(mate::Arguments* args) {
     if (!media_controller_initialized_) {
-      args->ThrowError("You must initialize the app as a media player before settings now playing");
+      args->ThrowError("You must initialize the app as a media player before setting now playing");
       return;
     }
+
     mate::Dictionary opts;
     if (!args->GetNext(&opts)) {
       args->ThrowError("The first argument must be an options object");
       return;
     }
+
+    [controller setNowPlaying:opts withArgs:args];
   }
 
 }  // namespace api

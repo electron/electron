@@ -108,7 +108,7 @@ class App : public AtomBrowserClient::Delegate,
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus status) override;
 
-  virtual void InitializeAsMediaPlayer();
+  virtual void InitializeAsMediaPlayer(mate::Arguments* args);
   virtual void SetNowPlaying(mate::Arguments* args);
 
  private:
