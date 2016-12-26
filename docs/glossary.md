@@ -12,9 +12,10 @@ The ASAR format was created primarily to improve performance on Windows... TODO
 
 ### Brightray
 
-Brightray is a static library that makes [libchromiumcontent] easier to use in
-applications. It was created specifically for Electron, but can be used to
-enable Chromium's renderer in native apps that are not based on Electron.
+[Brightray][brightray] is a static library that makes [libchromiumcontent]
+easier to use in applications. It was created specifically for Electron, but can
+be used to enable Chromium's renderer in native apps that are not based on
+Electron.
 
 Brightray is a low-level dependency of Electron that does not concern the
 majority of Electron users.
@@ -139,7 +140,9 @@ embedded content will be asynchronous. This keeps your app safe from the
 embedded content.
 
 [addons]: https://nodejs.org/api/addons.html
+[asar]: https://github.com/electron/asar
 [autoUpdater]: api/auto-updater.md
+[brightray]: https://github.com/electron/brightray
 [electron-builder]: https://github.com/electron-userland/electron-builder
 [libchromiumcontent]: #libchromiumcontent
 [Mac App Store Submission Guide]: tutorials/mac-app-store-submission-guide.md
