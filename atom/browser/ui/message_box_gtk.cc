@@ -5,6 +5,7 @@
 #include "atom/browser/ui/message_box.h"
 
 #include "atom/browser/browser.h"
+#include "atom/browser/native_window_observer.h"
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
@@ -25,7 +26,7 @@ namespace atom {
 
 namespace {
 
-class GtkMessageBox {
+class GtkMessageBox : public NativeWindowObserver {
  public:
   GtkMessageBox(NativeWindow* parent_window,
                 MessageBoxType type,
@@ -77,6 +78,7 @@ class GtkMessageBox {
 
     // Parent window.
     if (parent_) {
+      parent_->AddObserver(this);
       parent_->SetEnabled(false);
       libgtk2ui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
       gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
@@ -85,8 +87,10 @@ class GtkMessageBox {
 
   ~GtkMessageBox() {
     gtk_widget_destroy(dialog_);
-    if (parent_)
+    if (parent_) {
+      parent_->RemoveObserver(this);
       parent_->SetEnabled(true);
+    }
   }
 
   GtkMessageType GetMessageType(MessageBoxType type) {
@@ -142,6 +146,11 @@ class GtkMessageBox {
     g_signal_connect(dialog_, "response",
                      G_CALLBACK(OnResponseDialogThunk), this);
     Show();
+  }
+
+  void OnWindowClosed() override {
+    parent_->RemoveObserver(this);
+    parent_ = nullptr;
   }
 
   CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, int);

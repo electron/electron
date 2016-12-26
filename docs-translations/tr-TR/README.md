@@ -37,7 +37,7 @@ Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
 ### Özel DOM Elementleri:
 
 * [`File` Nesnesi](api/file-object.md)
-* [`<webview>` Etiketi](https://github.com/electron/electron/tree/master/docs/api/web-view-tag.md)
+* [`<webview>` Etiketi](https://github.com/electron/electron/tree/master/docs/api/webview-tag.md)
 * [`window.open` Fonksiyonu](https://github.com/electron/electron/tree/master/docs/api/window-open.md)
 
 ### Ana Süreç(Main Process) Modülleri:

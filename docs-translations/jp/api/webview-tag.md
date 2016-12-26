@@ -396,11 +396,11 @@ Executes editing command `undo` in page.
   * `wordStart` Boolean - ワード始まりからの検索かを指定します。省略時は`false`で、語途中でもマッチします。
   * `medialCapitalAsWordStart` Boolean - `wordStart`指定時、CamelCaseの途中もワード始まりと見なすかを指定します。省略時は`false`です。
 
-`text`をページ内全てから検索し、リクエストに使用するリクエストID(`Integer`)を返します。リクエストの結果は、[`found-in-page`](web-view-tag.md#event-found-in-page)イベントを介して受け取ることができます。
+`text`をページ内全てから検索し、リクエストに使用するリクエストID(`Integer`)を返します。リクエストの結果は、[`found-in-page`](webview-tag.md#event-found-in-page)イベントを介して受け取ることができます。
 
 ### `<webview>.stopFindInPage(action)`
 
-* `action` String - [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage)リクエストを終わらせる時にとるアクションを指定します。
+* `action` String - [`<webview>.findInPage`](webview-tag.md#webviewtagfindinpage)リクエストを終わらせる時にとるアクションを指定します。
   * `clearSelection` - 選択をクリアします。
   * `keepSelection` - 選択を通常の選択へと変換します。
   * `activateSelection` - 選択ノードにフォーカスを当て、クリックします。
@@ -573,7 +573,7 @@ webview.addEventListener('console-message', (e) => {
   * `matches` Integer (optional) - マッチした数です。
   * `selectionArea` Object (optional) - 最初のマッチした場所です。
 
-[`webview.findInPage`](web-view-tag.md#webviewtagfindinpage)リクエストで結果が得られた場合に発生します。
+[`webview.findInPage`](webview-tag.md#webviewtagfindinpage)リクエストで結果が得られた場合に発生します。
 
 ```javascript
 webview.addEventListener('found-in-page', (e) => {
