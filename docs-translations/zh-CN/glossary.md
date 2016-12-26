@@ -4,7 +4,7 @@
 
 ### ASAR
 
-ASAR 代表了 Atom Shell Archive Format。一个 [asar][asar] 压缩包就是一个简单的 `tar` 文件-就像将那些有联系的文件格式化至一个单独的文件中。Electron 能够任意读取其中的文件并且不需要解压缩整个文件。
+ASAR 代表了 Atom Shell Archive Format。一个 asar 压缩包就是一个简单的 `tar` 文件-就像将那些有联系的文件格式化至一个单独的文件中。Electron 能够任意读取其中的文件并且不需要解压缩整个文件。
 
 ASAR 格式主要是为了提升 Windows 平台上的性能。TODO
 
@@ -20,7 +20,7 @@ Brightray 是 Electron 中的一个低级别的依赖，大部分的 Electron �
 
 ### IPC
 
-IPC 代表 Inter-Process Communication。Electron 使用 IPC 来在 [主进程] 和 [渲染进程] 进件传递 JSON 信息。
+IPC 代表 Inter-Process Communication。Electron 使用 IPC 来在 [主进程] 和 [渲染进程] 之间传递 JSON 信息。
 
 ### libchromiumcontent
 
@@ -32,7 +32,7 @@ IPC 代表 Inter-Process Communication。Electron 使用 IPC 来在 [主进程] 
 
 每个 app 的主进程文件都定义在 `package.json` 中的 `main` 属性当中，这也是为什么 `electron .` 能够知道应该使用哪个文件来启动。
 
-参见： [process](#process), [renderer-process](#renderer-process)
+参见： [process](#process), [renderer process](#renderer-process)
 
 ### MAS
 
@@ -78,7 +78,7 @@ Squirrel 是一个开源的框架来让 Electron 的应用能够自动的更新�
 
 ### V8
 
-V8 是谷歌公司的开源的 JavaScript 引擎。他使用 C++ 编写并使用在谷歌公司开源的的浏览器 Google Chrome 上。V8 能够单独运行或者集成在任何一个 C++ 应用内。
+V8 是谷歌公司的开源的 JavaScript 引擎。它使用 C++ 编写并使用在谷歌公司开源的的浏览器 Google Chrome 上。V8 能够单独运行或者集成在任何一个 C++ 应用内。
 
 ### webview
 
