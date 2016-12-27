@@ -6,7 +6,7 @@ var childProcess = require('child_process')
 tape('fails for unsupported platforms', function (t) {
   install({npm_config_platform: 'android'}, function (code, stderr) {
     t.notEqual(stderr.indexOf('Electron builds are not available on platform: android'), -1, 'has error message')
-    t.equal(code, 1, 'exited with 1')
+    t.notEqual(code, 0, 'exited with error')
     t.end()
   })
 })
@@ -20,7 +20,7 @@ tape('fails for unknown architectures', function (t) {
   }, function (code, stderr) {
     t.notEqual(stderr.indexOf('Failed to find Electron'), -1, 'has error message')
     t.notEqual(stderr.indexOf('win32-midcentury'), -1, 'has error message')
-    t.equal(code, 1, 'exited with 1')
+    t.notEqual(code, 0, 'exited with error')
     t.end()
   })
 })
