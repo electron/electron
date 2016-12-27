@@ -47,9 +47,9 @@ download({
 // unzips and makes path.txt point at the correct executable
 function extractFile (err, zipPath) {
   if (err) return onerror(err)
-  fs.writeFile(path.join(__dirname, 'path.txt'), paths[platform], function (err) {
+  extract(zipPath, {dir: path.join(__dirname, 'dist')}, function (err) {
     if (err) return onerror(err)
-    extract(zipPath, {dir: path.join(__dirname, 'dist')}, function (err) {
+    fs.writeFile(path.join(__dirname, 'path.txt'), paths[platform], function (err) {
       if (err) return onerror(err)
     })
   })
