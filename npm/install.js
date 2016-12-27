@@ -12,7 +12,7 @@ var download = require('electron-download')
 var installedVersion = null
 try {
   installedVersion = fs.readFileSync(path.join(__dirname, 'dist', 'version'), 'utf-8').replace(/^v/, '')
-} catch (err) {
+} catch (ignored) {
   // do nothing
 }
 
