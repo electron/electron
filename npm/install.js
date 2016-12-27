@@ -16,27 +16,7 @@ try {
   // do nothing
 }
 
-var platform = process.env.npm_config_platform || os.platform()
-
-function onerror (err) {
-  throw err
-}
-
-function getPath (platform) {
-  switch (platform) {
-    case 'darwin':
-      return 'dist/Electron.app/Contents/MacOS/Electron'
-    case 'freebsd':
-    case 'linux':
-      return 'dist/electron'
-    case 'win32':
-      return 'dist/electron.exe'
-    default:
-      throw new Error('Electron builds are not available on platform: ' + platform)
-  }
-}
-
-var platformPath = getPath(platform)
+var platformPath = getPlatformPath()
 
 if (installedVersion === version && fs.existsSync(path.join(__dirname, platformPath))) {
   process.exit(0)
@@ -60,4 +40,24 @@ function extractFile (err, zipPath) {
       if (err) return onerror(err)
     })
   })
+}
+
+function onerror (err) {
+  throw err
+}
+
+function getPlatformPath () {
+  var platform = process.env.npm_config_platform || os.platform()
+
+  switch (platform) {
+    case 'darwin':
+      return 'dist/Electron.app/Contents/MacOS/Electron'
+    case 'freebsd':
+    case 'linux':
+      return 'dist/electron'
+    case 'win32':
+      return 'dist/electron.exe'
+    default:
+      throw new Error('Electron builds are not available on platform: ' + platform)
+  }
 }
