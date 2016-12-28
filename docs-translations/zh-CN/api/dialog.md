@@ -79,7 +79,7 @@ console.log(dialog.showOpenDialog({properties: ['openFile', 'openDirectory', 'mu
   * `detail` String - 额外信息.
   * `icon` [NativeImage](native-image.md)
   * `cancelId` Integer - 当用户关闭对话框的时候，不是通过点击对话框的button，就返回值.默认值为对应 "cancel" 或 "no" 标签button 的索引值, 或者如果没有这种button，就返回0. 在 macOS 和  Windows 上， "Cancel" button 的索引值将一直是 `cancelId`, 不管之前是不是特别指出的.
-  * `noLink` Boolean - 在 Windows ，Electron 将尝试识别哪个button 是普通 button (如 "Cancel" 或 "Yes"), 然后再对话框中以链接命令(command links)方式展现其它的 button . 这能让对话框展示得很炫酷.如果你不喜欢这种效果，你可以设置 `noLink` 为 `true`.
+  * `noLink` Boolean - 在 Windows ，Electron 将尝试识别哪个button 是普通 button (如 "Cancel" 或 "Yes"), 然后在对话框中以链接命令(command links)方式展现其它的 button . 这能让对话框展示得很炫酷.如果你不喜欢这种效果，你可以设置 `noLink` 为 `true`.
 * `callback` Function
 
 展示 message box, 它会阻塞进程，直到 message box 关闭为止.返回点击按钮的索引值.
