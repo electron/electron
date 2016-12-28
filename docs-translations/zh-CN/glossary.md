@@ -4,13 +4,13 @@
 
 ### ASAR
 
-ASAR 代表了 Atom Shell Archive Format。一个 asar 压缩包就是一个简单的 `tar` 文件-就像将那些有联系的文件格式化至一个单独的文件中。Electron 能够任意读取其中的文件并且不需要解压缩整个文件。
+ASAR 代表了 Atom Shell Archive Format。一个 [asar][asar] 压缩包就是一个简单的 `tar` 文件-就像将那些有联系的文件格式化至一个单独的文件中。Electron 能够任意读取其中的文件并且不需要解压缩整个文件。
 
 ASAR 格式主要是为了提升 Windows 平台上的性能。TODO
 
 ### Brightray
 
-Brightray 是能够简单的将 [libchromiumcontent] 应用到应用中的一个静态库。它是专门开发给 Electron 使用，但是也能够使用在那些没有基于 Electron 的原生应用来启用 Chromium 的渲染引擎。
+[Brightray][brightray] 是能够简单的将 [libchromiumcontent] 应用到应用中的一个静态库。它是专门开发给 Electron 使用，但是也能够使用在那些没有基于 Electron 的原生应用来启用 Chromium 的渲染引擎。
 
 Brightray 是 Electron 中的一个低级别的依赖，大部分的 Electron 用户不用关心它。
 
@@ -85,7 +85,9 @@ V8 是谷歌公司的开源的 JavaScript 引擎。它使用 C++ 编写并使用
 `webview` 标签用于集成 'guest（访客）' 内容（比如外部的网页）在你的 Electron 应用内。它们类似于 `iframe`，但是不同的是每个 webview 运行在独立的进程中。 作为页面它拥有不一样的权限并且所有的嵌入的内容和你应用之间的交互都将是异步的。这将保证你的应用对于嵌入的内容的安全性。
 
 [addons]: https://nodejs.org/api/addons.html
+[asar]: https://github.com/electron/asar
 [autoUpdater]: api/auto-updater.md
+[brightray]: https://github.com/electron/brightray
 [electron-builder]: https://github.com/electron-userland/electron-builder
 [libchromiumcontent]: #libchromiumcontent
 [Mac App Store Submission Guide]: tutorials/mac-app-store-submission-guide.md
