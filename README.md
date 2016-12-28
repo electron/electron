@@ -73,7 +73,7 @@ forums
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
-- [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(Japanese)*
+- [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
 - [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
 
