@@ -12,26 +12,13 @@ var download = require('electron-download')
 var installedVersion = null
 try {
   installedVersion = fs.readFileSync(path.join(__dirname, 'dist', 'version'), 'utf-8').replace(/^v/, '')
-} catch (err) {
+} catch (ignored) {
   // do nothing
 }
 
-var platform = process.env.npm_config_platform || os.platform()
+var platformPath = getPlatformPath()
 
-function onerror (err) {
-  throw err
-}
-
-var paths = {
-  darwin: 'dist/Electron.app/Contents/MacOS/Electron',
-  freebsd: 'dist/electron',
-  linux: 'dist/electron',
-  win32: 'dist/electron.exe'
-}
-
-if (!paths[platform]) throw new Error('Electron builds are not available on platform: ' + platform)
-
-if (installedVersion === version && fs.existsSync(path.join(__dirname, paths[platform]))) {
+if (installedVersion === version && fs.existsSync(path.join(__dirname, platformPath))) {
   process.exit(0)
 }
 
@@ -47,10 +34,30 @@ download({
 // unzips and makes path.txt point at the correct executable
 function extractFile (err, zipPath) {
   if (err) return onerror(err)
-  fs.writeFile(path.join(__dirname, 'path.txt'), paths[platform], function (err) {
+  extract(zipPath, {dir: path.join(__dirname, 'dist')}, function (err) {
     if (err) return onerror(err)
-    extract(zipPath, {dir: path.join(__dirname, 'dist')}, function (err) {
+    fs.writeFile(path.join(__dirname, 'path.txt'), platformPath, function (err) {
       if (err) return onerror(err)
     })
   })
+}
+
+function onerror (err) {
+  throw err
+}
+
+function getPlatformPath () {
+  var platform = process.env.npm_config_platform || os.platform()
+
+  switch (platform) {
+    case 'darwin':
+      return 'dist/Electron.app/Contents/MacOS/Electron'
+    case 'freebsd':
+    case 'linux':
+      return 'dist/electron'
+    case 'win32':
+      return 'dist/electron.exe'
+    default:
+      throw new Error('Electron builds are not available on platform: ' + platform)
+  }
 }
