@@ -251,6 +251,10 @@ void WebContentsPreferences::OverrideWebkitPrefs(
       prefs->sans_serif_font_family_map[content::kCommonScript] = font;
     if (fonts->GetString("monospace", &font))
       prefs->fixed_font_family_map[content::kCommonScript] = font;
+    if (fonts->GetString("cursive", &font))
+      prefs->cursive_font_family_map[content::kCommonScript] = font;
+    if (fonts->GetString("fantasy", &font))
+      prefs->fantasy_font_family_map[content::kCommonScript] = font;
   }
   int size;
   if (self->web_preferences_.GetInteger("defaultFontSize", &size))
