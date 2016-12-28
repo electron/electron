@@ -1,4 +1,10 @@
 var fs = require('fs')
 var path = require('path')
 
-module.exports = path.join(__dirname, fs.readFileSync(path.join(__dirname, 'path.txt'), 'utf-8'))
+var pathFile = path.join(__dirname, 'path.txt')
+
+if (fs.existsSync(pathFile)) {
+  module.exports = path.join(__dirname, fs.readFileSync(pathFile, 'utf-8'))
+} else {
+  throw new Error('Electron failed to install correctly, please delete node_modules/' + path.basename(__dirname) + ' and try installing again')
+}
