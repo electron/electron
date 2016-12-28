@@ -267,6 +267,16 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('will-navigate event', function () {
+    it('allows the window to be closed from the event listener', (done) => {
+      ipcRenderer.send('close-on-will-navigate', w.id)
+      ipcRenderer.once('closed-on-will-navigate', () => {
+        done()
+      })
+      w.loadURL('file://' + fixtures + '/pages/will-navigate.html')
+    })
+  })
+
   describe('BrowserWindow.show()', function () {
     if (isCI) {
       return

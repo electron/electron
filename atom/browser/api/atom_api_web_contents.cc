@@ -439,6 +439,11 @@ content::WebContents* WebContents::OpenURLFromTab(
   if (Emit("will-navigate", params.url))
     return nullptr;
 
+  // Don't load the URL if the web contents was marked as destroyed from a
+  // will-navigate event listener
+  if (IsDestroyed())
+    return nullptr;
+
   return CommonWebContentsDelegate::OpenURLFromTab(source, params);
 }
 

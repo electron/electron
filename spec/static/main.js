@@ -221,3 +221,12 @@ ipcMain.on('set-client-certificate-option', function (event, skip) {
   })
   event.returnValue = 'done'
 })
+
+ipcMain.on('close-on-will-navigate', (event, id) => {
+  const contents = event.sender
+  const window = BrowserWindow.fromId(id)
+  window.webContents.once('will-navigate', (event, input) => {
+    window.close()
+    contents.send('closed-on-will-navigate')
+  })
+})
