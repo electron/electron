@@ -6,7 +6,7 @@ Electron began in 2013 as the framework on which [Atom](https://atom.io), GitHub
 
 It has since become a popular tool used by open source developers, startups, and established companies. [See who is building on Electron](/apps).
 
-Read on to learn more about the contributors and releases of Electron or get started building with Electron in the [Quick Start Guide](quick-start.md).
+Read on to learn more about the contributors and releases of Electron or get started building with Electron in the [Quick Start Guide](http://electron.atom.io/docs/tutorial/quick-start/).
 
 ## Core Team and Contributors
 
