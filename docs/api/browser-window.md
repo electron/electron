@@ -278,7 +278,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `backgroundThrottling` Boolean (optional) - Whether to throttle animations and timers
       when the page becomes background. Defaults to `true`.
     * `offscreen` Boolean (optional) - Whether to enable offscreen rendering for the browser
-      window. Defaults to `false`.
+      window. Defaults to `false`. See the
+      [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
+      more details.
     * `sandbox` Boolean (optional) - Whether to enable Chromium OS-level sandbox.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
