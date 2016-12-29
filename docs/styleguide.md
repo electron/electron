@@ -148,8 +148,8 @@ The methods chapter must be in the following form:
 ```markdown
 ### `objectName.methodName(required[, optional]))`
 
-* `required` String
-* `optional` Integer (optional)
+* `required` String - A parameter description.
+* `optional` Integer (optional) - Another parameter description.
 
 ...
 ```
@@ -187,7 +187,7 @@ denoted using a space-delimited italicized list following the datatype. Values
 can be `macOS`, `Windows`, or `Linux`.
 
 ```markdown
-* `animate` Boolean (optional) _macOS_ _Windows_
+* `animate` Boolean (optional) _macOS_ _Windows_ - Animate the thing.
 ```
 
 `Array` type arguments must specify what elements the array may include in

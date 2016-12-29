@@ -202,10 +202,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
-  * `vibrancy` String - (optional) Add a type of vibrancy effect to the window, only on
+  * `vibrancy` String (optional) - Add a type of vibrancy effect to the window, only on
     macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
     `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.
-  * `zoomToPageWidth` Boolean - (optional) Controls the behavior on macOS when
+  * `zoomToPageWidth` Boolean (optional) - Controls the behavior on macOS when
     option-clicking the green stoplight button on the toolbar or by clicking the
     Window > Zoom menu item. If `true`, the window will grow to the preferred
     width of the web page when zoomed, `false` will cause it to zoom to the
@@ -1098,7 +1098,7 @@ The `buttons` is an array of `Button` objects:
     toolbar.
   * `click` Function
   * `tooltip` String (optional) - The text of the button's tooltip.
-  * `flags` String[] - (optional) - Control specific states and behaviors of the
+  * `flags` String[] (optional) - Control specific states and behaviors of the
     button. By default, it is `['enabled']`.
 
 The `flags` is an array that can include following `String`s:
