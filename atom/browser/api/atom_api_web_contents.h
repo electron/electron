@@ -278,6 +278,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
+  void RenderViewCreated(content::RenderViewHost*) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
   void DocumentLoadedInFrame(
