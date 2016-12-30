@@ -16,29 +16,29 @@ Electron框架，让您可使用JavaScript, HTML 及 CSS 编写桌面程序。
 
 ## 下载
 
-可以在[releases](https://github.com/electron/electron/releases)找到预编译的二进制版本及symbols调试版本，
-其中包括Linux,Windows和macOS版本。
-
-可以使用[`npm`](https://docs.npmjs.com/)来安装预编译版本Electron的二进制文件:
-
-
+可以使用[`npm`](https://docs.npmjs.com/)来安装Electron的预编译二进制版本:
 ```sh
-# 在 $PATH 里全局安装 `electron`
-npm install electron -g
-
-# 安装为开发依赖
+# 开发依赖安装
 npm install electron --save-dev
 
-# 淘宝源全局安装(PS:大陆到Electron源的下载速度极不稳定，无法下载成功时可用)
-ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install -g electron
-
-# 淘宝源开发依赖安装(PS:大陆到Electron源的下载速度极不稳定，无法下载成功时可用)
-ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron --save-dev
+# 全局安装
+npm install electron -g
 ```
+可以在[releases](https://github.com/electron/electron/releases)找到预编译的二进制版本及symbols调试版本，
+其中包括Linux,Windows和macOS版本。
 
 ### 其他源
 
 - [中国](https://npm.taobao.org/mirrors/electron)
+
+```sh
+# PS:大陆到Electron源的下载速度极不稳定，无法下载成功时可用
+# 淘宝源开发依赖安装
+ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron --save-dev
+
+# 淘宝源全局安装
+ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron -g
+```
 
 ## 文档
 
