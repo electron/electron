@@ -76,7 +76,7 @@ Chrome的版本号。
 
 * `maxDescriptors` Integer
 
-设置文件描述符软限制于 `maxDescriptors` 或硬限制于OS, 无论它是否低于当前进程.
+设置文件描述符软限制于 `maxDescriptors` 或硬限制于OS, 无论它是否低于当前进程。
 
 ### `process.getProcessMemoryInfo()`
 
@@ -87,7 +87,7 @@ Chrome的版本号。
 * `privateBytes` Integer - 不被其他进程共享的内存量，如JS堆或HTML内容。
 * `sharedBytes` Integer - 进程之间共享的内存量，通常是 Electron 代码本身所消耗的内存。
 
-返回当前进程的内存使用统计信息的对象. 请注意，所有数据的单位都是KB。
+返回当前进程的内存使用统计信息的对象。请注意，所有数据的单位都是KB。
 
 ### `process.getSystemMemoryInfo()`
 
@@ -98,4 +98,4 @@ Chrome的版本号。
 * `swapTotal` Integer - 系统 swap 分区(虚拟内存)总量。  _Windows_ _Linux_
 * `swapFree` Integer - 系统剩余可用的 swap 分区(虚拟内存)量。  _Windows_ _Linux_
 
-返回系统的内存使用统计信息的对象. 请注意，所有数据的单位都是KB。
+返回系统的内存使用统计信息的对象。请注意，所有数据的单位都是KB。
