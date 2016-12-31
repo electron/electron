@@ -10,6 +10,7 @@
 
 ## 向导
 
+* [术语表](glossary.md)
 * [支持平台](tutorial/supported-platforms.md)
 * [安全性](tutorial/security.md) 未翻译
 * [Electron 版本管理](tutorial/electron-versioning.md) 未翻译
