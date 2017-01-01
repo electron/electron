@@ -133,7 +133,7 @@ electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/na
 
 ### 检查并提交你的应用
 
-最后, 你可以 [检查并提交你的应用][submit-for-review].
+最后, 你可以 [检查并提交你的应用][submit-for-review]。
 
 ## MAS 构建限制
 
@@ -155,7 +155,7 @@ https://github.com/electron/electron/issues/7312#issuecomment-249479237
 ### 附加授权
 
 根据应用使用的 Electron API，你可能需要添加附加授权
-在 `parent.plist` 文件，在 Mac App Store 发布应用程序的时候能够够使用这些API。
+在 `parent.plist` 文件，在 Mac App Store 发布应用程序的时候能够使用这些API。
 
 #### 网络访问
 
