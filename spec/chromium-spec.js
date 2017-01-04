@@ -46,7 +46,7 @@ describe('chromium feature', function () {
     var w = null
 
     afterEach(function () {
-      return closeWindow(w).then(() => w = null)
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('is set correctly when window is not shown', function (done) {
@@ -157,7 +157,7 @@ describe('chromium feature', function () {
     var w = null
 
     afterEach(function () {
-      return closeWindow(w).then(() => w = null)
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('should register for file scheme', function (done) {
@@ -190,7 +190,7 @@ describe('chromium feature', function () {
     let w = null
 
     afterEach(() => {
-      return closeWindow(w).then(() => w = null)
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('returns a BrowserWindowProxy object', function () {
@@ -269,7 +269,7 @@ describe('chromium feature', function () {
     it('handles cycles when merging the parent options into the child options', (done) => {
       w = BrowserWindow.fromId(ipcRenderer.sendSync('create-window-with-options-cycle'))
       w.loadURL('file://' + fixtures + '/pages/window-open.html')
-      w.webContents.once('new-window',  (event, url, frameName, disposition, options) => {
+      w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
         assert.equal(options.show, false)
         assert.deepEqual(options.foo, {
           bar: null,
@@ -340,7 +340,7 @@ describe('chromium feature', function () {
     let w = null
 
     afterEach(function () {
-      return closeWindow(w).then(() => w = null)
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('is null for main window', function (done) {
