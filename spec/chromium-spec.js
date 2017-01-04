@@ -46,7 +46,7 @@ describe('chromium feature', function () {
     var w = null
 
     afterEach(function () {
-      w != null ? w.destroy() : void 0
+      return closeWindow(w).then(() => w = null)
     })
 
     it('is set correctly when window is not shown', function (done) {
@@ -157,7 +157,7 @@ describe('chromium feature', function () {
     var w = null
 
     afterEach(function () {
-      w != null ? w.destroy() : void 0
+      return closeWindow(w).then(() => w = null)
     })
 
     it('should register for file scheme', function (done) {
@@ -312,7 +312,7 @@ describe('chromium feature', function () {
     let w = null
 
     afterEach(function () {
-      if (w) w.destroy()
+      return closeWindow(w).then(() => w = null)
     })
 
     it('is null for main window', function (done) {
