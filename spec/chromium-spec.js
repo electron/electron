@@ -3,7 +3,7 @@ const http = require('http')
 const path = require('path')
 const ws = require('ws')
 const url = require('url')
-const remote = require('electron').remote
+const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
 const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
@@ -187,6 +187,12 @@ describe('chromium feature', function () {
       return
     }
 
+    let w = null
+
+    afterEach(() => {
+      return closeWindow(w).then(() => w = null)
+    })
+
     it('returns a BrowserWindowProxy object', function () {
       var b = window.open('about:blank', '', 'show=no')
       assert.equal(b.closed, false)
@@ -258,6 +264,20 @@ describe('chromium feature', function () {
       }
       window.addEventListener('message', listener)
       b = window.open('file://' + fixtures + '/pages/window-open-size.html', '', 'show=no,width=' + size.width + ',height=' + size.height)
+    })
+
+    it('handles cycles when merging the parent options into the child options', (done) => {
+      w = BrowserWindow.fromId(ipcRenderer.sendSync('create-window-with-options-cycle'))
+      w.loadURL('file://' + fixtures + '/pages/window-open.html')
+      w.webContents.once('new-window',  (event, url, frameName, disposition, options) => {
+        assert.deepEqual(options, {
+          show: false,
+          foo: {
+            bar: null
+          }
+        })
+        done()
+      })
     })
 
     it('defines a window.location getter', function (done) {
