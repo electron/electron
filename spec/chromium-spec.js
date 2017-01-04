@@ -270,10 +270,13 @@ describe('chromium feature', function () {
       w = BrowserWindow.fromId(ipcRenderer.sendSync('create-window-with-options-cycle'))
       w.loadURL('file://' + fixtures + '/pages/window-open.html')
       w.webContents.once('new-window',  (event, url, frameName, disposition, options) => {
-        assert.deepEqual(options, {
-          show: false,
-          foo: {
-            bar: null
+        assert.equal(options.show, false)
+        assert.deepEqual(options.foo, {
+          bar: null,
+          baz: {
+            hello: {
+              world: true
+            }
           }
         })
         done()

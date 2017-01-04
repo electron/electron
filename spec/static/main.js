@@ -237,6 +237,11 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
   // nulled out at the IPC layer
   const foo = {}
   foo.bar  = foo
+  foo.baz = {
+    hello: {
+      world: true
+    }
+  }
   const window = new BrowserWindow({show: false, foo: foo})
   event.returnValue = window.id
 })
