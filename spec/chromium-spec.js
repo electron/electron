@@ -277,6 +277,11 @@ describe('chromium feature', function () {
             hello: {
               world: true
             }
+          },
+          baz2: {
+            hello: {
+              world: true
+            }
           }
         })
         done()
