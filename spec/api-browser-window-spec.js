@@ -1847,7 +1847,7 @@ describe('BrowserWindow module', function () {
             typeofRequire: 'function',
             typeofProcess: 'object',
             typeofArrayPush: 'function',
-            typeofFunctionApply: 'function',
+            typeofFunctionApply: 'function'
           },
           pageContext: {
             preloadProperty: 'undefined',
