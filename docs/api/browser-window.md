@@ -282,6 +282,17 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
       more details.
     * `sandbox` Boolean (optional) - Whether to enable Chromium OS-level sandbox.
+    * `contextIsolation` Boolean (optional) - Whether to run Electron APIs and
+      the specified `preload` script in a separate JavaScript context. Defaults
+      to `false`. The context that the `preload` script runs in will still
+      have full access to the `document` and `window` globals but it will use
+      its own set of JavaScript builtins (`Array`, `Object`, `JSON`, etc.)
+      and will be isolated from any changes made to the global environment
+      by the loaded page. The Electron API will only be available in the
+      `preload` script and not the loaded page. This option should be used when
+      loading potentially untrusted remote content to ensure the loaded content
+      cannot tamper with the `preload` script and any Electron APIs being used.
+      This option uses the same technique used by [Chrome Content Scripts][chrome-content-scripts].
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -1254,3 +1265,4 @@ will remove the vibrancy effect on the window.
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
+[chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
