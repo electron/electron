@@ -1856,6 +1856,7 @@ describe('BrowserWindow module', function () {
             typeofProcess: 'undefined',
             typeofArrayPush: 'number',
             typeofFunctionApply: 'boolean',
+            typeofPreloadExecuteJavaScriptProperty: 'number'
           }
         })
         done()

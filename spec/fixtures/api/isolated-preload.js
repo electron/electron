@@ -1,6 +1,8 @@
-const {ipcRenderer} = require('electron')
+const {ipcRenderer, webFrame} = require('electron')
 
 window.foo = 3
+
+webFrame.executeJavaScript('window.preloadExecuteJavaScriptProperty = 1234;')
 
 window.addEventListener('message', (event) => {
   ipcRenderer.send('isolated-world', {
