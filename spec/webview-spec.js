@@ -429,6 +429,36 @@ describe('<webview> tag', function () {
       webview.src = 'data:text/html;base64,' + encoded
       document.body.appendChild(webview)
     })
+
+    it('can enable context isolation', (done) => {
+      ipcMain.once('isolated-world', (event, data) => {
+        assert.deepEqual(data, {
+          preloadContext: {
+            preloadProperty: 'number',
+            pageProperty: 'undefined',
+            typeofRequire: 'function',
+            typeofProcess: 'object',
+            typeofArrayPush: 'function',
+            typeofFunctionApply: 'function'
+          },
+          pageContext: {
+            preloadProperty: 'undefined',
+            pageProperty: 'string',
+            typeofRequire: 'undefined',
+            typeofProcess: 'undefined',
+            typeofArrayPush: 'number',
+            typeofFunctionApply: 'boolean',
+            typeofPreloadExecuteJavaScriptProperty: 'number'
+          }
+        })
+        done()
+      })
+
+      webview.setAttribute('preload', path.join(fixtures, 'api', 'isolated-preload.js'))
+      webview.setAttribute('webpreferences', 'contextIsolation=yes')
+      webview.src = 'file://' + fixtures + '/api/isolated.html'
+      document.body.appendChild(webview)
+    })
   })
 
   describe('new-window event', function () {
