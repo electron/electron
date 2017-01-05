@@ -1,16 +1,15 @@
 # 使用 node-inspector 进行主进程调试
 
 [`node-inspector`][node-inspector] 提供了一个熟悉的 DevTools GUI 即可
-在 Chrome 中来调试 Electron 的主进程，但是，因为
+在 Chrome 中来调试 Electron 的主进程，但是，因为根据你希望调试的 Electron 版本，
 `node-inspector` 依赖于一些必须重新编译的原生 Node 模块
-根据你希望调试的 Electron 版本。你可以重新编译
-`node-inspector` 依赖自己，或者让
+。你可以重新编译 `node-inspector` 依赖自己，或者让
 [`electron-inspector`][electron-inspector] 为你做，两种方法都
 涵盖在本文档中。
 
 **备注**: 在编写的 `node-inspector` 最新版本
 （0.12.8）无法重新编译目标版本为 Electron 1.3.0 或者以上，没有修补
-它的一个依赖关系。在使用 `electron-inspector`，需要注意这些。
+它的一个依赖关系。在使用 `electron-inspector`时，需要注意这些。
 
 ## 使用 `electron-inspector` 来调试
 
