@@ -2,6 +2,8 @@
 
 为了使调试更容易，Electron 原生支持 [Chrome DevTools Extension][devtools-extension]。
 
+## 如何加载 DevTools 扩展
+
 对于大多数DevTools的扩展，你可以直接下载源码，然后通过 `BrowserWindow.addDevToolsExtension` API 加载它们。Electron会记住已经加载了哪些扩展，所以你不需要每次创建一个新window时都调用 `BrowserWindow.addDevToolsExtension` API。
 
 ** 注：React DevTools目前不能直接工作，详情留意 [https://github.com/electron/electron/issues/915](https://github.com/electron/electron/issues/915) **
@@ -43,3 +45,4 @@ Electron 目前并不支持 chrome 扩展里的后台运行(background pages)功
 考虑到并非所有的 `chrome.*`APIs 都实现完毕，如果 DevTools 正在使用除了 `chrome.devtools.*` 之外的其它 APIs，这个扩展很可能无法正常工作。你可以通过报告这个扩展的异常信息，这样做方便我们对该扩展的支持。
 
 [devtools-extension]: https://developer.chrome.com/extensions/devtools
+[react-devtools]: https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi
