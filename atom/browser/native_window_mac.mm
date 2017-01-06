@@ -1297,8 +1297,8 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     CGFloat dimension = 2 * radius + 1;
     NSSize size = NSMakeSize(dimension, dimension);
     NSImage* maskImage = [[NSImage imageWithSize:size
-                                        flipped:NO
-                                 drawingHandler:^BOOL(NSRect rect) {
+                                         flipped:NO
+                                  drawingHandler:^BOOL(NSRect rect) {
       NSBezierPath* bezierPath = [NSBezierPath
                                   bezierPathWithRoundedRect:rect
                                                     xRadius:radius
