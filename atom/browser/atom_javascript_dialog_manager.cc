@@ -32,9 +32,8 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     return;
   }
 
-  std::vector<std::string> buttons;
+  std::vector<std::string> buttons = {"OK"};
   if (message_type == JavaScriptMessageType::JAVASCRIPT_MESSAGE_TYPE_CONFIRM) {
-    buttons.push_back("OK");
     buttons.push_back("Cancel");
   }
 
