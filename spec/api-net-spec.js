@@ -487,6 +487,55 @@ describe('net module', function () {
       urlRequest.end()
     })
 
+    it('should be able to set cookie header line', function (done) {
+      const requestUrl = '/requestUrl'
+      const cookieHeaderName = 'Cookie'
+      const cookieHeaderValue = 'test=12345'
+      const customSession = session.fromPartition('test-cookie-header')
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case requestUrl:
+            assert.equal(request.headers[cookieHeaderName.toLowerCase()],
+              cookieHeaderValue)
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      customSession.cookies.set({
+        url: `${server.url}`,
+        name: 'test',
+        value: '11111'
+      }, function (error) {
+        if (error) {
+          return done(error)
+        }
+        const urlRequest = net.request({
+          method: 'GET',
+          url: `${server.url}${requestUrl}`,
+          session: customSession
+        })
+        urlRequest.on('response', function (response) {
+          const statusCode = response.statusCode
+          assert.equal(statusCode, 200)
+          response.pause()
+          response.on('data', function (chunk) {
+          })
+          response.on('end', function () {
+            done()
+          })
+          response.resume()
+        })
+        urlRequest.setHeader(cookieHeaderName, cookieHeaderValue)
+        assert.equal(urlRequest.getHeader(cookieHeaderName),
+          cookieHeaderValue)
+        urlRequest.end()
+      })
+    })
+
     it('should be able to abort an HTTP request before first write', function (done) {
       const requestUrl = '/requestUrl'
       server.on('request', function (request, response) {
