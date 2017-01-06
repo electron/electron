@@ -1296,7 +1296,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     CGFloat radius = 5.0f;
     CGFloat dimension = 2 * radius + 1;
     NSSize size = NSMakeSize(dimension, dimension);
-    NSImage* maskImage = [NSImage imageWithSize:size
+    NSImage* maskImage = [[NSImage imageWithSize:size
                                         flipped:NO
                                  drawingHandler:^BOOL(NSRect rect) {
       NSBezierPath* bezierPath = [NSBezierPath
@@ -1306,7 +1306,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       [[NSColor blackColor] set];
       [bezierPath fill];
       return YES;
-    }];
+    }] autorelease];
     [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
     [maskImage setResizingMode:NSImageResizingModeStretch];
 
