@@ -88,7 +88,7 @@ $ node_modules/.bin/node-pre-gyp --target=1.2.5 --runtime=electron --fallback-to
 $ node_modules/.bin/node-pre-gyp --target=1.2.5 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
 ```
 
-详见 [如何下载原生模块][how-to-install-native-modules].
+详见 [如何下载原生模块][how-to-install-native-modules]。
 
 ### 5. 打开 Electron 的调试模式
 
@@ -114,10 +114,6 @@ $ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin
 
 在 Chrome 浏览器中打开 http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 。
 如果以 `--debug-brk` 开始看到输入行，你可能需要点击 pause。
-
-Open http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 in the Chrome
-browser. You may have to click pause if starting with `--debug-brk` to see the
-entry line.
 
 [electron-inspector]: https://github.com/enlight/electron-inspector
 [electron-rebuild]: https://github.com/electron/electron-rebuild
