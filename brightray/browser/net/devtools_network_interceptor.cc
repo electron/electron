@@ -195,15 +195,20 @@ base::TimeTicks DevToolsNetworkInterceptor::CalculateDesiredTime(
 
 void DevToolsNetworkInterceptor::ArmTimer(base::TimeTicks now) {
   size_t suspend_count = suspended_.size();
-  if (!download_.size() && !upload_.size() && !suspend_count)
+  if (!download_.size() && !upload_.size() && !suspend_count) {
+    timer_.Stop();
     return;
+  }
 
   base::TimeTicks desired_time = CalculateDesiredTime(
       download_, download_last_tick_, download_tick_length_);
+  if (desired_time == offset_) {
+    FinishRecords(&download_, false);
+  }
 
   base::TimeTicks upload_time = CalculateDesiredTime(
       upload_, upload_last_tick_, upload_tick_length_);
-  if (upload_time < desired_time)
+  if (upload_time != offset_ && upload_time < desired_time)
     desired_time = upload_time;
 
   int64_t min_baseline = std::numeric_limits<int64_t>::max();
@@ -218,9 +223,9 @@ void DevToolsNetworkInterceptor::ArmTimer(base::TimeTicks now) {
       desired_time = activation_time;
   }
 
-  timer_.Start(FROM_HERE, desired_time - now,
-      base::Bind(&DevToolsNetworkInterceptor::OnTimer,
-          base::Unretained(this)));
+  timer_.Start(
+      FROM_HERE, (desired_time - now).magnitude(),
+      base::Bind(&DevToolsNetworkInterceptor::OnTimer, base::Unretained(this)));
 }
 
 int DevToolsNetworkInterceptor::StartThrottle(
