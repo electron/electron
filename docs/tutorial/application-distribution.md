@@ -55,6 +55,8 @@ electron/resources/
 
 More details can be found in [Application packaging](application-packaging.md).
 
+### Reducing app.asar file size
+By default when packing with asar it includes all files inluding the `electron.exe` used for testing which is quite large. To ignore these when packaging use ``--unpack-dir "**/dist"``.
 ## Rebranding with Downloaded Binaries
 
 After bundling your app into Electron, you will want to rebrand Electron
