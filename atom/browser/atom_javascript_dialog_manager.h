@@ -29,6 +29,10 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
   void CancelActiveAndPendingDialogs(
       content::WebContents* web_contents) override {}
   void ResetDialogState(content::WebContents* web_contents) override {};
+
+ private:
+  static void OnMessageBoxCallback(const DialogClosedCallback& callback,
+                                   int code);
 };
 
 }  // namespace atom
