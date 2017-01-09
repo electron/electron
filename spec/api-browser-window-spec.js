@@ -1258,6 +1258,18 @@ describe('BrowserWindow module', function () {
         w.setResizable(true)
         assert.equal(w.isResizable(), true)
       })
+
+      it('works for a frameless window', () => {
+        w.destroy()
+        w = new BrowserWindow({show: false, frame: false})
+        assert.equal(w.isResizable(), true)
+
+        if (process.platform === 'win32') {
+          w.destroy()
+          w = new BrowserWindow({show: false, thickFrame: false})
+          assert.equal(w.isResizable(), false)
+        }
+      })
     })
 
     describe('loading main frame state', function () {
