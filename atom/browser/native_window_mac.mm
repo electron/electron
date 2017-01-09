@@ -347,10 +347,12 @@ bool ScopedDisableResize::disable_resize_ = false;
 @property NSPoint windowButtonsOffset;
 @property (nonatomic, retain) AtomPreviewItem* quickLookItem;
 @property (nonatomic, retain) NSView* vibrantView;
+@property (nonatomic, retain) NSImage* cornerMask;
 
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)enableWindowButtonsOffset;
+- (NSImage*)_cornerMask;
 @end
 
 @implementation AtomNSWindow
@@ -502,6 +504,12 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (NSView*)frameView {
   return [[self contentView] superview];
+}
+
+// By overriding this built-in method the corners of the vibrant view (if set)
+// will be smooth.
+- (NSImage*)_cornerMask {
+  return [self cornerMask];
 }
 
 // Quicklook methods
@@ -1283,6 +1291,28 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
     [effect_view setState:NSVisualEffectStateActive];
+
+    // The default corner radius of a macOS window.
+    CGFloat radius = 5.0f;
+    CGFloat dimension = 2 * radius + 1;
+    NSSize size = NSMakeSize(dimension, dimension);
+    NSImage* maskImage = [[NSImage imageWithSize:size
+                                         flipped:NO
+                                  drawingHandler:^BOOL(NSRect rect) {
+      NSBezierPath* bezierPath = [NSBezierPath
+                                  bezierPathWithRoundedRect:rect
+                                                    xRadius:radius
+                                                    yRadius:radius];
+      [[NSColor blackColor] set];
+      [bezierPath fill];
+      return YES;
+    }] autorelease];
+    [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
+    [maskImage setResizingMode:NSImageResizingModeStretch];
+
+    [effect_view setMaskImage:maskImage];
+    [window_ setCornerMask:maskImage];
+
     [[window_ contentView] addSubview:effect_view
                            positioned:NSWindowBelow
                            relativeTo:nil];
