@@ -230,3 +230,18 @@ ipcMain.on('close-on-will-navigate', (event, id) => {
     contents.send('closed-on-will-navigate')
   })
 })
+
+ipcMain.on('create-window-with-options-cycle', (event) => {
+  // This can't be done over remote since cycles are already
+  // nulled out at the IPC layer
+  const foo = {}
+  foo.bar = foo
+  foo.baz = {
+    hello: {
+      world: true
+    }
+  }
+  foo.baz2 = foo.baz
+  const window = new BrowserWindow({show: false, foo: foo})
+  event.returnValue = window.id
+})
