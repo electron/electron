@@ -1836,9 +1836,18 @@ describe('BrowserWindow module', function () {
   })
 
   describe('contextIsolation option', () => {
-    it('separates the page context from the Electron/preload context', (done) => {
+    beforeEach(() => {
       if (w != null) w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+    })
 
+    it('separates the page context from the Electron/preload context', (done) => {
       ipcMain.once('isolated-world', (event, data) => {
         assert.deepEqual(data, {
           preloadContext: {
@@ -1862,12 +1871,35 @@ describe('BrowserWindow module', function () {
         done()
       })
 
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
-        }
+      w.loadURL('file://' + fixtures + '/api/isolated.html')
+    })
+
+    it('recreates the contexts on reload', (done) => {
+      w.webContents.once('did-finish-load', () => {
+        ipcMain.once('isolated-world', (event, data) => {
+          assert.deepEqual(data, {
+            preloadContext: {
+              preloadProperty: 'number',
+              pageProperty: 'undefined',
+              typeofRequire: 'function',
+              typeofProcess: 'object',
+              typeofArrayPush: 'function',
+              typeofFunctionApply: 'function'
+            },
+            pageContext: {
+              preloadProperty: 'undefined',
+              pageProperty: 'string',
+              typeofRequire: 'undefined',
+              typeofProcess: 'undefined',
+              typeofArrayPush: 'number',
+              typeofFunctionApply: 'boolean',
+              typeofPreloadExecuteJavaScriptProperty: 'number'
+            }
+          })
+          done()
+        })
+
+        w.webContents.reload()
       })
       w.loadURL('file://' + fixtures + '/api/isolated.html')
     })
