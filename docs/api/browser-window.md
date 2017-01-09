@@ -293,6 +293,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       loading potentially untrusted remote content to ensure the loaded content
       cannot tamper with the `preload` script and any Electron APIs being used.
       This option uses the same technique used by [Chrome Content Scripts][chrome-content-scripts].
+      This option is experimental and may undergo further API changes before
+      Electron 2.0.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
