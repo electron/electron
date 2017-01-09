@@ -55,7 +55,9 @@ This is not bulletproof, but at the least, you should attempt the following:
 
 * Only display secure (https) content
 * Disable the Node integration in all renderers that display remote content
-  (using `webPreferences`)
+  (setting `nodeIntegration` to `false` in `webPreferences`)
+* Enable context isolation in all rendererers that display remote content
+  (setting `contextIsolation` to `true` in `webPreferences`)
 * Do not disable `webSecurity`. Disabling it will disable the same-origin policy.
 * Define a [`Content-Security-Policy`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/)
 , and use restrictive rules (i.e. `script-src 'self'`)
