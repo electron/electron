@@ -426,7 +426,7 @@ bool NativeWindowViews::IsEnabled() {
 void NativeWindowViews::Maximize() {
 #if defined(OS_WIN)
   // For window without WS_THICKFRAME style, we can not call Maximize().
-  if (!thick_frame_) {
+  if (!(::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME)) {
     restore_bounds_ = GetBounds();
     auto display =
         display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
@@ -444,7 +444,7 @@ void NativeWindowViews::Maximize() {
 
 void NativeWindowViews::Unmaximize() {
 #if defined(OS_WIN)
-  if (!thick_frame_) {
+  if (!(::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME)) {
     SetBounds(restore_bounds_, false);
     return;
   }
@@ -485,19 +485,6 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   } else {
     last_window_state_ = ui::SHOW_STATE_NORMAL;
     NotifyWindowLeaveFullScreen();
-  }
-
-  // For window without WS_THICKFRAME style, we can not call SetFullscreen().
-  if (!thick_frame_) {
-    if (fullscreen) {
-      restore_bounds_ = GetBounds();
-      auto display =
-          display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
-      SetBounds(display.bounds(), false);
-    } else {
-      SetBounds(restore_bounds_, false);
-    }
-    return;
   }
 
   // We set the new value after notifying, so we can handle the size event
@@ -572,7 +559,7 @@ void NativeWindowViews::SetContentSizeConstraints(
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  if (thick_frame_)
+  if (has_frame())
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #elif defined(USE_X11)
   if (resizable != resizable_) {
@@ -595,11 +582,10 @@ void NativeWindowViews::SetResizable(bool resizable) {
 
 bool NativeWindowViews::IsResizable() {
 #if defined(OS_WIN)
-  if (thick_frame_) {
+  if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
-  } else {
+  else
     return CanResize();
-  }
 #else
   return CanResize();
 #endif
