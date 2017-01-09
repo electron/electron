@@ -9,7 +9,7 @@ import sys
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
     'https://s3.amazonaws.com/github-janky-artifacts/libchromiumcontent'
 LIBCHROMIUMCONTENT_COMMIT = os.getenv('LIBCHROMIUMCONTENT_COMMIT') or \
-    '2667f2d495e545b3cb2d3435481d69cc30b6f69a'
+    'f14fb5fb9cb3c3a57a2ac1a9725fd9373ef043d2'
 
 PLATFORM = {
   'cygwin': 'win32',
