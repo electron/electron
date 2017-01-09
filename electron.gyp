@@ -223,6 +223,8 @@
         'GLIB_DISABLE_DEPRECATION_WARNINGS',
         # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
+        'V8_SHARED',
+        'USING_V8_SHARED',
         'ENABLE_PLUGINS',
         'ENABLE_PEPPER_CDMS',
         'USE_PROPRIETARY_CODECS',
@@ -560,16 +562,6 @@
                 '-change',
                 '/usr/local/lib/libnode.dylib',
                 '@rpath/libnode.dylib',
-                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
-              ],
-            },
-            {
-              'postbuild_name': 'Fix path of ffmpeg',
-              'action': [
-                'install_name_tool',
-                '-change',
-                '/usr/local/lib/libffmpeg.dylib',
-                '@rpath/libffmpeg.dylib',
                 '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
               ],
             },
