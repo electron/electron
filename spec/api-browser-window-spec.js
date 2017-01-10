@@ -1024,10 +1024,8 @@ describe('BrowserWindow module', function () {
         const initialWebContents = webContents.getAllWebContents()
         ipcRenderer.send('prevent-next-new-window', w.webContents.id)
         w.webContents.once('new-window', () => {
-          process.nextTick(() => {
-            assert.deepEqual(webContents.getAllWebContents().length, initialWebContents.length)
-            done()
-          })
+          assert.deepEqual(webContents.getAllWebContents(), initialWebContents)
+          done()
         })
         w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
       })
