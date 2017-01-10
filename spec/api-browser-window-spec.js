@@ -1012,6 +1012,25 @@ describe('BrowserWindow module', function () {
           })
         })
       })
+
+      it('supports calling preventDefault on new-window events', (done) => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+          }
+        })
+        const initialWebContents = webContents.getAllWebContents()
+        ipcRenderer.send('prevent-next-new-window', w.webContents.id)
+        w.webContents.once('new-window', () => {
+          process.nextTick(() => {
+            assert.deepEqual(webContents.getAllWebContents().length, initialWebContents.length)
+            done()
+          })
+        })
+        w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
+      })
     })
   })
 
