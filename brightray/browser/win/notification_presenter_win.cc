@@ -66,4 +66,8 @@ base::string16 NotificationPresenterWin::SaveIconToFilesystem(
   return base::UTF8ToUTF16(origin.spec());
 }
 
+Notification* NotificationPresenterWin::CreateNotificationObject(NotificationDelegate* delegate) {
+  return new WindowsToastNotification(delegate, this);
+}
+
 }  // namespace brightray

@@ -43,12 +43,6 @@ bool GetAppUserModelId(ScopedHString* app_id) {
 }  // namespace
 
 // static
-Notification* Notification::Create(NotificationDelegate* delegate,
-                                   NotificationPresenter* presenter) {
-  return new WindowsToastNotification(delegate, presenter);
-}
-
-// static
 ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>
     WindowsToastNotification::toast_manager_;
 

@@ -22,6 +22,8 @@ class NotificationPresenterMac : public NotificationPresenter {
   ~NotificationPresenterMac();
 
  private:
+  Notification* CreateNotificationObject(NotificationDelegate* delegate) override;
+
   base::scoped_nsobject<NotificationCenterDelegate>
       notification_center_delegate_;
 
