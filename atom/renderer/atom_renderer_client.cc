@@ -81,6 +81,10 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   }
 
   void CreateIsolatedWorldContext() {
+    render_frame_->GetWebFrame()->setIsolatedWorldHumanReadableName(
+        World::ISOLATED_WORLD,
+        blink::WebString::fromUTF8("Electron Isolated Context"));
+
     blink::WebScriptSource source("void 0");
     render_frame_->GetWebFrame()->executeScriptInIsolatedWorld(
         World::ISOLATED_WORLD, &source, 1, ExtensionGroup::MAIN_GROUP);
