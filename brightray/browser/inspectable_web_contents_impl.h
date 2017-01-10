@@ -54,7 +54,7 @@ class InspectableWebContentsImpl :
   void ShowDevTools() override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
-  void AttachTo(const scoped_refptr<content::DevToolsAgentHost>&) override;
+  void AttachTo(scoped_refptr<content::DevToolsAgentHost>) override;
   void Detach() override;
   void CallClientFunction(const std::string& function_name,
                           const base::Value* arg1,

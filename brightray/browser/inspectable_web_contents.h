@@ -38,7 +38,7 @@ class InspectableWebContents {
   virtual void ShowDevTools() = 0;
   virtual void CloseDevTools() = 0;
   virtual bool IsDevToolsViewShowing() = 0;
-  virtual void AttachTo(const scoped_refptr<content::DevToolsAgentHost>&) = 0;
+  virtual void AttachTo(scoped_refptr<content::DevToolsAgentHost>) = 0;
   virtual void Detach() = 0;
   virtual void CallClientFunction(const std::string& function_name,
                                   const base::Value* arg1 = nullptr,
