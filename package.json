@@ -37,7 +37,7 @@
     "lint-cpp": "python ./script/cpplint.py",
     "lint-py": "python ./script/pylint.py",
     "lint-api-docs-js": "standard-markdown docs && standard-markdown docs-translations",
-    "lint-api-docs": "electron-docs-linter --outfile=out/electron-api.json",
+    "lint-api-docs": "electron-docs-linter",
     "preinstall": "node -e 'process.exit(0)'",
     "release": "./script/upload.py -p",
     "repl": "python ./script/start.py --interactive",
