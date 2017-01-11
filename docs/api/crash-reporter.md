@@ -14,7 +14,7 @@ crashReporter.start({
   productName: 'YourName',
   companyName: 'YourCompany',
   submitURL: 'https://your-domain.com/url-to-submit',
-  autoSubmit: true
+  uploadToServer: true
 })
 ```
 
@@ -52,12 +52,12 @@ and in each process (main/renderer) from which you want to collect crash reports
 You can pass different options to `crashReporter.start` when calling from different processes.
 
 **Note:** On Windows and Linux, Electron uses `breakpad` for crash collection and reporting.
-Crashes can be collected from the main and renderer process, but not from the child processes 
+Crashes can be collected from the main and renderer process, but not from the child processes
 created via the `child_process` module.
 
 **Note:** On macOS, Electron uses a new `crashpad` client for crash collection and reporting.
 Crashes can be collected from the main, renderer and any of the child processes created via the `child_process` module.
-If you want to enable crash reporting, initializing `crashpad` from the main process using `crashReporter.start` is required 
+If you want to enable crash reporting, initializing `crashpad` from the main process using `crashReporter.start` is required
 regardless of which process you want to collect crashes from. Once initialized this way, the crashpad handler collects
 crashes from all processes. You still have to call `crashReporter.start` from the renderer process, otherwise crashes from
 renderer processes will get reported without `companyName`, `productName` or any of the `extra` information.
