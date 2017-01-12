@@ -246,7 +246,6 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
   event.returnValue = window.id
 })
 
-
 ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })

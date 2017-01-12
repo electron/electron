@@ -1018,7 +1018,7 @@ describe('BrowserWindow module', function () {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            sandbox: true,
+            sandbox: true
           }
         })
         const initialWebContents = webContents.getAllWebContents()
