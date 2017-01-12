@@ -1,41 +1,27 @@
-#!/usr/bin/env python
+#!/usr/bin/env bash
 
-import os
-import subprocess
-import sys
+set -ex
 
+# Make cloned repository complete
+git fetch --unshallow origin HEAD
 
-SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-# We're in JENKINS_ROOT/workspace/brightray. Walk up to JENKINS_ROOT.
-JENKINS_ROOT = os.path.dirname(os.path.dirname(SOURCE_ROOT))
-S3_CREDENTIALS_FILE = os.path.join(JENKINS_ROOT, 'config', 's3credentials')
+# Clone Electron
+git clone https://github.com/electron/electron --depth 1 --recursive
 
+# Checkout current brightray commit into Electron
+cd electron/vendor/brightray
+git fetch ../../..
+git reset --hard FETCH_HEAD
 
-def main():
-    if not os.path.isfile(S3_CREDENTIALS_FILE):
-        return 'Error: Can\'t find {0}'.format(S3_CREDENTIALS_FILE)
-    copy_to_environment(S3_CREDENTIALS_FILE)
+# Commit change
+cd ../..
+git add vendor/brightray
+git config --local user.email "test@github.com"
+git config --local user.name "Test"
+git commit --message 'Upgrading brightray'
 
-    url = 'https://{0}.s3.amazonaws.com/libchromiumcontent'.format(os.environ['JANKY_ARTIFACTS_S3_BUCKET'])
-    return (run_script('bootstrap', url) or
-            run_script('build') or
-            run_script('cpplint'))
+# Bootstrap Electron
+npm run bootstrap -- --dev
 
-
-def copy_to_environment(credentials_file):
-    with open(credentials_file, 'r') as f:
-        for line in f:
-            key, value = line.strip().split('=')
-            value = value.strip("'")
-            os.environ[key] = value
-
-
-def run_script(script, *args):
-    script = os.path.join('script', script)
-    sys.stderr.write('+ {0}\n'.format(script))
-    sys.stderr.flush()
-    return subprocess.call([sys.executable, script] + list(args))
-
-
-if __name__ == '__main__':
-    sys.exit(main())
+# Build Electron with brightray commit
+npm run build
