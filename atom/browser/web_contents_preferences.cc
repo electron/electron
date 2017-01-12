@@ -196,7 +196,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (window) {
     bool visible = window->IsVisible() && !window->IsMinimized();
     if (!visible)  // Default state is visible.
-      command_line->AppendSwitch("hidden-page");
+      command_line->AppendSwitch(switches::kHiddenPage);
   }
 
   // Use frame scheduling for offscreen renderers.

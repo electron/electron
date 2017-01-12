@@ -1836,6 +1836,27 @@ describe('BrowserWindow module', function () {
   })
 
   describe('contextIsolation option', () => {
+    const expectedContextData = {
+      preloadContext: {
+        preloadProperty: 'number',
+        pageProperty: 'undefined',
+        typeofRequire: 'function',
+        typeofProcess: 'object',
+        typeofArrayPush: 'function',
+        typeofFunctionApply: 'function'
+      },
+      pageContext: {
+        preloadProperty: 'undefined',
+        pageProperty: 'string',
+        typeofRequire: 'undefined',
+        typeofProcess: 'undefined',
+        typeofArrayPush: 'number',
+        typeofFunctionApply: 'boolean',
+        typeofPreloadExecuteJavaScriptProperty: 'number',
+        typeofOpenedWindow: 'object'
+      }
+    }
+
     beforeEach(() => {
       if (w != null) w.destroy()
       w = new BrowserWindow({
@@ -1849,56 +1870,18 @@ describe('BrowserWindow module', function () {
 
     it('separates the page context from the Electron/preload context', (done) => {
       ipcMain.once('isolated-world', (event, data) => {
-        assert.deepEqual(data, {
-          preloadContext: {
-            preloadProperty: 'number',
-            pageProperty: 'undefined',
-            typeofRequire: 'function',
-            typeofProcess: 'object',
-            typeofArrayPush: 'function',
-            typeofFunctionApply: 'function'
-          },
-          pageContext: {
-            preloadProperty: 'undefined',
-            pageProperty: 'string',
-            typeofRequire: 'undefined',
-            typeofProcess: 'undefined',
-            typeofArrayPush: 'number',
-            typeofFunctionApply: 'boolean',
-            typeofPreloadExecuteJavaScriptProperty: 'number'
-          }
-        })
+        assert.deepEqual(data, expectedContextData)
         done()
       })
-
       w.loadURL('file://' + fixtures + '/api/isolated.html')
     })
 
     it('recreates the contexts on reload', (done) => {
       w.webContents.once('did-finish-load', () => {
         ipcMain.once('isolated-world', (event, data) => {
-          assert.deepEqual(data, {
-            preloadContext: {
-              preloadProperty: 'number',
-              pageProperty: 'undefined',
-              typeofRequire: 'function',
-              typeofProcess: 'object',
-              typeofArrayPush: 'function',
-              typeofFunctionApply: 'function'
-            },
-            pageContext: {
-              preloadProperty: 'undefined',
-              pageProperty: 'string',
-              typeofRequire: 'undefined',
-              typeofProcess: 'undefined',
-              typeofArrayPush: 'number',
-              typeofFunctionApply: 'boolean',
-              typeofPreloadExecuteJavaScriptProperty: 'number'
-            }
-          })
+          assert.deepEqual(data, expectedContextData)
           done()
         })
-
         w.webContents.reload()
       })
       w.loadURL('file://' + fixtures + '/api/isolated.html')
@@ -1909,7 +1892,6 @@ describe('BrowserWindow module', function () {
         assert.equal(window.webContents.getWebPreferences().contextIsolation, true)
         done()
       })
-
       w.loadURL('file://' + fixtures + '/pages/window-open.html')
     })
   })

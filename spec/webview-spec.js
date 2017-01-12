@@ -448,13 +448,15 @@ describe('<webview> tag', function () {
             typeofProcess: 'undefined',
             typeofArrayPush: 'number',
             typeofFunctionApply: 'boolean',
-            typeofPreloadExecuteJavaScriptProperty: 'number'
+            typeofPreloadExecuteJavaScriptProperty: 'number',
+            typeofOpenedWindow: 'object'
           }
         })
         done()
       })
 
       webview.setAttribute('preload', path.join(fixtures, 'api', 'isolated-preload.js'))
+      webview.setAttribute('allowpopups', 'yes')
       webview.setAttribute('webpreferences', 'contextIsolation=yes')
       webview.src = 'file://' + fixtures + '/api/isolated.html'
       document.body.appendChild(webview)

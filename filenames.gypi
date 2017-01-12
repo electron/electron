@@ -56,6 +56,7 @@
       'lib/renderer/init.js',
       'lib/renderer/inspector.js',
       'lib/renderer/override.js',
+      'lib/renderer/window-setup.js',
       'lib/renderer/web-view/guest-view-internal.js',
       'lib/renderer/web-view/web-view.js',
       'lib/renderer/web-view/web-view-attributes.js',
@@ -75,6 +76,10 @@
     'browserify_entries': [
       'lib/renderer/api/ipc-renderer-setup.js',
       'lib/sandboxed_renderer/init.js',
+    ],
+    'isolated_context_browserify_entries': [
+      'lib/renderer/window-setup.js',
+      'lib/isolated_renderer/init.js',
     ],
     'js2c_sources': [
       'lib/common/asar.js',

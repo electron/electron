@@ -4,6 +4,8 @@
 
 #include "atom/renderer/atom_renderer_client.h"
 
+#include "atom_natives.h"  // NOLINT: This file is generated with js2c
+
 #include <string>
 #include <vector>
 
@@ -14,6 +16,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
+#include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/guest_view_container.h"
@@ -90,6 +93,39 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
         World::ISOLATED_WORLD, &source, 1, ExtensionGroup::MAIN_GROUP);
   }
 
+  void SetupMainWorldOverrides(v8::Handle<v8::Context> context) {
+    // Setup window overrides in the main world context
+    v8::Isolate* isolate = context->GetIsolate();
+
+    // Wrap the bundle into a function that receives the binding object as
+    // an argument.
+    std::string bundle(node::isolated_bundle_native,
+        node::isolated_bundle_native + sizeof(node::isolated_bundle_native));
+    std::string wrapper = "(function (binding) {\n" + bundle + "\n})";
+    auto script = v8::Script::Compile(
+        mate::ConvertToV8(isolate, wrapper)->ToString());
+    auto func = v8::Handle<v8::Function>::Cast(
+        script->Run(context).ToLocalChecked());
+
+    auto binding = v8::Object::New(isolate);
+    api::Initialize(binding, v8::Null(isolate), context, nullptr);
+
+    // Pass in CLI flags needed to setup window
+    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+    mate::Dictionary dict(isolate, binding);
+    if (command_line->HasSwitch(switches::kGuestInstanceID))
+      dict.Set("guestInstanceId",
+               command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
+    if (command_line->HasSwitch(switches::kOpenerID))
+      dict.Set("openerId",
+               command_line->GetSwitchValueASCII(switches::kOpenerID));
+    dict.Set("hiddenPage", command_line->HasSwitch(switches::kHiddenPage));
+
+    v8::Local<v8::Value> args[] = { binding };
+
+    ignore_result(func->Call(context, v8::Null(isolate), 1, args));
+  }
+
   bool IsMainWorld(int world_id) {
     return world_id == World::MAIN_WORLD;
   }
@@ -111,8 +147,10 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     if (NotifyClient(world_id))
       renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-    if (renderer_client_->isolated_world() && IsMainWorld(world_id))
+    if (renderer_client_->isolated_world() && IsMainWorld(world_id)) {
       CreateIsolatedWorldContext();
+      SetupMainWorldOverrides(context);
+    }
   }
 
   void WillReleaseScriptContext(v8::Local<v8::Context> context,

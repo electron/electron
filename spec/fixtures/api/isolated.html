@@ -7,6 +7,10 @@
       window.hello = 'world'
       Array.prototype.push = 3
       Function.prototype.apply = true
+
+      const opened = window.open()
+      opened.close()
+
       window.postMessage({
         preloadProperty: typeof window.foo,
         pageProperty: typeof window.hello,
@@ -14,7 +18,8 @@
         typeofProcess: typeof process,
         typeofArrayPush: typeof Array.prototype.push,
         typeofFunctionApply: typeof Function.prototype.apply,
-        typeofPreloadExecuteJavaScriptProperty: typeof window.preloadExecuteJavaScriptProperty
+        typeofPreloadExecuteJavaScriptProperty: typeof window.preloadExecuteJavaScriptProperty,
+        typeofOpenedWindow: typeof opened
       }, '*')
     </script>
   </head>

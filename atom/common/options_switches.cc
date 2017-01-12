@@ -102,7 +102,7 @@ const char kNodeIntegration[] = "nodeIntegration";
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
 
-// Instancd ID of guest WebContents.
+// Instance ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
 
 // Web runtime features.
@@ -170,6 +170,7 @@ const char kContextIsolation[] = "context-isolation";
 const char kGuestInstanceID[]  = "guest-instance-id";
 const char kOpenerID[]         = "opener-id";
 const char kScrollBounce[]     = "scroll-bounce";
+const char kHiddenPage[]       = "hidden-page";
 
 // Widevine options
 // Path to Widevine CDM binaries.

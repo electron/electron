@@ -433,7 +433,7 @@
       ],
       'actions': [
         {
-          'action_name': 'atom_browserify',
+          'action_name': 'atom_browserify_sandbox',
           'inputs': [
             '<@(browserify_entries)',
           ],
@@ -450,7 +450,26 @@
             '-o',
             '<@(_outputs)',
           ],
-        }
+        },
+        {
+          'action_name': 'atom_browserify_isolated_context',
+          'inputs': [
+            '<@(isolated_context_browserify_entries)',
+          ],
+          'outputs': [
+            '<(js2c_input_dir)/isolated_bundle.js',
+          ],
+          'action': [
+            'npm',
+            'run',
+            '--silent',
+            'browserify',
+            '--',
+            'lib/isolated_renderer/init.js',
+            '-o',
+            '<@(_outputs)',
+          ],
+        },
       ],
     },  # target atom_browserify
     {
@@ -467,6 +486,7 @@
             # List all input files that should trigger a rebuild with js2c
             '<@(js2c_sources)',
             '<(js2c_input_dir)/preload_bundle.js',
+            '<(js2c_input_dir)/isolated_bundle.js',
           ],
           'outputs': [
             '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
