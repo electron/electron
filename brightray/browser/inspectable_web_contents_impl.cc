@@ -279,8 +279,8 @@ void InspectableWebContentsImpl::ShowDevTools() {
     Observe(devtools_web_contents_.get());
     devtools_web_contents_->SetDelegate(this);
 
-    agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
-    agent_host_->AttachClient(this);
+    AttachTo(std::move(
+        content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get())));
 
     devtools_web_contents_->GetController().LoadURL(
         GetDevToolsURL(can_dock_),
@@ -304,11 +304,13 @@ bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
   return devtools_web_contents_ && view_->IsDevToolsViewShowing();
 }
 
-void InspectableWebContentsImpl::AttachTo(const scoped_refptr<content::DevToolsAgentHost>& host) {
+void InspectableWebContentsImpl::AttachTo(
+    scoped_refptr<content::DevToolsAgentHost> host) {
   if (agent_host_.get())
     Detach();
   agent_host_ = host;
-  agent_host_->AttachClient(this);
+  // Terminate existing debugging connections and start debugging.
+  agent_host_->ForceAttachClient(this);
 }
 
 void InspectableWebContentsImpl::Detach() {
