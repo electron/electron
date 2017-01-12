@@ -16,6 +16,7 @@ application by using one of these projects:
   auto-updater*
 - [squirrel-updates-server][squirrel-updates-server]: *A simple node.js server
   for Squirrel.Mac and Squirrel.Windows which uses GitHub releases*
+- [squirrel-release-server][squirrel-release-server]: *A simple PHP application for Squirrel.Windows which reads updates from a folder. Supports delta updates.*
 
 ## Platform notices
 
@@ -135,3 +136,4 @@ from the normal quit event sequence.
 [electron-release-server]: https://github.com/ArekSredzki/electron-release-server
 [squirrel-updates-server]: https://github.com/Aluxian/squirrel-updates-server
 [nuts]: https://github.com/GitbookIO/nuts
+[squirrel-release-server]: https://github.com/Arcath/squirrel-release-server
