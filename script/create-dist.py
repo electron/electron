@@ -133,8 +133,7 @@ def copy_license():
 
 def create_api_json_schema():
   outfile = os.path.join(DIST_DIR, 'electron-api.json')
-  execute(['electron-docs-linter',
-           '--outfile={0}'.format(outfile)])
+  execute(['electron-docs-linter', '--outfile={0}'.format(outfile)])
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:
