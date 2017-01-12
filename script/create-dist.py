@@ -87,7 +87,7 @@ def main():
   copy_license()
 
   if PLATFORM != 'win32':
-    copy_api_json_schema()
+    create_api_json_schema()
 
   if PLATFORM == 'linux':
     strip_binaries()
@@ -131,8 +131,9 @@ def copy_license():
                DIST_DIR)
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
-def copy_api_json_schema():
-  shutil.copy2(os.path.join(SOURCE_ROOT, 'out', 'electron-api.json'), DIST_DIR)
+def create_api_json_schema():
+  outfile = os.path.join(DIST_DIR, 'electron-api.json')
+  execute(['electron-docs-linter', '--outfile={0}'.format(outfile)])
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:
