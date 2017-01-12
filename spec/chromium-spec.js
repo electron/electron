@@ -6,7 +6,7 @@ const url = require('url')
 const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
-const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
+const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
@@ -197,12 +197,6 @@ describe('chromium feature', function () {
       var b = window.open('about:blank', '', 'show=no')
       assert.equal(b.closed, false)
       assert.equal(b.constructor.name, 'BrowserWindowProxy')
-
-      // Check that guestId is not writeable
-      assert(b.guestId)
-      b.guestId = 'anotherValue'
-      assert.notEqual(b.guestId, 'anoterValue')
-
       b.close()
     })
 
@@ -295,12 +289,14 @@ describe('chromium feature', function () {
       } else {
         targetURL = 'file://' + fixtures + '/pages/base-page.html'
       }
-      b = window.open(targetURL)
-      webContents.fromId(b.guestId).once('did-finish-load', function () {
-        assert.equal(b.location, targetURL)
-        b.close()
-        done()
+      app.once('browser-window-created', (event, window) => {
+        window.webContents.once('did-finish-load', () => {
+          assert.equal(b.location, targetURL)
+          b.close()
+          done()
+        })
       })
+      b = window.open(targetURL)
     })
 
     it('defines a window.location setter', function (done) {
