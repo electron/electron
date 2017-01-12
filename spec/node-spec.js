@@ -290,4 +290,12 @@ describe('node feature', function () {
       require('vm').runInNewContext('')
     })
   })
+
+  it('includes the electron version in process.versions', () => {
+    assert(/^\d+\.\d+\.\d+$/.test(process.versions.electron))
+  })
+
+  it('includes the chrome version in process.versions', () => {
+    assert(/^\d+\.\d+\.\d+\.\d+$/.test(process.versions.chrome))
+  })
 })
