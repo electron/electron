@@ -494,6 +494,18 @@ describe('ipc module', function () {
       w.removeListener('test', listener)
       assert.equal(w.listenerCount('test'), 0)
     })
+
+    it('throws an error when a function is called in a destroyed renderer', (done) => {
+      w = new BrowserWindow({
+        show: false
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'reload-page.html'))
+      setTimeout(() => {
+        assert.throws(() => w.webContents.emit('remote-handler'),
+          /Attempting to call a function in a renderer window that has been closed or released./)
+        done()
+      }, 400)
+    })
   })
 
   it('throws an error when removing all the listeners', () => {
