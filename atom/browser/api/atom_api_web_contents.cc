@@ -419,9 +419,11 @@ void WebContents::AddNewContents(content::WebContents* source,
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto api_web_contents = CreateFrom(isolate(), new_contents);
-  Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
+  if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
       initial_rect.x(), initial_rect.y(), initial_rect.width(),
-      initial_rect.height());
+      initial_rect.height())) {
+    api_web_contents->DestroyWebContents();
+  }
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
