@@ -300,34 +300,43 @@ describe('chromium feature', function () {
     })
 
     it('defines a window.location setter', function (done) {
-      // Load a page that definitely won't redirect
-      var b = window.open('about:blank')
-      webContents.fromId(b.guestId).once('did-finish-load', function () {
-        // When it loads, redirect
-        b.location = 'file://' + fixtures + '/pages/base-page.html'
-        webContents.fromId(b.guestId).once('did-finish-load', function () {
-          // After our second redirect, cleanup and callback
-          b.close()
-          done()
+      let b
+      app.once('browser-window-created', (event, {webContents}) => {
+        webContents.once('did-finish-load', function () {
+          // When it loads, redirect
+          b.location = 'file://' + fixtures + '/pages/base-page.html'
+          webContents.once('did-finish-load', function () {
+            // After our second redirect, cleanup and callback
+            b.close()
+            done()
+          })
         })
       })
+      // Load a page that definitely won't redirect
+      b = window.open('about:blank')
     })
 
     it('open a blank page when no URL is specified', function (done) {
-      let b = window.open()
-      webContents.fromId(b.guestId).once('did-finish-load', function () {
-        const {location} = b
-        b.close()
-        assert.equal(location, 'about:blank')
-
-        let c = window.open('')
-        webContents.fromId(c.guestId).once('did-finish-load', function () {
-          const {location} = c
-          c.close()
+      let b
+      app.once('browser-window-created', (event, {webContents}) => {
+        webContents.once('did-finish-load', function () {
+          const {location} = b
+          b.close()
           assert.equal(location, 'about:blank')
-          done()
+
+          let c
+          app.once('browser-window-created', (event, {webContents}) => {
+            webContents.once('did-finish-load', function () {
+              const {location} = c
+              c.close()
+              assert.equal(location, 'about:blank')
+              done()
+            })
+          })
+          c = window.open('')
         })
       })
+      b = window.open()
     })
   })
 
@@ -492,8 +501,7 @@ describe('chromium feature', function () {
 
   describe('window.postMessage', function () {
     it('sets the source and origin correctly', function (done) {
-      var b, sourceId
-      sourceId = remote.getCurrentWindow().id
+      var b
       listener = function (event) {
         window.removeEventListener('message', listener)
         b.close()
@@ -501,15 +509,16 @@ describe('chromium feature', function () {
         assert.equal(message.data, 'testing')
         assert.equal(message.origin, 'file://')
         assert.equal(message.sourceEqualsOpener, true)
-        assert.equal(message.sourceId, sourceId)
         assert.equal(event.origin, 'file://')
         done()
       }
       window.addEventListener('message', listener)
-      b = window.open('file://' + fixtures + '/pages/window-open-postMessage.html', '', 'show=no')
-      webContents.fromId(b.guestId).once('did-finish-load', function () {
-        b.postMessage('testing', '*')
+      app.once('browser-window-created', (event, {webContents}) => {
+        webContents.once('did-finish-load', function () {
+          b.postMessage('testing', '*')
+        })
       })
+      b = window.open('file://' + fixtures + '/pages/window-open-postMessage.html', '', 'show=no')
     })
   })
 
