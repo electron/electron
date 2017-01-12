@@ -87,6 +87,10 @@ process.versions['atom-shell']
 process.versions.electron
 ```
 
+* `process.versions.electron` and `process.version.chrome` will be made
+  read-only properties for consistency with the other `process.versions`
+  properties set by Node.
+
 ## `Tray`
 
 ```js
