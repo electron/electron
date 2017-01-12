@@ -112,6 +112,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
 
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {
+    // TODO(kevinsawicki): Make read-only in 2.0 to match node
     versions.Set(ATOM_PROJECT_NAME, ATOM_VERSION_STRING);
     versions.Set("chrome", CHROME_VERSION_STRING);
 
