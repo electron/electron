@@ -139,7 +139,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   }
 
   bool ShouldNotifyClient(int world_id) {
-    if (renderer_client_->isolated_world())
+    if (renderer_client_->isolated_world() && render_frame_->IsMainFrame())
       return IsIsolatedWorld(world_id);
     else
       return IsMainWorld(world_id);
@@ -151,7 +151,8 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     if (ShouldNotifyClient(world_id))
       renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-    if (renderer_client_->isolated_world() && IsMainWorld(world_id)) {
+    if (renderer_client_->isolated_world() && IsMainWorld(world_id)
+        && render_frame_->IsMainFrame()) {
       CreateIsolatedWorldContext();
       SetupMainWorldOverrides(context);
     }
