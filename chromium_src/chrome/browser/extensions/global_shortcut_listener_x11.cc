@@ -50,9 +50,9 @@ namespace extensions {
 // static
 GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  static GlobalShortcutListenerX11* instance =
-      new GlobalShortcutListenerX11();
-  return instance;
+  static std::unique_ptr<GlobalShortcutListenerX11> instance(
+      new GlobalShortcutListenerX11());
+  return instance.get();
 }
 
 GlobalShortcutListenerX11::GlobalShortcutListenerX11()
