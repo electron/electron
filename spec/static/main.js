@@ -249,3 +249,13 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
 ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })
+
+ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
+  const contents = webContents.fromId(id)
+  try {
+    contents.emit(eventName, {sender: contents})
+    event.returnValue = null
+  } catch (error) {
+    event.returnValue = error.message
+  }
+})
