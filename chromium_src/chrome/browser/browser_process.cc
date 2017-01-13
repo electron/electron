@@ -9,10 +9,9 @@
 
 BrowserProcess* g_browser_process = NULL;
 
-BrowserProcess::BrowserProcess() {
+BrowserProcess::BrowserProcess()
+    : print_job_manager_(new printing::PrintJobManager) {
   g_browser_process = this;
-
-  print_job_manager_.reset(new printing::PrintJobManager);
 }
 
 BrowserProcess::~BrowserProcess() {
