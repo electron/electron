@@ -415,7 +415,7 @@ void AtomRendererClient::AddSupportedKeySystems(
 
 v8::Local<v8::Context> AtomRendererClient::GetContext(
     blink::WebFrame* frame, v8::Isolate* isolate) {
-  if (isolated_world_)
+  if (isolated_world())
     return frame->worldScriptContext(
         isolate, World::ISOLATED_WORLD, ExtensionGroup::MAIN_GROUP);
   else
