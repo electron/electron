@@ -37,6 +37,7 @@ class PlatformNotificationService
   void DisplayPersistentNotification(
       content::BrowserContext* browser_context,
       int64_t persistent_notification_id,
+      const GURL& service_worker_origin,
       const GURL& origin,
       const content::PlatformNotificationData& notification_data,
       const content::NotificationResources& notification_resources) override;

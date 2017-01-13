@@ -267,8 +267,8 @@ DevToolsFileSystemIndexer::FileSystemIndexingJob::FileSystemIndexingJob(
       total_work_callback_(total_work_callback),
       worked_callback_(worked_callback),
       done_callback_(done_callback),
-      current_file_(BrowserThread::GetMessageLoopProxyForThread(
-                        BrowserThread::FILE).get()),
+      current_file_(
+          BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE).get()),
       files_indexed_(0),
       stopped_(false) {
   current_trigrams_set_.resize(kTrigramCount);

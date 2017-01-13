@@ -185,6 +185,8 @@
                   '$(SDKROOT)/System/Library/Frameworks/ApplicationServices.framework',
                   '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
+                  # device/gamepad/BUILD.gn:
+                  '$(SDKROOT)/System/Library/Frameworks/GameController.framework',
                   # content_browser.gypi:
                   '-lbsm',
                   # content_common.gypi:
@@ -203,6 +205,7 @@
                 'libraries': [
                   # Needed by desktop_capture.lib:
                   '-ld3d11.lib',
+                  '-ldxgi.lib',
                   # Following libs are always linked statically.
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
@@ -235,6 +238,7 @@
                   '<(libchromiumcontent_dir)/fxcrt.lib',
                   '<(libchromiumcontent_dir)/fxedit.lib',
                   '<(libchromiumcontent_dir)/fxge.lib',
+                  '<(libchromiumcontent_dir)/fxjs.lib',
                   '<(libchromiumcontent_dir)/javascript.lib',
                   '<(libchromiumcontent_dir)/pdfwindow.lib',
                   '<(libchromiumcontent_dir)/fx_agg.lib',
@@ -256,6 +260,7 @@
                   # content_common.gypi:
                   '-ld3d9.lib',
                   '-ld3d11.lib',
+                  '-ldxgi.lib',
                   '-ldxva2.lib',
                   '-lstrmiids.lib',
                   '-lmf.lib',
@@ -295,6 +300,8 @@
                       'secur32.lib',
                       'urlmon.lib',
                       'winhttp.lib',
+                      # ui/gfx/BUILD.gn:
+                      'dwrite.lib',
                     ],
                     'DelayLoadDLLs': [
                       'wtsapi32.dll',
