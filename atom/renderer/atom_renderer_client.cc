@@ -62,6 +62,8 @@ namespace {
 
 enum World {
   MAIN_WORLD = 0,
+  // Use a high number far away from 0 to not collide with any other world
+  // IDs created internally by Chrome.
   ISOLATED_WORLD = 999
 };
 
@@ -84,6 +86,8 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   }
 
   void CreateIsolatedWorldContext() {
+    // This maps to the name shown in the context combo box in the Console tab
+    // of the dev tools.
     render_frame_->GetWebFrame()->setIsolatedWorldHumanReadableName(
         World::ISOLATED_WORLD,
         blink::WebString::fromUTF8("Electron Isolated Context"));
@@ -134,7 +138,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     return world_id == World::ISOLATED_WORLD;
   }
 
-  bool NotifyClient(int world_id) {
+  bool ShouldNotifyClient(int world_id) {
     if (renderer_client_->isolated_world())
       return IsIsolatedWorld(world_id);
     else
@@ -144,7 +148,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
                               int world_id) override {
-    if (NotifyClient(world_id))
+    if (ShouldNotifyClient(world_id))
       renderer_client_->DidCreateScriptContext(context, render_frame_);
 
     if (renderer_client_->isolated_world() && IsMainWorld(world_id)) {
@@ -155,7 +159,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
-    if (NotifyClient(world_id))
+    if (ShouldNotifyClient(world_id))
       renderer_client_->WillReleaseScriptContext(context, render_frame_);
   }
 
