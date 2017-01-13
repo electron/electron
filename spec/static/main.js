@@ -251,11 +251,13 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
 })
 
 ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
-  const contents = webContents.fromId(id)
-  try {
-    contents.emit(eventName, {sender: contents})
-    event.returnValue = null
-  } catch (error) {
-    event.returnValue = error.message
+  const consoleWarn = console.warn
+  let lastWarning = null
+  console.warn = (message) => {
+    lastWarning = message
   }
+  const contents = webContents.fromId(id)
+  contents.emit(eventName, {sender: contents})
+  event.returnValue = lastWarning
+  console.warn = consoleWarn
 })

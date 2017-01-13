@@ -495,7 +495,7 @@ describe('ipc module', function () {
       assert.equal(w.listenerCount('test'), 0)
     })
 
-    it('throws an error when a function is called in a destroyed renderer', (done) => {
+    it('shows a warning when a function is called in a destroyed renderer', (done) => {
       w = new BrowserWindow({
         show: false
       })
@@ -506,8 +506,8 @@ describe('ipc module', function () {
             'Function provided here: remote-event-handler.html:11:33',
             'Remote event names: remote-handler, other-remote-handler'
           ].join('\n')
-          const errorMessage = ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
-          assert.equal(errorMessage, expectedMessage)
+          const warningMessage = ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
+          assert.equal(warningMessage, expectedMessage)
           done()
         })
         w.webContents.reload()
