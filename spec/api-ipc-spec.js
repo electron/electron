@@ -499,12 +499,20 @@ describe('ipc module', function () {
       w = new BrowserWindow({
         show: false
       })
-      w.loadURL('file://' + path.join(fixtures, 'api', 'reload-page.html'))
-      setTimeout(() => {
-        assert.throws(() => w.webContents.emit('remote-handler'),
-          /Attempting to call a function in a renderer window that has been closed or released./)
-        done()
-      }, 400)
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.once('did-finish-load', () => {
+          const expectedMessage = [
+            'Attempting to call a function in a renderer window that has been closed or released.',
+            'Function provided here: remote-event-handler.html:11:33',
+            'Remote event names: remote-handler, other-remote-handler'
+          ].join('\n')
+          const errorMessage = ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
+          assert.equal(errorMessage, expectedMessage)
+          done()
+        })
+        w.webContents.reload()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'remote-event-handler.html'))
     })
   })
 

@@ -7,8 +7,9 @@
       const {remote} = require('electron')
       const browserWindow = remote.getCurrentWindow()
 
-      browserWindow.webContents.on('remote-handler', () => { })
-      browserWindow.reload()
+      const handler = () => {}
+      browserWindow.webContents.on('remote-handler', handler)
+      browserWindow.webContents.on('other-remote-handler', handler)
     </script>
   </head>
   <body>
