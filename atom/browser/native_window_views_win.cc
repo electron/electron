@@ -147,6 +147,18 @@ bool NativeWindowViews::PreHandleMSG(
       }
       return false;
     }
+    /** Return zero (no-op) for non-client area events when window is frameless.
+     *  \see WM_NCPAINT - https://msdn.microsoft.com/en-us/library/windows/desktop/dd145212(v=vs.85).aspx
+     *  \see WM_NCCALCSIZE - https://msdn.microsoft.com/en-us/library/windows/desktop/ms632634(v=vs.85).aspx
+     */
+    case WM_NCPAINT:
+    case WM_NCCALCSIZE: {
+      if (!has_frame()) {
+        *result = 0;
+        return true;
+      }
+      return false;
+    }
     default:
       return false;
   }
