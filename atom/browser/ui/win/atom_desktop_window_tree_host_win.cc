@@ -25,4 +25,12 @@ bool AtomDesktopWindowTreeHostWin::PreHandleMSG(
   return delegate_->PreHandleMSG(message, w_param, l_param, result);
 }
 
+/** Override the client area inset
+ *  Returning true forces a border of 0 for frameless windows
+ */
+bool AtomDesktopWindowTreeHostWin::GetClientAreaInsets(
+    gfx::Insets* insets) const {
+  return !HasFrame();
+}
+
 }  // namespace atom
