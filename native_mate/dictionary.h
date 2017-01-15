@@ -94,6 +94,19 @@ class Dictionary {
   }
 
   template<typename T>
+  bool SetReadOnly(const base::StringPiece& key, T val) {
+    v8::Local<v8::Value> v8_value;
+    if (!TryConvertToV8(isolate_, val, &v8_value))
+      return false;
+    v8::Maybe<bool> result =
+        GetHandle()->DefineOwnProperty(isolate_->GetCurrentContext(),
+                                       StringToV8(isolate_, key),
+                                       v8_value,
+                                       v8::ReadOnly);
+    return !result.IsNothing() && result.FromJust();
+  }
+
+  template<typename T>
   bool SetMethod(const base::StringPiece& key, const T& callback) {
     return GetHandle()->Set(
         StringToV8(isolate_, key),
