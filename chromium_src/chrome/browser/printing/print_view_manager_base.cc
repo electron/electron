@@ -8,6 +8,7 @@
 
 #include "base/bind.h"
 #include "base/memory/ref_counted_memory.h"
+#include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
 #include "components/prefs/pref_service.h"
@@ -424,7 +425,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
   {
     base::MessageLoop::ScopedNestableTaskAllower allow(
         base::MessageLoop::current());
-    base::MessageLoop::current()->Run();
+    base::RunLoop().Run();
   }
 
   bool success = true;

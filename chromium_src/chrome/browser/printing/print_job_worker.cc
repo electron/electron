@@ -9,6 +9,7 @@
 #include "base/callback.h"
 #include "base/compiler_specific.h"
 #include "base/message_loop/message_loop.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/chrome_notification_types.h"
@@ -278,7 +279,7 @@ void PrintJobWorker::OnNewPage() {
     scoped_refptr<PrintedPage> page = document_->GetPage(page_number_.ToInt());
     if (!page.get()) {
       // We need to wait for the page to be available.
-      base::MessageLoop::current()->PostDelayedTask(
+      base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
           FROM_HERE,
           base::Bind(&PrintJobWorker::OnNewPage, weak_factory_.GetWeakPtr()),
           base::TimeDelta::FromMilliseconds(500));

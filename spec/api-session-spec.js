@@ -13,6 +13,7 @@ const {ipcMain, session, BrowserWindow, net} = remote
 describe('session module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
+  var webview = null
   var url = 'http://127.0.0.1'
 
   beforeEach(function () {
@@ -24,6 +25,13 @@ describe('session module', function () {
   })
 
   afterEach(function () {
+    if (webview != null) {
+      if (!document.body.contains(webview)) {
+        document.body.appendChild(webview)
+      }
+      webview.remove()
+    }
+
     return closeWindow(w).then(function () { w = null })
   })
 
@@ -325,7 +333,7 @@ describe('session module', function () {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', false, false)
-        var webview = new WebView()
+        webview = new WebView()
         webview.src = 'file://' + fixtures + '/api/blank.html'
         webview.addEventListener('did-finish-load', function () {
           webview.downloadURL(url + ':' + port + '/')
@@ -716,6 +724,26 @@ describe('session module', function () {
         }
         issueLoginRequest()
       })
+    })
+  })
+
+  describe('ses.setPermissionRequestHandler(handler)', () => {
+    it('cancels any pending requests when cleared', (done) => {
+      const ses = session.fromPartition('permissionTest')
+      ses.setPermissionRequestHandler(() => {
+        ses.setPermissionRequestHandler(null)
+      })
+
+      webview = new WebView()
+      webview.addEventListener('ipc-message', function (e) {
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['SecurityError'])
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/permissions/midi-sysex.html'
+      webview.partition = 'permissionTest'
+      webview.setAttribute('nodeintegration', 'on')
+      document.body.appendChild(webview)
     })
   })
 })

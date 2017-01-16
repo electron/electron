@@ -5,6 +5,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/bridge_task_runner.h"
@@ -18,6 +19,8 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "device/geolocation/geolocation_delegate.h"
+#include "device/geolocation/geolocation_provider.h"
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
@@ -27,10 +30,27 @@
 
 namespace atom {
 
+namespace {
+
+// A provider of Geolocation services to override AccessTokenStore.
+class AtomGeolocationDelegate : public device::GeolocationDelegate {
+ public:
+  AtomGeolocationDelegate() = default;
+
+  scoped_refptr<device::AccessTokenStore> CreateAccessTokenStore() final {
+    return new AtomAccessTokenStore();
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AtomGeolocationDelegate);
+};
+
 template<typename T>
 void Erase(T* container, typename T::iterator iter) {
   container->erase(iter);
 }
+
+}  // namespace
 
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
@@ -115,7 +135,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // Make sure node can get correct environment when debugging.
   if (node_debugger_->IsRunning())
-    env->AssignToContext(v8::Debug::GetDebugContext());
+    env->AssignToContext(v8::Debug::GetDebugContext(js_env_->isolate()));
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
@@ -171,6 +191,8 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 #if defined(OS_POSIX)
   HandleShutdownSignals();
 #endif
+  device::GeolocationProvider::SetGeolocationDelegate(
+      new AtomGeolocationDelegate());
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {

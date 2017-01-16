@@ -302,8 +302,8 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
                       const base::Closure& callback)
       : callback_(callback) {
     time_source_.reset(new cc::DelayBasedTimeSource(
-        content::BrowserThread::GetMessageLoopProxyForThread(
-          content::BrowserThread::UI).get()));
+        content::BrowserThread::GetTaskRunnerForThread(
+            content::BrowserThread::UI).get()));
     time_source_->SetClient(this);
   }
 
@@ -424,7 +424,7 @@ bool OffScreenRenderWidgetHostView::OnMessageReceived(
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(OffScreenRenderWidgetHostView, message)
     IPC_MESSAGE_HANDLER(ViewHostMsg_SetNeedsBeginFrames,
-                        OnSetNeedsBeginFrames)
+                        SetNeedsBeginFrames)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -678,22 +678,6 @@ bool OffScreenRenderWidgetHostView::HasAcceleratedSurface(const gfx::Size &) {
   return false;
 }
 
-void OffScreenRenderWidgetHostView::GetScreenInfo(
-    blink::WebScreenInfo* results) {
-  results->rect = gfx::Rect(size_);
-  results->availableRect = gfx::Rect(size_);
-  results->depth = 24;
-  results->depthPerComponent = 8;
-  results->deviceScaleFactor = scale_factor_;
-  results->orientationAngle = 0;
-  results->orientationType = blink::WebScreenOrientationLandscapePrimary;
-}
-
-bool OffScreenRenderWidgetHostView::GetScreenColorProfile(
-    blink::WebVector<char>*) {
-  return false;
-}
-
 gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
 }
@@ -716,12 +700,7 @@ gfx::Size OffScreenRenderWidgetHostView::GetRequestedRendererSize() const {
   return size_;
 }
 
-int OffScreenRenderWidgetHostView::
-  DelegatedFrameHostGetGpuMemoryBufferClientId()
-    const {
-  return render_widget_host_->GetProcess()->GetID();
-}
-
+#if !defined(OS_MACOSX)
 ui::Layer* OffScreenRenderWidgetHostView::DelegatedFrameHostGetLayer() const {
   return const_cast<ui::Layer*>(root_layer_.get());
 }
@@ -754,19 +733,14 @@ void OffScreenRenderWidgetHostView::DelegatedFrameHostResizeLockWasReleased() {
   return render_widget_host_->WasResized();
 }
 
-void OffScreenRenderWidgetHostView::DelegatedFrameHostSendCompositorSwapAck(
-  int output_surface_id, const cc::CompositorFrameAck& ack) {
-  render_widget_host_->Send(new ViewMsg_SwapCompositorFrameAck(
-    render_widget_host_->GetRoutingID(),
-    output_surface_id, ack));
-}
-
-void OffScreenRenderWidgetHostView::
-  DelegatedFrameHostSendReclaimCompositorResources(
-    int output_surface_id, const cc::CompositorFrameAck& ack) {
+void
+OffScreenRenderWidgetHostView::DelegatedFrameHostSendReclaimCompositorResources(
+    int output_surface_id,
+    bool is_swap_ack,
+    const cc::ReturnedResourceArray& resources) {
   render_widget_host_->Send(new ViewMsg_ReclaimCompositorResources(
-    render_widget_host_->GetRoutingID(),
-    output_surface_id, ack));
+      render_widget_host_->GetRoutingID(), output_surface_id, is_swap_ack,
+      resources));
 }
 
 void OffScreenRenderWidgetHostView::
@@ -782,6 +756,8 @@ void OffScreenRenderWidgetHostView::DelegatedFrameHostUpdateVSyncParameters(
 void OffScreenRenderWidgetHostView::SetBeginFrameSource(
     cc::BeginFrameSource* source) {
 }
+
+#endif  // !defined(OS_MACOSX)
 
 std::unique_ptr<cc::SoftwareOutputDevice>
   OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(
@@ -814,13 +790,14 @@ bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
   return false;
 }
 
-void OffScreenRenderWidgetHostView::OnSetNeedsBeginFrames(bool enabled) {
+void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
+    bool needs_begin_frames) {
   SetupFrameRate(false);
 
-  begin_frame_timer_->SetActive(enabled);
+  begin_frame_timer_->SetActive(needs_begin_frames);
 
   if (software_output_device_) {
-    software_output_device_->SetActive(enabled && painting_);
+    software_output_device_->SetActive(needs_begin_frames && painting_);
   }
 }
 

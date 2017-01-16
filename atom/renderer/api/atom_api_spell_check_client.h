@@ -32,10 +32,6 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
       int& misspelledOffset,
       int& misspelledLength,
       blink::WebVector<blink::WebString>* optionalSuggestions) override;
-  void checkTextOfParagraph(
-      const blink::WebString&,
-      blink::WebTextCheckingTypeMask mask,
-      blink::WebVector<blink::WebTextCheckingResult>* results) override;
   void requestCheckingOfText(
       const blink::WebString& textToCheck,
       const blink::WebVector<uint32_t>& markersInText,
