@@ -126,7 +126,6 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     dict.Set("hiddenPage", command_line->HasSwitch(switches::kHiddenPage));
 
     v8::Local<v8::Value> args[] = { binding };
-
     ignore_result(func->Call(context, v8::Null(isolate), 1, args));
   }
 
