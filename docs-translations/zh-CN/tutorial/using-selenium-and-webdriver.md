@@ -15,7 +15,7 @@ $ npm install --save-dev spectron
 ```
 
 ```javascript
-//一个简单的测试验证一个带标题的可见的窗口
+// 一个简单的测试验证一个带标题的可见的窗口
 var Application = require('spectron').Application
 var assert = require('assert')
 
