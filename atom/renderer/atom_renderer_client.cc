@@ -4,10 +4,10 @@
 
 #include "atom/renderer/atom_renderer_client.h"
 
-#include "atom_natives.h"  // NOLINT: This file is generated with js2c
-
 #include <string>
 #include <vector>
+
+#include "atom_natives.h"  // NOLINT: This file is generated with js2c
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
