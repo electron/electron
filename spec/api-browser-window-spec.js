@@ -1853,7 +1853,9 @@ describe('BrowserWindow module', function () {
         typeofArrayPush: 'number',
         typeofFunctionApply: 'boolean',
         typeofPreloadExecuteJavaScriptProperty: 'number',
-        typeofOpenedWindow: 'object'
+        typeofOpenedWindow: 'object',
+        documentHidden: true,
+        documentVisibilityState: 'hidden'
       }
     }
 
