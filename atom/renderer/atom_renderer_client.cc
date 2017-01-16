@@ -118,10 +118,10 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
     mate::Dictionary dict(isolate, binding);
     if (command_line->HasSwitch(switches::kGuestInstanceID))
-      dict.Set("guestInstanceId",
+      dict.Set(options::kGuestInstanceID,
                command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
     if (command_line->HasSwitch(switches::kOpenerID))
-      dict.Set("openerId",
+      dict.Set(options::kOpenerID,
                command_line->GetSwitchValueASCII(switches::kOpenerID));
     dict.Set("hiddenPage", command_line->HasSwitch(switches::kHiddenPage));
 
