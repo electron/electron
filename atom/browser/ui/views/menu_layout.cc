@@ -16,10 +16,10 @@ namespace {
 #if defined(OS_WIN)
 gfx::Rect SubtractBorderSize(gfx::Rect bounds) {
   gfx::Point borderSize = gfx::Point(
-    GetSystemMetrics(SM_CXSIZEFRAME) - 1, // width
-    GetSystemMetrics(SM_CYSIZEFRAME) - 1  // height
-  );
-  gfx::Point dpiAdjustedSize = display::win::ScreenWin::ScreenToDIPPoint(borderSize);
+      GetSystemMetrics(SM_CXSIZEFRAME) - 1,   // width
+      GetSystemMetrics(SM_CYSIZEFRAME) - 1);  // height
+  gfx::Point dpiAdjustedSize =
+      display::win::ScreenWin::ScreenToDIPPoint(borderSize);
 
   bounds.set_x(bounds.x() + dpiAdjustedSize.x());
   bounds.set_y(bounds.y() + dpiAdjustedSize.y());
