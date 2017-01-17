@@ -1,0 +1,11 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="../viewer-bookmark/viewer-bookmark.html">
+
+<dom-module id="viewer-bookmarks-content">
+  <template>
+    <template is="dom-repeat" items="{{bookmarks}}">
+      <viewer-bookmark bookmark="{{item}}" depth="0"></viewer-bookmark>
+    </template>
+  </template>
+</dom-module>
+<script src="viewer-bookmarks-content.js"></script>

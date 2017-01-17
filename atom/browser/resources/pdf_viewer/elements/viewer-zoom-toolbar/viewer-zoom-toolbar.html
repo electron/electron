@@ -1,0 +1,21 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="viewer-zoom-button.html">
+
+<dom-module id="viewer-zoom-toolbar">
+  <link rel="import" type="css" href="viewer-zoom-toolbar.css">
+  <template>
+
+    <div id="zoom-buttons">
+      <viewer-zoom-button id="fit-button" on-fabclick="fitToggle" delay="100"
+          icons="pdf:fullscreen-exit cr:fullscreen">
+      </viewer-zoom-button>
+      <viewer-zoom-button id="zoom-in-button" icons="pdf:add"
+          on-fabclick="zoomIn" delay="50"></viewer-zoom-button>
+      <viewer-zoom-button id="zoom-out-button" icons="pdf:remove"
+          on-fabclick="zoomOut" delay="0"></viewer-zoom-button>
+    </div>
+  </template>
+</dom-module>
+<script src="viewer-zoom-toolbar.js"></script>

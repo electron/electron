@@ -1,0 +1,15 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-fab/paper-fab.html">
+
+<dom-module id="viewer-zoom-button">
+  <link rel="import" type="css" href="../shared-icon-style.css">
+  <link rel="import" type="css" href="viewer-zoom-button.css">
+  <template>
+    <div id="wrapper">
+      <paper-fab id="button" mini icon="[[visibleIcon_]]" on-click="fireClick"
+          aria-label$="[[visibleTooltip_]]" title="[[visibleTooltip_]]">
+      </paper-fab>
+    </div>
+  </template>
+</dom-module>
+<script src="viewer-zoom-button.js"></script>

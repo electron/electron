@@ -1,0 +1,26 @@
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-ripple/paper-ripple.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-styles/color.html">
+
+<dom-module id="viewer-bookmark" attributes="bookmark">
+  <link rel="import" type="css" href="viewer-bookmark.css">
+  <template>
+    <div id="item" on-click="onClick">
+      <paper-ripple></paper-ripple>
+      <paper-icon-button id="expand" icon="cr:chevron-right"
+          on-click="toggleChildren">
+      </paper-icon-button>
+      <span id="title" tabindex="0">{{bookmark.title}}</span>
+    </div>
+    <!-- dom-if will stamp the complex bookmark tree lazily as individual nodes
+      are opened. -->
+    <template is="dom-if" if="{{childrenShown}}" id="sub-bookmarks">
+      <template is="dom-repeat" items="{{bookmark.children}}">
+        <viewer-bookmark bookmark="{{item}}" depth="{{childDepth}}">
+        </viewer-bookmark>
+      </template>
+    </template>
+  </template>
+</dom-module>
+<script src="viewer-bookmark.js"></script>

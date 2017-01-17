@@ -1,0 +1,22 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-button/paper-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-dialog/paper-dialog.html">
+
+<dom-module id="viewer-error-screen">
+  <link rel="import" type="css" href="viewer-error-screen.css">
+  <template>
+    <paper-dialog id="dialog" modal no-cancel-on-esc-key
+        entry-animation="fade-in-animation">
+      <div id="load-failed-message" class="last-item">
+        {{strings.pageLoadFailed}}
+      </div>
+      <div class="buttons" hidden$="{{!reloadFn}}">
+        <paper-button on-click="reload" autofocus>
+          {{strings.pageReload}}
+        </paper-button>
+      </div>
+    </paper-dialog>
+  </template>
+</dom-module>
+<script src="viewer-error-screen.js"></script>

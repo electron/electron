@@ -1,0 +1,19 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-input/iron-input.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-input/paper-input-container.html">
+
+<dom-module id="viewer-page-selector">
+  <link rel="import" type="css" href="viewer-page-selector.css">
+  <template>
+    <paper-input-container id="pageselector" no-label-float>
+      <input id="input" is="iron-input" value="{{pageNo}}"
+          prevent-invalid-input allowed-pattern="\d" on-mouseup="select"
+          on-change="pageNoCommitted" aria-label$="{{strings.labelPageNumber}}">
+    </paper-input-container>
+    <span id="slash"> / </span>
+    <span id="pagelength-spacer">
+      <span id="pagelength">{{docLength}}</span>
+    </span>
+  </template>
+</dom-module>
+<script src="viewer-page-selector.js"></script>

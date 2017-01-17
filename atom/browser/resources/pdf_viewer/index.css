@@ -1,0 +1,50 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+body {
+  background-color: rgb(82, 86, 89);
+  font-family: 'Roboto', 'Noto', sans-serif;
+  margin: 0;
+}
+
+viewer-page-indicator {
+  visibility: hidden;
+  z-index: 2;
+}
+
+viewer-pdf-toolbar {
+  position: fixed;
+  width: 100%;
+  z-index: 4;
+}
+
+#plugin {
+  height: 100%;
+  position: fixed;
+  width: 100%;
+  z-index: 1;
+}
+
+#sizer {
+  position: absolute;
+  z-index: 0;
+}
+
+@media(max-height: 250px) {
+  viewer-pdf-toolbar {
+    display: none;
+  }
+}
+
+@media(max-height: 200px) {
+  viewer-zoom-toolbar {
+    display: none;
+  }
+}
+
+@media(max-width: 300px) {
+  viewer-zoom-toolbar {
+    display: none;
+  }
+}

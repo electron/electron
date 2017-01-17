@@ -1,0 +1,68 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/slide-up-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/animations/transform-animation.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-progress/paper-progress.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+<link rel="import" href="../icons.html">
+<link rel="import" href="../viewer-bookmarks-content/viewer-bookmarks-content.html">
+<link rel="import" href="../viewer-page-selector/viewer-page-selector.html">
+<link rel="import" href="../viewer-toolbar-dropdown/viewer-toolbar-dropdown.html">
+
+<dom-module id="viewer-pdf-toolbar">
+  <link rel="import" type="css" href="../shared-icon-style.css">
+  <link rel="import" type="css" href="viewer-pdf-toolbar.css">
+  <template>
+
+    <paper-toolbar>
+      <div id="aligner" class="middle">
+        <span id="title" title="{{docTitle}}">
+          <span>{{docTitle}}</span>
+        </span>
+
+        <div id="pageselector-container">
+          <viewer-page-selector id="pageselector" class="invisible"
+              doc-length="{{docLength}}" page-no="{{pageNo}}"
+              strings="{{strings}}">
+          </viewer-page-selector>
+        </div>
+
+        <div id="buttons" class="invisible">
+          <paper-icon-button id="rotate-right" icon="pdf:rotate-right"
+              on-click="rotateRight"
+              aria-label$="{{strings.tooltipRotateCW}}"
+              title$="{{strings.tooltipRotateCW}}">
+          </paper-icon-button>
+
+          <paper-icon-button id="download" icon="cr:file-download"
+              on-click="download"
+              aria-label$="{{strings.tooltipDownload}}"
+              title$="{{strings.tooltipDownload}}">
+          </paper-icon-button>
+
+          <paper-icon-button id="print" icon="cr:print"
+              on-click="print"
+              aria-label$="{{strings.tooltipPrint}}"
+              title$="{{strings.tooltipPrint}}">
+          </paper-icon-button>
+
+          <viewer-toolbar-dropdown id="bookmarks"
+                                   hidden$="[[!bookmarks.length]]"
+                                   open-icon="pdf:bookmark"
+                                   closed-icon="pdf:bookmark-border"
+                                   header="{{strings.bookmarks}}">
+              <viewer-bookmarks-content bookmarks="{{bookmarks}}">
+              </viewer-bookmarks-content>
+          </viewer-toolbar-dropdown>
+        </div>
+      </div>
+      <div class="bottom fit">
+        <paper-progress id="progress" value="{{loadProgress}}"></paper-progress>
+      </div>
+    </paper-toolbar>
+  </template>
+</dom-module>
+<script src="viewer-pdf-toolbar.js"></script>

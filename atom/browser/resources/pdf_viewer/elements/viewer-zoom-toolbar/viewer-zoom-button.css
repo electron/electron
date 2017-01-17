@@ -1,0 +1,32 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+#wrapper {
+  transition: transform 250ms;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+:host([closed]) #wrapper {
+  /* 132px roughly flips the location of the button across the right edge of the
+   * page. */
+  transform: translateX(132px);
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+}
+
+:host-context([dir=rtl]):host([closed]) #wrapper {
+  transform: translateX(-132px);
+}
+
+paper-fab {
+  --paper-fab-keyboard-focus-background: var(--viewer-icon-ink-color);
+  --paper-fab-mini: {
+    height: 36px;
+    padding: 8px;
+    width: 36px;
+  };
+  @apply(--shadow-elevation-4dp);
+  background-color: rgb(242, 242, 242);
+  color: rgb(96, 96, 96);
+  overflow: visible;
+}

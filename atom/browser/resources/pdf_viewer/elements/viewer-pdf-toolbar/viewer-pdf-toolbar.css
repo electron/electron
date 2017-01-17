@@ -1,0 +1,92 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+:host ::selection {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* We introduce a wrapper aligner element to help with laying out the main
+ * toolbar content without changing the bottom-aligned progress bar. */
+#aligner {
+  @apply(--layout-horizontal);
+  @apply(--layout-center);
+  padding: 0 16px;
+  width: 100%;
+}
+
+#title {
+  @apply(--layout-flex-5);
+  font-size: 77.8%;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pageselector-container {
+  @apply(--layout-flex-1);
+  text-align: center;
+  /* The container resizes according to the width of the toolbar. On small
+   * screens with large numbers of pages, overflow page numbers without
+   * wrapping. */
+  white-space: nowrap;
+}
+
+#buttons {
+  @apply(--layout-flex-5);
+  -webkit-user-select: none;
+  text-align: end;
+}
+
+paper-icon-button {
+  -webkit-margin-end: 12px;
+}
+
+viewer-toolbar-dropdown {
+  -webkit-margin-end: 4px;
+}
+
+paper-progress {
+  --paper-progress-active-color: var(--google-blue-300);
+  --paper-progress-container-color: transparent;
+  --paper-progress-height: 3px;
+  transition: opacity 150ms;
+  width: 100%;
+}
+
+paper-toolbar {
+  --paper-toolbar-background: rgb(50, 54, 57);
+  --paper-toolbar-height: 48px;
+  @apply(--shadow-elevation-2dp);
+  color: rgb(241, 241, 241);
+  font-size: 1.5em;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+@media(max-width: 675px) {
+  #bookmarks,
+  #rotate-left {
+    display: none;
+  }
+
+  #pageselector-container {
+    flex: 2;
+  }
+}
+
+@media(max-width: 450px) {
+  #rotate-right {
+    display: none;
+  }
+}
+
+@media(max-width: 400px) {
+  #buttons,
+  #pageselector-container {
+    display: none;
+  }
+}

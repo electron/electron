@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grit latest_public_release="0" current_release="1">
+  <outputs>
+    <output filename="pdf_viewer_resources.h" type="rc_header">
+      <emit emit_type='prepend'></emit>
+    </output>
+    <output filename="pdf_viewer_resources_map.cc" type="resource_file_map_source" />
+    <output filename="pdf_viewer_resources_map.h" type="resource_map_header" />
+    <output filename="../../pdf_viewer_resources.pak" type="data_package" />
+  </outputs>
+  <release seq="1">
+    <includes>
+      <include name="IDR_PDF_INDEX_CSS" file="index.css" allowexternalscript="true" type="BINDATA" />
+      <include name="IDR_PDF_INDEX_HTML" file="index.html" allowexternalscript="true" type="BINDATA" />
+      <include name="IDR_PDF_MAIN_JS" file="main.js" type="BINDATA" />
+      <include name="IDR_PDF_PDF_JS" file="pdf.js" type="BINDATA" />
+      <include name="IDR_PDF_UI_MANAGER_JS" file="toolbar_manager.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWPORT_JS" file="viewport.js" type="BINDATA" />
+      <include name="IDR_PDF_OPEN_PDF_PARAMS_PARSER_JS" file="open_pdf_params_parser.js" type="BINDATA" />
+      <include name="IDR_PDF_NAVIGATOR_JS" file="navigator.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWPORT_SCROLLER_JS" file="viewport_scroller.js" type="BINDATA" />
+      <include name="IDR_PDF_PDF_SCRIPTING_API_JS" file="pdf_scripting_api.js" type="BINDATA" />
+      <include name="IDR_PDF_ZOOM_MANAGER_JS" file="zoom_manager.js" type="BINDATA" />
+      <include name="IDR_PDF_BROWSER_API_JS" file="browser_api.js" type="BINDATA" />
+      <include name="IDR_PDF_ODS_CPP_PDF" file="ods-cpp.pdf" type="BINDATA" />
+
+      <include name="IDR_PDF_SHARED_ICON_STYLE_CSS" file="elements/shared-icon-style.css" type="BINDATA" />
+      <include name="IDR_PDF_ICONS_HTML" file="elements/icons.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_BOOKMARK_CSS" file="elements/viewer-bookmark/viewer-bookmark.css" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_BOOKMARK_HTML" file="elements/viewer-bookmark/viewer-bookmark.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_BOOKMARK_JS" file="elements/viewer-bookmark/viewer-bookmark.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_BOOKMARKS_CONTENT_HTML" file="elements/viewer-bookmarks-content/viewer-bookmarks-content.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_BOOKMARKS_CONTENT_JS" file="elements/viewer-bookmarks-content/viewer-bookmarks-content.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_ERROR_SCREEN_CSS" file="elements/viewer-error-screen/viewer-error-screen.css" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_ERROR_SCREEN_HTML" file="elements/viewer-error-screen/viewer-error-screen.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_ERROR_SCREEN_JS" file="elements/viewer-error-screen/viewer-error-screen.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PAGE_INDICATOR_CSS" file="elements/viewer-page-indicator/viewer-page-indicator.css" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PAGE_INDICATOR_HTML" file="elements/viewer-page-indicator/viewer-page-indicator.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PAGE_INDICATOR_JS" file="elements/viewer-page-indicator/viewer-page-indicator.js" type="BINDATA" flattenhtml="true" />
+      <include name="IDR_PDF_VIEWER_PAGE_SELECTOR_CSS" file="elements/viewer-page-selector/viewer-page-selector.css" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PAGE_SELECTOR_HTML" file="elements/viewer-page-selector/viewer-page-selector.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PAGE_SELECTOR_JS" file="elements/viewer-page-selector/viewer-page-selector.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PASSWORD_SCREEN_HTML" file="elements/viewer-password-screen/viewer-password-screen.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PASSWORD_SCREEN_JS" file="elements/viewer-password-screen/viewer-password-screen.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PDF_TOOLBAR_CSS" file="elements/viewer-pdf-toolbar/viewer-pdf-toolbar.css" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PDF_TOOLBAR_HTML" file="elements/viewer-pdf-toolbar/viewer-pdf-toolbar.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_PDF_TOOLBAR_JS" file="elements/viewer-pdf-toolbar/viewer-pdf-toolbar.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_TOOLBAR_DROPDOWN_CSS" file="elements/viewer-toolbar-dropdown/viewer-toolbar-dropdown.css" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_TOOLBAR_DROPDOWN_HTML" file="elements/viewer-toolbar-dropdown/viewer-toolbar-dropdown.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_TOOLBAR_DROPDOWN_JS" file="elements/viewer-toolbar-dropdown/viewer-toolbar-dropdown.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_ZOOM_BUTTON_CSS" file="elements/viewer-zoom-toolbar/viewer-zoom-button.css" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_ZOOM_BUTTON_HTML" file="elements/viewer-zoom-toolbar/viewer-zoom-button.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_ZOOM_BUTTON_JS" file="elements/viewer-zoom-toolbar/viewer-zoom-button.js" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_ZOOM_SELECTOR_CSS" file="elements/viewer-zoom-toolbar/viewer-zoom-toolbar.css" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_ZOOM_SELECTOR_HTML" file="elements/viewer-zoom-toolbar/viewer-zoom-toolbar.html" type="BINDATA" />
+      <include name="IDR_PDF_VIEWER_ZOOM_SELECTOR_JS" file="elements/viewer-zoom-toolbar/viewer-zoom-toolbar.js" type="BINDATA" />
+    </includes>
+  </release>
+</grit>

@@ -1,0 +1,41 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+:host {
+  -webkit-user-select: none;
+  bottom: 0;
+  padding: 48px 0;
+  position: fixed;
+  right: 0;
+  z-index: 3;
+}
+
+:host-context([dir=rtl]) {
+  left: 0;
+  right: auto;
+}
+
+#zoom-buttons {
+  position: relative;
+  right: 48px;
+}
+
+:host-context([dir=rtl]) #zoom-buttons {
+  left: 48px;
+  right: auto;
+}
+
+viewer-zoom-button {
+  display: block;
+}
+
+/* A small gap between the zoom in/zoom out buttons. */
+#zoom-out-button {
+  margin-top: 10px;
+}
+
+/* A larger gap between the fit button and bottom two buttons. */
+#zoom-in-button {
+  margin-top: 24px;
+}

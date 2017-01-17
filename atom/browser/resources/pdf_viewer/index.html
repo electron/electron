@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+  <base href="chrome://pdf-viewer/">
+  <meta charset="utf-8">
+  <link rel="import" href="elements/viewer-error-screen/viewer-error-screen.html">
+  <link rel="import" href="elements/viewer-page-indicator/viewer-page-indicator.html">
+  <link rel="import" href="elements/viewer-page-selector/viewer-page-selector.html">
+  <link rel="import" href="elements/viewer-password-screen/viewer-password-screen.html">
+  <link rel="import" href="elements/viewer-pdf-toolbar/viewer-pdf-toolbar.html">
+  <link rel="import" href="elements/viewer-zoom-toolbar/viewer-zoom-toolbar.html">
+
+  <link rel="stylesheet" href="chrome://resources/css/text_defaults.css">
+  <link rel="stylesheet" href="chrome://resources/css/roboto.css">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+<viewer-pdf-toolbar id="toolbar" hidden></viewer-pdf-toolbar>
+
+<div id="sizer"></div>
+<viewer-password-screen id="password-screen"></viewer-password-screen>
+
+<viewer-zoom-toolbar id="zoom-toolbar"></viewer-zoom-toolbar>
+
+<viewer-page-indicator id="page-indicator"></viewer-page-indicator>
+
+<viewer-error-screen id="error-screen"></viewer-error-screen>
+
+</body>
+<script src="toolbar_manager.js"></script>
+<script src="viewport.js"></script>
+<script src="open_pdf_params_parser.js"></script>
+<script src="navigator.js"></script>
+<script src="viewport_scroller.js"></script>
+<script src="zoom_manager.js"></script>
+<script src="pdf_scripting_api.js"></script>
+<script src="chrome://resources/js/util.js"></script>
+<script src="browser_api.js"></script>
+<script src="pdf.js"></script>
+<script src="main.js"></script>
+</html>

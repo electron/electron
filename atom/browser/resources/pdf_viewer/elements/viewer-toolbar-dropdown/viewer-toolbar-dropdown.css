@@ -1,0 +1,59 @@
+/* Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+:host {
+  text-align: start;
+}
+
+#container {
+  position: absolute;
+  /* Controls the position of the dropdown relative to the right of the screen.
+   * Default is aligned with the right of the toolbar buttons.
+   * TODO(tsergeant): Change the layout of the dropdown so this is not required.
+   */
+  right: var(--viewer-toolbar-dropdown-right-distance, 36px);
+}
+
+:host-context([dir=rtl]) #container {
+  left: var(--viewer-toolbar-dropdown-right-distance, 36px);
+  right: auto;
+}
+
+paper-material {
+  background-color: rgb(256, 256, 256);
+  border-radius: 4px;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  width: 260px;
+}
+
+#scroll-container {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 6px 0 4px 0;
+}
+
+#icon {
+  cursor: pointer;
+  display: inline-block;
+}
+
+:host([dropdown-open]) #icon {
+  background-color: rgb(25, 27, 29);
+  border-radius: 4px;
+}
+
+#arrow {
+  -webkit-margin-start: -12px;
+  -webkit-padding-end: 4px;
+}
+
+h1 {
+  border-bottom: 1px solid rgb(219, 219, 219);
+  color: rgb(33, 33, 33);
+  font-size: 77.8%;
+  font-weight: 500;
+  margin: 0;
+  padding: 14px 28px;
+}

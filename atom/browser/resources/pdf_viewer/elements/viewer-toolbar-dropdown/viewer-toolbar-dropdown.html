@@ -1,0 +1,29 @@
+<link rel="import" href="chrome://resources/html/polymer.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/neon-animation/web-animations.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-material/paper-material.html">
+<link rel="import" href="chrome://resources/polymer/v1_0/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="chrome://resources/cr_elements/icons.html">
+
+<dom-module id="viewer-toolbar-dropdown">
+  <link rel="import" type="css" href="../shared-icon-style.css">
+  <link rel="import" type="css" href="viewer-toolbar-dropdown.css">
+  <template>
+    <div on-click="toggleDropdown" id="icon">
+      <paper-icon-button id="main-icon" icon="[[dropdownIcon]]"
+          aria-label$="{{header}}" title$="{{header}}">
+      </paper-icon-button>
+      <iron-icon icon="cr:arrow-drop-down" id="arrow"></iron-icon>
+    </div>
+
+    <div id="container">
+      <paper-material id="dropdown" style="display: none">
+        <h1>{{header}}</h1>
+        <div id="scroll-container">
+          <content></content>
+        </div>
+      </paper-material>
+    </div>
+  </template>
+</dom-module>
+
+<script src="viewer-toolbar-dropdown.js"></script>
