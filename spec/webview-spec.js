@@ -1467,6 +1467,8 @@ describe('<webview> tag', function () {
     })
 
     it('can be manually resized with setSize even when attribute is present', done => {
+      if (process.env.TRAVIS === 'true') return done()
+
       w = new BrowserWindow({show: false, width: 200, height: 200})
       w.loadURL('file://' + fixtures + '/pages/webview-no-guest-resize.html')
 
