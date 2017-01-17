@@ -49,18 +49,17 @@ void InitializeResourceBundle(const std::string& locale) {
       locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
 
   // Load other resource files.
-  base::FilePath path;
 #if defined(OS_MACOSX)
-  path = GetResourcesPakFilePath();
+  LoadCommonResources();
 #else
-  base::FilePath pak_dir;
+  base::FilePath path, pak_dir;
+  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
   PathService::Get(base::DIR_MODULE, &pak_dir);
   path = pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak"));
-#endif
-
-  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
   bundle.AddDataPackFromPath(path, ui::GetSupportedScaleFactors()[0]);
-#if !defined(OS_MACOSX)
+  bundle.AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("pdf_viewer_resources.pak")),
+      ui::GetSupportedScaleFactors()[0]);
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("blink_image_resources_200_percent.pak")),
       ui::SCALE_FACTOR_200P);

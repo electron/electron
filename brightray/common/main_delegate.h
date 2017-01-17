@@ -24,7 +24,7 @@ class BrowserClient;
 class ContentClient;
 
 void InitializeResourceBundle(const std::string& locale);
-base::FilePath GetResourcesPakFilePath();
+void LoadCommonResources();
 
 class MainDelegate : public content::ContentMainDelegate {
  public:

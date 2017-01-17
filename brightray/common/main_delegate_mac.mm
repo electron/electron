@@ -16,6 +16,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
+#include "ui/base/resource/resource_bundle.h"
 
 namespace brightray {
 
@@ -27,9 +28,17 @@ base::FilePath GetFrameworksPath() {
 
 }
 
-base::FilePath GetResourcesPakFilePath() {
-  auto path = [base::mac::FrameworkBundle() pathForResource:@"content_shell" ofType:@"pak"];
+base::FilePath GetResourcesPakFilePath(NSString* name) {
+  auto path = [base::mac::FrameworkBundle() pathForResource:name ofType:@"pak"];
   return base::mac::NSStringToFilePath(path);
+}
+
+void LoadCommonResources() {
+  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
+  bundle.AddDataPackFromPath(GetResourcesPakFilePath(@"content_shell"),
+                             ui::GetSupportedScaleFactors()[0]);
+  bundle.AddDataPackFromPath(GetResourcesPakFilePath(@"pdf_viewer_resources"),
+                             ui::GetSupportedScaleFactors()[0]);
 }
 
 void MainDelegate::OverrideFrameworkBundlePath() {
