@@ -5,7 +5,7 @@
 #include "atom/browser/atom_web_ui_controller_factory.h"
 
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
+#include "base/strings/string_split.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/url_data_source.h"
 #include "content/public/browser/web_contents.h"
@@ -103,14 +103,34 @@ class BundledDataSource : public content::URLDataSource {
 
 class PdfViewerUI : public content::WebUIController {
  public:
-  PdfViewerUI(content::BrowserContext* browser_context, content::WebUI* web_ui)
-      : content::WebUIController(web_ui) {
+  PdfViewerUI(content::BrowserContext* browser_context,
+              content::WebUI* web_ui,
+              const std::string& stream_url,
+              const std::string& original_url)
+      : content::WebUIController(web_ui),
+        stream_url_(stream_url),
+        original_url_(original_url) {
+    web_ui->RegisterMessageCallback(
+        "initialize",
+        base::Bind(&PdfViewerUI::OnInitialize, base::Unretained(this)));
     content::URLDataSource::Add(browser_context, new BundledDataSource);
   }
 
   void RenderViewCreated(content::RenderViewHost* rvh) override {
     rvh->AllowBindings(content::BINDINGS_POLICY_WEB_UI);
   }
+
+  void OnInitialize(const base::ListValue* args) {
+    web_ui()->CallJavascriptFunctionUnsafe("main",
+                                           base::StringValue(original_url_),
+                                           base::StringValue(original_url_));
+  }
+
+ private:
+  std::string stream_url_;
+  std::string original_url_;
+
+  DISALLOW_COPY_AND_ASSIGN(PdfViewerUI);
 };
 }
 
@@ -149,8 +169,18 @@ content::WebUIController*
 AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
                                                         const GURL& url) const {
   if (url.host() == kChromeUIPdfViewerHost) {
+    base::StringPairs toplevel_params;
+    base::SplitStringIntoKeyValuePairs(url.query(), '=', '&', &toplevel_params);
+    std::string stream_url, original_url;
+    for (const auto& param : toplevel_params) {
+      if (param.first == "streamURL") {
+        stream_url = param.second;
+      } else if (param.first == "originalURL") {
+        original_url = param.second;
+      }
+    }
     auto browser_context = web_ui->GetWebContents()->GetBrowserContext();
-    return new PdfViewerUI(browser_context, web_ui);
+    return new PdfViewerUI(browser_context, web_ui, stream_url, original_url);
   }
   return nullptr;
 }

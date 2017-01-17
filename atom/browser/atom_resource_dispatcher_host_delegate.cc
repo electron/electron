@@ -8,6 +8,7 @@
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/common/platform_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/strings/stringprintf.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/stream_handle.h"
 #include "content/public/browser/stream_info.h"
@@ -68,11 +69,11 @@ void OnPdfStreamCreated(std::unique_ptr<content::StreamInfo> stream,
   if (!web_contents)
     return;
 
-  LOG(WARNING) << stream->handle->GetURL();
-  LOG(WARNING) << stream->original_url;
-
-  content::NavigationController::LoadURLParams params(
-      GURL("chrome://pdf-viewer/index.html"));
+  auto stream_url = stream->handle->GetURL();
+  auto original_url = stream->original_url;
+  content::NavigationController::LoadURLParams params(GURL(base::StringPrintf(
+      "chrome://pdf-viewer/index.html?streamURL=%s&originalURL=%s",
+      stream_url.spec().c_str(), original_url.spec().c_str())));
   web_contents->GetController().LoadURLWithParams(params);
 }
 

@@ -71,13 +71,13 @@ class BrowserApi {
    * @param {boolean} manageZoom Whether to manage zoom.
    */
   static create(streamInfo, manageZoom) {
-    /*return Promise.all([
-        lookupDefaultZoom(streamInfo),
-        lookupInitialZoom(streamInfo)
-    ]).then(function(zoomFactors) {*/
+    return Promise.all([
+      lookupDefaultZoom(streamInfo),
+      lookupInitialZoom(streamInfo)
+    ]).then(function(zoomFactors) {
       return new BrowserApi(
-          streamInfo, 1.0, 1.0, manageZoom);
-    //});
+        streamInfo, zoomFactors[0], zoomFactors[1], manageZoom);
+    });
   }
 
   /**
@@ -144,33 +144,11 @@ class BrowserApi {
 };
 
 /**
- * Creates a BrowserApi for an extension running as a mime handler.
- * @return {Promise<BrowserApi>} A promise to a BrowserApi instance constructed
- *     using the mimeHandlerPrivate API.
- */
-function createBrowserApiForMimeHandlerView() {
-  return new Promise(function(resolve, reject) {
-    chrome.mimeHandlerPrivate.getStreamInfo(resolve);
-  }).then(function(streamInfo) {
-    let manageZoom = !streamInfo.embedded && streamInfo.tabId != -1;
-    return new Promise(function(resolve, reject) {
-      if (!manageZoom) {
-        resolve();
-        return;
-      }
-      chrome.tabs.setZoomSettings(
-          streamInfo.tabId, {mode: 'manual', scope: 'per-tab'}, resolve);
-    }).then(function() { return BrowserApi.create(streamInfo, manageZoom); });
-  });
-}
-
-/**
  * Creates a BrowserApi instance for an extension not running as a mime handler.
  * @return {Promise<BrowserApi>} A promise to a BrowserApi instance constructed
  *     from the URL.
  */
 function createBrowserApi(streamURL, originalURL) {
-  //let url = window.location.search.substring(1);
   let streamInfo = {
     streamUrl: streamURL,
     originalUrl: originalURL,
@@ -189,16 +167,3 @@ function createBrowserApi(streamURL, originalURL) {
     //});
   }).then(function() { return BrowserApi.create(streamInfo, false); });
 }
-
-/**
- * Returns a promise that will resolve to a BrowserApi instance.
- * @return {Promise<BrowserApi>} A promise to a BrowserApi instance for the
- *     current environment.
-
-function createBrowserApi(streamURL, originalURL) {
-  //if (window.location.search)
-  return createBrowserApiForStandaloneExtension();
-
-  //return createBrowserApiForMimeHandlerView();
-}
-*/
