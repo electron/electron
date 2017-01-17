@@ -896,6 +896,8 @@ settings.
 The `callback` will be called with `callback(error, data)` on completion. The
 `data` is a `Buffer` that contains the generated PDF data.
 
+The `landscape` will be ignored if `@page` CSS at-rule is used in the web page.
+
 By default, an empty `options` will be regarded as:
 
 ```javascript
