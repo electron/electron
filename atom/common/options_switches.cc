@@ -99,7 +99,10 @@ const char kPreloadURL[] = "preloadURL";
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
-// Instancd ID of guest WebContents.
+// Enable context isolation of Electron APIs and preload script
+const char kContextIsolation[] = "contextIsolation";
+
+// Instance ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
 
 // Web runtime features.
@@ -158,14 +161,16 @@ const char kCipherSuiteBlacklist[] = "cipher-suite-blacklist";
 const char kAppUserModelId[] = "app-user-model-id";
 
 // The command line switch versions of the options.
-const char kBackgroundColor[] = "background-color";
-const char kZoomFactor[]      = "zoom-factor";
-const char kPreloadScript[]   = "preload";
-const char kPreloadURL[]      = "preload-url";
-const char kNodeIntegration[] = "node-integration";
-const char kGuestInstanceID[] = "guest-instance-id";
-const char kOpenerID[]        = "opener-id";
-const char kScrollBounce[]    = "scroll-bounce";
+const char kBackgroundColor[]  = "background-color";
+const char kZoomFactor[]       = "zoom-factor";
+const char kPreloadScript[]    = "preload";
+const char kPreloadURL[]       = "preload-url";
+const char kNodeIntegration[]  = "node-integration";
+const char kContextIsolation[] = "context-isolation";
+const char kGuestInstanceID[]  = "guest-instance-id";
+const char kOpenerID[]         = "opener-id";
+const char kScrollBounce[]     = "scroll-bounce";
+const char kHiddenPage[]       = "hidden-page";
 
 // Widevine options
 // Path to Widevine CDM binaries.

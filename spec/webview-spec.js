@@ -2,8 +2,11 @@ const assert = require('assert')
 const path = require('path')
 const http = require('http')
 const url = require('url')
-const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} = require('electron').remote
+const {remote} = require('electron')
+const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} = remote
 const {closeWindow} = require('./window-helpers')
+
+const isCI = remote.getGlobal('isCi')
 
 describe('<webview> tag', function () {
   this.timeout(3 * 60 * 1000)
@@ -427,6 +430,40 @@ describe('<webview> tag', function () {
       webview.addEventListener('console-message', listener)
       webview.setAttribute('webpreferences', 'webSecurity=no, nodeIntegration=yes')
       webview.src = 'data:text/html;base64,' + encoded
+      document.body.appendChild(webview)
+    })
+
+    it('can enable context isolation', (done) => {
+      ipcMain.once('isolated-world', (event, data) => {
+        assert.deepEqual(data, {
+          preloadContext: {
+            preloadProperty: 'number',
+            pageProperty: 'undefined',
+            typeofRequire: 'function',
+            typeofProcess: 'object',
+            typeofArrayPush: 'function',
+            typeofFunctionApply: 'function'
+          },
+          pageContext: {
+            preloadProperty: 'undefined',
+            pageProperty: 'string',
+            typeofRequire: 'undefined',
+            typeofProcess: 'undefined',
+            typeofArrayPush: 'number',
+            typeofFunctionApply: 'boolean',
+            typeofPreloadExecuteJavaScriptProperty: 'number',
+            typeofOpenedWindow: 'object',
+            documentHidden: isCI,
+            documentVisibilityState: isCI ? 'hidden' : 'visible'
+          }
+        })
+        done()
+      })
+
+      webview.setAttribute('preload', path.join(fixtures, 'api', 'isolated-preload.js'))
+      webview.setAttribute('allowpopups', 'yes')
+      webview.setAttribute('webpreferences', 'contextIsolation=yes')
+      webview.src = 'file://' + fixtures + '/api/isolated.html'
       document.body.appendChild(webview)
     })
   })

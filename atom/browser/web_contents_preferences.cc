@@ -119,6 +119,12 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       LOG(ERROR) << "preload url must be file:// protocol.";
   }
 
+  // Run Electron APIs and preload script in isolated world
+  bool isolated;
+  if (web_preferences.GetBoolean(options::kContextIsolation, &isolated) &&
+      isolated)
+    command_line->AppendSwitch(switches::kContextIsolation);
+
   // --background-color.
   std::string color;
   if (web_preferences.GetString(options::kBackgroundColor, &color))
@@ -190,7 +196,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (window) {
     bool visible = window->IsVisible() && !window->IsMinimized();
     if (!visible)  // Default state is visible.
-      command_line->AppendSwitch("hidden-page");
+      command_line->AppendSwitch(switches::kHiddenPage);
   }
 
   // Use frame scheduling for offscreen renderers.

@@ -1835,6 +1835,69 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('contextIsolation option', () => {
+    const expectedContextData = {
+      preloadContext: {
+        preloadProperty: 'number',
+        pageProperty: 'undefined',
+        typeofRequire: 'function',
+        typeofProcess: 'object',
+        typeofArrayPush: 'function',
+        typeofFunctionApply: 'function'
+      },
+      pageContext: {
+        preloadProperty: 'undefined',
+        pageProperty: 'string',
+        typeofRequire: 'undefined',
+        typeofProcess: 'undefined',
+        typeofArrayPush: 'number',
+        typeofFunctionApply: 'boolean',
+        typeofPreloadExecuteJavaScriptProperty: 'number',
+        typeofOpenedWindow: 'object',
+        documentHidden: true,
+        documentVisibilityState: 'hidden'
+      }
+    }
+
+    beforeEach(() => {
+      if (w != null) w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+    })
+
+    it('separates the page context from the Electron/preload context', (done) => {
+      ipcMain.once('isolated-world', (event, data) => {
+        assert.deepEqual(data, expectedContextData)
+        done()
+      })
+      w.loadURL('file://' + fixtures + '/api/isolated.html')
+    })
+
+    it('recreates the contexts on reload', (done) => {
+      w.webContents.once('did-finish-load', () => {
+        ipcMain.once('isolated-world', (event, data) => {
+          assert.deepEqual(data, expectedContextData)
+          done()
+        })
+        w.webContents.reload()
+      })
+      w.loadURL('file://' + fixtures + '/api/isolated.html')
+    })
+
+    it('enables context isolation on child windows', function (done) {
+      app.once('browser-window-created', function (event, window) {
+        assert.equal(window.webContents.getWebPreferences().contextIsolation, true)
+        done()
+      })
+      w.loadURL('file://' + fixtures + '/pages/window-open.html')
+    })
+  })
+
   describe('offscreen rendering', function () {
     beforeEach(function () {
       if (w != null) w.destroy()
