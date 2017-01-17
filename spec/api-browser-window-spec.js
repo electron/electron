@@ -1417,6 +1417,42 @@ describe('BrowserWindow module', function () {
       })
     })
 
+    describe('kiosk state', function () {
+      // Only implemented on macOS.
+      if (process.platform !== 'darwin') return
+
+      it('can be changed with setKiosk method', function () {
+        w.destroy()
+        w = new BrowserWindow()
+        w.setKiosk(true)
+        assert.equal(w.isKiosk(), true)
+        w.setKiosk(false)
+        assert.equal(w.isKiosk(), false)
+      })
+    })
+
+    describe('fullscreen state', function () {
+      // Only implemented on macOS.
+      if (process.platform !== 'darwin') return
+
+      it('can be changed with setFullScreen method', function () {
+        w.destroy()
+        w = new BrowserWindow()
+        w.setFullScreen(true)
+        assert.equal(w.isFullScreen(), true)
+        w.setFullScreen(false)
+        assert.equal(w.isFullScreen(), false)
+      })
+
+      it('should not be changed by setKiosk method', function () {
+        w.setFullScreen(true)
+        assert.equal(w.isFullScreen(), true)
+        w.setKiosk(true)
+        w.setKiosk(false)
+        assert.equal(w.isFullScreen(), true)
+      })
+    })
+
     describe('closable state', function () {
       it('can be changed with closable option', function () {
         w.destroy()

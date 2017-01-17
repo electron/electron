@@ -162,6 +162,8 @@ class NativeWindowMac : public NativeWindow,
 
   bool is_kiosk_;
 
+  bool was_fullscreen_;
+
   bool zoom_to_page_width_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention

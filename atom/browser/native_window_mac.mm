@@ -619,6 +619,7 @@ NativeWindowMac::NativeWindowMac(
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
+      was_fullscreen_(false),
       zoom_to_page_width_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
@@ -1126,10 +1127,11 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
+    was_fullscreen_ = IsFullscreen();
     SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
     is_kiosk_ = false;
-    SetFullScreen(false);
+    if (!was_fullscreen_) SetFullScreen(false);
     [NSApp setPresentationOptions:kiosk_options_];
   }
 }
