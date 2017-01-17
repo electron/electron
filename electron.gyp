@@ -6,6 +6,7 @@
     'company_abbr%': 'github',
     'version%': '1.6.3',
     'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
+    'grit_dir': 'vendor/grit',
   },
   'includes': [
     'filenames.gypi',
@@ -210,6 +211,7 @@
       'type': 'static_library',
       'dependencies': [
         'atom_js2c',
+        'pdfviewer',
         'vendor/brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node',
       ],
@@ -418,6 +420,34 @@
       ],
     },  # target app2asar
     {
+      'target_name': 'pdfviewer',
+      'type': 'none',
+      'actions': [
+        {
+          'action_name': 'pdfviewer',
+          'inputs': [
+            '<(grit_dir)/grit.py',
+            '<@(pdf_viewer_sources)',
+          ],
+          'outputs': [
+            'pdf_viewer_resouces.h',
+            'pdf_viewer_resouces_map.cc',
+            'pdf_viewer_resouces_map.h',
+            'pdf_viewer_resources.pak',
+          ],
+          'action': [
+            'python',
+            '<(grit_dir)/grit.py',
+            '-i',
+            '<@(pdf_viewer_sources)',
+            'build',
+            '-o',
+            '<(SHARED_INTERMEDIATE_DIR)/grit',
+          ],
+        }
+      ],
+    },  # target pdfviewer
+    {
       'target_name': 'atom_js2c_copy',
       'type': 'none',
       'copies': [
@@ -543,6 +573,7 @@
             '<(libchromiumcontent_dir)/icudtl.dat',
             '<(libchromiumcontent_dir)/natives_blob.bin',
             '<(libchromiumcontent_dir)/snapshot_blob.bin',
+            '<(PRODUCT_DIR)/pdf_viewer_resources.pak',
           ],
           'xcode_settings': {
             'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).framework',

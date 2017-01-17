@@ -22,6 +22,13 @@ class AtomResourceDispatcherHostDelegate
       net::URLRequest* request) override;
   std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
       content::ResourceContext* resource_context) override;
+  bool ShouldInterceptResourceAsStream(net::URLRequest* request,
+                                       const base::FilePath& plugin_path,
+                                       const std::string& mime_type,
+                                       GURL* origin,
+                                       std::string* payload) override;
+  void OnStreamCreated(net::URLRequest* request,
+                       std::unique_ptr<content::StreamInfo> stream) override;
 };
 
 }  // namespace atom

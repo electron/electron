@@ -12,6 +12,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
+#include "atom/browser/atom_web_ui_controller_factory.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
@@ -165,6 +166,9 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
       FROM_HERE, base::TimeDelta::FromMinutes(1),
       base::Bind(&v8::Isolate::LowMemoryNotification,
                  base::Unretained(js_env_->isolate())));
+
+  content::WebUIControllerFactory::RegisterFactory(
+      AtomWebUIControllerFactory::GetInstance());
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();

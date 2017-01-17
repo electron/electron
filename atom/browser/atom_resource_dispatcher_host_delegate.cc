@@ -9,8 +9,11 @@
 #include "atom/common/platform_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/stream_handle.h"
+#include "content/public/browser/stream_info.h"
 #include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
+#include "net/url_request/url_request.h"
 #include "url/gurl.h"
 
 #if defined(USE_NSS_CERTS)
@@ -57,6 +60,22 @@ void HandleExternalProtocolInUI(
   permission_helper->RequestOpenExternalPermission(callback, has_user_gesture);
 }
 
+void OnPdfStreamCreated(std::unique_ptr<content::StreamInfo> stream,
+                        int64_t expected_content_size,
+                        const content::ResourceRequestInfo::WebContentsGetter&
+                            web_contents_getter) {
+  content::WebContents* web_contents = web_contents_getter.Run();
+  if (!web_contents)
+    return;
+
+  LOG(WARNING) << stream->handle->GetURL();
+  LOG(WARNING) << stream->original_url;
+
+  content::NavigationController::LoadURLParams params(
+      GURL("chrome://pdf-viewer/index.html"));
+  web_contents->GetController().LoadURLWithParams(params);
+}
+
 }  // namespace
 
 AtomResourceDispatcherHostDelegate::AtomResourceDispatcherHostDelegate() {
@@ -93,6 +112,31 @@ AtomResourceDispatcherHostDelegate::CreateClientCertStore(
   #elif defined(USE_OPENSSL)
     return std::unique_ptr<net::ClientCertStore>();
   #endif
+}
+
+bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
+    net::URLRequest* request,
+    const base::FilePath& plugin_path,
+    const std::string& mime_type,
+    GURL* origin,
+    std::string* payload) {
+  if (mime_type == "application/pdf") {
+    *origin = GURL("chrome://pdf-viewer/");
+    return true;
+  }
+  return false;
+}
+
+void AtomResourceDispatcherHostDelegate::OnStreamCreated(
+    net::URLRequest* request,
+    std::unique_ptr<content::StreamInfo> stream) {
+  const content::ResourceRequestInfo* info =
+      content::ResourceRequestInfo::ForRequest(request);
+  content::BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::Bind(&OnPdfStreamCreated, base::Passed(&stream),
+                 request->GetExpectedContentSize(),
+                 info->GetWebContentsGetterForRequest()));
 }
 
 }  // namespace atom

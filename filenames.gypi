@@ -96,6 +96,9 @@
       'default_app/main.js',
       'default_app/package.json',
     ],
+    'pdf_viewer_sources': [
+      'atom/browser/resources/pdf_viewer/resources.grd',
+    ],
     'lib_sources': [
       'atom/app/atom_content_client.cc',
       'atom/app/atom_content_client.h',
@@ -195,6 +198,8 @@
       'atom/browser/atom_resource_dispatcher_host_delegate.h',
       'atom/browser/atom_speech_recognition_manager_delegate.cc',
       'atom/browser/atom_speech_recognition_manager_delegate.h',
+      'atom/browser/atom_web_ui_controller_factory.cc',
+      'atom/browser/atom_web_ui_controller_factory.h',
       'atom/browser/bridge_task_runner.cc',
       'atom/browser/bridge_task_runner.h',
       'atom/browser/browser.cc',
@@ -617,6 +622,9 @@
       'chromium_src/net/test/embedded_test_server/tcp_listen_socket.h',
       '<@(native_mate_files)',
       '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
+      '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources.h',
+      '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.cc',
+      '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.h',
     ],
     'lib_sources_linux': [
       'chromium_src/chrome/browser/icon_loader_auralinux.cc',

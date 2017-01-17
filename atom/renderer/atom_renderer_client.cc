@@ -274,6 +274,9 @@ void AtomRendererClient::RenderFrameCreated(
   // This is required for widevine plugin detection provided during runtime.
   blink::resetPluginCache();
 
+  blink::WebSecurityPolicy::addOriginAccessWhitelistEntry(
+      GURL("chrome://pdf-viewer/"), "file", "", true);
+
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
       ParseSchemesCLISwitch(switches::kSecureSchemes);
