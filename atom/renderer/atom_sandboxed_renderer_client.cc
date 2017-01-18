@@ -144,8 +144,8 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   v8::Context::Scope context_scope(context);
   // Wrap the bundle into a function that receives the binding object and the
   // preload script path as arguments.
-  std::string preload_bundle_native(node::preload_bundle_native,
-      node::preload_bundle_native + sizeof(node::preload_bundle_native));
+  std::string preload_bundle_native(node::preload_bundle_data,
+      node::preload_bundle_data + sizeof(node::preload_bundle_data));
   std::stringstream ss;
   ss << "(function(binding, preloadPath) {\n";
   ss << preload_bundle_native << "\n";

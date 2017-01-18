@@ -15,6 +15,10 @@
 
 class BrowserProcess;
 
+namespace node {
+class IsolateData;
+}
+
 namespace atom {
 
 class AtomBindings;
@@ -82,6 +86,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;
   std::unique_ptr<NodeDebugger> node_debugger_;
+  std::unique_ptr<node::IsolateData> isolate_data_;
 
   base::Timer gc_timer_;
 

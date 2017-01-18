@@ -48,8 +48,9 @@ int NodeMain(int argc, char *argv[]) {
     const char** exec_argv;
     node::Init(&argc, const_cast<const char**>(argv), &exec_argc, &exec_argv);
 
+    node::IsolateData isolate_data(gin_env.isolate(), loop);
     node::Environment* env = node::CreateEnvironment(
-        gin_env.isolate(), loop, gin_env.context(), argc, argv,
+        &isolate_data, gin_env.context(), argc, argv,
         exec_argc, exec_argv);
 
     // Start our custom debugger implementation.
