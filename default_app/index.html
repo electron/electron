@@ -114,23 +114,10 @@
 </head>
 <body>
   <script>
-    const {remote, shell, crashReporter} = require('electron');
-    const cp = require('child_process')
+    const {remote, shell} = require('electron');
 
     const execPath = remote.process.execPath;
     const command = execPath + ' path-to-your-app';
-
-    crashReporter.start({
-        productName: 'Renderer Product',
-        companyName: 'Renderer Company',
-        submitURL: 'http://localhost:8080/uploadDump/rendererDump'
-      });
-
-    document.addEventListener("DOMContentLoaded", function(event) { 
-      document.getElementById('crashMe').addEventListener('click', () => {
-          cp.fork('./default_app/forkedProcess')
-      })
-    });
 
     document.onclick = function(e) {
       e.preventDefault();
@@ -169,8 +156,6 @@
   </div>
 
   <div class="container">
-
-    <button id="crashMe">Fork a process which crashes</button>
 
     <p>
     To run your app with Electron, execute the following command in your
