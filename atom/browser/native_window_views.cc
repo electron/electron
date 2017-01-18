@@ -487,6 +487,20 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     NotifyWindowLeaveFullScreen();
   }
 
+  // For window without WS_THICKFRAME style, we can not call SetFullscreen().
+  // This path will be used for transparent windows as well.
+  if (!thick_frame_) {
+    if (fullscreen) {
+      restore_bounds_ = GetBounds();
+      auto display =
+          display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+      SetBounds(display.bounds(), false);
+    } else {
+      SetBounds(restore_bounds_, false);
+    }
+    return;
+  }
+
   // We set the new value after notifying, so we can handle the size event
   // correctly.
   window_->SetFullscreen(fullscreen);
