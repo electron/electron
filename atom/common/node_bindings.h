@@ -16,6 +16,7 @@ class MessageLoop;
 
 namespace node {
 class Environment;
+class IsolateData;
 }
 
 namespace atom {
@@ -30,7 +31,8 @@ class NodeBindings {
   void Initialize();
 
   // Create the environment and load node.js.
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context);
+  node::Environment* CreateEnvironment(node::IsolateData* isolate_data,
+                                       v8::Handle<v8::Context> context);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);

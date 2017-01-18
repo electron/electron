@@ -103,8 +103,8 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
     // Wrap the bundle into a function that receives the binding object as
     // an argument.
-    std::string bundle(node::isolated_bundle_native,
-        node::isolated_bundle_native + sizeof(node::isolated_bundle_native));
+    std::string bundle(node::isolated_bundle_data,
+        node::isolated_bundle_data + sizeof(node::isolated_bundle_data));
     std::string wrapper = "(function (binding) {\n" + bundle + "\n})";
     auto script = v8::Script::Compile(
         mate::ConvertToV8(isolate, wrapper)->ToString());
@@ -349,10 +349,13 @@ void AtomRendererClient::DidCreateScriptContext(
   if (first_time) {
     node_bindings_->Initialize();
     node_bindings_->PrepareMessageLoop();
+    isolate_data_.reset(new node::IsolateData(context->GetIsolate(),
+                                              uv_default_loop()));
   }
 
   // Setup node environment for each window.
-  node::Environment* env = node_bindings_->CreateEnvironment(context);
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(isolate_data_.get(), context);
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
