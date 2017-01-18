@@ -96,9 +96,6 @@
       'default_app/main.js',
       'default_app/package.json',
     ],
-    'pdf_viewer_sources': [
-      'atom/browser/resources/pdf_viewer/resources.grd',
-    ],
     'lib_sources': [
       'atom/app/atom_content_client.cc',
       'atom/app/atom_content_client.h',
