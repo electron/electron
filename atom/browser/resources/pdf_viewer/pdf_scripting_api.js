@@ -56,7 +56,7 @@ function PDFScriptingAPI(window, plugin) {
   this.setPlugin(plugin);
 
   window.addEventListener('message', function(event) {
-    if (event.origin != 'chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai' &&
+    if (event.origin != 'chrome://pdf-viewer' &&
         event.origin != 'chrome://print') {
       console.error('Received message that was not from the extension: ' +
                     event);

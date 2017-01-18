@@ -22,7 +22,6 @@
       <include name="IDR_PDF_PDF_SCRIPTING_API_JS" file="pdf_scripting_api.js" type="BINDATA" />
       <include name="IDR_PDF_ZOOM_MANAGER_JS" file="zoom_manager.js" type="BINDATA" />
       <include name="IDR_PDF_BROWSER_API_JS" file="browser_api.js" type="BINDATA" />
-      <include name="IDR_PDF_ODS_CPP_PDF" file="ods-cpp.pdf" type="BINDATA" />
 
       <include name="IDR_PDF_SHARED_ICON_STYLE_CSS" file="elements/shared-icon-style.css" type="BINDATA" />
       <include name="IDR_PDF_ICONS_HTML" file="elements/icons.html" type="BINDATA" />

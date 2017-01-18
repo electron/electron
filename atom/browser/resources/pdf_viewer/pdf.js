@@ -41,32 +41,18 @@ function getFilenameFromURL(url) {
 
 /**
  * Called when navigation happens in the current tab.
- * @param {boolean} isInTab Indicates if the PDF viewer is displayed in a tab.
- * @param {boolean} isSourceFileUrl Indicates if the navigation source is a
- *     file:// URL.
  * @param {string} url The url to be opened in the current tab.
  */
-function onNavigateInCurrentTab(isInTab, isSourceFileUrl, url) {
-  // When the PDFviewer is inside a browser tab, prefer the tabs API because
-  // it can navigate from one file:// URL to another.
-  if (chrome.tabs && isInTab && isSourceFileUrl)
-    chrome.tabs.update({url: url});
-  else
-    window.location.href = url;
+function onNavigateInCurrentTab(url) {
+  window.location.href = url;
 }
 
 /**
  * Called when navigation happens in the new tab.
  * @param {string} url The url to be opened in the new tab.
- * @param {boolean} active Indicates if the new tab should be the active tab.
  */
-function onNavigateInNewTab(url, active) {
-  // Prefer the tabs API because it guarantees we can just open a new tab.
-  // window.open doesn't have this guarantee.
-  if (chrome.tabs)
-    chrome.tabs.create({url: url, active: active});
-  else
-    window.open(url);
+function onNavigateInNewTab(url) {
+  window.open(url);
 }
 
 /**
@@ -151,10 +137,10 @@ function PDFViewer(browserApi) {
                                         this.onPasswordSubmitted_.bind(this));
   this.errorScreen_ = $('error-screen');
   // Can only reload if we are in a normal tab.
-  if (chrome.tabs && this.browserApi_.getStreamInfo().tabId != -1) {
+  if (!this.browserApi_.getStreamInfo().embedded) {
     this.errorScreen_.reloadFn = function() {
-      chrome.tabs.reload(this.browserApi_.getStreamInfo().tabId);
-    }.bind(this);
+      chrome.send('reload');
+    };
   }
 
   // Create the viewport.
@@ -258,13 +244,9 @@ function PDFViewer(browserApi) {
   document.addEventListener('mousemove', this.handleMouseEvent_.bind(this));
   document.addEventListener('mouseout', this.handleMouseEvent_.bind(this));
 
-  var isInTab = this.browserApi_.getStreamInfo().tabId != -1;
-  var isSourceFileUrl = this.originalUrl_.indexOf('file://') == 0;
   this.navigator_ = new Navigator(this.originalUrl_,
                                   this.viewport_, this.paramsParser_,
-                                  onNavigateInCurrentTab.bind(undefined,
-                                                              isInTab,
-                                                              isSourceFileUrl),
+                                  onNavigateInCurrentTab,
                                   onNavigateInNewTab);
   this.viewportScroller_ =
       new ViewportScroller(this.viewport_, this.plugin_, window);
@@ -645,7 +627,7 @@ PDFViewer.prototype = {
         this.viewport_.position = position;
         break;
       case 'cancelStreamUrl':
-        chrome.mimeHandlerPrivate.abortStream();
+        //chrome.mimeHandlerPrivate.abortStream();
         break;
       case 'metadata':
         if (message.data.title) {

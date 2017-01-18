@@ -6,42 +6,22 @@
 
 /**
  * Returns a promise that will resolve to the default zoom factor.
- * @param {!Object} streamInfo The stream object pointing to the data contained
- *     in the PDF.
  * @return {Promise<number>} A promise that will resolve to the default zoom
  *     factor.
  */
-function lookupDefaultZoom(streamInfo) {
-  // Webviews don't run in tabs so |streamInfo.tabId| is -1 when running within
-  // a webview.
-  if (!chrome.tabs || streamInfo.tabId < 0)
-    return Promise.resolve(1);
-
-  return new Promise(function(resolve, reject) {
-    chrome.tabs.getZoomSettings(streamInfo.tabId, function(zoomSettings) {
-      resolve(zoomSettings.defaultZoomFactor);
-    });
-  });
+function lookupDefaultZoom() {
+  return cr.sendWithPromise('getDefaultZoom');
 }
 
 /**
  * Returns a promise that will resolve to the initial zoom factor
  * upon starting the plugin. This may differ from the default zoom
  * if, for example, the page is zoomed before the plugin is run.
- * @param {!Object} streamInfo The stream object pointing to the data contained
- *     in the PDF.
  * @return {Promise<number>} A promise that will resolve to the initial zoom
  *     factor.
  */
-function lookupInitialZoom(streamInfo) {
-  // Webviews don't run in tabs so |streamInfo.tabId| is -1 when running within
-  // a webview.
-  if (!chrome.tabs || streamInfo.tabId < 0)
-    return Promise.resolve(1);
-
-  return new Promise(function(resolve, reject) {
-    chrome.tabs.getZoom(streamInfo.tabId, resolve);
-  });
+function lookupInitialZoom() {
+  return cr.sendWithPromise('getInitialZoom');
 }
 
 /**
@@ -72,8 +52,8 @@ class BrowserApi {
    */
   static create(streamInfo, manageZoom) {
     return Promise.all([
-      lookupDefaultZoom(streamInfo),
-      lookupInitialZoom(streamInfo)
+      lookupDefaultZoom(),
+      lookupInitialZoom()
     ]).then(function(zoomFactors) {
       return new BrowserApi(
         streamInfo, zoomFactors[0], zoomFactors[1], manageZoom);
@@ -89,14 +69,6 @@ class BrowserApi {
   }
 
   /**
-   * Aborts the stream.
-   */
-  abortStream() {
-    if (chrome.mimeHandlerPrivate)
-      chrome.mimeHandlerPrivate.abortStream();
-  }
-
-  /**
    * Sets the browser zoom.
    * @param {number} zoom The zoom factor to send to the browser.
    * @return {Promise} A promise that will be resolved when the browser zoom
@@ -105,9 +77,7 @@ class BrowserApi {
   setZoom(zoom) {
     if (!this.manageZoom_)
       return Promise.resolve();
-    return new Promise(function(resolve, reject) {
-      chrome.tabs.setZoom(this.streamInfo_.tabId, zoom, resolve);
-    }.bind(this));
+    return cr.sendWithPromise('setZoom', zoom);
   }
 
   /**
@@ -135,11 +105,9 @@ class BrowserApi {
     if (!this.manageZoom_)
       return;
 
-    chrome.tabs.onZoomChange.addListener(function(zoomChangeInfo) {
-      if (zoomChangeInfo.tabId != this.streamInfo_.tabId)
-        return;
-      listener(zoomChangeInfo.newZoomFactor);
-    }.bind(this));
+    cr.addWebUIListener('onZoomLevelChanged', function(newZoomFactor) {
+      listener(newZoomFactor);
+    });
   }
 };
 
@@ -148,22 +116,15 @@ class BrowserApi {
  * @return {Promise<BrowserApi>} A promise to a BrowserApi instance constructed
  *     from the URL.
  */
-function createBrowserApi(streamURL, originalURL) {
+function createBrowserApi(opts) {
   let streamInfo = {
-    streamUrl: streamURL,
-    originalUrl: originalURL,
+    streamUrl: opts.originalURL,
+    originalUrl: opts.originalURL,
     responseHeaders: {},
     embedded: window.parent != window,
     tabId: -1,
   };
   return new Promise(function(resolve, reject) {
-    if (!chrome.tabs) {
-      resolve();
-      return;
-    }
-    //chrome.tabs.getCurrent(function(tab) {
-      streamInfo.tabId = -1;
-      resolve();
-    //});
-  }).then(function() { return BrowserApi.create(streamInfo, false); });
+    resolve(BrowserApi.create(streamInfo, true));
+  });
 }
