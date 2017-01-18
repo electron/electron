@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
 #define ATOM_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
 
+#include <string>
+
 #include "content/public/browser/resource_dispatcher_host_delegate.h"
 
 namespace atom {

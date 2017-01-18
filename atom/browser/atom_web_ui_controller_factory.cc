@@ -4,10 +4,13 @@
 
 #include "atom/browser/atom_web_ui_controller_factory.h"
 
+#include <map>
+#include <string>
+
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
 #include "base/memory/ptr_util.h"
-#include "base/strings/string_util.h"
 #include "base/strings/string_split.h"
+#include "base/strings/string_util.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/url_data_source.h"
 #include "content/public/browser/web_contents.h"
@@ -122,7 +125,8 @@ class PdfViewerUI : public content::WebUIController {
  private:
   DISALLOW_COPY_AND_ASSIGN(PdfViewerUI);
 };
-}
+
+}  // namespace
 
 // static
 AtomWebUIControllerFactory* AtomWebUIControllerFactory::GetInstance() {
