@@ -9,6 +9,7 @@
 #include "base/values.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
+#include "content/public/common/page_zoom.h"
 
 namespace atom {
 
@@ -23,8 +24,23 @@ void PdfViewerHandler::RegisterMessages() {
       "initialize",
       base::Bind(&PdfViewerHandler::Initialize, base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
-      "getTabId",
-      base::Bind(&PdfViewerHandler::GetTabId, base::Unretained(this)));
+      "getDefaultZoom",
+      base::Bind(&PdfViewerHandler::GetInitialZoom, base::Unretained(this)));
+  web_ui()->RegisterMessageCallback(
+      "getInitialZoom",
+      base::Bind(&PdfViewerHandler::GetInitialZoom, base::Unretained(this)));
+}
+
+void PdfViewerHandler::OnJavascriptAllowed() {
+  auto host_zoom_map =
+      content::HostZoomMap::GetForWebContents(web_ui()->GetWebContents());
+  host_zoom_map_subscription_ =
+      host_zoom_map->AddZoomLevelChangedCallback(base::Bind(
+          &PdfViewerHandler::OnZoomLevelChanged, base::Unretained(this)));
+}
+
+void PdfViewerHandler::OnJavascriptDisallowed() {
+  host_zoom_map_subscription_.reset();
 }
 
 void PdfViewerHandler::Initialize(const base::ListValue* args) {
@@ -39,13 +55,45 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
   ResolveJavascriptCallback(*callback_id, *stream_info);
 }
 
-void PdfViewerHandler::GetTabId(const base::ListValue* args) {
+void PdfViewerHandler::GetDefaultZoom(const base::ListValue* args) {
   if (!IsJavascriptAllowed())
     return;
   CHECK_EQ(1U, args->GetSize());
   const base::Value* callback_id;
   CHECK(args->Get(0, &callback_id));
-  ResolveJavascriptCallback(*callback_id, base::FundamentalValue(-1));
+
+  auto host_zoom_map =
+      content::HostZoomMap::GetForWebContents(web_ui()->GetWebContents());
+  double zoom_level = host_zoom_map->GetDefaultZoomLevel();
+  ResolveJavascriptCallback(
+      *callback_id,
+      base::FundamentalValue(content::ZoomLevelToZoomFactor(zoom_level)));
+}
+
+void PdfViewerHandler::GetInitialZoom(const base::ListValue* args) {
+  if (!IsJavascriptAllowed())
+    return;
+  CHECK_EQ(1U, args->GetSize());
+  const base::Value* callback_id;
+  CHECK(args->Get(0, &callback_id));
+
+  double zoom_level =
+      content::HostZoomMap::GetZoomLevel(web_ui()->GetWebContents());
+  ResolveJavascriptCallback(
+      *callback_id,
+      base::FundamentalValue(content::ZoomLevelToZoomFactor(zoom_level)));
+}
+
+void PdfViewerHandler::OnZoomLevelChanged(
+    const content::HostZoomMap::ZoomLevelChange& change) {
+  // TODO(deepak1556): This will work only if zoom level is changed through host
+  // zoom map.
+  if (change.scheme == "chrome" && change.host == "pdf-viewer") {
+    CallJavascriptFunction(
+        "cr.webUIListenerCallback", base::StringValue("onZoomLevelChanged"),
+        base::FundamentalValue(
+            content::ZoomLevelToZoomFactor(change.zoom_level)));
+  }
 }
 
 }  // namespace atom

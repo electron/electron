@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "base/macros.h"
+#include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/web_ui_message_handler.h"
 
 namespace base {
@@ -25,11 +25,18 @@ class PdfViewerHandler : public content::WebUIMessageHandler {
 
   // WebUIMessageHandler implementation.
   void RegisterMessages() override;
+  void OnJavascriptAllowed() override;
+  void OnJavascriptDisallowed() override;
 
  private:
   void Initialize(const base::ListValue* args);
-  void GetTabId(const base::ListValue* args);
+  void GetDefaultZoom(const base::ListValue* args);
+  void GetInitialZoom(const base::ListValue* args);
+  void OnZoomLevelChanged(const content::HostZoomMap::ZoomLevelChange& change);
 
+  // Keeps track of events related to zooming.
+  std::unique_ptr<content::HostZoomMap::Subscription>
+      host_zoom_map_subscription_;
   std::string stream_url_;
   std::string original_url_;
 
