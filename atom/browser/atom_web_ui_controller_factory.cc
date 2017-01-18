@@ -4,6 +4,8 @@
 
 #include "atom/browser/atom_web_ui_controller_factory.h"
 
+#include "atom/browser/ui/webui/pdf_viewer_handler.h"
+#include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/string_split.h"
 #include "content/public/browser/render_view_host.h"
@@ -107,29 +109,17 @@ class PdfViewerUI : public content::WebUIController {
               content::WebUI* web_ui,
               const std::string& stream_url,
               const std::string& original_url)
-      : content::WebUIController(web_ui),
-        stream_url_(stream_url),
-        original_url_(original_url) {
-    web_ui->RegisterMessageCallback(
-        "initialize",
-        base::Bind(&PdfViewerUI::OnInitialize, base::Unretained(this)));
+      : content::WebUIController(web_ui) {
+    web_ui->AddMessageHandler(new PdfViewerHandler(stream_url, original_url));
     content::URLDataSource::Add(browser_context, new BundledDataSource);
   }
 
+  // content::WebUIController implementation.
   void RenderViewCreated(content::RenderViewHost* rvh) override {
     rvh->AllowBindings(content::BINDINGS_POLICY_WEB_UI);
   }
 
-  void OnInitialize(const base::ListValue* args) {
-    web_ui()->CallJavascriptFunctionUnsafe("main",
-                                           base::StringValue(original_url_),
-                                           base::StringValue(original_url_));
-  }
-
  private:
-  std::string stream_url_;
-  std::string original_url_;
-
   DISALLOW_COPY_AND_ASSIGN(PdfViewerUI);
 };
 }

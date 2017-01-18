@@ -19,6 +19,7 @@ class AtomWebUIControllerFactory : public content::WebUIControllerFactory {
   AtomWebUIControllerFactory();
   virtual ~AtomWebUIControllerFactory();
 
+  // content::WebUIControllerFactory:
   content::WebUI::TypeID GetWebUIType(content::BrowserContext* browser_context,
                                       const GURL& url) const override;
   bool UseWebUIForURL(content::BrowserContext* browser_context,
