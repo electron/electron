@@ -12,11 +12,15 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
+#include "brightray/vendor/download/libchromiumcontent/src/printing/backend/print_backend.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
+
+
+using PrinterList = std::vector<printing::PrinterBasicInfo>;
 
 namespace blink {
 struct WebDeviceEmulationParams;
@@ -108,6 +112,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
+  PrinterList GetPrinterList(mate::Arguments* args);
   void Print(mate::Arguments* args);
   void SetEmbedder(const WebContents* embedder);
 

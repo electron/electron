@@ -5,7 +5,10 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 
 #include <set>
+
+#include <map>
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/atom_api_debugger.h"
 #include "atom/browser/api/atom_api_session.h"
@@ -39,9 +42,11 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
+#include "base/strings/string16.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "brightray/vendor/download/libchromiumcontent/src/printing/backend/print_backend.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
@@ -77,11 +82,13 @@
 
 #include "atom/common/node_includes.h"
 
+
 namespace {
 
 struct PrintSettings {
   bool silent;
   bool print_background;
+  base::string16 device_name;
 };
 
 }  // namespace
@@ -119,8 +126,55 @@ struct Converter<PrintSettings> {
       return false;
     dict.Get("silent", &(out->silent));
     dict.Get("printBackground", &(out->print_background));
+    dict.Get("deviceName", &(out->device_name));
     return true;
   }
+};
+
+using StringMap = std::map<std::string, std::string>;
+
+template<>
+struct Converter<StringMap> {
+    static v8::Local<v8::Value>
+    ToV8(v8::Isolate* isolate, const StringMap& val) {
+      v8::Local<v8::Object> result = v8::Object::New(isolate);
+      for (auto i = val.begin(); i != val.end(); i++) {
+        result->Set(StringToV8(isolate, i->first),
+                    StringToV8(isolate, i->second));
+      }
+      return result;
+    }
+};
+
+template<>
+struct Converter<printing::PrinterBasicInfo> {
+  static v8::Local<v8::Value>
+  ToV8(v8::Isolate* isolate, const printing::PrinterBasicInfo& val) {
+    v8::Local<v8::Object> result = v8::Object::New(isolate);
+    result->Set(StringToV8(isolate, "printerName"),
+                StringToV8(isolate, val.printer_name));
+    result->Set(StringToV8(isolate, "printerDescription"),
+                StringToV8(isolate, val.printer_description));
+    result->Set(StringToV8(isolate, "printerStatus"),
+                ConvertToV8(isolate, val.printer_status));
+    result->Set(StringToV8(isolate, "isDefault"),
+                ConvertToV8(isolate, val.is_default));
+    result->Set(StringToV8(isolate, "options"),
+                ConvertToV8(isolate, val.options));
+    return result;
+  }
+};
+
+template<>
+struct Converter<PrinterList> {
+    static v8::Local<v8::Value>
+    ToV8(v8::Isolate* isolate, const PrinterList& val) {
+      v8::Local<v8::Array> result = v8::Array::New(isolate, val.size());
+      for (PrinterList::size_type i = 0; i != val.size(); i++) {
+        result->Set(i, ConvertToV8(isolate, val[i]));
+      }
+      return result;
+    }
 };
 
 template<>
@@ -1116,14 +1170,22 @@ bool WebContents::IsAudioMuted() {
 }
 
 void WebContents::Print(mate::Arguments* args) {
-  PrintSettings settings = { false, false };
+  PrintSettings settings = { false, false, base::string16() };
   if (args->Length() == 1 && !args->GetNext(&settings)) {
     args->ThrowError();
     return;
   }
 
   printing::PrintViewManagerBasic::FromWebContents(web_contents())->
-      PrintNow(settings.silent, settings.print_background);
+      PrintNow(settings.silent, settings.print_background,
+               base::string16(settings.device_name));
+}
+
+PrinterList WebContents::GetPrinterList(mate::Arguments* args) {
+  PrinterList printerList;
+  auto printBackend = printing::PrintBackend::CreateInstance(nullptr);
+  printBackend->EnumeratePrinters(&printerList);
+  return printerList;
 }
 
 void WebContents::PrintToPDF(const base::DictionaryValue& setting,
@@ -1611,6 +1673,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::UnregisterServiceWorker)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
       .SetMethod("print", &WebContents::Print)
+      .SetMethod("printerList", &WebContents::GetPrinterList)
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)

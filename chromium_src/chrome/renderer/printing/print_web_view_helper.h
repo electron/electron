@@ -98,7 +98,7 @@ class PrintWebViewHelper
 
   // Message handlers ---------------------------------------------------------
 #if !defined(DISABLE_BASIC_PRINTING)
-  void OnPrintPages(bool silent, bool print_background);
+  void OnPrintPages(bool silent, bool print_background, const base::string16& device_name);
   void OnPrintingDone(bool success);
 #endif  // !DISABLE_BASIC_PRINTING
   void OnPrintPreview(const base::DictionaryValue& settings);
@@ -137,7 +137,8 @@ class PrintWebViewHelper
   void Print(blink::WebLocalFrame* frame,
              const blink::WebNode& node,
              bool silent = false,
-             bool print_background = false);
+             bool print_background = false,
+             const base::string16& device_name = base::string16());
 
   // Notification when printing is done - signal tear-down/free resources.
   void DidFinishPrinting(PrintingResult result);
