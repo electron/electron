@@ -1,6 +1,6 @@
-# About Electron
+# เกี่ยวกับ Electron
 
-[Electron](http://electron.atom.io) is an open source library developed by GitHub for building cross-platform desktop applications with HTML, CSS, and JavaScript. Electron accomplishes this by combining [Chromium](https://www.chromium.org/Home) and [Node.js](https://nodejs.org) into a single runtime and apps can be packaged for Mac, Windows, and Linux.
+[Electron](http://electron.atom.io) เป็นโอเพ่นซอร์สไลบรารี พัฒนา โดย GitHub สำหรับการสร้างการใช้งานเดสก์ทอปข้ามแพลตฟอร์มกับ HTML, CSS และ JavaScript Electron เกิดขึ้นได้โดยการ่วม [Chromium](https://www.chromium.org/Home) กับ [Node.js](https://nodejs.org) เข้าด้วยกันเป็นหนึงruntimeและปพลิเคชันสามารถบรรจุสำหรับ Mac, Windows และ Linux
 
 Electron began in 2013 as the framework on which [Atom](https://atom.io), GitHub's hackable text editor, would be built. The two were open sourced in the Spring of 2014.
 
@@ -22,7 +22,7 @@ Electron's version of Chromium is usually updated within one or two weeks after 
 
 When a new version of Node.js is released, Electron usually waits about a month before upgrading in order to bring in a more stable version.
 
-In Electron, Node.js and Chromium share a single V8 instance—usually the version that Chromium is using. Most of the time this _just works_ but sometimes it means patching Node.js.
+ใน Electron, Node.js and Chromium share a single V8 instance—usually the version that Chromium is using. Most of the time this _just works_ but sometimes it means patching Node.js.
 
 
 ### Versioning
