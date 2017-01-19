@@ -1,143 +1,140 @@
-# Glossary
+# อภิธานศัพท์ (Glossary)
 
-This page defines some terminology that is commonly used in Electron development.
+เพจนี้จะบ่งบอกคำศัพท์ที่ถูกใช่บ่อยๆในการพัฒนา Electron
 
 ### ASAR
 
-ASAR stands for Atom Shell Archive Format. An [asar][asar] archive is a simple
-`tar`-like format that concatenates files into a single file. Electron can read
-arbitrary files from it without unpacking the whole file.
+[ASAR (Atom Shell Archive Format)][asar] เป็น extension ของไฟล์ที่มีลักษณะความคล้ายครีง `tar` ที่รวมหลายไฟล์ลงไปในไฟล์เดียว Electron สามารถอ่านไฟล์ได้เลยโดยที่ไม่ต้อง unpack ไฟล์
 
-The ASAR format was created primarily to improve performance on Windows... TODO
+กำลังทำ: ไฟล์ประเภท ASAR นั้น สร้างมาเพื่อเพิ่มประสิทธิถาพบนระบบปฎิบัติการ Windows
 
 ### Brightray
 
-[Brightray][brightray] is a static library that makes [libchromiumcontent]
-easier to use in applications. It was created specifically for Electron, but can
-be used to enable Chromium's renderer in native apps that are not based on
-Electron.
+[Brightray][brightray] เป็น static library ที่ทำให้ [libchromiumcontent] ใช้ได้ง่ายขึ้นในแอพพิเคชั่น
+มันถูกสร้างขึ้นมาเพื่อ Electron โดยเฉพาะ แต่ว่ามันสามารถเปิดใช้ในแอพที่ใช้ Chromium's render ซึ่งไม่ถูกสร้างจาก Electron ได้
 
-Brightray is a low-level dependency of Electron that does not concern the
-majority of Electron users.
+Brightray เป็น dependency ของ Electron ที่ไม่ค่อยได้ใช้งานสำหรับผู้ใช้ Electron ทั่วไป
 
 ### DMG
 
-An Apple Disk Image is a packaging format used by macOS. DMG files are
-commonly used for distributing application "installers". [electron-builder]
-supports `dmg` as a build target.
+DMG เป็นรูปแบบไฟล์ที่ใช้กับ Apple Disk Image
+
+โดยส่วนมากไฟล์ DMG จะถูกใช้ในการแจกแจงตัวติดตั้งของแอพพิเคชั่น
+คุณสามารถใช้ [electron-builder] ในการสร้างไฟล์ขึ้นมาได้
 
 ### IPC
 
-IPC stands for Inter-Process Communication. Electron uses IPC to send
-serialized JSON messages between the [main] and [renderer] processes.
+IPC ย่อมาจาก Inter-Process Communication ซึ่ง Electron ใช้ IPC 
+ในการที่จะส่งข้อความ JSON ระหว่าง [โปรเซสหลัก][main] และ [ตัวเรนเดอร์][renderer]
 
 ### libchromiumcontent
 
-A single, shared library that includes the Chromium Content module and all its
-dependencies (e.g., Blink, [V8], etc.).
+เป็น library รวมที่มี Chromium Content โมดูลและ dependencies ต่างๆเข้าไปด้วย
+(อาทิเช่น Blink, [V8], ฯลฯ)
 
-### main process
+### โปรเซสหลัก
 
-The main process, commonly a file named `main.js`, is the entry point to every
-Electron app. It controls the life of the app, from open to close. It also
-manages native elements such as the Menu, Menu Bar, Dock, Tray, etc.  The
-main process is responsible for creating each new renderer process in the app.
-The full Node API is built in.
+โปรเซสหลักในส่วนมากจะเป็นไฟล์ `main.js` ซึ่งเป็นจุดเริ่มต้นของทุกๆแอพของ Electron 
+โปรเซสหลักเป็นตัวที่กำหนดการทำงานของแอพตั้งแต่ต้นจนจบ มันจะควบคุมองค์ประกอบของแอพเช่น
+Menu, Menu Bar, Dock, Tray, ฯลฯ โปรเซสหลักนั้นจะรับผิดชอบการสร้างตัวเรนเดอร์ใหม่ในแอพ
 
-Every app's main process file is specified in the `main` property in
-`package.json`. This is how `electron .` knows what file to execute at startup.
+Node API นั้นมาพร้อมกับ Electron
 
-See also: [process](#process), [renderer process](#renderer-process)
+`package.json` จะสามารถใช้ระบุโปรเซสหลักของทุกๆแอพบน Electron ได้ นี้คือเหตุผลที่ `electron .` รู้ว่าไฟล์ไหนควรจะรันตอนเริ่มต้น
+
+เพิ่มเติม: [process](#process), [renderer process](#renderer-process)
 
 ### MAS
 
-Acronym for Apple's Mac App Store. For details on submitting your app to the
-MAS, see the [Mac App Store Submission Guide].
+MAS เป็นตัวย่อของ Mac App Store ในการที่จะส่งไฟล์ลง MAS นั้นโปรดดู [การแนะนำการส่ง Mac App Store](Mac App Store Submission Guide)
 
 ### native modules
 
-Native modules (also called [addons] in
-Node.js) are modules written in C or C++ that can be loaded into Node.js or
-Electron using the require() function, and used just as if they were an
-ordinary Node.js module. They are used primarily to provide an interface
-between JavaScript running in Node.js and C/C++ libraries.
+Native โมดูล (อีกชื่อคือ [addons]) คือโมดูลที่เขียนด้วย C หรือ C++ 
+ที่สามารถจะโหลดอยู่ใน Node.js หรือ Electron โดยการใช้ฟังค์ชั่น require() 
+และใช้แบบเดียวกับโมดูล Node.js ธรรมดา
 
-Native Node modules are supported by Electron, but since Electron is very
-likely to use a different V8 version from the Node binary installed in your
-system, you have to manually specify the location of Electron’s headers when
-building native modules.
+โดยส่วนมากมันถูกใช้เป็นอินเตอร์เฟสระหว่าง JavaScript และ Node.js ผ่านทาง C/C++
 
-See also [Using Native Node Modules].
+Native Node โมดูลจะได้รับการสนับสนุนจาก Electron
+แต่ว่ามีความเป็นไปได้ว่า Electron นั้นจะใช้ V8 คนละเวอร์ชั่นกับ Node ที่มีอยู่ในระบบ
+คุณจะต้องเป็นคนเลือก Electron's header ด้วยตนเอง
+
+เพิ่มเติม: [วิธีการใช้ Native Node โมดูล][Using Native Node Modules]
 
 ## NSIS
 
-Nullsoft Scriptable Install System is a script-driven Installer
-authoring tool for Microsoft Windows. It is released under a combination of
-free software licenses, and is a widely-used alternative to commercial
-proprietary products like InstallShield. [electron-builder] supports NSIS
-as a build target.
+NSIS ย่อมาจาก Nullsoft Scriptable Install System คือตัวติดตั้งที่ขับเคลื่อนด้วยสคริปท์
+สำหรับระบบปฎิบัติการ Windows มันได้รับการจดลิขสิทธ์สำหรับใช้ทุกๆคน
+มันถูกใช้แทนสินค้าเชิงพาณิชย์เช่น InstallShield 
+[electron-builder] นั้นรองรับการสร้าง NSIS
 
 ### process
 
-A process is an instance of a computer program that is being executed. Electron
-apps that make use of the [main] and one or many [renderer] process are
-actually running several programs simultaneously.
+โปรเซสคือ instance ของโปรแกรมที่กำลังทำงานอยู่ 
+Electron แอพนั้นใช้ [โปรเซสหลัก][main] และ [ตัวเรนเดอร์][renderer] หนึ่งตัวขึ้นไปที่รัน
+หลายๆโปรเกรมพร้อมๆกัน
 
-In Node.js and Electron, each running process has a `process` object. This
-object is a global that provides information about, and control over, the
-current process. As a global, it is always available to applications without
-using require().
+ใน Node.js และ Electron นั้น แต่ละโปรเซสที่กำลังรันอยู่จะมี `process` object
+Object ตัวนี้เป็น global ที่ให้ข้อมูลและการควบคุมของตัวโปรเซสนั้นๆ
 
-See also: [main process](#main-process), [renderer process](#renderer-process)
+เพราะว่ามันเป็น global ดังนั้นจึงไม่จำเป็นที่จะเรียก `require()` เพื่อใช้งาน
+
+เพิ่มเติม: [โปรเซสหลัก](#main-process), [ตัวเรนเดอร์](#renderer-process)
 
 ### renderer process
 
-The renderer process is a browser window in your app. Unlike the main process,
-there can be multiple of these and each is run in a separate process.
-They can also be hidden.
+ตัวเรนเดอร์ คือ หน้าต่างบราวเซอร์ของแอพพิเคชั่นของคุณ
+มันแตกต่างจากโปรเซสหลักโดยที่มันจะสามารถมีอยู่พร้อมกันหลายตัวได้
+และแต่ละตัวนั้นใช้ โปรเซส ที่ต่างกันออกไป
+นอกจากนั้นมันยังสามารถซ่อนได้อีกด้วย
 
-In normal browsers, web pages usually run in a sandboxed environment and are not
-allowed access to native resources. Electron users, however, have the power to
-use Node.js APIs in web pages allowing lower level operating system
-interactions.
+ใน บราวเซอร์ ทั่วๆไป เว็ปเพจจะได้รับการรันด้วยสภาพแวดล้อมจำกัดและจะไม่สามารถใช้ทรัพยากร native ได้
 
-See also: [process](#process), [main process](#main-process)
+แต่ว่าสำหับผู้ใช้ Electron นั้นเราสามารถให้
+เว็ปเพจมีการปฏิสัมพันธ์กับระบบปฎิบัติการได้โดยผ่านทาง API ของ Node.js
+
+เพิ่มเติม: [โปรเซสหลัก](#main-process), [ตัวเรนเดอร์](#renderer-process)
 
 ### Squirrel
 
-Squirrel is an open-source framework that enables Electron apps to update
-automatically as new versions are released. See the [autoUpdater] API for
-info about getting started with Squirrel.
+Squirrel เป็น open-source framework ที่ทำให้แอพ Electron นั้น 
+อัพเดทได้อย่างอัตโนมัดเมื่อมีเวอร์ชั่นใหม่เข้ามา
+
+เพิ่มเติม: [autoUpdater] API เพื่อการใช้งาน Squirrel เบื้องต้น
 
 ### userland
 
-This term originated in the Unix community, where "userland" or "userspace"
-referred to programs that run outside of the operating system kernel. More
-recently, the term has been popularized in the Node and npm community to
-distinguish between the features available in "Node core" versus packages
-published to the npm registry by the much larger "user" community.
+userland แต่แรกทีมาจากสังคม unix ซึ่งหมายถึงโปรแกรมที่รันข้างนอก kernel ของระบบปฎิบัติการ
+ภายหลังนี้ "userland" ได้รับความสนใจจากสังคม Node และ npm เพื่อใช้ในการอธิบายความแตกต่าง
+ของ feature ที่พร้อมไช้งานใน "node core" กับ แพ็คเกจที่ได้รับการแจกจ่ายถายใน npm registry
+ซึ่งมาจากเหล่าคนใช้ที่กว้างขวาง
 
-Like Node, Electron is focused on having a small set of APIs that provide
-all the necessary primitives for developing multi-platform desktop applications.
-This design philosophy allows Electron to remain a flexible tool without being
-overly prescriptive about how it should be used. Userland enables users to
-create and share tools that provide additional functionality on top of what is
-available in "core".
+Electron นั้นมีความคล้ายคลึงกับ Node ตรงที่มี API ที่ไม่เยอะแต่ว่ามีความสามารถเพียงพอ
+ในการพัฒนา multi-platform แอพพิเคชั่น
+
+ด้วยปรัชญาการออกแบบนี้เองที่ทำให้ Electron นั้นเป็นเครื่องมือที่มีความยืดหยุ่นโดยที่ไม่กำหนดให้ผู้ใช้
+ใช้งานได้เพียงตามที่ออกแบบไว้
+
+Userland ได้เปิดโอกาสให้ผู้ใช้สามารถสร้างและแบ่งปันเครื่องมือนอกเหนือจากอะไรก็ตามที่มีอยู่ใน "core"
 
 ### V8
 
-V8 is Google's open source JavaScript engine. It is written in C++ and is
-used in Google Chrome, the open source browser from Google. V8 can run
-standalone, or can be embedded into any C++ application.
+V8 เป็น JavaScripe engine ของ Google ที่เป็น open source
+มันถูกเขียนขึ้นด้วย C++ และถูกใช้ใน Google Chrome
+
+Google Chrome เป็น open source บราวส์เซอร์ของ Google
+
+V8 สามารถรันแยกเองต่างหากได้ หรือจะสามารถนำไปใช้กับแอพพิเคชั่น C++ อะไรก็ได้
 
 ### webview
 
-`webview` tags are used to embed 'guest' content (such as external web pages) in
-your Electron app. They are similar to `iframe`s, but differ in that each
-webview runs in a separate process. It doesn't have the same
-permissions as your web page and all interactions between your app and
-embedded content will be asynchronous. This keeps your app safe from the
-embedded content.
+`webview` เป็นแท็กที่ใช้ในการใส่ข้อมูลสำหรับคนใช้ทั่วไป (เช่นเว็ปภายนอก) ใน Electron แอพของคุณ
+มันมีความคล้ายครึงกับ `iframe` แต่ว่าต่างกันโดยที่ webview รันโดยโปรเซสคนละตัว
+มันไม่มี permission เหมือนกับเว็ปเพจของคุณและการมีปฏิสัมพันธ์ระกว่าง แอพของคุณ กับ สิ่งที่ฝังอยู่จะเป็นไปโดยราบลื่นโดยที่ไม่ต้องซิ้งค์ (asynchronous)
+
+ด้วยเหตุนี้เองทำให้ แอพของคุณปลอกภัยจากสิ่งที่ถูกฝัง
+
 
 [addons]: https://nodejs.org/api/addons.html
 [asar]: https://github.com/electron/asar
