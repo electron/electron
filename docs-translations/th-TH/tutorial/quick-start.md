@@ -1,7 +1,7 @@
-# Quick Start
+# การเริ่มต้นอย่างรวดเร็ว
 
-Electron enables you to create desktop applications with pure JavaScript by
-providing a runtime with rich native (operating system) APIs. You could see it
+Electronช่วยให้คุณสามารถสร้างโปรแกรมคอมพิวเตอร์ด้วย JavaScript โดย
+ให้รันไทม์ที่สอดคล้องกับ APIs ระดับระบบปฏิบัติการ You could see it
 as a variant of the Node.js runtime that is focused on desktop applications
 instead of web servers.
 
