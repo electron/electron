@@ -144,7 +144,7 @@ void NodeBindings::Initialize() {
 }
 
 node::Environment* NodeBindings::CreateEnvironment(
-    node::IsolateData* isolate_data, v8::Handle<v8::Context> context) {
+    v8::Handle<v8::Context> context) {
   auto args = AtomCommandLine::argv();
 
   // Feed node the path to initialization script.
@@ -160,7 +160,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
-      isolate_data, context,
+      new node::IsolateData(context->GetIsolate(), uv_default_loop()), context,
       args.size(), c_argv.get(), 0, nullptr);
 
   // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should switch
