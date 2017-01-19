@@ -17,6 +17,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/constructor.h"
@@ -152,7 +153,7 @@ Window::~Window() {
 
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
-  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
+  base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
@@ -185,7 +186,8 @@ void Window::OnWindowClosed() {
   RemoveFromParentChildWindows();
 
   // Destroy the native class when window is closed.
-  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, GetDestroyClosure());
 }
 
 void Window::OnWindowBlur() {

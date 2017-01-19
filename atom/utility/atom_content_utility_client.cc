@@ -49,7 +49,8 @@ void AtomContentUtilityClient::UtilityThreadStarted() {
 
 bool AtomContentUtilityClient::OnMessageReceived(
     const IPC::Message& message) {
-  if (filter_messages_ && !ContainsKey(message_id_whitelist_, message.type()))
+  if (filter_messages_ &&
+      !base::ContainsKey(message_id_whitelist_, message.type()))
     return false;
 
   bool handled = true;

@@ -10,8 +10,8 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "base/files/file_util.h"
-#include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/brightray_paths.h"
 
 namespace atom {
@@ -85,7 +85,7 @@ void Browser::Shutdown() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit());
 
   if (base::MessageLoop::current()) {
-    base::MessageLoop::current()->PostTask(
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
   } else {
     // There is no message loop available so we are in early stage.

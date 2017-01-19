@@ -98,8 +98,8 @@ class App : public AtomBrowserClient::Delegate,
       bool overridable,
       bool strict_enforcement,
       bool expired_previous_decision,
-      const base::Callback<void(bool)>& callback,
-      content::CertificateRequestResultType* request) override;
+      const base::Callback<void(content::CertificateRequestResultType)>&
+          callback) override;
   void SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,

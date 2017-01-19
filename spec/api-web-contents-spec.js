@@ -268,4 +268,21 @@ describe('webContents module', function () {
       w.webContents.sendInputEvent({type: 'char', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
     })
   })
+
+  it('supports inserting CSS', function (done) {
+    w.loadURL('about:blank')
+    w.webContents.insertCSS('body { background-repeat: round; }')
+    w.webContents.executeJavaScript('window.getComputedStyle(document.body).getPropertyValue("background-repeat")', (result) => {
+      assert.equal(result, 'round')
+      done()
+    })
+  })
+
+  it('supports inspecting an element in the devtools', function (done) {
+    w.loadURL('about:blank')
+    w.webContents.once('devtools-opened', function () {
+      done()
+    })
+    w.webContents.inspectElement(10, 10)
+  })
 })

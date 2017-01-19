@@ -10,7 +10,6 @@
 
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/atom_api_protocol.h"
-#include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_quota_permission_context.h"
@@ -33,7 +32,6 @@
 #include "content/common/resource_request_body_impl.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
-#include "content/public/browser/geolocation_delegate.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/resource_dispatcher_host.h"
@@ -55,19 +53,6 @@ bool g_suppress_renderer_process_restart = false;
 
 // Custom schemes to be registered to handle service worker.
 std::string g_custom_service_worker_schemes = "";
-
-// A provider of Geolocation services to override AccessTokenStore.
-class AtomGeolocationDelegate : public content::GeolocationDelegate {
- public:
-  AtomGeolocationDelegate() = default;
-
-  content::AccessTokenStore* CreateAccessTokenStore() final {
-    return new AtomAccessTokenStore();
-  }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(AtomGeolocationDelegate);
-};
 
 void Noop(scoped_refptr<content::SiteInstance>) {
 }
@@ -93,7 +78,7 @@ AtomBrowserClient::~AtomBrowserClient() {
 content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
   // If the process is a pending process, we should use the old one.
-  if (ContainsKey(pending_processes_, process_id))
+  if (base::ContainsKey(pending_processes_, process_id))
     process_id = pending_processes_[process_id];
 
   // Certain render process will be created with no associated render view,
@@ -158,11 +143,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 content::SpeechRecognitionManagerDelegate*
     AtomBrowserClient::CreateSpeechRecognitionManagerDelegate() {
   return new AtomSpeechRecognitionManagerDelegate;
-}
-
-content::GeolocationDelegate*
-AtomBrowserClient::CreateGeolocationDelegate() {
-  return new AtomGeolocationDelegate();
 }
 
 void AtomBrowserClient::OverrideWebkitPrefs(
@@ -283,13 +263,13 @@ void AtomBrowserClient::AllowCertificateError(
     bool overridable,
     bool strict_enforcement,
     bool expired_previous_decision,
-    const base::Callback<void(bool)>& callback,
-    content::CertificateRequestResultType* request) {
+    const base::Callback<void(content::CertificateRequestResultType)>&
+        callback) {
   if (delegate_) {
     delegate_->AllowCertificateError(
         web_contents, cert_error, ssl_info, request_url,
         resource_type, overridable, strict_enforcement,
-        expired_previous_decision, callback, request);
+        expired_previous_decision, callback);
   }
 }
 
@@ -315,9 +295,9 @@ bool AtomBrowserClient::CanCreateWindow(
     const GURL& opener_top_level_frame_url,
     const GURL& source_origin,
     WindowContainerType container_type,
-    const std::string& frame_name,
     const GURL& target_url,
     const content::Referrer& referrer,
+    const std::string& frame_name,
     WindowOpenDisposition disposition,
     const blink::WebWindowFeatures& features,
     const std::vector<base::string16>& additional_features,

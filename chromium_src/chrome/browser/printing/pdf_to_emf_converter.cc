@@ -10,6 +10,7 @@
 #include "base/files/file_util.h"
 #include "base/files/scoped_temp_dir.h"
 #include "base/logging.h"
+#include "base/memory/ptr_util.h"
 #include "chrome/common/chrome_utility_messages.h"
 #include "chrome/common/print_messages.h"
 #include "content/public/browser/browser_thread.h"
@@ -59,10 +60,11 @@ class LazyEmf : public MetafilePlayer {
  public:
   LazyEmf(const scoped_refptr<RefCountedTempDir>& temp_dir, ScopedTempFile file)
       : temp_dir_(temp_dir), file_(std::move(file)) {}
-  virtual ~LazyEmf() { Close(); }
+  ~LazyEmf() override { Close(); }
 
-  virtual bool SafePlayback(HDC hdc) const override;
-  virtual bool SaveTo(base::File* file) const override;
+  bool SafePlayback(HDC hdc) const override;
+  bool GetDataAsVector(std::vector<char>* buffer) const override;
+  bool SaveTo(base::File* file) const override;
 
  private:
   void Close() const;
@@ -242,6 +244,11 @@ bool LazyEmf::SafePlayback(HDC hdc) const {
   return result;
 }
 
+bool LazyEmf::GetDataAsVector(std::vector<char>* buffer) const {
+  NOTREACHED();
+  return false;
+}
+
 bool LazyEmf::SaveTo(base::File* file) const {
   Emf emf;
   return LoadEmf(&emf) && emf.SaveTo(file);
@@ -392,7 +399,7 @@ void PdfToEmfUtilityProcessHostClient::OnPageDone(bool success,
     ScopedTempFile temp_emf = data.TakeEmf();
     if (!temp_emf)  // Unexpected message from utility process.
       return OnFailed();
-    emf.reset(new LazyEmf(temp_dir_, std::move(temp_emf)));
+    emf = base::MakeUnique<LazyEmf>(temp_dir_, std::move(temp_emf));
   }
 
   BrowserThread::PostTask(BrowserThread::UI,

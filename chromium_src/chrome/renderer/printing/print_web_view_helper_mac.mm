@@ -18,11 +18,11 @@
 
 namespace printing {
 
-using blink::WebFrame;
+using blink::WebLocalFrame;
 
 void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
-    WebFrame* frame) {
+    WebLocalFrame* frame) {
   PdfMetafileSkia metafile(PDF_SKIA_DOCUMENT_TYPE);
   CHECK(metafile.Init());
 
@@ -89,7 +89,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
 
 void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
                                     int page_number,
-                                    WebFrame* frame,
+                                    WebLocalFrame* frame,
                                     bool is_preview,
                                     PdfMetafileSkia* metafile,
                                     gfx::Size* page_size,

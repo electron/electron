@@ -22,7 +22,7 @@
 
 namespace printing {
 
-using blink::WebFrame;
+using blink::WebLocalFrame;
 
 bool PrintWebViewHelper::RenderPreviewPage(
     int page_number,
@@ -56,7 +56,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
   return PreviewPageRendered(page_number, draft_metafile.get());
 }
 
-bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
+bool PrintWebViewHelper::PrintPagesNative(blink::WebLocalFrame* frame,
                                           int page_count) {
   PdfMetafileSkia metafile(PDF_SKIA_DOCUMENT_TYPE);
   if (!metafile.Init())
@@ -113,7 +113,7 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
 
 void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
-    WebFrame* frame,
+    WebLocalFrame* frame,
     PdfMetafileSkia* metafile) {
   PageSizeMargins page_layout_in_points;
   double scale_factor = 1.0f;

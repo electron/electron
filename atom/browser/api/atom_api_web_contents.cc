@@ -40,6 +40,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
@@ -830,7 +831,8 @@ void WebContents::WebContentsDestroyed() {
   Emit("destroyed");
 
   // Destroy the native class in next tick.
-  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, GetDestroyClosure());
 }
 
 void WebContents::NavigationEntryCommitted(
@@ -975,10 +977,6 @@ std::string WebContents::GetUserAgent() {
   return web_contents()->GetUserAgentOverride();
 }
 
-void WebContents::InsertCSS(const std::string& css) {
-  web_contents()->InsertCSS(css);
-}
-
 bool WebContents::SavePage(const base::FilePath& full_file_path,
                            const content::SavePageType& save_type,
                            const SavePageHandler::SavePageCallback& callback) {
@@ -1064,9 +1062,7 @@ void WebContents::InspectElement(int x, int y) {
 
   if (!managed_web_contents()->GetDevToolsWebContents())
     OpenDevTools(nullptr);
-  scoped_refptr<content::DevToolsAgentHost> agent(
-    content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
-  agent->InspectElement(x, y);
+  managed_web_contents()->InspectElement(x, y);
 }
 
 void WebContents::InspectServiceWorker() {
@@ -1558,7 +1554,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("setUserAgent", &WebContents::SetUserAgent)
       .SetMethod("getUserAgent", &WebContents::GetUserAgent)
-      .SetMethod("insertCSS", &WebContents::InsertCSS)
       .SetMethod("savePage", &WebContents::SavePage)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)

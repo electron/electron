@@ -48,14 +48,15 @@ int NodeMain(int argc, char *argv[]) {
     const char** exec_argv;
     node::Init(&argc, const_cast<const char**>(argv), &exec_argc, &exec_argv);
 
+    node::IsolateData isolate_data(gin_env.isolate(), loop);
     node::Environment* env = node::CreateEnvironment(
-        gin_env.isolate(), loop, gin_env.context(), argc, argv,
+        &isolate_data, gin_env.context(), argc, argv,
         exec_argc, exec_argv);
 
     // Start our custom debugger implementation.
     NodeDebugger node_debugger(gin_env.isolate());
     if (node_debugger.IsRunning())
-      env->AssignToContext(v8::Debug::GetDebugContext());
+      env->AssignToContext(v8::Debug::GetDebugContext(gin_env.isolate()));
 
 #if defined(OS_WIN)
     mate::Dictionary process(gin_env.isolate(), env->process_object());

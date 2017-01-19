@@ -29,7 +29,7 @@ void WebViewManager::AddGuest(int guest_instance_id,
 }
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
-  if (!ContainsKey(web_contents_embedder_map_, guest_instance_id))
+  if (!base::ContainsKey(web_contents_embedder_map_, guest_instance_id))
     return;
 
   web_contents_embedder_map_.erase(guest_instance_id);
@@ -43,7 +43,7 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
 }
 
 content::WebContents* WebViewManager::GetEmbedder(int guest_instance_id) {
-  if (ContainsKey(web_contents_embedder_map_, guest_instance_id))
+  if (base::ContainsKey(web_contents_embedder_map_, guest_instance_id))
     return web_contents_embedder_map_[guest_instance_id].embedder;
   else
     return nullptr;
@@ -53,11 +53,11 @@ content::WebContents* WebViewManager::GetGuestByInstanceID(
     int owner_process_id,
     int element_instance_id) {
   ElementInstanceKey key(owner_process_id, element_instance_id);
-  if (!ContainsKey(element_instance_id_to_guest_map_, key))
+  if (!base::ContainsKey(element_instance_id_to_guest_map_, key))
     return nullptr;
 
   int guest_instance_id = element_instance_id_to_guest_map_[key];
-  if (ContainsKey(web_contents_embedder_map_, guest_instance_id))
+  if (base::ContainsKey(web_contents_embedder_map_, guest_instance_id))
     return web_contents_embedder_map_[guest_instance_id].web_contents;
   else
     return nullptr;

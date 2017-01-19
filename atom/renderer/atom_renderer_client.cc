@@ -103,8 +103,8 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
     // Wrap the bundle into a function that receives the binding object as
     // an argument.
-    std::string bundle(node::isolated_bundle_native,
-        node::isolated_bundle_native + sizeof(node::isolated_bundle_native));
+    std::string bundle(node::isolated_bundle_data,
+        node::isolated_bundle_data + sizeof(node::isolated_bundle_data));
     std::string wrapper = "(function (binding) {\n" + bundle + "\n})";
     auto script = v8::Script::Compile(
         mate::ConvertToV8(isolate, wrapper)->ToString());
