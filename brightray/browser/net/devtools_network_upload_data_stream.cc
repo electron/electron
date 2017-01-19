@@ -35,11 +35,11 @@ bool DevToolsNetworkUploadDataStream::IsInMemory() const {
   return false;
 }
 
-int DevToolsNetworkUploadDataStream::InitInternal() {
+int DevToolsNetworkUploadDataStream::InitInternal(const net::BoundNetLog& net_log) {
   throttled_byte_count_ = 0;
   int result = upload_data_stream_->Init(
       base::Bind(&DevToolsNetworkUploadDataStream::StreamInitCallback,
-                 base::Unretained(this)));
+                 base::Unretained(this)), net_log);
   if (result == net::OK && !is_chunked())
     SetSize(upload_data_stream_->size());
   return result;

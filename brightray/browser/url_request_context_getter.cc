@@ -96,7 +96,7 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(const base::Fil
       net::CACHE_BACKEND_DEFAULT,
       cache_path,
       0,
-      BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
+      BrowserThread::GetTaskRunnerForThread(BrowserThread::CACHE));
 }
 
 std::unique_ptr<net::CertVerifier>
@@ -291,10 +291,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_session_params.ignore_certificate_errors = false;
 
     // --disable-http2
-    if (command_line.HasSwitch(switches::kDisableHttp2)) {
-      network_session_params.enable_spdy31 = false;
+    if (command_line.HasSwitch(switches::kDisableHttp2))
       network_session_params.enable_http2 = false;
-    }
 
     // --ignore-certificate-errors
     if (command_line.HasSwitch(switches::kIgnoreCertificateErrors))
@@ -357,7 +355,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 }
 
 scoped_refptr<base::SingleThreadTaskRunner> URLRequestContextGetter::GetNetworkTaskRunner() const {
-  return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO);
+  return BrowserThread::GetTaskRunnerForThread(BrowserThread::IO);
 }
 
 }  // namespace brightray

@@ -91,14 +91,13 @@
                   '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
-                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
                   '<(libchromiumcontent_dir)/libsystem_wrappers.a',
                   '<(libchromiumcontent_dir)/librtc_base.a',
                   '<(libchromiumcontent_dir)/librtc_base_approved.a',
                   '<(libchromiumcontent_dir)/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/libyuv.a',
-                  '<(libchromiumcontent_dir)/libcdm_renderer.a',
+                  '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
                 ],
               },
@@ -147,14 +146,13 @@
                   '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
-                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
                   '<(libchromiumcontent_dir)/librtc_base.a',
                   '<(libchromiumcontent_dir)/librtc_base_approved.a',
                   '<(libchromiumcontent_dir)/libsystem_wrappers.a',
                   '<(libchromiumcontent_dir)/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/libyuv.a',
-                  '<(libchromiumcontent_dir)/libcdm_renderer.a',
+                  '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
                 ],
               },
@@ -187,6 +185,8 @@
                   '$(SDKROOT)/System/Library/Frameworks/ApplicationServices.framework',
                   '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
+                  # device/gamepad/BUILD.gn:
+                  '$(SDKROOT)/System/Library/Frameworks/GameController.framework',
                   # content_browser.gypi:
                   '-lbsm',
                   # content_common.gypi:
@@ -205,6 +205,7 @@
                 'libraries': [
                   # Needed by desktop_capture.lib:
                   '-ld3d11.lib',
+                  '-ldxgi.lib',
                   # Following libs are always linked statically.
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
@@ -213,14 +214,13 @@
                   '<(libchromiumcontent_dir)/devtools_http_handler.lib',
                   '<(libchromiumcontent_dir)/http_server.lib',
                   '<(libchromiumcontent_dir)/desktop_capture.lib',
-                  '<(libchromiumcontent_dir)/desktop_capture_differ_sse2.lib',
                   '<(libchromiumcontent_dir)/dom_keycode_converter.lib',
                   '<(libchromiumcontent_dir)/rtc_base.lib',
                   '<(libchromiumcontent_dir)/rtc_base_approved.lib',
                   '<(libchromiumcontent_dir)/system_wrappers.lib',
                   '<(libchromiumcontent_dir)/webrtc_common.lib',
                   '<(libchromiumcontent_dir)/libyuv.lib',
-                  '<(libchromiumcontent_dir)/cdm_renderer.lib',
+                  '<(libchromiumcontent_dir)/renderer.lib',
                   '<(libchromiumcontent_dir)/security_state.lib',
                   # Friends of pdf.lib:
                   '<(libchromiumcontent_dir)/pdf.lib',
@@ -238,9 +238,9 @@
                   '<(libchromiumcontent_dir)/fxcrt.lib',
                   '<(libchromiumcontent_dir)/fxedit.lib',
                   '<(libchromiumcontent_dir)/fxge.lib',
+                  '<(libchromiumcontent_dir)/fxjs.lib',
                   '<(libchromiumcontent_dir)/javascript.lib',
                   '<(libchromiumcontent_dir)/pdfwindow.lib',
-                  '<(libchromiumcontent_dir)/bigint.lib',
                   '<(libchromiumcontent_dir)/fx_agg.lib',
                   '<(libchromiumcontent_dir)/fx_freetype.lib',
                   '<(libchromiumcontent_dir)/fx_lcms2.lib',
@@ -260,6 +260,7 @@
                   # content_common.gypi:
                   '-ld3d9.lib',
                   '-ld3d11.lib',
+                  '-ldxgi.lib',
                   '-ldxva2.lib',
                   '-lstrmiids.lib',
                   '-lmf.lib',
@@ -299,6 +300,8 @@
                       'secur32.lib',
                       'urlmon.lib',
                       'winhttp.lib',
+                      # ui/gfx/BUILD.gn:
+                      'dwrite.lib',
                     ],
                     'DelayLoadDLLs': [
                       'wtsapi32.dll',

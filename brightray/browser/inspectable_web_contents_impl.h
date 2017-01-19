@@ -60,6 +60,7 @@ class InspectableWebContentsImpl :
                           const base::Value* arg1,
                           const base::Value* arg2,
                           const base::Value* arg3) override;
+  void InspectElement(int x, int y) override;
 
   // Return the last position and size of devtools window.
   gfx::Rect GetDevToolsBounds() const;

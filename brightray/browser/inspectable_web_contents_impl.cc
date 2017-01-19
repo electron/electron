@@ -249,6 +249,11 @@ content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents() const
   return devtools_web_contents_.get();
 }
 
+void InspectableWebContentsImpl::InspectElement(int x, int y) {
+  if (agent_host_.get())
+    agent_host_->InspectElement(this, x, y);
+}
+
 void InspectableWebContentsImpl::SetDelegate(InspectableWebContentsDelegate* delegate) {
   delegate_ = delegate;
 }

@@ -44,6 +44,7 @@ class InspectableWebContents {
                                   const base::Value* arg1 = nullptr,
                                   const base::Value* arg2 = nullptr,
                                   const base::Value* arg3 = nullptr) = 0;
+  virtual void InspectElement(int x, int y) = 0;
 };
 
 }  // namespace brightray
