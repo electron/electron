@@ -661,13 +661,13 @@ void PrintWebViewHelper::OnDestruct() {
 }
 
 #if !defined(DISABLE_BASIC_PRINTING)
-void PrintWebViewHelper::OnPrintPages(bool silent, bool print_background) {
+void PrintWebViewHelper::OnPrintPages(bool silent, bool print_background, const base::string16& device_name) {
   if (ipc_nesting_level_> 1)
     return;
 
   blink::WebLocalFrame* frame =
       render_view()->GetMainRenderFrame()->GetWebFrame();
-  Print(frame, blink::WebNode(), silent, print_background);
+  Print(frame, blink::WebNode(), silent, print_background, device_name);
 }
 #endif  // !DISABLE_BASIC_PRINTING
 
@@ -851,7 +851,8 @@ void PrintWebViewHelper::PrintNode(const blink::WebNode& node) {
 void PrintWebViewHelper::Print(blink::WebLocalFrame* frame,
                                const blink::WebNode& node,
                                bool silent,
-                               bool print_background) {
+                               bool print_background,
+                               const base::string16& device_name) {
   // If still not finished with earlier print request simply ignore.
   if (prep_frame_view_)
     return;

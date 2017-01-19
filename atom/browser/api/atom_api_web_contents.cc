@@ -47,6 +47,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "brightray/vendor/download/libchromiumcontent/src/printing/backend/print_backend.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
@@ -69,11 +70,9 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
-#include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
-#include "printing/backend/print_backend.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/display/screen.h"
@@ -133,16 +132,18 @@ struct Converter<PrintSettings> {
   }
 };
 
+using StringMap = std::map<std::string, std::string>;
 
 template<>
-struct Converter<std::map<std::string, std::string> > {
+struct Converter<StringMap> {
     static v8::Local<v8::Value>
-    ToV8(v8::Isolate* isolate, const std::map<std::string, std::string>& val) {
-      mate::Dictionary result(isolate, v8::Object::New(isolate));
+    ToV8(v8::Isolate* isolate, const StringMap& val) {
+      v8::Local<v8::Object> result = v8::Object::New(isolate);
       for (auto i = val.begin(); i != val.end(); i++) {
-        result.Set(i->first, i->second);
+        result->Set(StringToV8(isolate, i->first),
+                    StringToV8(isolate, i->second));
       }
-      return result.GetHandle();
+      return result;
     }
 };
 
@@ -150,14 +151,31 @@ template<>
 struct Converter<printing::PrinterBasicInfo> {
   static v8::Local<v8::Value>
   ToV8(v8::Isolate* isolate, const printing::PrinterBasicInfo& val) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
-    dict.Set("printerName", val.printer_name);
-    dict.Set("printerDescription", val.printer_description);
-    dict.Set("printerStatus", val.printer_status);
-    dict.Set("isDefault", val.is_default);
-    dict.Set("options", val.options);
-    return dict.GetHandle();
+    v8::Local<v8::Object> result = v8::Object::New(isolate);
+    result->Set(StringToV8(isolate, "printerName"),
+                StringToV8(isolate, val.printer_name));
+    result->Set(StringToV8(isolate, "printerDescription"),
+                StringToV8(isolate, val.printer_description));
+    result->Set(StringToV8(isolate, "printerStatus"),
+                ConvertToV8(isolate, val.printer_status));
+    result->Set(StringToV8(isolate, "isDefault"),
+                ConvertToV8(isolate, val.is_default));
+    result->Set(StringToV8(isolate, "options"),
+                ConvertToV8(isolate, val.options));
+    return result;
   }
+};
+
+template<>
+struct Converter<PrinterList> {
+    static v8::Local<v8::Value>
+    ToV8(v8::Isolate* isolate, const PrinterList& val) {
+      v8::Local<v8::Array> result = v8::Array::New(isolate, val.size());
+      for (PrinterList::size_type i = 0; i != val.size(); i++) {
+        result->Set(i, ConvertToV8(isolate, val[i]));
+      }
+      return result;
+    }
 };
 
 template<>
@@ -1161,9 +1179,8 @@ void WebContents::Print(mate::Arguments* args) {
                base::string16(settings.device_name));
 }
 
-std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList(
-    mate::Arguments* args) {
-  std::vector<printing::PrinterBasicInfo> printerList;
+PrinterList WebContents::GetPrinterList(mate::Arguments* args) {
+  PrinterList printerList;
   auto printBackend = printing::PrintBackend::CreateInstance(nullptr);
   printBackend->EnumeratePrinters(&printerList);
   return printerList;
