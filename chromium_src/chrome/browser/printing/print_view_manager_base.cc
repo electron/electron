@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "base/bind.h"
+#include "base/strings/string16.h"
 #include "base/memory/ref_counted_memory.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
@@ -63,9 +64,9 @@ PrintViewManagerBase::~PrintViewManagerBase() {
 }
 
 #if !defined(DISABLE_BASIC_PRINTING)
-bool PrintViewManagerBase::PrintNow(bool silent, bool print_background) {
+bool PrintViewManagerBase::PrintNow(bool silent, bool print_background, const base::string16& device_name) {
   return PrintNowInternal(new PrintMsg_PrintPages(
-      routing_id(), silent, print_background));
+      routing_id(), silent, print_background, device_name));
 }
 #endif  // !DISABLE_BASIC_PRINTING
 

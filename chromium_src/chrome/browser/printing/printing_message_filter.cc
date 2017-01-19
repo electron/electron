@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/bind.h"
+#include "base/strings/string16.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/printing/print_job_manager.h"
 #include "chrome/browser/printing/printer_query.h"
@@ -80,6 +81,7 @@ void RenderParamsFromPrintSettings(const PrintSettings& settings,
   params->should_print_backgrounds = settings.should_print_backgrounds();
   params->title = settings.title();
   params->url = settings.url();
+  params->device_name = settings.device_name();
 }
 
 }  // namespace

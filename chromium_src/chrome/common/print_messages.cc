@@ -23,7 +23,8 @@ PrintMsg_Print_Params::PrintMsg_Print_Params()
     print_scaling_option(blink::WebPrintScalingOptionSourceSize),
     title(),
     url(),
-    should_print_backgrounds(false) {
+    should_print_backgrounds(false),
+    device_name() {
 }
 
 PrintMsg_Print_Params::~PrintMsg_Print_Params() {}
@@ -45,6 +46,7 @@ void PrintMsg_Print_Params::Reset() {
   title.clear();
   url.clear();
   should_print_backgrounds = false;
+  device_name.clear();
 }
 
 PrintMsg_PrintPages_Params::PrintMsg_PrintPages_Params()

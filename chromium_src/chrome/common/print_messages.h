@@ -10,6 +10,7 @@
 
 #include "base/memory/shared_memory.h"
 #include "base/values.h"
+#include "base/bind.h"
 #include "ipc/ipc_message_macros.h"
 #include "printing/page_size_margins.h"
 #include "printing/print_job_constants.h"
@@ -52,6 +53,7 @@ struct PrintMsg_Print_Params {
   base::string16 title;
   base::string16 url;
   bool should_print_backgrounds;
+  base::string16 device_name;
 };
 
 struct PrintMsg_PrintPages_Params {
@@ -124,6 +126,10 @@ IPC_STRUCT_TRAITS_BEGIN(PrintMsg_Print_Params)
 
   // True if print backgrounds is requested by the user.
   IPC_STRUCT_TRAITS_MEMBER(should_print_backgrounds)
+
+  // For select printers
+  IPC_STRUCT_TRAITS_MEMBER(device_name)
+
 IPC_STRUCT_TRAITS_END()
 
 IPC_STRUCT_BEGIN(PrintMsg_PrintPage_Params)
@@ -213,9 +219,10 @@ IPC_STRUCT_END()
 
 // Tells the render view to switch the CSS to print media type, renders every
 // requested pages and switch back the CSS to display media type.
-IPC_MESSAGE_ROUTED2(PrintMsg_PrintPages,
+IPC_MESSAGE_ROUTED3(PrintMsg_PrintPages,
                     bool /* silent print */,
-                    bool /* print page's background */)
+                    bool /* print page's background */,
+                    base::string16 /* device_name */)
 
 // Tells the render view that printing is done so it can clean up.
 IPC_MESSAGE_ROUTED1(PrintMsg_PrintingDone,
