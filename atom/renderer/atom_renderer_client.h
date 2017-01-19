@@ -10,10 +10,6 @@
 
 #include "content/public/renderer/content_renderer_client.h"
 
-namespace node {
-class IsolateData;
-}
-
 namespace atom {
 
 class AtomBindings;
@@ -73,7 +69,6 @@ class AtomRendererClient : public content::ContentRendererClient {
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;
   std::unique_ptr<PreferencesManager> preferences_manager_;
-  std::unique_ptr<node::IsolateData> isolate_data_;
   bool isolated_world_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);

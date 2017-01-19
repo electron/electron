@@ -349,13 +349,10 @@ void AtomRendererClient::DidCreateScriptContext(
   if (first_time) {
     node_bindings_->Initialize();
     node_bindings_->PrepareMessageLoop();
-    isolate_data_.reset(new node::IsolateData(context->GetIsolate(),
-                                              uv_default_loop()));
   }
 
   // Setup node environment for each window.
-  node::Environment* env =
-      node_bindings_->CreateEnvironment(isolate_data_.get(), context);
+  node::Environment* env = node_bindings_->CreateEnvironment(context);
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
