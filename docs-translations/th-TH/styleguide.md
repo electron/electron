@@ -1,85 +1,69 @@
-# Electron Documentation Styleguide
+# ลักษณะเอกสาร Electron
 
-These are the guidelines for writing Electron documentation.
+นี้คือกฎในการเขียนเอกสารประกอบ Electron
 
-## Titles
+## หัวข้อ
 
-* Each page must have a single `#`-level title at the top.
-* Chapters in the same page must have `##`-level titles.
-* Sub-chapters need to increase the number of `#` in the title according to
-  their nesting depth.
-* All words in the page's title must be capitalized, except for conjunctions
-  like "of" and "and" .
-* Only the first word of a chapter title must be capitalized.
+* ทุกๆเพจจะมี `#` อยู่ข้างบนสุดของเอกสาร
+* ทุกๆบทจะต้องมี `##` ในหัวข้อ
+* ทุกๆบทย่อยจะเพิ่ม `#` ลงไปในหัวข้อตามความลึกของบทย่อย
 
-Using `Quick Start` as example:
+ยกตัวอย่างเช่น `การเริ่มต้น`:
 
 ```markdown
-# Quick Start
+# การเริ่มต้น
 
 ...
 
-## Main process
+## โปรเซสหลัก
 
 ...
 
-## Renderer process
+## โปรเซส render
 
 ...
 
-## Run your app
+## การรันแอพ
 
 ...
 
-### Run as a distribution
-
-...
-
-### Manually downloaded Electron binary
-
-...
 ```
 
-For API references, there are exceptions to this rule.
+สำหรับการอ้างอิงของ API จะไม่ใช้กฎนี้
 
-## Markdown rules
+## กฎของ Markdown
 
-* Use `bash` instead of `cmd` in code blocks (due to the syntax highlighter).
-* Lines should be wrapped at 80 columns.
-* No nesting lists more than 2 levels (due to the markdown renderer).
-* All `js` and `javascript` code blocks are linted with
+* ใช้ `bash` แทน `cmd` ในการเขียน code blocks (เพราะตัวไฮไลท์ syntax)
+* บรรทัดควรที่จะเริ่มต้นใหม่ที่ 80 คอลัมน์
+* ไม่ควรใส่ลิสต์ที่มีมากกว่าสองชั้น (เพราะตัว render ของ markdown)
+* ทุก `js` แลพ `javascript` code blocks จะไฮไลท์ด้วย
 [standard-markdown](http://npm.im/standard-markdown).
 
-## Picking words
+## การใช้คำ
 
-* Use "will" over "would" when describing outcomes.
-* Prefer "in the ___ process" over "on".
+* ใช้ 'จะ' แทนที่ 'ควรจะ' ตอนอธิบายผลลัทธ์
 
-## API references
+## การอ้างอิงของ API
 
-The following rules only apply to the documentation of APIs.
+กฎดังต่อไปนี้จะใช้สำหรับเอกสาร API เท่านั้น
 
-### Page title
+### หัวข้อเพจ
 
-Each page must use the actual object name returned by `require('electron')`
-as the title, such as `BrowserWindow`, `autoUpdater`, and `session`.
+ทุกๆเพจจะใช้ชื่อของ object ที่ได้รับจาก `require('electron')` เป็นหัวข้อ อาทิเช่น `BrowserWindow`, `autoUpdater` และ `session`
 
-Under the page tile must be a one-line description starting with `>`.
-
-Using `session` as example:
+ข้างล่างหัวข้อจะเป็นคำอธิบายหนึ่งบรรทัดเริ่มต้นด้วย `>`
 
 ```markdown
 # session
 
-> Manage browser sessions, cookies, cache, proxy settings, etc.
+> คำอธิบาย
 ```
 
-### Module methods and events
+### โมดูล methods และ events
 
-For modules that are not classes, their methods and events must be listed under
-the `## Methods` and `## Events` chapters.
+สำหรับโมดูลที่ไม่ใช่คราสนั้น methods และ events ของมันจะต้องอยู่ในลิสต์ภายใต้บท `## Methods` และ `## Events`
 
-Using `autoUpdater` as an example:
+ยกตัวอย่างเช่น `autoUpdater`:
 
 ```markdown
 # autoUpdater
@@ -93,21 +77,20 @@ Using `autoUpdater` as an example:
 ### `autoUpdater.setFeedURL(url[, requestHeaders])`
 ```
 
-### Classes
+### คราส (Classes)
 
-* API classes or classes that are part of modules must be listed under a
-  `## Class: TheClassName` chapter.
-* One page can have multiple classes.
-* Constructors must be listed with `###`-level titles.
-* [Static Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) must be listed under a `### Static Methods` chapter.
-* [Instance Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#Prototype_methods) must be listed under an `### Instance Methods` chapter.
-* All methods that have a return value must start their description with "Returns `[TYPE]` - Return description"
-  * If the method returns an `Object`, its structure can be specified using a colon followed by a newline then an unordered list of properties in the same style as function parameters.
-* Instance Events must be listed under an `### Instance Events` chapter.
-* Instance Properties must be listed under an `### Instance Properties` chapter.
-  * Instance properties must start with "A [Property Type] ..."
+* คราส API หรือ คราสที่เป็นส่วนของโมดูลจะต้องอยู่ในบท `## Class: TheClassName`
+* หนึ่งเพจสามารถมีหลายคราสได้
+* Constructors จะต้องอยู่ใน `###`
+* [Static Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) จะต้องอยู่ในบทของ `### Static Method`
+* [Instance Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#Prototype_methods) จะต้องอยู่ในบทของ `### Instance Methods`
+* ทุกๆ methods ที่มีค่า รีเทิร์น(return) จะต้องเริ่มต้นคำอธิบายด้วย "Returns `[TYPE]` - คำอธิบายค่ารีเทิร์น"
+    * ถ้า method รีเทิร์น `Object` โครงสร้างจองมันจะอธิบายได้ด้วยการใช้ ','(โคล่อน) ตามด้วยบรรทัดใหม่ จากนั้นก็ ลิสต์ของคุณสมบัติที่ไม่เรียงกัน (เหมือนกับ parametres ของฟังค์ชั่น)
+* Instance ของ Events จะต้องอยู่ในบทของ `### Instance Events`
+* Instance ของ Properties จะต้องอยู่ในบทของ `### Instance Properties`
+    * จะเริ่มต้นด้วย "A [Type ของ คุณสมบัติ]"
 
-Using the `Session` and `Cookies` classes as an example:
+ยกตัวอย่างเช่น `Session` และ `Cookies` คราส:
 
 ```markdown
 # session
@@ -143,7 +126,7 @@ Using the `Session` and `Cookies` classes as an example:
 
 ### Methods
 
-The methods chapter must be in the following form:
+บท methods จะอยู่ในรูปแบบดังนี้:
 
 ```markdown
 ### `objectName.methodName(required[, optional]))`
@@ -154,51 +137,41 @@ The methods chapter must be in the following form:
 ...
 ```
 
-The title can be `###` or `####`-levels depending on whether it is a method of
-a module or a class.
+หัวข้อจะสามารถอยู่ในรูปของ `###` หรือ `####` (ตามว่าเป็น method ของโมดูลหรือของคราส)
 
-For modules, the `objectName` is the module's name. For classes, it must be the
-name of the instance of the class, and must not be the same as the module's
-name.
+สำหรับโมดูล `objectName` คือชื่อของโมดูล แต่ว่าสำหรับคราสนั้น ชื่อจะต้องเป็น instance ของคราสและจะต้องไม่ซ้ำกับชื่อโมดูล
 
-For example, the methods of the `Session` class under the `session` module must
-use `ses` as the `objectName`.
+ยกตัวอย่างเช่น method ของคราส `Session` ที่อยู่ใน `session` โมดูลจะต้องใช้ `ses` เหมือนกับ `objectName`.
 
-The optional arguments are notated by square brackets `[]` surrounding the optional argument
-as well as the comma required if this optional argument follows another
-argument:
+หากมี arguments เพิ่มเตินนั้นจะได้รับการบันทึกภายใน `[]` รวมถึงคอมม่ถ้าหากว่า arguement นี้ตามด้วย argument เสริมอื่นๆ
 
 ```
 required[, optional]
 ```
 
-Below the method is more detailed information on each of the arguments. The type
-of argument is notated by either the common types:
+ข้างล่าง method จะเป็นข้อคาวมโดยละเอียดเกี่ยวกับ arguments อื่นๆ, ชนิค (Type) ของ argument จะโดนบันทีกตาม type ทั่วไป
 
 * [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)
 * [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
 * [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object)
 * [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
 * [`Boolean`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)
-* Or a custom type like Electron's [`WebContent`](api/web-contents.md)
+* หรือ type พิเศษเช่น Electron [`WebContent`](api/web-contents.md)
 
-If an argument or a method is unique to certain platforms, those platforms are
-denoted using a space-delimited italicized list following the datatype. Values
-can be `macOS`, `Windows`, or `Linux`.
+หาก argument หรือ method มีเฉพาะเจาะจงกับ platform นั้น ให้ใช้ตัว italic (เอียง) ลิสต์ตาม datatype
+โดยที่ตัวลิสต์นั้นจะจำกัดอยู่ที่ `macOS`, `Windows`, หรือ `Linux` เท่านั้น
 
 ```markdown
-* `animate` Boolean (optional) _macOS_ _Windows_ - Animate the thing.
+* `animate` Boolean (optional) _macOS_ _Windows_ - เล่นแอนนิเมชัั่น.
 ```
 
-`Array` type arguments must specify what elements the array may include in
-the description below.
+Arguments ชนิด `Array` จะต้องบอกว่า array นั้นจะใส่อะไรลงไปตามข้อมูลด้านล่าง
 
-The description for `Function` type arguments should make it clear how it may be
-called and list the types of the parameters that will be passed to it.
+ข้อความอธิบาย arguments ของ ฟังค์ชั่น (function) จะต้องบอกเจาะจงถึงวิธีการใช้งานและชนิดของ parametres ที่ฟังค์ชั่นนั้นรับ
 
-### Events
+### อีเว้น (Events)
 
-The events chapter must be in following form:
+บทอีเว้นจะต้องอยู่ในรูปแบบดังนี้:
 
 ```markdown
 ### Event: 'wake-up'
@@ -210,14 +183,13 @@ Returns:
 ...
 ```
 
-The title can be `###` or `####`-levels depending on whether it is an event of
-a module or a class.
+หัวข้อจะสามารถอยู่ในรูปของ `###` หรือ `####` (ตามว่าเป็นอีเว้นของโมดูลหรือของคราส)
 
-The arguments of an event follow the same rules as methods.
+แบบเอกสาร arguments ของอีเว้นจะใช้กฎเดียวกับ methods
 
-### Properties
+### คุณสมบัติ (Properties)
 
-The properties chapter must be in following form:
+บทคุณสมบัติจะต้องอยู่ในรูปแบบดังนี้:
 
 ```markdown
 ### session.defaultSession
@@ -225,22 +197,17 @@ The properties chapter must be in following form:
 ...
 ```
 
-The title can be `###` or `####`-levels depending on whether it is a property of
-a module or a class.
+หัวข้อจะสามารถอยู่ในรูปของ `###` หรือ `####` (ตามว่าเป็นคุณสมบัติของโมดูลหรือของคราส)
 
-## Documentation Translations
+## การแปลเอกสาร
 
-Translations of the Electron docs are located within the `docs-translations`
-directory.
+เอกสารของ Electron ที่ถูกแปลแล้ว จะอยู่ในโฟลเดอร์ `docs-translation`
 
-To add another set (or partial set):
+ในการสร้างเซ็ตของภาษาใหม่ (เพิ่มในบางส่วน)
 
-* Create a subdirectory named by language abbreviation.
-* Translate the files.
-* Update the `README.md` within your language directory to link to the files
-  you have translated.
-* Add a link to your translation directory on the main Electron
-  [README](https://github.com/electron/electron#documentation-translations).
+* สร้างที่อยู่ย่อยตามตัวย่อของภาษา
+* แปลภาษา
+* อัพเดท `README.md` ภายในเพื่อเป็นสารลิงค์ไฟล์ต่างๆที่แปลแล้ว
+* เพิ่มลิ้งค์ลง [README](https://github.com/electron/electron#documentation-translations) หลักของ Electron
 
-Note that the files under `docs-translations` must only include the translated
-ones, the original English files should not be copied there.
+โน้ต: ไฟล์ที่อยู่ใน `docs-translations` จะมีแค่ที่แปลแล้วเท่านั้น ไฟล์ต้นตำรับภาษาอังกริษไม่ควรจะโดนก้อปปี้ลงไปด้วย
