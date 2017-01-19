@@ -241,6 +241,7 @@
             'xcode_settings': {
               'WARNING_CFLAGS': [
                 '-Wno-unused-private-field',
+                '-Wno-address-of-packed-member',
               ],
             },
           }],  # OS=="mac"
