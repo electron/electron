@@ -21,7 +21,7 @@ custom Electron build, you may skip this section.
 For certain features (e.g. pinch-zoom) to work properly, you must target the
 macOS 10.10 SDK.
 
-Official Electron builds are built with Xcode 7.3.1, which does not contain
+Official Electron builds are built with [Xcode 7.3.1](http://adcdownload.apple.com/Developer_Tools/Xcode_7.3.1/Xcode_7.3.1.dmg), which does not contain
 the 10.10 SDK by default. To obtain it, first download and mount the
 [Xcode 6.4](http://developer.apple.com/devcenter/download.action?path=/Developer_Tools/Xcode_6.4/Xcode_6.4.dmg)
 DMG.
