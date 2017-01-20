@@ -4,14 +4,15 @@
 
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 
+#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/login_handler.h"
+#include "atom/browser/stream_manager.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/common/platform_util.h"
+#include "base/guid.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/stream_handle.h"
-#include "content/public/browser/stream_info.h"
 #include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
 #include "net/url_request/url_request.h"
@@ -61,19 +62,24 @@ void HandleExternalProtocolInUI(
   permission_helper->RequestOpenExternalPermission(callback, has_user_gesture);
 }
 
-void OnPdfStreamCreated(std::unique_ptr<content::StreamInfo> stream,
-                        int64_t expected_content_size,
-                        const content::ResourceRequestInfo::WebContentsGetter&
-                            web_contents_getter) {
+void OnPdfStreamCreated(
+    std::unique_ptr<content::StreamInfo> stream,
+    int64_t expected_content_size,
+    const content::ResourceRequestInfo::WebContentsGetter& web_contents_getter,
+    int render_process_id,
+    int render_frame_id) {
   content::WebContents* web_contents = web_contents_getter.Run();
   if (!web_contents)
     return;
 
-  auto stream_url = stream->handle->GetURL();
-  auto original_url = stream->original_url;
+  auto browser_context =
+      static_cast<AtomBrowserContext*>(web_contents->GetBrowserContext());
+  auto stream_manager = browser_context->stream_manager();
+  std::string view_id = base::GenerateGUID();
+  stream_manager->AddStream(std::move(stream), view_id, render_process_id,
+                            render_frame_id);
   content::NavigationController::LoadURLParams params(GURL(base::StringPrintf(
-      "chrome://pdf-viewer/index.html?streamURL=%s&originalURL=%s",
-      stream_url.spec().c_str(), original_url.spec().c_str())));
+      "chrome://pdf-viewer/index.html?viewId=%s", view_id.c_str())));
   web_contents->GetController().LoadURLWithParams(params);
 }
 
@@ -137,7 +143,8 @@ void AtomResourceDispatcherHostDelegate::OnStreamCreated(
       BrowserThread::UI, FROM_HERE,
       base::Bind(&OnPdfStreamCreated, base::Passed(&stream),
                  request->GetExpectedContentSize(),
-                 info->GetWebContentsGetterForRequest()));
+                 info->GetWebContentsGetterForRequest(), info->GetChildID(),
+                 info->GetRenderFrameID()));
 }
 
 }  // namespace atom

@@ -19,6 +19,7 @@ class AtomCTDelegate;
 class AtomDownloadManagerDelegate;
 class AtomNetworkDelegate;
 class AtomPermissionManager;
+class StreamManager;
 class WebViewManager;
 
 class AtomBrowserContext : public brightray::BrowserContext {
@@ -58,6 +59,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomCookieDelegate* cookie_delegate() const {
     return cookie_delegate_.get();
   }
+  StreamManager* stream_manager() const { return stream_manager_.get(); }
 
  protected:
   AtomBrowserContext(const std::string& partition, bool in_memory,
@@ -70,6 +72,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<AtomPermissionManager> permission_manager_;
   std::unique_ptr<AtomBlobReader> blob_reader_;
   std::unique_ptr<AtomCTDelegate> ct_delegate_;
+  std::unique_ptr<StreamManager> stream_manager_;
   std::string user_agent_;
   bool use_cache_;
 

@@ -88,10 +88,9 @@ class PdfViewerUI : public content::WebUIController {
  public:
   PdfViewerUI(content::BrowserContext* browser_context,
               content::WebUI* web_ui,
-              const std::string& stream_url,
-              const std::string& original_url)
+              const std::string& view_id)
       : content::WebUIController(web_ui) {
-    web_ui->AddMessageHandler(new PdfViewerHandler(stream_url, original_url));
+    web_ui->AddMessageHandler(new PdfViewerHandler(view_id));
     content::URLDataSource::Add(browser_context, new BundledDataSource);
   }
 
@@ -143,16 +142,15 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
   if (url.host() == kChromeUIPdfViewerHost) {
     base::StringPairs toplevel_params;
     base::SplitStringIntoKeyValuePairs(url.query(), '=', '&', &toplevel_params);
-    std::string stream_url, original_url;
+    std::string view_id;
     for (const auto& param : toplevel_params) {
-      if (param.first == "streamURL") {
-        stream_url = param.second;
-      } else if (param.first == "originalURL") {
-        original_url = param.second;
+      if (param.first == "viewId") {
+        view_id = param.second;
+        break;
       }
     }
     auto browser_context = web_ui->GetWebContents()->GetBrowserContext();
-    return new PdfViewerUI(browser_context, web_ui, stream_url, original_url);
+    return new PdfViewerUI(browser_context, web_ui, view_id);
   }
   return nullptr;
 }

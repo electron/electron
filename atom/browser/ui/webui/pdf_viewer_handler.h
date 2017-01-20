@@ -15,12 +15,15 @@ namespace base {
 class ListValue;
 }
 
+namespace content {
+class StreamInfo;
+}
+
 namespace atom {
 
 class PdfViewerHandler : public content::WebUIMessageHandler {
  public:
-  PdfViewerHandler(const std::string& stream_url,
-                   const std::string& original_url);
+  explicit PdfViewerHandler(const std::string& view_id);
   ~PdfViewerHandler() override;
 
   // WebUIMessageHandler implementation.
@@ -37,8 +40,8 @@ class PdfViewerHandler : public content::WebUIMessageHandler {
   // Keeps track of events related to zooming.
   std::unique_ptr<content::HostZoomMap::Subscription>
       host_zoom_map_subscription_;
-  std::string stream_url_;
-  std::string original_url_;
+  std::unique_ptr<content::StreamInfo> stream_;
+  std::string view_id_;
 
   DISALLOW_COPY_AND_ASSIGN(PdfViewerHandler);
 };

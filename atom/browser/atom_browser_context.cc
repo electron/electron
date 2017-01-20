@@ -17,6 +17,7 @@
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/http_protocol_handler.h"
+#include "atom/browser/stream_manager.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
@@ -73,6 +74,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        const base::DictionaryValue& options)
     : brightray::BrowserContext(partition, in_memory),
       ct_delegate_(new AtomCTDelegate),
+      stream_manager_(new StreamManager),
       network_delegate_(new AtomNetworkDelegate),
       cookie_delegate_(new AtomCookieDelegate) {
   // Construct user agent string.
