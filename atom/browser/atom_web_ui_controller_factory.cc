@@ -18,6 +18,7 @@
 #include "content/public/browser/web_ui_controller.h"
 #include "content/public/common/bindings_policy.h"
 #include "grit/pdf_viewer_resources_map.h"
+#include "net/base/mime_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
 namespace atom {
@@ -28,32 +29,6 @@ const char kChromeUIPdfViewerHost[] = "pdf-viewer";
 
 std::string PathWithoutParams(const std::string& path) {
   return GURL(std::string("chrome://pdf-viewer/") + path).path().substr(1);
-}
-
-std::string GetMimeTypeForPath(const std::string& path) {
-  std::string filename = PathWithoutParams(path);
-  if (base::EndsWith(filename, ".html", base::CompareCase::INSENSITIVE_ASCII)) {
-    return "text/html";
-  } else if (base::EndsWith(filename, ".css",
-                            base::CompareCase::INSENSITIVE_ASCII)) {
-    return "text/css";
-  } else if (base::EndsWith(filename, ".js",
-                            base::CompareCase::INSENSITIVE_ASCII)) {
-    return "application/javascript";
-  } else if (base::EndsWith(filename, ".png",
-                            base::CompareCase::INSENSITIVE_ASCII)) {
-    return "image/png";
-  } else if (base::EndsWith(filename, ".gif",
-                            base::CompareCase::INSENSITIVE_ASCII)) {
-    return "image/gif";
-  } else if (base::EndsWith(filename, ".svg",
-                            base::CompareCase::INSENSITIVE_ASCII)) {
-    return "image/svg+xml";
-  } else if (base::EndsWith(filename, ".manifest",
-                            base::CompareCase::INSENSITIVE_ASCII)) {
-    return "text/cache-manifest";
-  }
-  return "text/html";
 }
 
 class BundledDataSource : public content::URLDataSource {
@@ -88,7 +63,10 @@ class BundledDataSource : public content::URLDataSource {
   }
 
   std::string GetMimeType(const std::string& path) const override {
-    return GetMimeTypeForPath(path);
+    std::string filename = PathWithoutParams(path);
+    std::string mime_type;
+    net::GetMimeTypeFromFile(base::FilePath(filename), &mime_type);
+    return mime_type;
   }
 
   bool ShouldAddContentSecurityPolicy() const override { return false; }
