@@ -900,14 +900,16 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   // We have to call it right after LoadURL because the RenderViewHost is only
   // created after loading a page.
   const auto view = web_contents()->GetRenderWidgetHostView();
-  WebContentsPreferences* web_preferences =
-      WebContentsPreferences::FromWebContents(web_contents());
-  std::string color_name;
-  if (web_preferences->web_preferences()->GetString(options::kBackgroundColor,
-                                                    &color_name)) {
-    view->SetBackgroundColor(ParseHexColor(color_name));
-  } else {
-    view->SetBackgroundColor(SK_ColorTRANSPARENT);
+  if (view) {
+    WebContentsPreferences* web_preferences =
+        WebContentsPreferences::FromWebContents(web_contents());
+    std::string color_name;
+    if (web_preferences->web_preferences()->GetString(options::kBackgroundColor,
+                                                      &color_name)) {
+      view->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      view->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
   }
 }
 
