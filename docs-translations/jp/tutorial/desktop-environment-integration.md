@@ -6,7 +6,7 @@
 
 ## 通知 (Windows, Linux, macOS)
 
-3つのオペレーティングシステム全てで、アプリケーションからユーザーに通知を送る手段が提供されています。通知を表示するためにオペレーティングシステムのネイティブ通知APIを使用しする[HTML5 Notification API](https://notifications.spec.whatwg.org/)で、Electronは、開発者に通知を送ることができます。
+3つのオペレーティングシステム全てで、アプリケーションからユーザーに通知を送る手段が提供されています。通知を表示するためにオペレーティングシステムのネイティブ通知APIを使用する[HTML5 Notification API](https://notifications.spec.whatwg.org/)で、Electronは、開発者に通知を送ることができます。
 
 **注意:** これはHTML5 APIですので、レンダラプロセス内のみで有効です。
 
