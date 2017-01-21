@@ -1,33 +1,40 @@
-# Accessibility
+# การเข้าถึง (Accessibility)
 
-Making accessible applications is important and we're happy to introduce new functionality to [Devtron](http://electron.atom.io/devtron) and [Spectron](http://electron.atom.io/spectron) that gives developers the opportunity to make their apps better for everyone.
+การที่จะทำให้แอพพิเคชั่นนั้นเข้าถึงได้เป็นเรื่องที่สำคัญมาก และ เรามีความสุขที่จะต้อนรับความสามารถใหม่ของเราสู่ [Devtron](http://electron.atom.io/devtron) และ [Spectron](http://electron.atom.io/spectron) ซึ่งได้ให้โอกาสผู้พัฒนาในการที่จะสร้างแอพพิเคชั่นที่ดีขึ้นเพื่อทุกๆคน
 
 ---
 
-Accessibility concerns in Electron applications are similar to those of websites because they're both ultimately HTML. With Electron apps, however, you can't use the online resources for accessibility audits because your app doesn't have a URL to point the auditor to.
+ความกังวลเกี่ยวกับการเข้าถึงของแอพพิเคชั่น Electron นั้นมีความคล้ายครึงกับความกังวลของเว็ปไซต์ เพราะว่าทั้งสองนั้นเป็น HTML ด้วยกัน ในขณะเดียวกันนั้น แต่ว่าในแอพ Electron คุณไม่สามารถใช้ทรัพยากรณ์ออนไลน์ได้เพราะว่าแอพของคุณนั้นไม่มี URL ที่สามารถเข้าถึงได้
 
-These new features bring those auditing tools to your Electron app. You can choose to add audits to your tests with Spectron or use them within DevTools with Devtron. Read on for a summary of the tools or checkout our [accessibility documentation](http://electron.atom.io/docs/tutorial/accessibility) for more information.
+ความสามารถใหม่ๆนี้นำอุปกรณ์การแก้ไขต่างๆเข้ามาใส่แอพ Electron ของคุณ คุณสามารถเลือกที่จะแก้ไขบททดสองของคุณได้ด้วย Spectron หรือว่าใช้มันใน DevTools ด้วย Devtron
+
+กรุณาอ่านต่อเพื่อบทสรุปของอุปกรณ์หรือดู [เอกสารการเข้าถึง](http://electron.atom.io/docs/tutorial/accessibility) ของเราสำหรับข้อมูลเพิ่มเติม
 
 ### Spectron
 
-In the testing framework Spectron, you can now audit each window and `<webview>` tag in your application. For example:
+ในการทดสอบเฟรมเวิร์ค Spectron นั้น 
+คุณจะใช้วิธีการแก้ไขทุกๆหน้าต่าง และ แท็ก `<webview>` ในแอพพิเคชั่นของคุณได้
+
+ยกตัวอย่างเช่น:
 
 ```javascript
-app.client.auditAccessibility().then(function (audit) {
-  if (audit.failed) {
-    console.error(audit.message)
-  }
+app.client.autidAccessibility().then(function (audit) {
+    if (audit.failed) {
+        console.error(audit.message)
+    }
 })
 ```
 
-You can read more about this feature in [Spectron's documentation](https://github.com/electron/spectron#accessibility-testing).
+คุณสามารถอ่านข้อมูลเพิ่มเติมสำหรับได้ที่ [เอกสาร Spectron](https://github.com/electron/spectron#accessibility-testing)
 
 ### Devtron
 
-In Devtron, there is a new accessibility tab which will allow you to audit a page in your app, sort and filter the results.
+ใน Devtron นั้น จะมีแท็ปการเข้าถึง ซึ่งจะทำให้คุณสามารถจัดการเพจในแอพของคุณได้ 
 
 ![devtron screenshot](https://cloud.githubusercontent.com/assets/1305617/17156618/9f9bcd72-533f-11e6-880d-389115f40a2a.png)
 
-Both of these tools are using the [Accessibility Developer Tools](https://github.com/GoogleChrome/accessibility-developer-tools) library built by Google for Chrome. You can learn more about the accessibility audit rules this library uses on that [repository's wiki](https://github.com/GoogleChrome/accessibility-developer-tools/wiki/Audit-Rules).
+ทั้งสองเครื่องมือใช้ [Accessibility Developer Tools](https://github.com/GoogleChrome/accessibility-developer-tools) ซึ่งเป็น library ที่สร้างขึ้นโดย Google เพื่อ Chrome 
 
-If you know of other great accessibility tools for Electron, add them to the [accessibility documentation](http://electron.atom.io/docs/tutorial/accessibility) with a pull request.
+คุณสามารถศึกษาเพิ่มเติมเกี่ยวกับมันได้ที่ [รีโปนี้](https://github.com/GoogleChrome/accessibility-developer-tools/wiki/Audit-Rules)
+
+ถ้าคุณมีความรู้เกี่ยวกับอุปกรณือื่นๆที่สามารถใช้กับ Electron ได้ โปรดใส่มันเพิ่มใน [เอกสารการเข้าถึง](http://electron.atom.io/docs/tutorial/accessibility) ด้วยการขอดึงจาก Electron (pull request)
