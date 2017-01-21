@@ -8,7 +8,9 @@
 #include <string>
 
 #include "base/macros.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_ui_controller.h"
+#include "ipc/ipc_message.h"
 
 namespace content {
 class BrowserContext;
@@ -16,18 +18,26 @@ class BrowserContext;
 
 namespace atom {
 
-class PdfViewerUI : public content::WebUIController {
+class PdfViewerUI : public content::WebUIController,
+                    public content::WebContentsObserver {
  public:
   static const char kHost[];
 
   PdfViewerUI(content::BrowserContext* browser_context,
               content::WebUI* web_ui,
               const std::string& view_id);
+  ~PdfViewerUI() override;
 
   // content::WebUIController implementation.
   void RenderViewCreated(content::RenderViewHost* rvh) override;
 
+  // content::WebContentsObserver:
+  bool OnMessageReceived(const IPC::Message& message,
+                         content::RenderFrameHost* render_frame_host) override;
+
  private:
+  void OnSaveURLAs(const GURL& url, const content::Referrer& referrer);
+
   DISALLOW_COPY_AND_ASSIGN(PdfViewerUI);
 };
 

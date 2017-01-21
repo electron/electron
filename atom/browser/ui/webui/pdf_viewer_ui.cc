@@ -7,8 +7,10 @@
 #include <map>
 
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
+#include "components/pdf/common/pdf_messages.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/url_data_source.h"
+#include "content/public/browser/web_contents.h"
 #include "content/public/common/bindings_policy.h"
 #include "grit/pdf_viewer_resources_map.h"
 #include "net/base/mime_util.h"
@@ -82,13 +84,32 @@ const char PdfViewerUI::kHost[] = "pdf-viewer";
 PdfViewerUI::PdfViewerUI(content::BrowserContext* browser_context,
                          content::WebUI* web_ui,
                          const std::string& view_id)
-    : content::WebUIController(web_ui) {
+    : content::WebUIController(web_ui),
+      content::WebContentsObserver(web_ui->GetWebContents()) {
   web_ui->AddMessageHandler(new PdfViewerHandler(view_id));
   content::URLDataSource::Add(browser_context, new BundledDataSource);
 }
 
+PdfViewerUI::~PdfViewerUI() {}
+
 void PdfViewerUI::RenderViewCreated(content::RenderViewHost* rvh) {
   rvh->AllowBindings(content::BINDINGS_POLICY_WEB_UI);
+}
+
+bool PdfViewerUI::OnMessageReceived(
+    const IPC::Message& message,
+    content::RenderFrameHost* render_frame_host) {
+  bool handled = true;
+  IPC_BEGIN_MESSAGE_MAP(PdfViewerUI, message)
+    IPC_MESSAGE_HANDLER(PDFHostMsg_PDFSaveURLAs, OnSaveURLAs)
+    IPC_MESSAGE_UNHANDLED(handled = false)
+  IPC_END_MESSAGE_MAP()
+  return handled;
+}
+
+void PdfViewerUI::OnSaveURLAs(const GURL& url,
+                              const content::Referrer& referrer) {
+  web_contents()->SaveFrame(url, referrer);
 }
 
 }  // namespace atom
