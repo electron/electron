@@ -4,7 +4,7 @@
 
 Electron began in 2013 as the framework on which [Atom](https://atom.io), GitHub's hackable text editor, would be built. The two were open sourced in the Spring of 2014.
 
-It has since become a popular tool used by open source developers, startups, and established companies. [See who is building on Electron](/apps).
+It has since become a popular tool used by open source developers, startups, and established companies. [See who is building on Electron](http://electron.atom.io/apps/).
 
 Read on to learn more about the contributors and releases of Electron or get started building with Electron in the [Quick Start Guide](quick-start.md).
 
