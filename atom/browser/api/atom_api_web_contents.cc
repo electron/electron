@@ -861,7 +861,7 @@ bool WebContents::Equal(const WebContents* web_contents) const {
 }
 
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
-  if (!url.is_valid()) {
+  if (!url.is_valid() || url.spec().size() > url::kMaxURLChars) {
     Emit("did-fail-load",
          static_cast<int>(net::ERR_INVALID_URL),
          net::ErrorToShortString(net::ERR_INVALID_URL),
