@@ -330,6 +330,8 @@
       'atom/browser/ui/views/win_frame_view.h',
       'atom/browser/ui/webui/pdf_viewer_handler.cc',
       'atom/browser/ui/webui/pdf_viewer_handler.h',
+      'atom/browser/ui/webui/pdf_viewer_ui.cc',
+      'atom/browser/ui/webui/pdf_viewer_ui.h',
       'atom/browser/ui/win/atom_desktop_native_widget_aura.cc',
       'atom/browser/ui/win/atom_desktop_native_widget_aura.h',
       'atom/browser/ui/win/atom_desktop_window_tree_host_win.cc',

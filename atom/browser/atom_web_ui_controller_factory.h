@@ -7,7 +7,6 @@
 
 #include "base/macros.h"
 #include "base/memory/singleton.h"
-#include "content/public/browser/web_ui.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 
 namespace atom {
