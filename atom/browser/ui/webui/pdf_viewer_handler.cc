@@ -13,6 +13,8 @@
 #include "content/public/browser/web_ui.h"
 #include "content/public/common/page_zoom.h"
 #include "net/http/http_response_headers.h"
+#include "ui/base/l10n/l10n_util.h"
+#include "ui/base/webui/web_ui_util.h"
 
 namespace atom {
 
@@ -60,6 +62,9 @@ void PdfViewerHandler::RegisterMessages() {
   web_ui()->RegisterMessageCallback(
       "getInitialZoom",
       base::Bind(&PdfViewerHandler::GetInitialZoom, base::Unretained(this)));
+  web_ui()->RegisterMessageCallback(
+      "getStrings",
+      base::Bind(&PdfViewerHandler::GetStrings, base::Unretained(this)));
 }
 
 void PdfViewerHandler::OnJavascriptAllowed() {
@@ -120,6 +125,39 @@ void PdfViewerHandler::GetInitialZoom(const base::ListValue* args) {
   ResolveJavascriptCallback(
       *callback_id,
       base::FundamentalValue(content::ZoomLevelToZoomFactor(zoom_level)));
+}
+
+void PdfViewerHandler::GetStrings(const base::ListValue* args) {
+  if (!IsJavascriptAllowed())
+    return;
+  CHECK_EQ(1U, args->GetSize());
+  const base::Value* callback_id;
+  CHECK(args->Get(0, &callback_id));
+
+  std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue);
+  // TODO(deepak1556): Generate strings from componenets/pdf_strings.grdp.
+#define SET_STRING(id, resource) result->SetString(id, resource)
+  SET_STRING("passwordPrompt",
+             "This document is password protected.  Please enter a password.");
+  SET_STRING("passwordSubmit", "Submit");
+  SET_STRING("passwordInvalid", "Incorrect password");
+  SET_STRING("pageLoading", "Loading...");
+  SET_STRING("pageLoadFailed", "Failed to load PDF document");
+  SET_STRING("pageReload", "Reload");
+  SET_STRING("bookmarks", "Bookmarks");
+  SET_STRING("labelPageNumber", "Page number");
+  SET_STRING("tooltipRotateCW", "Rotate clockwise");
+  SET_STRING("tooltipDownload", "Download");
+  SET_STRING("tooltipPrint", "Print");
+  SET_STRING("tooltipFitToPage", "Fit to page");
+  SET_STRING("tooltipFitToWidth", "Fit to width");
+  SET_STRING("tooltipZoomIn", "Zoom in");
+  SET_STRING("tooltipZoomOut", "Zoom out");
+#undef SET_STRING
+
+  webui::SetLoadTimeDataDefaults(l10n_util::GetApplicationLocale(""),
+                                 result.get());
+  ResolveJavascriptCallback(*callback_id, *result);
 }
 
 void PdfViewerHandler::OnZoomLevelChanged(
