@@ -48,8 +48,6 @@ class StreamManager {
 
     StreamManager* stream_manager_;
     std::string view_id_;
-    int render_process_id_;
-    int render_frame_id_;
 
     DISALLOW_COPY_AND_ASSIGN(EmbedderObserver);
   };

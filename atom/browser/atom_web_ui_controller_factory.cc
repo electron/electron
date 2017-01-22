@@ -52,7 +52,7 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
     base::SplitStringIntoKeyValuePairs(url.query(), '=', '&', &toplevel_params);
     std::string view_id;
     for (const auto& param : toplevel_params) {
-      if (param.first == "viewId") {
+      if (param.first == PdfViewerUI::kId) {
         view_id = param.second;
         break;
       }

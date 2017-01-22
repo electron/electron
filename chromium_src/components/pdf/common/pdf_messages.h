@@ -13,13 +13,6 @@
 
 #define IPC_MESSAGE_START PDFMsgStart
 
-// Updates the content restrictions, i.e. to disable print/copy.
-IPC_MESSAGE_ROUTED1(PDFHostMsg_PDFUpdateContentRestrictions,
-                    int /* restrictions */)
-
-// The currently displayed PDF has an unsupported feature.
-IPC_MESSAGE_ROUTED0(PDFHostMsg_PDFHasUnsupportedFeature)
-
 // Brings up SaveAs... dialog to save specified URL.
 IPC_MESSAGE_ROUTED2(PDFHostMsg_PDFSaveURLAs,
                     GURL /* url */,

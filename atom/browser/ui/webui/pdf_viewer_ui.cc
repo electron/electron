@@ -21,7 +21,7 @@ namespace atom {
 namespace {
 
 std::string PathWithoutParams(const std::string& path) {
-  return GURL(std::string("chrome://pdf-viewer/") + path).path().substr(1);
+  return GURL(PdfViewerUI::kOrigin + path).path().substr(1);
 }
 
 class BundledDataSource : public content::URLDataSource {
@@ -79,7 +79,9 @@ class BundledDataSource : public content::URLDataSource {
 
 }  // namespace
 
+const char PdfViewerUI::kOrigin[] = "chrome://pdf-viewer/";
 const char PdfViewerUI::kHost[] = "pdf-viewer";
+const char PdfViewerUI::kId[] = "viewId";
 
 PdfViewerUI::PdfViewerUI(content::BrowserContext* browser_context,
                          content::WebUI* web_ui,
