@@ -106,7 +106,7 @@ bool DevToolsNetworkTransaction::CheckFailed() {
 int DevToolsNetworkTransaction::Start(
     const net::HttpRequestInfo* request,
     const net::CompletionCallback& callback,
-    const net::BoundNetLog& net_log) {
+    const net::BoundNe& net_log) {
   DCHECK(request);
   request_ = request;
 
@@ -129,7 +129,8 @@ int DevToolsNetworkTransaction::Start(
     request_ = custom_request_.get();
   }
 
-  DevToolsNetworkInterceptor* interceptor = controller_->GetInterceptor(client_id);
+  DevToolsNetworkInterceptor* interceptor =
+      controller_->GetInterceptor(client_id);
   if (interceptor) {
     interceptor_ = interceptor->GetWeakPtr();
     if (custom_upload_data_stream_)
@@ -140,9 +141,9 @@ int DevToolsNetworkTransaction::Start(
     return net::ERR_INTERNET_DISCONNECTED;
 
   if (!interceptor_)
-    return transaction_->Start(request_, callback, net_log);
+    return network_transaction_->Start(request_, callback, net_log);
 
-  int result = transaction_->Start(request_,
+  int result = network_transaction_->Start(request_,
       base::Bind(&DevToolsNetworkTransaction::IOCallback,
                  base::Unretained(this), callback, true),
       net_log);
@@ -244,10 +245,6 @@ DevToolsNetworkTransaction::GetResponseInfo() const {
 
 net::LoadState DevToolsNetworkTransaction::GetLoadState() const {
   return transaction_->GetLoadState();
-}
-
-net::UploadProgress DevToolsNetworkTransaction::GetUploadProgress() const {
-  return transaction_->GetUploadProgress();
 }
 
 void DevToolsNetworkTransaction::SetQuicServerInfo(

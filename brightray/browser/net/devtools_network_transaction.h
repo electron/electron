@@ -32,7 +32,7 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
   // HttpTransaction methods:
   int Start(const net::HttpRequestInfo* request,
             const net::CompletionCallback& callback,
-            const net::BoundNetLog& net_log) override;
+            const net::NetLogWithSource& net_log) override;
   int RestartIgnoringLastError(
       const net::CompletionCallback& callback) override;
   int RestartWithCertificate(net::X509Certificate* client_cert,
@@ -52,7 +52,6 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
   void DoneReading() override;
   const net::HttpResponseInfo* GetResponseInfo() const override;
   net::LoadState GetLoadState() const override;
-  net::UploadProgress GetUploadProgress() const override;
   void SetQuicServerInfo(net::QuicServerInfo* quic_server_info) override;
   bool GetLoadTimingInfo(net::LoadTimingInfo* load_timing_info) const override;
   bool GetRemoteEndpoint(net::IPEndPoint* endpoint) const override;
