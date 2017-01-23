@@ -137,10 +137,6 @@ void MediaStreamDevicesController::Accept() {
                               webcam_requested_,
                               &devices);
         break;
-      case content::MEDIA_ENUMERATE_DEVICES:
-        // Do nothing.
-        NOTREACHED();
-        break;
     }
   }
 
