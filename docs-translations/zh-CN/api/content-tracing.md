@@ -115,15 +115,3 @@ contentTracing.startRecording(options, function () {
 * `callback` Function
 
 通过查找 buffer 进程来获取百分比最大使用量.当确定了TraceBufferUsage 的值确定的时候，就调用 `callback` .
-
-### `contentTracing.setWatchEvent(categoryName, eventName, callback)`
-
-* `categoryName` String
-* `eventName` String
-* `callback` Function
-
-任意时刻在任何进程上指定事件发生时将调用 `callback` .
-
-### `contentTracing.cancelWatchEvent()`
-
-取消 watch 事件. 如果启动查找，这或许会造成 watch 事件的回调函数 出错.

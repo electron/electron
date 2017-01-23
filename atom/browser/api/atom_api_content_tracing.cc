@@ -69,10 +69,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("stopRecording", &StopRecording);
   dict.SetMethod("getTraceBufferUsage", base::Bind(
       &TracingController::GetTraceBufferUsage, controller));
-  dict.SetMethod("setWatchEvent", base::Bind(
-      &TracingController::SetWatchEvent, controller));
-  dict.SetMethod("cancelWatchEvent", base::Bind(
-      &TracingController::CancelWatchEvent, controller));
 }
 
 }  // namespace
