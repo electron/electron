@@ -2,7 +2,7 @@
 
 > どうやってNode.jsとElectronのAPIを使うか。
 
-Electron では全ての [Node.js のビルトインモジュール](http://nodejs.org/api/) 利用可能です。また、サードパーティの Node モジュール ([ネイティブモジュール](../tutorial/using-native-node-modules.md)も含む) も完全にサポートされています。
+Electron では全ての [Node.js のビルトインモジュール](http://nodejs.org/api/) が利用可能です。また、サードパーティの Node モジュール ([ネイティブモジュール](../tutorial/using-native-node-modules.md)も含む) も完全にサポートされています。
 
 Electron はネイティブのデスクトップアプリケーション開発のための幾つかの追加のビルトインモジュールも提供しています。メインプロセスでだけ使えるモジュールもあれば、レンダラプロセス(ウェブページ)でだけ使えるモジュール、あるいはメインプロセス、レンダラプロセスどちらでも使えるモジュールもあります。
 
@@ -39,7 +39,7 @@ app.on('ready', () => {
 
 ## 分割代入
 
-0.37の時点で、 、[分割代入][desctructuring-assignment]でビルトインモジュールの使用をより簡単にできます：
+0.37の時点で、[分割代入][desctructuring-assignment]でビルトインモジュールの使用をより簡単にできます：
 
 ```javascript
 const {app, BrowserWindow} = require('electron')
