@@ -184,7 +184,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const GURL& target_url,
       const std::string& frame_name,
       WindowOpenDisposition disposition,
-      const std::vector<base::string16>& features,
+      const std::vector<std::string>& features,
       const scoped_refptr<content::ResourceRequestBodyImpl>& body);
 
   // Returns the web preferences of current WebContents.

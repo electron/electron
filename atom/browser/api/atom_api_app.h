@@ -53,7 +53,7 @@ class App : public AtomBrowserClient::Delegate,
       const GURL& target_url,
       const std::string& frame_name,
       WindowOpenDisposition disposition,
-      const std::vector<base::string16>& features,
+      const std::vector<std::string>& features,
       const scoped_refptr<content::ResourceRequestBodyImpl>& body,
       int render_process_id,
       int render_frame_id);

@@ -392,7 +392,7 @@ void WebContents::OnCreateWindow(
     const GURL& target_url,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
-    const std::vector<base::string16>& features,
+    const std::vector<std::string>& features,
     const scoped_refptr<content::ResourceRequestBodyImpl>& body) {
   if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
     Emit("-new-window", target_url, frame_name, disposition, features, body);
