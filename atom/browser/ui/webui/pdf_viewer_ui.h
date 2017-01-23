@@ -14,6 +14,7 @@
 
 namespace content {
 class BrowserContext;
+class StreamInfo;
 }
 
 namespace atom {
@@ -24,10 +25,12 @@ class PdfViewerUI : public content::WebUIController,
   static const char kOrigin[];
   static const char kHost[];
   static const char kId[];
+  static const char kSrc[];
 
   PdfViewerUI(content::BrowserContext* browser_context,
               content::WebUI* web_ui,
-              const std::string& view_id);
+              const std::string& view_id,
+              const std::string& src);
   ~PdfViewerUI() override;
 
   // content::WebUIController implementation.
@@ -39,6 +42,9 @@ class PdfViewerUI : public content::WebUIController,
 
  private:
   void OnSaveURLAs(const GURL& url, const content::Referrer& referrer);
+
+  std::string src_;
+  std::unique_ptr<content::StreamInfo> stream_;
 
   DISALLOW_COPY_AND_ASSIGN(PdfViewerUI);
 };

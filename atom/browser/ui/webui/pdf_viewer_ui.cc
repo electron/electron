@@ -6,6 +6,8 @@
 
 #include <map>
 
+#include "atom/browser/atom_browser_context.h"
+#include "atom/browser/stream_manager.h"
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
 #include "components/pdf/common/pdf_messages.h"
 #include "content/public/browser/render_view_host.h"
@@ -82,13 +84,19 @@ class BundledDataSource : public content::URLDataSource {
 const char PdfViewerUI::kOrigin[] = "chrome://pdf-viewer/";
 const char PdfViewerUI::kHost[] = "pdf-viewer";
 const char PdfViewerUI::kId[] = "viewId";
+const char PdfViewerUI::kSrc[] = "src";
 
 PdfViewerUI::PdfViewerUI(content::BrowserContext* browser_context,
                          content::WebUI* web_ui,
-                         const std::string& view_id)
-    : content::WebUIController(web_ui),
+                         const std::string& view_id,
+                         const std::string& src)
+    : src_(src),
+      content::WebUIController(web_ui),
       content::WebContentsObserver(web_ui->GetWebContents()) {
-  web_ui->AddMessageHandler(new PdfViewerHandler(view_id));
+  auto context = static_cast<AtomBrowserContext*>(browser_context);
+  auto stream_manager = context->stream_manager();
+  stream_ = stream_manager->ReleaseStream(view_id);
+  web_ui->AddMessageHandler(new PdfViewerHandler(stream_.get(), src));
   content::URLDataSource::Add(browser_context, new BundledDataSource);
 }
 

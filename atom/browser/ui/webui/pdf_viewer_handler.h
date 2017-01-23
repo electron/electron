@@ -23,7 +23,8 @@ namespace atom {
 
 class PdfViewerHandler : public content::WebUIMessageHandler {
  public:
-  explicit PdfViewerHandler(const std::string& view_id);
+  PdfViewerHandler(const content::StreamInfo* stream,
+                   const std::string& original_url);
   ~PdfViewerHandler() override;
 
   // WebUIMessageHandler implementation.
@@ -41,8 +42,8 @@ class PdfViewerHandler : public content::WebUIMessageHandler {
   // Keeps track of events related to zooming.
   std::unique_ptr<content::HostZoomMap::Subscription>
       host_zoom_map_subscription_;
-  std::unique_ptr<content::StreamInfo> stream_;
-  std::string view_id_;
+  const content::StreamInfo* stream_;
+  std::string original_url_;
 
   DISALLOW_COPY_AND_ASSIGN(PdfViewerHandler);
 };

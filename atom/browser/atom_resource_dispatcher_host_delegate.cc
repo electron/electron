@@ -77,11 +77,12 @@ void OnPdfStreamCreated(
       static_cast<AtomBrowserContext*>(web_contents->GetBrowserContext());
   auto stream_manager = browser_context->stream_manager();
   std::string view_id = base::GenerateGUID();
+  GURL original_url = stream->original_url;
   stream_manager->AddStream(std::move(stream), view_id, render_process_id,
                             render_frame_id);
-  content::NavigationController::LoadURLParams params(
-      GURL(base::StringPrintf("%sindex.html?%s=%s", PdfViewerUI::kOrigin,
-                              PdfViewerUI::kId, view_id.c_str())));
+  content::NavigationController::LoadURLParams params(GURL(base::StringPrintf(
+      "%sindex.html?%s=%s&%s=%s", PdfViewerUI::kOrigin, PdfViewerUI::kId,
+      view_id.c_str(), PdfViewerUI::kSrc, original_url.spec().c_str())));
   web_contents->GetController().LoadURLWithParams(params);
 }
 

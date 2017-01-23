@@ -50,15 +50,16 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
   if (url.host() == PdfViewerUI::kHost) {
     base::StringPairs toplevel_params;
     base::SplitStringIntoKeyValuePairs(url.query(), '=', '&', &toplevel_params);
-    std::string view_id;
+    std::string view_id, src;
     for (const auto& param : toplevel_params) {
       if (param.first == PdfViewerUI::kId) {
         view_id = param.second;
-        break;
+      } else if (param.first == PdfViewerUI::kSrc) {
+        src = param.second;
       }
     }
     auto browser_context = web_ui->GetWebContents()->GetBrowserContext();
-    return new PdfViewerUI(browser_context, web_ui, view_id);
+    return new PdfViewerUI(browser_context, web_ui, view_id, src);
   }
   return nullptr;
 }

@@ -4,8 +4,7 @@
 
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/stream_manager.h"
+#include "base/bind.h"
 #include "base/values.h"
 #include "content/public/browser/stream_handle.h"
 #include "content/public/browser/stream_info.h"
@@ -42,17 +41,13 @@ void CreateResponseHeadersDictionary(const net::HttpResponseHeaders* headers,
 
 }  // namespace
 
-PdfViewerHandler::PdfViewerHandler(const std::string& view_id)
-    : view_id_(view_id) {}
+PdfViewerHandler::PdfViewerHandler(const content::StreamInfo* stream,
+                                   const std::string& src)
+    : stream_(stream), original_url_(src) {}
 
 PdfViewerHandler::~PdfViewerHandler() {}
 
 void PdfViewerHandler::RegisterMessages() {
-  auto browser_context = static_cast<AtomBrowserContext*>(
-      web_ui()->GetWebContents()->GetBrowserContext());
-  auto stream_manager = browser_context->stream_manager();
-  stream_ = stream_manager->ReleaseStream(view_id_);
-
   web_ui()->RegisterMessageCallback(
       "initialize",
       base::Bind(&PdfViewerHandler::Initialize, base::Unretained(this)));
@@ -86,14 +81,16 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
   const base::Value* callback_id;
   CHECK(args->Get(0, &callback_id));
   std::unique_ptr<base::DictionaryValue> stream_info(new base::DictionaryValue);
-  auto stream_url = stream_->handle->GetURL().spec();
-  auto original_url = stream_->original_url.spec();
-  stream_info->SetString("streamURL", stream_url);
-  stream_info->SetString("originalURL", original_url);
   std::unique_ptr<base::DictionaryValue> headers_dict(
       new base::DictionaryValue);
-  CreateResponseHeadersDictionary(stream_->response_headers.get(),
-                                  headers_dict.get());
+  std::string stream_url = original_url_;
+  if (stream_) {
+    stream_url = stream_->handle->GetURL().spec();
+    CreateResponseHeadersDictionary(stream_->response_headers.get(),
+                                    headers_dict.get());
+  }
+  stream_info->SetString("streamURL", stream_url);
+  stream_info->SetString("originalURL", original_url_);
   stream_info->Set("responseHeaders", std::move(headers_dict));
   ResolveJavascriptCallback(*callback_id, *stream_info);
 }
