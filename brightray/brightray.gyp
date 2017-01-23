@@ -14,6 +14,7 @@
         '.',
         '<(libchromiumcontent_src_dir)',
         '<(libchromiumcontent_src_dir)/skia/config',
+        '<(libchromiumcontent_src_dir)/third_party/boringssl/src/include',
         '<(libchromiumcontent_src_dir)/third_party/skia/include/core',
         '<(libchromiumcontent_src_dir)/third_party/mojo/src',
         '<(libchromiumcontent_src_dir)/third_party/WebKit',
