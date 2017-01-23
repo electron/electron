@@ -218,6 +218,17 @@ describe('BrowserWindow module', function () {
       w.loadURL('http://127.0.0.1:11111')
     })
 
+    it('should emit did-fail-load event for URL exceeding character limit', function (done) {
+      w.webContents.on('did-fail-load', function (event, code, desc, url, isMainFrame) {
+        assert.equal(desc, 'ERR_INVALID_URL')
+        assert.equal(code, -300)
+        assert.equal(isMainFrame, true)
+        done()
+      })
+      let data = new Buffer(2 * 1024 * 1024).toString('base64')
+      w.loadURL('data:image/png;base64,' + data)
+    })
+
     describe('POST navigations', function () {
       afterEach(() => {
         w.webContents.session.webRequest.onBeforeSendHeaders(null)
