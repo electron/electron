@@ -426,20 +426,19 @@
         {
           'action_name': 'pdfviewer',
           'inputs': [
-            '<(grit_dir)/grit.py',
             'vendor/pdf_viewer/resources.grd',
           ],
           'outputs': [
-            'pdf_viewer_resouces.h',
-            'pdf_viewer_resouces_map.cc',
-            'pdf_viewer_resouces_map.h',
-            'pdf_viewer_resources.pak',
+            '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources.h',
+            '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.cc',
+            '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.h',
+            '<(PRODUCT_DIR)/pdf_viewer_resources.pak',
           ],
           'action': [
             'python',
             '<(grit_dir)/grit.py',
             '-i',
-            'vendor/pdf_viewer/resources.grd',
+            '<@(_inputs)',
             'build',
             '-o',
             '<(SHARED_INTERMEDIATE_DIR)/grit',
