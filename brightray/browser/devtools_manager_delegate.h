@@ -16,7 +16,7 @@ class DevToolsNetworkProtocolHandler;
 
 class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
  public:
-  static content::DevToolsHttpHandler* CreateHttpHandler();
+  static void StartHttpHandler();
 
   DevToolsManagerDelegate();
   virtual ~DevToolsManagerDelegate();
@@ -28,6 +28,8 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
       base::DictionaryValue* command) override;
   scoped_refptr<content::DevToolsAgentHost> CreateNewTarget(
       const GURL& url) override;
+  std::string GetDiscoveryPageHTML() override;
+  std::string GetFrontendResource(const std::string& path) override;
 
  private:
   std::unique_ptr<DevToolsNetworkProtocolHandler> handler_;

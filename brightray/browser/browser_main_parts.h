@@ -9,10 +9,6 @@
 #include "base/memory/ref_counted.h"
 #include "content/public/browser/browser_main_parts.h"
 
-namespace devtools_http_handler {
-class DevToolsHttpHandler;
-}
-
 #if defined(TOOLKIT_VIEWS)
 namespace brightray {
 class ViewsDelegate;
@@ -47,8 +43,6 @@ class BrowserMainParts : public content::BrowserMainParts {
 #if defined(OS_MACOSX)
   void InitializeMainNib();
 #endif
-
-  std::unique_ptr<devtools_http_handler::DevToolsHttpHandler> devtools_http_handler_;
 
 #if defined(TOOLKIT_VIEWS)
   std::unique_ptr<ViewsDelegate> views_delegate_;

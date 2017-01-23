@@ -44,11 +44,15 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
   // content::ServerSocketFactory.
   std::unique_ptr<net::ServerSocket> CreateForHttpServer() override {
     std::unique_ptr<net::ServerSocket> socket(
-        new net::TCPServerSocket(nullptr, net::NetLog::Source()));
+        new net::TCPServerSocket(nullptr, net::NetLogSource()));
     if (socket->ListenWithAddressAndPort(address_, port_, 10) != net::OK)
       return std::unique_ptr<net::ServerSocket>();
 
     return socket;
+  }
+  std::unique_ptr<net::ServerSocket> CreateForTethering(
+      std::string* name) override {
+    return std::unique_ptr<net::ServerSocket>();
   }
 
   std::string address_;
@@ -57,7 +61,7 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
   DISALLOW_COPY_AND_ASSIGN(TCPServerSocketFactory);
 };
 
-std::unique_ptr<devtools_http_handler::DevToolsHttpHandler::ServerSocketFactory>
+std::unique_ptr<content::DevToolsSocketFactory>
 CreateSocketFactory() {
   auto& command_line = *base::CommandLine::ForCurrentProcess();
   // See if the user specified a port on the command line (useful for
@@ -74,55 +78,8 @@ CreateSocketFactory() {
       DLOG(WARNING) << "Invalid http debugger port number " << temp_port;
     }
   }
-  return std::unique_ptr<
-      devtools_http_handler::DevToolsHttpHandler::ServerSocketFactory>(
-          new TCPServerSocketFactory("127.0.0.1", port));
-}
-
-
-// DevToolsDelegate --------------------------------------------------------
-
-class DevToolsDelegate :
-    public devtools_http_handler::DevToolsHttpHandlerDelegate {
- public:
-  DevToolsDelegate();
-  ~DevToolsDelegate() override;
-
-  // devtools_http_handler::DevToolsHttpHandlerDelegate.
-  std::string GetDiscoveryPageHTML() override;
-  std::string GetFrontendResource(const std::string& path) override;
-  std::string GetPageThumbnailData(const GURL& url) override;
-  content::DevToolsExternalAgentProxyDelegate* HandleWebSocketConnection(
-      const std::string& path) override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(DevToolsDelegate);
-};
-
-DevToolsDelegate::DevToolsDelegate() {
-}
-
-DevToolsDelegate::~DevToolsDelegate() {
-}
-
-std::string DevToolsDelegate::GetDiscoveryPageHTML() {
-  return ResourceBundle::GetSharedInstance().GetRawDataResource(
-      IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE).as_string();
-}
-
-
-std::string DevToolsDelegate::GetFrontendResource(
-  const std::string& path) {
-  return content::DevToolsFrontendHost::GetFrontendResource(path).as_string();
-}
-
-std::string DevToolsDelegate::GetPageThumbnailData(const GURL& url) {
-  return std::string();
-}
-
-content::DevToolsExternalAgentProxyDelegate*
-DevToolsDelegate::HandleWebSocketConnection(const std::string& path) {
-  return nullptr;
+  return std::unique_ptr<content::DevToolsSocketFactory>(
+      new TCPServerSocketFactory("127.0.0.1", port));
 }
 
 }  // namespace
@@ -130,12 +87,10 @@ DevToolsDelegate::HandleWebSocketConnection(const std::string& path) {
 // DevToolsManagerDelegate ---------------------------------------------------
 
 // static
-devtools_http_handler::DevToolsHttpHandler*
-DevToolsManagerDelegate::CreateHttpHandler() {
-  return new devtools_http_handler::DevToolsHttpHandler(
+void DevToolsManagerDelegate::StartHttpHandler() {
+  content::DevToolsAgentHost::StartRemoteDebuggingServer(
       CreateSocketFactory(),
       std::string(),
-      new DevToolsDelegate,
       base::FilePath(),
       base::FilePath(),
       std::string(),
@@ -153,14 +108,24 @@ void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {
 }
 
 base::DictionaryValue* DevToolsManagerDelegate::HandleCommand(
-    DevToolsAgentHost* agent_host,
+    content::DevToolsAgentHost* agent_host,
     base::DictionaryValue* command) {
   return handler_->HandleCommand(agent_host, command);
 }
 
 scoped_refptr<content::DevToolsAgentHost>
-DevToolsManagerDelegate::::CreateNewTarget(const GURL& url) {
+DevToolsManagerDelegate::CreateNewTarget(const GURL& url) {
   return nullptr;
+}
+
+std::string DevToolsManagerDelegate::GetDiscoveryPageHTML() {
+  return ResourceBundle::GetSharedInstance().GetRawDataResource(
+      IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE).as_string();
+}
+
+std::string DevToolsManagerDelegate::GetFrontendResource(
+    const std::string& path) {
+  return content::DevToolsFrontendHost::GetFrontendResource(path).as_string();
 }
 
 }  // namespace brightray
