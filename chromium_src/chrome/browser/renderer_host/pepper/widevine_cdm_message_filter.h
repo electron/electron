@@ -25,7 +25,7 @@ class WidevineCdmMessageFilter : public content::BrowserMessageFilter {
 
   virtual ~WidevineCdmMessageFilter();
 
-  #if defined(ENABLE_PEPPER_CDMS)
+  #if BUILDFLAG(ENABLE_PEPPER_CDMS)
   // Returns whether any internal plugin supporting |mime_type| is registered
   // and enabled. Does not determine whether the plugin can actually be
   // instantiated (e.g. whether it has all its dependencies).
