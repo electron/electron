@@ -133,14 +133,14 @@ class InspectableWebContentsImpl :
   void OnWebContentsFocused() override;
   void DidStartNavigationToPendingEntry(
       const GURL& url,
-      content::NavigationController::ReloadType reload_type) override;
+      content::ReloadType reload_type) override;
 
   // content::WebContentsDelegate:
-  bool AddMessageToConsole(content::WebContents* source,
-                           int32_t level,
-                           const base::string16& message,
-                           int32_t line_no,
-                           const base::string16& source_id) override;
+  bool DidAddMessageToConsole(content::WebContents* source,
+                              int32_t level,
+                              const base::string16& message,
+                              int32_t line_no,
+                              const base::string16& source_id) override;
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
       int32_t route_id,
