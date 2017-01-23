@@ -91,9 +91,9 @@ PdfViewerUI::PdfViewerUI(content::BrowserContext* browser_context,
                          content::WebUI* web_ui,
                          const std::string& view_id,
                          const std::string& src)
-    : src_(src),
-      content::WebUIController(web_ui),
-      content::WebContentsObserver(web_ui->GetWebContents()) {
+    : content::WebUIController(web_ui),
+      content::WebContentsObserver(web_ui->GetWebContents()),
+      src_(src) {
   auto context = static_cast<AtomBrowserContext*>(browser_context);
   auto stream_manager = context->stream_manager();
   stream_ = stream_manager->ReleaseStream(view_id);
