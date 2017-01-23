@@ -15,11 +15,9 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common/content_client.h"
-#include "components/devtools_discovery/basic_target_descriptor.h"
-#include "components/devtools_discovery/devtools_discovery_manager.h"
-#include "components/devtools_http_handler/devtools_http_handler.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
+#include "content/public/browser/devtools_socket_factory.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/common/content_switches.h"
@@ -36,15 +34,14 @@ namespace brightray {
 
 namespace {
 
-class TCPServerSocketFactory
-    : public devtools_http_handler::DevToolsHttpHandler::ServerSocketFactory {
+class TCPServerSocketFactory : public content::DevToolsSocketFactory {
  public:
   TCPServerSocketFactory(const std::string& address, int port)
       : address_(address), port_(port) {
   }
 
  private:
-  // content::DevToolsHttpHandler::ServerSocketFactory.
+  // content::ServerSocketFactory.
   std::unique_ptr<net::ServerSocket> CreateForHttpServer() override {
     std::unique_ptr<net::ServerSocket> socket(
         new net::TCPServerSocket(nullptr, net::NetLog::Source()));
@@ -147,27 +144,23 @@ DevToolsManagerDelegate::CreateHttpHandler() {
 
 DevToolsManagerDelegate::DevToolsManagerDelegate()
     : handler_(new DevToolsNetworkProtocolHandler) {
-  // NB(zcbenz): This call does nothing, the only purpose is to make sure the
-  // devtools_discovery module is linked into the final executable on Linux.
-  // Though it is possible to achieve this by modifying the gyp settings, it
-  // would greatly increase gyp file's complexity, so I chose to instead do
-  // this hack.
-  devtools_discovery::DevToolsDiscoveryManager::GetInstance();
 }
 
 DevToolsManagerDelegate::~DevToolsManagerDelegate() {
 }
 
-void DevToolsManagerDelegate::DevToolsAgentStateChanged(
-    content::DevToolsAgentHost* agent_host,
-    bool attached) {
-  handler_->DevToolsAgentStateChanged(agent_host, attached);
+void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {
 }
 
 base::DictionaryValue* DevToolsManagerDelegate::HandleCommand(
-    content::DevToolsAgentHost* agent_host,
+    DevToolsAgentHost* agent_host,
     base::DictionaryValue* command) {
   return handler_->HandleCommand(agent_host, command);
+}
+
+scoped_refptr<content::DevToolsAgentHost>
+DevToolsManagerDelegate::::CreateNewTarget(const GURL& url) {
+  return nullptr;
 }
 
 }  // namespace brightray
