@@ -144,22 +144,24 @@ bool IsDevToolsFileSystemAdded(
   return file_system_paths.find(file_system_path) != file_system_paths.end();
 }
 
-content::SecurityStyle SecurityLevelToSecurityStyle(
-    SecurityStateModel::SecurityLevel security_level) {
+blink::WebSecurityStyle SecurityLevelToSecurityStyle(
+    security_state::SecurityLevel security_level) {
   switch (security_level) {
-    case SecurityStateModel::NONE:
-      return content::SECURITY_STYLE_UNAUTHENTICATED;
-    case SecurityStateModel::SECURITY_WARNING:
-    case SecurityStateModel::SECURITY_POLICY_WARNING:
-      return content::SECURITY_STYLE_WARNING;
-    case SecurityStateModel::EV_SECURE:
-    case SecurityStateModel::SECURE:
-      return content::SECURITY_STYLE_AUTHENTICATED;
-    case SecurityStateModel::SECURITY_ERROR:
-      return content::SECURITY_STYLE_AUTHENTICATION_BROKEN;
+    case security_state::NONE:
+    case security_state::HTTP_SHOW_WARNING:
+      return blink::WebSecurityStyleUnauthenticated;
+    case security_state::SECURITY_WARNING:
+    case security_state::SECURE_WITH_POLICY_INSTALLED_CERT:
+      return blink::WebSecurityStyleWarning;
+    case security_state::EV_SECURE:
+    case security_state::SECURE:
+      return blink::WebSecurityStyleAuthenticated;
+    case security_state::DANGEROUS:
+      return blink::WebSecurityStyleAuthenticationBroken;
   }
 
-  return content::SECURITY_STYLE_UNKNOWN;
+  NOTREACHED();
+  return blink::WebSecurityStyleUnknown;
 }
 
 }  // namespace
@@ -290,7 +292,7 @@ bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
   return html_fullscreen_;
 }
 
-content::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
+blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
     content::WebContents* web_contents,
     content::SecurityStyleExplanations* explanations) {
   auto model_client =
@@ -299,7 +301,7 @@ content::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
   const SecurityStateModel::SecurityInfo& security_info =
       model_client->GetSecurityInfo();
 
-  const content::SecurityStyle security_style =
+  const blink::WebSecurityStyle security_style =
       SecurityLevelToSecurityStyle(security_info.security_level);
 
   explanations->ran_insecure_content_style =
