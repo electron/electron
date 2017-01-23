@@ -57,7 +57,7 @@ class Cookies : public mate::TrackableObject<Cookies>,
   // AtomCookieDelegate::Observer:
   void OnCookieChanged(const net::CanonicalCookie& cookie,
                        bool removed,
-                       AtomCookieDelegate::ChangeCause cause) override;
+                       net::CookieStore::ChangeCause cause) override;
 
  private:
   net::URLRequestContextGetter* request_context_getter_;
