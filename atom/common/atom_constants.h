@@ -20,6 +20,10 @@ extern const char kValidCertificateDescription[];
 extern const char kSecureProtocol[];
 extern const char kSecureProtocolDescription[];
 
+// The MIME type used for the PDF plugin.
+extern const char kPdfPluginMimeType[];
+extern const char kPdfPluginPath[];
+
 }  // namespace atom
 
 #endif  // ATOM_COMMON_ATOM_CONSTANTS_H_

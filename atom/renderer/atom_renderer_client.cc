@@ -12,6 +12,7 @@
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/atom_constants.h"
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
@@ -274,8 +275,9 @@ void AtomRendererClient::RenderFrameCreated(
   // This is required for widevine plugin detection provided during runtime.
   blink::resetPluginCache();
 
-  blink::WebSecurityPolicy::addOriginAccessWhitelistEntry(
-      GURL("chrome://pdf-viewer/"), "file", "", true);
+  // Allow access to file scheme from pdf viewer.
+  blink::WebSecurityPolicy::addOriginAccessWhitelistEntry(GURL(kPdfPluginPath),
+                                                          "file", "", true);
 
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
@@ -342,6 +344,7 @@ bool AtomRendererClient::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (params.mimeType.utf8() == content::kBrowserPluginMimeType ||
+      params.mimeType.utf8() == kPdfPluginMimeType ||
       command_line->HasSwitch(switches::kEnablePlugins))
     return false;
 

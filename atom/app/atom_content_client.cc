@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "atom/browser/ui/webui/pdf_viewer_ui.h"
+#include "atom/common/atom_constants.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/options_switches.h"
@@ -116,9 +117,9 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   pdf_info.is_out_of_process = true;
   pdf_info.name = "Chromium PDF Viewer";
   pdf_info.description = "Portable Document Format";
-  pdf_info.path = base::FilePath::FromUTF8Unsafe(PdfViewerUI::kOrigin);
-  content::WebPluginMimeType pdf_mime_type("application/x-google-chrome-pdf",
-                                           "pdf", "Portable Document Format");
+  pdf_info.path = base::FilePath::FromUTF8Unsafe(kPdfPluginPath);
+  content::WebPluginMimeType pdf_mime_type(kPdfPluginMimeType, "pdf",
+                                           "Portable Document Format");
   pdf_info.mime_types.push_back(pdf_mime_type);
   pdf_info.internal_entry_points.get_interface = chrome_pdf::PPP_GetInterface;
   pdf_info.internal_entry_points.initialize_module =
