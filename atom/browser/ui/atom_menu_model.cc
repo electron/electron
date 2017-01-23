@@ -40,9 +40,9 @@ bool AtomMenuModel::GetAcceleratorAtWithParams(
   return false;
 }
 
-void AtomMenuModel::MenuClosed() {
-  ui::SimpleMenuModel::MenuClosed();
-  FOR_EACH_OBSERVER(Observer, observers_, MenuClosed());
+void AtomMenuModel::MenuWillClose() {
+  ui::SimpleMenuModel::MenuWillClose();
+  FOR_EACH_OBSERVER(Observer, observers_, MenuWillClose());
 }
 
 AtomMenuModel* AtomMenuModel::GetSubmenuModelAt(int index) {

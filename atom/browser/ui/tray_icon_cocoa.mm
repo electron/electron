@@ -405,7 +405,7 @@ gfx::Rect TrayIconCocoa::GetBounds() {
   return bounds;
 }
 
-void TrayIconCocoa::MenuClosed() {
+void TrayIconCocoa::MenuWillClose() {
   [status_item_view_ setNeedsDisplay:YES];
 }
 
