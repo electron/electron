@@ -14,7 +14,7 @@
 
 namespace content {
 class BrowserContext;
-class StreamInfo;
+struct StreamInfo;
 }
 
 namespace atom {

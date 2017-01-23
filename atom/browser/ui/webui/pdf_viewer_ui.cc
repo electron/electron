@@ -49,7 +49,8 @@ class BundledDataSource : public content::URLDataSource {
                         const GotDataCallback& callback) override {
     std::string filename = PathWithoutParams(path);
     std::map<base::FilePath, int>::const_iterator entry =
-        path_to_resource_id_.find(base::FilePath(filename));
+        path_to_resource_id_.find(base::FilePath::FromUTF8Unsafe(filename));
+
     if (entry != path_to_resource_id_.end()) {
       int resource_id = entry->second;
       const ui::ResourceBundle& rb = ui::ResourceBundle::GetSharedInstance();
@@ -60,7 +61,7 @@ class BundledDataSource : public content::URLDataSource {
   std::string GetMimeType(const std::string& path) const override {
     std::string filename = PathWithoutParams(path);
     std::string mime_type;
-    net::GetMimeTypeFromFile(base::FilePath(filename), &mime_type);
+    net::GetMimeTypeFromFile(base::FilePath::FromUTF8Unsafe(filename), &mime_type);
     return mime_type;
   }
 

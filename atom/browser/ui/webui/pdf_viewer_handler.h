@@ -16,7 +16,7 @@ class ListValue;
 }
 
 namespace content {
-class StreamInfo;
+struct StreamInfo;
 }
 
 namespace atom {
