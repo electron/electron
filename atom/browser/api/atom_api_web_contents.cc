@@ -13,7 +13,6 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_security_state_model_client.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
@@ -45,6 +44,7 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
+#include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
@@ -336,7 +336,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   // Intialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents);
   // Intialize security state client.
-  AtomSecurityStateModelClient::CreateForWebContents(web_contents);
+  SecurityStateTabHelper::CreateForWebContents(web_contents);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 

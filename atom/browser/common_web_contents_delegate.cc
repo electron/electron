@@ -10,7 +10,6 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
-#include "atom/browser/atom_security_state_model_client.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/web_dialog_helper.h"
@@ -18,10 +17,13 @@
 #include "base/files/file_util.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
+#include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "chrome/browser/ui/browser_dialogs.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
+#include "components/security_state/content/content_utils.h"
+#include "components/security_state/core/security_state.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
@@ -32,7 +34,6 @@
 #include "storage/browser/fileapi/isolated_context.h"
 
 using content::BrowserThread;
-using security_state::SecurityStateModel;
 
 namespace atom {
 
@@ -142,26 +143,6 @@ bool IsDevToolsFileSystemAdded(
     const std::string& file_system_path) {
   auto file_system_paths = GetAddedFileSystemPaths(web_contents);
   return file_system_paths.find(file_system_path) != file_system_paths.end();
-}
-
-blink::WebSecurityStyle SecurityLevelToSecurityStyle(
-    security_state::SecurityLevel security_level) {
-  switch (security_level) {
-    case security_state::NONE:
-    case security_state::HTTP_SHOW_WARNING:
-      return blink::WebSecurityStyleUnauthenticated;
-    case security_state::SECURITY_WARNING:
-    case security_state::SECURE_WITH_POLICY_INSTALLED_CERT:
-      return blink::WebSecurityStyleWarning;
-    case security_state::EV_SECURE:
-    case security_state::SECURE:
-      return blink::WebSecurityStyleAuthenticated;
-    case security_state::DANGEROUS:
-      return blink::WebSecurityStyleAuthenticationBroken;
-  }
-
-  NOTREACHED();
-  return blink::WebSecurityStyleUnknown;
 }
 
 }  // namespace
@@ -294,79 +275,14 @@ bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
 
 blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
     content::WebContents* web_contents,
-    content::SecurityStyleExplanations* explanations) {
-  auto model_client =
-      AtomSecurityStateModelClient::FromWebContents(web_contents);
-
-  const SecurityStateModel::SecurityInfo& security_info =
-      model_client->GetSecurityInfo();
-
-  const blink::WebSecurityStyle security_style =
-      SecurityLevelToSecurityStyle(security_info.security_level);
-
-  explanations->ran_insecure_content_style =
-      SecurityLevelToSecurityStyle(
-          SecurityStateModel::kRanInsecureContentLevel);
-  explanations->displayed_insecure_content_style =
-      SecurityLevelToSecurityStyle(
-          SecurityStateModel::kDisplayedInsecureContentLevel);
-
-  explanations->scheme_is_cryptographic = security_info.scheme_is_cryptographic;
-  if (!security_info.scheme_is_cryptographic)
-    return security_style;
-
-  if (security_info.sha1_deprecation_status ==
-      SecurityStateModel::DEPRECATED_SHA1_MAJOR) {
-    explanations->broken_explanations.push_back(
-        content::SecurityStyleExplanation(
-            kSHA1Certificate,
-            kSHA1MajorDescription,
-            security_info.cert_id));
-  } else if (security_info.sha1_deprecation_status ==
-                SecurityStateModel::DEPRECATED_SHA1_MINOR) {
-    explanations->unauthenticated_explanations.push_back(
-        content::SecurityStyleExplanation(
-            kSHA1Certificate,
-            kSHA1MinorDescription,
-            security_info.cert_id));
-  }
-
-  explanations->ran_insecure_content =
-      security_info.mixed_content_status ==
-          security_state::SecurityStateModel::CONTENT_STATUS_RAN ||
-      security_info.mixed_content_status ==
-          security_state::SecurityStateModel::CONTENT_STATUS_DISPLAYED_AND_RAN;
-  explanations->displayed_insecure_content =
-      security_info.mixed_content_status ==
-          security_state::SecurityStateModel::CONTENT_STATUS_DISPLAYED ||
-      security_info.mixed_content_status ==
-          security_state::SecurityStateModel::CONTENT_STATUS_DISPLAYED_AND_RAN;
-
-  if (net::IsCertStatusError(security_info.cert_status)) {
-    std::string error_string = net::ErrorToString(
-        net::MapCertStatusToNetError(security_info.cert_status));
-
-    content::SecurityStyleExplanation explanation(
-        kCertificateError,
-        "There are issues with the site's certificate chain " + error_string,
-        security_info.cert_id);
-
-    if (net::IsCertStatusMinorError(security_info.cert_status))
-      explanations->unauthenticated_explanations.push_back(explanation);
-    else
-      explanations->broken_explanations.push_back(explanation);
-  } else {
-    if (security_info.sha1_deprecation_status ==
-        SecurityStateModel::NO_DEPRECATED_SHA1) {
-      explanations->secure_explanations.push_back(
-          content::SecurityStyleExplanation(
-              kValidCertificate,
-              kValidCertificateDescription,
-              security_info.cert_id));
-    }
-  }
-
-  return security_style;
+    content::SecurityStyleExplanations* security_style_explanations) {
+  SecurityStateTabHelper* helper =
+      SecurityStateTabHelper::FromWebContents(web_contents);
+  DCHECK(helper);
+  security_state::SecurityInfo security_info;
+  helper->GetSecurityInfo(&security_info);
+  return security_state::GetSecurityStyle(security_info,
+                                          security_style_explanations);
 }
 
 void CommonWebContentsDelegate::DevToolsSaveToFile(
