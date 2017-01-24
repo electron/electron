@@ -69,7 +69,7 @@
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
+#include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "ui/display/screen.h"
 
 #if !defined(OS_MACOSX)
