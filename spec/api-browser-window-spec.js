@@ -1452,20 +1452,31 @@ describe('BrowserWindow module', function () {
         w.destroy()
         w = new BrowserWindow()
         w.once('enter-full-screen', () => {
+          assert.equal(w.isFullScreen(), true)
           w.setFullScreen(false)
+        })
+        w.once('leave-full-screen', () => {
           assert.equal(w.isFullScreen(), false)
           done()
         })
         w.setFullScreen(true)
-        assert.equal(w.isFullScreen(), true)
       })
 
-      it('should not be changed by setKiosk method', function () {
+      it('should not be changed by setKiosk method', function (done) {
+        w.destroy()
+        w = new BrowserWindow()
+        w.once('enter-full-screen', () => {
+          assert.equal(w.isFullScreen(), true)
+          w.setKiosk(true)
+          w.setKiosk(false)
+          assert.equal(w.isFullScreen(), true)
+          w.setFullScreen(false)
+        })
+        w.once('leave-full-screen', () => {
+          assert.equal(w.isFullScreen(), false)
+          done()
+        })
         w.setFullScreen(true)
-        assert.equal(w.isFullScreen(), true)
-        w.setKiosk(true)
-        w.setKiosk(false)
-        assert.equal(w.isFullScreen(), true)
       })
     })
 
