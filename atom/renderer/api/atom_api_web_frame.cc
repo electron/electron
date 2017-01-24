@@ -17,6 +17,8 @@
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebCache.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
+#include "third_party/WebKit/public/web/WebFrameWidget.h"
+#include "third_party/WebKit/public/web/WebInputMethodController.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebScriptExecutionCallback.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
@@ -187,7 +189,9 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
 }
 
 void WebFrame::InsertText(const std::string& text) {
-  web_frame_->insertText(blink::WebString::fromUTF8(text));
+  web_frame_->frameWidget()
+            ->getActiveWebInputMethodController()
+            ->commitText(blink::WebString::fromUTF8(text), 0);
 }
 
 void WebFrame::InsertCSS(const std::string& css) {
