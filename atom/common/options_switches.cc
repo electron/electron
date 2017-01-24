@@ -150,9 +150,6 @@ const char kRegisterServiceWorkerSchemes[] = "register-service-worker-schemes";
 // Register schemes as secure.
 const char kSecureSchemes[] = "secure-schemes";
 
-// Comma-separated list of SSL cipher suites to disable.
-const char kCipherSuiteBlacklist[] = "cipher-suite-blacklist";
-
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
 

@@ -245,8 +245,6 @@
       'atom/browser/net/atom_cookie_delegate.h',
       'atom/browser/net/atom_network_delegate.cc',
       'atom/browser/net/atom_network_delegate.h',
-      'atom/browser/net/atom_ssl_config_service.cc',
-      'atom/browser/net/atom_ssl_config_service.h',
       'atom/browser/net/atom_url_request.cc',
       'atom/browser/net/atom_url_request.h',
       'atom/browser/net/atom_url_request_job_factory.cc',

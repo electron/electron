@@ -97,10 +97,6 @@ pepper flash pluginの`version`を設定します。
 
 ネットログイベントを保存し、`path`に書き込みを有効化します。
 
-## --cipher-suite-blacklist=`cipher_suites`
-
-無効にするために、SSL暗号スイートのカンマ区切りのリストを指定します。
-
 ## --disable-renderer-backgrounding
 
 不可視のページのレンダラープロセスの優先度を下げることからChromiumを防ぎます。

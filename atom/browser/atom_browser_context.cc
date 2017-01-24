@@ -15,7 +15,6 @@
 #include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/browser/net/atom_ct_delegate.h"
 #include "atom/browser/net/atom_network_delegate.h"
-#include "atom/browser/net/atom_ssl_config_service.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/http_protocol_handler.h"
 #include "atom/browser/web_view_manager.h"
@@ -196,10 +195,6 @@ content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
 
 std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
   return base::WrapUnique(new AtomCertVerifier(ct_delegate_.get()));
-}
-
-net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {
-  return new AtomSSLConfigService;
 }
 
 std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
