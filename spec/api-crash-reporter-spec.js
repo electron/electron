@@ -1,4 +1,5 @@
 const assert = require('assert')
+const childProcess = require('child_process')
 const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')
@@ -40,51 +41,34 @@ describe('crashReporter module', function () {
 
     this.timeout(120000)
 
-    var called = false
-    var server = http.createServer(function (req, res) {
-      server.close()
-      var form = new multiparty.Form()
-      form.parse(req, function (error, fields) {
-        if (error) throw error
-        if (called) return
-        called = true
-        assert.equal(fields['prod'], 'Electron')
-        assert.equal(fields['ver'], process.versions.electron)
-        assert.equal(fields['process_type'], 'renderer')
-        assert.equal(fields['platform'], process.platform)
-        assert.equal(fields['extra1'], 'extra1')
-        assert.equal(fields['extra2'], 'extra2')
-        assert.equal(fields['_productName'], 'Zombies')
-        assert.equal(fields['_companyName'], 'Umbrella Corporation')
-        assert.equal(fields['_version'], app.getVersion())
-
-        const reportId = 'abc-123-def-456-abc-789-abc-123-abcd'
-        res.end(reportId, () => {
-          waitForCrashReport().then(() => {
-            assert.equal(crashReporter.getLastCrashReport().id, reportId)
-            assert.notEqual(crashReporter.getUploadedReports().length, 0)
-            assert.equal(crashReporter.getUploadedReports()[0].id, reportId)
-            done()
-          }, done)
+    startServer({
+      callback (port) {
+        const crashUrl = url.format({
+          protocol: 'file',
+          pathname: path.join(fixtures, 'api', 'crash.html'),
+          search: '?port=' + port
         })
-      })
+        w.loadURL(crashUrl)
+      },
+      processType: 'renderer',
+      done: done
     })
-    var port = remote.process.port
-    server.listen(port, '127.0.0.1', function () {
-      port = server.address().port
-      remote.process.port = port
-      const crashUrl = url.format({
-        protocol: 'file',
-        pathname: path.join(fixtures, 'api', 'crash.html'),
-        search: '?port=' + port
-      })
-      if (process.platform === 'darwin') {
-        crashReporter.start({
-          companyName: 'Umbrella Corporation',
-          submitURL: 'http://127.0.0.1:' + port
-        })
-      }
-      w.loadURL(crashUrl)
+  })
+
+  it('should send minidump when node processes crash', function (done) {
+    if (isCI) return done()
+
+    this.timeout(120000)
+
+    startServer({
+      callback (port) {
+        const crashesDir = path.join(app.getPath('temp'), `${app.getName()} Crashes`)
+        const version = app.getVersion()
+        const crashPath = path.join(fixtures, 'module', 'crash.js')
+        childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
+      },
+      processType: 'browser',
+      done: done
     })
   })
 
@@ -153,5 +137,49 @@ const waitForCrashReport = () => {
       }
     }
     checkForReport()
+  })
+}
+
+const startServer = ({callback, processType, done}) => {
+  var called = false
+  var server = http.createServer((req, res) => {
+    server.close()
+    var form = new multiparty.Form()
+    form.parse(req, (error, fields) => {
+      if (error) throw error
+      if (called) return
+      called = true
+      assert.equal(fields.prod, 'Electron')
+      assert.equal(fields.ver, process.versions.electron)
+      assert.equal(fields.process_type, processType)
+      assert.equal(fields.platform, process.platform)
+      assert.equal(fields.extra1, 'extra1')
+      assert.equal(fields.extra2, 'extra2')
+      assert.equal(fields._productName, 'Zombies')
+      assert.equal(fields._companyName, 'Umbrella Corporation')
+      assert.equal(fields._version, app.getVersion())
+
+      const reportId = 'abc-123-def-456-abc-789-abc-123-abcd'
+      res.end(reportId, () => {
+        waitForCrashReport().then(() => {
+          assert.equal(crashReporter.getLastCrashReport().id, reportId)
+          assert.notEqual(crashReporter.getUploadedReports().length, 0)
+          assert.equal(crashReporter.getUploadedReports()[0].id, reportId)
+          done()
+        }, done)
+      })
+    })
+  })
+  let {port} = remote.process
+  server.listen(port, '127.0.0.1', () => {
+    port = server.address().port
+    remote.process.port = port
+    if (process.platform === 'darwin') {
+      crashReporter.start({
+        companyName: 'Umbrella Corporation',
+        submitURL: 'http://127.0.0.1:' + port
+      })
+    }
+    callback(port)
   })
 }
