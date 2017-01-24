@@ -506,10 +506,12 @@ describe('ipc module', function () {
             'Function provided here: remote-event-handler.html:11:33',
             'Remote event names: remote-handler, other-remote-handler'
           ].join('\n')
-          const {warningMessage, listenerCountBefore, listenerCountAfter} =
-            ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
-          assert.equal(warningMessage, expectedMessage)
-          assert.equal(listenerCountAfter, listenerCountBefore - 1)
+          const results = ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
+          assert.deepEqual(results, {
+            warningMessage: expectedMessage,
+            listenerCountBefore: 2,
+            listenerCountAfter: 1
+          })
           done()
         })
         w.webContents.reload()
