@@ -57,14 +57,14 @@ along with an additional one called `crashesDirectory` that should point to a di
 reports temporarily. You can test this out by calling `process.crash()` to crash the child process.
 
 **Note:** To collect crash reports from child process in Windows, you need to add this extra code as well.
-This will start the process that will monitor and send the crash reports. Replace `submitURL`, `productName` and `tmpPath`
-with appropriate values.
+This will start the process that will monitor and send the crash reports. Replace `submitURL`, `productName`
+and `crashesDirectory` with appropriate values.
 
 ```js
  const args = [
    '--reporter-url=' + submitURL,
    '--application-name=' + productName,
-   '--crashes-directory=' + tmpPath
+   '--crashes-directory=' + crashesDirectory
  ]
  const env = {
    ELECTRON_INTERNAL_CRASH_SERVICE: 1
