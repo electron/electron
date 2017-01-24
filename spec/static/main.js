@@ -253,13 +253,16 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
 ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
   const consoleWarn = console.warn
   let warningMessage = null
-  console.warn = (message) => {
-    warningMessage = message
-  }
-
   const contents = webContents.fromId(id)
   const listenerCountBefore = contents.listenerCount(eventName)
-  contents.emit(eventName, {sender: contents})
+
+  try {
+    console.warn = (message) => warningMessage = message
+    contents.emit(eventName, {sender: contents})
+  } finally {
+    console.warn = consoleWarn
+  }
+
   const listenerCountAfter = contents.listenerCount(eventName)
 
   event.returnValue = {
@@ -267,5 +270,4 @@ ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
     listenerCountBefore,
     listenerCountAfter
   }
-  console.warn = consoleWarn
 })
