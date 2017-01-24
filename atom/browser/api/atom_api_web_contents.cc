@@ -130,12 +130,24 @@ struct Converter<WindowOpenDisposition> {
                                    WindowOpenDisposition val) {
     std::string disposition = "other";
     switch (val) {
-      case CURRENT_TAB: disposition = "default"; break;
-      case NEW_FOREGROUND_TAB: disposition = "foreground-tab"; break;
-      case NEW_BACKGROUND_TAB: disposition = "background-tab"; break;
-      case NEW_POPUP: case NEW_WINDOW: disposition = "new-window"; break;
-      case SAVE_TO_DISK: disposition = "save-to-disk"; break;
-      default: break;
+      case WindowOpenDisposition::CURRENT_TAB:
+        disposition = "default";
+        break;
+      case WindowOpenDisposition::NEW_FOREGROUND_TAB:
+        disposition = "foreground-tab";
+        break;
+      case WindowOpenDisposition::NEW_BACKGROUND_TAB:
+        disposition = "background-tab";
+        break;
+      case WindowOpenDisposition::NEW_POPUP:
+      case WindowOpenDisposition::NEW_WINDOW:
+        disposition = "new-window";
+        break;
+      case WindowOpenDisposition::SAVE_TO_DISK:
+        disposition = "save-to-disk";
+        break;
+      default:
+        break;
     }
     return mate::ConvertToV8(isolate, disposition);
   }
@@ -431,7 +443,7 @@ void WebContents::AddNewContents(content::WebContents* source,
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
-  if (params.disposition != CURRENT_TAB) {
+  if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
     if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
       Emit("-new-window", params.url, "", params.disposition);
     else
@@ -1080,7 +1092,7 @@ void WebContents::InspectServiceWorker() {
 
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
-        content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
+        content::DevToolsAgentHost::kTypeServiceWorker) {
       OpenDevTools(nullptr);
       managed_web_contents()->AttachTo(agent_host);
       break;
