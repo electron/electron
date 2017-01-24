@@ -89,8 +89,6 @@
                 'libraries': [
                   # Following libraries are always linked statically.
                   '<(libchromiumcontent_dir)/libgtk2ui.a',
-                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
-                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
@@ -144,8 +142,6 @@
               'link_settings': {
                 'libraries': [
                   # Following libraries are always linked statically.
-                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
-                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
@@ -212,8 +208,6 @@
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
                   '<(libchromiumcontent_dir)/sandbox_helper_win.lib',
-                  '<(libchromiumcontent_dir)/devtools_discovery.lib',
-                  '<(libchromiumcontent_dir)/devtools_http_handler.lib',
                   '<(libchromiumcontent_dir)/http_server.lib',
                   '<(libchromiumcontent_dir)/desktop_capture.lib',
                   '<(libchromiumcontent_dir)/dom_keycode_converter.lib',
