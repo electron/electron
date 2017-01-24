@@ -23,10 +23,6 @@ namespace {
 // Dummy class type that used for crashing the program.
 struct DummyClass { bool crash; };
 
-void Crash() {
-  static_cast<DummyClass*>(nullptr)->crash = true;
-}
-
 void Hang() {
   for (;;)
     base::PlatformThread::Sleep(base::TimeDelta::FromSeconds(1));
@@ -76,7 +72,7 @@ v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
 // we can get the stack trace.
 void FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
-  Crash();
+  AtomBindings::Crash();
 }
 
 }  // namespace
@@ -95,7 +91,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   v8::V8::SetFatalErrorHandler(FatalErrorCallback);
 
   mate::Dictionary dict(isolate, process);
-  dict.SetMethod("crash", &Crash);
+  dict.SetMethod("crash", &AtomBindings::Crash);
   dict.SetMethod("hang", &Hang);
   dict.SetMethod("log", &Log);
   dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
@@ -157,6 +153,11 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
 // static
 void AtomBindings::Log(const base::string16& message) {
   std::cout << message << std::flush;
+}
+
+// static
+void AtomBindings::Crash() {
+  static_cast<DummyClass*>(nullptr)->crash = true;
 }
 
 }  // namespace atom
