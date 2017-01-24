@@ -233,11 +233,8 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->experimental_webgl_enabled = b;
   if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
     prefs->web_security_enabled = b;
-    prefs->allow_displaying_insecure_content = !b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (self->web_preferences_.GetBoolean("allowDisplayingInsecureContent", &b))
-    prefs->allow_displaying_insecure_content = b;
   if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;
   const base::DictionaryValue* fonts = nullptr;

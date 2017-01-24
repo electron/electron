@@ -46,7 +46,6 @@ Il ne s'agit pas d'une liste exhaustive, mais au moins, pour palier aux problèm
 , et utiliser des règles strictes (i.e. `script-src 'self'`)
 * [Surcharger et désactiver `eval`](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6-L8)
 , qui permet à des chaines de caractères d'être exécutées comme du code.
-* Ne pas assigner `allowDisplayingInsecureContent` à true.
 * Ne pas assigner `allowRunningInsecureContent` à true.
 * Ne pas activer `experimentalFeatures` ou `experimentalCanvasFeatures` à moins d'être sûr ce que vous faites.
 * Ne pas utiliser `blinkFeatures` à moins d'être sûr ce que vous faites.

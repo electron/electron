@@ -229,12 +229,9 @@ On Windows it is
   * `javascript` Boolean - 자바스크립트를 활성화합니다. 기본값은 `false`입니다.
   * `webSecurity` Boolean - `false`로 지정하면 same-origin 정책을 비활성화
     합니다. (이 속성은 보통 사람들에 의해 웹 사이트를 테스트할 때 사용합니다)
-    그리고 `allowDisplayingInsecureContent`와 `allowRunningInsecureContent` 두
+    그리고`allowRunningInsecureContent` 두
     속성을 사용자가 `true`로 지정되지 않은 경우 `true`로 지정합니다. 기본값은
     `true`입니다.
-  * `allowDisplayingInsecureContent` Boolean - https 페이지에서 http URL에서
-    로드한 이미지 같은 리소스를 표시할 수 있도록 허용합니다. 기본값은 `false`
-    입니다.
   * `allowRunningInsecureContent` Boolean - https 페이지에서 http URL에서 로드한
     JavaScript와 CSS 또는 플러그인을 실행시킬 수 있도록 허용합니다. 기본값은
     `false`입니다.
