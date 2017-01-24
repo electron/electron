@@ -62,9 +62,9 @@ and `crashesDirectory` with appropriate values.
 
 ```js
  const args = [
-   '--reporter-url=' + submitURL,
-   '--application-name=' + productName,
-   '--crashes-directory=' + crashesDirectory
+   `--reporter-url=${submitURL}`,
+   `--application-name=${productName}`,
+   `--crashes-directory=${crashesDirectory}`
  ]
  const env = {
    ELECTRON_INTERNAL_CRASH_SERVICE: 1
