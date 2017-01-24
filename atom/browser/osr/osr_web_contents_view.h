@@ -51,7 +51,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void RenderViewCreated(content::RenderViewHost* host) override;
   void RenderViewSwappedIn(content::RenderViewHost* host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
-  void GetScreenInfo(blink::WebScreenInfo* web_screen_info) const override;
+  void GetScreenInfo(content::ScreenInfo* screen_info) const override;
 
 #if defined(OS_MACOSX)
   void SetAllowOtherViews(bool allow) override;
@@ -61,12 +61,12 @@ class OffScreenWebContentsView : public content::WebContentsView,
 #endif
 
   // content::RenderViewHostDelegateView
-  void StartDragging(
-      const content::DropData& drop_data,
-      blink::WebDragOperationsMask allowed_ops,
-      const gfx::ImageSkia& image,
-      const gfx::Vector2d& image_offset,
-      const content::DragEventSourceInfo& event_info) override;
+  void StartDragging(const content::DropData& drop_data,
+                     blink::WebDragOperationsMask allowed_ops,
+                     const gfx::ImageSkia& image,
+                     const gfx::Vector2d& image_offset,
+                     const content::DragEventSourceInfo& event_info,
+                     content::RenderWidgetHostImpl* source_rwh) override;
   void UpdateDragCursor(blink::WebDragOperation operation) override;
 
  private:
