@@ -64,7 +64,7 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
     }
     return job_->DataAvailable(buffer, num_bytes, callback);
   }
-  int Finish(const net::CompletionCallback& callback) override {
+  int Finish(int net_error, const net::CompletionCallback& callback) override {
     return net::OK;
   }
 
