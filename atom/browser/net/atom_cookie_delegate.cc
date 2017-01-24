@@ -26,9 +26,8 @@ void AtomCookieDelegate::NotifyObservers(
     const net::CanonicalCookie& cookie,
     bool removed,
     net::CookieStore::ChangeCause cause) {
-  FOR_EACH_OBSERVER(Observer,
-                    observers_,
-                    OnCookieChanged(cookie, removed, cause));
+  for (Observer& observer : observers_)
+    observer.OnCookieChanged(cookie, removed, cause);
 }
 
 void AtomCookieDelegate::OnCookieChanged(

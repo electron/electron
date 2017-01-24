@@ -42,7 +42,8 @@ bool AtomMenuModel::GetAcceleratorAtWithParams(
 
 void AtomMenuModel::MenuWillClose() {
   ui::SimpleMenuModel::MenuWillClose();
-  FOR_EACH_OBSERVER(Observer, observers_, MenuWillClose());
+  for (Observer& observer : observers_)
+    observer.MenuWillClose();
 }
 
 AtomMenuModel* AtomMenuModel::GetSubmenuModelAt(int index) {
