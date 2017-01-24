@@ -9,7 +9,6 @@
 
 #include "base/macros.h"
 #include "base/strings/string16.h"
-#include "native_mate/dictionary.h"
 #include "v8/include/v8.h"
 #include "vendor/node/deps/uv/include/uv.h"
 
@@ -30,7 +29,6 @@ class AtomBindings {
 
   static void Log(const base::string16& message);
   static void Crash();
-  static void StartCrashReporter(const mate::Dictionary& options);
 
  private:
   void ActivateUVLoop(v8::Isolate* isolate);

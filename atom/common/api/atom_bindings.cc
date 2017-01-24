@@ -10,7 +10,6 @@
 
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
-#include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
@@ -159,11 +158,6 @@ void AtomBindings::Log(const base::string16& message) {
 // static
 void AtomBindings::Crash() {
   static_cast<DummyClass*>(nullptr)->crash = true;
-}
-
-// static
-void AtomBindings::StartCrashReporter(const mate::Dictionary& options) {
-  crash_reporter::CrashReporter::GetInstance()->StartWithOptions(options);
 }
 
 }  // namespace atom
