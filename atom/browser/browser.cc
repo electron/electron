@@ -12,6 +12,7 @@
 #include "atom/browser/window_list.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
+#include "base/run_loop.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/brightray_paths.h"
 
@@ -86,7 +87,7 @@ void Browser::Shutdown() {
   for (BrowserObserver& observer : observers_)
     observer.OnQuit();
 
-  if (base::MessageLoop::current()) {
+  if (base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
   } else {
