@@ -395,7 +395,7 @@ void InspectableWebContentsImpl::LoadCompleted() {
       base::RemoveChars(current_dock_state, "\"", &dock_state_);
     }
     base::string16 javascript = base::UTF8ToUTF16(
-        "WebInspector.dockController.setDockSide(\"" + dock_state_ + "\");");
+        "Components.dockController.setDockSide(\"" + dock_state_ + "\");");
     devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(javascript);
   }
 
