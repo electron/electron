@@ -155,8 +155,7 @@ AtomBrowserContext::CreateURLRequestJobFactory(
       url_request_context_getter()->GetURLRequestContext()->host_resolver();
   job_factory->SetProtocolHandler(
       url::kFtpScheme,
-      base::WrapUnique(new net::FtpProtocolHandler(
-          new net::FtpNetworkLayer(host_resolver))));
+      net::FtpProtocolHandler::Create(host_resolver));
 
   return std::move(job_factory);
 }
