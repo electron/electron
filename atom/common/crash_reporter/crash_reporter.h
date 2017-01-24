@@ -22,6 +22,7 @@ class CrashReporter {
   typedef std::pair<int, std::string> UploadReportResult;  // upload-date, id
 
   static CrashReporter* GetInstance();
+  static void StartInstance(const mate::Dictionary& options);
 
   void Start(const std::string& product_name,
              const std::string& company_name,
@@ -30,8 +31,6 @@ class CrashReporter {
              bool upload_to_server,
              bool skip_system_crash_handler,
              const StringMap& extra_parameters);
-  void StartWithOptions(const mate::Dictionary& options);
-
   virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
       const base::FilePath& crashes_dir);
 

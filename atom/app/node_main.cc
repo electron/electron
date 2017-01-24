@@ -8,6 +8,7 @@
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
+#include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
@@ -61,9 +62,9 @@ int NodeMain(int argc, char *argv[]) {
 #endif
     process.SetMethod("crash", &AtomBindings::Crash);
 
-    mate::Dictionary crashReporter =
-        mate::Dictionary::CreateEmpty(gin_env.isolate());
-    crashReporter.SetMethod("start", &AtomBindings::StartCrashReporter);
+    auto crashReporter = mate::Dictionary::CreateEmpty(gin_env.isolate());
+    crashReporter.SetMethod("start",
+                            &crash_reporter::CrashReporter::StartInstance);
     process.Set("crashReporter", crashReporter);
 
     node::LoadEnvironment(env);
