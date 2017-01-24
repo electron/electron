@@ -116,5 +116,4 @@ void CrashReporter::StartInstance(const mate::Dictionary& options) {
                   false, extra_parameters);
 }
 
-
 }  // namespace crash_reporter

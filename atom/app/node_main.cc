@@ -62,10 +62,10 @@ int NodeMain(int argc, char *argv[]) {
 #endif
     process.SetMethod("crash", &AtomBindings::Crash);
 
-    auto crashReporter = mate::Dictionary::CreateEmpty(gin_env.isolate());
-    crashReporter.SetMethod("start",
-                            &crash_reporter::CrashReporter::StartInstance);
-    process.Set("crashReporter", crashReporter);
+    // Setup process.crashReporter.start in child node processes
+    auto reporter = mate::Dictionary::CreateEmpty(gin_env.isolate());
+    reporter.SetMethod("start", &crash_reporter::CrashReporter::StartInstance);
+    process.Set("crashReporter", reporter);
 
     node::LoadEnvironment(env);
 
