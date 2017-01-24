@@ -445,9 +445,6 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStat>::ToV8(
   dict.Set("count", static_cast<uint32_t>(stat.count));
   dict.Set("size", static_cast<double>(stat.size));
   dict.Set("liveSize", static_cast<double>(stat.liveSize));
-  dict.Set("decodedSize", static_cast<double>(stat.decodedSize));
-  dict.Set("purgedSize", static_cast<double>(stat.purgedSize));
-  dict.Set("purgeableSize", static_cast<double>(stat.purgeableSize));
   return dict.GetHandle();
 }
 
