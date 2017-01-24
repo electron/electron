@@ -17,7 +17,7 @@
     "yargs": "^6.0.0"
   },
   "optionalDependencies": {
-    "ffi": "2.0.0",
+    "ffi": "2.2.0",
     "runas": "3.x"
   },
   "standard": {
