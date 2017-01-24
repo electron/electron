@@ -9,9 +9,10 @@
 #include <string>
 #include <vector>
 
+#include "base/strings/string_piece.h"
+
 class GURL;
 
-namespace extensions {
 // A pattern that can be used to match URLs. A URLPattern is a very restricted
 // subset of URL syntax:
 //
@@ -82,15 +83,16 @@ class URLPattern {
   static const char kAllUrlsPattern[];
 
   // Returns true if the given |scheme| is considered valid for extensions.
-  static bool IsValidSchemeForExtensions(const std::string& scheme);
+  static bool IsValidSchemeForExtensions(base::StringPiece scheme);
 
   explicit URLPattern(int valid_schemes);
 
   // Convenience to construct a URLPattern from a string. If the string is not
   // known ahead of time, use Parse() instead, which returns success or failure.
-  URLPattern(int valid_schemes, const std::string& pattern);
+  URLPattern(int valid_schemes, base::StringPiece pattern);
 
   URLPattern();
+  URLPattern(const URLPattern& other);
   ~URLPattern();
 
   bool operator<(const URLPattern& other) const;
@@ -101,7 +103,7 @@ class URLPattern {
   // URLPattern::PARSE_SUCCESS on success, or an error code otherwise. On
   // failure, this instance will have some intermediate values and is in an
   // invalid state.
-  ParseResult Parse(const std::string& pattern_str);
+  ParseResult Parse(base::StringPiece pattern_str);
 
   // Gets the bitmask of valid schemes.
   int valid_schemes() const { return valid_schemes_; }
@@ -110,7 +112,7 @@ class URLPattern {
   // Gets the host the pattern matches. This can be an empty string if the
   // pattern matches all hosts (the input was <scheme>://*/<whatever>).
   const std::string& host() const { return host_; }
-  void SetHost(const std::string& host);
+  void SetHost(base::StringPiece host);
 
   // Gets whether to match subdomains of host().
   bool match_subdomains() const { return match_subdomains_; }
@@ -119,7 +121,7 @@ class URLPattern {
   // Gets the path the pattern matches with the leading slash. This can have
   // embedded asterisks which are interpreted using glob rules.
   const std::string& path() const { return path_; }
-  void SetPath(const std::string& path);
+  void SetPath(base::StringPiece path);
 
   // Returns true if this pattern matches all urls.
   bool match_all_urls() const { return match_all_urls_; }
@@ -128,14 +130,14 @@ class URLPattern {
   // Sets the scheme for pattern matches. This can be a single '*' if the
   // pattern matches all valid schemes (as defined by the valid_schemes_
   // property). Returns false on failure (if the scheme is not valid).
-  bool SetScheme(const std::string& scheme);
+  bool SetScheme(base::StringPiece scheme);
   // Note: You should use MatchesScheme() instead of this getter unless you
   // absolutely need the exact scheme. This is exposed for testing.
   const std::string& scheme() const { return scheme_; }
 
   // Returns true if the specified scheme can be used in this URL pattern, and
   // false otherwise. Uses valid_schemes_ to determine validity.
-  bool IsValidScheme(const std::string& scheme) const;
+  bool IsValidScheme(base::StringPiece scheme) const;
 
   // Returns true if this instance matches the specified URL.
   bool MatchesURL(const GURL& test) const;
@@ -147,14 +149,14 @@ class URLPattern {
   // Note that if test is "filesystem", this may fail whereas MatchesURL
   // may succeed.  MatchesURL is smart enough to look at the inner_url instead
   // of the outer "filesystem:" part.
-  bool MatchesScheme(const std::string& test) const;
+  bool MatchesScheme(base::StringPiece test) const;
 
   // Returns true if |test| matches our host.
-  bool MatchesHost(const std::string& test) const;
+  bool MatchesHost(base::StringPiece test) const;
   bool MatchesHost(const GURL& test) const;
 
   // Returns true if |test| matches our path.
-  bool MatchesPath(const std::string& test) const;
+  bool MatchesPath(base::StringPiece test) const;
 
   // Returns true if the pattern is vague enough that it implies all hosts,
   // such as *://*/*.
@@ -168,7 +170,7 @@ class URLPattern {
   bool MatchesSingleOrigin() const;
 
   // Sets the port. Returns false if the port is invalid.
-  bool SetPort(const std::string& port);
+  bool SetPort(base::StringPiece port);
   const std::string& port() const { return port_; }
 
   // Returns a string representing this instance.
@@ -216,7 +218,7 @@ class URLPattern {
   bool MatchesSecurityOriginHelper(const GURL& test) const;
 
   // Returns true if our port matches the |port| pattern (it may be "*").
-  bool MatchesPortPattern(const std::string& port) const;
+  bool MatchesPortPattern(base::StringPiece port) const;
 
   // If the URLPattern contains a wildcard scheme, returns a list of
   // equivalent literal schemes, otherwise returns the current scheme.
@@ -258,7 +260,5 @@ class URLPattern {
 std::ostream& operator<<(std::ostream& out, const URLPattern& url_pattern);
 
 typedef std::vector<URLPattern> URLPatternList;
-
-}  // namespace extensions
 
 #endif  // EXTENSIONS_COMMON_URL_PATTERN_H_
