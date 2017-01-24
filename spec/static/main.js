@@ -257,7 +257,9 @@ ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
   const listenerCountBefore = contents.listenerCount(eventName)
 
   try {
-    console.warn = (message) => warningMessage = message
+    console.warn = (message) => {
+      warningMessage = message
+    }
     contents.emit(eventName, {sender: contents})
   } finally {
     console.warn = consoleWarn
