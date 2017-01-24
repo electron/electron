@@ -257,10 +257,32 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
 
   if (settings.open_at_login) {
-    base::FilePath path;
-    if (PathService::Get(base::FILE_EXE, &path)) {
-      base::string16 exePath(path.value());
-      key.WriteValue(GetAppUserModelID(), exePath.c_str());
+    base::FilePath appDir, execPath;
+    if (PathService::Get(base::DIR_EXE, &appDir) &&
+        PathService::Get(base::FILE_EXE, &execPath)) {
+      base::FilePath updatePath = appDir.Append(
+        FILE_PATH_LITERAL("..\\Update.exe"));
+      base::string16 updateDotExe(updatePath.value());
+      base::string16 appName(execPath.BaseName().value());
+
+      if (GetFileAttributesW(updateDotExe.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        base::string16* args = base::StringPrintf(L" --processStart \"%s\"",
+                                                  appName.c_str());
+
+        std::vector<base::string16> startArgs;
+        if (settings.start_args->GetNext(&startArgs) && !startArgs.empty()) {
+          args += base::StringPrintf(L" --process-start-args \"%s\"",
+                                     base::JoinString(startArgs, L" "));
+        }
+
+        base::string16* regEntry = base::StringPrintf(L"\"%s\" %s \"%%1\"",
+                                                      updateDotExe.c_str(),
+                                                      args.c_str());
+
+        key.WriteValue(GetAppUserModelID(), regEntry.c_str());
+      } else {
+        // TODO(charliehess): No Update.exe found, Windows Store build?
+      }
     }
   } else {
     key.DeleteValue(GetAppUserModelID());
@@ -283,7 +305,6 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings() {
 
   return settings;
 }
-
 
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {
