@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "ipc/ipc_message_macros.h"
-// #include "ipc/ipc_param_traits.h"
+#include "ppapi/features/features.h"
 
 #define IPC_MESSAGE_START ChromeMsgStart
 
