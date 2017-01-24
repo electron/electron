@@ -27,6 +27,7 @@
           '<(libchromiumcontent_src_dir)',
           '<(libchromiumcontent_src_dir)/gpu',
           '<(libchromiumcontent_src_dir)/skia/config',
+          '<(libchromiumcontent_src_dir)/third_party/boringssl/src/include',
           '<(libchromiumcontent_src_dir)/third_party/skia/include/core',
           '<(libchromiumcontent_src_dir)/third_party/skia/include/config',
           '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
