@@ -50,12 +50,6 @@ std::vector<uint16_t> ParseCipherSuites(
 
 AtomSSLConfigService::AtomSSLConfigService() {
   auto cmd_line = base::CommandLine::ForCurrentProcess();
-  if (cmd_line->HasSwitch(switches::kSSLVersionFallbackMin)) {
-    auto version_string =
-        cmd_line->GetSwitchValueASCII(switches::kSSLVersionFallbackMin);
-    config_.version_fallback_min = GetSSLProtocolVersion(version_string);
-  }
-
   if (cmd_line->HasSwitch(switches::kCipherSuiteBlacklist)) {
     auto cipher_strings = base::SplitString(
         cmd_line->GetSwitchValueASCII(switches::kCipherSuiteBlacklist),

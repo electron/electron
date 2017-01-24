@@ -138,10 +138,6 @@ Pepper 플래시 플러그인의 버전을 설정합니다.
 
 Net log 이벤트를 활성화하고 `path`에 로그를 기록합니다.
 
-## --ssl-version-fallback-min=`version`
-
-TLS fallback에서 사용할 SSL/TLS 최소 버전을 지정합니다. (`tls1`, `tls1.1`, `tls1.2`)
-
 ## --cipher-suite-blacklist=`cipher_suites`
 
 SSL 암호화를 비활성화할 대상 목록을 지정합니다. (`,`로 구분)
