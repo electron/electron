@@ -271,6 +271,9 @@ class ResolveProxyHelper {
 };
 
 // Runs the callback in UI thread.
+void RunCallbackInUI(const base::Callback<void()>& callback) {
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, callback);
+}
 template<typename ...T>
 void RunCallbackInUI(const base::Callback<void(T...)>& callback, T... result) {
   BrowserThread::PostTask(
