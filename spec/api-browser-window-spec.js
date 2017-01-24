@@ -1437,21 +1437,35 @@ describe('BrowserWindow module', function () {
       // Only implemented on macOS.
       if (process.platform !== 'darwin') return
 
-      it('can be changed with setFullScreen method', function () {
+      it('can be changed with setFullScreen method', function (done) {
         w.destroy()
         w = new BrowserWindow()
+        w.once('enter-full-screen', () => {
+          assert.equal(w.isFullScreen(), true)
+          w.setFullScreen(false)
+        })
+        w.once('leave-full-screen', () => {
+          assert.equal(w.isFullScreen(), false)
+          done()
+        })
         w.setFullScreen(true)
-        assert.equal(w.isFullScreen(), true)
-        w.setFullScreen(false)
-        assert.equal(w.isFullScreen(), false)
       })
 
-      it('should not be changed by setKiosk method', function () {
+      it('should not be changed by setKiosk method', function (done) {
+        w.destroy()
+        w = new BrowserWindow()
+        w.once('enter-full-screen', () => {
+          assert.equal(w.isFullScreen(), true)
+          w.setKiosk(true)
+          w.setKiosk(false)
+          assert.equal(w.isFullScreen(), true)
+          w.setFullScreen(false)
+        })
+        w.once('leave-full-screen', () => {
+          assert.equal(w.isFullScreen(), false)
+          done()
+        })
         w.setFullScreen(true)
-        assert.equal(w.isFullScreen(), true)
-        w.setKiosk(true)
-        w.setKiosk(false)
-        assert.equal(w.isFullScreen(), true)
       })
     })
 
