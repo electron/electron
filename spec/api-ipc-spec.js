@@ -494,6 +494,30 @@ describe('ipc module', function () {
       w.removeListener('test', listener)
       assert.equal(w.listenerCount('test'), 0)
     })
+
+    it('detaches listeners subscribed to destroyed renderers, and shows a warning', (done) => {
+      w = new BrowserWindow({
+        show: false
+      })
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.once('did-finish-load', () => {
+          const expectedMessage = [
+            'Attempting to call a function in a renderer window that has been closed or released.',
+            'Function provided here: remote-event-handler.html:11:33',
+            'Remote event names: remote-handler, other-remote-handler'
+          ].join('\n')
+          const results = ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
+          assert.deepEqual(results, {
+            warningMessage: expectedMessage,
+            listenerCountBefore: 2,
+            listenerCountAfter: 1
+          })
+          done()
+        })
+        w.webContents.reload()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'remote-event-handler.html'))
+    })
   })
 
   it('throws an error when removing all the listeners', () => {

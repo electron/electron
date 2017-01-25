@@ -249,3 +249,27 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
 ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })
+
+ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
+  const consoleWarn = console.warn
+  let warningMessage = null
+  const contents = webContents.fromId(id)
+  const listenerCountBefore = contents.listenerCount(eventName)
+
+  try {
+    console.warn = (message) => {
+      warningMessage = message
+    }
+    contents.emit(eventName, {sender: contents})
+  } finally {
+    console.warn = consoleWarn
+  }
+
+  const listenerCountAfter = contents.listenerCount(eventName)
+
+  event.returnValue = {
+    warningMessage,
+    listenerCountBefore,
+    listenerCountAfter
+  }
+})
