@@ -87,7 +87,7 @@ class NativeWindowViews : public NativeWindow,
   void SetClosable(bool closable) override;
   bool IsClosable() override;
   void SetAlwaysOnTop(bool top, const std::string& level,
-                      int relativeLevel) override;
+                      int relativeLevel, std::string& error) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
   void SetTitle(const std::string& title) override;
