@@ -1056,8 +1056,10 @@ bool NativeWindowMac::IsClosable() {
   return [window_ styleMask] & NSClosableWindowMask;
 }
 
-void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level, int relativeLevel) {
+void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level, int relativeLevel,
+                                     std::string* error) {
   int windowLevel = NSNormalWindowLevel;
+  CGWindowLevel maxWindowLevel = CGWindowLevelForKey(kCGMaximumWindowLevelKey);
   
   if (top) {
     if (level == "floating") {
@@ -1081,10 +1083,12 @@ void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level, int rel
   }
 
   NSInteger newLevel = windowLevel + relativeLevel;
-  if (newLevel >= 0 && newLevel < CGWindowLevelForKey(kCGMaximumWindowLevelKey)) {
+  
+  if (newLevel >= 0 && newLevel <= maxWindowLevel) {
     [window_ setLevel:newLevel];
   } else {
-    [window_ setLevel:windowLevel];
+    *error = std::string([[NSString stringWithFormat:
+      @"relativeLevel must be between 0 and %d", maxWindowLevel] UTF8String]);
   }
 }
 
