@@ -150,7 +150,7 @@ describe('node feature', function () {
     })
 
     describe('error thrown in main process node context', function () {
-      it('gets emitted as an process uncaughtException event', function () {
+      it('gets emitted as a process uncaughtException event', function () {
         const error = ipcRenderer.sendSync('handle-uncaught-exception', 'hello')
         assert.equal(error, 'hello')
       })
