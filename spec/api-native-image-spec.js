@@ -11,12 +11,15 @@ describe('nativeImage module', () => {
       assert.equal(empty.isEmpty(), true)
       assert.equal(empty.getAspectRatio(), 1)
       assert.equal(empty.toDataURL(), 'data:image/png;base64,')
-      assert.deepEqual(empty.getNativeHandle(), [])
-      assert.deepEqual(empty.getBitmap(), [])
       assert.deepEqual(empty.getSize(), {width: 0, height: 0})
+      assert.deepEqual(empty.getBitmap(), [])
       assert.deepEqual(empty.toBitmap(), [])
       assert.deepEqual(empty.toJPEG(100), [])
       assert.deepEqual(empty.toPNG(), [])
+
+      if (process.platform === 'darwin') {
+        assert.deepEqual(empty.getNativeHandle(), [])
+      }
     })
   })
 
