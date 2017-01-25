@@ -59,6 +59,9 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
                   int element_instance_id,
                   bool is_full_page_plugin,
                   const base::Closure& completion_callback) final;
+  bool CanBeEmbeddedInsideCrossProcessFrames() override;
+  content::RenderWidgetHost* GetOwnerRenderWidgetHost() override;
+  content::SiteInstance* GetOwnerSiteInstance() override;
 
  private:
   // This method is invoked when the contents auto-resized to give the container
