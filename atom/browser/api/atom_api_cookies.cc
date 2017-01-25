@@ -60,6 +60,7 @@ struct Converter<net::CookieStore::ChangeCause> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::CookieStore::ChangeCause& val) {
     switch (val) {
+      case net::CookieStore::ChangeCause::INSERTED:
       case net::CookieStore::ChangeCause::EXPLICIT:
         return mate::StringToV8(isolate, "explicit");
       case net::CookieStore::ChangeCause::OVERWRITE:
