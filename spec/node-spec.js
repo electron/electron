@@ -131,7 +131,7 @@ describe('node feature', function () {
     })
 
     describe('error thrown in renderer process node context', function () {
-      it('gets emitted as an process uncaughtException event', function (done) {
+      it('gets emitted as a process uncaughtException event', function (done) {
         const error = new Error('boo!')
         const listeners = process.listeners('uncaughtException')
         process.removeAllListeners('uncaughtException')
@@ -152,6 +152,13 @@ describe('node feature', function () {
     describe('error thrown in main process node context', function () {
       it('gets emitted as an process uncaughtException event', function () {
         const error = ipcRenderer.sendSync('handle-uncaught-exception', 'hello')
+        assert.equal(error, 'hello')
+      })
+    })
+
+    describe('promise rejection in main process node context', function () {
+      it('gets emitted as a process unhandledRejection event', function () {
+        const error = ipcRenderer.sendSync('handle-unhandled-rejection', 'hello')
         assert.equal(error, 'hello')
       })
     })
