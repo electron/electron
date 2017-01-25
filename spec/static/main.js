@@ -273,3 +273,18 @@ ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
     listenerCountAfter
   }
 })
+
+ipcMain.on('handle-uncaught-exception', (event, message) => {
+  const listeners = process.listeners('uncaughtException')
+  process.removeAllListeners('uncaughtException')
+  process.on('uncaughtException', (error) => {
+    process.removeAllListeners('uncaughtException')
+    listeners.forEach((listener) => {
+      process.on('uncaughtException', listener)
+    })
+    event.returnValue = error.message
+  })
+  fs.readFile(__filename, () => {
+    throw new Error(message)
+  })
+})
