@@ -163,9 +163,13 @@ node::Environment* NodeBindings::CreateEnvironment(
       new node::IsolateData(context->GetIsolate(), uv_default_loop()), context,
       args.size(), c_argv.get(), 0, nullptr);
 
-  // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should switch
-  // to use the scoped policy to match blink's behavior.
-  if (!is_browser_) {
+  if (is_browser_) {
+    // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
+    // so instead call it here to match expected node behavior
+    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+  } else {
+    // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should
+    // switch to use the scoped policy to match blink's behavior.
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
   }
 
