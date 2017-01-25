@@ -225,8 +225,8 @@ describe('BrowserWindow module', function () {
         assert.equal(isMainFrame, true)
         done()
       })
-      let data = new Buffer(2 * 1024 * 1024).toString('base64')
-      w.loadURL('data:image/png;base64,' + data)
+      const data = new Buffer(2 * 1024 * 1024).toString('base64')
+      w.loadURL(`data:image/png;base64,${data}`)
     })
 
     describe('POST navigations', function () {
