@@ -36,7 +36,7 @@
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "browser/brightray_paths.h"
-#include "chrome/browser/ui/libgtk2ui/gtk2_ui.h"
+#include "chrome/browser/ui/libgtkui/gtk_ui.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/base/x/x11_util_internal.h"
 #include "ui/views/linux_ui/linux_ui.h"
@@ -244,8 +244,7 @@ int BrowserMainParts::PreCreateThreads() {
   display::Screen* screen = views::CreateDesktopScreen();
   display::Screen::SetScreenInstance(screen);
 #if defined(USE_X11)
-  views::LinuxUI::instance()->UpdateDeviceScaleFactor(
-      screen->GetPrimaryDisplay().device_scale_factor());
+  views::LinuxUI::instance()->UpdateDeviceScaleFactor();
 #endif
 #endif
   return 0;

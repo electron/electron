@@ -69,7 +69,7 @@
           },
           'cflags': [
             '<!@(<(pkg-config) --cflags <(linux_system_libraries))',
-            # Needed by using libgtk2ui:
+            # Needed by using libgtkui:
             '-Wno-deprecated-register',
             '-Wno-sentinel',
           ],
@@ -88,7 +88,7 @@
               'link_settings': {
                 'libraries': [
                   # Following libraries are always linked statically.
-                  '<(libchromiumcontent_dir)/libgtk2ui.a',
+                  '<(libchromiumcontent_dir)/libgtkui.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
