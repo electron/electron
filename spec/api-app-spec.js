@@ -357,18 +357,15 @@ describe('app module', function () {
       const updateExe = path.resolve(appFolder, '..', 'Update.exe')
       const exeName = path.basename(process.execPath)
 
-      app.setLoginItemSettings({openAtLogin: true}, updateExe, [
+      const processStartArgs = [
         '--processStart', `"${exeName}"`,
         '--process-start-args', `"--hidden"`
-      ])
+      ];
 
-      assert.deepEqual(app.getLoginItemSettings(), {
-        openAtLogin: true,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
+      app.setLoginItemSettings({openAtLogin: true}, updateExe, processStartArgs)
+
+      assert(!app.getLoginItemSettings().openAtLogin)
+      assert(app.getLoginItemSettings(updateExe, processStartArgs))
     })
   })
 

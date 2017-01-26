@@ -765,6 +765,9 @@ Returns `Boolean` - Whether the current desktop environment is Unity launcher.
 * `args` String[] (optional) _Windows_ - The command-line arguments to compare
   against. Defaults to an empty array.
 
+If you provided arguments to `app.setLoginItemSettings` you need to pass the
+same arguments here for `openAtLogin` to be set correctly.
+
 Returns `Object`:
 
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
