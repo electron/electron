@@ -293,12 +293,14 @@ describe('webContents module', function () {
       }, /Must specify either 'file' or 'files' option/)
 
       assert.throws(() => {
-        w.webContents.startDrag({file: __filename, icon: __filename})
-      }, /Must specify non-empty 'icon' option/)
-
-      assert.throws(() => {
         w.webContents.startDrag({file: __filename})
-      }, /Must specify non-empty 'icon' option/)
+      }, /Must specify 'icon' option/)
+
+      if (process.platform === 'darwin') {
+        assert.throws(() => {
+          w.webContents.startDrag({file: __filename, icon: __filename})
+        }, /Must specify non-empty 'icon' option/)
+      }
     })
   })
 })
