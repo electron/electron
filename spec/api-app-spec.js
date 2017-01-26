@@ -360,7 +360,7 @@ describe('app module', function () {
       const processStartArgs = [
         '--processStart', `"${exeName}"`,
         '--process-start-args', `"--hidden"`
-      ];
+      ]
 
       app.setLoginItemSettings({openAtLogin: true}, updateExe, processStartArgs)
 
