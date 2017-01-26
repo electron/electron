@@ -1663,9 +1663,38 @@ describe('BrowserWindow module', function () {
   })
 
   describe('dev tool extensions', function () {
-    describe('BrowserWindow.addDevToolsExtension', function () {
-      let showPanelIntervalId
+    let showPanelIntervalId
 
+    const showLastDevToolsPanel = () => {
+      w.webContents.once('devtools-opened', function () {
+        clearInterval(showPanelIntervalId)
+
+        showPanelIntervalId = setInterval(function () {
+          if (w == null || w.isDestroyed()) {
+            clearInterval(showLastDevToolsPanel)
+            return
+          }
+
+          const {devToolsWebContents} = w
+          if (devToolsWebContents == null || devToolsWebContents.isDestroyed()) {
+            clearInterval(showLastDevToolsPanel)
+            return
+          }
+
+          var showLastPanel = function () {
+            var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
+            WebInspector.inspectorView.showPanel(lastPanelId)
+          }
+          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
+        }, 100)
+      })
+    }
+
+    afterEach(function () {
+      clearInterval(showPanelIntervalId)
+    })
+
+    describe('BrowserWindow.addDevToolsExtension', function () {
       beforeEach(function () {
         BrowserWindow.removeDevToolsExtension('foo')
         assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), false)
@@ -1674,25 +1703,9 @@ describe('BrowserWindow module', function () {
         BrowserWindow.addDevToolsExtension(extensionPath)
         assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), true)
 
-        w.webContents.on('devtools-opened', function () {
-          showPanelIntervalId = setInterval(function () {
-            if (w && w.devToolsWebContents) {
-              var showLastPanel = function () {
-                var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
-                WebInspector.inspectorView.showPanel(lastPanelId)
-              }
-              w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
-            } else {
-              clearInterval(showPanelIntervalId)
-            }
-          }, 100)
-        })
+        showLastDevToolsPanel()
 
         w.loadURL('about:blank')
-      })
-
-      afterEach(function () {
-        clearInterval(showPanelIntervalId)
       })
 
       it('throws errors for missing manifest.json files', function () {
@@ -1760,27 +1773,12 @@ describe('BrowserWindow module', function () {
       BrowserWindow.removeDevToolsExtension('foo')
       BrowserWindow.addDevToolsExtension(extensionPath)
 
-      let showPanelIntervalId = null
-
-      w.webContents.once('devtools-opened', function () {
-        showPanelIntervalId = setInterval(function () {
-          if (w && w.devToolsWebContents) {
-            var showLastPanel = function () {
-              var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
-              WebInspector.inspectorView.showPanel(lastPanelId)
-            }
-            w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
-          } else {
-            clearInterval(showPanelIntervalId)
-          }
-        }, 100)
-      })
+      showLastDevToolsPanel()
 
       w.loadURL('about:blank')
       w.webContents.openDevTools({mode: 'bottom'})
 
       ipcMain.once('answer', function (event, message) {
-        clearInterval(showPanelIntervalId)
         assert.equal(message.runtimeId, 'foo')
         done()
       })
