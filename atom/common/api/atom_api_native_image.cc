@@ -238,6 +238,8 @@ v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> NativeImage::ToBitmap(v8::Isolate* isolate) {
+  if (IsEmpty()) return node::Buffer::New(isolate, 0).ToLocalChecked();
+
   const SkBitmap* bitmap = image_.ToSkBitmap();
   SkPixelRef* ref = bitmap->pixelRef();
   return node::Buffer::Copy(isolate,
@@ -264,6 +266,8 @@ std::string NativeImage::ToDataURL() {
 }
 
 v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
+  if (IsEmpty()) return node::Buffer::New(isolate, 0).ToLocalChecked();
+
   const SkBitmap* bitmap = image_.ToSkBitmap();
   SkPixelRef* ref = bitmap->pixelRef();
   return node::Buffer::New(isolate,
@@ -276,6 +280,8 @@ v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
 v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
                                                   mate::Arguments* args) {
 #if defined(OS_MACOSX)
+  if (IsEmpty()) return node::Buffer::New(isolate, 0).ToLocalChecked();
+
   NSImage* ptr = image_.AsNSImage();
   return node::Buffer::Copy(
       isolate,
