@@ -349,6 +349,27 @@ describe('app module', function () {
         restoreState: false
       })
     })
+
+    it('allows you to pass a custom executable and arguments', () => {
+      if (process.platform !== 'win32') return
+
+      const appFolder = path.dirname(process.execPath)
+      const updateExe = path.resolve(appFolder, '..', 'Update.exe')
+      const exeName = path.basename(process.execPath)
+
+      app.setLoginItemSettings({openAtLogin: true}, updateExe, [
+        '--processStart', `"${exeName}"`,
+        '--process-start-args', `"--hidden"`
+      ])
+
+      assert.deepEqual(app.getLoginItemSettings(), {
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false
+      })
+    })
   })
 
   describe('isAccessibilitySupportEnabled API', function () {
