@@ -1668,15 +1668,22 @@ describe('BrowserWindow module', function () {
     const showLastDevToolsPanel = () => {
       w.webContents.once('devtools-opened', function () {
         showPanelIntervalId = setInterval(function () {
-          if (w && w.devToolsWebContents) {
-            var showLastPanel = function () {
-              var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
-              WebInspector.inspectorView.showPanel(lastPanelId)
-            }
-            w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
-          } else {
-            clearInterval(showPanelIntervalId)
+          if (w == null || w.isDestroyed())  {
+            clearInterval(showLastDevToolsPanel)
+            return
           }
+
+          const {devToolsWebContents} = w
+          if (devToolsWebContents == null || devToolsWebContents.isDestroyed()) {
+            clearInterval(showLastDevToolsPanel)
+            return
+          }
+
+          var showLastPanel = function () {
+            var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
+            WebInspector.inspectorView.showPanel(lastPanelId)
+          }
+          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
         }, 100)
       })
     }
@@ -1770,7 +1777,6 @@ describe('BrowserWindow module', function () {
       w.webContents.openDevTools({mode: 'bottom'})
 
       ipcMain.once('answer', function (event, message) {
-        clearInterval(showPanelIntervalId)
         assert.equal(message.runtimeId, 'foo')
         done()
       })
