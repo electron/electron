@@ -38,7 +38,7 @@ class RefCountedTempDir
  public:
   RefCountedTempDir() { ignore_result(temp_dir_.CreateUniqueTempDir()); }
   bool IsValid() const { return temp_dir_.IsValid(); }
-  const base::FilePath& GetPath() const { return temp_dir_.path(); }
+  const base::FilePath& GetPath() const { return temp_dir_.GetPath(); }
 
  private:
   friend struct BrowserThread::DeleteOnThread<BrowserThread::FILE>;

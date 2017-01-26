@@ -105,30 +105,21 @@ bool PrintingHandlerWin::RenderPdfPageToMetafile(int page_number,
   // original coordinates and we'll be able to print in full resolution.
   // Before playback we'll need to counter the scaling up that will happen
   // in the service (print_system_win.cc).
-  *scale_factor =
-      gfx::CalculatePageScale(metafile.context(),
-                              pdf_rendering_settings_.area().right(),
-                              pdf_rendering_settings_.area().bottom());
+  *scale_factor = gfx::CalculatePageScale(
+      metafile.context(), pdf_rendering_settings_.area.right(),
+      pdf_rendering_settings_.area.bottom());
   gfx::ScaleDC(metafile.context(), *scale_factor);
 
   // The underlying metafile is of type Emf and ignores the arguments passed
   // to StartPage.
   metafile.StartPage(gfx::Size(), gfx::Rect(), 1);
   if (!chrome_pdf::RenderPDFPageToDC(
-          &pdf_data_.front(),
-          pdf_data_.size(),
-          page_number,
-          metafile.context(),
-          pdf_rendering_settings_.dpi(),
-          pdf_rendering_settings_.area().x(),
-          pdf_rendering_settings_.area().y(),
-          pdf_rendering_settings_.area().width(),
-          pdf_rendering_settings_.area().height(),
-          true,
-          false,
-          true,
-          true,
-          pdf_rendering_settings_.autorotate())) {
+          &pdf_data_.front(), pdf_data_.size(), page_number, metafile.context(),
+          pdf_rendering_settings_.dpi, pdf_rendering_settings_.area.x(),
+          pdf_rendering_settings_.area.y(),
+          pdf_rendering_settings_.area.width(),
+          pdf_rendering_settings_.area.height(), true, false, true, true,
+          pdf_rendering_settings_.autorotate)) {
     return false;
   }
   metafile.FinishPage();

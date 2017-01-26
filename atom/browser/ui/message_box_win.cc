@@ -233,7 +233,7 @@ void ShowMessageBox(NativeWindow* parent,
   }
 
   base::Thread* unretained = thread.release();
-  unretained->message_loop()->PostTask(
+  unretained->task_runner()->PostTask(
       FROM_HERE,
       base::Bind(&RunMessageBoxInNewThread, base::Unretained(unretained),
                  parent, type, buttons, default_id, cancel_id, options, title,

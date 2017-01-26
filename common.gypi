@@ -277,6 +277,7 @@
     'msvs_disabled_warnings': [
       4005,  # (node.h) macro redefinition
       4091,  # (node_extern.h) '__declspec(dllimport)' : ignored on left of 'node::Environment' when no variable is declared
+      4099,  # (pdf_render_settings.h) type name first seen using 'class' now seen using 'struct'
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
       4267,  # conversion from 'size_t' to 'int', possible loss of data
