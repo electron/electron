@@ -3,7 +3,7 @@ const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const {remote} = require('electron')
+const {ipcRenderer, remote} = require('electron')
 
 const isCI = remote.getGlobal('isCi')
 
@@ -130,23 +130,36 @@ describe('node feature', function () {
       })
     })
 
-    describe('throw error in node context', function () {
-      it('gets caught', function (done) {
-        var error = new Error('boo!')
-        var lsts = process.listeners('uncaughtException')
+    describe('error thrown in renderer process node context', function () {
+      it('gets emitted as a process uncaughtException event', function (done) {
+        const error = new Error('boo!')
+        const listeners = process.listeners('uncaughtException')
         process.removeAllListeners('uncaughtException')
-        process.on('uncaughtException', function () {
-          var i, len, lst
+        process.on('uncaughtException', (thrown) => {
+          assert.strictEqual(thrown, error)
           process.removeAllListeners('uncaughtException')
-          for (i = 0, len = lsts.length; i < len; i++) {
-            lst = lsts[i]
-            process.on('uncaughtException', lst)
-          }
+          listeners.forEach((listener) => {
+            process.on('uncaughtException', listener)
+          })
           done()
         })
-        fs.readFile(__filename, function () {
+        fs.readFile(__filename, () => {
           throw error
         })
+      })
+    })
+
+    describe('error thrown in main process node context', function () {
+      it('gets emitted as a process uncaughtException event', function () {
+        const error = ipcRenderer.sendSync('handle-uncaught-exception', 'hello')
+        assert.equal(error, 'hello')
+      })
+    })
+
+    describe('promise rejection in main process node context', function () {
+      it('gets emitted as a process unhandledRejection event', function () {
+        const error = ipcRenderer.sendSync('handle-unhandled-rejection', 'hello')
+        assert.equal(error, 'hello')
       })
     })
 

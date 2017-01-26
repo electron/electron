@@ -273,3 +273,34 @@ ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
     listenerCountAfter
   }
 })
+
+ipcMain.on('handle-uncaught-exception', (event, message) => {
+  suspendListeners(process, 'uncaughtException', (error) => {
+    event.returnValue = error.message
+  })
+  fs.readFile(__filename, () => {
+    throw new Error(message)
+  })
+})
+
+ipcMain.on('handle-unhandled-rejection', (event, message) => {
+  suspendListeners(process, 'unhandledRejection', (error) => {
+    event.returnValue = error.message
+  })
+  fs.readFile(__filename, () => {
+    Promise.reject(new Error(message))
+  })
+})
+
+// Suspend listeners until the next event and then restore them
+const suspendListeners = (emitter, eventName, callback) => {
+  const listeners = emitter.listeners(eventName)
+  emitter.removeAllListeners(eventName)
+  emitter.once(eventName, (...args) => {
+    emitter.removeAllListeners(eventName)
+    listeners.forEach((listener) => {
+      emitter.on(eventName, listener)
+    })
+    callback(...args)
+  })
+}
