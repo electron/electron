@@ -43,7 +43,9 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
   return TRUE;
 }
 
-bool ReadAppCommandLine(mate::Arguments* args, base::string16* exe) {
+bool ReadAppCommandLine(mate::Arguments* args,
+                        base::string16* exe,
+                        bool includeOriginalArg) {
   // Executable Path
   if (!args->GetNext(exe)) {
     base::FilePath path;
@@ -56,12 +58,19 @@ bool ReadAppCommandLine(mate::Arguments* args, base::string16* exe) {
 
   // Read in optional args arg
   std::vector<base::string16> launch_args;
-  if (args->GetNext(&launch_args) && !launch_args.empty())
-    *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"",
+  if (args->GetNext(&launch_args) && !launch_args.empty()) {
+    base::string16 formatString = includeOriginalArg ?
+      L"\"%s\" %s \"%%1\"" :
+      L"\"%s\" %s";
+    *exe = base::StringPrintf(formatString.c_str(),
                               exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
-  else
-    *exe = base::StringPrintf(L"\"%s\" \"%%1\"", exe->c_str());
+  } else {
+    base::string16 formatString = includeOriginalArg ?
+      L"\"%s\" \"%%1\"" :
+      L"\"%s\"";
+    *exe = base::StringPrintf(formatString.c_str(), exe->c_str());
+  }
   return true;
 }
 
@@ -155,7 +164,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     return true;
 
   base::string16 exe;
-  if (!ReadAppCommandLine(args, &exe))
+  if (!ReadAppCommandLine(args, &exe, true))
     return false;
 
   if (keyVal == exe) {
@@ -189,7 +198,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   base::string16 exe;
-  if (!ReadAppCommandLine(args, &exe))
+  if (!ReadAppCommandLine(args, &exe, true))
     return false;
 
   // Main Registry Key
@@ -219,7 +228,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   base::string16 exe;
-  if (!ReadAppCommandLine(args, &exe))
+  if (!ReadAppCommandLine(args, &exe, true))
     return false;
 
   // Main Registry Key
@@ -259,7 +268,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings,
 
   if (settings.open_at_login) {
     base::string16 exe;
-    if (!ReadAppCommandLine(args, &exe)) return;
+    if (!ReadAppCommandLine(args, &exe, false)) return;
 
     key.WriteValue(GetAppUserModelID(), exe.c_str());
   } else {
@@ -276,7 +285,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
     base::string16 exe;
-    if (ReadAppCommandLine(args, &exe)) {
+    if (ReadAppCommandLine(args, &exe, false)) {
       settings.open_at_login = keyVal == exe;
     }
   }
