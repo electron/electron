@@ -1670,7 +1670,7 @@ describe('BrowserWindow module', function () {
         clearInterval(showPanelIntervalId)
 
         showPanelIntervalId = setInterval(function () {
-          if (w == null || w.isDestroyed())  {
+          if (w == null || w.isDestroyed()) {
             clearInterval(showLastDevToolsPanel)
             return
           }
