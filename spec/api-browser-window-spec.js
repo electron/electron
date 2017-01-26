@@ -514,14 +514,14 @@ describe('BrowserWindow module', function () {
       assert.equal(w.isAlwaysOnTop(), true)
     })
 
-    it('raises an error when relativeLevel is out of bounds', function() {
-      if (process.platform !== 'darwin') return;
+    it('raises an error when relativeLevel is out of bounds', function () {
+      if (process.platform !== 'darwin') return
 
-      assert.throws(function() {
+      assert.throws(function () {
         w.setAlwaysOnTop(true, '', -1)
       })
 
-      assert.throws(function() {
+      assert.throws(function () {
         w.setAlwaysOnTop(true, '', 2147483632)
       })
     })
