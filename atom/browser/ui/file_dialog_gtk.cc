@@ -9,8 +9,8 @@
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/ui/libgtk2ui/gtk2_signal.h"
-#include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
+#include "chrome/browser/ui/libgtkui/gtk_signal.h"
+#include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 namespace file_dialog {
@@ -61,7 +61,7 @@ class FileChooserDialog {
         NULL);
     if (parent_) {
       parent_->SetEnabled(false);
-      libgtk2ui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+      libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
       gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     }
 
@@ -109,7 +109,7 @@ class FileChooserDialog {
 
     // We need to call gtk_window_present after making the widgets visible to
     // make sure window gets correctly raised and gets focus.
-    int time = views::X11DesktopHandler::get()->wm_user_time_ms();
+    int time = ui::X11EventSource::GetInstance()->GetTimestamp();
     gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
   }
 

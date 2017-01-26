@@ -11,9 +11,9 @@
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/ui/libgtk2ui/gtk2_signal.h"
-#include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
-#include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
+#include "chrome/browser/ui/libgtkui/gtk_signal.h"
+#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 #define ANSI_FOREGROUND_RED   "\x1b[31m"
@@ -54,7 +54,7 @@ class GtkMessageBox : public NativeWindowObserver {
 
     // Set dialog's icon.
     if (!icon.isNull()) {
-      GdkPixbuf* pixbuf = libgtk2ui::GdkPixbufFromSkBitmap(*icon.bitmap());
+      GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(*icon.bitmap());
       GtkIconSource* iconsource = gtk_icon_source_new();
       GtkIconSet* iconset = gtk_icon_set_new();
       gtk_icon_source_set_pixbuf(iconsource, pixbuf);
@@ -80,7 +80,7 @@ class GtkMessageBox : public NativeWindowObserver {
     if (parent_) {
       parent_->AddObserver(this);
       parent_->SetEnabled(false);
-      libgtk2ui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+      libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
       gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     }
   }
@@ -126,7 +126,7 @@ class GtkMessageBox : public NativeWindowObserver {
     gtk_widget_show_all(dialog_);
     // We need to call gtk_window_present after making the widgets visible to
     // make sure window gets correctly raised and gets focus.
-    int time = views::X11DesktopHandler::get()->wm_user_time_ms();
+    int time = ui::X11EventSource::GetInstance()->GetTimestamp();
     gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
   }
 

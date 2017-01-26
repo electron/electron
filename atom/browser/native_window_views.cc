@@ -41,7 +41,7 @@
 #include "atom/browser/ui/x/window_state_watcher.h"
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/ui/libgtk2ui/unity_service.h"
+#include "chrome/browser/ui/libgtkui/unity_service.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"

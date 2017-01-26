@@ -10,7 +10,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/atom_version.h"
 #include "brightray/common/application_info.h"
-#include "chrome/browser/ui/libgtk2ui/unity_service.h"
+#include "chrome/browser/ui/libgtkui/unity_service.h"
 
 namespace atom {
 
