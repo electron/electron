@@ -51,7 +51,6 @@ class ViewsDelegate : public views::ViewsDelegate {
   void OnBeforeWidgetInit(
       views::Widget::InitParams* params,
       views::internal::NativeWidgetDelegate* delegate) override;
-  base::TimeDelta GetDefaultTextfieldObscuredRevealDuration() override;
   bool WindowManagerProvidesTitleBar(bool maximized) override;
 
  private:

@@ -56,7 +56,7 @@ bool NotificationPresenterWin::Init() {
 base::string16 NotificationPresenterWin::SaveIconToFilesystem(
     const SkBitmap& icon, const GURL& origin) {
   std::string filename = base::MD5String(origin.spec()) + ".png";
-  base::FilePath path = temp_dir_.path().Append(base::UTF8ToUTF16(filename));
+  base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToUTF16(filename));
   if (base::PathExists(path))
     return path.value();
   if (SaveIconToPath(icon, path))
