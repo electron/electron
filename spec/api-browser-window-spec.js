@@ -1679,6 +1679,8 @@ describe('BrowserWindow module', function () {
 
     const showLastDevToolsPanel = () => {
       w.webContents.once('devtools-opened', function () {
+        clearInterval(showPanelIntervalId)
+
         showPanelIntervalId = setInterval(function () {
           if (w == null || w.isDestroyed())  {
             clearInterval(showLastDevToolsPanel)
