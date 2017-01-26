@@ -758,7 +758,12 @@ Returns `Integer` - The current value displayed in the counter badge.
 
 Returns `Boolean` - Whether the current desktop environment is Unity launcher.
 
-### `app.getLoginItemSettings()` _macOS_ _Windows_
+### `app.getLoginItemSettings([path, args])` _macOS_ _Windows_
+
+* `path` String (optional) _Windows_ - The executable path to compare against.
+  Defaults to `process.execPath`.
+* `args` String[] (optional) _Windows_ - The command-line arguments to compare
+  against. Defaults to an empty array.
 
 Returns `Object`:
 
@@ -778,7 +783,7 @@ Returns `Object`:
 **Note:** This API has no effect on
 [MAS builds][mas-builds].
 
-### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
+### `app.setLoginItemSettings(settings[, path, args])` _macOS_ _Windows_
 
 * `settings` Object
   * `openAtLogin` Boolean (optional) - `true` to open the app at login, `false` to remove
@@ -788,8 +793,27 @@ Returns `Object`:
     `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
     is opened to know the current value. This setting is only supported on
     macOS.
+* `path` String (optional) _Windows_ - The executable to launch at login.
+  Defaults to `process.execPath`.
+* `args` String[] (optional) _Windows_ - The command-line arguments to pass to the
+  executable. Defaults to an empty array. Take care to wrap paths in quotes.
 
 Set the app's login item settings.
+
+To work with Electron's `autoUpdater` on Windows, which uses [Squirrel](Squirrel-Windows),
+you'll want to set the launch path to Update.exe, and pass arguments that specify your 
+application name. For example:
+
+``` javascript
+const appFolder = path.dirname(process.execPath)
+const updateExe = path.resolve(appFolder, '..', 'Update.exe')
+const exeName = path.basename(process.execPath)
+
+app.setLoginItemSettings({openAtLogin: true}, updateExe, [
+  '--processStart', `"${exeName}"`,
+  '--process-start-args', `"--hidden"`
+])
+```
 
 **Note:** This API has no effect on
 [MAS builds][mas-builds].
@@ -904,5 +928,6 @@ Sets the `image` associated with this dock icon.
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
 [unity-requirement]: ../tutorial/desktop-environment-integration.md#unity-launcher-shortcuts-linux
 [mas-builds]: ../tutorial/mac-app-store-submission-guide.md
+[Squirrel-Windows]: https://github.com/Squirrel/Squirrel.Windows
 [JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
 [about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc
