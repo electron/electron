@@ -33,9 +33,6 @@ class PdfViewerUI : public content::WebUIController,
               const std::string& src);
   ~PdfViewerUI() override;
 
-  // content::WebUIController implementation.
-  void RenderViewCreated(content::RenderViewHost* rvh) override;
-
   // content::WebContentsObserver:
   bool OnMessageReceived(const IPC::Message& message,
                          content::RenderFrameHost* render_frame_host) override;

@@ -61,7 +61,8 @@ class BundledDataSource : public content::URLDataSource {
   std::string GetMimeType(const std::string& path) const override {
     std::string filename = PathWithoutParams(path);
     std::string mime_type;
-    net::GetMimeTypeFromFile(base::FilePath::FromUTF8Unsafe(filename), &mime_type);
+    net::GetMimeTypeFromFile(
+        base::FilePath::FromUTF8Unsafe(filename), &mime_type);
     return mime_type;
   }
 
@@ -102,10 +103,6 @@ PdfViewerUI::PdfViewerUI(content::BrowserContext* browser_context,
 }
 
 PdfViewerUI::~PdfViewerUI() {}
-
-void PdfViewerUI::RenderViewCreated(content::RenderViewHost* rvh) {
-  rvh->AllowBindings(content::BINDINGS_POLICY_WEB_UI);
-}
 
 bool PdfViewerUI::OnMessageReceived(
     const IPC::Message& message,
