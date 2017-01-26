@@ -99,8 +99,8 @@ class Browser : public WindowListObserver {
     bool opened_at_login = false;
     bool opened_as_hidden = false;
   };
-  void SetLoginItemSettings(LoginItemSettings settings, mate::Arguments* start_args);
-  LoginItemSettings GetLoginItemSettings();
+  void SetLoginItemSettings(LoginItemSettings settings, mate::Arguments* args);
+  LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
 
 #if defined(OS_MACOSX)
   // Hide the application.

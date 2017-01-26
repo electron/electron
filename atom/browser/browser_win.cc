@@ -43,7 +43,7 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
   return TRUE;
 }
 
-bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
+bool ReadAppCommandLine(mate::Arguments* args, base::string16* exe) {
   // Executable Path
   if (!args->GetNext(exe)) {
     base::FilePath path;
@@ -155,7 +155,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     return true;
 
   base::string16 exe;
-  if (!GetProtocolLaunchPath(args, &exe))
+  if (!ReadAppCommandLine(args, &exe))
     return false;
 
   if (keyVal == exe) {
@@ -189,7 +189,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   base::string16 exe;
-  if (!GetProtocolLaunchPath(args, &exe))
+  if (!ReadAppCommandLine(args, &exe))
     return false;
 
   // Main Registry Key
@@ -219,7 +219,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   base::string16 exe;
-  if (!GetProtocolLaunchPath(args, &exe))
+  if (!ReadAppCommandLine(args, &exe))
     return false;
 
   // Main Registry Key
@@ -253,58 +253,30 @@ bool Browser::SetBadgeCount(int count) {
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings,
-                                   mate::Arguments* start_args) {
+                                   mate::Arguments* args) {
   base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
 
   if (settings.open_at_login) {
-    base::FilePath appDir, execPath;
-    if (PathService::Get(base::DIR_EXE, &appDir) &&
-        PathService::Get(base::FILE_EXE, &execPath)) {
-      base::FilePath updatePath = appDir
-        .Append(FILE_PATH_LITERAL("..\\Update.exe"));
-        
-      base::string16 updateDotExe(updatePath.value());
-      base::string16 appName(execPath.BaseName().value());
+    base::string16 exe;
+    if (!ReadAppCommandLine(args, &exe)) return;
 
-      if (GetFileAttributesW(updateDotExe.c_str()) != INVALID_FILE_ATTRIBUTES) {
-        base::string16 appStartArg(base::StringPrintf(L"--processStart \"%s\"",
-                                   appName.c_str()));
-
-        base::string16 formattedStartArgs(L"");
-        std::vector<base::string16> startArgs;
-        if (start_args->GetNext(&startArgs) && !startArgs.empty()) {
-          formattedStartArgs =
-            base::StringPrintf(L"--process-start-args \"%s\"",
-                               base::JoinString(startArgs, L" ").c_str());
-        }
-
-        base::string16 regEntry(base::StringPrintf(L"\"%s\" %s %s",
-                                updateDotExe.c_str(),
-                                appStartArg.c_str(),
-                                formattedStartArgs.c_str()));
-
-        key.WriteValue(GetAppUserModelID(), regEntry.c_str());
-      } else {
-        // TODO(charliehess): No Update.exe found, Windows Store build?
-      }
-    }
+    key.WriteValue(GetAppUserModelID(), exe.c_str());
   } else {
     key.DeleteValue(GetAppUserModelID());
   }
 }
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+Browser::LoginItemSettings Browser::GetLoginItemSettings(mate::Arguments* args) {
   LoginItemSettings settings;
   base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
   base::string16 keyVal;
 
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
-    base::FilePath path;
-    if (PathService::Get(base::FILE_EXE, &path)) {
-      base::string16 exePath(path.value());
-      settings.open_at_login = keyVal == exePath;
+    base::string16 exe;
+    if (ReadAppCommandLine(args, &exe)) {
+      settings.open_at_login = keyVal == exe;
     }
   }
 
