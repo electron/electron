@@ -294,6 +294,7 @@
                       # net_common.gypi:
                       'crypt32.lib',
                       'dhcpcsvc.lib',
+                      'ncrypt.lib',
                       'rpcrt4.lib',
                       'secur32.lib',
                       'urlmon.lib',
