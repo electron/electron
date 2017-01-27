@@ -301,6 +301,8 @@
                       'winhttp.lib',
                       # ui/gfx/BUILD.gn:
                       'dwrite.lib',
+                      # skia/BUILD.gn:
+                      'fontsub.lib',
                     ],
                     'DelayLoadDLLs': [
                       'wtsapi32.dll',
