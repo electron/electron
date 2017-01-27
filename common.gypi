@@ -155,13 +155,15 @@
               '-ldbghelp.lib',
               '-lshlwapi.lib',
             ],
-            # Fix the linking error with icu.
+            # Force referencing symbols of ICU and v8_inspector to make sure
+            # they are included in the final DLL.
             'conditions': [
               ['libchromiumcontent_component==0', {
                 'variables': {
                   'conditions': [
                     ['target_arch=="ia32"', {
                       'reference_symbols': [
+                        # ICU symbols:
                         '_u_errorName_58',
                         '_ubidi_setPara_58',
                         '_ucsdet_getName_58',
@@ -177,6 +179,7 @@
                       ],
                     }, {
                       'reference_symbols': [
+                        # ICU symbols:
                         'u_errorName_58',
                         'ubidi_setPara_58',
                         'ucsdet_getName_58',
@@ -188,6 +191,9 @@
                         'usearch_setPattern_58',
                         '?createInstance@Transliterator@icu_58@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z',
                         '??0MeasureFormat@icu_58@@QEAA@AEBVLocale@1@W4UMeasureFormatWidth@@AEAW4UErrorCode@@@Z',
+                        # v8_inspector symbols:
+                        '?DOM@ReasonEnum@Paused@API@Debugger@protocol@v8_inspector@@3PEBDEB',
+                        '?canDispatchMethod@V8InspectorSession@v8_inspector@@SA_NAEBVStringView@2@@Z',
                       ],
                     }],
                   ],

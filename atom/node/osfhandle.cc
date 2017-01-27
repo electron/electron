@@ -6,6 +6,9 @@
 
 #include <io.h>
 
+#include "v8-profiler.h"
+#include "v8-inspector.h"
+
 namespace node {
 
 int open_osfhandle(intptr_t osfhandle, int flags) {
@@ -14,6 +17,14 @@ int open_osfhandle(intptr_t osfhandle, int flags) {
 
 int close(int fd) {
   return _close(fd);
+}
+
+void ReferenceSymbols() {
+  // Following symbols are used by electron.exe but got stripped by compiler,
+  // for some reason, adding them to ForceSymbolReferences does not work,
+  // probably because of VC++ bugs.
+  v8::TracingCpuProfiler::Create(nullptr);
+  reinterpret_cast<v8_inspector::V8InspectorClient*>(nullptr)->unmuteMetrics(0);
 }
 
 }  // namespace node
