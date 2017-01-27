@@ -1132,8 +1132,9 @@ End subscribing for frame presentation events.
 #### `contents.startDrag(item)`
 
 * `item` Object
-  * `file` String
-  * `icon` [NativeImage](native-image.md)
+  * `file` String - The path to the file being dragged.
+  * `icon` [NativeImage](native-image.md) - The image must be non-empty on
+    macOS.
 
 Sets the `item` as dragging item for current drag-drop operation, `file` is the
 absolute path of the file to be dragged, and `icon` is the image showing under

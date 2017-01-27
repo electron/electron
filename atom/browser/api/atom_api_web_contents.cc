@@ -1327,9 +1327,17 @@ void WebContents::StartDrag(const mate::Dictionary& item,
 
   // Error checking.
   if (icon.IsEmpty()) {
-    args->ThrowError("icon must be set");
+    args->ThrowError("Must specify 'icon' option");
     return;
   }
+
+#if defined(OS_MACOSX)
+  // NSWindow.dragImage requires a non-empty NSImage
+  if (icon->image().IsEmpty()) {
+    args->ThrowError("Must specify non-empty 'icon' option");
+    return;
+  }
+#endif
 
   // Start dragging.
   if (!files.empty()) {
@@ -1337,7 +1345,7 @@ void WebContents::StartDrag(const mate::Dictionary& item,
         base::MessageLoop::current());
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
-    args->ThrowError("There is nothing to drag");
+    args->ThrowError("Must specify either 'file' or 'files' option");
   }
 }
 

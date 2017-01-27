@@ -1663,35 +1663,33 @@ describe('BrowserWindow module', function () {
   })
 
   describe('dev tool extensions', function () {
-    let showPanelIntervalId
+    let showPanelTimeoutId
 
     const showLastDevToolsPanel = () => {
       w.webContents.once('devtools-opened', function () {
-        clearInterval(showPanelIntervalId)
-
-        showPanelIntervalId = setInterval(function () {
+        const show = function () {
           if (w == null || w.isDestroyed()) {
-            clearInterval(showLastDevToolsPanel)
             return
           }
-
           const {devToolsWebContents} = w
           if (devToolsWebContents == null || devToolsWebContents.isDestroyed()) {
-            clearInterval(showLastDevToolsPanel)
             return
           }
 
-          var showLastPanel = function () {
-            var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
+          const showLastPanel = function () {
+            const lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
             WebInspector.inspectorView.showPanel(lastPanelId)
           }
-          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
-        }, 100)
+          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false, () => {
+            showPanelTimeoutId = setTimeout(show, 100)
+          })
+        }
+        showPanelTimeoutId = setTimeout(show, 100)
       })
     }
 
     afterEach(function () {
-      clearInterval(showPanelIntervalId)
+      clearTimeout(showPanelTimeoutId)
     })
 
     describe('BrowserWindow.addDevToolsExtension', function () {

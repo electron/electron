@@ -285,4 +285,22 @@ describe('webContents module', function () {
     })
     w.webContents.inspectElement(10, 10)
   })
+
+  describe('startDrag({file, icon})', () => {
+    it('throws errors for a missing file or a missing/empty icon', () => {
+      assert.throws(() => {
+        w.webContents.startDrag({icon: path.join(__dirname, 'fixtures', 'assets', 'logo.png')})
+      }, /Must specify either 'file' or 'files' option/)
+
+      assert.throws(() => {
+        w.webContents.startDrag({file: __filename})
+      }, /Must specify 'icon' option/)
+
+      if (process.platform === 'darwin') {
+        assert.throws(() => {
+          w.webContents.startDrag({file: __filename, icon: __filename})
+        }, /Must specify non-empty 'icon' option/)
+      }
+    })
+  })
 })
