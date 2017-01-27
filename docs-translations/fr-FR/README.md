@@ -30,14 +30,7 @@ dans la FAQ :
 ## Tutoriels
 
 * [Démarrage Rapide](tutorial/quick-start.md)
-* [Détection des Evènements En ligne/Hors ligne](tutorial/online-offline-events.md)
 
-## Références API
-
-* [Synopsis](api/synopsis.md)
-* [L'objet Process](api/process.md)
-* [Commandes Chromes Supportées](api/chrome-command-line-switches.md)
-* [Variables d'Environnement](api/environment-variables.md)
 
 ### Eléments DOM Personnalisés:
 
