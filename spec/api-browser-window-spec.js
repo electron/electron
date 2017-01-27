@@ -518,7 +518,7 @@ describe('BrowserWindow module', function () {
       if (process.platform !== 'darwin') return
 
       assert.throws(function () {
-        w.setAlwaysOnTop(true, '', -1)
+        w.setAlwaysOnTop(true, '', -2147483644)
       })
 
       assert.throws(function () {
