@@ -30,7 +30,6 @@ dans la FAQ :
 ## Tutoriels
 
 * [Démarrage Rapide](tutorial/quick-start.md)
-* [Intégration Environnement de Bureau](tutorial/desktop-environment-integration.md)
 * [Détection des Evènements En ligne/Hors ligne](tutorial/online-offline-events.md)
 
 ## Références API
