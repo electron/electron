@@ -98,11 +98,19 @@ void OpenExternal(const GURL& url, bool activate,
 bool MoveItemToTrash(const base::FilePath& full_path) {
   std::string trash;
   if (getenv(ELECTRON_TRASH) != NULL) {
-    trash = getenv(ELECTRON_TRASH);
+     trash = getenv(ELECTRON_TRASH);
   } else {
-    trash = ELECTRON_DEFAULT_TRASH;
+    // Determine desktop environment and set accordingly.
+    std::string desktopEnv = getenv(DESKTOP_SESSION);
+    if (desktopEnv.find("plasma") != std::string::npos) {
+      trash = "kioclient5";
+    } else if (desktopEnv.find("kde") != std::string::npos) {
+      trash = "kioclient";
+    } else {
+      trash = ELECTRON_DEFAULT_TRASH; 
+    }
   }
-
+      
   std::vector<std::string> argv;
 
   if (trash.compare("kioclient5") == 0 || trash.compare("kioclient") == 0) {
