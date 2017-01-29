@@ -174,6 +174,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   int GetFrameRate() const;
   void Invalidate();
 
+  // Methods for zoom handling.
+  void SetZoomLevel(double level);
+  double GetZoomLevel();
+  void SetZoomFactor(double factor);
+  double GetZoomFactor();
+
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
                                    const GURL& origin,

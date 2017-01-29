@@ -49,6 +49,7 @@
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
+#include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
@@ -1498,6 +1499,24 @@ void WebContents::Invalidate() {
     osr_rwhv->Invalidate();
 }
 
+void WebContents::SetZoomLevel(double level) {
+  content::HostZoomMap::SetZoomLevel(web_contents(), level);
+}
+
+double WebContents::GetZoomLevel() {
+  return content::HostZoomMap::GetZoomLevel(web_contents());
+}
+
+void WebContents::SetZoomFactor(double factor) {
+  auto level = content::ZoomFactorToZoomLevel(factor);
+  SetZoomLevel(level);
+}
+
+double WebContents::GetZoomFactor() {
+  auto level = GetZoomLevel();
+  return content::ZoomLevelToZoomFactor(level);
+}
+
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   WebContentsPreferences* web_preferences =
       WebContentsPreferences::FromWebContents(web_contents());
@@ -1626,6 +1645,10 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFrameRate", &WebContents::SetFrameRate)
       .SetMethod("getFrameRate", &WebContents::GetFrameRate)
       .SetMethod("invalidate", &WebContents::Invalidate)
+      .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
+      .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
+      .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
+      .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
