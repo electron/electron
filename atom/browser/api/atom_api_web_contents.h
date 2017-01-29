@@ -349,11 +349,16 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // Called after committing a navigation, to set the zoom
+  // factor.
+  void SetZoomFactorIfNeeded(const GURL& url);
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
+  std::map<std::string, double> host_zoom_factor_;
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;
@@ -369,6 +374,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether to enable devtools.
   bool enable_devtools_;
+
+  // Initial zoom factor.
+  double zoom_factor_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

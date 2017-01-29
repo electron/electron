@@ -130,13 +130,6 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (web_preferences.GetString(options::kBackgroundColor, &color))
     command_line->AppendSwitchASCII(switches::kBackgroundColor, color);
 
-  // The zoom factor.
-  double zoom_factor = 1.0;
-  if (web_preferences.GetDouble(options::kZoomFactor, &zoom_factor) &&
-      zoom_factor != 1.0)
-    command_line->AppendSwitchASCII(switches::kZoomFactor,
-                                    base::DoubleToString(zoom_factor));
-
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
   if (web_preferences.GetInteger(options::kGuestInstanceID, &guest_instance_id))
