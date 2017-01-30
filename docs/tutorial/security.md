@@ -20,7 +20,7 @@ display primarily local content (or trusted, secure remote content without Node
 integration) – if your application executes code from an online source, it is
 your responsibility to ensure that the code is not malicious.
 
-## Disclosing Security Vulnerabilities
+## Reporting Security Issues
 
 For information on how to properly disclose an Electron vulnerability,
 see [SECURITY.md](https://github.com/electron/electron/tree/master/SECURITY.md)
