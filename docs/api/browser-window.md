@@ -846,13 +846,16 @@ Returns `Boolean` - Whether the window can be manually closed by user.
 
 On Linux always returns `true`.
 
-#### `win.setAlwaysOnTop(flag[, level])`
+#### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
 * `flag` Boolean
 * `level` String (optional) _macOS_ - Values include `normal`, `floating`,
   `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
   `screen-saver`, and ~~`dock`~~ (Deprecated). The default is `floating`. See the
   [macOS docs][window-levels] for more details.
+* `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
+  this window relative to the given `level`. The default is `0`. Note that Apple
+  discourages setting levels higher than 1 above `screen-saver`. 
 
 Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which

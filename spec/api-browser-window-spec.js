@@ -524,6 +524,18 @@ describe('BrowserWindow module', function () {
       w.setAlwaysOnTop(true)
       assert.equal(w.isAlwaysOnTop(), true)
     })
+
+    it('raises an error when relativeLevel is out of bounds', function () {
+      if (process.platform !== 'darwin') return
+
+      assert.throws(function () {
+        w.setAlwaysOnTop(true, '', -2147483644)
+      })
+
+      assert.throws(function () {
+        w.setAlwaysOnTop(true, '', 2147483632)
+      })
+    })
   })
 
   describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {

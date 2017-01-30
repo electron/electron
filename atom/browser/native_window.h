@@ -119,7 +119,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() = 0;
   virtual void SetAlwaysOnTop(bool top,
-                              const std::string& level = "floating") = 0;
+                              const std::string& level = "floating",
+                              int relativeLevel = 0,
+                              std::string* error = nullptr) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
   virtual void SetTitle(const std::string& title) = 0;
