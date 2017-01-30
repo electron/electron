@@ -60,12 +60,11 @@ bool Browser::SetBadgeCount(int count) {
   }
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings,
-                                   mate::Arguments* args) {
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 }
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
-  mate::Arguments* args) {
+    LoginItemSettings options) {
   return LoginItemSettings();
 }
 

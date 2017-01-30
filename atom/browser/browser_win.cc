@@ -43,11 +43,11 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
   return TRUE;
 }
 
-bool ReadAppCommandLine(mate::Arguments* args,
-                        base::string16* exe,
+bool ReadAppCommandLine(base::string16* exe,
+                        const std::vector<base::string16>& launch_args,
                         bool includeOriginalArg) {
   // Executable Path
-  if (!args->GetNext(exe)) {
+  if (exe->empty()) {
     base::FilePath path;
     if (!PathService::Get(base::FILE_EXE, &path)) {
       LOG(ERROR) << "Error getting app exe path";
@@ -56,21 +56,20 @@ bool ReadAppCommandLine(mate::Arguments* args,
     *exe = path.value();
   }
 
-  // Read in optional args arg
-  std::vector<base::string16> launch_args;
-  if (args->GetNext(&launch_args) && !launch_args.empty()) {
+  if (launch_args.empty()) {
+    base::string16 formatString = includeOriginalArg ?
+      L"\"%s\" \"%%1\"" :
+      L"\"%s\"";
+    *exe = base::StringPrintf(formatString.c_str(), exe->c_str());
+  } else {
     base::string16 formatString = includeOriginalArg ?
       L"\"%s\" %s \"%%1\"" :
       L"\"%s\" %s";
     *exe = base::StringPrintf(formatString.c_str(),
                               exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
-  } else {
-    base::string16 formatString = includeOriginalArg ?
-      L"\"%s\" \"%%1\"" :
-      L"\"%s\"";
-    *exe = base::StringPrintf(formatString.c_str(), exe->c_str());
   }
+
   return true;
 }
 
@@ -164,7 +163,10 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     return true;
 
   base::string16 exe;
-  if (!ReadAppCommandLine(args, &exe, true))
+  std::vector<base::string16> launch_args;
+  args->GetNext(&exe);
+  args->GetNext(&launch_args);
+  if (!ReadAppCommandLine(&exe, launch_args, true))
     return false;
 
   if (keyVal == exe) {
@@ -198,7 +200,10 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   base::string16 exe;
-  if (!ReadAppCommandLine(args, &exe, true))
+  std::vector<base::string16> launch_args;
+  args->GetNext(&exe);
+  args->GetNext(&launch_args);
+  if (!ReadAppCommandLine(&exe, launch_args, true))
     return false;
 
   // Main Registry Key
@@ -228,7 +233,10 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   base::string16 exe;
-  if (!ReadAppCommandLine(args, &exe, true))
+  std::vector<base::string16> launch_args;
+  args->GetNext(&exe);
+  args->GetNext(&launch_args);
+  if (!ReadAppCommandLine(&exe, launch_args, true))
     return false;
 
   // Main Registry Key
@@ -261,14 +269,13 @@ bool Browser::SetBadgeCount(int count) {
   return false;
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings,
-                                   mate::Arguments* args) {
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
 
   if (settings.open_at_login) {
-    base::string16 exe;
-    if (!ReadAppCommandLine(args, &exe, false)) return;
+    base::string16 exe = settings.path;
+    if (!ReadAppCommandLine(&exe, settings.args, false)) return;
 
     key.WriteValue(GetAppUserModelID(), exe.c_str());
   } else {
@@ -277,15 +284,15 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings,
 }
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
-  mate::Arguments* args) {
+    LoginItemSettings options) {
   LoginItemSettings settings;
   base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
   base::string16 keyVal;
 
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
-    base::string16 exe;
-    if (ReadAppCommandLine(args, &exe, false)) {
+    base::string16 exe = options.path;
+    if (ReadAppCommandLine(&exe, options.args, false)) {
       settings.open_at_login = keyVal == exe;
     }
   }

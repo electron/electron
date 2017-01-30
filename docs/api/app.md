@@ -758,15 +758,16 @@ Returns `Integer` - The current value displayed in the counter badge.
 
 Returns `Boolean` - Whether the current desktop environment is Unity launcher.
 
-### `app.getLoginItemSettings([path, args])` _macOS_ _Windows_
+### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
-* `path` String (optional) _Windows_ - The executable path to compare against.
-  Defaults to `process.execPath`.
-* `args` String[] (optional) _Windows_ - The command-line arguments to compare
-  against. Defaults to an empty array.
+* `options` Object (optional)
+  * `path` String (optional) _Windows_ - The executable path to compare against.
+    Defaults to `process.execPath`.
+  * `args` String[] (optional) _Windows_ - The command-line arguments to compare
+    against. Defaults to an empty array.
 
-If you provided arguments to `app.setLoginItemSettings` you need to pass the
-same arguments here for `openAtLogin` to be set correctly.
+If you provided `path` and `argg` potions to `app.setLoginItemSettings` then you
+need to pass the same arguments here for `openAtLogin` to be set correctly.
 
 Returns `Object`:
 
@@ -783,8 +784,7 @@ Returns `Object`:
   app should restore the windows that were open the last time the app was
   closed. This setting is only supported on macOS.
 
-**Note:** This API has no effect on
-[MAS builds][mas-builds].
+**Note:** This API has no effect on [MAS builds][mas-builds].
 
 ### `app.setLoginItemSettings(settings[, path, args])` _macOS_ _Windows_
 
@@ -796,15 +796,16 @@ Returns `Object`:
     `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
     is opened to know the current value. This setting is only supported on
     macOS.
-* `path` String (optional) _Windows_ - The executable to launch at login.
-  Defaults to `process.execPath`.
-* `args` String[] (optional) _Windows_ - The command-line arguments to pass to the
-  executable. Defaults to an empty array. Take care to wrap paths in quotes.
+  * `path` String (optional) _Windows_ - The executable to launch at login.
+    Defaults to `process.execPath`.
+  * `args` String[] (optional) _Windows_ - The command-line arguments to pass to
+    the executable. Defaults to an empty array. Take care to wrap paths in
+    quotes.
 
 Set the app's login item settings.
 
 To work with Electron's `autoUpdater` on Windows, which uses [Squirrel](Squirrel-Windows),
-you'll want to set the launch path to Update.exe, and pass arguments that specify your 
+you'll want to set the launch path to Update.exe, and pass arguments that specify your
 application name. For example:
 
 ``` javascript
@@ -818,8 +819,7 @@ app.setLoginItemSettings({openAtLogin: true}, updateExe, [
 ])
 ```
 
-**Note:** This API has no effect on
-[MAS builds][mas-builds].
+**Note:** This API has no effect on [MAS builds][mas-builds].
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 

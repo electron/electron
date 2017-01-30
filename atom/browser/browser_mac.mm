@@ -152,7 +152,8 @@ bool Browser::ContinueUserActivity(const std::string& type,
   return prevent_default;
 }
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings(mate::Arguments* args) {
+Browser::LoginItemSettings Browser::GetLoginItemSettings(
+    LoginItemSettings options) {
   LoginItemSettings settings;
   settings.open_at_login = base::mac::CheckLoginItemStatus(
       &settings.open_as_hidden);
@@ -162,8 +163,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(mate::Arguments* args) 
   return settings;
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings,
-                                   mate::Arguments* args) {
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   if (settings.open_at_login)
     base::mac::AddToLoginItems(settings.open_as_hidden);
   else

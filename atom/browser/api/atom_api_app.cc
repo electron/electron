@@ -12,7 +12,6 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/browser.h"
 #include "atom/browser/login_handler.h"
 #include "atom/browser/relauncher.h"
 #include "atom/common/atom_command_line.h"
@@ -298,6 +297,8 @@ struct Converter<Browser::LoginItemSettings> {
 
     dict.Get("openAtLogin", &(out->open_at_login));
     dict.Get("openAsHidden", &(out->open_as_hidden));
+    dict.Get("path", &(out->path));
+    dict.Get("args", &(out->args));
     return true;
   }
 
@@ -746,6 +747,12 @@ bool App::IsAccessibilitySupportEnabled() {
   return ax_state->IsAccessibleBrowser();
 }
 
+Browser::LoginItemSettings App::GetLoginItemSettings(mate::Arguments* args) {
+  Browser::LoginItemSettings options;
+  args->GetNext(&options);
+  return Browser::Get()->GetLoginItemSettings(options);
+}
+
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(
     const base::DictionaryValue& options,
@@ -867,8 +874,7 @@ void App::BuildPrototype(
                  base::Bind(&Browser::RemoveAsDefaultProtocolClient, browser))
       .SetMethod("setBadgeCount", base::Bind(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount", base::Bind(&Browser::GetBadgeCount, browser))
-      .SetMethod("getLoginItemSettings",
-                 base::Bind(&Browser::GetLoginItemSettings, browser))
+      .SetMethod("getLoginItemSettings", &App::GetLoginItemSettings)
       .SetMethod("setLoginItemSettings",
                  base::Bind(&Browser::SetLoginItemSettings, browser))
 #if defined(OS_MACOSX)

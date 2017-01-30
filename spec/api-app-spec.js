@@ -362,10 +362,10 @@ describe('app module', function () {
         '--process-start-args', `"--hidden"`
       ]
 
-      app.setLoginItemSettings({openAtLogin: true}, updateExe, processStartArgs)
+      app.setLoginItemSettings({openAtLogin: true, path: updateExe, args: processStartArgs})
 
-      assert(!app.getLoginItemSettings().openAtLogin)
-      assert(app.getLoginItemSettings(updateExe, processStartArgs))
+      assert.equal(app.getLoginItemSettings().openAtLogin, false)
+      assert.equal(app.getLoginItemSettings({path: updateExe, args: processStartArgs}).openAtLogin, true)
     })
   })
 
