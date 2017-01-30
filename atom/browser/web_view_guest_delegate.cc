@@ -39,7 +39,9 @@ void WebViewGuestDelegate::Initialize(api::WebContents* api_web_contents) {
 
 void WebViewGuestDelegate::Destroy() {
   // Give the content module an opportunity to perform some cleanup.
+  embedder_zoom_controller_->RemoveObserver(this);
   guest_host_->WillDestroy();
+  embedder_zoom_controller_ = nullptr;
   guest_host_ = nullptr;
 }
 
@@ -107,6 +109,9 @@ void WebViewGuestDelegate::DidFinishNavigation(
 
 void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {
   api_web_contents_->Emit("did-attach");
+  embedder_zoom_controller_ =
+      WebContentsZoomController::FromWebContents(embedder_web_contents_);
+  embedder_zoom_controller_->AddObserver(this);
 }
 
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
@@ -132,6 +137,14 @@ void WebViewGuestDelegate::WillAttach(
   embedder_web_contents_ = embedder_web_contents;
   is_full_page_plugin_ = is_full_page_plugin;
   completion_callback.Run();
+}
+
+void WebViewGuestDelegate::OnZoomLevelChanged(
+    content::WebContents* web_contents,
+    double level) {
+  if (web_contents == GetOwnerWebContents()) {
+    api_web_contents_->GetZoomController()->SetZoomLevel(level);
+  }
 }
 
 void WebViewGuestDelegate::GuestSizeChangedDueToAutoSize(

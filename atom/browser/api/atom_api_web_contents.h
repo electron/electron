@@ -39,6 +39,7 @@ namespace atom {
 
 struct SetSizeParams;
 class AtomBrowserContext;
+class WebContentsZoomController;
 class WebViewGuestDelegate;
 
 namespace api {
@@ -206,6 +207,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
+  WebContentsZoomController* GetZoomController() { return zoom_controller_; }
+
  protected:
   WebContents(v8::Isolate* isolate,
               content::WebContents* web_contents,
@@ -349,19 +352,17 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
-  // Called after committing a navigation, to set the zoom
-  // factor.
-  void SetZoomFactorIfNeeded(const GURL& url);
-
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
-  std::map<std::string, double> host_zoom_factor_;
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;
+
+  // The zoom controller for this webContents.
+  WebContentsZoomController* zoom_controller_;
 
   // The type of current WebContents.
   Type type_;
@@ -374,9 +375,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether to enable devtools.
   bool enable_devtools_;
-
-  // Initial zoom factor.
-  double zoom_factor_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

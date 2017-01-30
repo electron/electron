@@ -22,6 +22,7 @@
 #include "atom/browser/ui/drag_util.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
+#include "atom/browser/web_contents_zoom_controller.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
@@ -49,7 +50,6 @@
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
-#include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
@@ -68,7 +68,6 @@
 #include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "net/base/url_util.h"
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
@@ -249,13 +248,12 @@ WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents,
                          Type type)
     : content::WebContentsObserver(web_contents),
+      zoom_controller_(nullptr),
       embedder_(nullptr),
       type_(type),
       request_id_(0),
       background_throttling_(true),
-      enable_devtools_(true),
-      zoom_factor_(content::kMinimumZoomFactor) {
-
+      enable_devtools_(true) {
   if (type == REMOTE) {
     web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
     Init(isolate);
@@ -268,17 +266,15 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
 }
 
-WebContents::WebContents(v8::Isolate* isolate,
-                         const mate::Dictionary& options)
-    : embedder_(nullptr),
+WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
+    : zoom_controller_(nullptr),
+      embedder_(nullptr),
       type_(BROWSER_WINDOW),
       request_id_(0),
       background_throttling_(true),
-      enable_devtools_(true),
-      zoom_factor_(content::kMinimumZoomFactor) {
+      enable_devtools_(true) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
-  options.Get("zoomFactor", &zoom_factor_);
 
   // FIXME(zcbenz): We should read "type" parameter for better design, but
   // on Windows we have encountered a compiler bug that if we read "type"
@@ -350,10 +346,16 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
 
-  // Intialize permission helper.
+  // Initialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents);
-  // Intialize security state client.
+  // Initialize security state client.
   SecurityStateTabHelper::CreateForWebContents(web_contents);
+  // Initialize zoom controller.
+  WebContentsZoomController::CreateForWebContents(web_contents);
+  zoom_controller_ = WebContentsZoomController::FromWebContents(web_contents);
+  double zoom_factor;
+  if (options.Get("zoomFactor", &zoom_factor))
+    zoom_controller_->SetDefaultZoomFactor(zoom_factor);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -738,8 +740,6 @@ void WebContents::DidFinishNavigation(
     auto url = navigation_handle->GetURL();
     bool is_in_page = navigation_handle->IsSamePage();
     if (is_main_frame && !is_in_page) {
-      // Set initial zoom factor if needed.
-      SetZoomFactorIfNeeded(url);
       Emit("did-navigate", url);
     } else if (is_in_page) {
       Emit("did-navigate-in-page", url, is_main_frame);
@@ -1506,20 +1506,11 @@ void WebContents::Invalidate() {
 }
 
 void WebContents::SetZoomLevel(double level) {
-  auto factor = content::ZoomLevelToZoomFactor(level);
-  if (!content::ZoomValuesEqual(zoom_factor_, factor)) {
-    content::NavigationEntry* entry =
-        web_contents()->GetController().GetLastCommittedEntry();
-    if (entry) {
-      std::string host = net::GetHostOrSpecFromURL(entry->GetURL());
-      host_zoom_factor_[host] = factor;
-    }
-  }
-  content::HostZoomMap::SetZoomLevel(web_contents(), level);
+  zoom_controller_->SetZoomLevel(level);
 }
 
 double WebContents::GetZoomLevel() {
-  return content::HostZoomMap::GetZoomLevel(web_contents());
+  return zoom_controller_->GetZoomLevel();
 }
 
 void WebContents::SetZoomFactor(double factor) {
@@ -1530,22 +1521,6 @@ void WebContents::SetZoomFactor(double factor) {
 double WebContents::GetZoomFactor() {
   auto level = GetZoomLevel();
   return content::ZoomLevelToZoomFactor(level);
-}
-
-void WebContents::SetZoomFactorIfNeeded(const GURL& url) {
-  if (zoom_factor_ == content::kMinimumZoomFactor)
-    return;
-
-  std::string host = net::GetHostOrSpecFromURL(url);
-  double zoom_factor = zoom_factor_;
-  auto it = host_zoom_factor_.find(host);
-  if (it != host_zoom_factor_.end())
-    zoom_factor = it->second;
-  auto level = content::ZoomFactorToZoomLevel(zoom_factor);
-  if (content::ZoomValuesEqual(level, GetZoomLevel()))
-    return;
-
-  SetZoomLevel(level);
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
