@@ -51,21 +51,13 @@ describe('third-party module', function () {
   describe('global variables', function () {
     describe('process', function () {
       it('can be declared in a module', function () {
-        var exportedProcess
-        assert.doesNotThrow(function () {
-          exportedProcess = require('./fixtures/module/declare-process')
-        })
-        assert.strictEqual(exportedProcess, require('process'))
+        assert.strictEqual(require('./fixtures/module/declare-process'), require('process'))
       })
     })
 
     describe('global', function () {
       it('can be declared in a module', function () {
-        var exportedGlobal
-        assert.doesNotThrow(function () {
-          exportedGlobal = require('./fixtures/module/declare-global')
-        })
-        assert.deepEqual(exportedGlobal, {__global: true})
+        assert.deepEqual(require('./fixtures/module/declare-global'), {__global: true})
       })
     })
   })
