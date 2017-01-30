@@ -1056,8 +1056,8 @@ bool NativeWindowMac::IsClosable() {
   return [window_ styleMask] & NSClosableWindowMask;
 }
 
-void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level, int relativeLevel,
-                                     std::string* error) {
+void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level,
+                                     int relativeLevel, std::string* error) {
   int windowLevel = NSNormalWindowLevel;
   CGWindowLevel maxWindowLevel = CGWindowLevelForKey(kCGMaximumWindowLevelKey);
   CGWindowLevel minWindowLevel = CGWindowLevelForKey(kCGMinimumWindowLevelKey);
