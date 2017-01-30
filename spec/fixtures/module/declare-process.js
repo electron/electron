@@ -1,2 +1,2 @@
-const process = require('process')
+const process = 'declared process'
 module.exports = process
