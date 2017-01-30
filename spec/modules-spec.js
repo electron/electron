@@ -57,7 +57,7 @@ describe('third-party module', function () {
 
     describe('global', function () {
       it('can be declared in a module', function () {
-        assert.deepEqual(require('./fixtures/module/declare-global'), 'declared global')
+        assert.strictEqual(require('./fixtures/module/declare-global'), 'declared global')
       })
     })
   })
