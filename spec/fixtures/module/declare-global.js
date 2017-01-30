@@ -1,2 +1,2 @@
-const global = {__global: true}
+const global = 'declared global'
 module.exports = global
