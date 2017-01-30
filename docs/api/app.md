@@ -813,10 +813,14 @@ const appFolder = path.dirname(process.execPath)
 const updateExe = path.resolve(appFolder, '..', 'Update.exe')
 const exeName = path.basename(process.execPath)
 
-app.setLoginItemSettings({openAtLogin: true}, updateExe, [
-  '--processStart', `"${exeName}"`,
-  '--process-start-args', `"--hidden"`
-])
+app.setLoginItemSettings({
+  openAtLogin: true,
+  path: updateExe,
+  args: [
+    '--processStart', `"${exeName}"`,
+    '--process-start-args', `"--hidden"`
+  ]
+})
 ```
 
 **Note:** This API has no effect on [MAS builds][mas-builds].
