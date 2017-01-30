@@ -22,6 +22,7 @@ WebContentsZoomController::WebContentsZoomController(
     content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents) {
   default_zoom_factor_ = content::kEpsilon;
+  temporary_zoom_level_ = content::kEpsilon;
   host_zoom_map_ = content::HostZoomMap::GetForWebContents(web_contents);
   zoom_subscription_ = host_zoom_map_->AddZoomLevelChangedCallback(base::Bind(
       &WebContentsZoomController::OnZoomLevelChanged, base::Unretained(this)));
@@ -43,6 +44,11 @@ void WebContentsZoomController::SetZoomLevel(double level) {
   if (!web_contents()->GetRenderViewHost()->IsRenderViewLive() ||
       content::ZoomValuesEqual(GetZoomLevel(), level))
     return;
+
+  if (!content::ZoomValuesEqual(GetTemporaryZoomLevel(), content::kEpsilon)) {
+    temporary_zoom_level_ = content::kEpsilon;
+  }
+
   auto new_zoom_factor = content::ZoomLevelToZoomFactor(level);
   content::NavigationEntry* entry =
       web_contents()->GetController().GetLastCommittedEntry();
@@ -54,7 +60,7 @@ void WebContentsZoomController::SetZoomLevel(double level) {
     content::HostZoomMap::SetZoomLevel(web_contents(), level);
     // Notify observers of zoom level changes.
     FOR_EACH_OBSERVER(WebContentsZoomController::Observer, observers_,
-                      OnZoomLevelChanged(web_contents(), level));
+                      OnZoomLevelChanged(web_contents(), level, false));
   }
 }
 
@@ -68,6 +74,34 @@ void WebContentsZoomController::SetDefaultZoomFactor(double factor) {
 
 double WebContentsZoomController::GetDefaultZoomFactor() {
   return default_zoom_factor_;
+}
+
+bool WebContentsZoomController::UsesTemporaryZoomLevel() {
+  return !content::ZoomValuesEqual(temporary_zoom_level_, content::kEpsilon);
+}
+
+double WebContentsZoomController::GetTemporaryZoomLevel() {
+  return temporary_zoom_level_;
+}
+
+void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
+  int render_process_id = web_contents()->GetRenderProcessHost()->GetID();
+  int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
+  host_zoom_map_->SetTemporaryZoomLevel(render_process_id, render_view_id,
+                                        level);
+  temporary_zoom_level_ = level;
+  // Notify observers of zoom level changes.
+  FOR_EACH_OBSERVER(WebContentsZoomController::Observer, observers_,
+                    OnZoomLevelChanged(web_contents(), level, true));
+}
+
+void WebContentsZoomController::DidStartNavigation(
+    content::NavigationHandle* navigation_handle) {
+  if (!navigation_handle->IsInMainFrame() || navigation_handle->IsSamePage())
+    return;
+  int render_process_id = web_contents()->GetRenderProcessHost()->GetID();
+  int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
+  host_zoom_map_->ClearTemporaryZoomLevel(render_process_id, render_view_id);
 }
 
 void WebContentsZoomController::DidFinishNavigation(
@@ -107,6 +141,14 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
     const GURL& url) {
   if (content::ZoomValuesEqual(GetDefaultZoomFactor(), content::kEpsilon))
     return;
+
+  if (!content::ZoomValuesEqual(GetTemporaryZoomLevel(), content::kEpsilon)) {
+    FOR_EACH_OBSERVER(
+        WebContentsZoomController::Observer, observers_,
+        OnZoomLevelChanged(web_contents(), GetTemporaryZoomLevel(), true));
+    temporary_zoom_level_ = content::kEpsilon;
+    return;
+  }
 
   // When kZoomFactor is available, it takes precedence over
   // pref store values but if the host has zoom factor set explicitly

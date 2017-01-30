@@ -41,3 +41,11 @@ IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
 
 // Update renderer process preferences.
 IPC_MESSAGE_CONTROL1(AtomMsg_UpdatePreferences, base::ListValue)
+
+// Sent by renderer to set the temporary zoom level.
+IPC_SYNC_MESSAGE_ROUTED1_1(AtomViewHostMsg_SetTemporaryZoomLevel,
+                           double /* zoom level */,
+                           double /* result */)
+
+// Sent by renderer to get the zoom level.
+IPC_SYNC_MESSAGE_ROUTED0_1(AtomViewHostMsg_GetZoomLevel, double /* result */)

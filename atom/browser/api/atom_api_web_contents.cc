@@ -819,6 +819,10 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_SetTemporaryZoomLevel,
+                                    OnSetTemporaryZoomLevel)
+    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_GetZoomLevel,
+                                    OnGetZoomLevel)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
       handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -1521,6 +1525,19 @@ void WebContents::SetZoomFactor(double factor) {
 double WebContents::GetZoomFactor() {
   auto level = GetZoomLevel();
   return content::ZoomLevelToZoomFactor(level);
+}
+
+void WebContents::OnSetTemporaryZoomLevel(double level,
+                                          IPC::Message* reply_msg) {
+  zoom_controller_->SetTemporaryZoomLevel(level);
+  double new_level = zoom_controller_->GetTemporaryZoomLevel();
+  AtomViewHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg, new_level);
+  Send(reply_msg);
+}
+
+void WebContents::OnGetZoomLevel(IPC::Message* reply_msg) {
+  AtomViewHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
+  Send(reply_msg);
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {

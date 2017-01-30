@@ -5,6 +5,9 @@
 #ifndef ATOM_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 #define ATOM_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 
+#include <map>
+#include <string>
+
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -19,7 +22,8 @@ class WebContentsZoomController
   class Observer {
    public:
     virtual void OnZoomLevelChanged(content::WebContents* web_contents,
-                                    double level) {}
+                                    double level,
+                                    bool is_temporary) {}
 
    protected:
     virtual ~Observer() {}
@@ -36,9 +40,13 @@ class WebContentsZoomController
   double GetZoomLevel();
   void SetDefaultZoomFactor(double factor);
   double GetDefaultZoomFactor();
+  void SetTemporaryZoomLevel(double level);
+  bool UsesTemporaryZoomLevel();
+  double GetTemporaryZoomLevel();
 
  protected:
   // content::WebContentsObserver:
+  void DidStartNavigation(content::NavigationHandle* handle) override;
   void DidFinishNavigation(content::NavigationHandle* handle) override;
   void WebContentsDestroyed() override;
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
@@ -55,6 +63,7 @@ class WebContentsZoomController
 
   // kZoomFactor.
   double default_zoom_factor_;
+  double temporary_zoom_level_;
 
   // Map between zoom factor and hosts in this webContent.
   std::map<std::string, double> host_zoom_factor_;

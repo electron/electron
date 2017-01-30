@@ -112,6 +112,10 @@ void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {
   embedder_zoom_controller_ =
       WebContentsZoomController::FromWebContents(embedder_web_contents_);
   embedder_zoom_controller_->AddObserver(this);
+  if (embedder_zoom_controller_->UsesTemporaryZoomLevel()) {
+    double level = embedder_zoom_controller_->GetTemporaryZoomLevel();
+    api_web_contents_->GetZoomController()->SetTemporaryZoomLevel(level);
+  }
 }
 
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
@@ -141,9 +145,14 @@ void WebViewGuestDelegate::WillAttach(
 
 void WebViewGuestDelegate::OnZoomLevelChanged(
     content::WebContents* web_contents,
-    double level) {
+    double level,
+    bool is_temporary) {
   if (web_contents == GetOwnerWebContents()) {
-    api_web_contents_->GetZoomController()->SetZoomLevel(level);
+    if (is_temporary) {
+      api_web_contents_->GetZoomController()->SetTemporaryZoomLevel(level);
+    } else {
+      api_web_contents_->GetZoomController()->SetZoomLevel(level);
+    }
   }
 }
 

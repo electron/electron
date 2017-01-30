@@ -352,6 +352,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // Called when received a synchronous message from renderer to
+  // set temporary zoom level.
+  void OnSetTemporaryZoomLevel(double level, IPC::Message* reply_msg);
+
+  // Called when received a synchronous message from renderer to
+  // get the zoom level.
+  void OnGetZoomLevel(IPC::Message* reply_msg);
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;

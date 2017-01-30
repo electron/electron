@@ -4,6 +4,7 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
+#include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -72,13 +73,21 @@ void WebFrame::SetName(const std::string& name) {
 }
 
 double WebFrame::SetZoomLevel(double level) {
-  double ret = web_frame_->view()->setZoomLevel(level);
-  mate::EmitEvent(isolate(), GetWrapper(), "zoom-level-changed", ret);
-  return ret;
+  double result;
+  content::RenderView* render_view =
+      content::RenderView::FromWebView(web_frame_->view());
+  render_view->Send(new AtomViewHostMsg_SetTemporaryZoomLevel(
+      render_view->GetRoutingID(), level, &result));
+  return result;
 }
 
 double WebFrame::GetZoomLevel() const {
-  return web_frame_->view()->zoomLevel();
+  double result;
+  content::RenderView* render_view =
+      content::RenderView::FromWebView(web_frame_->view());
+  render_view->Send(
+      new AtomViewHostMsg_GetZoomLevel(render_view->GetRoutingID(), &result));
+  return result;
 }
 
 double WebFrame::SetZoomFactor(double factor) {

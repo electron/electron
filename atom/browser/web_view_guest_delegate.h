@@ -67,7 +67,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   // WebContentsZoomController::Observer:
   void OnZoomLevelChanged(content::WebContents* web_contents,
-                          double level) override;
+                          double level,
+                          bool is_temporary) override;
 
  private:
   // This method is invoked when the contents auto-resized to give the container
