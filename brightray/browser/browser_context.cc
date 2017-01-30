@@ -11,6 +11,7 @@
 #include "browser/network_delegate.h"
 #include "browser/permission_manager.h"
 #include "browser/special_storage_policy.h"
+#include "browser/zoom_level_delegate.h"
 #include "common/application_info.h"
 
 #include "base/files/file_path.h"
@@ -123,6 +124,7 @@ void BrowserContext::InitPrefs() {
 void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
   InspectableWebContentsImpl::RegisterPrefs(registry);
   MediaDeviceIDSalt::RegisterPrefs(registry);
+  ZoomLevelDelegate::RegisterPrefs(registry);
 }
 
 URLRequestContextGetter* BrowserContext::GetRequestContext() {
@@ -166,6 +168,9 @@ base::FilePath BrowserContext::GetPath() const {
 
 std::unique_ptr<content::ZoomLevelDelegate> BrowserContext::CreateZoomLevelDelegate(
     const base::FilePath& partition_path) {
+  if (!IsOffTheRecord()) {
+    return base::MakeUnique<ZoomLevelDelegate>(prefs(), partition_path);
+  }
   return std::unique_ptr<content::ZoomLevelDelegate>();
 }
 
