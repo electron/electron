@@ -39,7 +39,8 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // Prints the current document immediately. Since the rendering is
   // asynchronous, the actual printing will not be completed on the return of
   // this function. Returns false if printing is impossible at the moment.
-  virtual bool PrintNow(bool silent, bool print_background);
+  virtual bool PrintNow(content::RenderFrameHost* rfh,
+                        bool silent, bool print_background);
 #endif  // !DISABLE_BASIC_PRINTING
 
   // PrintedPagesSource implementation.
@@ -49,7 +50,8 @@ class PrintViewManagerBase : public content::NotificationObserver,
   explicit PrintViewManagerBase(content::WebContents* web_contents);
 
   // Helper method for Print*Now().
-  bool PrintNowInternal(IPC::Message* message);
+  bool PrintNowInternal(content::RenderFrameHost* rfh,
+                        std::unique_ptr<IPC::Message> message);
 
   // Terminates or cancels the print job if one was pending.
   virtual void RenderProcessGone(base::TerminationStatus status) override;
