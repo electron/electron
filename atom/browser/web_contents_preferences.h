@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 #define ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
+#include <string>
 #include <vector>
 
 #include "base/values.h"
@@ -37,6 +38,9 @@ class WebContentsPreferences
       content::WebContents* web_contents, base::CommandLine* command_line);
 
   static bool IsSandboxed(content::WebContents* web_contents);
+
+  static bool ConvertValueToIntegerFromString(
+      WebContentsPreferences* pref, std::string attributeName, int* intValue);
 
   // Modify the WebPreferences according to |web_contents|'s preferences.
   static void OverrideWebkitPrefs(

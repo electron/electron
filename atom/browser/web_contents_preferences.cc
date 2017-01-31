@@ -5,6 +5,7 @@
 #include "atom/browser/web_contents_preferences.h"
 
 #include <algorithm>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -216,6 +217,25 @@ bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
 }
 
 // static
+bool WebContentsPreferences::ConvertValueToIntegerFromString(
+    WebContentsPreferences* pref, std::string attributeName, int* intValue) {
+
+  // if it is already an integer, no conversion needed
+  if (pref->web_preferences_.GetInteger(attributeName, intValue)) {
+    return true;
+  }
+
+  std::string stringValue;
+
+  if (pref->web_preferences_.GetString(attributeName, &stringValue)) {
+    std::stringstream(stringValue) >> *intValue;
+    return true;
+  }
+
+  return false;
+}
+
+// static
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebContents* web_contents, content::WebPreferences* prefs) {
   WebContentsPreferences* self = FromWebContents(web_contents);
@@ -254,11 +274,11 @@ void WebContentsPreferences::OverrideWebkitPrefs(
       prefs->fantasy_font_family_map[content::kCommonScript] = font;
   }
   int size;
-  if (self->web_preferences_.GetInteger("defaultFontSize", &size))
+  if (ConvertValueToIntegerFromString(self, "defaultFontSize", &size))
     prefs->default_font_size = size;
-  if (self->web_preferences_.GetInteger("defaultMonospaceFontSize", &size))
+  if (ConvertValueToIntegerFromString(self, "defaultMonospaceFontSize", &size))
     prefs->default_fixed_font_size = size;
-  if (self->web_preferences_.GetInteger("minimumFontSize", &size))
+  if (ConvertValueToIntegerFromString(self, "minimumFontSize", &size))
     prefs->minimum_font_size = size;
   std::string encoding;
   if (self->web_preferences_.GetString("defaultEncoding", &encoding))
