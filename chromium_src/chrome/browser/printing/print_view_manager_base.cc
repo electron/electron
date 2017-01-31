@@ -160,13 +160,18 @@ void PrintViewManagerBase::OnDidPrintPage(
   ShouldQuitFromInnerMessageLoop();
 #else
   if (metafile_must_be_valid) {
+    bool print_text_with_gdi =
+        document->settings().print_text_with_gdi() &&
+        !document->settings().printer_is_xps();
+
     scoped_refptr<base::RefCountedBytes> bytes = new base::RefCountedBytes(
         reinterpret_cast<const unsigned char*>(shared_buf.memory()),
         params.data_size);
 
     document->DebugDumpData(bytes.get(), FILE_PATH_LITERAL(".pdf"));
     print_job_->StartPdfToEmfConversion(
-        bytes, params.page_size, params.content_area);
+        bytes, params.page_size, params.content_area,
+        print_text_with_gdi);
   }
 #endif  // !OS_WIN
 }

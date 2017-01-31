@@ -315,9 +315,10 @@ IPC_MESSAGE_ROUTED2(PrintHostMsg_PrintPreviewFailed,
 // Tell the utility process to start rendering the given PDF into a metafile.
 // Utility process would be alive until
 // ChromeUtilityMsg_RenderPDFPagesToMetafiles_Stop message.
-IPC_MESSAGE_CONTROL2(ChromeUtilityMsg_RenderPDFPagesToMetafiles,
-                     IPC::PlatformFileForTransit, /* input_file */
-                     printing::PdfRenderSettings /* settings */)
+IPC_MESSAGE_CONTROL3(ChromeUtilityMsg_RenderPDFPagesToMetafiles,
+                     IPC::PlatformFileForTransit /* input_file */,
+                     printing::PdfRenderSettings /* settings */,
+                     bool /* print_text_with_gdi */)
 
 // Requests conversion of the next page.
 IPC_MESSAGE_CONTROL2(ChromeUtilityMsg_RenderPDFPagesToMetafiles_GetPage,
@@ -336,4 +337,12 @@ IPC_MESSAGE_CONTROL1(ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageCount,
 IPC_MESSAGE_CONTROL2(ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageDone,
                      bool /* success */,
                      float /* scale_factor */)
+
+// Request that the given font characters be loaded by the browser so it's
+// cached by the OS. Please see
+// PdfToEmfUtilityProcessHostClient::OnPreCacheFontCharacters for details.
+IPC_SYNC_MESSAGE_CONTROL2_0(ChromeUtilityHostMsg_PreCacheFontCharacters,
+                            LOGFONT /* font_data */,
+                            base::string16 /* characters */)
+
 #endif
