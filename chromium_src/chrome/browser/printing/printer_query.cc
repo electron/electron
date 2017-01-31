@@ -4,6 +4,9 @@
 
 #include "chrome/browser/printing/printer_query.h"
 
+#include <memory>
+#include <utility>
+
 #include "base/bind.h"
 #include "base/bind_helpers.h"
 #include "base/message_loop/message_loop.h"
@@ -13,8 +16,8 @@
 
 namespace printing {
 
-PrinterQuery::PrinterQuery(int render_process_id, int render_view_id)
-    : worker_(new PrintJobWorker(render_process_id, render_view_id, this)),
+PrinterQuery::PrinterQuery(int render_process_id, int render_frame_id)
+    : worker_(new PrintJobWorker(render_process_id, render_frame_id, this)),
       is_print_dialog_box_shown_(false),
       cookie_(PrintSettings::NewCookie()),
       last_status_(PrintingContext::FAILED) {
@@ -25,7 +28,7 @@ PrinterQuery::~PrinterQuery() {
   // The job should be finished (or at least canceled) when it is destroyed.
   DCHECK(!is_print_dialog_box_shown_);
   // If this fires, it is that this pending printer context has leaked.
-  DCHECK(!worker_.get());
+  DCHECK(!worker_);
 }
 
 void PrinterQuery::GetSettingsDone(const PrintSettings& new_settings,
@@ -47,12 +50,13 @@ void PrinterQuery::GetSettingsDone(const PrintSettings& new_settings,
   }
 }
 
-PrintJobWorker* PrinterQuery::DetachWorker(PrintJobWorkerOwner* new_owner) {
+std::unique_ptr<PrintJobWorker> PrinterQuery::DetachWorker(
+    PrintJobWorkerOwner* new_owner) {
   DCHECK(callback_.is_null());
-  DCHECK(worker_.get());
+  DCHECK(worker_);
 
   worker_->SetNewOwner(new_owner);
-  return worker_.release();
+  return std::move(worker_);
 }
 
 const PrintSettings& PrinterQuery::settings() const {
@@ -63,30 +67,31 @@ int PrinterQuery::cookie() const {
   return cookie_;
 }
 
-void PrinterQuery::GetSettings(
-    GetSettingsAskParam ask_user_for_settings,
-    int expected_page_count,
-    bool has_selection,
-    MarginType margin_type,
-    const base::Closure& callback) {
+void PrinterQuery::GetSettings(GetSettingsAskParam ask_user_for_settings,
+                               int expected_page_count,
+                               bool has_selection,
+                               MarginType margin_type,
+                               bool is_scripted,
+                               bool is_modifiable,
+                               const base::Closure& callback) {
   DCHECK(RunsTasksOnCurrentThread());
-  DCHECK(!is_print_dialog_box_shown_);
+  DCHECK(!is_print_dialog_box_shown_ || !is_scripted);
 
   StartWorker(callback);
 
   // Real work is done in PrintJobWorker::GetSettings().
-  is_print_dialog_box_shown_ = ask_user_for_settings == ASK_USER;
-  worker_->PostTask(FROM_HERE,
-                    base::Bind(&PrintJobWorker::GetSettings,
-                               base::Unretained(worker_.get()),
-                               is_print_dialog_box_shown_,
-                               expected_page_count,
-                               has_selection,
-                               margin_type));
+  is_print_dialog_box_shown_ =
+      ask_user_for_settings == GetSettingsAskParam::ASK_USER;
+  worker_->PostTask(
+      FROM_HERE,
+      base::Bind(&PrintJobWorker::GetSettings, base::Unretained(worker_.get()),
+                 is_print_dialog_box_shown_, expected_page_count, has_selection,
+                 margin_type, is_scripted, is_modifiable));
 }
 
-void PrinterQuery::SetSettings(std::unique_ptr<base::DictionaryValue> new_settings,
-                               const base::Closure& callback) {
+void PrinterQuery::SetSettings(
+    std::unique_ptr<base::DictionaryValue> new_settings,
+    const base::Closure& callback) {
   StartWorker(callback);
 
   worker_->PostTask(FROM_HERE,
@@ -97,7 +102,7 @@ void PrinterQuery::SetSettings(std::unique_ptr<base::DictionaryValue> new_settin
 
 void PrinterQuery::StartWorker(const base::Closure& callback) {
   DCHECK(callback_.is_null());
-  DCHECK(worker_.get());
+  DCHECK(worker_);
 
   // Lazily create the worker thread. There is one worker thread per print job.
   if (!worker_->IsRunning())
@@ -107,7 +112,7 @@ void PrinterQuery::StartWorker(const base::Closure& callback) {
 }
 
 void PrinterQuery::StopWorker() {
-  if (worker_.get()) {
+  if (worker_) {
     // http://crbug.com/66082: We're blocking on the PrinterQuery's worker
     // thread.  It's not clear to me if this may result in blocking the current
     // thread for an unacceptable time.  We should probably fix it.
@@ -122,7 +127,7 @@ bool PrinterQuery::is_callback_pending() const {
 }
 
 bool PrinterQuery::is_valid() const {
-  return worker_.get() != NULL;
+  return !!worker_;
 }
 
 }  // namespace printing

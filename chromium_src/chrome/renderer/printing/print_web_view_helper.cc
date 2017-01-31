@@ -1087,15 +1087,15 @@ bool PrintWebViewHelper::UpdatePrintSettings(
 
   SetPrintPagesParams(settings);
 
-  if (!PrintMsg_Print_Params_IsValid(settings.params)) {
-    if (!print_for_preview_)
-      print_preview_context_.set_error(PREVIEW_ERROR_INVALID_PRINTER_SETTINGS);
-    return false;
-  }
+  if (PrintMsg_Print_Params_IsValid(settings.params))
+    return true;
 
-  return true;
+  if (print_for_preview_)
+    Send(new PrintHostMsg_ShowInvalidPrinterSettingsError(routing_id()));
+  else
+    print_preview_context_.set_error(PREVIEW_ERROR_INVALID_PRINTER_SETTINGS);
+  return false;
 }
-
 
 bool PrintWebViewHelper::GetPrintSettingsFromUser(blink::WebLocalFrame* frame,
                                                   const blink::WebNode& node,
@@ -1170,6 +1170,8 @@ bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
 void PrintWebViewHelper::SetPrintPagesParams(
     const PrintMsg_PrintPages_Params& settings) {
   print_pages_params_.reset(new PrintMsg_PrintPages_Params(settings));
+  Send(new PrintHostMsg_DidGetDocumentCookie(routing_id(),
+                                             settings.params.document_cookie));
 }
 
 bool PrintWebViewHelper::PreviewPageRendered(int page_number,

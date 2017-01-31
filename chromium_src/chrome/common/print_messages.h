@@ -40,15 +40,18 @@ struct PrintMsg_Print_Params {
   int margin_top;
   int margin_left;
   double dpi;
-  double min_shrink;
-  double max_shrink;
+  double scale_factor;
   int desired_dpi;
+  bool rasterize_pdf;
   int document_cookie;
   bool selection_only;
   bool supports_alpha_blend;
+  int32_t preview_ui_id;
   int preview_request_id;
+  bool is_first_request;
   blink::WebPrintScalingOption print_scaling_option;
   bool print_to_pdf;
+  bool display_header_footer;
   base::string16 title;
   base::string16 url;
   bool should_print_backgrounds;
@@ -95,11 +98,8 @@ IPC_STRUCT_TRAITS_BEGIN(PrintMsg_Print_Params)
   // Specifies dots per inch.
   IPC_STRUCT_TRAITS_MEMBER(dpi)
 
-  // Minimum shrink factor. See PrintSettings::min_shrink for more information.
-  IPC_STRUCT_TRAITS_MEMBER(min_shrink)
-
-  // Maximum shrink factor. See PrintSettings::max_shrink for more information.
-  IPC_STRUCT_TRAITS_MEMBER(max_shrink)
+  // Specifies the scale factor in percent
+  IPC_STRUCT_TRAITS_MEMBER(scale_factor)
 
   // Desired apparent dpi on paper.
   IPC_STRUCT_TRAITS_MEMBER(desired_dpi)
@@ -113,8 +113,25 @@ IPC_STRUCT_TRAITS_BEGIN(PrintMsg_Print_Params)
   // Does the printer support alpha blending?
   IPC_STRUCT_TRAITS_MEMBER(supports_alpha_blend)
 
+  // *** Parameters below are used only for print preview. ***
+
+  // The print preview ui associated with this request.
+  IPC_STRUCT_TRAITS_MEMBER(preview_ui_id)
+
+  // The id of the preview request.
+  IPC_STRUCT_TRAITS_MEMBER(preview_request_id)
+
+  // True if this is the first preview request.
+  IPC_STRUCT_TRAITS_MEMBER(is_first_request)
+
   // Specifies the page scaling option for preview printing.
   IPC_STRUCT_TRAITS_MEMBER(print_scaling_option)
+
+  // True if print to pdf is requested.
+  IPC_STRUCT_TRAITS_MEMBER(print_to_pdf)
+
+  // Specifies if the header and footer should be rendered.
+  IPC_STRUCT_TRAITS_MEMBER(display_header_footer)
 
   // Title string to be printed as header if requested by the user.
   IPC_STRUCT_TRAITS_MEMBER(title)
