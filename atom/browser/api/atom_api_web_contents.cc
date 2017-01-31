@@ -1530,7 +1530,7 @@ double WebContents::GetZoomFactor() {
 void WebContents::OnSetTemporaryZoomLevel(double level,
                                           IPC::Message* reply_msg) {
   zoom_controller_->SetTemporaryZoomLevel(level);
-  double new_level = zoom_controller_->GetTemporaryZoomLevel();
+  double new_level = zoom_controller_->GetZoomLevel();
   AtomViewHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg, new_level);
   Send(reply_msg);
 }

@@ -7,6 +7,7 @@
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
@@ -20,15 +21,19 @@ namespace atom {
 
 WebContentsZoomController::WebContentsZoomController(
     content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents) {
+    : old_process_id_(-1),
+      old_view_id_(-1),
+      embedder_zoom_controller_(nullptr),
+      content::WebContentsObserver(web_contents) {
   default_zoom_factor_ = content::kEpsilon;
-  temporary_zoom_level_ = content::kEpsilon;
   host_zoom_map_ = content::HostZoomMap::GetForWebContents(web_contents);
   zoom_subscription_ = host_zoom_map_->AddZoomLevelChangedCallback(base::Bind(
       &WebContentsZoomController::OnZoomLevelChanged, base::Unretained(this)));
 }
 
-WebContentsZoomController::~WebContentsZoomController() {}
+WebContentsZoomController::~WebContentsZoomController() {
+  embedder_zoom_controller_ = nullptr;
+}
 
 void WebContentsZoomController::AddObserver(
     WebContentsZoomController::Observer* observer) {
@@ -40,13 +45,21 @@ void WebContentsZoomController::RemoveObserver(
   observers_.RemoveObserver(observer);
 }
 
+void WebContentsZoomController::SetEmbedderZoomController(
+    WebContentsZoomController* controller) {
+  embedder_zoom_controller_ = controller;
+}
+
 void WebContentsZoomController::SetZoomLevel(double level) {
   if (!web_contents()->GetRenderViewHost()->IsRenderViewLive() ||
       content::ZoomValuesEqual(GetZoomLevel(), level))
     return;
 
-  if (!content::ZoomValuesEqual(GetTemporaryZoomLevel(), content::kEpsilon)) {
-    temporary_zoom_level_ = content::kEpsilon;
+  int render_process_id = web_contents()->GetRenderProcessHost()->GetID();
+  int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
+  if (host_zoom_map_->UsesTemporaryZoomLevel(render_process_id,
+                                             render_view_id)) {
+    host_zoom_map_->ClearTemporaryZoomLevel(render_process_id, render_view_id);
   }
 
   auto new_zoom_factor = content::ZoomLevelToZoomFactor(level);
@@ -76,32 +89,20 @@ double WebContentsZoomController::GetDefaultZoomFactor() {
   return default_zoom_factor_;
 }
 
-bool WebContentsZoomController::UsesTemporaryZoomLevel() {
-  return !content::ZoomValuesEqual(temporary_zoom_level_, content::kEpsilon);
-}
-
-double WebContentsZoomController::GetTemporaryZoomLevel() {
-  return temporary_zoom_level_;
-}
-
 void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
-  int render_process_id = web_contents()->GetRenderProcessHost()->GetID();
-  int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
-  host_zoom_map_->SetTemporaryZoomLevel(render_process_id, render_view_id,
-                                        level);
-  temporary_zoom_level_ = level;
+  old_process_id_ = web_contents()->GetRenderProcessHost()->GetID();
+  old_view_id_ = web_contents()->GetRenderViewHost()->GetRoutingID();
+  host_zoom_map_->SetTemporaryZoomLevel(old_process_id_, old_view_id_, level);
   // Notify observers of zoom level changes.
   FOR_EACH_OBSERVER(WebContentsZoomController::Observer, observers_,
                     OnZoomLevelChanged(web_contents(), level, true));
 }
 
-void WebContentsZoomController::DidStartNavigation(
-    content::NavigationHandle* navigation_handle) {
-  if (!navigation_handle->IsInMainFrame() || navigation_handle->IsSamePage())
-    return;
+bool WebContentsZoomController::UsesTemporaryZoomLevel() {
   int render_process_id = web_contents()->GetRenderProcessHost()->GetID();
   int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
-  host_zoom_map_->ClearTemporaryZoomLevel(render_process_id, render_view_id);
+  return host_zoom_map_->UsesTemporaryZoomLevel(render_process_id,
+                                                render_view_id);
 }
 
 void WebContentsZoomController::DidFinishNavigation(
@@ -142,11 +143,14 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
   if (content::ZoomValuesEqual(GetDefaultZoomFactor(), content::kEpsilon))
     return;
 
-  if (!content::ZoomValuesEqual(GetTemporaryZoomLevel(), content::kEpsilon)) {
-    FOR_EACH_OBSERVER(
-        WebContentsZoomController::Observer, observers_,
-        OnZoomLevelChanged(web_contents(), GetTemporaryZoomLevel(), true));
-    temporary_zoom_level_ = content::kEpsilon;
+  if (host_zoom_map_->UsesTemporaryZoomLevel(old_process_id_, old_view_id_)) {
+    host_zoom_map_->ClearTemporaryZoomLevel(old_process_id_, old_view_id_);
+  }
+
+  if (embedder_zoom_controller_ &&
+      embedder_zoom_controller_->UsesTemporaryZoomLevel()) {
+    double level = embedder_zoom_controller_->GetZoomLevel();
+    SetTemporaryZoomLevel(level);
     return;
   }
 

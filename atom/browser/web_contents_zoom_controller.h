@@ -35,6 +35,8 @@ class WebContentsZoomController
   void AddObserver(Observer* observer);
   void RemoveObserver(Observer* observer);
 
+  void SetEmbedderZoomController(WebContentsZoomController* controller);
+
   // Methods for managing zoom levels.
   void SetZoomLevel(double level);
   double GetZoomLevel();
@@ -42,11 +44,9 @@ class WebContentsZoomController
   double GetDefaultZoomFactor();
   void SetTemporaryZoomLevel(double level);
   bool UsesTemporaryZoomLevel();
-  double GetTemporaryZoomLevel();
 
  protected:
   // content::WebContentsObserver:
-  void DidStartNavigation(content::NavigationHandle* handle) override;
   void DidFinishNavigation(content::NavigationHandle* handle) override;
   void WebContentsDestroyed() override;
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
@@ -64,6 +64,11 @@ class WebContentsZoomController
   // kZoomFactor.
   double default_zoom_factor_;
   double temporary_zoom_level_;
+
+  int old_process_id_;
+  int old_view_id_;
+
+  WebContentsZoomController* embedder_zoom_controller_;
 
   // Map between zoom factor and hosts in this webContent.
   std::map<std::string, double> host_zoom_factor_;

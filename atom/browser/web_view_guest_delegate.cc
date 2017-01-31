@@ -111,11 +111,9 @@ void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {
   api_web_contents_->Emit("did-attach");
   embedder_zoom_controller_ =
       WebContentsZoomController::FromWebContents(embedder_web_contents_);
+  auto zoom_controller = api_web_contents_->GetZoomController();
   embedder_zoom_controller_->AddObserver(this);
-  if (embedder_zoom_controller_->UsesTemporaryZoomLevel()) {
-    double level = embedder_zoom_controller_->GetTemporaryZoomLevel();
-    api_web_contents_->GetZoomController()->SetTemporaryZoomLevel(level);
-  }
+  zoom_controller->SetEmbedderZoomController(embedder_zoom_controller_);
 }
 
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
@@ -153,6 +151,9 @@ void WebViewGuestDelegate::OnZoomLevelChanged(
     } else {
       api_web_contents_->GetZoomController()->SetZoomLevel(level);
     }
+    // Change the default zoom factor to match the embedders' new zoom level.
+    double zoom_factor = content::ZoomLevelToZoomFactor(level);
+    api_web_contents_->GetZoomController()->SetDefaultZoomFactor(zoom_factor);
   }
 }
 
