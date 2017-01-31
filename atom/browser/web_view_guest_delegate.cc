@@ -23,11 +23,11 @@ const int kDefaultHeight = 300;
 }  // namespace
 
 WebViewGuestDelegate::WebViewGuestDelegate()
-    : guest_host_(nullptr),
+    : embedder_zoom_controller_(nullptr),
+      guest_host_(nullptr),
       auto_size_enabled_(false),
       is_full_page_plugin_(false),
-      api_web_contents_(nullptr) {
-}
+      api_web_contents_(nullptr) {}
 
 WebViewGuestDelegate::~WebViewGuestDelegate() {
 }
@@ -39,9 +39,11 @@ void WebViewGuestDelegate::Initialize(api::WebContents* api_web_contents) {
 
 void WebViewGuestDelegate::Destroy() {
   // Give the content module an opportunity to perform some cleanup.
-  embedder_zoom_controller_->RemoveObserver(this);
+  if (embedder_zoom_controller_) {
+    embedder_zoom_controller_->RemoveObserver(this);
+    embedder_zoom_controller_ = nullptr;
+  }
   guest_host_->WillDestroy();
-  embedder_zoom_controller_ = nullptr;
   guest_host_ = nullptr;
 }
 

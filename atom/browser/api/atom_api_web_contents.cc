@@ -248,8 +248,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents,
                          Type type)
     : content::WebContentsObserver(web_contents),
-      zoom_controller_(nullptr),
       embedder_(nullptr),
+      zoom_controller_(nullptr),
       type_(type),
       request_id_(0),
       background_throttling_(true),
@@ -267,8 +267,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 }
 
 WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
-    : zoom_controller_(nullptr),
-      embedder_(nullptr),
+    : embedder_(nullptr),
+      zoom_controller_(nullptr),
       type_(BROWSER_WINDOW),
       request_id_(0),
       background_throttling_(true),
@@ -354,7 +354,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   WebContentsZoomController::CreateForWebContents(web_contents);
   zoom_controller_ = WebContentsZoomController::FromWebContents(web_contents);
   double zoom_factor;
-  if (options.Get("zoomFactor", &zoom_factor))
+  if (options.Get(options::kZoomFactor, &zoom_factor))
     zoom_controller_->SetDefaultZoomFactor(zoom_factor);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());

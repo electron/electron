@@ -8,6 +8,7 @@
 #include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
 #include "content/public/browser/browser_context.h"
 #include "native_mate/dictionary.h"
 
@@ -26,7 +27,7 @@ void AddGuest(int guest_instance_id,
                       guest_web_contents);
 
   double zoom_factor;
-  if (options.GetDouble("zoomFactor", &zoom_factor)) {
+  if (options.GetDouble(atom::options::kZoomFactor, &zoom_factor)) {
     atom::WebContentsZoomController::FromWebContents(guest_web_contents)
         ->SetDefaultZoomFactor(zoom_factor);
   }

@@ -7,7 +7,6 @@
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
-#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
@@ -31,9 +30,7 @@ WebContentsZoomController::WebContentsZoomController(
       &WebContentsZoomController::OnZoomLevelChanged, base::Unretained(this)));
 }
 
-WebContentsZoomController::~WebContentsZoomController() {
-  embedder_zoom_controller_ = nullptr;
-}
+WebContentsZoomController::~WebContentsZoomController() {}
 
 void WebContentsZoomController::AddObserver(
     WebContentsZoomController::Observer* observer) {
@@ -72,8 +69,8 @@ void WebContentsZoomController::SetZoomLevel(double level) {
       host_zoom_factor_[host] = new_zoom_factor;
     content::HostZoomMap::SetZoomLevel(web_contents(), level);
     // Notify observers of zoom level changes.
-    FOR_EACH_OBSERVER(WebContentsZoomController::Observer, observers_,
-                      OnZoomLevelChanged(web_contents(), level, false));
+    for (Observer& observer : observers_)
+      observer.OnZoomLevelChanged(web_contents(), level, false);
   }
 }
 
@@ -94,8 +91,8 @@ void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
   old_view_id_ = web_contents()->GetRenderViewHost()->GetRoutingID();
   host_zoom_map_->SetTemporaryZoomLevel(old_process_id_, old_view_id_, level);
   // Notify observers of zoom level changes.
-  FOR_EACH_OBSERVER(WebContentsZoomController::Observer, observers_,
-                    OnZoomLevelChanged(web_contents(), level, true));
+  for (Observer& observer : observers_)
+    observer.OnZoomLevelChanged(web_contents(), level, true);
 }
 
 bool WebContentsZoomController::UsesTemporaryZoomLevel() {
@@ -122,6 +119,7 @@ void WebContentsZoomController::DidFinishNavigation(
 void WebContentsZoomController::WebContentsDestroyed() {
   observers_.Clear();
   host_zoom_factor_.clear();
+  embedder_zoom_controller_ = nullptr;
 }
 
 void WebContentsZoomController::RenderFrameHostChanged(

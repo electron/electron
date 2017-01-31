@@ -73,7 +73,7 @@ void WebFrame::SetName(const std::string& name) {
 }
 
 double WebFrame::SetZoomLevel(double level) {
-  double result;
+  double result = 0.0;
   content::RenderView* render_view =
       content::RenderView::FromWebView(web_frame_->view());
   render_view->Send(new AtomViewHostMsg_SetTemporaryZoomLevel(
@@ -82,7 +82,7 @@ double WebFrame::SetZoomLevel(double level) {
 }
 
 double WebFrame::GetZoomLevel() const {
-  double result;
+  double result = 0.0;
   content::RenderView* render_view =
       content::RenderView::FromWebView(web_frame_->view());
   render_view->Send(
