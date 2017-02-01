@@ -94,6 +94,10 @@ shown.
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
+  * `message` (optional) _macOS_
+  * `nameFieldLabel` String (optional) _macOS_ - Custom label for the string displayed
+    in front of the filename text field.
+  * `showsTagField` Boolean (optional) _macOS_
 * `callback` Function (optional)
   * `filename` String
 
