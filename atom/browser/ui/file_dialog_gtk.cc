@@ -236,6 +236,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
+                    const std::string& message,
                     std::vector<base::FilePath>* paths) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   if (properties & FILE_DIALOG_OPEN_DIRECTORY)
@@ -260,6 +261,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
+                    const std::string& message,
                     const OpenDialogCallback& callback) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
   if (properties & FILE_DIALOG_OPEN_DIRECTORY)

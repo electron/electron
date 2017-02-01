@@ -43,6 +43,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
+                    const std::string& message,
                     std::vector<base::FilePath>* paths);
 
 void ShowOpenDialog(atom::NativeWindow* parent_window,
@@ -51,6 +52,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
+                    const std::string& message,
                     const OpenDialogCallback& callback);
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,

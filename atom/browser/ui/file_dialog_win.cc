@@ -198,6 +198,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
+                    const std::string& message,
                     std::vector<base::FilePath>* paths) {
   int options = FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST;
   if (properties & FILE_DIALOG_OPEN_DIRECTORY)
@@ -250,6 +251,7 @@ void ShowOpenDialog(atom::NativeWindow* parent,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
+                    const std::string& message,
                     const OpenDialogCallback& callback) {
   RunState run_state;
   if (!CreateDialogThread(&run_state)) {

@@ -125,6 +125,7 @@ void WebDialogHelper::RunFileChooser(
                                     default_file_path,
                                     filters,
                                     flags,
+                                    "",
                                     &paths)) {
       for (auto& path : paths) {
         content::FileChooserFileInfo info;

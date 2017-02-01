@@ -71,6 +71,7 @@ void ShowOpenDialog(const std::string& title,
                     const base::FilePath& default_path,
                     const file_dialog::Filters& filters,
                     int properties,
+                    const std::string& message,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Local<v8::Value> peek = args->PeekNext();
@@ -79,11 +80,11 @@ void ShowOpenDialog(const std::string& title,
                                                                peek,
                                                                &callback)) {
     file_dialog::ShowOpenDialog(window, title, button_label, default_path,
-                                filters, properties, callback);
+                                filters, properties, message, callback);
   } else {
     std::vector<base::FilePath> paths;
     if (file_dialog::ShowOpenDialog(window, title, button_label, default_path,
-                                    filters, properties, &paths))
+                                    filters, properties, message, &paths))
       args->Return(paths);
   }
 }

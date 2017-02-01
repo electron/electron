@@ -134,12 +134,14 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
+                    const std::string& message,
                     std::vector<base::FilePath>* paths) {
   DCHECK(paths);
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
-// TODO yamgent: Fix this
-  SetupDialog(dialog, title, button_label, default_path, filters, "", "", false);
+  SetupDialog(dialog, title, button_label, default_path, filters, message,
+          // NSOpenPanel does not support name_field_label and shows_tag_field
+          "", false);
   SetupDialogForProperties(dialog, properties);
 
   int chosen = RunModalDialog(dialog, parent_window);
@@ -156,11 +158,13 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
+                    const std::string& message,
                     const OpenDialogCallback& c) {
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
-// TODO yamgent: Fix this
-  SetupDialog(dialog, title, button_label, default_path, filters, "", "", false);
+  SetupDialog(dialog, title, button_label, default_path, filters, message,
+          // NSOpenPanel does not support name_field_label and shows_tag_field
+          "", false);
   SetupDialogForProperties(dialog, properties);
 
   // Duplicate the callback object here since c is a reference and gcd would
