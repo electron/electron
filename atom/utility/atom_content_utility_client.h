@@ -21,8 +21,10 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   ~AtomContentUtilityClient() override;
 
  private:
+#if defined(OS_WIN)
   typedef ScopedVector<UtilityMessageHandler> Handlers;
   Handlers handlers_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(AtomContentUtilityClient);
 };
