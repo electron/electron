@@ -51,6 +51,7 @@ The `dialog` module has the following methods:
     untouched on Windows. For example, a button label of `Vie&w` will be
     converted to `Vie_w` on Linux and `View` on macOS and can be selected
     via `Alt-W` on Windows and Linux.
+    * `message` (optional) _macOS_
 * `callback` Function (optional)
   * `filePaths` String[] - An array of file paths chosen by the user
 
