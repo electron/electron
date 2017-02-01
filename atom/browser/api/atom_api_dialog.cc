@@ -92,6 +92,9 @@ void ShowSaveDialog(const std::string& title,
                     const std::string& button_label,
                     const base::FilePath& default_path,
                     const file_dialog::Filters& filters,
+                    const std::string& message,
+                    const std::string& name_field_label,
+                    const bool& shows_tag_field,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Local<v8::Value> peek = args->PeekNext();
@@ -100,11 +103,13 @@ void ShowSaveDialog(const std::string& title,
                                                                peek,
                                                                &callback)) {
     file_dialog::ShowSaveDialog(window, title, button_label, default_path,
-                                filters, callback);
+                                filters, message, name_field_label,
+                                shows_tag_field, callback);
   } else {
     base::FilePath path;
     if (file_dialog::ShowSaveDialog(window, title, button_label, default_path,
-                                    filters, &path))
+                                    filters, message, name_field_label,
+                                    shows_tag_field, &path))
       args->Return(path);
   }
 }

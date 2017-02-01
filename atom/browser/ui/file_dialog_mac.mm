@@ -47,12 +47,23 @@ void SetupDialog(NSSavePanel* dialog,
                  const std::string& title,
                  const std::string& button_label,
                  const base::FilePath& default_path,
-                 const Filters& filters) {
+                 const Filters& filters,
+                 const std::string& message,
+                 const std::string& name_field_label,
+                 const bool& shows_tag_field) {
   if (!title.empty())
     [dialog setTitle:base::SysUTF8ToNSString(title)];
 
   if (!button_label.empty())
     [dialog setPrompt:base::SysUTF8ToNSString(button_label)];
+
+  if (!message.empty())
+    [dialog setMessage:base::SysUTF8ToNSString(message)];
+
+  if (!name_field_label.empty())
+    [dialog setNameFieldLabel:base::SysUTF8ToNSString(name_field_label)];
+
+  [dialog setShowsTagField:shows_tag_field];
 
   NSString* default_dir = nil;
   NSString* default_filename = nil;
@@ -127,7 +138,8 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   DCHECK(paths);
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
-  SetupDialog(dialog, title, button_label, default_path, filters);
+// TODO yamgent: Fix this
+  SetupDialog(dialog, title, button_label, default_path, filters, "", "", false);
   SetupDialogForProperties(dialog, properties);
 
   int chosen = RunModalDialog(dialog, parent_window);
@@ -147,7 +159,8 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const OpenDialogCallback& c) {
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
-  SetupDialog(dialog, title, button_label, default_path, filters);
+// TODO yamgent: Fix this
+  SetupDialog(dialog, title, button_label, default_path, filters, "", "", false);
   SetupDialogForProperties(dialog, properties);
 
   // Duplicate the callback object here since c is a reference and gcd would
@@ -172,11 +185,15 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
+                    const std::string& message,
+                    const std::string& name_field_label,
+                    const bool& shows_tag_field,
                     base::FilePath* path) {
   DCHECK(path);
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
-  SetupDialog(dialog, title, button_label, default_path, filters);
+  SetupDialog(dialog, title, button_label, default_path, filters, message,
+                name_field_label, shows_tag_field);
 
   int chosen = RunModalDialog(dialog, parent_window);
   if (chosen == NSFileHandlingPanelCancelButton || ![[dialog URL] isFileURL])
@@ -191,10 +208,14 @@ void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
+                    const std::string& message,
+                    const std::string& name_field_label,
+                    const bool& shows_tag_field,
                     const SaveDialogCallback& c) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
-  SetupDialog(dialog, title, button_label, default_path, filters);
+  SetupDialog(dialog, title, button_label, default_path, filters, message,
+                name_field_label, shows_tag_field);
   [dialog setCanSelectHiddenExtension:YES];
 
   __block SaveDialogCallback callback = c;

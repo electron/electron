@@ -90,6 +90,9 @@ void WebDialogHelper::RunFileChooser(
                                     "",
                                     params.default_file_name,
                                     filters,
+                                    "",
+                                    "",
+                                    false,
                                     &path)) {
       content::FileChooserFileInfo info;
       info.file_path = path;

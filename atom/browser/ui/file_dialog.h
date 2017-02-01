@@ -58,6 +58,9 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
+                    const std::string& message,
+                    const std::string& name_field_label,
+                    const bool& shows_tag_field,
                     base::FilePath* path);
 
 void ShowSaveDialog(atom::NativeWindow* parent_window,
@@ -65,6 +68,9 @@ void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& button_label,
                     const base::FilePath& default_path,
                     const Filters& filters,
+                    const std::string& message,
+                    const std::string& name_field_label,
+                    const bool& shows_tag_field,
                     const SaveDialogCallback& callback);
 
 }  // namespace file_dialog

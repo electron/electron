@@ -297,7 +297,7 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
     file_dialog::Filters filters;
     base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
     if (!file_dialog::ShowSaveDialog(owner_window(), url, "", default_path,
-                                     filters, &path)) {
+                                     filters, "", "", false, &path)) {
       base::StringValue url_value(url);
       web_contents_->CallClientFunction(
           "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
