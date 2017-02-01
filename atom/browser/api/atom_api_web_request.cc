@@ -26,6 +26,7 @@ struct Converter<URLPattern> {
     std::string pattern;
     if (!ConvertFromV8(isolate, val, &pattern))
       return false;
+    *out = URLPattern(URLPattern::SCHEME_ALL);
     return out->Parse(pattern) == URLPattern::PARSE_SUCCESS;
   }
 };
