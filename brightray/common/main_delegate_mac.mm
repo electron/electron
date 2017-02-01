@@ -26,12 +26,12 @@ base::FilePath GetFrameworksPath() {
   return MainApplicationBundlePath().Append("Contents").Append("Frameworks");
 }
 
-}
-
 base::FilePath GetResourcesPakFilePath(NSString* name) {
   auto path = [base::mac::FrameworkBundle() pathForResource:name ofType:@"pak"];
   return base::mac::NSStringToFilePath(path);
 }
+
+}  // namespace
 
 void LoadCommonResources() {
   ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
@@ -56,4 +56,4 @@ void MainDelegate::OverrideChildProcessPath() {
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }
 
-}
+}  // namespace brightray

@@ -52,11 +52,12 @@ void InitializeResourceBundle(const std::string& locale) {
 #if defined(OS_MACOSX)
   LoadCommonResources();
 #else
-  base::FilePath path, pak_dir;
+  base::FilePath pak_dir;
   ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
   PathService::Get(base::DIR_MODULE, &pak_dir);
-  path = pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak"));
-  bundle.AddDataPackFromPath(path, ui::GetSupportedScaleFactors()[0]);
+  bundle.AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak")),
+      ui::GetSupportedScaleFactors()[0]);
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("pdf_viewer_resources.pak")),
       ui::GetSupportedScaleFactors()[0]);

@@ -100,6 +100,9 @@
                   '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
                   # Friends of libpdf.a:
+                  # On Linux we have to use "--whole-archive" to include
+                  # all symbols, otherwise there will be plenty of
+                  # unresolved symbols errors.
                   '-Wl,--whole-archive',
                   '<(libchromiumcontent_dir)/libpdf.a',
                   '<(libchromiumcontent_dir)/libppapi_cpp_objects.a',
