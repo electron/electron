@@ -195,6 +195,7 @@
                   '<(libchromiumcontent_dir)/libjavascript.a',
                   '<(libchromiumcontent_dir)/libpdfwindow.a',
                   '<(libchromiumcontent_dir)/libfx_agg.a',
+                  '<(libchromiumcontent_dir)/libfx_freetype.a',
                   '<(libchromiumcontent_dir)/libfx_lcms2.a',
                   '<(libchromiumcontent_dir)/libfx_libopenjpeg.a',
                   '<(libchromiumcontent_dir)/libfx_zlib.a',
