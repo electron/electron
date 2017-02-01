@@ -48,7 +48,7 @@ class BundledDataSource : public content::URLDataSource {
                         int render_frame_id,
                         const GotDataCallback& callback) override {
     std::string filename = PathWithoutParams(path);
-    std::map<base::FilePath, int>::const_iterator entry =
+    auto entry =
         path_to_resource_id_.find(base::FilePath::FromUTF8Unsafe(filename));
 
     if (entry != path_to_resource_id_.end()) {
