@@ -103,14 +103,15 @@ The `src` attribute can also accept data URLs, such as
 ### `autosize`
 
 ```html
-<webview src="https://www.github.com/" autosize="on" minwidth="576" minheight="432"></webview>
+<webview src="https://www.github.com/" autosize minwidth="576" minheight="432"></webview>
 ```
 
-If "on", the `webview` container will automatically resize within the
-bounds specified by the attributes `minwidth`, `minheight`, `maxwidth`, and
-`maxheight`. These constraints do not impact the `webview` unless `autosize` is
-enabled. When `autosize` is enabled, the `webview` container size cannot be less
-than the minimum values or greater than the maximum.
+When this attribute is present the `webview` container will automatically resize
+within the bounds specified by the attributes `minwidth`, `minheight`,
+`maxwidth`, and `maxheight`. These constraints do not impact the `webview`
+unless `autosize` is enabled. When `autosize` is enabled, the `webview`
+container size cannot be less than the minimum values or greater than the
+maximum.
 
 ### `nodeintegration`
 
@@ -118,8 +119,10 @@ than the minimum values or greater than the maximum.
 <webview src="http://www.google.com/" nodeintegration></webview>
 ```
 
-If "on", the guest page in `webview` will have node integration and can use node
-APIs like `require` and `process` to access low level system resources.
+When this attribute is present the guest page in `webview` will have node
+integration and can use node APIs like `require` and `process` to access low
+level system resources. Node integration is disabled by default in the guest
+page.
 
 ### `plugins`
 
@@ -127,7 +130,8 @@ APIs like `require` and `process` to access low level system resources.
 <webview src="https://www.github.com/" plugins></webview>
 ```
 
-If "on", the guest page in `webview` will be able to use browser plugins.
+When this attribute is present the guest page in `webview` will be able to use
+browser plugins. Plugins are disabled by default.
 
 ### `preload`
 
@@ -166,7 +170,8 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 <webview src="https://www.github.com/" disablewebsecurity></webview>
 ```
 
-If "on", the guest page will have web security disabled.
+When this attribute is present the guest page will have web security disabled.
+Web security is enabled by default.
 
 ### `partition`
 
@@ -192,7 +197,8 @@ value will fail with a DOM exception.
 <webview src="https://www.github.com/" allowpopups></webview>
 ```
 
-If "on", the guest page will be allowed to open new windows.
+When this attribute is present the guest page will be allowed to open new
+windows. Popups are disabled by default.
 
 ### `webpreferences`
 
@@ -249,8 +255,8 @@ webContents when a new url is loaded.
 <webview src="https://www.github.com/" disableguestresize></webview>
 ```
 
-Prevents the webview contents from resizing when the webview element itself is
-resized.
+When this attribute is present the `webview` contents will be prevented from
+resizing when the `webview` element itself is resized.
 
 This can be used in combination with
 [`webContents.setSize`](web-contents.md#contentssetsizeoptions) to manually
