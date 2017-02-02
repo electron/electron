@@ -35,7 +35,7 @@ and displays a "loading..." message during the load time:
 ```html
 <script>
   onload = () => {
-    const webview = document.getElementById('foo')
+    const webview = document.querySelector('webview')
     const indicator = document.querySelector('.indicator')
 
     const loadstart = () => {
@@ -296,7 +296,7 @@ The `webview` tag has the following methods:
 **Example**
 
 ```javascript
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('dom-ready', () => {
   webview.openDevTools()
 })
@@ -709,7 +709,7 @@ The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
 ```javascript
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message)
 })
@@ -729,7 +729,7 @@ Fired when a result is available for
 [`webview.findInPage`](webview-tag.md#webviewtagfindinpage) request.
 
 ```javascript
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('found-in-page', (e) => {
   webview.stopFindInPage('keepSelection')
 })
@@ -755,7 +755,7 @@ The following example code opens the new url in system's default browser.
 
 ```javascript
 const {shell} = require('electron')
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 
 webview.addEventListener('new-window', (e) => {
   const protocol = require('url').parse(e.url).protocol
@@ -816,7 +816,7 @@ The following example code navigates the `webview` to `about:blank` when the
 guest attempts to close itself.
 
 ```javascript
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('close', () => {
   webview.src = 'about:blank'
 })
@@ -836,7 +836,7 @@ between guest page and embedder page:
 
 ```javascript
 // In embedder page.
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('ipc-message', (event) => {
   console.log(event.channel)
   // Prints "pong"
