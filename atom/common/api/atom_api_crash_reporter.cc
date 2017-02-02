@@ -38,11 +38,11 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   auto report = base::Unretained(CrashReporter::GetInstance());
   dict.SetMethod("start",
                  base::Bind(&CrashReporter::Start, report));
-  dict.SetMethod("_getUploadedReports",
+  dict.SetMethod("getUploadedReports",
                  base::Bind(&CrashReporter::GetUploadedReports, report));
-  dict.SetMethod("_setUploadToServer",
+  dict.SetMethod("setUploadToServer",
                  base::Bind(&CrashReporter::SetUploadToServer, report));
-  dict.SetMethod("_getUploadToServer",
+  dict.SetMethod("getUploadToServer",
                  base::Bind(&CrashReporter::GetUploadToServer, report));
 }
 
