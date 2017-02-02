@@ -100,6 +100,14 @@ void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
   simple_string_dictionary_->SetKeyValue(key.data(), value.data());
 }
 
+void CrashReporterMac::SetExtraParameter(const std::string& key,
+                                         const std::string& value) {
+  if (simple_string_dictionary_)
+    SetCrashKeyValue(key, value);
+  else
+    upload_parameters_[key] = value;
+}
+
 std::vector<CrashReporter::UploadReportResult>
 CrashReporterMac::GetUploadedReports(const base::FilePath& crashes_dir) {
   std::vector<CrashReporter::UploadReportResult> uploaded_reports;

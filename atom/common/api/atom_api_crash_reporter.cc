@@ -35,15 +35,16 @@ namespace {
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  auto report = base::Unretained(CrashReporter::GetInstance());
-  dict.SetMethod("start",
-                 base::Bind(&CrashReporter::Start, report));
+  auto reporter = base::Unretained(CrashReporter::GetInstance());
+  dict.SetMethod("start", base::Bind(&CrashReporter::Start, reporter));
+  dict.SetMethod("setExtraParameter",
+                 base::Bind(&CrashReporter::SetExtraParameter, reporter));
   dict.SetMethod("getUploadedReports",
-                 base::Bind(&CrashReporter::GetUploadedReports, report));
+                 base::Bind(&CrashReporter::GetUploadedReports, reporter));
   dict.SetMethod("setUploadToServer",
-                 base::Bind(&CrashReporter::SetUploadToServer, report));
+                 base::Bind(&CrashReporter::SetUploadToServer, reporter));
   dict.SetMethod("getUploadToServer",
-                 base::Bind(&CrashReporter::GetUploadToServer, report));
+                 base::Bind(&CrashReporter::GetUploadToServer, reporter));
 }
 
 }  // namespace
