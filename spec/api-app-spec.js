@@ -403,4 +403,39 @@ describe('app module', function () {
       w.webContents.loadURL(secureUrl)
     })
   })
+
+  describe('setAsDefaultProtocolClient(protocol, path, args)', () => {
+    if (process.platform !== 'win32') return
+
+    const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
+    const processStartArgs = [
+      '--processStart', `"${path.basename(process.execPath)}"`,
+      '--process-start-args', `"--hidden"`
+    ]
+
+    beforeEach(() => {
+      app.removeAsDefaultProtocolClient('elecron-test')
+      app.removeAsDefaultProtocolClient('elecron-test', updateExe, processStartArgs)
+    })
+
+    afterEach(() => {
+      app.removeAsDefaultProtocolClient('elecron-test')
+      assert.equal(app.isDefaultProtocolClient('electron-test'), false)
+      app.removeAsDefaultProtocolClient('elecron-test', updateExe, processStartArgs)
+      assert.equal(app.isDefaultProtocolClient('electron-test', updateExe, processStartArgs), false)
+    })
+
+    it('sets the app as the default protocol client', () => {
+      assert.equal(app.isDefaultProtocolClient('electron-test'), false)
+      app.setAsDefaultProtocolClient('electron-test')
+      assert.equal(app.isDefaultProtocolClient('electron-test'), true)
+    })
+
+    it('allows a custom path and args to be specified', () => {
+      assert.equal(app.isDefaultProtocolClient('electron-test', updateExe, processStartArgs), false)
+      app.setAsDefaultProtocolClient('electron-test', updateExe, processStartArgs)
+      assert.equal(app.isDefaultProtocolClient('electron-test', updateExe, processStartArgs), true)
+      assert.equal(app.isDefaultProtocolClient('electron-test'), false)
+    })
+  })
 })
