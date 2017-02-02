@@ -32,7 +32,7 @@ The `dialog` module has the following methods:
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
-  * `properties` String[] (optional) - Contains which features the dialog should use, can
+  * `properties` String\[\] (optional) - Contains which features the dialog should use, can
     contain `openFile`, `openDirectory`, `multiSelections`, `createDirectory`
     and `showHiddenFiles`.
   * `normalizeAccessKeys` Boolean (optional) - Normalize the keyboard access keys
