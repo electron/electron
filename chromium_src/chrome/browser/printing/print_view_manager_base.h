@@ -54,10 +54,11 @@ class PrintViewManagerBase : public content::NotificationObserver,
                         std::unique_ptr<IPC::Message> message);
 
   // Terminates or cancels the print job if one was pending.
-  virtual void RenderProcessGone(base::TerminationStatus status) override;
+  void RenderProcessGone(base::TerminationStatus status) override;
 
   // content::WebContentsObserver implementation.
-  virtual bool OnMessageReceived(const IPC::Message& message) override;
+  bool OnMessageReceived(const IPC::Message& message,
+                         content::RenderFrameHost* render_frame_host) override;
 
   // IPC Message handlers.
   virtual void OnPrintingFailed(int cookie);
