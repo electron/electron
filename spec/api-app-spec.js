@@ -313,12 +313,20 @@ describe('app module', function () {
   describe('app.get/setLoginItemSettings API', function () {
     if (process.platform === 'linux') return
 
+    const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
+    const processStartArgs = [
+      '--processStart', `"${path.basename(process.execPath)}"`,
+      '--process-start-args', `"--hidden"`
+    ]
+
     beforeEach(function () {
       app.setLoginItemSettings({openAtLogin: false})
+      app.setLoginItemSettings({openAtLogin: false, path: updateExe, args: processStartArgs})
     })
 
     afterEach(function () {
       app.setLoginItemSettings({openAtLogin: false})
+      app.setLoginItemSettings({openAtLogin: false, path: updateExe, args: processStartArgs})
     })
 
     it('returns the login item status of the app', function () {
@@ -352,15 +360,6 @@ describe('app module', function () {
 
     it('allows you to pass a custom executable and arguments', () => {
       if (process.platform !== 'win32') return
-
-      const appFolder = path.dirname(process.execPath)
-      const updateExe = path.resolve(appFolder, '..', 'Update.exe')
-      const exeName = path.basename(process.execPath)
-
-      const processStartArgs = [
-        '--processStart', `"${exeName}"`,
-        '--process-start-args', `"--hidden"`
-      ]
 
       app.setLoginItemSettings({openAtLogin: true, path: updateExe, args: processStartArgs})
 
