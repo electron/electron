@@ -121,6 +121,7 @@ describe('webContents module', function () {
             w.webContents.once('before-input-event', (event, input) => {
               assert.equal(input.type, opts.type)
               assert.equal(input.key, opts.key)
+              assert.equal(input.code, opts.code)
               assert.equal(input.isAutoRepeat, opts.isAutoRepeat)
               assert.equal(input.shift, opts.shift)
               assert.equal(input.control, opts.control)
@@ -148,6 +149,7 @@ describe('webContents module', function () {
           return testBeforeInput({
             type: 'keyDown',
             key: 'A',
+            code: 'KeyA',
             keyCode: 'a',
             shift: true,
             control: true,
@@ -159,6 +161,7 @@ describe('webContents module', function () {
           return testBeforeInput({
             type: 'keyUp',
             key: '.',
+            code: 'Period',
             keyCode: '.',
             shift: false,
             control: true,
@@ -170,6 +173,7 @@ describe('webContents module', function () {
           return testBeforeInput({
             type: 'keyUp',
             key: '!',
+            code: 'Digit1',
             keyCode: '1',
             shift: true,
             control: false,
@@ -181,6 +185,7 @@ describe('webContents module', function () {
           return testBeforeInput({
             type: 'keyUp',
             key: 'Tab',
+            code: 'Tab',
             keyCode: 'Tab',
             shift: false,
             control: true,
