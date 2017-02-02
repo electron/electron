@@ -44,14 +44,14 @@ The `crashReporter` module has the following methods:
     Default is `true`.
   * `ignoreSystemCrashHandler` Boolean (optional) - Default is `false`.
   * `extra` Object (optional) - An object you can define that will be sent along with the
-    report. Only string properties are sent correctly, Nested objects are not
+    report. Only string properties are sent correctly. Nested objects are not
     supported.
 
 You are required to call this method before using any other `crashReporter` APIs
 and in each process (main/renderer) from which you want to collect crash reports.
 You can pass different options to `crashReporter.start` when calling from different processes.
 
-**Note** Child processes created via the `child_process` module will not have access to the Electron modules. 
+**Note** Child processes created via the `child_process` module will not have access to the Electron modules.
 Therefore, to collect crash reports from them, use `process.crashReporter.start` instead. Pass the same options as above
 along with an additional one called `crashesDirectory` that should point to a directory to store the crash
 reports temporarily. You can test this out by calling `process.crash()` to crash the child process.
