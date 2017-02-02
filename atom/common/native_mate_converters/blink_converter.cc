@@ -224,6 +224,8 @@ v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
   else if (in.type == blink::WebInputEvent::Type::KeyUp)
     dict.Set("type", "keyUp");
   dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.domKey));
+  dict.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
+    static_cast<ui::DomCode>(in.domCode)));
 
   using Modifiers = blink::WebInputEvent::Modifiers;
   dict.Set("isAutoRepeat", (in.modifiers & Modifiers::IsAutoRepeat) != 0);
