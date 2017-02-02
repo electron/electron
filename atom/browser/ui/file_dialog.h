@@ -28,6 +28,7 @@ enum FileDialogProperty {
   FILE_DIALOG_MULTI_SELECTIONS  = 1 << 2,
   FILE_DIALOG_CREATE_DIRECTORY  = 1 << 3,
   FILE_DIALOG_SHOW_HIDDEN_FILES = 1 << 4,
+  FILE_DIALOG_PROMPT_TO_CREATE  = 1 << 5,
 };
 
 typedef base::Callback<void(
