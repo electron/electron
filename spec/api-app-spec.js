@@ -407,6 +407,7 @@ describe('app module', function () {
   describe('setAsDefaultProtocolClient(protocol, path, args)', () => {
     if (process.platform !== 'win32') return
 
+    const protocol = 'electron-test'
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
@@ -414,28 +415,28 @@ describe('app module', function () {
     ]
 
     beforeEach(() => {
-      app.removeAsDefaultProtocolClient('elecron-test')
-      app.removeAsDefaultProtocolClient('elecron-test', updateExe, processStartArgs)
+      app.removeAsDefaultProtocolClient(protocol)
+      app.removeAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
     })
 
     afterEach(() => {
-      app.removeAsDefaultProtocolClient('elecron-test')
-      assert.equal(app.isDefaultProtocolClient('electron-test'), false)
-      app.removeAsDefaultProtocolClient('elecron-test', updateExe, processStartArgs)
-      assert.equal(app.isDefaultProtocolClient('electron-test', updateExe, processStartArgs), false)
+      app.removeAsDefaultProtocolClient(protocol)
+      assert.equal(app.isDefaultProtocolClient(protocol), false)
+      app.removeAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
+      assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), false)
     })
 
     it('sets the app as the default protocol client', () => {
-      assert.equal(app.isDefaultProtocolClient('electron-test'), false)
-      app.setAsDefaultProtocolClient('electron-test')
-      assert.equal(app.isDefaultProtocolClient('electron-test'), true)
+      assert.equal(app.isDefaultProtocolClient(protocol), false)
+      app.setAsDefaultProtocolClient(protocol)
+      assert.equal(app.isDefaultProtocolClient(protocol), true)
     })
 
     it('allows a custom path and args to be specified', () => {
-      assert.equal(app.isDefaultProtocolClient('electron-test', updateExe, processStartArgs), false)
-      app.setAsDefaultProtocolClient('electron-test', updateExe, processStartArgs)
-      assert.equal(app.isDefaultProtocolClient('electron-test', updateExe, processStartArgs), true)
-      assert.equal(app.isDefaultProtocolClient('electron-test'), false)
+      assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), false)
+      app.setAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
+      assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), true)
+      assert.equal(app.isDefaultProtocolClient(protocol), false)
     })
   })
 })
