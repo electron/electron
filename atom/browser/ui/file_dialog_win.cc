@@ -169,7 +169,7 @@ void RunOpenDialogInNewThread(const RunState& run_state,
                               const OpenDialogCallback& callback) {
   std::vector<base::FilePath> paths;
   bool result = ShowOpenDialog(parent, title, button_label, default_path,
-                               filters, properties, &paths);
+                               filters, properties, "", &paths);
   run_state.ui_task_runner->PostTask(FROM_HERE,
                                       base::Bind(callback, result, paths));
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
@@ -184,7 +184,7 @@ void RunSaveDialogInNewThread(const RunState& run_state,
                               const SaveDialogCallback& callback) {
   base::FilePath path;
   bool result = ShowSaveDialog(parent, title, button_label, default_path,
-                               filters, &path);
+                               filters, "", "", false, &path);
   run_state.ui_task_runner->PostTask(FROM_HERE,
                                      base::Bind(callback, result, path));
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
