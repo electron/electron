@@ -117,6 +117,14 @@ std::string SystemPreferences::GetColor(const std::string& color,
 void SystemPreferences::InitializeWindow() {
   invertered_color_scheme_ = IsInvertedColorScheme();
 
+  // Wait until app is ready before creating sys color listener
+  // Creating this listener before the app is ready causes global shortcuts
+  // to not fire
+  if (Browser::Get()->is_ready())
+    color_change_listener_.reset(new gfx::ScopedSysColorChangeListener(this));
+  else
+    Browser::Get()->AddObserver(this);
+
   WNDCLASSEX window_class;
   base::win::InitializeWindowClass(
       kSystemPreferencesWindowClass,
@@ -170,6 +178,11 @@ void SystemPreferences::OnSysColorChange() {
     Emit("inverted-color-scheme-changed", new_invertered_color_scheme);
   }
   Emit("color-changed");
+}
+
+void SystemPreferences::OnFinishLaunching(
+    const base::DictionaryValue& launch_info) {
+  color_change_listener_.reset(new gfx::ScopedSysColorChangeListener(this));
 }
 
 }  // namespace api

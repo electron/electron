@@ -13,6 +13,8 @@
 #include "native_mate/handle.h"
 
 #if defined(OS_WIN)
+#include "atom/browser/browser.h"
+#include "atom/browser/browser_observer.h"
 #include "ui/gfx/sys_color_change_listener.h"
 #endif
 
@@ -26,6 +28,7 @@ namespace api {
 
 class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #if defined(OS_WIN)
+    , public BrowserObserver
     , public gfx::SysColorChangeListener
 #endif
   {
@@ -50,6 +53,9 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 
   // gfx::SysColorChangeListener:
   void OnSysColorChange() override;
+
+  // BrowserObserver:
+  void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
 
 #elif defined(OS_MACOSX)
   using NotificationCallback = base::Callback<
@@ -111,7 +117,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 
   bool invertered_color_scheme_;
 
-  gfx::ScopedSysColorChangeListener color_change_listener_;
+  std::unique_ptr<gfx::ScopedSysColorChangeListener> color_change_listener_;
 #endif
   DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
 };
