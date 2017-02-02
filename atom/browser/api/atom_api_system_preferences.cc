@@ -14,11 +14,7 @@ namespace atom {
 
 namespace api {
 
-SystemPreferences::SystemPreferences(v8::Isolate* isolate)
-#if defined(OS_WIN)
-    : color_change_listener_(this)
-#endif
-    {
+SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
   Init(isolate);
 #if defined(OS_WIN)
   InitializeWindow();
@@ -26,6 +22,9 @@ SystemPreferences::SystemPreferences(v8::Isolate* isolate)
 }
 
 SystemPreferences::~SystemPreferences() {
+#if defined(OS_WIN)
+  Browser::Get()->RemoveObserver(this);
+#endif
 }
 
 #if !defined(OS_MACOSX)
