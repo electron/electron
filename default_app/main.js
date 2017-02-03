@@ -87,6 +87,9 @@ app.once('ready', () => {
           role: 'reload'
         },
         {
+          role: 'forcereload'
+        },
+        {
           role: 'toggledevtools'
         },
         {
