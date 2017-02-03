@@ -250,12 +250,12 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })
 
-ipcMain.on('prevent-next-new-webview', (event) => {
-  event.sender.once('new-webview', event => event.preventDefault())
+ipcMain.on('prevent-next-will-attach-webview', (event) => {
+  event.sender.once('will-attach-webview', event => event.preventDefault())
 })
 
-ipcMain.on('disable-node-on-next-new-webview', (event, id) => {
-  event.sender.once('new-webview', (event, guest, webPreferences) => {
+ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
+  event.sender.once('will-attach-webview', (event, guest, webPreferences) => {
     webPreferences.nodeIntegration = false
   })
 })

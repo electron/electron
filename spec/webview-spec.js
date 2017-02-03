@@ -1100,9 +1100,9 @@ describe('<webview> tag', function () {
     w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
   })
 
-  describe('new-webview event', () => {
+  describe('will-attach-webview event', () => {
     it('supports changing the web preferences', (done) => {
-      ipcRenderer.send('disable-node-on-next-new-webview')
+      ipcRenderer.send('disable-node-on-next-will-attach-webview')
       webview.addEventListener('console-message', (event) => {
         assert.equal(event.message, 'undefined undefined undefined undefined')
         done()
@@ -1113,7 +1113,7 @@ describe('<webview> tag', function () {
     })
 
     it('supports preventing a webview from being created', (done) => {
-      ipcRenderer.send('prevent-next-new-webview')
+      ipcRenderer.send('prevent-next-will-attach-webview')
       webview.addEventListener('destroyed', () => {
         done()
       })
