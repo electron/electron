@@ -511,8 +511,11 @@ Returns:
 * `webPreferences` Object - The web preferences that will be used by the guest
   page. This object can be modified to adjust the preferences for the guest
   page.
+* `params` Object - The other `<webview>` parameters such as the `src` URL.
+  This object can be modified to adjust the parameters of the guest page.
 
-Calling `event.preventDefault()` will destroy the guest page.
+Emitted when a `<webview>`'s web contents is being attached to this web
+contents. Calling `event.preventDefault()` will destroy the guest page.
 
 ### Instance Methods
 
