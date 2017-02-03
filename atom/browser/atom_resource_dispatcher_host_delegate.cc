@@ -76,13 +76,18 @@ void OnPdfStreamCreated(
   auto browser_context =
       static_cast<AtomBrowserContext*>(web_contents->GetBrowserContext());
   auto stream_manager = browser_context->stream_manager();
-  std::string view_id = base::GenerateGUID();
+  std::string stream_id = base::GenerateGUID();
   GURL original_url = stream->original_url;
-  stream_manager->AddStream(std::move(stream), view_id, render_process_id,
+  stream_manager->AddStream(std::move(stream), stream_id, render_process_id,
                             render_frame_id);
+  // The URL passes the stream ID to PDF webui that uses it to extract the
+  // stream from the StreamManager and also passes the URL that the PDF
+  // originates from, which is used whenever no stream is available from the
+  // content layer (this will happen when the webui page is reloaded).
+  // chrome://pdf-viewer/index.html?streamId=abcd&src=https://somepage/123.pdf
   content::NavigationController::LoadURLParams params(GURL(base::StringPrintf(
-      "%sindex.html?%s=%s&%s=%s", kPdfViewerUIOrigin, kPdfViewerUIId,
-      view_id.c_str(), kPdfPluginSrc, original_url.spec().c_str())));
+      "%sindex.html?%s=%s&%s=%s", kPdfViewerUIOrigin, kPdfViewerUIStreamId,
+      stream_id.c_str(), kPdfPluginSrc, original_url.spec().c_str())));
   web_contents->GetController().LoadURLWithParams(params);
 }
 

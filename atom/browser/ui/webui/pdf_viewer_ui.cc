@@ -23,6 +23,8 @@ namespace atom {
 
 namespace {
 
+// Extracts the path value from the URL without the leading '/',
+// which follows the mapping of names in pdf_viewer_resources_map.
 std::string PathWithoutParams(const std::string& path) {
   return GURL(kPdfViewerUIOrigin + path).path().substr(1);
 }
@@ -86,14 +88,14 @@ class BundledDataSource : public content::URLDataSource {
 
 PdfViewerUI::PdfViewerUI(content::BrowserContext* browser_context,
                          content::WebUI* web_ui,
-                         const std::string& view_id,
+                         const std::string& stream_id,
                          const std::string& src)
     : content::WebUIController(web_ui),
       content::WebContentsObserver(web_ui->GetWebContents()),
       src_(src) {
   auto context = static_cast<AtomBrowserContext*>(browser_context);
   auto stream_manager = context->stream_manager();
-  stream_ = stream_manager->ReleaseStream(view_id);
+  stream_ = stream_manager->ReleaseStream(stream_id);
   web_ui->AddMessageHandler(new PdfViewerHandler(stream_.get(), src));
   content::URLDataSource::Add(browser_context, new BundledDataSource);
 }

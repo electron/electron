@@ -51,16 +51,16 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
   if (url.host() == kPdfViewerUIHost) {
     base::StringPairs toplevel_params;
     base::SplitStringIntoKeyValuePairs(url.query(), '=', '&', &toplevel_params);
-    std::string view_id, src;
+    std::string stream_id, src;
     for (const auto& param : toplevel_params) {
-      if (param.first == kPdfViewerUIId) {
-        view_id = param.second;
+      if (param.first == kPdfViewerUIStreamId) {
+        stream_id = param.second;
       } else if (param.first == kPdfPluginSrc) {
         src = param.second;
       }
     }
     auto browser_context = web_ui->GetWebContents()->GetBrowserContext();
-    return new PdfViewerUI(browser_context, web_ui, view_id, src);
+    return new PdfViewerUI(browser_context, web_ui, stream_id, src);
   }
   return nullptr;
 }

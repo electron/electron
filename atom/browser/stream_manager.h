@@ -22,12 +22,12 @@ class StreamManager {
   ~StreamManager();
 
   void AddStream(std::unique_ptr<content::StreamInfo> stream,
-                 const std::string& view_id,
+                 const std::string& stream_id,
                  int render_process_id,
                  int render_frame_id);
 
   std::unique_ptr<content::StreamInfo> ReleaseStream(
-      const std::string& view_id);
+      const std::string& stream_id);
 
  private:
   // WebContents observer that deletes an unclaimed stream
@@ -35,7 +35,7 @@ class StreamManager {
   class EmbedderObserver : public content::WebContentsObserver {
    public:
     EmbedderObserver(StreamManager* stream_manager,
-                     const std::string& view_id,
+                     const std::string& stream_id,
                      int render_process_id,
                      int render_frame_id);
 
@@ -47,13 +47,15 @@ class StreamManager {
     void AbortStream();
 
     StreamManager* stream_manager_;
-    std::string view_id_;
+    std::string stream_id_;
 
     DISALLOW_COPY_AND_ASSIGN(EmbedderObserver);
   };
 
+  // StreamID => Stream.
   std::map<std::string, std::unique_ptr<content::StreamInfo>> streams_;
 
+  // StreamID => WebContents Observer.
   std::map<std::string, std::unique_ptr<EmbedderObserver>> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(StreamManager);

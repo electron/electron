@@ -17,32 +17,32 @@ StreamManager::StreamManager() {}
 StreamManager::~StreamManager() {}
 
 void StreamManager::AddStream(std::unique_ptr<content::StreamInfo> stream,
-                              const std::string& view_id,
+                              const std::string& stream_id,
                               int render_process_id,
                               int render_frame_id) {
-  streams_.insert(std::make_pair(view_id, std::move(stream)));
-  observers_[view_id] = base::MakeUnique<EmbedderObserver>(
-      this, view_id, render_process_id, render_frame_id);
+  streams_.insert(std::make_pair(stream_id, std::move(stream)));
+  observers_[stream_id] = base::MakeUnique<EmbedderObserver>(
+      this, stream_id, render_process_id, render_frame_id);
 }
 
 std::unique_ptr<content::StreamInfo> StreamManager::ReleaseStream(
-    const std::string& view_id) {
-  auto stream = streams_.find(view_id);
+    const std::string& stream_id) {
+  auto stream = streams_.find(stream_id);
   if (stream == streams_.end())
     return nullptr;
 
   std::unique_ptr<content::StreamInfo> result =
       base::WrapUnique(stream->second.release());
   streams_.erase(stream);
-  observers_.erase(view_id);
+  observers_.erase(stream_id);
   return result;
 }
 
 StreamManager::EmbedderObserver::EmbedderObserver(StreamManager* stream_manager,
-                                                  const std::string& view_id,
+                                                  const std::string& stream_id,
                                                   int render_process_id,
                                                   int render_frame_id)
-    : stream_manager_(stream_manager), view_id_(view_id) {
+    : stream_manager_(stream_manager), stream_id_(stream_id) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(
           content::RenderFrameHost::FromID(render_process_id, render_frame_id));
@@ -60,7 +60,7 @@ void StreamManager::EmbedderObserver::WebContentsDestroyed() {
 
 void StreamManager::EmbedderObserver::AbortStream() {
   Observe(nullptr);
-  stream_manager_->ReleaseStream(view_id_);
+  stream_manager_->ReleaseStream(stream_id_);
 }
 
 }  // namespace atom

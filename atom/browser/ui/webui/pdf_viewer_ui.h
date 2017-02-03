@@ -24,7 +24,7 @@ class PdfViewerUI : public content::WebUIController,
  public:
   PdfViewerUI(content::BrowserContext* browser_context,
               content::WebUI* web_ui,
-              const std::string& view_id,
+              const std::string& stream_id,
               const std::string& src);
   ~PdfViewerUI() override;
 
@@ -35,6 +35,7 @@ class PdfViewerUI : public content::WebUIController,
  private:
   void OnSaveURLAs(const GURL& url, const content::Referrer& referrer);
 
+  // Source URL from where the PDF originates.
   std::string src_;
   std::unique_ptr<content::StreamInfo> stream_;
 
