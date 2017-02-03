@@ -205,6 +205,8 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
     options |= FOS_ALLOWMULTISELECT;
   if (properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
     options |= FOS_FORCESHOWHIDDEN;
+  if (properties & FILE_DIALOG_PROMPT_TO_CREATE)
+    options |= FOS_CREATEPROMPT;
 
   FileDialog<CShellFileOpenDialog> open_dialog(
       default_path, title, button_label, filters, options);
