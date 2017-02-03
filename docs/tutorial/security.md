@@ -58,6 +58,8 @@ This is not bulletproof, but at the least, you should attempt the following:
   (setting `nodeIntegration` to `false` in `webPreferences`)
 * Enable context isolation in all renderers that display remote content
   (setting `contextIsolation` to `true` in `webPreferences`)
+* Enable the Chromium OS-level sandbox
+  (setting `sandbox` to `true` in `webPreferences`)
 * Use `ses.setPermissionRequestHandler()` in all sessions that load remote content
 * Do not disable `webSecurity`. Disabling it will disable the same-origin policy.
 * Define a [`Content-Security-Policy`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/)
