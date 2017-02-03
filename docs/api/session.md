@@ -30,7 +30,7 @@ The `session` module has the following methods:
   * `cache` Boolean - Whether to enable cache.
 
 Returns `Session` - A session instance from `partition` string. When there is an existing
-`Session` with the same `partition`, it will be returned; othewise a new
+`Session` with the same `partition`, it will be returned; otherwise a new
 `Session` instance will be created with `options`.
 
 If `partition` starts with `persist:`, the page will use a persistent session
