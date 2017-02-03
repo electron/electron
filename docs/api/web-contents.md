@@ -502,6 +502,18 @@ win.loadURL('http://github.com')
 
 Emitted when the devtools window instructs the webContents to reload
 
+#### Event: 'will-attach-webview'
+
+Returns:
+
+* `event` Event
+* `guest` WebContents - The contents of the guest page.
+* `webPreferences` Object - The web preferences that will be used by the guest
+  page. This object can be modified to adjust the preferences for the guest
+  page.
+
+Calling `event.preventDefault()` will destroy the guest page.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
