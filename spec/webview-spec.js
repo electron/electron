@@ -1108,7 +1108,7 @@ describe('<webview> tag', function () {
         done()
       })
       webview.setAttribute('nodeintegration', 'yes')
-      webview.src = 'file://' + fixtures + '/pages/c.html'
+      webview.src = 'file://' + fixtures + '/pages/a.html'
       document.body.appendChild(webview)
     })
 
@@ -1120,9 +1120,6 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/pages/c.html'
       document.body.appendChild(webview)
     })
-  })
-
-  it('emits a new-webview event when first attached that ', () => {
   })
 
   it('loads devtools extensions registered on the parent window', function (done) {
