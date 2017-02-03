@@ -22,11 +22,6 @@ namespace atom {
 class PdfViewerUI : public content::WebUIController,
                     public content::WebContentsObserver {
  public:
-  static const char kOrigin[];
-  static const char kHost[];
-  static const char kId[];
-  static const char kSrc[];
-
   PdfViewerUI(content::BrowserContext* browser_context,
               content::WebUI* web_ui,
               const std::string& view_id,

@@ -9,6 +9,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/stream_manager.h"
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
+#include "atom/common/atom_constants.h"
 #include "components/pdf/common/pdf_messages.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/url_data_source.h"
@@ -23,7 +24,7 @@ namespace atom {
 namespace {
 
 std::string PathWithoutParams(const std::string& path) {
-  return GURL(PdfViewerUI::kOrigin + path).path().substr(1);
+  return GURL(kPdfViewerUIOrigin + path).path().substr(1);
 }
 
 class BundledDataSource : public content::URLDataSource {
@@ -41,7 +42,7 @@ class BundledDataSource : public content::URLDataSource {
   }
 
   // content::URLDataSource implementation.
-  std::string GetSource() const override { return PdfViewerUI::kHost; }
+  std::string GetSource() const override { return kPdfViewerUIHost; }
 
   void StartDataRequest(const std::string& path,
                         int render_process_id,
@@ -82,11 +83,6 @@ class BundledDataSource : public content::URLDataSource {
 };
 
 }  // namespace
-
-const char PdfViewerUI::kOrigin[] = "chrome://pdf-viewer/";
-const char PdfViewerUI::kHost[] = "pdf-viewer";
-const char PdfViewerUI::kId[] = "viewId";
-const char PdfViewerUI::kSrc[] = "src";
 
 PdfViewerUI::PdfViewerUI(content::BrowserContext* browser_context,
                          content::WebUI* web_ui,

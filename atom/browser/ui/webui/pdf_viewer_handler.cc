@@ -4,6 +4,7 @@
 
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
 
+#include "atom/common/atom_constants.h"
 #include "base/bind.h"
 #include "base/values.h"
 #include "content/public/browser/stream_handle.h"
@@ -11,6 +12,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
 #include "content/public/common/page_zoom.h"
+#include "content/public/common/url_constants.h"
 #include "net/http/http_response_headers.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/webui/web_ui_util.h"
@@ -145,7 +147,6 @@ void PdfViewerHandler::GetStrings(const base::ListValue* args) {
   SET_STRING("labelPageNumber", "Page number");
   SET_STRING("tooltipRotateCW", "Rotate clockwise");
   SET_STRING("tooltipDownload", "Download");
-  SET_STRING("tooltipPrint", "Print");
   SET_STRING("tooltipFitToPage", "Fit to page");
   SET_STRING("tooltipFitToWidth", "Fit to width");
   SET_STRING("tooltipZoomIn", "Zoom in");
@@ -161,7 +162,8 @@ void PdfViewerHandler::OnZoomLevelChanged(
     const content::HostZoomMap::ZoomLevelChange& change) {
   // TODO(deepak1556): This will work only if zoom level is changed through host
   // zoom map.
-  if (change.scheme == "chrome" && change.host == "pdf-viewer") {
+  if (change.scheme == content::kChromeUIScheme &&
+      change.host == kPdfViewerUIHost) {
     CallJavascriptFunction(
         "cr.webUIListenerCallback", base::StringValue("onZoomLevelChanged"),
         base::FundamentalValue(

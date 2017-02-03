@@ -7,8 +7,8 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/login_handler.h"
 #include "atom/browser/stream_manager.h"
-#include "atom/browser/ui/webui/pdf_viewer_ui.h"
 #include "atom/browser/web_contents_permission_helper.h"
+#include "atom/common/atom_constants.h"
 #include "atom/common/platform_util.h"
 #include "base/guid.h"
 #include "base/strings/stringprintf.h"
@@ -81,8 +81,8 @@ void OnPdfStreamCreated(
   stream_manager->AddStream(std::move(stream), view_id, render_process_id,
                             render_frame_id);
   content::NavigationController::LoadURLParams params(GURL(base::StringPrintf(
-      "%sindex.html?%s=%s&%s=%s", PdfViewerUI::kOrigin, PdfViewerUI::kId,
-      view_id.c_str(), PdfViewerUI::kSrc, original_url.spec().c_str())));
+      "%sindex.html?%s=%s&%s=%s", kPdfViewerUIOrigin, kPdfViewerUIId,
+      view_id.c_str(), kPdfPluginSrc, original_url.spec().c_str())));
   web_contents->GetController().LoadURLWithParams(params);
 }
 
@@ -131,7 +131,7 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     GURL* origin,
     std::string* payload) {
   if (mime_type == "application/pdf") {
-    *origin = GURL(PdfViewerUI::kOrigin);
+    *origin = GURL(kPdfViewerUIOrigin);
     return true;
   }
   return false;

@@ -23,6 +23,12 @@ extern const char kSecureProtocolDescription[];
 // The MIME type used for the PDF plugin.
 extern const char kPdfPluginMimeType[];
 extern const char kPdfPluginPath[];
+extern const char kPdfPluginSrc[];
+
+// Constants for PDF viewer webui.
+extern const char kPdfViewerUIOrigin[];
+extern const char kPdfViewerUIHost[];
+extern const char kPdfViewerUIId[];
 
 }  // namespace atom
 

@@ -26,5 +26,10 @@ const char kSecureProtocolDescription[] =
 
 const char kPdfPluginMimeType[] = "application/x-google-chrome-pdf";
 const char kPdfPluginPath[] = "chrome://pdf-viewer/";
+const char kPdfPluginSrc[] = "src";
+
+const char kPdfViewerUIOrigin[] = "chrome://pdf-viewer/";
+const char kPdfViewerUIHost[] = "pdf-viewer";
+const char kPdfViewerUIId[] = "viewId";
 
 }  // namespace atom
