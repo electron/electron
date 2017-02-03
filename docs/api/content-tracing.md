@@ -76,7 +76,7 @@ list. Possible options are:
 * `enable-sampling`
 * `enable-systrace`
 
-The first 3 options are trace recoding modes and hence mutually exclusive.
+The first 3 options are trace recording modes and hence mutually exclusive.
 If more than one trace recording modes appear in the `traceOptions` string,
 the last one takes precedence. If none of the trace recording modes are
 specified, recording mode is `record-until-full`.
