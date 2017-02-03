@@ -250,6 +250,16 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })
 
+ipcMain.on('prevent-next-new-webview', (event) => {
+  event.sender.once('new-webview', event => event.preventDefault())
+})
+
+ipcMain.on('disable-node-on-next-new-webview', (event, id) => {
+  event.sender.once('new-webview', (event, guest, webPreferences) => {
+    webPreferences.nodeIntegration = false
+  })
+})
+
 ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
   const consoleWarn = console.warn
   let warningMessage = null
