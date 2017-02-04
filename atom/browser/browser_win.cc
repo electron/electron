@@ -43,28 +43,40 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
   return TRUE;
 }
 
-bool ReadAppCommandLine(base::string16* exe,
-                        const std::vector<base::string16>& launch_args,
-                        bool includeOriginalArg) {
-  // Executable Path
-  if (exe->empty()) {
-    base::FilePath path;
-    if (!PathService::Get(base::FILE_EXE, &path)) {
-      LOG(ERROR) << "Error getting app exe path";
-      return false;
-    }
-    *exe = path.value();
+bool GetProcessExecPath(base::string16* exe) {
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return false;
+  }
+  *exe = path.value();
+  return true;
+}
+
+bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
+  if (!args->GetNext(exe)) {
+    GetProcessExecPath(exe);
   }
 
-  if (launch_args.empty()) {
-    base::string16 formatString = includeOriginalArg ?
-      L"\"%s\" \"%%1\"" :
-      L"\"%s\"";
-    *exe = base::StringPrintf(formatString.c_str(), exe->c_str());
-  } else {
-    base::string16 formatString = includeOriginalArg ?
-      L"\"%s\" %s \"%%1\"" :
-      L"\"%s\" %s";
+  // Read in optional args arg
+  std::vector<base::string16> launch_args;
+  if (args->GetNext(&launch_args) && !launch_args.empty())
+    *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"",
+                              exe->c_str(),
+                              base::JoinString(launch_args, L" ").c_str());
+  else
+    *exe = base::StringPrintf(L"\"%s\" \"%%1\"", exe->c_str());
+  return true;
+}
+
+bool FormatCommandLineString(base::string16* exe,
+                             const std::vector<base::string16>& launch_args) {
+  if (exe->empty()) {
+    GetProcessExecPath(exe);
+  }
+
+  if (!launch_args.empty()) {
+    base::string16 formatString = L"%s %s";
     *exe = base::StringPrintf(formatString.c_str(),
                               exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
@@ -163,10 +175,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     return true;
 
   base::string16 exe;
-  std::vector<base::string16> launch_args;
-  args->GetNext(&exe);
-  args->GetNext(&launch_args);
-  if (!ReadAppCommandLine(&exe, launch_args, true))
+  if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
   if (keyVal == exe) {
@@ -200,10 +209,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   base::string16 exe;
-  std::vector<base::string16> launch_args;
-  args->GetNext(&exe);
-  args->GetNext(&launch_args);
-  if (!ReadAppCommandLine(&exe, launch_args, true))
+  if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
   // Main Registry Key
@@ -233,10 +239,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   base::string16 exe;
-  std::vector<base::string16> launch_args;
-  args->GetNext(&exe);
-  args->GetNext(&launch_args);
-  if (!ReadAppCommandLine(&exe, launch_args, true))
+  if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
   // Main Registry Key
@@ -275,7 +278,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 
   if (settings.open_at_login) {
     base::string16 exe = settings.path;
-    if (!ReadAppCommandLine(&exe, settings.args, false)) return;
+    if (!FormatCommandLineString(&exe, settings.args)) return;
 
     key.WriteValue(GetAppUserModelID(), exe.c_str());
   } else {
@@ -292,7 +295,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
     base::string16 exe = options.path;
-    if (ReadAppCommandLine(&exe, options.args, false)) {
+    if (FormatCommandLineString(&exe, options.args)) {
       settings.open_at_login = keyVal == exe;
     }
   }
