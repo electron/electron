@@ -65,7 +65,6 @@ void HandleExternalProtocolInUI(
 
 void OnPdfStreamCreated(
     std::unique_ptr<content::StreamInfo> stream,
-    int64_t expected_content_size,
     const content::ResourceRequestInfo::WebContentsGetter& web_contents_getter,
     int render_process_id,
     int render_frame_id) {
@@ -150,7 +149,6 @@ void AtomResourceDispatcherHostDelegate::OnStreamCreated(
   content::BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(&OnPdfStreamCreated, base::Passed(&stream),
-                 request->GetExpectedContentSize(),
                  info->GetWebContentsGetterForRequest(), info->GetChildID(),
                  info->GetRenderFrameID()));
 }
