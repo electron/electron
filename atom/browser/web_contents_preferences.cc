@@ -5,7 +5,6 @@
 #include "atom/browser/web_contents_preferences.h"
 
 #include <algorithm>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -225,11 +224,10 @@ bool WebContentsPreferences::ConvertValueToIntegerFromString(
     return true;
   }
 
-  std::string stringValue;
+  base::string16 stringValue;
 
   if (pref->web_preferences_.GetString(attributeName, &stringValue)) {
-    std::stringstream(stringValue) >> *intValue;
-    return true;
+    return base::StringToInt(stringValue, intValue);
   }
 
   return false;
