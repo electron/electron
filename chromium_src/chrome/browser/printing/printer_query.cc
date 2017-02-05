@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "chrome/browser/printing/printer_query.h"
-
+#include <iostream>
 #include "base/bind.h"
 #include "base/bind_helpers.h"
 #include "base/message_loop/message_loop.h"
@@ -95,6 +95,7 @@ void PrinterQuery::GetSettings(
     const base::Closure& callback) {
   DCHECK(RunsTasksOnCurrentThread());
   DCHECK(!is_print_dialog_box_shown_);
+  std::cout << "PrinterQuery::GetSetting" << device_name <<std::endl;
   StartWorker(callback);
 
   // Real work is done in PrintJobWorker::GetSettings().
