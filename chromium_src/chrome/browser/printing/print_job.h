@@ -109,7 +109,7 @@ class PrintJob : public PrintJobWorkerOwner,
  private:
   // Updates document_ to a new instance.
   void UpdatePrintedDocument(PrintedDocument* new_document);
-
+  void createSettingDictionary(base::DictionaryValue*);
   // Processes a NOTIFY_PRINT_JOB_EVENT notification.
   void OnNotifyPrintJobEvent(const JobEventDetails& event_details);
 

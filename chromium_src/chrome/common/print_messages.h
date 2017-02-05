@@ -267,6 +267,11 @@ IPC_MESSAGE_ROUTED1(PrintHostMsg_DidPrintPage,
 IPC_SYNC_MESSAGE_ROUTED0_1(PrintHostMsg_GetDefaultPrintSettings,
                            PrintMsg_Print_Params /* default_settings */)
 
+// you can set the printer
+IPC_SYNC_MESSAGE_ROUTED1_1(PrintHostMsg_InitSettingWithDeviceName,
+                           base::string16, /* device name */
+                           PrintMsg_Print_Params /* default_settings */)
+
 // The renderer wants to update the current print settings with new
 // |job_settings|.
 IPC_SYNC_MESSAGE_ROUTED2_2(PrintHostMsg_UpdatePrintSettings,

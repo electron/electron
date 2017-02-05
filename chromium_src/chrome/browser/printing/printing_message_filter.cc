@@ -5,6 +5,7 @@
 #include "chrome/browser/printing/printing_message_filter.h"
 
 #include <string>
+#include <iostream>
 
 #include "base/bind.h"
 #include "base/strings/string16.h"
@@ -125,6 +126,8 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
 #endif
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_GetDefaultPrintSettings,
                                     OnGetDefaultPrintSettings)
+    IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_InitSettingWithDeviceName,
+                                    OnInitSettingWithDeviceName)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_ScriptedPrint, OnScriptedPrint)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_UpdatePrintSettings,
                                     OnUpdatePrintSettings)
@@ -280,6 +283,31 @@ void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
                  reply_msg));
 }
 
+void PrintingMessageFilter::OnInitSettingWithDeviceName(const base::string16& device_name,
+                                                        IPC::Message* reply_msg) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  scoped_refptr<PrinterQuery> printer_query;
+  printer_query = queue_->PopPrinterQuery(0);
+  std::cout << "PrintingMessageFilter::OnInitSettingWithDeviceName" << device_name << std::endl;
+  if (!printer_query.get()) {
+    printer_query =
+        queue_->CreatePrinterQuery(render_process_id_, reply_msg->routing_id());
+  }
+
+  // Loads default settings. This is asynchronous, only the IPC message sender
+  // will hang until the settings are retrieved.
+  printer_query->GetSettings(
+      PrinterQuery::DEFAULTS,
+      0,
+      false,
+      DEFAULT_MARGINS,
+      device_name,
+      base::Bind(&PrintingMessageFilter::OnGetDefaultPrintSettingsReply,
+                 this,
+                 printer_query,
+                 reply_msg));
+}
+
 void PrintingMessageFilter::OnGetDefaultPrintSettingsReply(
     scoped_refptr<PrinterQuery> printer_query,
     IPC::Message* reply_msg) {
@@ -342,6 +370,7 @@ void PrintingMessageFilter::OnScriptedPrintReply(
     params.pages = PageRange::GetPages(printer_query->settings().ranges());
   }
   PrintHostMsg_ScriptedPrint::WriteReplyParams(reply_msg, params);
+
   Send(reply_msg);
   if (params.params.dpi && params.params.document_cookie) {
 #if defined(OS_ANDROID)
@@ -376,7 +405,6 @@ void PrintingMessageFilter::OnUpdatePrintSettings(
     int document_cookie, const base::DictionaryValue& job_settings,
     IPC::Message* reply_msg) {
   std::unique_ptr<base::DictionaryValue> new_settings(job_settings.DeepCopy());
-
   scoped_refptr<PrinterQuery> printer_query;
   printer_query = queue_->PopPrinterQuery(document_cookie);
   if (!printer_query.get()) {

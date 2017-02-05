@@ -147,12 +147,14 @@ class PrintWebViewHelper
 
   // Initialize print page settings with default settings.
   // Used only for native printing workflow.
-  bool InitPrintSettings(bool fit_to_paper_size);
+  bool InitPrintSettings(bool fit_to_paper_size,
+                         const base::string16& device_name = base::string16());
 
   // Calculate number of pages in source document.
   bool CalculateNumberOfPages(blink::WebLocalFrame* frame,
                               const blink::WebNode& node,
-                              int* number_of_pages);
+                              int* number_of_pages,
+                              const base::string16& device_name = base::string16());
 
   // Update the current print settings with new |passed_job_settings|.
   // |passed_job_settings| dictionary contains print job details such as printer

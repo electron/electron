@@ -3,7 +3,8 @@
 // found in the LICENSE file.
 
 #include "chrome/browser/printing/print_job_worker.h"
-
+#include <iostream>
+#include <utility>
 #include "base/bind.h"
 #include "base/bind_helpers.h"
 #include "base/callback.h"
@@ -23,6 +24,22 @@
 #include "printing/printing_utils.h"
 #include "ui/base/l10n/l10n_util.h"
 
+#include <stddef.h>
+
+#include <algorithm>
+#include <cmath>
+#include <memory>
+#include <string>
+#include <utility>
+
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/utf_string_conversions.h"
+#include "base/time/time.h"
+#include "base/values.h"
+#include "printing/page_size_margins.h"
+#include "printing/print_job_constants.h"
+#include "printing/print_settings.h"
+#include "printing/units.h"
 using content::BrowserThread;
 
 namespace printing {
@@ -34,6 +51,80 @@ void HoldRefCallback(const scoped_refptr<printing::PrintJobWorkerOwner>& owner,
                      const base::Closure& callback) {
   callback.Run();
 }
+
+void SetCustomMarginsToJobSettings(const PageSizeMargins& page_size_margins,
+                                    base::DictionaryValue* settings) {
+  std::unique_ptr<base::DictionaryValue> custom_margins(new base::DictionaryValue());
+  custom_margins->SetDouble(kSettingMarginTop, page_size_margins.margin_top);
+  custom_margins->SetDouble(kSettingMarginBottom, page_size_margins.margin_bottom);
+  custom_margins->SetDouble(kSettingMarginLeft, page_size_margins.margin_left);
+  custom_margins->SetDouble(kSettingMarginRight, page_size_margins.margin_right);
+  settings->Set(kSettingMarginsCustom, std::move(custom_margins));
+}
+void PrintSettingsToJobSettings(const PrintSettings& settings,
+                                base::DictionaryValue* job_settings) {
+  // header footer
+  job_settings->SetBoolean(kSettingHeaderFooterEnabled,
+                           settings.display_header_footer());
+  job_settings->SetString(kSettingHeaderFooterTitle, settings.title());
+  job_settings->SetString(kSettingHeaderFooterURL, settings.url());
+
+  // bg
+  job_settings->SetBoolean(kSettingShouldPrintBackgrounds,
+                           settings.should_print_backgrounds());
+  job_settings->SetBoolean(kSettingShouldPrintSelectionOnly,
+                           settings.selection_only());
+
+  // margin
+  auto margin_type = settings.margin_type();
+  job_settings->SetInteger(kSettingMarginsType, settings.margin_type());
+  if (margin_type == CUSTOM_MARGINS) {
+    const auto& margins_in_points = settings.requested_custom_margins_in_points();
+
+    PageSizeMargins page_size_margins;
+
+    page_size_margins.margin_top = margins_in_points.top;
+    page_size_margins.margin_bottom = margins_in_points.bottom;
+    page_size_margins.margin_left = margins_in_points.left;
+    page_size_margins.margin_right = margins_in_points.right;
+    SetCustomMarginsToJobSettings(page_size_margins, job_settings);
+  }
+  job_settings->SetInteger(kSettingPreviewPageCount, 1);
+
+  // range
+
+  if (!settings.ranges().empty()) {
+    base::ListValue* page_range_array = new base::ListValue;
+    job_settings->Set(kSettingPageRange, page_range_array);
+    for (size_t i = 0; i < settings.ranges().size(); ++i) {
+      std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
+      dict->SetInteger(kSettingPageRangeFrom, settings.ranges()[i].from + 1);
+      dict->SetInteger(kSettingPageRangeTo, settings.ranges()[i].to + 1);
+      page_range_array->Append(std::move(dict));
+    }
+  }
+
+  job_settings->SetBoolean(kSettingCollate, settings.collate());
+  job_settings->SetInteger(kSettingCopies, 1);
+  job_settings->SetInteger(kSettingColor, settings.color());
+  job_settings->SetInteger(kSettingDuplexMode, settings.duplex_mode());
+  job_settings->SetBoolean(kSettingLandscape, settings.landscape());
+  job_settings->SetString(kSettingDeviceName, settings.device_name());
+  job_settings->SetInteger("scaleFactor", 100);
+  job_settings->SetBoolean("rasterizePDF", false);
+
+  job_settings->SetInteger("desiredDpi", settings.desired_dpi());
+  job_settings->SetInteger("dpi", settings.dpi());
+
+  job_settings->SetBoolean(kSettingPrintToPDF, false);
+  job_settings->SetBoolean(kSettingCloudPrintDialog, false);
+  job_settings->SetBoolean(kSettingPrintWithPrivet, false);
+  job_settings->SetBoolean(kSettingPrintWithExtension, false);
+
+  job_settings->SetBoolean("showSystemDialog", false);
+  job_settings->SetInteger(kSettingPreviewPageCount, 1);
+}
+
 
 class PrintingContextDelegate : public PrintingContext::Delegate {
  public:
@@ -114,7 +205,9 @@ void PrintJobWorker::GetSettings(
     bool ask_user_for_settings,
     int document_page_count,
     bool has_selection,
-    MarginType margin_type) {
+    MarginType margin_type,
+    const base::string16& device_name
+) {
   DCHECK(task_runner_->RunsTasksOnCurrentThread());
   DCHECK_EQ(page_number_, PageNumber::npos());
 
@@ -136,6 +229,13 @@ void PrintJobWorker::GetSettings(
                               base::Unretained(this),
                               document_page_count,
                               has_selection)));
+  } else if (!device_name.empty()) {
+    BrowserThread::PostTask(
+        BrowserThread::UI, FROM_HERE,
+        base::Bind(&HoldRefCallback, make_scoped_refptr(owner_),
+                   base::Bind(&PrintJobWorker::InitWithDeviceName,
+                              base::Unretained(this),
+                              device_name)));
   } else {
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
@@ -148,7 +248,6 @@ void PrintJobWorker::GetSettings(
 void PrintJobWorker::SetSettings(
     std::unique_ptr<base::DictionaryValue> new_settings) {
   DCHECK(task_runner_->RunsTasksOnCurrentThread());
-
   BrowserThread::PostTask(
       BrowserThread::UI,
       FROM_HERE,
@@ -164,6 +263,8 @@ void PrintJobWorker::UpdatePrintSettings(
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   PrintingContext::Result result =
       printing_context_->UpdatePrintSettings(*new_settings);
+  std::cout << *new_settings << std::endl;
+  std::cout << "PrintJobWorker::UpdatePrintSettings -- " << result << printing_context_->settings().device_name() << std::endl;
   GetSettingsDone(result);
 }
 
@@ -209,6 +310,23 @@ void PrintJobWorker::GetSettingsWithUIDone(PrintingContext::Result result) {
 void PrintJobWorker::UseDefaultSettings() {
   PrintingContext::Result result = printing_context_->UseDefaultSettings();
   GetSettingsDone(result);
+}
+
+void PrintJobWorker::InitWithDeviceName(const base::string16& device_name) {
+  std::cout << "PrintJobWorker::InitWithDeviceName" << device_name << std::endl;
+  PrintingContext::Result result = printing_context_->UseDefaultSettings();
+  if (result == PrintingContext::Result::FAILED) {
+    GetSettingsDone(result);
+  } else {
+    const auto& settings = printing_context_->settings();
+    std::unique_ptr<base::DictionaryValue> dic(new base::DictionaryValue);
+    PrintSettingsToJobSettings(settings, dic.get());
+    dic->SetString("deviceName", device_name);
+    base::string16 string16;
+    dic->GetString("deviceName", &string16);
+    std::cout << "PrintJobWorker::InitWithDeviceName dic" << string16 << std::endl;
+    UpdatePrintSettings(std::move(dic));
+  }
 }
 
 void PrintJobWorker::StartPrinting(PrintedDocument* new_document) {
