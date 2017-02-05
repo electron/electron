@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "chrome/browser/printing/print_job_worker.h"
-#include <iostream>
 #include <utility>
 #include "base/bind.h"
 #include "base/bind_helpers.h"
@@ -262,10 +261,7 @@ void PrintJobWorker::UpdatePrintSettings(
     std::unique_ptr<base::DictionaryValue> new_settings) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   PrintingContext::Result result =
-      printing_context_->UpdatePrintSettings(*new_settings);
-  std::cout << *new_settings << std::endl;
-  std::cout << "PrintJobWorker::UpdatePrintSettings -- " << result << printing_context_->settings().device_name() << std::endl;
-  GetSettingsDone(result);
+      printing_context_->UpdatePrintSettings(*new_settings);GetSettingsDone(result);
 }
 
 void PrintJobWorker::GetSettingsDone(PrintingContext::Result result) {
@@ -313,7 +309,6 @@ void PrintJobWorker::UseDefaultSettings() {
 }
 
 void PrintJobWorker::InitWithDeviceName(const base::string16& device_name) {
-  std::cout << "PrintJobWorker::InitWithDeviceName" << device_name << std::endl;
   PrintingContext::Result result = printing_context_->UseDefaultSettings();
   if (result == PrintingContext::Result::FAILED) {
     GetSettingsDone(result);
@@ -324,7 +319,6 @@ void PrintJobWorker::InitWithDeviceName(const base::string16& device_name) {
     dic->SetString("deviceName", device_name);
     base::string16 string16;
     dic->GetString("deviceName", &string16);
-    std::cout << "PrintJobWorker::InitWithDeviceName dic" << string16 << std::endl;
     UpdatePrintSettings(std::move(dic));
   }
 }

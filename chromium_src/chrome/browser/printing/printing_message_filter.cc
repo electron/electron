@@ -5,7 +5,6 @@
 #include "chrome/browser/printing/printing_message_filter.h"
 
 #include <string>
-#include <iostream>
 
 #include "base/bind.h"
 #include "base/strings/string16.h"
@@ -288,7 +287,6 @@ void PrintingMessageFilter::OnInitSettingWithDeviceName(const base::string16& de
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   scoped_refptr<PrinterQuery> printer_query;
   printer_query = queue_->PopPrinterQuery(0);
-  std::cout << "PrintingMessageFilter::OnInitSettingWithDeviceName" << device_name << std::endl;
   if (!printer_query.get()) {
     printer_query =
         queue_->CreatePrinterQuery(render_process_id_, reply_msg->routing_id());
