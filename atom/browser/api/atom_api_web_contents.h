@@ -19,9 +19,6 @@
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
-
-using PrinterList = std::vector<printing::PrinterBasicInfo>;
-
 namespace blink {
 struct WebDeviceEmulationParams;
 }
@@ -112,7 +109,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
-  PrinterList GetPrinterList(mate::Arguments* args);
+  std::vector<printing::PrinterBasicInfo> GetPrinterList(mate::Arguments* args);
   void Print(mate::Arguments* args);
   void SetEmbedder(const WebContents* embedder);
 
