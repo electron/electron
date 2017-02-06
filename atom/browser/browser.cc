@@ -7,10 +7,12 @@
 #include <string>
 
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/browser_observer.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
+#include "base/run_loop.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/brightray_paths.h"
 
@@ -82,9 +84,10 @@ void Browser::Shutdown() {
   is_shutdown_ = true;
   is_quiting_ = true;
 
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit());
+  for (BrowserObserver& observer : observers_)
+    observer.OnQuit();
 
-  if (base::MessageLoop::current()) {
+  if (base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
   } else {
@@ -127,25 +130,25 @@ int Browser::GetBadgeCount() {
 
 bool Browser::OpenFile(const std::string& file_path) {
   bool prevent_default = false;
-  FOR_EACH_OBSERVER(BrowserObserver,
-                    observers_,
-                    OnOpenFile(&prevent_default, file_path));
+  for (BrowserObserver& observer : observers_)
+    observer.OnOpenFile(&prevent_default, file_path);
 
   return prevent_default;
 }
 
 void Browser::OpenURL(const std::string& url) {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnOpenURL(url));
+  for (BrowserObserver& observer : observers_)
+    observer.OnOpenURL(url);
 }
 
 void Browser::Activate(bool has_visible_windows) {
-  FOR_EACH_OBSERVER(BrowserObserver,
-                    observers_,
-                    OnActivate(has_visible_windows));
+  for (BrowserObserver& observer : observers_)
+    observer.OnActivate(has_visible_windows);
 }
 
 void Browser::WillFinishLaunching() {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillFinishLaunching());
+  for (BrowserObserver& observer : observers_)
+    observer.OnWillFinishLaunching();
 }
 
 void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
@@ -155,22 +158,20 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
     base::CreateDirectoryAndGetError(user_data, nullptr);
 
   is_ready_ = true;
-  FOR_EACH_OBSERVER(BrowserObserver, observers_,
-    OnFinishLaunching(launch_info));
+  for (BrowserObserver& observer : observers_)
+    observer.OnFinishLaunching(launch_info);
 }
 
 void Browser::OnAccessibilitySupportChanged() {
-  FOR_EACH_OBSERVER(BrowserObserver,
-                    observers_,
-                    OnAccessibilitySupportChanged());
+  for (BrowserObserver& observer : observers_)
+    observer.OnAccessibilitySupportChanged();
 }
 
 void Browser::RequestLogin(
     LoginHandler* login_handler,
     std::unique_ptr<base::DictionaryValue> request_details) {
-  FOR_EACH_OBSERVER(BrowserObserver,
-                    observers_,
-                    OnLogin(login_handler, *(request_details.get())));
+  for (BrowserObserver& observer : observers_)
+    observer.OnLogin(login_handler, *(request_details.get()));
 }
 
 void Browser::NotifyAndShutdown() {
@@ -178,7 +179,8 @@ void Browser::NotifyAndShutdown() {
     return;
 
   bool prevent_default = false;
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillQuit(&prevent_default));
+  for (BrowserObserver& observer : observers_)
+    observer.OnWillQuit(&prevent_default);
 
   if (prevent_default) {
     is_quiting_ = false;
@@ -190,9 +192,8 @@ void Browser::NotifyAndShutdown() {
 
 bool Browser::HandleBeforeQuit() {
   bool prevent_default = false;
-  FOR_EACH_OBSERVER(BrowserObserver,
-                    observers_,
-                    OnBeforeQuit(&prevent_default));
+  for (BrowserObserver& observer : observers_)
+    observer.OnBeforeQuit(&prevent_default);
 
   return !prevent_default;
 }
@@ -205,12 +206,14 @@ void Browser::OnWindowCloseCancelled(NativeWindow* window) {
 }
 
 void Browser::OnWindowAllClosed() {
-  if (is_exiting_)
+  if (is_exiting_) {
     Shutdown();
-  else if (is_quiting_)
+  } else if (is_quiting_) {
     NotifyAndShutdown();
-  else
-    FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWindowAllClosed());
+  } else {
+    for (BrowserObserver& observer : observers_)
+      observer.OnWindowAllClosed();
+  }
 }
 
 }  // namespace atom

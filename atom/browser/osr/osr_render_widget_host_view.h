@@ -160,12 +160,9 @@ class OffScreenRenderWidgetHostView
     bool defer_compositor_lock) override;
   void DelegatedFrameHostResizeLockWasReleased(void) override;
   void DelegatedFrameHostSendReclaimCompositorResources(
-    int output_surface_id,
-    bool is_swap_ack,
-    const cc::ReturnedResourceArray& resources) override;
-  void DelegatedFrameHostOnLostCompositorResources(void) override;
-  void DelegatedFrameHostUpdateVSyncParameters(
-    const base::TimeTicks &, const base::TimeDelta &) override;
+      int output_surface_id,
+      bool is_swap_ack,
+      const cc::ReturnedResourceArray& resources) override;
   void SetBeginFrameSource(cc::BeginFrameSource* source) override;
 #endif  // !defined(OS_MACOSX)
 

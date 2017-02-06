@@ -13,8 +13,8 @@
             var showPanelIntevalId = setInterval(function () {
               if (webContents.devToolsWebContents) {
                 webContents.devToolsWebContents.executeJavaScript('(' + (function () {
-                  var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
-                  WebInspector.inspectorView.showPanel(lastPanelId)
+                  var lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
+                  UI.inspectorView.showPanel(lastPanelId)
                 }).toString() + ')()')
               } else {
                 clearInterval(showPanelIntevalId)

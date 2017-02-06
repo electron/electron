@@ -255,7 +255,7 @@ class ResolveProxyHelper {
     // Start the request.
     int result = proxy_service->ResolveProxy(
         url, "GET", &proxy_info_, completion_callback, &pac_req_, nullptr,
-        net::BoundNetLog());
+        net::NetLogWithSource());
 
     // Completed synchronously.
     if (result != net::ERR_IO_PENDING)
@@ -271,6 +271,9 @@ class ResolveProxyHelper {
 };
 
 // Runs the callback in UI thread.
+void RunCallbackInUI(const base::Callback<void()>& callback) {
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, callback);
+}
 template<typename ...T>
 void RunCallbackInUI(const base::Callback<void(T...)>& callback, T... result) {
   BrowserThread::PostTask(
@@ -371,7 +374,7 @@ void ClearAuthCacheInIO(
             options.origin, options.realm, options.auth_scheme,
             net::AuthCredentials(options.username, options.password));
       } else {
-        auth_cache->Clear();
+        auth_cache->ClearEntriesAddedWithin(base::TimeDelta::Max());
       }
     } else if (options.type == "clientCertificate") {
       auto client_auth_cache = network_session->ssl_client_auth_cache();

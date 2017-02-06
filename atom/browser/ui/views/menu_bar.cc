@@ -17,7 +17,7 @@
 #if defined(OS_WIN)
 #include "ui/gfx/color_utils.h"
 #elif defined(USE_X11)
-#include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
+#include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #endif
 
 namespace atom {
@@ -35,11 +35,11 @@ void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
   GtkWidget* menu_bar = gtk_menu_bar_new();
 
   GtkStyle* style = gtk_rc_get_style(menu_bar);
-  *enabled = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_NORMAL]);
-  *disabled = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_INSENSITIVE]);
-  *highlight = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_SELECTED]);
-  *hover = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_PRELIGHT]);
-  *background = libgtk2ui::GdkColorToSkColor(style->bg[GTK_STATE_NORMAL]);
+  *enabled = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_NORMAL]);
+  *disabled = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_INSENSITIVE]);
+  *highlight = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_SELECTED]);
+  *hover = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_PRELIGHT]);
+  *background = libgtkui::GdkColorToSkColor(style->bg[GTK_STATE_NORMAL]);
 
   gtk_widget_destroy(menu_bar);
 }

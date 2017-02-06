@@ -109,15 +109,15 @@ void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {
 }
 
 void OffScreenWebContentsView::GetScreenInfo(
-    blink::WebScreenInfo* web_screen_info) const {
-  web_screen_info->rect = gfx::Rect(view_->size());
-  web_screen_info->availableRect = gfx::Rect(view_->size());
-  web_screen_info->depth = 24;
-  web_screen_info->depthPerComponent = 8;
-  web_screen_info->deviceScaleFactor = view_->scale_factor();
-  web_screen_info->orientationAngle = 0;
-  web_screen_info->orientationType =
-      blink::WebScreenOrientationLandscapePrimary;
+    content::ScreenInfo* screen_info) const {
+  screen_info->rect = gfx::Rect(view_->size());
+  screen_info->available_rect = gfx::Rect(view_->size());
+  screen_info->depth = 24;
+  screen_info->depth_per_component = 8;
+  screen_info->device_scale_factor = view_->scale_factor();
+  screen_info->orientation_angle = 0;
+  screen_info->orientation_type =
+      content::SCREEN_ORIENTATION_VALUES_LANDSCAPE_PRIMARY;
 }
 
 #if defined(OS_MACOSX)
@@ -141,9 +141,10 @@ void OffScreenWebContentsView::StartDragging(
     blink::WebDragOperationsMask allowed_ops,
     const gfx::ImageSkia& image,
     const gfx::Vector2d& image_offset,
-    const content::DragEventSourceInfo& event_info) {
+    const content::DragEventSourceInfo& event_info,
+    content::RenderWidgetHostImpl* source_rwh) {
   if (web_contents_)
-    web_contents_->SystemDragEnded();
+    web_contents_->SystemDragEnded(source_rwh);
 }
 
 void OffScreenWebContentsView::UpdateDragCursor(

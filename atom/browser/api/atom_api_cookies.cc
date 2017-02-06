@@ -56,19 +56,20 @@ struct Converter<net::CanonicalCookie> {
 };
 
 template<>
-struct Converter<AtomCookieDelegate::ChangeCause> {
+struct Converter<net::CookieStore::ChangeCause> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const AtomCookieDelegate::ChangeCause& val) {
+                                   const net::CookieStore::ChangeCause& val) {
     switch (val) {
-      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_EXPLICIT:
+      case net::CookieStore::ChangeCause::INSERTED:
+      case net::CookieStore::ChangeCause::EXPLICIT:
         return mate::StringToV8(isolate, "explicit");
-      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_OVERWRITE:
+      case net::CookieStore::ChangeCause::OVERWRITE:
         return mate::StringToV8(isolate, "overwrite");
-      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_EXPIRED:
+      case net::CookieStore::ChangeCause::EXPIRED:
         return mate::StringToV8(isolate, "expired");
-      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_EVICTED:
+      case net::CookieStore::ChangeCause::EVICTED:
         return mate::StringToV8(isolate, "evicted");
-      case AtomCookieDelegate::ChangeCause::CHANGE_COOKIE_EXPIRED_OVERWRITE:
+      case net::CookieStore::ChangeCause::EXPIRED_OVERWRITE:
         return mate::StringToV8(isolate, "expired-overwrite");
       default:
         return mate::StringToV8(isolate, "unknown");
@@ -266,7 +267,7 @@ void Cookies::Set(const base::DictionaryValue& details,
 
 void Cookies::OnCookieChanged(const net::CanonicalCookie& cookie,
                               bool removed,
-                              AtomCookieDelegate::ChangeCause cause) {
+                              net::CookieStore::ChangeCause cause) {
   Emit("changed", cookie, cause, removed);
 }
 

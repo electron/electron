@@ -4,8 +4,11 @@
 
 #include "extensions/common/url_pattern.h"
 
+#include <stddef.h>
+
 #include <ostream>
 
+#include "base/macros.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_piece.h"
@@ -17,31 +20,28 @@
 #include "url/gurl.h"
 #include "url/url_util.h"
 
-const char extensions::URLPattern::kAllUrlsPattern[] = "<all_urls>";
+const char URLPattern::kAllUrlsPattern[] = "<all_urls>";
 const char kExtensionScheme[] = "chrome-extension";
 
 namespace {
 
 // TODO(aa): What about more obscure schemes like data: and javascript: ?
 // Note: keep this array in sync with kValidSchemeMasks.
-const char* kValidSchemes[] = {
-    url::kHttpScheme,
-    url::kHttpsScheme,
-    url::kFileScheme,
-    url::kFtpScheme,
-    content::kChromeUIScheme,
-    kExtensionScheme,
+const char* const kValidSchemes[] = {
+    url::kHttpScheme,         url::kHttpsScheme,
+    url::kFileScheme,         url::kFtpScheme,
+    content::kChromeUIScheme, kExtensionScheme,
     url::kFileSystemScheme,
 };
 
 const int kValidSchemeMasks[] = {
-  extensions::URLPattern::SCHEME_HTTP,
-  extensions::URLPattern::SCHEME_HTTPS,
-  extensions::URLPattern::SCHEME_FILE,
-  extensions::URLPattern::SCHEME_FTP,
-  extensions::URLPattern::SCHEME_CHROMEUI,
-  extensions::URLPattern::SCHEME_EXTENSION,
-  extensions::URLPattern::SCHEME_FILESYSTEM,
+  URLPattern::SCHEME_HTTP,
+  URLPattern::SCHEME_HTTPS,
+  URLPattern::SCHEME_FILE,
+  URLPattern::SCHEME_FTP,
+  URLPattern::SCHEME_CHROMEUI,
+  URLPattern::SCHEME_EXTENSION,
+  URLPattern::SCHEME_FILESYSTEM,
 };
 
 static_assert(arraysize(kValidSchemes) == arraysize(kValidSchemeMasks),
@@ -70,26 +70,26 @@ const char* const kParseResultMessages[] = {
   kParseErrorInvalidHost,
 };
 
-static_assert(extensions::URLPattern::NUM_PARSE_RESULTS == arraysize(kParseResultMessages),
+static_assert(URLPattern::NUM_PARSE_RESULTS == arraysize(kParseResultMessages),
               "must add message for each parse result");
 
 const char kPathSeparator[] = "/";
 
-bool IsStandardScheme(const std::string& scheme) {
+bool IsStandardScheme(base::StringPiece scheme) {
   // "*" gets the same treatment as a standard scheme.
   if (scheme == "*")
     return true;
 
-  return url::IsStandard(scheme.c_str(),
+  return url::IsStandard(scheme.data(),
                          url::Component(0, static_cast<int>(scheme.length())));
 }
 
-bool IsValidPortForScheme(const std::string& scheme, const std::string& port) {
+bool IsValidPortForScheme(base::StringPiece scheme, base::StringPiece port) {
   if (port == "*")
     return true;
 
   // Only accept non-wildcard ports if the scheme uses ports.
-  if (url::DefaultPortForScheme(scheme.c_str(), scheme.length()) ==
+  if (url::DefaultPortForScheme(scheme.data(), scheme.length()) ==
       url::PORT_UNSPECIFIED) {
     return false;
   }
@@ -107,17 +107,23 @@ bool IsValidPortForScheme(const std::string& scheme, const std::string& port) {
 // the path will have only a single wildcard at the end. This makes figuring
 // out overlap much easier. It seems like there is probably a computer-sciency
 // way to solve the general case, but we don't need that yet.
-std::string StripTrailingWildcard(const std::string& path) {
-  size_t wildcard_index = path.find('*');
-  size_t path_last = path.size() - 1;
-  return wildcard_index == path_last ? path.substr(0, path_last) : path;
+base::StringPiece StripTrailingWildcard(base::StringPiece path) {
+  if (path.ends_with("*"))
+    path.remove_suffix(1);
+  return path;
+}
+
+// Removes trailing dot from |host_piece| if any.
+base::StringPiece CanonicalizeHostForMatching(base::StringPiece host_piece) {
+  if (host_piece.ends_with("."))
+    host_piece.remove_suffix(1);
+  return host_piece;
 }
 
 }  // namespace
 
-namespace extensions {
 // static
-bool URLPattern::IsValidSchemeForExtensions(const std::string& scheme) {
+bool URLPattern::IsValidSchemeForExtensions(base::StringPiece scheme) {
   for (size_t i = 0; i < arraysize(kValidSchemes); ++i) {
     if (scheme == kValidSchemes[i])
       return true;
@@ -126,7 +132,7 @@ bool URLPattern::IsValidSchemeForExtensions(const std::string& scheme) {
 }
 
 URLPattern::URLPattern()
-    : valid_schemes_(SCHEME_ALL),
+    : valid_schemes_(SCHEME_NONE),
       match_all_urls_(false),
       match_subdomains_(false),
       port_("*") {}
@@ -137,7 +143,7 @@ URLPattern::URLPattern(int valid_schemes)
       match_subdomains_(false),
       port_("*") {}
 
-URLPattern::URLPattern(int valid_schemes, const std::string& pattern)
+URLPattern::URLPattern(int valid_schemes, base::StringPiece pattern)
     // Strict error checking is used, because this constructor is only
     // appropriate when we know |pattern| is valid.
     : valid_schemes_(valid_schemes),
@@ -148,6 +154,8 @@ URLPattern::URLPattern(int valid_schemes, const std::string& pattern)
   if (PARSE_SUCCESS != result)
     NOTREACHED() << "URLPattern invalid: " << pattern << " result " << result;
 }
+
+URLPattern::URLPattern(const URLPattern& other) = default;
 
 URLPattern::~URLPattern() {
 }
@@ -168,7 +176,7 @@ std::ostream& operator<<(std::ostream& out, const URLPattern& url_pattern) {
   return out << '"' << url_pattern.GetAsString() << '"';
 }
 
-URLPattern::ParseResult URLPattern::Parse(const std::string& pattern) {
+URLPattern::ParseResult URLPattern::Parse(base::StringPiece pattern) {
   spec_.clear();
   SetMatchAllURLs(false);
   SetMatchSubdomains(false);
@@ -185,12 +193,12 @@ URLPattern::ParseResult URLPattern::Parse(const std::string& pattern) {
   bool has_standard_scheme_separator = true;
 
   // Some urls also use ':' alone as the scheme separator.
-  if (scheme_end_pos == std::string::npos) {
+  if (scheme_end_pos == base::StringPiece::npos) {
     scheme_end_pos = pattern.find(':');
     has_standard_scheme_separator = false;
   }
 
-  if (scheme_end_pos == std::string::npos)
+  if (scheme_end_pos == base::StringPiece::npos)
     return PARSE_ERROR_MISSING_SCHEME_SEPARATOR;
 
   if (!SetScheme(pattern.substr(0, scheme_end_pos)))
@@ -214,7 +222,7 @@ URLPattern::ParseResult URLPattern::Parse(const std::string& pattern) {
     path_start_pos = host_start_pos;
   } else if (scheme_ == url::kFileScheme) {
     size_t host_end_pos = pattern.find(kPathSeparator, host_start_pos);
-    if (host_end_pos == std::string::npos) {
+    if (host_end_pos == base::StringPiece::npos) {
       // Allow hostname omission.
       // e.g. file://* is interpreted as file:///*,
       // file://foo* is interpreted as file:///foo*.
@@ -231,10 +239,13 @@ URLPattern::ParseResult URLPattern::Parse(const std::string& pattern) {
     if (host_start_pos == host_end_pos)
       return PARSE_ERROR_EMPTY_HOST;
 
-    if (host_end_pos == std::string::npos)
+    if (host_end_pos == base::StringPiece::npos)
       return PARSE_ERROR_EMPTY_PATH;
 
-    host_ = pattern.substr(host_start_pos, host_end_pos - host_start_pos);
+    // TODO(devlin): This whole series is expensive. Luckily we don't do it
+    // *too* often, but it could be optimized.
+    pattern.substr(host_start_pos, host_end_pos - host_start_pos)
+        .CopyToString(&host_);
 
     // The first component can optionally be '*' to match all subdomains.
     std::vector<std::string> host_components = base::SplitString(
@@ -282,9 +293,9 @@ void URLPattern::SetValidSchemes(int valid_schemes) {
   valid_schemes_ = valid_schemes;
 }
 
-void URLPattern::SetHost(const std::string& host) {
+void URLPattern::SetHost(base::StringPiece host) {
   spec_.clear();
-  host_ = host;
+  host.CopyToString(&host_);
 }
 
 void URLPattern::SetMatchAllURLs(bool val) {
@@ -304,9 +315,9 @@ void URLPattern::SetMatchSubdomains(bool val) {
   match_subdomains_ = val;
 }
 
-bool URLPattern::SetScheme(const std::string& scheme) {
+bool URLPattern::SetScheme(base::StringPiece scheme) {
   spec_.clear();
-  scheme_ = scheme;
+  scheme.CopyToString(&scheme_);
   if (scheme_ == "*") {
     valid_schemes_ &= (SCHEME_HTTP | SCHEME_HTTPS);
   } else if (!IsValidScheme(scheme_)) {
@@ -315,7 +326,7 @@ bool URLPattern::SetScheme(const std::string& scheme) {
   return true;
 }
 
-bool URLPattern::IsValidScheme(const std::string& scheme) const {
+bool URLPattern::IsValidScheme(base::StringPiece scheme) const {
   if (valid_schemes_ == SCHEME_ALL)
     return true;
 
@@ -327,18 +338,18 @@ bool URLPattern::IsValidScheme(const std::string& scheme) const {
   return false;
 }
 
-void URLPattern::SetPath(const std::string& path) {
+void URLPattern::SetPath(base::StringPiece path) {
   spec_.clear();
-  path_ = path;
+  path.CopyToString(&path_);
   path_escaped_ = path_;
   base::ReplaceSubstringsAfterOffset(&path_escaped_, 0, "\\", "\\\\");
   base::ReplaceSubstringsAfterOffset(&path_escaped_, 0, "?", "\\?");
 }
 
-bool URLPattern::SetPort(const std::string& port) {
+bool URLPattern::SetPort(base::StringPiece port) {
   spec_.clear();
   if (IsValidPortForScheme(scheme_, port)) {
-    port_ = port;
+    port.CopyToString(&port_);
     return true;
   }
   return false;
@@ -354,15 +365,17 @@ bool URLPattern::MatchesURL(const GURL& test) const {
     test_url = test.inner_url();
   }
 
-  if (!MatchesScheme(test_url->scheme()))
+  if (!MatchesScheme(test_url->scheme_piece()))
     return false;
 
   if (match_all_urls_)
     return true;
 
   std::string path_for_request = test.PathForRequest();
-  if (has_inner_url)
-    path_for_request = test_url->path() + path_for_request;
+  if (has_inner_url) {
+    path_for_request = base::StringPrintf("%s%s", test_url->path_piece().data(),
+                                          path_for_request.c_str());
+  }
 
   return MatchesSecurityOriginHelper(*test_url) &&
          MatchesPath(path_for_request);
@@ -387,30 +400,33 @@ bool URLPattern::MatchesSecurityOrigin(const GURL& test) const {
   return MatchesSecurityOriginHelper(*test_url);
 }
 
-bool URLPattern::MatchesScheme(const std::string& test) const {
+bool URLPattern::MatchesScheme(base::StringPiece test) const {
   if (!IsValidScheme(test))
     return false;
 
   return scheme_ == "*" || test == scheme_;
 }
 
-bool URLPattern::MatchesHost(const std::string& host) const {
-  std::string test(url::kHttpScheme);
-  test += url::kStandardSchemeSeparator;
-  test += host;
-  test += "/";
-  return MatchesHost(GURL(test));
+bool URLPattern::MatchesHost(base::StringPiece host) const {
+  // TODO(devlin): This is a bit sad. Parsing urls is expensive.
+  return MatchesHost(
+      GURL(base::StringPrintf("%s%s%s/", url::kHttpScheme,
+                              url::kStandardSchemeSeparator, host.data())));
 }
 
 bool URLPattern::MatchesHost(const GURL& test) const {
+  const base::StringPiece test_host(
+      CanonicalizeHostForMatching(test.host_piece()));
+  const base::StringPiece pattern_host(CanonicalizeHostForMatching(host_));
+
   // If the hosts are exactly equal, we have a match.
-  if (test.host() == host_)
+  if (test_host == pattern_host)
     return true;
 
   // If we're matching subdomains, and we have no host in the match pattern,
   // that means that we're matching all hosts, which means we have a match no
   // matter what the test host is.
-  if (match_subdomains_ && host_.empty())
+  if (match_subdomains_ && pattern_host.empty())
     return true;
 
   // Otherwise, we can only match if our match pattern matches subdomains.
@@ -423,14 +439,13 @@ bool URLPattern::MatchesHost(const GURL& test) const {
     return false;
 
   // Check if the test host is a subdomain of our host.
-  if (test.host().length() <= (host_.length() + 1))
+  if (test_host.length() <= (pattern_host.length() + 1))
     return false;
 
-  if (test.host().compare(test.host().length() - host_.length(),
-                          host_.length(), host_) != 0)
+  if (!test_host.ends_with(pattern_host))
     return false;
 
-  return test.host()[test.host().length() - host_.length() - 1] == '.';
+  return test_host[test_host.length() - pattern_host.length() - 1] == '.';
 }
 
 bool URLPattern::ImpliesAllHosts() const {
@@ -444,28 +459,24 @@ bool URLPattern::ImpliesAllHosts() const {
   if (!match_subdomains_)
     return false;
 
-  // If |host_| is a recognized TLD, this will be 0. We don't include private
-  // TLDs, so that, e.g., *.appspot.com does not imply all hosts.
-  size_t registry_length = net::registry_controlled_domains::GetRegistryLength(
-      host_,
-      net::registry_controlled_domains::EXCLUDE_UNKNOWN_REGISTRIES,
-      net::registry_controlled_domains::EXCLUDE_PRIVATE_REGISTRIES);
   // If there was more than just a TLD in the host (e.g., *.foobar.com), it
-  // doesn't imply all hosts.
-  if (registry_length > 0)
+  // doesn't imply all hosts. We don't include private TLDs, so that, e.g.,
+  // *.appspot.com does not imply all hosts.
+  if (net::registry_controlled_domains::HostHasRegistryControlledDomain(
+          host_, net::registry_controlled_domains::EXCLUDE_UNKNOWN_REGISTRIES,
+          net::registry_controlled_domains::EXCLUDE_PRIVATE_REGISTRIES))
     return false;
 
   // At this point the host could either be just a TLD ("com") or some unknown
   // TLD-like string ("notatld"). To disambiguate between them construct a
-  // fake URL, and check the registry. This returns 0 if the TLD is
-  // unrecognized, or the length of the recognized TLD.
-  registry_length = net::registry_controlled_domains::GetRegistryLength(
-      base::StringPrintf("foo.%s", host_.c_str()),
+  // fake URL, and check the registry.
+  //
+  // If we recognized this TLD, then this is a pattern like *.com, and it
+  // should imply all hosts.
+  return net::registry_controlled_domains::HostHasRegistryControlledDomain(
+      "notatld." + host_,
       net::registry_controlled_domains::EXCLUDE_UNKNOWN_REGISTRIES,
       net::registry_controlled_domains::EXCLUDE_PRIVATE_REGISTRIES);
-  // If we recognized this TLD, then this is a pattern like *.com, and it
-  // should imply all hosts. Otherwise, this doesn't imply all hosts.
-  return registry_length > 0;
 }
 
 bool URLPattern::MatchesSingleOrigin() const {
@@ -474,11 +485,16 @@ bool URLPattern::MatchesSingleOrigin() const {
   return !ImpliesAllHosts() && scheme_ != "*" && !match_subdomains_;
 }
 
-bool URLPattern::MatchesPath(const std::string& test) const {
+bool URLPattern::MatchesPath(base::StringPiece test) const {
   // Make the behaviour of OverlapsWith consistent with MatchesURL, which is
   // need to match hosted apps on e.g. 'google.com' also run on 'google.com/'.
-  if (test + "/*" == path_escaped_)
+  // The below if is a no-copy way of doing (test + "/*" == path_escaped_).
+  if (path_escaped_.length() == test.length() + 2 &&
+      base::StartsWith(path_escaped_.c_str(), test,
+                       base::CompareCase::SENSITIVE) &&
+      base::EndsWith(path_escaped_, "/*", base::CompareCase::SENSITIVE)) {
     return true;
+  }
 
   return base::MatchPattern(test, path_escaped_);
 }
@@ -516,7 +532,7 @@ const std::string& URLPattern::GetAsString() const {
   if (!path_.empty())
     spec += path_;
 
-  spec_ = spec;
+  spec_ = std::move(spec);
   return spec_;
 }
 
@@ -574,7 +590,7 @@ bool URLPattern::MatchesSecurityOriginHelper(const GURL& test) const {
   return true;
 }
 
-bool URLPattern::MatchesPortPattern(const std::string& port) const {
+bool URLPattern::MatchesPortPattern(base::StringPiece port) const {
   return port_ == "*" || port_ == port;
 }
 
@@ -615,5 +631,3 @@ const char* URLPattern::GetParseResultString(
     URLPattern::ParseResult parse_result) {
   return kParseResultMessages[parse_result];
 }
-
-}  // namespace extensions

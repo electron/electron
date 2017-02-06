@@ -155,39 +155,45 @@
               '-ldbghelp.lib',
               '-lshlwapi.lib',
             ],
-            # Fix the linking error with icu.
+            # Force referencing symbols of ICU and v8_inspector to make sure
+            # they are included in the final DLL.
             'conditions': [
               ['libchromiumcontent_component==0', {
                 'variables': {
                   'conditions': [
                     ['target_arch=="ia32"', {
                       'reference_symbols': [
-                        '_u_errorName_56',
-                        '_ubidi_setPara_56',
-                        '_ucsdet_getName_56',
-                        '_uidna_openUTS46_56',
-                        '_ulocdata_close_56',
-                        '_unorm_normalize_56',
-                        '_uregex_matches_56',
-                        '_uscript_getCode_56',
-                        '_uspoof_open_56',
-                        '_usearch_setPattern_56',
-                        '?createInstance@Transliterator@icu_56@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
-                        '??0MeasureFormat@icu_56@@QAE@ABVLocale@1@W4UMeasureFormatWidth@@AAW4UErrorCode@@@Z',
+                        # ICU symbols:
+                        '_u_errorName_58',
+                        '_ubidi_setPara_58',
+                        '_ucsdet_getName_58',
+                        '_uidna_openUTS46_58',
+                        '_ulocdata_close_58',
+                        '_unorm_normalize_58',
+                        '_uregex_matches_58',
+                        '_uscript_getCode_58',
+                        '_uspoof_open_58',
+                        '_usearch_setPattern_58',
+                        '?createInstance@Transliterator@icu_58@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
+                        '??0MeasureFormat@icu_58@@QAE@ABVLocale@1@W4UMeasureFormatWidth@@AAW4UErrorCode@@@Z',
                       ],
                     }, {
                       'reference_symbols': [
-                        'u_errorName_56',
-                        'ubidi_setPara_56',
-                        'ucsdet_getName_56',
-                        'uidna_openUTS46_56',
-                        'ulocdata_close_56',
-                        'unorm_normalize_56',
-                        'uregex_matches_56',
-                        'uspoof_open_56',
-                        'usearch_setPattern_56',
-                        '?createInstance@Transliterator@icu_56@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z',
-                        '??0MeasureFormat@icu_56@@QEAA@AEBVLocale@1@W4UMeasureFormatWidth@@AEAW4UErrorCode@@@Z',
+                        # ICU symbols:
+                        'u_errorName_58',
+                        'ubidi_setPara_58',
+                        'ucsdet_getName_58',
+                        'uidna_openUTS46_58',
+                        'ulocdata_close_58',
+                        'unorm_normalize_58',
+                        'uregex_matches_58',
+                        'uspoof_open_58',
+                        'usearch_setPattern_58',
+                        '?createInstance@Transliterator@icu_58@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z',
+                        '??0MeasureFormat@icu_58@@QEAA@AEBVLocale@1@W4UMeasureFormatWidth@@AEAW4UErrorCode@@@Z',
+                        # v8_inspector symbols:
+                        '?DOM@ReasonEnum@Paused@API@Debugger@protocol@v8_inspector@@3PEBDEB',
+                        '?canDispatchMethod@V8InspectorSession@v8_inspector@@SA_NAEBVStringView@2@@Z',
                       ],
                     }],
                   ],
@@ -277,6 +283,7 @@
     'msvs_disabled_warnings': [
       4005,  # (node.h) macro redefinition
       4091,  # (node_extern.h) '__declspec(dllimport)' : ignored on left of 'node::Environment' when no variable is declared
+      4099,  # (pdf_render_settings.h) type name first seen using 'class' now seen using 'struct'
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
       4267,  # conversion from 'size_t' to 'int', possible loss of data

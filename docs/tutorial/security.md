@@ -64,7 +64,6 @@ This is not bulletproof, but at the least, you should attempt the following:
 , and use restrictive rules (i.e. `script-src 'self'`)
 * [Override and disable `eval`](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6-L8)
 , which allows strings to be executed as code.
-* Do not set `allowDisplayingInsecureContent` to true.
 * Do not set `allowRunningInsecureContent` to true.
 * Do not enable `experimentalFeatures` or `experimentalCanvasFeatures` unless
   you know what you're doing.

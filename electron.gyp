@@ -225,8 +225,10 @@
         'V8_USE_EXTERNAL_STARTUP_DATA',
         'V8_SHARED',
         'USING_V8_SHARED',
+        'USING_V8_PLATFORM_SHARED',
+        'USING_V8_BASE_SHARED',
+        # Remove this after enable_plugins becomes a feature flag.
         'ENABLE_PLUGINS',
-        'ENABLE_PEPPER_CDMS',
         'USE_PROPRIETARY_CODECS',
       ],
       'sources': [

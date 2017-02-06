@@ -167,10 +167,7 @@ This will generate:
   images: {
     count: 22,
     size: 2549,
-    liveSize: 2542,
-    decodedSize: 478,
-    purgedSize: 0,
-    purgeableSize: 0
+    liveSize: 2542
   },
   cssStyleSheets: { /* same with "images" */ },
   xslStyleSheets: { /* same with "images" */ },

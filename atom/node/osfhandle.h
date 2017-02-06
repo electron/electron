@@ -21,6 +21,9 @@ namespace node {
 __declspec(dllexport) int open_osfhandle(intptr_t osfhandle, int flags);
 __declspec(dllexport) int close(int fd);
 
+// A trick to force referencing symbols.
+__declspec(dllexport) void ReferenceSymbols();
+
 }  // namespace node
 
 #endif  // ATOM_NODE_OSFHANDLE_H_

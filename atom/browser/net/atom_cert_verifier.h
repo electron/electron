@@ -33,7 +33,7 @@ class AtomCertVerifier : public net::CertVerifier {
              net::CertVerifyResult* verify_result,
              const net::CompletionCallback& callback,
              std::unique_ptr<Request>* out_req,
-             const net::BoundNetLog& net_log) override;
+             const net::NetLogWithSource& net_log) override;
   bool SupportsOCSPStapling() override;
 
  private:

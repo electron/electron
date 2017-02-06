@@ -13,10 +13,11 @@
 #include "base/memory/shared_memory.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
-#include "content/public/renderer/render_view_observer.h"
-#include "content/public/renderer/render_view_observer_tracker.h"
+#include "content/public/renderer/render_frame_observer.h"
+#include "content/public/renderer/render_frame_observer_tracker.h"
 #include "printing/pdf_metafile_skia.h"
 #include "third_party/WebKit/public/platform/WebCanvas.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebNode.h"
 #include "third_party/WebKit/public/web/WebPrintParams.h"
 #include "ui/gfx/geometry/size.h"
@@ -63,10 +64,10 @@ class FrameReference {
 // We plan on making print asynchronous and that will require copying the DOM
 // of the document and creating a new WebView with the contents.
 class PrintWebViewHelper
-    : public content::RenderViewObserver,
-      public content::RenderViewObserverTracker<PrintWebViewHelper> {
+    : public content::RenderFrameObserver,
+      public content::RenderFrameObserverTracker<PrintWebViewHelper> {
  public:
-  explicit PrintWebViewHelper(content::RenderView* render_view);
+  explicit PrintWebViewHelper(content::RenderFrame* render_frame);
   virtual ~PrintWebViewHelper();
 
   void PrintNode(const blink::WebNode& node);
@@ -91,10 +92,10 @@ class PrintWebViewHelper
     PREVIEW_ERROR_LAST_ENUM  // Always last.
   };
 
-  // RenderViewObserver implementation.
+  // RenderFrameObserver implementation.
   bool OnMessageReceived(const IPC::Message& message) override;
-  void PrintPage(blink::WebLocalFrame* frame, bool user_initiated) override;
   void OnDestruct() override;
+  void ScriptedPrint(bool user_initiated) override;
 
   // Message handlers ---------------------------------------------------------
 #if !defined(DISABLE_BASIC_PRINTING)

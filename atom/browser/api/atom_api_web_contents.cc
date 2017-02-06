@@ -13,7 +13,6 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_security_state_model_client.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
@@ -45,6 +44,7 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
+#include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
@@ -68,8 +68,8 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
+#include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/display/screen.h"
 
 #if !defined(OS_MACOSX)
@@ -130,12 +130,24 @@ struct Converter<WindowOpenDisposition> {
                                    WindowOpenDisposition val) {
     std::string disposition = "other";
     switch (val) {
-      case CURRENT_TAB: disposition = "default"; break;
-      case NEW_FOREGROUND_TAB: disposition = "foreground-tab"; break;
-      case NEW_BACKGROUND_TAB: disposition = "background-tab"; break;
-      case NEW_POPUP: case NEW_WINDOW: disposition = "new-window"; break;
-      case SAVE_TO_DISK: disposition = "save-to-disk"; break;
-      default: break;
+      case WindowOpenDisposition::CURRENT_TAB:
+        disposition = "default";
+        break;
+      case WindowOpenDisposition::NEW_FOREGROUND_TAB:
+        disposition = "foreground-tab";
+        break;
+      case WindowOpenDisposition::NEW_BACKGROUND_TAB:
+        disposition = "background-tab";
+        break;
+      case WindowOpenDisposition::NEW_POPUP:
+      case WindowOpenDisposition::NEW_WINDOW:
+        disposition = "new-window";
+        break;
+      case WindowOpenDisposition::SAVE_TO_DISK:
+        disposition = "save-to-disk";
+        break;
+      default:
+        break;
     }
     return mate::ConvertToV8(isolate, disposition);
   }
@@ -336,7 +348,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   // Intialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents);
   // Intialize security state client.
-  AtomSecurityStateModelClient::CreateForWebContents(web_contents);
+  SecurityStateTabHelper::CreateForWebContents(web_contents);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -375,11 +387,11 @@ WebContents::~WebContents() {
   }
 }
 
-bool WebContents::AddMessageToConsole(content::WebContents* source,
-                                      int32_t level,
-                                      const base::string16& message,
-                                      int32_t line_no,
-                                      const base::string16& source_id) {
+bool WebContents::DidAddMessageToConsole(content::WebContents* source,
+                                         int32_t level,
+                                         const base::string16& message,
+                                         int32_t line_no,
+                                         const base::string16& source_id) {
   if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) {
     return false;
   } else {
@@ -392,7 +404,7 @@ void WebContents::OnCreateWindow(
     const GURL& target_url,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
-    const std::vector<base::string16>& features,
+    const std::vector<std::string>& features,
     const scoped_refptr<content::ResourceRequestBodyImpl>& body) {
   if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
     Emit("-new-window", target_url, frame_name, disposition, features, body);
@@ -401,6 +413,7 @@ void WebContents::OnCreateWindow(
 }
 
 void WebContents::WebContentsCreated(content::WebContents* source_contents,
+                                     int opener_render_process_id,
                                      int opener_render_frame_id,
                                      const std::string& frame_name,
                                      const GURL& target_url,
@@ -430,7 +443,7 @@ void WebContents::AddNewContents(content::WebContents* source,
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
-  if (params.disposition != CURRENT_TAB) {
+  if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
     if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
       Emit("-new-window", params.url, "", params.disposition);
     else
@@ -530,7 +543,9 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
   Emit("leave-html-full-screen");
 }
 
-void WebContents::RendererUnresponsive(content::WebContents* source) {
+void WebContents::RendererUnresponsive(
+    content::WebContents* source,
+    const content::WebContentsUnresponsiveState& unresponsive_state) {
   Emit("unresponsive");
   if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->RendererUnresponsive(source);
@@ -640,11 +655,13 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
   Emit("plugin-crashed", info.name, info.version);
 }
 
-void WebContents::MediaStartedPlaying(const MediaPlayerId& id) {
+void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
+                                      const MediaPlayerId& id) {
   Emit("media-started-playing");
 }
 
-void WebContents::MediaStoppedPlaying(const MediaPlayerId& id) {
+void WebContents::MediaStoppedPlaying(const MediaPlayerInfo& video_type,
+                                      const MediaPlayerId& id) {
   Emit("media-paused");
 }
 
@@ -698,7 +715,6 @@ void WebContents::DidGetResourceResponseStart(
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
-    content::RenderFrameHost* render_frame_host,
     const content::ResourceRedirectDetails& details) {
   Emit("did-get-redirect-request",
        details.url,
@@ -1076,7 +1092,7 @@ void WebContents::InspectServiceWorker() {
 
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
-        content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
+        content::DevToolsAgentHost::kTypeServiceWorker) {
       OpenDevTools(nullptr);
       managed_web_contents()->AttachTo(agent_host);
       break;
@@ -1121,7 +1137,9 @@ void WebContents::Print(mate::Arguments* args) {
   }
 
   printing::PrintViewManagerBasic::FromWebContents(web_contents())->
-      PrintNow(settings.silent, settings.print_background);
+      PrintNow(web_contents()->GetMainFrame(),
+               settings.silent,
+               settings.print_background);
 }
 
 void WebContents::PrintToPDF(const base::DictionaryValue& setting,

@@ -22,6 +22,7 @@
 #undef UNLIKELY
 #undef DISALLOW_COPY_AND_ASSIGN
 #undef NO_RETURN
+#undef LIKELY
 #undef arraysize
 #undef debug_string  // This is defined in macOS 10.9 SDK in AssertMacros.h.
 #include "vendor/node/src/env.h"

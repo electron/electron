@@ -11,6 +11,7 @@
 #include "ui/gfx/text_utils.h"
 #include "ui/views/animation/flood_fill_ink_drop_ripple.h"
 #include "ui/views/animation/ink_drop_host_view.h"
+#include "ui/views/animation/ink_drop_impl.h"
 #include "ui/views/controls/button/label_button_border.h"
 
 namespace atom {
@@ -59,28 +60,20 @@ SubmenuButton::~SubmenuButton() {
 
 std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
     const {
-  return base::MakeUnique<views::FloodFillInkDropRipple>(
-      GetLocalBounds(),
-      GetInkDropCenterBasedOnLastEvent(),
-      GetInkDropBaseColor(),
-      ink_drop_visible_opacity());
+  std::unique_ptr<views::InkDropRipple> ripple(
+      new views::FloodFillInkDropRipple(
+          size(),
+          GetInkDropCenterBasedOnLastEvent(),
+          GetInkDropBaseColor(),
+          ink_drop_visible_opacity()));
+  return ripple;
 }
 
-std::unique_ptr<views::InkDropHighlight>
-    SubmenuButton::CreateInkDropHighlight() const {
-  if (!ShouldShowInkDropHighlight())
-    return nullptr;
-
-  gfx::Size size = GetLocalBounds().size();
-  return base::MakeUnique<views::InkDropHighlight>(
-      size,
-      kInkDropSmallCornerRadius,
-      gfx::RectF(gfx::SizeF(size)).CenterPoint(),
-      GetInkDropBaseColor());
-}
-
-bool SubmenuButton::ShouldShowInkDropForFocus() const {
-  return false;
+std::unique_ptr<views::InkDrop> SubmenuButton::CreateInkDrop() {
+  std::unique_ptr<views::InkDropImpl> ink_drop =
+      CustomButton::CreateDefaultInkDropImpl();
+  ink_drop->SetShowHighlightOnHover(false);
+  return std::move(ink_drop);
 }
 
 void SubmenuButton::SetAcceleratorVisibility(bool visible) {

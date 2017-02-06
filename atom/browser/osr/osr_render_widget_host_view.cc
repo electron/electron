@@ -20,6 +20,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
+#include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"
 #include "ui/events/latency_info.h"
@@ -349,14 +350,16 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       is_showing_(!render_widget_host_->is_hidden()),
       size_(native_window->GetSize()),
       painting_(true),
-#if !defined(OS_MACOSX)
-      delegated_frame_host_(new content::DelegatedFrameHost(this)),
-#endif
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   render_widget_host_->SetView(this);
 
 #if !defined(OS_MACOSX)
+  content::ImageTransportFactory* factory =
+      content::ImageTransportFactory::GetInstance();
+  delegated_frame_host_ = base::MakeUnique<content::DelegatedFrameHost>(
+      factory->GetContextFactory()->AllocateFrameSinkId(), this);
+
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 #endif
 
@@ -741,16 +744,6 @@ OffScreenRenderWidgetHostView::DelegatedFrameHostSendReclaimCompositorResources(
   render_widget_host_->Send(new ViewMsg_ReclaimCompositorResources(
       render_widget_host_->GetRoutingID(), output_surface_id, is_swap_ack,
       resources));
-}
-
-void OffScreenRenderWidgetHostView::
-  DelegatedFrameHostOnLostCompositorResources() {
-  render_widget_host_->ScheduleComposite();
-}
-
-void OffScreenRenderWidgetHostView::DelegatedFrameHostUpdateVSyncParameters(
-  const base::TimeTicks& timebase, const base::TimeDelta& interval) {
-  render_widget_host_->UpdateVSyncParameters(timebase, interval);
 }
 
 void OffScreenRenderWidgetHostView::SetBeginFrameSource(

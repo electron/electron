@@ -361,7 +361,7 @@ base::Value* V8ValueConverter::FromV8Array(
 
     base::Value* child = FromV8ValueImpl(state, child_v8, isolate);
     if (child)
-      result->Append(child);
+      result->Append(std::unique_ptr<base::Value>(child));
     else
       // JSON.stringify puts null in places where values don't serialize, for
       // example undefined and functions. Emulate that behavior.

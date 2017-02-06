@@ -10,13 +10,7 @@
 #include "base/compiler_specific.h"
 #include "content/public/browser/browser_message_filter.h"
 
-#if defined(OS_WIN)
-#include "base/memory/shared_memory.h"
-#endif
-
 struct PrintHostMsg_ScriptedPrint_Params;
-class Profile;
-class ProfileIOData;
 
 namespace base {
 class DictionaryValue;
@@ -29,7 +23,6 @@ class WebContents;
 
 namespace printing {
 
-class PrintJobManager;
 class PrintQueriesQueue;
 class PrinterQuery;
 
@@ -46,42 +39,25 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
+  friend class base::DeleteHelper<PrintingMessageFilter>;
+  friend class content::BrowserThread;
+
   virtual ~PrintingMessageFilter();
 
-#if defined(OS_WIN)
-  // Used to pass resulting EMF from renderer to browser in printing.
-  void OnDuplicateSection(base::SharedMemoryHandle renderer_handle,
-                          base::SharedMemoryHandle* browser_handle);
-#endif
-
-#if defined(OS_CHROMEOS) || defined(OS_ANDROID)
-  // Used to ask the browser allocate a temporary file for the renderer
-  // to fill in resulting PDF in renderer.
-  void OnAllocateTempFileForPrinting(int render_view_id,
-                                     base::FileDescriptor* temp_file_fd,
-                                     int* sequence_number);
-  void OnTempFileForPrintingWritten(int render_view_id, int sequence_number);
-#endif
-
-#if defined(OS_CHROMEOS)
-  void CreatePrintDialogForFile(int render_view_id, const base::FilePath& path);
-#endif
+  void OnDestruct() const override;
 
 #if defined(OS_ANDROID)
+  // Used to ask the browser allocate a temporary file for the renderer
+  // to fill in resulting PDF in renderer.
+  void OnAllocateTempFileForPrinting(int render_frame_id,
+                                     base::FileDescriptor* temp_file_fd,
+                                     int* sequence_number);
+  void OnTempFileForPrintingWritten(int render_frame_id, int sequence_number);
+
   // Updates the file descriptor for the PrintViewManagerBasic of a given
-  // render_view_id.
-  void UpdateFileDescriptor(int render_view_id, int fd);
+  // render_frame_id.
+  void UpdateFileDescriptor(int render_frame_id, int fd);
 #endif
-
-  // Given a render_view_id get the corresponding WebContents.
-  // Must be called on the UI thread.
-  content::WebContents* GetWebContentsForRenderView(int render_view_id);
-
-  // GetPrintSettingsForRenderView must be called via PostTask and
-  // base::Bind.  Collapse the settings-specific params into a
-  // struct to avoid running into issues with too many params
-  // to base::Bind.
-  struct GetPrintSettingsForRenderViewParams;
 
   // Get the default print setting.
   void OnGetDefaultPrintSettings(IPC::Message* reply_msg);
@@ -104,13 +80,6 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
                              IPC::Message* reply_msg);
   void OnUpdatePrintSettingsReply(scoped_refptr<PrinterQuery> printer_query,
                                   IPC::Message* reply_msg);
-
-#if defined(ENABLE_FULL_PRINTING)
-  // Check to see if print preview has been cancelled.
-  void OnCheckForCancel(int32_t preview_ui_id,
-                        int preview_request_id,
-                        bool* cancel);
-#endif
 
   const int render_process_id_;
 

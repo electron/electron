@@ -160,7 +160,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->allow_universal_access_from_file_urls = true;
   prefs->allow_file_access_from_file_urls = true;
   prefs->experimental_webgl_enabled = true;
-  prefs->allow_displaying_insecure_content = false;
   prefs->allow_running_insecure_content = false;
 
   // Custom preferences of guest page.
@@ -300,7 +299,7 @@ bool AtomBrowserClient::CanCreateWindow(
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const blink::WebWindowFeatures& features,
-    const std::vector<base::string16>& additional_features,
+    const std::vector<std::string>& additional_features,
     const scoped_refptr<content::ResourceRequestBodyImpl>& body,
     bool user_gesture,
     bool opener_suppressed,
