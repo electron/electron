@@ -859,18 +859,54 @@ Unregisters any ServiceWorker if present and returns a boolean as
 response to `callback` when the JS promise is fulfilled or false
 when the JS promise is rejected.
 
+#### `contents.printerList()`
+
+Get the system printer list, the result is an array of printer description.
+eg:
+````js
+[{ printerName: 'Zebra_LP2844',
+     printerDescription: 'Zebra LP2844',
+     printerStatus: 3,
+     isDefault: 0,
+     options:
+      { copies: '1',
+        'device-uri': 'usb://Zebra/LP2844?location=14200000',
+        finishings: '3',
+        'job-cancel-after': '10800',
+        'job-hold-until': 'no-hold',
+        'job-priority': '50',
+        'job-sheets': 'none,none',
+        'marker-change-time': '0',
+        'number-up': '1',
+        'printer-commands': 'none',
+        'printer-info': 'Zebra LP2844',
+        'printer-is-accepting-jobs': 'true',
+        'printer-is-shared': 'true',
+        'printer-location': '',
+        'printer-make-and-model': 'Zebra EPL2 Label Printer',
+        'printer-state': '3',
+        'printer-state-change-time': '1484872644',
+        'printer-state-reasons': 'offline-report',
+        'printer-type': '36932',
+        'printer-uri-supported': 'ipp://localhost/printers/Zebra_LP2844',
+        system_driverinfo: 'Z' } }]
+````
+
+
 #### `contents.print([options])`
 
 * `options` Object (optional)
   * `silent` Boolean - Don't ask user for print settings. Default is `false`.
   * `printBackground` Boolean - Also prints the background color and image of
     the web page. Default is `false`.
+  * `deviceName` String - Set the printer
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
-up system's default printer and default settings for printing.
+up printer depending on `deviceName`(when left will pick system's default printer)
+ and default settings for printing.
 
 Calling `window.print()` in web page is equivalent to calling
-`webContents.print({silent: false, printBackground: false})`.
+`webContents.print({silent: false, printBackground: false, deviceName: ''})`.
 
 Use `page-break-before: always; ` CSS style to force to print to a new page.
 

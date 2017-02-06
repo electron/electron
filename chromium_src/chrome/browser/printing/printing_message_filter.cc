@@ -123,6 +123,9 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
 #endif
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_GetDefaultPrintSettings,
                                     OnGetDefaultPrintSettings)
+
+    IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_InitSettingWithDeviceName,
+                                  OnInitSettingWithDeviceName)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_ScriptedPrint, OnScriptedPrint)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_UpdatePrintSettings,
                                     OnUpdatePrintSettings)
@@ -272,6 +275,30 @@ void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
       0,
       false,
       DEFAULT_MARGINS,
+      base::Bind(&PrintingMessageFilter::OnGetDefaultPrintSettingsReply,
+                 this,
+                 printer_query,
+                 reply_msg));
+}
+
+void PrintingMessageFilter::OnInitSettingWithDeviceName(const base::string16& device_name,
+                                                        IPC::Message* reply_msg) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  scoped_refptr<PrinterQuery> printer_query;
+  printer_query = queue_->PopPrinterQuery(0);
+  if (!printer_query.get()) {
+    printer_query =
+        queue_->CreatePrinterQuery(render_process_id_, reply_msg->routing_id());
+  }
+
+  // Loads default settings. This is asynchronous, only the IPC message sender
+  // will hang until the settings are retrieved.
+  printer_query->GetSettings(
+      PrinterQuery::DEFAULTS,
+      0,
+      false,
+      DEFAULT_MARGINS,
+      device_name,
       base::Bind(&PrintingMessageFilter::OnGetDefaultPrintSettingsReply,
                  this,
                  printer_query,

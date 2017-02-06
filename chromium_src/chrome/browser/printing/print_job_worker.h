@@ -46,7 +46,8 @@ class PrintJobWorker {
       bool ask_user_for_settings,
       int document_page_count,
       bool has_selection,
-      MarginType margin_type);
+      MarginType margin_type,
+      const base::string16& device_name);
 
   // Set the new print settings.
   void SetSettings(std::unique_ptr<base::DictionaryValue> new_settings);
@@ -126,6 +127,9 @@ class PrintJobWorker {
   // displaying a dialog. So this needs to happen from the UI thread on these
   // systems.
   void UseDefaultSettings();
+
+  // set the printer name
+  void InitWithDeviceName(const base::string16& device_name);
 
   // Printing context delegate.
   std::unique_ptr<PrintingContext::Delegate> printing_context_delegate_;
