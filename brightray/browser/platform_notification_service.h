@@ -28,7 +28,9 @@ class PlatformNotificationService
       content::ResourceContext* resource_context,
       const GURL& origin,
       int render_process_id) override;
-  void DisplayNotification(content::BrowserContext* browser_context,
+  void DisplayNotification(
+      content::BrowserContext* browser_context,
+      const std::string& notification_id,
       const GURL& origin,
       const content::PlatformNotificationData& notification_data,
       const content::NotificationResources& notification_resources,
@@ -36,14 +38,13 @@ class PlatformNotificationService
       base::Closure* cancel_callback) override;
   void DisplayPersistentNotification(
       content::BrowserContext* browser_context,
-      int64_t persistent_notification_id,
-      const GURL& service_worker_origin,
+      const std::string& notification_id,
+      const GURL& service_worker_scope,
       const GURL& origin,
       const content::PlatformNotificationData& notification_data,
       const content::NotificationResources& notification_resources) override;
-  void ClosePersistentNotification(
-      content::BrowserContext* browser_context,
-      int64_t persistent_notification_id) override;
+  void ClosePersistentNotification(content::BrowserContext* browser_context,
+                                   const std::string& notification_id) override;
   bool GetDisplayedPersistentNotifications(
       content::BrowserContext* browser_context,
       std::set<std::string>* displayed_notifications) override;

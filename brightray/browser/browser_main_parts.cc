@@ -13,7 +13,6 @@
 #include "base/feature_list.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "components/devtools_http_handler/devtools_http_handler.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_switches.h"
 #include "media/base/media_resources.h"
@@ -37,7 +36,7 @@
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "browser/brightray_paths.h"
-#include "chrome/browser/ui/libgtk2ui/gtk2_ui.h"
+#include "chrome/browser/ui/libgtkui/gtk_ui.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/base/x/x11_util_internal.h"
 #include "ui/views/linux_ui/linux_ui.h"
@@ -216,7 +215,7 @@ void BrowserMainParts::PreMainMessageLoopRun() {
   // --remote-debugging-port
   auto command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
-    devtools_http_handler_.reset(DevToolsManagerDelegate::CreateHttpHandler());
+    DevToolsManagerDelegate::StartHttpHandler();
 }
 
 void BrowserMainParts::PostMainMessageLoopStart() {
@@ -245,8 +244,7 @@ int BrowserMainParts::PreCreateThreads() {
   display::Screen* screen = views::CreateDesktopScreen();
   display::Screen::SetScreenInstance(screen);
 #if defined(USE_X11)
-  views::LinuxUI::instance()->UpdateDeviceScaleFactor(
-      screen->GetPrimaryDisplay().device_scale_factor());
+  views::LinuxUI::instance()->UpdateDeviceScaleFactor();
 #endif
 #endif
   return 0;

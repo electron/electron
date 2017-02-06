@@ -14,7 +14,6 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
 
-
 namespace brightray {
 
 namespace {
@@ -62,19 +61,21 @@ class BundledDataSource : public content::URLDataSource {
     return kChromeUIDevToolsHost;
   }
 
-  void StartDataRequest(const std::string& path,
-                        int render_process_id,
-                        int render_frame_id,
-                        const GotDataCallback& callback) override {
+  void StartDataRequest(
+      const std::string& path,
+      const content::ResourceRequestInfo::WebContentsGetter& wc_getter,
+      const GotDataCallback& callback) override {
     // Serve request from local bundle.
     std::string bundled_path_prefix(kChromeUIDevToolsBundledPath);
     bundled_path_prefix += "/";
     if (base::StartsWith(path, bundled_path_prefix,
                          base::CompareCase::INSENSITIVE_ASCII)) {
       StartBundledDataRequest(path.substr(bundled_path_prefix.length()),
-                              render_process_id, render_frame_id, callback);
+                              callback);
       return;
     }
+
+    // We do not handle remote and custom requests.
     callback.Run(nullptr);
   }
 
@@ -94,11 +95,8 @@ class BundledDataSource : public content::URLDataSource {
     return true;
   }
 
-  void StartBundledDataRequest(
-      const std::string& path,
-      int render_process_id,
-      int render_frame_id,
-      const content::URLDataSource::GotDataCallback& callback) {
+  void StartBundledDataRequest(const std::string& path,
+                               const GotDataCallback& callback) {
     std::string filename = PathWithoutParams(path);
     base::StringPiece resource =
         content::DevToolsFrontendHost::GetFrontendResource(filename);

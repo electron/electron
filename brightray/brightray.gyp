@@ -1,7 +1,7 @@
 {
   'variables': {
     # The libraries brightray will be compiled to.
-    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0 nss'
+    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 x11-xcb xcb xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0 nss'
   },
   'includes': [
     'filenames.gypi',
@@ -14,6 +14,7 @@
         '.',
         '<(libchromiumcontent_src_dir)',
         '<(libchromiumcontent_src_dir)/skia/config',
+        '<(libchromiumcontent_src_dir)/third_party/boringssl/src/include',
         '<(libchromiumcontent_src_dir)/third_party/skia/include/core',
         '<(libchromiumcontent_src_dir)/third_party/mojo/src',
         '<(libchromiumcontent_src_dir)/third_party/WebKit',
@@ -26,6 +27,7 @@
           '<(libchromiumcontent_src_dir)',
           '<(libchromiumcontent_src_dir)/gpu',
           '<(libchromiumcontent_src_dir)/skia/config',
+          '<(libchromiumcontent_src_dir)/third_party/boringssl/src/include',
           '<(libchromiumcontent_src_dir)/third_party/skia/include/core',
           '<(libchromiumcontent_src_dir)/third_party/skia/include/config',
           '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
@@ -67,7 +69,7 @@
           },
           'cflags': [
             '<!@(<(pkg-config) --cflags <(linux_system_libraries))',
-            # Needed by using libgtk2ui:
+            # Needed by using libgtkui:
             '-Wno-deprecated-register',
             '-Wno-sentinel',
           ],
@@ -86,9 +88,7 @@
               'link_settings': {
                 'libraries': [
                   # Following libraries are always linked statically.
-                  '<(libchromiumcontent_dir)/libgtk2ui.a',
-                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
-                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
+                  '<(libchromiumcontent_dir)/libgtkui.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
@@ -142,8 +142,6 @@
               'link_settings': {
                 'libraries': [
                   # Following libraries are always linked statically.
-                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
-                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
@@ -193,6 +191,8 @@
                   '-lsandbox',
                   # bluetooth.gyp:
                   '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
+                  # components/wifi/BUILD.gn:
+                  '$(SDKROOT)/System/Library/Frameworks/CoreWLAN.framework',
                 ],
               },
             }],
@@ -210,8 +210,6 @@
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
                   '<(libchromiumcontent_dir)/sandbox_helper_win.lib',
-                  '<(libchromiumcontent_dir)/devtools_discovery.lib',
-                  '<(libchromiumcontent_dir)/devtools_http_handler.lib',
                   '<(libchromiumcontent_dir)/http_server.lib',
                   '<(libchromiumcontent_dir)/desktop_capture.lib',
                   '<(libchromiumcontent_dir)/dom_keycode_converter.lib',
@@ -296,12 +294,15 @@
                       # net_common.gypi:
                       'crypt32.lib',
                       'dhcpcsvc.lib',
+                      'ncrypt.lib',
                       'rpcrt4.lib',
                       'secur32.lib',
                       'urlmon.lib',
                       'winhttp.lib',
                       # ui/gfx/BUILD.gn:
                       'dwrite.lib',
+                      # skia/BUILD.gn:
+                      'fontsub.lib',
                     ],
                     'DelayLoadDLLs': [
                       'wtsapi32.dll',

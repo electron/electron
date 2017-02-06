@@ -103,10 +103,9 @@ bool DevToolsNetworkTransaction::CheckFailed() {
   return false;
 }
 
-int DevToolsNetworkTransaction::Start(
-    const net::HttpRequestInfo* request,
-    const net::CompletionCallback& callback,
-    const net::BoundNetLog& net_log) {
+int DevToolsNetworkTransaction::Start(const net::HttpRequestInfo* request,
+                                      const net::CompletionCallback& callback,
+                                      const net::NetLogWithSource& net_log) {
   DCHECK(request);
   request_ = request;
 
@@ -129,7 +128,8 @@ int DevToolsNetworkTransaction::Start(
     request_ = custom_request_.get();
   }
 
-  DevToolsNetworkInterceptor* interceptor = controller_->GetInterceptor(client_id);
+  DevToolsNetworkInterceptor* interceptor =
+      controller_->GetInterceptor(client_id);
   if (interceptor) {
     interceptor_ = interceptor->GetWeakPtr();
     if (custom_upload_data_stream_)
@@ -244,10 +244,6 @@ DevToolsNetworkTransaction::GetResponseInfo() const {
 
 net::LoadState DevToolsNetworkTransaction::GetLoadState() const {
   return transaction_->GetLoadState();
-}
-
-net::UploadProgress DevToolsNetworkTransaction::GetUploadProgress() const {
-  return transaction_->GetUploadProgress();
 }
 
 void DevToolsNetworkTransaction::SetQuicServerInfo(

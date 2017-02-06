@@ -100,10 +100,6 @@ void ViewsDelegate::OnBeforeWidgetInit(
 }
 
 
-base::TimeDelta ViewsDelegate::GetDefaultTextfieldObscuredRevealDuration() {
-  return base::TimeDelta();
-}
-
 bool ViewsDelegate::WindowManagerProvidesTitleBar(bool maximized) {
 #if defined(OS_LINUX)
   // On Ubuntu Unity, the system always provides a title bar for maximized

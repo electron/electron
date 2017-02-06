@@ -7,12 +7,8 @@
 
 #include "base/macros.h"
 #include "base/compiler_specific.h"
-#include "components/devtools_http_handler/devtools_http_handler_delegate.h"
+#include "content/browser/devtools/devtools_http_handler.h"
 #include "content/public/browser/devtools_manager_delegate.h"
-
-namespace devtools_http_handler {
-class DevToolsHttpHandler;
-}
 
 namespace brightray {
 
@@ -20,18 +16,20 @@ class DevToolsNetworkProtocolHandler;
 
 class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
  public:
-  static devtools_http_handler::DevToolsHttpHandler* CreateHttpHandler();
+  static void StartHttpHandler();
 
   DevToolsManagerDelegate();
   virtual ~DevToolsManagerDelegate();
 
   // DevToolsManagerDelegate implementation.
-  void Inspect(content::BrowserContext* browser_context,
-               content::DevToolsAgentHost* agent_host) override {}
-  void DevToolsAgentStateChanged(content::DevToolsAgentHost* agent_host,
-                                 bool attached) override;
-  base::DictionaryValue* HandleCommand(content::DevToolsAgentHost* agent_host,
-                                       base::DictionaryValue* command) override;
+  void Inspect(content::DevToolsAgentHost* agent_host) override;
+  base::DictionaryValue* HandleCommand(
+      content::DevToolsAgentHost* agent_host,
+      base::DictionaryValue* command) override;
+  scoped_refptr<content::DevToolsAgentHost> CreateNewTarget(
+      const GURL& url) override;
+  std::string GetDiscoveryPageHTML() override;
+  std::string GetFrontendResource(const std::string& path) override;
 
  private:
   std::unique_ptr<DevToolsNetworkProtocolHandler> handler_;
