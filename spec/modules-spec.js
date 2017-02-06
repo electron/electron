@@ -69,6 +69,12 @@ describe('third-party module', function () {
         assert.strictEqual(require('./fixtures/module/declare-global'), 'declared global')
       })
     })
+
+    describe('Buffer', function () {
+      it('can be declared in a module', function () {
+        assert.strictEqual(require('./fixtures/module/declare-buffer'), 'declared Buffer')
+      })
+    })
   })
 })
 
