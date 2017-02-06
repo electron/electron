@@ -32,7 +32,8 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
 
  private:
   static void OnMessageBoxCallback(const DialogClosedCallback& callback,
-                                   int code);
+                                   int code,
+                                   bool checkbox_checked);
 };
 
 }  // namespace atom
