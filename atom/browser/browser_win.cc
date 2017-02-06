@@ -43,15 +43,19 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
   return TRUE;
 }
 
+bool GetProcessExecPath(base::string16* exe) {
+  base::FilePath path;
+  if (!PathService::Get(base::FILE_EXE, &path)) {
+    LOG(ERROR) << "Error getting app exe path";
+    return false;
+  }
+  *exe = path.value();
+  return true;
+}
+
 bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
-  // Executable Path
-  if (!args->GetNext(exe)) {
-    base::FilePath path;
-    if (!PathService::Get(base::FILE_EXE, &path)) {
-      LOG(ERROR) << "Error getting app exe path";
-      return false;
-    }
-    *exe = path.value();
+  if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
+    return false;
   }
 
   // Read in optional args arg
@@ -62,6 +66,22 @@ bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
                               base::JoinString(launch_args, L" ").c_str());
   else
     *exe = base::StringPrintf(L"\"%s\" \"%%1\"", exe->c_str());
+  return true;
+}
+
+bool FormatCommandLineString(base::string16* exe,
+                             const std::vector<base::string16>& launch_args) {
+  if (exe->empty() && !GetProcessExecPath(exe)) {
+    return false;
+  }
+
+  if (!launch_args.empty()) {
+    base::string16 formatString = L"%s %s";
+    *exe = base::StringPrintf(formatString.c_str(),
+                              exe->c_str(),
+                              base::JoinString(launch_args, L" ").c_str());
+  }
+
   return true;
 }
 
@@ -257,33 +277,31 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
 
   if (settings.open_at_login) {
-    base::FilePath path;
-    if (PathService::Get(base::FILE_EXE, &path)) {
-      base::string16 exePath(path.value());
-      key.WriteValue(GetAppUserModelID(), exePath.c_str());
+    base::string16 exe = settings.path;
+    if (FormatCommandLineString(&exe, settings.args)) {
+      key.WriteValue(GetAppUserModelID(), exe.c_str());
     }
   } else {
     key.DeleteValue(GetAppUserModelID());
   }
 }
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+Browser::LoginItemSettings Browser::GetLoginItemSettings(
+    LoginItemSettings options) {
   LoginItemSettings settings;
   base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
   base::string16 keyVal;
 
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
-    base::FilePath path;
-    if (PathService::Get(base::FILE_EXE, &path)) {
-      base::string16 exePath(path.value());
-      settings.open_at_login = keyVal == exePath;
+    base::string16 exe = options.path;
+    if (FormatCommandLineString(&exe, options.args)) {
+      settings.open_at_login = keyVal == exe;
     }
   }
 
   return settings;
 }
-
 
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {

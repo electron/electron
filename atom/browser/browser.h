@@ -98,9 +98,11 @@ class Browser : public WindowListObserver {
     bool restore_state = false;
     bool opened_at_login = false;
     bool opened_as_hidden = false;
+    base::string16 path;
+    std::vector<base::string16> args;
   };
   void SetLoginItemSettings(LoginItemSettings settings);
-  LoginItemSettings GetLoginItemSettings();
+  LoginItemSettings GetLoginItemSettings(LoginItemSettings options);
 
 #if defined(OS_MACOSX)
   // Hide the application.
