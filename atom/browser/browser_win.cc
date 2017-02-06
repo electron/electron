@@ -54,8 +54,8 @@ bool GetProcessExecPath(base::string16* exe) {
 }
 
 bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
-  if (!args->GetNext(exe)) {
-    GetProcessExecPath(exe);
+  if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
+    return false;
   }
 
   // Read in optional args arg
@@ -71,8 +71,8 @@ bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
 
 bool FormatCommandLineString(base::string16* exe,
                              const std::vector<base::string16>& launch_args) {
-  if (exe->empty()) {
-    GetProcessExecPath(exe);
+  if (exe->empty() && !GetProcessExecPath(exe)) {
+    return false;
   }
 
   if (!launch_args.empty()) {
@@ -278,9 +278,9 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 
   if (settings.open_at_login) {
     base::string16 exe = settings.path;
-    if (!FormatCommandLineString(&exe, settings.args)) return;
-
-    key.WriteValue(GetAppUserModelID(), exe.c_str());
+    if (FormatCommandLineString(&exe, settings.args)) {
+      key.WriteValue(GetAppUserModelID(), exe.c_str());
+    }
   } else {
     key.DeleteValue(GetAppUserModelID());
   }
