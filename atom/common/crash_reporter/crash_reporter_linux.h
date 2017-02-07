@@ -49,7 +49,7 @@ class CrashReporterLinux : public CrashReporter {
                         const bool succeeded);
 
   std::unique_ptr<google_breakpad::ExceptionHandler> breakpad_;
-  CrashKeyStorage crash_keys_;
+  std::unique_ptr<CrashKeyStorage> crash_keys_;
 
   uint64_t process_start_time_;
   pid_t pid_;
