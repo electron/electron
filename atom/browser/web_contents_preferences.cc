@@ -216,24 +216,6 @@ bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
 }
 
 // static
-bool WebContentsPreferences::ConvertValueToIntegerFromString(
-    WebContentsPreferences* pref, std::string attributeName, int* intValue) {
-
-  // if it is already an integer, no conversion needed
-  if (pref->web_preferences_.GetInteger(attributeName, intValue)) {
-    return true;
-  }
-
-  base::string16 stringValue;
-
-  if (pref->web_preferences_.GetString(attributeName, &stringValue)) {
-    return base::StringToInt(stringValue, intValue);
-  }
-
-  return false;
-}
-
-// static
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebContents* web_contents, content::WebPreferences* prefs) {
   WebContentsPreferences* self = FromWebContents(web_contents);
@@ -272,15 +254,28 @@ void WebContentsPreferences::OverrideWebkitPrefs(
       prefs->fantasy_font_family_map[content::kCommonScript] = font;
   }
   int size;
-  if (ConvertValueToIntegerFromString(self, "defaultFontSize", &size))
+  if (self->GetInteger("defaultFontSize", &size))
     prefs->default_font_size = size;
-  if (ConvertValueToIntegerFromString(self, "defaultMonospaceFontSize", &size))
+  if (self->GetInteger("defaultMonospaceFontSize", &size))
     prefs->default_fixed_font_size = size;
-  if (ConvertValueToIntegerFromString(self, "minimumFontSize", &size))
+  if (self->GetInteger("minimumFontSize", &size))
     prefs->minimum_font_size = size;
   std::string encoding;
   if (self->web_preferences_.GetString("defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
+}
+
+bool WebContentsPreferences::GetInteger(const std::string& attributeName,
+                                        int* intValue) {
+  // if it is already an integer, no conversion needed
+  if (web_preferences_.GetInteger(attributeName, intValue))
+    return true;
+
+  base::string16 stringValue;
+  if (web_preferences_.GetString(attributeName, &stringValue))
+    return base::StringToInt(stringValue, intValue);
+
+  return false;
 }
 
 }  // namespace atom

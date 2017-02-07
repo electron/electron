@@ -39,9 +39,6 @@ class WebContentsPreferences
 
   static bool IsSandboxed(content::WebContents* web_contents);
 
-  static bool ConvertValueToIntegerFromString(
-      WebContentsPreferences* pref, std::string attributeName, int* intValue);
-
   // Modify the WebPreferences according to |web_contents|'s preferences.
   static void OverrideWebkitPrefs(
       content::WebContents* web_contents, content::WebPreferences* prefs);
@@ -63,6 +60,9 @@ class WebContentsPreferences
 
   content::WebContents* web_contents_;
   base::DictionaryValue web_preferences_;
+
+  // Get preferences value as integer possibly coercing it from a string
+  bool GetInteger(const std::string& attributeName, int* intValue);
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };
