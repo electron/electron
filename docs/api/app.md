@@ -804,7 +804,7 @@ Returns `Object`:
 
 Set the app's login item settings.
 
-To work with Electron's `autoUpdater` on Windows, which uses [Squirrel](Squirrel-Windows),
+To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel-Windows],
 you'll want to set the launch path to Update.exe, and pass arguments that specify your
 application name. For example:
 
