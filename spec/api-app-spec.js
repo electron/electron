@@ -465,7 +465,7 @@ describe('app module', function () {
       large: 48
     }
 
-    it('fetches non-empty icon', function (done) {
+    it('fetches a non-empty icon', function (done) {
       app.getFileIcon(iconPath, function (err, icon) {
         assert.equal(err, null)
         assert.equal(icon.isEmpty(), false)
@@ -473,7 +473,7 @@ describe('app module', function () {
       })
     })
 
-    it('fetches normal size by default', function (done) {
+    it('fetches normal icon size by default', function (done) {
       app.getFileIcon(iconPath, function (err, icon) {
         const size = icon.getSize()
         assert.equal(err, null)
@@ -484,7 +484,7 @@ describe('app module', function () {
     })
 
     describe('size option', function () {
-      it('fetches small icon', function (done) {
+      it('fetches a small icon', function (done) {
         app.getFileIcon(iconPath, { size: 'small' }, function (err, icon) {
           const size = icon.getSize()
           assert.equal(err, null)
@@ -494,7 +494,7 @@ describe('app module', function () {
         })
       })
 
-      it('fetches normal icon', function (done) {
+      it('fetches a normal icon', function (done) {
         app.getFileIcon(iconPath, { size: 'normal' }, function (err, icon) {
           const size = icon.getSize()
           assert.equal(err, null)
@@ -504,7 +504,7 @@ describe('app module', function () {
         })
       })
 
-      it('fetches large icon', function (done) {
+      it('fetches a large icon', function (done) {
         // macOS does not support large icons
         if (process.platform === 'darwin') return done()
 
