@@ -27,7 +27,7 @@ IconManager* IconManager::GetInstance() {
 IconManager::IconManager() {}
 
 IconManager::~IconManager() {
-  STLDeleteValues(&icon_cache_);
+  base::STLDeleteValues(&icon_cache_);
 }
 
 gfx::Image* IconManager::LookupIconFromFilepath(const base::FilePath& file_name,
