@@ -58,6 +58,8 @@ class PrinterQuery : public PrintJobWorkerOwner {
       int expected_page_count,
       bool has_selection,
       MarginType margin_type,
+      bool is_scripted,
+      bool is_modifiable,
       const base::string16& device_name,
       const base::Closure& callback);
 

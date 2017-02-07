@@ -115,7 +115,7 @@ void PrintSettingsToJobSettings(const PrintSettings& settings,
   job_settings->SetInteger(kSettingDuplexMode, settings.duplex_mode());
   job_settings->SetBoolean(kSettingLandscape, settings.landscape());
   job_settings->SetString(kSettingDeviceName, settings.device_name());
-  job_settings->SetInteger("scaleFactor", 100);
+  job_settings->SetInteger(kSettingScaleFactor, 100);
   job_settings->SetBoolean("rasterizePDF", false);
 
   job_settings->SetInteger("desiredDpi", settings.desired_dpi());
@@ -126,7 +126,7 @@ void PrintSettingsToJobSettings(const PrintSettings& settings,
   job_settings->SetBoolean(kSettingPrintWithPrivet, false);
   job_settings->SetBoolean(kSettingPrintWithExtension, false);
 
-  job_settings->SetBoolean("showSystemDialog", false);
+  job_settings->SetBoolean(kSettingShowSystemDialog, false);
   job_settings->SetInteger(kSettingPreviewPageCount, 1);
 }
 

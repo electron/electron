@@ -102,16 +102,11 @@ void PrinterQuery::GetSettings(
   DCHECK(!is_print_dialog_box_shown_);
   StartWorker(callback);
 
-  // Real work is done in PrintJobWorker::GetSettings().
-  is_print_dialog_box_shown_ = ask_user_for_settings == ASK_USER;
+  is_print_dialog_box_shown_ = false;
   worker_->PostTask(FROM_HERE,
-                    base::Bind(&PrintJobWorker::GetSettings,
-                               base::Unretained(worker_.get()),
-                               is_print_dialog_box_shown_,
-                               expected_page_count,
-                               has_selection,
-                               margin_type,
-                               device_name));
+                    base::Bind(&PrintJobWorker::GetSettings, base::Unretained(worker_.get()),
+                               is_print_dialog_box_shown_, expected_page_count, has_selection,
+                               margin_type, is_scripted, is_modifiable, device_name));
 }
 
 void PrinterQuery::SetSettings(

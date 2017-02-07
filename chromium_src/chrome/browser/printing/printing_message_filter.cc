@@ -190,10 +190,12 @@ void PrintingMessageFilter::OnInitSettingWithDeviceName(const base::string16& de
   // Loads default settings. This is asynchronous, only the IPC message sender
   // will hang until the settings are retrieved.
   printer_query->GetSettings(
-      PrinterQuery::DEFAULTS,
+      PrinterQuery::GetSettingsAskParam::DEFAULTS,
       0,
       false,
       DEFAULT_MARGINS,
+      true,
+      true,
       device_name,
       base::Bind(&PrintingMessageFilter::OnGetDefaultPrintSettingsReply,
                  this,
