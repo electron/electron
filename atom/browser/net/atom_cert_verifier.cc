@@ -77,7 +77,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
   }
 
   void Start(net::CRLSet* crl_set,
-             const net::BoundNetLog& net_log) {
+             const net::NetLogWithSource& net_log) {
     int error = cert_verifier_->default_verifier()->Verify(
         params_, crl_set, &result_,
         base::Bind(&CertVerifierRequest::OnDefaultVerificationDone,
