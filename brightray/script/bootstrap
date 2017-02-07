@@ -58,9 +58,10 @@ def parse_args():
 
 
 def update_submodules():
-  return (subprocess.call(['git', 'submodule', 'sync', '--quiet']) or
+  return (subprocess.call(['git', 'submodule', 'sync', '--quiet'],
+                           cwd=SOURCE_ROOT) or
           subprocess.call(['git', 'submodule', 'update', '--init',
-                           '--recursive']))
+                           '--recursive'], cwd=SOURCE_ROOT))
 
 
 def setup_libchromiumcontent(is_dev, commit, target_arch, url,
