@@ -91,6 +91,19 @@ process.versions.electron
   read-only properties for consistency with the other `process.versions`
   properties set by Node.
 
+## `session`
+
+```js
+// Deprecated
+ses.setCertificateVerifyProc(function (hostname, certificate, callback) {
+  callback(true)
+})
+// Replace with
+ses.setCertificateVerifyProc(function (hostname, certificate, error, callback) {
+  callback(0)
+})
+```
+
 ## `Tray`
 
 ```js
