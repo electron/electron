@@ -7,6 +7,7 @@
 
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
+#include "base/single_thread_task_runner.h"
 #include "v8/include/v8.h"
 #include "vendor/node/deps/uv/include/uv.h"
 

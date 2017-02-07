@@ -123,11 +123,11 @@ AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {
 void AtomSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new AtomSandboxedRenderFrameObserver(render_frame, this);
+  new printing::PrintWebViewHelper(render_frame);
 }
 
 void AtomSandboxedRendererClient::RenderViewCreated(
     content::RenderView* render_view) {
-  new printing::PrintWebViewHelper(render_view);
   new AtomSandboxedRenderViewObserver(render_view, this);
 }
 

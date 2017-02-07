@@ -151,4 +151,16 @@ gfx::Size WebViewGuestDelegate::GetDefaultSize() const {
   }
 }
 
+bool WebViewGuestDelegate::CanBeEmbeddedInsideCrossProcessFrames() {
+  return true;
+}
+
+content::RenderWidgetHost* WebViewGuestDelegate::GetOwnerRenderWidgetHost() {
+  return embedder_web_contents_->GetRenderViewHost()->GetWidget();
+}
+
+content::SiteInstance* WebViewGuestDelegate::GetOwnerSiteInstance() {
+  return embedder_web_contents_->GetSiteInstance();
+}
+
 }  // namespace atom

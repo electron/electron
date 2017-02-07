@@ -985,16 +985,16 @@ bool ProcessSingleton::Create() {
 
   // Check that the directory was created with the correct permissions.
   int dir_mode = 0;
-  CHECK(base::GetPosixFilePermissions(socket_dir_.path(), &dir_mode) &&
+  CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
         dir_mode == base::FILE_PERMISSION_USER_MASK)
       << "Temp directory mode is not 700: " << std::oct << dir_mode;
 
   // Setup the socket symlink and the two cookies.
   base::FilePath socket_target_path =
-      socket_dir_.path().Append(kSingletonSocketFilename);
+      socket_dir_.GetPath().Append(kSingletonSocketFilename);
   base::FilePath cookie(GenerateCookie());
   base::FilePath remote_cookie_path =
-      socket_dir_.path().Append(kSingletonCookieFilename);
+      socket_dir_.GetPath().Append(kSingletonCookieFilename);
   UnlinkPath(socket_path_);
   UnlinkPath(cookie_path_);
   if (!SymlinkPath(socket_target_path, socket_path_) ||

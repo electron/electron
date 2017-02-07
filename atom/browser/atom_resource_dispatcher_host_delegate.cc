@@ -64,17 +64,12 @@ AtomResourceDispatcherHostDelegate::AtomResourceDispatcherHostDelegate() {
 
 bool AtomResourceDispatcherHostDelegate::HandleExternalProtocol(
     const GURL& url,
-    int child_id,
-    const content::ResourceRequestInfo::WebContentsGetter& web_contents_getter,
-    bool is_main_frame,
-    ui::PageTransition transition,
-    bool has_user_gesture,
-    content::ResourceContext* resource_context) {
+    content::ResourceRequestInfo* info) {
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
                           base::Bind(&HandleExternalProtocolInUI,
                                      url,
-                                     web_contents_getter,
-                                     has_user_gesture));
+                                     info->GetWebContentsGetterForRequest(),
+                                     info->HasUserGesture()));
   return true;
 }
 

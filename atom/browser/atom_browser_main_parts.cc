@@ -24,7 +24,7 @@
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
-#include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
+#include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
 
@@ -170,7 +170,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   bridge_task_runner_ = nullptr;
 
 #if defined(USE_X11)
-  libgtk2ui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
+  libgtkui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
 #endif
 
 #if !defined(OS_MACOSX)

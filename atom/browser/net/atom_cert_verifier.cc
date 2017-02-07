@@ -46,7 +46,7 @@ int AtomCertVerifier::Verify(
     net::CertVerifyResult* verify_result,
     const net::CompletionCallback& callback,
     std::unique_ptr<Request>* out_req,
-    const net::BoundNetLog& net_log) {
+    const net::NetLogWithSource& net_log) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   if (verify_proc_.is_null()) {

@@ -10,6 +10,7 @@
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/atom_browser_client.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "chrome/browser/process_singleton.h"
@@ -52,7 +53,7 @@ class App : public AtomBrowserClient::Delegate,
       const GURL& target_url,
       const std::string& frame_name,
       WindowOpenDisposition disposition,
-      const std::vector<base::string16>& features,
+      const std::vector<std::string>& features,
       const scoped_refptr<content::ResourceRequestBodyImpl>& body,
       int render_process_id,
       int render_frame_id);
@@ -123,6 +124,7 @@ class App : public AtomBrowserClient::Delegate,
   bool Relaunch(mate::Arguments* args);
   void DisableHardwareAcceleration(mate::Arguments* args);
   bool IsAccessibilitySupportEnabled();
+  Browser::LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);

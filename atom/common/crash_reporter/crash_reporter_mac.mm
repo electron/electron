@@ -44,13 +44,12 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
           framework_bundle_path.Append("Resources").Append("crashpad_handler");
 
       crashpad::CrashpadClient crashpad_client;
-      if (crashpad_client.StartHandler(handler_path, crashes_dir,
-                                       submit_url,
-                                       StringMap(),
-                                       std::vector<std::string>(),
-                                       true)) {
-        crashpad_client.UseHandler();
-      }
+      crashpad_client.StartHandler(handler_path, crashes_dir, crashes_dir,
+                                   submit_url,
+                                   StringMap(),
+                                   std::vector<std::string>(),
+                                   true,
+                                   false);
     }  // @autoreleasepool
   }
 

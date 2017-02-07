@@ -28,8 +28,10 @@
       "serviceworker": true
     },
     "globals": [
-      "WebView",
-      "WebInspector"
+      "Bindings",
+      "Components",
+      "UI",
+      "WebView"
     ]
   }
 }

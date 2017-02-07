@@ -102,14 +102,6 @@ app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com
 
 使网络日志事件能够被读写到 `path`.
 
-## --ssl-version-fallback-min=`version`
-
-设置最简化的 SSL/TLS 版本号 ("tls1", "tls1.1" or "tls1.2")，TLS 可接受回退.
-
-## --cipher-suite-blacklist=`cipher_suites`
-
-指定逗号分隔的 SSL 密码套件 列表实效.
-
 ## --disable-renderer-backgrounding
 
 防止 Chromium 降低隐藏的渲染进程优先级.

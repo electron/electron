@@ -190,7 +190,7 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 ### `webpreferences`
 
 ```html
-<webview src="https://github.com" webpreferences="allowDisplayingInsecureContent, javascript=no"></webview>
+<webview src="https://github.com" webpreferences="allowRunningInsecureContent, javascript=no"></webview>
 ```
 웹뷰에 설정될 웹 환경설정을 나타내는 `,` 로 구분된 문자열의 목록입니다.
 지원되는 환경설정 문자열의 전체 목록은

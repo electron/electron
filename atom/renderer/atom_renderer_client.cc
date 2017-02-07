@@ -257,6 +257,7 @@ void AtomRendererClient::RenderFrameCreated(
   new PepperHelper(render_frame);
   new AtomRenderFrameObserver(render_frame, this);
   new ContentSettingsObserver(render_frame);
+  new printing::PrintWebViewHelper(render_frame);
 
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
@@ -271,7 +272,6 @@ void AtomRendererClient::RenderFrameCreated(
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
-  new printing::PrintWebViewHelper(render_view);
   new AtomRenderViewObserver(render_view, this);
 
   blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();

@@ -58,6 +58,12 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
   callback.Run(false, base::ASCIIToUTF16("This should not be displayed"));
 }
 
+void AtomJavaScriptDialogManager::CancelDialogs(
+    content::WebContents* web_contents,
+    bool suppress_callbacks,
+    bool reset_state) {
+}
+
 // static
 void AtomJavaScriptDialogManager::OnMessageBoxCallback(
     const DialogClosedCallback& callback, int code) {

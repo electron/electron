@@ -1689,8 +1689,8 @@ describe('BrowserWindow module', function () {
           }
 
           const showLastPanel = function () {
-            const lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
-            WebInspector.inspectorView.showPanel(lastPanelId)
+            const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
+            UI.inspectorView.showPanel(lastPanelId)
           }
           devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false, () => {
             showPanelTimeoutId = setTimeout(show, 100)

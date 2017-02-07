@@ -81,7 +81,7 @@ class CommonWebContentsDelegate
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   bool IsFullscreenForTabOrPending(
       const content::WebContents* source) const override;
-  content::SecurityStyle GetSecurityStyle(
+  blink::WebSecurityStyle GetSecurityStyle(
       content::WebContents* web_contents,
       content::SecurityStyleExplanations* explanations) override;
   void HandleKeyboardEvent(

@@ -100,9 +100,7 @@ win.show()
   `300%`. 默认 `1.0`.
 * `javascript` Boolean - 开启javascript支持. 默认为`true`.
 * `webSecurity` Boolean - 当设置为 `false`, 它将禁用同源策略 (通常用来测试网站), 并且如果有2个非用户设置的参数，就设置
-  `allowDisplayingInsecureContent` 和 `allowRunningInsecureContent` 的值为
-  `true`. 默认为 `true`.
-* `allowDisplayingInsecureContent` Boolean -允许一个使用 https的界面来展示由 http URLs 传过来的资源. 默认`false`.
+  `allowRunningInsecureContent` 的值为`true`. 默认为 `true`.
 * `allowRunningInsecureContent` Boolean - Boolean -允许一个使用 https的界面来渲染由 http URLs 提交的html,css,javascript. 默认为 `false`.
 * `images` Boolean - 开启图片使用支持. 默认 `true`.
 * `textAreasAreResizable` Boolean - textArea 可以编辑. 默认为 `true`.

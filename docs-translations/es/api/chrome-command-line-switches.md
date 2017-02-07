@@ -87,11 +87,6 @@ Asigna la versión `version` del pepper flash plugin.
 
 Permite guardar y escribir eventos de registros de red en `path`.
 
-## --ssl-version-fallback-min=`version`
-
-Establece la versión mínima de SSL/TLS ("tls1", "tls1.1" o "tls1.2") que
-el repliegue de TLC aceptará.
-
 ## --enable-logging
 
 Imprime el registro de Chromium en consola.

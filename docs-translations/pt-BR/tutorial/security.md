@@ -27,7 +27,6 @@ Este não é á prova de balas, mas, ao menos, você deve tentar o seguinte:
 * Não desative `webSecurity`. Destivá-lo irá desativar a política de mesma origem.
 * Definir um [`Content-Security-Policy`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/), e usar regras restritivas (i.e. `script-src 'self'`)
 * [Substituir e desativar `eval`](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6-L8), que permite strings para ser executadas como código.
-* Não defina `allowDisplayingInsecureContent` para true.
 * Nao defina `allowRunningInsecureContent` para true.
 * Não ative `experimentalFeatures` ou `experimentalCanvasFeatures` se você não sabe o que está fazendo.
 * Não use `blinkFeatures` se você não sabe o que está fazendo.

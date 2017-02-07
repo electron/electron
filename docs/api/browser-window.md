@@ -238,10 +238,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
     * `webSecurity` Boolean (optional) - When `false`, it will disable the
       same-origin policy (usually using testing websites by people), and set
-      `allowDisplayingInsecureContent` and `allowRunningInsecureContent` to
-      `true` if these two options are not set by user. Default is `true`.
-    * `allowDisplayingInsecureContent` Boolean (optional) - Allow an https page to display
-      content like images from http URLs. Default is `false`.
+      `allowRunningInsecureContent` to `true` if this options has not been set
+      by user. Default is `true`.
     * `allowRunningInsecureContent` Boolean (optional) - Allow an https page to run
       JavaScript, CSS or plugins from http URLs. Default is `false`.
     * `images` Boolean (optional) - Enables image support. Default is `true`.

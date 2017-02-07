@@ -13,10 +13,10 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
+#include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebCache.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
@@ -445,9 +445,6 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStat>::ToV8(
   dict.Set("count", static_cast<uint32_t>(stat.count));
   dict.Set("size", static_cast<double>(stat.size));
   dict.Set("liveSize", static_cast<double>(stat.liveSize));
-  dict.Set("decodedSize", static_cast<double>(stat.decodedSize));
-  dict.Set("purgedSize", static_cast<double>(stat.purgedSize));
-  dict.Set("purgeableSize", static_cast<double>(stat.purgeableSize));
   return dict.GetHandle();
 }
 
