@@ -456,4 +456,66 @@ describe('app module', function () {
       assert.equal(app.isDefaultProtocolClient(protocol), false)
     })
   })
+
+  describe('getFileIcon() API', function () {
+    const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
+    const sizes = {
+      small: 16,
+      normal: 32,
+      large: process.platform === 'win32' ? 32 : 48
+    }
+
+    it('fetches a non-empty icon', function (done) {
+      app.getFileIcon(iconPath, function (err, icon) {
+        assert.equal(err, null)
+        assert.equal(icon.isEmpty(), false)
+        done()
+      })
+    })
+
+    it('fetches normal icon size by default', function (done) {
+      app.getFileIcon(iconPath, function (err, icon) {
+        const size = icon.getSize()
+        assert.equal(err, null)
+        assert.equal(size.height, sizes.normal)
+        assert.equal(size.width, sizes.normal)
+        done()
+      })
+    })
+
+    describe('size option', function () {
+      it('fetches a small icon', function (done) {
+        app.getFileIcon(iconPath, { size: 'small' }, function (err, icon) {
+          const size = icon.getSize()
+          assert.equal(err, null)
+          assert.equal(size.height, sizes.small)
+          assert.equal(size.width, sizes.small)
+          done()
+        })
+      })
+
+      it('fetches a normal icon', function (done) {
+        app.getFileIcon(iconPath, { size: 'normal' }, function (err, icon) {
+          const size = icon.getSize()
+          assert.equal(err, null)
+          assert.equal(size.height, sizes.normal)
+          assert.equal(size.width, sizes.normal)
+          done()
+        })
+      })
+
+      it('fetches a large icon', function (done) {
+        // macOS does not support large icons
+        if (process.platform === 'darwin') return done()
+
+        app.getFileIcon(iconPath, { size: 'large' }, function (err, icon) {
+          const size = icon.getSize()
+          assert.equal(err, null)
+          assert.equal(size.height, sizes.large)
+          assert.equal(size.width, sizes.large)
+          done()
+        })
+      })
+    })
+  })
 })

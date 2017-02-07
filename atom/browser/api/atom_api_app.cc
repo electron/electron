@@ -30,6 +30,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "brightray/browser/brightray_paths.h"
+#include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -335,6 +336,15 @@ namespace api {
 
 namespace {
 
+IconLoader::IconSize GetIconSizeByString(const std::string& size) {
+  if (size == "small") {
+    return IconLoader::IconSize::SMALL;
+  } else if (size == "large") {
+    return IconLoader::IconSize::LARGE;
+  }
+  return IconLoader::IconSize::NORMAL;
+}
+
 // Return the path constant from string.
 int GetPathConstant(const std::string& name) {
   if (name == "appData")
@@ -461,6 +471,21 @@ int ImportIntoCertStore(
   return rv;
 }
 #endif
+
+void OnIconDataAvailable(v8::Isolate* isolate,
+                         const App::FileIconCallback& callback,
+                         gfx::Image* icon) {
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+
+  if (icon && !icon->IsEmpty()) {
+    callback.Run(v8::Null(isolate), *icon);
+  } else {
+    v8::Local<v8::String> error_message =
+      v8::String::NewFromUtf8(isolate, "Failed to get file icon.");
+    callback.Run(v8::Exception::Error(error_message), gfx::Image());
+  }
+}
 
 }  // namespace
 
@@ -841,6 +866,42 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 }
 #endif  // defined(OS_WIN)
 
+void App::GetFileIcon(const base::FilePath& path,
+                      mate::Arguments* args) {
+  mate::Dictionary options;
+  IconLoader::IconSize icon_size;
+  FileIconCallback callback;
+
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+
+  base::FilePath normalized_path = path.NormalizePathSeparators();
+
+  if (!args->GetNext(&options)) {
+    icon_size = IconLoader::IconSize::NORMAL;
+  } else {
+    std::string icon_size_string;
+    options.Get("size", &icon_size_string);
+    icon_size = GetIconSizeByString(icon_size_string);
+  }
+
+  if (!args->GetNext(&callback)) {
+    args->ThrowError("Missing required callback function");
+    return;
+  }
+
+  IconManager* icon_manager = IconManager::GetInstance();
+  gfx::Image* icon = icon_manager->LookupIconFromFilepath(normalized_path,
+                                                          icon_size);
+  if (icon) {
+    callback.Run(v8::Null(isolate()), *icon);
+  } else {
+    icon_manager->LoadIcon(normalized_path, icon_size,
+                           base::Bind(&OnIconDataAvailable, isolate(),
+                                      callback));
+  }
+}
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -909,7 +970,8 @@ void App::BuildPrototype(
       .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
-                 &App::DisableHardwareAcceleration);
+                 &App::DisableHardwareAcceleration)
+      .SetMethod("getFileIcon", &App::GetFileIcon);
 }
 
 }  // namespace api
