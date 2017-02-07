@@ -401,7 +401,7 @@ You can request the following paths by the name:
 * `videos` Directory for a user's videos.
 * `pepperFlashSystemPlugin`  Full path to the system version of the Pepper Flash plugin.
 
-### `app.getFileIcon(path, [options], callback)`
+### `app.getFileIcon(path[, options], callback)`
 
 * `path` String
 * `options` Object (optional)
