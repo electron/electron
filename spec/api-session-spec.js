@@ -558,6 +558,7 @@ describe('session module', function () {
 
     it('accepts the request when the callback is called with true', function (done) {
       session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, error, callback) {
+        assert.equal(error, 'net::ERR_CERT_AUTHORITY_INVALID')
         callback(0)
       })
 
@@ -580,6 +581,7 @@ describe('session module', function () {
         assert.equal(certificate.issuerCert.issuerCert.issuer.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.subject.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.issuerCert, undefined)
+        assert.equal(error, 'net::ERR_CERT_AUTHORITY_INVALID')
         callback(-2)
       })
 
