@@ -505,9 +505,9 @@ describe('app module', function () {
       })
 
       it('fetches large icon', function (done) {
-        if (process.platform === 'darwin') {
-          return this.skip() // macOS does not support large icons
-        }
+        // macOS does not support large icons
+        if (process.platform === 'darwin') return done()
+
         app.getFileIcon(iconPath, { size: 'large' }, function (err, icon) {
           const size = icon.getSize()
           assert.equal(err, null)
