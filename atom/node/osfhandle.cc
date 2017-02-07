@@ -24,6 +24,8 @@ void ReferenceSymbols() {
   // for some reason, adding them to ForceSymbolReferences does not work,
   // probably because of VC++ bugs.
   v8::TracingCpuProfiler::Create(nullptr);
+  reinterpret_cast<v8_inspector::V8InspectorSession*>(nullptr)->
+      canDispatchMethod(v8_inspector::StringView());
   reinterpret_cast<v8_inspector::V8InspectorClient*>(nullptr)->unmuteMetrics(0);
 }
 
