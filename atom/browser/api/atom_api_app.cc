@@ -696,6 +696,12 @@ void App::ReleaseSingleInstance() {
   }
 }
 
+#if defined(OS_MACOSX)
+#else
+void App::InitializeAsMediaPlayer(mate::Arguments* args) {}
+void App::SetNowPlaying(mate::Arguments* args) {}
+#endif
+
 bool App::Relaunch(mate::Arguments* js_args) {
   // Parse parameters.
   bool override_argv = false;
@@ -908,6 +914,8 @@ void App::BuildPrototype(
       .SetMethod("relaunch", &App::Relaunch)
       .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
+      .SetMethod("initializeAsMediaPlayer", &App::InitializeAsMediaPlayer)
+      .SetMethod("setNowPlaying", &App::SetNowPlaying)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration);
 }
