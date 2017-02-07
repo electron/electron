@@ -408,7 +408,7 @@ You can request the following paths by the name:
   * `size` String
     * `small` - 16x16
     * `normal` - 32x32
-    * `large` - 48x48. This size is not supported on _macOS_.
+    * `large` - 48x48 on _Linux_, 32x32 on _Windows_, unsupported on _macOS_.
 * `callback` Function
   * `error` Error
   * `icon` [NativeImage](native-image.md)

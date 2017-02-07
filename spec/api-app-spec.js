@@ -462,7 +462,7 @@ describe('app module', function () {
     const sizes = {
       small: 16,
       normal: 32,
-      large: 48
+      large: process.platform === 'win32' ? 32 : 48
     }
 
     it('fetches a non-empty icon', function (done) {
