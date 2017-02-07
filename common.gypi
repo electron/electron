@@ -129,6 +129,9 @@
       }],
       ['_target_name=="node"', {
         'include_dirs': [
+          '<(libchromiumcontent_src_dir)',
+          '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
+          '<(libchromiumcontent_src_dir)/third_party/icu/source/i18n',
           '<(libchromiumcontent_src_dir)/v8',
           '<(libchromiumcontent_src_dir)/v8/include',
         ],
@@ -154,59 +157,6 @@
               # Needed by V8.
               '-ldbghelp.lib',
               '-lshlwapi.lib',
-            ],
-            # Force referencing symbols of ICU and v8_inspector to make sure
-            # they are included in the final DLL.
-            'conditions': [
-              ['libchromiumcontent_component==0', {
-                'variables': {
-                  'conditions': [
-                    ['target_arch=="ia32"', {
-                      'reference_symbols': [
-                        # ICU symbols:
-                        '_u_errorName_58',
-                        '_ubidi_setPara_58',
-                        '_ucsdet_getName_58',
-                        '_uidna_openUTS46_58',
-                        '_ulocdata_close_58',
-                        '_unorm_normalize_58',
-                        '_uregex_matches_58',
-                        '_uscript_getCode_58',
-                        '_uspoof_open_58',
-                        '_usearch_setPattern_58',
-                        '?createInstance@Transliterator@icu_58@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
-                        '??0MeasureFormat@icu_58@@QAE@ABVLocale@1@W4UMeasureFormatWidth@@AAW4UErrorCode@@@Z',
-                      ],
-                    }, {
-                      'reference_symbols': [
-                        # ICU symbols:
-                        'u_errorName_58',
-                        'ubidi_setPara_58',
-                        'ucsdet_getName_58',
-                        'uidna_openUTS46_58',
-                        'ulocdata_close_58',
-                        'unorm_normalize_58',
-                        'uregex_matches_58',
-                        'uspoof_open_58',
-                        'usearch_setPattern_58',
-                        '?createInstance@Transliterator@icu_58@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z',
-                        '??0MeasureFormat@icu_58@@QEAA@AEBVLocale@1@W4UMeasureFormatWidth@@AEAW4UErrorCode@@@Z',
-                        # v8_inspector symbols:
-                        '?DOM@ReasonEnum@Paused@API@Debugger@protocol@v8_inspector@@3PEBDEB',
-                        '?canDispatchMethod@V8InspectorSession@v8_inspector@@SA_NAEBVStringView@2@@Z',
-                      ],
-                    }],
-                  ],
-                },
-                'msvs_settings': {
-                  'VCLinkerTool': {
-                    # There is nothing like "whole-archive" on Windows, so we
-                    # have to manually force some objets files to be included
-                    # by referencing them.
-                    'ForceSymbolReferences': [ '<@(reference_symbols)' ],  # '/INCLUDE'
-                  },
-                },
-              }],
             ],
           }],
           ['OS=="linux" and libchromiumcontent_component==0', {
