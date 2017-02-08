@@ -250,15 +250,22 @@ the original network configuration.
 #### `ses.setCertificateVerifyProc(proc)`
 
 * `proc` Function
-  * `hostname` String
-  * `certificate` [Certificate](structures/certificate.md)
+  * `request` Object
+    * `hostname` String
+    * `certificate` [Certificate](structures/certificate.md)
+    * `error` String - Verification result from chromium.
   * `callback` Function
-    * `isTrusted` Boolean - Determines if the certificate should be trusted
+    * `verificationResult` Integer - Value can be one of certificate error codes
+    from [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+    Apart from the certificate error codes, the following special codes can be used.
+      * `0` - Indicates success and disables Certificate Transperancy verification.
+      * `-2` - Indicates failure.
+      * `-3` - Uses the verification result from chromium.
 
 Sets the certificate verify proc for `session`, the `proc` will be called with
-`proc(hostname, certificate, callback)` whenever a server certificate
-verification is requested. Calling `callback(true)` accepts the certificate,
-calling `callback(false)` rejects it.
+`proc(request, callback)` whenever a server certificate
+verification is requested. Calling `callback(0)` accepts the certificate,
+calling `callback(-2)` rejects it.
 
 Calling `setCertificateVerifyProc(null)` will revert back to default certificate
 verify proc.

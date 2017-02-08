@@ -204,6 +204,18 @@ struct Converter<net::ProxyConfig> {
   }
 };
 
+template<>
+struct Converter<atom::VerifyRequestParams> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   atom::VerifyRequestParams val) {
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    dict.Set("hostname", val.hostname);
+    dict.Set("certificate", val.certificate);
+    dict.Set("verificationResult", val.default_result);
+    return dict.GetHandle();
+  }
+};
+
 }  // namespace mate
 
 namespace atom {
@@ -738,7 +750,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
-      .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
+      .SetMethod("_setCertificateVerifyProc", &Session::SetCertVerifyProc)
       .SetMethod("setPermissionRequestHandler",
                  &Session::SetPermissionRequestHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)

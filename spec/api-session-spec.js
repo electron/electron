@@ -557,8 +557,9 @@ describe('session module', function () {
     })
 
     it('accepts the request when the callback is called with true', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
-        callback(true)
+      session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult}, callback) {
+        assert.equal(verificationResult, 'net::ERR_CERT_AUTHORITY_INVALID')
+        callback(0)
       })
 
       w.webContents.once('did-finish-load', function () {
@@ -568,8 +569,37 @@ describe('session module', function () {
       w.loadURL(`https://127.0.0.1:${server.address().port}`)
     })
 
+    describe('deprecated function signature', function () {
+      it('supports accepting the request', function (done) {
+        session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+          assert.equal(hostname, '127.0.0.1')
+          callback(true)
+        })
+
+        w.webContents.once('did-finish-load', function () {
+          assert.equal(w.webContents.getTitle(), 'hello')
+          done()
+        })
+        w.loadURL(`https://127.0.0.1:${server.address().port}`)
+      })
+
+      it('supports rejecting the request', function (done) {
+        session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+          assert.equal(hostname, '127.0.0.1')
+          callback(false)
+        })
+
+        var url = `https://127.0.0.1:${server.address().port}`
+        w.webContents.once('did-finish-load', function () {
+          assert.equal(w.webContents.getTitle(), url)
+          done()
+        })
+        w.loadURL(url)
+      })
+    })
+
     it('rejects the request when the callback is called with false', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+      session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult}, callback) {
         assert.equal(hostname, '127.0.0.1')
         assert.equal(certificate.issuerName, 'Intermediate CA')
         assert.equal(certificate.subjectName, 'localhost')
@@ -580,7 +610,8 @@ describe('session module', function () {
         assert.equal(certificate.issuerCert.issuerCert.issuer.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.subject.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.issuerCert, undefined)
-        callback(false)
+        assert.equal(verificationResult, 'net::ERR_CERT_AUTHORITY_INVALID')
+        callback(-2)
       })
 
       var url = `https://127.0.0.1:${server.address().port}`

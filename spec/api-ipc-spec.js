@@ -85,6 +85,13 @@ describe('ipc module', function () {
       assert.equal(foo.baz(), 123)
     })
 
+    it('includes the length of functions specified as arguments', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'function-with-args.js'))
+      assert.equal(a(function (a, b, c, d, f) {}), 5)
+      assert.equal(a((a) => {}), 1)
+      assert.equal(a((...args) => {}), 0)
+    })
+
     it('handles circular references in arrays and objects', function () {
       var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
 
