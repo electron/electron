@@ -205,9 +205,9 @@ struct Converter<net::ProxyConfig> {
 };
 
 template<>
-struct Converter<atom::VerifyRequest> {
+struct Converter<atom::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   atom::VerifyRequest val) {
+                                   atom::VerifyRequestParams val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     dict.Set("hostname", val.hostname);
     dict.Set("certificate", val.certificate);

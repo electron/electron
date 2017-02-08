@@ -89,16 +89,23 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
 
   void OnDefaultVerificationDone(int error) {
     error_ = error;
-    VerifyRequest request = {
-      params_.hostname(),
-      net::ErrorToString(error),
-      params_.certificate()
-    };
+    std::unique_ptr<VerifyRequestParams> request(new VerifyRequestParams());
+    request->hostname = params_.hostname();
+    request->default_result = net::ErrorToString(error);
+    request->certificate = params_.certificate();
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
-        base::Bind(cert_verifier_->verify_proc(), request,
-                   base::Bind(&CertVerifierRequest::OnResponseInUI,
-                              weak_ptr_factory_.GetWeakPtr())));
+        base::Bind(&CertVerifierRequest::OnVerifyRequestInUI,
+                   weak_ptr_factory_.GetWeakPtr(),
+                   cert_verifier_->verify_proc(),
+                   base::Passed(&request)));
+  }
+
+  void OnVerifyRequestInUI(const AtomCertVerifier::VerifyProc& verify_proc,
+                           std::unique_ptr<VerifyRequestParams> request) {
+    verify_proc.Run(*(request.get()),
+                    base::Bind(&CertVerifierRequest::OnResponseInUI,
+                               weak_ptr_factory_.GetWeakPtr()));
   }
 
   void OnResponseInUI(int result) {
