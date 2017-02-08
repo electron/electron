@@ -480,7 +480,7 @@ void OnIconDataAvailable(v8::Isolate* isolate,
 
   if (!icon) {
     v8::Local<v8::String> error_message =
-      v8::String::NewFromUtf8(isolate, "Failed to get file icon.");
+      v8::String::NewFromUtf8(isolate, "Decoding the icon failed");
     callback.Run(v8::Exception::Error(error_message), gfx::Image());
     return;
   }
