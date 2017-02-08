@@ -556,9 +556,9 @@ describe('session module', function () {
       server.close()
     })
 
-    it('accepts the request when the callback is called with true', function (done) {
+    it('accepts the request when the callback is called with 0', function (done) {
       session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult}, callback) {
-        assert.equal(verificationResult, 'net::ERR_CERT_AUTHORITY_INVALID')
+        assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
         callback(0)
       })
 
@@ -598,7 +598,7 @@ describe('session module', function () {
       })
     })
 
-    it('rejects the request when the callback is called with false', function (done) {
+    it('rejects the request when the callback is called with -2', function (done) {
       session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult}, callback) {
         assert.equal(hostname, '127.0.0.1')
         assert.equal(certificate.issuerName, 'Intermediate CA')
@@ -610,7 +610,7 @@ describe('session module', function () {
         assert.equal(certificate.issuerCert.issuerCert.issuer.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.subject.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.issuerCert, undefined)
-        assert.equal(verificationResult, 'net::ERR_CERT_AUTHORITY_INVALID')
+        assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
         callback(-2)
       })
 
