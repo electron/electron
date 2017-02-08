@@ -1494,13 +1494,14 @@ void WebContents::Invalidate() {
       web_contents()->GetRenderWidgetHostView());
     if (osr_rwhv)
       osr_rwhv->Invalidate();
-  }
-  else {
+  } else {
     const auto ownerWindow = owner_window();
-    const auto nativeWindow = ownerWindow ? ownerWindow->GetNativeWindow() : nullptr;
+    const auto nativeWindow = ownerWindow ? ownerWindow->GetNativeWindow() :
+                                            nullptr;
     if (nativeWindow) {
       const gfx::Rect& bounds = nativeWindow->bounds();
-      nativeWindow->SchedulePaintInRect(gfx::Rect(0, 0, bounds.width(), bounds.height()));
+      nativeWindow->SchedulePaintInRect(
+        gfx::Rect(0, 0, bounds.width(), bounds.height()));
     }
   }
 }
