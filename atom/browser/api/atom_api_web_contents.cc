@@ -1489,20 +1489,20 @@ int WebContents::GetFrameRate() const {
 }
 
 void WebContents::Invalidate() {
-	if (IsOffScreen()) {
-		auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-			web_contents()->GetRenderWidgetHostView());
-		if (osr_rwhv)
-			osr_rwhv->Invalidate();
-	}
-	else {
-		const auto ownerWindow = owner_window();
-		const auto nativeWindow = ownerWindow ? ownerWindow->GetNativeWindow() : nullptr;
-		if (nativeWindow) {
-			const gfx::Rect& bounds = nativeWindow->bounds();
-			nativeWindow->SchedulePaintInRect(gfx::Rect(0, 0, bounds.width(), bounds.height()));
-		}
-	}
+  if (IsOffScreen()) {
+    auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
+    if (osr_rwhv)
+      osr_rwhv->Invalidate();
+  }
+  else {
+    const auto ownerWindow = owner_window();
+    const auto nativeWindow = ownerWindow ? ownerWindow->GetNativeWindow() : nullptr;
+    if (nativeWindow) {
+      const gfx::Rect& bounds = nativeWindow->bounds();
+      nativeWindow->SchedulePaintInRect(gfx::Rect(0, 0, bounds.width(), bounds.height()));
+    }
+  }
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
