@@ -52,8 +52,8 @@ describe('third-party module', function () {
     it('can be registered and used to require .coffee files', function () {
       assert.doesNotThrow(function () {
         require('coffee-script').register()
-        assert.strictEqual(require('./fixtures/module/test.coffee'), true)
       })
+      assert.strictEqual(require('./fixtures/module/test.coffee'), true)
     })
   })
 
