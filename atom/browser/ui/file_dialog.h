@@ -37,34 +37,25 @@ typedef base::Callback<void(
 typedef base::Callback<void(
     bool result, const base::FilePath& path)> SaveDialogCallback;
 
-bool ShowOpenDialog(atom::NativeWindow* parent_window,
-                    const std::string& title,
-                    const std::string& button_label,
-                    const base::FilePath& default_path,
-                    const Filters& filters,
-                    int properties,
+struct DialogSettings {
+  atom::NativeWindow* parent_window = nullptr;
+  std::string title;
+  std::string button_label;
+  base::FilePath default_path;
+  Filters filters;
+  int properties = 0;
+};
+
+bool ShowOpenDialog(const DialogSettings& settings,
                     std::vector<base::FilePath>* paths);
 
-void ShowOpenDialog(atom::NativeWindow* parent_window,
-                    const std::string& title,
-                    const std::string& button_label,
-                    const base::FilePath& default_path,
-                    const Filters& filters,
-                    int properties,
+void ShowOpenDialog(const DialogSettings& settings,
                     const OpenDialogCallback& callback);
 
-bool ShowSaveDialog(atom::NativeWindow* parent_window,
-                    const std::string& title,
-                    const std::string& button_label,
-                    const base::FilePath& default_path,
-                    const Filters& filters,
+bool ShowSaveDialog(const DialogSettings& settings,
                     base::FilePath* path);
 
-void ShowSaveDialog(atom::NativeWindow* parent_window,
-                    const std::string& title,
-                    const std::string& button_label,
-                    const base::FilePath& default_path,
-                    const Filters& filters,
+void ShowSaveDialog(const DialogSettings& settings,
                     const SaveDialogCallback& callback);
 
 }  // namespace file_dialog

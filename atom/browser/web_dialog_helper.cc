@@ -81,16 +81,16 @@ void WebDialogHelper::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
     const content::FileChooserParams& params) {
   std::vector<content::FileChooserFileInfo> result;
-  file_dialog::Filters filters = GetFileTypesFromAcceptType(
-      params.accept_types);
+
+  file_dialog::DialogSettings settings;
+  settings.filters = GetFileTypesFromAcceptType(params.accept_types);
+  settings.parent_window = window_;
+  settings.title = base::UTF16ToUTF8(params.title);
+
   if (params.mode == content::FileChooserParams::Save) {
     base::FilePath path;
-    if (file_dialog::ShowSaveDialog(window_,
-                                    base::UTF16ToUTF8(params.title),
-                                    "",
-                                    params.default_file_name,
-                                    filters,
-                                    &path)) {
+    settings.default_path = params.default_file_name;
+    if (file_dialog::ShowSaveDialog(settings, &path)) {
       content::FileChooserFileInfo info;
       info.file_path = path;
       info.display_name = path.BaseName().value();
@@ -114,15 +114,10 @@ void WebDialogHelper::RunFileChooser(
     std::vector<base::FilePath> paths;
     AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
         window_->web_contents()->GetBrowserContext());
-    base::FilePath default_file_path = browser_context->prefs()->GetFilePath(
+    settings.default_path = browser_context->prefs()->GetFilePath(
         prefs::kSelectFileLastDirectory).Append(params.default_file_name);
-    if (file_dialog::ShowOpenDialog(window_,
-                                    base::UTF16ToUTF8(params.title),
-                                    "",
-                                    default_file_path,
-                                    filters,
-                                    flags,
-                                    &paths)) {
+    settings.properties = flags;
+    if (file_dialog::ShowOpenDialog(settings, &paths)) {
       for (auto& path : paths) {
         content::FileChooserFileInfo info;
         info.file_path = path;
