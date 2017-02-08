@@ -16,14 +16,18 @@ namespace atom {
 class AtomCTDelegate;
 class CertVerifierRequest;
 
+struct VerifyRequest {
+  std::string hostname;
+  std::string default_result;
+  scoped_refptr<net::X509Certificate> certificate;
+};
+
 class AtomCertVerifier : public net::CertVerifier {
  public:
   explicit AtomCertVerifier(AtomCTDelegate* ct_delegate);
   virtual ~AtomCertVerifier();
 
-  using VerifyProc = base::Callback<void(const std::string& hostname,
-                                         scoped_refptr<net::X509Certificate>,
-                                         const std::string& default_result,
+  using VerifyProc = base::Callback<void(VerifyRequest request,
                                          const net::CompletionCallback&)>;
 
   void SetVerifyProc(const VerifyProc& proc);

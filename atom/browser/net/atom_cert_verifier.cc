@@ -89,10 +89,14 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
 
   void OnDefaultVerificationDone(int error) {
     error_ = error;
+    VerifyRequest request = {
+      params_.hostname(),
+      net::ErrorToString(error),
+      params_.certificate()
+    };
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
-        base::Bind(cert_verifier_->verify_proc(), params_.hostname(),
-                   params_.certificate(), net::ErrorToString(error),
+        base::Bind(cert_verifier_->verify_proc(), request,
                    base::Bind(&CertVerifierRequest::OnResponseInUI,
                               weak_ptr_factory_.GetWeakPtr())));
   }

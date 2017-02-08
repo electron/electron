@@ -99,7 +99,7 @@ ses.setCertificateVerifyProc(function (hostname, certificate, callback) {
   callback(true)
 })
 // Replace with
-ses.setCertificateVerifyProc(function (hostname, certificate, error, callback) {
+ses.setCertificateVerifyProc(function (request, callback) {
   callback(0)
 })
 ```
