@@ -193,7 +193,7 @@ content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
 }
 
 std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
-  return base::WrapUnique(new AtomCertVerifier(ct_delegate_.get()));
+  return base::WrapUnique(new AtomCertVerifier());
 }
 
 std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
