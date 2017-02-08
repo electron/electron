@@ -485,7 +485,7 @@ void OnIconDataAvailable(v8::Isolate* isolate,
     return;
   }
 
-  if(icon->IsEmpty()) {
+  if (icon->IsEmpty()) {
     v8::Local<v8::String> error_message =
       v8::String::NewFromUtf8(isolate, "Icon is empty.");
     callback.Run(v8::Exception::Error(error_message), gfx::Image());
