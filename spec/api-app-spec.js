@@ -459,6 +459,9 @@ describe('app module', function () {
 
   describe('getFileIcon() API', function () {
     const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
+
+    console.log(fs.statSync(iconPath))
+
     const sizes = {
       small: 16,
       normal: 32,
