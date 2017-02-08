@@ -569,17 +569,33 @@ describe('session module', function () {
       w.loadURL(`https://127.0.0.1:${server.address().port}`)
     })
 
-    it('supports the old function signature', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
-        assert.equal(hostname, '127.0.0.1')
-        callback(true)
+    describe('deprecated function signature', function () {
+      it('supports accepting the request', function (done) {
+        session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+          assert.equal(hostname, '127.0.0.1')
+          callback(true)
+        })
+
+        w.webContents.once('did-finish-load', function () {
+          assert.equal(w.webContents.getTitle(), 'hello')
+          done()
+        })
+        w.loadURL(`https://127.0.0.1:${server.address().port}`)
       })
 
-      w.webContents.once('did-finish-load', function () {
-        assert.equal(w.webContents.getTitle(), 'hello')
-        done()
+      it('supports rejecting the request', function (done) {
+        session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+          assert.equal(hostname, '127.0.0.1')
+          callback(false)
+        })
+
+        var url = `https://127.0.0.1:${server.address().port}`
+        w.webContents.once('did-finish-load', function () {
+          assert.equal(w.webContents.getTitle(), url)
+          done()
+        })
+        w.loadURL(url)
       })
-      w.loadURL(`https://127.0.0.1:${server.address().port}`)
     })
 
     it('rejects the request when the callback is called with false', function (done) {
