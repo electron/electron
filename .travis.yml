@@ -1,5 +1,5 @@
 dist: trusty
-sudo: false
+sudo: required
 
 git:
   depth: 10
