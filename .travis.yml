@@ -1,3 +1,6 @@
+dist: trusty
+sudo: false
+
 git:
   depth: 10
 notifications:
