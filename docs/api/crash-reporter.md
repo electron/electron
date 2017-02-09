@@ -118,7 +118,8 @@ called before `start` is called.
 ### `crashReporter.setExtraParameter(key, value)` _macOS_
 
 * `key` String - Parameter key.
-* `value` String - Parameter value.
+* `value` String - Parameter value. Specifying `null` or `undefined` will
+  remove the key from the extra parameters.
 
 Set an extra data to set be sent with the crash report. The values specified
 here will be sent in addition to any values set via the `extra` option to

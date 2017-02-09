@@ -108,6 +108,13 @@ void CrashReporterMac::SetExtraParameter(const std::string& key,
     upload_parameters_[key] = value;
 }
 
+void CrashReporterMac::RemoveExtraParameter(const std::string& key) {
+  if (simple_string_dictionary_)
+    simple_string_dictionary_->RemoveKey(key.data());
+  else
+    upload_parameters_.erase(key);
+}
+
 std::vector<CrashReporter::UploadReportResult>
 CrashReporterMac::GetUploadedReports(const base::FilePath& crashes_dir) {
   std::vector<CrashReporter::UploadReportResult> uploaded_reports;

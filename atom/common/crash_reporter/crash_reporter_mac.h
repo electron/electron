@@ -36,6 +36,7 @@ class CrashReporterMac : public CrashReporter {
   bool GetUploadToServer() override;
   void SetExtraParameter(const std::string& key,
                          const std::string& value) override;
+  void RemoveExtraParameter(const std::string& key) override;
 
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterMac>;

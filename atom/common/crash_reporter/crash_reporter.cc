@@ -90,6 +90,9 @@ void CrashReporter::SetExtraParameter(const std::string& key,
                                       const std::string& value) {
 }
 
+void CrashReporter::RemoveExtraParameter(const std::string& key) {
+}
+
 #if defined(OS_MACOSX) && defined(MAS_BUILD)
 // static
 CrashReporter* CrashReporter::GetInstance() {
