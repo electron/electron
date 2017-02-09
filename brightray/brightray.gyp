@@ -115,7 +115,6 @@
                   '<(libchromiumcontent_dir)/libfpdfdoc.a',
                   '<(libchromiumcontent_dir)/libfpdftext.a',
                   '<(libchromiumcontent_dir)/libfxcodec.a',
-                  '<(libchromiumcontent_dir)/libfxcrt.a',
                   '<(libchromiumcontent_dir)/libfxedit.a',
                   '<(libchromiumcontent_dir)/libfxge.a',
                   '<(libchromiumcontent_dir)/libfxjs.a',
