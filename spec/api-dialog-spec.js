@@ -19,6 +19,10 @@ describe('dialog module', () => {
       assert.throws(() => {
         dialog.showOpenDialog({defaultPath: {}})
       }, /Default path must be a string/)
+
+      assert.throws(() => {
+        dialog.showOpenDialog({message: {}})
+      }, /Message must be a string/)
     })
   })
 
@@ -35,6 +39,14 @@ describe('dialog module', () => {
       assert.throws(() => {
         dialog.showSaveDialog({defaultPath: {}})
       }, /Default path must be a string/)
+
+      assert.throws(() => {
+        dialog.showSaveDialog({message: {}})
+      }, /Message must be a string/)
+
+      assert.throws(() => {
+        dialog.showSaveDialog({nameFieldLabel: {}})
+      }, /Name field label must be a string/)
     })
   })
 
