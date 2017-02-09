@@ -39,7 +39,7 @@
 - (void)alertDidEnd:(NSAlert*)alert
          returnCode:(NSInteger)returnCode
         contextInfo:(void*)contextInfo {
-  callback_.Run(returnCode);
+  callback_.Run(returnCode, alert.suppressionButton.state == NSOnState);
   [alert_ release];
   [self release];
 
@@ -60,6 +60,8 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
                        const std::string& title,
                        const std::string& message,
                        const std::string& detail,
+                       const std::string& checkbox_label,
+                       bool checkbox_checked,
                        const gfx::ImageSkia& icon) {
   // Ignore the title; it's the window title on other platforms and ignorable.
   NSAlert* alert = [[NSAlert alloc] init];
@@ -95,6 +97,12 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
     [[ns_buttons objectAtIndex:default_id] setKeyEquivalent:@"\r"];
   }
 
+  if (!checkbox_label.empty()) {
+    alert.showsSuppressionButton = YES;
+    alert.suppressionButton.title = base::SysUTF8ToNSString(checkbox_label);
+    alert.suppressionButton.state = checkbox_checked ? NSOnState : NSOffState;
+  }
+
   if (!icon.isNull()) {
     NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
         *icon.bitmap(), base::mac::GetGenericRGBColorSpace());
@@ -104,7 +112,7 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   return alert;
 }
 
-void SetReturnCode(int* ret_code, int result) {
+void SetReturnCode(int* ret_code, int result, bool checkbox_checked) {
   *ret_code = result;
 }
 
@@ -120,9 +128,8 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
-  NSAlert* alert = CreateNSAlert(
-      parent_window, type, buttons, default_id, title, message,
-      detail, icon);
+  NSAlert* alert = CreateNSAlert(parent_window, type, buttons, default_id,
+                                 title, message, detail, "", false, icon);
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
@@ -154,11 +161,13 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
+                    const std::string& checkbox_label,
+                    bool checkbox_checked,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  NSAlert* alert = CreateNSAlert(
-      parent_window, type, buttons, default_id, title, message,
-      detail, icon);
+  NSAlert* alert =
+      CreateNSAlert(parent_window, type, buttons, default_id, title, message,
+                    detail, checkbox_label, checkbox_checked, icon);
   ModalDelegate* delegate = [[ModalDelegate alloc] initWithCallback:callback
                                                            andAlert:alert
                                                        callEndModal:false];
