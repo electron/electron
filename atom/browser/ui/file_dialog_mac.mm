@@ -139,9 +139,8 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   DCHECK(paths);
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
-  SetupDialog(dialog, title, button_label, default_path, filters, message,
-          // NSOpenPanel does not support name_field_label and shows_tag_field
-          "", false);
+  // NSOpenPanel does not support name_field_label and shows_tag_field
+  SetupDialog(dialog, title, button_label, default_path, filters, message, "", false);
   SetupDialogForProperties(dialog, properties);
 
   int chosen = RunModalDialog(dialog, parent_window);
@@ -162,9 +161,8 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const OpenDialogCallback& c) {
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
-  SetupDialog(dialog, title, button_label, default_path, filters, message,
-          // NSOpenPanel does not support name_field_label and shows_tag_field
-          "", false);
+  // NSOpenPanel does not support name_field_label and shows_tag_field
+  SetupDialog(dialog, title, button_label, default_path, filters, message, "", false);
   SetupDialogForProperties(dialog, properties);
 
   // Duplicate the callback object here since c is a reference and gcd would
