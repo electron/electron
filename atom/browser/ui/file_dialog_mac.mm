@@ -191,7 +191,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const Filters& filters,
                     const std::string& message,
                     const std::string& name_field_label,
-                    const bool& shows_tag_field,
+                    bool shows_tag_field,
                     base::FilePath* path) {
   DCHECK(path);
   NSSavePanel* dialog = [NSSavePanel savePanel];
@@ -214,7 +214,7 @@ void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const Filters& filters,
                     const std::string& message,
                     const std::string& name_field_label,
-                    const bool& shows_tag_field,
+                    bool shows_tag_field,
                     const SaveDialogCallback& c) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 

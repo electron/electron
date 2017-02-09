@@ -279,7 +279,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const Filters& filters,
                     const std::string& message,
                     const std::string& name_field_label,
-                    const bool& shows_tag_field,
+                    bool shows_tag_field,
                     base::FilePath* path) {
   FileChooserDialog save_dialog(GTK_FILE_CHOOSER_ACTION_SAVE, parent_window,
                                 title, button_label, default_path, filters);
@@ -300,7 +300,7 @@ void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const Filters& filters,
                     const std::string& message,
                     const std::string& name_field_label,
-                    const bool& shows_tag_field,
+                    bool shows_tag_field,
                     const SaveDialogCallback& callback) {
   FileChooserDialog* save_dialog = new FileChooserDialog(
       GTK_FILE_CHOOSER_ACTION_SAVE, parent_window, title, button_label,

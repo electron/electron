@@ -95,7 +95,7 @@ void ShowSaveDialog(const std::string& title,
                     const file_dialog::Filters& filters,
                     const std::string& message,
                     const std::string& name_field_label,
-                    const bool& shows_tag_field,
+                    bool shows_tag_field,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Local<v8::Value> peek = args->PeekNext();
