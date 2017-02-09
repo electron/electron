@@ -71,6 +71,10 @@ describe('dialog module', () => {
       assert.throws(() => {
         dialog.showMessageBox({detail: 3.14})
       }, /Detail must be a string/)
+
+      assert.throws(() => {
+        dialog.showMessageBox({checkboxLabel: false})
+      }, /checkboxLabel must be a string/)
     })
   })
 

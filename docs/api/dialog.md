@@ -127,6 +127,11 @@ will be passed via `callback(filename)`
   * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `message` String - Content of the message box.
   * `detail` String (optional) - Extra information of the message.
+  * `checkboxLabel` String (optional) - If provided, the message box will
+    include a checkbox with the given label. The checkbox state can be
+    inspected only when using `callback`.
+  * `checkboxChecked` Boolean (optional) - Initial checked state of the
+    checkbox. `false` by default.
   * `icon` [NativeImage](native-image.md) (optional)
   * `cancelId` Integer (optional) - The value will be returned when user cancels the dialog
     instead of clicking the buttons of the dialog. By default it is the index
@@ -140,6 +145,8 @@ will be passed via `callback(filename)`
     set `noLink` to `true`.
 * `callback` Function (optional)
   * `response` Number - The index of the button that was clicked
+  * `checkboxChecked` Boolean - The checked state of the checkbox if
+    `checkboxLabel` was set. Otherwise `false`.
 
 Returns `Integer`, the index of the clicked button, if a callback is provided
 it returns undefined.

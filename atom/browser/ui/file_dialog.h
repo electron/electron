@@ -37,42 +37,28 @@ typedef base::Callback<void(
 typedef base::Callback<void(
     bool result, const base::FilePath& path)> SaveDialogCallback;
 
-bool ShowOpenDialog(atom::NativeWindow* parent_window,
-                    const std::string& title,
-                    const std::string& button_label,
-                    const base::FilePath& default_path,
-                    const Filters& filters,
-                    int properties,
-                    const std::string& message,
+struct DialogSettings {
+  atom::NativeWindow* parent_window = nullptr;
+  std::string title;
+  std::string message;
+  std::string button_label;
+  std::string name_field_label;
+  base::FilePath default_path;
+  Filters filters;
+  int properties = 0;
+  bool shows_tag_field = true;
+};
+
+bool ShowOpenDialog(const DialogSettings& settings,
                     std::vector<base::FilePath>* paths);
 
-void ShowOpenDialog(atom::NativeWindow* parent_window,
-                    const std::string& title,
-                    const std::string& button_label,
-                    const base::FilePath& default_path,
-                    const Filters& filters,
-                    int properties,
-                    const std::string& message,
+void ShowOpenDialog(const DialogSettings& settings,
                     const OpenDialogCallback& callback);
 
-bool ShowSaveDialog(atom::NativeWindow* parent_window,
-                    const std::string& title,
-                    const std::string& button_label,
-                    const base::FilePath& default_path,
-                    const Filters& filters,
-                    const std::string& message,
-                    const std::string& name_field_label,
-                    bool shows_tag_field,
+bool ShowSaveDialog(const DialogSettings& settings,
                     base::FilePath* path);
 
-void ShowSaveDialog(atom::NativeWindow* parent_window,
-                    const std::string& title,
-                    const std::string& button_label,
-                    const base::FilePath& default_path,
-                    const Filters& filters,
-                    const std::string& message,
-                    const std::string& name_field_label,
-                    bool shows_tag_field,
+void ShowSaveDialog(const DialogSettings& settings,
                     const SaveDialogCallback& callback);
 
 }  // namespace file_dialog

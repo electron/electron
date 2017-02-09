@@ -294,10 +294,11 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
   if (it != saved_files_.end() && !save_as) {
     path = it->second;
   } else {
-    file_dialog::Filters filters;
-    base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
-    if (!file_dialog::ShowSaveDialog(owner_window(), url, "", default_path,
-                                     filters, "", "", false, &path)) {
+    file_dialog::DialogSettings settings;
+    settings.parent_window = owner_window();
+    settings.title = url;
+    settings.default_path = base::FilePath::FromUTF8Unsafe(url);
+    if (!file_dialog::ShowSaveDialog(settings, &path)) {
       base::StringValue url_value(url);
       web_contents_->CallClientFunction(
           "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
@@ -358,12 +359,11 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     const base::FilePath& file_system_path) {
   base::FilePath path = file_system_path;
   if (path.empty()) {
-    file_dialog::Filters filters;
-    base::FilePath default_path;
     std::vector<base::FilePath> paths;
-    int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
-    if (!file_dialog::ShowOpenDialog(owner_window(), "", "", default_path,
-                                     filters, flag, "", &paths))
+    file_dialog::DialogSettings settings;
+    settings.parent_window = owner_window();
+    settings.properties = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
+    if (!file_dialog::ShowOpenDialog(settings, &paths))
       return;
 
     path = paths[0];
