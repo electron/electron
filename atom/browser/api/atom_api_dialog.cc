@@ -45,10 +45,13 @@ struct Converter<file_dialog::DialogSettings> {
       return false;
     dict.Get("window", &(out->parent_window));
     dict.Get("title", &(out->title));
+    dict.Get("message", &(out->message));
     dict.Get("buttonLabel", &(out->button_label));
+    dict.Get("nameFieldLabel", &(out->name_field_label));
     dict.Get("defaultPath", &(out->default_path));
     dict.Get("filters", &(out->filters));
     dict.Get("properties", &(out->properties));
+    dict.Get("showsTagField", &(out->shows_tag_field));
     return true;
   }
 };

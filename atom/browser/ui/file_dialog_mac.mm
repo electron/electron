@@ -51,6 +51,14 @@ void SetupDialog(NSSavePanel* dialog,
   if (!settings.button_label.empty())
     [dialog setPrompt:base::SysUTF8ToNSString(settings.button_label)];
 
+  if (!settings.message.empty())
+    [dialog setMessage:base::SysUTF8ToNSString(settings.message)];
+
+  if (!settings.name_field_label.empty())
+    [dialog setNameFieldLabel:base::SysUTF8ToNSString(settings.name_field_label)];
+
+  [dialog setShowsTagField:settings.shows_tag_field];
+
   NSString* default_dir = nil;
   NSString* default_filename = nil;
   if (!settings.default_path.empty()) {

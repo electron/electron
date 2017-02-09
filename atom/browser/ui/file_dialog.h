@@ -40,10 +40,13 @@ typedef base::Callback<void(
 struct DialogSettings {
   atom::NativeWindow* parent_window = nullptr;
   std::string title;
+  std::string message;
   std::string button_label;
+  std::string name_field_label;
   base::FilePath default_path;
   Filters filters;
   int properties = 0;
+  bool shows_tag_field = true;
 };
 
 bool ShowOpenDialog(const DialogSettings& settings,
