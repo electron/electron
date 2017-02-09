@@ -250,6 +250,17 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })
 
+ipcMain.on('prevent-next-will-attach-webview', (event) => {
+  event.sender.once('will-attach-webview', event => event.preventDefault())
+})
+
+ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
+  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
+    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`
+    webPreferences.nodeIntegration = false
+  })
+})
+
 ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
   const consoleWarn = console.warn
   let warningMessage = null

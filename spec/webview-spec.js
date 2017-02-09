@@ -2,7 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const http = require('http')
 const url = require('url')
-const {remote} = require('electron')
+const {ipcRenderer, remote} = require('electron')
 const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} = remote
 const {closeWindow} = require('./window-helpers')
 
@@ -1098,6 +1098,28 @@ describe('<webview> tag', function () {
     })
 
     w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
+  })
+
+  describe('will-attach-webview event', () => {
+    it('supports changing the web preferences', (done) => {
+      ipcRenderer.send('disable-node-on-next-will-attach-webview')
+      webview.addEventListener('console-message', (event) => {
+        assert.equal(event.message, 'undefined undefined undefined undefined')
+        done()
+      })
+      webview.setAttribute('nodeintegration', 'yes')
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+      document.body.appendChild(webview)
+    })
+
+    it('supports preventing a webview from being created', (done) => {
+      ipcRenderer.send('prevent-next-will-attach-webview')
+      webview.addEventListener('destroyed', () => {
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/c.html'
+      document.body.appendChild(webview)
+    })
   })
 
   it('loads devtools extensions registered on the parent window', function (done) {
