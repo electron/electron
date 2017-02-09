@@ -507,7 +507,6 @@ Emitted when the devtools window instructs the webContents to reload
 Returns:
 
 * `event` Event
-* `guest` WebContents - The contents of the guest page.
 * `webPreferences` Object - The web preferences that will be used by the guest
   page. This object can be modified to adjust the preferences for the guest
   page.

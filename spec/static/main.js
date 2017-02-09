@@ -255,7 +255,7 @@ ipcMain.on('prevent-next-will-attach-webview', (event) => {
 })
 
 ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
-  event.sender.once('will-attach-webview', (event, guest, webPreferences, params) => {
+  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
     params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`
     webPreferences.nodeIntegration = false
   })

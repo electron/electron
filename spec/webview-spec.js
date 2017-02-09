@@ -1100,7 +1100,7 @@ describe('<webview> tag', function () {
     w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
   })
 
-  describe('will-attach-webview event', () => {
+  describe.only('will-attach-webview event', () => {
     it('supports changing the web preferences', (done) => {
       ipcRenderer.send('disable-node-on-next-will-attach-webview')
       webview.addEventListener('console-message', (event) => {
