@@ -60,6 +60,10 @@ reports temporarily. You can test this out by calling `process.crash()` to crash
 This will start the process that will monitor and send the crash reports. Replace `submitURL`, `productName`
 and `crashesDirectory` with appropriate values.
 
+**Note:** If you need send additional/updated `extra` parameters after your
+first call `start` you can call `setExtraParameter` on macOS or call `start`
+again with the new/updated `extra` parameters on Linux and Windows.
+
 ```js
  const args = [
    `--reporter-url=${submitURL}`,
@@ -110,6 +114,18 @@ This would normally be controlled by user preferences. This has no effect if
 called before `start` is called.
 
 **Note:** This API can only be called from the main process.
+
+### `crashReporter.setExtraParameter(key, value)` _macOS_
+
+* `key` String - Parameter key.
+* `value` String - Parameter value.
+
+Set an extra data to set be sent with the crash report. The values specified
+here will be sent in addition to any values set via the `extra` option to
+the `start` API. This API is only available on macOS, if you need to
+add additional extra parameters on Linux and Windows after your first call to
+`start` you can call `start` again with the updated `extra` options for the
+parameters to send.
 
 ## Crash Report Payload
 
