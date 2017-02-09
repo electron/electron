@@ -1,32 +1,122 @@
 # BrowserWindow
 
- `BrowserWindow` 类让你有创建一个浏览器窗口的权力。例如:
+> 创建和控制浏览器窗口。
+
+进程: [Main](../glossary.md#main-process)
 
 ```javascript
 // In the main process.
-const BrowserWindow = require('electron').BrowserWindow
+const {BrowserWindow} = require('electron')
 
-// Or in the renderer process.
-// const BrowserWindow = require('electron').remote.BrowserWindow
+// Or use `remote` from the renderer process.
+// const {BrowserWindow} = require('electron').remote
 
-var win = new BrowserWindow({ width: 800, height: 600, show: false })
-win.on('closed', function () {
+let win = new BrowserWindow({width: 800, height: 600})
+win.on('closed', () => {
   win = null
 })
 
+// Load a remote URL
 win.loadURL('https://github.com')
-win.show()
+
+// Or load a local HTML file
+win.loadURL(`file://${__dirname}/app/index.html`)
 ```
 
-你也可以不通过chrome创建窗口，使用
-[Frameless Window](frameless-window.md) API.
+## Frameless window
+
+不通过chrome创建窗口，或者一个任意形状的透明窗口，
+你可以使用 [Frameless Window](frameless-window.md) API。
+
+## Showing window gracefully
+
+When loading a page in the window directly, users may see the page load incrementally, which is not a good experience for a native app. To make the window display
+without visual flash, there are two solutions for different situations.
+
+## 优雅地显示窗口
+
+当在窗口中直接加载页面时，用户可能会看到增量加载页面，这不是一个好的原生应用程序的体验。使窗口显示
+没有可视闪烁，有两种解决方案适用于不同的情况。
+
+### 使用 `ready-to-show` 事件
+
+在加载页面时，进程第一次完成绘制时，渲染器会发出 `ready-to-show` 事件
+，在此事件后显示窗口将没有可视闪烁：
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({show: false})
+win.once('ready-to-show', () => {
+  win.show()
+})
+```
+
+这个事件通常发生在 `did-finish-load` 事件之后，但是
+页面有许多远程资源，它可能会在 `did-finish-load` 之前发出
+事件。
+
+### 设置 `backgroundColor`
+
+对于一个复杂的应用程序，`ready-to-show` 事件可能发出太晚，使
+应用程序感觉缓慢。在这种情况下，建议立即显示窗口，
+并使用接近应用程序的背景 `backgroundColor`：
+
+```javascript
+const {BrowserWindow} = require('electron')
+
+let win = new BrowserWindow({backgroundColor: '#2e2c29'})
+win.loadURL('https://github.com')
+```
+
+请注意，即使是使用 `ready-to-show` 事件的应用程序，仍建议使用
+设置 `backgroundColor` 使应用程序感觉更原生。
+
+## Parent 和 child 窗口
+
+使用 `parent` 选项，你可以创建 child 窗口：
+
+```javascript
+const {BrowserWindow} = require('electron')
+
+let top = new BrowserWindow()
+let child = new BrowserWindow({parent: top})
+child.show()
+top.show()
+```
+
+`child` 窗口将总是显示在 `top` 窗口的顶部。
+
+### Modal 窗口
+
+模态窗口是禁用父窗口的子窗口，以创建模态
+窗口，你必须设置 `parent` 和 `modal` 选项：
+
+```javascript
+const {BrowserWindow} = require('electron')
+
+let child = new BrowserWindow({parent: top, modal: true, show: false})
+child.loadURL('https://github.com')
+child.once('ready-to-show', () => {
+  child.show()
+})
+```
+
+### 平台通知
+
+* 在 macOS 上，modal 窗口将显示为附加到父窗口的工作表。
+* 在 macOS 上，子窗口将保持与父窗口的相对位置
+   当父窗口移动时，而在 Windows 和 Linux 子窗口不会
+   移动。
+* 在Windows上，不支持动态更改父窗口。
+* 在Linux上，模态窗口的类型将更改为 `dialog`。
+* 在Linux上，许多桌面环境不支持隐藏模态窗口。
 
 ## Class: BrowserWindow
 
 `BrowserWindow` 是一个
-[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)。
 
-通过 `options` 可以创建一个具有本质属性的 `BrowserWindow` .
+通过 `options` 可以创建一个具有原生属性的 `BrowserWindow`。
 
 ### `new BrowserWindow([options])`
 
@@ -748,4 +838,9 @@ windows上句柄类型为 `HWND` ，macOS `NSView*` ， Linux `Window`.
 
 忽略窗口的所有鼠标事件.
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+[quick-look]: https://en.wikipedia.org/wiki/Quick_Look
+[vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
+[window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
+[chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
