@@ -169,7 +169,7 @@ class GtkMessageBox : public NativeWindowObserver {
   }
 
   CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, int);
-  CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnCheckboxToggled, gpointer);
+  CHROMEGTK_CALLBACK_0(GtkMessageBox, void, OnCheckboxToggled);
 
  private:
   atom::UnresponsiveSuppressor unresponsive_suppressor_;
@@ -196,7 +196,7 @@ void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
   delete this;
 }
 
-void GtkMessageBox::OnCheckboxToggled(GtkWidget* widget, gpointer data) {
+void GtkMessageBox::OnCheckboxToggled(GtkWidget* widget) {
   checkbox_checked_ = GTK_TOGGLE_BUTTON(widget)->active;
 }
 
