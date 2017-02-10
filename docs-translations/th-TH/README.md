@@ -1,26 +1,42 @@
-## คู่มือ 
+กรุณาตรวจสอบว่าคุณกำลังใช้คู่มือที่ตรงกับเวอร์ชั่นของ Electon ของคุณด้วย ตัวเลขเวอร์ชั่นจะมีบอกใน URL ของหน้าเพจ ถ้าไม่มีหมายความว่าคุณอาจจะใช้เอกสารของ development branch ที่ API อาจจะมีการเปลี่ยนแปลง ซึ่งไม่สามารถใช้ร่วมกับ Electron เวอร์ชั่นที่คุณใช้อยู่ได้ เพื่อที่จะดูเอกสารเวอร์ชั่นเก่า [คุณสามารถที่จะดูแท็ก](https://github.com/electron/electron/tree/v1.4.0) ใน GitHub โดยการที่คลิกที่ "เรียกดูตามกิ่ง/แท็ก" แล้วเลือกแท็กที่ตรงกับเวอร์ชั่นของคุณ
 
+## คำถามที่ถูกถามบ่อย
+
+รวบรวมคำถามที่ถูกถามบ่อย กรุณาอ่านก่อนเปิด issue:
+
+* [คำถามที่ถูกถามบ่อยเกี่ยวกับ Electron](faq.md)
+
+## คู่มือ
+
+* [คำศัพท์เฉพาะ](glossary.md)
 * [แพลตฟอร์มที่รองรับ](tutorial/supported-platforms.md)
+* [ความปลอดภัย](tutorial/security.md)
 * [การเผยแพร่แอปพลิเคชัน](tutorial/application-distribution.md)
 * [แนวทางการส่งแอปเข้า Mac App Store](tutorial/mac-app-store-submission-guide.md)
+* [คู่มือ Windows Store](tutorial/mac-app-store-submission-guide.md)
 * [การบรรจุแอปพลิเคชัน](tutorial/application-packaging.md)
 * [การใช้โมดูลของ Node](tutorial/using-native-node-modules.md)
 * [การหาข้อผิดพลาดในกระบวนการหลัก](tutorial/debugging-main-process.md)
 * [การใช้งาน Selenium และ WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [ส่วนเสริมของ DevTools](tutorial/devtools-extension.md)
 * [การใช้งานส่วนเสริม Pepper Flash](tutorial/using-pepper-flash-plugin.md)
+* [การใช้งานส่วนเสริม Widevine CDM Plugin](tutorial/using-pepper-flash-plugin.md)
+* [การทดสอบบน CI (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
+* [การเลนเดอร์นอกหน้าต่าง] (tutorial/offscreen-rendering.md)
 
 ## แนะนำ
 
 * [เริ่มต้นอย่างคราวๆ](tutorial/quick-start.md)
 * [การร่วมกันของสภาพแวดล้อมบนเดสทอป](tutorial/desktop-environment-integration.md)
 * [การตรวจจับเหตุการณ์ออนไลน์หรือออฟไลน์](tutorial/online-offline-events.md)
+* [REPL](tutorial/repl.md)
 
 ## แหล่งอ้างอิงของ API
 
 * [สรุปความ](api/synopsis.md)
 * [โปรเซสออบเจค](api/process.md)
 * [คำสั่งสำหรับเปลี่ยนแปลงค่าของ Chrome ที่รองรับ](api/chrome-command-line-switches.md)
+* [Variables สภาพแวดล้อม](api/environment-variables.md)
 
 ### การปรับแต่ง DOM:
 
@@ -31,43 +47,48 @@
 ### โมดูลสำหรับกระบวนการหลัก :
 
 * [app](api/app.md)
-* [auto-updater](api/auto-updater.md)
-* [browser-window](api/browser-window.md)
-* [content-tracing](api/content-tracing.md)
+* [autoUpdater](api/auto-updater.md)
+* [BrowserWindow](api/browser-window.md)
+* [contentTracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
-* [global-shortcut](api/global-shortcut.md)
-* [ipc (main process)](api/ipc-main-process.md)
-* [menu](api/menu.md)
-* [menu-item](api/menu-item.md)
-* [power-monitor](api/power-monitor.md)
-* [power-save-blocker](api/power-save-blocker.md)
+* [globalShortcut](api/global-shortcut.md)
+* [ipcMain](api/ipc-main.md)
+* [Menu](api/menu.md)
+* [MenuItem](api/menu-item.md)
+* [powerMonitor](api/power-monitor.md)
+* [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* [web-contents](api/web-contents.md)
-* [tray](api/tray.md)
+* [systemPreferences](api/system-preferences.md)
+* [Tray](api/tray.md)
+* [webContents](api/web-contents.md)
 
 ### โมดูลสำหรับกระบวนการ Renderer (เว็บเพจ):
 
-* [ipc (renderer)](api/ipc-renderer.md)
+* [desktopCapturer](api/desktop-capturer.md)
+* [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)
-* [web-frame](api/web-frame.md)
+* [webFrame](api/web-frame.md)
 
-### Modules for Both Processes:
+### โมดูลสำหรับทั้งสองกระบวนการ:
 
 * [clipboard](api/clipboard.md)
-* [crash-reporter](api/crash-reporter.md)
-* [native-image](api/native-image.md)
+* [crashReporter](api/crash-reporter.md)
+* [nativeImage](api/native-image.md)
 * [screen](api/screen.md)
 * [shell](api/shell.md)
 
 ## การพัฒนา 
 
 * [ลักษณะการเขียนโค้ด](development/coding-style.md)
+* [การใช้ clang-format สำหรับโค้ด C++](development/clang-format.md)
 * [โครงสร้างไดเรคทอรี่ของซอร์สโค้ด](development/source-code-directory-structure.md)
 * [ความแตกต่างทางเทคนิคจาก NW.js (หรือ node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [ภาพรวมการสร้างระบบ](development/build-system-overview.md)
 * [ขั้นตอนการสร้าง (macOS)](development/build-instructions-osx.md)
 * [ขั้นตอนการสร้าง (Windows)](development/build-instructions-windows.md)
 * [ขั้นตอนการสร้าง (Linux)](development/build-instructions-linux.md)
-* [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
+* [ขั้นตอนการแก้บัค (macOS)](development/debugging-instructions-macos.md)
+* [ขั้นตอนการแก้บัค (Windows)](development/debug-instructions-windows.md)
 * [การติดตั้งเซิร์ฟเวอร์ Symbol Server ใน debugger](development/setting-up-symbol-server.md)
+* [ลักษณะการแก้เอกสาร](styleguide.md)
