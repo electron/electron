@@ -132,9 +132,13 @@ def copy_license():
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
 def create_api_json_schema():
+  node_bin_dir = os.path.join(SOURCE_ROOT, 'node_modules', '.bin')
+  env = os.environ.copy()
+  env['PATH'] = os.path.pathsep.join([node_bin_dir, env['PATH']])
   outfile = os.path.relpath(os.path.join(DIST_DIR, 'electron-api.json'))
   execute(['electron-docs-linter', 'docs', '--outfile={0}'.format(outfile),
-           '--version={}'.format(ELECTRON_VERSION.replace('v', ''))])
+           '--version={}'.format(ELECTRON_VERSION.replace('v', ''))],
+          env=env)
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:
