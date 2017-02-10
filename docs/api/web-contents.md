@@ -164,12 +164,12 @@ instance, failing to do so may result in unexpected behavior. For example:
 
 ```javascript
 myBrowserWindow.webContents.on('new-window', (event, url) => {
-   event.preventDefault()
-   const win = new BrowserWindow({ show: false })
-   win.once('ready-to-show', () => win.show())
-   win.loadURL(url)
-   event.newGuest = win
-});
+  event.preventDefault()
+  const win = new BrowserWindow({show: false})
+  win.once('ready-to-show', () => win.show())
+  win.loadURL(url)
+  event.newGuest = win
+})
 ```
 
 #### Event: 'will-navigate'
