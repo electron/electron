@@ -157,9 +157,20 @@ requested by `window.open` or an external link like `<a target='_blank'>`.
 
 By default a new `BrowserWindow` will be created for the `url`.
 
-Calling `event.preventDefault()` will prevent creating new windows. In such case, the
-`event.newGuest` may be set with a reference to a `BrowserWindow` instance to make it
-used by the Electron's runtime.
+Calling `event.preventDefault()` will prevent Electron from automatically creating a
+new `BrowserWindow`. If you call `event.preventDefault()` and manually create a new
+`BrowserWindow` then you must set `event.newGuest` to reference the new `BrowserWindow`
+instance, failing to do so may result in unexpected behavior. For example:
+
+```javascript
+myBrowserWindow.webContents.on('new-window', event => {
+   event.preventDefault()
+   const win = new BrowserWindow({ show: false })
+   win.once('ready-to-show', () => win.show())
+   win.loadURL(event.url)
+   event.newGuest = win
+});
+```
 
 #### Event: 'will-navigate'
 
