@@ -12,16 +12,16 @@
 
 ### Spectron
 
-ในการทดสอบเฟรมเวิร์ค Spectron นั้น 
+ในการทดสอบเฟรมเวิร์ค Spectron นั้น
 คุณจะใช้วิธีการแก้ไขทุกๆหน้าต่าง และ แท็ก `<webview>` ในแอพพิเคชั่นของคุณได้
 
 ยกตัวอย่างเช่น:
 
 ```javascript
 app.client.autidAccessibility().then(function (audit) {
-    if (audit.failed) {
-        console.error(audit.message)
-    }
+  if (audit.failed) {
+    console.error(audit.message)
+  }
 })
 ```
 
@@ -29,11 +29,11 @@ app.client.autidAccessibility().then(function (audit) {
 
 ### Devtron
 
-ใน Devtron นั้น จะมีแท็ปการเข้าถึง ซึ่งจะทำให้คุณสามารถจัดการเพจในแอพของคุณได้ 
+ใน Devtron นั้น จะมีแท็ปการเข้าถึง ซึ่งจะทำให้คุณสามารถจัดการเพจในแอพของคุณได้
 
 ![devtron screenshot](https://cloud.githubusercontent.com/assets/1305617/17156618/9f9bcd72-533f-11e6-880d-389115f40a2a.png)
 
-ทั้งสองเครื่องมือใช้ [Accessibility Developer Tools](https://github.com/GoogleChrome/accessibility-developer-tools) ซึ่งเป็น library ที่สร้างขึ้นโดย Google เพื่อ Chrome 
+ทั้งสองเครื่องมือใช้ [Accessibility Developer Tools](https://github.com/GoogleChrome/accessibility-developer-tools) ซึ่งเป็น library ที่สร้างขึ้นโดย Google เพื่อ Chrome
 
 คุณสามารถศึกษาเพิ่มเติมเกี่ยวกับมันได้ที่ [รีโปนี้](https://github.com/GoogleChrome/accessibility-developer-tools/wiki/Audit-Rules)
 
