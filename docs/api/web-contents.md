@@ -163,11 +163,11 @@ new `BrowserWindow`. If you call `event.preventDefault()` and manually create a 
 instance, failing to do so may result in unexpected behavior. For example:
 
 ```javascript
-myBrowserWindow.webContents.on('new-window', event => {
+myBrowserWindow.webContents.on('new-window', (event, url) => {
    event.preventDefault()
    const win = new BrowserWindow({ show: false })
    win.once('ready-to-show', () => win.show())
-   win.loadURL(event.url)
+   win.loadURL(url)
    event.newGuest = win
 });
 ```
