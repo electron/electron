@@ -81,6 +81,12 @@ This is not bulletproof, but at the least, you should attempt the following:
 Again, this list merely minimizes the risk, it does not remove it. If your goal
 is to display a website, a browser will be a more secure option.
 
+## Preload Scripts
+
+Globals created by preload scripts can be modified by untrusted remote sites,
+even if `nodeIntegration` is disabled. Use caution when using preload scripts
+in conjunction with untrusted `webview` content or `BrowserWindow` instances.
+
 ## Buffer Global
 
 Node's [Buffer](https://nodejs.org/api/buffer.html) class is currently available
