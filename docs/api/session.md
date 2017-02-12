@@ -98,7 +98,7 @@ The following methods are available on instances of `Session`:
 * `callback` Function
   * `size` Integer - Cache size used in bytes.
 
-Returns the session's current cache size.
+Callback is invoked with the session's current cache size.
 
 #### `ses.clearCache(callback)`
 
