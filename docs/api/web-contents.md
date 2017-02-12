@@ -1180,7 +1180,7 @@ the cursor when dragging.
 * `callback` Function - `(error) => {}`.
   * `error` Error
 
-Returns true if the process of saving page has been initiated successfully.
+Returns `Boolean` - true if the process of saving page has been initiated successfully.
 
 ```javascript
 const {BrowserWindow} = require('electron')
