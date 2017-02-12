@@ -93,6 +93,8 @@ void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
     [dialog setAllowsMultipleSelection:YES];
   if (properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
     [dialog setShowsHiddenFiles:YES];
+  if (properties & FILE_DIALOG_NO_RESOLVE_ALIASES)
+    dialog.resolvesAliases = false;
 }
 
 // Run modal dialog with parent window and return user's choice.
