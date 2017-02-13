@@ -111,7 +111,7 @@ describe('crashReporter module', function () {
         crashReporter.start({
           companyName: 'Umbrella Corporation',
           submitURL: 'http://127.0.0.1/crashes',
-          autoSubmit: true
+          uploadToServer: true
         })
         assert.equal(crashReporter.getUploadToServer(), true)
         crashReporter.setUploadToServer(false)
