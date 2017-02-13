@@ -1,3 +1,6 @@
+dist: trusty
+sudo: required
+
 git:
   depth: 10
 notifications:
@@ -8,10 +11,8 @@ node_js:
   - "4"
 os:
   - linux
-  - osx
 env:
   - TARGET_ARCH=x64
-osx_image: xcode7.3
 
 matrix:
   include:
@@ -19,8 +20,14 @@ matrix:
       env: TARGET_ARCH=arm
     - os: linux
       env: TARGET_ARCH=ia32
-  allow_failures:
-    - os: osx
+
+before_install:
+  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16"
+
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
 
 script: './script/cibuild'
 

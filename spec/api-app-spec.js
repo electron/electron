@@ -9,8 +9,6 @@ const {closeWindow} = require('./window-helpers')
 
 const {app, BrowserWindow, ipcMain} = remote
 
-const isCI = remote.getGlobal('isCi')
-
 describe('electron module', function () {
   it('does not expose internal modules to require', function () {
     assert.throws(function () {
@@ -460,10 +458,10 @@ describe('app module', function () {
   })
 
   describe('getFileIcon() API', function () {
-    // FIXME Get these specs running on Linux CI
-    if (process.platform === 'linux' && isCI) return
-
     const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
+
+    console.log(fs.statSync(iconPath))
+
     const sizes = {
       small: 16,
       normal: 32,
