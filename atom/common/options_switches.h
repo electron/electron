@@ -81,7 +81,6 @@ extern const char kSecureSchemes[];
 extern const char kAppUserModelId[];
 
 extern const char kBackgroundColor[];
-extern const char kZoomFactor[];
 extern const char kPreloadScript[];
 extern const char kPreloadURL[];
 extern const char kNodeIntegration[];

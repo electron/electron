@@ -22,6 +22,7 @@
 #include "atom/browser/ui/drag_util.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
+#include "atom/browser/web_contents_zoom_controller.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
@@ -248,11 +249,11 @@ WebContents::WebContents(v8::Isolate* isolate,
                          Type type)
     : content::WebContentsObserver(web_contents),
       embedder_(nullptr),
+      zoom_controller_(nullptr),
       type_(type),
       request_id_(0),
       background_throttling_(true),
       enable_devtools_(true) {
-
   if (type == REMOTE) {
     web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
     Init(isolate);
@@ -265,9 +266,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
 }
 
-WebContents::WebContents(v8::Isolate* isolate,
-                         const mate::Dictionary& options)
+WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
     : embedder_(nullptr),
+      zoom_controller_(nullptr),
       type_(BROWSER_WINDOW),
       request_id_(0),
       background_throttling_(true),
@@ -345,10 +346,16 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
 
-  // Intialize permission helper.
+  // Initialize permission helper.
   WebContentsPermissionHelper::CreateForWebContents(web_contents);
-  // Intialize security state client.
+  // Initialize security state client.
   SecurityStateTabHelper::CreateForWebContents(web_contents);
+  // Initialize zoom controller.
+  WebContentsZoomController::CreateForWebContents(web_contents);
+  zoom_controller_ = WebContentsZoomController::FromWebContents(web_contents);
+  double zoom_factor;
+  if (options.Get(options::kZoomFactor, &zoom_factor))
+    zoom_controller_->SetDefaultZoomFactor(zoom_factor);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -812,6 +819,10 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_SetTemporaryZoomLevel,
+                                    OnSetTemporaryZoomLevel)
+    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_GetZoomLevel,
+                                    OnGetZoomLevel)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
       handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -1498,6 +1509,37 @@ void WebContents::Invalidate() {
     osr_rwhv->Invalidate();
 }
 
+void WebContents::SetZoomLevel(double level) {
+  zoom_controller_->SetZoomLevel(level);
+}
+
+double WebContents::GetZoomLevel() {
+  return zoom_controller_->GetZoomLevel();
+}
+
+void WebContents::SetZoomFactor(double factor) {
+  auto level = content::ZoomFactorToZoomLevel(factor);
+  SetZoomLevel(level);
+}
+
+double WebContents::GetZoomFactor() {
+  auto level = GetZoomLevel();
+  return content::ZoomLevelToZoomFactor(level);
+}
+
+void WebContents::OnSetTemporaryZoomLevel(double level,
+                                          IPC::Message* reply_msg) {
+  zoom_controller_->SetTemporaryZoomLevel(level);
+  double new_level = zoom_controller_->GetZoomLevel();
+  AtomViewHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg, new_level);
+  Send(reply_msg);
+}
+
+void WebContents::OnGetZoomLevel(IPC::Message* reply_msg) {
+  AtomViewHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
+  Send(reply_msg);
+}
+
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   WebContentsPreferences* web_preferences =
       WebContentsPreferences::FromWebContents(web_contents());
@@ -1626,6 +1668,10 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFrameRate", &WebContents::SetFrameRate)
       .SetMethod("getFrameRate", &WebContents::GetFrameRate)
       .SetMethod("invalidate", &WebContents::Invalidate)
+      .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
+      .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
+      .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
+      .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)

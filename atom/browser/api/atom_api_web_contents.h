@@ -39,6 +39,7 @@ namespace atom {
 
 struct SetSizeParams;
 class AtomBrowserContext;
+class WebContentsZoomController;
 class WebViewGuestDelegate;
 
 namespace api {
@@ -174,6 +175,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   int GetFrameRate() const;
   void Invalidate();
 
+  // Methods for zoom handling.
+  void SetZoomLevel(double level);
+  double GetZoomLevel();
+  void SetZoomFactor(double factor);
+  double GetZoomFactor();
+
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
                                    const GURL& origin,
@@ -199,6 +206,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   content::WebContents* HostWebContents();
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
+
+  WebContentsZoomController* GetZoomController() { return zoom_controller_; }
 
  protected:
   WebContents(v8::Isolate* isolate,
@@ -343,6 +352,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // Called when received a synchronous message from renderer to
+  // set temporary zoom level.
+  void OnSetTemporaryZoomLevel(double level, IPC::Message* reply_msg);
+
+  // Called when received a synchronous message from renderer to
+  // get the zoom level.
+  void OnGetZoomLevel(IPC::Message* reply_msg);
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
@@ -351,6 +368,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;
+
+  // The zoom controller for this webContents.
+  WebContentsZoomController* zoom_controller_;
 
   // The type of current WebContents.
   Type type_;

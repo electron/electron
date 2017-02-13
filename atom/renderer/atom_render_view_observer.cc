@@ -14,7 +14,6 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
@@ -117,17 +116,6 @@ void AtomRenderViewObserver::EmitIPCEvent(blink::WebFrame* frame,
 void AtomRenderViewObserver::DidCreateDocumentElement(
     blink::WebLocalFrame* frame) {
   document_created_ = true;
-
-  // Read --zoom-factor from command line.
-  std::string zoom_factor_str = base::CommandLine::ForCurrentProcess()->
-      GetSwitchValueASCII(switches::kZoomFactor);
-  if (zoom_factor_str.empty())
-    return;
-  double zoom_factor;
-  if (!base::StringToDouble(zoom_factor_str, &zoom_factor))
-    return;
-  double zoom_level = blink::WebView::zoomFactorToZoomLevel(zoom_factor);
-  frame->view()->setZoomLevel(zoom_level);
 }
 
 void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
