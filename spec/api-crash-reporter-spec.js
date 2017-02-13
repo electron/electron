@@ -72,6 +72,26 @@ describe('crashReporter module', function () {
     })
   })
 
+  it('should send minidump with updated extra parameters', function (done) {
+    if (process.env.APPVEYOR === 'True') return done()
+    if (process.env.TRAVIS === 'true') return done()
+
+    this.timeout(10000)
+
+    startServer({
+      callback (port) {
+        const crashUrl = url.format({
+          protocol: 'file',
+          pathname: path.join(fixtures, 'api', 'crash-restart.html'),
+          search: '?port=' + port
+        })
+        w.loadURL(crashUrl)
+      },
+      processType: 'renderer',
+      done: done
+    })
+  })
+
   describe('.start(options)', function () {
     it('requires that the companyName and submitURL options be specified', function () {
       assert.throws(function () {
@@ -155,6 +175,7 @@ const startServer = ({callback, processType, done}) => {
       assert.equal(fields.platform, process.platform)
       assert.equal(fields.extra1, 'extra1')
       assert.equal(fields.extra2, 'extra2')
+      assert.equal(fields.extra3, undefined)
       assert.equal(fields._productName, 'Zombies')
       assert.equal(fields._companyName, 'Umbrella Corporation')
       assert.equal(fields._version, app.getVersion())
@@ -165,6 +186,7 @@ const startServer = ({callback, processType, done}) => {
           assert.equal(crashReporter.getLastCrashReport().id, reportId)
           assert.notEqual(crashReporter.getUploadedReports().length, 0)
           assert.equal(crashReporter.getUploadedReports()[0].id, reportId)
+          req.socket.destroy()
           done()
         }, done)
       })
