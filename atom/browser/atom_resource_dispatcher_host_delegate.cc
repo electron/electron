@@ -65,6 +65,7 @@ void HandleExternalProtocolInUI(
 
 void OnPdfStreamCreated(
     std::unique_ptr<content::StreamInfo> stream,
+    const std::string& stream_id,
     const content::ResourceRequestInfo::WebContentsGetter& web_contents_getter,
     int render_process_id,
     int render_frame_id) {
@@ -75,7 +76,6 @@ void OnPdfStreamCreated(
   auto browser_context =
       static_cast<AtomBrowserContext*>(web_contents->GetBrowserContext());
   auto stream_manager = browser_context->stream_manager();
-  std::string stream_id = base::GenerateGUID();
   GURL original_url = stream->original_url;
   stream_manager->AddStream(std::move(stream), stream_id, render_process_id,
                             render_frame_id);
@@ -136,6 +136,7 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     std::string* payload) {
   if (mime_type == "application/pdf") {
     *origin = GURL(kPdfViewerUIOrigin);
+    stream_info_[request] = base::GenerateGUID();
     return true;
   }
   return false;
@@ -144,13 +145,17 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
 void AtomResourceDispatcherHostDelegate::OnStreamCreated(
     net::URLRequest* request,
     std::unique_ptr<content::StreamInfo> stream) {
+  auto it = stream_info_.find(request);
+  if (it == stream_info_.end())
+    return;
   const content::ResourceRequestInfo* info =
       content::ResourceRequestInfo::ForRequest(request);
   content::BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(&OnPdfStreamCreated, base::Passed(&stream),
+      base::Bind(&OnPdfStreamCreated, base::Passed(&stream), it->second,
                  info->GetWebContentsGetterForRequest(), info->GetChildID(),
                  info->GetRenderFrameID()));
+  stream_info_.erase(it);
 }
 
 }  // namespace atom

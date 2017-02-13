@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
 #define ATOM_BROWSER_ATOM_RESOURCE_DISPATCHER_HOST_DELEGATE_H_
 
+#include <map>
 #include <string>
 
 #include "content/public/browser/resource_dispatcher_host_delegate.h"
@@ -31,6 +32,12 @@ class AtomResourceDispatcherHostDelegate
                                        std::string* payload) override;
   void OnStreamCreated(net::URLRequest* request,
                        std::unique_ptr<content::StreamInfo> stream) override;
+
+ private:
+  // Map between intercepted request and its generated stream id.
+  std::map<net::URLRequest*, std::string> stream_info_;
+
+  DISALLOW_COPY_AND_ASSIGN(AtomResourceDispatcherHostDelegate);
 };
 
 }  // namespace atom
