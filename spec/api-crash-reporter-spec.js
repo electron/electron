@@ -35,7 +35,7 @@ describe('crashReporter module', function () {
   }
 
   it('should send minidump when renderer crashes', function (done) {
-    if (process.platform !== 'darwin') return done()
+    if (process.env.APPVEYOR === 'True') return done()
     if (process.env.TRAVIS === 'true') return done()
 
     this.timeout(120000)
@@ -55,7 +55,7 @@ describe('crashReporter module', function () {
   })
 
   it('should send minidump when node processes crash', function (done) {
-    if (process.platform !== 'darwin') return done()
+    if (process.env.APPVEYOR === 'True') return done()
     if (process.env.TRAVIS === 'true') return done()
 
     this.timeout(120000)
