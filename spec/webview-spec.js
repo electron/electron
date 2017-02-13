@@ -318,7 +318,7 @@ describe('<webview> tag', function () {
 
     it('does not break preload script', function (done) {
       var listener = function (e) {
-        assert.equal(e.message, 'function object object')
+        assert.equal(e.message, 'function object object function')
         webview.removeEventListener('console-message', listener)
         done()
       }
