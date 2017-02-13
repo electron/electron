@@ -281,6 +281,15 @@ struct Converter<std::map<std::string, T> > {
     }
     return true;
   }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                   const std::map<std::string, T>& val) {
+    v8::Local<v8::Object> result = v8::Object::New(isolate);
+    for (auto i = val.begin(); i != val.end(); i++) {
+      result->Set(Converter<T>::ToV8(isolate, i->first),
+                 Converter<T>::ToV8(isolate, i->second));
+    }
+    return result;
+  }
 };
 
 // Convenience functions that deduce T.
