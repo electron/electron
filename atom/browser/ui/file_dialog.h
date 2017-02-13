@@ -23,12 +23,13 @@ typedef std::pair<std::string, std::vector<std::string> > Filter;
 typedef std::vector<Filter> Filters;
 
 enum FileDialogProperty {
-  FILE_DIALOG_OPEN_FILE         = 1 << 0,
-  FILE_DIALOG_OPEN_DIRECTORY    = 1 << 1,
-  FILE_DIALOG_MULTI_SELECTIONS  = 1 << 2,
-  FILE_DIALOG_CREATE_DIRECTORY  = 1 << 3,
-  FILE_DIALOG_SHOW_HIDDEN_FILES = 1 << 4,
-  FILE_DIALOG_PROMPT_TO_CREATE  = 1 << 5,
+  FILE_DIALOG_OPEN_FILE          = 1 << 0,
+  FILE_DIALOG_OPEN_DIRECTORY     = 1 << 1,
+  FILE_DIALOG_MULTI_SELECTIONS   = 1 << 2,
+  FILE_DIALOG_CREATE_DIRECTORY   = 1 << 3,
+  FILE_DIALOG_SHOW_HIDDEN_FILES  = 1 << 4,
+  FILE_DIALOG_PROMPT_TO_CREATE   = 1 << 5,
+  FILE_DIALOG_NO_RESOLVE_ALIASES = 1 << 6,
 };
 
 typedef base::Callback<void(
