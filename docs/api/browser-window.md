@@ -47,7 +47,7 @@ win.once('ready-to-show', () => {
 })
 ```
 
-This is event is usually emitted after the `did-finish-load` event, but for
+This event is usually emitted after the `did-finish-load` event, but for
 pages with many remote resources, it may be emitted before the `did-finish-load`
 event.
 
