@@ -13,7 +13,7 @@ between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content.
 
 For security purposes, `webview` can only be used in `BrowserWindow`s that have
-`nodeIntegration` enabled.
+`nodeIntegration` disabled.
 
 ## Example
 
