@@ -130,6 +130,7 @@ class NativeWindowViews : public NativeWindow,
 
 #if defined(OS_WIN)
   TaskbarHost& taskbar_host() { return taskbar_host_; }
+  bool CanFocus();
 #endif
 
  private:
@@ -262,6 +263,7 @@ class NativeWindowViews : public NativeWindow,
   bool maximizable_;
   bool minimizable_;
   bool fullscreenable_;
+  bool focusable_;
   std::string title_;
   gfx::Size widget_size_;
 

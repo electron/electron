@@ -202,4 +202,8 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   }
 }
 
+bool NativeWindowViews::CanFocus() {
+  return focusable_ && IsVisible();
+}
+
 }  // namespace atom

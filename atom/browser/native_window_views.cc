@@ -48,6 +48,7 @@
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
+#include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
@@ -148,7 +149,8 @@ NativeWindowViews::NativeWindowViews(
       resizable_(true),
       maximizable_(true),
       minimizable_(true),
-      fullscreenable_(true) {
+      fullscreenable_(true),
+      focusable_(true) {
   options.Get(options::kTitle, &title_);
   options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 
@@ -196,16 +198,14 @@ NativeWindowViews::NativeWindowViews(
   if (transparent() && !has_frame())
     params.shadow_type = views::Widget::InitParams::SHADOW_TYPE_NONE;
 
-  bool focusable;
-  if (options.Get(options::kFocusable, &focusable) && !focusable)
+  if (options.Get(options::kFocusable, &focusable_) && !focusable_)
     params.activatable = views::Widget::InitParams::ACTIVATABLE_NO;
 
 #if defined(OS_WIN)
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget =
-      new views::DesktopNativeWidgetAura(window_.get());
+  params.native_widget = new AtomDeskopNativeWidgetAura(window_.get(), this);
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
       this,
       window_.get(),
@@ -806,6 +806,7 @@ void NativeWindowViews::SetContentProtection(bool enable) {
 }
 
 void NativeWindowViews::SetFocusable(bool focusable) {
+  focusable_ = focusable;
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
   if (focusable)

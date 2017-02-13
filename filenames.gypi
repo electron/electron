@@ -317,6 +317,8 @@
       'atom/browser/ui/views/submenu_button.h',
       'atom/browser/ui/views/win_frame_view.cc',
       'atom/browser/ui/views/win_frame_view.h',
+      'atom/browser/ui/win/atom_desktop_native_widget_aura.cc',
+      'atom/browser/ui/win/atom_desktop_native_widget_aura.h',
       'atom/browser/ui/win/atom_desktop_window_tree_host_win.cc',
       'atom/browser/ui/win/atom_desktop_window_tree_host_win.h',
       'atom/browser/ui/win/jump_list.cc',

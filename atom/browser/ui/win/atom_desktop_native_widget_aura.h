@@ -1,0 +1,29 @@
+// Copyright (c) 2017 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef ATOM_BROWSER_UI_WIN_ATOM_DESKTOP_NATIVE_WIDGET_AURA_H_
+#define ATOM_BROWSER_UI_WIN_ATOM_DESKTOP_NATIVE_WIDGET_AURA_H_
+
+#include "atom/browser/native_window_views.h"
+#include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
+
+namespace atom {
+
+class AtomDeskopNativeWidgetAura : public views::DesktopNativeWidgetAura {
+ public:
+  AtomDeskopNativeWidgetAura(views::internal::NativeWidgetDelegate* delegate,
+                             NativeWindowViews* window);
+
+  // aura::WindowDelegate
+  bool CanFocus() override;
+
+ private:
+  NativeWindowViews* window_;
+
+  DISALLOW_COPY_AND_ASSIGN(AtomDeskopNativeWidgetAura);
+};
+
+}  // namespace atom
+
+#endif  // ATOM_BROWSER_UI_WIN_ATOM_DESKTOP_NATIVE_WIDGET_AURA_H_
