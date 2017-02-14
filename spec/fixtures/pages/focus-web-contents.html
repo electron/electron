@@ -6,16 +6,16 @@
     <script>
       const {ipcRenderer, remote} = require('electron')
 
+      remote.getCurrentWindow().focus()
+
       const child = new remote.BrowserWindow({show: false})
-
-      remote.getCurrentWindow().once('blur', () => {
-        ipcRenderer.send('answer', child.isVisible(), child.isFocused())
-        child.close()
-      })
-
+      child.loadURL('about:blank')
       child.webContents.focus()
-      child.show()
-      child.webContents.focus()
+
+      const currentFocused = remote.getCurrentWindow().isFocused()
+      const childFocused = child.isFocused()
+      child.close()
+      ipcRenderer.send('answer', currentFocused, childFocused)
     </script>
   </head>
   <body>

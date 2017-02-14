@@ -310,14 +310,16 @@ describe('webContents module', function () {
   })
 
   describe('focus()', function () {
-    it('focuses the parent window', function (done) {
-      ipcMain.once('answer', (event, visible, focused) => {
-        assert.equal(visible, true)
-        assert.equal(focused, true)
-        done()
+    describe('when the web contents is hidden', function () {
+      it('does not blur the focused window', function (done) {
+        ipcMain.once('answer', (event, parentFocused, childFocused) => {
+          assert.equal(parentFocused, true)
+          assert.equal(childFocused, false)
+          done()
+        })
+        w.show()
+        w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'focus-web-contents.html'))
       })
-      w.show()
-      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'focus-web-contents.html'))
     })
   })
 })
