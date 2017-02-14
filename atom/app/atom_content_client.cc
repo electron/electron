@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/ui/webui/pdf_viewer_ui.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
