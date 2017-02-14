@@ -71,6 +71,7 @@ class NativeWindowMac : public NativeWindow,
                       int relativeLevel, std::string* error) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
+  void Invalidate() override;
   void SetTitle(const std::string& title) override;
   std::string GetTitle() override;
   void FlashFrame(bool flash) override;

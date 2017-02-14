@@ -1496,12 +1496,8 @@ void WebContents::Invalidate() {
       osr_rwhv->Invalidate();
   } else {
     const auto ownerWindow = owner_window();
-    const auto nativeWindow = ownerWindow ? ownerWindow->GetNativeWindow() :
-                                            nullptr;
-    if (nativeWindow) {
-      const gfx::Rect& bounds = nativeWindow->bounds();
-      nativeWindow->SchedulePaintInRect(
-        gfx::Rect(0, 0, bounds.width(), bounds.height()));
+    if (ownerWindow) {
+      ownerWindow->Invalidate();
     }
   }
 }
