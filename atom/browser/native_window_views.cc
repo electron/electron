@@ -697,8 +697,7 @@ void NativeWindowViews::Center() {
 
 void NativeWindowViews::Invalidate() {
   const gfx::Rect& bounds = GetBounds();
-  window_->SchedulePaintInRect(
-    gfx::Rect(0, 0, bounds.width(), bounds.height()));
+  window_->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
 }
 
 void NativeWindowViews::SetTitle(const std::string& title) {

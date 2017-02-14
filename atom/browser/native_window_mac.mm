@@ -1103,7 +1103,7 @@ void NativeWindowMac::Center() {
 
 void NativeWindowMac::Invalidate() {
   [window_ flushWindow];
-  [[window_ contentView] setNeedsDisplay:TRUE];
+  [[window_ contentView] setNeedsDisplay:YES];
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
