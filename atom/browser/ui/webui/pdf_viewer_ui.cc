@@ -58,6 +58,9 @@ class BundledDataSource : public content::URLDataSource {
       int resource_id = entry->second;
       const ui::ResourceBundle& rb = ui::ResourceBundle::GetSharedInstance();
       callback.Run(rb.LoadDataResourceBytes(resource_id));
+    } else {
+      LOG(ERROR) << "Unable to find: " << path;
+      callback.Run(new base::RefCountedString());
     }
   }
 
