@@ -12,15 +12,12 @@ namespace atom {
 
 class AtomDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
  public:
-  AtomDesktopNativeWidgetAura(views::internal::NativeWidgetDelegate* delegate,
-                             NativeWindowViews* window);
+  AtomDesktopNativeWidgetAura(views::internal::NativeWidgetDelegate* delegate);
 
   // internal::NativeWidgetPrivate:
   void Activate() override;
 
  private:
-  NativeWindowViews* window_;
-
   DISALLOW_COPY_AND_ASSIGN(AtomDesktopNativeWidgetAura);
 };
 
