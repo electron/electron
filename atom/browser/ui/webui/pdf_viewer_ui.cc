@@ -33,10 +33,7 @@ class BundledDataSource : public content::URLDataSource {
  public:
   BundledDataSource() {
     for (size_t i = 0; i < kPdfViewerResourcesSize; ++i) {
-      base::FilePath resource_path =
-          base::FilePath().AppendASCII(kPdfViewerResources[i].name);
-      resource_path = resource_path.NormalizePathSeparators();
-
+      std::string resource_path = kPdfViewerResources[i].name;
       DCHECK(path_to_resource_id_.find(resource_path) ==
              path_to_resource_id_.end());
       path_to_resource_id_[resource_path] = kPdfViewerResources[i].value;
@@ -51,8 +48,7 @@ class BundledDataSource : public content::URLDataSource {
       const content::ResourceRequestInfo::WebContentsGetter& wc_getter,
       const GotDataCallback& callback) override {
     std::string filename = PathWithoutParams(path);
-    auto entry =
-        path_to_resource_id_.find(base::FilePath::FromUTF8Unsafe(filename));
+    auto entry = path_to_resource_id_.find(filename);
 
     if (entry != path_to_resource_id_.end()) {
       int resource_id = entry->second;
@@ -82,7 +78,7 @@ class BundledDataSource : public content::URLDataSource {
   ~BundledDataSource() override {}
 
   // A map from a resource path to the resource ID.
-  std::map<base::FilePath, int> path_to_resource_id_;
+  std::map<std::string, int> path_to_resource_id_;
 
   DISALLOW_COPY_AND_ASSIGN(BundledDataSource);
 };
