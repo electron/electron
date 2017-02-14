@@ -12,7 +12,8 @@ namespace atom {
 
 class AtomDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
  public:
-  AtomDesktopNativeWidgetAura(views::internal::NativeWidgetDelegate* delegate);
+  explicit AtomDesktopNativeWidgetAura(
+      views::internal::NativeWidgetDelegate* delegate);
 
   // internal::NativeWidgetPrivate:
   void Activate() override;
