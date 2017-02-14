@@ -1,1 +1,1 @@
-console.log([typeof require, typeof module, typeof process].join(' '))
+console.log([typeof require, typeof module, typeof process, typeof Buffer].join(' '))
