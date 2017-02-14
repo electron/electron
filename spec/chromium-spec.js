@@ -805,7 +805,11 @@ describe('chromium feature', function () {
 
   describe('PDF Viewer', function () {
     let w = null
-    const pdfSource = `file://${fixtures}/assets/pdf.pdf`
+    const pdfSource = url.format({
+      pathname: path.join(fixtures, 'assets', 'pdf.pdf').replace(/\\/g, '/'),
+      protocol: 'file',
+      slashes: true
+    })
 
     beforeEach(function () {
       w = new BrowserWindow({
