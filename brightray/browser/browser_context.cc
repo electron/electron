@@ -102,6 +102,8 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
 }
 
 BrowserContext::~BrowserContext() {
+  NotifyWillBeDestroyed(this);
+  ShutdownStoragePartitions();
   BrowserThread::DeleteSoon(BrowserThread::IO,
                             FROM_HERE,
                             resource_context_.release());
