@@ -59,6 +59,7 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
  private:
   base::FilePath save_path_;
   content::DownloadItem* download_item_;
+  bool done_emitted_;
 
   DISALLOW_COPY_AND_ASSIGN(DownloadItem);
 };
