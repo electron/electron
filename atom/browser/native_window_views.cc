@@ -205,7 +205,7 @@ NativeWindowViews::NativeWindowViews(
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget = new AtomDeskopNativeWidgetAura(window_.get(), this);
+  params.native_widget = new AtomDesktopNativeWidgetAura(window_.get(), this);
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
       this,
       window_.get(),

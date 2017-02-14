@@ -10,18 +10,18 @@
 
 namespace atom {
 
-class AtomDeskopNativeWidgetAura : public views::DesktopNativeWidgetAura {
+class AtomDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
  public:
-  AtomDeskopNativeWidgetAura(views::internal::NativeWidgetDelegate* delegate,
+  AtomDesktopNativeWidgetAura(views::internal::NativeWidgetDelegate* delegate,
                              NativeWindowViews* window);
 
-  // aura::WindowDelegate
-  bool CanFocus() override;
+  // internal::NativeWidgetPrivate:
+  void Activate() override;
 
  private:
   NativeWindowViews* window_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomDeskopNativeWidgetAura);
+  DISALLOW_COPY_AND_ASSIGN(AtomDesktopNativeWidgetAura);
 };
 
 }  // namespace atom

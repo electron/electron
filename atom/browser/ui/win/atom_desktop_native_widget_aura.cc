@@ -6,15 +6,16 @@
 
 namespace atom {
 
-AtomDeskopNativeWidgetAura::AtomDeskopNativeWidgetAura(
+AtomDesktopNativeWidgetAura::AtomDesktopNativeWidgetAura(
     views::internal::NativeWidgetDelegate* delegate,
     NativeWindowViews* window)
     : views::DesktopNativeWidgetAura(delegate),
       window_(window) {
 }
 
-bool AtomDeskopNativeWidgetAura::CanFocus() {
-  return window_->IsVisible();
+void AtomDesktopNativeWidgetAura::Activate() {
+  if (window_->IsVisible())
+    views::DesktopNativeWidgetAura::Activate();
 }
 
 }  // namespace atom
