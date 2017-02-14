@@ -308,4 +308,16 @@ describe('webContents module', function () {
       }
     })
   })
+
+  describe('focus()', function () {
+    it('focuses the parent window', function (done) {
+      ipcMain.once('answer', (event, visible, focused) => {
+        assert.equal(visible, true)
+        assert.equal(focused, true)
+        done()
+      })
+      w.show()
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'focus-web-contents.html'))
+    })
+  })
 })
