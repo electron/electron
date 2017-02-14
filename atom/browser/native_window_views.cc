@@ -696,7 +696,6 @@ void NativeWindowViews::Center() {
 }
 
 void NativeWindowViews::Invalidate() {
-  const gfx::Rect& bounds = GetBounds();
   window_->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
 }
 
