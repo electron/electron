@@ -14,7 +14,7 @@ AtomDeskopNativeWidgetAura::AtomDeskopNativeWidgetAura(
 }
 
 bool AtomDeskopNativeWidgetAura::CanFocus() {
-  return window_->CanFocus();
+  return window_->IsVisible();
 }
 
 }  // namespace atom

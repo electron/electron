@@ -149,8 +149,7 @@ NativeWindowViews::NativeWindowViews(
       resizable_(true),
       maximizable_(true),
       minimizable_(true),
-      fullscreenable_(true),
-      focusable_(true) {
+      fullscreenable_(true) {
   options.Get(options::kTitle, &title_);
   options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 
@@ -198,7 +197,8 @@ NativeWindowViews::NativeWindowViews(
   if (transparent() && !has_frame())
     params.shadow_type = views::Widget::InitParams::SHADOW_TYPE_NONE;
 
-  if (options.Get(options::kFocusable, &focusable_) && !focusable_)
+  bool focusable;
+  if (options.Get(options::kFocusable, &focusable) && !focusable)
     params.activatable = views::Widget::InitParams::ACTIVATABLE_NO;
 
 #if defined(OS_WIN)
@@ -806,7 +806,6 @@ void NativeWindowViews::SetContentProtection(bool enable) {
 }
 
 void NativeWindowViews::SetFocusable(bool focusable) {
-  focusable_ = focusable;
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
   if (focusable)
