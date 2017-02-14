@@ -202,7 +202,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
 
 #### `ses.resolveProxy(url, callback)`
 
-* `url` URL
+* `url` String - URL
 * `callback` Function
   * `proxy` Object
 
@@ -383,15 +383,15 @@ The following properties are available on instances of `Session`:
 
 #### `ses.cookies`
 
-A Cookies object for this session.
+A `Cookies` object for this session.
 
 #### `ses.webRequest`
 
-A WebRequest object for this session.
+A `WebRequest` object for this session.
 
 #### `ses.protocol`
 
-A Protocol object (an instance of [protocol](protocol.md) module) for this session.
+A `Protocol` object (an instance of [protocol](protocol.md) module) for this session.
 
 ```javascript
 const {app, session} = require('electron')

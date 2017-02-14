@@ -1246,11 +1246,11 @@ one through the `'paint'` event.
 
 #### `contents.id`
 
-A Integer representing the unique ID of this WebContents.
+A `Integer` representing the unique ID of this WebContents.
 
 #### `contents.session`
 
-A Session object ([session](session.md)) used by this webContents.
+A `Session` object ([session](session.md)) used by this webContents.
 
 #### `contents.hostWebContents`
 
