@@ -531,7 +531,7 @@ void NativeWindow::NotifyWindowScrollTouchBegin() {
 
 void NativeWindow::NotifyWindowScrollTouchEnd() {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowScrollTouchEdge();
+    observer.OnWindowScrollTouchEnd();
 }
 
 void NativeWindow::NotifyWindowScrollTouchEdge() {
