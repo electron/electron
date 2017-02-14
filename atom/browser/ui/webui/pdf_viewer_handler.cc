@@ -62,6 +62,8 @@ void PdfViewerHandler::RegisterMessages() {
   web_ui()->RegisterMessageCallback(
       "getStrings",
       base::Bind(&PdfViewerHandler::GetStrings, base::Unretained(this)));
+  web_ui()->RegisterMessageCallback(
+      "reload", base::Bind(&PdfViewerHandler::Reload, base::Unretained(this)));
 }
 
 void PdfViewerHandler::OnJavascriptAllowed() {
@@ -156,6 +158,11 @@ void PdfViewerHandler::GetStrings(const base::ListValue* args) {
   webui::SetLoadTimeDataDefaults(l10n_util::GetApplicationLocale(""),
                                  result.get());
   ResolveJavascriptCallback(*callback_id, *result);
+}
+
+void PdfViewerHandler::Reload(const base::ListValue* args) {
+  CHECK_EQ(0U, args->GetSize());
+  web_ui()->GetWebContents()->ReloadFocusedFrame(false);
 }
 
 void PdfViewerHandler::OnZoomLevelChanged(

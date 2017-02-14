@@ -37,6 +37,7 @@ class PdfViewerHandler : public content::WebUIMessageHandler {
   void GetDefaultZoom(const base::ListValue* args);
   void GetInitialZoom(const base::ListValue* args);
   void GetStrings(const base::ListValue* args);
+  void Reload(const base::ListValue* args);
   void OnZoomLevelChanged(const content::HostZoomMap::ZoomLevelChange& change);
 
   // Keeps track of events related to zooming.
