@@ -42,9 +42,6 @@ def get_target_arch():
   return 'x64'
 
 
-def get_chromedriver_version():
-  return 'v2.21'
-
 def get_env_var(name):
   value = os.environ.get('ELECTRON_' + name, '')
   if not value:
