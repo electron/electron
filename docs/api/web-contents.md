@@ -1210,6 +1210,8 @@ Returns `Integer` - If *offscreen rendering* is enabled returns the current fram
 
 #### `contents.invalidate()`
 
+Schedules a full repaint of the window this web contents is in.
+
 If *offscreen rendering* is enabled invalidates the frame and generates a new
 one through the `'paint'` event.
 
