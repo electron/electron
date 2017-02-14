@@ -1101,6 +1101,11 @@ void NativeWindowMac::Center() {
   [window_ center];
 }
 
+void NativeWindowMac::Invalidate() {
+  [window_ flushWindow];
+  [[window_ contentView] setNeedsDisplay:YES];
+}
+
 void NativeWindowMac::SetTitle(const std::string& title) {
   // For macOS <= 10.9, the setTitleVisibility API is not available, we have
   // to avoid calling setTitle for frameless window.

@@ -1500,13 +1500,16 @@ int WebContents::GetFrameRate() const {
 }
 
 void WebContents::Invalidate() {
-  if (!IsOffScreen())
-    return;
-
-  auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+  if (IsOffScreen()) {
+    auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
       web_contents()->GetRenderWidgetHostView());
-  if (osr_rwhv)
-    osr_rwhv->Invalidate();
+    if (osr_rwhv)
+      osr_rwhv->Invalidate();
+  } else {
+    const auto owner_window = owner_window();
+    if (owner_window)
+      owner_window->Invalidate();
+  }
 }
 
 void WebContents::SetZoomLevel(double level) {

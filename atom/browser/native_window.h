@@ -124,6 +124,7 @@ class NativeWindow : public base::SupportsUserData,
                               std::string* error = nullptr) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
+  virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;

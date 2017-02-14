@@ -695,6 +695,10 @@ void NativeWindowViews::Center() {
   window_->CenterWindow(GetSize());
 }
 
+void NativeWindowViews::Invalidate() {
+  window_->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
+}
+
 void NativeWindowViews::SetTitle(const std::string& title) {
   title_ = title;
   window_->UpdateWindowTitle();
