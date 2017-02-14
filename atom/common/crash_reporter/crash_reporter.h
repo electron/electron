@@ -37,6 +37,9 @@ class CrashReporter {
 
   virtual void SetUploadToServer(bool upload_to_server);
   virtual bool GetUploadToServer();
+  virtual void SetExtraParameter(const std::string& key,
+                                 const std::string& value);
+  virtual void RemoveExtraParameter(const std::string& key);
 
  protected:
   CrashReporter();
