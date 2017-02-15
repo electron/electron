@@ -16,6 +16,8 @@
 
 #include "atom/common/node_includes.h"
 
+using content::BrowserThread;
+
 namespace atom {
 
 namespace api {
@@ -25,18 +27,23 @@ MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
       weak_factory_(this) {
 }
 
-void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
+void MenuMac::PopupAt(
+    Window* window, int x, int y, int positioning_item, bool async) {
   NativeWindow* native_window = window->window();
   if (!native_window)
     return;
 
-  content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
-                 native_window->GetWeakPtr(), x, y, positioning_item));
+  auto popup = base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
+                          native_window->GetWeakPtr(), x, y, positioning_item,
+                          async);
+  if (async)
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, popup);
+  else
+    popup.Run();
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
-                        int x, int y, int positioning_item) {
+                        int x, int y, int positioning_item, bool async) {
   if (!native_window)
     return;
   brightray::InspectableWebContents* web_contents =
@@ -82,7 +89,8 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 
-  {
+
+  if (async) {
     // Make sure events can be pumped while the menu is up.
     base::MessageLoop::ScopedNestableTaskAllower allow(
         base::MessageLoop::current());
@@ -96,8 +104,10 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 
     // Don't emit unresponsive event when showing menu.
     atom::UnresponsiveSuppressor suppressor;
-
-    // Show the menu.
+    [menu popUpMenuPositioningItem:item atLocation:position inView:view];
+  } else {
+    // Don't emit unresponsive event when showing menu.
+    atom::UnresponsiveSuppressor suppressor;
     [menu popUpMenuPositioningItem:item atLocation:position inView:view];
   }
 }

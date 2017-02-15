@@ -19,9 +19,10 @@ class MenuMac : public Menu {
  protected:
   MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
-  void PopupAt(Window* window, int x, int y, int positioning_item) override;
+  void PopupAt(
+      Window* window, int x, int y, int positioning_item, bool async) override;
   void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
-                 int x, int y, int positioning_item);
+                 int x, int y, int positioning_item, bool async);
 
   base::scoped_nsobject<AtomMenuController> menu_controller_;
 
