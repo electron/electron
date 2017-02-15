@@ -13,7 +13,7 @@
 * [术语表](glossary.md)
 * [支持平台](tutorial/supported-platforms.md)
 * [安全性](tutorial/security.md) 未翻译
-* [Electron 版本管理](tutorial/electron-versioning.md) 未翻译
+* [Electron 版本管理](tutorial/electron-versioning.md)
 * [分发应用](tutorial/application-distribution.md)
 * [提交应用到 Mac App Store](tutorial/mac-app-store-submission-guide.md)
 * [Windows 商店提交指引](tutorial/windows-store-guide.md)
@@ -25,7 +25,7 @@
 * [使用 Pepper Flash 插件](tutorial/using-pepper-flash-plugin.md)
 * [使用 Widevine CDM 插件](tutorial/using-widevine-cdm-plugin.md)
 * [通过自动化持续集成系统（CI）进行测试 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md) 未翻译
-* [离屏渲染](tutorial/offscreen-rendering.md) 未翻译
+* [离屏渲染](tutorial/offscreen-rendering.md)
 
 ## 教程
 
