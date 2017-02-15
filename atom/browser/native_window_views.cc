@@ -48,6 +48,7 @@
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
+#include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
@@ -204,8 +205,7 @@ NativeWindowViews::NativeWindowViews(
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget =
-      new views::DesktopNativeWidgetAura(window_.get());
+  params.native_widget = new AtomDesktopNativeWidgetAura(window_.get());
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
       this,
       window_.get(),
