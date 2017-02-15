@@ -60,6 +60,13 @@ template <typename R, typename Z, typename A, typename B, typename C,
           typename D>
 struct is_member_function_pointer<R(Z::*)(A, B, C, D) const> : true_type {};
 
+template <typename R, typename Z, typename A, typename B, typename C,
+          typename D, typename E>
+struct is_member_function_pointer<R(Z::*)(A, B, C, D, E)> : true_type {};
+template <typename R, typename Z, typename A, typename B, typename C,
+          typename D, typename E>
+struct is_member_function_pointer<R(Z::*)(A, B, C, D, E) const> : true_type {};
+
 
 template <class T, class U> struct is_same : public false_type {};
 template <class T> struct is_same<T,T> : true_type {};
