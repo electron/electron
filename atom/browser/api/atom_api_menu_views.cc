@@ -8,14 +8,16 @@
 #include "atom/browser/unresponsive_suppressor.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "ui/display/screen.h"
-#include "ui/views/controls/menu/menu_runner.h"
+
+using views::MenuRunner;
 
 namespace atom {
 
 namespace api {
 
 MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : Menu(isolate, wrapper) {
+    : Menu(isolate, wrapper),
+      weak_factory_(this) {
 }
 
 void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
@@ -42,15 +44,20 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
   atom::UnresponsiveSuppressor suppressor;
 
   // Show the menu.
-  views::MenuRunner menu_runner(
+  menu_runner_.reset(new MenuRunner(
       model(),
-      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
-  ignore_result(menu_runner.RunMenuAt(
+      MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS | MenuRunner::ASYNC,
+      base::Bind(&MenuViews::OnMenuClosed, weak_factory_.GetWeakPtr())));
+  ignore_result(menu_runner_->RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,
       gfx::Rect(location, gfx::Size()),
       views::MENU_ANCHOR_TOPLEFT,
       ui::MENU_SOURCE_MOUSE));
+}
+
+void MenuViews::OnMenuClosed() {
+  menu_runner_.reset();
 }
 
 // static
