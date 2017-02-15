@@ -93,7 +93,8 @@ if (global.isCi) {
 
 // Register app as standard scheme.
 global.standardScheme = 'app'
-protocol.registerStandardSchemes([global.standardScheme], { secure: true })
+global.zoomScheme = 'zoom'
+protocol.registerStandardSchemes([global.standardScheme, global.zoomScheme], { secure: true })
 
 app.on('window-all-closed', function () {
   app.quit()
