@@ -20,6 +20,8 @@ class MenuMac : public Menu {
   MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
   void PopupAt(Window* window, int x, int y, int positioning_item) override;
+  void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
+                 int x, int y, int positioning_item);
 
   base::scoped_nsobject<AtomMenuController> menu_controller_;
 
@@ -27,6 +29,8 @@ class MenuMac : public Menu {
   friend class Menu;
 
   static void SendActionToFirstResponder(const std::string& action);
+
+  base::WeakPtrFactory<MenuMac> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuMac);
 };
