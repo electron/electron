@@ -9,8 +9,7 @@ import sys
 import stat
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       get_target_arch, get_chromedriver_version, \
-                       get_zip_name
+                       get_target_arch, get_zip_name
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
                      execute, electron_gyp
 
@@ -94,7 +93,7 @@ def main():
 
   create_version()
   create_dist_zip()
-  create_chrome_binary_zip('chromedriver', get_chromedriver_version())
+  create_chrome_binary_zip('chromedriver', ELECTRON_VERSION)
   create_chrome_binary_zip('mksnapshot', ELECTRON_VERSION)
   create_ffmpeg_zip()
   create_symbols_zip()
