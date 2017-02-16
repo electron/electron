@@ -20,7 +20,8 @@ MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
       weak_factory_(this) {
 }
 
-void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
+void MenuViews::PopupAt(
+    Window* window, int x, int y, int positioning_item, bool async) {
   NativeWindow* native_window = static_cast<NativeWindow*>(window->window());
   if (!native_window)
     return;
@@ -40,13 +41,17 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
     location = gfx::Point(origin.x() + x, origin.y() + y);
   }
 
+  int flags = MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS;
+  if (async)
+    flags |= MenuRunner::ASYNC;
+
   // Don't emit unresponsive event when showing menu.
   atom::UnresponsiveSuppressor suppressor;
 
   // Show the menu.
   menu_runner_.reset(new MenuRunner(
       model(),
-      MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS | MenuRunner::ASYNC,
+      flags,
       base::Bind(&MenuViews::OnMenuClosed, weak_factory_.GetWeakPtr())));
   ignore_result(menu_runner_->RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
