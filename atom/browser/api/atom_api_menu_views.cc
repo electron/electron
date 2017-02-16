@@ -62,6 +62,10 @@ void MenuViews::PopupAt(
       ui::MENU_SOURCE_MOUSE));
 }
 
+void MenuViews::ClosePopupAt(int32_t window_id) {
+  menu_runners_.erase(window_id);
+}
+
 // static
 mate::WrappableBase* Menu::New(mate::Arguments* args) {
   return new MenuViews(args->isolate(), args->GetThis());
