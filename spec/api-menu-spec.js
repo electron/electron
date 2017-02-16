@@ -1,7 +1,8 @@
 const assert = require('assert')
 
 const {ipcRenderer, remote} = require('electron')
-const {Menu, MenuItem} = remote
+const {BrowserWindow, Menu, MenuItem} = remote
+const {closeWindow} = require('./window-helpers')
 
 describe('menu module', function () {
   describe('Menu.buildFromTemplate', function () {
@@ -216,6 +217,30 @@ describe('menu module', function () {
     })
   })
 
+  describe('Menu.popup', function () {
+    let w = null
+
+    afterEach(function () {
+      return closeWindow(w).then(function () { w = null })
+    })
+
+    describe('when called with async: true', function () {
+      it('returns immediately', function () {
+        w = new BrowserWindow({show: false, width: 200, height: 200})
+        const menu = Menu.buildFromTemplate([
+          {
+            label: '1'
+          }, {
+            label: '2'
+          }, {
+            label: '3'
+          }
+        ])
+        menu.popup(w, {x: 100, y: 100, async: true})
+        menu.closePopup(w)
+      })
+    })
+  })
   describe('MenuItem.click', function () {
     it('should be called with the item object passed', function (done) {
       var menu = Menu.buildFromTemplate([
