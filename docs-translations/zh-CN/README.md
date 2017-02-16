@@ -12,7 +12,7 @@
 
 * [术语表](glossary.md)
 * [支持平台](tutorial/supported-platforms.md)
-* [安全性](tutorial/security.md) 未翻译
+* [安全性](tutorial/security.md)
 * [Electron 版本管理](tutorial/electron-versioning.md)
 * [分发应用](tutorial/application-distribution.md)
 * [提交应用到 Mac App Store](tutorial/mac-app-store-submission-guide.md)
@@ -24,7 +24,7 @@
 * [使用开发人员工具扩展](tutorial/devtools-extension.md)
 * [使用 Pepper Flash 插件](tutorial/using-pepper-flash-plugin.md)
 * [使用 Widevine CDM 插件](tutorial/using-widevine-cdm-plugin.md)
-* [通过自动化持续集成系统（CI）进行测试 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md) 未翻译
+* [通过自动化持续集成系统（CI）进行测试 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
 * [离屏渲染](tutorial/offscreen-rendering.md)
 
 ## 教程
@@ -32,7 +32,7 @@
 * [快速入门](tutorial/quick-start.md)
 * [桌面环境集成](tutorial/desktop-environment-integration.md)
 * [在线/离线事件探测](tutorial/online-offline-events.md)
-* [应答式编译器（REPL）](tutorial/repl.md) 未翻译
+* [交互式解释器（REPL）](tutorial/repl.md)
 
 ## API文档
 
