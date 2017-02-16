@@ -523,8 +523,11 @@ describe('<webview> tag', function () {
     it('emits when favicon urls are received', function (done) {
       webview.addEventListener('page-favicon-updated', function (e) {
         assert.equal(e.favicons.length, 2)
-        var pageUrl = process.platform === 'win32' ? 'file:///C:/favicon.png' : 'file:///favicon.png'
-        assert.equal(e.favicons[0], pageUrl)
+        if (process.platform === 'win32') {
+          assert(/^file:\/\/\/[A-Z]:\/favicon.png$/i.test(e.favicons[0]))
+        } else {
+          assert.equal(e.favicons[0], 'file:///favicon.png')
+        }
         done()
       })
       webview.src = 'file://' + fixtures + '/pages/a.html'
