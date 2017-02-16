@@ -524,7 +524,7 @@ describe('<webview> tag', function () {
       webview.addEventListener('page-favicon-updated', function (e) {
         assert.equal(e.favicons.length, 2)
         if (process.platform === 'win32') {
-          assert(/^file:\/\/\/[a-zA-Z]:\/favicon.png$/i.test(e.favicons[0]))
+          assert(/^file:\/\/\/[A-Z]:\/favicon.png$/i.test(e.favicons[0]))
         } else {
           assert.equal(e.favicons[0], 'file:///favicon.png')
         }
