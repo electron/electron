@@ -49,20 +49,17 @@ void MenuViews::PopupAt(
   atom::UnresponsiveSuppressor suppressor;
 
   // Show the menu.
-  menu_runner_.reset(new MenuRunner(
-      model(),
-      flags,
-      base::Bind(&MenuViews::OnMenuClosed, weak_factory_.GetWeakPtr())));
-  ignore_result(menu_runner_->RunMenuAt(
+  int32_t window_id = window->ID();
+  auto close_callback = base::Bind(
+      &MenuViews::ClosePopupAt, weak_factory_.GetWeakPtr(), window_id);
+  menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
+      model(), flags, close_callback));
+  ignore_result(menu_runners_[window_id]->RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,
       gfx::Rect(location, gfx::Size()),
       views::MENU_ANCHOR_TOPLEFT,
       ui::MENU_SOURCE_MOUSE));
-}
-
-void MenuViews::OnMenuClosed() {
-  menu_runner_.reset();
 }
 
 // static
