@@ -890,15 +890,18 @@ void App::GetFileIcon(const base::FilePath& path,
     return;
   }
 
-  IconManager* icon_manager = IconManager::GetInstance();
-  gfx::Image* icon = icon_manager->LookupIconFromFilepath(normalized_path,
+  if (!icon_manager_.get()) {
+    icon_manager_.reset(new IconManager());
+  }
+
+  gfx::Image* icon = icon_manager_->LookupIconFromFilepath(normalized_path,
                                                           icon_size);
   if (icon) {
     callback.Run(v8::Null(isolate()), *icon);
   } else {
-    icon_manager->LoadIcon(normalized_path, icon_size,
+    icon_manager_->LoadIcon(normalized_path, icon_size,
                            base::Bind(&OnIconDataAvailable, isolate(),
-                                      callback));
+                                      callback), &cancelable_task_tracker_);
   }
 }
 
