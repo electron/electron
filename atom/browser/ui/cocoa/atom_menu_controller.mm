@@ -71,6 +71,10 @@ Role kRolesMap[] = {
   [super dealloc];
 }
 
+- (void)setCloseCallback:(const base::Callback<void()>&)callback {
+  closeCallback = callback;
+}
+
 - (void)populateWithModel:(atom::AtomMenuModel*)model {
   if (!menu_)
     return;
@@ -265,8 +269,10 @@ Role kRolesMap[] = {
 
 - (void)menuDidClose:(NSMenu*)menu {
   if (isMenuOpen_) {
-    model_->MenuWillClose();
     isMenuOpen_ = NO;
+    model_->MenuWillClose();
+    if (!closeCallback.is_null())
+      closeCallback.Run();
   }
 }
 

@@ -55,6 +55,7 @@ class Menu : public mate::TrackableObject<Menu>,
 
   virtual void PopupAt(Window* window, int x, int y, int positioning_item,
                       bool async) = 0;
+  virtual void ClosePopupAt(int32_t window_id) = 0;
 
   std::unique_ptr<AtomMenuModel> model_;
   Menu* parent_;

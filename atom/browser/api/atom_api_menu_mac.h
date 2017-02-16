@@ -7,9 +7,12 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 
+#include <map>
 #include <string>
 
 #import "atom/browser/ui/cocoa/atom_menu_controller.h"
+
+using base::scoped_nsobject;
 
 namespace atom {
 
@@ -22,9 +25,12 @@ class MenuMac : public Menu {
   void PopupAt(
       Window* window, int x, int y, int positioning_item, bool async) override;
   void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
-                 int x, int y, int positioning_item, bool async);
+                 int32_t window_id, int x, int y, int positioning_item,
+                 bool async);
+  void ClosePopupAt(int32_t window_id) override;
 
-  base::scoped_nsobject<AtomMenuController> menu_controller_;
+  scoped_nsobject<AtomMenuController> menu_controller_;
+  std::map<int32_t, scoped_nsobject<AtomMenuController>> popup_controllers_;
 
  private:
   friend class Menu;
