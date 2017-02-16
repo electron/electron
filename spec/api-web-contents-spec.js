@@ -417,6 +417,41 @@ describe('webContents module', function () {
       w.loadURL(`${zoomScheme}://host3`)
     })
 
+    it('cannot propagate zoom level across different session', (done) => {
+      const w2 = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'temp'
+        }
+      })
+      let protocol = w2.webContents.session.protocol
+      protocol.registerStringProtocol(zoomScheme, (request, callback) => {
+        callback('hello')
+      }, (error) => {
+        if (error) return done(error)
+        w2.webContents.on('did-finish-load', () => {
+          w.webContents.getZoomLevel((zoomLevel1) => {
+            assert.equal(zoomLevel1, hostZoomMap['host3'])
+            w2.webContents.getZoomLevel((zoomLevel2) => {
+              assert.equal(zoomLevel2, 0)
+              assert.notEqual(zoomLevel1, zoomLevel2)
+              protocol.unregisterProtocol(zoomScheme, (error) => {
+                if (error) return done(error)
+                w2.setClosable(true)
+                w2.close()
+                done()
+              })
+            })
+          })
+        })
+        w.webContents.on('did-finish-load', () => {
+          w.webContents.setZoomLevel(hostZoomMap['host3'])
+          w2.loadURL(`${zoomScheme}://host3`)
+        })
+        w.loadURL(`${zoomScheme}://host3`)
+      })
+    })
+
     it('can persist when it contains iframe', (done) => {
       const server = http.createServer(function (req, res) {
         setTimeout(() => {
@@ -441,6 +476,55 @@ describe('webContents module', function () {
         })
         w.loadURL(`data:text/html,${content}`)
       })
+    })
+
+    it('cannot propagate when used with webframe', (done) => {
+      let finalZoomLevel = 0
+      const w2 = new BrowserWindow({
+        show: false
+      })
+      w2.webContents.on('did-finish-load', () => {
+        w.webContents.getZoomLevel((zoomLevel1) => {
+          assert.equal(zoomLevel1, finalZoomLevel)
+          w2.webContents.getZoomLevel((zoomLevel2) => {
+            assert.equal(zoomLevel2, 0)
+            assert.notEqual(zoomLevel1, zoomLevel2)
+            w2.setClosable(true)
+            w2.close()
+            done()
+          })
+        })
+      })
+      ipcMain.once('temporary-zoom-set', (e, zoomLevel) => {
+        w2.loadURL(`file://${fixtures}/pages/a.html`)
+        finalZoomLevel = zoomLevel
+      })
+      w.loadURL(`file://${fixtures}/pages/webframe-zoom.html`)
+    })
+
+    it('cannot persist zoom level after navigation with webFrame', (done) => {
+      let initialNavigation = true
+      const source = `
+        const {ipcRenderer, webFrame} = require('electron')
+        webFrame.setZoomLevel(0.6)
+        ipcRenderer.send('zoom-level-set', webFrame.getZoomLevel())
+      `
+      w.webContents.on('did-finish-load', () => {
+        if (initialNavigation) {
+          w.webContents.executeJavaScript(source, () => {})
+        } else {
+          w.webContents.getZoomLevel((zoomLevel) => {
+            assert.equal(zoomLevel, 0)
+            done()
+          })
+        }
+      })
+      ipcMain.once('zoom-level-set', (e, zoomLevel) => {
+        assert.equal(zoomLevel, 0.6)
+        w.loadURL(`file://${fixtures}/pages/b.html`)
+        initialNavigation = false
+      })
+      w.loadURL(`file://${fixtures}/pages/a.html`)
     })
   })
 })

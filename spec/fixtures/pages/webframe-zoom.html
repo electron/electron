@@ -1,0 +1,9 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer, webFrame} = require('electron')
+  webFrame.setZoomLevel(1.0)
+  ipcRenderer.send('temporary-zoom-set', webFrame.getZoomLevel())
+</script>
+</body>
+</html>
