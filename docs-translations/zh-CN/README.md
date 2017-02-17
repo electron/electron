@@ -85,7 +85,7 @@
 ## 开发
 
 * [代码规范](development/coding-style.md)
-* [在 C++ 代码中使用 clang格式化工具](development/clang-format.md) 未翻译
+* [在 C++ 代码中使用 clang-format 工具](development/clang-format.md)
 * [源码目录结构](development/source-code-directory-structure.md)
 * [与 NW.js（原 node-webkit）在技术上的差异](development/atom-shell-vs-node-webkit.md)
 * [构建系统概览](development/build-system-overview.md)
@@ -95,4 +95,4 @@
 * [调试步骤 (macOS)](development/debug-instructions-macos.md) 未翻译
 * [调试步骤 (Windows)](development/debug-instructions-windows.md) 未翻译
 * [在调试中使用 Symbol Server](development/setting-up-symbol-server.md)
-* [文档风格规范](styleguide.md) 未翻译
+* [文档风格指南](styleguide.md)
