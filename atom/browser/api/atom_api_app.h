@@ -13,7 +13,8 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/common/native_mate_converters/callback.h"
-#include "chrome/browser/icon_loader.h"
+#include "base/task/cancelable_task_tracker.h"
+#include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
@@ -149,6 +150,9 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(USE_NSS_CERTS)
   std::unique_ptr<CertificateManagerModel> certificate_manager_model_;
 #endif
+
+  // Tracks tasks requesting file icons.
+  base::CancelableTaskTracker cancelable_task_tracker_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

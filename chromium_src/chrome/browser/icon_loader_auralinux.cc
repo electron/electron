@@ -10,14 +10,9 @@
 #include "ui/views/linux_ui/linux_ui.h"
 
 // static
-IconGroupID IconLoader::ReadGroupIDFromFilepath(
-    const base::FilePath& filepath) {
-  return base::nix::GetFileMimeType(filepath);
-}
-
-// static
-bool IconLoader::IsIconMutableFromFilepath(const base::FilePath&) {
-  return false;
+IconLoader::IconGroup IconLoader::GroupForFilepath(
+    const base::FilePath& file_path) {
+  return base::nix::GetFileMimeType(file_path);
 }
 
 // static
@@ -50,6 +45,7 @@ void IconLoader::ReadIcon() {
       image_.reset(new gfx::Image(image));
   }
 
-  target_task_runner_->PostTask(FROM_HERE,
-                                base::Bind(&IconLoader::NotifyDelegate, this));
+  target_task_runner_->PostTask(
+      FROM_HERE, base::Bind(callback_, base::Passed(&image_), group_));
+  delete this;
 }

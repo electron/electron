@@ -8,121 +8,86 @@
 #include <tuple>
 
 #include "base/bind.h"
-#include "base/stl_util.h"
 #include "base/task_runner.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 
-struct IconManager::ClientRequest {
-  IconRequestCallback callback;
-  base::FilePath file_path;
-  IconLoader::IconSize size;
-};
+namespace {
 
-// static
-IconManager* IconManager::GetInstance() {
-  return base::Singleton<IconManager>::get();
+void RunCallbackIfNotCanceled(
+    const base::CancelableTaskTracker::IsCanceledCallback& is_canceled,
+    const IconManager::IconRequestCallback& callback,
+    gfx::Image* image) {
+  if (is_canceled.Run())
+    return;
+  callback.Run(image);
 }
 
-IconManager::IconManager() {}
+}  // namespace
+
+IconManager::IconManager() : weak_factory_(this) {}
 
 IconManager::~IconManager() {
-  base::STLDeleteValues(&icon_cache_);
 }
 
-gfx::Image* IconManager::LookupIconFromFilepath(const base::FilePath& file_name,
+gfx::Image* IconManager::LookupIconFromFilepath(const base::FilePath& file_path,
                                                 IconLoader::IconSize size) {
-  GroupMap::iterator it = group_cache_.find(file_name);
-  if (it != group_cache_.end())
-    return LookupIconFromGroup(it->second, size);
+  auto group_it = group_cache_.find(file_path);
+  if (group_it == group_cache_.end())
+    return nullptr;
 
-  return NULL;
+  CacheKey key(group_it->second, size);
+  auto icon_it = icon_cache_.find(key);
+  if (icon_it == icon_cache_.end())
+    return nullptr;
+
+  return icon_it->second.get();
 }
 
-gfx::Image* IconManager::LookupIconFromGroup(const IconGroupID& group,
-                                             IconLoader::IconSize size) {
-  IconMap::iterator it = icon_cache_.find(CacheKey(group, size));
-  if (it != icon_cache_.end())
-    return it->second;
+base::CancelableTaskTracker::TaskId IconManager::LoadIcon(
+    const base::FilePath& file_path,
+    IconLoader::IconSize size,
+    const IconRequestCallback& callback,
+    base::CancelableTaskTracker* tracker) {
+  base::CancelableTaskTracker::IsCanceledCallback is_canceled;
+  base::CancelableTaskTracker::TaskId id =
+      tracker->NewTrackedTaskId(&is_canceled);
+  IconRequestCallback callback_runner = base::Bind(
+      &RunCallbackIfNotCanceled, is_canceled, callback);
 
-  return nullptr;
-}
-
-void IconManager::LoadIcon(const base::FilePath& file_name,
-                           IconLoader::IconSize size,
-                           const IconRequestCallback& callback) {
-  IconLoader* loader = new IconLoader(file_name, size, this);
-  loader->AddRef();
+  IconLoader* loader = IconLoader::Create(
+      file_path, size,
+      base::Bind(&IconManager::OnIconLoaded, weak_factory_.GetWeakPtr(),
+                 callback_runner, file_path, size));
   loader->Start();
 
-  ClientRequest client_request = {callback, file_name, size};
-  requests_[loader] = client_request;
+  return id;
 }
 
-// IconLoader::Delegate implementation -----------------------------------------
-
-bool IconManager::OnGroupLoaded(IconLoader* loader, const IconGroupID& group) {
-  ClientRequests::iterator rit = requests_.find(loader);
-  if (rit == requests_.end()) {
-    NOTREACHED();
-    return false;
+void IconManager::OnIconLoaded(IconRequestCallback callback,
+                               base::FilePath file_path,
+                               IconLoader::IconSize size,
+                               std::unique_ptr<gfx::Image> result,
+                               const IconLoader::IconGroup& group) {
+  // Cache the bitmap. Watch out: |result| may be null, which indicates a
+  // failure. We assume that if we have an entry in |icon_cache_| it must not be
+  // null.
+  CacheKey key(group, size);
+  if (result) {
+    callback.Run(result.get());
+    icon_cache_[key] = std::move(result);
+  } else {
+    callback.Run(nullptr);
+    icon_cache_.erase(key);
   }
 
-  gfx::Image* result = LookupIconFromGroup(group, rit->second.size);
-  if (!result) {
-    return false;
-  }
-
-  return OnImageLoaded(loader, result, group);
+  group_cache_[file_path] = group;
 }
 
-bool IconManager::OnImageLoaded(IconLoader* loader,
-                                gfx::Image* result,
-                                const IconGroupID& group) {
-  ClientRequests::iterator rit = requests_.find(loader);
-
-  // Balances the AddRef() in LoadIcon().
-  loader->Release();
-
-  // Look up our client state.
-  if (rit == requests_.end()) {
-    NOTREACHED();
-    return false;  // Return false to indicate result should be deleted.
-  }
-
-  const ClientRequest& client_request = rit->second;
-
-  // Cache the bitmap. Watch out: |result| may be NULL to indicate a current
-  // failure. We assume that if we have an entry in |icon_cache_|
-  // it must not be NULL.
-  CacheKey key(group, client_request.size);
-  IconMap::iterator it = icon_cache_.find(key);
-  if (it != icon_cache_.end()) {
-    if (!result) {
-      delete it->second;
-      icon_cache_.erase(it);
-    } else if (result != it->second) {
-      it->second->SwapRepresentations(result);
-      delete result;
-      result = it->second;
-    }
-  } else if (result) {
-    icon_cache_[key] = result;
-  }
-
-  group_cache_[client_request.file_path] = group;
-
-  // Inform our client that the request has completed.
-  client_request.callback.Run(result);
-  requests_.erase(rit);
-
-  return true;  // Indicates we took ownership of result.
-}
-
-IconManager::CacheKey::CacheKey(const IconGroupID& group,
+IconManager::CacheKey::CacheKey(const IconLoader::IconGroup& group,
                                 IconLoader::IconSize size)
     : group(group), size(size) {}
 
-bool IconManager::CacheKey::operator<(const CacheKey& other) const {
+bool IconManager::CacheKey::operator<(const CacheKey &other) const {
   return std::tie(group, size) < std::tie(other.group, other.size);
 }

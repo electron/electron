@@ -17,18 +17,15 @@
 #include "ui/gfx/image/image_skia.h"
 
 // static
-IconGroupID IconLoader::ReadGroupIDFromFilepath(
-    const base::FilePath& filepath) {
-  if (!IsIconMutableFromFilepath(filepath))
-    return filepath.Extension();
-  return filepath.value();
-}
+IconLoader::IconGroup IconLoader::GroupForFilepath(
+    const base::FilePath& file_path) {
+  if (file_path.MatchesExtension(L".exe") ||
+      file_path.MatchesExtension(L".dll") ||
+      file_path.MatchesExtension(L".ico")) {
+    return file_path.value();
+  }
 
-// static
-bool IconLoader::IsIconMutableFromFilepath(const base::FilePath& filepath) {
-  return filepath.MatchesExtension(L".exe") ||
-         filepath.MatchesExtension(L".dll") ||
-         filepath.MatchesExtension(L".ico");
+  return file_path.Extension();
 }
 
 // static
@@ -54,22 +51,22 @@ void IconLoader::ReadIcon() {
 
   image_.reset();
 
-  SHFILEINFO file_info = {0};
+  SHFILEINFO file_info = { 0 };
   if (SHGetFileInfo(group_.c_str(), FILE_ATTRIBUTE_NORMAL, &file_info,
-                    sizeof(SHFILEINFO),
-                    SHGFI_ICON | size | SHGFI_USEFILEATTRIBUTES)) {
+                     sizeof(SHFILEINFO),
+                     SHGFI_ICON | size | SHGFI_USEFILEATTRIBUTES)) {
     std::unique_ptr<SkBitmap> bitmap(
         IconUtil::CreateSkBitmapFromHICON(file_info.hIcon));
     if (bitmap.get()) {
-      gfx::ImageSkia image_skia(
-          gfx::ImageSkiaRep(*bitmap, display::win::GetDPIScale()));
+      gfx::ImageSkia image_skia(gfx::ImageSkiaRep(*bitmap,
+                                                  display::win::GetDPIScale()));
       image_skia.MakeThreadSafe();
       image_.reset(new gfx::Image(image_skia));
       DestroyIcon(file_info.hIcon);
     }
   }
 
-  // Always notify the delegate, regardless of success.
-  target_task_runner_->PostTask(FROM_HERE,
-                                base::Bind(&IconLoader::NotifyDelegate, this));
+  target_task_runner_->PostTask(
+      FROM_HERE, base::Bind(callback_, base::Passed(&image_), group_));
+  delete this;
 }

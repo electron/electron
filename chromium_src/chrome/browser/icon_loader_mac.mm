@@ -15,14 +15,9 @@
 #include "ui/gfx/image/image_skia_util_mac.h"
 
 // static
-IconGroupID IconLoader::ReadGroupIDFromFilepath(
-    const base::FilePath& filepath) {
-  return filepath.Extension();
-}
-
-// static
-bool IconLoader::IsIconMutableFromFilepath(const base::FilePath&) {
-  return false;
+IconLoader::IconGroup IconLoader::GroupForFilepath(
+    const base::FilePath& file_path) {
+  return file_path.Extension();
 }
 
 // static
@@ -57,6 +52,7 @@ void IconLoader::ReadIcon() {
     }
   }
 
-  target_task_runner_->PostTask(FROM_HERE,
-                                base::Bind(&IconLoader::NotifyDelegate, this));
+  target_task_runner_->PostTask(
+      FROM_HERE, base::Bind(callback_, base::Passed(&image_), group_));
+  delete this;
 }
