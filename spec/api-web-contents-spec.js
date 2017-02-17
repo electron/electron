@@ -327,29 +327,29 @@ describe('webContents module', function () {
   describe('zoom api', () => {
     const zoomScheme = remote.getGlobal('zoomScheme')
     const hostZoomMap = {
-      'host1': 0.3,
-      'host2': 0.7,
-      'host3': 0.2
+      host1: 0.3,
+      host2: 0.7,
+      host3: 0.2
     }
 
     before((done) => {
-      let protocol = session.defaultSession.protocol
+      const protocol = session.defaultSession.protocol
       protocol.registerStringProtocol(zoomScheme, (request, callback) => {
-        let response = `<script>
-                          const {ipcRenderer, remote} = require('electron')
-                          ipcRenderer.send('set-zoom', window.location.hostname)
-                          ipcRenderer.on(window.location.hostname + '-zoom-set', () => {
-                            remote.getCurrentWebContents().getZoomLevel((zoomLevel) => {
-                              ipcRenderer.send(window.location.hostname + '-zoom-level', zoomLevel)
+        const response = `<script>
+                            const {ipcRenderer, remote} = require('electron')
+                            ipcRenderer.send('set-zoom', window.location.hostname)
+                            ipcRenderer.on(window.location.hostname + '-zoom-set', () => {
+                              remote.getCurrentWebContents().getZoomLevel((zoomLevel) => {
+                                ipcRenderer.send(window.location.hostname + '-zoom-level', zoomLevel)
+                              })
                             })
-                          })
-                        </script>`
+                          </script>`
         callback({data: response, mimeType: 'text/html'})
       }, (error) => done(error))
     })
 
     after((done) => {
-      let protocol = session.defaultSession.protocol
+      const protocol = session.defaultSession.protocol
       protocol.unregisterProtocol(zoomScheme, (error) => done(error))
     })
 
@@ -371,14 +371,14 @@ describe('webContents module', function () {
     it('can persist zoom level across navigation', (done) => {
       let finalNavigation = false
       ipcMain.on('set-zoom', (e, host) => {
-        let zoomLevel = hostZoomMap[host]
+        const zoomLevel = hostZoomMap[host]
         if (!finalNavigation) {
           w.webContents.setZoomLevel(zoomLevel)
         }
         e.sender.send(`${host}-zoom-set`)
       })
       ipcMain.on('host1-zoom-level', (e, zoomLevel) => {
-        let expectedZoomLevel = hostZoomMap['host1']
+        const expectedZoomLevel = hostZoomMap.host1
         assert.equal(zoomLevel, expectedZoomLevel)
         if (finalNavigation) {
           done()
@@ -387,7 +387,7 @@ describe('webContents module', function () {
         }
       })
       ipcMain.once('host2-zoom-level', (e, zoomLevel) => {
-        let expectedZoomLevel = hostZoomMap['host2']
+        const expectedZoomLevel = hostZoomMap.host2
         assert.equal(zoomLevel, expectedZoomLevel)
         finalNavigation = true
         w.webContents.goBack()
@@ -401,7 +401,7 @@ describe('webContents module', function () {
       })
       w2.webContents.on('did-finish-load', () => {
         w.webContents.getZoomLevel((zoomLevel1) => {
-          assert.equal(zoomLevel1, hostZoomMap['host3'])
+          assert.equal(zoomLevel1, hostZoomMap.host3)
           w2.webContents.getZoomLevel((zoomLevel2) => {
             assert.equal(zoomLevel1, zoomLevel2)
             w2.setClosable(true)
@@ -411,7 +411,7 @@ describe('webContents module', function () {
         })
       })
       w.webContents.on('did-finish-load', () => {
-        w.webContents.setZoomLevel(hostZoomMap['host3'])
+        w.webContents.setZoomLevel(hostZoomMap.host3)
         w2.loadURL(`${zoomScheme}://host3`)
       })
       w.loadURL(`${zoomScheme}://host3`)
@@ -424,14 +424,14 @@ describe('webContents module', function () {
           partition: 'temp'
         }
       })
-      let protocol = w2.webContents.session.protocol
+      const protocol = w2.webContents.session.protocol
       protocol.registerStringProtocol(zoomScheme, (request, callback) => {
         callback('hello')
       }, (error) => {
         if (error) return done(error)
         w2.webContents.on('did-finish-load', () => {
           w.webContents.getZoomLevel((zoomLevel1) => {
-            assert.equal(zoomLevel1, hostZoomMap['host3'])
+            assert.equal(zoomLevel1, hostZoomMap.host3)
             w2.webContents.getZoomLevel((zoomLevel2) => {
               assert.equal(zoomLevel2, 0)
               assert.notEqual(zoomLevel1, zoomLevel2)
@@ -445,7 +445,7 @@ describe('webContents module', function () {
           })
         })
         w.webContents.on('did-finish-load', () => {
-          w.webContents.setZoomLevel(hostZoomMap['host3'])
+          w.webContents.setZoomLevel(hostZoomMap.host3)
           w2.loadURL(`${zoomScheme}://host3`)
         })
         w.loadURL(`${zoomScheme}://host3`)
@@ -456,7 +456,7 @@ describe('webContents module', function () {
       const server = http.createServer(function (req, res) {
         setTimeout(() => {
           res.end()
-        }, 2000)
+        }, 200)
       })
       server.listen(0, '127.0.0.1', function () {
         const url = 'http://127.0.0.1:' + server.address().port
