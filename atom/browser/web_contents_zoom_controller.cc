@@ -112,8 +112,7 @@ void WebContentsZoomController::DidFinishNavigation(
     return;
   }
 
-  if (!navigation_handle->IsSamePage())
-    SetZoomFactorOnNavigationIfNeeded(navigation_handle->GetURL());
+  SetZoomFactorOnNavigationIfNeeded(navigation_handle->GetURL());
 }
 
 void WebContentsZoomController::WebContentsDestroyed() {
