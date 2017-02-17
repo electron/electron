@@ -26,7 +26,9 @@ class MenuViews : public Menu {
   void ClosePopupAt(int32_t window_id) override;
 
  private:
+  // window ID -> open context menu
   std::map<int32_t, std::unique_ptr<views::MenuRunner>> menu_runners_;
+
   base::WeakPtrFactory<MenuViews> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuViews);

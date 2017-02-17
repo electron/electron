@@ -29,13 +29,15 @@ class MenuMac : public Menu {
                  bool async);
   void ClosePopupAt(int32_t window_id) override;
 
-  scoped_nsobject<AtomMenuController> menu_controller_;
-  std::map<int32_t, scoped_nsobject<AtomMenuController>> popup_controllers_;
-
  private:
   friend class Menu;
 
   static void SendActionToFirstResponder(const std::string& action);
+
+  scoped_nsobject<AtomMenuController> menu_controller_;
+
+  // window ID -> open context menu
+  std::map<int32_t, scoped_nsobject<AtomMenuController>> popup_controllers_;
 
   base::WeakPtrFactory<MenuMac> weak_factory_;
 
