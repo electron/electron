@@ -496,7 +496,7 @@ describe('webContents module', function () {
         })
       })
       ipcMain.once('temporary-zoom-set', (e, zoomLevel) => {
-        w2.loadURL(`file://${fixtures}/pages/a.html`)
+        w2.loadURL(`file://${fixtures}/pages/c.html`)
         finalZoomLevel = zoomLevel
       })
       w.loadURL(`file://${fixtures}/pages/webframe-zoom.html`)
@@ -521,10 +521,10 @@ describe('webContents module', function () {
       })
       ipcMain.once('zoom-level-set', (e, zoomLevel) => {
         assert.equal(zoomLevel, 0.6)
-        w.loadURL(`file://${fixtures}/pages/b.html`)
+        w.loadURL(`file://${fixtures}/pages/d.html`)
         initialNavigation = false
       })
-      w.loadURL(`file://${fixtures}/pages/a.html`)
+      w.loadURL(`file://${fixtures}/pages/c.html`)
     })
   })
 })
