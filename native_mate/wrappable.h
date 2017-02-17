@@ -9,7 +9,6 @@
 #include "native_mate/compat.h"
 #include "native_mate/converter.h"
 #include "native_mate/constructor.h"
-#include "native_mate/template_util.h"
 
 namespace mate {
 
