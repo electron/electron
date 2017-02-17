@@ -30,6 +30,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "brightray/browser/brightray_paths.h"
+#include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_accessibility_state.h"
@@ -890,18 +891,16 @@ void App::GetFileIcon(const base::FilePath& path,
     return;
   }
 
-  if (!icon_manager_.get()) {
-    icon_manager_.reset(new IconManager());
-  }
-
-  gfx::Image* icon = icon_manager_->LookupIconFromFilepath(normalized_path,
-                                                          icon_size);
+  auto icon_manager = g_browser_process->GetIconManager();
+  gfx::Image* icon =
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
     callback.Run(v8::Null(isolate()), *icon);
   } else {
-    icon_manager_->LoadIcon(normalized_path, icon_size,
-                           base::Bind(&OnIconDataAvailable, isolate(),
-                                      callback), &cancelable_task_tracker_);
+    icon_manager->LoadIcon(
+        normalized_path, icon_size,
+        base::Bind(&OnIconDataAvailable, isolate(), callback),
+        &cancelable_task_tracker_);
   }
 }
 

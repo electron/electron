@@ -130,8 +130,6 @@ class App : public AtomBrowserClient::Delegate,
   void DisableHardwareAcceleration(mate::Arguments* args);
   bool IsAccessibilitySupportEnabled();
   Browser::LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
-  base::CancelableTaskTracker cancelable_task_tracker_;
-  std::unique_ptr<IconManager> icon_manager_;
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);
@@ -152,6 +150,9 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(USE_NSS_CERTS)
   std::unique_ptr<CertificateManagerModel> certificate_manager_model_;
 #endif
+
+  // Tracks tasks requesting file icons.
+  base::CancelableTaskTracker cancelable_task_tracker_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };
