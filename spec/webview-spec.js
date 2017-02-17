@@ -1067,21 +1067,6 @@ describe('<webview> tag', function () {
     })
   })
 
-  it('inherits the zoomFactor of the parent window', function (done) {
-    w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        zoomFactor: 1.2
-      }
-    })
-    ipcMain.once('pong', function (event, zoomFactor, zoomLevel) {
-      assert.equal(zoomFactor, 1.2)
-      assert.equal(zoomLevel, 1)
-      done()
-    })
-    w.loadURL('file://' + fixtures + '/pages/webview-zoom-factor.html')
-  })
-
   it('inherits the parent window visibility state and receives visibilitychange events', function (done) {
     w = new BrowserWindow({
       show: false
@@ -1538,6 +1523,43 @@ describe('<webview> tag', function () {
           }
         }
       })
+    })
+  })
+
+  describe('zoom behavior', () => {
+    it('inherits the zoomFactor of the parent window', (done) => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomFactor: 1.2
+        }
+      })
+      ipcMain.once('webview-zoom-level', (event, zoomFactor, zoomLevel) => {
+        assert.equal(zoomFactor, 1.2)
+        assert.equal(zoomLevel, 1)
+        done()
+      })
+      w.loadURL(`file://${fixtures}/pages/webview-zoom-factor.html`)
+    })
+
+    it('inherits the zoomLevel of parent window on navigation', (done) => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomFactor: 1.2
+        }
+      })
+      ipcMain.on('webview-zoom-level', (event, zoomLevel, zoomFactor, final) => {
+        if (!final) {
+          assert.equal(zoomFactor, 1.44)
+          assert.equal(zoomLevel, 2.0)
+        } else {
+          assert.equal(zoomFactor, 1.2)
+          assert.equal(zoomLevel, 1)
+          done()
+        }
+      })
+      w.loadURL(`file://${fixtures}/pages/webview-custom-zoom-level.html`)
     })
   })
 })

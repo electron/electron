@@ -1,0 +1,23 @@
+<html>
+<body>
+<webview nodeintegration src="a.html" id="view"/>
+</body>
+<script>
+  const {ipcRenderer, webFrame} = require('electron')
+  const view = document.getElementById('view')
+  let finalNavigation = false
+  view.addEventListener('dom-ready', () => {
+    if (!finalNavigation)
+      view.setZoomLevel(2.0)
+    view.getZoomLevel((zoomLevel) => {
+      view.getZoomFactor((zoomFactor) => {
+        ipcRenderer.send('webview-zoom-level', zoomLevel, zoomFactor, finalNavigation)
+        if (!finalNavigation) {
+          finalNavigation = true
+          view.src = 'b.html'
+        }
+      })
+    })
+  })
+</script>
+</html>
