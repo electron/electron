@@ -1280,7 +1280,7 @@ void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
-  if (!base::mac::IsOS10_10()) return;
+  if (!base::mac::IsAtLeastOS10_10()) return;
 
   NSView* vibrant_view = [window_ vibrantView];
 
