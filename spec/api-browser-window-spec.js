@@ -229,6 +229,24 @@ describe('BrowserWindow module', function () {
       w.loadURL(`data:image/png;base64,${data}`)
     })
 
+    it('should not crash when there is a pending navigation entry', function (done) {
+      const source = `
+        <script>
+          setInterval(function () {
+            window.location = 'http://host'
+          }, 1000)
+        </script>
+      `
+      w.webContents.on('did-fail-load', function (event, code, desc, url, isMainFrame) {
+        assert.equal(url, 'http://host/')
+        w.webContents.loadURL('about:blank')
+      })
+      w.webContents.on('did-navigate', function (event, url) {
+        if (url === 'about:blank') done()
+      })
+      w.loadURL(`data:text/html,${source}`)
+    })
+
     describe('POST navigations', function () {
       afterEach(() => {
         w.webContents.session.webRequest.onBeforeSendHeaders(null)
