@@ -92,7 +92,7 @@
 * [构建步骤（macOS）](development/build-instructions-osx.md)
 * [构建步骤（Windows）](development/build-instructions-windows.md)
 * [构建步骤（Linux）](development/build-instructions-linux.md)
-* [调试步骤 (macOS)](development/debug-instructions-macos.md) 未翻译
-* [调试步骤 (Windows)](development/debug-instructions-windows.md) 未翻译
+* [调试步骤 (macOS)](development/debug-instructions-macos.md)
+* [调试步骤 (Windows)](development/debug-instructions-windows.md)
 * [在调试中使用 Symbol Server](development/setting-up-symbol-server.md)
 * [文档风格指南](styleguide.md)
