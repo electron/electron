@@ -51,6 +51,7 @@
       'lib/common/api/module-list.js',
       'lib/common/api/native-image.js',
       'lib/common/api/shell.js',
+      'lib/common/atom-binding-setup.js',
       'lib/common/init.js',
       'lib/common/parse-features-string.js',
       'lib/common/reset-search-paths.js',
