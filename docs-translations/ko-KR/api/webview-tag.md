@@ -190,7 +190,7 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 ### `webpreferences`
 
 ```html
-<webview src="https://github.com" webpreferences="allowDisplayingInsecureContent, javascript=no"></webview>
+<webview src="https://github.com" webpreferences="allowRunningInsecureContent, javascript=no"></webview>
 ```
 웹뷰에 설정될 웹 환경설정을 나타내는 `,` 로 구분된 문자열의 목록입니다.
 지원되는 환경설정 문자열의 전체 목록은
@@ -473,12 +473,12 @@ Returns `Boolean` - 게스트 페이지 음소거 여부.
 
 웹 페이지에서 `text`에 일치하는 모든 대상을 찾는 요청을 시작하고 요청에 사용된 요청을
 표현하는 `정수(integer)`를 반환합니다. 요청의 결과는
-[`found-in-page`](web-view-tag.md#event-found-in-page) 이벤트를 통해 취득할 수
+[`found-in-page`](webview-tag.md#event-found-in-page) 이벤트를 통해 취득할 수
 있습니다.
 
 ### `webContents.stopFindInPage(action)`
 
-* `action` String - [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage)
+* `action` String - [`<webview>.findInPage`](webview-tag.md#webviewtagfindinpage)
   요청이 종료되었을 때 일어날 수 있는 작업을 지정합니다.
   * `clearSelection` - 선택을 취소합니다.
   * `keepSelection` - 선택을 일반 선택으로 변경합니다.

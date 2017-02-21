@@ -171,6 +171,7 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
   void PreviewFile(const std::string& path, mate::Arguments* args);
+  void CloseFilePreview();
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
   v8::Local<v8::Value> GetParentWindow() const;
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
@@ -187,6 +188,7 @@ class Window : public mate::TrackableObject<Window>,
   void UnhookAllWindowMessages();
   bool SetThumbnailClip(const gfx::Rect& region);
   bool SetThumbnailToolTip(const std::string& tooltip);
+  void SetAppDetails(const mate::Dictionary& options);
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -195,6 +197,8 @@ class Window : public mate::TrackableObject<Window>,
 
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
+
+  void SetAutoHideCursor(bool auto_hide);
 
   void SetVibrancy(mate::Arguments* args);
 

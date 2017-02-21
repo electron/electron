@@ -11,6 +11,8 @@
 
 #include "atom/common/node_includes.h"
 
+using content::BrowserThread;
+
 namespace mate {
 
 template<>
@@ -76,10 +78,8 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
             new_blocker_type,
             device::PowerSaveBlocker::kReasonOther,
             ATOM_PRODUCT_NAME,
-            content::BrowserThread::GetMessageLoopProxyForThread(
-                content::BrowserThread::UI),
-            content::BrowserThread::GetMessageLoopProxyForThread(
-                content::BrowserThread::FILE)));
+            BrowserThread::GetTaskRunnerForThread(BrowserThread::UI),
+            BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE)));
     power_save_blocker_.swap(new_blocker);
     current_blocker_type_ = new_blocker_type;
   }

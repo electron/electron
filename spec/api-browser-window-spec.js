@@ -9,11 +9,11 @@ const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
-const {app, ipcMain, BrowserWindow, protocol} = remote
+const {app, ipcMain, BrowserWindow, protocol, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
-describe('browser-window module', function () {
+describe('BrowserWindow module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
   var server, postData
@@ -133,10 +133,10 @@ describe('browser-window module', function () {
 
   describe('BrowserWindow.destroy()', function () {
     it('prevents users to access methods of webContents', function () {
-      var webContents = w.webContents
+      const contents = w.webContents
       w.destroy()
       assert.throws(function () {
-        webContents.getId()
+        contents.getId()
       }, /Object has been destroyed/)
     })
   })
@@ -211,12 +211,22 @@ describe('browser-window module', function () {
     })
 
     it('does not crash in did-fail-provisional-load handler', function (done) {
-      this.timeout(10000)
       w.webContents.once('did-fail-provisional-load', function () {
         w.loadURL('http://127.0.0.1:11111')
         done()
       })
       w.loadURL('http://127.0.0.1:11111')
+    })
+
+    it('should emit did-fail-load event for URL exceeding character limit', function (done) {
+      w.webContents.on('did-fail-load', function (event, code, desc, url, isMainFrame) {
+        assert.equal(desc, 'ERR_INVALID_URL')
+        assert.equal(code, -300)
+        assert.equal(isMainFrame, true)
+        done()
+      })
+      const data = new Buffer(2 * 1024 * 1024).toString('base64')
+      w.loadURL(`data:image/png;base64,${data}`)
     })
 
     describe('POST navigations', function () {
@@ -237,6 +247,7 @@ describe('browser-window module', function () {
           })
           w.webContents.executeJavaScript(`
             form = document.createElement('form')
+            document.body.appendChild(form)
             form.method = 'POST'
             form.target = '_blank'
             form.submit()
@@ -253,6 +264,7 @@ describe('browser-window module', function () {
           })
           w.webContents.executeJavaScript(`
             form = document.createElement('form')
+            document.body.appendChild(form)
             form.method = 'POST'
             form.target = '_blank'
             form.enctype = 'multipart/form-data'
@@ -265,6 +277,16 @@ describe('browser-window module', function () {
         })
         w.loadURL(server.url)
       })
+    })
+  })
+
+  describe('will-navigate event', function () {
+    it('allows the window to be closed from the event listener', (done) => {
+      ipcRenderer.send('close-on-will-navigate', w.id)
+      ipcRenderer.once('closed-on-will-navigate', () => {
+        done()
+      })
+      w.loadURL('file://' + fixtures + '/pages/will-navigate.html')
     })
   })
 
@@ -284,7 +306,6 @@ describe('browser-window module', function () {
     })
 
     it('emits when window is shown', function (done) {
-      this.timeout(10000)
       w.once('show', function () {
         assert.equal(w.isVisible(), true)
         done()
@@ -310,7 +331,6 @@ describe('browser-window module', function () {
     })
 
     it('emits when window is hidden', function (done) {
-      this.timeout(10000)
       w.show()
       w.once('hide', function () {
         assert.equal(w.isVisible(), false)
@@ -497,12 +517,41 @@ describe('browser-window module', function () {
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', function () {
     it('sets the window as always on top', function () {
       assert.equal(w.isAlwaysOnTop(), false)
-      w.setAlwaysOnTop(true, 'dock')
+      w.setAlwaysOnTop(true, 'screen-saver')
       assert.equal(w.isAlwaysOnTop(), true)
       w.setAlwaysOnTop(false)
       assert.equal(w.isAlwaysOnTop(), false)
       w.setAlwaysOnTop(true)
       assert.equal(w.isAlwaysOnTop(), true)
+    })
+
+    it('raises an error when relativeLevel is out of bounds', function () {
+      if (process.platform !== 'darwin') return
+
+      assert.throws(function () {
+        w.setAlwaysOnTop(true, '', -2147483644)
+      })
+
+      assert.throws(function () {
+        w.setAlwaysOnTop(true, '', 2147483632)
+      })
+    })
+  })
+
+  describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
+    if (process.platform !== 'darwin') {
+      it('is not available on non-macOS platforms', () => {
+        assert.ok(!w.setAutoHideCursor)
+      })
+
+      return
+    }
+
+    it('allows changing cursor auto-hiding', () => {
+      assert.doesNotThrow(() => {
+        w.setAutoHideCursor(false)
+        w.setAutoHideCursor(true)
+      })
     })
   })
 
@@ -518,9 +567,77 @@ describe('browser-window module', function () {
     })
   })
 
+  describe('BrowserWindow.setAppDetails(options)', function () {
+    it('supports setting the app details', function () {
+      if (process.platform !== 'win32') return
+
+      const iconPath = path.join(fixtures, 'assets', 'icon.ico')
+
+      assert.doesNotThrow(function () {
+        w.setAppDetails({appId: 'my.app.id'})
+        w.setAppDetails({appIconPath: iconPath, appIconIndex: 0})
+        w.setAppDetails({appIconPath: iconPath})
+        w.setAppDetails({relaunchCommand: 'my-app.exe arg1 arg2', relaunchDisplayName: 'My app name'})
+        w.setAppDetails({relaunchCommand: 'my-app.exe arg1 arg2'})
+        w.setAppDetails({relaunchDisplayName: 'My app name'})
+        w.setAppDetails({
+          appId: 'my.app.id',
+          appIconPath: iconPath,
+          appIconIndex: 0,
+          relaunchCommand: 'my-app.exe arg1 arg2',
+          relaunchDisplayName: 'My app name'
+        })
+        w.setAppDetails({})
+      })
+
+      assert.throws(function () {
+        w.setAppDetails()
+      }, /Insufficient number of arguments\./)
+    })
+  })
+
   describe('BrowserWindow.fromId(id)', function () {
     it('returns the window with id', function () {
       assert.equal(w.id, BrowserWindow.fromId(w.id).id)
+    })
+  })
+
+  describe('BrowserWindow.fromWebContents(webContents)', function () {
+    let contents = null
+
+    beforeEach(function () {
+      contents = webContents.create({})
+    })
+
+    afterEach(function () {
+      contents.destroy()
+    })
+
+    it('returns the window with the webContents', function () {
+      assert.equal(BrowserWindow.fromWebContents(w.webContents).id, w.id)
+      assert.equal(BrowserWindow.fromWebContents(contents), undefined)
+    })
+  })
+
+  describe('BrowserWindow.fromDevToolsWebContents(webContents)', function () {
+    let contents = null
+
+    beforeEach(function () {
+      contents = webContents.create({})
+    })
+
+    afterEach(function () {
+      contents.destroy()
+    })
+
+    it('returns the window with the webContents', function (done) {
+      w.webContents.once('devtools-opened', () => {
+        assert.equal(BrowserWindow.fromDevToolsWebContents(w.devToolsWebContents).id, w.id)
+        assert.equal(BrowserWindow.fromDevToolsWebContents(w.webContents), undefined)
+        assert.equal(BrowserWindow.fromDevToolsWebContents(contents), undefined)
+        done()
+      })
+      w.webContents.openDevTools()
     })
   })
 
@@ -628,7 +745,7 @@ describe('browser-window module', function () {
 
   describe('"zoomToPageWidth" option', function () {
     it('sets the window width to the page width when used', function () {
-      if (process.platform !== 'darwin') return this.skip()
+      if (process.platform !== 'darwin') return
 
       w.destroy()
       w = new BrowserWindow({
@@ -684,8 +801,9 @@ describe('browser-window module', function () {
     describe('"node-integration" option', function () {
       it('disables node integration when specified to false', function (done) {
         var preload = path.join(fixtures, 'module', 'send-later.js')
-        ipcMain.once('answer', function (event, test) {
-          assert.equal(test, 'undefined')
+        ipcMain.once('answer', function (event, typeofProcess, typeofBuffer) {
+          assert.equal(typeofProcess, 'undefined')
+          assert.equal(typeofBuffer, 'undefined')
           done()
         })
         w.destroy()
@@ -827,7 +945,7 @@ describe('browser-window module', function () {
               assert(/Blocked a frame with origin/.test(exceptionMessage))
 
               // FIXME this popup window should be closed in sandbox.html
-              closeWindow(popupWindow).then(() => {
+              closeWindow(popupWindow, {assertSingleWindow: false}).then(() => {
                 popupWindow = null
                 done()
               })
@@ -900,6 +1018,43 @@ describe('browser-window module', function () {
           w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?webcontents-events'))
         })
       })
+
+      it('can print to PDF', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload
+          }
+        })
+        w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+        w.webContents.once('did-finish-load', function () {
+          w.webContents.printToPDF({}, function (error, data) {
+            assert.equal(error, null)
+            assert.equal(data instanceof Buffer, true)
+            assert.notEqual(data.length, 0)
+            done()
+          })
+        })
+      })
+
+      it('supports calling preventDefault on new-window events', (done) => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true
+          }
+        })
+        const initialWebContents = webContents.getAllWebContents()
+        ipcRenderer.send('prevent-next-new-window', w.webContents.id)
+        w.webContents.once('new-window', () => {
+          assert.deepEqual(webContents.getAllWebContents(), initialWebContents)
+          done()
+        })
+        w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
+      })
     })
   })
 
@@ -956,7 +1111,6 @@ describe('browser-window module', function () {
     })
 
     it('emits when link with target is called', function (done) {
-      this.timeout(10000)
       w.webContents.once('new-window', function (e, url, frameName) {
         e.preventDefault()
         assert.equal(url, 'http://host/')
@@ -973,7 +1127,6 @@ describe('browser-window module', function () {
     }
 
     it('emits when window is maximized', function (done) {
-      this.timeout(10000)
       w.once('maximize', function () {
         done()
       })
@@ -988,7 +1141,6 @@ describe('browser-window module', function () {
     }
 
     it('emits when window is unmaximized', function (done) {
-      this.timeout(10000)
       w.once('unmaximize', function () {
         done()
       })
@@ -1004,7 +1156,6 @@ describe('browser-window module', function () {
     }
 
     it('emits when window is minimized', function (done) {
-      this.timeout(10000)
       w.once('minimize', function () {
         done()
       })
@@ -1016,8 +1167,6 @@ describe('browser-window module', function () {
   describe('beginFrameSubscription method', function () {
     // This test is too slow, only test it on CI.
     if (!isCI) return
-
-    this.timeout(20000)
 
     it('subscribes to frame updates', function (done) {
       let called = false
@@ -1152,6 +1301,18 @@ describe('browser-window module', function () {
         w.setResizable(true)
         assert.equal(w.isResizable(), true)
       })
+
+      it('works for a frameless window', () => {
+        w.destroy()
+        w = new BrowserWindow({show: false, frame: false})
+        assert.equal(w.isResizable(), true)
+
+        if (process.platform === 'win32') {
+          w.destroy()
+          w = new BrowserWindow({show: false, thickFrame: false})
+          assert.equal(w.isResizable(), false)
+        }
+      })
     })
 
     describe('loading main frame state', function () {
@@ -1279,6 +1440,56 @@ describe('browser-window module', function () {
         assert.equal(w.isFullScreenable(), false)
         w.setFullScreenable(true)
         assert.equal(w.isFullScreenable(), true)
+      })
+    })
+
+    describe('kiosk state', function () {
+      // Only implemented on macOS.
+      if (process.platform !== 'darwin') return
+
+      it('can be changed with setKiosk method', function () {
+        w.destroy()
+        w = new BrowserWindow()
+        w.setKiosk(true)
+        assert.equal(w.isKiosk(), true)
+        w.setKiosk(false)
+        assert.equal(w.isKiosk(), false)
+      })
+    })
+
+    describe('fullscreen state', function () {
+      // Only implemented on macOS.
+      if (process.platform !== 'darwin') return
+
+      it('can be changed with setFullScreen method', function (done) {
+        w.destroy()
+        w = new BrowserWindow()
+        w.once('enter-full-screen', () => {
+          assert.equal(w.isFullScreen(), true)
+          w.setFullScreen(false)
+        })
+        w.once('leave-full-screen', () => {
+          assert.equal(w.isFullScreen(), false)
+          done()
+        })
+        w.setFullScreen(true)
+      })
+
+      it('should not be changed by setKiosk method', function (done) {
+        w.destroy()
+        w = new BrowserWindow()
+        w.once('enter-full-screen', () => {
+          assert.equal(w.isFullScreen(), true)
+          w.setKiosk(true)
+          w.setKiosk(false)
+          assert.equal(w.isFullScreen(), true)
+          w.setFullScreen(false)
+        })
+        w.once('leave-full-screen', () => {
+          assert.equal(w.isFullScreen(), false)
+          done()
+        })
+        w.setFullScreen(true)
       })
     })
 
@@ -1465,10 +1676,36 @@ describe('browser-window module', function () {
   })
 
   describe('dev tool extensions', function () {
-    describe('BrowserWindow.addDevToolsExtension', function () {
-      let showPanelIntevalId
-      this.timeout(10000)
+    let showPanelTimeoutId
 
+    const showLastDevToolsPanel = () => {
+      w.webContents.once('devtools-opened', function () {
+        const show = function () {
+          if (w == null || w.isDestroyed()) {
+            return
+          }
+          const {devToolsWebContents} = w
+          if (devToolsWebContents == null || devToolsWebContents.isDestroyed()) {
+            return
+          }
+
+          const showLastPanel = function () {
+            const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id
+            UI.inspectorView.showPanel(lastPanelId)
+          }
+          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false, () => {
+            showPanelTimeoutId = setTimeout(show, 100)
+          })
+        }
+        showPanelTimeoutId = setTimeout(show, 100)
+      })
+    }
+
+    afterEach(function () {
+      clearTimeout(showPanelTimeoutId)
+    })
+
+    describe('BrowserWindow.addDevToolsExtension', function () {
       beforeEach(function () {
         BrowserWindow.removeDevToolsExtension('foo')
         assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), false)
@@ -1477,25 +1714,9 @@ describe('browser-window module', function () {
         BrowserWindow.addDevToolsExtension(extensionPath)
         assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), true)
 
-        w.webContents.on('devtools-opened', function () {
-          showPanelIntevalId = setInterval(function () {
-            if (w && w.devToolsWebContents) {
-              var showLastPanel = function () {
-                var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
-                WebInspector.inspectorView.showPanel(lastPanelId)
-              }
-              w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
-            } else {
-              clearInterval(showPanelIntevalId)
-            }
-          }, 100)
-        })
+        showLastDevToolsPanel()
 
         w.loadURL('about:blank')
-      })
-
-      afterEach(function () {
-        clearInterval(showPanelIntevalId)
       })
 
       it('throws errors for missing manifest.json files', function () {
@@ -1549,8 +1770,6 @@ describe('browser-window module', function () {
     })
 
     it('works when used with partitions', function (done) {
-      this.timeout(10000)
-
       if (w != null) {
         w.destroy()
       }
@@ -1565,19 +1784,7 @@ describe('browser-window module', function () {
       BrowserWindow.removeDevToolsExtension('foo')
       BrowserWindow.addDevToolsExtension(extensionPath)
 
-      w.webContents.on('devtools-opened', function () {
-        var showPanelIntevalId = setInterval(function () {
-          if (w && w.devToolsWebContents) {
-            var showLastPanel = function () {
-              var lastPanelId = WebInspector.inspectorView._tabbedPane._tabs.peekLast().id
-              WebInspector.inspectorView.showPanel(lastPanelId)
-            }
-            w.devToolsWebContents.executeJavaScript(`(${showLastPanel})()`)
-          } else {
-            clearInterval(showPanelIntevalId)
-          }
-        }, 100)
-      })
+      showLastDevToolsPanel()
 
       w.loadURL('about:blank')
       w.webContents.openDevTools({mode: 'bottom'})
@@ -1689,9 +1896,81 @@ describe('browser-window module', function () {
     })
   })
 
-  describe('offscreen rendering', function () {
-    this.timeout(10000)
+  describe('previewFile', function () {
+    it('opens the path in Quick Look on macOS', function () {
+      if (process.platform !== 'darwin') return
 
+      assert.doesNotThrow(function () {
+        w.previewFile(__filename)
+        w.closeFilePreview()
+      })
+    })
+  })
+
+  describe('contextIsolation option', () => {
+    const expectedContextData = {
+      preloadContext: {
+        preloadProperty: 'number',
+        pageProperty: 'undefined',
+        typeofRequire: 'function',
+        typeofProcess: 'object',
+        typeofArrayPush: 'function',
+        typeofFunctionApply: 'function'
+      },
+      pageContext: {
+        preloadProperty: 'undefined',
+        pageProperty: 'string',
+        typeofRequire: 'undefined',
+        typeofProcess: 'undefined',
+        typeofArrayPush: 'number',
+        typeofFunctionApply: 'boolean',
+        typeofPreloadExecuteJavaScriptProperty: 'number',
+        typeofOpenedWindow: 'object',
+        documentHidden: true,
+        documentVisibilityState: 'hidden'
+      }
+    }
+
+    beforeEach(() => {
+      if (w != null) w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+    })
+
+    it('separates the page context from the Electron/preload context', (done) => {
+      ipcMain.once('isolated-world', (event, data) => {
+        assert.deepEqual(data, expectedContextData)
+        done()
+      })
+      w.loadURL('file://' + fixtures + '/api/isolated.html')
+    })
+
+    it('recreates the contexts on reload', (done) => {
+      w.webContents.once('did-finish-load', () => {
+        ipcMain.once('isolated-world', (event, data) => {
+          assert.deepEqual(data, expectedContextData)
+          done()
+        })
+        w.webContents.reload()
+      })
+      w.loadURL('file://' + fixtures + '/api/isolated.html')
+    })
+
+    it('enables context isolation on child windows', function (done) {
+      app.once('browser-window-created', function (event, window) {
+        assert.equal(window.webContents.getWebPreferences().contextIsolation, true)
+        done()
+      })
+      w.loadURL('file://' + fixtures + '/pages/window-open.html')
+    })
+  })
+
+  describe('offscreen rendering', function () {
     beforeEach(function () {
       if (w != null) w.destroy()
       w = new BrowserWindow({

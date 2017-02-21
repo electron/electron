@@ -24,7 +24,7 @@ Electron はウェブページを表示させるために Chromium を使用し�
 
 Electron では、メインプロセスとレンダラープロセスとのコミュニケーションをするために [ipc](../api/ipc-renderer.md) モジュールを提供しています。またそれと、RPC 形式の通信を行う [remote](../api/remote.md) モジュールもあります。
 
-Electron では、メインプロセスとレンダラープロセスとのコミュニケーションをするには幾つかのほうほうがあります。メッセージを送信する[`ipcRenderer`](../api/ipc-renderer.md)モジュールと[`ipcMain`](../api/ipc-main.md)モジュールのように、RPC 形式の通信を行う[remote](../api/remote.md)モジュールです。[ウェブページ間のデータを共有する方法][share-data]にFAQエントリーがあります。
+Electron では、メインプロセスとレンダラープロセスとのコミュニケーションをするには幾つかの方法があります。メッセージを送信する[`ipcRenderer`](../api/ipc-renderer.md)モジュールと[`ipcMain`](../api/ipc-main.md)モジュールのように、RPC 形式の通信を行う[remote](../api/remote.md)モジュールです。[ウェブページ間のデータを共有する方法][share-data]にFAQエントリーがあります。
 
 ## Electronアプリを作成する
 

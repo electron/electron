@@ -28,6 +28,7 @@ class AtomBindings {
   void BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process);
 
   static void Log(const base::string16& message);
+  static void Crash();
 
  private:
   void ActivateUVLoop(v8::Isolate* isolate);

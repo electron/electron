@@ -16,12 +16,14 @@ class DictionaryValue;
 
 namespace atom {
 
+NSArray* ListValueToNSArray(const base::ListValue& value);
+
+std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr);
+
 NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value);
 
 std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
     NSDictionary* dict);
-
-std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr);
 
 }  // namespace atom
 

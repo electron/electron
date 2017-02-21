@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
 #define ATOM_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
 
-#include "content/public/browser/access_token_store.h"
+#include "device/geolocation/access_token_store.h"
 
 namespace atom {
 
@@ -15,12 +15,12 @@ namespace internal {
 class TokenLoadingJob;
 }
 
-class AtomAccessTokenStore : public content::AccessTokenStore {
+class AtomAccessTokenStore : public device::AccessTokenStore {
  public:
   AtomAccessTokenStore();
   ~AtomAccessTokenStore();
 
-  // content::AccessTokenStore:
+  // device::AccessTokenStore:
   void LoadAccessTokens(
       const LoadAccessTokensCallback& callback) override;
   void SaveAccessToken(const GURL& server_url,

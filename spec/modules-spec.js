@@ -47,6 +47,35 @@ describe('third-party module', function () {
       })
     })
   })
+
+  describe('coffee-script', function () {
+    it('can be registered and used to require .coffee files', function () {
+      assert.doesNotThrow(function () {
+        require('coffee-script').register()
+      })
+      assert.strictEqual(require('./fixtures/module/test.coffee'), true)
+    })
+  })
+
+  describe('global variables', function () {
+    describe('process', function () {
+      it('can be declared in a module', function () {
+        assert.strictEqual(require('./fixtures/module/declare-process'), 'declared process')
+      })
+    })
+
+    describe('global', function () {
+      it('can be declared in a module', function () {
+        assert.strictEqual(require('./fixtures/module/declare-global'), 'declared global')
+      })
+    })
+
+    describe('Buffer', function () {
+      it('can be declared in a module', function () {
+        assert.strictEqual(require('./fixtures/module/declare-buffer'), 'declared Buffer')
+      })
+    })
+  })
 })
 
 describe('Module._nodeModulePaths', function () {

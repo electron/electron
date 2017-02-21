@@ -39,6 +39,7 @@ namespace atom {
 
 struct SetSizeParams;
 class AtomBrowserContext;
+class WebContentsZoomController;
 class WebViewGuestDelegate;
 
 namespace api {
@@ -174,6 +175,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   int GetFrameRate() const;
   void Invalidate();
 
+  // Methods for zoom handling.
+  void SetZoomLevel(double level);
+  double GetZoomLevel();
+  void SetZoomFactor(double factor);
+  double GetZoomFactor();
+
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
                                    const GURL& origin,
@@ -184,7 +191,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const GURL& target_url,
       const std::string& frame_name,
       WindowOpenDisposition disposition,
-      const std::vector<base::string16>& features,
+      const std::vector<std::string>& features,
       const scoped_refptr<content::ResourceRequestBodyImpl>& body);
 
   // Returns the web preferences of current WebContents.
@@ -200,6 +207,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
+  WebContentsZoomController* GetZoomController() { return zoom_controller_; }
+
  protected:
   WebContents(v8::Isolate* isolate,
               content::WebContents* web_contents,
@@ -213,12 +222,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
                                  const mate::Dictionary& options);
 
   // content::WebContentsDelegate:
-  bool AddMessageToConsole(content::WebContents* source,
-                           int32_t level,
-                           const base::string16& message,
-                           int32_t line_no,
-                           const base::string16& source_id) override;
+  bool DidAddMessageToConsole(content::WebContents* source,
+                              int32_t level,
+                              const base::string16& message,
+                              int32_t line_no,
+                              const base::string16& source_id) override;
   void WebContentsCreated(content::WebContents* source_contents,
+                          int opener_render_process_id,
                           int opener_render_frame_id,
                           const std::string& frame_name,
                           const GURL& target_url,
@@ -244,10 +254,15 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
+  bool PreHandleKeyboardEvent(content::WebContents* source,
+                              const content::NativeWebKeyboardEvent& event,
+                              bool* is_keyboard_shortcut) override;
   void EnterFullscreenModeForTab(content::WebContents* source,
                                  const GURL& origin) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
-  void RendererUnresponsive(content::WebContents* source) override;
+  void RendererUnresponsive(
+      content::WebContents* source,
+      const content::WebContentsUnresponsiveState& unresponsive_state) override;
   void RendererResponsive(content::WebContents* source) override;
   bool HandleContextMenu(const content::ContextMenuParams& params) override;
   bool OnGoToEntryOffset(int offset) override;
@@ -275,6 +290,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
+  void RenderViewCreated(content::RenderViewHost*) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
   void DocumentLoadedInFrame(
@@ -291,7 +307,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidGetResourceResponseStart(
       const content::ResourceRequestDetails& details) override;
   void DidGetRedirectForResourceRequest(
-      content::RenderFrameHost* render_frame_host,
       const content::ResourceRedirectDetails& details) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
@@ -304,8 +319,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
-  void MediaStartedPlaying(const MediaPlayerId& id) override;
-  void MediaStoppedPlaying(const MediaPlayerId& id) override;
+  void MediaStartedPlaying(const MediaPlayerInfo& video_type,
+                           const MediaPlayerId& id) override;
+  void MediaStoppedPlaying(const MediaPlayerInfo& video_type,
+                           const MediaPlayerId& id) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
   // brightray::InspectableWebContentsDelegate:
@@ -335,6 +352,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // Called when received a synchronous message from renderer to
+  // set temporary zoom level.
+  void OnSetTemporaryZoomLevel(double level, IPC::Message* reply_msg);
+
+  // Called when received a synchronous message from renderer to
+  // get the zoom level.
+  void OnGetZoomLevel(IPC::Message* reply_msg);
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
@@ -343,6 +368,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;
+
+  // The zoom controller for this webContents.
+  WebContentsZoomController* zoom_controller_;
 
   // The type of current WebContents.
   Type type_;

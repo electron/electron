@@ -11,6 +11,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/base/elements_upload_data_stream.h"
 #include "net/base/io_buffer.h"
+#include "net/base/load_flags.h"
 #include "net/base/upload_bytes_element_reader.h"
 
 namespace {
@@ -113,6 +114,8 @@ void AtomURLRequest::DoInitialize(
     return;
   }
   request_->set_method(method);
+  // Do not send cookies from the cookie store.
+  DoSetLoadFlags(net::LOAD_DO_NOT_SEND_COOKIES);
 }
 
 void AtomURLRequest::DoTerminate() {
@@ -175,6 +178,13 @@ void AtomURLRequest::PassLoginInformation(
         content::BrowserThread::IO, FROM_HERE,
         base::Bind(&AtomURLRequest::DoSetAuth, this, username, password));
   }
+}
+
+void AtomURLRequest::SetLoadFlags(int flags) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomURLRequest::DoSetLoadFlags, this, flags));
 }
 
 void AtomURLRequest::DoWriteBuffer(
@@ -244,6 +254,7 @@ void AtomURLRequest::DoSetExtraHeader(const std::string& name,
   }
   request_->SetExtraRequestHeaderByName(name, value, true);
 }
+
 void AtomURLRequest::DoRemoveExtraHeader(const std::string& name) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   if (!request_) {
@@ -276,6 +287,14 @@ void AtomURLRequest::DoCancelWithError(const std::string& error,
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&AtomURLRequest::InformDelegateErrorOccured, this, error,
                  isRequestError));
+}
+
+void AtomURLRequest::DoSetLoadFlags(int flags) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (!request_) {
+    return;
+  }
+  request_->SetLoadFlags(request_->load_flags() | flags);
 }
 
 void AtomURLRequest::OnAuthRequired(net::URLRequest* request,

@@ -119,9 +119,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() = 0;
   virtual void SetAlwaysOnTop(bool top,
-                              const std::string& level = "floating") = 0;
+                              const std::string& level = "floating",
+                              int relativeLevel = 0,
+                              std::string* error = nullptr) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
+  virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;
@@ -161,6 +164,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
+  virtual void SetAutoHideCursor(bool auto_hide);
+
   // Vibrancy API
   virtual void SetVibrancy(const std::string& type);
 
@@ -179,8 +184,11 @@ class NativeWindow : public base::SupportsUserData,
   double GetAspectRatio();
   gfx::Size GetAspectRatioExtraSize();
   virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
+
+  // File preview APIs.
   virtual void PreviewFile(const std::string& path,
                            const std::string& display_name);
+  virtual void CloseFilePreview();
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

@@ -41,13 +41,14 @@
 #include "atom/browser/ui/x/window_state_watcher.h"
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/ui/libgtk2ui/unity_service.h"
+#include "chrome/browser/ui/libgtkui/unity_service.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
+#include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
@@ -204,8 +205,7 @@ NativeWindowViews::NativeWindowViews(
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget =
-      new views::DesktopNativeWidgetAura(window_.get());
+  params.native_widget = new AtomDesktopNativeWidgetAura(window_.get());
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
       this,
       window_.get(),
@@ -426,7 +426,7 @@ bool NativeWindowViews::IsEnabled() {
 void NativeWindowViews::Maximize() {
 #if defined(OS_WIN)
   // For window without WS_THICKFRAME style, we can not call Maximize().
-  if (!thick_frame_) {
+  if (!(::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME)) {
     restore_bounds_ = GetBounds();
     auto display =
         display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
@@ -444,7 +444,7 @@ void NativeWindowViews::Maximize() {
 
 void NativeWindowViews::Unmaximize() {
 #if defined(OS_WIN)
-  if (!thick_frame_) {
+  if (!(::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME)) {
     SetBounds(restore_bounds_, false);
     return;
   }
@@ -488,6 +488,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   }
 
   // For window without WS_THICKFRAME style, we can not call SetFullscreen().
+  // This path will be used for transparent windows as well.
   if (!thick_frame_) {
     if (fullscreen) {
       restore_bounds_ = GetBounds();
@@ -572,7 +573,7 @@ void NativeWindowViews::SetContentSizeConstraints(
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  if (thick_frame_)
+  if (has_frame())
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #elif defined(USE_X11)
   if (resizable != resizable_) {
@@ -595,11 +596,10 @@ void NativeWindowViews::SetResizable(bool resizable) {
 
 bool NativeWindowViews::IsResizable() {
 #if defined(OS_WIN)
-  if (thick_frame_) {
+  if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
-  } else {
+  else
     return CanResize();
-  }
 #else
   return CanResize();
 #endif
@@ -682,7 +682,8 @@ bool NativeWindowViews::IsClosable() {
 #endif
 }
 
-void NativeWindowViews::SetAlwaysOnTop(bool top, const std::string& level) {
+void NativeWindowViews::SetAlwaysOnTop(bool top, const std::string& level,
+                                       int relativeLevel, std::string* error) {
   window_->SetAlwaysOnTop(top);
 }
 
@@ -692,6 +693,10 @@ bool NativeWindowViews::IsAlwaysOnTop() {
 
 void NativeWindowViews::Center() {
   window_->CenterWindow(GetSize());
+}
+
+void NativeWindowViews::Invalidate() {
+  window_->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
 }
 
 void NativeWindowViews::SetTitle(const std::string& title) {

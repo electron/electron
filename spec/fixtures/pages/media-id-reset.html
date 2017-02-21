@@ -1,0 +1,9 @@
+<script>
+  const {ipcRenderer} = require('electron')
+  navigator.mediaDevices.enumerateDevices().then((devices) => {
+    return devices.map((device) => device.deviceId)
+                  .filter((deviceId) => deviceId !== "default")
+  }).then((deviceIds) => {
+    ipcRenderer.send('deviceIds', deviceIds)
+  })
+</script>

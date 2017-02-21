@@ -45,6 +45,8 @@ template<>
 struct Converter<content::NativeWebKeyboardEvent> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      content::NativeWebKeyboardEvent* out);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const content::NativeWebKeyboardEvent& in);
 };
 
 template<>

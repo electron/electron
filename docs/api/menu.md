@@ -2,7 +2,7 @@
 
 > Create native application menus and context menus.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 ### `new Menu()`
 
@@ -138,6 +138,9 @@ const template = [
     submenu: [
       {
         role: 'reload'
+      },
+      {
+        role: 'forcereload'
       },
       {
         role: 'toggledevtools'

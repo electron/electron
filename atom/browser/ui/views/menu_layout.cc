@@ -6,6 +6,7 @@
 
 #if defined(OS_WIN)
 #include "atom/browser/native_window_views.h"
+#include "ui/display/win/screen_win.h"
 #endif
 
 namespace atom {
@@ -13,13 +14,17 @@ namespace atom {
 namespace {
 
 #if defined(OS_WIN)
-gfx::Rect SubstractBorderSize(gfx::Rect bounds) {
-  int border_width = GetSystemMetrics(SM_CXSIZEFRAME) - 1;
-  int border_height = GetSystemMetrics(SM_CYSIZEFRAME) - 1;
-  bounds.set_x(bounds.x() + border_width);
-  bounds.set_y(bounds.y() + border_height);
-  bounds.set_width(bounds.width() - 2 * border_width);
-  bounds.set_height(bounds.height() - 2 * border_height);
+gfx::Rect SubtractBorderSize(gfx::Rect bounds) {
+  gfx::Point borderSize = gfx::Point(
+      GetSystemMetrics(SM_CXSIZEFRAME) - 1,   // width
+      GetSystemMetrics(SM_CYSIZEFRAME) - 1);  // height
+  gfx::Point dpiAdjustedSize =
+      display::win::ScreenWin::ScreenToDIPPoint(borderSize);
+
+  bounds.set_x(bounds.x() + dpiAdjustedSize.x());
+  bounds.set_y(bounds.y() + dpiAdjustedSize.y());
+  bounds.set_width(bounds.width() - 2 * dpiAdjustedSize.x());
+  bounds.set_height(bounds.height() - 2 * dpiAdjustedSize.y());
   return bounds;
 }
 #endif
@@ -39,7 +44,7 @@ void MenuLayout::Layout(views::View* host) {
   // Reserve border space for maximized frameless window so we won't have the
   // content go outside of screen.
   if (!window_->has_frame() && window_->IsMaximized()) {
-    gfx::Rect bounds = SubstractBorderSize(host->GetContentsBounds());
+    gfx::Rect bounds = SubtractBorderSize(host->GetContentsBounds());
     host->child_at(0)->SetBoundsRect(bounds);
     return;
   }

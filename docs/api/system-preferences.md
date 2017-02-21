@@ -2,7 +2,7 @@
 
 > Get system preferences.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 ```javascript
 const {systemPreferences} = require('electron')
@@ -18,7 +18,7 @@ The `systemPreferences` object emits the following events:
 Returns:
 
 * `event` Event
-* `newColor` String - The new RGBA color the user assigned to be there system
+* `newColor` String - The new RGBA color the user assigned to be their system
   accent color.
 
 ### Event: 'color-changed' _Windows_
@@ -114,16 +114,30 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificati
 
 Get the value of `key` in system preferences.
 
-This API reads from `NSUserDefaults` on macOS, some popular `key` and `type`s
-are:
+This API uses `NSUserDefaults` on macOS. Some popular `key` and `type`s are:
 
-* `AppleInterfaceStyle: string`
-* `AppleAquaColorVariant: integer`
-* `AppleHighlightColor: string`
-* `AppleShowScrollBars: string`
-* `NSNavRecentPlaces: array`
-* `NSPreferredWebServices: dictionary`
-* `NSUserDictionaryReplacementItems: array`
+* `AppleInterfaceStyle`:  `string`
+* `AppleAquaColorVariant`:  `integer`
+* `AppleHighlightColor`:  `string`
+* `AppleShowScrollBars`:  `string`
+* `NSNavRecentPlaces`:  `array`
+* `NSPreferredWebServices`:  `dictionary`
+* `NSUserDictionaryReplacementItems`:  `array`
+
+### `systemPreferences.setUserDefault(key, type, value)` _macOS_
+
+* `key` String
+* `type` String - See [`getUserDefault`][#systempreferencesgetuserdefaultkey-type-macos]
+* `value` String
+
+Set the value of `key` in system preferences.
+
+Note that `type` should match actual type of `value`. An exception is thrown
+if they don't.
+
+This API uses `NSUserDefaults` on macOS. Some popular `key` and `type`s are:
+
+* `ApplePressAndHoldEnabled`:  `boolean`
 
 ### `systemPreferences.isAeroGlassEnabled()` _Windows_
 

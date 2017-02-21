@@ -60,17 +60,19 @@ void CrashReporterLinux::InitBreakpad(const std::string& product_name,
                                       const std::string& company_name,
                                       const std::string& submit_url,
                                       const base::FilePath& crashes_dir,
-                                      bool auto_submit,
+                                      bool upload_to_server,
                                       bool skip_system_crash_handler) {
   EnableCrashDumping(crashes_dir);
 
-  crash_keys_.SetKeyValue("prod", ATOM_PRODUCT_NAME);
-  crash_keys_.SetKeyValue("ver", version.c_str());
+  crash_keys_.reset(new CrashKeyStorage());
+
+  crash_keys_->SetKeyValue("prod", ATOM_PRODUCT_NAME);
+  crash_keys_->SetKeyValue("ver", version.c_str());
   upload_url_ = submit_url;
 
   for (StringMap::const_iterator iter = upload_parameters_.begin();
        iter != upload_parameters_.end(); ++iter)
-    crash_keys_.SetKeyValue(iter->first.c_str(), iter->second.c_str());
+    crash_keys_->SetKeyValue(iter->first.c_str(), iter->second.c_str());
 }
 
 void CrashReporterLinux::SetUploadParameters() {
@@ -120,7 +122,7 @@ bool CrashReporterLinux::CrashDone(const MinidumpDescriptor& minidump,
   info.oom_size = base::g_oom_size;
   info.pid = self->pid_;
   info.upload_url = self->upload_url_.c_str();
-  info.crash_keys = &self->crash_keys_;
+  info.crash_keys = self->crash_keys_.get();
   HandleCrashDump(info);
   return true;
 }

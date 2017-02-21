@@ -20,6 +20,11 @@ display primarily local content (or trusted, secure remote content without Node
 integration) – if your application executes code from an online source, it is
 your responsibility to ensure that the code is not malicious.
 
+## Reporting Security Issues
+
+For information on how to properly disclose an Electron vulnerability,
+see [SECURITY.md](https://github.com/electron/electron/tree/master/SECURITY.md)
+
 ## Chromium Security Issues and Upgrades
 
 While Electron strives to support new versions of Chromium as soon as possible,
@@ -55,13 +60,15 @@ This is not bulletproof, but at the least, you should attempt the following:
 
 * Only display secure (https) content
 * Disable the Node integration in all renderers that display remote content
-  (using `webPreferences`)
+  (setting `nodeIntegration` to `false` in `webPreferences`)
+* Enable context isolation in all renderers that display remote content
+  (setting `contextIsolation` to `true` in `webPreferences`)
+* Use `ses.setPermissionRequestHandler()` in all sessions that load remote content
 * Do not disable `webSecurity`. Disabling it will disable the same-origin policy.
 * Define a [`Content-Security-Policy`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/)
 , and use restrictive rules (i.e. `script-src 'self'`)
 * [Override and disable `eval`](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6-L8)
 , which allows strings to be executed as code.
-* Do not set `allowDisplayingInsecureContent` to true.
 * Do not set `allowRunningInsecureContent` to true.
 * Do not enable `experimentalFeatures` or `experimentalCanvasFeatures` unless
   you know what you're doing.
@@ -73,22 +80,3 @@ This is not bulletproof, but at the least, you should attempt the following:
 
 Again, this list merely minimizes the risk, it does not remove it. If your goal
 is to display a website, a browser will be a more secure option.
-
-## Buffer Global
-
-Node's [Buffer](https://nodejs.org/api/buffer.html) class is currently available
-as a global even when the `nodeintegration` attribute is not added. You can
-delete this in your app by doing the following in your `preload` script:
-
-```js
-delete global.Buffer
-```
-
-Deleting it may break Node modules used in your preload script and app since
-many libraries expect it to be a global instead of requiring it directly via:
-
-```js
-const {Buffer} = require('buffer')
-```
-
-The `Buffer` global may be removed in future major versions of Electron.

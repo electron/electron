@@ -28,7 +28,7 @@ class CrashReporterWin : public CrashReporter {
                     const std::string& company_name,
                     const std::string& submit_url,
                     const base::FilePath& crashes_dir,
-                    bool auto_submit,
+                    bool upload_to_server,
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
 

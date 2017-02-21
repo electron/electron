@@ -57,6 +57,7 @@ class NativeWindowMac : public NativeWindow,
     override;
   void PreviewFile(const std::string& path, const std::string& display_name)
     override;
+  void CloseFilePreview() override;
   bool IsMovable() override;
   void SetMinimizable(bool minimizable) override;
   bool IsMinimizable() override;
@@ -66,9 +67,11 @@ class NativeWindowMac : public NativeWindow,
   bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
-  void SetAlwaysOnTop(bool top, const std::string& level) override;
+  void SetAlwaysOnTop(bool top, const std::string& level,
+                      int relativeLevel, std::string* error) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
+  void Invalidate() override;
   void SetTitle(const std::string& title) override;
   std::string GetTitle() override;
   void FlashFrame(bool flash) override;
@@ -90,8 +93,12 @@ class NativeWindowMac : public NativeWindow,
   void SetProgressBar(double progress, const ProgressState state) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
+
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
+
+  void SetAutoHideCursor(bool auto_hide) override;
+
   void SetVibrancy(const std::string& type) override;
 
   // content::RenderWidgetHost::InputEventObserver:
@@ -156,6 +163,8 @@ class NativeWindowMac : public NativeWindow,
   std::vector<DraggableRegion> draggable_regions_;
 
   bool is_kiosk_;
+
+  bool was_fullscreen_;
 
   bool zoom_to_page_width_;
 

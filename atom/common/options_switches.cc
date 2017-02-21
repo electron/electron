@@ -99,7 +99,10 @@ const char kPreloadURL[] = "preloadURL";
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
-// Instancd ID of guest WebContents.
+// Enable context isolation of Electron APIs and preload script
+const char kContextIsolation[] = "contextIsolation";
+
+// Instance ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
 
 // Web runtime features.
@@ -144,25 +147,22 @@ const char kStandardSchemes[] = "standard-schemes";
 // Register schemes to handle service worker.
 const char kRegisterServiceWorkerSchemes[] = "register-service-worker-schemes";
 
-// The minimum SSL/TLS version ("tls1", "tls1.1", or "tls1.2") that
-// TLS fallback will accept.
-const char kSSLVersionFallbackMin[] = "ssl-version-fallback-min";
-
-// Comma-separated list of SSL cipher suites to disable.
-const char kCipherSuiteBlacklist[] = "cipher-suite-blacklist";
+// Register schemes as secure.
+const char kSecureSchemes[] = "secure-schemes";
 
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
 
 // The command line switch versions of the options.
-const char kBackgroundColor[] = "background-color";
-const char kZoomFactor[]      = "zoom-factor";
-const char kPreloadScript[]   = "preload";
-const char kPreloadURL[]      = "preload-url";
-const char kNodeIntegration[] = "node-integration";
-const char kGuestInstanceID[] = "guest-instance-id";
-const char kOpenerID[]        = "opener-id";
-const char kScrollBounce[]    = "scroll-bounce";
+const char kBackgroundColor[]  = "background-color";
+const char kPreloadScript[]    = "preload";
+const char kPreloadURL[]       = "preload-url";
+const char kNodeIntegration[]  = "node-integration";
+const char kContextIsolation[] = "context-isolation";
+const char kGuestInstanceID[]  = "guest-instance-id";
+const char kOpenerID[]         = "opener-id";
+const char kScrollBounce[]     = "scroll-bounce";
+const char kHiddenPage[]       = "hidden-page";
 
 // Widevine options
 // Path to Widevine CDM binaries.

@@ -4,6 +4,7 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
+#include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -17,6 +18,8 @@
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebCache.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
+#include "third_party/WebKit/public/web/WebFrameWidget.h"
+#include "third_party/WebKit/public/web/WebInputMethodController.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebScriptExecutionCallback.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
@@ -70,13 +73,21 @@ void WebFrame::SetName(const std::string& name) {
 }
 
 double WebFrame::SetZoomLevel(double level) {
-  double ret = web_frame_->view()->setZoomLevel(level);
-  mate::EmitEvent(isolate(), GetWrapper(), "zoom-level-changed", ret);
-  return ret;
+  double result = 0.0;
+  content::RenderView* render_view =
+      content::RenderView::FromWebView(web_frame_->view());
+  render_view->Send(new AtomViewHostMsg_SetTemporaryZoomLevel(
+      render_view->GetRoutingID(), level, &result));
+  return result;
 }
 
 double WebFrame::GetZoomLevel() const {
-  return web_frame_->view()->zoomLevel();
+  double result = 0.0;
+  content::RenderView* render_view =
+      content::RenderView::FromWebView(web_frame_->view());
+  render_view->Send(
+      new AtomViewHostMsg_GetZoomLevel(render_view->GetRoutingID(), &result));
+  return result;
 }
 
 double WebFrame::SetZoomFactor(double factor) {
@@ -133,6 +144,7 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
 }
 
 void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
+  // TODO(pfrazee): Remove 2.0
   // Register scheme to secure list (https, wss, data).
   blink::WebSecurityPolicy::registerURLSchemeAsSecure(
       blink::WebString::fromUTF8(scheme));
@@ -165,6 +177,7 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
   // Register scheme to privileged list (https, wss, data, chrome-extension)
   blink::WebString privileged_scheme(blink::WebString::fromUTF8(scheme));
   if (secure) {
+    // TODO(pfrazee): Remove 2.0
     blink::WebSecurityPolicy::registerURLSchemeAsSecure(privileged_scheme);
   }
   if (bypassCSP) {
@@ -185,7 +198,13 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
 }
 
 void WebFrame::InsertText(const std::string& text) {
-  web_frame_->insertText(blink::WebString::fromUTF8(text));
+  web_frame_->frameWidget()
+            ->getActiveWebInputMethodController()
+            ->commitText(blink::WebString::fromUTF8(text), 0);
+}
+
+void WebFrame::InsertCSS(const std::string& css) {
+  web_frame_->document().insertStyleSheet(blink::WebString::fromUTF8(css));
 }
 
 void WebFrame::ExecuteJavaScript(const base::string16& code,
@@ -249,6 +268,7 @@ void WebFrame::BuildPrototype(
       .SetMethod("registerURLSchemeAsPrivileged",
                  &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
+      .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)

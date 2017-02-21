@@ -144,6 +144,91 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   }
 }
 
+void SystemPreferences::SetUserDefault(const std::string& name,
+                                       const std::string& type,
+                                       mate::Arguments* args) {
+  const auto throwConversionError = [&] {
+    args->ThrowError("Unable to convert value to: " + type);
+  };
+
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  NSString* key = base::SysUTF8ToNSString(name);
+  if (type == "string") {
+    std::string value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setObject:base::SysUTF8ToNSString(value) forKey:key];
+  } else if (type == "boolean") {
+    bool value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setBool:value forKey:key];
+  } else if (type == "float") {
+    float value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setFloat:value forKey:key];
+  } else if (type == "integer") {
+    int value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setInteger:value forKey:key];
+  } else if (type == "double") {
+    double value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setDouble:value forKey:key];
+  } else if (type == "url") {
+    GURL value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    if (NSURL* url = net::NSURLWithGURL(value)) {
+      [defaults setURL:url forKey:key];
+    }
+  } else if (type == "array") {
+    base::ListValue value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    if (NSArray* array = ListValueToNSArray(value)) {
+      [defaults setObject:array forKey:key];
+    }
+  } else if (type == "dictionary") {
+    base::DictionaryValue value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    if (NSDictionary* dict = DictionaryValueToNSDictionary(value)) {
+      [defaults setObject:dict forKey:key];
+    }
+  } else {
+    args->ThrowError("Invalid type: " + type);
+    return;
+  }
+}
+
 bool SystemPreferences::IsDarkMode() {
   NSString* mode = [[NSUserDefaults standardUserDefaults]
       stringForKey:@"AppleInterfaceStyle"];

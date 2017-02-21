@@ -4,6 +4,8 @@
 
 #include "atom/browser/osr/osr_web_contents_view.h"
 
+#include "third_party/WebKit/public/platform/WebScreenInfo.h"
+
 namespace atom {
 
 OffScreenWebContentsView::OffScreenWebContentsView(
@@ -106,6 +108,18 @@ void OffScreenWebContentsView::RenderViewSwappedIn(
 void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {
 }
 
+void OffScreenWebContentsView::GetScreenInfo(
+    content::ScreenInfo* screen_info) const {
+  screen_info->rect = gfx::Rect(view_->size());
+  screen_info->available_rect = gfx::Rect(view_->size());
+  screen_info->depth = 24;
+  screen_info->depth_per_component = 8;
+  screen_info->device_scale_factor = view_->scale_factor();
+  screen_info->orientation_angle = 0;
+  screen_info->orientation_type =
+      content::SCREEN_ORIENTATION_VALUES_LANDSCAPE_PRIMARY;
+}
+
 #if defined(OS_MACOSX)
 void OffScreenWebContentsView::SetAllowOtherViews(bool allow) {
 }
@@ -127,9 +141,10 @@ void OffScreenWebContentsView::StartDragging(
     blink::WebDragOperationsMask allowed_ops,
     const gfx::ImageSkia& image,
     const gfx::Vector2d& image_offset,
-    const content::DragEventSourceInfo& event_info) {
+    const content::DragEventSourceInfo& event_info,
+    content::RenderWidgetHostImpl* source_rwh) {
   if (web_contents_)
-    web_contents_->SystemDragEnded();
+    web_contents_->SystemDragEnded(source_rwh);
 }
 
 void OffScreenWebContentsView::UpdateDragCursor(

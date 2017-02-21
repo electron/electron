@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '1.4.10',
+    'version%': '1.6.0',
     'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
   },
   'includes': [
@@ -223,8 +223,12 @@
         'GLIB_DISABLE_DEPRECATION_WARNINGS',
         # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
+        'V8_SHARED',
+        'USING_V8_SHARED',
+        'USING_V8_PLATFORM_SHARED',
+        'USING_V8_BASE_SHARED',
+        # Remove this after enable_plugins becomes a feature flag.
         'ENABLE_PLUGINS',
-        'ENABLE_PEPPER_CDMS',
         'USE_PROPRIETARY_CODECS',
       ],
       'sources': [
@@ -324,6 +328,7 @@
         }],  # OS=="mac" and mas_build==1
         ['OS=="linux"', {
           'sources': [
+            '<@(lib_sources_linux)',
             '<@(lib_sources_nss)',
           ],
           'link_settings': {
@@ -433,7 +438,7 @@
       ],
       'actions': [
         {
-          'action_name': 'atom_browserify',
+          'action_name': 'atom_browserify_sandbox',
           'inputs': [
             '<@(browserify_entries)',
           ],
@@ -450,7 +455,26 @@
             '-o',
             '<@(_outputs)',
           ],
-        }
+        },
+        {
+          'action_name': 'atom_browserify_isolated_context',
+          'inputs': [
+            '<@(isolated_context_browserify_entries)',
+          ],
+          'outputs': [
+            '<(js2c_input_dir)/isolated_bundle.js',
+          ],
+          'action': [
+            'npm',
+            'run',
+            '--silent',
+            'browserify',
+            '--',
+            'lib/isolated_renderer/init.js',
+            '-o',
+            '<@(_outputs)',
+          ],
+        },
       ],
     },  # target atom_browserify
     {
@@ -467,6 +491,7 @@
             # List all input files that should trigger a rebuild with js2c
             '<@(js2c_sources)',
             '<(js2c_input_dir)/preload_bundle.js',
+            '<(js2c_input_dir)/isolated_bundle.js',
           ],
           'outputs': [
             '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
@@ -560,16 +585,6 @@
                 '-change',
                 '/usr/local/lib/libnode.dylib',
                 '@rpath/libnode.dylib',
-                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
-              ],
-            },
-            {
-              'postbuild_name': 'Fix path of ffmpeg',
-              'action': [
-                'install_name_tool',
-                '-change',
-                '/usr/local/lib/libffmpeg.dylib',
-                '@rpath/libffmpeg.dylib',
                 '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
               ],
             },

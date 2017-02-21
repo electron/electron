@@ -15,6 +15,7 @@
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "base/command_line.h"
+#include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_view.h"
@@ -122,6 +123,7 @@ AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {
 void AtomSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new AtomSandboxedRenderFrameObserver(render_frame, this);
+  new printing::PrintWebViewHelper(render_frame);
 }
 
 void AtomSandboxedRendererClient::RenderViewCreated(
@@ -142,8 +144,8 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   v8::Context::Scope context_scope(context);
   // Wrap the bundle into a function that receives the binding object and the
   // preload script path as arguments.
-  std::string preload_bundle_native(node::preload_bundle_native,
-      node::preload_bundle_native + sizeof(node::preload_bundle_native));
+  std::string preload_bundle_native(node::preload_bundle_data,
+      node::preload_bundle_data + sizeof(node::preload_bundle_data));
   std::stringstream ss;
   ss << "(function(binding, preloadPath) {\n";
   ss << preload_bundle_native << "\n";

@@ -35,7 +35,7 @@ and displays a "loading..." message during the load time:
 ```html
 <script>
   onload = () => {
-    const webview = document.getElementById('foo')
+    const webview = document.querySelector('webview')
     const indicator = document.querySelector('.indicator')
 
     const loadstart = () => {
@@ -103,14 +103,15 @@ The `src` attribute can also accept data URLs, such as
 ### `autosize`
 
 ```html
-<webview src="https://www.github.com/" autosize="on" minwidth="576" minheight="432"></webview>
+<webview src="https://www.github.com/" autosize minwidth="576" minheight="432"></webview>
 ```
 
-If "on", the `webview` container will automatically resize within the
-bounds specified by the attributes `minwidth`, `minheight`, `maxwidth`, and
-`maxheight`. These constraints do not impact the `webview` unless `autosize` is
-enabled. When `autosize` is enabled, the `webview` container size cannot be less
-than the minimum values or greater than the maximum.
+When this attribute is present the `webview` container will automatically resize
+within the bounds specified by the attributes `minwidth`, `minheight`,
+`maxwidth`, and `maxheight`. These constraints do not impact the `webview`
+unless `autosize` is enabled. When `autosize` is enabled, the `webview`
+container size cannot be less than the minimum values or greater than the
+maximum.
 
 ### `nodeintegration`
 
@@ -118,8 +119,10 @@ than the minimum values or greater than the maximum.
 <webview src="http://www.google.com/" nodeintegration></webview>
 ```
 
-If "on", the guest page in `webview` will have node integration and can use node
-APIs like `require` and `process` to access low level system resources.
+When this attribute is present the guest page in `webview` will have node
+integration and can use node APIs like `require` and `process` to access low
+level system resources. Node integration is disabled by default in the guest
+page.
 
 ### `plugins`
 
@@ -127,7 +130,8 @@ APIs like `require` and `process` to access low level system resources.
 <webview src="https://www.github.com/" plugins></webview>
 ```
 
-If "on", the guest page in `webview` will be able to use browser plugins.
+When this attribute is present the guest page in `webview` will be able to use
+browser plugins. Plugins are disabled by default.
 
 ### `preload`
 
@@ -166,7 +170,8 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 <webview src="https://www.github.com/" disablewebsecurity></webview>
 ```
 
-If "on", the guest page will have web security disabled.
+When this attribute is present the guest page will have web security disabled.
+Web security is enabled by default.
 
 ### `partition`
 
@@ -192,12 +197,13 @@ value will fail with a DOM exception.
 <webview src="https://www.github.com/" allowpopups></webview>
 ```
 
-If "on", the guest page will be allowed to open new windows.
+When this attribute is present the guest page will be allowed to open new
+windows. Popups are disabled by default.
 
 ### `webpreferences`
 
 ```html
-<webview src="https://github.com" webpreferences="allowDisplayingInsecureContent, javascript=no"></webview>
+<webview src="https://github.com" webpreferences="allowRunningInsecureContent, javascript=no"></webview>
 ```
 
 A list of strings which specifies the web preferences to be set on the webview, separated by `,`.
@@ -249,8 +255,8 @@ webContents when a new url is loaded.
 <webview src="https://www.github.com/" disableguestresize></webview>
 ```
 
-Prevents the webview contents from resizing when the webview element itself is
-resized.
+When this attribute is present the `webview` contents will be prevented from
+resizing when the `webview` element itself is resized.
 
 This can be used in combination with
 [`webContents.setSize`](web-contents.md#contentssetsizeoptions) to manually
@@ -290,7 +296,7 @@ The `webview` tag has the following methods:
 **Example**
 
 ```javascript
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('dom-ready', () => {
   webview.openDevTools()
 })
@@ -515,12 +521,12 @@ Inserts `text` to the focused element.
 
 Starts a request to find all matches for the `text` in the web page and returns an `Integer`
 representing the request id used for the request. The result of the request can be
-obtained by subscribing to [`found-in-page`](web-view-tag.md#event-found-in-page) event.
+obtained by subscribing to [`found-in-page`](webview-tag.md#event-found-in-page) event.
 
 ### `<webview>.stopFindInPage(action)`
 
 * `action` String - Specifies the action to take place when ending
-  [`<webview>.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
+  [`<webview>.findInPage`](webview-tag.md#webviewtagfindinpage) request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
@@ -581,7 +587,8 @@ Shows pop-up dictionary that searches the selected word on the page.
 
 ### `<webview>.getWebContents()`
 
-Returns `WebContents` - The [WebContents](web-contents.md) associated with this `webview`.
+Returns [`WebContents`](web-contents.md) - The web contents associated with
+this `webview`.
 
 ## DOM events
 
@@ -702,7 +709,7 @@ The following example code forwards all log messages to the embedder's console
 without regard for log level or other properties.
 
 ```javascript
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('console-message', (e) => {
   console.log('Guest page logged a message:', e.message)
 })
@@ -719,10 +726,10 @@ Returns:
   * `selectionArea` Object - Coordinates of first match region.
 
 Fired when a result is available for
-[`webview.findInPage`](web-view-tag.md#webviewtagfindinpage) request.
+[`webview.findInPage`](webview-tag.md#webviewtagfindinpage) request.
 
 ```javascript
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('found-in-page', (e) => {
   webview.stopFindInPage('keepSelection')
 })
@@ -748,7 +755,7 @@ The following example code opens the new url in system's default browser.
 
 ```javascript
 const {shell} = require('electron')
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 
 webview.addEventListener('new-window', (e) => {
   const protocol = require('url').parse(e.url).protocol
@@ -809,7 +816,7 @@ The following example code navigates the `webview` to `about:blank` when the
 guest attempts to close itself.
 
 ```javascript
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('close', () => {
   webview.src = 'about:blank'
 })
@@ -829,7 +836,7 @@ between guest page and embedder page:
 
 ```javascript
 // In embedder page.
-const webview = document.getElementById('foo')
+const webview = document.querySelector('webview')
 webview.addEventListener('ipc-message', (event) => {
   console.log(event.channel)
   // Prints "pong"

@@ -38,28 +38,13 @@ class MacHelper :
     return color;
   }
 
-  void BrowserCompositorMacSendCompositorSwapAck(
-      int output_surface_id,
-      const cc::CompositorFrameAck& ack) override {
-    view_->render_widget_host()->Send(new ViewMsg_SwapCompositorFrameAck(
-        view_->render_widget_host()->GetRoutingID(), output_surface_id, ack));
-  }
-
   void BrowserCompositorMacSendReclaimCompositorResources(
       int output_surface_id,
-      const cc::CompositorFrameAck& ack) override {
+      bool is_swap_ack,
+      const cc::ReturnedResourceArray& resources) override {
     view_->render_widget_host()->Send(new ViewMsg_ReclaimCompositorResources(
-        view_->render_widget_host()->GetRoutingID(), output_surface_id, ack));
-  }
-
-  void BrowserCompositorMacOnLostCompositorResources() override {
-    view_->render_widget_host()->ScheduleComposite();
-  }
-
-  void BrowserCompositorMacUpdateVSyncParameters(
-      const base::TimeTicks& timebase,
-      const base::TimeDelta& interval) override {
-    view_->render_widget_host()->UpdateVSyncParameters(timebase, interval);
+        view_->render_widget_host()->GetRoutingID(), output_surface_id,
+        is_swap_ack, resources));
   }
 
   void BrowserCompositorMacSendBeginFrame(

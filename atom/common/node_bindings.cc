@@ -15,8 +15,10 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
-#include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
+#include "base/run_loop.h"
+#include "base/threading/thread_task_runner_handle.h"
+#include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "native_mate/dictionary.h"
@@ -62,14 +64,6 @@ REFERENCE_MODULE(atom_renderer_ipc);
 REFERENCE_MODULE(atom_renderer_web_frame);
 #undef REFERENCE_MODULE
 
-// The "v8::Function::kLineOffsetNotFound" is exported in node.dll, but the
-// linker can not find it, could be a bug of VS.
-#if defined(OS_WIN) && !defined(DEBUG)
-namespace v8 {
-const int Function::kLineOffsetNotFound = -1;
-}
-#endif
-
 namespace atom {
 
 namespace {
@@ -106,7 +100,6 @@ base::FilePath GetResourcesPath(bool is_browser) {
 
 NodeBindings::NodeBindings(bool is_browser)
     : is_browser_(is_browser),
-      message_loop_(nullptr),
       uv_loop_(uv_default_loop()),
       embed_closed_(false),
       uv_env_(nullptr),
@@ -167,12 +160,16 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
-      context->GetIsolate(), uv_default_loop(), context,
+      new node::IsolateData(context->GetIsolate(), uv_default_loop()), context,
       args.size(), c_argv.get(), 0, nullptr);
 
-  // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should switch
-  // to use the scoped policy to match blink's behavior.
-  if (!is_browser_) {
+  if (is_browser_) {
+    // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
+    // so instead call it here to match expected node behavior
+    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+  } else {
+    // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should
+    // switch to use the scoped policy to match blink's behavior.
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
   }
 
@@ -217,7 +214,7 @@ void NodeBindings::RunMessageLoop() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   // The MessageLoop should have been created, remember the one in main thread.
-  message_loop_ = base::MessageLoop::current();
+  task_runner_ = base::ThreadTaskRunnerHandle::Get();
 
   // Run uv loop for once to give the uv__io_poll a chance to add all events.
   UvRunOnce();
@@ -239,19 +236,26 @@ void NodeBindings::UvRunOnce() {
   v8::MicrotasksScope script_scope(env->isolate(),
                                    v8::MicrotasksScope::kRunMicrotasks);
 
+  if (!is_browser_)
+    TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
+
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+
+  if (!is_browser_)
+    TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
+
   if (r == 0)
-    message_loop_->QuitWhenIdle();  // Quit from uv.
+    base::RunLoop().QuitWhenIdle();  // Quit from uv.
 
   // Tell the worker thread to continue polling.
   uv_sem_post(&embed_sem_);
 }
 
 void NodeBindings::WakeupMainThread() {
-  DCHECK(message_loop_);
-  message_loop_->PostTask(FROM_HERE, base::Bind(&NodeBindings::UvRunOnce,
-                                                weak_factory_.GetWeakPtr()));
+  DCHECK(task_runner_);
+  task_runner_->PostTask(FROM_HERE, base::Bind(&NodeBindings::UvRunOnce,
+                                               weak_factory_.GetWeakPtr()));
 }
 
 void NodeBindings::WakeupEmbedThread() {

@@ -7,8 +7,8 @@
 #include "atom/browser/browser.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/ui/libgtk2ui/app_indicator_icon.h"
-#include "chrome/browser/ui/libgtk2ui/gtk2_status_icon.h"
+#include "chrome/browser/ui/libgtkui/app_indicator_icon.h"
+#include "chrome/browser/ui/libgtkui/gtk_status_icon.h"
 #include "ui/gfx/image/image.h"
 
 namespace atom {
@@ -33,15 +33,15 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
   }
 
   base::string16 empty;
-  if (libgtk2ui::AppIndicatorIcon::CouldOpen()) {
+  if (libgtkui::AppIndicatorIcon::CouldOpen()) {
     ++indicators_count;
-    icon_.reset(new libgtk2ui::AppIndicatorIcon(
+    icon_.reset(new libgtkui::AppIndicatorIcon(
         base::StringPrintf(
             "%s%d", Browser::Get()->GetName().c_str(), indicators_count),
         image.AsImageSkia(),
         empty));
   } else {
-    icon_.reset(new libgtk2ui::Gtk2StatusIcon(image.AsImageSkia(), empty));
+    icon_.reset(new libgtkui::Gtk2StatusIcon(image.AsImageSkia(), empty));
   }
   icon_->set_delegate(this);
 }

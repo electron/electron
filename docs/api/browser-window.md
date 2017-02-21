@@ -2,7 +2,7 @@
 
 > Create and control browser windows.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 ```javascript
 // In the main process.
@@ -30,8 +30,7 @@ you can use the [Frameless Window](frameless-window.md) API.
 
 ## Showing window gracefully
 
-When loading a page in window directly, users will see the progress of loading
-page, which is not good experience for native app. To make the window display
+When loading a page in the window directly, users may see the page load incrementally, which is not a good experience for a native app. To make the window display
 without visual flash, there are two solutions for different situations.
 
 ### Using `ready-to-show` event
@@ -48,7 +47,7 @@ win.once('ready-to-show', () => {
 })
 ```
 
-This is event is usually emitted after the `did-finish-load` event, but for
+This event is usually emitted after the `did-finish-load` event, but for
 pages with many remote resources, it may be emitted before the `did-finish-load`
 event.
 
@@ -100,6 +99,7 @@ child.once('ready-to-show', () => {
 
 ### Platform notices
 
+* On macOS modal windows will be displayed as sheets attached to the parent window.
 * On macOS the child windows will keep the relative position to parent window
   when parent window moves, while on Windows and Linux child windows will not
   move.
@@ -111,7 +111,7 @@ child.once('ready-to-show', () => {
 
 > Create and control browser windows.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 `BrowserWindow` is an
 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
@@ -202,10 +202,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
-  * `vibrancy` String - Add a type of vibrancy effect to the window, only on
+  * `vibrancy` String (optional) - Add a type of vibrancy effect to the window, only on
     macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
     `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.
-  * `zoomToPageWidth` Boolean - Controls the behavior on macOS when
+  * `zoomToPageWidth` Boolean (optional) - Controls the behavior on macOS when
     option-clicking the green stoplight button on the toolbar or by clicking the
     Window > Zoom menu item. If `true`, the window will grow to the preferred
     width of the web page when zoomed, `false` will cause it to zoom to the
@@ -238,10 +238,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
     * `webSecurity` Boolean (optional) - When `false`, it will disable the
       same-origin policy (usually using testing websites by people), and set
-      `allowDisplayingInsecureContent` and `allowRunningInsecureContent` to
-      `true` if these two options are not set by user. Default is `true`.
-    * `allowDisplayingInsecureContent` Boolean (optional) - Allow an https page to display
-      content like images from http URLs. Default is `false`.
+      `allowRunningInsecureContent` to `true` if this options has not been set
+      by user. Default is `true`.
     * `allowRunningInsecureContent` Boolean (optional) - Allow an https page to run
       JavaScript, CSS or plugins from http URLs. Default is `false`.
     * `images` Boolean (optional) - Enables image support. Default is `true`.
@@ -269,6 +267,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       * `serif` String (optional) - Defaults to `Times New Roman`.
       * `sansSerif` String (optional) - Defaults to `Arial`.
       * `monospace` String (optional) - Defaults to `Courier New`.
+      * `cursive` String (optional) - Defaults to `Script`.
+      * `fantasy` String (optional) - Defaults to `Impact`.
     * `defaultFontSize` Integer (optional) - Defaults to `16`.
     * `defaultMonospaceFontSize` Integer (optional) - Defaults to `13`.
     * `minimumFontSize` Integer (optional) - Defaults to `0`.
@@ -276,8 +276,25 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `backgroundThrottling` Boolean (optional) - Whether to throttle animations and timers
       when the page becomes background. Defaults to `true`.
     * `offscreen` Boolean (optional) - Whether to enable offscreen rendering for the browser
-      window. Defaults to `false`.
+      window. Defaults to `false`. See the
+      [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
+      more details.
     * `sandbox` Boolean (optional) - Whether to enable Chromium OS-level sandbox.
+    * `contextIsolation` Boolean (optional) - Whether to run Electron APIs and
+      the specified `preload` script in a separate JavaScript context. Defaults
+      to `false`. The context that the `preload` script runs in will still
+      have full access to the `document` and `window` globals but it will use
+      its own set of JavaScript builtins (`Array`, `Object`, `JSON`, etc.)
+      and will be isolated from any changes made to the global environment
+      by the loaded page. The Electron API will only be available in the
+      `preload` script and not the loaded page. This option should be used when
+      loading potentially untrusted remote content to ensure the loaded content
+      cannot tamper with the `preload` script and any Electron APIs being used.
+      This option uses the same technique used by [Chrome Content Scripts][chrome-content-scripts].
+      You can access this context in the dev tools by selecting the
+      'Electron Isolated Context' entry in the combo box at the top of the
+      Console tab. **Note:** This option is currently experimental and may
+      change or be removed in future Electron releases.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -682,6 +699,10 @@ height areas you have within the overall content view.
 
 Uses [Quick Look][quick-look] to preview a file at a given path.
 
+#### `win.closeFilePreview()` _macOS_
+
+Closes the currently open [Quick Look][quick-look] panel.
+
 #### `win.setBounds(bounds[, animate])`
 
 * `bounds` [Rectangle](structures/rectangle.md)
@@ -823,13 +844,16 @@ Returns `Boolean` - Whether the window can be manually closed by user.
 
 On Linux always returns `true`.
 
-#### `win.setAlwaysOnTop(flag[, level])`
+#### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
 * `flag` Boolean
 * `level` String (optional) _macOS_ - Values include `normal`, `floating`,
   `torn-off-menu`, `modal-panel`, `main-menu`, `status`, `pop-up-menu`,
-  `screen-saver`, and `dock`. The default is `floating`. See the
+  `screen-saver`, and ~~`dock`~~ (Deprecated). The default is `floating`. See the
   [macOS docs][window-levels] for more details.
+* `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
+  this window relative to the given `level`. The default is `0`. Note that Apple
+  discourages setting levels higher than 1 above `screen-saver`. 
 
 Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
@@ -1000,6 +1024,19 @@ let url = require('url').format({
 win.loadURL(url)
 ```
 
+You can load a URL using a `POST` request with URL-encoded data by doing
+the following:
+
+```javascript
+win.loadURL('http://localhost:8000/post', {
+  postData: [{
+    type: 'rawData',
+    bytes: Buffer.from('hello=world')
+  }],
+  extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
+})
+```
+
 #### `win.reload()`
 
 Same as `webContents.reload`.
@@ -1077,7 +1114,7 @@ The `buttons` is an array of `Button` objects:
     toolbar.
   * `click` Function
   * `tooltip` String (optional) - The text of the button's tooltip.
-  * `flags` String[] - (optional) - Control specific states and behaviors of the
+  * `flags` String[] (optional) - Control specific states and behaviors of the
     button. By default, it is `['enabled']`.
 
 The `flags` is an array that can include following `String`s:
@@ -1108,6 +1145,22 @@ the entire window by specifying an empty region:
 
 Sets the toolTip that is displayed when hovering over the window thumbnail
 in the taskbar.
+
+#### `win.setAppDetails(options)` _Windows_
+
+* `options` Object
+  * `appId` String (optional) - Window's [App User Model ID](https://msdn.microsoft.com/en-us/library/windows/desktop/dd391569(v=vs.85).aspx).
+    It has to be set, otherwise the other options will have no effect.
+  * `appIconPath` String (optional) - Window's [Relaunch Icon](https://msdn.microsoft.com/en-us/library/windows/desktop/dd391573(v=vs.85).aspx).
+  * `appIconIndex` Integer (optional) - Index of the icon in `appIconPath`.
+    Ignored when `appIconPath` is not set. Default is `0`.
+  * `relaunchCommand` String (optional) - Window's [Relaunch Command](https://msdn.microsoft.com/en-us/library/windows/desktop/dd391571(v=vs.85).aspx).
+  * `relaunchDisplayName` String (optional) - Window's [Relaunch Display Name](https://msdn.microsoft.com/en-us/library/windows/desktop/dd391572(v=vs.85).aspx).
+
+Sets the properties for the window's taskbar button.
+
+**Note:** `relaunchCommand` and `relaunchDisplayName` must always be set
+together. If one of those properties is not set, then neither will be used.
 
 #### `win.showDefinitionForSelection()` _macOS_
 
@@ -1198,6 +1251,12 @@ Returns `BrowserWindow` - The parent window.
 
 Returns `BrowserWindow[]` - All child windows.
 
+#### `win.setAutoHideCursor(autoHide)` _macOS_
+
+* `autoHide` Boolean
+
+Controls whether to hide cursor when typing.
+
 #### `win.setVibrancy(type)` _macOS_
 
 * `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,
@@ -1211,3 +1270,4 @@ will remove the vibrancy effect on the window.
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
+[chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment

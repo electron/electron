@@ -10,21 +10,18 @@
 #include "base/callback.h"
 #include "base/memory/ref_counted_memory.h"
 
-namespace base {
-class FilePath;
-}
-
 namespace printing {
 
 class MetafilePlayer;
-class PdfRenderSettings;
+struct PdfRenderSettings;
 
 class PdfToEmfConverter {
  public:
   typedef base::Callback<void(int page_count)> StartCallback;
   typedef base::Callback<void(int page_number,
                               float scale_factor,
-                              std::unique_ptr<MetafilePlayer> emf)> GetPageCallback;
+                              std::unique_ptr<MetafilePlayer> emf)>
+      GetPageCallback;
 
   virtual ~PdfToEmfConverter();
 
@@ -34,6 +31,7 @@ class PdfToEmfConverter {
   // with positive |page_count|. |page_count| is 0 if initialization failed.
   virtual void Start(const scoped_refptr<base::RefCountedMemory>& data,
                      const PdfRenderSettings& conversion_settings,
+                     bool print_text_with_gdi,
                      const StartCallback& start_callback) = 0;
 
   // Requests conversion of the page. |page_number| is 0-base page number in

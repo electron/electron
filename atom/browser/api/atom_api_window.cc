@@ -10,12 +10,14 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/constructor.h"
@@ -28,6 +30,7 @@
 
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/taskbar_host.h"
+#include "ui/base/win/shell.h"
 #endif
 
 #include "atom/common/node_includes.h"
@@ -88,6 +91,13 @@ Window::Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
     if (options.Get("transparent", &transparent))
       web_preferences.Set("transparent", transparent);
 
+    // Offscreen windows are always created frameless.
+    bool offscreen;
+    if (web_preferences.Get("offscreen", &offscreen) && offscreen) {
+      auto window_options = const_cast<mate::Dictionary&>(options);
+      window_options.Set(options::kFrame, false);
+    }
+
     // Creates the WebContents used by BrowserWindow.
     web_contents = WebContents::Create(isolate, web_preferences);
   }
@@ -143,7 +153,7 @@ Window::~Window() {
 
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
-  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
+  base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
@@ -176,7 +186,8 @@ void Window::OnWindowClosed() {
   RemoveFromParentChildWindows();
 
   // Destroy the native class when window is closed.
-  base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, GetDestroyClosure());
 }
 
 void Window::OnWindowBlur() {
@@ -501,8 +512,17 @@ bool Window::IsClosable() {
 
 void Window::SetAlwaysOnTop(bool top, mate::Arguments* args) {
   std::string level = "floating";
+  int relativeLevel = 0;
+  std::string error;
+
   args->GetNext(&level);
-  window_->SetAlwaysOnTop(top, level);
+  args->GetNext(&relativeLevel);
+
+  window_->SetAlwaysOnTop(top, level, relativeLevel, &error);
+
+  if (!error.empty()) {
+    args->ThrowError(error);
+  }
 }
 
 bool Window::IsAlwaysOnTop() {
@@ -708,6 +728,25 @@ bool Window::SetThumbnailToolTip(const std::string& tooltip) {
   return window->taskbar_host().SetThumbnailToolTip(
       window_->GetAcceleratedWidget(), tooltip);
 }
+
+void Window::SetAppDetails(const mate::Dictionary& options) {
+  base::string16 app_id;
+  base::FilePath app_icon_path;
+  int app_icon_index = 0;
+  base::string16 relaunch_command;
+  base::string16 relaunch_display_name;
+
+  options.Get("appId", &app_id);
+  options.Get("appIconPath", &app_icon_path);
+  options.Get("appIconIndex", &app_icon_index);
+  options.Get("relaunchCommand", &relaunch_command);
+  options.Get("relaunchDisplayName", &relaunch_display_name);
+
+  ui::win::SetAppDetailsForWindow(
+      app_id, app_icon_path, app_icon_index,
+      relaunch_command, relaunch_display_name,
+      window_->GetAcceleratedWidget());
+}
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -734,6 +773,10 @@ void Window::PreviewFile(const std::string& path, mate::Arguments* args) {
   if (!args->GetNext(&display_name))
     display_name = path;
   window_->PreviewFile(path, display_name);
+}
+
+void Window::CloseFilePreview() {
+  window_->CloseFilePreview();
 }
 
 void Window::SetParentWindow(v8::Local<v8::Value> value,
@@ -784,6 +827,10 @@ void Window::SetVisibleOnAllWorkspaces(bool visible) {
 
 bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
+}
+
+void Window::SetAutoHideCursor(bool auto_hide) {
+  window_->SetAutoHideCursor(auto_hide);
 }
 
 void Window::SetVibrancy(mate::Arguments* args) {
@@ -840,6 +887,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
       .SetMethod("previewFile", &Window::PreviewFile)
+      .SetMethod("closeFilePreview", &Window::CloseFilePreview)
 #if !defined(OS_WIN)
       .SetMethod("setParentWindow", &Window::SetParentWindow)
 #endif
@@ -908,6 +956,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
+#if defined(OS_MACOSX)
+      .SetMethod("setAutoHideCursor", &Window::SetAutoHideCursor)
+#endif
       .SetMethod("setVibrancy", &Window::SetVibrancy)
 #if defined(OS_WIN)
       .SetMethod("hookWindowMessage", &Window::HookWindowMessage)
@@ -916,6 +967,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unhookAllWindowMessages", &Window::UnhookAllWindowMessages)
       .SetMethod("setThumbnailClip", &Window::SetThumbnailClip)
       .SetMethod("setThumbnailToolTip", &Window::SetThumbnailToolTip)
+      .SetMethod("setAppDetails", &Window::SetAppDetails)
 #endif
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &Window::SetIcon)

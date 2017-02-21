@@ -10,8 +10,8 @@ import sys
 import tempfile
 
 from io import StringIO
-from lib.config import PLATFORM, get_target_arch, get_chromedriver_version, \
-                       get_env_var, s3_config, get_zip_name
+from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
+                       get_zip_name
 from lib.util import electron_gyp, execute, get_electron_version, \
                      parse_version, scoped_cwd, s3put
 from lib.github import GitHub
@@ -91,7 +91,7 @@ def main():
 
   # Upload chromedriver and mksnapshot for minor version update.
   if parse_version(args.version)[2] == '0':
-    chromedriver = get_zip_name('chromedriver', get_chromedriver_version())
+    chromedriver = get_zip_name('chromedriver', ELECTRON_VERSION)
     upload_electron(github, release, os.path.join(DIST_DIR, chromedriver))
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
     upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot))

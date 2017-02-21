@@ -12,7 +12,7 @@
 	url = https://github.com/electron/chromium-breakpad.git
 [submodule "vendor/native_mate"]
 	path = vendor/native_mate
-	url = https://github.com/zcbenz/native-mate.git
+	url = https://github.com/electron/native-mate.git
 [submodule "vendor/crashpad"]
 	path = vendor/crashpad
 	url = https://github.com/electron/crashpad.git

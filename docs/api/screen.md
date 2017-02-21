@@ -2,7 +2,7 @@
 
 > Retrieve information about screen size, displays, cursor position, etc.
 
-Process: [Main](../tutorial/quick-start.md#main-process), [Renderer](../tutorial/quick-start.md#renderer-process)
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
 
 You cannot require or use this module until the `ready` event of the `app`
 module is emitted.
@@ -100,11 +100,11 @@ The current absolute position of the mouse pointer.
 
 ### `screen.getPrimaryDisplay()`
 
-Returns `Display` - The primary display.
+Returns [`Display`](structures/display.md) - The primary display.
 
 ### `screen.getAllDisplays()`
 
-Returns `Display[]` - An array of displays that are currently available.
+Returns [`Display[]`](structures/display.md) - An array of displays that are currently available.
 
 ### `screen.getDisplayNearestPoint(point)`
 
@@ -112,10 +112,11 @@ Returns `Display[]` - An array of displays that are currently available.
   * `x` Integer
   * `y` Integer
 
-Returns `Display` - The display nearest the specified point.
+Returns [`Display`](structures/display.md) - The display nearest the specified point.
 
 ### `screen.getDisplayMatching(rect)`
 
 * `rect` [Rectangle](structures/rectangle.md)
 
-Returns `Display` - The display that most closely intersects the provided bounds.
+Returns [`Display`](structures/display.md) - The display that most closely
+intersects the provided bounds.

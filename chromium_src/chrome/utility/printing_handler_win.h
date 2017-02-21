@@ -29,7 +29,8 @@ class PrintingHandlerWin : public UtilityMessageHandler {
  private:
   // IPC message handlers.
   void OnRenderPDFPagesToMetafile(IPC::PlatformFileForTransit pdf_transit,
-                                  const PdfRenderSettings& settings);
+                                  const PdfRenderSettings& settings,
+                                  bool print_text_with_gdi);
   void OnRenderPDFPagesToMetafileGetPage(
       int page_number,
       IPC::PlatformFileForTransit output_file);

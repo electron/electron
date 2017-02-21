@@ -22,8 +22,6 @@ OffScreenOutputDevice::~OffScreenOutputDevice() {
 
 void OffScreenOutputDevice::Resize(
     const gfx::Size& pixel_size, float scale_factor) {
-  scale_factor_ = scale_factor;
-
   if (viewport_pixel_size_ == pixel_size) return;
   viewport_pixel_size_ = pixel_size;
 

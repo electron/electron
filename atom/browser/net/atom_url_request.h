@@ -40,6 +40,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   void RemoveExtraHeader(const std::string& name) const;
   void PassLoginInformation(const base::string16& username,
                             const base::string16& password) const;
+  void SetLoadFlags(int flags) const;
 
  protected:
   // Overrides of net::URLRequest::Delegate
@@ -71,6 +72,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
                  const base::string16& password) const;
   void DoCancelAuth() const;
   void DoCancelWithError(const std::string& error, bool isRequestError);
+  void DoSetLoadFlags(int flags) const;
 
   void ReadResponse();
   bool CopyAndPostBuffer(int bytes_read);

@@ -49,7 +49,7 @@ sezione prima di creare una issue:
 ### Elementi personalizzati DOM:
 
 * [Oggetto `File`](api/oggetto-file.md)
-* [Tag `<webview>`](api/web-view-tag.md)
+* [Tag `<webview>`](api/webview-tag.md)
 * [Funzione `window.open`](api/window-open.md)
 
 ### Moduli per il Processo Main:

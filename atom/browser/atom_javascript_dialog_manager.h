@@ -26,9 +26,14 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
       content::WebContents* web_contents,
       bool is_reload,
       const DialogClosedCallback& callback) override;
-  void CancelActiveAndPendingDialogs(
-      content::WebContents* web_contents) override {}
-  void ResetDialogState(content::WebContents* web_contents) override {};
+  void CancelDialogs(content::WebContents* web_contents,
+                     bool suppress_callbacks,
+                     bool reset_state) override;
+
+ private:
+  static void OnMessageBoxCallback(const DialogClosedCallback& callback,
+                                   int code,
+                                   bool checkbox_checked);
 };
 
 }  // namespace atom

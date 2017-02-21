@@ -32,7 +32,6 @@ Electronは新しいバージョンのChromiumを出来るだけ早くサポー�
 * `webSecurity`を無効にしないください。無効にすると、same-origin policyが無効になります。
 * [`Content-Security-Policy`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/)を定義して、スクリプトの読み込み元を制限してください。(例: `script-src 'self'`)
 * [`eval`を無効にしてください。](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6) evalは文字列をコードとして実行してしまいます。
-* `allowDisplayingInsecureContent` を有効にしないでください。
 * `allowRunningInsecureContent` を有効にしないでください。
 * しっかり理解していない限りは`experimentalFeatures`や`experimentalCanvasFeatures`を有効にしないでください。
 * しっかり理解していない限りは`blinkFeatures`を有効にしないでください。

@@ -26,7 +26,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
    private:
     // ui::SimpleMenuModel::Delegate:
     bool GetAcceleratorForCommandId(int command_id,
-                                    ui::Accelerator* accelerator) {
+                                    ui::Accelerator* accelerator) const {
       return GetAcceleratorForCommandIdWithParams(
           command_id, false, accelerator);
     }
@@ -37,7 +37,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
     virtual ~Observer() {}
 
     // Notifies the menu has been closed.
-    virtual void MenuClosed() {}
+    virtual void MenuWillClose() {}
   };
 
   explicit AtomMenuModel(Delegate* delegate);
@@ -53,7 +53,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
                                   ui::Accelerator* accelerator) const;
 
   // ui::SimpleMenuModel:
-  void MenuClosed() override;
+  void MenuWillClose() override;
 
   using SimpleMenuModel::GetSubmenuModelAt;
   AtomMenuModel* GetSubmenuModelAt(int index);

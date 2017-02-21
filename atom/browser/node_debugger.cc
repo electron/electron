@@ -51,8 +51,9 @@ NodeDebugger::NodeDebugger(v8::Isolate* isolate)
       base::StringToInt(port_str, &port);
 
     isolate_->SetData(kIsolateSlot, this);
-    v8::Debug::SetMessageHandler(DebugMessageHandler);
+    v8::Debug::SetMessageHandler(isolate_, DebugMessageHandler);
 
+    weak_up_ui_handle_.data = this;
     uv_async_init(uv_default_loop(), &weak_up_ui_handle_, ProcessMessageInUI);
 
     // Start a new IO thread.
@@ -64,7 +65,7 @@ NodeDebugger::NodeDebugger(v8::Isolate* isolate)
     }
 
     // Start the server in new IO thread.
-    thread_.message_loop()->PostTask(
+    thread_.task_runner()->PostTask(
         FROM_HERE,
         base::Bind(&NodeDebugger::StartServer, weak_factory_.GetWeakPtr(),
                    port));
@@ -126,7 +127,8 @@ void NodeDebugger::SendConnectMessage() {
 
 // static
 void NodeDebugger::ProcessMessageInUI(uv_async_t* handle) {
-  v8::Debug::ProcessDebugMessages();
+  NodeDebugger* self = static_cast<NodeDebugger*>(handle->data);
+  v8::Debug::ProcessDebugMessages(self->isolate_);
 }
 
 // static
@@ -136,7 +138,7 @@ void NodeDebugger::DebugMessageHandler(const v8::Debug::Message& message) {
 
   if (self) {
     std::string message8(*v8::String::Utf8Value(message.GetJSON()));
-    self->thread_.message_loop()->PostTask(
+    self->thread_.task_runner()->PostTask(
         FROM_HERE,
         base::Bind(&NodeDebugger::SendMessage, self->weak_factory_.GetWeakPtr(),
                    message8));

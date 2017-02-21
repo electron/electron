@@ -55,6 +55,7 @@
   var mocha = new Mocha();
 
   mocha.ui('bdd').reporter(isCi ? 'tap' : 'html');
+  mocha.timeout(isCi ? 30000 : 10000)
 
   var query = Mocha.utils.parseQuery(window.location.search || '');
   if (query.grep) mocha.grep(query.grep);

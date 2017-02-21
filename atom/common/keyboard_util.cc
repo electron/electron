@@ -7,7 +7,7 @@
 #include "atom/common/keyboard_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
+#include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "ui/events/event_constants.h"
 
 namespace atom {

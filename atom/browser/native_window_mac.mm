@@ -228,7 +228,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
   // Hide the native toolbar before entering fullscreen, so there is no visual
   // artifacts.
-  if (base::mac::IsOSYosemiteOrLater() &&
+  if (base::mac::IsAtLeastOS10_10() &&
       shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
     NSWindow* window = shell_->GetNativeWindow();
     [window setToolbar:nil];
@@ -243,7 +243,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   // have to set one, because title bar is visible here.
   NSWindow* window = shell_->GetNativeWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
-      base::mac::IsOSYosemiteOrLater() &&
+      base::mac::IsAtLeastOS10_10() &&
       // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
       // fullscreen mode.
       shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
@@ -252,7 +252,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
   // Restore the native toolbar immediately after entering fullscreen, if we do
   // this before leaving fullscreen, traffic light buttons will be jumping.
-  if (base::mac::IsOSYosemiteOrLater() &&
+  if (base::mac::IsAtLeastOS10_10() &&
       shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
     base::scoped_nsobject<NSToolbar> toolbar(
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
@@ -269,13 +269,13 @@ bool ScopedDisableResize::disable_resize_ = false;
   // Restore the titlebar visibility.
   NSWindow* window = shell_->GetNativeWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
-      base::mac::IsOSYosemiteOrLater() &&
+      base::mac::IsAtLeastOS10_10() &&
       shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
     [window setTitleVisibility:NSWindowTitleHidden];
   }
 
   // Turn off the style for toolbar.
-  if (base::mac::IsOSYosemiteOrLater() &&
+  if (base::mac::IsAtLeastOS10_10() &&
       shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
     shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
   }
@@ -619,6 +619,7 @@ NativeWindowMac::NativeWindowMac(
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
       is_kiosk_(false),
+      was_fullscreen_(false),
       zoom_to_page_width_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
@@ -626,7 +627,7 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
 
-  NSRect main_screen_rect = [[[NSScreen screens] objectAtIndex:0] frame];
+  NSRect main_screen_rect = [[[NSScreen screens] firstObject] frame];
   NSRect cocoa_bounds = NSMakeRect(
       round((NSWidth(main_screen_rect) - width) / 2) ,
       round((NSHeight(main_screen_rect) - height) / 2),
@@ -711,7 +712,7 @@ NativeWindowMac::NativeWindowMac(
     [window_ setDisableKeyOrMainWindow:YES];
 
   if (transparent() || !has_frame()) {
-    if (base::mac::IsOSYosemiteOrLater()) {
+    if (base::mac::IsAtLeastOS10_10()) {
       // Don't show title bar.
       [window_ setTitleVisibility:NSWindowTitleHidden];
     }
@@ -724,7 +725,7 @@ NativeWindowMac::NativeWindowMac(
 
   // Hide the title bar.
   if (title_bar_style_ == HIDDEN_INSET) {
-    if (base::mac::IsOSYosemiteOrLater()) {
+    if (base::mac::IsAtLeastOS10_10()) {
       [window_ setTitlebarAppearsTransparent:YES];
       base::scoped_nsobject<NSToolbar> toolbar(
           [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
@@ -937,7 +938,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
 
   NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0, size.width(), size.height());
   // Flip coordinates based on the primary screen.
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+  NSScreen* screen = [[NSScreen screens] firstObject];
   cocoa_bounds.origin.y =
       NSHeight([screen frame]) - size.height() - bounds.y();
 
@@ -947,7 +948,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
 gfx::Rect NativeWindowMac::GetBounds() {
   NSRect frame = [window_ frame];
   gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+  NSScreen* screen = [[NSScreen screens] firstObject];
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
   return bounds;
 }
@@ -1004,6 +1005,12 @@ void NativeWindowMac::PreviewFile(const std::string& path,
   [window_ previewFileAtPath:path_ns withName:name_ns];
 }
 
+void NativeWindowMac::CloseFilePreview() {
+  if ([QLPreviewPanel sharedPreviewPanelExists]) {
+    [[QLPreviewPanel sharedPreviewPanel] close];
+  }
+}
+
 void NativeWindowMac::SetMovable(bool movable) {
   [window_ setMovable:movable];
 }
@@ -1049,8 +1056,12 @@ bool NativeWindowMac::IsClosable() {
   return [window_ styleMask] & NSClosableWindowMask;
 }
 
-void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level) {
+void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level,
+                                     int relativeLevel, std::string* error) {
   int windowLevel = NSNormalWindowLevel;
+  CGWindowLevel maxWindowLevel = CGWindowLevelForKey(kCGMaximumWindowLevelKey);
+  CGWindowLevel minWindowLevel = CGWindowLevelForKey(kCGMinimumWindowLevelKey);
+
   if (top) {
     if (level == "floating") {
       windowLevel = NSFloatingWindowLevel;
@@ -1067,10 +1078,19 @@ void NativeWindowMac::SetAlwaysOnTop(bool top, const std::string& level) {
     } else if (level == "screen-saver") {
       windowLevel = NSScreenSaverWindowLevel;
     } else if (level == "dock") {
+      // Deprecated by macOS, but kept for backwards compatibility
       windowLevel = NSDockWindowLevel;
     }
   }
-  [window_ setLevel:windowLevel];
+
+  NSInteger newLevel = windowLevel + relativeLevel;
+  if (newLevel >= minWindowLevel && newLevel <= maxWindowLevel) {
+    [window_ setLevel:newLevel];
+  } else {
+    *error = std::string([[NSString stringWithFormat:
+      @"relativeLevel must be between %d and %d", minWindowLevel,
+      maxWindowLevel] UTF8String]);
+  }
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {
@@ -1081,10 +1101,15 @@ void NativeWindowMac::Center() {
   [window_ center];
 }
 
+void NativeWindowMac::Invalidate() {
+  [window_ flushWindow];
+  [[window_ contentView] setNeedsDisplay:YES];
+}
+
 void NativeWindowMac::SetTitle(const std::string& title) {
   // For macOS <= 10.9, the setTitleVisibility API is not available, we have
   // to avoid calling setTitle for frameless window.
-  if (!base::mac::IsOSYosemiteOrLater() && (transparent() || !has_frame()))
+  if (!base::mac::IsAtLeastOS10_10() && (transparent() || !has_frame()))
     return;
 
   [window_ setTitle:base::SysUTF8ToNSString(title)];
@@ -1119,10 +1144,11 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
-    SetFullScreen(true);
+    was_fullscreen_ = IsFullscreen();
+    if (!was_fullscreen_) SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
     is_kiosk_ = false;
-    SetFullScreen(false);
+    if (!was_fullscreen_) SetFullScreen(false);
     [NSApp setPresentationOptions:kiosk_options_];
   }
 }
@@ -1249,8 +1275,12 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
   return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
 }
 
+void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
+  [window_ setDisableAutoHideCursor:!auto_hide];
+}
+
 void NativeWindowMac::SetVibrancy(const std::string& type) {
-  if (!base::mac::IsOSYosemiteOrLater()) return;
+  if (!base::mac::IsOS10_10()) return;
 
   NSView* vibrant_view = [window_ vibrantView];
 
@@ -1289,7 +1319,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancyType = NSVisualEffectMaterialTitlebar;
   }
 
-  if (base::mac::IsOSElCapitanOrLater()) {
+  if (base::mac::IsAtLeastOS10_11()) {
     // TODO(kevinsawicki): Use NSVisualEffectMaterial* constants directly once
     // they are available in the minimum SDK version
     if (type == "selection") {
@@ -1391,10 +1421,10 @@ void NativeWindowMac::ShowWindowButton(NSWindowButton button) {
 }
 
 void NativeWindowMac::InstallView() {
-  // Make sure the bottom corner is rounded: http://crbug.com/396264.
+  // Make sure the bottom corner is rounded for non-modal windows: http://crbug.com/396264.
   // But do not enable it on OS X 10.9 for transparent window, otherwise a
   // semi-transparent frame would show.
-  if (!(transparent() && base::mac::IsOSMavericks()))
+  if (!(transparent() && base::mac::IsOS10_9()) && !is_modal())
     [[window_ contentView] setWantsLayer:YES];
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
@@ -1419,7 +1449,7 @@ void NativeWindowMac::InstallView() {
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
     if (title_bar_style_ != NORMAL) {
-      if (base::mac::IsOSMavericks()) {
+      if (base::mac::IsOS10_9()) {
         ShowWindowButton(NSWindowZoomButton);
         ShowWindowButton(NSWindowMiniaturizeButton);
         ShowWindowButton(NSWindowCloseButton);

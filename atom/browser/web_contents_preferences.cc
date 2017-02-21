@@ -119,17 +119,16 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       LOG(ERROR) << "preload url must be file:// protocol.";
   }
 
+  // Run Electron APIs and preload script in isolated world
+  bool isolated;
+  if (web_preferences.GetBoolean(options::kContextIsolation, &isolated) &&
+      isolated)
+    command_line->AppendSwitch(switches::kContextIsolation);
+
   // --background-color.
   std::string color;
   if (web_preferences.GetString(options::kBackgroundColor, &color))
     command_line->AppendSwitchASCII(switches::kBackgroundColor, color);
-
-  // The zoom factor.
-  double zoom_factor = 1.0;
-  if (web_preferences.GetDouble(options::kZoomFactor, &zoom_factor) &&
-      zoom_factor != 1.0)
-    command_line->AppendSwitchASCII(switches::kZoomFactor,
-                                    base::DoubleToString(zoom_factor));
 
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
@@ -190,14 +189,8 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (window) {
     bool visible = window->IsVisible() && !window->IsMinimized();
     if (!visible)  // Default state is visible.
-      command_line->AppendSwitch("hidden-page");
+      command_line->AppendSwitch(switches::kHiddenPage);
   }
-
-  // Use frame scheduling for offscreen renderers.
-  // TODO(zcbenz): Remove this after Chrome 54, on which it becomes default.
-  bool offscreen;
-  if (web_preferences.GetBoolean("offscreen", &offscreen) && offscreen)
-    command_line->AppendSwitch(cc::switches::kEnableBeginFrameScheduling);
 }
 
 bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
@@ -233,11 +226,8 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->experimental_webgl_enabled = b;
   if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
     prefs->web_security_enabled = b;
-    prefs->allow_displaying_insecure_content = !b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (self->web_preferences_.GetBoolean("allowDisplayingInsecureContent", &b))
-    prefs->allow_displaying_insecure_content = b;
   if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;
   const base::DictionaryValue* fonts = nullptr;
@@ -251,17 +241,34 @@ void WebContentsPreferences::OverrideWebkitPrefs(
       prefs->sans_serif_font_family_map[content::kCommonScript] = font;
     if (fonts->GetString("monospace", &font))
       prefs->fixed_font_family_map[content::kCommonScript] = font;
+    if (fonts->GetString("cursive", &font))
+      prefs->cursive_font_family_map[content::kCommonScript] = font;
+    if (fonts->GetString("fantasy", &font))
+      prefs->fantasy_font_family_map[content::kCommonScript] = font;
   }
   int size;
-  if (self->web_preferences_.GetInteger("defaultFontSize", &size))
+  if (self->GetInteger("defaultFontSize", &size))
     prefs->default_font_size = size;
-  if (self->web_preferences_.GetInteger("defaultMonospaceFontSize", &size))
+  if (self->GetInteger("defaultMonospaceFontSize", &size))
     prefs->default_fixed_font_size = size;
-  if (self->web_preferences_.GetInteger("minimumFontSize", &size))
+  if (self->GetInteger("minimumFontSize", &size))
     prefs->minimum_font_size = size;
   std::string encoding;
   if (self->web_preferences_.GetString("defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
+}
+
+bool WebContentsPreferences::GetInteger(const std::string& attributeName,
+                                        int* intValue) {
+  // if it is already an integer, no conversion needed
+  if (web_preferences_.GetInteger(attributeName, intValue))
+    return true;
+
+  base::string16 stringValue;
+  if (web_preferences_.GetString(attributeName, &stringValue))
+    return base::StringToInt(stringValue, intValue);
+
+  return false;
 }
 
 }  // namespace atom

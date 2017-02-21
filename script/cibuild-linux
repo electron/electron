@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+MESSAGE="$(git log --format=%B -n 1 HEAD)"
+case ${MESSAGE} in
+  Bump* ) export ELECTRON_RELEASE=1 ;;
+esac
+
+set +x
+
+export ELECTRON_GITHUB_TOKEN="$BUILD_ELECTRON_ELECTRON_GITHUB_TOKEN"
+export ELECTRON_S3_BUCKET="$BUILD_ELECTRON_ELECTRON_S3_BUCKET"
+export ELECTRON_S3_ACCESS_KEY="$BUILD_ELECTRON_ELECTRON_S3_ACCESS_KEY"
+export ELECTRON_S3_SECRET_KEY="$BUILD_ELECTRON_ELECTRON_S3_SECRET_KEY"
+
+if [[ -z "${ELECTRON_RELEASE}" ]]; then
+  echo "Generating Linux $TARGET_ARCH debug build"
+else
+  echo "Generating Linux $TARGET_ARCH release build"
+fi
+
+set -x
+
+script/cibuild

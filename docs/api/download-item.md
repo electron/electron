@@ -2,7 +2,7 @@
 
 > Control file downloads from remote sources.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 `DownloadItem` is an `EventEmitter` that represents a download item in Electron.
 It is used in `will-download` event of `Session` class, and allows users to
@@ -146,3 +146,23 @@ header.
 #### `downloadItem.getState()`
 
 Returns `String` - The current state.  Can be `progressing`, `completed`, `cancelled` or `interrupted`.
+
+**Note:** The following methods are useful specifically to resume a
+`cancelled` item when session is restarted.
+
+#### `downloadItem.getURLChain()`
+
+Returns `String[]` - The complete url chain of the item including any redirects.
+
+#### `downloadItem.getLastModifiedTime()`
+
+Returns `String` - Last-Modified header value.
+
+#### `downloadItem.getETag()`
+
+Returns `String` - ETag header value.
+
+#### `downloadItem.getStartTime()`
+
+Returns `Double` - Number of seconds since the UNIX epoch when the download was
+started.

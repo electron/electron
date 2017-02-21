@@ -9,7 +9,7 @@ import sys
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
     'https://s3.amazonaws.com/github-janky-artifacts/libchromiumcontent'
 LIBCHROMIUMCONTENT_COMMIT = os.getenv('LIBCHROMIUMCONTENT_COMMIT') or \
-    '76bb29da18cbeec0051e0690bc1b95e78034a422'
+    '4f5b89374df7ee69095b9f7d50b30fb46ddd7407'
 
 PLATFORM = {
   'cygwin': 'win32',
@@ -41,9 +41,6 @@ def get_target_arch():
 
   return 'x64'
 
-
-def get_chromedriver_version():
-  return 'v2.21'
 
 def get_env_var(name):
   value = os.environ.get('ELECTRON_' + name, '')

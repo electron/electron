@@ -2,7 +2,7 @@
 
 > Manage browser sessions, cookies, cache, proxy settings, etc.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 The `session` module can be used to create new `Session` objects.
 
@@ -30,7 +30,7 @@ The `session` module has the following methods:
   * `cache` Boolean - Whether to enable cache.
 
 Returns `Session` - A session instance from `partition` string. When there is an existing
-`Session` with the same `partition`, it will be returned; othewise a new
+`Session` with the same `partition`, it will be returned; otherwise a new
 `Session` instance will be created with `options`.
 
 If `partition` starts with `persist:`, the page will use a persistent session
@@ -54,7 +54,7 @@ A `Session` object, the default session object of the app.
 
 > Get and set properties of a session.
 
-Process: [Main](../tutorial/quick-start.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 You can create a `Session` object in the `session` module:
 
@@ -98,7 +98,7 @@ The following methods are available on instances of `Session`:
 * `callback` Function
   * `size` Integer - Cache size used in bytes.
 
-Returns the session's current cache size.
+Callback is invoked with the session's current cache size.
 
 #### `ses.clearCache(callback)`
 
@@ -112,7 +112,7 @@ Clears the session’s HTTP cache.
   * `origin` String - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
   * `storages` String[] - The types of storages to clear, can contain:
-    `appcache`, `cookies`, `filesystem`, `indexdb`, `local storage`,
+    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
     `shadercache`, `websql`, `serviceworkers`
   * `quotas` String[] - The types of quotas to clear, can contain:
     `temporary`, `persistent`, `syncable`.
@@ -200,7 +200,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Match local addresses. The meaning of `<local>` is whether the
    host matches one of: "127.0.0.1", "::1", "localhost".
 
-### `ses.resolveProxy(url, callback)`
+#### `ses.resolveProxy(url, callback)`
 
 * `url` URL
 * `callback` Function
@@ -250,15 +250,22 @@ the original network configuration.
 #### `ses.setCertificateVerifyProc(proc)`
 
 * `proc` Function
-  * `hostname` String
-  * `certificate` [Certificate](structures/certificate.md)
+  * `request` Object
+    * `hostname` String
+    * `certificate` [Certificate](structures/certificate.md)
+    * `error` String - Verification result from chromium.
   * `callback` Function
-    * `isTrusted` Boolean - Determines if the certificate should be trusted
+    * `verificationResult` Integer - Value can be one of certificate error codes
+    from [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+    Apart from the certificate error codes, the following special codes can be used.
+      * `0` - Indicates success and disables Certificate Transperancy verification.
+      * `-2` - Indicates failure.
+      * `-3` - Uses the verification result from chromium.
 
 Sets the certificate verify proc for `session`, the `proc` will be called with
-`proc(hostname, certificate, callback)` whenever a server certificate
-verification is requested. Calling `callback(true)` accepts the certificate,
-calling `callback(false)` rejects it.
+`proc(request, callback)` whenever a server certificate
+verification is requested. Calling `callback(0)` accepts the certificate,
+calling `callback(-2)` rejects it.
 
 Calling `setCertificateVerifyProc(null)` will revert back to default certificate
 verify proc.
@@ -343,6 +350,32 @@ Returns `String` - The user agent for this session.
   * `result` Buffer - Blob data.
 
 Returns `Blob` - The blob data associated with the `identifier`.
+
+#### `ses.createInterruptedDownload(options)`
+
+* `options` Object
+  * `path` String - Absolute path of the download.
+  * `urlChain` String[] - Complete URL chain for the download.
+  * `mimeType` String (optional)
+  * `offset` Integer - Start range for the download.
+  * `length` Integer - Total length of the download.
+  * `lastModified` String - Last-Modified header value.
+  * `eTag` String - ETag header value.
+  * `startTime` Double (optional) - Time when download was started in
+    number of seconds since UNIX epoch.
+
+Allows resuming `cancelled` or `interrupted` downloads from previous `Session`.
+The API will generate a [DownloadItem](download-item.md) that can be accessed with the [will-download](#event-will-download)
+event. The [DownloadItem](download-item.md) will not have any `WebContents` associated with it and
+the initial state will be `interrupted`. The download will start only when the
+`resume` API is called on the [DownloadItem](download-item.md).
+
+#### `ses.clearAuthCache(options[, callback])`
+
+* `options` ([RemovePassword](structures/remove-password.md) | [RemoveClientCertificate](structures/remove-client-certificate.md))
+* `callback` Function (optional) - Called when operation is done
+
+Clears the session’s HTTP authentication cache.
 
 ### Instance Properties
 

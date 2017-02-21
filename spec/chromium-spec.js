@@ -3,9 +3,10 @@ const http = require('http')
 const path = require('path')
 const ws = require('ws')
 const url = require('url')
-const remote = require('electron').remote
+const {ipcRenderer, remote} = require('electron')
+const {closeWindow} = require('./window-helpers')
 
-const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
+const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
@@ -28,8 +29,6 @@ describe('chromium feature', function () {
 
   describe('sending request of http protocol urls', function () {
     it('does not crash', function (done) {
-      this.timeout(5000)
-
       var server = http.createServer(function (req, res) {
         res.end()
         server.close()
@@ -47,7 +46,7 @@ describe('chromium feature', function () {
     var w = null
 
     afterEach(function () {
-      w != null ? w.destroy() : void 0
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('is set correctly when window is not shown', function (done) {
@@ -61,11 +60,9 @@ describe('chromium feature', function () {
       w.loadURL(url)
     })
 
-    if (isCI && process.platform === 'win32') {
-      return
-    }
-
     it('is set correctly when window is inactive', function (done) {
+      if (isCI && process.platform === 'win32') return done()
+
       w = new BrowserWindow({
         show: false
       })
@@ -80,8 +77,6 @@ describe('chromium feature', function () {
 
   xdescribe('navigator.webkitGetUserMedia', function () {
     it('calls its callbacks', function (done) {
-      this.timeout(5000)
-
       navigator.webkitGetUserMedia({
         audio: true,
         video: false
@@ -115,6 +110,40 @@ describe('chromium feature', function () {
         }
       }).catch(done)
     })
+
+    it('can return new device id when cookie storage is cleared', function (done) {
+      const options = {
+        origin: null,
+        storages: ['cookies']
+      }
+      const deviceIds = []
+      const ses = session.fromPartition('persist:media-device-id')
+      let w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: ses
+        }
+      })
+      w.webContents.on('ipc-message', function (event, args) {
+        if (args[0] === 'deviceIds') {
+          deviceIds.push(args[1])
+        }
+        if (deviceIds.length === 2) {
+          assert.notDeepEqual(deviceIds[0], deviceIds[1])
+          closeWindow(w).then(function () {
+            w = null
+            done()
+          }).catch(function (error) {
+            done(error)
+          })
+        } else {
+          ses.clearStorageData(options, function () {
+            w.webContents.reload()
+          })
+        }
+      })
+      w.loadURL('file://' + fixtures + '/pages/media-id-reset.html')
+    })
   })
 
   describe('navigator.language', function () {
@@ -128,7 +157,7 @@ describe('chromium feature', function () {
     var w = null
 
     afterEach(function () {
-      w != null ? w.destroy() : void 0
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('should register for file scheme', function (done) {
@@ -158,18 +187,16 @@ describe('chromium feature', function () {
       return
     }
 
-    this.timeout(20000)
+    let w = null
+
+    afterEach(() => {
+      return closeWindow(w).then(function () { w = null })
+    })
 
     it('returns a BrowserWindowProxy object', function () {
       var b = window.open('about:blank', '', 'show=no')
       assert.equal(b.closed, false)
       assert.equal(b.constructor.name, 'BrowserWindowProxy')
-
-      // Check that guestId is not writeable
-      assert(b.guestId)
-      b.guestId = 'anotherValue'
-      assert.notEqual(b.guestId, 'anoterValue')
-
       b.close()
     })
 
@@ -233,6 +260,28 @@ describe('chromium feature', function () {
       b = window.open('file://' + fixtures + '/pages/window-open-size.html', '', 'show=no,width=' + size.width + ',height=' + size.height)
     })
 
+    it('handles cycles when merging the parent options into the child options', (done) => {
+      w = BrowserWindow.fromId(ipcRenderer.sendSync('create-window-with-options-cycle'))
+      w.loadURL('file://' + fixtures + '/pages/window-open.html')
+      w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
+        assert.equal(options.show, false)
+        assert.deepEqual(options.foo, {
+          bar: null,
+          baz: {
+            hello: {
+              world: true
+            }
+          },
+          baz2: {
+            hello: {
+              world: true
+            }
+          }
+        })
+        done()
+      })
+    })
+
     it('defines a window.location getter', function (done) {
       var b, targetURL
       if (process.platform === 'win32') {
@@ -240,54 +289,63 @@ describe('chromium feature', function () {
       } else {
         targetURL = 'file://' + fixtures + '/pages/base-page.html'
       }
-      b = window.open(targetURL)
-      webContents.fromId(b.guestId).once('did-finish-load', function () {
-        assert.equal(b.location, targetURL)
-        b.close()
-        done()
-      })
-    })
-
-    it('defines a window.location setter', function (done) {
-      // Load a page that definitely won't redirect
-      var b = window.open('about:blank')
-      webContents.fromId(b.guestId).once('did-finish-load', function () {
-        // When it loads, redirect
-        b.location = 'file://' + fixtures + '/pages/base-page.html'
-        webContents.fromId(b.guestId).once('did-finish-load', function () {
-          // After our second redirect, cleanup and callback
+      app.once('browser-window-created', (event, window) => {
+        window.webContents.once('did-finish-load', () => {
+          assert.equal(b.location, targetURL)
           b.close()
           done()
         })
       })
+      b = window.open(targetURL)
+    })
+
+    it('defines a window.location setter', function (done) {
+      let b
+      app.once('browser-window-created', (event, {webContents}) => {
+        webContents.once('did-finish-load', function () {
+          // When it loads, redirect
+          b.location = 'file://' + fixtures + '/pages/base-page.html'
+          webContents.once('did-finish-load', function () {
+            // After our second redirect, cleanup and callback
+            b.close()
+            done()
+          })
+        })
+      })
+      // Load a page that definitely won't redirect
+      b = window.open('about:blank')
     })
 
     it('open a blank page when no URL is specified', function (done) {
-      let b = window.open()
-      webContents.fromId(b.guestId).once('did-finish-load', function () {
-        const {location} = b
-        b.close()
-        assert.equal(location, 'about:blank')
-
-        let c = window.open('')
-        webContents.fromId(c.guestId).once('did-finish-load', function () {
-          const {location} = c
-          c.close()
+      let b
+      app.once('browser-window-created', (event, {webContents}) => {
+        webContents.once('did-finish-load', function () {
+          const {location} = b
+          b.close()
           assert.equal(location, 'about:blank')
-          done()
+
+          let c
+          app.once('browser-window-created', (event, {webContents}) => {
+            webContents.once('did-finish-load', function () {
+              const {location} = c
+              c.close()
+              assert.equal(location, 'about:blank')
+              done()
+            })
+          })
+          c = window.open('')
         })
       })
+      b = window.open()
     })
   })
 
   describe('window.opener', function () {
-    this.timeout(10000)
-
     let url = 'file://' + fixtures + '/pages/window-opener.html'
     let w = null
 
     afterEach(function () {
-      if (w) w.destroy()
+      return closeWindow(w).then(function () { w = null })
     })
 
     it('is null for main window', function (done) {
@@ -314,8 +372,6 @@ describe('chromium feature', function () {
   })
 
   describe('window.opener access from BrowserWindow', function () {
-    this.timeout(10000)
-
     const scheme = 'other'
     let url = `${scheme}://${fixtures}/pages/window-opener-location.html`
     let w = null
@@ -365,8 +421,6 @@ describe('chromium feature', function () {
   })
 
   describe('window.opener access from <webview>', function () {
-    this.timeout(10000)
-
     const scheme = 'other'
     const srcPath = `${fixtures}/pages/webview-opener-postMessage.html`
     const pageURL = `file://${fixtures}/pages/window-opener-location.html`
@@ -447,8 +501,7 @@ describe('chromium feature', function () {
 
   describe('window.postMessage', function () {
     it('sets the source and origin correctly', function (done) {
-      var b, sourceId
-      sourceId = remote.getCurrentWindow().id
+      var b
       listener = function (event) {
         window.removeEventListener('message', listener)
         b.close()
@@ -456,15 +509,16 @@ describe('chromium feature', function () {
         assert.equal(message.data, 'testing')
         assert.equal(message.origin, 'file://')
         assert.equal(message.sourceEqualsOpener, true)
-        assert.equal(message.sourceId, sourceId)
         assert.equal(event.origin, 'file://')
         done()
       }
       window.addEventListener('message', listener)
-      b = window.open('file://' + fixtures + '/pages/window-open-postMessage.html', '', 'show=no')
-      webContents.fromId(b.guestId).once('did-finish-load', function () {
-        b.postMessage('testing', '*')
+      app.once('browser-window-created', (event, {webContents}) => {
+        webContents.once('did-finish-load', function () {
+          b.postMessage('testing', '*')
+        })
       })
+      b = window.open('file://' + fixtures + '/pages/window-open-postMessage.html', '', 'show=no')
     })
   })
 

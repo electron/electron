@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "atom_natives.h"  // NOLINT: This file is generated with js2c
+
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
@@ -14,6 +16,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
+#include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/guest_view_container.h"
@@ -57,6 +60,17 @@ namespace atom {
 
 namespace {
 
+enum World {
+  MAIN_WORLD = 0,
+  // Use a high number far away from 0 to not collide with any other world
+  // IDs created internally by Chrome.
+  ISOLATED_WORLD = 999
+};
+
+enum ExtensionGroup {
+  MAIN_GROUP = 1
+};
+
 // Helper class to forward the messages to the client.
 class AtomRenderFrameObserver : public content::RenderFrameObserver {
  public:
@@ -64,7 +78,6 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
                           AtomRendererClient* renderer_client)
       : content::RenderFrameObserver(frame),
         render_frame_(frame),
-        world_id_(-1),
         renderer_client_(renderer_client) {}
 
   // content::RenderFrameObserver:
@@ -72,19 +85,82 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
     renderer_client_->DidClearWindowObject(render_frame_);
   }
 
+  void CreateIsolatedWorldContext() {
+    // This maps to the name shown in the context combo box in the Console tab
+    // of the dev tools.
+    render_frame_->GetWebFrame()->setIsolatedWorldHumanReadableName(
+        World::ISOLATED_WORLD,
+        blink::WebString::fromUTF8("Electron Isolated Context"));
+
+    blink::WebScriptSource source("void 0");
+    render_frame_->GetWebFrame()->executeScriptInIsolatedWorld(
+        World::ISOLATED_WORLD, &source, 1, ExtensionGroup::MAIN_GROUP);
+  }
+
+  void SetupMainWorldOverrides(v8::Handle<v8::Context> context) {
+    // Setup window overrides in the main world context
+    v8::Isolate* isolate = context->GetIsolate();
+
+    // Wrap the bundle into a function that receives the binding object as
+    // an argument.
+    std::string bundle(node::isolated_bundle_data,
+        node::isolated_bundle_data + sizeof(node::isolated_bundle_data));
+    std::string wrapper = "(function (binding) {\n" + bundle + "\n})";
+    auto script = v8::Script::Compile(
+        mate::ConvertToV8(isolate, wrapper)->ToString());
+    auto func = v8::Handle<v8::Function>::Cast(
+        script->Run(context).ToLocalChecked());
+
+    auto binding = v8::Object::New(isolate);
+    api::Initialize(binding, v8::Null(isolate), context, nullptr);
+
+    // Pass in CLI flags needed to setup window
+    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+    mate::Dictionary dict(isolate, binding);
+    if (command_line->HasSwitch(switches::kGuestInstanceID))
+      dict.Set(options::kGuestInstanceID,
+               command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
+    if (command_line->HasSwitch(switches::kOpenerID))
+      dict.Set(options::kOpenerID,
+               command_line->GetSwitchValueASCII(switches::kOpenerID));
+    dict.Set("hiddenPage", command_line->HasSwitch(switches::kHiddenPage));
+
+    v8::Local<v8::Value> args[] = { binding };
+    ignore_result(func->Call(context, v8::Null(isolate), 1, args));
+  }
+
+  bool IsMainWorld(int world_id) {
+    return world_id == World::MAIN_WORLD;
+  }
+
+  bool IsIsolatedWorld(int world_id) {
+    return world_id == World::ISOLATED_WORLD;
+  }
+
+  bool ShouldNotifyClient(int world_id) {
+    if (renderer_client_->isolated_world() && render_frame_->IsMainFrame())
+      return IsIsolatedWorld(world_id);
+    else
+      return IsMainWorld(world_id);
+  }
+
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               int extension_group,
                               int world_id) override {
-    if (world_id_ != -1 && world_id_ != world_id)
-      return;
-    world_id_ = world_id;
-    renderer_client_->DidCreateScriptContext(context, render_frame_);
+    if (ShouldNotifyClient(world_id))
+      renderer_client_->DidCreateScriptContext(context, render_frame_);
+
+    if (renderer_client_->isolated_world() && IsMainWorld(world_id)
+        && render_frame_->IsMainFrame()) {
+      CreateIsolatedWorldContext();
+      SetupMainWorldOverrides(context);
+    }
   }
+
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override {
-    if (world_id_ != world_id)
-      return;
-    renderer_client_->WillReleaseScriptContext(context, render_frame_);
+    if (ShouldNotifyClient(world_id))
+      renderer_client_->WillReleaseScriptContext(context, render_frame_);
   }
 
   void OnDestruct() override {
@@ -93,7 +169,6 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
  private:
   content::RenderFrame* render_frame_;
-  int world_id_;
   AtomRendererClient* renderer_client_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
@@ -121,21 +196,25 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
       .SchemeIs("chrome-extension");
 }
 
+std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
+  return base::SplitString(
+      custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+}
+
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
       atom_bindings_(new AtomBindings) {
+  isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kContextIsolation);
   // Parse --standard-schemes=scheme1,scheme2
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  std::string custom_schemes = command_line->GetSwitchValueASCII(
-      switches::kStandardSchemes);
-  if (!custom_schemes.empty()) {
-    std::vector<std::string> schemes_list = base::SplitString(
-        custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-    for (const std::string& scheme : schemes_list)
-      url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
-  }
+  std::vector<std::string> standard_schemes_list =
+      ParseSchemesCLISwitch(switches::kStandardSchemes);
+  for (const std::string& scheme : standard_schemes_list)
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -178,14 +257,21 @@ void AtomRendererClient::RenderFrameCreated(
   new PepperHelper(render_frame);
   new AtomRenderFrameObserver(render_frame, this);
   new ContentSettingsObserver(render_frame);
+  new printing::PrintWebViewHelper(render_frame);
 
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
+
+  // Parse --secure-schemes=scheme1,scheme2
+  std::vector<std::string> secure_schemes_list =
+      ParseSchemesCLISwitch(switches::kSecureSchemes);
+  for (const std::string& secure_scheme : secure_schemes_list)
+    blink::WebSecurityPolicy::registerURLSchemeAsSecure(
+        blink::WebString::fromUTF8(secure_scheme));
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
-  new printing::PrintWebViewHelper(render_view);
   new AtomRenderViewObserver(render_view, this);
 
   blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
@@ -325,6 +411,15 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
 void AtomRendererClient::AddSupportedKeySystems(
     std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
   AddChromeKeySystems(key_systems);
+}
+
+v8::Local<v8::Context> AtomRendererClient::GetContext(
+    blink::WebFrame* frame, v8::Isolate* isolate) {
+  if (isolated_world())
+    return frame->worldScriptContext(
+        isolate, World::ISOLATED_WORLD, ExtensionGroup::MAIN_GROUP);
+  else
+    return frame->mainWorldScriptContext();
 }
 
 }  // namespace atom

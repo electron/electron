@@ -22,7 +22,7 @@ behavior to electron@github.com.
 ## Downloads
 
 To install prebuilt Electron binaries, use
-[`npm`](https://docs.npmjs.com/) (or [`yarn`](https://yarnpkg.com/en/docs/managing-dependencies)):
+[`npm`](https://docs.npmjs.com/):
 
 ```sh
 # Install as a development dependency
@@ -54,6 +54,7 @@ contains documents describing how to build and contribute to Electron.
 - [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN)
 - [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW)
 - [Turkish](https://github.com/electron/electron/tree/master/docs-translations/tr-TR)
+- [Thai](https://github.com/electron/electron/tree/master/docs-Translations/th-TH)
 - [Ukrainian](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
 - [Russian](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
 - [French](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)
@@ -73,7 +74,7 @@ forums
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
-- [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(Japanese)*
+- [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
 - [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
 

@@ -13,11 +13,12 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
+#include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebCache.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/base/clipboard/clipboard.h"
+#include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
 
 namespace {
@@ -89,11 +90,11 @@ struct Converter<blink::WebMouseEvent::Button> {
                      blink::WebMouseEvent::Button* out) {
     std::string button = base::ToLowerASCII(V8ToString(val));
     if (button == "left")
-      *out = blink::WebMouseEvent::Button::ButtonLeft;
+      *out = blink::WebMouseEvent::Button::Left;
     else if (button == "middle")
-      *out = blink::WebMouseEvent::Button::ButtonMiddle;
+      *out = blink::WebMouseEvent::Button::Middle;
     else if (button == "right")
-      *out = blink::WebMouseEvent::Button::ButtonRight;
+      *out = blink::WebMouseEvent::Button::Right;
     else
       return false;
     return true;
@@ -175,7 +176,6 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
   out->windowsKeyCode = keyCode;
   if (shifted)
     out->modifiers |= blink::WebInputEvent::ShiftKey;
-  out->setKeyIdentifierFromWindowsKeyCode();
 
   ui::DomCode domCode = ui::UsLayoutKeyboardCodeToDomCode(keyCode);
   out->domCode = static_cast<int>(domCode);
@@ -215,6 +215,28 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
   return true;
 }
 
+v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
+    v8::Isolate* isolate, const content::NativeWebKeyboardEvent& in) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+
+  if (in.type == blink::WebInputEvent::Type::RawKeyDown)
+    dict.Set("type", "keyDown");
+  else if (in.type == blink::WebInputEvent::Type::KeyUp)
+    dict.Set("type", "keyUp");
+  dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.domKey));
+  dict.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
+    static_cast<ui::DomCode>(in.domCode)));
+
+  using Modifiers = blink::WebInputEvent::Modifiers;
+  dict.Set("isAutoRepeat", (in.modifiers & Modifiers::IsAutoRepeat) != 0);
+  dict.Set("shift", (in.modifiers & Modifiers::ShiftKey) != 0);
+  dict.Set("control", (in.modifiers & Modifiers::ControlKey) != 0);
+  dict.Set("alt", (in.modifiers & Modifiers::AltKey) != 0);
+  dict.Set("meta", (in.modifiers & Modifiers::MetaKey) != 0);
+
+  return dict.GetHandle();
+}
+
 bool Converter<blink::WebMouseEvent>::FromV8(
     v8::Isolate* isolate, v8::Local<v8::Value> val, blink::WebMouseEvent* out) {
   mate::Dictionary dict;
@@ -225,7 +247,7 @@ bool Converter<blink::WebMouseEvent>::FromV8(
   if (!dict.Get("x", &out->x) || !dict.Get("y", &out->y))
     return false;
   if (!dict.Get("button", &out->button))
-    out->button = blink::WebMouseEvent::Button::ButtonLeft;
+    out->button = blink::WebMouseEvent::Button::Left;
   dict.Get("globalX", &out->globalX);
   dict.Get("globalY", &out->globalY);
   dict.Get("movementX", &out->movementX);
@@ -423,9 +445,6 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStat>::ToV8(
   dict.Set("count", static_cast<uint32_t>(stat.count));
   dict.Set("size", static_cast<double>(stat.size));
   dict.Set("liveSize", static_cast<double>(stat.liveSize));
-  dict.Set("decodedSize", static_cast<double>(stat.decodedSize));
-  dict.Set("purgedSize", static_cast<double>(stat.purgedSize));
-  dict.Set("purgeableSize", static_cast<double>(stat.purgeableSize));
   return dict.GetHandle();
 }
 

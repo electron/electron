@@ -13,6 +13,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/image/image.h"
@@ -71,7 +72,8 @@ Tray::Tray(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
 
 Tray::~Tray() {
   // Destroy the native tray in next tick.
-  base::MessageLoop::current()->DeleteSoon(FROM_HERE, tray_icon_.release());
+  base::ThreadTaskRunnerHandle::Get()->DeleteSoon(
+      FROM_HERE, tray_icon_.release());
 }
 
 // static

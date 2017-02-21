@@ -176,6 +176,7 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setExtraHeader", &URLRequest::SetExtraHeader)
       .SetMethod("removeExtraHeader", &URLRequest::RemoveExtraHeader)
       .SetMethod("setChunkedUpload", &URLRequest::SetChunkedUpload)
+      .SetMethod("_setLoadFlags", &URLRequest::SetLoadFlags)
       .SetProperty("notStarted", &URLRequest::NotStarted)
       .SetProperty("finished", &URLRequest::Finished)
       // Response APi
@@ -289,6 +290,18 @@ void URLRequest::SetChunkedUpload(bool is_chunked_upload) {
   DCHECK(atom_request_);
   if (atom_request_) {
     atom_request_->SetChunkedUpload(is_chunked_upload);
+  }
+}
+
+void URLRequest::SetLoadFlags(int flags) {
+  // State must be equal to not started.
+  if (!request_state_.NotStarted()) {
+    // Cannot change load flags after start.
+    return;
+  }
+  DCHECK(atom_request_);
+  if (atom_request_) {
+    atom_request_->SetLoadFlags(flags);
   }
 }
 

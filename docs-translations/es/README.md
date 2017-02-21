@@ -24,7 +24,7 @@
 ### Elementos DOM personalizados:
 
 * [Objeto `File`](../../docs/api/file-object.md)
-* [Etiqueta `<webview>`](../../docs/api/web-view-tag.md)
+* [Etiqueta `<webview>`](../../docs/api/webview-tag.md)
 * [Función `window.open`](../../docs/api/window-open.md)
 
 ### Módulos del Proceso Principal:

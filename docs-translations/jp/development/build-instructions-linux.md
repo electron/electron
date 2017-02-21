@@ -5,7 +5,7 @@ Linux で Electron をビルドする際は以下のガイドラインに従っ�
 ## 事前準備
 
 * 25GB のディスク空き容量と8GB の RAM が少なくとも必要です
-* Python 2.7.xが必要です。CentOS のようないくつかのディストリビューションはまだ Python 2.6.x を使ってるので、`python -V` で Python のバージョンを確認する必要があるでしょう。
+* Python 2.7.xが必要です。CentOS 6.x のようないくつかのディストリビューションはまだ Python 2.6.x を使ってるので、`python -V` で Python のバージョンを確認する必要があるでしょう。
 * Node.js v0.12.x が必要です。Node のインストールには色んな方法があります。[Node.js](http://nodejs.org) からソースコードをダウンロードしてビルドすることもできます。そうすることで root でないユーザーのホームディレクトリに Node をインストールすることもできます。あるいは [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories) のようなレポジトリを試してみてください。
 * Clang 3.4 以上が必要です。
 * GTK+ と libnotify の開発用ヘッダーが必要です。
@@ -19,12 +19,22 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib curl
 ```
 
+RHEL / CentOS では以下のライブラリをインストールしてください。
+
+```bash
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
+```
+
 Fedora では以下のライブラリをインストールしてください。
 
 ```bash
-$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
-                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
-                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+$ sudo dnf install clang dbus-devel gtk2-devel libnotify-devel \
+                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                   GConf2-devel nss-devel
 ```
 
 他のディストリビューションでは pacman のようなパッケージマネージャーを通して似たようなインストールパッケージを提供しているかもしれません。あるいはソースコードからコンパイルもできます。

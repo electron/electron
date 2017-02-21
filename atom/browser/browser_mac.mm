@@ -146,13 +146,13 @@ std::string Browser::GetCurrentActivityType() {
 bool Browser::ContinueUserActivity(const std::string& type,
                                    const base::DictionaryValue& user_info) {
   bool prevent_default = false;
-  FOR_EACH_OBSERVER(BrowserObserver,
-                    observers_,
-                    OnContinueUserActivity(&prevent_default, type, user_info));
+  for (BrowserObserver& observer : observers_)
+    observer.OnContinueUserActivity(&prevent_default, type, user_info);
   return prevent_default;
 }
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+Browser::LoginItemSettings Browser::GetLoginItemSettings(
+    LoginItemSettings options) {
   LoginItemSettings settings;
   settings.open_at_login = base::mac::CheckLoginItemStatus(
       &settings.open_as_hidden);
