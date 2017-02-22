@@ -276,7 +276,7 @@ let win = new BrowserWindow()
 
 win.webContents.session.setCertificateVerifyProc((request, callback) => {
   const {hostname} = request
-  if(hostname === 'github.com') {
+  if (hostname === 'github.com') {
     callback(0)
   } else {
     callback(-2)
