@@ -51,6 +51,8 @@ class Window : public mate::TrackableObject<Window>,
 
   NativeWindow* window() const { return window_.get(); }
 
+  int32_t ID() const;
+
  protected:
   Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
          const mate::Dictionary& options);
@@ -202,7 +204,6 @@ class Window : public mate::TrackableObject<Window>,
 
   void SetVibrancy(mate::Arguments* args);
 
-  int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
 
   // Remove this window from parent window's |child_windows_|.
