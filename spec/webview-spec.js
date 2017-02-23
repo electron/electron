@@ -193,7 +193,7 @@ describe('<webview> tag', function () {
 
     it('preload script can require modules that still use "process" and "Buffer" when nodeintegration is off', function (done) {
       webview.addEventListener('console-message', function (e) {
-        assert.equal(e.message, 'object undefined object function')
+        assert.equal(e.message, 'object undefined object function undefined')
         done()
       })
       webview.setAttribute('preload', fixtures + '/module/preload-node-off-wrapper.js')
