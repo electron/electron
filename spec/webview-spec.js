@@ -191,7 +191,7 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
-    it('preload script can require modules that still use "process" and "Buffer"when nodeintegration is off', function (done) {
+    it('preload script can require modules that still use "process" and "Buffer" when nodeintegration is off', function (done) {
       webview.addEventListener('console-message', function (e) {
         assert.equal(e.message, 'object undefined object function')
         done()
