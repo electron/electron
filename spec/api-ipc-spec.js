@@ -143,6 +143,21 @@ describe('ipc module', function () {
         {foo: {bar: null}, bar: 'baz'}
       ])
     })
+
+    it('handles large arguments that get truncated by value converter recursion limit', function () {
+      const object = {}
+      const array = []
+      let currentObject = object
+      let currentArray = array
+      for (let i = 0; i < 250; i++) {
+        currentObject.foo = {}
+        currentObject = currentObject.foo
+        currentArray.push([])
+        currentArray = currentArray[0]
+      }
+      var a = remote.require(path.join(fixtures, 'module', 'function.js'))
+      assert.equal(a.aFunction(object, array), 1127)
+    })
   })
 
   describe('remote.createFunctionWithReturnValue', function () {
