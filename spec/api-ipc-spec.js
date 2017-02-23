@@ -144,7 +144,7 @@ describe('ipc module', function () {
       ])
     })
 
-    it('handles large arguments that get truncated by value converter recursion limit', function () {
+    it('handles large arguments', function () {
       const object = {}
       const array = []
       let currentObject = object
