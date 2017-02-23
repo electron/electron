@@ -28,9 +28,7 @@
 
 namespace {
 
-class FileSelectHelper : public base::RefCountedThreadSafe<
-                             FileSelectHelper,
-                             content::BrowserThread::DeleteOnUIThread>,
+class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
                          public content::WebContentsObserver {
  public:
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
@@ -44,18 +42,20 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   }
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings) {
-    auto callback = base::Bind(&FileSelectHelper::OnOpenDialogDone,
-                               base::Unretained(this));
+    auto callback = base::Bind(&FileSelectHelper::OnOpenDialogDone, this);
     file_dialog::ShowOpenDialog(settings, callback);
   }
 
   void ShowSaveDialog(const file_dialog::DialogSettings& settings) {
-    auto callback = base::Bind(&FileSelectHelper::OnSaveDialogDone,
-                               base::Unretained(this));
+    auto callback = base::Bind(&FileSelectHelper::OnSaveDialogDone, this);
     file_dialog::ShowSaveDialog(settings, callback);
   }
 
  private:
+  friend class base::RefCounted<FileSelectHelper>;
+
+  ~FileSelectHelper() {}
+
   void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths) {
     std::vector<content::FileChooserFileInfo> file_info;
     if (result) {
