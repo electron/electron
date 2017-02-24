@@ -58,7 +58,7 @@ std::map<uint32_t, v8::Global<v8::Object>> g_download_item_objects;
 
 DownloadItem::DownloadItem(v8::Isolate* isolate,
                            content::DownloadItem* download_item)
-    : download_item_(download_item), done_emitted_(false) {
+    : download_item_(download_item) {
   download_item_->AddObserver(this);
   Init(isolate);
   AttachAsUserData(download_item);
@@ -76,16 +76,13 @@ DownloadItem::~DownloadItem() {
 }
 
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
-  if (!download_item_->IsDone()) {
-    Emit("updated", item->GetState());
-    
-  } else if (!done_emitted_) {
+  if (download_item_->IsDone()) {
     Emit("done", item->GetState());
-    done_emitted_ = true;
-
     // Destroy the item once item is downloaded.
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE, GetDestroyClosure());
+  } else {
+    Emit("updated", item->GetState());
   }
 }
 
@@ -113,7 +110,6 @@ bool DownloadItem::CanResume() const {
 
 void DownloadItem::Cancel() {
   download_item_->Cancel(true);
-  download_item_->Remove();
 }
 
 int64_t DownloadItem::GetReceivedBytes() const {
