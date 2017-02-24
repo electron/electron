@@ -181,12 +181,22 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
-    it('preload script can still use "process" and "Buffer" in required modules when nodeintegration is off', function (done) {
+    it('preload script can still use "process" and "Buffer" when nodeintegration is off', function (done) {
       webview.addEventListener('console-message', function (e) {
         assert.equal(e.message, 'object undefined object function')
         done()
       })
       webview.setAttribute('preload', fixtures + '/module/preload-node-off.js')
+      webview.src = 'file://' + fixtures + '/api/blank.html'
+      document.body.appendChild(webview)
+    })
+
+    it('preload script can require modules that still use "process" and "Buffer" when nodeintegration is off', function (done) {
+      webview.addEventListener('console-message', function (e) {
+        assert.equal(e.message, 'object undefined object function undefined')
+        done()
+      })
+      webview.setAttribute('preload', fixtures + '/module/preload-node-off-wrapper.js')
       webview.src = 'file://' + fixtures + '/api/blank.html'
       document.body.appendChild(webview)
     })
