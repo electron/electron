@@ -65,7 +65,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
         file_info.push_back(info);
       }
 
-      if (!paths.empty()) {
+      if (render_frame_host_ && !paths.empty()) {
         auto browser_context = static_cast<atom::AtomBrowserContext*>(
             render_frame_host_->GetProcess()->GetBrowserContext());
         browser_context->prefs()->SetFilePath(prefs::kSelectFileLastDirectory,
