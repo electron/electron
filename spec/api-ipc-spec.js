@@ -154,6 +154,15 @@ describe('ipc module', function () {
     })
   })
 
+  describe('remote modules', function () {
+    it('includes browser process modules as properties', function () {
+      assert.equal(typeof remote.app.getPath, 'function')
+      assert.equal(typeof remote.webContents.getFocusedWebContents, 'function')
+      assert.equal(typeof remote.clipboard.readText, 'function')
+      assert.equal(typeof remote.shell.openExternal, 'function')
+    })
+  })
+
   describe('remote object in renderer', function () {
     it('can change its properties', function () {
       var property = remote.require(path.join(fixtures, 'module', 'property.js'))
