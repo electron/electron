@@ -1086,7 +1086,7 @@ describe('<webview> tag', function () {
       assert.equal(visibilityState, 'hidden')
       assert.equal(hidden, true)
 
-      w.webContents.send('ELECTRON_RENDERER_WINDOW_VISIBILITY_CHANGE', 'visible')
+      w.webContents.emit('-window-visibility-change', 'visible')
 
       ipcMain.once('pong', function (event, visibilityState, hidden) {
         assert.equal(visibilityState, 'visible')
