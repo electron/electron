@@ -51,35 +51,35 @@ NSIS staat voor "Nullsoft Scriptable Install System" is een script gestuurde ins
 
 Een proces is een instantie van een computerprogramma dat wordt uitgevoerd. Electron apps die gebruik maken van het [main] en een of meer [renderer] processen zijn eigenlijk meerdere programma's tegelijk aan het uitvoeren.
 
-In Node.js en Electron, elk lopend proces heeft een `proces` object. Dit object is een global that informatie voorziet over, en controle over, het huidige proces. Als een global is het altijd beschikbaar voor applicaties zonder gebruik van `require()`.
+In Node.js en Electron heeft elk lopend proces een `proces` object. Dit object is een global dat informatie voorziet over, en controle over, het huidige proces. Als een global is het altijd beschikbaar voor applicaties zonder gebruik van `require()`.
 
 Zie ook: [main process](#main-process), [renderer process](#renderer-process)
 
 ### renderer process
 
-Het renderer proces is een browservenster in uw app. In tegenstelling tot het hoofdproces, kunnen er meerdere van zijn en elke is een apart proces. Ze kunnen ook verborgen zijn.
+Het renderer proces is een browservenster in uw app. In tegenstelling tot het hoofdproces, kunnen er meerdere van zijn en elk is een apart proces. Ze kunnen ook verborgen zijn.
 
-In normale browsers worden webpagina's meestal uitgevoerd in een sandbox-omgeving en hebben geen toegang tot native resources. Electron gebruikers hebben echter de bevoegdheid om gebruik te maken van Node.js zijn API in webpagina's die het toe laten in lager niveau van operating system te gebruiken.
+In normale browsers worden webpagina's meestal uitgevoerd in een sandbox-omgeving en hebben geen toegang tot native resources. Electron gebruikers hebben echter de bevoegdheid om gebruik te maken van Node.js zijn API in webpagina's die het toe laten een lager niveau van operating system te gebruiken.
 
 Zie ook: [process](#process), [main process](#main-process)
 
 ### Squirrel
 
-Squirrel is een open-source framework dat Electron apps in staat stelt om automatisch te updaten als nieuwe versies uitkomen. Kijk naar [autoUpdater] API voor informatie over hoe te starten met Squirrel.
+Squirrel is een open-source framework dat Electron apps in staat stelt om automatisch te updaten als nieuwe versies uitkomen. Kijk naar de [autoUpdater] API voor informatie over hoe te starten met Squirrel.
 
 ### userland
 
-Userland of gebruikers-land is een term die zijn oorsprong heeft in de Unix gemeenschap, waar "userland" of "userspace" verwijst naar de programma's die uitgevoerd worden buiten de kernel. Meer recent is de term populair geworden in de Node en npm community om het verschil aan te geven tussen de beschikbare features in de "Node core" versus pakketten gepubliceerd naar de npm register door een veel grotere "gebruiker" gemeenschap.
+Userland of gebruikers-land is een term die zijn oorsprong heeft in de Unix gemeenschap, waar "userland" of "userspace" verwijst naar de programma's die uitgevoerd worden buiten de kernel. Meer recent is de term populair geworden in de Node en npm community om het verschil aan te geven tussen de beschikbare features in de "Node core" versus pakketten gepubliceerd naar het npm register door een veel grotere "gebruiker" gemeenschap.
 
 Net zoals Node, is Electron gericht op het hebben van een kleine API die alle noodzakelijke functies voorziet voor het ontwikkelen van multi-platform desktop applicaties. Deze ontwerpfilosofie zorgt ervoor dat Electron een flexibel tool is zonder overdreven te beschrijven hoe het gebruikt moet worden. Userland zorgt ervoor dat gebruikers tools kunnen maken en delen die extra functionaliteit bieden bovenop wat beschikbaar is in de "core".
 
 ### V8
 
-V8 is Google's open source JavaScript-engine. Het is geschreven in C++ en wordt gebruikt in Google Chrome, de open source browser van Google. V8 kan standalone draaien, of kan worden gebruikt in een C++ applicatie.
+V8 is Google's open source JavaScript-engine. Het is geschreven in C++ en wordt gebruikt in Google Chrome. V8 kan standalone draaien, of kan worden gebruikt in een C++ applicatie.
 
 ### webview
 
-`Webview` tags worden gebruikt om 'gast' content (zoals in externe webpagina's) in uw Electron app. Ze lijken op `iframe`s, maar verschillen erin dat elke webview in een apart proces loopt. Het hoeft niet dezelfde rechten hebben als uw webpagina en alle interacties tussen uw app en ingebouwde inhoud zal asynchroon zijn. Dit houd uw app veilig voor het ingebouwde content.
+`Webview` tags worden gebruikt om 'gast' content (zoals in externe webpagina's) in uw Electron app te verwerken. Ze lijken op `iframe`s, maar verschillen erin dat elke webview op een apart proces loopt. Het hoeft niet dezelfde rechten te hebben als uw webpagina en alle interacties tussen uw app en ingebouwde inhoud zal asynchroon zijn. Dit houd uw app veilig voor het ingebouwde content.
 
 
 
