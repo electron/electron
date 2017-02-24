@@ -1086,13 +1086,13 @@ describe('<webview> tag', function () {
       assert.equal(visibilityState, 'hidden')
       assert.equal(hidden, true)
 
-      w.webContents.emit('-window-visibility-change', 'visible')
-
       ipcMain.once('pong', function (event, visibilityState, hidden) {
         assert.equal(visibilityState, 'visible')
         assert.equal(hidden, false)
         done()
       })
+
+      w.webContents.emit('-window-visibility-change', 'visible')
     })
 
     w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
