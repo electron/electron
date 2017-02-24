@@ -36,8 +36,6 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     auto web_contents = content::WebContents::FromRenderFrameHost(
         render_frame_host);
     content::WebContentsObserver::Observe(web_contents);
-    // Add ref that will be released when the dialog is completed
-    AddRef();
   }
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings) {
@@ -90,7 +88,6 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
       const std::vector<content::FileChooserFileInfo>& file_info) {
     if (render_frame_host_)
       render_frame_host_->FilesSelectedInChooser(file_info, mode_);
-    Release();
   }
 
   // content::WebContentsObserver:
