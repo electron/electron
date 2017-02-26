@@ -125,8 +125,10 @@ Returns:
 * `event` Event
 * `hasVisibleWindows` Boolean
 
-Emitted when the application is activated, which usually happens when the user
-clicks on the application's dock icon.
+Emitted when the application is activated. Various actions can trigger
+this event, such as launching the application for the first time, attempting
+to re-launch the application when it's already running, or clicking on the 
+application's dock or taskbar icon.
 
 ### Event: 'continue-activity' _macOS_
 
