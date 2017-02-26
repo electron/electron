@@ -2,21 +2,6 @@
 
 > Configure local and global keyboard shortcuts
 
-## Global Shortcuts
-
-You can use the [globalShortcut] module to detect keyboard events even when
-the application does not have keyboard focus.
-
-```js
-const {app, globalShortcut} = require('electron')
-
-app.on('ready', () => {
-  globalShortcut.register('CommandOrControl+X', () => {
-    console.log('CommandOrControl+X is pressed')
-  })
-})
-```
-
 ## Local Shortcuts
 
 You can use the [Menu] module to configure keyboard shortcuts that will
@@ -45,6 +30,21 @@ It's easy to configure different key combinations based on the user's operating 
 If you want to configure a local keyboard shortcut to trigger an action that
 _does not_ have a corresponding menu item, you can use the
 [electron-localshortcut] npm module.
+
+## Global Shortcuts
+
+You can use the [globalShortcut] module to detect keyboard events even when
+the application does not have keyboard focus.
+
+```js
+const {app, globalShortcut} = require('electron')
+
+app.on('ready', () => {
+  globalShortcut.register('CommandOrControl+X', () => {
+    console.log('CommandOrControl+X is pressed')
+  })
+})
+```
 
 ## Shortcuts within a BrowserWindow
 
