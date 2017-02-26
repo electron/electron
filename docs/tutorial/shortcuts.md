@@ -42,12 +42,11 @@ It's easy to configure different key combinations based on the user's operating 
 }
 ```
 
-
-## Local Shortcuts without a Menu
-
 If you want to configure a local keyboard shortcut to trigger an action that
 _does not_ have a corresponding menu item, you can use the
 [electron-localshortcut] npm module.
+
+## Shortcuts within a BrowserWindow
 
 If you want to handle keyboard shortcuts for a [BrowserWindow], you can use the `keyup` and `keydown` event listeners on the window object inside the renderer process.
 
@@ -57,9 +56,39 @@ window.addEventListener('keyup', doSomething, true)
 
 Note the third parameter `true` which means the listener will always receive key presses before other listeners so they can't have `stopPropagation()` called on them.
 
+If you don't want to do manual shortcut parsing there are libraries that do advanced key detection such as [mousetrap].
+
+```js
+Mousetrap.bind('4', function () { console.log('4')})
+Mousetrap.bind('?', function () { console.log('show shortcuts!')})
+Mousetrap.bind('esc', function () { console.log('escape')}, 'keyup')
+
+// combinations
+Mousetrap.bind('command+shift+k', function () { console.log('command shift k')})
+
+// map multiple combinations to the same callback
+Mousetrap.bind(['command+k', 'ctrl+k'], function () {
+  console.log('command k or control k')
+
+  // return false to prevent default browser behavior
+  // and stop event from bubbling
+  return false
+})
+
+// gmail style sequences
+Mousetrap.bind('g i', function () { console.log('go to inbox')})
+Mousetrap.bind('* a', function () { console.log('select all')})
+
+// konami code!
+Mousetrap.bind('up up down down left right left right b a enter', function () {
+  console.log('konami code')
+})
+```
+
 [Menu]: ../api/menu.md
 [MenuItem]: ../api/menu-item.md
 [globalShortcut]: ../api/global-shortcut.md
 [`accelerator`]: ../api/accelerator.md
 [electron-localshortcut]: http://ghub.io/electron-localshortcut
 [BrowserWindow]: ../api/browser-window.md
+[mousetrap]: https://github.com/ccampbell/mousetrap
