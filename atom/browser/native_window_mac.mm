@@ -377,7 +377,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)resetTouchBar {
   bar_items_ = [[NSMutableArray alloc] init];
-  // self.touchBar = nil;
+  self.touchBar = nil;
 }
 
 - (NSMutableArray*)identifierArrayFromDicts:(std::vector<mate::PersistentDictionary>)dicts {
@@ -435,7 +435,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::map<std::string, mate::PersistentDictionary> new_map;
   item_id_map = new_map;
   bar_items_ = [self identifierArrayFromDicts:shell_->GetTouchBarItems()];
-  // self.touchBar = nil;
+  self.touchBar = nil;
 }
 
 - (NSTouchBar*)makeTouchBar {

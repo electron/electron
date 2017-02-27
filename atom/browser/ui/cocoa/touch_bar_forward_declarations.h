@@ -121,7 +121,7 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 
 @interface NSWindow (TouchBarSDK)
 
-@property(strong, readonly) NSTouchBar* touchBar;
+@property(strong, readwrite, nullable) NSTouchBar* touchBar;
 
 @end
 
