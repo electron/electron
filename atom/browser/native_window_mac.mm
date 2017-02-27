@@ -459,10 +459,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)colorPickerAction:(id)sender {
     NSString* item_id = ((NSColorPickerTouchBarItem *)sender).identifier;
     NSColor* color = ((NSColorPickerTouchBarItem *)sender).color;
-    NSString* colorHexString = [NSString stringWithFormat:@"#%02X%02X%02X",
-      (int) (color.redComponent * 0xFF), (int) (color.greenComponent * 0xFF),
-      (int) (color.blueComponent * 0xFF)];
-    shell_->NotifyTouchBarItemInteraction("color_picker", { std::string([item_id UTF8String]), std::string([colorHexString UTF8String]) });
+    std::string hex_color = atom::ToRGBHex(skia::NSDeviceColorToSkColor(color));
+    shell_->NotifyTouchBarItemInteraction("color_picker", { std::string([item_id UTF8String]), hex_color });
 }
 
 - (void)sliderAction:(id)sender {
@@ -481,25 +479,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (NSColor*)colorFromHexColorString:(NSString*)inColorString {
-  NSColor* result = nil;
-  unsigned colorCode = 0;
-  unsigned char redByte, greenByte, blueByte;
-
-  if (nil != inColorString)
-  {
-       NSScanner* scanner = [NSScanner scannerWithString:inColorString];
-       (void) [scanner scanHexInt:&colorCode]; // ignore error
-  }
-  redByte = (unsigned char)(colorCode >> 16);
-  greenByte = (unsigned char)(colorCode >> 8);
-  blueByte = (unsigned char)(colorCode); // masks off high bits
-
-  result = [NSColor
-  colorWithCalibratedRed:(CGFloat)redByte / 0xff
-  green:(CGFloat)greenByte / 0xff
-  blue:(CGFloat)blueByte / 0xff
-  alpha:1.0];
-  return result;
+  SkColor color = atom::ParseHexColor([inColorString UTF8String]);
+  return skia::SkColorToCalibratedNSColor(color);
 }
 
 - (NSButton*)makeButtonForDict:(mate::PersistentDictionary)dict withLabel:(std::string)label {
