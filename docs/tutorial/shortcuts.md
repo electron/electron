@@ -27,10 +27,6 @@ It's easy to configure different key combinations based on the user's operating 
 }
 ```
 
-If you want to configure a local keyboard shortcut to trigger an action that
-_does not_ have a corresponding menu item, you can use the
-[electron-localshortcut] npm module.
-
 ## Global Shortcuts
 
 You can use the [globalShortcut] module to detect keyboard events even when
@@ -89,6 +85,5 @@ Mousetrap.bind('up up down down left right left right b a enter', function () {
 [MenuItem]: ../api/menu-item.md
 [globalShortcut]: ../api/global-shortcut.md
 [`accelerator`]: ../api/accelerator.md
-[electron-localshortcut]: http://ghub.io/electron-localshortcut
 [BrowserWindow]: ../api/browser-window.md
 [mousetrap]: https://github.com/ccampbell/mousetrap
