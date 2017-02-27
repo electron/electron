@@ -147,6 +147,15 @@ bool NativeWindowViews::PreHandleMSG(
       }
       return false;
     }
+    /**
+     * Reset max position to stop overflow onto different monitor.
+     */
+    case WM_GETMINMAXINFO: {
+      MINMAXINFO* info = reinterpret_cast<MINMAXINFO*>(l_param);
+      info->ptMaxPosition.x = 0;
+      info->ptMaxPosition.y = 0;
+      return true;
+    }
     default:
       return false;
   }
