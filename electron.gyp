@@ -6,7 +6,6 @@
     'company_abbr%': 'github',
     'version%': '1.6.3',
     'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
-    'grit_dir': 'vendor/grit',
   },
   'includes': [
     'filenames.gypi',
@@ -211,7 +210,7 @@
       'type': 'static_library',
       'dependencies': [
         'atom_js2c',
-        'pdfviewer',
+        'vendor/pdf_viewer/pdf_viewer.gyp:pdf_viewer',
         'vendor/brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node',
       ],
@@ -419,33 +418,6 @@
         }
       ],
     },  # target app2asar
-    {
-      'target_name': 'pdfviewer',
-      'type': 'none',
-      'actions': [
-        {
-          'action_name': 'pdfviewer',
-          'inputs': [
-            'vendor/pdf_viewer/resources.grd',
-          ],
-          'outputs': [
-            '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources.h',
-            '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.cc',
-            '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.h',
-            '<(PRODUCT_DIR)/pdf_viewer_resources.pak',
-          ],
-          'action': [
-            'python',
-            '<(grit_dir)/grit.py',
-            '-i',
-            '<@(_inputs)',
-            'build',
-            '-o',
-            '<(SHARED_INTERMEDIATE_DIR)/grit',
-          ],
-        }
-      ],
-    },  # target pdfviewer
     {
       'target_name': 'atom_js2c_copy',
       'type': 'none',
