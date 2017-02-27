@@ -22,9 +22,6 @@
 [submodule "vendor/boto"]
 	path = vendor/boto
 	url = https://github.com/boto/boto.git
-[submodule "vendor/grit"]
-	path = vendor/grit
-	url = https://chromium.googlesource.com/chromium/src/tools/grit.git
 [submodule "vendor/pdf_viewer"]
 	path = vendor/pdf_viewer
 	url = https://github.com/deepak1556/pdf-viewer.git
