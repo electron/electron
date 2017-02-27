@@ -34,7 +34,7 @@ namespace atom {
 
 namespace {
 
-const std::string kIpcKey = "ipc";
+const std::string kIpcKey = "ipcNative";
 const std::string kModuleCacheKey = "native-module-cache";
 
 

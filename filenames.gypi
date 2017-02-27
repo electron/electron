@@ -81,6 +81,7 @@
     'browserify_entries': [
       'lib/renderer/api/ipc-renderer-setup.js',
       'lib/sandboxed_renderer/init.js',
+      'lib/sandboxed_renderer/api/exports/electron.js',
     ],
     'isolated_context_browserify_entries': [
       'lib/renderer/window-setup.js',
