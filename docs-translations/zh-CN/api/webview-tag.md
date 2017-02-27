@@ -193,7 +193,7 @@ CSS通过 `flex` 布局设置 `width` 和 `height`，并允许元素缩小到0px
 
 指定要禁用的 blink 特征的字符串列表，用 `,` 分隔。
 支持的功能字符串的完整列表
-[RuntimeEnabledFeatures.in][blink-feature-string]。
+[RuntimeEnabledFeatures.json5][blink-feature-string]。
 
 ### `guestinstance`
 
@@ -835,4 +835,4 @@ ipcRenderer.on('ping', () => {
 
 在开发者工具获取焦点的时候触发。
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62

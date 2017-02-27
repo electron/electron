@@ -212,7 +212,7 @@ The full list of supported preference strings can be found in [BrowserWindow](br
 The string follows the same format as the features string in `window.open`.
 A name by itself is given a `true` boolean value.
 A preference can be set to another value by including an `=`, followed by the value.
-Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are interpreted as `false`.  
+Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are interpreted as `false`.
 
 ### `blinkfeatures`
 
@@ -222,7 +222,7 @@ Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are i
 
 A list of strings which specifies the blink features to be enabled separated by `,`.
 The full list of supported feature strings can be found in the
-[RuntimeEnabledFeatures.in][blink-feature-string] file.
+[RuntimeEnabledFeatures.json5][blink-feature-string] file.
 
 ### `disableblinkfeatures`
 
@@ -232,7 +232,7 @@ The full list of supported feature strings can be found in the
 
 A list of strings which specifies the blink features to be disabled separated by `,`.
 The full list of supported feature strings can be found in the
-[RuntimeEnabledFeatures.in][blink-feature-string] file.
+[RuntimeEnabledFeatures.json5][blink-feature-string] file.
 
 ### `guestinstance`
 
@@ -913,4 +913,4 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
-[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
