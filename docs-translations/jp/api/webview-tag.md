@@ -741,4 +741,4 @@ DevToolsが閉じられた際に発生します。
 
 DevToolsにフォーカスが当たった際 / 開かれた際に発生します。
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
