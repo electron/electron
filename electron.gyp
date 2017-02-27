@@ -436,11 +436,21 @@
         # depend on this target to ensure the '<(js2c_input_dir)' is created
         'atom_js2c_copy',
       ],
+      'variables': {
+        'sandbox_args': [
+          './lib/sandboxed_renderer/init.js',
+          '-r',
+          './lib/sandboxed_renderer/api/exports/electron.js:electron'
+        ],
+        'isolated_args': [
+          'lib/isolated_renderer/init.js',
+        ]
+      },
       'actions': [
         {
           'action_name': 'atom_browserify_sandbox',
           'inputs': [
-            '<@(browserify_entries)',
+            '<!@(python tools/list-browserify-deps.py <(sandbox_args))'
           ],
           'outputs': [
             '<(js2c_input_dir)/preload_bundle.js',
@@ -451,9 +461,7 @@
             '--silent',
             'browserify',
             '--',
-            'lib/sandboxed_renderer/init.js',
-            '-r',
-            './lib/sandboxed_renderer/api/exports/electron.js:electron',
+            '<@(sandbox_args)',
             '-o',
             '<@(_outputs)',
           ],
@@ -461,7 +469,7 @@
         {
           'action_name': 'atom_browserify_isolated_context',
           'inputs': [
-            '<@(isolated_context_browserify_entries)',
+            '<!@(python tools/list-browserify-deps.py <(isolated_args))'
           ],
           'outputs': [
             '<(js2c_input_dir)/isolated_bundle.js',
@@ -472,7 +480,7 @@
             '--silent',
             'browserify',
             '--',
-            'lib/isolated_renderer/init.js',
+            '<@(isolated_args)',
             '-o',
             '<@(_outputs)',
           ],
