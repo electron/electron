@@ -14,7 +14,7 @@ const menu = new Menu()
 
 menu.append(new MenuItem({
   label: 'Print',
-  accelerator: 'CmdOrCtrl+P'
+  accelerator: 'CmdOrCtrl+P',
   click: () => { console.log('time to print stuff') }
 }))
 ```
@@ -55,28 +55,27 @@ Note the third parameter `true` which means the listener will always receive key
 If you don't want to do manual shortcut parsing there are libraries that do advanced key detection such as [mousetrap].
 
 ```js
-Mousetrap.bind('4', function () { console.log('4')})
-Mousetrap.bind('?', function () { console.log('show shortcuts!')})
-Mousetrap.bind('esc', function () { console.log('escape')}, 'keyup')
+Mousetrap.bind('4', () => { console.log('4') })
+Mousetrap.bind('?', () => { console.log('show shortcuts!') })
+Mousetrap.bind('esc', () => { console.log('escape') }, 'keyup')
 
 // combinations
-Mousetrap.bind('command+shift+k', function () { console.log('command shift k')})
+Mousetrap.bind('command+shift+k', () => { console.log('command shift k') })
 
 // map multiple combinations to the same callback
-Mousetrap.bind(['command+k', 'ctrl+k'], function () {
+Mousetrap.bind(['command+k', 'ctrl+k'], () => {
   console.log('command k or control k')
 
-  // return false to prevent default browser behavior
-  // and stop event from bubbling
+  // return false to prevent default behavior and stop event from bubbling
   return false
 })
 
 // gmail style sequences
-Mousetrap.bind('g i', function () { console.log('go to inbox')})
-Mousetrap.bind('* a', function () { console.log('select all')})
+Mousetrap.bind('g i', () => { console.log('go to inbox') })
+Mousetrap.bind('* a', () => { console.log('select all') })
 
 // konami code!
-Mousetrap.bind('up up down down left right left right b a enter', function () {
+Mousetrap.bind('up up down down left right left right b a enter', () => {
   console.log('konami code')
 })
 ```
