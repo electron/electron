@@ -1,4 +1,4 @@
-const {app, BrowserWindow, TouchBar} = require('electron')
+const {app, BrowserWindow} = require('electron')
 const path = require('path')
 
 let mainWindow = null
@@ -24,56 +24,5 @@ exports.load = (appUrl) => {
     mainWindow = new BrowserWindow(options)
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
-
-    const slider = new (TouchBar.Slider)({
-      label: 'Slider 123',
-      minValue: 50,
-      maxValue: 1000,
-      initialValue: 300,
-      change: (newVal) => {
-        console.log('Slider was changed', newVal, typeof newVal)
-      }
-    });
-
-    global.slider = slider;
-    global.button = new (TouchBar.Button)({
-      label: 'Hello World!',
-      // image: '/path/to/image',
-      backgroundColor: 'FF0000',
-      labelColor: '0000FF',
-      click: () => {
-        console.log('Hello World Clicked')
-      }
-    });
-
-    mainWindow.setTouchBar(new TouchBar([
-      button,
-      new (TouchBar.Label)({
-        label: 'This is a Label'
-      }),
-      new (TouchBar.ColorPicker)({
-        change: (newColor) => {
-          console.log('Color was changed', newColor)
-        }
-      }),
-      new (TouchBar.PopOver)({
-        // image: '/path/to/image',
-        label: 'foo',
-        showCloseButton: true,
-        touchBar: new TouchBar([
-          new (TouchBar.Group)({
-            items: new TouchBar(
-              [1, 2, 3].map((i) => new (TouchBar.Button)({
-                label: `Button ${i}`,
-                click: () => {
-                  console.log(`Button ${i} (group) Clicked`)
-                }
-              }))
-            )
-          })
-        ])
-      }),
-      slider,
-    ]))
   })
 }
