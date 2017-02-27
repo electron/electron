@@ -7,6 +7,7 @@
 #include <Quartz/Quartz.h>
 #include <string>
 
+#include "atom/browser/ui/cocoa/touch_bar_forward_declarations.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
@@ -355,14 +356,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)reloadTouchBar;
 - (void)refreshTouchBarItem:(mate::Arguments*)args;
 - (void)resetTouchBar;
-- (NSTouchBar*)touchBarFromMutatableArray:(NSMutableArray<NSTouchBarItemIdentifier>*)items;
+- (NSTouchBar*)touchBarFromMutatableArray:(NSMutableArray*)items;
 @end
 
 @interface AtomNSWindow () <NSTouchBarDelegate>
 @end
 
 @implementation AtomNSWindow
-  NSMutableArray<NSTouchBarItemIdentifier>* bar_items_ = [[NSMutableArray alloc] init];
+  NSMutableArray* bar_items_ = [[NSMutableArray alloc] init];
   std::map<std::string, mate::PersistentDictionary> item_id_map;
   std::map<std::string, NSTouchBarItem*> item_map;
 
@@ -376,11 +377,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)resetTouchBar {
   bar_items_ = [[NSMutableArray alloc] init];
-  self.touchBar = nil;
+  // self.touchBar = nil;
 }
 
-- (NSMutableArray<NSTouchBarItemIdentifier>*)identifierArrayFromDicts:(std::vector<mate::PersistentDictionary>)dicts {
-  NSMutableArray<NSTouchBarItemIdentifier>* idents = [[NSMutableArray alloc] init];
+- (NSMutableArray*)identifierArrayFromDicts:(std::vector<mate::PersistentDictionary>)dicts {
+  NSMutableArray* idents = [[NSMutableArray alloc] init];
 
   for (mate::PersistentDictionary &item : dicts) {
     std::string type;
@@ -434,15 +435,15 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::map<std::string, mate::PersistentDictionary> new_map;
   item_id_map = new_map;
   bar_items_ = [self identifierArrayFromDicts:shell_->GetTouchBarItems()];
-  self.touchBar = nil;
+  // self.touchBar = nil;
 }
 
-- (NSTouchBar *)makeTouchBar {
+- (NSTouchBar*)makeTouchBar {
   return [self touchBarFromMutatableArray:bar_items_];
 }
 
-- (NSTouchBar *)touchBarFromMutatableArray:(NSMutableArray<NSTouchBarItemIdentifier>*)items {
-  NSTouchBar* bar = [[NSTouchBar alloc] init];
+- (NSTouchBar*)touchBarFromMutatableArray:(NSMutableArray*)items {
+  NSTouchBar* bar = [[NSClassFromString(@"NSTouchBar") alloc] init];
   bar.delegate = self;
 
   bar.defaultItemIdentifiers = [items copy];
@@ -534,7 +535,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
-  NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
+  NSCustomTouchBarItem *customItem = [[NSClassFromString(@"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier];
   return [self updateButton:customItem withOpts:item withID:id andCreate:true];
 }
 
@@ -566,7 +567,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
-  NSCustomTouchBarItem *customItem = [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
+  NSCustomTouchBarItem *customItem = [[NSClassFromString(@"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier];
   return [self updateLabel:customItem withOpts:item];
 }
 
@@ -591,7 +592,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
-  NSColorPickerTouchBarItem *colorPickerItem = [[NSColorPickerTouchBarItem alloc] initWithIdentifier:identifier];
+  NSColorPickerTouchBarItem *colorPickerItem = [[NSClassFromString(@"NSColorPickerTouchBarItem") alloc] initWithIdentifier:identifier];
   return [self updateColorPicker:colorPickerItem withOpts:item];
 }
 
@@ -611,7 +612,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
-  NSSliderTouchBarItem *sliderItem = [[NSSliderTouchBarItem alloc] initWithIdentifier:identifier];
+  NSSliderTouchBarItem *sliderItem = [[NSClassFromString(@"NSSliderTouchBarItem") alloc] initWithIdentifier:identifier];
   return [self updateSlider:sliderItem withOpts:item];
 }
 
@@ -647,7 +648,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   std::string s_id = std::string([id UTF8String]);
   if (![self hasTBDict:s_id]) return nil;
   mate::PersistentDictionary item = item_id_map[s_id];
-  NSPopoverTouchBarItem *popOverItem = [[NSPopoverTouchBarItem alloc] initWithIdentifier:identifier];
+  NSPopoverTouchBarItem *popOverItem = [[NSClassFromString(@"NSPopoverTouchBarItem") alloc] initWithIdentifier:identifier];
   return [self updatePopOver:popOverItem withOpts:item];
 }
 
@@ -690,8 +691,8 @@ bool ScopedDisableResize::disable_resize_ = false;
     return nil;
   }
 
-  NSMutableArray<NSTouchBarItem*>* generatedItems = [[NSMutableArray alloc] init];
-  NSMutableArray<NSString*>* identList = [self identifierArrayFromDicts:items];
+  NSMutableArray* generatedItems = [[NSMutableArray alloc] init];
+  NSMutableArray* identList = [self identifierArrayFromDicts:items];
   for (NSUInteger i = 0; i < [identList count]; i++) {
     if ([identList objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
       NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identList objectAtIndex:i]];
@@ -700,7 +701,7 @@ bool ScopedDisableResize::disable_resize_ = false;
       }
     }
   }
-  NSGroupTouchBarItem *groupItem = [NSGroupTouchBarItem groupItemWithIdentifier:identifier items:generatedItems];
+  NSGroupTouchBarItem *groupItem = [NSClassFromString(@"NSGroupTouchBarItem") groupItemWithIdentifier:identifier items:generatedItems];
 
   std::string customizationLabel;
   if (item.Get("customizationLabel", &customizationLabel)) {
