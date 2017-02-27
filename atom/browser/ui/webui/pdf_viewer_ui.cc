@@ -7,7 +7,6 @@
 #include <map>
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/stream_manager.h"
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
 #include "atom/common/atom_constants.h"
 #include "components/pdf/common/pdf_messages.h"
@@ -23,6 +22,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/stream_handle.h"
+#include "content/public/browser/stream_info.h"
 #include "content/public/browser/url_data_source.h"
 #include "content/public/browser/web_contents.h"
 #include "grit/pdf_viewer_resources_map.h"

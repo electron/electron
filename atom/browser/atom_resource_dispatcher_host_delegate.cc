@@ -75,7 +75,6 @@ void OnPdfStreamCreated(const GURL& original_url,
   content::NavigationController::LoadURLParams params(
       GURL(base::StringPrintf("%sindex.html?%s=%s", kPdfViewerUIOrigin,
                               kPdfPluginSrc, original_url.spec().c_str())));
-  params.can_load_local_resources = true;
   web_contents->GetController().LoadURLWithParams(params);
 }
 

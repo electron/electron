@@ -280,8 +280,6 @@
       'atom/browser/relauncher.h',
       'atom/browser/render_process_preferences.cc',
       'atom/browser/render_process_preferences.h',
-      'atom/browser/stream_manager.cc',
-      'atom/browser/stream_manager.h',
       'atom/browser/ui/accelerator_util.cc',
       'atom/browser/ui/accelerator_util.h',
       'atom/browser/ui/accelerator_util_mac.mm',
