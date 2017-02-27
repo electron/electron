@@ -4,9 +4,7 @@
 
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 
-#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/login_handler.h"
-#include "atom/browser/stream_manager.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/platform_util.h"
@@ -14,6 +12,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/stream_info.h"
 #include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
 #include "net/url_request/url_request.h"
@@ -63,30 +62,20 @@ void HandleExternalProtocolInUI(
   permission_helper->RequestOpenExternalPermission(callback, has_user_gesture);
 }
 
-void OnPdfStreamCreated(
-    std::unique_ptr<content::StreamInfo> stream,
-    const std::string& stream_id,
-    const content::ResourceRequestInfo::WebContentsGetter& web_contents_getter,
-    int render_process_id,
-    int render_frame_id) {
+void OnPdfStreamCreated(const GURL& original_url,
+                        const content::ResourceRequestInfo::WebContentsGetter&
+                            web_contents_getter) {
   content::WebContents* web_contents = web_contents_getter.Run();
   if (!web_contents)
     return;
 
-  auto browser_context =
-      static_cast<AtomBrowserContext*>(web_contents->GetBrowserContext());
-  auto stream_manager = browser_context->stream_manager();
-  GURL original_url = stream->original_url;
-  stream_manager->AddStream(std::move(stream), stream_id, render_process_id,
-                            render_frame_id);
-  // The URL passes the stream ID to PDF webui that uses it to extract the
-  // stream from the StreamManager and also passes the URL that the PDF
-  // originates from, which is used whenever no stream is available from the
-  // content layer (this will happen when the webui page is reloaded).
-  // chrome://pdf-viewer/index.html?streamId=abcd&src=https://somepage/123.pdf
-  content::NavigationController::LoadURLParams params(GURL(base::StringPrintf(
-      "%sindex.html?%s=%s&%s=%s", kPdfViewerUIOrigin, kPdfViewerUIStreamId,
-      stream_id.c_str(), kPdfPluginSrc, original_url.spec().c_str())));
+  // The URL passes the original pdf resource url, that will be requested
+  // by the webui page.
+  // chrome://pdf-viewer/index.html?src=https://somepage/123.pdf
+  content::NavigationController::LoadURLParams params(
+      GURL(base::StringPrintf("%sindex.html?%s=%s", kPdfViewerUIOrigin,
+                              kPdfPluginSrc, original_url.spec().c_str())));
+  params.can_load_local_resources = true;
   web_contents->GetController().LoadURLWithParams(params);
 }
 
@@ -136,7 +125,6 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     std::string* payload) {
   if (mime_type == "application/pdf") {
     *origin = GURL(kPdfViewerUIOrigin);
-    stream_info_[request] = base::GenerateGUID();
     return true;
   }
   return false;
@@ -145,17 +133,12 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
 void AtomResourceDispatcherHostDelegate::OnStreamCreated(
     net::URLRequest* request,
     std::unique_ptr<content::StreamInfo> stream) {
-  auto it = stream_info_.find(request);
-  if (it == stream_info_.end())
-    return;
   const content::ResourceRequestInfo* info =
       content::ResourceRequestInfo::ForRequest(request);
   content::BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(&OnPdfStreamCreated, base::Passed(&stream), it->second,
-                 info->GetWebContentsGetterForRequest(), info->GetChildID(),
-                 info->GetRenderFrameID()));
-  stream_info_.erase(it);
+      base::Bind(&OnPdfStreamCreated, stream->original_url,
+                 info->GetWebContentsGetterForRequest()));
 }
 
 }  // namespace atom

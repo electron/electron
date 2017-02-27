@@ -6,6 +6,7 @@
 
 #include "atom/common/atom_constants.h"
 #include "base/bind.h"
+#include "base/memory/ptr_util.h"
 #include "base/values.h"
 #include "content/public/browser/stream_handle.h"
 #include "content/public/browser/stream_info.h"
@@ -41,13 +42,34 @@ void CreateResponseHeadersDictionary(const net::HttpResponseHeaders* headers,
   }
 }
 
+void PopulateStreamInfo(base::DictionaryValue* stream_info,
+                        content::StreamInfo* stream,
+                        const std::string& original_url) {
+  std::unique_ptr<base::DictionaryValue> headers_dict(
+      new base::DictionaryValue);
+  auto stream_url = stream->handle->GetURL().spec();
+  CreateResponseHeadersDictionary(stream->response_headers.get(),
+                                  headers_dict.get());
+  stream_info->SetString("streamURL", stream_url);
+  stream_info->SetString("originalURL", original_url);
+  stream_info->Set("responseHeaders", std::move(headers_dict));
+}
+
 }  // namespace
 
-PdfViewerHandler::PdfViewerHandler(const content::StreamInfo* stream,
-                                   const std::string& src)
-    : stream_(stream), original_url_(src) {}
+PdfViewerHandler::PdfViewerHandler(const std::string& src)
+    : stream_(nullptr), original_url_(src), initialized_(false) {}
 
 PdfViewerHandler::~PdfViewerHandler() {}
+
+void PdfViewerHandler::SetPdfResourceStream(content::StreamInfo* stream) {
+  stream_ = stream;
+  if (initialized_) {
+    auto list = base::MakeUnique<base::ListValue>();
+    list->Set(0, std::move(initialize_callback_id_));
+    Initialize(list.get());
+  }
+}
 
 void PdfViewerHandler::RegisterMessages() {
   web_ui()->RegisterMessageCallback(
@@ -79,24 +101,23 @@ void PdfViewerHandler::OnJavascriptDisallowed() {
 }
 
 void PdfViewerHandler::Initialize(const base::ListValue* args) {
-  AllowJavascript();
-
   CHECK_EQ(1U, args->GetSize());
   const base::Value* callback_id;
   CHECK(args->Get(0, &callback_id));
-  std::unique_ptr<base::DictionaryValue> stream_info(new base::DictionaryValue);
-  std::unique_ptr<base::DictionaryValue> headers_dict(
-      new base::DictionaryValue);
-  std::string stream_url = original_url_;
+
   if (stream_) {
-    stream_url = stream_->handle->GetURL().spec();
-    CreateResponseHeadersDictionary(stream_->response_headers.get(),
-                                    headers_dict.get());
+    initialized_ = false;
+
+    AllowJavascript();
+
+    std::unique_ptr<base::DictionaryValue> stream_info(
+        new base::DictionaryValue);
+    PopulateStreamInfo(stream_info.get(), stream_, original_url_);
+    ResolveJavascriptCallback(*callback_id, *stream_info);
+  } else {
+    initialize_callback_id_ = callback_id->CreateDeepCopy();
+    initialized_ = true;
   }
-  stream_info->SetString("streamURL", stream_url);
-  stream_info->SetString("originalURL", original_url_);
-  stream_info->Set("responseHeaders", std::move(headers_dict));
-  ResolveJavascriptCallback(*callback_id, *stream_info);
 }
 
 void PdfViewerHandler::GetDefaultZoom(const base::ListValue* args) {

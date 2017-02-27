@@ -213,6 +213,8 @@
       'atom/browser/javascript_environment.h',
       'atom/browser/lib/bluetooth_chooser.cc',
       'atom/browser/lib/bluetooth_chooser.h',
+      'atom/browser/loader/layered_resource_handler.cc',
+      'atom/browser/loader/layered_resource_handler.h',
       'atom/browser/login_handler.cc',
       'atom/browser/login_handler.h',
       'atom/browser/mac/atom_application.h',
