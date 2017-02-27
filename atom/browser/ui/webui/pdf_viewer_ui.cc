@@ -7,8 +7,10 @@
 #include <map>
 
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/loader/layered_resource_handler.h"
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
 #include "atom/common/atom_constants.h"
+#include "base/sequenced_task_runner_helpers.h"
 #include "components/pdf/common/pdf_messages.h"
 #include "content/browser/loader/resource_dispatcher_host_impl.h"
 #include "content/browser/loader/resource_request_info_impl.h"
@@ -98,59 +100,101 @@ class BundledDataSource : public content::URLDataSource {
   DISALLOW_COPY_AND_ASSIGN(BundledDataSource);
 };
 
-void RequestPdfResource(
-    const GURL& url,
-    const GURL& origin,
-    int render_process_id,
-    int render_view_id,
-    int render_frame_id,
-    content::ResourceContext* resource_context,
-    base::Callback<void(std::unique_ptr<content::StreamInfo>)> callback,
-    atom::LayeredResourceHandler::Delegate* delegate) {
-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
-
-  const net::URLRequestContext* request_context =
-      resource_context->GetRequestContext();
-  std::unique_ptr<net::URLRequest> request(
-      request_context->CreateRequest(url, net::DEFAULT_PRIORITY, nullptr));
-  request->set_method("GET");
-
-  content::ResourceDispatcherHostImpl::Get()->InitializeURLRequest(
-      request.get(), content::Referrer(url, blink::WebReferrerPolicyDefault),
-      false,  // download.
-      render_process_id, render_view_id, render_frame_id, resource_context);
-
-  content::ResourceRequestInfoImpl* info =
-      content::ResourceRequestInfoImpl::ForRequest(request.get());
-  content::StreamContext* stream_context =
-      content::GetStreamContextForResourceContext(resource_context);
-
-  std::unique_ptr<content::ResourceHandler> handler(
-      new content::StreamResourceHandler(request.get(),
-                                         stream_context->registry(), origin));
-  info->set_is_stream(true);
-  std::unique_ptr<content::StreamInfo> stream_info(new content::StreamInfo);
-  stream_info->handle =
-      static_cast<content::StreamResourceHandler*>(handler.get())
-          ->stream()
-          ->CreateHandle();
-  stream_info->original_url = request->url();
-
-  // Helper to fill stream response details.
-  handler.reset(new atom::LayeredResourceHandler(request.get(),
-                                                 std::move(handler), delegate));
-
-  content::ResourceDispatcherHostImpl::Get()->BeginURLRequest(
-      std::move(request), std::move(handler),
-      false,  // download
-      false,  // content_initiated (download specific)
-      false,  // do_not_prompt_for_login (download specific)
-      resource_context);
-
-  callback.Run(std::move(stream_info));
+// Helper to convert from OnceCallback to Callback.
+template <typename T>
+void CallMigrationCallback(T callback,
+                           std::unique_ptr<content::StreamInfo> stream_info) {
+  std::move(callback).Run(std::move(stream_info));
 }
 
 }  // namespace
+
+class PdfViewerUI::ResourceRequester
+    : public base::RefCountedThreadSafe<ResourceRequester,
+                                        BrowserThread::DeleteOnIOThread>,
+      public atom::LayeredResourceHandler::Delegate {
+ public:
+  ResourceRequester(StreamResponseCallback cb)
+      : stream_response_cb_(std::move(cb)) {}
+
+  void StartRequest(const GURL& url,
+                    const GURL& origin,
+                    int render_process_id,
+                    int render_view_id,
+                    int render_frame_id,
+                    content::ResourceContext* resource_context) {
+    DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+    const net::URLRequestContext* request_context =
+        resource_context->GetRequestContext();
+    std::unique_ptr<net::URLRequest> request(
+        request_context->CreateRequest(url, net::DEFAULT_PRIORITY, nullptr));
+    request->set_method("GET");
+
+    content::ResourceDispatcherHostImpl::Get()->InitializeURLRequest(
+        request.get(), content::Referrer(url, blink::WebReferrerPolicyDefault),
+        false,  // download.
+        render_process_id, render_view_id, render_frame_id, resource_context);
+
+    content::ResourceRequestInfoImpl* info =
+        content::ResourceRequestInfoImpl::ForRequest(request.get());
+    content::StreamContext* stream_context =
+        content::GetStreamContextForResourceContext(resource_context);
+
+    std::unique_ptr<content::ResourceHandler> handler(
+        new content::StreamResourceHandler(request.get(),
+                                           stream_context->registry(), origin));
+    info->set_is_stream(true);
+    stream_info_.reset(new content::StreamInfo);
+    stream_info_->handle =
+        static_cast<content::StreamResourceHandler*>(handler.get())
+            ->stream()
+            ->CreateHandle();
+    stream_info_->original_url = request->url();
+
+    // Helper to fill stream response details.
+    handler.reset(new atom::LayeredResourceHandler(request.get(),
+                                                   std::move(handler), this));
+
+    content::ResourceDispatcherHostImpl::Get()->BeginURLRequest(
+        std::move(request), std::move(handler),
+        false,  // download
+        false,  // content_initiated (download specific)
+        false,  // do_not_prompt_for_login (download specific)
+        resource_context);
+  }
+
+ protected:
+  // atom::LayeredResourceHandler::Delegate:
+  void OnResponseStarted(content::ResourceResponse* response) override {
+    DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+    auto resource_response_head = response->head;
+    auto headers = resource_response_head.headers;
+    auto mime_type = resource_response_head.mime_type;
+    if (headers.get())
+      stream_info_->response_headers =
+          new net::HttpResponseHeaders(headers->raw_headers());
+    stream_info_->mime_type = mime_type;
+
+    BrowserThread::PostTask(
+        BrowserThread::UI, FROM_HERE,
+        base::Bind(&CallMigrationCallback<StreamResponseCallback>,
+                   base::Passed(&stream_response_cb_),
+                   base::Passed(&stream_info_)));
+  }
+
+ private:
+  friend class base::RefCountedThreadSafe<ResourceRequester>;
+  friend struct BrowserThread::DeleteOnThread<BrowserThread::IO>;
+  friend class base::DeleteHelper<ResourceRequester>;
+  ~ResourceRequester() override {}
+
+  StreamResponseCallback stream_response_cb_;
+  std::unique_ptr<content::StreamInfo> stream_info_;
+
+  DISALLOW_COPY_AND_ASSIGN(ResourceRequester);
+};
 
 PdfViewerUI::PdfViewerUI(content::BrowserContext* browser_context,
                          content::WebUI* web_ui,
@@ -176,30 +220,11 @@ bool PdfViewerUI::OnMessageReceived(
   return handled;
 }
 
-void PdfViewerUI::OnPdfStreamResponseStarted(
-    scoped_refptr<net::HttpResponseHeaders> headers,
-    const std::string& mime_type) {
-  if (headers.get())
-    stream_->response_headers =
-        new net::HttpResponseHeaders(headers->raw_headers());
-  stream_->mime_type = mime_type;
-  pdf_handler_->SetPdfResourceStream(stream_.get());
-}
-
-void PdfViewerUI::OnResponseStarted(content::ResourceResponse* response) {
-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
-
-  auto resource_response_head = response->head;
-  BrowserThread::PostTask(
-      BrowserThread::UI, FROM_HERE,
-      base::Bind(&PdfViewerUI::OnPdfStreamResponseStarted,
-                 base::Unretained(this), resource_response_head.headers,
-                 resource_response_head.mime_type));
-}
-
 void PdfViewerUI::OnPdfStreamCreated(
     std::unique_ptr<content::StreamInfo> stream) {
   stream_ = std::move(stream);
+  pdf_handler_->SetPdfResourceStream(stream_.get());
+  resource_requester_ = nullptr;
 }
 
 void PdfViewerUI::RenderFrameCreated(content::RenderFrameHost* rfh) {
@@ -208,13 +233,14 @@ void PdfViewerUI::RenderFrameCreated(content::RenderFrameHost* rfh) {
   int render_view_id = rfh->GetRenderViewHost()->GetRoutingID();
   auto resource_context =
       web_contents()->GetBrowserContext()->GetResourceContext();
+  auto callback =
+      base::BindOnce(&PdfViewerUI::OnPdfStreamCreated, base::Unretained(this));
+  resource_requester_ = new ResourceRequester(std::move(callback));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(
-          &RequestPdfResource, GURL(src_), GURL(kPdfViewerUIOrigin),
-          render_process_id, render_view_id, render_frame_id, resource_context,
-          base::Bind(&PdfViewerUI::OnPdfStreamCreated, base::Unretained(this)),
-          this));
+      base::Bind(&ResourceRequester::StartRequest, resource_requester_,
+                 GURL(src_), GURL(kPdfViewerUIOrigin), render_process_id,
+                 render_view_id, render_frame_id, resource_context));
 }
 
 void PdfViewerUI::OnSaveURLAs(const GURL& url,

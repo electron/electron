@@ -58,16 +58,17 @@ void PopulateStreamInfo(base::DictionaryValue* stream_info,
 }  // namespace
 
 PdfViewerHandler::PdfViewerHandler(const std::string& src)
-    : stream_(nullptr), original_url_(src), initialized_(false) {}
+    : stream_(nullptr), original_url_(src), initialized_(true) {}
 
 PdfViewerHandler::~PdfViewerHandler() {}
 
 void PdfViewerHandler::SetPdfResourceStream(content::StreamInfo* stream) {
   stream_ = stream;
-  if (initialized_) {
+  if (!initialized_) {
     auto list = base::MakeUnique<base::ListValue>();
     list->Set(0, std::move(initialize_callback_id_));
     Initialize(list.get());
+    initialized_ = true;
   }
 }
 
@@ -106,8 +107,6 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
   CHECK(args->Get(0, &callback_id));
 
   if (stream_) {
-    initialized_ = false;
-
     AllowJavascript();
 
     std::unique_ptr<base::DictionaryValue> stream_info(
@@ -116,7 +115,7 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
     ResolveJavascriptCallback(*callback_id, *stream_info);
   } else {
     initialize_callback_id_ = callback_id->CreateDeepCopy();
-    initialized_ = true;
+    initialized_ = false;
   }
 }
 
