@@ -11,7 +11,6 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
-#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
@@ -396,7 +395,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 // NSWindow overrides.
 
-- (void)swipeWithEvent:(NSEvent*)event {
+- (void)swipeWithEvent:(NSEvent *)event {
   if (event.deltaY == 1.0) {
     shell_->NotifyWindowSwipe("up");
   } else if (event.deltaX == -1.0) {
