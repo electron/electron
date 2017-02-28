@@ -363,7 +363,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 @end
 
 @implementation AtomNSWindow
-  NSMutableArray* bar_items_ = [[NSMutableArray alloc] init];
   std::map<std::string, mate::PersistentDictionary> item_id_map;
   std::map<std::string, NSTouchBarItem*> item_map;
 
@@ -376,7 +375,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)resetTouchBar {
-  bar_items_ = [[NSMutableArray alloc] init];
   self.touchBar = nil;
 }
 
@@ -432,27 +430,25 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)reloadTouchBar {
-  std::map<std::string, mate::PersistentDictionary> new_map;
-  item_id_map = new_map;
-  bar_items_ = [self identifierArrayFromDicts:shell_->GetTouchBarItems()];
+  item_id_map.clear();
   self.touchBar = nil;
 }
 
 - (NSTouchBar*)makeTouchBar {
-  return [self touchBarFromMutatableArray:bar_items_];
+  NSMutableArray* item_identifiers =
+      [self identifierArrayFromDicts:shell_->GetTouchBarItems()];
+  return [self touchBarFromMutatableArray:item_identifiers];
 }
 
 - (NSTouchBar*)touchBarFromMutatableArray:(NSMutableArray*)items {
   NSTouchBar* bar = [[NSClassFromString(@"NSTouchBar") alloc] init];
   bar.delegate = self;
-
-  bar.defaultItemIdentifiers = [items copy];
-
+  bar.defaultItemIdentifiers = items;
   return bar;
 }
 
 - (void)buttonAction:(id)sender {
-    NSString* item_id = [NSString stringWithFormat:@"com.electron.tb.button.%d", (int)((NSButton *)sender).tag];
+    NSString* item_id = [NSString stringWithFormat:@"%@.%d", ButtonIdentifier, (int)((NSButton *)sender).tag];
     shell_->NotifyTouchBarItemInteraction("button", { std::string([item_id UTF8String]) });
 }
 
@@ -469,9 +465,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix {
-  NSString *idCopy = [identifier copy];
-  idCopy = [identifier substringFromIndex:[prefix length]];
-  return idCopy;
+  return [identifier substringFromIndex:[prefix length]];
 }
 
 - (bool)hasTBDict:(std::string)id {
@@ -497,7 +491,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
   std::string labelColor;
   if (dict.Get("labelColor", &labelColor)) {
-    NSMutableAttributedString *attrTitle = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithUTF8String:label.c_str()]];
+    NSMutableAttributedString *attrTitle = [[[NSMutableAttributedString alloc] initWithString:[NSString stringWithUTF8String:label.c_str()]] autorelease];
     NSUInteger len = [attrTitle length];
     NSRange range = NSMakeRange(0, len);
     [attrTitle addAttribute:NSForegroundColorAttributeName value:[self colorFromHexColorString:[NSString stringWithUTF8String:labelColor.c_str()]] range:range];
