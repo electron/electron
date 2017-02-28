@@ -827,7 +827,6 @@ describe('chromium feature', function () {
         assert.equal(parsedURL.protocol, 'chrome:')
         assert.equal(parsedURL.hostname, 'pdf-viewer')
         assert.equal(parsedURL.query.src, pdfSource)
-        assert(!!parsedURL.query.streamId.length)
       })
       w.webContents.on('page-title-updated', function () {
         assert.equal(w.webContents.getTitle(), 'PDF')

@@ -114,7 +114,7 @@ class PdfViewerUI::ResourceRequester
                                         BrowserThread::DeleteOnIOThread>,
       public atom::LayeredResourceHandler::Delegate {
  public:
-  ResourceRequester(StreamResponseCallback cb)
+  explicit ResourceRequester(StreamResponseCallback cb)
       : stream_response_cb_(std::move(cb)) {}
 
   void StartRequest(const GURL& url,
