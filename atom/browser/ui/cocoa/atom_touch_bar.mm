@@ -297,7 +297,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
 - (NSTouchBarItem*)makePopoverForID:(NSString*)id
                               withIdentifier:(NSString*)identifier {
-  std::string s_id = std::string([id UTF8String]);
+  std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary options = item_id_map[s_id];
