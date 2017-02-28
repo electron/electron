@@ -6,6 +6,7 @@
 
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "base/strings/sys_string_conversions.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image.h"
 
@@ -52,17 +53,17 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
     if (item.Get("type", &type) && item.Get("id", &item_id)) {
       item_id_map.insert(make_pair(item_id, item));
       if (type == "button") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "label") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "colorpicker") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", ColorPickerIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", ColorPickerIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "slider") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", SliderIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", SliderIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "popover") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", PopOverIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", PopOverIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "group") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", GroupIdentifier, [NSString stringWithUTF8String:item_id.c_str()]]];
+        [idents addObject:[NSString stringWithFormat:@"%@%@", GroupIdentifier, base::SysUTF8ToNSString(item_id)]];
       }
     }
   }
@@ -181,7 +182,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
   std::string customizationLabel;
   if (options.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = [NSString stringWithUTF8String:customizationLabel.data()];
+    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 
   std::string backgroundColor;
@@ -191,12 +192,12 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
   std::string label;
   if (options.Get("label", &label)) {
-    button.title = [NSString stringWithUTF8String:label.data()];
+    button.title = base::SysUTF8ToNSString(label);
   }
 
   std::string labelColor;
   if (!label.empty() && options.Get("labelColor", &labelColor)) {
-    NSMutableAttributedString* attrTitle = [[[NSMutableAttributedString alloc] initWithString:[NSString stringWithUTF8String:label.data()]] autorelease];
+    NSMutableAttributedString* attrTitle = [[[NSMutableAttributedString alloc] initWithString:base::SysUTF8ToNSString(label)] autorelease];
     NSRange range = NSMakeRange(0, [attrTitle length]);
     [attrTitle addAttribute:NSForegroundColorAttributeName
                       value:[self colorFromHexColorString:labelColor]
@@ -229,11 +230,11 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   std::string label;
   options.Get("label", &label);
   NSTextField* text_field = (NSTextField*)item.view;
-  text_field.stringValue = [NSString stringWithUTF8String:label.data()];
+  text_field.stringValue = base::SysUTF8ToNSString(label);
 
   std::string customizationLabel;
   if (options.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = [NSString stringWithUTF8String:customizationLabel.data()];
+    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 }
 
@@ -254,7 +255,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
               withOptions:(const mate::PersistentDictionary)options {
   std::string customizationLabel;
   if (options.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = [NSString stringWithUTF8String:customizationLabel.data()];
+    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 }
 
@@ -275,12 +276,12 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
          withOptions:(const mate::PersistentDictionary&)options {
   std::string customizationLabel;
   if (options.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = [NSString stringWithUTF8String:customizationLabel.data()];
+    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 
   std::string label;
   options.Get("label", &label);
-  item.label = [NSString stringWithUTF8String:label.data()];
+  item.label = base::SysUTF8ToNSString(label);
 
   int maxValue = 100;
   int minValue = 0;
@@ -309,13 +310,13 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
           withOptions:(const mate::PersistentDictionary&)options {
   std::string customizationLabel;
   if (options.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = [NSString stringWithUTF8String:customizationLabel.data()];
+    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 
   std::string label;
   gfx::Image image;
   if (options.Get("label", &label)) {
-    item.collapsedRepresentationLabel = [NSString stringWithUTF8String:label.data()];
+    item.collapsedRepresentationLabel = base::SysUTF8ToNSString(label);
   } else if (options.Get("image", &image)) {
     item.collapsedRepresentationImage = image.AsNSImage();
   }
@@ -354,7 +355,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   NSGroupTouchBarItem* item = [NSClassFromString(@"NSGroupTouchBarItem") groupItemWithIdentifier:identifier items:generatedItems];
   std::string customizationLabel;
   if (options.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = [NSString stringWithUTF8String:customizationLabel.data()];
+    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);;
   }
   return item;
 }
