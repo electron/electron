@@ -132,6 +132,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   // Create the global environment.
   node::Environment* env =
       node_bindings_->CreateEnvironment(js_env_->context());
+  node_env_.reset(new NodeEnvironment(env));
 
   // Make sure node can get correct environment when debugging.
   if (node_debugger_->IsRunning())
