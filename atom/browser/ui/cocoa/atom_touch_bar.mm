@@ -131,20 +131,30 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (void)buttonAction:(id)sender {
-  NSString* item_id = [NSString stringWithFormat:@"%@.%d", ButtonIdentifier, (int)((NSButton*)sender).tag];
-  window_->NotifyTouchBarItemInteraction("button", { std::string([item_id UTF8String]) });
+  NSString* item_id = [NSString stringWithFormat:@"%ld", ((NSButton*)sender).tag];
+  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
+                                         base::DictionaryValue());
 }
 
 - (void)colorPickerAction:(id)sender {
-  NSString* item_id = ((NSColorPickerTouchBarItem*)sender).identifier;
+  NSString* identifier = ((NSColorPickerTouchBarItem*)sender).identifier;
+  NSString* item_id = [self idFromIdentifier:identifier
+                                  withPrefix:ColorPickerIdentifier];
   NSColor* color = ((NSColorPickerTouchBarItem*)sender).color;
   std::string hex_color = atom::ToRGBHex(skia::NSDeviceColorToSkColor(color));
-  window_->NotifyTouchBarItemInteraction("color_picker", { std::string([item_id UTF8String]), hex_color });
+  base::DictionaryValue details;
+  details.SetString("color", hex_color);
+  window_->NotifyTouchBarItemInteraction([item_id UTF8String], details);
 }
 
 - (void)sliderAction:(id)sender {
-  NSString* item_id = ((NSSliderTouchBarItem*)sender).identifier;
-  window_->NotifyTouchBarItemInteraction("slider", { std::string([item_id UTF8String]), std::to_string([((NSSliderTouchBarItem*)sender).slider intValue]) });
+  NSString* identifier = ((NSSliderTouchBarItem*)sender).identifier;
+  NSString* item_id = [self idFromIdentifier:identifier
+                                  withPrefix:SliderIdentifier];
+  base::DictionaryValue details;
+  details.SetInteger("value",
+                     [((NSSliderTouchBarItem*)sender).slider intValue]);
+  window_->NotifyTouchBarItemInteraction([item_id UTF8String], details);
 }
 
 - (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix {
@@ -326,9 +336,10 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
     item.showsCloseButton = showCloseButton;
   }
 
-  std::vector<mate::PersistentDictionary> touchBar;
-  if (options.Get("touchBar", &touchBar)) {
-    item.popoverTouchBar = [self touchBarFromItemIdentifiers:[self identifierArrayFromDicts:touchBar]];
+  mate::PersistentDictionary child;
+  std::vector<mate::PersistentDictionary> items;
+  if (options.Get("child", &child) && child.Get("ordereredItems", &items)) {
+    item.popoverTouchBar = [self touchBarFromItemIdentifiers:[self identifierArrayFromDicts:items]];
   }
 }
 
@@ -338,8 +349,10 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   if (![self hasItemWithID:s_id]) return nil;
   mate::PersistentDictionary options = item_id_map[s_id];
 
+  mate::PersistentDictionary child;
+  if (!options.Get("child", &child)) return nil;
   std::vector<mate::PersistentDictionary> items;
-  if (!options.Get("items", &items)) return nil;
+  if (!child.Get("ordereredItems", &items)) return nil;
 
   NSMutableArray* generatedItems = [[NSMutableArray alloc] init];
   NSMutableArray* identList = [self identifierArrayFromDicts:items];

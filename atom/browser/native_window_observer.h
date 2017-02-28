@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/strings/string16.h"
+#include "base/values.h"
 #include "ui/base/window_open_disposition.h"
 #include "url/gurl.h"
 
@@ -71,8 +72,8 @@ class NativeWindowObserver {
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}
   virtual void OnWindowLeaveHtmlFullScreen() {}
-  virtual void OnTouchBarItemResult(const std::string& item_type,
-                                    const std::vector<std::string>& args) {}
+  virtual void OnTouchBarItemResult(const std::string& item_id,
+                                    const base::DictionaryValue& details) {}
 
   // Called when window message received
   #if defined(OS_WIN)
