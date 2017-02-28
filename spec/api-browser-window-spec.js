@@ -230,21 +230,8 @@ describe('BrowserWindow module', function () {
     })
 
     it('should not crash when there is a pending navigation entry', function (done) {
-      const source = `
-        <script>
-          setInterval(function () {
-            window.location = 'http://host'
-          }, 1000)
-        </script>
-      `
-      w.webContents.on('did-fail-load', function (event, code, desc, url, isMainFrame) {
-        assert.equal(url, 'http://host/')
-        w.webContents.loadURL('about:blank')
-      })
-      w.webContents.on('did-navigate', function (event, url) {
-        if (url === 'about:blank') done()
-      })
-      w.loadURL(`data:text/html,${source}`)
+      ipcRenderer.once('navigated-with-pending-entry', () => done())
+      ipcRenderer.send('navigate-with-pending-entry', w.id)
     })
 
     describe('POST navigations', function () {

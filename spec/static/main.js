@@ -304,6 +304,35 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
   })
 })
 
+ipcMain.on('navigate-with-pending-entry', (event, id) => {
+  const w = BrowserWindow.fromId(id)
+
+  const source = `
+    <body>
+      <a href='http://host'>Link</a>
+    </body>
+    <script>
+      setInterval(function () {
+        document.getElementsByTagName('a')[0].click();
+      }, 100)
+    </script>
+  `
+
+  w.webContents.on('did-fail-load', () => {
+    w.loadURL('about:blank')
+  })
+
+  w.webContents.on('did-navigate', (e, url) => {
+    if (url === 'about:blank') {
+      event.sender.send('navigated-with-pending-entry')
+    }
+  })
+
+  w.webContents.session.clearHostResolverCache(() => {
+    w.loadURL(`data:text/html,${source}`)
+  })
+})
+
 // Suspend listeners until the next event and then restore them
 const suspendListeners = (emitter, eventName, callback) => {
   const listeners = emitter.listeners(eventName)
