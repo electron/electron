@@ -34,10 +34,10 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
 - (NSTouchBar*)makeTouchBarFromItemOptions:(const std::vector<mate::PersistentDictionary>&)item_options {
   NSMutableArray* identifiers = [self identifierArrayFromDicts:item_options];
-  return [self touchBarFromMutatableArray:identifiers];
+  return [self touchBarFromItemIdentifiers:identifiers];
 }
 
-- (NSTouchBar*)touchBarFromMutatableArray:(NSMutableArray*)items {
+- (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items {
   NSTouchBar* bar = [[NSClassFromString(@"NSTouchBar") alloc] init];
   bar.delegate = delegate_;
   bar.defaultItemIdentifiers = items;
@@ -328,7 +328,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
   std::vector<mate::PersistentDictionary> touchBar;
   if (options.Get("touchBar", &touchBar)) {
-    item.popoverTouchBar = [self touchBarFromMutatableArray:[self identifierArrayFromDicts:touchBar]];
+    item.popoverTouchBar = [self touchBarFromItemIdentifiers:[self identifierArrayFromDicts:touchBar]];
   }
 }
 

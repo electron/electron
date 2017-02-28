@@ -28,7 +28,7 @@
                 window:(atom::NativeWindow*)window;
 
 - (NSTouchBar*)makeTouchBarFromItemOptions:(const std::vector<mate::PersistentDictionary>&)item_options;
-- (NSTouchBar*)touchBarFromMutatableArray:(NSMutableArray*)items;
+- (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items;
 - (NSMutableArray*)identifierArrayFromDicts:(const std::vector<mate::PersistentDictionary>&)dicts;
 - (void)refreshTouchBarItem:(mate::Arguments*)args;
 - (void)clear;
