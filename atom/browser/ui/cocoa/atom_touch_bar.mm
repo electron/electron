@@ -150,7 +150,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   return [identifier substringFromIndex:[prefix length]];
 }
 
-- (bool)hasTBDict:(const std::string&)id {
+- (bool)hasItemWithID:(const std::string&)id {
   return item_id_map.find(id) != item_id_map.end();
 }
 
@@ -162,7 +162,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 - (NSTouchBarItem*)makeButtonForID:(NSString*)id
                              withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasTBDict:s_id]) return nil;
+  if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary options = item_id_map[s_id];
   NSCustomTouchBarItem* item = [[NSClassFromString(@"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier];
@@ -214,7 +214,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 - (NSTouchBarItem*)makeLabelForID:(NSString*)id
                             withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasTBDict:s_id]) return nil;
+  if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary item = item_id_map[s_id];
   NSCustomTouchBarItem* customItem = [[NSClassFromString(@"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier];
@@ -240,7 +240,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 - (NSTouchBarItem*)makeColorPickerForID:(NSString*)id
                                   withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasTBDict:s_id]) return nil;
+  if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary options = item_id_map[s_id];
   NSColorPickerTouchBarItem* item = [[NSClassFromString(@"NSColorPickerTouchBarItem") alloc] initWithIdentifier:identifier];
@@ -261,7 +261,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 - (NSTouchBarItem*)makeSliderForID:(NSString*)id
                              withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasTBDict:s_id]) return nil;
+  if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary options = item_id_map[s_id];
   NSSliderTouchBarItem* item = [[NSClassFromString(@"NSSliderTouchBarItem") alloc] initWithIdentifier:identifier];
@@ -297,7 +297,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 - (NSTouchBarItem*)makePopoverForID:(NSString*)id
                               withIdentifier:(NSString*)identifier {
   std::string s_id = std::string([id UTF8String]);
-  if (![self hasTBDict:s_id]) return nil;
+  if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary options = item_id_map[s_id];
   NSPopoverTouchBarItem* item = [[NSClassFromString(@"NSPopoverTouchBarItem") alloc] initWithIdentifier:identifier];
@@ -334,7 +334,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 - (NSTouchBarItem*)makeGroupForID:(NSString*)id
                    withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasTBDict:s_id]) return nil;
+  if (![self hasItemWithID:s_id]) return nil;
   mate::PersistentDictionary options = item_id_map[s_id];
 
   std::vector<mate::PersistentDictionary> items;

@@ -34,7 +34,7 @@
 - (void)clear;
 
 - (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix;
-- (bool)hasTBDict:(const std::string&)id;
+- (bool)hasItemWithID:(const std::string&)id;
 - (NSColor*)colorFromHexColorString:(const std::string&)colorString;
 
 // Selector actions
