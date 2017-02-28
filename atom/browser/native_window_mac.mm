@@ -336,10 +336,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate> {
+@interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate, NSTouchBarDelegate> {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
+  base::scoped_nsobject<AtomTouchBar> touch_bar_helper_;
   CGFloat windowButtonsInterButtonSpacing_;
 }
 @property BOOL acceptsFirstMouse;
@@ -356,11 +357,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)refreshTouchBarItem:(mate::Arguments*)args;
 @end
 
-@interface AtomNSWindow () <NSTouchBarDelegate>
-@end
-
 @implementation AtomNSWindow
-  base::scoped_nsobject<AtomTouchBar> touch_bar_;
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
@@ -375,16 +372,17 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)refreshTouchBarItem:(mate::Arguments*)args {
-  [touch_bar_ refreshTouchBarItem:args];
+  [touch_bar_helper_ refreshTouchBarItem:args];
 }
 
 - (NSTouchBar*)makeTouchBar {
-  touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self window:shell_]);
-  return [touch_bar_ makeTouchBarFromItemOptions:shell_->GetTouchBarItems()];
+  touch_bar_helper_.reset([[AtomTouchBar alloc] initWithDelegate:self window:shell_]);
+  return [touch_bar_helper_ makeTouchBarFromItemOptions:shell_->GetTouchBarItems()];
 }
 
-- (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
-  return [touch_bar_ makeItemForIdentifier:identifier];
+- (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
+               makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+  return [touch_bar_helper_ makeItemForIdentifier:identifier];
 }
 
 // NSWindow overrides.
