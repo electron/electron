@@ -340,7 +340,7 @@ bool ScopedDisableResize::disable_resize_ = false;
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
-  base::scoped_nsobject<AtomTouchBar> touch_bar_helper_;
+  base::scoped_nsobject<AtomTouchBar> atom_touch_bar_;
   CGFloat windowButtonsInterButtonSpacing_;
 }
 @property BOOL acceptsFirstMouse;
@@ -372,12 +372,12 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)refreshTouchBarItem:(mate::Arguments*)args {
-  [touch_bar_helper_ refreshTouchBarItem:args];
+  [atom_touch_bar_ refreshTouchBarItem:args];
 }
 
 - (NSTouchBar*)makeTouchBar {
-  touch_bar_helper_.reset([[AtomTouchBar alloc] initWithDelegate:self window:shell_]);
-  return [touch_bar_helper_ makeTouchBarFromItemOptions:shell_->GetTouchBarItems()];
+  atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self window:shell_]);
+  return [atom_touch_bar_ makeTouchBarFromItemOptions:shell_->GetTouchBarItems()];
 }
 
 - (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
