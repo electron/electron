@@ -161,7 +161,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (NSTouchBarItem*)makeButtonForID:(NSString*)id
-                             withIdentifier:(NSString*)identifier {
+                    withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
@@ -213,7 +213,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (NSTouchBarItem*)makeLabelForID:(NSString*)id
-                            withIdentifier:(NSString*)identifier {
+                   withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
@@ -260,7 +260,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (NSTouchBarItem*)makeSliderForID:(NSString*)id
-                             withIdentifier:(NSString*)identifier {
+                    withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
@@ -296,7 +296,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (NSTouchBarItem*)makePopoverForID:(NSString*)id
-                              withIdentifier:(NSString*)identifier {
+                     withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 

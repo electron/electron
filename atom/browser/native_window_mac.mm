@@ -352,9 +352,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)enableWindowButtonsOffset;
-- (void)reloadTouchBar;
-- (void)refreshTouchBarItem:(mate::Arguments*)args;
 - (void)resetTouchBar;
+- (void)refreshTouchBarItem:(mate::Arguments*)args;
 @end
 
 @interface AtomNSWindow () <NSTouchBarDelegate>
@@ -365,7 +364,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
-  touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self window:shell]);
 }
 
 - (void)setEnableLargerThanScreen:(bool)enable {
@@ -376,16 +374,12 @@ bool ScopedDisableResize::disable_resize_ = false;
   self.touchBar = nil;
 }
 
-- (void)reloadTouchBar {
-  [touch_bar_ clear];
-  self.touchBar = nil;
-}
-
 - (void)refreshTouchBarItem:(mate::Arguments*)args {
   [touch_bar_ refreshTouchBarItem:args];
 }
 
 - (NSTouchBar*)makeTouchBar {
+  touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self window:shell_]);
   return [touch_bar_ makeTouchBarFromItemOptions:shell_->GetTouchBarItems()];
 }
 
@@ -1377,6 +1371,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 }
 
 void NativeWindowMac::DestroyTouchBar() {
+  touch_bar_items_.clear();
   [window_ resetTouchBar];
 }
 
@@ -1384,7 +1379,7 @@ void NativeWindowMac::SetTouchBar(mate::Arguments* args) {
   std::vector<mate::PersistentDictionary> items;
   if (args->GetNext(&items)) {
     touch_bar_items_ = items;
-    [window_ reloadTouchBar];
+    [window_ resetTouchBar];
   }
 }
 
