@@ -252,7 +252,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
-              withOptions:(const mate::PersistentDictionary)options {
+              withOptions:(const mate::PersistentDictionary&)options {
   std::string customizationLabel;
   if (options.Get("customizationLabel", &customizationLabel)) {
     item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);

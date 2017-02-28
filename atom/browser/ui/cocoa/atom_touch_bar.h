@@ -54,7 +54,7 @@
 // Helpers to update touch bar items
 - (void)updateButton:(NSCustomTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
 - (void)updateLabel:(NSCustomTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
-- (void)updateColorPicker:(NSColorPickerTouchBarItem*)item withOptions:(const mate::PersistentDictionary)options;
+- (void)updateColorPicker:(NSColorPickerTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
 - (void)updateSlider:(NSSliderTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
 - (void)updatePopover:(NSPopoverTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
 
