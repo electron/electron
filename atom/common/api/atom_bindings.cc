@@ -84,6 +84,7 @@ AtomBindings::AtomBindings() {
 }
 
 AtomBindings::~AtomBindings() {
+  uv_close(reinterpret_cast<uv_handle_t*>(&call_next_tick_async_), nullptr);
 }
 
 void AtomBindings::BindTo(v8::Isolate* isolate,
