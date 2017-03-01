@@ -196,11 +196,6 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
         withSettings:(const mate::PersistentDictionary&)settings {
   NSButton* button = (NSButton*)item.view;
 
-  std::string customizationLabel;
-  if (settings.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
-  }
-
   std::string backgroundColor;
   if (settings.Get("backgroundColor", &backgroundColor)) {
     button.bezelColor = [self colorFromHexColorString:backgroundColor];
@@ -209,17 +204,6 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   std::string label;
   if (settings.Get("label", &label)) {
     button.title = base::SysUTF8ToNSString(label);
-  }
-
-  std::string labelColor;
-  if (!label.empty() && settings.Get("labelColor", &labelColor)) {
-    NSMutableAttributedString* attrTitle = [[[NSMutableAttributedString alloc] initWithString:base::SysUTF8ToNSString(label)] autorelease];
-    NSRange range = NSMakeRange(0, [attrTitle length]);
-    [attrTitle addAttribute:NSForegroundColorAttributeName
-                      value:[self colorFromHexColorString:labelColor]
-                      range:range];
-    [attrTitle fixAttributesInRange:range];
-    button.attributedTitle = attrTitle;
   }
 
   gfx::Image image;
@@ -247,11 +231,6 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   settings.Get("label", &label);
   NSTextField* text_field = (NSTextField*)item.view;
   text_field.stringValue = base::SysUTF8ToNSString(label);
-
-  std::string customizationLabel;
-  if (settings.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
-  }
 }
 
 - (NSTouchBarItem*)makeColorPickerForID:(NSString*)id
@@ -263,32 +242,26 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   NSColorPickerTouchBarItem* item = [[NSClassFromString(@"NSColorPickerTouchBarItem") alloc] initWithIdentifier:identifier];
   item.target = self;
   item.action = @selector(colorPickerAction:);
-
-  std::string selectedColor;
-  if (settings.Get("selectedColor", &selectedColor)) {
-    item.color = [self colorFromHexColorString:selectedColor];
-  }
-
-  std::vector<std::string> colors;
-  if (settings.Get("availableColors", &colors) && colors.size() > 0) {
-    NSColorList* color_list  = [[[NSColorList alloc] initWithName:identifier] autorelease];
-    for (size_t i = 0; i < colors.size(); ++i) {
-      [color_list insertColor:[self colorFromHexColorString:colors[i]]
-                          key:base::SysUTF8ToNSString(colors[i])
-                      atIndex:i];
-    }
-    item.colorList = color_list;
-  }
-
   [self updateColorPicker:item withSettings:settings];
   return item;
 }
 
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
              withSettings:(const mate::PersistentDictionary&)settings {
-  std::string customizationLabel;
-  if (settings.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
+  std::vector<std::string> colors;
+  if (settings.Get("availableColors", &colors) && colors.size() > 0) {
+    NSColorList* color_list  = [[[NSColorList alloc] initWithName:@""] autorelease];
+    for (size_t i = 0; i < colors.size(); ++i) {
+      [color_list insertColor:[self colorFromHexColorString:colors[i]]
+                          key:base::SysUTF8ToNSString(colors[i])
+                      atIndex:i];
+    }
+     item.colorList = color_list;
+  }
+
+  std::string selectedColor;
+  if (settings.Get("selectedColor", &selectedColor)) {
+    item.color = [self colorFromHexColorString:selectedColor];
   }
 }
 
@@ -307,25 +280,20 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
 - (void)updateSlider:(NSSliderTouchBarItem*)item
         withSettings:(const mate::PersistentDictionary&)settings {
-  std::string customizationLabel;
-  if (settings.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
-  }
-
   std::string label;
   settings.Get("label", &label);
   item.label = base::SysUTF8ToNSString(label);
 
   int maxValue = 100;
   int minValue = 0;
-  int initialValue = 50;
+  int value = 50;
   settings.Get("minValue", &minValue);
   settings.Get("maxValue", &maxValue);
-  settings.Get("initialValue", &initialValue);
+  settings.Get("value", &value);
 
   item.slider.minValue = minValue;
   item.slider.maxValue = maxValue;
-  item.slider.doubleValue = initialValue;
+  item.slider.doubleValue = value;
 }
 
 - (NSTouchBarItem*)makePopoverForID:(NSString*)id
@@ -341,11 +309,6 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
 - (void)updatePopover:(NSPopoverTouchBarItem*)item
          withSettings:(const mate::PersistentDictionary&)settings {
-  std::string customizationLabel;
-  if (settings.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
-  }
-
   std::string label;
   gfx::Image image;
   if (settings.Get("label", &label)) {
@@ -387,13 +350,8 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
       }
     }
   }
-
-  NSGroupTouchBarItem* item = [NSClassFromString(@"NSGroupTouchBarItem") groupItemWithIdentifier:identifier items:generatedItems];
-  std::string customizationLabel;
-  if (settings.Get("customizationLabel", &customizationLabel)) {
-    item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);;
-  }
-  return item;
+  return [NSClassFromString(@"NSGroupTouchBarItem") groupItemWithIdentifier:identifier
+                                                                      items:generatedItems];
 }
 
 @end
