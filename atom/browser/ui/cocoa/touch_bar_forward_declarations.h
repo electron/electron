@@ -98,6 +98,7 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 @property SEL action;
 @property(weak) id target;
 @property(copy) NSColor *color;
+@property(strong) NSColorList *colorList;
 
 @end
 

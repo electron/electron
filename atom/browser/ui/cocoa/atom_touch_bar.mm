@@ -245,7 +245,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (NSTouchBarItem*)makeColorPickerForID:(NSString*)id
-                                  withIdentifier:(NSString*)identifier {
+                         withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
@@ -253,6 +253,25 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   NSColorPickerTouchBarItem* item = [[NSClassFromString(@"NSColorPickerTouchBarItem") alloc] initWithIdentifier:identifier];
   item.target = self;
   item.action = @selector(colorPickerAction:);
+
+  std::string selectedColor;
+  if (settings.Get("selectedColor", &selectedColor)) {
+    item.color = [self colorFromHexColorString:selectedColor];
+  }
+
+  std::vector<std::string> colors;
+  if (settings.Get("availableColors", &colors) && colors.size() > 0) {
+    NSColorList* color_list  = [[[NSColorList alloc] initWithName:identifier] autorelease];
+    for (size_t i = 0; i < colors.size(); ++i) {
+      [color_list insertColor:[self colorFromHexColorString:colors[i]]
+                          key:base::SysUTF8ToNSString(colors[i])
+                      atIndex:i];
+    }
+    item.colorList = color_list;
+  }
+
+  item.showsAlpha = NO;
+
   [self updateColorPicker:item withSettings:settings];
   return item;
 }
