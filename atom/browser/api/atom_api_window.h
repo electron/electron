@@ -206,7 +206,6 @@ class Window : public mate::TrackableObject<Window>,
   void SetAutoHideCursor(bool auto_hide);
 
   void SetVibrancy(mate::Arguments* args);
-  void DestroyTouchBar();
   void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
   void RefreshTouchBarItem(const std::string& item_id);
 

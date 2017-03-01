@@ -171,7 +171,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVibrancy(const std::string& type);
 
   // Touchbar API
-  virtual void DestroyTouchBar();
   virtual void SetTouchBar(
       const std::vector<mate::PersistentDictionary>& items);
   virtual void RefreshTouchBarItem(const std::string& item_id);

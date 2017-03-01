@@ -845,10 +845,6 @@ void Window::SetVibrancy(mate::Arguments* args) {
   window_->SetVibrancy(type);
 }
 
-void Window::DestroyTouchBar()  {
-  window_->DestroyTouchBar();
-}
-
 void Window::SetTouchBar(const std::vector<mate::PersistentDictionary>& items) {
   window_->SetTouchBar(items);
 }
@@ -977,8 +973,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &Window::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &Window::SetVibrancy)
-      .SetMethod("_destroyTouchBar", &Window::DestroyTouchBar)
-      .SetMethod("_setTouchBar", &Window::SetTouchBar)
+      .SetMethod("_setTouchBarItems", &Window::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &Window::RefreshTouchBarItem)
 #if defined(OS_WIN)
       .SetMethod("hookWindowMessage", &Window::HookWindowMessage)

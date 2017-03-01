@@ -340,9 +340,6 @@ void NativeWindow::SetAutoHideCursor(bool auto_hide) {
 void NativeWindow::SetVibrancy(const std::string& filename) {
 }
 
-void NativeWindow::DestroyTouchBar() {
-}
-
 void NativeWindow::SetTouchBar(
     const std::vector<mate::PersistentDictionary>& items) {
 }

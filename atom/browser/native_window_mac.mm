@@ -1372,11 +1372,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   [effect_view setMaterial:vibrancyType];
 }
 
-void NativeWindowMac::DestroyTouchBar() {
-  touch_bar_items_.clear();
-  [window_ resetTouchBar];
-}
-
 void NativeWindowMac::SetTouchBar(
     const std::vector<mate::PersistentDictionary>& items) {
   touch_bar_items_ = items;
