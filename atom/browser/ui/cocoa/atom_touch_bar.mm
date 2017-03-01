@@ -61,6 +61,16 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
         [identifiers addObject:[NSString stringWithFormat:@"%@%@", PopOverIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "group") {
         [identifiers addObject:[NSString stringWithFormat:@"%@%@", GroupIdentifier, base::SysUTF8ToNSString(item_id)]];
+      } else if (type == "spacer") {
+        std::string size;
+        item.Get("size", &size);
+        if (size == "large") {
+          [identifiers addObject:NSTouchBarItemIdentifierFixedSpaceLarge];
+        } else if (size == "flexible") {
+          [identifiers addObject:NSTouchBarItemIdentifierFlexibleSpace];
+        } else {
+          [identifiers addObject:NSTouchBarItemIdentifierFixedSpaceSmall];
+        }
       }
     }
   }
@@ -269,8 +279,6 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
     }
     item.colorList = color_list;
   }
-
-  item.showsAlpha = NO;
 
   [self updateColorPicker:item withSettings:settings];
   return item;

@@ -27,6 +27,9 @@ typedef NSString* NSTouchBarCustomizationIdentifier;
 static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierFixedSpaceSmall =
     @"NSTouchBarItemIdentifierFixedSpaceSmall";
 
+static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierFixedSpaceLarge =
+    @"NSTouchBarItemIdentifierFixedSpaceLarge";
+
 static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierFlexibleSpace =
     @"NSTouchBarItemIdentifierFlexibleSpace";
 
