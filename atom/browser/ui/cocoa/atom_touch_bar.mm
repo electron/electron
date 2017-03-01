@@ -28,10 +28,6 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   return self;
 }
 
-- (void)clear {
-  settings_.clear();
-}
-
 - (NSTouchBar*)makeTouchBarFromSettings:(const std::vector<mate::PersistentDictionary>&)settings {
   NSMutableArray* identifiers = [self identifiersFromSettings:settings];
   return [self touchBarFromItemIdentifiers:identifiers];

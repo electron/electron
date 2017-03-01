@@ -25,14 +25,12 @@
   atom::NativeWindow* window_;
 }
 
-- (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
-                window:(atom::NativeWindow*)window;
+- (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate window:(atom::NativeWindow*)window;
 
 - (NSTouchBar*)makeTouchBarFromSettings:(const std::vector<mate::PersistentDictionary>&)settings;
 - (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items;
 - (NSMutableArray*)identifiersFromSettings:(const std::vector<mate::PersistentDictionary>&)settings;
 - (void)refreshTouchBarItem:(const std::string&)item_id;
-- (void)clear;
 
 - (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix;
 - (bool)hasItemWithID:(const std::string&)item_id;
