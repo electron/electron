@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Install prebuilt electron binaries for the command-line using npm",
   "repository": "https://github.com/electron-userland/electron-prebuilt",
   "scripts": {
