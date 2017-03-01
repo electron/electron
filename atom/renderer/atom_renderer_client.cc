@@ -86,14 +86,21 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   }
 
   void CreateIsolatedWorldContext() {
+    auto frame = render_frame_->GetWebFrame();
+
     // This maps to the name shown in the context combo box in the Console tab
     // of the dev tools.
-    render_frame_->GetWebFrame()->setIsolatedWorldHumanReadableName(
+    frame->setIsolatedWorldHumanReadableName(
         World::ISOLATED_WORLD,
         blink::WebString::fromUTF8("Electron Isolated Context"));
 
+    // Setup document's origin policy in isolated world
+    frame->setIsolatedWorldSecurityOrigin(
+      World::ISOLATED_WORLD, frame->document().getSecurityOrigin());
+
+    // Create initial script context in isolated world
     blink::WebScriptSource source("void 0");
-    render_frame_->GetWebFrame()->executeScriptInIsolatedWorld(
+    frame->executeScriptInIsolatedWorld(
         World::ISOLATED_WORLD, &source, 1, ExtensionGroup::MAIN_GROUP);
   }
 

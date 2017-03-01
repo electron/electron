@@ -9,7 +9,6 @@ window.foo = 3
 
 webFrame.executeJavaScript('window.preloadExecuteJavaScriptProperty = 1234;')
 
-
 window.addEventListener('message', (event) => {
   ipcRenderer.send('isolated-world', {
     preloadContext: {
