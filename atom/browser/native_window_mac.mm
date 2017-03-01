@@ -376,16 +376,20 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)refreshTouchBarItem:(const std::string&)item_id {
-  [atom_touch_bar_ refreshTouchBarItem:item_id];
+  if (atom_touch_bar_)
+    [atom_touch_bar_ refreshTouchBarItem:item_id];
 }
 
 - (NSTouchBar*)makeTouchBar {
-  return [atom_touch_bar_ makeTouchBar];
+  if (atom_touch_bar_)
+    return [atom_touch_bar_ makeTouchBar];
+  else
+    return nil;
 }
 
 - (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
                makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
-  if (touchBar)
+  if (touchBar && atom_touch_bar_)
     return [atom_touch_bar_ makeItemForIdentifier:identifier];
   else
     return nil;
