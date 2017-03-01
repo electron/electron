@@ -1,6 +1,6 @@
 Lütfen kullandığınız dokümanın Electron versiyonunuzla aynı olduğundan emin olun.
 Versiyon numarası okuduğunuz dokümanın URL'sindekiyle aynı olmalı. Eğer aynı değilse, muhtemelen geliştirme aşamasındaki API değişikliklerini içerebilecek dokümantasyonudur.
-Eğer öyleyse, atom.io üzerinden [mevcut sürümler](http://electron.atom.io/docs/)e göz atabilirsiniz ya da eğer GitHub arayüzünü kullanıyorsanız "Switch branches/tags" açılır menüsünden versiyonunuza uygun olanı seçebilirsiniz.
+Eğer öyleyse, atom.io üzerinden [mevcut sürümler](https://electron.atom.io/docs/)e göz atabilirsiniz ya da eğer GitHub arayüzünü kullanıyorsanız "Switch branches/tags" açılır menüsünden versiyonunuza uygun olanı seçebilirsiniz.
 
 ## SSS(Sıkça Sorulan Sorular)
 

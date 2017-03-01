@@ -129,7 +129,7 @@ app.once('ready', () => {
         {
           label: 'Learn More',
           click () {
-            shell.openExternal('http://electron.atom.io')
+            shell.openExternal('https://electron.atom.io')
           }
         },
         {

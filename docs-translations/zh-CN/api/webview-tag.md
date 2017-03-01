@@ -147,7 +147,7 @@ CSS通过 `flex` 布局设置 `width` 和 `height`，并允许元素缩小到0px
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
-<webview src="http://electron.atom.io" partition="electron"></webview>
+<webview src="https://electron.atom.io" partition="electron"></webview>
 ```
 
 为 page 设置 session。如果初始值为 `partition` ，这个 page 将会为app中的所有 page 应用同一个持续有效的 session。如果没有 `persist:` 前缀, 这个 page 将会使用一个历史 session。通过分配使用相同的 `partition`, 所有的 page 都可以分享相同的session。如果 `partition` 没有设置，那 app 将使用默认的 session。

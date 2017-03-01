@@ -1,7 +1,7 @@
 使用している Electron のバージョンに応じたドキュメントを使うように確認してください。
 ドキュメントのバージョン番号はページの URL の一部になっています。
 そうでない場合、おそらくご使用の Electron のバージョンと互換性のない API 変更を含んだ development ブランチのドキュメントを使っているものと思われます。
-その場合、atom.io の [available versions](http://electron.atom.io/docs/) リストにある別のバージョンのドキュメントに切り替えることができます。また GitHub で閲覧している場合、"Switch branches/tags" ドロップダウンを開いて、バージョンに対応したタグを選ぶこともできます。
+その場合、atom.io の [available versions](https://electron.atom.io/docs/) リストにある別のバージョンのドキュメントに切り替えることができます。また GitHub で閲覧している場合、"Switch branches/tags" ドロップダウンを開いて、バージョンに対応したタグを選ぶこともできます。
 
 _リンクになっていないリストは未翻訳のものです。_
 ## FAQ
