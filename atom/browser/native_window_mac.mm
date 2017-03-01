@@ -354,7 +354,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)enableWindowButtonsOffset;
 - (void)resetTouchBar;
-- (void)refreshTouchBarItem:(mate::Arguments*)args;
+- (void)refreshTouchBarItem:(const std::string&)item_id;
+
 @end
 
 @implementation AtomNSWindow
@@ -371,8 +372,8 @@ bool ScopedDisableResize::disable_resize_ = false;
   self.touchBar = nil;
 }
 
-- (void)refreshTouchBarItem:(mate::Arguments*)args {
-  [atom_touch_bar_ refreshTouchBarItem:args];
+- (void)refreshTouchBarItem:(const std::string&)item_id {
+  [atom_touch_bar_ refreshTouchBarItem:item_id];
 }
 
 - (NSTouchBar*)makeTouchBar {
@@ -1381,8 +1382,8 @@ void NativeWindowMac::SetTouchBar(mate::Arguments* args) {
   }
 }
 
-void NativeWindowMac::RefreshTouchBarItem(mate::Arguments* args) {
-  [window_ refreshTouchBarItem:args];
+void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
+  [window_ refreshTouchBarItem:item_id];
 }
 
 std::vector<mate::PersistentDictionary> NativeWindowMac::GetTouchBarItems() {

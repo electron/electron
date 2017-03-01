@@ -101,32 +101,29 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 
-- (void)refreshTouchBarItem:(mate::Arguments*)args {
-  std::string item_id;
-  std::string type;
-  mate::PersistentDictionary options;
-  if (!args->GetNext(&options)) return;
-  if (!options.Get("type", &type)) return;
-  if (!options.Get("id", &item_id)) return;
+- (void)refreshTouchBarItem:(const std::string&)item_id {
   if (item_map.find(item_id) == item_map.end()) return;
+  if (![self hasItemWithID:item_id]) return;
 
-  if (type == "button") {
+  mate::PersistentDictionary options = item_id_map[item_id];
+  std::string item_type;
+  options.Get("type", &item_type);
+
+  if (item_type == "button") {
     [self updateButton:(NSCustomTouchBarItem*)item_map[item_id]
            withOptions:options];
-  } else if (type == "label") {
+  } else if (item_type == "label") {
     [self updateLabel:(NSCustomTouchBarItem*)item_map[item_id]
           withOptions:options];
-  } else if (type == "colorpicker") {
+  } else if (item_type == "colorpicker") {
     [self updateColorPicker:(NSColorPickerTouchBarItem*)item_map[item_id]
                 withOptions:options];
-  } else if (type == "slider") {
+  } else if (item_type == "slider") {
     [self updateSlider:(NSSliderTouchBarItem*)item_map[item_id]
            withOptions:options];
-  } else if (type == "popover") {
+  } else if (item_type == "popover") {
     [self updatePopover:(NSPopoverTouchBarItem*)item_map[item_id]
             withOptions:options];
-  } else if (type == "group") {
-    args->ThrowError("You can not update the config of a group. Update the individual items or replace the group");
   }
 }
 

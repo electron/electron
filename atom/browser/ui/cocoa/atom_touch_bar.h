@@ -30,7 +30,7 @@
 - (NSTouchBar*)makeTouchBarFromItemOptions:(const std::vector<mate::PersistentDictionary>&)item_options;
 - (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items;
 - (NSMutableArray*)identifierArrayFromDicts:(const std::vector<mate::PersistentDictionary>&)dicts;
-- (void)refreshTouchBarItem:(mate::Arguments*)args;
+- (void)refreshTouchBarItem:(const std::string&)item_id;
 - (void)clear;
 
 - (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix;

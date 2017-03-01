@@ -853,8 +853,8 @@ void Window::SetTouchBar(mate::Arguments* args) {
   window_->SetTouchBar(args);
 }
 
-void Window::RefreshTouchBarItem(mate::Arguments* args) {
-  window_->RefreshTouchBarItem(args);
+void Window::RefreshTouchBarItem(const std::string& item_id) {
+  window_->RefreshTouchBarItem(item_id);
 }
 
 int32_t Window::ID() const {

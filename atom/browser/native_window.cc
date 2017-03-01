@@ -347,7 +347,7 @@ void NativeWindow::DestroyTouchBar() {
 void NativeWindow::SetTouchBar(mate::Arguments* args) {
 }
 
-void NativeWindow::RefreshTouchBarItem(mate::Arguments* args) {
+void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {
 }
 
 void NativeWindow::FocusOnWebView() {
