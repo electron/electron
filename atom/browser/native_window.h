@@ -21,7 +21,6 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
-#include "native_mate/constructor.h"
 #include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
