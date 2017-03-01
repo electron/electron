@@ -353,7 +353,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)enableWindowButtonsOffset;
-- (void)resetTouchBar;
+- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings;
 - (void)refreshTouchBarItem:(const std::string&)item_id;
 
 @end
@@ -368,7 +368,10 @@ bool ScopedDisableResize::disable_resize_ = false;
   enable_larger_than_screen_ = enable;
 }
 
-- (void)resetTouchBar {
+- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings {
+  atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self
+                                                        window:shell_
+                                                      settings:settings]);
   self.touchBar = nil;
 }
 
@@ -377,8 +380,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (NSTouchBar*)makeTouchBar {
-  atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self window:shell_]);
-  return [atom_touch_bar_ makeTouchBarFromSettings:shell_->GetTouchBarItems()];
+  return [atom_touch_bar_ makeTouchBar];
 }
 
 - (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
@@ -1374,16 +1376,11 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
 void NativeWindowMac::SetTouchBar(
     const std::vector<mate::PersistentDictionary>& items) {
-  touch_bar_items_ = items;
-  [window_ resetTouchBar];
+  [window_ resetTouchBar:items];
 }
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
   [window_ refreshTouchBarItem:item_id];
-}
-
-std::vector<mate::PersistentDictionary> NativeWindowMac::GetTouchBarItems() {
-  return touch_bar_items_;
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {

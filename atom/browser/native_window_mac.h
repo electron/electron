@@ -103,7 +103,6 @@ class NativeWindowMac : public NativeWindow,
   void SetTouchBar(
       const std::vector<mate::PersistentDictionary>& items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
-  std::vector<mate::PersistentDictionary> GetTouchBarItems();
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;
@@ -157,8 +156,6 @@ class NativeWindowMac : public NativeWindow,
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
-
-  std::vector<mate::PersistentDictionary> touch_bar_items_;
 
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;

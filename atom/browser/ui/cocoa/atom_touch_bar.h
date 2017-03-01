@@ -19,15 +19,16 @@
 
 @interface AtomTouchBar : NSObject {
  @protected
+  std::vector<mate::PersistentDictionary> ordered_settings_;
   std::map<std::string, mate::PersistentDictionary> settings_;
   std::map<std::string, base::scoped_nsobject<NSTouchBarItem>> items_;
   id<NSTouchBarDelegate> delegate_;
   atom::NativeWindow* window_;
 }
 
-- (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate window:(atom::NativeWindow*)window;
+- (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate window:(atom::NativeWindow*)window settings:(const std::vector<mate::PersistentDictionary>&)settings;
 
-- (NSTouchBar*)makeTouchBarFromSettings:(const std::vector<mate::PersistentDictionary>&)settings;
+- (NSTouchBar*)makeTouchBar;
 - (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items;
 - (NSMutableArray*)identifiersFromSettings:(const std::vector<mate::PersistentDictionary>&)settings;
 - (void)refreshTouchBarItem:(const std::string&)item_id;

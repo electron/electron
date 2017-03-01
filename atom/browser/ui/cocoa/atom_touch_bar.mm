@@ -20,16 +20,18 @@ static NSTouchBarItemIdentifier PopOverIdentifier = @"com.electron.touchbar.popo
 static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slider.";
 
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
-                window:(atom::NativeWindow*)window {
+                window:(atom::NativeWindow*)window
+              settings:(const std::vector<mate::PersistentDictionary>&)settings {
   if ((self = [super init])) {
     delegate_ = delegate;
     window_ = window;
+    ordered_settings_ = settings;
   }
   return self;
 }
 
-- (NSTouchBar*)makeTouchBarFromSettings:(const std::vector<mate::PersistentDictionary>&)settings {
-  NSMutableArray* identifiers = [self identifiersFromSettings:settings];
+- (NSTouchBar*)makeTouchBar {
+  NSMutableArray* identifiers = [self identifiersFromSettings:ordered_settings_];
   return [self touchBarFromItemIdentifiers:identifiers];
 }
 
