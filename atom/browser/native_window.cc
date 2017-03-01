@@ -344,7 +344,8 @@ void NativeWindow::SetVibrancy(const std::string& filename) {
 void NativeWindow::DestroyTouchBar() {
 }
 
-void NativeWindow::SetTouchBar(mate::Arguments* args) {
+void NativeWindow::SetTouchBar(
+    const std::vector<mate::PersistentDictionary>& items) {
 }
 
 void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {

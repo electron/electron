@@ -849,8 +849,8 @@ void Window::DestroyTouchBar()  {
   window_->DestroyTouchBar();
 }
 
-void Window::SetTouchBar(mate::Arguments* args) {
-  window_->SetTouchBar(args);
+void Window::SetTouchBar(const std::vector<mate::PersistentDictionary>& items) {
+  window_->SetTouchBar(items);
 }
 
 void Window::RefreshTouchBarItem(const std::string& item_id) {

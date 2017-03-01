@@ -16,6 +16,7 @@
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
 #include "native_mate/handle.h"
+#include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 
 class GURL;
@@ -206,7 +207,7 @@ class Window : public mate::TrackableObject<Window>,
 
   void SetVibrancy(mate::Arguments* args);
   void DestroyTouchBar();
-  void SetTouchBar(mate::Arguments* args);
+  void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
   void RefreshTouchBarItem(const std::string& item_id);
 
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);

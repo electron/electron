@@ -1374,12 +1374,10 @@ void NativeWindowMac::DestroyTouchBar() {
   [window_ resetTouchBar];
 }
 
-void NativeWindowMac::SetTouchBar(mate::Arguments* args) {
-  std::vector<mate::PersistentDictionary> items;
-  if (args->GetNext(&items)) {
-    touch_bar_items_ = items;
-    [window_ resetTouchBar];
-  }
+void NativeWindowMac::SetTouchBar(
+    const std::vector<mate::PersistentDictionary>& items) {
+  touch_bar_items_ = items;
+  [window_ resetTouchBar];
 }
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {

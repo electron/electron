@@ -13,8 +13,6 @@
 #include "atom/browser/native_window.h"
 #include "base/mac/scoped_nsobject.h"
 #include "content/public/browser/render_widget_host.h"
-#include "native_mate/constructor.h"
-#include "native_mate/persistent_dictionary.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
@@ -103,7 +101,8 @@ class NativeWindowMac : public NativeWindow,
 
   void SetVibrancy(const std::string& type) override;
   void DestroyTouchBar() override;
-  void SetTouchBar(mate::Arguments* args) override;
+  void SetTouchBar(
+      const std::vector<mate::PersistentDictionary>& items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
   std::vector<mate::PersistentDictionary> GetTouchBarItems();
 

@@ -22,6 +22,7 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "native_mate/constructor.h"
+#include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -172,7 +173,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Touchbar API
   virtual void DestroyTouchBar();
-  virtual void SetTouchBar(mate::Arguments* args);
+  virtual void SetTouchBar(
+      const std::vector<mate::PersistentDictionary>& items);
   virtual void RefreshTouchBarItem(const std::string& item_id);
 
   // Webview APIs.
