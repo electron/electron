@@ -256,6 +256,14 @@ describe('BrowserWindow module', function () {
         w.loadURL(server.url)
       })
 
+      it('should support support base url for data urls', (done) => {
+        ipcMain.once('answer', function (event, test) {
+          assert.equal(test, 'test')
+          done()
+        })
+        w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {baseURLForDataURL: 'file://' + path.join(fixtures, 'api') + path.sep})
+      })
+
       it('sets the content type header on multi part forms', function (done) {
         w.webContents.on('did-finish-load', () => {
           w.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
