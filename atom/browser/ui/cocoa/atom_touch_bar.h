@@ -19,8 +19,8 @@
 
 @interface AtomTouchBar : NSObject {
  @protected
-  std::map<std::string, mate::PersistentDictionary> item_id_map;
-  std::map<std::string, base::scoped_nsobject<NSTouchBarItem>> item_map;
+  std::map<std::string, mate::PersistentDictionary> settings_;
+  std::map<std::string, base::scoped_nsobject<NSTouchBarItem>> items_;
   id<NSTouchBarDelegate> delegate_;
   atom::NativeWindow* window_;
 }
@@ -28,14 +28,14 @@
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
                 window:(atom::NativeWindow*)window;
 
-- (NSTouchBar*)makeTouchBarFromItemOptions:(const std::vector<mate::PersistentDictionary>&)item_options;
+- (NSTouchBar*)makeTouchBarFromSettings:(const std::vector<mate::PersistentDictionary>&)settings;
 - (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items;
-- (NSMutableArray*)identifierArrayFromDicts:(const std::vector<mate::PersistentDictionary>&)dicts;
+- (NSMutableArray*)identifiersFromSettings:(const std::vector<mate::PersistentDictionary>&)settings;
 - (void)refreshTouchBarItem:(const std::string&)item_id;
 - (void)clear;
 
 - (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix;
-- (bool)hasItemWithID:(const std::string&)id;
+- (bool)hasItemWithID:(const std::string&)item_id;
 - (NSColor*)colorFromHexColorString:(const std::string&)colorString;
 
 // Selector actions
@@ -53,11 +53,11 @@
 - (NSTouchBarItem*)makeGroupForID:(NSString*)id withIdentifier:(NSString*)identifier;
 
 // Helpers to update touch bar items
-- (void)updateButton:(NSCustomTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
-- (void)updateLabel:(NSCustomTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
-- (void)updateColorPicker:(NSColorPickerTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
-- (void)updateSlider:(NSSliderTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
-- (void)updatePopover:(NSPopoverTouchBarItem*)item withOptions:(const mate::PersistentDictionary&)options;
+- (void)updateButton:(NSCustomTouchBarItem*)item withSettings:(const mate::PersistentDictionary&)settings;
+- (void)updateLabel:(NSCustomTouchBarItem*)item withSettings:(const mate::PersistentDictionary&)settings;
+- (void)updateColorPicker:(NSColorPickerTouchBarItem*)item withSettings:(const mate::PersistentDictionary&)settings;
+- (void)updateSlider:(NSSliderTouchBarItem*)item withSettings:(const mate::PersistentDictionary&)settings;
+- (void)updatePopover:(NSPopoverTouchBarItem*)item withSettings:(const mate::PersistentDictionary&)settings;
 
 @end
 

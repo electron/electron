@@ -378,7 +378,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (NSTouchBar*)makeTouchBar {
   atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self window:shell_]);
-  return [atom_touch_bar_ makeTouchBarFromItemOptions:shell_->GetTouchBarItems()];
+  return [atom_touch_bar_ makeTouchBarFromSettings:shell_->GetTouchBarItems()];
 }
 
 - (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar

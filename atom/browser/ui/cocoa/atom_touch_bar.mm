@@ -29,11 +29,11 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (void)clear {
-  item_id_map.clear();
+  settings_.clear();
 }
 
-- (NSTouchBar*)makeTouchBarFromItemOptions:(const std::vector<mate::PersistentDictionary>&)item_options {
-  NSMutableArray* identifiers = [self identifierArrayFromDicts:item_options];
+- (NSTouchBar*)makeTouchBarFromSettings:(const std::vector<mate::PersistentDictionary>&)settings {
+  NSMutableArray* identifiers = [self identifiersFromSettings:settings];
   return [self touchBarFromItemIdentifiers:identifiers];
 }
 
@@ -45,32 +45,32 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   return bar.autorelease();
 }
 
-- (NSMutableArray*)identifierArrayFromDicts:(const std::vector<mate::PersistentDictionary>&)dicts {
-  NSMutableArray* idents = [[NSMutableArray alloc] init];
+- (NSMutableArray*)identifiersFromSettings:(const std::vector<mate::PersistentDictionary>&)dicts {
+  NSMutableArray* identifiers = [[NSMutableArray alloc] init];
 
   for (const auto& item : dicts) {
     std::string type;
     std::string item_id;
     if (item.Get("type", &type) && item.Get("id", &item_id)) {
-      item_id_map[item_id] = item;
+      settings_[item_id] = item;
       if (type == "button") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, base::SysUTF8ToNSString(item_id)]];
+        [identifiers addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "label") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, base::SysUTF8ToNSString(item_id)]];
+        [identifiers addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "colorpicker") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", ColorPickerIdentifier, base::SysUTF8ToNSString(item_id)]];
+        [identifiers addObject:[NSString stringWithFormat:@"%@%@", ColorPickerIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "slider") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", SliderIdentifier, base::SysUTF8ToNSString(item_id)]];
+        [identifiers addObject:[NSString stringWithFormat:@"%@%@", SliderIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "popover") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", PopOverIdentifier, base::SysUTF8ToNSString(item_id)]];
+        [identifiers addObject:[NSString stringWithFormat:@"%@%@", PopOverIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "group") {
-        [idents addObject:[NSString stringWithFormat:@"%@%@", GroupIdentifier, base::SysUTF8ToNSString(item_id)]];
+        [identifiers addObject:[NSString stringWithFormat:@"%@%@", GroupIdentifier, base::SysUTF8ToNSString(item_id)]];
       }
     }
   }
-  [idents addObject:NSTouchBarItemIdentifierOtherItemsProxy];
+  [identifiers addObject:NSTouchBarItemIdentifierOtherItemsProxy];
 
-  return idents;
+  return identifiers;
 }
 
 - (NSTouchBarItem*)makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
@@ -98,35 +98,35 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   }
 
   if (item_id)
-    item_map[[item_id UTF8String]] = item;
+    items_[[item_id UTF8String]] = item;
 
   return item.autorelease();
 }
 
 
 - (void)refreshTouchBarItem:(const std::string&)item_id {
-  if (item_map.find(item_id) == item_map.end()) return;
+  if (items_.find(item_id) == items_.end()) return;
   if (![self hasItemWithID:item_id]) return;
 
-  mate::PersistentDictionary options = item_id_map[item_id];
+  mate::PersistentDictionary settings = settings_[item_id];
   std::string item_type;
-  options.Get("type", &item_type);
+  settings.Get("type", &item_type);
 
   if (item_type == "button") {
-    [self updateButton:(NSCustomTouchBarItem*)item_map[item_id]
-           withOptions:options];
+    [self updateButton:(NSCustomTouchBarItem*)items_[item_id]
+          withSettings:settings];
   } else if (item_type == "label") {
-    [self updateLabel:(NSCustomTouchBarItem*)item_map[item_id]
-          withOptions:options];
+    [self updateLabel:(NSCustomTouchBarItem*)items_[item_id]
+         withSettings:settings];
   } else if (item_type == "colorpicker") {
-    [self updateColorPicker:(NSColorPickerTouchBarItem*)item_map[item_id]
-                withOptions:options];
+    [self updateColorPicker:(NSColorPickerTouchBarItem*)items_[item_id]
+               withSettings:settings];
   } else if (item_type == "slider") {
-    [self updateSlider:(NSSliderTouchBarItem*)item_map[item_id]
-           withOptions:options];
+    [self updateSlider:(NSSliderTouchBarItem*)items_[item_id]
+          withSettings:settings];
   } else if (item_type == "popover") {
-    [self updatePopover:(NSPopoverTouchBarItem*)item_map[item_id]
-            withOptions:options];
+    [self updatePopover:(NSPopoverTouchBarItem*)items_[item_id]
+           withSettings:settings];
   }
 }
 
@@ -161,8 +161,8 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   return [identifier substringFromIndex:[prefix length]];
 }
 
-- (bool)hasItemWithID:(const std::string&)id {
-  return item_id_map.find(id) != item_id_map.end();
+- (bool)hasItemWithID:(const std::string&)item_id {
+  return settings_.find(item_id) != settings_.end();
 }
 
 - (NSColor*)colorFromHexColorString:(const std::string&)colorString {
@@ -175,38 +175,38 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
-  mate::PersistentDictionary options = item_id_map[s_id];
+  mate::PersistentDictionary settings = settings_[s_id];
   NSCustomTouchBarItem* item = [[NSClassFromString(@"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier];
   NSButton* button = [NSButton buttonWithTitle:@""
                                         target:self
                                         action:@selector(buttonAction:)];
   button.tag = [id floatValue];
   item.view = button;
-  [self updateButton:item withOptions:options];
+  [self updateButton:item withSettings:settings];
   return item;
 }
 
 - (void)updateButton:(NSCustomTouchBarItem*)item
-         withOptions:(const mate::PersistentDictionary&)options {
+        withSettings:(const mate::PersistentDictionary&)settings {
   NSButton* button = (NSButton*)item.view;
 
   std::string customizationLabel;
-  if (options.Get("customizationLabel", &customizationLabel)) {
+  if (settings.Get("customizationLabel", &customizationLabel)) {
     item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 
   std::string backgroundColor;
-  if (options.Get("backgroundColor", &backgroundColor)) {
+  if (settings.Get("backgroundColor", &backgroundColor)) {
     button.bezelColor = [self colorFromHexColorString:backgroundColor];
   }
 
   std::string label;
-  if (options.Get("label", &label)) {
+  if (settings.Get("label", &label)) {
     button.title = base::SysUTF8ToNSString(label);
   }
 
   std::string labelColor;
-  if (!label.empty() && options.Get("labelColor", &labelColor)) {
+  if (!label.empty() && settings.Get("labelColor", &labelColor)) {
     NSMutableAttributedString* attrTitle = [[[NSMutableAttributedString alloc] initWithString:base::SysUTF8ToNSString(label)] autorelease];
     NSRange range = NSMakeRange(0, [attrTitle length]);
     [attrTitle addAttribute:NSForegroundColorAttributeName
@@ -217,7 +217,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   }
 
   gfx::Image image;
-  if (options.Get("image", &image)) {
+  if (settings.Get("image", &image)) {
     button.image = image.AsNSImage();
   }
 }
@@ -227,23 +227,23 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
-  mate::PersistentDictionary item = item_id_map[s_id];
+  mate::PersistentDictionary item = settings_[s_id];
   NSCustomTouchBarItem* customItem = [[NSClassFromString(@"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier];
   customItem.view = [NSTextField labelWithString:@""];
-  [self updateLabel:customItem withOptions:item];
+  [self updateLabel:customItem withSettings:item];
 
   return customItem;
 }
 
 - (void)updateLabel:(NSCustomTouchBarItem*)item
-        withOptions:(const mate::PersistentDictionary&)options {
+       withSettings:(const mate::PersistentDictionary&)settings {
   std::string label;
-  options.Get("label", &label);
+  settings.Get("label", &label);
   NSTextField* text_field = (NSTextField*)item.view;
   text_field.stringValue = base::SysUTF8ToNSString(label);
 
   std::string customizationLabel;
-  if (options.Get("customizationLabel", &customizationLabel)) {
+  if (settings.Get("customizationLabel", &customizationLabel)) {
     item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 }
@@ -253,18 +253,18 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
-  mate::PersistentDictionary options = item_id_map[s_id];
+  mate::PersistentDictionary settings = settings_[s_id];
   NSColorPickerTouchBarItem* item = [[NSClassFromString(@"NSColorPickerTouchBarItem") alloc] initWithIdentifier:identifier];
   item.target = self;
   item.action = @selector(colorPickerAction:);
-  [self updateColorPicker:item withOptions:options];
+  [self updateColorPicker:item withSettings:settings];
   return item;
 }
 
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
-              withOptions:(const mate::PersistentDictionary&)options {
+             withSettings:(const mate::PersistentDictionary&)settings {
   std::string customizationLabel;
-  if (options.Get("customizationLabel", &customizationLabel)) {
+  if (settings.Get("customizationLabel", &customizationLabel)) {
     item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 }
@@ -274,31 +274,31 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
-  mate::PersistentDictionary options = item_id_map[s_id];
+  mate::PersistentDictionary settings = settings_[s_id];
   NSSliderTouchBarItem* item = [[NSClassFromString(@"NSSliderTouchBarItem") alloc] initWithIdentifier:identifier];
   item.target = self;
   item.action = @selector(sliderAction:);
-  [self updateSlider:item withOptions:options];
+  [self updateSlider:item withSettings:settings];
   return item;
 }
 
 - (void)updateSlider:(NSSliderTouchBarItem*)item
-         withOptions:(const mate::PersistentDictionary&)options {
+        withSettings:(const mate::PersistentDictionary&)settings {
   std::string customizationLabel;
-  if (options.Get("customizationLabel", &customizationLabel)) {
+  if (settings.Get("customizationLabel", &customizationLabel)) {
     item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 
   std::string label;
-  options.Get("label", &label);
+  settings.Get("label", &label);
   item.label = base::SysUTF8ToNSString(label);
 
   int maxValue = 100;
   int minValue = 0;
   int initialValue = 50;
-  options.Get("minValue", &minValue);
-  options.Get("maxValue", &maxValue);
-  options.Get("initialValue", &initialValue);
+  settings.Get("minValue", &minValue);
+  settings.Get("maxValue", &maxValue);
+  settings.Get("initialValue", &initialValue);
 
   item.slider.minValue = minValue;
   item.slider.maxValue = maxValue;
@@ -310,36 +310,36 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
-  mate::PersistentDictionary options = item_id_map[s_id];
+  mate::PersistentDictionary settings = settings_[s_id];
   NSPopoverTouchBarItem* item = [[NSClassFromString(@"NSPopoverTouchBarItem") alloc] initWithIdentifier:identifier];
-  [self updatePopover:item withOptions:options];
+  [self updatePopover:item withSettings:settings];
   return item;
 }
 
 - (void)updatePopover:(NSPopoverTouchBarItem*)item
-          withOptions:(const mate::PersistentDictionary&)options {
+         withSettings:(const mate::PersistentDictionary&)settings {
   std::string customizationLabel;
-  if (options.Get("customizationLabel", &customizationLabel)) {
+  if (settings.Get("customizationLabel", &customizationLabel)) {
     item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);
   }
 
   std::string label;
   gfx::Image image;
-  if (options.Get("label", &label)) {
+  if (settings.Get("label", &label)) {
     item.collapsedRepresentationLabel = base::SysUTF8ToNSString(label);
-  } else if (options.Get("image", &image)) {
+  } else if (settings.Get("image", &image)) {
     item.collapsedRepresentationImage = image.AsNSImage();
   }
 
   bool showCloseButton;
-  if (options.Get("showCloseButton", &showCloseButton)) {
+  if (settings.Get("showCloseButton", &showCloseButton)) {
     item.showsCloseButton = showCloseButton;
   }
 
   mate::PersistentDictionary child;
   std::vector<mate::PersistentDictionary> items;
-  if (options.Get("child", &child) && child.Get("ordereredItems", &items)) {
-    item.popoverTouchBar = [self touchBarFromItemIdentifiers:[self identifierArrayFromDicts:items]];
+  if (settings.Get("child", &child) && child.Get("ordereredItems", &items)) {
+    item.popoverTouchBar = [self touchBarFromItemIdentifiers:[self identifiersFromSettings:items]];
   }
 }
 
@@ -347,15 +347,15 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
                    withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
-  mate::PersistentDictionary options = item_id_map[s_id];
+  mate::PersistentDictionary settings = settings_[s_id];
 
   mate::PersistentDictionary child;
-  if (!options.Get("child", &child)) return nil;
+  if (!settings.Get("child", &child)) return nil;
   std::vector<mate::PersistentDictionary> items;
   if (!child.Get("ordereredItems", &items)) return nil;
 
   NSMutableArray* generatedItems = [[NSMutableArray alloc] init];
-  NSMutableArray* identList = [self identifierArrayFromDicts:items];
+  NSMutableArray* identList = [self identifiersFromSettings:items];
   for (NSUInteger i = 0; i < [identList count]; i++) {
     if ([identList objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
       NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identList objectAtIndex:i]];
@@ -367,7 +367,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
   NSGroupTouchBarItem* item = [NSClassFromString(@"NSGroupTouchBarItem") groupItemWithIdentifier:identifier items:generatedItems];
   std::string customizationLabel;
-  if (options.Get("customizationLabel", &customizationLabel)) {
+  if (settings.Get("customizationLabel", &customizationLabel)) {
     item.customizationLabel = base::SysUTF8ToNSString(customizationLabel);;
   }
   return item;
