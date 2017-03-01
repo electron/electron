@@ -13,13 +13,14 @@
 
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/cocoa/touch_bar_forward_declarations.h"
+#include "base/mac/scoped_nsobject.h"
 #include "native_mate/constructor.h"
 #include "native_mate/persistent_dictionary.h"
 
 @interface AtomTouchBar : NSObject {
  @protected
   std::map<std::string, mate::PersistentDictionary> item_id_map;
-  std::map<std::string, NSTouchBarItem*> item_map;
+  std::map<std::string, base::scoped_nsobject<NSTouchBarItem>> item_map;
   id<NSTouchBarDelegate> delegate_;
   atom::NativeWindow* window_;
 }

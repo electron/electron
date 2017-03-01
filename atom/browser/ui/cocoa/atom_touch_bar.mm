@@ -38,10 +38,11 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items {
-  NSTouchBar* bar = [[NSClassFromString(@"NSTouchBar") alloc] init];
-  bar.delegate = delegate_;
-  bar.defaultItemIdentifiers = items;
-  return bar;
+  base::scoped_nsobject<NSTouchBar> bar(
+      [[NSClassFromString(@"NSTouchBar") alloc] init]);
+  [bar setDelegate:delegate_];
+  [bar setDefaultItemIdentifiers:items];
+  return bar.autorelease();
 }
 
 - (NSMutableArray*)identifierArrayFromDicts:(const std::vector<mate::PersistentDictionary>&)dicts {
@@ -51,7 +52,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
     std::string type;
     std::string item_id;
     if (item.Get("type", &type) && item.Get("id", &item_id)) {
-      item_id_map.insert(make_pair(item_id, item));
+      item_id_map[item_id] = item;
       if (type == "button") {
         [idents addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, base::SysUTF8ToNSString(item_id)]];
       } else if (type == "label") {
@@ -73,31 +74,33 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (NSTouchBarItem*)makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
-  NSTouchBarItem* item = nil;
-  NSString* id = nil;
+  base::scoped_nsobject<NSTouchBarItem> item;
+  NSString* item_id = nil;
+
   if ([identifier hasPrefix:ButtonIdentifier]) {
-    id = [self idFromIdentifier:identifier withPrefix:ButtonIdentifier];
-    item = [self makeButtonForID:id withIdentifier:identifier];
+    item_id = [self idFromIdentifier:identifier withPrefix:ButtonIdentifier];
+    item.reset([self makeButtonForID:item_id withIdentifier:identifier]);
   } else if ([identifier hasPrefix:LabelIdentifier]) {
-    id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
-    item = [self makeLabelForID:id withIdentifier:identifier];
+    item_id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
+    item.reset([self makeLabelForID:item_id withIdentifier:identifier]);
   } else if ([identifier hasPrefix:ColorPickerIdentifier]) {
-    id = [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
-    item = [self makeColorPickerForID:id withIdentifier:identifier];
+    item_id = [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
+    item.reset([self makeColorPickerForID:item_id withIdentifier:identifier]);
   } else if ([identifier hasPrefix:SliderIdentifier]) {
-    id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
-    item = [self makeSliderForID:id withIdentifier:identifier];
+    item_id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
+    item.reset([self makeSliderForID:item_id withIdentifier:identifier]);
   } else if ([identifier hasPrefix:PopOverIdentifier]) {
-    id = [self idFromIdentifier:identifier withPrefix:PopOverIdentifier];
-    item = [self makePopoverForID:id withIdentifier:identifier];
+    item_id = [self idFromIdentifier:identifier withPrefix:PopOverIdentifier];
+    item.reset([self makePopoverForID:item_id withIdentifier:identifier]);
   } else if ([identifier hasPrefix:GroupIdentifier]) {
-    id = [self idFromIdentifier:identifier withPrefix:GroupIdentifier];
-    item = [self makeGroupForID:id withIdentifier:identifier];
+    item_id = [self idFromIdentifier:identifier withPrefix:GroupIdentifier];
+    item.reset([self makeGroupForID:item_id withIdentifier:identifier]);
   }
 
-  item_map.insert(make_pair(std::string([id UTF8String]), item));
+  if (item_id)
+    item_map[[item_id UTF8String]] = item;
 
-  return item;
+  return item.autorelease();
 }
 
 

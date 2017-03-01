@@ -383,7 +383,10 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
                makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
-  return [atom_touch_bar_ makeItemForIdentifier:identifier];
+  if (touchBar)
+    return [atom_touch_bar_ makeItemForIdentifier:identifier];
+  else
+    return nil;
 }
 
 // NSWindow overrides.
