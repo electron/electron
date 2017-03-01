@@ -16,15 +16,18 @@ namespace {
 #if defined(OS_WIN)
 gfx::Rect SubtractBorderSize(gfx::Rect bounds) {
   gfx::Point borderSize = gfx::Point(
-      GetSystemMetrics(SM_CXSIZEFRAME) - 1,   // width
-      GetSystemMetrics(SM_CYSIZEFRAME) - 1);  // height
-  gfx::Point dpiAdjustedSize =
+      GetSystemMetrics(SM_CXSIZEFRAME),   // width
+      GetSystemMetrics(SM_CYSIZEFRAME));  // height
+  gfx::Point dpiAdjustedBorder =
       display::win::ScreenWin::ScreenToDIPPoint(borderSize);
+  int diff = std::abs(borderSize.x() - dpiAdjustedBorder.x());
 
-  bounds.set_x(bounds.x() + dpiAdjustedSize.x());
-  bounds.set_y(bounds.y() + dpiAdjustedSize.y());
-  bounds.set_width(bounds.width() - 2 * dpiAdjustedSize.x());
-  bounds.set_height(bounds.height() - 2 * dpiAdjustedSize.y());
+  bounds.set_x(bounds.x() + (dpiAdjustedBorder.x() * 2) + diff);
+  bounds.set_y(bounds.y() + (dpiAdjustedBorder.y() * 2) + diff);
+  bounds.set_width(bounds.width() - (borderSize.x() * borderSize.x()) + diff);
+  // diff for height is subtracted in WM_NCCALCSIZE
+  bounds.set_height(bounds.height() - (borderSize.y() / 2 * borderSize.y()));
+
   return bounds;
 }
 #endif
