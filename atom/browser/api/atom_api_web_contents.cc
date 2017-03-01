@@ -90,7 +90,7 @@ struct PrintSettings {
 
 namespace mate {
 
-template <>
+template<>
 struct Converter<atom::SetSizeParams> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -112,10 +112,9 @@ struct Converter<atom::SetSizeParams> {
   }
 };
 
-template <>
+template<>
 struct Converter<PrintSettings> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      PrintSettings* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -126,7 +125,7 @@ struct Converter<PrintSettings> {
   }
 };
 
-template <>
+template<>
 struct Converter<WindowOpenDisposition> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    WindowOpenDisposition val) {
@@ -155,10 +154,9 @@ struct Converter<WindowOpenDisposition> {
   }
 };
 
-template <>
+template<>
 struct Converter<content::SavePageType> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      content::SavePageType* out) {
     std::string save_type;
     if (!ConvertFromV8(isolate, val, &save_type))
@@ -177,36 +175,24 @@ struct Converter<content::SavePageType> {
   }
 };
 
-template <>
+template<>
 struct Converter<atom::api::WebContents::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    atom::api::WebContents::Type val) {
     using Type = atom::api::WebContents::Type;
     std::string type = "";
     switch (val) {
-      case Type::BACKGROUND_PAGE:
-        type = "backgroundPage";
-        break;
-      case Type::BROWSER_WINDOW:
-        type = "window";
-        break;
-      case Type::REMOTE:
-        type = "remote";
-        break;
-      case Type::WEB_VIEW:
-        type = "webview";
-        break;
-      case Type::OFF_SCREEN:
-        type = "offscreen";
-        break;
-      default:
-        break;
+      case Type::BACKGROUND_PAGE: type = "backgroundPage"; break;
+      case Type::BROWSER_WINDOW: type = "window"; break;
+      case Type::REMOTE: type = "remote"; break;
+      case Type::WEB_VIEW: type = "webview"; break;
+      case Type::OFF_SCREEN: type = "offscreen"; break;
+      default: break;
     }
     return mate::ConvertToV8(isolate, type);
   }
 
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      atom::api::WebContents::Type* out) {
     using Type = atom::api::WebContents::Type;
     std::string type;
@@ -226,6 +212,7 @@ struct Converter<atom::api::WebContents::Type> {
 };
 
 }  // namespace mate
+
 
 namespace atom {
 
@@ -320,10 +307,10 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
   content::WebContents* web_contents;
   if (IsGuest()) {
     scoped_refptr<content::SiteInstance> site_instance =
-        content::SiteInstance::CreateForURL(session->browser_context(),
-                                            GURL("chrome-guest://fake-host"));
-    content::WebContents::CreateParams params(session->browser_context(),
-                                              site_instance);
+        content::SiteInstance::CreateForURL(
+            session->browser_context(), GURL("chrome-guest://fake-host"));
+    content::WebContents::CreateParams params(
+        session->browser_context(), site_instance);
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
@@ -348,7 +335,7 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
 }
 
 void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
-                                            content::WebContents* web_contents,
+                                            content::WebContents *web_contents,
                                             mate::Handle<api::Session> session,
                                             const mate::Dictionary& options) {
   Observe(web_contents);
@@ -454,8 +441,8 @@ void WebContents::AddNewContents(content::WebContents* source,
   v8::HandleScope handle_scope(isolate());
   auto api_web_contents = CreateFrom(isolate(), new_contents);
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
-           initial_rect.x(), initial_rect.y(), initial_rect.width(),
-           initial_rect.height())) {
+      initial_rect.x(), initial_rect.y(), initial_rect.width(),
+      initial_rect.height())) {
     api_web_contents->DestroyWebContents();
   }
 }
@@ -533,8 +520,8 @@ bool WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event,
     bool* is_keyboard_shortcut) {
-  if (event.type == blink::WebInputEvent::Type::RawKeyDown ||
-      event.type == blink::WebInputEvent::Type::KeyUp)
+  if (event.type == blink::WebInputEvent::Type::RawKeyDown
+      || event.type == blink::WebInputEvent::Type::KeyUp)
     return Emit("before-input-event", event);
   else
     return false;
@@ -542,7 +529,8 @@ bool WebContents::PreHandleKeyboardEvent(
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
                                             const GURL& origin) {
-  auto permission_helper = WebContentsPermissionHelper::FromWebContents(source);
+  auto permission_helper =
+      WebContentsPermissionHelper::FromWebContents(source);
   auto callback = base::Bind(&WebContents::OnEnterFullscreenModeForTab,
                              base::Unretained(this), source, origin);
   permission_helper->RequestFullscreenPermission(callback);
@@ -612,9 +600,10 @@ void WebContents::FindReply(content::WebContents* web_contents,
   Emit("found-in-page", result);
 }
 
-bool WebContents::CheckMediaAccessPermission(content::WebContents* web_contents,
-                                             const GURL& security_origin,
-                                             content::MediaStreamType type) {
+bool WebContents::CheckMediaAccessPermission(
+    content::WebContents* web_contents,
+    const GURL& security_origin,
+    content::MediaStreamType type) {
   return true;
 }
 
@@ -627,9 +616,10 @@ void WebContents::RequestMediaAccessPermission(
   permission_helper->RequestMediaAccessPermission(request, callback);
 }
 
-void WebContents::RequestToLockMouse(content::WebContents* web_contents,
-                                     bool user_gesture,
-                                     bool last_unlocked_by_target) {
+void WebContents::RequestToLockMouse(
+    content::WebContents* web_contents,
+    bool user_gesture,
+    bool last_unlocked_by_target) {
   auto permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(user_gesture);
@@ -720,17 +710,26 @@ void WebContents::DidStopLoading() {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
-  Emit("did-get-response-details", details.socket_address.IsEmpty(),
-       details.url, details.original_url, details.http_response_code,
-       details.method, details.referrer, details.headers.get(),
+  Emit("did-get-response-details",
+       details.socket_address.IsEmpty(),
+       details.url,
+       details.original_url,
+       details.http_response_code,
+       details.method,
+       details.referrer,
+       details.headers.get(),
        ResourceTypeToString(details.resource_type));
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
     const content::ResourceRedirectDetails& details) {
-  Emit("did-get-redirect-request", details.url, details.new_url,
+  Emit("did-get-redirect-request",
+       details.url,
+       details.new_url,
        (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME),
-       details.http_response_code, details.method, details.referrer,
+       details.http_response_code,
+       details.method,
+       details.referrer,
        details.headers.get());
 }
 
@@ -795,8 +794,8 @@ void WebContents::DevToolsOpened() {
 
   // Set inspected tabID.
   base::FundamentalValue tab_id(ID());
-  managed_web_contents()->CallClientFunction("DevToolsAPI.setInspectedTabId",
-                                             &tab_id, nullptr, nullptr);
+  managed_web_contents()->CallClientFunction(
+      "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
 
   // Inherit owner window in devtools.
   if (owner_window())
@@ -825,7 +824,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_GetZoomLevel,
                                     OnGetZoomLevel)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
-                             handled = false)
+      handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -859,13 +858,14 @@ void WebContents::WebContentsDestroyed() {
   Emit("destroyed");
 
   // Destroy the native class in next tick.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, GetDestroyClosure());
 }
 
 void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& details) {
-  Emit("navigation-entry-commited", details.entry->GetURL(), details.is_in_page,
-       details.did_replace_entry);
+  Emit("navigation-entry-commited", details.entry->GetURL(),
+       details.is_in_page, details.did_replace_entry);
 }
 
 int64_t WebContents::GetID() const {
@@ -889,9 +889,11 @@ bool WebContents::Equal(const WebContents* web_contents) const {
 
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (!url.is_valid() || url.spec().size() > url::kMaxURLChars) {
-    Emit("did-fail-load", static_cast<int>(net::ERR_INVALID_URL),
+    Emit("did-fail-load",
+         static_cast<int>(net::ERR_INVALID_URL),
          net::ErrorToShortString(net::ERR_INVALID_URL),
-         url.possibly_invalid_spec(), true);
+         url.possibly_invalid_spec(),
+         true);
     return;
   }
 
@@ -921,7 +923,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     params.base_url_for_data_url = base_url_for_data_url;
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
-
+  
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
@@ -947,7 +949,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 void WebContents::DownloadURL(const GURL& url) {
   auto browser_context = web_contents()->GetBrowserContext();
   auto download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context);
+    content::BrowserContext::GetDownloadManager(browser_context);
 
   download_manager->DownloadUrl(
       content::DownloadUrlParameters::CreateForWebContentsMainFrame(
@@ -971,8 +973,7 @@ bool WebContents::IsLoadingMainFrame() const {
   // instance when navigating, regardless of origin. See AtomBrowserClient.
   return (web_contents()->GetLastCommittedURL().is_empty() ||
           web_contents()->GetSiteInstance() !=
-              web_contents()->GetPendingSiteInstance()) &&
-         IsLoading();
+          web_contents()->GetPendingSiteInstance()) && IsLoading();
 }
 
 bool WebContents::IsWaitingForResponse() const {
@@ -1116,13 +1117,15 @@ void WebContents::InspectServiceWorker() {
   }
 }
 
-void WebContents::HasServiceWorker(const base::Callback<void(bool)>& callback) {
+void WebContents::HasServiceWorker(
+    const base::Callback<void(bool)>& callback) {
   auto context = GetServiceWorkerContext(web_contents());
   if (!context)
     return;
 
   context->CheckHasServiceWorker(web_contents()->GetLastCommittedURL(),
-                                 GURL::EmptyGURL(), callback);
+                                 GURL::EmptyGURL(),
+                                 callback);
 }
 
 void WebContents::UnregisterServiceWorker(
@@ -1144,21 +1147,22 @@ bool WebContents::IsAudioMuted() {
 }
 
 void WebContents::Print(mate::Arguments* args) {
-  PrintSettings settings = {false, false};
+  PrintSettings settings = { false, false };
   if (args->Length() == 1 && !args->GetNext(&settings)) {
     args->ThrowError();
     return;
   }
 
-  printing::PrintViewManagerBasic::FromWebContents(web_contents())
-      ->PrintNow(web_contents()->GetMainFrame(), settings.silent,
-                 settings.print_background);
+  printing::PrintViewManagerBasic::FromWebContents(web_contents())->
+      PrintNow(web_contents()->GetMainFrame(),
+               settings.silent,
+               settings.print_background);
 }
 
 void WebContents::PrintToPDF(const base::DictionaryValue& setting,
                              const PrintToPDFCallback& callback) {
-  printing::PrintPreviewMessageHandler::FromWebContents(web_contents())
-      ->PrintToPDF(setting, callback);
+  printing::PrintPreviewMessageHandler::FromWebContents(web_contents())->
+      PrintToPDF(setting, callback);
 }
 
 void WebContents::AddWorkSpace(mate::Arguments* args,
@@ -1263,8 +1267,7 @@ void WebContents::Focus() {
 #if !defined(OS_MACOSX)
 bool WebContents::IsFocused() const {
   auto view = web_contents()->GetRenderWidgetHostView();
-  if (!view)
-    return false;
+  if (!view) return false;
 
   if (GetType() != BACKGROUND_PAGE) {
     auto window = web_contents()->GetNativeView()->GetToplevelWindow();
@@ -1316,8 +1319,8 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     }
   }
 
-  isolate->ThrowException(
-      v8::Exception::Error(mate::StringToV8(isolate, "Invalid event object")));
+  isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+      isolate, "Invalid event object")));
 }
 
 void WebContents::BeginFrameSubscription(mate::Arguments* args) {
@@ -1332,8 +1335,8 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
 
   const auto view = web_contents()->GetRenderWidgetHostView();
   if (view) {
-    std::unique_ptr<FrameSubscriber> frame_subscriber(
-        new FrameSubscriber(isolate(), view, callback, only_dirty));
+    std::unique_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
+        isolate(), view, callback, only_dirty));
     view->BeginFrameSubscription(std::move(frame_subscriber));
   }
 }
@@ -1386,8 +1389,8 @@ void WebContents::CapturePage(mate::Arguments* args) {
   base::Callback<void(const gfx::Image&)> callback;
 
   if (!(args->Length() == 1 && args->GetNext(&callback)) &&
-      !(args->Length() == 2 && args->GetNext(&rect) &&
-        args->GetNext(&callback))) {
+      !(args->Length() == 2 && args->GetNext(&rect)
+                            && args->GetNext(&callback))) {
     args->ThrowError();
     return;
   }
@@ -1400,21 +1403,22 @@ void WebContents::CapturePage(mate::Arguments* args) {
   }
 
   // Capture full page if user doesn't specify a |rect|.
-  const gfx::Size view_size =
-      rect.IsEmpty() ? view->GetViewBounds().size() : rect.size();
+  const gfx::Size view_size = rect.IsEmpty() ? view->GetViewBounds().size() :
+                                               rect.size();
 
   // By default, the requested bitmap size is the view size in screen
   // coordinates.  However, if there's more pixel detail available on the
   // current system, increase the requested bitmap size to capture it all.
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
-  const float scale = display::Screen::GetScreen()
-                          ->GetDisplayNearestWindow(native_view)
-                          .device_scale_factor();
+  const float scale =
+      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
-  host->CopyFromBackingStore(gfx::Rect(rect.origin(), view_size), bitmap_size,
+  host->CopyFromBackingStore(gfx::Rect(rect.origin(), view_size),
+                             bitmap_size,
                              base::Bind(&OnCapturePageDone, callback),
                              kBGRA_8888_SkColorType);
 }
@@ -1425,10 +1429,10 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
 
   if (cursor.IsCustom()) {
     Emit("cursor-changed", CursorTypeToString(info),
-         gfx::Image::CreateFrom1xBitmap(info.custom_image),
-         info.image_scale_factor,
-         gfx::Size(info.custom_image.width(), info.custom_image.height()),
-         info.hotspot);
+      gfx::Image::CreateFrom1xBitmap(info.custom_image),
+      info.image_scale_factor,
+      gfx::Size(info.custom_image.width(), info.custom_image.height()),
+      info.hotspot);
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
   }
@@ -1634,8 +1638,10 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
       .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
-      .SetMethod("enableDeviceEmulation", &WebContents::EnableDeviceEmulation)
-      .SetMethod("disableDeviceEmulation", &WebContents::DisableDeviceEmulation)
+      .SetMethod("enableDeviceEmulation",
+                 &WebContents::EnableDeviceEmulation)
+      .SetMethod("disableDeviceEmulation",
+                 &WebContents::DisableDeviceEmulation)
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
       .SetMethod("inspectElement", &WebContents::InspectElement)
       .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
@@ -1658,7 +1664,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
-      .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
+      .SetMethod("beginFrameSubscription",
+                 &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("setSize", &WebContents::SetSize)
@@ -1716,30 +1723,27 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
 
 // static
 mate::Handle<WebContents> WebContents::CreateFrom(
-    v8::Isolate* isolate,
-    content::WebContents* web_contents) {
+    v8::Isolate* isolate, content::WebContents* web_contents) {
   // We have an existing WebContents object in JS.
   auto existing = TrackableObject::FromWrappedClass(isolate, web_contents);
   if (existing)
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 
   // Otherwise create a new WebContents wrapper object.
-  return mate::CreateHandle(isolate,
-                            new WebContents(isolate, web_contents, REMOTE));
+  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents,
+        REMOTE));
 }
 
 mate::Handle<WebContents> WebContents::CreateFrom(
-    v8::Isolate* isolate,
-    content::WebContents* web_contents,
-    Type type) {
+    v8::Isolate* isolate, content::WebContents* web_contents, Type type) {
   // Otherwise create a new WebContents wrapper object.
-  return mate::CreateHandle(isolate,
-                            new WebContents(isolate, web_contents, type));
+  return mate::CreateHandle(isolate, new WebContents(isolate, web_contents,
+        type));
 }
 
 // static
-mate::Handle<WebContents> WebContents::Create(v8::Isolate* isolate,
-                                              const mate::Dictionary& options) {
+mate::Handle<WebContents> WebContents::Create(
+    v8::Isolate* isolate, const mate::Dictionary& options) {
   return mate::CreateHandle(isolate, new WebContents(isolate, options));
 }
 
@@ -1751,10 +1755,8 @@ namespace {
 
 using atom::api::WebContents;
 
-void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context,
-                void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(isolate)->GetFunction());
