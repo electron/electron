@@ -38,6 +38,7 @@ class PdfViewerHandler : public content::WebUIMessageHandler {
   void Initialize(const base::ListValue* args);
   void GetDefaultZoom(const base::ListValue* args);
   void GetInitialZoom(const base::ListValue* args);
+  void SetZoom(const base::ListValue* args);
   void GetStrings(const base::ListValue* args);
   void Reload(const base::ListValue* args);
   void OnZoomLevelChanged(const content::HostZoomMap::ZoomLevelChange& change);

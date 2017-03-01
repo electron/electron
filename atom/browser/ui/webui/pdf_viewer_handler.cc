@@ -83,6 +83,9 @@ void PdfViewerHandler::RegisterMessages() {
       "getInitialZoom",
       base::Bind(&PdfViewerHandler::GetInitialZoom, base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
+      "setZoom",
+      base::Bind(&PdfViewerHandler::SetZoom, base::Unretained(this)));
+  web_ui()->RegisterMessageCallback(
       "getStrings",
       base::Bind(&PdfViewerHandler::GetStrings, base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
@@ -148,6 +151,20 @@ void PdfViewerHandler::GetInitialZoom(const base::ListValue* args) {
       base::FundamentalValue(content::ZoomLevelToZoomFactor(zoom_level)));
 }
 
+void PdfViewerHandler::SetZoom(const base::ListValue* args) {
+  if (!IsJavascriptAllowed())
+    return;
+  CHECK_EQ(2U, args->GetSize());
+  const base::Value* callback_id;
+  CHECK(args->Get(0, &callback_id));
+  double zoom_level = 0.0;
+  CHECK(args->GetDouble(1, &zoom_level));
+
+  content::HostZoomMap::SetZoomLevel(web_ui()->GetWebContents(),
+                                     zoom_level);
+  ResolveJavascriptCallback(*callback_id, base::FundamentalValue(zoom_level));
+}
+
 void PdfViewerHandler::GetStrings(const base::ListValue* args) {
   if (!IsJavascriptAllowed())
     return;
@@ -187,10 +204,7 @@ void PdfViewerHandler::Reload(const base::ListValue* args) {
 
 void PdfViewerHandler::OnZoomLevelChanged(
     const content::HostZoomMap::ZoomLevelChange& change) {
-  // TODO(deepak1556): This will work only if zoom level is changed through host
-  // zoom map.
-  if (change.scheme == content::kChromeUIScheme &&
-      change.host == kPdfViewerUIHost) {
+  if (change.host == kPdfViewerUIHost) {
     CallJavascriptFunction(
         "cr.webUIListenerCallback", base::StringValue("onZoomLevelChanged"),
         base::FundamentalValue(

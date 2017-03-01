@@ -185,7 +185,6 @@ class PdfViewerUI::ResourceRequester
   }
 
  private:
-  friend class base::RefCountedThreadSafe<ResourceRequester>;
   friend struct BrowserThread::DeleteOnThread<BrowserThread::IO>;
   friend class base::DeleteHelper<ResourceRequester>;
   ~ResourceRequester() override {}
@@ -223,7 +222,8 @@ bool PdfViewerUI::OnMessageReceived(
 void PdfViewerUI::OnPdfStreamCreated(
     std::unique_ptr<content::StreamInfo> stream) {
   stream_ = std::move(stream);
-  pdf_handler_->SetPdfResourceStream(stream_.get());
+  if (pdf_handler_)
+    pdf_handler_->SetPdfResourceStream(stream_.get());
   resource_requester_ = nullptr;
 }
 
