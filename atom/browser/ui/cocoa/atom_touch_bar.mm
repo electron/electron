@@ -50,29 +50,24 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
     std::string type;
     std::string item_id;
     if (item.Get("type", &type) && item.Get("id", &item_id)) {
-      settings_[item_id] = item;
-      if (type == "button") {
-        [identifiers addObject:[NSString stringWithFormat:@"%@%@", ButtonIdentifier, base::SysUTF8ToNSString(item_id)]];
-      } else if (type == "label") {
-        [identifiers addObject:[NSString stringWithFormat:@"%@%@", LabelIdentifier, base::SysUTF8ToNSString(item_id)]];
-      } else if (type == "colorpicker") {
-        [identifiers addObject:[NSString stringWithFormat:@"%@%@", ColorPickerIdentifier, base::SysUTF8ToNSString(item_id)]];
-      } else if (type == "slider") {
-        [identifiers addObject:[NSString stringWithFormat:@"%@%@", SliderIdentifier, base::SysUTF8ToNSString(item_id)]];
-      } else if (type == "popover") {
-        [identifiers addObject:[NSString stringWithFormat:@"%@%@", PopOverIdentifier, base::SysUTF8ToNSString(item_id)]];
-      } else if (type == "group") {
-        [identifiers addObject:[NSString stringWithFormat:@"%@%@", GroupIdentifier, base::SysUTF8ToNSString(item_id)]];
-      } else if (type == "spacer") {
+      NSTouchBarItemIdentifier identifier = nil;
+      if (type == "spacer") {
         std::string size;
         item.Get("size", &size);
         if (size == "large") {
-          [identifiers addObject:NSTouchBarItemIdentifierFixedSpaceLarge];
+          identifier = NSTouchBarItemIdentifierFixedSpaceLarge;
         } else if (size == "flexible") {
-          [identifiers addObject:NSTouchBarItemIdentifierFlexibleSpace];
+          identifier = NSTouchBarItemIdentifierFlexibleSpace;
         } else {
-          [identifiers addObject:NSTouchBarItemIdentifierFixedSpaceSmall];
+          identifier = NSTouchBarItemIdentifierFixedSpaceSmall;
         }
+      } else {
+        identifier = [self identifierFromID:item_id type:type];
+      }
+
+      if (identifier) {
+        settings_[item_id] = item;
+        [identifiers addObject:identifier];
       }
     }
   }
@@ -82,59 +77,58 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (NSTouchBarItem*)makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
-  base::scoped_nsobject<NSTouchBarItem> item;
   NSString* item_id = nil;
 
   if ([identifier hasPrefix:ButtonIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:ButtonIdentifier];
-    item.reset([self makeButtonForID:item_id withIdentifier:identifier]);
+    return [self makeButtonForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:LabelIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
-    item.reset([self makeLabelForID:item_id withIdentifier:identifier]);
+    return [self makeLabelForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:ColorPickerIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
-    item.reset([self makeColorPickerForID:item_id withIdentifier:identifier]);
+    return [self makeColorPickerForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:SliderIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
-    item.reset([self makeSliderForID:item_id withIdentifier:identifier]);
+    return [self makeSliderForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:PopOverIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:PopOverIdentifier];
-    item.reset([self makePopoverForID:item_id withIdentifier:identifier]);
+    return [self makePopoverForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:GroupIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:GroupIdentifier];
-    item.reset([self makeGroupForID:item_id withIdentifier:identifier]);
+    return [self makeGroupForID:item_id withIdentifier:identifier];
   }
 
-  if (item_id)
-    items_[[item_id UTF8String]] = item;
-
-  return item.autorelease();
+  return nil;
 }
 
 
-- (void)refreshTouchBarItem:(const std::string&)item_id {
-  if (items_.find(item_id) == items_.end()) return;
+- (void)refreshTouchBarItem:(NSTouchBar*)touchBar
+                         id:(const std::string&)item_id {
   if (![self hasItemWithID:item_id]) return;
 
   mate::PersistentDictionary settings = settings_[item_id];
   std::string item_type;
   settings.Get("type", &item_type);
 
+  NSTouchBarItemIdentifier identifier = [self identifierFromID:item_id
+                                                          type:item_type];
+  if (!identifier) return;
+
+  NSTouchBarItem* item = [touchBar itemForIdentifier:identifier];
+  if (!item) return;
+
   if (item_type == "button") {
-    [self updateButton:(NSCustomTouchBarItem*)items_[item_id]
-          withSettings:settings];
+    [self updateButton:(NSCustomTouchBarItem*)item withSettings:settings];
   } else if (item_type == "label") {
-    [self updateLabel:(NSCustomTouchBarItem*)items_[item_id]
-         withSettings:settings];
+    [self updateLabel:(NSCustomTouchBarItem*)item withSettings:settings];
   } else if (item_type == "colorpicker") {
-    [self updateColorPicker:(NSColorPickerTouchBarItem*)items_[item_id]
+    [self updateColorPicker:(NSColorPickerTouchBarItem*)item
                withSettings:settings];
   } else if (item_type == "slider") {
-    [self updateSlider:(NSSliderTouchBarItem*)items_[item_id]
-          withSettings:settings];
+    [self updateSlider:(NSSliderTouchBarItem*)item withSettings:settings];
   } else if (item_type == "popover") {
-    [self updatePopover:(NSPopoverTouchBarItem*)items_[item_id]
-           withSettings:settings];
+    [self updatePopover:(NSPopoverTouchBarItem*)item withSettings:settings];
   }
 }
 
@@ -169,6 +163,28 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   return [identifier substringFromIndex:[prefix length]];
 }
 
+- (NSTouchBarItemIdentifier)identifierFromID:(const std::string&)item_id
+                                        type:(const std::string&)type {
+  NSTouchBarItemIdentifier base_identifier = nil;
+  if (type == "button")
+    base_identifier = ButtonIdentifier;
+  else if (type == "label")
+    base_identifier = LabelIdentifier;
+  else if (type == "colorpicker")
+    base_identifier = ColorPickerIdentifier;
+  else if (type == "slider")
+    base_identifier = SliderIdentifier;
+  else if (type == "popover")
+    base_identifier = PopOverIdentifier;
+  else if (type == "group")
+    base_identifier = GroupIdentifier;
+
+  if (base_identifier)
+    return [NSString stringWithFormat:@"%@%s", base_identifier, item_id.data()];
+  else
+    return nil;
+}
+
 - (bool)hasItemWithID:(const std::string&)item_id {
   return settings_.find(item_id) != settings_.end();
 }
@@ -184,14 +200,15 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
-  NSCustomTouchBarItem* item = [[NSClassFromString(@"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier];
+  base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
+      @"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier]);
   NSButton* button = [NSButton buttonWithTitle:@""
                                         target:self
                                         action:@selector(buttonAction:)];
   button.tag = [id floatValue];
-  item.view = button;
+  [item setView:button];
   [self updateButton:item withSettings:settings];
-  return item;
+  return item.autorelease();
 }
 
 - (void)updateButton:(NSCustomTouchBarItem*)item
@@ -219,12 +236,12 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
-  mate::PersistentDictionary item = settings_[s_id];
-  NSCustomTouchBarItem* customItem = [[NSClassFromString(@"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier];
-  customItem.view = [NSTextField labelWithString:@""];
-  [self updateLabel:customItem withSettings:item];
-
-  return customItem;
+  mate::PersistentDictionary settings = settings_[s_id];
+  base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
+      @"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier]);
+  [item setView:[NSTextField labelWithString:@""]];
+  [self updateLabel:item withSettings:settings];
+  return item.autorelease();
 }
 
 - (void)updateLabel:(NSCustomTouchBarItem*)item
@@ -241,11 +258,12 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
-  NSColorPickerTouchBarItem* item = [[NSClassFromString(@"NSColorPickerTouchBarItem") alloc] initWithIdentifier:identifier];
-  item.target = self;
-  item.action = @selector(colorPickerAction:);
+  base::scoped_nsobject<NSColorPickerTouchBarItem> item([[NSClassFromString(
+    @"NSColorPickerTouchBarItem") alloc] initWithIdentifier:identifier]);
+  [item setTarget:self];
+  [item setAction:@selector(colorPickerAction:)];
   [self updateColorPicker:item withSettings:settings];
-  return item;
+  return item.autorelease();
 }
 
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
@@ -273,11 +291,12 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
-  NSSliderTouchBarItem* item = [[NSClassFromString(@"NSSliderTouchBarItem") alloc] initWithIdentifier:identifier];
-  item.target = self;
-  item.action = @selector(sliderAction:);
+  base::scoped_nsobject<NSSliderTouchBarItem> item([[NSClassFromString(
+      @"NSSliderTouchBarItem") alloc] initWithIdentifier:identifier]);
+  [item setTarget:self];
+  [item setAction:@selector(sliderAction:)];
   [self updateSlider:item withSettings:settings];
-  return item;
+  return item.autorelease();
 }
 
 - (void)updateSlider:(NSSliderTouchBarItem*)item
@@ -304,9 +323,10 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   if (![self hasItemWithID:s_id]) return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
-  NSPopoverTouchBarItem* item = [[NSClassFromString(@"NSPopoverTouchBarItem") alloc] initWithIdentifier:identifier];
+  base::scoped_nsobject<NSPopoverTouchBarItem> item([[NSClassFromString(
+      @"NSPopoverTouchBarItem") alloc] initWithIdentifier:identifier]);
   [self updatePopover:item withSettings:settings];
-  return item;
+  return item.autorelease();
 }
 
 - (void)updatePopover:(NSPopoverTouchBarItem*)item

@@ -21,7 +21,6 @@
  @protected
   std::vector<mate::PersistentDictionary> ordered_settings_;
   std::map<std::string, mate::PersistentDictionary> settings_;
-  std::map<std::string, base::scoped_nsobject<NSTouchBarItem>> items_;
   id<NSTouchBarDelegate> delegate_;
   atom::NativeWindow* window_;
 }
@@ -31,9 +30,11 @@
 - (NSTouchBar*)makeTouchBar;
 - (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items;
 - (NSMutableArray*)identifiersFromSettings:(const std::vector<mate::PersistentDictionary>&)settings;
-- (void)refreshTouchBarItem:(const std::string&)item_id;
+- (void)refreshTouchBarItem:(NSTouchBar*)touchBar id:(const std::string&)item_id;
+
 
 - (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix;
+- (NSTouchBarItemIdentifier)identifierFromID:(const std::string&)item_id type:(const std::string&)typere;
 - (bool)hasItemWithID:(const std::string&)item_id;
 - (NSColor*)colorFromHexColorString:(const std::string&)colorString;
 
