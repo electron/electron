@@ -33,7 +33,7 @@ need a powerful machine to build Electron.
 __3. Node Integration__
 
 In NW.js, the Node integration in web pages requires patching Chromium to
-work, while in Electron we chose a different way to integrate the libuv loop
+work, whereas in Electron we chose a different way to integrate the libuv loop
 with each platform's message loop to avoid hacking Chromium. See the
 [`node_bindings`][node-bindings] code for how that was done.
 
