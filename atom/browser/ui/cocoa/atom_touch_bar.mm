@@ -16,7 +16,7 @@ static NSTouchBarItemIdentifier ButtonIdentifier = @"com.electron.touchbar.butto
 static NSTouchBarItemIdentifier ColorPickerIdentifier = @"com.electron.touchbar.colorpicker.";
 static NSTouchBarItemIdentifier GroupIdentifier = @"com.electron.touchbar.group.";
 static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.touchbar.label.";
-static NSTouchBarItemIdentifier PopOverIdentifier = @"com.electron.touchbar.popover.";
+static NSTouchBarItemIdentifier PopoverIdentifier = @"com.electron.touchbar.popover.";
 static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slider.";
 
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
@@ -91,8 +91,8 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   } else if ([identifier hasPrefix:SliderIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
     return [self makeSliderForID:item_id withIdentifier:identifier];
-  } else if ([identifier hasPrefix:PopOverIdentifier]) {
-    item_id = [self idFromIdentifier:identifier withPrefix:PopOverIdentifier];
+  } else if ([identifier hasPrefix:PopoverIdentifier]) {
+    item_id = [self idFromIdentifier:identifier withPrefix:PopoverIdentifier];
     return [self makePopoverForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:GroupIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:GroupIdentifier];
@@ -175,7 +175,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   else if (type == "slider")
     base_identifier = SliderIdentifier;
   else if (type == "popover")
-    base_identifier = PopOverIdentifier;
+    base_identifier = PopoverIdentifier;
   else if (type == "group")
     base_identifier = GroupIdentifier;
 
