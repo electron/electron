@@ -28,7 +28,6 @@ extern const char kPdfPluginSrc[];
 // Constants for PDF viewer webui.
 extern const char kPdfViewerUIOrigin[];
 extern const char kPdfViewerUIHost[];
-extern const char kPdfViewerUIStreamId[];
 
 }  // namespace atom
 

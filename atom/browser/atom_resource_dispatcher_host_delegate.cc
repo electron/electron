@@ -8,14 +8,12 @@
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/platform_util.h"
-#include "base/guid.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/stream_info.h"
 #include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
-#include "net/url_request/url_request.h"
 #include "url/gurl.h"
 
 #if defined(USE_NSS_CERTS)
@@ -122,7 +120,9 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     const std::string& mime_type,
     GURL* origin,
     std::string* payload) {
-  if (mime_type == "application/pdf") {
+  const content::ResourceRequestInfo* info =
+      content::ResourceRequestInfo::ForRequest(request);
+  if (mime_type == "application/pdf" && info->IsMainFrame()) {
     *origin = GURL(kPdfViewerUIOrigin);
     return true;
   }

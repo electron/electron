@@ -30,6 +30,5 @@ const char kPdfPluginSrc[] = "src";
 
 const char kPdfViewerUIOrigin[] = "chrome://pdf-viewer/";
 const char kPdfViewerUIHost[] = "pdf-viewer";
-const char kPdfViewerUIStreamId[] = "streamId";
 
 }  // namespace atom
