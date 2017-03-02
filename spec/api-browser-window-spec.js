@@ -261,7 +261,7 @@ describe('BrowserWindow module', function () {
           assert.equal(test, 'test')
           done()
         })
-        w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {baseURLForDataURL: 'file://' + path.join(fixtures, 'api') + path.sep})
+        w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {baseURLForDataURL: `file://${path.join(fixtures, 'api')}${path.sep}`})
       })
 
       it('sets the content type header on multi part forms', function (done) {
