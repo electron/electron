@@ -227,7 +227,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   }
 
   gfx::Image image;
-  if (settings.Get("image", &image)) {
+  if (settings.Get("icon", &image)) {
     button.image = image.AsNSImage();
   }
 }
