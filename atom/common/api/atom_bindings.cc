@@ -118,6 +118,13 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   }
 }
 
+void AtomBindings::EnvironmentDestroyed(node::Environment* env) {
+  auto it = std::find(pending_next_ticks_.begin(), pending_next_ticks_.end(),
+                      env);
+  if (it != pending_next_ticks_.end())
+    pending_next_ticks_.erase(it);
+}
+
 void AtomBindings::ActivateUVLoop(v8::Isolate* isolate) {
   node::Environment* env = node::Environment::GetCurrent(isolate);
   if (std::find(pending_next_ticks_.begin(), pending_next_ticks_.end(), env) !=
