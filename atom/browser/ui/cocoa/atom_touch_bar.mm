@@ -333,10 +333,11 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 - (void)updatePopover:(NSPopoverTouchBarItem*)item
          withSettings:(const mate::PersistentDictionary&)settings {
   std::string label;
-  gfx::Image image;
   if (settings.Get("label", &label)) {
     item.collapsedRepresentationLabel = base::SysUTF8ToNSString(label);
-  } else if (settings.Get("image", &image)) {
+  }
+  gfx::Image image;
+  if (settings.Get("icon", &image)) {
     item.collapsedRepresentationImage = image.AsNSImage();
   }
 
