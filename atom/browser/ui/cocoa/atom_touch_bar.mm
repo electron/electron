@@ -175,7 +175,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
 - (NSColor*)colorFromHexColorString:(const std::string&)colorString {
   SkColor color = atom::ParseHexColor(colorString);
-  return skia::SkColorToCalibratedNSColor(color);
+  return skia::SkColorToDeviceNSColor(color);
 }
 
 - (NSTouchBarItem*)makeButtonForID:(NSString*)id
