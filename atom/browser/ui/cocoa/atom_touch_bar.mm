@@ -159,7 +159,8 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   window_->NotifyTouchBarItemInteraction([item_id UTF8String], details);
 }
 
-- (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix {
+- (NSString*)idFromIdentifier:(NSString*)identifier
+                  withPrefix:(NSString*)prefix {
   return [identifier substringFromIndex:[prefix length]];
 }
 
