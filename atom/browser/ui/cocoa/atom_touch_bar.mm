@@ -44,7 +44,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 }
 
 - (NSMutableArray*)identifiersFromSettings:(const std::vector<mate::PersistentDictionary>&)dicts {
-  NSMutableArray* identifiers = [[NSMutableArray alloc] init];
+  NSMutableArray* identifiers = [NSMutableArray array];
 
   for (const auto& item : dicts) {
     std::string type;
@@ -342,7 +342,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   std::vector<mate::PersistentDictionary> items;
   if (!child.Get("ordereredItems", &items)) return nil;
 
-  NSMutableArray* generatedItems = [[NSMutableArray alloc] init];
+  NSMutableArray* generatedItems = [NSMutableArray array];
   NSMutableArray* identList = [self identifiersFromSettings:items];
   for (NSUInteger i = 0; i < [identList count]; i++) {
     if ([identList objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
