@@ -381,6 +381,9 @@ void AtomRendererClient::WillReleaseScriptContext(
   node::Environment* env = node::Environment::GetCurrent(context);
   if (env)
     mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+
+  // Destroy the node environment.
+  node::FreeEnvironment(env);
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
