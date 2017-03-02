@@ -45,7 +45,7 @@ class JavascriptEnvironment {
 // Manage the Node Environment automatically.
 class NodeEnvironment {
  public:
-  NodeEnvironment(node::Environment* env);
+  explicit NodeEnvironment(node::Environment* env);
   ~NodeEnvironment();
 
  private:
