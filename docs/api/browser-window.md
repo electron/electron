@@ -1270,7 +1270,8 @@ will remove the vibrancy effect on the window.
 
 * `touchBar` TouchBar
 
-Sets the touchBar layout for the current window.
+Sets the touchBar layout for the current window. Specifying `null` or
+`undefined` clears the touch bar.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look

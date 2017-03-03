@@ -341,7 +341,7 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
     item.collapsedRepresentationImage = image.AsNSImage();
   }
 
-  bool showCloseButton;
+  bool showCloseButton = true;
   if (settings.Get("showCloseButton", &showCloseButton)) {
     item.showsCloseButton = showCloseButton;
   }
