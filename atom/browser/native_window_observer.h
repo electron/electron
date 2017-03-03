@@ -6,7 +6,6 @@
 #define ATOM_BROWSER_NATIVE_WINDOW_OBSERVER_H_
 
 #include <string>
-#include <vector>
 
 #include "base/strings/string16.h"
 #include "base/values.h"
