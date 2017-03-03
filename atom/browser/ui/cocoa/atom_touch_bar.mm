@@ -247,10 +247,18 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
 - (void)updateLabel:(NSCustomTouchBarItem*)item
        withSettings:(const mate::PersistentDictionary&)settings {
+  NSTextField* text_field = (NSTextField*)item.view;
+
   std::string label;
   settings.Get("label", &label);
-  NSTextField* text_field = (NSTextField*)item.view;
   text_field.stringValue = base::SysUTF8ToNSString(label);
+
+  std::string textColor;
+  if (settings.Get("textColor", &textColor) && !textColor.empty()) {
+    text_field.textColor = [self colorFromHexColorString:textColor];
+  } else {
+    text_field.textColor = nil;
+  }
 }
 
 - (NSTouchBarItem*)makeColorPickerForID:(NSString*)id

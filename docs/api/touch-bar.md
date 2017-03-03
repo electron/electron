@@ -80,12 +80,15 @@ const finishSpin = () => {
   if (uniqueValues === 1) {
     // All 3 values are the same
     result.label = '💰 Jackpot!'
+    result.textColor = '#FDFF00'
   } else if (uniqueValues === 2) {
     // 2 values are the same
     result.label = '😍 Winner!'
+    result.textColor = '#FDFF00'
   } else {
     // No values are the same
     result.label = '🙁 Spin Again'
+    result.textColor = null
   }
   spinning = false
 }
@@ -94,7 +97,9 @@ const touchBar = new TouchBar([
   spin,
   new TouchBarSpacer({size: 'large'}),
   reel1,
+  new TouchBarSpacer({size: 'small'}),
   reel2,
+  new TouchBarSpacer({size: 'small'}),
   reel3,
   new TouchBarSpacer({size: 'large'}),
   result
