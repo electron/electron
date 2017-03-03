@@ -389,8 +389,8 @@ bool ScopedDisableResize::disable_resize_ = false;
     return nil;
 }
 
-- (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
-               makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+- (NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
+      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
   if (touchBar && atom_touch_bar_)
     return [atom_touch_bar_ makeItemForIdentifier:identifier];
   else
