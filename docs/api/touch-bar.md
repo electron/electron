@@ -13,9 +13,6 @@ Creates a new touch bar with the specified items. Use
 
 ## Examples
 
-The `TouchBar` class is only available in the main process, it is not currently
-possible to use in the renderer process **even** through the remote module.
-
 Below is an example of a simple slot machine touch bar game with a button
 and some labels.
 
