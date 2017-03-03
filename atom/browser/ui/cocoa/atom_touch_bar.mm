@@ -222,9 +222,8 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   }
 
   std::string label;
-  if (settings.Get("label", &label)) {
-    button.title = base::SysUTF8ToNSString(label);
-  }
+  settings.Get("label", &label);
+  button.title = base::SysUTF8ToNSString(label);
 
   gfx::Image image;
   if (settings.Get("icon", &image)) {
@@ -247,10 +246,18 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 
 - (void)updateLabel:(NSCustomTouchBarItem*)item
        withSettings:(const mate::PersistentDictionary&)settings {
+  NSTextField* text_field = (NSTextField*)item.view;
+
   std::string label;
   settings.Get("label", &label);
-  NSTextField* text_field = (NSTextField*)item.view;
   text_field.stringValue = base::SysUTF8ToNSString(label);
+
+  std::string textColor;
+  if (settings.Get("textColor", &textColor) && !textColor.empty()) {
+    text_field.textColor = [self colorFromHexColorString:textColor];
+  } else {
+    text_field.textColor = nil;
+  }
 }
 
 - (NSTouchBarItem*)makeColorPickerForID:(NSString*)id
@@ -333,18 +340,17 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 - (void)updatePopover:(NSPopoverTouchBarItem*)item
          withSettings:(const mate::PersistentDictionary&)settings {
   std::string label;
-  if (settings.Get("label", &label)) {
-    item.collapsedRepresentationLabel = base::SysUTF8ToNSString(label);
-  }
+  settings.Get("label", &label);
+  item.collapsedRepresentationLabel = base::SysUTF8ToNSString(label);
+
   gfx::Image image;
   if (settings.Get("icon", &image)) {
     item.collapsedRepresentationImage = image.AsNSImage();
   }
 
   bool showCloseButton = true;
-  if (settings.Get("showCloseButton", &showCloseButton)) {
-    item.showsCloseButton = showCloseButton;
-  }
+  settings.Get("showCloseButton", &showCloseButton);
+  item.showsCloseButton = showCloseButton;
 
   mate::PersistentDictionary child;
   std::vector<mate::PersistentDictionary> items;
@@ -365,10 +371,10 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   if (!child.Get("ordereredItems", &items)) return nil;
 
   NSMutableArray* generatedItems = [NSMutableArray array];
-  NSMutableArray* identList = [self identifiersFromSettings:items];
-  for (NSUInteger i = 0; i < [identList count]; i++) {
-    if ([identList objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
-      NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identList objectAtIndex:i]];
+  NSMutableArray* identifiers = [self identifiersFromSettings:items];
+  for (NSUInteger i = 0; i < [identifiers count]; i++) {
+    if ([identifiers objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
+      NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identifiers objectAtIndex:i]];
       if (generatedItem) {
         [generatedItems addObject:generatedItem];
       }
