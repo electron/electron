@@ -7,6 +7,7 @@
 #include <Quartz/Quartz.h>
 #include <string>
 
+#include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
@@ -335,10 +336,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate> {
+@interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate, NSTouchBarDelegate> {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
+  base::scoped_nsobject<AtomTouchBar> atom_touch_bar_;
   CGFloat windowButtonsInterButtonSpacing_;
 }
 @property BOOL acceptsFirstMouse;
@@ -351,6 +353,9 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)enableWindowButtonsOffset;
+- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings;
+- (void)refreshTouchBarItem:(const std::string&)item_id;
+
 @end
 
 @implementation AtomNSWindow
@@ -361,6 +366,35 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)setEnableLargerThanScreen:(bool)enable {
   enable_larger_than_screen_ = enable;
+}
+
+- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings {
+  if (![self respondsToSelector:@selector(touchBar)]) return;
+
+  atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self
+                                                        window:shell_
+                                                      settings:settings]);
+  self.touchBar = nil;
+}
+
+- (void)refreshTouchBarItem:(const std::string&)item_id {
+  if (atom_touch_bar_ && self.touchBar)
+    [atom_touch_bar_ refreshTouchBarItem:self.touchBar id:item_id];
+}
+
+- (NSTouchBar*)makeTouchBar {
+  if (atom_touch_bar_)
+    return [atom_touch_bar_ makeTouchBar];
+  else
+    return nil;
+}
+
+- (NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
+      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+  if (touchBar && atom_touch_bar_)
+    return [atom_touch_bar_ makeItemForIdentifier:identifier];
+  else
+    return nil;
 }
 
 // NSWindow overrides.
@@ -1344,6 +1378,15 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   }
 
   [effect_view setMaterial:vibrancyType];
+}
+
+void NativeWindowMac::SetTouchBar(
+    const std::vector<mate::PersistentDictionary>& items) {
+  [window_ resetTouchBar:items];
+}
+
+void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
+  [window_ refreshTouchBarItem:item_id];
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {

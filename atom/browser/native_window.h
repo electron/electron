@@ -21,6 +21,7 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
+#include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -169,6 +170,11 @@ class NativeWindow : public base::SupportsUserData,
   // Vibrancy API
   virtual void SetVibrancy(const std::string& type);
 
+  // Touchbar API
+  virtual void SetTouchBar(
+      const std::vector<mate::PersistentDictionary>& items);
+  virtual void RefreshTouchBarItem(const std::string& item_id);
+
   // Webview APIs.
   virtual void FocusOnWebView();
   virtual void BlurWebView();
@@ -228,6 +234,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
+  void NotifyTouchBarItemInteraction(const std::string& item_id,
+                                     const base::DictionaryValue& details);
 
   #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
