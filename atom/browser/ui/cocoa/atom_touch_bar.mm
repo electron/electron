@@ -222,9 +222,8 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   }
 
   std::string label;
-  if (settings.Get("label", &label)) {
-    button.title = base::SysUTF8ToNSString(label);
-  }
+  settings.Get("label", &label);
+  button.title = base::SysUTF8ToNSString(label);
 
   gfx::Image image;
   if (settings.Get("icon", &image)) {
@@ -341,18 +340,17 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
 - (void)updatePopover:(NSPopoverTouchBarItem*)item
          withSettings:(const mate::PersistentDictionary&)settings {
   std::string label;
-  if (settings.Get("label", &label)) {
-    item.collapsedRepresentationLabel = base::SysUTF8ToNSString(label);
-  }
+  settings.Get("label", &label);
+  item.collapsedRepresentationLabel = base::SysUTF8ToNSString(label);
+
   gfx::Image image;
   if (settings.Get("icon", &image)) {
     item.collapsedRepresentationImage = image.AsNSImage();
   }
 
   bool showCloseButton = true;
-  if (settings.Get("showCloseButton", &showCloseButton)) {
-    item.showsCloseButton = showCloseButton;
-  }
+  settings.Get("showCloseButton", &showCloseButton);
+  item.showsCloseButton = showCloseButton;
 
   mate::PersistentDictionary child;
   std::vector<mate::PersistentDictionary> items;
