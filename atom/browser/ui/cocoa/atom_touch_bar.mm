@@ -371,10 +371,10 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   if (!child.Get("ordereredItems", &items)) return nil;
 
   NSMutableArray* generatedItems = [NSMutableArray array];
-  NSMutableArray* identList = [self identifiersFromSettings:items];
-  for (NSUInteger i = 0; i < [identList count]; i++) {
-    if ([identList objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
-      NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identList objectAtIndex:i]];
+  NSMutableArray* identifiers = [self identifiersFromSettings:items];
+  for (NSUInteger i = 0; i < [identifiers count]; i++) {
+    if ([identifiers objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
+      NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identifiers objectAtIndex:i]];
       if (generatedItem) {
         [generatedItems addObject:generatedItem];
       }
