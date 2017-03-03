@@ -5,6 +5,7 @@
 #include "atom/browser/ui/views/menu_layout.h"
 
 #if defined(OS_WIN)
+#include <algorithm>
 #include "atom/browser/native_window_views.h"
 #include "ui/display/win/screen_win.h"
 #endif
@@ -15,18 +16,20 @@ namespace {
 
 #if defined(OS_WIN)
 gfx::Rect SubtractBorderSize(gfx::Rect bounds) {
+  int frameX = display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME);
+  int frameY = display::win::ScreenWin::GetSystemMetricsInDIP(SM_CYSIZEFRAME);
   gfx::Point borderSize = gfx::Point(
-      GetSystemMetrics(SM_CXSIZEFRAME),   // width
-      GetSystemMetrics(SM_CYSIZEFRAME));  // height
-  gfx::Point dpiAdjustedBorder =
-      display::win::ScreenWin::ScreenToDIPPoint(borderSize);
-  int diff = std::abs(borderSize.x() - dpiAdjustedBorder.x());
+      frameX,   // width
+      frameY);  // height
 
-  bounds.set_x(bounds.x() + (dpiAdjustedBorder.x() * 2) + diff);
-  bounds.set_y(bounds.y() + (dpiAdjustedBorder.y() * 2) + diff);
-  bounds.set_width(bounds.width() - (borderSize.x() * borderSize.x()) + diff);
-  // diff for height is subtracted in WM_NCCALCSIZE
-  bounds.set_height(bounds.height() - (borderSize.y() / 2 * borderSize.y()));
+  int diff = std::max(0, GetSystemMetrics(SM_CXSIZEFRAME) - frameX - 1);
+
+  int basisX = borderSize.x() * 2 + diff;
+  int basisY = borderSize.y() * 2 + diff;
+  bounds.set_x(bounds.x() + basisX);
+  bounds.set_y(bounds.y() + basisY);
+  bounds.set_width(bounds.width() - basisX * 2);
+  bounds.set_height(bounds.height() - basisY * 2);
 
   return bounds;
 }

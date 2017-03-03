@@ -5,7 +5,6 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
 #include "content/public/browser/browser_accessibility_state.h"
-#include "ui/display/win/screen_win.h"
 
 namespace atom {
 
@@ -148,20 +147,9 @@ bool NativeWindowViews::PreHandleMSG(
       }
       return false;
     }
-    // remove THICKFRAME/CAPTION border on maximized frameless window
+    case WM_NCPAINT:
     case WM_NCCALCSIZE: {
       if (!has_frame()) {
-        BOOL status = static_cast<BOOL>(w_param);
-        if (status && IsMaximized()) {
-          // adjust bottom window size for border
-          RECT* rect = reinterpret_cast<RECT*>(l_param);
-          int borderY = GetSystemMetrics(SM_CYSIZEFRAME);
-          int dpiAdjustedY =
-              display::win::ScreenWin::GetSystemMetricsInDIP(SM_CYSIZEFRAME);
-          int diff = std::abs(borderY - dpiAdjustedY);
-          rect->bottom = rect->bottom - (borderY * 2) - diff;
-        }
-
         *result = 0;
         return true;
       }
