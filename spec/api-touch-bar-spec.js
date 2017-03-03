@@ -33,16 +33,18 @@ describe('TouchBar module', function () {
     })
 
     it('can be added to and removed from a window', function () {
+      const label = new TouchBarLabel({label: 'bar'})
       const touchBar = new TouchBar([
         new TouchBarButton({label: 'foo', backgroundColor: '#F00', click: () => {}}),
         new TouchBarColorPicker({selectedColor: '#F00', change: () => {}}),
         new TouchBarGroup({items: new TouchBar([new TouchBarLabel({label: 'hello'})])}),
-        new TouchBarLabel({label: 'bar'}),
+        label,
         new TouchBarPopover({items: new TouchBar([new TouchBarButton({label: 'pop'})])}),
         new TouchBarSlider({label: 'slide', value: 5, minValue: 2, maxValue: 75, change: () => {}}),
         new TouchBarSpacer({size: 'large'})
       ])
       window.setTouchBar(touchBar)
+      label.label = 'baz'
       window.setTouchBar()
       window.setTouchBar(new TouchBar([new TouchBarLabel({label: 'two'})]))
     })

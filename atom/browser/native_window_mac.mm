@@ -369,6 +369,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings {
+  if (![self respondsToSelector:@selector(touchBar)]) return;
+
   atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self
                                                         window:shell_
                                                       settings:settings]);
