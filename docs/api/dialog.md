@@ -38,14 +38,14 @@ The `dialog` module has the following methods:
     * `openDirectory` - Allow directories to be selected.
     * `multiSelections` - Allow multiple paths to be selected.
     * `showHiddenFiles` - Show hidden files in dialog.
-    * `createDirectory` _macOS_ - Allow creating new directories from dialog.
-    * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
+    * `createDirectory` - Allow creating new directories from dialog. _macOS_
+    * `promptToCreate` - Prompt for creation if the file path entered
       in the dialog does not exist. This does not actually create the file at
       the path but allows non-existent paths to be returned that should be
-      created by the application.
-    * `noResolveAliases` _macOS_ - Disable the automatic alias (symlink) path
+      created by the application. _Windows_
+    * `noResolveAliases` - Disable the automatic alias (symlink) path
       resolution.  Selected aliases will now return the alias path instead of
-      their target path.
+      their target path. _macOS_
   * `normalizeAccessKeys` Boolean (optional) - Normalize the keyboard access keys
     across platforms. Default is `false`. Enabling this assumes `&` is used in
     the button labels for the placement of the keyboard shortcut access key
