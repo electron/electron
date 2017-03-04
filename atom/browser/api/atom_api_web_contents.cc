@@ -48,6 +48,7 @@
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/frame_host/navigation_entry_impl.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
@@ -315,6 +316,9 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
   else if (options.Get("offscreen", &b) && b)
     type_ = OFF_SCREEN;
 
+  // Init embedder earlier
+  options.Get("embedder", &embedder_);
+
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
@@ -339,7 +343,18 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
         session->browser_context(), site_instance);
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
-    web_contents = content::WebContents::Create(params);
+    
+    if (embedder_ && embedder_->IsOffScreen()) {
+      auto* view = new OffScreenWebContentsView(false, 
+          base::Bind(&WebContents::OnPaint, base::Unretained(this)));
+      params.view = view;
+      params.delegate_view = view;
+      
+      web_contents = content::WebContents::Create(params);
+      view->SetWebContents(web_contents);
+    } else {
+      web_contents = content::WebContents::Create(params);
+    }
   } else if (IsOffScreen()) {
     bool transparent = false;
     options.Get("transparent", &transparent);
@@ -389,7 +404,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
     guest_delegate_->Initialize(this);
 
     NativeWindow* owner_window = nullptr;
-    if (options.Get("embedder", &embedder_) && embedder_) {
+    if (embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
       auto relay =
           NativeWindowRelay::FromWebContents(embedder_->web_contents());
@@ -1402,18 +1417,16 @@ bool WebContents::SendIPCMessage(bool all_frames,
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
                                  v8::Local<v8::Value> input_event) {
-  const auto view = web_contents()->GetRenderWidgetHostView();
+  const auto view = static_cast<content::RenderWidgetHostViewBase*>(
+    web_contents()->GetRenderWidgetHostView());
   if (!view)
-    return;
-  const auto host = view->GetRenderWidgetHost();
-  if (!host)
     return;
 
   int type = mate::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::isMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
-      host->ForwardMouseEvent(mouse_event);
+      view->ProcessMouseEvent(mouse_event, ui::LatencyInfo());
       return;
     }
   } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
@@ -1422,13 +1435,13 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         blink::WebInputEvent::NoModifiers,
         ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
-      host->ForwardKeyboardEvent(keyboard_event);
+      view->ProcessKeyboardEvent(keyboard_event);
       return;
     }
   } else if (type == blink::WebInputEvent::MouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      host->ForwardWheelEvent(mouse_wheel_event);
+      view->ProcessMouseEvent(mouse_wheel_event, ui::LatencyInfo());
       return;
     }
   }
@@ -1629,6 +1642,16 @@ void WebContents::Invalidate() {
     if (window)
       window->Invalidate();
   }
+}
+
+gfx::Size WebContents::GetSizeForNewRenderView(
+    content::WebContents* web_contents) const {
+  auto relay = NativeWindowRelay::FromWebContents(web_contents);
+  if (relay) {
+    return relay->window->GetSize();
+  }
+  
+  return gfx::Size();
 }
 
 void WebContents::SetZoomLevel(double level) {
