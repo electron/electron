@@ -19,10 +19,10 @@ The following properties are available on instances of `TouchBarPopover`:
 
 #### `touchBarPopover.label`
 
-The popover's current button text. Changing this value immediately updates the
+A `String` representing the popover's current button text. Changing this value immediately updates the
 popover in the touch bar.
 
 #### `touchBarPopover.icon`
 
-The popover's current button icon. Changing this value immediately updates the
+A `NativeImage` representing the popover's current button icon. Changing this value immediately updates the
 popover in the touch bar.

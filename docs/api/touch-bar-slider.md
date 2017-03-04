@@ -12,6 +12,7 @@ Process: [Main](../tutorial/quick-start.md#main-process)
   * `minValue` Integer (optional) - Minimum value.
   * `maxValue` Integer (optional) - Maximum value.
   * `change` Function (optional) - Function to call when the slider is changed.
+    * `newValue` Number - The value that the user selected on the Slider
 
 ### Instance Properties
 
@@ -19,20 +20,20 @@ The following properties are available on instances of `TouchBarSlider`:
 
 #### `touchBarSlider.label`
 
-The slider's current text. Changing this value immediately updates the slider
+A `String` representing the slider's current text. Changing this value immediately updates the slider
 in the touch bar.
 
 #### `touchBarSlider.value`
 
-The slider's current value. Changing this value immediately updates the slider
+A `Number` representing the slider's current value. Changing this value immediately updates the slider
 in the touch bar.
 
 #### `touchBarSlider.minValue`
 
-The slider's current minimum value. Changing this value immediately updates the
+A `Number` representing the slider's current minimum value. Changing this value immediately updates the
 slider in the touch bar.
 
 #### `touchBarSlider.maxValue`
 
-The slider's current maximum value. Changing this value immediately updates the
+A `Number` representing the slider's current maximum value. Changing this value immediately updates the
 slider in the touch bar.

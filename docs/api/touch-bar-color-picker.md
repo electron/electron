@@ -12,6 +12,7 @@ Process: [Main](../tutorial/quick-start.md#main-process)
   * `selectedColor` String (optional) - The selected hex color in the picker,
     i.e `#ABCDEF`.
   * `change` Function (optional) - Function to call when a color is selected.
+    * `color` String - The color that the user selected from the picker
 
 ### Instance Properties
 
@@ -19,10 +20,10 @@ The following properties are available on instances of `TouchBarColorPicker`:
 
 #### `touchBarColorPicker.availableColors`
 
-The color picker's available colors to select. Changing this value immediately
+A `String[]` array representing the color picker's available colors to select. Changing this value immediately
 updates the color picker in the touch bar.
 
 #### `touchBarColorPicker.selectedColor`
 
-The color picker's currently selected color. Changing this value immediately
+A `String` hex code representing the color picker's currently selected color. Changing this value immediately
 updates the color picker in the touch bar.
