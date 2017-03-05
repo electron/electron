@@ -841,8 +841,7 @@ void WebContents::Observe(int type,
       // instead in WebContents::LoadURL with controller.GetPendingEntry()
       // TODO(deepak1556): Remove once we have
       // https://codereview.chromium.org/2661743002.
-      if (entry_impl->is_renderer_initiated() &&
-          entry_impl->frame_tree_node_id() == -1) {
+      if (entry_impl->frame_tree_node_id() == -1) {
         deferred_load_url_.id = entry->GetUniqueID();
       }
       break;
