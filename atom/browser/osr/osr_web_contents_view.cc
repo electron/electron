@@ -34,7 +34,7 @@ void OffScreenWebContentsView::SetWebContents(
 #if !defined(OS_MACOSX)
 gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
   if (!web_contents_) return gfx::NativeView();
-  
+
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   if (!relay) return gfx::NativeView();
   return relay->window->GetNativeView();
@@ -42,7 +42,7 @@ gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
 
 gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const {
   if (!web_contents_) return gfx::NativeView();
-  
+
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   if (!relay) return gfx::NativeView();
   return relay->window->GetNativeView();
@@ -50,7 +50,7 @@ gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const {
 
 gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const {
   if (!web_contents_) return gfx::NativeWindow();
-  
+
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   if (!relay) return gfx::NativeWindow();
   return relay->window->GetNativeWindow();
@@ -90,18 +90,18 @@ void OffScreenWebContentsView::CreateView(const gfx::Size& initial_size,
 
 content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForWidget(
-    content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack) {  
+    content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack) {
   if (render_widget_host->GetView()) {
     return static_cast<content::RenderWidgetHostViewBase*>(
         render_widget_host->GetView());
   }
-  
+
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   return new OffScreenRenderWidgetHostView(
-      transparent_, 
-      callback_, 
-      render_widget_host, 
-      nullptr, 
+      transparent_,
+      callback_,
+      render_widget_host,
+      nullptr,
       relay->window.get());
 }
 
@@ -113,19 +113,19 @@ content::RenderWidgetHostViewBase*
     return static_cast<content::RenderWidgetHostViewBase*>(
         render_widget_host->GetView());
   }
-  
+
   OffScreenRenderWidgetHostView* embedder_host_view = nullptr;
   if (embedder_render_widget_host) {
     embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
         embedder_render_widget_host->GetView());
   }
-  
+
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   return new OffScreenRenderWidgetHostView(
-      transparent_, 
-      callback_, 
-      render_widget_host, 
-      embedder_host_view, 
+      transparent_,
+      callback_,
+      render_widget_host,
+      embedder_host_view,
       relay->window.get());
 }
 
@@ -134,10 +134,10 @@ content::RenderWidgetHostViewBase*
     content::RenderWidgetHost* render_widget_host) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   return new OffScreenRenderWidgetHostView(
-      transparent_, 
-      callback_, 
-      render_widget_host, 
-      GetView(), 
+      transparent_,
+      callback_,
+      render_widget_host,
+      GetView(),
       relay->window.get());
 }
 
@@ -164,13 +164,13 @@ void OffScreenWebContentsView::GetScreenInfo(
   screen_info->orientation_angle = 0;
   screen_info->orientation_type =
       content::SCREEN_ORIENTATION_VALUES_LANDSCAPE_PRIMARY;
-      
+
   if (GetView()) {
     screen_info->rect = gfx::Rect(GetView()->size());
     screen_info->available_rect = gfx::Rect(GetView()->size());
     screen_info->device_scale_factor = GetView()->scale_factor();
   } else {
-    const display::Display display = 
+    const display::Display display =
       display::Screen::GetScreen()->GetPrimaryDisplay();
     screen_info->rect = display.bounds();
     screen_info->available_rect = display.work_area();

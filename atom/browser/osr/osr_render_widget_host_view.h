@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
 #define ATOM_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -142,7 +143,7 @@ class OffScreenRenderWidgetHostView
     std::unique_ptr<content::RenderWidgetHostViewFrameSubscriber>) override;
   void EndFrameSubscription() override;
   void InitAsGuest(
-    content::RenderWidgetHostView*, 
+    content::RenderWidgetHostView*,
     content::RenderWidgetHostViewGuest*) override;
   bool HasAcceleratedSurface(const gfx::Size &) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
@@ -209,15 +210,15 @@ class OffScreenRenderWidgetHostView
 
   void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
   void OnPopupPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
-  
+
   bool IsPopupWidget() const {
     return popup_type_ != blink::WebPopupTypeNone;
   }
-  
+
   void HoldResize();
   void ReleaseResize();
   void WasResized();
-  
+
   void ProcessKeyboardEvent(
       const content::NativeWebKeyboardEvent& event) override;
   void ProcessMouseEvent(const blink::WebMouseEvent& event,
@@ -247,7 +248,7 @@ class OffScreenRenderWidgetHostView
   void set_popup_host_view(OffScreenRenderWidgetHostView* popup_view) {
     popup_host_view_ = popup_view;
   }
-  
+
   void set_child_host_view(OffScreenRenderWidgetHostView* child_view) {
     child_host_view_ = child_view;
   }
@@ -260,13 +261,13 @@ class OffScreenRenderWidgetHostView
 
   // Weak ptrs.
   content::RenderWidgetHostImpl* render_widget_host_;
-  
+
   OffScreenRenderWidgetHostView* parent_host_view_;
   OffScreenRenderWidgetHostView* popup_host_view_;
   std::unique_ptr<SkBitmap> popup_bitmap_;
   OffScreenRenderWidgetHostView* child_host_view_;
   std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
-  
+
   NativeWindow* native_window_;
   OffScreenOutputDevice* software_output_device_;
 
@@ -283,7 +284,7 @@ class OffScreenRenderWidgetHostView
   gfx::Vector2dF last_scroll_offset_;
   gfx::Size size_;
   bool painting_;
-  
+
   bool is_showing_;
   bool is_destroyed_;
   gfx::Rect popup_position_;

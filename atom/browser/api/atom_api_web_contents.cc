@@ -343,13 +343,13 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
         session->browser_context(), site_instance);
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
-    
+
     if (embedder_ && embedder_->IsOffScreen()) {
-      auto* view = new OffScreenWebContentsView(false, 
+      auto* view = new OffScreenWebContentsView(false,
           base::Bind(&WebContents::OnPaint, base::Unretained(this)));
       params.view = view;
       params.delegate_view = view;
-      
+
       web_contents = content::WebContents::Create(params);
       view->SetWebContents(web_contents);
     } else {
@@ -1650,7 +1650,7 @@ gfx::Size WebContents::GetSizeForNewRenderView(
   if (relay) {
     return relay->window->GetSize();
   }
-  
+
   return gfx::Size();
 }
 
