@@ -1050,16 +1050,19 @@ void OffScreenRenderWidgetHostView::OnPaint(
   TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
 
   HoldResize();
-  
-  if (parent_callback_)
+
+  if (parent_callback_) {
     parent_callback_.Run(damage_rect, bitmap);
-  else if (popup_host_view_ && popup_bitmap_.get()) {
+  } else if (popup_host_view_ && popup_bitmap_.get()) {
     gfx::Rect pos = popup_host_view_->popup_position_;
+    gfx::Rect damage(damage_rect);
+    damage.Union(pos);
+
     SkBitmap copy = SkBitmapOperations::CreateTiledBitmap(bitmap,
       pos.x(), pos.y(), pos.width(), pos.height());
 
     CopyBitmapTo(bitmap, *popup_bitmap_, pos);
-    callback_.Run(damage_rect, bitmap);
+    callback_.Run(damage, bitmap);
     CopyBitmapTo(bitmap, copy, pos);
   } else {
     callback_.Run(damage_rect, bitmap);
