@@ -1441,7 +1441,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   } else if (type == blink::WebInputEvent::MouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      view->ProcessMouseEvent(mouse_wheel_event, ui::LatencyInfo());
+      view->ProcessMouseWheelEvent(mouse_wheel_event, ui::LatencyInfo());
       return;
     }
   }
