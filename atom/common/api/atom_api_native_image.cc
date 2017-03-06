@@ -21,6 +21,7 @@
 #include "net/base/data_url.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
 #include "ui/base/layout.h"
+#include "ui/base/webui/web_ui_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/size.h"
@@ -257,12 +258,12 @@ v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
 }
 
 std::string NativeImage::ToDataURL() {
-  scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-  std::string data_url;
-  data_url.insert(data_url.end(), png->front(), png->front() + png->size());
-  base::Base64Encode(data_url, &data_url);
-  data_url.insert(0, "data:image/png;base64,");
-  return data_url;
+  if (HasRepresentation(1.0)) {
+    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+    return webui::GetPngDataUrl(png->front(), png->size());
+  } else {
+    return webui::GetBitmapDataUrl(image_.AsBitmap());
+  }
 }
 
 v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
@@ -295,6 +296,10 @@ v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
 
 bool NativeImage::IsEmpty() {
   return image_.IsEmpty();
+}
+
+bool NativeImage::HasRepresentation(float scale_factor) {
+  return image_.AsImageSkia().HasRepresentation(scale_factor);
 }
 
 gfx::Size NativeImage::GetSize() {
@@ -468,6 +473,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)
       .SetMethod("getAspectRatio", &NativeImage::GetAspectRatio)
+      .SetMethod("hasRepresentation", &NativeImage::HasRepresentation)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
       .SetMethod("toPng", &NativeImage::ToPNG)
       .SetMethod("toJpeg", &NativeImage::ToJPEG);

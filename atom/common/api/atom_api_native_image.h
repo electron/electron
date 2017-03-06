@@ -83,6 +83,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
                                  const gfx::Rect& rect);
   std::string ToDataURL();
   bool IsEmpty();
+  bool HasRepresentation(float scale_factor);
   gfx::Size GetSize();
   float GetAspectRatio();
 

@@ -9,6 +9,7 @@ describe('nativeImage module', () => {
     it('returns an empty image', () => {
       const empty = nativeImage.createEmpty()
       assert.equal(empty.isEmpty(), true)
+      assert.equal(empty.hasRepresentation(1.0), false)
       assert.equal(empty.getAspectRatio(), 1)
       assert.equal(empty.toDataURL(), 'data:image/png;base64,')
       assert.deepEqual(empty.getSize(), {width: 0, height: 0})
