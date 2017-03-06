@@ -125,7 +125,7 @@ Cortana integration, or live tiles.
 To check out how an Electron app that uses a background task to send toast
 notifications and live tiles, [check out the Microsoft-provided sample][background-task].
 
-## Optional: Convert using Container Virtualiziation
+## Optional: Convert using Container Virtualization
 
 To generate the AppX package, the `electron-windows-store` CLI uses a template
 that should work for most Electron apps. However, if you are using a custom
