@@ -229,6 +229,11 @@ describe('BrowserWindow module', function () {
       w.loadURL(`data:image/png;base64,${data}`)
     })
 
+    it('should not crash when there is a pending navigation entry', function (done) {
+      ipcRenderer.once('navigated-with-pending-entry', () => done())
+      ipcRenderer.send('navigate-with-pending-entry', w.id)
+    })
+
     describe('POST navigations', function () {
       afterEach(() => {
         w.webContents.session.webRequest.onBeforeSendHeaders(null)
