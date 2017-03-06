@@ -1851,8 +1851,16 @@ describe('BrowserWindow module', function () {
       })
     })
 
-    it('resolves the returned promise with the result', function (done) {
+    it('resolves the returned promise with the result when a callback is specified', function (done) {
       ipcRenderer.send('executeJavaScript', code, true)
+      ipcRenderer.once('executeJavaScript-promise-response', function (event, result) {
+        assert.equal(result, expected)
+        done()
+      })
+    })
+
+    it('resolves the returned promise with the result when no callback is specified', function (done) {
+      ipcRenderer.send('executeJavaScript', code, false)
       ipcRenderer.once('executeJavaScript-promise-response', function (event, result) {
         assert.equal(result, expected)
         done()
