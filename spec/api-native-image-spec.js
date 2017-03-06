@@ -79,6 +79,23 @@ describe('nativeImage module', () => {
     })
   })
 
+  describe('toDataURL()', () => {
+    it('returns a data URL at 1x scale factor', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      const imageB = nativeImage.createFromBuffer(imageA.toPNG(), {
+        width: imageA.getSize().width,
+        height: imageA.getSize().height,
+        scaleFactor: 2.0
+      })
+      assert.deepEqual(imageB.getSize(), {width: 269, height: 95})
+      assert.equal(imageB.hasRepresentation(1.0), false)
+
+      const imageC = nativeImage.createFromDataURL(imageB.toDataURL())
+      assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
+      assert(imageB.toBitmap().equals(imageC.toBitmap()))
+    })
+  })
+
   describe('createFromPath(path)', () => {
     it('returns an empty image for invalid paths', () => {
       assert(nativeImage.createFromPath('').isEmpty())
