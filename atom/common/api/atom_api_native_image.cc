@@ -231,8 +231,8 @@ HICON NativeImage::GetHICON(int size) {
 #endif
 
 v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
-  if (HasRepresentation(1.0)) {
-    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+  scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+  if (IsEmpty() || png->size() > 0) {
     const char* data = reinterpret_cast<const char*>(png->front());
     const size_t length = static_cast<size_t>(png->size());
     return node::Buffer::Copy(isolate, data, length).ToLocalChecked();
@@ -264,12 +264,11 @@ v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
 }
 
 std::string NativeImage::ToDataURL() {
-  if (HasRepresentation(1.0)) {
-    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+  scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+  if (IsEmpty() || png->size() > 0)
     return webui::GetPngDataUrl(png->front(), png->size());
-  } else {
+  else
     return webui::GetBitmapDataUrl(image_.AsBitmap());
-  }
 }
 
 v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
@@ -302,10 +301,6 @@ v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
 
 bool NativeImage::IsEmpty() {
   return image_.IsEmpty();
-}
-
-bool NativeImage::HasRepresentation(float scale_factor) {
-  return image_.AsImageSkia().HasRepresentation(scale_factor);
 }
 
 gfx::Size NativeImage::GetSize() {
@@ -479,7 +474,6 @@ void NativeImage::BuildPrototype(
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)
       .SetMethod("getAspectRatio", &NativeImage::GetAspectRatio)
-      .SetMethod("hasRepresentation", &NativeImage::HasRepresentation)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
       .SetMethod("toPng", &NativeImage::ToPNG)
       .SetMethod("toJpeg", &NativeImage::ToJPEG);

@@ -9,7 +9,6 @@ describe('nativeImage module', () => {
     it('returns an empty image', () => {
       const empty = nativeImage.createEmpty()
       assert.equal(empty.isEmpty(), true)
-      assert.equal(empty.hasRepresentation(1.0), false)
       assert.equal(empty.getAspectRatio(), 1)
       assert.equal(empty.toDataURL(), 'data:image/png;base64,')
       assert.deepEqual(empty.getSize(), {width: 0, height: 0})
@@ -94,12 +93,9 @@ describe('nativeImage module', () => {
         scaleFactor: 2.0
       })
       assert.deepEqual(imageB.getSize(), {width: 269, height: 95})
-      assert.equal(imageB.hasRepresentation(1.0), false)
-      assert.equal(imageB.hasRepresentation(2.0), true)
 
       const imageC = nativeImage.createFromDataURL(imageB.toDataURL())
       assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
-      assert.equal(imageC.hasRepresentation(1.0), false)
       assert(imageB.toBitmap().equals(imageC.toBitmap()))
     })
   })
@@ -113,12 +109,9 @@ describe('nativeImage module', () => {
         scaleFactor: 2.0
       })
       assert.deepEqual(imageB.getSize(), {width: 269, height: 95})
-      assert.equal(imageB.hasRepresentation(1.0), false)
-      assert.equal(imageB.hasRepresentation(2.0), true)
 
       const imageC = nativeImage.createFromBuffer(imageB.toPNG())
       assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
-      assert.equal(imageC.hasRepresentation(1.0), true)
       assert(imageB.toBitmap().equals(imageC.toBitmap()))
     })
   })
