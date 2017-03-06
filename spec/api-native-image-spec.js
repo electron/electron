@@ -95,9 +95,11 @@ describe('nativeImage module', () => {
       })
       assert.deepEqual(imageB.getSize(), {width: 269, height: 95})
       assert.equal(imageB.hasRepresentation(1.0), false)
+      assert.equal(imageB.hasRepresentation(2.0), true)
 
       const imageC = nativeImage.createFromDataURL(imageB.toDataURL())
       assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
+      assert.equal(imageC.hasRepresentation(1.0), false)
       assert(imageB.toBitmap().equals(imageC.toBitmap()))
     })
   })
