@@ -19,16 +19,17 @@ Thanks for opening an issue! A few things to keep in mind:
 <!-- What actually happens? -->
 
 ### How to reproduce
+
 <!-- 
 
-Your best chance of getting the bug fixed quickly is to provide a REPOSITORY that can be cloned and run.
+Your best chance of getting this bug looked at quickly is to provide a REPOSITORY that can be cloned and run.
+
+You can fork https://github.com/electron/electron-quick-start and include a link to the branch with your changes.
 
 If you provide a URL, please list the commands required to clone/setup/run your repo e.g.
 
   $ git clone $YOUR_URL -b $BRANCH
   $ npm install
   $ npm start || electron .
-
-You can fork https://github.com/electron/electron-quick-start and submit the branch with your changes
 
 -->
