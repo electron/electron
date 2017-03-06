@@ -27,6 +27,9 @@ class AtomBindings {
   // load native code from Electron instead.
   void BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process);
 
+  // Should be called when a node::Environment has been destroyed.
+  void EnvironmentDestroyed(node::Environment* env);
+
   static void Log(const base::string16& message);
   static void Crash();
 
