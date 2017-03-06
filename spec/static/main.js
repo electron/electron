@@ -193,16 +193,23 @@ app.on('ready', function () {
   })
 
   ipcMain.on('executeJavaScript', function (event, code, hasCallback) {
+    let promise
+
     if (hasCallback) {
-      window.webContents.executeJavaScript(code, (result) => {
+      promise = window.webContents.executeJavaScript(code, (result) => {
         window.webContents.send('executeJavaScript-response', result)
-      }).then((result) => {
-        window.webContents.send('executeJavaScript-promise-response', result)
-      }).catch((err) => {
-        window.webContents.send('executeJavaScript-promise-error', err)
       })
     } else {
-      window.webContents.executeJavaScript(code)
+      promise = window.webContents.executeJavaScript(code)
+    }
+
+    promise.then((result) => {
+      window.webContents.send('executeJavaScript-promise-response', result)
+    }).catch((error) => {
+      window.webContents.send('executeJavaScript-promise-error', error)
+    })
+
+    if (!hasCallback) {
       event.returnValue = 'success'
     }
   })
