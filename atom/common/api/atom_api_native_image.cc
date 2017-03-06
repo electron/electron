@@ -231,10 +231,17 @@ HICON NativeImage::GetHICON(int size) {
 #endif
 
 v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
-  scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-  return node::Buffer::Copy(isolate,
-                            reinterpret_cast<const char*>(png->front()),
-                            static_cast<size_t>(png->size())).ToLocalChecked();
+  if (HasRepresentation(1.0)) {
+    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+    const char* data = reinterpret_cast<const char*>(png->front());
+    const size_t length = static_cast<size_t>(png->size());
+    return node::Buffer::Copy(isolate, data, length).ToLocalChecked();
+  } else {
+    std::vector<unsigned char> encoded;
+    gfx::PNGCodec::EncodeBGRASkBitmap(image_.AsBitmap(), false, &encoded);
+    const char* data = reinterpret_cast<char*>(encoded.data());
+    return node::Buffer::Copy(isolate, data, encoded.size()).ToLocalChecked();
+  }
 }
 
 v8::Local<v8::Value> NativeImage::ToBitmap(v8::Isolate* isolate) {
