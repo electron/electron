@@ -80,6 +80,11 @@ describe('nativeImage module', () => {
   })
 
   describe('toDataURL()', () => {
+    it('returns a PNG data URL', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', '1x1.png'))
+      assert.equal(imageA.toDataURL(), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=')
+    })
+
     it('returns a data URL at 1x scale factor', () => {
       const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
       const imageB = nativeImage.createFromBuffer(imageA.toPNG(), {
