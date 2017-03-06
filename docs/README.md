@@ -32,6 +32,7 @@ an issue:
 * [Using Widevine CDM Plugin](tutorial/using-widevine-cdm-plugin.md)
 * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
 * [Offscreen Rendering](tutorial/offscreen-rendering.md)
+* [Keyboard Shortcuts](tutorial/keyboard-shortcuts.md)
 
 ## Tutorials
 
