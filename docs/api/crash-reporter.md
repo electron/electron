@@ -40,7 +40,7 @@ The `crashReporter` module has the following methods:
   * `companyName` String (optional)
   * `submitURL` String - URL that crash reports will be sent to as POST.
   * `productName` String (optional) - Defaults to `app.getName()`.
-  * `uploadToServer` Boolean (optional) _macOS_ - Whether crash reports should be sent to the server
+  * `uploadToServer` Boolean (optional) _Linux_ _macOS_ - Whether crash reports should be sent to the server
     Default is `true`.
   * `ignoreSystemCrashHandler` Boolean (optional) - Default is `false`.
   * `extra` Object (optional) - An object you can define that will be sent along with the
@@ -99,14 +99,14 @@ Returns [`CrashReport[]`](structures/crash-report.md):
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
-### `crashReporter.getUploadToServer()` _macOS_
+### `crashReporter.getUploadToServer()` _Linux_ _macOS_
 
 Returns `Boolean` - Whether reports should be submitted to the server.  Set through
 the `start` method or `setUploadToServer`.
 
 **Note:** This API can only be called from the main process.
 
-### `crashReporter.setUploadToServer(uploadToServer)` _macOS_
+### `crashReporter.setUploadToServer(uploadToServer)` _Linux_ _macOS_
 
 * `uploadToServer` Boolean _macOS_ - Whether reports should be submitted to the server
 
