@@ -4,7 +4,7 @@
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
-### `new TouchBarSlider(options)`
+### `new TouchBarSpacer(options)`
 
 * `options` Object
   * `size` String (optional) - Size of spacer, possible values are:
