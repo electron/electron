@@ -148,7 +148,7 @@ Electronアプリ内でウェブページのような外部コンテンツを埋
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
-<webview src="http://electron.atom.io" partition="electron"></webview>
+<webview src="https://electron.atom.io" partition="electron"></webview>
 ```
 
 ページで使用されるセッションを設定します。もし、`partition`が`persist:`から始まる場合、アプリ上の同じ`partition`を指定した全てのページで有効な永続セッションを使用します。

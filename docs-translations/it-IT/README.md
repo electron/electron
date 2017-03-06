@@ -4,7 +4,7 @@ Se cos� non fosse, stai probabilmente utilizzando una documentazione facente
 parte di una branch di sviluppo che potrebbe contenere modifiche all'API che non
 sono compatibili con la tua versione di Electron. In questo caso, puoi passare a
 una differente versione della documentazione dalla lista di
-[versioni disponibili](http://electron.atom.io/docs/) su atom.io, o nel caso tu
+[versioni disponibili](https://electron.atom.io/docs/) su atom.io, o nel caso tu
 stia usando l'interfaccia di GitHub, apri il menu a tendina "Switch
 branches/tags" e seleziona il tag che corrisponde alla tua versione.
 

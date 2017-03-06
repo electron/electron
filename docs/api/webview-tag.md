@@ -179,7 +179,7 @@ Web security is enabled by default.
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
-<webview src="http://electron.atom.io" partition="electron"></webview>
+<webview src="https://electron.atom.io" partition="electron"></webview>
 ```
 
 Sets the session used by the page. If `partition` starts with `persist:`, the

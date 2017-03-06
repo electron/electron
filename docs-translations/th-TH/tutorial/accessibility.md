@@ -1,6 +1,6 @@
 # การเข้าถึง (Accessibility)
 
-การที่จะทำให้แอพพิเคชั่นนั้นเข้าถึงได้เป็นเรื่องที่สำคัญมาก และ เรามีความสุขที่จะต้อนรับความสามารถใหม่ของเราสู่ [Devtron](http://electron.atom.io/devtron) และ [Spectron](http://electron.atom.io/spectron) ซึ่งได้ให้โอกาสผู้พัฒนาในการที่จะสร้างแอพพิเคชั่นที่ดีขึ้นเพื่อทุกๆคน
+การที่จะทำให้แอพพิเคชั่นนั้นเข้าถึงได้เป็นเรื่องที่สำคัญมาก และ เรามีความสุขที่จะต้อนรับความสามารถใหม่ของเราสู่ [Devtron](https://electron.atom.io/devtron) และ [Spectron](https://electron.atom.io/spectron) ซึ่งได้ให้โอกาสผู้พัฒนาในการที่จะสร้างแอพพิเคชั่นที่ดีขึ้นเพื่อทุกๆคน
 
 ---
 
@@ -8,7 +8,7 @@
 
 ความสามารถใหม่ๆนี้นำอุปกรณ์การแก้ไขต่างๆเข้ามาใส่แอพ Electron ของคุณ คุณสามารถเลือกที่จะแก้ไขบททดสองของคุณได้ด้วย Spectron หรือว่าใช้มันใน DevTools ด้วย Devtron
 
-กรุณาอ่านต่อเพื่อบทสรุปของอุปกรณ์หรือดู [เอกสารการเข้าถึง](http://electron.atom.io/docs/tutorial/accessibility) ของเราสำหรับข้อมูลเพิ่มเติม
+กรุณาอ่านต่อเพื่อบทสรุปของอุปกรณ์หรือดู [เอกสารการเข้าถึง](https://electron.atom.io/docs/tutorial/accessibility) ของเราสำหรับข้อมูลเพิ่มเติม
 
 ### Spectron
 
@@ -37,4 +37,4 @@ app.client.autidAccessibility().then(function (audit) {
 
 คุณสามารถศึกษาเพิ่มเติมเกี่ยวกับมันได้ที่ [รีโปนี้](https://github.com/GoogleChrome/accessibility-developer-tools/wiki/Audit-Rules)
 
-ถ้าคุณมีความรู้เกี่ยวกับอุปกรณือื่นๆที่สามารถใช้กับ Electron ได้ โปรดใส่มันเพิ่มใน [เอกสารการเข้าถึง](http://electron.atom.io/docs/tutorial/accessibility) ด้วยการขอดึงจาก Electron (pull request)
+ถ้าคุณมีความรู้เกี่ยวกับอุปกรณือื่นๆที่สามารถใช้กับ Electron ได้ โปรดใส่มันเพิ่มใน [เอกสารการเข้าถึง](https://electron.atom.io/docs/tutorial/accessibility) ด้วยการขอดึงจาก Electron (pull request)

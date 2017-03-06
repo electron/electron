@@ -102,7 +102,7 @@ Returns `Object`:
 
 ```javascript
 clipboard.write({
-  text: 'http://electron.atom.io',
+  text: 'https://electron.atom.io',
   bookmark: 'Electron Homepage'
 })
 ```

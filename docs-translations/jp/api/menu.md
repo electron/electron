@@ -129,7 +129,7 @@ var template = [
     submenu: [
       {
         label: 'Learn More',
-        click: function () { require('electron').shell.openExternal('http://electron.atom.io') }
+        click: function () { require('electron').shell.openExternal('https://electron.atom.io') }
       }
     ]
   }

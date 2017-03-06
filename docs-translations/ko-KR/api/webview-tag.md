@@ -166,7 +166,7 @@ API를 사용할 수 있습니다. 이를 지정하면 내부에서 로우레벨
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
-<webview src="http://electron.atom.io" partition="electron"></webview>
+<webview src="https://electron.atom.io" partition="electron"></webview>
 ```
 
 페이지에서 사용하는 세션을 설정합니다.
