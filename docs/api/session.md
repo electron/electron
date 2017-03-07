@@ -204,7 +204,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
 
 * `url` URL
 * `callback` Function
-  * `proxy` Object
+  * `proxy` String
 
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
