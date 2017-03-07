@@ -23,6 +23,7 @@
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/node_array_buffer_bridge.h"
 #include "atom/renderer/preferences_manager.h"
+#include "atom/renderer/web_worker_observer.h"
 #include "base/command_line.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
@@ -434,6 +435,16 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
 void AtomRendererClient::AddSupportedKeySystems(
     std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
   AddChromeKeySystems(key_systems);
+}
+
+void AtomRendererClient::DidInitializeWorkerContextOnWorkerThread(
+    v8::Local<v8::Context> context) {
+  WebWorkerObserver::GetCurrent()->ContextCreated(context);
+}
+
+void AtomRendererClient::WillDestroyWorkerContextOnWorkerThread(
+    v8::Local<v8::Context> context) {
+  WebWorkerObserver::GetCurrent()->ContextWillDestroy(context);
 }
 
 v8::Local<v8::Context> AtomRendererClient::GetContext(

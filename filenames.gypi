@@ -479,6 +479,8 @@
       'atom/renderer/node_array_buffer_bridge.h',
       'atom/renderer/preferences_manager.cc',
       'atom/renderer/preferences_manager.h',
+      'atom/renderer/web_worker_observer.cc',
+      'atom/renderer/web_worker_observer.h',
       'atom/utility/atom_content_utility_client.cc',
       'atom/utility/atom_content_utility_client.h',
       'chromium_src/chrome/browser/browser_process.cc',
