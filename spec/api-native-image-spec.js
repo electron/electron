@@ -87,9 +87,10 @@ describe('nativeImage module', () => {
     it('returns a PNG data URL', () => {
       const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', '1x1.png'))
       assert.equal(imageA.toDataURL(), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=')
+      assert.equal(imageA.toDataURL({scaleFactor: 2.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=')
     })
 
-    it('returns a data URL at 1x scale factor', () => {
+    it('returns a data URL at 1x scale factor by default', () => {
       const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
       const imageB = nativeImage.createFromBuffer(imageA.toPNG(), {
         width: imageA.getSize().width,
@@ -113,7 +114,7 @@ describe('nativeImage module', () => {
   })
 
   describe('toPNG()', () => {
-    it('returns a buffer at 1x scale factor', () => {
+    it('returns a buffer at 1x scale factor by default', () => {
       const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
       const imageB = nativeImage.createFromBuffer(imageA.toPNG(), {
         width: imageA.getSize().width,
@@ -125,6 +126,14 @@ describe('nativeImage module', () => {
       const imageC = nativeImage.createFromBuffer(imageB.toPNG())
       assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
       assert(imageB.toBitmap().equals(imageC.toBitmap()))
+    })
+
+    it('supports a scale factor', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      const imageB = nativeImage.createFromBuffer(imageA.toPNG({scaleFactor: 1.0}))
+      assert.deepEqual(imageB.getSize(), {width: 538, height: 190})
+      const imageC = nativeImage.createFromBuffer(imageA.toPNG({scaleFactor: 2.0}), {scaleFactor: 2.0})
+      assert.deepEqual(imageC.getSize(), {width: 269, height: 95})
     })
   })
 
