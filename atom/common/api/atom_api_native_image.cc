@@ -230,28 +230,46 @@ HICON NativeImage::GetHICON(int size) {
 }
 #endif
 
-v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
-  scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-  if (IsEmpty() || png->size() > 0) {
-    const char* data = reinterpret_cast<const char*>(png->front());
-    const size_t length = static_cast<size_t>(png->size());
-    return node::Buffer::Copy(isolate, data, length).ToLocalChecked();
-  } else {
-    std::vector<unsigned char> encoded;
-    gfx::PNGCodec::EncodeBGRASkBitmap(image_.AsBitmap(), false, &encoded);
-    const char* data = reinterpret_cast<char*>(encoded.data());
-    return node::Buffer::Copy(isolate, data, encoded.size()).ToLocalChecked();
+v8::Local<v8::Value> NativeImage::ToPNG(mate::Arguments* args) {
+  float scale_factor = 1.0f;
+  mate::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("scaleFactor", &scale_factor);
+
+  if (scale_factor == 1.0f) {
+    // Use raw 1x PNG bytes when available
+    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+    if (png->size() > 0) {
+      const char* data = reinterpret_cast<const char*>(png->front());
+      size_t size = png->size();
+      return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
+    }
   }
+
+  const SkBitmap bitmap =
+      image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
+  std::unique_ptr<std::vector<unsigned char>> encoded(
+      new std::vector<unsigned char>());
+  gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false, encoded.get());
+  const char* data = reinterpret_cast<char*>(encoded->data());
+  size_t size = encoded->size();
+  return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
 }
 
-v8::Local<v8::Value> NativeImage::ToBitmap(v8::Isolate* isolate) {
-  if (IsEmpty()) return node::Buffer::New(isolate, 0).ToLocalChecked();
+v8::Local<v8::Value> NativeImage::ToBitmap(mate::Arguments* args) {
+  float scale_factor = 1.0f;
+  mate::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("scaleFactor", &scale_factor);
 
-  const SkBitmap* bitmap = image_.ToSkBitmap();
-  SkPixelRef* ref = bitmap->pixelRef();
-  return node::Buffer::Copy(isolate,
+  const SkBitmap bitmap =
+      image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
+  SkPixelRef* ref = bitmap.pixelRef();
+  if (!ref)
+    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  return node::Buffer::Copy(args->isolate(),
                             reinterpret_cast<const char*>(ref->pixels()),
-                            bitmap->getSafeSize()).ToLocalChecked();
+                            bitmap.getSafeSize()).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
@@ -260,25 +278,40 @@ v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   return node::Buffer::Copy(
       isolate,
       reinterpret_cast<const char*>(&output.front()),
-      static_cast<size_t>(output.size())).ToLocalChecked();
+      output.size()).ToLocalChecked();
 }
 
-std::string NativeImage::ToDataURL() {
-  scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-  if (IsEmpty() || png->size() > 0)
-    return webui::GetPngDataUrl(png->front(), png->size());
-  else
-    return webui::GetBitmapDataUrl(image_.AsBitmap());
+std::string NativeImage::ToDataURL(mate::Arguments* args) {
+  float scale_factor = 1.0f;
+  mate::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("scaleFactor", &scale_factor);
+
+  if (scale_factor == 1.0f) {
+    // Use raw 1x PNG bytes when available
+    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+    if (png->size() > 0)
+      return webui::GetPngDataUrl(png->front(), png->size());
+  }
+
+  return webui::GetBitmapDataUrl(
+      image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap());
 }
 
-v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
-  if (IsEmpty()) return node::Buffer::New(isolate, 0).ToLocalChecked();
+v8::Local<v8::Value> NativeImage::GetBitmap(mate::Arguments* args) {
+  float scale_factor = 1.0f;
+  mate::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("scaleFactor", &scale_factor);
 
-  const SkBitmap* bitmap = image_.ToSkBitmap();
-  SkPixelRef* ref = bitmap->pixelRef();
-  return node::Buffer::New(isolate,
+  const SkBitmap bitmap =
+      image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
+  SkPixelRef* ref = bitmap.pixelRef();
+  if (!ref)
+    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  return node::Buffer::New(args->isolate(),
                            reinterpret_cast<char*>(ref->pixels()),
-                           bitmap->getSafeSize(),
+                           bitmap.getSafeSize(),
                            &Noop,
                            nullptr).ToLocalChecked();
 }
