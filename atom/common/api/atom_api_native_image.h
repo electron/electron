@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/values.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 #include "ui/gfx/geometry/rect.h"
@@ -85,6 +86,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   bool IsEmpty();
   gfx::Size GetSize();
   float GetAspectRatio();
+  void AddRepresentation(const mate::Dictionary& options);
 
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);
