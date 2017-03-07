@@ -270,6 +270,8 @@ describe('nativeImage module', () => {
         buffer: 'invalid'
       })
 
+      assert.equal(image.isEmpty(), false)
+      assert.deepEqual(image.getSize(), {width: 1, height: 1})
       assert.equal(image.toDataURL({scaleFactor: 1.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=')
       assert.equal(image.toDataURL({scaleFactor: 2.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFUlEQVQYlWP8////fwYGBgYmBigAAD34BABBrq9BAAAAAElFTkSuQmCC')
       assert.equal(image.toDataURL({scaleFactor: 3.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAADElEQVQYlWNgIAoAAAAnAAGZWEMnAAAAAElFTkSuQmCC')
@@ -295,6 +297,8 @@ describe('nativeImage module', () => {
         dataURL: 'invalid'
       })
 
+      assert.equal(image.isEmpty(), false)
+      assert.deepEqual(image.getSize(), {width: 1, height: 1})
       assert.equal(image.toDataURL({scaleFactor: 1.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=')
       assert.equal(image.toDataURL({scaleFactor: 2.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFUlEQVQYlWP8////fwYGBgYmBigAAD34BABBrq9BAAAAAElFTkSuQmCC')
       assert.equal(image.toDataURL({scaleFactor: 3.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAADElEQVQYlWNgIAoAAAAnAAGZWEMnAAAAAElFTkSuQmCC')
