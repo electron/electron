@@ -76,6 +76,15 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
   return 1.0f;
 }
 
+// Get the scale factor from options object at the first argument
+float GetScaleFactorFromOptions(mate::Arguments* args) {
+  float scale_factor = 1.0f;
+  mate::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("scaleFactor", &scale_factor);
+  return scale_factor;
+}
+
 bool AddImageSkiaRep(gfx::ImageSkia* image,
                      const unsigned char* data,
                      size_t size,
@@ -231,10 +240,7 @@ HICON NativeImage::GetHICON(int size) {
 #endif
 
 v8::Local<v8::Value> NativeImage::ToPNG(mate::Arguments* args) {
-  float scale_factor = 1.0f;
-  mate::Dictionary options;
-  if (args->GetNext(&options))
-    options.Get("scaleFactor", &scale_factor);
+  float scale_factor = GetScaleFactorFromOptions(args);
 
   if (scale_factor == 1.0f) {
     // Use raw 1x PNG bytes when available
@@ -257,10 +263,7 @@ v8::Local<v8::Value> NativeImage::ToPNG(mate::Arguments* args) {
 }
 
 v8::Local<v8::Value> NativeImage::ToBitmap(mate::Arguments* args) {
-  float scale_factor = 1.0f;
-  mate::Dictionary options;
-  if (args->GetNext(&options))
-    options.Get("scaleFactor", &scale_factor);
+  float scale_factor = GetScaleFactorFromOptions(args);
 
   const SkBitmap bitmap =
       image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
@@ -282,10 +285,7 @@ v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
 }
 
 std::string NativeImage::ToDataURL(mate::Arguments* args) {
-  float scale_factor = 1.0f;
-  mate::Dictionary options;
-  if (args->GetNext(&options))
-    options.Get("scaleFactor", &scale_factor);
+  float scale_factor = GetScaleFactorFromOptions(args);
 
   if (scale_factor == 1.0f) {
     // Use raw 1x PNG bytes when available
@@ -299,10 +299,7 @@ std::string NativeImage::ToDataURL(mate::Arguments* args) {
 }
 
 v8::Local<v8::Value> NativeImage::GetBitmap(mate::Arguments* args) {
-  float scale_factor = 1.0f;
-  mate::Dictionary options;
-  if (args->GetNext(&options))
-    options.Get("scaleFactor", &scale_factor);
+  float scale_factor = GetScaleFactorFromOptions(args);
 
   const SkBitmap bitmap =
       image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
