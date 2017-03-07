@@ -251,7 +251,7 @@ describe('nativeImage module', () => {
   })
 
   describe('addRepresentation()', () => {
-    it('supports adding a representation for a scale factor', () => {
+    it('supports adding a buffer representation for a scale factor', () => {
       const image = nativeImage.createEmpty()
       image.addRepresentation({
         scaleFactor: 1.0,
@@ -268,6 +268,31 @@ describe('nativeImage module', () => {
       image.addRepresentation({
         scaleFactor: 4.0,
         buffer: 'invalid'
+      })
+
+      assert.equal(image.toDataURL({scaleFactor: 1.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=')
+      assert.equal(image.toDataURL({scaleFactor: 2.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFUlEQVQYlWP8////fwYGBgYmBigAAD34BABBrq9BAAAAAElFTkSuQmCC')
+      assert.equal(image.toDataURL({scaleFactor: 3.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAADElEQVQYlWNgIAoAAAAnAAGZWEMnAAAAAElFTkSuQmCC')
+      assert.equal(image.toDataURL({scaleFactor: 4.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAADElEQVQYlWNgIAoAAAAnAAGZWEMnAAAAAElFTkSuQmCC')
+    })
+
+    it('supports adding a data URL representation for a scale factor', () => {
+      const image = nativeImage.createEmpty()
+      image.addRepresentation({
+        scaleFactor: 1.0,
+        dataURL: nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', '1x1.png')).toDataURL()
+      })
+      image.addRepresentation({
+        scaleFactor: 2.0,
+        dataURL: nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', '2x2.jpg')).toDataURL()
+      })
+      image.addRepresentation({
+        scaleFactor: 3.0,
+        dataURL: nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', '3x3.png')).toDataURL()
+      })
+      image.addRepresentation({
+        scaleFactor: 4.0,
+        dataURL: 'invalid'
       })
 
       assert.equal(image.toDataURL({scaleFactor: 1.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=')

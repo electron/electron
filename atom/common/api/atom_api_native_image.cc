@@ -394,19 +394,36 @@ void NativeImage::AddRepresentation(const mate::Dictionary& options) {
   options.Get("height", &height);
   options.Get("scaleFactor", &scale_factor);
 
+  bool skia_rep_added = false;
+  gfx::ImageSkia image_skia = image_.AsImageSkia();
+
   v8::Local<v8::Value> buffer;
+  GURL url;
   if (options.Get("buffer", &buffer) && node::Buffer::HasInstance(buffer)) {
-    gfx::ImageSkia image_skia = image_.AsImageSkia();
     AddImageSkiaRep(
         &image_skia,
         reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
         node::Buffer::Length(buffer),
         width, height, scale_factor);
-
-    if (IsEmpty()) {
-      gfx::Image image(image_skia);
-      image_.SwapRepresentations(&image);
+    skia_rep_added = true;
+  } else if (options.Get("dataURL", &url)) {
+    std::string mime_type, charset, data;
+    if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
+      if (mime_type == "image/png" || mime_type == "image/jpeg") {
+        AddImageSkiaRep(
+            &image_skia,
+            reinterpret_cast<const unsigned char*>(data.c_str()),
+            data.size(),
+            width, height, scale_factor);
+        skia_rep_added = true;
+      }
     }
+  }
+
+  // Re-initialize image when first representation is added to an empty image
+  if (skia_rep_added && IsEmpty()) {
+    gfx::Image image(image_skia);
+    image_.SwapRepresentations(&image);
   }
 }
 
