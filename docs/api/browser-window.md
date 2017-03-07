@@ -1004,7 +1004,7 @@ Same as `webContents.capturePage([rect, ]callback)`.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
   * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[] - (optional)
-  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files. 
+  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Same as `webContents.loadURL(url[, options])`.
 
@@ -1274,6 +1274,9 @@ will remove the vibrancy effect on the window.
 Sets the touchBar layout for the current window. Specifying `null` or
 `undefined` clears the touch bar. This method only has an effect if the
 machine has a touch bar and is running on macOS 10.12.1+.
+
+**Note:** The TouchBar API is currently experimental and may change or be
+removed in future Electron releases.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look

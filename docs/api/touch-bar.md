@@ -11,6 +11,9 @@ Process: [Main](../tutorial/quick-start.md#main-process)
 Creates a new touch bar with the specified items. Use
 `BrowserWindow.setTouchBar` to add the `TouchBar` to a window.
 
+**Note:** The TouchBar API is currently experimental and may change or be
+removed in future Electron releases.
+
 ## Examples
 
 Below is an example of a simple slot machine touch bar game with a button
