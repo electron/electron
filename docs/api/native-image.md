@@ -265,4 +265,18 @@ will be preserved in the resized image.
 
 Returns `Float` - The image's aspect ratio.
 
+#### `image.addRepresentation(options)`
+
+* `options` Object
+  * `scaleFactor` Double - The scale factor to add the image representation for.
+  * `width` Integer (optional)
+  * `height` Integer (optional)
+  * `buffer` Buffer (optional) - The buffer containing the raw image data.
+  * `dataURL` String (optional) - The data URL containing either a base 64
+    encoded PNG or JPEG image.
+
+Add an image representation for a specific scale factor. This can be used
+to explicitly add different scale factor representations to an image. This
+can be called on empty images.
+
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
