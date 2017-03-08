@@ -289,6 +289,13 @@ win.on('resize', () => {
 })
 ```
 
+### `webrtcippolicy`
+
+```html
+<webview  src="https://browserleaks.com/webrtc" webrtcippolicy="disable_non_proxied_udp"></webview>
+```
+This attribute allows you to set the WebRTC IP handling policy which controls what IPs are exposed via WebRTC.  See [webContents](web-contents.md#contentssetwebrtciphandlingpolicypolicy) for available policies.
+
 ## Methods
 
 The `webview` tag has the following methods:
@@ -312,7 +319,7 @@ webview.addEventListener('dom-ready', () => {
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
   * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[] - (optional)
-  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files. 
+  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Loads the `url` in the webview, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.

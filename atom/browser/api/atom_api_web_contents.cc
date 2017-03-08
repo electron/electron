@@ -1067,6 +1067,23 @@ void WebContents::GoToOffset(int offset) {
   web_contents()->GetController().GoToOffset(offset);
 }
 
+const std::string& WebContents::GetWebRTCIPHandlingPolicy() const {
+  return web_contents()->
+    GetMutableRendererPrefs()->webrtc_ip_handling_policy;
+}
+
+void WebContents::SetWebRTCIPHandlingPolicy(
+    const std::string webrtc_ip_handling_policy) {
+  if (GetWebRTCIPHandlingPolicy() == webrtc_ip_handling_policy)
+    return;
+  web_contents()->GetMutableRendererPrefs()->webrtc_ip_handling_policy =
+    webrtc_ip_handling_policy;
+
+  content::RenderViewHost* host = web_contents()->GetRenderViewHost();
+  if (host)
+    host->SyncRendererPrefs();
+}
+
 bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
@@ -1765,6 +1782,10 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
+      .SetMethod("setWebRTCIPHandlingPolicy",
+                 &WebContents::SetWebRTCIPHandlingPolicy)
+      .SetMethod("getWebRTCIPHandlingPolicy",
+                 &WebContents::GetWebRTCIPHandlingPolicy)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)

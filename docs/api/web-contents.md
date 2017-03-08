@@ -1245,6 +1245,20 @@ Schedules a full repaint of the window this web contents is in.
 If *offscreen rendering* is enabled invalidates the frame and generates a new
 one through the `'paint'` event.
 
+#### `contents.getWebRTCIPHandlingPolicy()`
+
+* Returns `String` - Returns the WebRTC IP Handling Policy
+
+#### `contents.setWebRTCIPHandlingPolicy(policy)`
+
+* `policy` String - Specify the WebRTC IP Handling Policy
+  * `default` - Exposes user's public and local IPs.  This is the default behavior if not specified.
+  * `default_public_interface_only` - Exposes user's public IP, but does not expose user's local IP.
+  * `default_public_and_private_interfaces` - Exposes user's public and local IPs.
+  * `disable_non_proxied_udp` - Does not expose public or local IPs.
+
+Setting the WebRTC IP handling policy allows you to control which IPs are exposed via WebRTC.  See [BrowserLeaks](https://browserleaks.com/webrtc) for more details.
+
 ### Instance Properties
 
 #### `contents.id`
