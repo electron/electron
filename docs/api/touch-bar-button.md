@@ -10,7 +10,7 @@ Process: [Main](../tutorial/quick-start.md#main-process)
   * `label` String (optional) - Button text.
   * `backgroundColor` String (optional) - Button background color in hex format,
     i.e `#ABCDEF`.
-  * `icon` NativeImage (optional) - Button icon.
+  * `icon` [NativeImage](native-image.md) (optional) - Button icon.
   * `click` Function (optional) - Function to call when the button is clicked.
 
 ### Instance Properties
