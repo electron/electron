@@ -6,11 +6,10 @@
 #define NATIVE_MATE_WRAPPABLE_H_
 
 #include "base/bind.h"
-#include "base/lazy_instance.h"
-#include "base/threading/thread_local.h"
 #include "native_mate/compat.h"
 #include "native_mate/converter.h"
 #include "native_mate/constructor.h"
+#include "gin/per_isolate_data.h"
 
 namespace mate {
 
@@ -32,18 +31,21 @@ class Wrappable : public WrappableBase {
         isolate, base::Bind(&internal::InvokeNew<Sig>, constructor));
     templ->InstanceTemplate()->SetInternalFieldCount(1);
     T::BuildPrototype(isolate, templ);
-    templ_.Get().Set(new v8::Global<v8::FunctionTemplate>(isolate, templ));
+    gin::PerIsolateData::From(isolate)->SetFunctionTemplate(
+        &kWrapperInfo, templ);
   }
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
     // Fill the object template.
-    if (!templ_.Get().Get()) {
-      v8::Local<v8::FunctionTemplate> templ = v8::FunctionTemplate::New(isolate);
+    auto data = gin::PerIsolateData::From(isolate);
+    auto templ = data->GetFunctionTemplate(&kWrapperInfo);
+    if (templ.IsEmpty()) {
+      templ = v8::FunctionTemplate::New(isolate);
       templ->InstanceTemplate()->SetInternalFieldCount(1);
       T::BuildPrototype(isolate, templ);
-      templ_.Get().Set(new v8::Global<v8::FunctionTemplate>(isolate, templ));
+      data->SetFunctionTemplate(&kWrapperInfo, templ);
     }
-    return v8::Local<v8::FunctionTemplate>::New(isolate, *templ_.Get().Get());
+    return templ;
   }
 
  protected:
@@ -65,16 +67,14 @@ class Wrappable : public WrappableBase {
   }
 
  private:
-  static base::LazyInstance<base::ThreadLocalPointer<
-      v8::Global<v8::FunctionTemplate>>> templ_;
+  static gin::WrapperInfo kWrapperInfo;
 
   DISALLOW_COPY_AND_ASSIGN(Wrappable);
 };
 
 // static
 template<typename T>
-base::LazyInstance<base::ThreadLocalPointer<v8::Global<v8::FunctionTemplate>>>
-Wrappable<T>::templ_ = LAZY_INSTANCE_INITIALIZER;
+gin::WrapperInfo Wrappable<T>::kWrapperInfo = { gin::kEmbedderNativeGin };
 
 // This converter handles any subclass of Wrappable.
 template <typename T>
