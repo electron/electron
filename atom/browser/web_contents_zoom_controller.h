@@ -58,9 +58,6 @@ class WebContentsZoomController
   // Called after a navigation has committed to set default zoom factor.
   void SetZoomFactorOnNavigationIfNeeded(const GURL& url);
 
-  // Track zoom changes of a host in other instances of a partition.
-  void OnZoomLevelChanged(const content::HostZoomMap::ZoomLevelChange& change);
-
   // kZoomFactor.
   double default_zoom_factor_;
   double temporary_zoom_level_;
@@ -70,14 +67,9 @@ class WebContentsZoomController
 
   WebContentsZoomController* embedder_zoom_controller_;
 
-  // Map between zoom factor and hosts in this webContent.
-  std::map<std::string, double> host_zoom_factor_;
-
   base::ObserverList<Observer> observers_;
 
   content::HostZoomMap* host_zoom_map_;
-
-  std::unique_ptr<content::HostZoomMap::Subscription> zoom_subscription_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsZoomController);
 };
