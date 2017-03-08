@@ -76,6 +76,7 @@
       'lib/renderer/extensions/i18n.js',
       'lib/renderer/extensions/storage.js',
       'lib/renderer/extensions/web-navigation.js',
+      'lib/worker/init.js',
     ],
     'js2c_sources': [
       'lib/common/asar.js',
