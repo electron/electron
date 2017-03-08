@@ -28,7 +28,7 @@ WebWorkerObserver* WebWorkerObserver::GetCurrent() {
 }
 
 WebWorkerObserver::WebWorkerObserver()
-    : node_bindings_(NodeBindings::Create(false)),
+    : node_bindings_(NodeBindings::Create(NodeBindings::WORKER)),
       atom_bindings_(new AtomBindings) {
   lazy_tls.Pointer()->Set(this);
 }
