@@ -1601,5 +1601,19 @@ describe('<webview> tag', function () {
       })
       w.loadURL(`file://${fixtures}/pages/webview-in-page-navigate.html`)
     })
+
+    it('inherits zoom level for the origin when available', (done) => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomFactor: 1.2
+        }
+      })
+      ipcMain.once('webview-origin-zoom-level', (event, zoomLevel) => {
+        assert.equal(zoomLevel, 2.0)
+        done()
+      })
+      w.loadURL(`file://${fixtures}/pages/webview-origin-zoom-level.html`)
+    })
   })
 })
