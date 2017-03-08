@@ -8,8 +8,8 @@ Process: [Main](../tutorial/quick-start.md#main-process)
 
 * `options` Object
   * `label` String (optional) - Popover button text.
-  * `icon` NativeImage (optional) - Popover button icon.
-  * `items` TouchBar (optional) - Items to display in the popover.
+  * `icon` [NativeImage](native-image.md) (optional) - Popover button icon.
+  * `items` [TouchBar](touch-bar.md) (optional) - Items to display in the popover.
   * `showCloseButton` Boolean (optional) - `true` to display a close button
     on the left of the popover, `false` to not show it. Default is `true`.
 
