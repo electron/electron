@@ -12,6 +12,8 @@
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 
+#include "atom/common/node_includes.h"
+
 namespace atom {
 
 JavascriptEnvironment::JavascriptEnvironment()
@@ -44,6 +46,13 @@ bool JavascriptEnvironment::Initialize() {
                                  gin::IsolateHolder::kStableV8Extras,
                                  gin::ArrayBufferAllocator::SharedInstance());
   return true;
+}
+
+NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {
+}
+
+NodeEnvironment::~NodeEnvironment() {
+  node::FreeEnvironment(env_);
 }
 
 }  // namespace atom

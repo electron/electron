@@ -156,4 +156,4 @@ Electronはリビルドせずにアプリケーションをテストするため
 もしくは、アプリのフォルダーを引数にしてElectronバイナリを実行します。これによって、Electronのリソースディレクトリにアプリをコピー＆ペーストする必要がなくなります。
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
-[spectron]: http://electron.atom.io/spectron
+[spectron]: https://electron.atom.io/spectron

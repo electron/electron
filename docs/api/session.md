@@ -204,7 +204,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
 
 * `url` URL
 * `callback` Function
-  * `proxy` Object
+  * `proxy` String
 
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
@@ -274,8 +274,13 @@ verify proc.
 const {BrowserWindow} = require('electron')
 let win = new BrowserWindow()
 
-win.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
-  callback(hostname === 'github.com')
+win.webContents.session.setCertificateVerifyProc((request, callback) => {
+  const {hostname} = request
+  if (hostname === 'github.com') {
+    callback(0)
+  } else {
+    callback(-2)
+  }
 })
 ```
 

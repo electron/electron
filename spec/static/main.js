@@ -193,16 +193,23 @@ app.on('ready', function () {
   })
 
   ipcMain.on('executeJavaScript', function (event, code, hasCallback) {
+    let promise
+
     if (hasCallback) {
-      window.webContents.executeJavaScript(code, (result) => {
+      promise = window.webContents.executeJavaScript(code, (result) => {
         window.webContents.send('executeJavaScript-response', result)
-      }).then((result) => {
-        window.webContents.send('executeJavaScript-promise-response', result)
-      }).catch((err) => {
-        window.webContents.send('executeJavaScript-promise-error', err)
       })
     } else {
-      window.webContents.executeJavaScript(code)
+      promise = window.webContents.executeJavaScript(code)
+    }
+
+    promise.then((result) => {
+      window.webContents.send('executeJavaScript-promise-response', result)
+    }).catch((error) => {
+      window.webContents.send('executeJavaScript-promise-error', error)
+    })
+
+    if (!hasCallback) {
       event.returnValue = 'success'
     }
   })
@@ -301,6 +308,24 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
   })
   fs.readFile(__filename, () => {
     Promise.reject(new Error(message))
+  })
+})
+
+ipcMain.on('navigate-with-pending-entry', (event, id) => {
+  const w = BrowserWindow.fromId(id)
+
+  w.webContents.on('did-start-loading', () => {
+    w.loadURL('about:blank')
+  })
+
+  w.webContents.on('did-navigate', (e, url) => {
+    if (url === 'about:blank') {
+      event.sender.send('navigated-with-pending-entry')
+    }
+  })
+
+  w.webContents.session.clearHostResolverCache(() => {
+    w.loadURL('http://host')
   })
 })
 

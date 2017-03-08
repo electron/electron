@@ -70,10 +70,10 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   ~NativeImage() override;
 
  private:
-  v8::Local<v8::Value> ToPNG(v8::Isolate* isolate);
+  v8::Local<v8::Value> ToPNG(mate::Arguments* args);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
-  v8::Local<v8::Value> ToBitmap(v8::Isolate* isolate);
-  v8::Local<v8::Value> GetBitmap(v8::Isolate* isolate);
+  v8::Local<v8::Value> ToBitmap(mate::Arguments* args);
+  v8::Local<v8::Value> GetBitmap(mate::Arguments* args);
   v8::Local<v8::Value> GetNativeHandle(
     v8::Isolate* isolate,
     mate::Arguments* args);
@@ -81,7 +81,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
                                    const base::DictionaryValue& options);
   mate::Handle<NativeImage> Crop(v8::Isolate* isolate,
                                  const gfx::Rect& rect);
-  std::string ToDataURL();
+  std::string ToDataURL(mate::Arguments* args);
   bool IsEmpty();
   gfx::Size GetSize();
   float GetAspectRatio();

@@ -229,6 +229,11 @@ describe('BrowserWindow module', function () {
       w.loadURL(`data:image/png;base64,${data}`)
     })
 
+    it('should not crash when there is a pending navigation entry', function (done) {
+      ipcRenderer.once('navigated-with-pending-entry', () => done())
+      ipcRenderer.send('navigate-with-pending-entry', w.id)
+    })
+
     describe('POST navigations', function () {
       afterEach(() => {
         w.webContents.session.webRequest.onBeforeSendHeaders(null)
@@ -277,6 +282,14 @@ describe('BrowserWindow module', function () {
         })
         w.loadURL(server.url)
       })
+    })
+
+    it('should support support base url for data urls', (done) => {
+      ipcMain.once('answer', function (event, test) {
+        assert.equal(test, 'test')
+        done()
+      })
+      w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {baseURLForDataURL: `file://${path.join(fixtures, 'api')}${path.sep}`})
     })
   })
 
@@ -1838,8 +1851,16 @@ describe('BrowserWindow module', function () {
       })
     })
 
-    it('resolves the returned promise with the result', function (done) {
+    it('resolves the returned promise with the result when a callback is specified', function (done) {
       ipcRenderer.send('executeJavaScript', code, true)
+      ipcRenderer.once('executeJavaScript-promise-response', function (event, result) {
+        assert.equal(result, expected)
+        done()
+      })
+    })
+
+    it('resolves the returned promise with the result when no callback is specified', function (done) {
+      ipcRenderer.send('executeJavaScript', code, false)
       ipcRenderer.once('executeJavaScript-promise-response', function (event, result) {
         assert.equal(result, expected)
         done()

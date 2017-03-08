@@ -38,14 +38,14 @@ The `dialog` module has the following methods:
     * `openDirectory` - Allow directories to be selected.
     * `multiSelections` - Allow multiple paths to be selected.
     * `showHiddenFiles` - Show hidden files in dialog.
-    * `createDirectory` _macOS_ - Allow creating new directories from dialog.
-    * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
+    * `createDirectory` - Allow creating new directories from dialog. _macOS_
+    * `promptToCreate` - Prompt for creation if the file path entered
       in the dialog does not exist. This does not actually create the file at
       the path but allows non-existent paths to be returned that should be
-      created by the application.
-    * `noResolveAliases` _macOS_ - Disable the automatic alias (symlink) path
+      created by the application. _Windows_
+    * `noResolveAliases` - Disable the automatic alias (symlink) path
       resolution.  Selected aliases will now return the alias path instead of
-      their target path.
+      their target path. _macOS_
   * `normalizeAccessKeys` Boolean (optional) - Normalize the keyboard access keys
     across platforms. Default is `false`. Enabling this assumes `&` is used in
     the button labels for the placement of the keyboard shortcut access key
@@ -138,11 +138,10 @@ will be passed via `callback(filename)`
   * `checkboxChecked` Boolean (optional) - Initial checked state of the
     checkbox. `false` by default.
   * `icon` [NativeImage](native-image.md) (optional)
-  * `cancelId` Integer (optional) - The value will be returned when user cancels the dialog
-    instead of clicking the buttons of the dialog. By default it is the index
-    of the buttons that have "cancel" or "no" as label, or 0 if there is no such
-    buttons. On macOS and Windows the index of the "Cancel" button will always
-    be used as `cancelId` even if it is specified.
+  * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
+    the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the
+    label. If no such labeled buttons exist and this option is not set, `0` will be used as the
+    return value or callback response. This option is ignored on Windows.
   * `noLink` Boolean (optional) - On Windows Electron will try to figure out which one of
     the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
     others as command links in the dialog. This can make the dialog appear in

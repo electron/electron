@@ -53,9 +53,9 @@ class Menu : public mate::TrackableObject<Menu>,
   void ExecuteCommand(int command_id, int event_flags) override;
   void MenuWillShow(ui::SimpleMenuModel* source) override;
 
-  virtual void PopupAt(Window* window,
-                       int x = -1, int y = -1,
-                       int positioning_item = 0) = 0;
+  virtual void PopupAt(
+      Window* window, int x, int y, int positioning_item, bool async) = 0;
+  virtual void ClosePopupAt(int32_t window_id) = 0;
 
   std::unique_ptr<AtomMenuModel> model_;
   Menu* parent_;

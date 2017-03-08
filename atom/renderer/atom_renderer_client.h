@@ -66,6 +66,9 @@ class AtomRendererClient : public content::ContentRendererClient {
       std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems)
       override;
 
+  // Whether the node integration has been initialized.
+  bool node_integration_initialized_;
+
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;
   std::unique_ptr<PreferencesManager> preferences_manager_;

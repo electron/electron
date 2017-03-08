@@ -147,7 +147,7 @@ CSS通过 `flex` 布局设置 `width` 和 `height`，并允许元素缩小到0px
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
-<webview src="http://electron.atom.io" partition="electron"></webview>
+<webview src="https://electron.atom.io" partition="electron"></webview>
 ```
 
 为 page 设置 session。如果初始值为 `partition` ，这个 page 将会为app中的所有 page 应用同一个持续有效的 session。如果没有 `persist:` 前缀, 这个 page 将会使用一个历史 session。通过分配使用相同的 `partition`, 所有的 page 都可以分享相同的session。如果 `partition` 没有设置，那 app 将使用默认的 session。
@@ -193,7 +193,7 @@ CSS通过 `flex` 布局设置 `width` 和 `height`，并允许元素缩小到0px
 
 指定要禁用的 blink 特征的字符串列表，用 `,` 分隔。
 支持的功能字符串的完整列表
-[RuntimeEnabledFeatures.in][blink-feature-string]。
+[RuntimeEnabledFeatures.json5][blink-feature-string]。
 
 ### `guestinstance`
 
@@ -835,4 +835,4 @@ ipcRenderer.on('ping', () => {
 
 在开发者工具获取焦点的时候触发。
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62

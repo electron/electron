@@ -1,4 +1,4 @@
-[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
+[![Electron Logo](https://electron.atom.io/images/electron-logo.svg)](https://electron.atom.io/)
 
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kvxe4byi7jcxbe26/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
@@ -9,7 +9,7 @@ Electron 프레임워크는 JavaScript, HTML 그리고 CSS를 사용하여
 Cross-Platform 데스크톱 애플리케이션을 개발할 수 있도록 해주는 프레임워크입니다.
 [Node.js](https://nodejs.org/)와 [Chromium](http://www.chromium.org)을 기반으로
 만들어졌으며 [Atom Editor](https://github.com/atom/atom)에 사용되고 있습니다.
-더 많은 애플리케이션은 [이곳](http://electron.atom.io/apps)에서 확인하세요.
+더 많은 애플리케이션은 [이곳](https://electron.atom.io/apps)에서 확인하세요.
 
 Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서
 [@ElectronJS](https://twitter.com/electronjs)를 팔로우 하세요.

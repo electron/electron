@@ -11,11 +11,15 @@ describe('nativeImage module', () => {
       assert.equal(empty.isEmpty(), true)
       assert.equal(empty.getAspectRatio(), 1)
       assert.equal(empty.toDataURL(), 'data:image/png;base64,')
+      assert.equal(empty.toDataURL({scaleFactor: 2.0}), 'data:image/png;base64,')
       assert.deepEqual(empty.getSize(), {width: 0, height: 0})
       assert.deepEqual(empty.getBitmap(), [])
+      assert.deepEqual(empty.getBitmap({scaleFactor: 2.0}), [])
       assert.deepEqual(empty.toBitmap(), [])
+      assert.deepEqual(empty.toBitmap({scaleFactor: 2.0}), [])
       assert.deepEqual(empty.toJPEG(100), [])
       assert.deepEqual(empty.toPNG(), [])
+      assert.deepEqual(empty.toPNG({scaleFactor: 2.0}), [])
 
       if (process.platform === 'darwin') {
         assert.deepEqual(empty.getNativeHandle(), [])
@@ -76,6 +80,60 @@ describe('nativeImage module', () => {
       const imageB = nativeImage.createFromDataURL(imageA.toDataURL())
       assert.deepEqual(imageB.getSize(), {width: 538, height: 190})
       assert(imageA.toBitmap().equals(imageB.toBitmap()))
+    })
+  })
+
+  describe('toDataURL()', () => {
+    it('returns a PNG data URL', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', '1x1.png'))
+      assert.equal(imageA.toDataURL(), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=')
+      assert.equal(imageA.toDataURL({scaleFactor: 2.0}), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=')
+    })
+
+    it('returns a data URL at 1x scale factor by default', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      const imageB = nativeImage.createFromBuffer(imageA.toPNG(), {
+        width: imageA.getSize().width,
+        height: imageA.getSize().height,
+        scaleFactor: 2.0
+      })
+      assert.deepEqual(imageB.getSize(), {width: 269, height: 95})
+
+      const imageC = nativeImage.createFromDataURL(imageB.toDataURL())
+      assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
+      assert(imageB.toBitmap().equals(imageC.toBitmap()))
+    })
+
+    it('supports a scale factor', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      const imageB = nativeImage.createFromDataURL(imageA.toDataURL({scaleFactor: 1.0}))
+      assert.deepEqual(imageB.getSize(), {width: 538, height: 190})
+      const imageC = nativeImage.createFromDataURL(imageA.toDataURL({scaleFactor: 2.0}))
+      assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
+    })
+  })
+
+  describe('toPNG()', () => {
+    it('returns a buffer at 1x scale factor by default', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      const imageB = nativeImage.createFromBuffer(imageA.toPNG(), {
+        width: imageA.getSize().width,
+        height: imageA.getSize().height,
+        scaleFactor: 2.0
+      })
+      assert.deepEqual(imageB.getSize(), {width: 269, height: 95})
+
+      const imageC = nativeImage.createFromBuffer(imageB.toPNG())
+      assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
+      assert(imageB.toBitmap().equals(imageC.toBitmap()))
+    })
+
+    it('supports a scale factor', () => {
+      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
+      const imageB = nativeImage.createFromBuffer(imageA.toPNG({scaleFactor: 1.0}))
+      assert.deepEqual(imageB.getSize(), {width: 538, height: 190})
+      const imageC = nativeImage.createFromBuffer(imageA.toPNG({scaleFactor: 2.0}), {scaleFactor: 2.0})
+      assert.deepEqual(imageC.getSize(), {width: 269, height: 95})
     })
   })
 

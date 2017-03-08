@@ -16,6 +16,7 @@
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
 #include "native_mate/handle.h"
+#include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 
 class GURL;
@@ -51,6 +52,8 @@ class Window : public mate::TrackableObject<Window>,
 
   NativeWindow* window() const { return window_.get(); }
 
+  int32_t ID() const;
+
  protected:
   Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
          const mate::Dictionary& options);
@@ -83,6 +86,8 @@ class Window : public mate::TrackableObject<Window>,
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
+  void OnTouchBarItemResult(const std::string& item_id,
+                            const base::DictionaryValue& details) override;
 
   #if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
@@ -201,8 +206,9 @@ class Window : public mate::TrackableObject<Window>,
   void SetAutoHideCursor(bool auto_hide);
 
   void SetVibrancy(mate::Arguments* args);
+  void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
+  void RefreshTouchBarItem(const std::string& item_id);
 
-  int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
 
   // Remove this window from parent window's |child_windows_|.

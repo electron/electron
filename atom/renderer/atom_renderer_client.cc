@@ -86,14 +86,21 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   }
 
   void CreateIsolatedWorldContext() {
+    auto frame = render_frame_->GetWebFrame();
+
     // This maps to the name shown in the context combo box in the Console tab
     // of the dev tools.
-    render_frame_->GetWebFrame()->setIsolatedWorldHumanReadableName(
+    frame->setIsolatedWorldHumanReadableName(
         World::ISOLATED_WORLD,
         blink::WebString::fromUTF8("Electron Isolated Context"));
 
+    // Setup document's origin policy in isolated world
+    frame->setIsolatedWorldSecurityOrigin(
+      World::ISOLATED_WORLD, frame->document().getSecurityOrigin());
+
+    // Create initial script context in isolated world
     blink::WebScriptSource source("void 0");
-    render_frame_->GetWebFrame()->executeScriptInIsolatedWorld(
+    frame->executeScriptInIsolatedWorld(
         World::ISOLATED_WORLD, &source, 1, ExtensionGroup::MAIN_GROUP);
   }
 
@@ -206,7 +213,8 @@ std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
-    : node_bindings_(NodeBindings::Create(false)),
+    : node_integration_initialized_(false),
+      node_bindings_(NodeBindings::Create(false)),
       atom_bindings_(new AtomBindings) {
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
@@ -342,11 +350,9 @@ void AtomRendererClient::DidCreateScriptContext(
   if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
     return;
 
-  // Whether the node binding has been initialized.
-  bool first_time = node_bindings_->uv_env() == nullptr;
-
   // Prepare the node bindings.
-  if (first_time) {
+  if (!node_integration_initialized_) {
+    node_integration_initialized_ = true;
     node_bindings_->Initialize();
     node_bindings_->PrepareMessageLoop();
   }
@@ -362,7 +368,7 @@ void AtomRendererClient::DidCreateScriptContext(
   // Load everything.
   node_bindings_->LoadEnvironment(env);
 
-  if (first_time) {
+  if (node_bindings_->uv_env() == nullptr) {
     // Make uv loop being wrapped by window context.
     node_bindings_->set_uv_env(env);
 
@@ -381,6 +387,14 @@ void AtomRendererClient::WillReleaseScriptContext(
   node::Environment* env = node::Environment::GetCurrent(context);
   if (env)
     mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+
+  // The main frame may be replaced.
+  if (env == node_bindings_->uv_env())
+    node_bindings_->set_uv_env(nullptr);
+
+  // Destroy the node environment.
+  node::FreeEnvironment(env);
+  atom_bindings_->EnvironmentDestroyed(env);
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,

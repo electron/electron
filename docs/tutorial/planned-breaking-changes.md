@@ -57,6 +57,15 @@ crashReporter.start({
 })
 ```
 
+## `menu`
+
+```js
+// Deprecated
+menu.popup(browserWindow, 100, 200, 2)
+// Replace with
+menu.popup(browserWindow, {x: 100, y: 200, positioningItem: 2})
+```
+
 ## `nativeImage`
 
 ```js

@@ -256,12 +256,12 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       macOS. Default is `false`.
     * `blinkFeatures` String (optional) - A list of feature strings separated by `,`, like
       `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
-      strings can be found in the [RuntimeEnabledFeatures.in][blink-feature-string]
+      strings can be found in the [RuntimeEnabledFeatures.json5][blink-feature-string]
       file.
     * `disableBlinkFeatures` String (optional) - A list of feature strings separated by `,`,
       like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
       feature strings can be found in the
-      [RuntimeEnabledFeatures.in][blink-feature-string] file.
+      [RuntimeEnabledFeatures.json5][blink-feature-string] file.
     * `defaultFontFamily` Object (optional) - Sets the default font for the font-family.
       * `standard` String (optional) - Defaults to `Times New Roman`.
       * `serif` String (optional) - Defaults to `Times New Roman`.
@@ -853,7 +853,7 @@ On Linux always returns `true`.
   [macOS docs][window-levels] for more details.
 * `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
   this window relative to the given `level`. The default is `0`. Note that Apple
-  discourages setting levels higher than 1 above `screen-saver`. 
+  discourages setting levels higher than 1 above `screen-saver`.
 
 Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
@@ -1004,6 +1004,7 @@ Same as `webContents.capturePage([rect, ]callback)`.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
   * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[] - (optional)
+  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Same as `webContents.loadURL(url[, options])`.
 
@@ -1266,7 +1267,18 @@ Controls whether to hide cursor when typing.
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
-[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+#### `win.setTouchBar(touchBar)` _macOS_
+
+* `touchBar` TouchBar
+
+Sets the touchBar layout for the current window. Specifying `null` or
+`undefined` clears the touch bar. This method only has an effect if the
+machine has a touch bar and is running on macOS 10.12.1+.
+
+**Note:** The TouchBar API is currently experimental and may change or be
+removed in future Electron releases.
+
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels

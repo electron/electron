@@ -100,6 +100,9 @@ class NativeWindowMac : public NativeWindow,
   void SetAutoHideCursor(bool auto_hide) override;
 
   void SetVibrancy(const std::string& type) override;
+  void SetTouchBar(
+      const std::vector<mate::PersistentDictionary>& items) override;
+  void RefreshTouchBarItem(const std::string& item_id) override;
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;

@@ -117,6 +117,7 @@ NodeBindings::~NodeBindings() {
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
+  uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
 }
 
 void NodeBindings::Initialize() {

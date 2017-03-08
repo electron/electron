@@ -165,7 +165,10 @@ Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer
 
 The following methods are available on instances of the `NativeImage` class:
 
-#### `image.toPNG()`
+#### `image.toPNG([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded data.
 
@@ -175,16 +178,25 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded da
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
-#### `image.toBitmap()`
+#### `image.toBitmap([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
 
-#### `image.toDataURL()`
+#### `image.toDataURL([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `String` - The data URL of the image.
 
-#### `image.getBitmap()`
+#### `image.getBitmap([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's raw bitmap pixel data.
 

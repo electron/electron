@@ -12,7 +12,6 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "base/base64.h"
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
@@ -21,6 +20,7 @@
 #include "net/base/data_url.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
 #include "ui/base/layout.h"
+#include "ui/base/webui/web_ui_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/size.h"
@@ -74,6 +74,15 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
   }
 
   return 1.0f;
+}
+
+// Get the scale factor from options object at the first argument
+float GetScaleFactorFromOptions(mate::Arguments* args) {
+  float scale_factor = 1.0f;
+  mate::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("scaleFactor", &scale_factor);
+  return scale_factor;
 }
 
 bool AddImageSkiaRep(gfx::ImageSkia* image,
@@ -230,21 +239,40 @@ HICON NativeImage::GetHICON(int size) {
 }
 #endif
 
-v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
-  scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-  return node::Buffer::Copy(isolate,
-                            reinterpret_cast<const char*>(png->front()),
-                            static_cast<size_t>(png->size())).ToLocalChecked();
+v8::Local<v8::Value> NativeImage::ToPNG(mate::Arguments* args) {
+  float scale_factor = GetScaleFactorFromOptions(args);
+
+  if (scale_factor == 1.0f) {
+    // Use raw 1x PNG bytes when available
+    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+    if (png->size() > 0) {
+      const char* data = reinterpret_cast<const char*>(png->front());
+      size_t size = png->size();
+      return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
+    }
+  }
+
+  const SkBitmap bitmap =
+      image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
+  std::unique_ptr<std::vector<unsigned char>> encoded(
+      new std::vector<unsigned char>());
+  gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false, encoded.get());
+  const char* data = reinterpret_cast<char*>(encoded->data());
+  size_t size = encoded->size();
+  return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
 }
 
-v8::Local<v8::Value> NativeImage::ToBitmap(v8::Isolate* isolate) {
-  if (IsEmpty()) return node::Buffer::New(isolate, 0).ToLocalChecked();
+v8::Local<v8::Value> NativeImage::ToBitmap(mate::Arguments* args) {
+  float scale_factor = GetScaleFactorFromOptions(args);
 
-  const SkBitmap* bitmap = image_.ToSkBitmap();
-  SkPixelRef* ref = bitmap->pixelRef();
-  return node::Buffer::Copy(isolate,
+  const SkBitmap bitmap =
+      image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
+  SkPixelRef* ref = bitmap.pixelRef();
+  if (!ref)
+    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  return node::Buffer::Copy(args->isolate(),
                             reinterpret_cast<const char*>(ref->pixels()),
-                            bitmap->getSafeSize()).ToLocalChecked();
+                            bitmap.getSafeSize()).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
@@ -253,26 +281,34 @@ v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   return node::Buffer::Copy(
       isolate,
       reinterpret_cast<const char*>(&output.front()),
-      static_cast<size_t>(output.size())).ToLocalChecked();
+      output.size()).ToLocalChecked();
 }
 
-std::string NativeImage::ToDataURL() {
-  scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-  std::string data_url;
-  data_url.insert(data_url.end(), png->front(), png->front() + png->size());
-  base::Base64Encode(data_url, &data_url);
-  data_url.insert(0, "data:image/png;base64,");
-  return data_url;
+std::string NativeImage::ToDataURL(mate::Arguments* args) {
+  float scale_factor = GetScaleFactorFromOptions(args);
+
+  if (scale_factor == 1.0f) {
+    // Use raw 1x PNG bytes when available
+    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+    if (png->size() > 0)
+      return webui::GetPngDataUrl(png->front(), png->size());
+  }
+
+  return webui::GetBitmapDataUrl(
+      image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap());
 }
 
-v8::Local<v8::Value> NativeImage::GetBitmap(v8::Isolate* isolate) {
-  if (IsEmpty()) return node::Buffer::New(isolate, 0).ToLocalChecked();
+v8::Local<v8::Value> NativeImage::GetBitmap(mate::Arguments* args) {
+  float scale_factor = GetScaleFactorFromOptions(args);
 
-  const SkBitmap* bitmap = image_.ToSkBitmap();
-  SkPixelRef* ref = bitmap->pixelRef();
-  return node::Buffer::New(isolate,
+  const SkBitmap bitmap =
+      image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
+  SkPixelRef* ref = bitmap.pixelRef();
+  if (!ref)
+    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  return node::Buffer::New(args->isolate(),
                            reinterpret_cast<char*>(ref->pixels()),
-                           bitmap->getSafeSize(),
+                           bitmap.getSafeSize(),
                            &Noop,
                            nullptr).ToLocalChecked();
 }

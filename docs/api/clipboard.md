@@ -103,7 +103,7 @@ clipboard.
 
 ```js
 clipboard.write({
-  text: 'http://electron.atom.io',
+  text: 'https://electron.atom.io',
   bookmark: 'Electron Homepage'
 })
 ```

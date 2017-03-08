@@ -1,6 +1,6 @@
 # Electron 에 대하여
 
-[Electron](http://electron.atom.io) 은 HTML, CSS 와 Javascript 로 크로스플랫폼
+[Electron](https://electron.atom.io) 은 HTML, CSS 와 Javascript 로 크로스플랫폼
 데스크톱 애플리케이션을 위해 Github 에서 개발한 오픈소스 라이브러리 입니다.
 Electron 은 [Chromium](https://www.chromium.org/Home) 와
 [Node.js](https://nodejs.org) 를 단일 실행으로 합치고 앱을 Mac, Windows 와
@@ -47,7 +47,7 @@ Chromium 이 사용하는 버전. 대부분은 동작하지만 가끔 Node.js �
 Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관리가 까다롭고
 [`semver`을 따르지 않습니다](http://semver.org). 그러므로 항상 Electron 의 특정
 버전을 참조해야 합니다. [Electron 의 버전관리]
-(http://electron.atom.io/docs/tutorial/electron-versioning/)를 읽거나
+(https://electron.atom.io/docs/tutorial/electron-versioning/)를 읽거나
 [현재 쓰이는 버전](https://electron.atom.io/#electron-versions)을 보세요.
 
 ### LTS
@@ -57,7 +57,7 @@ Node.js 와 Chromium 에 대한 의존성이 강해서, Electron 은 버전관�
 새버전으로 업그레이드 해야합니다.
 
 주 버전은 `v1.0.0` 입니다. 아직 이 버전을 사용중이지 않다면,
-[v1.0.0 변화에 대해 읽어보세요](http://electron.atom.io/blog/2016/05/11/electron-1-0).
+[v1.0.0 변화에 대해 읽어보세요](https://electron.atom.io/blog/2016/05/11/electron-1-0).
 
 ## 중심 철학
 
@@ -70,7 +70,7 @@ Electron 을 작고 (파일 크기) 지속가능하게 (의존성 및 API 의 �
 
 Electron 에 추가된 새로운 기능은 주로 네이티브 API 입니다. 기능은 가능한한
 Node.js 모듈로 해야합니다. [커뮤니티에 의해 개발된 Electron 도구들]
-(http://electron.atom.io/community)을 보세요.
+(https://electron.atom.io/community)을 보세요.
 
 ## 이력
 
@@ -81,6 +81,6 @@ Node.js 모듈로 해야합니다. [커뮤니티에 의해 개발된 Electron �
 | **2013년 4월**| [Atom Shell 탄생](https://github.com/electron/electron/commit/6ef8875b1e93787fa9759f602e7880f28e8e6b45).|
 | **2014년 5월** | [Atom Shell 오픈소스화](http://blog.atom.io/2014/05/06/atom-is-now-open-source.html). |
 | **2015년 4월** | [Electron 으로 개명](https://github.com/electron/electron/pull/1389). |
-| **2016년 5월** | [Electron v1.0.0 출시](http://electron.atom.io/blog/2016/05/11/electron-1-0).|
-| **2016년 5월** | [Electron 앱이 Mac App Store 와 호환](http://electron.atom.io/docs/tutorial/mac-app-store-submission-guide).|
-| **2016년 8월** | [Windows Store 의 Electron 앱 지원](http://electron.atom.io/docs/tutorial/windows-store-guide).|
+| **2016년 5월** | [Electron v1.0.0 출시](https://electron.atom.io/blog/2016/05/11/electron-1-0).|
+| **2016년 5월** | [Electron 앱이 Mac App Store 와 호환](https://electron.atom.io/docs/tutorial/mac-app-store-submission-guide).|
+| **2016년 8월** | [Windows Store 의 Electron 앱 지원](https://electron.atom.io/docs/tutorial/windows-store-guide).|

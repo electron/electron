@@ -78,7 +78,6 @@ DownloadItem::~DownloadItem() {
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
   if (download_item_->IsDone()) {
     Emit("done", item->GetState());
-
     // Destroy the item once item is downloaded.
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE, GetDestroyClosure());
@@ -111,7 +110,6 @@ bool DownloadItem::CanResume() const {
 
 void DownloadItem::Cancel() {
   download_item_->Cancel(true);
-  download_item_->Remove();
 }
 
 int64_t DownloadItem::GetReceivedBytes() const {

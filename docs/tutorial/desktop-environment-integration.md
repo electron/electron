@@ -65,7 +65,7 @@ the application via JumpList or dock menu, respectively.
 
 __JumpList:__
 
-![JumpList Recent Files](http://i.msdn.microsoft.com/dynimg/IC420538.png)
+![JumpList Recent Files](https://cloud.githubusercontent.com/assets/2289/23446924/11a27b98-fdfc-11e6-8485-cc3b1e86b80a.png)
 
 __Application dock menu:__
 

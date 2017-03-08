@@ -1,4 +1,4 @@
-[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
+[![Electron Logo](https://electron.atom.io/images/electron-logo.svg)](https://electron.atom.io/)
 
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kvxe4byi7jcxbe26/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
@@ -10,7 +10,7 @@
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
 [Chromium](http://www.chromium.org) and is used by the [Atom
-editor](https://github.com/atom/atom) and many other [apps](http://electron.atom.io/apps).
+editor](https://github.com/atom/atom) and many other [apps](https://electron.atom.io/apps).
 
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.

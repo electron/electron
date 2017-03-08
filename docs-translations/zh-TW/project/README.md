@@ -1,4 +1,4 @@
-[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
+[![Electron Logo](https://electron.atom.io/images/electron-logo.svg)](https://electron.atom.io/)
 
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kvxe4byi7jcxbe26/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
@@ -7,7 +7,7 @@
 
 Electron框架讓你可以用JavaScript, HTML 和 CSS 編寫跨平台的應用程式。
 它是基於[Node.js](https://nodejs.org/)和[Chromium](http://www.chromium.org)，
-並且被[Atom editor](https://github.com/atom/atom)及許多其他的[apps](http://electron.atom.io/apps)所使用。
+並且被[Atom editor](https://github.com/atom/atom)及許多其他的[apps](https://electron.atom.io/apps)所使用。
 
 請關注[@ElectronJS](https://twitter.com/electronjs)的Twitter以獲得重要公告。
 
