@@ -529,7 +529,7 @@ describe('webContents module', function () {
   })
 
   describe('webrtc ip policy api', () => {
-    it('can set and get webrtc ip policies', (done) => {
+    it('can set and get webrtc ip policies', () => {
       const policies = [
         'default',
         'default_public_interface_only',
@@ -540,7 +540,6 @@ describe('webContents module', function () {
         w.webContents.setWebRTCIPHandlingPolicy(policy)
         assert.equal(w.webContents.getWebRTCIPHandlingPolicy(), policy)
       })
-      done()
     })
   })
 })
