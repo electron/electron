@@ -1067,13 +1067,13 @@ void WebContents::GoToOffset(int offset) {
   web_contents()->GetController().GoToOffset(offset);
 }
 
-const std::string& WebContents::GetWebRTCIPHandlingPolicy() const {
+const std::string WebContents::GetWebRTCIPHandlingPolicy() const {
   return web_contents()->
     GetMutableRendererPrefs()->webrtc_ip_handling_policy;
 }
 
 void WebContents::SetWebRTCIPHandlingPolicy(
-    const std::string webrtc_ip_handling_policy) {
+    const std::string& webrtc_ip_handling_policy) {
   if (GetWebRTCIPHandlingPolicy() == webrtc_ip_handling_policy)
     return;
   web_contents()->GetMutableRendererPrefs()->webrtc_ip_handling_policy =

@@ -92,8 +92,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void GoBack();
   void GoForward();
   void GoToOffset(int offset);
-  const std::string& GetWebRTCIPHandlingPolicy() const;
-  void SetWebRTCIPHandlingPolicy(const std::string webrtc_ip_handling_policy);
+  const std::string GetWebRTCIPHandlingPolicy() const;
+  void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
   bool IsCrashed() const;
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
