@@ -26,8 +26,6 @@ WebContentsZoomController::WebContentsZoomController(
       embedder_zoom_controller_(nullptr) {
   default_zoom_factor_ = content::kEpsilon;
   host_zoom_map_ = content::HostZoomMap::GetForWebContents(web_contents);
-  zoom_subscription_ = host_zoom_map_->AddZoomLevelChangedCallback(base::Bind(
-      &WebContentsZoomController::OnZoomLevelChanged, base::Unretained(this)));
 }
 
 WebContentsZoomController::~WebContentsZoomController() {}
@@ -59,19 +57,10 @@ void WebContentsZoomController::SetZoomLevel(double level) {
     host_zoom_map_->ClearTemporaryZoomLevel(render_process_id, render_view_id);
   }
 
-  auto new_zoom_factor = content::ZoomLevelToZoomFactor(level);
-  content::NavigationEntry* entry =
-      web_contents()->GetController().GetLastCommittedEntry();
-  if (entry) {
-    std::string host = net::GetHostOrSpecFromURL(entry->GetURL());
-    // When new zoom level varies from kZoomFactor, it takes preference.
-    if (!content::ZoomValuesEqual(GetDefaultZoomFactor(), new_zoom_factor))
-      host_zoom_factor_[host] = new_zoom_factor;
-    content::HostZoomMap::SetZoomLevel(web_contents(), level);
-    // Notify observers of zoom level changes.
-    for (Observer& observer : observers_)
-      observer.OnZoomLevelChanged(web_contents(), level, false);
-  }
+  content::HostZoomMap::SetZoomLevel(web_contents(), level);
+  // Notify observers of zoom level changes.
+  for (Observer& observer : observers_)
+    observer.OnZoomLevelChanged(web_contents(), level, false);
 }
 
 double WebContentsZoomController::GetZoomLevel() {
@@ -117,7 +106,6 @@ void WebContentsZoomController::DidFinishNavigation(
 
 void WebContentsZoomController::WebContentsDestroyed() {
   observers_.Clear();
-  host_zoom_factor_.clear();
   embedder_zoom_controller_ = nullptr;
 }
 
@@ -131,8 +119,6 @@ void WebContentsZoomController::RenderFrameHostChanged(
     return;
 
   host_zoom_map_ = new_host_zoom_map;
-  zoom_subscription_ = host_zoom_map_->AddZoomLevelChangedCallback(base::Bind(
-      &WebContentsZoomController::OnZoomLevelChanged, base::Unretained(this)));
 }
 
 void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
@@ -156,27 +142,16 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
   // then it takes precendence.
   // pref store < kZoomFactor < setZoomLevel
   std::string host = net::GetHostOrSpecFromURL(url);
+  std::string scheme = url.scheme();
   double zoom_factor = GetDefaultZoomFactor();
-  auto it = host_zoom_factor_.find(host);
-  if (it != host_zoom_factor_.end())
-    zoom_factor = it->second;
-  auto level = content::ZoomFactorToZoomLevel(zoom_factor);
-  if (content::ZoomValuesEqual(level, GetZoomLevel()))
+  double zoom_level = content::ZoomFactorToZoomLevel(zoom_factor);
+  if (host_zoom_map_->HasZoomLevel(scheme, host)) {
+    zoom_level = host_zoom_map_->GetZoomLevelForHostAndScheme(scheme, host);
+  }
+  if (content::ZoomValuesEqual(zoom_level, GetZoomLevel()))
     return;
 
-  SetZoomLevel(level);
-}
-
-void WebContentsZoomController::OnZoomLevelChanged(
-    const content::HostZoomMap::ZoomLevelChange& change) {
-  if (change.mode == content::HostZoomMap::ZOOM_CHANGED_FOR_HOST) {
-    auto it = host_zoom_factor_.find(change.host);
-    if (it == host_zoom_factor_.end())
-      return;
-    host_zoom_factor_.insert(
-        it, std::make_pair(change.host,
-                           content::ZoomLevelToZoomFactor(change.zoom_level)));
-  }
+  SetZoomLevel(zoom_level);
 }
 
 }  // namespace atom
