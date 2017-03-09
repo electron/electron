@@ -64,6 +64,9 @@ The `role` property can have following values:
 * `zoomin` - Zoom in the focused page by 10%
 * `zoomout` - Zoom out the focused page by 10%
 
+* `menuEdit` - Whole default "Edit" menu (Undo,Copy, etc.)
+* `menuWindow` - Whole default "Window" menu (Minimize, Close, etc.)
+
 On macOS `role` can also have following additional values:
 
 * `about` - Map to the `orderFrontStandardAboutPanel` action
