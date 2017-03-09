@@ -36,8 +36,8 @@ without visual flash, there are two solutions for different situations.
 ### Using `ready-to-show` event
 
 While loading the page, the `ready-to-show` event will be emitted when renderer
-process has done drawing for the first time, showing window after this event
-will have no visual flash:
+process has done drawing for the first time if the window is not shown yet. Showing
+the window after this event will have no visual flash:
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -390,7 +390,7 @@ Emitted when the window is hidden.
 
 #### Event: 'ready-to-show'
 
-Emitted when the web page has been rendered and window can be displayed without
+Emitted when the web page has been rendered (while not being shown) and window can be displayed without
 a visual flash.
 
 #### Event: 'maximize'
@@ -632,7 +632,8 @@ Returns `Boolean` - Whether current window is a modal window.
 
 #### `win.maximize()`
 
-Maximizes the window.
+Maximizes the window. This will also show (but not focus) the window if it
+isn't being displayed already.
 
 #### `win.unmaximize()`
 
