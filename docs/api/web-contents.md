@@ -1247,17 +1247,28 @@ one through the `'paint'` event.
 
 #### `contents.getWebRTCIPHandlingPolicy()`
 
-* Returns `String` - Returns the WebRTC IP Handling Policy
+* Returns `String` - Returns the WebRTC IP Handling Policy.
 
 #### `contents.setWebRTCIPHandlingPolicy(policy)`
 
-* `policy` String - Specify the WebRTC IP Handling Policy
-  * `default` - Exposes user's public and local IPs.  This is the default behavior if not specified.
-  * `default_public_interface_only` - Exposes user's public IP, but does not expose user's local IP.
-  * `default_public_and_private_interfaces` - Exposes user's public and local IPs.
-  * `disable_non_proxied_udp` - Does not expose public or local IPs.
+* `policy` String - Specify the WebRTC IP Handling Policy.
+  * `default` - Exposes user's public and local IPs.  This is the default
+  behavior.  When this policy is used, WebRTC has the right to enumerate all
+  interfaces and bind them to discover public interfaces.
+  * `default_public_interface_only` - Exposes user's public IP, but does not
+  expose user's local IP.  When this policy is used, WebRTC should only use the
+  default route used by http. This doesn't expose any local addresses.
+  * `default_public_and_private_interfaces` - Exposes user's public and local
+  IPs.  When this policy is used, WebRTC should only use the default route used
+  by http. This also exposes the associated default private address. Default
+  route is the route chosen by the OS on a multi-homed endpoint.
+  * `disable_non_proxied_udp` - Does not expose public or local IPs.  When this
+  policy is used, WebRTC should only use TCP to contact peers or servers unless
+  the proxy server supports UDP.
 
-Setting the WebRTC IP handling policy allows you to control which IPs are exposed via WebRTC.  See [BrowserLeaks](https://browserleaks.com/webrtc) for more details.
+Setting the WebRTC IP handling policy allows you to control which IPs are
+exposed via WebRTC.  See [BrowserLeaks](https://browserleaks.com/webrtc) for
+more details.
 
 ### Instance Properties
 
