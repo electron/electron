@@ -15,7 +15,6 @@
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
-#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/data_url.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
@@ -387,6 +386,46 @@ mate::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
                             new NativeImage(isolate, gfx::Image(cropped)));
 }
 
+void NativeImage::AddRepresentation(const mate::Dictionary& options) {
+  int width = 0;
+  int height = 0;
+  float scale_factor = 1.0f;
+  options.Get("width", &width);
+  options.Get("height", &height);
+  options.Get("scaleFactor", &scale_factor);
+
+  bool skia_rep_added = false;
+  gfx::ImageSkia image_skia = image_.AsImageSkia();
+
+  v8::Local<v8::Value> buffer;
+  GURL url;
+  if (options.Get("buffer", &buffer) && node::Buffer::HasInstance(buffer)) {
+    AddImageSkiaRep(
+        &image_skia,
+        reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
+        node::Buffer::Length(buffer),
+        width, height, scale_factor);
+    skia_rep_added = true;
+  } else if (options.Get("dataURL", &url)) {
+    std::string mime_type, charset, data;
+    if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
+      if (mime_type == "image/png" || mime_type == "image/jpeg") {
+        AddImageSkiaRep(
+            &image_skia,
+            reinterpret_cast<const unsigned char*>(data.c_str()),
+            data.size(),
+            width, height, scale_factor);
+        skia_rep_added = true;
+      }
+    }
+  }
+
+  // Re-initialize image when first representation is added to an empty image
+  if (skia_rep_added && IsEmpty()) {
+    gfx::Image image(image_skia);
+    image_.SwapRepresentations(&image);
+  }
+}
 
 #if !defined(OS_MACOSX)
 void NativeImage::SetTemplateImage(bool setAsTemplate) {
@@ -504,6 +543,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)
       .SetMethod("getAspectRatio", &NativeImage::GetAspectRatio)
+      .SetMethod("addRepresentation", &NativeImage::AddRepresentation)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
       .SetMethod("toPng", &NativeImage::ToPNG)
       .SetMethod("toJpeg", &NativeImage::ToJPEG);
