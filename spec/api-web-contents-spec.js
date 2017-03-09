@@ -527,4 +527,19 @@ describe('webContents module', function () {
       w.loadURL(`file://${fixtures}/pages/c.html`)
     })
   })
+
+  describe('webrtc ip policy api', () => {
+    it('can set and get webrtc ip policies', () => {
+      const policies = [
+        'default',
+        'default_public_interface_only',
+        'default_public_and_private_interfaces',
+        'disable_non_proxied_udp'
+      ]
+      policies.forEach((policy) => {
+        w.webContents.setWebRTCIPHandlingPolicy(policy)
+        assert.equal(w.webContents.getWebRTCIPHandlingPolicy(), policy)
+      })
+    })
+  })
 })
