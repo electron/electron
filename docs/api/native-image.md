@@ -247,8 +247,8 @@ Returns `NativeImage` - The cropped image.
 #### `image.resize(options)`
 
 * `options` Object
-  * `width` Integer (optional)
-  * `height` Integer (optional)
+  * `width` Integer (optional) - Defaults to the image's width.
+  * `height` Integer (optional) - Defaults to the image's height
   * `quality` String (optional) - The desired quality of the resize image.
     Possible values are `good`, `better` or `best`. The default is `best`.
     These values express a desired quality/speed tradeoff. They are translated
@@ -269,8 +269,10 @@ Returns `Float` - The image's aspect ratio.
 
 * `options` Object
   * `scaleFactor` Double - The scale factor to add the image representation for.
-  * `width` Integer (optional)
-  * `height` Integer (optional)
+  * `width` Integer (optional) - Defaults to 0. Required if a bitmap buffer
+    is specified as `buffer`.
+  * `height` Integer (optional) - Defaults to 0. Required if a bitmap buffer
+    is specified as `buffer`.
   * `buffer` Buffer (optional) - The buffer containing the raw image data.
   * `dataURL` String (optional) - The data URL containing either a base 64
     encoded PNG or JPEG image.
