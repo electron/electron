@@ -68,6 +68,7 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   node::FreeEnvironment(env);
   atom_bindings_.reset();
   node_bindings_.reset();
+  delete this;
 }
 
 }  // namespace atom
