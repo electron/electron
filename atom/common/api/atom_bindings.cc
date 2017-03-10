@@ -78,8 +78,8 @@ void FatalErrorCallback(const char* location, const char* message) {
 }  // namespace
 
 
-AtomBindings::AtomBindings() {
-  uv_async_init(uv_default_loop(), &call_next_tick_async_, OnCallNextTick);
+AtomBindings::AtomBindings(uv_loop_t* loop) {
+  uv_async_init(loop, &call_next_tick_async_, OnCallNextTick);
   call_next_tick_async_.data = this;
 }
 

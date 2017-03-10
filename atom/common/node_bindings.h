@@ -52,6 +52,8 @@ class NodeBindings {
   void set_uv_env(node::Environment* env) { uv_env_ = env; }
   node::Environment* uv_env() const { return uv_env_; }
 
+  uv_loop_t* uv_loop() const { return uv_loop_; }
+
  protected:
   explicit NodeBindings(BrowserEnvironment browser_env);
 
@@ -70,10 +72,10 @@ class NodeBindings {
   // Which environment we are running.
   BrowserEnvironment browser_env_;
 
-  // Main thread's MessageLoop.
+  // Current thread's MessageLoop.
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
 
-  // Main thread's libuv loop.
+  // Current thread's libuv loop.
   uv_loop_t* uv_loop_;
 
  private:

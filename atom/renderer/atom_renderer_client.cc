@@ -217,7 +217,7 @@ std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
 AtomRendererClient::AtomRendererClient()
     : node_integration_initialized_(false),
       node_bindings_(NodeBindings::Create(NodeBindings::RENDERER)),
-      atom_bindings_(new AtomBindings) {
+      atom_bindings_(new AtomBindings(uv_default_loop())) {
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
   // Parse --standard-schemes=scheme1,scheme2

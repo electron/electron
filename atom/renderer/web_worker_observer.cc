@@ -29,7 +29,7 @@ WebWorkerObserver* WebWorkerObserver::GetCurrent() {
 
 WebWorkerObserver::WebWorkerObserver()
     : node_bindings_(NodeBindings::Create(NodeBindings::WORKER)),
-      atom_bindings_(new AtomBindings) {
+      atom_bindings_(new AtomBindings(node_bindings_->uv_loop())) {
   lazy_tls.Pointer()->Set(this);
 }
 
@@ -66,8 +66,6 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
 
   // Destroy the node environment.
   node::FreeEnvironment(env);
-  atom_bindings_.reset();
-  node_bindings_.reset();
   delete this;
 }
 
