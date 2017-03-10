@@ -806,7 +806,7 @@ describe('chromium feature', function () {
   describe('PDF Viewer', function () {
     let w = null
     const pdfSource = url.format({
-      pathname: path.join(fixtures, 'assets', 'pdf.pdf').replace(/\\/g, '/'),
+      pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
       protocol: 'file',
       slashes: true
     })
@@ -829,7 +829,7 @@ describe('chromium feature', function () {
         assert.equal(parsedURL.query.src, pdfSource)
       })
       w.webContents.on('page-title-updated', function () {
-        assert.equal(w.webContents.getTitle(), 'PDF')
+        assert.equal(w.webContents.getTitle(), 'cat.pdf')
         done()
       })
       w.webContents.loadURL(pdfSource)
@@ -844,7 +844,7 @@ describe('chromium feature', function () {
       })
       fetch(pdfSource).then(function (res) {
         assert.equal(res.status, 200)
-        assert.notEqual(document.title, 'PDF')
+        assert.notEqual(document.title, 'cat.pdf')
         done()
       }).catch(function (e) {
         done(e)
