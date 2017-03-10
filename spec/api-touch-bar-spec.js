@@ -3,7 +3,7 @@ const {BrowserWindow, TouchBar} = require('electron').remote
 const {closeWindow} = require('./window-helpers')
 
 const {TouchBarButton, TouchBarColorPicker, TouchBarGroup} = TouchBar
-const {TouchBarLabel, TouchBarPopover, TouchBarSlider, TouchBarSpacer} = TouchBar
+const {TouchBarLabel, TouchBarPopover, TouchBarSegmentedControl, TouchBarSlider, TouchBarSpacer} = TouchBar
 
 describe('TouchBar module', function () {
   it('throws an error when created without an items array', function () {
@@ -41,7 +41,13 @@ describe('TouchBar module', function () {
         label,
         new TouchBarPopover({items: new TouchBar([new TouchBarButton({label: 'pop'})])}),
         new TouchBarSlider({label: 'slide', value: 5, minValue: 2, maxValue: 75, change: () => {}}),
-        new TouchBarSpacer({size: 'large'})
+        new TouchBarSpacer({size: 'large'}),
+        new TouchBarSegmentedControl({
+          segmentStyle: 'capsule',
+          segments: [{label: 'baz', enabled: false}],
+          selectedIndex: 5
+        }),
+        new TouchBarSegmentedControl({segments: []})
       ])
       window.setTouchBar(touchBar)
       label.label = 'baz'

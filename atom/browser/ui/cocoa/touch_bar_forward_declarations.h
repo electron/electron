@@ -144,6 +144,15 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 
 @end
 
+@interface NSSegmentedControl (TouchBarSDK)
+
++ (instancetype)segmentedControlWithLabels:(NSArray*)labels
+                              trackingMode:(NSSegmentSwitchTracking)trackingMode
+                                    target:(id)target
+                                    action:(SEL)action;
+
+@end
+
 @protocol NSTouchBarDelegate<NSObject>
 
 @optional

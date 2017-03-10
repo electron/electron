@@ -18,6 +18,7 @@ static NSTouchBarItemIdentifier GroupIdentifier = @"com.electron.touchbar.group.
 static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.touchbar.label.";
 static NSTouchBarItemIdentifier PopoverIdentifier = @"com.electron.touchbar.popover.";
 static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slider.";
+static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touchbar.segmentedcontrol.";
 
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
                 window:(atom::NativeWindow*)window
@@ -97,6 +98,9 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   } else if ([identifier hasPrefix:GroupIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:GroupIdentifier];
     return [self makeGroupForID:item_id withIdentifier:identifier];
+  } else if ([identifier hasPrefix:SegmentedControlIdentifier]) {
+    item_id = [self idFromIdentifier:identifier withPrefix:SegmentedControlIdentifier];
+    return [self makeSegmentedControlForID:item_id withIdentifier:identifier];
   }
 
   return nil;
@@ -129,7 +133,8 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
     [self updateSlider:(NSSliderTouchBarItem*)item withSettings:settings];
   } else if (item_type == "popover") {
     [self updatePopover:(NSPopoverTouchBarItem*)item withSettings:settings];
-  }
+  } else if (item_type == "segmented_control")
+    [self updateSegmentedControl:(NSCustomTouchBarItem*)item withSettings:settings];
 }
 
 - (void)buttonAction:(id)sender {
@@ -164,6 +169,14 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   return [identifier substringFromIndex:[prefix length]];
 }
 
+- (void)segmentedControlAction:(id)sender {
+  NSString* item_id = [NSString stringWithFormat:@"%ld", ((NSSegmentedControl*)sender).tag];
+  base::DictionaryValue details;
+  details.SetInteger("selectedIndex", ((NSSegmentedControl*)sender).selectedSegment);
+  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
+                                         details);
+}
+
 - (NSTouchBarItemIdentifier)identifierFromID:(const std::string&)item_id
                                         type:(const std::string&)type {
   NSTouchBarItemIdentifier base_identifier = nil;
@@ -179,6 +192,8 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
     base_identifier = PopoverIdentifier;
   else if (type == "group")
     base_identifier = GroupIdentifier;
+  else if (type == "segmented_control")
+    base_identifier = SegmentedControlIdentifier;
 
   if (base_identifier)
     return [NSString stringWithFormat:@"%@%s", base_identifier, item_id.data()];
@@ -382,6 +397,74 @@ static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slide
   }
   return [NSClassFromString(@"NSGroupTouchBarItem") groupItemWithIdentifier:identifier
                                                                       items:generatedItems];
+}
+
+- (NSTouchBarItem*)makeSegmentedControlForID:(NSString*)id
+                              withIdentifier:(NSString*)identifier {
+  std::string s_id([id UTF8String]);
+  if (![self hasItemWithID:s_id]) return nil;
+
+  mate::PersistentDictionary settings = settings_[s_id];
+  base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
+      @"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier]);
+
+  NSSegmentedControl* control = [NSSegmentedControl segmentedControlWithLabels:[NSMutableArray array]
+                                        trackingMode:NSSegmentSwitchTrackingSelectOne
+                                        target:self
+                                        action:@selector(segmentedControlAction:)];
+  control.tag = [id floatValue];
+  [item setView:control];
+
+  [self updateSegmentedControl:item withSettings:settings];
+  return item.autorelease();
+}
+
+- (void)updateSegmentedControl:(NSCustomTouchBarItem*)item
+                  withSettings:(const mate::PersistentDictionary&)settings {
+
+  NSSegmentedControl* control = item.view;
+
+  std::string segmentStyle;
+  settings.Get("segmentStyle", &segmentStyle);
+  if (segmentStyle == "rounded")
+    control.segmentStyle = NSSegmentStyleRounded;
+  else if (segmentStyle == "textured-rounded")
+    control.segmentStyle = NSSegmentStyleTexturedRounded;
+  else if (segmentStyle == "round-rect")
+    control.segmentStyle = NSSegmentStyleRoundRect;
+  else if (segmentStyle == "textured-square")
+    control.segmentStyle = NSSegmentStyleTexturedSquare;
+  else if (segmentStyle == "capsule")
+    control.segmentStyle = NSSegmentStyleCapsule;
+  else if (segmentStyle == "small-square")
+    control.segmentStyle = NSSegmentStyleSmallSquare;
+  else if (segmentStyle == "separated")
+    control.segmentStyle = NSSegmentStyleSeparated;
+  else
+    control.segmentStyle = NSSegmentStyleAutomatic;
+
+  std::vector<mate::Dictionary> segments;
+  settings.Get("segments", &segments);
+
+  control.segmentCount = segments.size();
+  for (int i = 0; i < (int)segments.size(); i++) {
+    std::string label;
+    gfx::Image image;
+    bool enabled = true;
+    segments[i].Get("enabled", &enabled);
+    if (segments[i].Get("label", &label)) {
+      [control setLabel:base::SysUTF8ToNSString(label) forSegment:i];
+    } else if (segments[i].Get("icon", &image)) {
+      [control setImage:image.AsNSImage() forSegment:i];
+      [control setImageScaling:NSImageScaleProportionallyUpOrDown forSegment:i];
+    }
+    [control setEnabled:enabled forSegment:i];
+  }
+
+  int selectedIndex = 0;
+  settings.Get("selectedIndex", &selectedIndex);
+  if (selectedIndex >= 0 && selectedIndex < control.segmentCount)
+    control.selectedSegment = selectedIndex;
 }
 
 @end
