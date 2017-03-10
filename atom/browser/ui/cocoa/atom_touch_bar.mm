@@ -400,7 +400,7 @@ static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touc
 }
 
 - (NSTouchBarItem*)makeSegmentedControlForID:(NSString*)id
-                     withIdentifier:(NSString*)identifier {
+                              withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
@@ -420,15 +420,13 @@ static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touc
 }
 
 - (void)updateSegmentedControl:(NSCustomTouchBarItem*)item
-         withSettings:(const mate::PersistentDictionary&)settings {
+                  withSettings:(const mate::PersistentDictionary&)settings {
 
   NSSegmentedControl* control = item.view;
 
   std::string segmentStyle;
   settings.Get("segmentStyle", &segmentStyle);
-  if (segmentStyle == "automatic")
-    control.segmentStyle = NSSegmentStyleAutomatic;
-  else if (segmentStyle == "rounded")
+  if (segmentStyle == "rounded")
     control.segmentStyle = NSSegmentStyleRounded;
   else if (segmentStyle == "textured-rounded")
     control.segmentStyle = NSSegmentStyleTexturedRounded;
