@@ -40,7 +40,7 @@ WebWorkerObserver::~WebWorkerObserver() {
 void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> context) {
   v8::Context::Scope context_scope(context);
 
-  node_bindings_->Initialize();
+  // Start the embed thread.
   node_bindings_->PrepareMessageLoop();
 
   // Setup node environment for each window.

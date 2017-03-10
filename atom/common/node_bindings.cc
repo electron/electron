@@ -98,7 +98,7 @@ base::FilePath GetResourcesPath(bool is_browser) {
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
     : browser_env_(browser_env),
-      uv_loop_(uv_default_loop()),
+      uv_loop_(browser_env == WORKER ? uv_loop_new() : uv_default_loop()),
       embed_closed_(false),
       uv_env_(nullptr),
       weak_factory_(this) {
@@ -169,7 +169,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
-      new node::IsolateData(context->GetIsolate(), uv_default_loop()), context,
+      new node::IsolateData(context->GetIsolate(), uv_loop_), context,
       args.size(), c_argv.get(), 0, nullptr);
 
   if (browser_env_ == BROWSER) {
