@@ -6,6 +6,7 @@
 
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
 #include "base/lazy_instance.h"
 #include "base/threading/thread_local.h"
@@ -35,6 +36,8 @@ WebWorkerObserver::WebWorkerObserver()
 
 WebWorkerObserver::~WebWorkerObserver() {
   lazy_tls.Pointer()->Set(nullptr);
+  node::FreeEnvironment(node_bindings_->uv_env());
+  asar::ClearArchives();
 }
 
 void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> context) {
@@ -64,8 +67,6 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   if (env)
     mate::EmitEvent(env->isolate(), env->process_object(), "exit");
 
-  // Destroy the node environment.
-  node::FreeEnvironment(env);
   delete this;
 }
 

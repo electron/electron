@@ -12,6 +12,7 @@
 #include "base/files/file_util.h"
 #include "base/lazy_instance.h"
 #include "base/stl_util.h"
+#include "base/threading/thread_local.h"
 
 namespace asar {
 
@@ -19,14 +20,17 @@ namespace {
 
 // The global instance of ArchiveMap, will be destroyed on exit.
 typedef std::map<base::FilePath, std::shared_ptr<Archive>> ArchiveMap;
-static base::LazyInstance<ArchiveMap> g_archive_map = LAZY_INSTANCE_INITIALIZER;
+base::LazyInstance<base::ThreadLocalPointer<ArchiveMap>>::Leaky
+    g_archive_map_tls = LAZY_INSTANCE_INITIALIZER;
 
 const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
 
 }  // namespace
 
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
-  ArchiveMap& archive_map = *g_archive_map.Pointer();
+  if (!g_archive_map_tls.Pointer()->Get())
+    g_archive_map_tls.Pointer()->Set(new ArchiveMap);
+  ArchiveMap& archive_map = *g_archive_map_tls.Pointer()->Get();
   if (!ContainsKey(archive_map, path)) {
     std::shared_ptr<Archive> archive(new Archive(path));
     if (!archive->Init())
@@ -34,6 +38,11 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
     archive_map[path] = archive;
   }
   return archive_map[path];
+}
+
+void ClearArchives() {
+  if (g_archive_map_tls.Pointer()->Get())
+    delete g_archive_map_tls.Pointer()->Get();
 }
 
 bool GetAsarArchivePath(const base::FilePath& full_path,
