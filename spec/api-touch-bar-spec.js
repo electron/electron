@@ -45,8 +45,9 @@ describe('TouchBar module', function () {
         new TouchBarSegmentedControl({
           segmentStyle: 'capsule',
           segments: [{label: 'baz', enabled: false}],
-          selectedIndex: 0
-        })
+          selectedIndex: 5
+        }),
+        new TouchBarSegmentedControl({segments: []})
       ])
       window.setTouchBar(touchBar)
       label.label = 'baz'

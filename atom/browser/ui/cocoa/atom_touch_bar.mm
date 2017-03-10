@@ -465,7 +465,8 @@ static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touc
 
   int selectedIndex = 0;
   settings.Get("selectedIndex", &selectedIndex);
-  control.selectedSegment = selectedIndex;
+  if (selectedIndex >= 0 && selectedIndex < control.segmentCount)
+    control.selectedSegment = selectedIndex;
 }
 
 @end
