@@ -51,6 +51,7 @@
       'lib/common/api/module-list.js',
       'lib/common/api/native-image.js',
       'lib/common/api/shell.js',
+      'lib/common/atom-binding-setup.js',
       'lib/common/init.js',
       'lib/common/parse-features-string.js',
       'lib/common/reset-search-paths.js',
@@ -67,7 +68,6 @@
       'lib/renderer/api/desktop-capturer.js',
       'lib/renderer/api/exports/electron.js',
       'lib/renderer/api/ipc-renderer.js',
-      'lib/renderer/api/ipc-renderer-setup.js',
       'lib/renderer/api/module-list.js',
       'lib/renderer/api/remote.js',
       'lib/renderer/api/screen.js',
@@ -78,8 +78,8 @@
       'lib/renderer/extensions/web-navigation.js',
     ],
     'browserify_entries': [
-      'lib/renderer/api/ipc-renderer-setup.js',
       'lib/sandboxed_renderer/init.js',
+      'lib/sandboxed_renderer/api/exports/electron.js',
     ],
     'isolated_context_browserify_entries': [
       'lib/renderer/window-setup.js',

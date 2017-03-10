@@ -452,6 +452,8 @@
             'browserify',
             '--',
             'lib/sandboxed_renderer/init.js',
+            '-r',
+            './lib/sandboxed_renderer/api/exports/electron.js:electron',
             '-o',
             '<@(_outputs)',
           ],
