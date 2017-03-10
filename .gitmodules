@@ -24,4 +24,4 @@
 	url = https://github.com/boto/boto.git
 [submodule "vendor/pdf_viewer"]
 	path = vendor/pdf_viewer
-	url = https://github.com/deepak1556/pdf-viewer.git
+	url = https://github.com/electron/pdf-viewer.git
