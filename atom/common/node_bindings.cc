@@ -25,8 +25,6 @@
 
 #include "atom/common/node_includes.h"
 
-using content::BrowserThread;
-
 // Force all builtin modules to be referenced so they can actually run their
 // DSO constructors, see http://git.io/DRIqCg.
 #define REFERENCE_MODULE(name) \
@@ -210,9 +208,6 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
-  DCHECK(browser_env_ != BROWSER ||
-         BrowserThread::CurrentlyOn(BrowserThread::UI));
-
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
   uv_async_init(uv_loop_, &dummy_uv_handle_, nullptr);
@@ -223,9 +218,6 @@ void NodeBindings::PrepareMessageLoop() {
 }
 
 void NodeBindings::RunMessageLoop() {
-  DCHECK(browser_env_ != BROWSER ||
-         BrowserThread::CurrentlyOn(BrowserThread::UI));
-
   // The MessageLoop should have been created, remember the one in main thread.
   task_runner_ = base::ThreadTaskRunnerHandle::Get();
 
@@ -234,9 +226,6 @@ void NodeBindings::RunMessageLoop() {
 }
 
 void NodeBindings::UvRunOnce() {
-  DCHECK(browser_env_ != BROWSER ||
-         BrowserThread::CurrentlyOn(BrowserThread::UI));
-
   node::Environment* env = uv_env();
 
   // Use Locker in browser process.
