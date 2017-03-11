@@ -271,6 +271,9 @@ void AtomRendererClient::RenderFrameCreated(
   // FIXME(zcbenz): Can this be moved elsewhere?
   blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
 
+  // This is required for widevine plugin detection provided during runtime.
+  blink::resetPluginCache();
+
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
       ParseSchemesCLISwitch(switches::kSecureSchemes);
