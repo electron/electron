@@ -14,6 +14,7 @@
 #include "content/public/browser/stream_info.h"
 #include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
+#include "net/url_request/url_request.h"
 #include "url/gurl.h"
 
 #if defined(USE_NSS_CERTS)
@@ -60,9 +61,10 @@ void HandleExternalProtocolInUI(
   permission_helper->RequestOpenExternalPermission(callback, has_user_gesture);
 }
 
-void OnPdfStreamCreated(const GURL& original_url,
-                        const content::ResourceRequestInfo::WebContentsGetter&
-                            web_contents_getter) {
+void OnPdfResourceIntercepted(
+    const GURL& original_url,
+    const content::ResourceRequestInfo::WebContentsGetter&
+        web_contents_getter) {
   content::WebContents* web_contents = web_contents_getter.Run();
   if (!web_contents)
     return;
@@ -124,20 +126,13 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
       content::ResourceRequestInfo::ForRequest(request);
   if (mime_type == "application/pdf" && info->IsMainFrame()) {
     *origin = GURL(kPdfViewerUIOrigin);
+    content::BrowserThread::PostTask(
+        BrowserThread::UI, FROM_HERE,
+        base::Bind(&OnPdfResourceIntercepted, request->url(),
+                   info->GetWebContentsGetterForRequest()));
     return true;
   }
   return false;
-}
-
-void AtomResourceDispatcherHostDelegate::OnStreamCreated(
-    net::URLRequest* request,
-    std::unique_ptr<content::StreamInfo> stream) {
-  const content::ResourceRequestInfo* info =
-      content::ResourceRequestInfo::ForRequest(request);
-  content::BrowserThread::PostTask(
-      BrowserThread::UI, FROM_HERE,
-      base::Bind(&OnPdfStreamCreated, stream->original_url,
-                 info->GetWebContentsGetterForRequest()));
 }
 
 }  // namespace atom

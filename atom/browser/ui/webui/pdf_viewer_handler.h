@@ -49,7 +49,6 @@ class PdfViewerHandler : public content::WebUIMessageHandler {
   std::unique_ptr<base::Value> initialize_callback_id_;
   content::StreamInfo* stream_;
   std::string original_url_;
-  bool initialized_;
 
   DISALLOW_COPY_AND_ASSIGN(PdfViewerHandler);
 };

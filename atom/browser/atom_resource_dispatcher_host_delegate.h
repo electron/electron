@@ -29,8 +29,6 @@ class AtomResourceDispatcherHostDelegate
                                        const std::string& mime_type,
                                        GURL* origin,
                                        std::string* payload) override;
-  void OnStreamCreated(net::URLRequest* request,
-                       std::unique_ptr<content::StreamInfo> stream) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomResourceDispatcherHostDelegate);

@@ -45,8 +45,7 @@ void CreateResponseHeadersDictionary(const net::HttpResponseHeaders* headers,
 void PopulateStreamInfo(base::DictionaryValue* stream_info,
                         content::StreamInfo* stream,
                         const std::string& original_url) {
-  std::unique_ptr<base::DictionaryValue> headers_dict(
-      new base::DictionaryValue);
+  auto headers_dict = base::MakeUnique<base::DictionaryValue>();
   auto stream_url = stream->handle->GetURL().spec();
   CreateResponseHeadersDictionary(stream->response_headers.get(),
                                   headers_dict.get());
@@ -58,17 +57,16 @@ void PopulateStreamInfo(base::DictionaryValue* stream_info,
 }  // namespace
 
 PdfViewerHandler::PdfViewerHandler(const std::string& src)
-    : stream_(nullptr), original_url_(src), initialized_(true) {}
+    : stream_(nullptr), original_url_(src) {}
 
 PdfViewerHandler::~PdfViewerHandler() {}
 
 void PdfViewerHandler::SetPdfResourceStream(content::StreamInfo* stream) {
   stream_ = stream;
-  if (!initialized_) {
+  if (!!initialize_callback_id_.get()) {
     auto list = base::MakeUnique<base::ListValue>();
     list->Set(0, std::move(initialize_callback_id_));
     Initialize(list.get());
-    initialized_ = true;
   }
 }
 
@@ -110,15 +108,14 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
   CHECK(args->Get(0, &callback_id));
 
   if (stream_) {
+    CHECK(!initialize_callback_id_.get());
     AllowJavascript();
 
-    std::unique_ptr<base::DictionaryValue> stream_info(
-        new base::DictionaryValue);
+    auto stream_info = base::MakeUnique<base::DictionaryValue>();
     PopulateStreamInfo(stream_info.get(), stream_, original_url_);
     ResolveJavascriptCallback(*callback_id, *stream_info);
   } else {
     initialize_callback_id_ = callback_id->CreateDeepCopy();
-    initialized_ = false;
   }
 }
 
@@ -172,7 +169,7 @@ void PdfViewerHandler::GetStrings(const base::ListValue* args) {
   const base::Value* callback_id;
   CHECK(args->Get(0, &callback_id));
 
-  std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue);
+  auto result = base::MakeUnique<base::DictionaryValue>();
 // TODO(deepak1556): Generate strings from components/pdf_strings.grdp.
 #define SET_STRING(id, resource) result->SetString(id, resource)
   SET_STRING("passwordPrompt",
