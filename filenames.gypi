@@ -284,8 +284,6 @@
       'atom/browser/ui/atom_menu_model.h',
       'atom/browser/ui/cocoa/atom_menu_controller.h',
       'atom/browser/ui/cocoa/atom_menu_controller.mm',
-      'atom/browser/ui/cocoa/atom_scrubber_data_source.h',
-      'atom/browser/ui/cocoa/atom_scrubber_data_source.mm',
       'atom/browser/ui/cocoa/atom_touch_bar.h',
       'atom/browser/ui/cocoa/atom_touch_bar.mm',
       'atom/browser/ui/cocoa/touch_bar_forward_declarations.h',

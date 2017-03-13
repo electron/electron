@@ -504,40 +504,71 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
       @"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier]);
 
-
   int width = 320;
   int height = 30;
   settings.Get("frameWidth", &width);
   settings.Get("frameHeight", &height);
-  NSScrubber* scrubber = [[NSClassFromString(@"NSScrubber") alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+  NSScrubber* scrubber = [[[NSClassFromString(@"NSScrubber") alloc] initWithFrame:NSMakeRect(0, 0, width, height)] autorelease];
 
   [scrubber registerClass:NSClassFromString(@"NSScrubberTextItemView") forItemIdentifier:TextScrubberItemIdentifier];
   [scrubber registerClass:NSClassFromString(@"NSScrubberImageItemView") forItemIdentifier:ImageScrubberItemIdentifier];
 
   scrubber.delegate = self;
+  scrubber.dataSource = self;
   scrubber.identifier = id;
-  std::vector<mate::PersistentDictionary> items;
-  settings.Get("items", &items);
-  scrubber.dataSource = [[AtomScrubberDataSource alloc] initWithItems:items];
   scrubber.mode = NSScrubberModeFree;
 
   [item setView:scrubber];
-
   [self updateScrubber:item withSettings:settings];
+
   return item.autorelease();
 }
 
 - (void)updateScrubber:(NSCustomTouchBarItem*)item
           withSettings:(const mate::PersistentDictionary&)settings {
   NSScrubber* scrubber = item.view;
+  [scrubber reloadData];
+}
 
+- (NSInteger)numberOfItemsForScrubber:(NSScrubber*)scrubber {
+  std::string s_id([[scrubber identifier] UTF8String]);
+  if (![self hasItemWithID:s_id]) return 0;
+
+  mate::PersistentDictionary settings = settings_[s_id];
   std::vector<mate::PersistentDictionary> items;
   settings.Get("items", &items);
+  return items.size();
+}
 
-  AtomScrubberDataSource* source = scrubber.dataSource;
-  [source setItems:items];
+- (NSScrubberItemView*)scrubber:(NSScrubber*)scrubber
+             viewForItemAtIndex:(NSInteger)index {
+  std::string s_id([[scrubber identifier] UTF8String]);
+  if (![self hasItemWithID:s_id]) return nil;
 
-  [scrubber reloadData];
+  mate::PersistentDictionary settings = settings_[s_id];
+  std::vector<mate::PersistentDictionary> items;
+  settings.Get("items", &items);
+  mate::PersistentDictionary item = items[index];
+
+  NSScrubberItemView* itemView;
+  std::string title;
+
+  if (item.Get("label", &title)) {
+    NSScrubberTextItemView* view = [scrubber makeItemWithIdentifier:TextScrubberItemIdentifier
+                                                              owner:self];
+    view.title = base::SysUTF8ToNSString(title);
+    itemView = view;
+  } else {
+    NSScrubberImageItemView* view = [scrubber makeItemWithIdentifier:ImageScrubberItemIdentifier
+                                                               owner:self];
+    gfx::Image image;
+    if (item.Get("image", &image)) {
+      view.image = image.AsNSImage();
+    }
+    itemView = view;
+  }
+
+  return itemView;
 }
 
 @end
