@@ -13,18 +13,19 @@
 static NSString* const TextItemIdentifier = @"scrubber.text.item";
 static NSString* const ImageItemIdentifier = @"scrubber.image.item";
 
-- (id)initWithItems:(std::vector<mate::PersistentDictionary>)items {
+- (id)initWithItems:(const std::vector<mate::PersistentDictionary>&)items {
   if ((self = [super init])) {
     items_ = items;
   }
   return self;
 }
 
-- (NSInteger)numberOfItemsForScrubber:(NSScrubber *)theScrubber {
+- (NSInteger)numberOfItemsForScrubber:(NSScrubber*)theScrubber {
   return items_.size();
 }
 
-- (NSScrubberItemView *)scrubber:(NSScrubber *)scrubber viewForItemAtIndex:(NSInteger)index {
+- (NSScrubberItemView*)scrubber:(NSScrubber*)scrubber
+             viewForItemAtIndex:(NSInteger)index {
   mate::PersistentDictionary item = items_[index];
 
   NSScrubberItemView* itemView;
@@ -48,7 +49,7 @@ static NSString* const ImageItemIdentifier = @"scrubber.image.item";
   return itemView;
 }
 
-- (void)setItems:(std::vector<mate::PersistentDictionary>)items {
+- (void)setItems:(const std::vector<mate::PersistentDictionary>&)items {
   items_ = items;
 }
 

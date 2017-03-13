@@ -18,8 +18,8 @@
   std::vector<mate::PersistentDictionary> items_;
 }
 
-- (id)initWithItems:(std::vector<mate::PersistentDictionary>)items;
-- (void)setItems:(std::vector<mate::PersistentDictionary>)items;
+- (id)initWithItems:(const std::vector<mate::PersistentDictionary>&)items;
+- (void)setItems:(const std::vector<mate::PersistentDictionary>&)items;
 
 @end
 
