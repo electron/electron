@@ -13,7 +13,7 @@
 #include "native_mate/persistent_dictionary.h"
 
 @interface AtomScrubberDataSource : NSObject<NSScrubberDataSource> {
- @protected
+  @protected
   std::vector<mate::PersistentDictionary> items_;
 }
 
