@@ -189,16 +189,16 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
                                          details);
 }
 
-- (void)scrubber:(NSScrubber *)scrubber didSelectItemAtIndex:(NSInteger)selectedIndex {
+- (void)scrubber:(NSScrubber*)scrubber didSelectItemAtIndex:(NSInteger)selectedIndex {
   base::DictionaryValue details;
-  details.SetInteger("selectedIndex", (long)selectedIndex);
+  details.SetInteger("selectedIndex", selectedIndex);
   details.SetString("type", "select");
   window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String], details);
 }
 
-- (void)scrubber:(NSScrubber *)scrubber didHighlightItemAtIndex:(NSInteger)highlightedIndex {
+- (void)scrubber:(NSScrubber*)scrubber didHighlightItemAtIndex:(NSInteger)highlightedIndex {
   base::DictionaryValue details;
-  details.SetInteger("highlightedIndex", (long)highlightedIndex);
+  details.SetInteger("highlightedIndex", highlightedIndex);
   details.SetString("type", "highlight");
   window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String], details);
 }
@@ -496,7 +496,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSTouchBarItem*)makeScrubberForID:(NSString*)id
-                              withIdentifier:(NSString*)identifier {
+                     withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id]) return nil;
 
@@ -528,8 +528,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (void)updateScrubber:(NSCustomTouchBarItem*)item
-                  withSettings:(const mate::PersistentDictionary&)settings {
-
+          withSettings:(const mate::PersistentDictionary&)settings {
   NSScrubber* scrubber = item.view;
 
   std::vector<mate::PersistentDictionary> items;
