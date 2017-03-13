@@ -212,7 +212,8 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 @protocol NSScrubberDataSource<NSObject>
 
 - (NSInteger)numberOfItemsForScrubber:(NSScrubber *)scrubber;
-- (NSInteger)numberOfItemsForScrubber:(NSScrubber *)scrubber;
+- (__kindof NSScrubberItemView *)scrubber:(NSScrubber *)scrubber
+                       viewForItemAtIndex:(NSInteger)index;
 
 @end
 
