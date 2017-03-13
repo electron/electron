@@ -140,7 +140,9 @@ The `remote` module has the following methods:
 
 * `module` String
 
-Returns `any` - The object returned by `require(module)` in the main process.  Modules specified by their relative path will resolve relative to the entrypoint of the main process.
+Returns `any` - The object returned by `require(module)` in the main process.
+Modules specified by their relative path will resolve relative to the entrypoint
+of the main process.
 
 e.g.
 
