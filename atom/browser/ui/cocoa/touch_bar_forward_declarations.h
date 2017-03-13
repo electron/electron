@@ -199,13 +199,20 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 @optional
 - (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
                makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier;
+
 @end
 
 @protocol NSScrubberDelegate<NSObject>
 
+- (void)scrubber:(NSScrubber *)scrubber didHighlightItemAtIndex:(NSInteger)highlightedIndex;
+- (void)scrubber:(NSScrubber *)scrubber didSelectItemAtIndex:(NSInteger)selectedIndex;
+
 @end
 
 @protocol NSScrubberDataSource<NSObject>
+
+- (NSInteger)numberOfItemsForScrubber:(NSScrubber *)scrubber;
+- (NSInteger)numberOfItemsForScrubber:(NSScrubber *)scrubber;
 
 @end
 
