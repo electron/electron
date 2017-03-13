@@ -4,7 +4,6 @@
 
 #import "atom/browser/ui/cocoa/atom_touch_bar.h"
 
-#include "atom/browser/ui/cocoa/atom_scrubber_data_source.h"
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "base/strings/sys_string_conversions.h"
