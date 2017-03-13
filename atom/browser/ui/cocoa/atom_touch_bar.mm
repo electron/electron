@@ -146,7 +146,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   } else if (item_type == "scrubber") {
     [self updateScrubber:(NSCustomTouchBarItem*)item withSettings:settings];
   }
-  
+
 }
 
 - (void)buttonAction:(id)sender {
@@ -504,15 +504,15 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
       @"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier]);
 
-  
+
   int width = 320;
   int height = 30;
   settings.Get("frameWidth", &width);
   settings.Get("frameHeight", &height);
-  NSScrubber* scrubber = [[NSScrubber alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+  NSScrubber* scrubber = [[NSClassFromString(@"NSScrubber") alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
 
-  [scrubber registerClass:[NSScrubberTextItemView class] forItemIdentifier:TextScrubberItemIdentifier];
-  [scrubber registerClass:[NSScrubberImageItemView class] forItemIdentifier:ImageScrubberItemIdentifier];
+  [scrubber registerClass:NSClassFromString(@"NSScrubberTextItemView") forItemIdentifier:TextScrubberItemIdentifier];
+  [scrubber registerClass:NSClassFromString(@"NSScrubberImageItemView") forItemIdentifier:ImageScrubberItemIdentifier];
 
   scrubber.delegate = self;
   scrubber.identifier = id;
@@ -520,7 +520,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("items", &items);
   scrubber.dataSource = [[AtomScrubberDataSource alloc] initWithItems:items];
   scrubber.mode = NSScrubberModeFree;
-  
+
   [item setView:scrubber];
 
   [self updateScrubber:item withSettings:settings];

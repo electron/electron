@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/ui/cocoa/touch_bar_forward_declarations.h"
 #include "native_mate/persistent_dictionary.h"
 
 @interface AtomScrubberDataSource : NSObject<NSScrubberDataSource> {

@@ -14,12 +14,18 @@
 #pragma clang assume_nonnull begin
 
 @class NSTouchBar, NSTouchBarItem;
-@protocol NSTouchBarDelegate;
+@class NSScrubber, NSScrubberItemView, NSScrubberArrangedView, NSScrubberTextItemView, NSScrubberImageItemView;
+@protocol NSTouchBarDelegate, NSScrubberDelegate, NSScrubberDataSource;
 
 typedef float NSTouchBarItemPriority;
 static const NSTouchBarItemPriority NSTouchBarItemPriorityHigh = 1000;
 static const NSTouchBarItemPriority NSTouchBarItemPriorityNormal = 0;
 static const NSTouchBarItemPriority NSTouchBarItemPriorityLow = -1000;
+
+enum NSScrubberMode {
+  NSScrubberModeFixed = 0,
+  NSScrubberModeFree
+};
 
 typedef NSString* NSTouchBarItemIdentifier;
 typedef NSString* NSTouchBarCustomizationIdentifier;
@@ -123,6 +129,41 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 
 @end
 
+@interface NSScrubber : NSView
+
+@property(weak) id<NSScrubberDelegate> delegate;
+@property(weak) id<NSScrubberDataSource> dataSource;
+@property NSScrubberMode mode;
+
+- (void)registerClass:(Class)itemViewClass
+    forItemIdentifier:(NSString*)itemIdentifier;
+
+- (__kindof NSScrubberItemView*)makeItemWithIdentifier:(NSString*)itemIdentifier
+                                                 owner:(id)owner;
+- (void)reloadData;
+
+@end
+
+@interface NSScrubberArrangedView : NSView
+
+@end
+
+@interface NSScrubberItemView : NSScrubberArrangedView
+
+@end
+
+@interface NSScrubberTextItemView : NSScrubberItemView
+
+@property(copy) NSString* title;
+
+@end
+
+@interface NSScrubberImageItemView : NSScrubberItemView
+
+@property(copy) NSImage* image;
+
+@end
+
 @interface NSWindow (TouchBarSDK)
 
 @property(strong, readwrite, nullable) NSTouchBar* touchBar;
@@ -158,6 +199,14 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 @optional
 - (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
                makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier;
+@end
+
+@protocol NSScrubberDelegate<NSObject>
+
+@end
+
+@protocol NSScrubberDataSource<NSObject>
+
 @end
 
 #pragma clang assume_nonnull end
