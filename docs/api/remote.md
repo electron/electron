@@ -146,11 +146,24 @@ of the main process.
 
 e.g.
 
+```
+project/
+├── main
+│   ├── foo.js
+│   └── index.js
+├── package.json
+└── renderer
+    └── index.js
+```
+
 ```js
 // main process: main/index.js
-const { app, ipcMain } = require('electron')
+const { app } = require('electron')
 app.on('ready', () => {
-//...
+
+// ...
+
+})
 ```
 
 ```js
