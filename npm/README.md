@@ -1,7 +1,7 @@
 # electron-prebuilt
 
 [![Travis build status](http://img.shields.io/travis/electron-userland/electron-prebuilt.svg?style=flat)](http://travis-ci.org/electron-userland/electron-prebuilt)
-[![AppVeyor build status](https://ci.appveyor.com/api/projects/status/qd978ky9axl8m1m1?svg=true)](https://ci.appveyor.com/project/Atom/electron-prebuilt)
+[![AppVeyor build status](https://ci.appveyor.com/api/projects/status/hxcd9vcdn9hr0b3y/branch/master?svg=true)](https://ci.appveyor.com/project/electron-bot/electron-prebuilt/branch/master)
 
 [![badge](https://nodei.co/npm/electron.png?downloads=true)](https://www.npmjs.com/package/electron)
 
