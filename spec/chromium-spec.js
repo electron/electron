@@ -21,8 +21,9 @@ describe('chromium feature', function () {
     listener = null
   })
 
-  xdescribe('heap snapshot', function () {
+  describe('heap snapshot', function () {
     it('does not crash', function () {
+      if (process.env.TRAVIS === 'true') return
       process.atomBinding('v8_util').takeHeapSnapshot()
     })
   })
