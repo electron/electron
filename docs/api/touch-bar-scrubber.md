@@ -12,6 +12,11 @@ Process: [Main](../tutorial/quick-start.md#main-process)
     * `selectedIndex` - The index of the item the user selected
   * `highlight` Function - Called when the user taps any item
     * `highlightedIndex` - The index of the item the user touched
+  * `selectedStyle` String - Selected item style. Defaults to `null`.
+  * `overlayStyle` String - Selected overlay item style. Defaults to `null`.
+  * `showArrowButtons` Boolean - Defaults to `false`.
+  * `mode` String - Defaults to `free`.
+  * `continuous` Boolean - Defaults to `true`.
 
 ### Instance Properties
 
@@ -19,12 +24,12 @@ The following properties are available on instances of `TouchBarScrubber`:
 
 #### `touchBarSegmentedControl.items`
 
-A `ScrubberItem[]` array representing the items in this scrubber.  Updating this value immediately
-updates the control in the touch bar.  Updating deep properties inside this array **does not update the touch bar**.
+A `ScrubberItem[]` array representing the items in this scrubber. Updating this value immediately
+updates the control in the touch bar. Updating deep properties inside this array **does not update the touch bar**.
 
 #### `touchBarSegmentedControl.selectedStyle`
 
-A `String` representing the style that selected items in the scrubber should have.  Updating this value immediately
+A `String` representing the style that selected items in the scrubber should have. Updating this value immediately
 updates the control in the touch bar.  Possible values:
 
 * `background` - Maps to `[NSScrubberSelectionStyle roundedBackgroundStyle]`
@@ -33,8 +38,8 @@ updates the control in the touch bar.  Possible values:
 
 #### `touchBarSegmentedControl.overlayStyle`
 
-A `String` representing the style that selected items in the scrubber should have.  This style is overlayed on top
-of the scrubber item instead of being placed behind it  Updating this value immediately updates the control in the
+A `String` representing the style that selected items in the scrubber should have. This style is overlayed on top
+of the scrubber item instead of being placed behind it. Updating this value immediately updates the control in the
 touch bar.  Possible values:
 
 * `background` - Maps to `[NSScrubberSelectionStyle roundedBackgroundStyle]`
@@ -43,18 +48,18 @@ touch bar.  Possible values:
 
 #### `touchBarSegmentedControl.showArrowButtons`
 
-A `Boolean` representing whether to show the left / right selection arrows in this scrubber.  Updating this value
+A `Boolean` representing whether to show the left / right selection arrows in this scrubber. Updating this value
 immediately updates the control in the touch bar.  
 
 #### `touchBarSegmentedControl.mode`
 
-A `String` representing the mode of this scrubber.  Updating this value immediately
-updates the control in the touch bar.  Possible values:
+A `String` representing the mode of this scrubber. Updating this value immediately
+updates the control in the touch bar. Possible values:
 
 * `fixed` - Maps to `NSScrubberModeFixed`
 * `free` - Maps to `NSScrubberModeFree`
 
 #### `touchBarSegmentedControl.continuous`
 
-A `Boolean` representing whether this scrubber is continuous or not.  Updating this value immediately
+A `Boolean` representing whether this scrubber is continuous or not. Updating this value immediately
 updates the control in the touch bar.
