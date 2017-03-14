@@ -14,7 +14,7 @@
 #pragma clang assume_nonnull begin
 
 @class NSTouchBar, NSTouchBarItem;
-@class NSScrubber, NSScrubberItemView, NSScrubberArrangedView, NSScrubberTextItemView, NSScrubberImageItemView;
+@class NSScrubber, NSScrubberItemView, NSScrubberArrangedView, NSScrubberTextItemView, NSScrubberImageItemView, NSScrubberSelectionStyle;
 @protocol NSTouchBarDelegate, NSScrubberDelegate, NSScrubberDataSource;
 
 typedef float NSTouchBarItemPriority;
@@ -134,6 +134,10 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 @property(weak) id<NSScrubberDelegate> delegate;
 @property(weak) id<NSScrubberDataSource> dataSource;
 @property NSScrubberMode mode;
+@property BOOL showsArrowButtons;
+@property(getter=isContinuous) BOOL continuous;
+@property(strong, nullable) NSScrubberSelectionStyle* selectionBackgroundStyle;
+@property(strong, nullable) NSScrubberSelectionStyle* selectionOverlayStyle;
 
 - (void)registerClass:(Class)itemViewClass
     forItemIdentifier:(NSString*)itemIdentifier;
@@ -141,6 +145,13 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 - (__kindof NSScrubberItemView*)makeItemWithIdentifier:(NSString*)itemIdentifier
                                                  owner:(id)owner;
 - (void)reloadData;
+
+@end
+
+@interface NSScrubberSelectionStyle : NSObject<NSCoding>
+
+@property(class, strong, readonly) NSScrubberSelectionStyle* outlineOverlayStyle;
+@property(class, strong, readonly) NSScrubberSelectionStyle* roundedBackgroundStyle;
 
 @end
 

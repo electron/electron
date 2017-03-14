@@ -536,17 +536,17 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("overlayStyle", &overlayStyle);
 
   if (selectedStyle == "outline") {
-    scrubber.selectionBackgroundStyle = [NSScrubberSelectionStyle outlineOverlayStyle];
+    scrubber.selectionBackgroundStyle = [NSClassFromString(@"NSScrubberSelectionStyle") outlineOverlayStyle];
   } else if (selectedStyle == "background") {
-    scrubber.selectionBackgroundStyle = [NSScrubberSelectionStyle roundedBackgroundStyle];
+    scrubber.selectionBackgroundStyle = [NSClassFromString(@"NSScrubberSelectionStyle") roundedBackgroundStyle];
   } else {
     scrubber.selectionBackgroundStyle = nil;
   }
 
   if (overlayStyle == "outline") {
-    scrubber.selectionOverlayStyle = [NSScrubberSelectionStyle outlineOverlayStyle];
+    scrubber.selectionOverlayStyle = [NSClassFromString(@"NSScrubberSelectionStyle") outlineOverlayStyle];
   } else if (overlayStyle == "background") {
-    scrubber.selectionOverlayStyle = [NSScrubberSelectionStyle roundedBackgroundStyle];
+    scrubber.selectionOverlayStyle = [NSClassFromString(@"NSScrubberSelectionStyle") roundedBackgroundStyle];
   } else {
     scrubber.selectionOverlayStyle = nil;
   }
