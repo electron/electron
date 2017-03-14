@@ -1,16 +1,16 @@
 ## Class: TouchBarScrubber
 
-> Create a scrubber (a scrollablbe selector)
+> Create a scrubber (a scrollable selector)
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
 ### `new TouchBarScrubber(options)`
 
 * `options` Object
-  * `items` [ScrubberItem[]](structures/scrubber-item.md) - An array of items to place in this scruber
-  * `onSelect` Function - Called when the user taps an item that was not the last tapped item
+  * `items` [ScrubberItem[]](structures/scrubber-item.md) - An array of items to place in this scrubber
+  * `select` Function - Called when the user taps an item that was not the last tapped item
     * `selectedIndex` - The index of the item the user selected
-  * `onHightlight` Function - Called when the user taps any item
+  * `highlight` Function - Called when the user taps any item
     * `highlightedIndex` - The index of the item the user touched
 
 ### Instance Properties
@@ -33,7 +33,7 @@ updates the control in the touch bar.  Possible values:
 
 #### `touchBarSegmentedControl.overlayStyle`
 
-A `String` retpresenting the style that selected items in the scrubber should have.  This style is overlayed on top
+A `String` representing the style that selected items in the scrubber should have.  This style is overlayed on top
 of the scrubber item instead of being placed behind it  Updating this value immediately updates the control in the
 touch bar.  Possible values:
 
@@ -56,5 +56,5 @@ updates the control in the touch bar.  Possible values:
 
 #### `touchBarSegmentedControl.continuous`
 
-A `Boolean` representing whether this scrubber is continous or not.  Updating this value immediately
+A `Boolean` representing whether this scrubber is continuous or not.  Updating this value immediately
 updates the control in the touch bar.
