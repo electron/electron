@@ -415,13 +415,13 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       frame_rate_threshold_ms_(0),
       last_time_(base::Time::Now()),
       scale_factor_(kDefaultScaleFactor),
+      size_(native_window->GetSize()),
       painting_(true),
       is_showing_(!render_widget_host_->is_hidden()),
       is_destroyed_(false),
       popup_position_(gfx::Rect()),
       hold_resize_(false),
       pending_resize_(false),
-      size_(native_window->GetSize()),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
 #if !defined(OS_MACOSX)
@@ -837,6 +837,30 @@ gfx::Size OffScreenRenderWidgetHostView::GetPhysicalBackingSize() const {
 
 gfx::Size OffScreenRenderWidgetHostView::GetRequestedRendererSize() const {
   return GetDelegatedFrameHost()->GetRequestedRendererSize();
+}
+
+content::RenderWidgetHostViewBase*
+  OffScreenRenderWidgetHostView::CreateViewForWidget(
+    content::RenderWidgetHost* render_widget_host,
+    content::RenderWidgetHost* embedder_render_widget_host,
+    content::WebContentsView* web_contents_view) {
+  if (render_widget_host->GetView()) {
+    return static_cast<content::RenderWidgetHostViewBase*>(
+        render_widget_host->GetView());
+  }
+
+  OffScreenRenderWidgetHostView* embedder_host_view = nullptr;
+  if (embedder_render_widget_host) {
+    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
+        embedder_render_widget_host->GetView());
+  }
+
+  return new OffScreenRenderWidgetHostView(
+      transparent_,
+      callback_,
+      render_widget_host,
+      embedder_host_view,
+      native_window_);
 }
 
 #if !defined(OS_MACOSX)

@@ -26,6 +26,7 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/renderer_host/resize_lock.h"
+#include "content/browser/web_contents/web_contents_view.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/WebKit/public/platform/WebVector.h"
 #include "ui/base/ime/text_input_client.h"
@@ -151,6 +152,11 @@ class OffScreenRenderWidgetHostView
     const gfx::Range &, const std::vector<gfx::Rect>&) override;
   gfx::Size GetPhysicalBackingSize() const override;
   gfx::Size GetRequestedRendererSize() const override;
+
+  content::RenderWidgetHostViewBase* CreateViewForWidget(
+    content::RenderWidgetHost*,
+    content::RenderWidgetHost*,
+    content::WebContentsView*) override;
 
 #if !defined(OS_MACOSX)
   // content::DelegatedFrameHostClient:

@@ -89,6 +89,7 @@ class NativeWindowMac : public NativeWindow,
   void SetContentProtection(bool enable) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
+  gfx::NativeView GetNativeView() override;
   gfx::NativeWindow GetNativeWindow() override;
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
   void SetProgressBar(double progress, const ProgressState state) override;

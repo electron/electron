@@ -45,9 +45,6 @@ class OffScreenWebContentsView : public content::WebContentsView,
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost* render_widget_host,
       bool is_guest_view_hack) override;
-  content::RenderWidgetHostViewBase* CreateViewForWidget(
-      content::RenderWidgetHost* render_widget_host,
-      content::RenderWidgetHost* embedder_render_widget_host) override;
   content::RenderWidgetHostViewBase* CreateViewForPopupWidget(
       content::RenderWidgetHost* render_widget_host) override;
   void SetPageTitle(const base::string16& title) override;

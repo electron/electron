@@ -106,30 +106,6 @@ content::RenderWidgetHostViewBase*
 }
 
 content::RenderWidgetHostViewBase*
-  OffScreenWebContentsView::CreateViewForWidget(
-    content::RenderWidgetHost* render_widget_host,
-    content::RenderWidgetHost* embedder_render_widget_host) {
-  if (render_widget_host->GetView()) {
-    return static_cast<content::RenderWidgetHostViewBase*>(
-        render_widget_host->GetView());
-  }
-
-  OffScreenRenderWidgetHostView* embedder_host_view = nullptr;
-  if (embedder_render_widget_host) {
-    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
-        embedder_render_widget_host->GetView());
-  }
-
-  auto relay = NativeWindowRelay::FromWebContents(web_contents_);
-  return new OffScreenRenderWidgetHostView(
-      transparent_,
-      callback_,
-      render_widget_host,
-      embedder_host_view,
-      relay->window.get());
-}
-
-content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForPopupWidget(
     content::RenderWidgetHost* render_widget_host) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
