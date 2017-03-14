@@ -49,7 +49,10 @@ describe('TouchBar module', function () {
         }),
         new TouchBarSegmentedControl({segments: []}),
         new TouchBarScrubber({
-          items: [{label: 'foo'}, {label: 'bar'}, {label: 'baz'}]
+          items: [{label: 'foo'}, {label: 'bar'}, {label: 'baz'}],
+          selectedStyle: 'outline',
+          mode: 'fixed',
+          showArrowButtons: true
         })
       ])
       window.setTouchBar(touchBar)
