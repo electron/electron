@@ -585,7 +585,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::vector<mate::PersistentDictionary> items;
   if (!settings.Get("items", &items)) return nil;
 
-  if ((long)index >= (long)items.size()) return nil;
+  if (index >= (long)items.size()) return nil;
 
   mate::PersistentDictionary item = items[index];
 
