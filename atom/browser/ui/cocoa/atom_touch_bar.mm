@@ -515,7 +515,6 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   scrubber.delegate = self;
   scrubber.dataSource = self;
   scrubber.identifier = id;
-  scrubber.mode = NSScrubberModeFree;
 
   [item setView:scrubber];
   [self updateScrubber:item withSettings:settings];
@@ -526,6 +525,44 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)updateScrubber:(NSCustomTouchBarItem*)item
           withSettings:(const mate::PersistentDictionary&)settings {
   NSScrubber* scrubber = item.view;
+
+  bool showsArrowButtons = false;
+  settings.Get("showArrowButtons", &showsArrowButtons);
+  scrubber.showsArrowButtons = showsArrowButtons;
+
+  std::string selectedStyle;
+  std::string overlayStyle;
+  settings.Get("selectedStyle", &selectedStyle);
+  settings.Get("overlayStyle", &overlayStyle);
+
+  if (selectedStyle == "outline") {
+    scrubber.selectionBackgroundStyle = [NSScrubberSelectionStyle outlineOverlayStyle];
+  } else if (selectedStyle == "background") {
+    scrubber.selectionBackgroundStyle = [NSScrubberSelectionStyle roundedBackgroundStyle];
+  } else {
+    scrubber.selectionBackgroundStyle = nil;
+  }
+
+  if (overlayStyle == "outline") {
+    scrubber.selectionOverlayStyle = [NSScrubberSelectionStyle outlineOverlayStyle];
+  } else if (overlayStyle == "background") {
+    scrubber.selectionOverlayStyle = [NSScrubberSelectionStyle roundedBackgroundStyle];
+  } else {
+    scrubber.selectionOverlayStyle = nil;
+  }
+
+  std::string mode;
+  settings.Get("mode", &mode);
+  if (mode == "fixed") {
+    scrubber.mode = NSScrubberModeFixed;
+  } else {
+    scrubber.mode = NSScrubberModeFree;
+  }
+
+  bool continuous = true;
+  settings.Get("continuous", &continuous);
+  scrubber.continuous = continuous;
+
   [scrubber reloadData];
 }
 
@@ -546,7 +583,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
   mate::PersistentDictionary settings = settings_[s_id];
   std::vector<mate::PersistentDictionary> items;
-  settings.Get("items", &items);
+  if (!settings.Get("items", &items)) return nil;
+
+  if ((long)index >= (long)items.size()) return nil;
+
   mate::PersistentDictionary item = items[index];
 
   NSScrubberItemView* itemView;
