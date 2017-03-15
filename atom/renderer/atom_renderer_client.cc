@@ -441,12 +441,18 @@ void AtomRendererClient::AddSupportedKeySystems(
 
 void AtomRendererClient::DidInitializeWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
-  WebWorkerObserver::GetCurrent()->ContextCreated(context);
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInWorker)) {
+    WebWorkerObserver::GetCurrent()->ContextCreated(context);
+  }
 }
 
 void AtomRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
-  WebWorkerObserver::GetCurrent()->ContextWillDestroy(context);
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInWorker)) {
+    WebWorkerObserver::GetCurrent()->ContextWillDestroy(context);
+  }
 }
 
 v8::Local<v8::Context> AtomRendererClient::GetContext(
