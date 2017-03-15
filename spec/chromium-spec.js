@@ -3,7 +3,7 @@ const http = require('http')
 const path = require('path')
 const ws = require('ws')
 const url = require('url')
-const {ipcRenderer, remote} = require('electron')
+const {ipcRenderer, remote, webFrame} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
 const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
@@ -799,6 +799,66 @@ describe('chromium feature', function () {
         }).catch(function (e) {
           done(e)
         })
+      })
+    })
+  })
+
+  describe('PDF Viewer', function () {
+    let w = null
+    const pdfSource = url.format({
+      pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
+      protocol: 'file',
+      slashes: true
+    })
+
+    beforeEach(function () {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
+        }
+      })
+    })
+
+    afterEach(function () {
+      return closeWindow(w).then(function () { w = null })
+    })
+
+    it('opens when loading a pdf resource as top level navigation', function (done) {
+      ipcMain.once('pdf-loaded', function (event, success) {
+        if (success) done()
+      })
+      w.webContents.on('page-title-updated', function () {
+        const source = `
+          if (window.viewer) {
+            window.viewer.setLoadCallback(function(success) {
+              window.ipcRenderer.send('pdf-loaded', success);
+            });
+          }
+        `
+        const parsedURL = url.parse(w.webContents.getURL(), true)
+        assert.equal(parsedURL.protocol, 'chrome:')
+        assert.equal(parsedURL.hostname, 'pdf-viewer')
+        assert.equal(parsedURL.query.src, pdfSource)
+        assert.equal(w.webContents.getTitle(), 'cat.pdf')
+        w.webContents.executeJavaScript(source)
+      })
+      w.webContents.loadURL(pdfSource)
+    })
+
+    it('should not open when pdf is requested as sub resource', function (done) {
+      webFrame.registerURLSchemeAsPrivileged('file', {
+        secure: false,
+        bypassCSP: false,
+        allowServiceWorkers: false,
+        corsEnabled: false
+      })
+      fetch(pdfSource).then(function (res) {
+        assert.equal(res.status, 200)
+        assert.notEqual(document.title, 'cat.pdf')
+        done()
+      }).catch(function (e) {
+        done(e)
       })
     })
   })

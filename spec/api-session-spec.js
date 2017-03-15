@@ -313,11 +313,11 @@ describe('session module', function () {
       fs.unlinkSync(downloadFilePath)
     }
 
-    it('can download using BrowserWindow.loadURL', function (done) {
+    it('can download using WebContents.downloadURL', function (done) {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', false, false)
-        w.loadURL(url + ':' + port)
+        w.webContents.downloadURL(url + ':' + port)
         ipcRenderer.once('download-done', function (event, state, url,
                                                     mimeType, receivedBytes,
                                                     totalBytes, disposition,
@@ -355,7 +355,7 @@ describe('session module', function () {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', true, false)
-        w.loadURL(url + ':' + port + '/')
+        w.webContents.downloadURL(url + ':' + port + '/')
         ipcRenderer.once('download-done', function (event, state, url,
                                                     mimeType, receivedBytes,
                                                     totalBytes, disposition,
@@ -378,7 +378,7 @@ describe('session module', function () {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', true, false)
-        w.loadURL(url + ':' + port + '/?testFilename')
+        w.webContents.downloadURL(url + ':' + port + '/?testFilename')
         ipcRenderer.once('download-done', function (event, state, url,
                                                     mimeType, receivedBytes,
                                                     totalBytes, disposition,
