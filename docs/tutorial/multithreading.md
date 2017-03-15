@@ -30,7 +30,7 @@ modules can be used in multi-threaded environment.
 
 Any native Node.js module can be loaded directly in Web Workers, but it is
 strongly recommended not to do so. Most existing native modules have been
-written assuming single-thread environment, using them in a Web Workers will
+written assuming single-thread environment, using them in Web Workers will
 lead to crashes and memory corruptions.
 
 Even when using a thread-safe native Node.js module, it should be noticed that

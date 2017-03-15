@@ -590,6 +590,27 @@ describe('chromium feature', function () {
       worker.postMessage(message)
     })
 
+    it('Worker has no node integration by default', function (done) {
+      let worker = new Worker('../fixtures/workers/worker_node.js')
+      worker.onmessage = function (event) {
+        assert.equal(event.data, 'undefined undefined undefined undefined')
+        worker.terminate()
+        done()
+      }
+    })
+
+    it('Worker has node integration with nodeIntegrationInWorker', function (done) {
+      let webview = new WebView
+      webview.addEventListener('ipc-message', function (e) {
+        assert.equal(e.channel, 'object function object function')
+        webview.remove()
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/worker.html'
+      webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker')
+      document.body.appendChild(webview)
+    })
+
     it('SharedWorker can work', function (done) {
       var worker = new SharedWorker('../fixtures/workers/shared_worker.js')
       var message = 'ping'
@@ -598,6 +619,29 @@ describe('chromium feature', function () {
         done()
       }
       worker.port.postMessage(message)
+    })
+
+    it('SharedWorker has no node integration by default', function (done) {
+      let worker = new SharedWorker('../fixtures/workers/shared_worker_node.js')
+      worker.port.onmessage = function (event) {
+        assert.equal(event.data, 'undefined undefined undefined undefined')
+        done()
+      }
+    })
+
+    it('SharedWorker has node integration with nodeIntegrationInWorker', function (done) {
+      let webview = new WebView
+      webview.addEventListener('console-message', function (e) {
+        console.log(e)
+      })
+      webview.addEventListener('ipc-message', function (e) {
+        assert.equal(e.channel, 'object function object function')
+        webview.remove()
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/shared_worker.html'
+      webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker')
+      document.body.appendChild(webview)
     })
   })
 

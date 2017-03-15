@@ -441,6 +441,7 @@ void AtomRendererClient::AddSupportedKeySystems(
 
 void AtomRendererClient::DidInitializeWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
+  LOG(ERROR) << "DidInitializeWorkerContextOnWorkerThread";
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
     WebWorkerObserver::GetCurrent()->ContextCreated(context);
