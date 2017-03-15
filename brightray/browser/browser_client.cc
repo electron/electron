@@ -13,10 +13,6 @@
 #include "browser/platform_notification_service.h"
 #include "content/public/common/url_constants.h"
 
-#if defined(OS_WIN)
-#include "base/win/windows_version.h"
-#endif
-
 namespace brightray {
 
 namespace {
@@ -39,12 +35,6 @@ BrowserClient::~BrowserClient() {
 }
 
 NotificationPresenter* BrowserClient::GetNotificationPresenter() {
-  #if defined(OS_WIN)
-  // Bail out if on Windows 7 or even lower, no operating will follow
-  if (base::win::GetVersion() < base::win::VERSION_WIN8)
-    return nullptr;
-  #endif
-
   if (!notification_presenter_) {
     // Create a new presenter if on OS X, Linux, or Windows 8+
     notification_presenter_.reset(NotificationPresenter::Create());
