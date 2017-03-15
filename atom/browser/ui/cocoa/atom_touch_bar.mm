@@ -503,11 +503,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
       @"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier]);
 
-  int width = 320;
-  int height = 30;
-  settings.Get("frameWidth", &width);
-  settings.Get("frameHeight", &height);
-  NSScrubber* scrubber = [[[NSClassFromString(@"NSScrubber") alloc] initWithFrame:NSMakeRect(0, 0, width, height)] autorelease];
+  NSScrubber* scrubber = [[[NSClassFromString(@"NSScrubber") alloc] initWithFrame:NSZeroRect] autorelease];
 
   [scrubber registerClass:NSClassFromString(@"NSScrubberTextItemView") forItemIdentifier:TextScrubberItemIdentifier];
   [scrubber registerClass:NSClassFromString(@"NSScrubberImageItemView") forItemIdentifier:ImageScrubberItemIdentifier];
