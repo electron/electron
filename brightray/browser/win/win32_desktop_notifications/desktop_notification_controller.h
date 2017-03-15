@@ -1,0 +1,103 @@
+#pragma once
+#include <deque>
+#include <memory>
+#include <string>
+#include <vector>
+#include <Windows.h>
+
+namespace brightray {
+
+struct NotificationData;
+
+class DesktopNotificationController
+{
+public:
+    DesktopNotificationController(unsigned maximumToasts = 3);
+    ~DesktopNotificationController();
+
+    class Notification;
+    Notification AddNotification(std::wstring caption, std::wstring bodyText, HBITMAP image);
+    void CloseNotification(Notification& notification);
+
+    // Event handlers -- override to receive the events
+private:
+    virtual void OnNotificationClosed(Notification& notification) {}
+    virtual void OnNotificationClicked(Notification& notification) {}
+    virtual void OnNotificationDismissed(Notification& notification) {}
+
+private:
+    static HINSTANCE RegisterWndClasses();
+    void StartAnimation();
+    HFONT GetCaptionFont();
+    HFONT GetBodyFont();
+
+private:
+    enum TimerID {
+        TimerID_Animate = 1
+    };
+
+    template<typename T>
+    static constexpr T toastMargin = 20;
+
+    // Wrapper around `NotificationData` which makes sure that
+    // the `controller` member is cleared when the controller object
+    // stops tracking the notification
+    struct NotificationLink : std::shared_ptr<NotificationData> {
+        NotificationLink(DesktopNotificationController* controller);
+        ~NotificationLink();
+
+        NotificationLink(NotificationLink&&) = default;
+        NotificationLink(const NotificationLink&) = delete;
+        NotificationLink& operator=(NotificationLink&&) = default;
+    };
+
+    struct ToastInstance {
+        HWND hwnd;
+        NotificationLink data;
+    };
+
+    class Toast;
+
+    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    static DesktopNotificationController* Get(HWND hWnd)
+    {
+        return reinterpret_cast<DesktopNotificationController*>(GetWindowLongPtr(hWnd, 0));
+    }
+
+    DesktopNotificationController(const DesktopNotificationController&) = delete;
+
+    void InitializeFonts();
+    void ClearAssets();
+    void AnimateAll();
+    void CheckQueue();
+    void CreateToast(NotificationLink&& data);
+    HWND GetToast(const NotificationData* data) const;
+    void DestroyToast(ToastInstance& inst);
+
+private:
+    static constexpr const TCHAR className[] = TEXT("DesktopNotificationController");
+    HWND hwndController = NULL;
+    HFONT captionFont = NULL, bodyFont = NULL;
+    std::vector<ToastInstance> instances;
+    std::deque<NotificationLink> queue;
+    bool isAnimating = false;
+};
+
+class DesktopNotificationController::Notification
+{
+public:
+    Notification() = default;
+    Notification(const std::shared_ptr<NotificationData>& data);
+
+    bool operator==(const Notification& other) const;
+
+    void Close();
+    void Set(std::wstring caption, std::wstring bodyText, HBITMAP image);
+
+private:
+    std::shared_ptr<NotificationData> data;
+
+    friend class DesktopNotificationController;
+};
+
+}
