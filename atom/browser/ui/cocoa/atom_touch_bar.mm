@@ -601,7 +601,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     NSScrubberImageItemView* view = [scrubber makeItemWithIdentifier:ImageScrubberItemIdentifier
                                                                owner:self];
     gfx::Image image;
-    if (item.Get("image", &image)) {
+    if (item.Get("icon", &image)) {
       view.image = image.AsNSImage();
     }
     itemView = view;
