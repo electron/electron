@@ -1,5 +1,6 @@
 const assert = require('assert')
 const path = require('path')
+const {Buffer} = require('buffer')
 
 const clipboard = require('electron').clipboard
 const nativeImage = require('electron').nativeImage
@@ -91,6 +92,16 @@ describe('clipboard module', function () {
 
       clipboard.writeFindText('find this')
       assert.equal(clipboard.readFindText(), 'find this')
+    })
+  })
+
+  describe('clipboard.readBuffer(format)', function () {
+    it('returns a Buffer of the content for the specified format', function () {
+      if (process.platform !== 'darwin') return
+
+      const buffer = Buffer.from('this is binary', 'utf8')
+      clipboard.writeText(buffer.toString())
+      assert(buffer.equals(clipboard.readBuffer('public.utf8-plain-text')))
     })
   })
 })
