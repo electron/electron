@@ -10,6 +10,7 @@
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -135,7 +136,9 @@ class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
   AtomSandboxedRenderViewObserver(content::RenderView* render_view,
                                   AtomSandboxedRendererClient* renderer_client)
     : AtomRenderViewObserver(render_view, nullptr),
+    v8_converter_(new atom::V8ValueConverter),
     renderer_client_(renderer_client) {
+      v8_converter_->SetDisableNode(true);
     }
 
  protected:
@@ -151,7 +154,7 @@ class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
     v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> argv[] = {
       mate::ConvertToV8(isolate, channel),
-      mate::ConvertToV8(isolate, args)
+      v8_converter_->ToV8Value(&args, context)
     };
     renderer_client_->InvokeIpcCallback(
         context,
@@ -160,6 +163,7 @@ class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
   }
 
  private:
+  std::unique_ptr<atom::V8ValueConverter> v8_converter_;
   AtomSandboxedRendererClient* renderer_client_;
   DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRenderViewObserver);
 };
