@@ -44,7 +44,7 @@ loads no native modules after the Web Workers get started.
 process.dlopen = () => {
   throw new Error('Load native module is not safe')
 }
-new Worker('script.js')
+let worker = new Worker('script.js')
 ```
 
 [web-workers]: https://developer.mozilla.org/en/docs/Web/API/Web_Workers_API/Using_web_workers
