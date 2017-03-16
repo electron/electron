@@ -600,7 +600,7 @@ describe('chromium feature', function () {
     })
 
     it('Worker has node integration with nodeIntegrationInWorker', function (done) {
-      let webview = new WebView
+      let webview = new WebView()
       webview.addEventListener('ipc-message', function (e) {
         assert.equal(e.channel, 'object function object function')
         webview.remove()
@@ -630,7 +630,7 @@ describe('chromium feature', function () {
     })
 
     it('SharedWorker has node integration with nodeIntegrationInWorker', function (done) {
-      let webview = new WebView
+      let webview = new WebView()
       webview.addEventListener('console-message', function (e) {
         console.log(e)
       })
