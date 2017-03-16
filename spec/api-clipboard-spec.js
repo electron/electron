@@ -2,8 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const {Buffer} = require('buffer')
 
-const clipboard = require('electron').clipboard
-const nativeImage = require('electron').nativeImage
+const {clipboard, nativeImage} = require('electron')
 
 describe('clipboard module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
