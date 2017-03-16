@@ -19,6 +19,10 @@ static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.touchbar.label.
 static NSTouchBarItemIdentifier PopoverIdentifier = @"com.electron.touchbar.popover.";
 static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slider.";
 static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touchbar.segmentedcontrol.";
+static NSTouchBarItemIdentifier ScrubberIdentifier = @"com.electron.touchbar.scrubber.";
+
+static NSString* const TextScrubberItemIdentifier = @"scrubber.text.item";
+static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
                 window:(atom::NativeWindow*)window
@@ -101,6 +105,9 @@ static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touc
   } else if ([identifier hasPrefix:SegmentedControlIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:SegmentedControlIdentifier];
     return [self makeSegmentedControlForID:item_id withIdentifier:identifier];
+  } else if ([identifier hasPrefix:ScrubberIdentifier]) {
+    item_id = [self idFromIdentifier:identifier withPrefix:ScrubberIdentifier];
+    return [self makeScrubberForID:item_id withIdentifier:identifier];
   }
 
   return nil;
@@ -133,8 +140,12 @@ static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touc
     [self updateSlider:(NSSliderTouchBarItem*)item withSettings:settings];
   } else if (item_type == "popover") {
     [self updatePopover:(NSPopoverTouchBarItem*)item withSettings:settings];
-  } else if (item_type == "segmented_control")
+  } else if (item_type == "segmented_control") {
     [self updateSegmentedControl:(NSCustomTouchBarItem*)item withSettings:settings];
+  } else if (item_type == "scrubber") {
+    [self updateScrubber:(NSCustomTouchBarItem*)item withSettings:settings];
+  }
+
 }
 
 - (void)buttonAction:(id)sender {
@@ -177,6 +188,20 @@ static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touc
                                          details);
 }
 
+- (void)scrubber:(NSScrubber*)scrubber didSelectItemAtIndex:(NSInteger)selectedIndex {
+  base::DictionaryValue details;
+  details.SetInteger("selectedIndex", selectedIndex);
+  details.SetString("type", "select");
+  window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String], details);
+}
+
+- (void)scrubber:(NSScrubber*)scrubber didHighlightItemAtIndex:(NSInteger)highlightedIndex {
+  base::DictionaryValue details;
+  details.SetInteger("highlightedIndex", highlightedIndex);
+  details.SetString("type", "highlight");
+  window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String], details);
+}
+
 - (NSTouchBarItemIdentifier)identifierFromID:(const std::string&)item_id
                                         type:(const std::string&)type {
   NSTouchBarItemIdentifier base_identifier = nil;
@@ -194,6 +219,8 @@ static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touc
     base_identifier = GroupIdentifier;
   else if (type == "segmented_control")
     base_identifier = SegmentedControlIdentifier;
+  else if (type == "scrubber")
+    base_identifier = ScrubberIdentifier;
 
   if (base_identifier)
     return [NSString stringWithFormat:@"%@%s", base_identifier, item_id.data()];
@@ -465,6 +492,118 @@ static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touc
   settings.Get("selectedIndex", &selectedIndex);
   if (selectedIndex >= 0 && selectedIndex < control.segmentCount)
     control.selectedSegment = selectedIndex;
+}
+
+- (NSTouchBarItem*)makeScrubberForID:(NSString*)id
+                     withIdentifier:(NSString*)identifier {
+  std::string s_id([id UTF8String]);
+  if (![self hasItemWithID:s_id]) return nil;
+
+  mate::PersistentDictionary settings = settings_[s_id];
+  base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
+      @"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier]);
+
+  NSScrubber* scrubber = [[[NSClassFromString(@"NSScrubber") alloc] initWithFrame:NSZeroRect] autorelease];
+
+  [scrubber registerClass:NSClassFromString(@"NSScrubberTextItemView") forItemIdentifier:TextScrubberItemIdentifier];
+  [scrubber registerClass:NSClassFromString(@"NSScrubberImageItemView") forItemIdentifier:ImageScrubberItemIdentifier];
+
+  scrubber.delegate = self;
+  scrubber.dataSource = self;
+  scrubber.identifier = id;
+
+  [item setView:scrubber];
+  [self updateScrubber:item withSettings:settings];
+
+  return item.autorelease();
+}
+
+- (void)updateScrubber:(NSCustomTouchBarItem*)item
+          withSettings:(const mate::PersistentDictionary&)settings {
+  NSScrubber* scrubber = item.view;
+
+  bool showsArrowButtons = false;
+  settings.Get("showArrowButtons", &showsArrowButtons);
+  scrubber.showsArrowButtons = showsArrowButtons;
+
+  std::string selectedStyle;
+  std::string overlayStyle;
+  settings.Get("selectedStyle", &selectedStyle);
+  settings.Get("overlayStyle", &overlayStyle);
+
+  if (selectedStyle == "outline") {
+    scrubber.selectionBackgroundStyle = [NSClassFromString(@"NSScrubberSelectionStyle") outlineOverlayStyle];
+  } else if (selectedStyle == "background") {
+    scrubber.selectionBackgroundStyle = [NSClassFromString(@"NSScrubberSelectionStyle") roundedBackgroundStyle];
+  } else {
+    scrubber.selectionBackgroundStyle = nil;
+  }
+
+  if (overlayStyle == "outline") {
+    scrubber.selectionOverlayStyle = [NSClassFromString(@"NSScrubberSelectionStyle") outlineOverlayStyle];
+  } else if (overlayStyle == "background") {
+    scrubber.selectionOverlayStyle = [NSClassFromString(@"NSScrubberSelectionStyle") roundedBackgroundStyle];
+  } else {
+    scrubber.selectionOverlayStyle = nil;
+  }
+
+  std::string mode;
+  settings.Get("mode", &mode);
+  if (mode == "fixed") {
+    scrubber.mode = NSScrubberModeFixed;
+  } else {
+    scrubber.mode = NSScrubberModeFree;
+  }
+
+  bool continuous = true;
+  settings.Get("continuous", &continuous);
+  scrubber.continuous = continuous;
+
+  [scrubber reloadData];
+}
+
+- (NSInteger)numberOfItemsForScrubber:(NSScrubber*)scrubber {
+  std::string s_id([[scrubber identifier] UTF8String]);
+  if (![self hasItemWithID:s_id]) return 0;
+
+  mate::PersistentDictionary settings = settings_[s_id];
+  std::vector<mate::PersistentDictionary> items;
+  settings.Get("items", &items);
+  return items.size();
+}
+
+- (NSScrubberItemView*)scrubber:(NSScrubber*)scrubber
+             viewForItemAtIndex:(NSInteger)index {
+  std::string s_id([[scrubber identifier] UTF8String]);
+  if (![self hasItemWithID:s_id]) return nil;
+
+  mate::PersistentDictionary settings = settings_[s_id];
+  std::vector<mate::PersistentDictionary> items;
+  if (!settings.Get("items", &items)) return nil;
+
+  if (index >= (long)items.size()) return nil;
+
+  mate::PersistentDictionary item = items[index];
+
+  NSScrubberItemView* itemView;
+  std::string title;
+
+  if (item.Get("label", &title)) {
+    NSScrubberTextItemView* view = [scrubber makeItemWithIdentifier:TextScrubberItemIdentifier
+                                                              owner:self];
+    view.title = base::SysUTF8ToNSString(title);
+    itemView = view;
+  } else {
+    NSScrubberImageItemView* view = [scrubber makeItemWithIdentifier:ImageScrubberItemIdentifier
+                                                               owner:self];
+    gfx::Image image;
+    if (item.Get("icon", &image)) {
+      view.image = image.AsNSImage();
+    }
+    itemView = view;
+  }
+
+  return itemView;
 }
 
 @end

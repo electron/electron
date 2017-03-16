@@ -14,12 +14,18 @@
 #pragma clang assume_nonnull begin
 
 @class NSTouchBar, NSTouchBarItem;
-@protocol NSTouchBarDelegate;
+@class NSScrubber, NSScrubberItemView, NSScrubberArrangedView, NSScrubberTextItemView, NSScrubberImageItemView, NSScrubberSelectionStyle;
+@protocol NSTouchBarDelegate, NSScrubberDelegate, NSScrubberDataSource;
 
 typedef float NSTouchBarItemPriority;
 static const NSTouchBarItemPriority NSTouchBarItemPriorityHigh = 1000;
 static const NSTouchBarItemPriority NSTouchBarItemPriorityNormal = 0;
 static const NSTouchBarItemPriority NSTouchBarItemPriorityLow = -1000;
+
+enum NSScrubberMode {
+  NSScrubberModeFixed = 0,
+  NSScrubberModeFree
+};
 
 typedef NSString* NSTouchBarItemIdentifier;
 typedef NSString* NSTouchBarCustomizationIdentifier;
@@ -100,17 +106,17 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 
 @property SEL action;
 @property(weak) id target;
-@property(copy) NSColor *color;
-@property(strong) NSColorList *colorList;
+@property(copy) NSColor* color;
+@property(strong) NSColorList* colorList;
 
 @end
 
 @interface NSPopoverTouchBarItem : NSTouchBarItem
 
 @property BOOL showsCloseButton;
-@property(strong) NSImage *collapsedRepresentationImage;
-@property(strong) NSString *collapsedRepresentationLabel;
-@property(strong) NSTouchBar *popoverTouchBar;
+@property(strong) NSImage* collapsedRepresentationImage;
+@property(strong) NSString* collapsedRepresentationLabel;
+@property(strong) NSTouchBar* popoverTouchBar;
 
 @end
 
@@ -118,8 +124,54 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 
 @property SEL action;
 @property(weak) id target;
-@property(copy) NSString *label;
-@property(strong) NSSlider *slider;
+@property(copy) NSString* label;
+@property(strong) NSSlider* slider;
+
+@end
+
+@interface NSScrubber : NSView
+
+@property(weak) id<NSScrubberDelegate> delegate;
+@property(weak) id<NSScrubberDataSource> dataSource;
+@property NSScrubberMode mode;
+@property BOOL showsArrowButtons;
+@property(getter=isContinuous) BOOL continuous;
+@property(strong, nullable) NSScrubberSelectionStyle* selectionBackgroundStyle;
+@property(strong, nullable) NSScrubberSelectionStyle* selectionOverlayStyle;
+
+- (void)registerClass:(Class)itemViewClass
+    forItemIdentifier:(NSString*)itemIdentifier;
+
+- (__kindof NSScrubberItemView*)makeItemWithIdentifier:(NSString*)itemIdentifier
+                                                 owner:(id)owner;
+- (void)reloadData;
+
+@end
+
+@interface NSScrubberSelectionStyle : NSObject<NSCoding>
+
+@property(class, strong, readonly) NSScrubberSelectionStyle* outlineOverlayStyle;
+@property(class, strong, readonly) NSScrubberSelectionStyle* roundedBackgroundStyle;
+
+@end
+
+@interface NSScrubberArrangedView : NSView
+
+@end
+
+@interface NSScrubberItemView : NSScrubberArrangedView
+
+@end
+
+@interface NSScrubberTextItemView : NSScrubberItemView
+
+@property(copy) NSString* title;
+
+@end
+
+@interface NSScrubberImageItemView : NSScrubberItemView
+
+@property(copy) NSImage* image;
 
 @end
 
@@ -131,8 +183,8 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 
 @interface NSButton (TouchBarSDK)
 
-@property(copy) NSColor *bezelColor;
-+ (instancetype)buttonWithTitle:(NSString *)title
+@property(copy) NSColor* bezelColor;
++ (instancetype)buttonWithTitle:(NSString*)title
                          target:(id)target
                          action:(SEL)action;
 
@@ -140,7 +192,7 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 
 @interface NSTextField (TouchBarSDK)
 
-+ (instancetype)labelWithString:(NSString *)stringValue;
++ (instancetype)labelWithString:(NSString*)stringValue;
 
 @end
 
@@ -158,6 +210,22 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 @optional
 - (nullable NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
                makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier;
+
+@end
+
+@protocol NSScrubberDelegate<NSObject>
+
+- (void)scrubber:(NSScrubber*)scrubber didHighlightItemAtIndex:(NSInteger)highlightedIndex;
+- (void)scrubber:(NSScrubber*)scrubber didSelectItemAtIndex:(NSInteger)selectedIndex;
+
+@end
+
+@protocol NSScrubberDataSource<NSObject>
+
+- (NSInteger)numberOfItemsForScrubber:(NSScrubber*)scrubber;
+- (__kindof NSScrubberItemView*)scrubber:(NSScrubber*)scrubber
+                       viewForItemAtIndex:(NSInteger)index;
+
 @end
 
 #pragma clang assume_nonnull end

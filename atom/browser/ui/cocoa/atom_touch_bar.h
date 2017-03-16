@@ -17,7 +17,7 @@
 #include "native_mate/constructor.h"
 #include "native_mate/persistent_dictionary.h"
 
-@interface AtomTouchBar : NSObject {
+@interface AtomTouchBar : NSObject<NSScrubberDelegate, NSScrubberDataSource> {
  @protected
   std::vector<mate::PersistentDictionary> ordered_settings_;
   std::map<std::string, mate::PersistentDictionary> settings_;
