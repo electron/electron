@@ -48,6 +48,10 @@ class Clipboard {
   static base::string16 ReadFindText();
   static void WriteFindText(const base::string16& text);
 
+  static v8::Local<v8::Value> ReadBuffer(const std::string& format_string,
+                                         mate::Arguments* args);
+
+
  private:
   DISALLOW_COPY_AND_ASSIGN(Clipboard);
 };
