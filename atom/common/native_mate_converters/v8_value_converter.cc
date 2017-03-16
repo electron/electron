@@ -129,6 +129,7 @@ class V8ValueConverter::ScopedUniquenessGuard {
 V8ValueConverter::V8ValueConverter()
     : reg_exp_allowed_(false),
       function_allowed_(false),
+      disable_node_(false),
       strip_null_from_objects_(false) {}
 
 void V8ValueConverter::SetRegExpAllowed(bool val) {
@@ -141,6 +142,10 @@ void V8ValueConverter::SetFunctionAllowed(bool val) {
 
 void V8ValueConverter::SetStripNullFromObjects(bool val) {
   strip_null_from_objects_ = val;
+}
+
+void V8ValueConverter::SetDisableNode(bool val) {
+  disable_node_ = val;
 }
 
 v8::Local<v8::Value> V8ValueConverter::ToV8Value(
@@ -249,9 +254,49 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
 
 v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
     v8::Isolate* isolate, const base::BinaryValue* value) const {
-  return node::Buffer::Copy(isolate,
-                            value->GetBuffer(),
-                            value->GetSize()).ToLocalChecked();
+  const char* data = value->GetBuffer();
+  size_t length = value->GetSize();
+
+  if (!disable_node_) {
+    return node::Buffer::Copy(isolate, data, length).ToLocalChecked();
+  }
+
+  if (length > node::Buffer::kMaxLength) {
+    return v8::Local<v8::Object>();
+  }
+  auto context = isolate->GetCurrentContext();
+  auto array_buffer = v8::ArrayBuffer::New(isolate, length);
+  memcpy(array_buffer->GetContents().Data(), data, length);
+  // From this point, if something goes wrong(can't find Buffer class for
+  // example) we'll simply return a Uint8Array based on the created ArrayBuffer.
+  // This can happen if no preload script was specified to the renderer.
+  mate::Dictionary global(isolate, context->Global());
+  v8::Local<v8::Value> buffer_value;
+
+  // Get the Buffer class stored as a hidden value in the global object. We'll
+  // use it return a browserified Buffer.
+  if (!global.GetHidden("Buffer", &buffer_value) ||
+      !buffer_value->IsFunction()) {
+    return v8::Uint8Array::New(array_buffer, 0, length);
+  }
+
+  mate::Dictionary buffer_class(isolate, buffer_value->ToObject());
+  v8::Local<v8::Value> from_value;
+  if (!buffer_class.Get("from", &from_value) ||
+      !from_value->IsFunction()) {
+    return v8::Uint8Array::New(array_buffer, 0, length);
+  }
+
+  v8::Local<v8::Value> args[] = {
+    array_buffer
+  };
+  auto func = v8::Local<v8::Function>::Cast(from_value);
+  auto result = func->Call(context, v8::Null(isolate), 1, args);
+  if (!result.IsEmpty()) {
+    return result.ToLocalChecked();
+  }
+
+  return v8::Uint8Array::New(array_buffer, 0, length);
 }
 
 base::Value* V8ValueConverter::FromV8ValueImpl(
