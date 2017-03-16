@@ -24,6 +24,7 @@ if (installedVersion === version && fs.existsSync(path.join(__dirname, platformP
 
 // downloads if not cached
 download({
+  cache: process.env.electron_config_cache,
   version: version,
   platform: process.env.npm_config_platform,
   arch: process.env.npm_config_arch,
