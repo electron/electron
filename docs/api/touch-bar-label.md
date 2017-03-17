@@ -4,7 +4,7 @@
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
-### `new TouchBarLabel(options)`
+### `new TouchBarLabel(options)` _Experimental_
 
 * `options` Object
   * `label` String (optional) - Text to display.

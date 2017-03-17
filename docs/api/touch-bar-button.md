@@ -4,7 +4,7 @@
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
-### `new TouchBarButton(options)`
+### `new TouchBarButton(options)` _Experimental_
 
 * `options` Object
   * `label` String (optional) - Button text.

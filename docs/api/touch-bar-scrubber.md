@@ -4,7 +4,7 @@
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
-### `new TouchBarScrubber(options)`
+### `new TouchBarScrubber(options)` _Experimental_
 
 * `options` Object
   * `items` [ScrubberItem[]](structures/scrubber-item.md) - An array of items to place in this scrubber

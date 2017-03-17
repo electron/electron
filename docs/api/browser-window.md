@@ -1267,7 +1267,7 @@ Controls whether to hide cursor when typing.
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
-#### `win.setTouchBar(touchBar)` _macOS_
+#### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
 
 * `touchBar` TouchBar
 

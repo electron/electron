@@ -4,7 +4,7 @@
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
-### `new TouchBarPopover(options)`
+### `new TouchBarPopover(options)` _Experimental_
 
 * `options` Object
   * `label` String (optional) - Popover button text.
