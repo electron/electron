@@ -161,6 +161,11 @@ describe('ipc module', function () {
       assert.equal(typeof remote.clipboard.readText, 'function')
       assert.equal(typeof remote.shell.openExternal, 'function')
     })
+
+    it('returns toString() of original function via toString()', function () {
+      var readText = remote.clipboard.readText
+      assert(readText.toString().startsWith('function'))
+    })
   })
 
   describe('remote object in renderer', function () {
