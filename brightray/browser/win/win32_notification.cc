@@ -38,23 +38,23 @@ void Win32Notification::Show(const base::string16& title, const base::string16& 
 
     if(existing)
     {
-        existing->tag.clear();
-        this->notificationRef = std::move(existing->notificationRef);
-        this->notificationRef.Set(title, msg, image);
+        existing->tag_.clear();
+        this->notification_ref_ = std::move(existing->notification_ref_);
+        this->notification_ref_.Set(title, msg, image);
     }
     else
     {
-        this->notificationRef = presenter->AddNotification(title, msg, image);
+        this->notification_ref_ = presenter->AddNotification(title, msg, image);
     }
 
-    this->tag = tag;
+    this->tag_ = tag;
 
     if(image) DeleteObject(image);
 }
 
 void Win32Notification::Dismiss()
 {
-    notificationRef.Close();
+    notification_ref_.Close();
 }
 
 }

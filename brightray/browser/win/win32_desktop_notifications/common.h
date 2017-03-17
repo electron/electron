@@ -8,7 +8,7 @@ struct NotificationData
     DesktopNotificationController* controller = nullptr;
 
     std::wstring caption;
-    std::wstring bodyText;
+    std::wstring body_text;
     HBITMAP image = NULL;
 
 
@@ -31,7 +31,7 @@ inline T ScaleForDpi(T value, unsigned dpi)
 
 struct ScreenMetrics
 {
-    UINT dpiX, dpiY;
+    UINT dpi_x, dpi_y;
 
     ScreenMetrics()
     {
@@ -40,18 +40,18 @@ struct ScreenMetrics
         if(GetDpiForMonitor)
         {
             auto monitor = MonitorFromPoint({}, MONITOR_DEFAULTTOPRIMARY);
-            if(GetDpiForMonitor(monitor, 0, &dpiX, &dpiY) == S_OK)
+            if(GetDpiForMonitor(monitor, 0, &dpi_x, &dpi_y) == S_OK)
                 return;
         }
 
         HDC hdc = GetDC(NULL);
-        dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
-        dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+        dpi_x = GetDeviceCaps(hdc, LOGPIXELSX);
+        dpi_y = GetDeviceCaps(hdc, LOGPIXELSY);
         ReleaseDC(NULL, hdc);
     }
 
-    template<typename T> T X(T value) const { return ScaleForDpi(value, dpiX); }
-    template<typename T> T Y(T value) const { return ScaleForDpi(value, dpiY); }
+    template<typename T> T X(T value) const { return ScaleForDpi(value, dpi_x); }
+    template<typename T> T Y(T value) const { return ScaleForDpi(value, dpi_y); }
 };
 
 }

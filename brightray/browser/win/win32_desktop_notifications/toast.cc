@@ -167,25 +167,25 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
 }
 
 DesktopNotificationController::Toast::Toast(HWND hWnd, shared_ptr<NotificationData>* data) :
-    hWnd(hWnd), data(*data)
+    hwnd_(hWnd), data_(*data)
 {
     HDC hdcScreen = GetDC(NULL);
-    hdc = CreateCompatibleDC(hdcScreen);
+    hdc_ = CreateCompatibleDC(hdcScreen);
     ReleaseDC(NULL, hdcScreen);
 }
 
 DesktopNotificationController::Toast::~Toast()
 {
-    DeleteDC(hdc);
-    if(bitmap) DeleteBitmap(bitmap);
-    if(scaledImage) DeleteBitmap(scaledImage);
+    DeleteDC(hdc_);
+    if(bitmap_) DeleteBitmap(bitmap_);
+    if(scaled_image_) DeleteBitmap(scaled_image_);
 }
 
 void DesktopNotificationController::Toast::Register(HINSTANCE hInstance)
 {
     WNDCLASSEX wc = { sizeof(wc) };
     wc.lpfnWndProc = &Toast::WndProc;
-    wc.lpszClassName = className;
+    wc.lpszClassName = class_name_;
     wc.cbWndExtra = sizeof(Toast*);
     wc.hInstance = hInstance;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -226,29 +226,29 @@ LRESULT DesktopNotificationController::Toast::WndProc(HWND hWnd, UINT message, W
 
             inst->Dismiss();
 
-            Notification notification(inst->data);
-            if(inst->isCloseHot)
-                inst->data->controller->OnNotificationDismissed(notification);
+            Notification notification(inst->data_);
+            if(inst->is_close_hot_)
+                inst->data_->controller->OnNotificationDismissed(notification);
             else
-                inst->data->controller->OnNotificationClicked(notification);
+                inst->data_->controller->OnNotificationClicked(notification);
         }
         return 0;
 
     case WM_MOUSEMOVE:
         {
             auto inst = Get(hWnd);
-            if(!inst->isHighlighted)
+            if(!inst->is_highlighted_)
             {
-                inst->isHighlighted = true;
+                inst->is_highlighted_ = true;
 
                 TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, hWnd };
                 TrackMouseEvent(&tme);
             }
 
             POINT cursor = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-            inst->isCloseHot = (PtInRect(&inst->closeButtonRect, cursor) != FALSE);
+            inst->is_close_hot_ = (PtInRect(&inst->close_button_rect_, cursor) != FALSE);
 
-            if(!inst->isNonInteractive)
+            if(!inst->is_non_interactive_)
                 inst->CancelDismiss();
 
             inst->UpdateContents();
@@ -258,15 +258,15 @@ LRESULT DesktopNotificationController::Toast::WndProc(HWND hWnd, UINT message, W
     case WM_MOUSELEAVE:
         {
             auto inst = Get(hWnd);
-            inst->isHighlighted = false;
-            inst->isCloseHot = false;
+            inst->is_highlighted_ = false;
+            inst->is_close_hot_ = false;
             inst->UpdateContents();
 
-            if(!inst->easeOutActive && inst->easeInPos == 1.0f)
+            if(!inst->ease_out_active_ && inst->ease_in_pos_ == 1.0f)
                 inst->ScheduleDismissal();
 
             // Make sure stack collapse happens if needed
-            inst->data->controller->StartAnimation();
+            inst->data_->controller->StartAnimation();
         }
         return 0;
 
@@ -276,7 +276,7 @@ LRESULT DesktopNotificationController::Toast::WndProc(HWND hWnd, UINT message, W
             if(wp->flags & SWP_HIDEWINDOW)
             {
                 if(!IsWindowVisible(hWnd))
-                    Get(hWnd)->isHighlighted = false;
+                    Get(hWnd)->is_highlighted_ = false;
             }
         }
         break;
@@ -287,7 +287,7 @@ LRESULT DesktopNotificationController::Toast::WndProc(HWND hWnd, UINT message, W
 
 HWND DesktopNotificationController::Toast::Create(HINSTANCE hInstance, shared_ptr<NotificationData>& data)
 {
-    return CreateWindowEx(WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOPMOST, className, nullptr, WS_POPUP, 0, 0, 0, 0, NULL, NULL, hInstance, &data);
+    return CreateWindowEx(WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOPMOST, class_name_, nullptr, WS_POPUP, 0, 0, 0, 0, NULL, NULL, hInstance, &data);
 }
 
 void DesktopNotificationController::Toast::Draw()
@@ -299,7 +299,7 @@ void DesktopNotificationController::Toast::Draw()
         // base background color is 2/3 of accent
         // highlighted adds a bit of intensity to every channel
 
-        int h = isHighlighted ? (0xff / 20) : 0;
+        int h = is_highlighted_ ? (0xff / 20) : 0;
 
         backColor = RGB(min(0xff, (GetRValue(accent) * 2 / 3) + h),
                         min(0xff, (GetGValue(accent) * 2 / 3) + h),
@@ -347,55 +347,55 @@ void DesktopNotificationController::Toast::Draw()
     {
         auto brush = CreateSolidBrush(backColor);
 
-        RECT rc = { 0, 0, toastSize.cx, toastSize.cy };
-        FillRect(hdc, &rc, brush);
+        RECT rc = { 0, 0, toast_size_.cx, toast_size_.cy };
+        FillRect(hdc_, &rc, brush);
 
         DeleteBrush(brush);
     }
 
-    SetBkMode(hdc, TRANSPARENT);
+    SetBkMode(hdc_, TRANSPARENT);
 
     const auto close = L'\x2715';
-    auto captionFont = data->controller->GetCaptionFont();
-    auto bodyFont = data->controller->GetBodyFont();
+    auto captionFont = data_->controller->GetCaptionFont();
+    auto bodyFont = data_->controller->GetBodyFont();
 
     TEXTMETRIC tmCap;
-    SelectFont(hdc, captionFont);
-    GetTextMetrics(hdc, &tmCap);
+    SelectFont(hdc_, captionFont);
+    GetTextMetrics(hdc_, &tmCap);
 
-    auto textOffsetX = margin.cx;
+    auto textOffsetX = margin_.cx;
 
     BITMAP imageInfo = {};
-    if(scaledImage)
+    if(scaled_image_)
     {
-        GetObject(scaledImage, sizeof(imageInfo), &imageInfo);
+        GetObject(scaled_image_, sizeof(imageInfo), &imageInfo);
 
-        textOffsetX += margin.cx + imageInfo.bmWidth;
+        textOffsetX += margin_.cx + imageInfo.bmWidth;
     }
 
     // calculate close button rect
     POINT closePos;
     {
         SIZE extent = {};
-        GetTextExtentPoint32W(hdc, &close, 1, &extent);
+        GetTextExtentPoint32W(hdc_, &close, 1, &extent);
 
-        closeButtonRect.right = toastSize.cx;
-        closeButtonRect.top = 0;
+        close_button_rect_.right = toast_size_.cx;
+        close_button_rect_.top = 0;
 
-        closePos.x = closeButtonRect.right - margin.cy - extent.cx;
-        closePos.y = closeButtonRect.top + margin.cy;
+        closePos.x = close_button_rect_.right - margin_.cy - extent.cx;
+        closePos.y = close_button_rect_.top + margin_.cy;
 
-        closeButtonRect.left = closePos.x - margin.cy;
-        closeButtonRect.bottom = closePos.y + extent.cy + margin.cy;
+        close_button_rect_.left = closePos.x - margin_.cy;
+        close_button_rect_.bottom = closePos.y + extent.cy + margin_.cy;
     }
 
     // image
-    if(scaledImage)
+    if(scaled_image_)
     {
         HDC hdcImage = CreateCompatibleDC(NULL);
-        SelectBitmap(hdcImage, scaledImage);
+        SelectBitmap(hdcImage, scaled_image_);
         BLENDFUNCTION blend = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
-        AlphaBlend(hdc, margin.cx, margin.cy, imageInfo.bmWidth, imageInfo.bmHeight, hdcImage, 0, 0, imageInfo.bmWidth, imageInfo.bmHeight, blend);
+        AlphaBlend(hdc_, margin_.cx, margin_.cy, imageInfo.bmWidth, imageInfo.bmHeight, hdcImage, 0, 0, imageInfo.bmWidth, imageInfo.bmHeight, blend);
         DeleteDC(hdcImage);
     }
 
@@ -403,85 +403,85 @@ void DesktopNotificationController::Toast::Draw()
     {
         RECT rc = {
             textOffsetX,
-            margin.cy,
-            closeButtonRect.left,
-            toastSize.cy
+            margin_.cy,
+            close_button_rect_.left,
+            toast_size_.cy
         };
 
-        SelectFont(hdc, captionFont);
-        SetTextColor(hdc, foreColor);
-        DrawText(hdc, data->caption.data(), (UINT)data->caption.length(), &rc, DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+        SelectFont(hdc_, captionFont);
+        SetTextColor(hdc_, foreColor);
+        DrawText(hdc_, data_->caption.data(), (UINT)data_->caption.length(), &rc, DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
     }
 
     // body text
-    if(!data->bodyText.empty())
+    if(!data_->body_text.empty())
     {
         RECT rc = {
             textOffsetX,
-            2 * margin.cy + tmCap.tmAscent,
-            toastSize.cx - margin.cx,
-            toastSize.cy - margin.cy
+            2 * margin_.cy + tmCap.tmAscent,
+            toast_size_.cx - margin_.cx,
+            toast_size_.cy - margin_.cy
         };
 
-        SelectFont(hdc, bodyFont);
-        SetTextColor(hdc, dimmedColor);
-        DrawText(hdc, data->bodyText.data(), (UINT)data->bodyText.length(), &rc, DT_LEFT | DT_WORDBREAK | DT_NOPREFIX | DT_END_ELLIPSIS | DT_EDITCONTROL);
+        SelectFont(hdc_, bodyFont);
+        SetTextColor(hdc_, dimmedColor);
+        DrawText(hdc_, data_->body_text.data(), (UINT)data_->body_text.length(), &rc, DT_LEFT | DT_WORDBREAK | DT_NOPREFIX | DT_END_ELLIPSIS | DT_EDITCONTROL);
     }
 
     // close button
     {
-        SelectFont(hdc, captionFont);
-        SetTextColor(hdc, isCloseHot ? foreColor : dimmedColor);
-        ExtTextOut(hdc, closePos.x, closePos.y, 0, nullptr, &close, 1, nullptr);
+        SelectFont(hdc_, captionFont);
+        SetTextColor(hdc_, is_close_hot_ ? foreColor : dimmedColor);
+        ExtTextOut(hdc_, closePos.x, closePos.y, 0, nullptr, &close, 1, nullptr);
     }
 
-    isContentUpdated = true;
+    is_content_updated_ = true;
 }
 
 void DesktopNotificationController::Toast::Invalidate()
 {
-    isContentUpdated = false;
+    is_content_updated_ = false;
 }
 
 bool DesktopNotificationController::Toast::IsRedrawNeeded() const
 {
-    return !isContentUpdated;
+    return !is_content_updated_;
 }
 
 void DesktopNotificationController::Toast::UpdateBufferSize()
 {
-    if(hdc)
+    if(hdc_)
     {
         SIZE newSize;
         {
             TEXTMETRIC tmCap = {};
-            HFONT font = data->controller->GetCaptionFont();
+            HFONT font = data_->controller->GetCaptionFont();
             if(font)
             {
-                SelectFont(hdc, font);
-                if(!GetTextMetrics(hdc, &tmCap)) return;
+                SelectFont(hdc_, font);
+                if(!GetTextMetrics(hdc_, &tmCap)) return;
             }
 
             TEXTMETRIC tmBody = {};
-            font = data->controller->GetBodyFont();
+            font = data_->controller->GetBodyFont();
             if(font)
             {
-                SelectFont(hdc, font);
-                if(!GetTextMetrics(hdc, &tmBody)) return;
+                SelectFont(hdc_, font);
+                if(!GetTextMetrics(hdc_, &tmBody)) return;
             }
 
-            this->margin = { tmCap.tmAveCharWidth * 2, tmCap.tmAscent / 2 };
+            this->margin_ = { tmCap.tmAveCharWidth * 2, tmCap.tmAscent / 2 };
 
-            newSize.cx = margin.cx + (32 * tmCap.tmAveCharWidth) + margin.cx;
-            newSize.cy = margin.cy + (tmCap.tmHeight) + margin.cy;
+            newSize.cx = margin_.cx + (32 * tmCap.tmAveCharWidth) + margin_.cx;
+            newSize.cy = margin_.cy + (tmCap.tmHeight) + margin_.cy;
 
-            if(!data->bodyText.empty())
-                newSize.cy += margin.cy + (3 * tmBody.tmHeight);
+            if(!data_->body_text.empty())
+                newSize.cy += margin_.cy + (3 * tmBody.tmHeight);
 
-            if(data->image)
+            if(data_->image)
             {
                 BITMAP bm;
-                if(GetObject(data->image, sizeof(bm), &bm))
+                if(GetObject(data_->image, sizeof(bm), &bm))
                 {
                     // cap the image size
                     const int maxDimSize = 80;
@@ -508,9 +508,9 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
                     ScreenMetrics scr;
                     SIZE imageDrawSize = { scr.X(width), scr.Y(height) };
 
-                    newSize.cx += imageDrawSize.cx + margin.cx;
+                    newSize.cx += imageDrawSize.cx + margin_.cx;
 
-                    auto heightWithImage = margin.cy + (imageDrawSize.cy) + margin.cy;
+                    auto heightWithImage = margin_.cy + (imageDrawSize.cy) + margin_.cy;
                     if(newSize.cy < heightWithImage) newSize.cy = heightWithImage;
 
                     UpdateScaledImage(imageDrawSize);
@@ -518,7 +518,7 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
             }
         }
 
-        if(newSize.cx != this->toastSize.cx || newSize.cy != this->toastSize.cy)
+        if(newSize.cx != this->toast_size_.cx || newSize.cy != this->toast_size_.cy)
         {
             HDC hdcScreen = GetDC(NULL);
             auto newBitmap = CreateCompatibleBitmap(hdcScreen, newSize.cx, newSize.cy);
@@ -526,15 +526,15 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
 
             if(newBitmap)
             {
-                if(SelectBitmap(hdc, newBitmap))
+                if(SelectBitmap(hdc_, newBitmap))
                 {
                     RECT dirty1 = {}, dirty2 = {};
-                    if(toastSize.cx < newSize.cx) dirty1 = { toastSize.cx, 0, newSize.cx, toastSize.cy };
-                    if(toastSize.cy < newSize.cy) dirty2 = { 0, toastSize.cy, newSize.cx, newSize.cy };
+                    if(toast_size_.cx < newSize.cx) dirty1 = { toast_size_.cx, 0, newSize.cx, toast_size_.cy };
+                    if(toast_size_.cy < newSize.cy) dirty2 = { 0, toast_size_.cy, newSize.cx, newSize.cy };
 
-                    if(this->bitmap) DeleteBitmap(this->bitmap);
-                    this->bitmap = newBitmap;
-                    this->toastSize = newSize;
+                    if(this->bitmap_) DeleteBitmap(this->bitmap_);
+                    this->bitmap_ = newBitmap;
+                    this->toast_size_ = newSize;
 
                     Invalidate();
 
@@ -547,16 +547,16 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
                         ulw.cbSize = sizeof(ulw);
                         ulw.hdcDst = NULL;
                         ulw.pptDst = nullptr;
-                        ulw.psize = &toastSize;
-                        ulw.hdcSrc = hdc;
+                        ulw.psize = &toast_size_;
+                        ulw.hdcSrc = hdc_;
                         ulw.pptSrc = &origin;
                         ulw.crKey = 0;
                         ulw.pblend = nullptr;
                         ulw.dwFlags = 0;
                         ulw.prcDirty = &dirty1;
-                        auto b1 = UpdateLayeredWindowIndirect(hWnd, &ulw);
+                        auto b1 = UpdateLayeredWindowIndirect(hwnd_, &ulw);
                         ulw.prcDirty = &dirty2;
-                        auto b2 = UpdateLayeredWindowIndirect(hWnd, &ulw);
+                        auto b2 = UpdateLayeredWindowIndirect(hwnd_, &ulw);
                         _ASSERT(b1 && b2);
                     }
 
@@ -572,12 +572,12 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
 void DesktopNotificationController::Toast::UpdateScaledImage(const SIZE& size)
 {
     BITMAP bm;
-    if(!GetObject(scaledImage, sizeof(bm), &bm) ||
+    if(!GetObject(scaled_image_, sizeof(bm), &bm) ||
        bm.bmWidth != size.cx ||
        bm.bmHeight != size.cy)
     {
-        if(scaledImage) DeleteBitmap(scaledImage);
-        scaledImage = StretchBitmap(data->image, size.cx, size.cy);
+        if(scaled_image_) DeleteBitmap(scaled_image_);
+        scaled_image_ = StretchBitmap(data_->image, size.cx, size.cy);
     }
 }
 
@@ -585,24 +585,24 @@ void DesktopNotificationController::Toast::UpdateContents()
 {
     Draw();
 
-    if(IsWindowVisible(hWnd))
+    if(IsWindowVisible(hwnd_))
     {
         RECT rc;
-        GetWindowRect(hWnd, &rc);
+        GetWindowRect(hwnd_, &rc);
         POINT origin = { 0, 0 };
         SIZE size = { rc.right - rc.left, rc.bottom - rc.top };
-        UpdateLayeredWindow(hWnd, NULL, nullptr, &size, hdc, &origin, 0, nullptr, 0);
+        UpdateLayeredWindow(hwnd_, NULL, nullptr, &size, hdc_, &origin, 0, nullptr, 0);
     }
 }
 
 void DesktopNotificationController::Toast::Dismiss()
 {
-    if(!isNonInteractive)
+    if(!is_non_interactive_)
     {
         // Set a flag to prevent further interaction. We don't disable the HWND because
         // we still want to receive mouse move messages in order to keep the toast under
         // the cursor and not collapse it while dismissing.
-        isNonInteractive = true;
+        is_non_interactive_ = true;
 
         AutoDismiss();
     }
@@ -610,28 +610,28 @@ void DesktopNotificationController::Toast::Dismiss()
 
 void DesktopNotificationController::Toast::AutoDismiss()
 {
-    KillTimer(hWnd, TimerID_AutoDismiss);
+    KillTimer(hwnd_, TimerID_AutoDismiss);
     StartEaseOut();
 }
 
 void DesktopNotificationController::Toast::CancelDismiss()
 {
-    KillTimer(hWnd, TimerID_AutoDismiss);
-    easeOutActive = false;
-    easeOutPos = 0;
+    KillTimer(hwnd_, TimerID_AutoDismiss);
+    ease_out_active_ = false;
+    ease_out_pos_ = 0;
 }
 
 void DesktopNotificationController::Toast::ScheduleDismissal()
 {
-    SetTimer(hWnd, TimerID_AutoDismiss, 4000, nullptr);
+    SetTimer(hwnd_, TimerID_AutoDismiss, 4000, nullptr);
 }
 
 void DesktopNotificationController::Toast::ResetContents()
 {
-    if(scaledImage)
+    if(scaled_image_)
     {
-        DeleteBitmap(scaledImage);
-        scaledImage = NULL;
+        DeleteBitmap(scaled_image_);
+        scaled_image_ = NULL;
     }
 
     Invalidate();
@@ -639,23 +639,23 @@ void DesktopNotificationController::Toast::ResetContents()
 
 void DesktopNotificationController::Toast::PopUp(int y)
 {
-    verticalPosTarget = verticalPos = y;
+    vertical_pos_target_ = vertical_pos_ = y;
     StartEaseIn();
 }
 
 void DesktopNotificationController::Toast::SetVerticalPosition(int y)
 {
     // Don't restart animation if current target is the same
-    if(y == verticalPosTarget)
+    if(y == vertical_pos_target_)
         return;
 
     // Make sure the new animation's origin is at the current position
-    verticalPos += (int)((verticalPosTarget - verticalPos) * stackCollapsePos);
+    vertical_pos_ += (int)((vertical_pos_target_ - vertical_pos_) * stack_collapse_pos_);
 
     // Set new target position and start the animation
-    verticalPosTarget = y;
-    stackCollapseStart = GetTickCount();
-    data->controller->StartAnimation();
+    vertical_pos_target_ = y;
+    stack_collapse_start_ = GetTickCount();
+    data_->controller->StartAnimation();
 }
 
 HDWP DesktopNotificationController::Toast::Animate(HDWP hdwp, const POINT& origin)
@@ -672,7 +672,7 @@ HDWP DesktopNotificationController::Toast::Animate(HDWP hdwp, const POINT& origi
     ulw.hdcDst = NULL;
     ulw.pptDst = nullptr;
     ulw.psize = nullptr;
-    ulw.hdcSrc = hdc;
+    ulw.hdcSrc = hdc_;
     ulw.pptSrc = &srcOrigin;
     ulw.crKey = 0;
     ulw.pblend = nullptr;
@@ -688,27 +688,27 @@ HDWP DesktopNotificationController::Toast::Animate(HDWP hdwp, const POINT& origi
     auto easeOutPos = AnimateEaseOut();
     auto stackCollapsePos = AnimateStackCollapse();
 
-    auto yOffset = (verticalPosTarget - verticalPos) * stackCollapsePos;
+    auto yOffset = (vertical_pos_target_ - vertical_pos_) * stackCollapsePos;
 
-    size.cx = (int)(toastSize.cx * easeInPos);
-    size.cy = toastSize.cy;
+    size.cx = (int)(toast_size_.cx * easeInPos);
+    size.cy = toast_size_.cy;
 
     pt.x = origin.x - size.cx;
-    pt.y = (int)(origin.y - verticalPos - yOffset - size.cy);
+    pt.y = (int)(origin.y - vertical_pos_ - yOffset - size.cy);
 
     ulw.pptDst = &pt;
     ulw.psize = &size;
 
-    if(easeInActive && easeInPos == 1.0f)
+    if(ease_in_active_ && easeInPos == 1.0f)
     {
-        easeInActive = false;
+        ease_in_active_ = false;
         ScheduleDismissal();
     }
 
-    this->easeInPos = easeInPos;
-    this->stackCollapsePos = stackCollapsePos;
+    this->ease_in_pos_ = easeInPos;
+    this->stack_collapse_pos_ = stackCollapsePos;
 
-    if(easeOutPos != this->easeOutPos)
+    if(easeOutPos != this->ease_out_pos_)
     {
         blend.BlendOp = AC_SRC_OVER;
         blend.BlendFlags = 0;
@@ -718,11 +718,11 @@ HDWP DesktopNotificationController::Toast::Animate(HDWP hdwp, const POINT& origi
         ulw.pblend = &blend;
         ulw.dwFlags = ULW_ALPHA;
 
-        this->easeOutPos = easeOutPos;
+        this->ease_out_pos_ = easeOutPos;
 
         if(easeOutPos == 1.0f)
         {
-            easeOutActive = false;
+            ease_out_active_ = false;
 
             dwpFlags &= ~SWP_SHOWWINDOW;
             dwpFlags |= SWP_HIDEWINDOW;
@@ -731,46 +731,46 @@ HDWP DesktopNotificationController::Toast::Animate(HDWP hdwp, const POINT& origi
 
     if(stackCollapsePos == 1.0f)
     {
-        verticalPos = verticalPosTarget;
+        vertical_pos_ = vertical_pos_target_;
     }
 
     // `UpdateLayeredWindowIndirect` updates position, size, and transparency.
     // `DeferWindowPos` updates z-order, and also position and size in case ULWI fails,
     // which can happen when one of the dimensions is zero (e.g. at the beginning of ease-in).
 
-    auto ulwResult = UpdateLayeredWindowIndirect(hWnd, &ulw);
-    hdwp = DeferWindowPos(hdwp, hWnd, HWND_TOPMOST, pt.x, pt.y, size.cx, size.cy, dwpFlags);
+    auto ulwResult = UpdateLayeredWindowIndirect(hwnd_, &ulw);
+    hdwp = DeferWindowPos(hdwp, hwnd_, HWND_TOPMOST, pt.x, pt.y, size.cx, size.cy, dwpFlags);
     return hdwp;
 }
 
 void DesktopNotificationController::Toast::StartEaseIn()
 {
-    _ASSERT(!easeInActive);
-    easeInStart = GetTickCount();
-    easeInActive = true;
-    data->controller->StartAnimation();
+    _ASSERT(!ease_in_active_);
+    ease_in_start_ = GetTickCount();
+    ease_in_active_ = true;
+    data_->controller->StartAnimation();
 }
 
 void DesktopNotificationController::Toast::StartEaseOut()
 {
-    _ASSERT(!easeOutActive);
-    easeOutStart = GetTickCount();
-    easeOutActive = true;
-    data->controller->StartAnimation();
+    _ASSERT(!ease_out_active_);
+    ease_out_start_ = GetTickCount();
+    ease_out_active_ = true;
+    data_->controller->StartAnimation();
 }
 
 bool DesktopNotificationController::Toast::IsStackCollapseActive() const
 {
-    return (verticalPos != verticalPosTarget);
+    return (vertical_pos_ != vertical_pos_target_);
 }
 
 float DesktopNotificationController::Toast::AnimateEaseIn()
 {
-    if(!easeInActive)
-        return easeInPos;
+    if(!ease_in_active_)
+        return ease_in_pos_;
 
     constexpr float duration = 500.0f;
-    float time = std::min(duration, (float)(GetTickCount() - easeInStart)) / duration;
+    float time = std::min(duration, (float)(GetTickCount() - ease_in_start_)) / duration;
 
     // decelerating exponential ease
     const float a = -8.0f;
@@ -781,11 +781,11 @@ float DesktopNotificationController::Toast::AnimateEaseIn()
 
 float DesktopNotificationController::Toast::AnimateEaseOut()
 {
-    if(!easeOutActive)
-        return easeOutPos;
+    if(!ease_out_active_)
+        return ease_out_pos_;
 
     constexpr float duration = 120.0f;
-    float time = std::min(duration, (float)(GetTickCount() - easeOutStart)) / duration;
+    float time = std::min(duration, (float)(GetTickCount() - ease_out_start_)) / duration;
 
     // accelerating circle ease
     auto pos = 1.0f - std::sqrt(1 - time * time);
@@ -796,10 +796,10 @@ float DesktopNotificationController::Toast::AnimateEaseOut()
 float DesktopNotificationController::Toast::AnimateStackCollapse()
 {
     if(!IsStackCollapseActive())
-        return stackCollapsePos;
+        return stack_collapse_pos_;
 
     constexpr float duration = 500.0f;
-    float time = std::min(duration, (float)(GetTickCount() - stackCollapseStart)) / duration;
+    float time = std::min(duration, (float)(GetTickCount() - stack_collapse_start_)) / duration;
 
     // decelerating exponential ease
     const float a = -8.0f;

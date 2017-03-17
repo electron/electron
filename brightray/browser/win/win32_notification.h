@@ -13,18 +13,18 @@ public:
 
     const DesktopNotificationController::Notification& GetRef() const
     {
-        return notificationRef;
+        return notification_ref_;
     }
 
     const std::string& GetTag() const
     {
-        return tag;
+        return tag_;
     }
 
 private:
     DISALLOW_COPY_AND_ASSIGN(Win32Notification);
-    DesktopNotificationController::Notification notificationRef;
-    std::string tag;
+    DesktopNotificationController::Notification notification_ref_;
+    std::string tag_;
 };
 
 }

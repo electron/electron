@@ -17,7 +17,7 @@ public:
 
     const std::shared_ptr<NotificationData>& GetNotification() const
     {
-        return data;
+        return data_;
     }
 
     void ResetContents();
@@ -28,21 +28,21 @@ public:
     void SetVerticalPosition(int y);
     int GetVerticalPosition() const
     {
-        return verticalPosTarget;
+        return vertical_pos_target_;
     }
     int GetHeight() const
     {
-        return toastSize.cy;
+        return toast_size_.cy;
     }
     HDWP Animate(HDWP hdwp, const POINT& origin);
     bool IsAnimationActive() const
     {
-        return easeInActive || easeOutActive || IsStackCollapseActive();
+        return ease_in_active_ || ease_out_active_ || IsStackCollapseActive();
     }
     bool IsHighlighted() const
     {
-        _ASSERT(!(isHighlighted && !IsWindowVisible(hWnd)));
-        return isHighlighted;
+        _ASSERT(!(is_highlighted_ && !IsWindowVisible(hwnd_)));
+        return is_highlighted_;
     }
 
 private:
@@ -73,27 +73,27 @@ private:
     float AnimateStackCollapse();
 
 private:
-    static constexpr const TCHAR className[] = TEXT("DesktopNotificationToast");
+    static constexpr const TCHAR class_name_[] = TEXT("DesktopNotificationToast");
 
-    const HWND hWnd;
-    HDC hdc;
-    HBITMAP bitmap = NULL;
+    const HWND hwnd_;
+    HDC hdc_;
+    HBITMAP bitmap_ = NULL;
 
-    const std::shared_ptr<NotificationData> data; // never null
+    const std::shared_ptr<NotificationData> data_; // never null
 
-    SIZE toastSize = {};
-    SIZE margin = {};
-    RECT closeButtonRect = {};
-    HBITMAP scaledImage = NULL;
+    SIZE toast_size_ = {};
+    SIZE margin_ = {};
+    RECT close_button_rect_ = {};
+    HBITMAP scaled_image_ = NULL;
 
-    int verticalPos = 0;
-    int verticalPosTarget = 0;
-    bool isNonInteractive = false;
-    bool easeInActive = false;
-    bool easeOutActive = false;
-    bool isContentUpdated = false, isHighlighted = false, isCloseHot = false;
-    DWORD easeInStart, easeOutStart, stackCollapseStart;
-    float easeInPos = 0, easeOutPos = 0, stackCollapsePos = 0;
+    int vertical_pos_ = 0;
+    int vertical_pos_target_ = 0;
+    bool is_non_interactive_ = false;
+    bool ease_in_active_ = false;
+    bool ease_out_active_ = false;
+    bool is_content_updated_ = false, is_highlighted_ = false, is_close_hot_ = false;
+    DWORD ease_in_start_, ease_out_start_, stack_collapse_start_;
+    float ease_in_pos_ = 0, ease_out_pos_ = 0, stack_collapse_pos_ = 0;
 };
 
 }

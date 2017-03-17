@@ -37,7 +37,7 @@ private:
     };
 
     template<typename T>
-    static constexpr T toastMargin = 20;
+    static constexpr T toast_margin_ = 20;
 
     // Wrapper around `NotificationData` which makes sure that
     // the `controller` member is cleared when the controller object
@@ -75,12 +75,12 @@ private:
     void DestroyToast(ToastInstance& inst);
 
 private:
-    static constexpr const TCHAR className[] = TEXT("DesktopNotificationController");
-    HWND hwndController = NULL;
-    HFONT captionFont = NULL, bodyFont = NULL;
-    std::vector<ToastInstance> instances;
-    std::deque<NotificationLink> queue;
-    bool isAnimating = false;
+    static constexpr const TCHAR class_name_[] = TEXT("DesktopNotificationController");
+    HWND hwnd_controller_ = NULL;
+    HFONT caption_font_ = NULL, body_font_ = NULL;
+    std::vector<ToastInstance> instances_;
+    std::deque<NotificationLink> queue_;
+    bool is_animating_ = false;
 };
 
 class DesktopNotificationController::Notification
@@ -95,7 +95,7 @@ public:
     void Set(std::wstring caption, std::wstring bodyText, HBITMAP image);
 
 private:
-    std::shared_ptr<NotificationData> data;
+    std::shared_ptr<NotificationData> data_;
 
     friend class DesktopNotificationController;
 };
