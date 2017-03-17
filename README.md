@@ -1,6 +1,3 @@
-Attempting to add full kiosk mode functionality on windows 7
-==
-
 [![Electron Logo](https://electron.atom.io/images/electron-logo.svg)](https://electron.atom.io/)
 
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)

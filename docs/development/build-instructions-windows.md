@@ -83,6 +83,14 @@ To clean the build files:
 $ npm run clean
 ```
 
+To clean only `out` and `dir` directories:
+
+```bash
+$ npm run clean-build
+```
+
+Note that both commands will require to do run bootstrap again .
+
 ## Tests
 
 See [Build System Overview: Tests](build-system-overview.md#tests)

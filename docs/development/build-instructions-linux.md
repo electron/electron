@@ -117,6 +117,14 @@ To clean the build files:
 $ npm run clean
 ```
 
+To clean only `out` and `dir` directories:
+
+```bash
+$ npm run clean-build
+```
+
+Note that both commands will require to do run bootstrap again .
+
 ## Troubleshooting
 
 ### Error While Loading Shared Libraries: libtinfo.so.5
