@@ -37,8 +37,7 @@ bool Clipboard::Has(const std::string& format_string, mate::Arguments* args) {
   return clipboard->IsFormatAvailable(format, GetClipboardType(args));
 }
 
-std::string Clipboard::Read(const std::string& format_string,
-                            mate::Arguments* args) {
+std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
 
@@ -49,7 +48,7 @@ std::string Clipboard::Read(const std::string& format_string,
 
 v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
                                            mate::Arguments* args) {
-  std::string data = Read(format_string, args);
+  std::string data = Read(format_string);
   return node::Buffer::Copy(
       args->isolate(), data.data(), data.length()).ToLocalChecked();
 }
