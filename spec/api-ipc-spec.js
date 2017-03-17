@@ -163,8 +163,11 @@ describe('ipc module', function () {
     })
 
     it('returns toString() of original function via toString()', function () {
-      var readText = remote.clipboard.readText
+      const {readText} = remote.clipboard
       assert(readText.toString().startsWith('function'))
+
+      var {functionWithToStringProperty} = remote.require(path.join(fixtures, 'module', 'to-string-non-function.js'))
+      assert.equal(functionWithToStringProperty.toString, 'hello')
     })
   })
 
