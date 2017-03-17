@@ -4,7 +4,7 @@
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
-### `new TouchBarColorPicker(options)`
+### `new TouchBarColorPicker(options)` _Experimental_
 
 * `options` Object
   * `availableColors` String[] (optional) - Array of hex color strings to

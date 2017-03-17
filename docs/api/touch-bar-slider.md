@@ -4,7 +4,7 @@
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
-### `new TouchBarSlider(options)`
+### `new TouchBarSlider(options)` _Experimental_
 
 * `options` Object
   * `label` String (optional) - Label text.

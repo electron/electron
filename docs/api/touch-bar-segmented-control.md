@@ -4,7 +4,7 @@
 
 Process: [Main](../tutorial/quick-start.md#main-process)
 
-### `new TouchBarSegmentedControl(options)`
+### `new TouchBarSegmentedControl(options)` _Experimental_
 
 * `options` Object
   * `segmentStyle` String - (Optional) Style of the segments:
