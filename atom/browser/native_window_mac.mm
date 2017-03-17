@@ -1642,11 +1642,6 @@ void NativeWindowMac::UpdateDraggableRegions(
   UpdateDraggableRegionViews(regions);
 }
 
-// void NativeWindowMac::ShowWindowButton(NSWindowButton button) {
-//   auto view = [window_ standardWindowButton:button];
-//   [view.superview addSubview:view positioned:NSWindowAbove relativeTo:nil];
-// }
-
 void NativeWindowMac::InstallView() {
   // Make sure the bottom corner is rounded for non-modal windows: http://crbug.com/396264.
   // But do not enable it on OS X 10.9 for transparent window, otherwise a
@@ -1684,7 +1679,6 @@ void NativeWindowMac::InstallView() {
     // determine whether to show custom UI on hover, so we disable it here to
     // prevent them from doing so in a frameless app window.
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
-
   }
 }
 
