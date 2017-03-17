@@ -83,7 +83,7 @@ To clean the build files:
 $ npm run clean
 ```
 
-To clean only `out` and `dir` directories:
+To clean only `out` and `dist` directories:
 
 ```bash
 $ npm run clean-build
