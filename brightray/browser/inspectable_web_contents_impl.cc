@@ -235,8 +235,6 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
 }
 
 InspectableWebContentsImpl::~InspectableWebContentsImpl() {
-  if (devtools_web_contents_)
-    devtools_web_contents_->Close();
   Observe(nullptr);
 }
 
