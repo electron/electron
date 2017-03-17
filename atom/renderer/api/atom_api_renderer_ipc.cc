@@ -5,6 +5,7 @@
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "content/public/renderer/render_frame.h"
@@ -40,23 +41,31 @@ void Send(mate::Arguments* args,
     args->ThrowError("Unable to send AtomFrameHostMsg_Message");
 }
 
-base::string16 SendSync(mate::Arguments* args,
-                        const base::string16& channel,
-                        const base::ListValue& arguments) {
-  base::string16 json;
+v8::Local<v8::Value> SendSync(mate::Arguments* args,
+                              const base::string16& channel,
+                              const base::ListValue& arguments) {
+  base::ListValue result;
 
   RenderFrame* render_frame = GetCurrentRenderFrame();
   if (render_frame == nullptr)
-    return json;
+    return v8::Null(args->isolate());
 
   IPC::SyncMessage* message = new AtomFrameHostMsg_Message_Sync(
-      render_frame->GetRoutingID(), channel, arguments, &json);
+      render_frame->GetRoutingID(), channel, arguments, &result);
   bool success = render_frame->Send(message);
 
   if (!success)
     args->ThrowError("Unable to send AtomFrameHostMsg_Message_Sync");
 
-  return json;
+  std::unique_ptr<atom::V8ValueConverter> v8_converter(
+      new atom::V8ValueConverter);
+  mate::Dictionary global(args->isolate(),
+                          args->isolate()->GetCurrentContext()->Global());
+  v8::Local<v8::Value> sandboxed;
+  if (global.GetHidden("sandboxed", &sandboxed) && sandboxed->IsTrue()) {
+    v8_converter->SetDisableNode(true);
+  }
+  return v8_converter->ToV8Value(&result, args->isolate()->GetCurrentContext());
 }
 
 void Initialize(v8::Local<v8::Object> exports,

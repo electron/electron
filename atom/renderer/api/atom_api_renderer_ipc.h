@@ -16,9 +16,9 @@ void Send(mate::Arguments* args,
           const base::string16& channel,
           const base::ListValue& arguments);
 
-base::string16 SendSync(mate::Arguments* args,
-                        const base::string16& channel,
-                        const base::ListValue& arguments);
+v8::Local<v8::Value> SendSync(mate::Arguments* args,
+                              const base::string16& channel,
+                              const base::ListValue& arguments);
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
