@@ -121,7 +121,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
   bool IsRendererSandboxed(int process_id);
-  bool IsRendererUsesNativeWindowOpen(int process_id);
+  bool RendererUsesNativeWindowOpen(int process_id);
 
   // pending_render_process => current_render_process.
   std::map<int, int> pending_processes_;

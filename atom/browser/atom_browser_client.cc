@@ -95,7 +95,8 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     // "javacript:" scheme should always use same SiteInstance
     return false;
 
-  if (!IsRendererSandboxed(current_instance->GetProcess()->GetID()))
+  int process_id = current_instance->GetProcess()->GetID();
+  if (!(IsRendererSandboxed(process_id) || RendererUsesNativeWindowOpen(process_id)))
     // non-sandboxed renderers should always create a new SiteInstance
     return true;
 
@@ -125,7 +126,7 @@ bool AtomBrowserClient::IsRendererSandboxed(int process_id) {
   return it != process_preferences_.end() && it->second.sandbox;
 }
 
-bool AtomBrowserClient::IsRendererUsesNativeWindowOpen(int process_id) {
+bool AtomBrowserClient::RendererUsesNativeWindowOpen(int process_id) {
   base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.native_window_open;
@@ -318,7 +319,7 @@ bool AtomBrowserClient::CanCreateWindow(
     bool* no_javascript_access) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  if (IsRendererSandboxed(render_process_id)) {
+  if (IsRendererSandboxed(render_process_id) || RendererUsesNativeWindowOpen(render_process_id)) {
     *no_javascript_access = false;
     return true;
   }
