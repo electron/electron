@@ -1070,7 +1070,7 @@ describe('BrowserWindow module', function () {
       })
     })
 
-    describe('useNativeWindowOpen option', () => {
+    describe('nativeWindowOpen option', () => {
       it('allows synchronous access to window opened by window.open()', (done) => {
         ipcMain.once('answer', function (event, content) {
           assert.equal(content, 'Hello')
