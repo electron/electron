@@ -50,8 +50,16 @@ Native `window.open()` allows synchronous access to opened windows so it is conv
 The creation of the `BrowserWindow` is customizable in `WebContents`'s `new-window` event.
 
 ```javascript
+// main process
+const mainWindow = new BrowserWindow({
+  width: 800,
+  height: 600,
+  webPreferences: {
+    nativeWindowOpen: true
+  }
+})
 mainWindow.webContents.on('new-window', (event, url, frameName, disposition, options, additionalFeatures) => {
-  if (url.endsWith('modal.html')) {
+  if (frameName === 'modal') {
     // open window as modal
     event.preventDefault()
     Object.assign(options, {
@@ -64,4 +72,10 @@ mainWindow.webContents.on('new-window', (event, url, frameName, disposition, opt
     event.newGuest = modal
   }
 })
+```
+
+```javascript
+// renderer process (mainWindow)
+let modal = window.open('', 'modal')
+modal.document.write('<h1>Hello</h1>')
 ```
