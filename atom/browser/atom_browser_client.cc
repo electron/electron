@@ -96,7 +96,8 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     return false;
 
   int process_id = current_instance->GetProcess()->GetID();
-  if (!(IsRendererSandboxed(process_id) || RendererUsesNativeWindowOpen(process_id)))
+  if (!(IsRendererSandboxed(process_id)
+      || RendererUsesNativeWindowOpen(process_id)))
     // non-sandboxed renderers should always create a new SiteInstance
     return true;
 
@@ -110,7 +111,8 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
       content::SiteInstance::GetSiteForURL(browser_context, url) != src_url;
 }
 
-void AtomBrowserClient::AddProcessPreferences(int process_id, AtomBrowserClient::ProcessPreferences prefs) {
+void AtomBrowserClient::AddProcessPreferences(
+    int process_id, AtomBrowserClient::ProcessPreferences prefs) {
   base::AutoLock auto_lock(process_preferences_lock_);
   process_preferences_[process_id] = prefs;
 }
@@ -143,7 +145,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   ProcessPreferences process_prefs;
   process_prefs.sandbox = WebContentsPreferences::IsSandboxed(web_contents);
-  process_prefs.native_window_open = WebContentsPreferences::UsesNativeWindowOpen(web_contents);
+  process_prefs.native_window_open
+      = WebContentsPreferences::UsesNativeWindowOpen(web_contents);
   AddProcessPreferences(host->GetID(), process_prefs);
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
@@ -319,7 +322,8 @@ bool AtomBrowserClient::CanCreateWindow(
     bool* no_javascript_access) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  if (IsRendererSandboxed(render_process_id) || RendererUsesNativeWindowOpen(render_process_id)) {
+  if (IsRendererSandboxed(render_process_id)
+      || RendererUsesNativeWindowOpen(render_process_id)) {
     *no_javascript_access = false;
     return true;
   }

@@ -210,7 +210,8 @@ bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
   return sandboxed;
 }
 
-bool WebContentsPreferences::UsesNativeWindowOpen(content::WebContents* web_contents) {
+bool WebContentsPreferences::UsesNativeWindowOpen(
+    content::WebContents* web_contents) {
   WebContentsPreferences* self;
   if (!web_contents)
     return false;
