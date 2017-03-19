@@ -142,7 +142,7 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   ProcessPreferences process_prefs;
   process_prefs.sandbox = WebContentsPreferences::IsSandboxed(web_contents);
-  process_prefs.native_window_open = WebContentsPreferences::IsNativeWindowOpenEnabled(web_contents);
+  process_prefs.native_window_open = WebContentsPreferences::UsesNativeWindowOpen(web_contents);
   AddProcessPreferences(host->GetID(), process_prefs);
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);

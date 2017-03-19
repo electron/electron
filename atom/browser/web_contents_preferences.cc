@@ -102,6 +102,8 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   // integration.
   if (IsSandboxed(web_contents))
     command_line->AppendSwitch(switches::kEnableSandbox);
+  if (UsesNativeWindowOpen(web_contents))
+    command_line->AppendSwitch(switches::kNativeWindowOpen);
 
   // The preload script.
   base::FilePath::StringType preload;
@@ -208,7 +210,7 @@ bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
   return sandboxed;
 }
 
-bool WebContentsPreferences::IsNativeWindowOpenEnabled(content::WebContents* web_contents) {
+bool WebContentsPreferences::UsesNativeWindowOpen(content::WebContents* web_contents) {
   WebContentsPreferences* self;
   if (!web_contents)
     return false;

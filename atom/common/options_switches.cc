@@ -163,6 +163,7 @@ const char kGuestInstanceID[]  = "guest-instance-id";
 const char kOpenerID[]         = "opener-id";
 const char kScrollBounce[]     = "scroll-bounce";
 const char kHiddenPage[]       = "hidden-page";
+const char kNativeWindowOpen[] = "native-window-open";
 
 // Widevine options
 // Path to Widevine CDM binaries.

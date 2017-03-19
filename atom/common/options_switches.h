@@ -89,6 +89,7 @@ extern const char kGuestInstanceID[];
 extern const char kOpenerID[];
 extern const char kScrollBounce[];
 extern const char kHiddenPage[];
+extern const char kNativeWindowOpen[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
