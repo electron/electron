@@ -1069,6 +1069,23 @@ describe('BrowserWindow module', function () {
         w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
       })
     })
+
+    describe('useNativeWindowOpen option', () => {
+      it('allows synchronous access to window opened by window.open()', (done) => {
+        ipcMain.once('answer', function (event, content) {
+          assert.equal(content, 'Hello')
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nativeWindowOpen: true
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open.html'))
+      })
+    })
   })
 
   describe('beforeunload handler', function () {

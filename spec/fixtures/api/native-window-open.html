@@ -1,0 +1,11 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = require("electron");
+  const otherWin = window.open();
+  otherWin.document.write("<h1>Hello</h1>");
+  const content = otherWin.document.querySelector("h1").innerText;
+  ipcRenderer.send('answer', content);
+</script>
+</body>
+</html>
