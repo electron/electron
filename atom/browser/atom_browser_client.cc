@@ -109,19 +109,26 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
       content::SiteInstance::GetSiteForURL(browser_context, url) != src_url;
 }
 
-void AtomBrowserClient::AddSandboxedRendererId(int process_id) {
-  base::AutoLock auto_lock(sandboxed_renderers_lock_);
-  sandboxed_renderers_.insert(process_id);
+void AtomBrowserClient::AddProcessPreferences(int process_id, AtomBrowserClient::ProcessPreferences prefs) {
+  base::AutoLock auto_lock(process_preferences_lock_);
+  process_preferences_[process_id] = prefs;
 }
 
-void AtomBrowserClient::RemoveSandboxedRendererId(int process_id) {
-  base::AutoLock auto_lock(sandboxed_renderers_lock_);
-  sandboxed_renderers_.erase(process_id);
+void AtomBrowserClient::RemoveProcessPreferences(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
+  process_preferences_.erase(process_id);
 }
 
 bool AtomBrowserClient::IsRendererSandboxed(int process_id) {
-  base::AutoLock auto_lock(sandboxed_renderers_lock_);
-  return sandboxed_renderers_.count(process_id);
+  base::AutoLock auto_lock(process_preferences_lock_);
+  auto it = process_preferences_.find(process_id);
+  return it != process_preferences_.end() && it->second.sandbox;
+}
+
+bool AtomBrowserClient::IsRendererUsesNativeWindowOpen(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
+  auto it = process_preferences_.find(process_id);
+  return it != process_preferences_.end() && it->second.native_window_open;
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
@@ -133,11 +140,12 @@ void AtomBrowserClient::RenderProcessWillLaunch(
       new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
-  if (WebContentsPreferences::IsSandboxed(web_contents)) {
-    AddSandboxedRendererId(host->GetID());
-    // ensure the sandboxed renderer id is removed later
-    host->AddObserver(this);
-  }
+  ProcessPreferences process_prefs;
+  process_prefs.sandbox = WebContentsPreferences::IsSandboxed(web_contents);
+  process_prefs.native_window_open = WebContentsPreferences::IsNativeWindowOpenEnabled(web_contents);
+  AddProcessPreferences(host->GetID(), process_prefs);
+  // ensure the ProcessPreferences is removed later
+  host->AddObserver(this);
 }
 
 content::SpeechRecognitionManagerDelegate*
@@ -375,7 +383,7 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
       break;
     }
   }
-  RemoveSandboxedRendererId(process_id);
+  RemoveProcessPreferences(process_id);
 }
 
 }  // namespace atom
