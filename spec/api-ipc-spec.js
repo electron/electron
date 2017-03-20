@@ -161,6 +161,14 @@ describe('ipc module', function () {
       assert.equal(typeof remote.clipboard.readText, 'function')
       assert.equal(typeof remote.shell.openExternal, 'function')
     })
+
+    it('returns toString() of original function via toString()', function () {
+      const {readText} = remote.clipboard
+      assert(readText.toString().startsWith('function'))
+
+      var {functionWithToStringProperty} = remote.require(path.join(fixtures, 'module', 'to-string-non-function.js'))
+      assert.equal(functionWithToStringProperty.toString, 'hello')
+    })
   })
 
   describe('remote object in renderer', function () {
