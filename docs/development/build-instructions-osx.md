@@ -91,7 +91,7 @@ To clean only `out` and `dist` directories:
 $ npm run clean-build
 ```
 
-Note that both commands will require to do run bootstrap again .
+**Note:** Both clean commands require running `bootstrap` again before building.
 
 ## Tests
 
