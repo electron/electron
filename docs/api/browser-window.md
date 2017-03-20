@@ -35,8 +35,8 @@ without visual flash, there are two solutions for different situations.
 
 ### Using `ready-to-show` event
 
-While loading the page, the `ready-to-show` event will be emitted when renderer
-process has done drawing for the first time if the window is not shown yet. Showing
+While loading the page, the `ready-to-show` event will be emitted when the renderer
+process has rendered the page for the first time if the window has not been shown yet. Showing
 the window after this event will have no visual flash:
 
 ```javascript
