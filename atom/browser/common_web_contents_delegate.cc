@@ -178,9 +178,13 @@ void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
 
 void CommonWebContentsDelegate::SetOwnerWindow(
     content::WebContents* web_contents, NativeWindow* owner_window) {
-  owner_window_ = owner_window->GetWeakPtr();
-  NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
-  web_contents->SetUserData(relay->key, relay);
+  owner_window_ = owner_window ? owner_window->GetWeakPtr() : nullptr;
+  auto relay = base::MakeUnique<NativeWindowRelay>(owner_window_);
+  if (owner_window) {
+    web_contents->SetUserData(relay->key, relay.release());
+  } else {
+    web_contents->RemoveUserData(relay->key);
+  }
 }
 
 void CommonWebContentsDelegate::DestroyWebContents() {

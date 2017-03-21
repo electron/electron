@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 
+#include "atom/browser/api/atom_api_browser_view.h"
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
@@ -784,6 +785,31 @@ void Window::CloseFilePreview() {
   window_->CloseFilePreview();
 }
 
+void Window::AddChildView(v8::Local<v8::Value> value, mate::Arguments* args) {
+  mate::Handle<BrowserView> child_view;
+  if (!mate::ConvertFromV8(isolate(), value, &child_view)) {
+    args->ThrowError("Must pass child_view instance");
+    return;
+  }
+
+  window_->AddBrowserView(
+      child_view->web_contents()->managed_web_contents()->GetView());
+  child_view->web_contents()->SetOwnerWindow(window_.get());
+  child_views_.Set(isolate(), child_view->ID(), child_view->GetWrapper());
+}
+
+void Window::RemoveChildView(BrowserView& child_view) {
+  window_->RemoveBrowserView(
+      child_view.web_contents()->managed_web_contents()->GetView());
+  child_view.web_contents()->SetOwnerWindow(nullptr);
+  child_views_.Remove(child_view.ID());
+}
+
+void Window::ResizeChildView(BrowserView& child_view, const gfx::Rect& bounds) {
+  window_->ResizeBrowserView(
+      child_view.web_contents()->managed_web_contents()->GetView(), bounds);
+}
+
 void Window::SetParentWindow(v8::Local<v8::Value> value,
                              mate::Arguments* args) {
   if (IsModal()) {
@@ -901,6 +927,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAspectRatio", &Window::SetAspectRatio)
       .SetMethod("previewFile", &Window::PreviewFile)
       .SetMethod("closeFilePreview", &Window::CloseFilePreview)
+      .SetMethod("addChildView", &Window::AddChildView)
 #if !defined(OS_WIN)
       .SetMethod("setParentWindow", &Window::SetParentWindow)
 #endif

@@ -36,6 +36,7 @@ class NativeWindow;
 
 namespace api {
 
+class BrowserView;
 class WebContents;
 
 class Window : public mate::TrackableObject<Window>,
@@ -49,6 +50,9 @@ class Window : public mate::TrackableObject<Window>,
   // Returns the BrowserWindow object from |native_window|.
   static v8::Local<v8::Value> From(v8::Isolate* isolate,
                                    NativeWindow* native_window);
+
+  void ResizeChildView(BrowserView& child_view, const gfx::Rect& bounds);
+  void RemoveChildView(BrowserView& child_view);
 
   NativeWindow* window() const { return window_.get(); }
 
@@ -177,9 +181,14 @@ class Window : public mate::TrackableObject<Window>,
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
   void PreviewFile(const std::string& path, mate::Arguments* args);
   void CloseFilePreview();
+
+  void AddChildView(v8::Local<v8::Value> value, mate::Arguments* args);
+
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
   v8::Local<v8::Value> GetParentWindow() const;
+
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
+
   bool IsModal() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
 
@@ -223,6 +232,7 @@ class Window : public mate::TrackableObject<Window>,
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;
+  KeyWeakMap<int> child_views_;
 
   api::WebContents* api_web_contents_;
 

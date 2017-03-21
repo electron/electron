@@ -53,10 +53,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
  public:
   enum Type {
     BACKGROUND_PAGE,  // A DevTools extension background page.
-    BROWSER_WINDOW,  // Used by BrowserWindow.
-    REMOTE,  // Thin wrap around an existing WebContents.
-    WEB_VIEW,  // Used by <webview>.
-    OFF_SCREEN,  // Used for offscreen rendering
+    BROWSER_WINDOW,   // Used by BrowserWindow.
+    BROWSER_VIEW,     // Used by BrowserView.
+    REMOTE,           // Thin wrap around an existing WebContents.
+    WEB_VIEW,         // Used by <webview>.
+    OFF_SCREEN,       // Used for offscreen rendering
   };
 
   // For node.js callback function type: function(error, buffer)
