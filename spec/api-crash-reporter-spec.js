@@ -16,83 +16,83 @@ describe('crashReporter module', function () {
   }
   var fixtures = path.resolve(__dirname, 'fixtures')
   const generateSpecs = (description, browserWindowOpts) => {
-  describe(description, function () {
-  var w = null
-  var originalTempDirectory = null
-  var tempDirectory = null
+    describe(description, function () {
+      var w = null
+      var originalTempDirectory = null
+      var tempDirectory = null
 
-  beforeEach(function () {
-    w = new BrowserWindow(Object.assign({
-      show: false
-    }, browserWindowOpts))
-    tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
-    originalTempDirectory = app.getPath('temp')
-    app.setPath('temp', tempDirectory)
-  })
+      beforeEach(function () {
+        w = new BrowserWindow(Object.assign({
+          show: false
+        }, browserWindowOpts))
+        tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
+        originalTempDirectory = app.getPath('temp')
+        app.setPath('temp', tempDirectory)
+      })
 
-  afterEach(function () {
-    app.setPath('temp', originalTempDirectory)
-    return closeWindow(w).then(function () { w = null })
-  })
+      afterEach(function () {
+        app.setPath('temp', originalTempDirectory)
+        return closeWindow(w).then(function () { w = null })
+      })
 
-  it('should send minidump when renderer crashes', function (done) {
-    if (process.env.APPVEYOR === 'True') return done()
-    if (process.env.TRAVIS === 'true') return done()
+      it('should send minidump when renderer crashes', function (done) {
+        if (process.env.APPVEYOR === 'True') return done()
+        if (process.env.TRAVIS === 'true') return done()
 
-    this.timeout(120000)
+        this.timeout(120000)
 
-    startServer({
-      callback (port) {
-        const crashUrl = url.format({
-          protocol: 'file',
-          pathname: path.join(fixtures, 'api', 'crash.html'),
-          search: '?port=' + port
+        startServer({
+          callback (port) {
+            const crashUrl = url.format({
+              protocol: 'file',
+              pathname: path.join(fixtures, 'api', 'crash.html'),
+              search: '?port=' + port
+            })
+            w.loadURL(crashUrl)
+          },
+          processType: 'renderer',
+          done: done
         })
-        w.loadURL(crashUrl)
-      },
-      processType: 'renderer',
-      done: done
-    })
-  })
+      })
 
-  it('should send minidump when node processes crash', function (done) {
-    if (process.env.APPVEYOR === 'True') return done()
-    if (process.env.TRAVIS === 'true') return done()
+      it('should send minidump when node processes crash', function (done) {
+        if (process.env.APPVEYOR === 'True') return done()
+        if (process.env.TRAVIS === 'true') return done()
 
-    this.timeout(120000)
+        this.timeout(120000)
 
-    startServer({
-      callback (port) {
-        const crashesDir = path.join(app.getPath('temp'), `${app.getName()} Crashes`)
-        const version = app.getVersion()
-        const crashPath = path.join(fixtures, 'module', 'crash.js')
-        childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
-      },
-      processType: 'browser',
-      done: done
-    })
-  })
-
-  it('should send minidump with updated extra parameters', function (done) {
-    if (process.env.APPVEYOR === 'True') return done()
-    if (process.env.TRAVIS === 'true') return done()
-
-    this.timeout(10000)
-
-    startServer({
-      callback (port) {
-        const crashUrl = url.format({
-          protocol: 'file',
-          pathname: path.join(fixtures, 'api', 'crash-restart.html'),
-          search: '?port=' + port
+        startServer({
+          callback (port) {
+            const crashesDir = path.join(app.getPath('temp'), `${app.getName()} Crashes`)
+            const version = app.getVersion()
+            const crashPath = path.join(fixtures, 'module', 'crash.js')
+            childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
+          },
+          processType: 'browser',
+          done: done
         })
-        w.loadURL(crashUrl)
-      },
-      processType: 'renderer',
-      done: done
+      })
+
+      it('should send minidump with updated extra parameters', function (done) {
+        if (process.env.APPVEYOR === 'True') return done()
+        if (process.env.TRAVIS === 'true') return done()
+
+        this.timeout(10000)
+
+        startServer({
+          callback (port) {
+            const crashUrl = url.format({
+              protocol: 'file',
+              pathname: path.join(fixtures, 'api', 'crash-restart.html'),
+              search: '?port=' + port
+            })
+            w.loadURL(crashUrl)
+          },
+          processType: 'renderer',
+          done: done
+        })
+      })
     })
-  })
-  })
   }
 
   generateSpecs('without sandbox', {})
