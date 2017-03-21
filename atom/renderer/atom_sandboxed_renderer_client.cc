@@ -206,7 +206,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   std::string preload_bundle_native(node::preload_bundle_data,
       node::preload_bundle_data + sizeof(node::preload_bundle_data));
   std::stringstream ss;
-  ss << "(function(binding, preloadPath) {\n";
+  ss << "(function(binding, preloadPath, require) {\n";
   ss << preload_bundle_native << "\n";
   ss << "})";
   std::string preload_wrapper = ss.str();
