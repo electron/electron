@@ -11,15 +11,20 @@ const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
 describe('crashReporter module', function () {
+  if (process.mas) {
+    return
+  }
   var fixtures = path.resolve(__dirname, 'fixtures')
+  const generateSpecs = (description, browserWindowOpts) => {
+  describe(description, function () {
   var w = null
   var originalTempDirectory = null
   var tempDirectory = null
 
   beforeEach(function () {
-    w = new BrowserWindow({
+    w = new BrowserWindow(Object.assign({
       show: false
-    })
+    }, browserWindowOpts))
     tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
     originalTempDirectory = app.getPath('temp')
     app.setPath('temp', tempDirectory)
@@ -29,10 +34,6 @@ describe('crashReporter module', function () {
     app.setPath('temp', originalTempDirectory)
     return closeWindow(w).then(function () { w = null })
   })
-
-  if (process.mas) {
-    return
-  }
 
   it('should send minidump when renderer crashes', function (done) {
     if (process.env.APPVEYOR === 'True') return done()
@@ -90,6 +91,16 @@ describe('crashReporter module', function () {
       processType: 'renderer',
       done: done
     })
+  })
+  })
+  }
+
+  generateSpecs('without sandbox', {})
+  generateSpecs('with sandbox ', {
+    webPreferences: {
+      sandbox: true,
+      preload: path.join(fixtures, 'module', 'preload-sandbox.js')
+    }
   })
 
   describe('.start(options)', function () {
