@@ -51,6 +51,10 @@ namespace {
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
+// Next navigation is caused by native window.open and
+// the renderer process may be reused.
+bool g_reuse_renderer_process_for_new_window = false;
+
 // Custom schemes to be registered to handle service worker.
 std::string g_custom_service_worker_schemes = "";
 
@@ -62,6 +66,10 @@ void Noop(scoped_refptr<content::SiteInstance>) {
 // static
 void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
   g_suppress_renderer_process_restart = true;
+}
+
+void AtomBrowserClient::CancelReuseRendererProcessForNewWindow() {
+  g_reuse_renderer_process_for_new_window = false;
 }
 
 void AtomBrowserClient::SetCustomServiceWorkerSchemes(
@@ -90,16 +98,22 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     content::BrowserContext* browser_context,
     content::SiteInstance* current_instance,
     const GURL& url) {
-
+  if (g_suppress_renderer_process_restart) {
+    g_suppress_renderer_process_restart = false;
+    return false;
+  }
   if (url.SchemeIs(url::kJavaScriptScheme))
     // "javacript:" scheme should always use same SiteInstance
     return false;
 
   int process_id = current_instance->GetProcess()->GetID();
-  if (!(IsRendererSandboxed(process_id)
-      || RendererUsesNativeWindowOpen(process_id)))
+  if (g_reuse_renderer_process_for_new_window) {
+    // native window.open can reuse renderer process
+    g_reuse_renderer_process_for_new_window = false;
+  } else if (!IsRendererSandboxed(process_id)) {
     // non-sandboxed renderers should always create a new SiteInstance
     return true;
+  }
 
   // Create new a SiteInstance if navigating to a different site.
   auto src_url = current_instance->GetSiteURL();
@@ -188,11 +202,6 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     content::SiteInstance* current_instance,
     const GURL& url,
     content::SiteInstance** new_instance) {
-  if (g_suppress_renderer_process_restart) {
-    g_suppress_renderer_process_restart = false;
-    return;
-  }
-
   if (!ShouldCreateNewSiteInstance(browser_context, current_instance, url))
     return;
 
@@ -322,8 +331,12 @@ bool AtomBrowserClient::CanCreateWindow(
     bool* no_javascript_access) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  if (IsRendererSandboxed(render_process_id)
-      || RendererUsesNativeWindowOpen(render_process_id)) {
+  if (IsRendererSandboxed(render_process_id)) {
+    *no_javascript_access = false;
+    return true;
+  }
+  if (RendererUsesNativeWindowOpen(render_process_id)) {
+    g_reuse_renderer_process_for_new_window = true;
     *no_javascript_access = false;
     return true;
   }

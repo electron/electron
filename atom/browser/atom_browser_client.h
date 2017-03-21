@@ -40,6 +40,8 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
   // Don't force renderer process to restart for once.
   static void SuppressRendererProcessRestartForOnce();
+  // Cancel reusing renderer process for new window.
+  static void CancelReuseRendererProcessForNewWindow();
 
   // Custom schemes to be registered to handle service worker.
   static void SetCustomServiceWorkerSchemes(
