@@ -8,8 +8,8 @@
 
 namespace atom {
 
-NodeBindingsLinux::NodeBindingsLinux(bool is_browser)
-    : NodeBindings(is_browser),
+NodeBindingsLinux::NodeBindingsLinux(BrowserEnvironment browser_env)
+    : NodeBindings(browser_env),
       epoll_(epoll_create(1)) {
   int backend_fd = uv_backend_fd(uv_loop_);
   struct epoll_event ev = { 0 };
@@ -50,8 +50,8 @@ void NodeBindingsLinux::PollEvents() {
 }
 
 // static
-NodeBindings* NodeBindings::Create(bool is_browser) {
-  return new NodeBindingsLinux(is_browser);
+NodeBindings* NodeBindings::Create(BrowserEnvironment browser_env) {
+  return new NodeBindingsLinux(browser_env);
 }
 
 }  // namespace atom

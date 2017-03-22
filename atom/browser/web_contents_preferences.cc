@@ -97,6 +97,10 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration ? "true" : "false");
 
+  // Whether to enable node integration in Worker.
+  if (web_preferences.GetBoolean(options::kNodeIntegrationInWorker, &b) && b)
+    command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
+
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.

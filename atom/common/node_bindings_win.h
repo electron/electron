@@ -12,7 +12,7 @@ namespace atom {
 
 class NodeBindingsWin : public NodeBindings {
  public:
-  explicit NodeBindingsWin(bool is_browser);
+  explicit NodeBindingsWin(BrowserEnvironment browser_env);
   virtual ~NodeBindingsWin();
 
  private:

@@ -141,15 +141,16 @@ void InitAsarSupport(v8::Isolate* isolate,
   v8::Local<v8::Value> result = asar_init->Run();
 
   // Initialize asar support.
-  base::Callback<void(v8::Local<v8::Value>,
-                      v8::Local<v8::Value>,
-                      std::string)> init;
-  if (mate::ConvertFromV8(isolate, result, &init)) {
+  if (result->IsFunction()) {
     const char* asar_native = reinterpret_cast<const char*>(
         static_cast<const unsigned char*>(node::asar_data));
-    init.Run(process,
-             require,
-             std::string(asar_native, sizeof(node::asar_data) - 1));
+    base::StringPiece asar_data(asar_native, sizeof(node::asar_data) - 1);
+    v8::Local<v8::Value> args[] = {
+        process,
+        require,
+        mate::ConvertToV8(isolate, asar_data),
+    };
+    result.As<v8::Function>()->Call(result, 3, args);
   }
 }
 

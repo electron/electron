@@ -11,6 +11,8 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "base/message_loop/message_loop.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/function_template.h"
 #include "native_mate/scoped_persistent.h"
 

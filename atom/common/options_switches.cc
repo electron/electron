@@ -122,6 +122,9 @@ const char kBlinkFeatures[] = "blinkFeatures";
 // Disable blink features.
 const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
 
+// Enable the node integration in WebWorker.
+const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
+
 }  // namespace options
 
 namespace switches {
@@ -163,6 +166,9 @@ const char kGuestInstanceID[]  = "guest-instance-id";
 const char kOpenerID[]         = "opener-id";
 const char kScrollBounce[]     = "scroll-bounce";
 const char kHiddenPage[]       = "hidden-page";
+
+// Command switch passed to renderer process to control nodeIntegration.
+const char kNodeIntegrationInWorker[]  = "node-integration-in-worker";
 
 // Widevine options
 // Path to Widevine CDM binaries.
