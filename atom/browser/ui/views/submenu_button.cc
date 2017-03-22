@@ -16,21 +16,10 @@
 
 namespace atom {
 
-namespace {
-
-// Filter out the "&" in menu label.
-base::string16 FilterAccelerator(const base::string16& label) {
-  base::string16 out;
-  base::RemoveChars(label, base::ASCIIToUTF16("&").c_str(), &out);
-  return out;
-}
-
-}  // namespace
-
 SubmenuButton::SubmenuButton(const base::string16& title,
                              views::MenuButtonListener* menu_button_listener,
                              const SkColor& background_color)
-    : views::MenuButton(FilterAccelerator(title),
+    : views::MenuButton(gfx::RemoveAcceleratorChar(title, '&', NULL, NULL),
                         menu_button_listener, false),
       accelerator_(0),
       show_underline_(false),
