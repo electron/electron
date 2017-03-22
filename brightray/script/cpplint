@@ -7,7 +7,7 @@ import sys
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-CPPLINT = os.path.join(SOURCE_ROOT, 'vendor', 'google-styleguide', 'trunk', 'cpplint', 'cpplint.py')
+CPPLINT = os.path.join(SOURCE_ROOT, 'vendor', 'libchromiumcontent', 'vendor', 'depot_tools', 'cpplint.py')
 LINE_LENGTH = 100
 
 IGNORED_FILES = [
