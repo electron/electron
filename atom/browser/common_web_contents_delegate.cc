@@ -183,7 +183,7 @@ void CommonWebContentsDelegate::SetOwnerWindow(
   web_contents->SetUserData(relay->key, relay);
 }
 
-void CommonWebContentsDelegate::DestroyWebContents() {
+void CommonWebContentsDelegate::ResetManagedWebContents() {
   web_contents_.reset();
 }
 

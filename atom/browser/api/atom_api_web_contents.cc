@@ -420,7 +420,7 @@ void WebContents::DestroyWebContents() {
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
   Emit("will-destroy");
-  CommonWebContentsDelegate::DestroyWebContents();
+  ResetManagedWebContents();
 }
 
 bool WebContents::DidAddMessageToConsole(content::WebContents* source,
