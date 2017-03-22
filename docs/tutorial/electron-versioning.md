@@ -48,4 +48,8 @@ The `--save-exact` flag will add `electron` to your `package.json` file without
 using a `^` or `~`, e.g. `1.6.2` instead of `^1.6.2`. This practice ensures that
 all upgrades of Electron are a manual operation made by you, the developer.
 
+Alternatively, you can use the `~` prefix in your SemVer range, like `~1.6.2`.
+This will lock your major and minor version, but allow new patch versions to
+be installed.
+
 [Semantic Versioning]: http://semver.org
