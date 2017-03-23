@@ -49,6 +49,10 @@ void NodeBindingsLinux::PollEvents() {
   } while (r == -1 && errno == EINTR);
 }
 
+bool NodeBindingsLinux::IsElevated() {
+  return geteuid() != 0;
+}
+
 // static
 NodeBindings* NodeBindings::Create(bool is_browser) {
   return new NodeBindingsLinux(is_browser);

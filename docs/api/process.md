@@ -66,6 +66,11 @@ for otherwise it is `undefined`.
 When app is started by being passed as parameter to the default app, this
 property is `true` in the main process, otherwise it is `undefined`.
 
+### `process.isElevated`
+
+If this app is running with administrative (Windows) or root (Mac, Linux) 
+privileges, this property is `true`, for otherwise it is `false`.
+
 ## Methods
 
 The `process` object has the following method:

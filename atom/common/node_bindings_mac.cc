@@ -59,6 +59,10 @@ void NodeBindingsMac::PollEvents() {
   } while (r == -1 && errno == EINTR);
 }
 
+bool NodeBindingsMac::IsElevated() {
+  return geteuid() != 0;
+}
+
 // static
 NodeBindings* NodeBindings::Create(bool is_browser) {
   return new NodeBindingsMac(is_browser);

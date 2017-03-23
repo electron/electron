@@ -23,6 +23,8 @@ class NodeBindingsMac : public NodeBindings {
 
   void PollEvents() override;
 
+  bool IsElevated() override;
+
   DISALLOW_COPY_AND_ASSIGN(NodeBindingsMac);
 };
 

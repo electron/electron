@@ -18,6 +18,8 @@ class NodeBindingsWin : public NodeBindings {
  private:
   void PollEvents() override;
 
+  bool IsElevated() override;
+
   DISALLOW_COPY_AND_ASSIGN(NodeBindingsWin);
 };
 
