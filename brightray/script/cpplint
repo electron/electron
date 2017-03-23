@@ -11,6 +11,8 @@ CPPLINT = os.path.join(SOURCE_ROOT, 'vendor', 'libchromiumcontent', 'vendor', 'd
 
 IGNORED_FILES = [
     os.path.join('browser', 'mac', 'bry_inspectable_web_contents_view.h'),
+    os.path.join('browser', 'mac', 'event_dispatching_window.h'),
+    os.path.join('browser', 'mac', 'notification_center_delegate.h'),
 ]
 
 def main():
