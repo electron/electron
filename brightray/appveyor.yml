@@ -13,6 +13,7 @@ platform:
 install:
   - cmd: SET PATH=C:\Program Files (x86)\MSBuild\14.0\bin\;%PATH%
   - cmd: SET PATH=C:\python27;%PATH%
+  - cmd: git submodule update --init --recursive
   - cmd: bash script/cibuild
 
 branches:
