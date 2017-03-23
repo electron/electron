@@ -142,10 +142,12 @@ void MediaStreamDevicesController::Accept() {
 
   content::MediaResponseCallback cb = callback_;
   callback_.Reset();
-  cb.Run(devices, content::MEDIA_DEVICE_OK, std::unique_ptr<content::MediaStreamUI>());
+  cb.Run(devices, content::MEDIA_DEVICE_OK,
+         std::unique_ptr<content::MediaStreamUI>());
 }
 
-void MediaStreamDevicesController::Deny(content::MediaStreamRequestResult result) {
+void MediaStreamDevicesController::Deny(
+    content::MediaStreamRequestResult result) {
   content::MediaResponseCallback cb = callback_;
   callback_.Reset();
   cb.Run(content::MediaStreamDevices(),

@@ -10,9 +10,15 @@
 //   icon: "file:///C:/Path/To/Your/Image.png"
 // });
 
-// windowsNotification.onshow  = function () { console.log("Notification shown") };
-// windowsNotification.onclick = function () { console.log("Notification clicked") };
-// windowsNotification.onclose = function () { console.log("Notification dismissed") };
+// windowsNotification.onshow  = function () {
+//   console.log("Notification shown")
+// };
+// windowsNotification.onclick = function () {
+//   console.log("Notification clicked")
+// };
+// windowsNotification.onclose = function () {
+//   console.log("Notification dismissed")
+// };
 
 #ifndef BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_
 #define BRIGHTRAY_BROWSER_WIN_NOTIFICATION_PRESENTER_WIN_H_

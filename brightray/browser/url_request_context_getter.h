@@ -47,8 +47,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     }
     virtual std::string GetUserAgent();
     virtual std::unique_ptr<net::URLRequestJobFactory>
-        CreateURLRequestJobFactory(
-            content::ProtocolHandlerMap* protocol_handlers);
+    CreateURLRequestJobFactory(content::ProtocolHandlerMap* protocol_handlers);
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
     virtual std::unique_ptr<net::CertVerifier> CreateCertVerifier();
@@ -75,7 +74,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   // net::URLRequestContextGetter:
   net::URLRequestContext* GetURLRequestContext() override;
-  scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const override;
+  scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner()
+      const override;
 
   net::HostResolver* host_resolver();
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }

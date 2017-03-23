@@ -173,7 +173,8 @@ class InspectableWebContentsImpl :
   bool frontend_loaded_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
   std::unique_ptr<content::DevToolsFrontendHost> frontend_host_;
-  std::unique_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
+  std::unique_ptr<DevToolsEmbedderMessageDispatcher>
+      embedder_message_dispatcher_;
 
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
