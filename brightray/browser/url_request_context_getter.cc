@@ -200,7 +200,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
             net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
             user_agent_)));
 
-    std::unique_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
+    std::unique_ptr<net::HostResolver> host_resolver(
+        net::HostResolver::CreateDefaultResolver(nullptr));
 
     // --host-resolver-rules
     if (command_line.HasSwitch(::switches::kHostResolverRules)) {
@@ -301,7 +302,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     // --host-rules
     if (command_line.HasSwitch(switches::kHostRules)) {
       host_mapping_rules_.reset(new net::HostMappingRules);
-      host_mapping_rules_->SetRulesFromString(command_line.GetSwitchValueASCII(switches::kHostRules));
+      host_mapping_rules_->SetRulesFromString(
+          command_line.GetSwitchValueASCII(switches::kHostRules));
       network_session_params.host_mapping_rules = host_mapping_rules_.get();
     }
 

@@ -1,5 +1,6 @@
 // Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jason.poon@microsoft.com>. All rights reserved.
+// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and
+// Jason Poon <jason.poon@microsoft.com>. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 

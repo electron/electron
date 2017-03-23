@@ -1,6 +1,9 @@
-// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jason.poon@microsoft.com>. All rights reserved.
-// Copyright (c) 2015 Ryan McShane <rmcshane@bandwidth.com> and Brandon Smith <bsmith@bandwidth.com>
-// Thanks to both of those folks mentioned above who first thought up a bunch of this code
+// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon
+// <jason.poon@microsoft.com>. All rights reserved.
+// Copyright (c) 2015 Ryan McShane <rmcshane@bandwidth.com> and Brandon Smith
+// <bsmith@bandwidth.com>
+// Thanks to both of those folks mentioned above who first thought up a bunch of
+// this code
 // and released it as MIT to the world.
 
 #include "browser/win/windows_toast_notification.h"
@@ -14,7 +17,13 @@
 #include "common/application_info.h"
 #include "content/public/browser/browser_thread.h"
 
-using namespace ABI::Windows::Data::Xml::Dom;
+using ABI::Windows::Data::Xml::Dom::IXmlAttribute;
+using ABI::Windows::Data::Xml::Dom::IXmlDocument;
+using ABI::Windows::Data::Xml::Dom::IXmlElement;
+using ABI::Windows::Data::Xml::Dom::IXmlNamedNodeMap;
+using ABI::Windows::Data::Xml::Dom::IXmlNode;
+using ABI::Windows::Data::Xml::Dom::IXmlNodeList;
+using ABI::Windows::Data::Xml::Dom::IXmlText;
 
 namespace brightray {
 
@@ -71,8 +80,7 @@ bool WindowsToastNotification::Initialize() {
 WindowsToastNotification::WindowsToastNotification(
     NotificationDelegate* delegate,
     NotificationPresenter* presenter)
-    : Notification(delegate, presenter) {
-}
+    : Notification(delegate, presenter) {}
 
 WindowsToastNotification::~WindowsToastNotification() {
   // Remove the notification on exit.
@@ -82,18 +90,18 @@ WindowsToastNotification::~WindowsToastNotification() {
   }
 }
 
-void WindowsToastNotification::Show(
-    const base::string16& title,
-    const base::string16& msg,
-    const std::string& tag,
-    const GURL& icon_url,
-    const SkBitmap& icon,
-    const bool silent) {
+void WindowsToastNotification::Show(const base::string16& title,
+                                    const base::string16& msg,
+                                    const std::string& tag,
+                                    const GURL& icon_url,
+                                    const SkBitmap& icon,
+                                    const bool silent) {
   auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
   std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
 
   ComPtr<IXmlDocument> toast_xml;
-  if(FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, silent, &toast_xml))) {
+  if (FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, silent,
+                         &toast_xml))) {
     NotificationFailed();
     return;
   }
@@ -105,7 +113,8 @@ void WindowsToastNotification::Show(
     return;
   }
 
-  ComPtr<ABI::Windows::UI::Notifications::IToastNotificationFactory> toast_factory;
+  ComPtr<ABI::Windows::UI::Notifications::IToastNotificationFactory>
+      toast_factory;
   if (FAILED(Windows::Foundation::GetActivationFactory(toast_str,
                                                        &toast_factory))) {
     NotificationFailed();
@@ -136,7 +145,8 @@ void WindowsToastNotification::Dismiss() {
 }
 
 bool WindowsToastNotification::GetToastXml(
-    ABI::Windows::UI::Notifications::IToastNotificationManagerStatics* toastManager,
+    ABI::Windows::UI::Notifications::IToastNotificationManagerStatics*
+        toastManager,
     const std::wstring& title,
     const std::wstring& msg,
     const std::wstring& icon_path,
@@ -145,16 +155,22 @@ bool WindowsToastNotification::GetToastXml(
   ABI::Windows::UI::Notifications::ToastTemplateType template_type;
   if (title.empty() || msg.empty()) {
     // Single line toast.
-    template_type = icon_path.empty() ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText01 :
-                                        ABI::Windows::UI::Notifications::ToastTemplateType_ToastImageAndText01;
+    template_type =
+        icon_path.empty()
+            ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText01
+            : ABI::Windows::UI::Notifications::
+                  ToastTemplateType_ToastImageAndText01;
     if (FAILED(toast_manager_->GetTemplateContent(template_type, toast_xml)))
       return false;
     if (!SetXmlText(*toast_xml, title.empty() ? msg : title))
       return false;
   } else {
     // Title and body toast.
-    template_type = icon_path.empty() ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText02 :
-                                        ABI::Windows::UI::Notifications::ToastTemplateType_ToastImageAndText02;
+    template_type =
+        icon_path.empty()
+            ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText02
+            : ABI::Windows::UI::Notifications::
+                  ToastTemplateType_ToastImageAndText02;
     if (FAILED(toastManager->GetTemplateContent(template_type, toast_xml)))
       return false;
     if (!SetXmlText(*toast_xml, title, msg))
@@ -174,9 +190,8 @@ bool WindowsToastNotification::GetToastXml(
   return true;
 }
 
-bool WindowsToastNotification::SetXmlAudioSilent(
-  IXmlDocument* doc) {
-    ScopedHString tag(L"toast");
+bool WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
+  ScopedHString tag(L"toast");
   if (!tag.success())
     return false;
 
@@ -230,15 +245,17 @@ bool WindowsToastNotification::SetXmlAudioSilent(
     return false;
 
   ComPtr<IXmlNode> child_node;
-  if (FAILED(silent_attribute_node->AppendChild(silent_node.Get(), &child_node)))
+  if (FAILED(
+          silent_attribute_node->AppendChild(silent_node.Get(), &child_node)))
     return false;
 
   ComPtr<IXmlNode> silent_attribute_pnode;
-  return SUCCEEDED(attributes.Get()->SetNamedItem(silent_attribute_node.Get(), &silent_attribute_pnode));
+  return SUCCEEDED(attributes.Get()->SetNamedItem(silent_attribute_node.Get(),
+                                                  &silent_attribute_pnode));
 }
 
-bool WindowsToastNotification::SetXmlText(
-    IXmlDocument* doc, const std::wstring& text) {
+bool WindowsToastNotification::SetXmlText(IXmlDocument* doc,
+                                          const std::wstring& text) {
   ScopedHString tag;
   ComPtr<IXmlNodeList> node_list;
   if (!GetTextNodeList(&tag, doc, &node_list, 1))
@@ -251,8 +268,9 @@ bool WindowsToastNotification::SetXmlText(
   return AppendTextToXml(doc, node.Get(), text);
 }
 
-bool WindowsToastNotification::SetXmlText(
-    IXmlDocument* doc, const std::wstring& title, const std::wstring& body) {
+bool WindowsToastNotification::SetXmlText(IXmlDocument* doc,
+                                          const std::wstring& title,
+                                          const std::wstring& body) {
   ScopedHString tag;
   ComPtr<IXmlNodeList> node_list;
   if (!GetTextNodeList(&tag, doc, &node_list, 2))
@@ -271,8 +289,8 @@ bool WindowsToastNotification::SetXmlText(
   return AppendTextToXml(doc, node.Get(), body);
 }
 
-bool WindowsToastNotification::SetXmlImage(
-    IXmlDocument* doc, const std::wstring& icon_path) {
+bool WindowsToastNotification::SetXmlImage(IXmlDocument* doc,
+                                           const std::wstring& icon_path) {
   ScopedHString tag(L"image");
   if (!tag.success())
     return false;
@@ -313,11 +331,10 @@ bool WindowsToastNotification::SetXmlImage(
   return SUCCEEDED(src_attr->AppendChild(src_node.Get(), &child_node));
 }
 
-bool WindowsToastNotification::GetTextNodeList(
-    ScopedHString* tag,
-    IXmlDocument* doc,
-    IXmlNodeList** node_list,
-    uint32_t req_length) {
+bool WindowsToastNotification::GetTextNodeList(ScopedHString* tag,
+                                               IXmlDocument* doc,
+                                               IXmlNodeList** node_list,
+                                               uint32_t req_length) {
   tag->Reset(L"text");
   if (!tag->success())
     return false;
@@ -332,8 +349,9 @@ bool WindowsToastNotification::GetTextNodeList(
   return node_length >= req_length;
 }
 
-bool WindowsToastNotification::AppendTextToXml(
-    IXmlDocument* doc, IXmlNode* node, const std::wstring& text) {
+bool WindowsToastNotification::AppendTextToXml(IXmlDocument* doc,
+                                               IXmlNode* node,
+                                               const std::wstring& text) {
   ScopedHString str(text);
   if (!str.success())
     return false;
@@ -377,14 +395,13 @@ bool WindowsToastNotification::RemoveCallbacks(
 / Toast Event Handler
 */
 ToastEventHandler::ToastEventHandler(Notification* notification)
-    : notification_(notification->GetWeakPtr()) {
-}
+    : notification_(notification->GetWeakPtr()) {}
 
-ToastEventHandler::~ToastEventHandler() {
-}
+ToastEventHandler::~ToastEventHandler() {}
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
-    ABI::Windows::UI::Notifications::IToastNotification* sender, IInspectable* args) {
+    ABI::Windows::UI::Notifications::IToastNotification* sender,
+    IInspectable* args) {
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationClicked, notification_));

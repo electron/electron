@@ -4,9 +4,9 @@
 #ifndef BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_LOADER_H_
 #define BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_LOADER_H_
 
-#include <string>
-
 #include <libnotify/notify.h>
+
+#include <string>
 
 class LibNotifyLoader {
  public:

@@ -81,7 +81,7 @@ int DevToolsNetworkUploadDataStream::ThrottleRead(int result) {
 }
 
 void DevToolsNetworkUploadDataStream::ThrottleCallback(
-   int result, int64_t bytes) {
+    int result, int64_t bytes) {
   throttled_byte_count_ = bytes;
   OnReadCompleted(result);
 }
