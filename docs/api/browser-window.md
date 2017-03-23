@@ -35,9 +35,9 @@ without visual flash, there are two solutions for different situations.
 
 ### Using `ready-to-show` event
 
-While loading the page, the `ready-to-show` event will be emitted when renderer
-process has done drawing for the first time, showing window after this event
-will have no visual flash:
+While loading the page, the `ready-to-show` event will be emitted when the renderer
+process has rendered the page for the first time if the window has not been shown yet. Showing
+the window after this event will have no visual flash:
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -215,6 +215,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
       is `true`.
+    * `nodeIntegrationInWorker` Boolean (optional) - Whether node integration is
+      enabled in web workers. Default is `false`. More about this can be found
+      in [Multithreading](../tutorial/multithreading.md).
     * `preload` String (optional) - Specifies a script that will be loaded before other
       scripts run in the page. This script will always have access to node APIs
       no matter whether node integration is turned on or off. The value should
@@ -391,7 +394,7 @@ Emitted when the window is hidden.
 
 #### Event: 'ready-to-show'
 
-Emitted when the web page has been rendered and window can be displayed without
+Emitted when the web page has been rendered (while not being shown) and window can be displayed without
 a visual flash.
 
 #### Event: 'maximize'
@@ -633,7 +636,8 @@ Returns `Boolean` - Whether current window is a modal window.
 
 #### `win.maximize()`
 
-Maximizes the window.
+Maximizes the window. This will also show (but not focus) the window if it
+isn't being displayed already.
 
 #### `win.unmaximize()`
 

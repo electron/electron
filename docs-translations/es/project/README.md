@@ -5,19 +5,19 @@
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
-:memo: Traducciones disponibles: [Koreano](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/README.md) | [Chino Simplificado](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/README.md) | [Portugues Brasileño](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/README.md) | [Chino Tradicional](https://github.com/electron/electron/tree/master/docs-translations/zh-TW/project/README.md)
+:memo: Traducciones disponibles: [Koreano](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/README.md) | [Chino Simplificado](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/README.md) | [Portugués Brasileño](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/README.md) | [Chino Tradicional](https://github.com/electron/electron/tree/master/docs-translations/zh-TW/project/README.md)
 
-Electron es framework que  permite escribir aplicaciones de escritorio multiplataforma 
-usando JavaScript, HTML y  CSS. Está basado en  [Node.js](https://nodejs.org/) con 
-[Chromium](http://www.chromium.org).  Es usado por [Atom
+Electron es un framework que permite escribir aplicaciones de escritorio multiplataforma 
+usando JavaScript, HTML y CSS. Está basado en [Node.js](https://nodejs.org/) con 
+[Chromium](http://www.chromium.org). Es usado por [Atom
 editor](https://github.com/atom/atom) y muchas otras [aplicaciones](https://electron.atom.io/apps).
 
 Sigue a [@ElectronJS](https://twitter.com/electronjs) en Twitter para estar informado de anuncios 
 importantes.
 
-Este projecto se adhiere a [Código de Conducta convenido para Contribuyentes](CODE_OF_CONDUCT.md).
+Este proyecto se adhiere al [Código de Conducta convenido para Colaboradores](CODE_OF_CONDUCT.md).
 Si desea participar, debes seguir este código de conducta. Por favor reporta un comportamiento
-no aceptado a  electron@github.com.
+no aceptado a electron@github.com.
 
 ## Downloads
 
@@ -33,7 +33,7 @@ npm install electron -g
 ```
 
 Mira la [página de lanzamientos](https://github.com/electron/electron/releases) para
-los prebuilt binaries, debug symbols, and more.
+los prebuilt binaries, debug symbols, y más.
 
 ### Mirrors
 
@@ -41,13 +41,13 @@ los prebuilt binaries, debug symbols, and more.
 
 ## Documentación
 
-Las guias y API de referencia están disponibles en el directorio 
+Las guías y API de referencia están disponibles en el directorio 
 [docs](https://github.com/electron/electron/tree/master/docs). Ahí también
-puedes encontrar documentos que describen como construir y contribuir a Electron.
+puedes encontrar documentos que describen cómo construir y contribuir en Electron.
 
 ## Traducciones de la Documentación
 
-- [Portugues Brasileño](https://github.com/electron/electron/tree/master/docs-translations/pt-BR)
+- [Portugués Brasileño](https://github.com/electron/electron/tree/master/docs-translations/pt-BR)
 - [Koreano](https://github.com/electron/electron/tree/master/docs-translations/ko-KR)
 - [Japonés](https://github.com/electron/electron/tree/master/docs-translations/jp)
 - [Español](https://github.com/electron/electron/tree/master/docs-translations/es)
@@ -57,12 +57,12 @@ puedes encontrar documentos que describen como construir y contribuir a Electron
 - [Thai](https://github.com/electron/electron/tree/master/docs-Translations/th-TH)
 - [Ucraniano](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
 - [Ruso](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
-- [Frances](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)
+- [Francés](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)
 
 ## Inicio rápido
 
 Clona y ejecuta el repositorio [`electron/electron-quick-start`](https://github.com/electron/electron-quick-start)
-para ver una aplicación minima en acción.
+para ver una aplicación mínima en acción.
 
 ## Comunidad
 
@@ -71,7 +71,7 @@ Puedes preguntar y interactuar con la comunidad en los siguientes lugares:
 Atom.
 - `#atom-shell` canal de IRC en Freenode
 - [`Atom`](http://atom-slack.herokuapp.com/) canales en Slack
-- [`electron-br`](https://electron-br.slack.com) *(Portugues Brasileño)*
+- [`electron-br`](https://electron-br.slack.com) *(Portugués Brasileño)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Koreano)*
 - [`electron-jp`](https://electron-jp.slack.com) *(Japonés)*
 - [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turco)*
@@ -84,4 +84,4 @@ donde la comunidad mantiene una lista útil de ejemplos de aplicaciones, herrami
 
 [MIT](https://github.com/electron/electron/blob/master/LICENSE)
 
-Si usas los logos de Electron ó GitHub, asegurate de seguir las [GitHub logo guidelines](https://github.com/logos).
+Si usas los logos de Electron ó GitHub, asegúrate de seguir las [GitHub logo guidelines](https://github.com/logos).

@@ -20,7 +20,7 @@ namespace atom {
 
 class AtomBindings {
  public:
-  AtomBindings();
+  explicit AtomBindings(uv_loop_t* loop);
   virtual ~AtomBindings();
 
   // Add process.atomBinding function, which behaves like process.binding but

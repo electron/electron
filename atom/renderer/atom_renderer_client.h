@@ -65,6 +65,10 @@ class AtomRendererClient : public content::ContentRendererClient {
   void AddSupportedKeySystems(
       std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems)
       override;
+  void DidInitializeWorkerContextOnWorkerThread(
+      v8::Local<v8::Context> context) override;
+  void WillDestroyWorkerContextOnWorkerThread(
+      v8::Local<v8::Context> context) override;
 
   // Whether the node integration has been initialized.
   bool node_integration_initialized_;
