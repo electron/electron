@@ -348,6 +348,14 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
   DCHECK_EQ(request, request_.get());
 
   const auto status = request_->status();
+  if (status.error() == bytes_read &&
+      bytes_read == net::ERR_CONTENT_DECODING_INIT_FAILED) {
+    // When the request job is unable to create a source stream for the
+    // content encoding, we fail the request.
+    DoCancelWithError(net::ErrorToString(net::ERR_CONTENT_DECODING_INIT_FAILED),
+                      true);
+    return;
+  }
 
   bool response_error = false;
   bool data_ended = false;
