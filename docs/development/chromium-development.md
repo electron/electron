@@ -11,4 +11,4 @@
 - [Development Calendar and Release Info](https://www.chromium.org/developers/calendar)
 - [Discussion Groups](http://www.chromium.org/developers/discussion-groups)
 
-See also [V8 Development](chromium-development.md)
+See also [V8 Development](v8-development.md)
