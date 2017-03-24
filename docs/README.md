@@ -105,3 +105,4 @@ an issue:
 * [Documentation Styleguide](styleguide.md)
 * [Updating Chrome](development/updating-chrome.md)
 * [Chromium Development](development/chromium-development.md)
+* [V8 Development](development/v8-development.md)
