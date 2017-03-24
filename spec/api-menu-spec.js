@@ -455,8 +455,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('MenuItem editMenu', function() {
-    it('includes a default submenu layout when submenu is empty', function() {
+  describe('MenuItem editMenu', function () {
+    it('includes a default submenu layout when submenu is empty', function () {
       var item = new MenuItem({role: 'editMenu'})
       assert.equal(item.label, 'Edit')
       assert.equal(item.submenu.items[0].role, 'undo')
@@ -465,37 +465,37 @@ describe('menu module', function () {
       assert.equal(item.submenu.items[3].role, 'cut')
       assert.equal(item.submenu.items[4].role, 'copy')
       assert.equal(item.submenu.items[5].role, 'paste')
-      if (process.platform == 'darwin') {
+      if (process.platform === 'darwin') {
         assert.equal(item.submenu.items[6].role, 'pasteandmatchstyle')
         assert.equal(item.submenu.items[7].role, 'delete')
         assert.equal(item.submenu.items[8].role, 'selectall')
       }
-      if (process.platform == 'win32') {
+      if (process.platform === 'win32') {
         assert.equal(item.submenu.items[6].role, 'delete')
         assert.equal(item.submenu.items[7].type, 'separator')
         assert.equal(item.submenu.items[8].role, 'selectall')
       }
     })
-    it('overrides default layout when submenu is specified', function() {
-      var item = new MenuItem({role: 'editMenu', submenu: [{ role: 'close'}]})
+    it('overrides default layout when submenu is specified', function () {
+      var item = new MenuItem({role: 'editMenu', submenu: [{role: 'close'}]})
       assert.equal(item.label, 'Edit')
       assert.equal(item.submenu.items[0].role, 'close')
     })
   })
 
-  describe('MenuItem windowMenu', function() {
-    it('includes a default submenu layout when submenu is empty', function() {
+  describe('MenuItem windowMenu', function () {
+    it('includes a default submenu layout when submenu is empty', function () {
       var item = new MenuItem({role: 'windowMenu'})
       assert.equal(item.label, 'Window')
       assert.equal(item.submenu.items[0].role, 'minimize')
       assert.equal(item.submenu.items[1].role, 'close')
-      if (process.platform == 'darwin') {
+      if (process.platform === 'darwin') {
         assert.equal(item.submenu.items[2].type, 'separator')
         assert.equal(item.submenu.items[3].role, 'front')
       }
     })
-    it('overrides default layout when submenu is specified', function() {
-      var item = new MenuItem({role: 'windowMenu', submenu: [{ role: 'copy'}]})
+    it('overrides default layout when submenu is specified', function () {
+      var item = new MenuItem({role: 'windowMenu', submenu: [{role: 'copy'}]})
       assert.equal(item.label, 'Window')
       assert.equal(item.submenu.items[0].role, 'copy')
     })
