@@ -173,7 +173,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
     devtools_window_web_view_ = new views::WebView(NULL);
     devtools_window_delegate_ = new DevToolsWindowDelegate(
         this,
-        devtools_window_web_view_
+        devtools_window_web_view_,
         devtools_window_.get());
 
     views::Widget::InitParams params;
