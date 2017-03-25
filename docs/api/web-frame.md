@@ -136,6 +136,9 @@ Inserts `text` to the focused element.
 * `callback` Function (optional) - Called after script has been executed.
   * `result` Any
 
+Returns `Promise` - A promise that resolves with the result of the executed code
+or is rejected if the result of the code is a rejected promise.
+
 Evaluates `code` in page.
 
 In the browser window some HTML APIs like `requestFullScreen` can only be
