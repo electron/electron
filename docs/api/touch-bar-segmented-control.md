@@ -19,7 +19,7 @@ Process: [Main](../tutorial/quick-start.md#main-process)
   * `segments` [SegmentedControlSegment[]](structures/segmented-control-segment.md) - An array of segments to place in this control
   * `selectedIndex` Integer (Optional) - The index of the currently selected segment, will update automatically with user interaction
   * `change` Function - Called when the user selects a new segment
-    * `selectedIndex` - The index of the segment the user selected
+    * `selectedIndex` Integer - The index of the segment the user selected
 
 ### Instance Properties
 
