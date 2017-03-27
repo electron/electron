@@ -179,6 +179,8 @@ class NativeWindowMac : public NativeWindow,
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_;
 
+  std::string tabbing_identifier_;
+
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
 

@@ -656,7 +656,8 @@ NativeWindowMac::NativeWindowMac(
       was_fullscreen_(false),
       zoom_to_page_width_(false),
       attention_request_id_(0),
-      title_bar_style_(NORMAL) {
+      title_bar_style_(NORMAL),
+      tabbing_identifier_(""){
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -681,6 +682,8 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kClosable, &closable);
 
   options.Get(options::kTitleBarStyle, &title_bar_style_);
+
+  options.Get(options::kTabbingIdentifier, &tabbing_identifier_);
 
   std::string windowType;
   options.Get(options::kType, &windowType);
@@ -752,6 +755,16 @@ NativeWindowMac::NativeWindowMac(
     }
     // Remove non-transparent corners, see http://git.io/vfonD.
     [window_ setOpaque:NO];
+  }
+
+  if (base::mac::IsAtLeastOS10_12()) {
+    // Create a tab only if tabbing identifier is specified and window has
+    // a native title bar.
+    if (tabbing_identifier_.empty() || transparent() || !has_frame()) {
+      [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
+    } else {
+      [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbing_identifier_)];
+    }
   }
 
   // We will manage window's lifetime ourselves.

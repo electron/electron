@@ -51,6 +51,9 @@ const char kZoomToPageWidth[] = "zoomToPageWidth";
 // The requested title bar style for the window
 const char kTitleBarStyle[] = "titleBarStyle";
 
+// Tabbing identifier for the window if native tabs are enabled on macOS.
+const char kTabbingIdentifier[] = "tabbingIdentifier";
+
 // The menu bar is hidden unless "Alt" is pressed.
 const char kAutoHideMenuBar[] = "autoHideMenuBar";
 
