@@ -480,6 +480,8 @@
       'atom/renderer/node_array_buffer_bridge.h',
       'atom/renderer/preferences_manager.cc',
       'atom/renderer/preferences_manager.h',
+      'atom/renderer/renderer_client_base.cc',
+      'atom/renderer/renderer_client_base.h',
       'atom/renderer/web_worker_observer.cc',
       'atom/renderer/web_worker_observer.h',
       'atom/utility/atom_content_utility_client.cc',
