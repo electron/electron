@@ -410,6 +410,11 @@ enum {
     return nil;
 }
 
+-(void)setEscapeTouchBarItem:(mate::PersistentDictionary)item {
+  if (self.touchBar && atom_touch_bar_)
+    [atom_touch_bar_ setEscapeTouchBarItem:item forTouchBar:self.touchBar];
+}
+
 // NSWindow overrides.
 
 - (void)swipeWithEvent:(NSEvent *)event {
@@ -1415,6 +1420,10 @@ void NativeWindowMac::SetTouchBar(
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
   [window_ refreshTouchBarItem:item_id];
+}
+
+void NativeWindowMac::SetEscapeTouchBarItem(const mate::PersistentDictionary item) {
+  [window_ setEscapeTouchBarItem:item];
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {

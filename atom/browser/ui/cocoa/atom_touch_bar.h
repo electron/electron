@@ -31,6 +31,8 @@
 - (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items;
 - (NSMutableArray*)identifiersFromSettings:(const std::vector<mate::PersistentDictionary>&)settings;
 - (void)refreshTouchBarItem:(NSTouchBar*)touchBar id:(const std::string&)item_id;
+- (void)addNonDefaultTouchBarItems:(std::vector<mate::PersistentDictionary>)items;
+- (void)setEscapeTouchBarItem:(mate::PersistentDictionary)item forTouchBar:(NSTouchBar*)touchBar;
 
 
 - (NSString*)idFromIdentifier:(NSString*)identifier withPrefix:(NSString*)prefix;

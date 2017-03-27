@@ -6,13 +6,24 @@ Process: [Main](../tutorial/quick-start.md#main-process)
 
 ### `new TouchBar(items)` _Experimental_
 
-* `items` ([TouchBarButton](touch-bar-button.md) | [TouchBarColorPicker](touch-bar-color-picker.md) | [TouchBarGroup](touch-bar-group.md) | [TouchBarLabel](touch-bar-label.md) | [TouchBarPopover](touch-bar-popover.md) | [TouchBarSlider](touch-bar-slider.md) | [TouchBarSpacer](touch-bar-spacer.md))[]
+* `items` ([TouchBarButton](touch-bar-button.md) | [TouchBarColorPicker](touch-bar-color-picker.md) | [TouchBarGroup](touch-bar-group.md) | [TouchBarLabel](touch-bar-label.md) | [TouchBarPopover](touch-bar-popover.md) | [TouchBarScrubber](touch-bar-scrubber.md) | [TouchBarSegmentedControl](touch-bar-segmented-control.md) | [TouchBarSlider](touch-bar-slider.md) | [TouchBarSpacer](touch-bar-spacer.md))[]
 
 Creates a new touch bar with the specified items. Use
 `BrowserWindow.setTouchBar` to add the `TouchBar` to a window.
 
 **Note:** The TouchBar API is currently experimental and may change or be
 removed in future Electron releases.
+
+### Instance Methods
+
+The following methods are available on instances of `TouchBar`:
+
+#### `touchBar.replaceEscapeItem([touchBarItem])`
+
+* `touchBarItem` (TouchBarButton | TouchBarColorPicker | TouchBarGroup | TouchBarLabel | TouchBarPopover | TouchBarScrubber | TouchBarSegmentedControl | TouchBarSlider | TouchBarSpacer) - (Optional) The touch bar item to replace the escape button with
+
+Replaces the "esc" button on the touchbar with the given TouchBarItem, if `touchBarItem` is not provided or is falsey the button is reset
+to the "esc" button automatically.
 
 ## Examples
 
