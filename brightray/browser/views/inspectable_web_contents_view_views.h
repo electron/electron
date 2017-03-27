@@ -14,7 +14,7 @@ class Widget;
 
 namespace brightray {
 
-namespace {
+namespace { // NOLINT
 class DevToolsWindowDelegate;
 }
 

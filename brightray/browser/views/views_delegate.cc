@@ -48,7 +48,8 @@ void ViewsDelegate::NotifyMenuItemFocused(
 #if defined(OS_WIN)
 HICON ViewsDelegate::GetDefaultWindowIcon() const {
   // Use current exe's icon as default window icon.
-  return LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1  /* IDR_MAINFRAME */));
+  return LoadIcon(GetModuleHandle(NULL),
+                  MAKEINTRESOURCE(1  /* IDR_MAINFRAME */));
 }
 
 HICON ViewsDelegate::GetSmallWindowIcon() const {

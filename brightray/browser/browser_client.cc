@@ -68,7 +68,8 @@ content::MediaObserver* BrowserClient::GetMediaObserver() {
   return MediaCaptureDevicesDispatcher::GetInstance();
 }
 
-content::PlatformNotificationService* BrowserClient::GetPlatformNotificationService() {
+content::PlatformNotificationService*
+BrowserClient::GetPlatformNotificationService() {
   if (!notification_service_)
     notification_service_.reset(new PlatformNotificationService(this));
   return notification_service_.get();

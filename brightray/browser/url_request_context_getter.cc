@@ -69,7 +69,8 @@ std::string URLRequestContextGetter::Delegate::GetUserAgent() {
 std::unique_ptr<net::URLRequestJobFactory>
 URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers) {
-  std::unique_ptr<net::URLRequestJobFactoryImpl> job_factory(new net::URLRequestJobFactoryImpl);
+  std::unique_ptr<net::URLRequestJobFactoryImpl> job_factory(
+      new net::URLRequestJobFactoryImpl);
 
   for (auto& it : *protocol_handlers) {
     job_factory->SetProtocolHandler(
@@ -89,7 +90,8 @@ URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
 }
 
 net::HttpCache::BackendFactory*
-URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(const base::FilePath& base_path) {
+URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(
+    const base::FilePath& base_path) {
   base::FilePath cache_path = base_path.Append(FILE_PATH_LITERAL("Cache"));
   return new net::HttpCache::DefaultBackend(
       net::DISK_CACHE,
@@ -104,11 +106,13 @@ URLRequestContextGetter::Delegate::CreateCertVerifier() {
   return net::CertVerifier::CreateDefault();
 }
 
-net::SSLConfigService* URLRequestContextGetter::Delegate::CreateSSLConfigService() {
+net::SSLConfigService*
+URLRequestContextGetter::Delegate::CreateSSLConfigService() {
   return new net::SSLConfigServiceDefaults;
 }
 
-std::vector<std::string> URLRequestContextGetter::Delegate::GetCookieableSchemes() {
+std::vector<std::string>
+URLRequestContextGetter::Delegate::GetCookieableSchemes() {
   return { "http", "https", "ws", "wss" };
 }
 
@@ -177,7 +181,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_delegate_.reset(delegate_->CreateNetworkDelegate());
     url_request_context_->set_network_delegate(network_delegate_.get());
 
-    storage_.reset(new net::URLRequestContextStorage(url_request_context_.get()));
+    storage_.reset(
+        new net::URLRequestContextStorage(url_request_context_.get()));
 
     auto cookie_path = in_memory_ ?
         base::FilePath() : base_path_.Append(FILE_PATH_LITERAL("Cookies"));
@@ -200,7 +205,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
             net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
             user_agent_)));
 
-    std::unique_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
+    std::unique_ptr<net::HostResolver> host_resolver(
+        net::HostResolver::CreateDefaultResolver(nullptr));
 
     // --host-resolver-rules
     if (command_line.HasSwitch(::switches::kHostResolverRules)) {
@@ -260,7 +266,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     // --auth-negotiate-delegate-whitelist
     if (command_line.HasSwitch(switches::kAuthNegotiateDelegateWhitelist)) {
       http_auth_preferences_->set_delegate_whitelist(
-          command_line.GetSwitchValueASCII(switches::kAuthNegotiateDelegateWhitelist));
+          command_line.GetSwitchValueASCII(
+              switches::kAuthNegotiateDelegateWhitelist));
     }
 
     auto auth_handler_factory =
@@ -301,13 +308,15 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     // --host-rules
     if (command_line.HasSwitch(switches::kHostRules)) {
       host_mapping_rules_.reset(new net::HostMappingRules);
-      host_mapping_rules_->SetRulesFromString(command_line.GetSwitchValueASCII(switches::kHostRules));
+      host_mapping_rules_->SetRulesFromString(
+          command_line.GetSwitchValueASCII(switches::kHostRules));
       network_session_params.host_mapping_rules = host_mapping_rules_.get();
     }
 
     // Give |storage_| ownership at the end in case it's |mapped_host_resolver|.
     storage_->set_host_resolver(std::move(host_resolver));
-    network_session_params.host_resolver = url_request_context_->host_resolver();
+    network_session_params.host_resolver =
+        url_request_context_->host_resolver();
 
     http_network_session_.reset(
         new net::HttpNetworkSession(network_session_params));
@@ -322,7 +331,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       storage_->set_http_transaction_factory(base::WrapUnique(
           new net::HttpCache(
               base::WrapUnique(new DevToolsNetworkTransactionFactory(
-                  network_controller_handle_->GetController(), http_network_session_.get())),
+                  network_controller_handle_->GetController(),
+                  http_network_session_.get())),
               std::move(backend),
               false)));
     } else {
@@ -354,7 +364,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   return url_request_context_.get();
 }
 
-scoped_refptr<base::SingleThreadTaskRunner> URLRequestContextGetter::GetNetworkTaskRunner() const {
+scoped_refptr<base::SingleThreadTaskRunner>
+URLRequestContextGetter::GetNetworkTaskRunner() const {
   return BrowserThread::GetTaskRunnerForThread(BrowserThread::IO);
 }
 

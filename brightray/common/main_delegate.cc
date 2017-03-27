@@ -61,9 +61,9 @@ void InitializeResourceBundle(const std::string& locale) {
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("pdf_viewer_resources.pak")),
       ui::GetSupportedScaleFactors()[0]);
-  bundle.AddDataPackFromPath(
-      pak_dir.Append(FILE_PATH_LITERAL("blink_image_resources_200_percent.pak")),
-      ui::SCALE_FACTOR_200P);
+  bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL(
+                                 "blink_image_resources_200_percent.pak")),
+                             ui::SCALE_FACTOR_200P);
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("content_resources_200_percent.pak")),
       ui::SCALE_FACTOR_200P);
@@ -75,7 +75,6 @@ void InitializeResourceBundle(const std::string& locale) {
       ui::SCALE_FACTOR_200P);
 #endif
 }
-
 
 MainDelegate::MainDelegate() {
 }

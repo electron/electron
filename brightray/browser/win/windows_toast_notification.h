@@ -1,6 +1,9 @@
-// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon <jason.poon@microsoft.com>. All rights reserved.
-// Copyright (c) 2015 Ryan McShane <rmcshane@bandwidth.com> and Brandon Smith <bsmith@bandwidth.com>
-// Thanks to both of those folks mentioned above who first thought up a bunch of this code
+// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon
+// <jason.poon@microsoft.com>. All rights reserved.
+// Copyright (c) 2015 Ryan McShane <rmcshane@bandwidth.com> and Brandon Smith
+// <bsmith@bandwidth.com>
+// Thanks to both of those folks mentioned above who first thought up a bunch of
+// this code
 // and released it as MIT to the world.
 
 #ifndef BRIGHTRAY_BROWSER_WIN_WINDOWS_TOAST_NOTIFICATION_H_
@@ -12,21 +15,28 @@
 
 #include "browser/notification.h"
 
-using namespace Microsoft::WRL;
+using Microsoft::WRL::ClassicCom;
+using Microsoft::WRL::ComPtr;
+using Microsoft::WRL::Make;
+using Microsoft::WRL::RuntimeClass;
+using Microsoft::WRL::RuntimeClassFlags;
 
 class ScopedHString;
 
 namespace brightray {
 
 using DesktopToastActivatedEventHandler =
-    ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Notifications::ToastNotification*,
-    IInspectable*>;
+    ABI::Windows::Foundation::ITypedEventHandler<
+        ABI::Windows::UI::Notifications::ToastNotification*,
+        IInspectable*>;
 using DesktopToastDismissedEventHandler =
-    ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Notifications::ToastNotification*,
-    ABI::Windows::UI::Notifications::ToastDismissedEventArgs*>;
+    ABI::Windows::Foundation::ITypedEventHandler<
+        ABI::Windows::UI::Notifications::ToastNotification*,
+        ABI::Windows::UI::Notifications::ToastDismissedEventArgs*>;
 using DesktopToastFailedEventHandler =
-    ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Notifications::ToastNotification*,
-    ABI::Windows::UI::Notifications::ToastFailedEventArgs*>;
+    ABI::Windows::Foundation::ITypedEventHandler<
+        ABI::Windows::UI::Notifications::ToastNotification*,
+        ABI::Windows::UI::Notifications::ToastFailedEventArgs*>;
 
 class WindowsToastNotification : public Notification {
  public:
@@ -50,12 +60,14 @@ class WindowsToastNotification : public Notification {
  private:
   friend class ToastEventHandler;
 
-  bool GetToastXml(ABI::Windows::UI::Notifications::IToastNotificationManagerStatics* toastManager,
-                   const std::wstring& title,
-                   const std::wstring& msg,
-                   const std::wstring& icon_path,
-                   const bool silent,
-                   ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
+  bool GetToastXml(
+      ABI::Windows::UI::Notifications::IToastNotificationManagerStatics*
+          toastManager,
+      const std::wstring& title,
+      const std::wstring& msg,
+      const std::wstring& icon_path,
+      const bool silent,
+      ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
   bool SetXmlAudioSilent(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
   bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                   const std::wstring& text);
@@ -71,34 +83,45 @@ class WindowsToastNotification : public Notification {
   bool AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                        ABI::Windows::Data::Xml::Dom::IXmlNode* node,
                        const std::wstring& text);
-  bool SetupCallbacks(ABI::Windows::UI::Notifications::IToastNotification* toast);
-  bool RemoveCallbacks(ABI::Windows::UI::Notifications::IToastNotification* toast);
+  bool SetupCallbacks(
+      ABI::Windows::UI::Notifications::IToastNotification* toast);
+  bool RemoveCallbacks(
+      ABI::Windows::UI::Notifications::IToastNotification* toast);
 
-  static ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics> toast_manager_;
-  static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier> toast_notifier_;
+  static ComPtr<
+      ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>
+      toast_manager_;
+  static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>
+      toast_notifier_;
 
   EventRegistrationToken activated_token_;
   EventRegistrationToken dismissed_token_;
   EventRegistrationToken failed_token_;
 
   ComPtr<ToastEventHandler> event_handler_;
-  ComPtr<ABI::Windows::UI::Notifications::IToastNotification> toast_notification_;
+  ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
+      toast_notification_;
 
   DISALLOW_COPY_AND_ASSIGN(WindowsToastNotification);
 };
-
 
 class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
                                               DesktopToastActivatedEventHandler,
                                               DesktopToastDismissedEventHandler,
                                               DesktopToastFailedEventHandler> {
  public:
-  ToastEventHandler(Notification* notification);
+  explicit ToastEventHandler(Notification* notification);
   ~ToastEventHandler();
 
-  IFACEMETHODIMP Invoke(ABI::Windows::UI::Notifications::IToastNotification* sender, IInspectable* args);
-  IFACEMETHODIMP Invoke(ABI::Windows::UI::Notifications::IToastNotification* sender, ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e);
-  IFACEMETHODIMP Invoke(ABI::Windows::UI::Notifications::IToastNotification* sender, ABI::Windows::UI::Notifications::IToastFailedEventArgs* e);
+  IFACEMETHODIMP Invoke(
+      ABI::Windows::UI::Notifications::IToastNotification* sender,
+      IInspectable* args);
+  IFACEMETHODIMP Invoke(
+      ABI::Windows::UI::Notifications::IToastNotification* sender,
+      ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e);
+  IFACEMETHODIMP Invoke(
+      ABI::Windows::UI::Notifications::IToastNotification* sender,
+      ABI::Windows::UI::Notifications::IToastFailedEventArgs* e);
 
  private:
   base::WeakPtr<Notification> notification_;  // weak ref.

@@ -2,6 +2,8 @@
 
 set -ex
 
+script/cpplint
+
 # Make cloned repository complete
 git fetch --unshallow origin HEAD
 

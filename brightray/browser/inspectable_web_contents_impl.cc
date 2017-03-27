@@ -136,7 +136,8 @@ GURL GetDevToolsURL(bool can_dock) {
 
 class ResponseWriter : public net::URLFetcherResponseWriter {
  public:
-  ResponseWriter(base::WeakPtr<InspectableWebContentsImpl> bindings, int stream_id);
+  ResponseWriter(base::WeakPtr<InspectableWebContentsImpl> bindings,
+                 int stream_id);
   ~ResponseWriter() override;
 
   // URLFetcherResponseWriter overrides:
@@ -153,8 +154,9 @@ class ResponseWriter : public net::URLFetcherResponseWriter {
   DISALLOW_COPY_AND_ASSIGN(ResponseWriter);
 };
 
-ResponseWriter::ResponseWriter(base::WeakPtr<InspectableWebContentsImpl> bindings,
-                               int stream_id)
+ResponseWriter::ResponseWriter(
+    base::WeakPtr<InspectableWebContentsImpl> bindings,
+    int stream_id)
     : bindings_(bindings),
       stream_id_(stream_id) {
 }
@@ -207,7 +209,8 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       delegate_(nullptr),
       web_contents_(web_contents),
       weak_factory_(this) {
-  auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
+  auto context =
+      static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
   pref_service_ = context->prefs();
   auto bounds_dict = pref_service_->GetDictionary(kDevToolsBoundsPref);
   if (bounds_dict) {
@@ -226,8 +229,10 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
         display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
       }
 
-      devtools_bounds_.set_x(display.x() + (display.width() - devtools_bounds_.width()) / 2);
-      devtools_bounds_.set_y(display.y() + (display.height() - devtools_bounds_.height()) / 2);
+      devtools_bounds_.set_x(display.x() +
+                             (display.width() - devtools_bounds_.width()) / 2);
+      devtools_bounds_.set_y(
+          display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
   }
 
@@ -246,7 +251,8 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
   return web_contents_.get();
 }
 
-content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents() const {
+content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents()
+    const {
   return devtools_web_contents_.get();
 }
 
@@ -255,11 +261,13 @@ void InspectableWebContentsImpl::InspectElement(int x, int y) {
     agent_host_->InspectElement(this, x, y);
 }
 
-void InspectableWebContentsImpl::SetDelegate(InspectableWebContentsDelegate* delegate) {
+void InspectableWebContentsImpl::SetDelegate(
+    InspectableWebContentsDelegate* delegate) {
   delegate_ = delegate;
 }
 
-InspectableWebContentsDelegate* InspectableWebContentsImpl::GetDelegate() const {
+InspectableWebContentsDelegate* InspectableWebContentsImpl::GetDelegate()
+    const {
   return delegate_;
 }
 
@@ -279,7 +287,8 @@ void InspectableWebContentsImpl::ShowDevTools() {
     embedder_message_dispatcher_.reset(
         DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this));
 
-    content::WebContents::CreateParams create_params(web_contents_->GetBrowserContext());
+    content::WebContents::CreateParams create_params(
+        web_contents_->GetBrowserContext());
     devtools_web_contents_.reset(content::WebContents::Create(create_params));
 
     Observe(devtools_web_contents_.get());
@@ -324,10 +333,11 @@ void InspectableWebContentsImpl::Detach() {
   agent_host_ = nullptr;
 }
 
-void InspectableWebContentsImpl::CallClientFunction(const std::string& function_name,
-                                                    const base::Value* arg1,
-                                                    const base::Value* arg2,
-                                                    const base::Value* arg3) {
+void InspectableWebContentsImpl::CallClientFunction(
+    const std::string& function_name,
+    const base::Value* arg1,
+    const base::Value* arg2,
+    const base::Value* arg3) {
   if (!devtools_web_contents_)
     return;
 
@@ -433,15 +443,17 @@ void InspectableWebContentsImpl::LoadNetworkResource(
     return;
   }
 
-  auto browser_context = static_cast<BrowserContext*>(devtools_web_contents_->GetBrowserContext());
+  auto browser_context =
+      static_cast<BrowserContext*>(devtools_web_contents_->GetBrowserContext());
 
   net::URLFetcher* fetcher =
       (net::URLFetcher::Create(gurl, net::URLFetcher::GET, this)).release();
   pending_requests_[fetcher] = callback;
   fetcher->SetRequestContext(browser_context->url_request_context_getter());
   fetcher->SetExtraRequestHeaders(headers);
-  fetcher->SaveResponseWithWriter(std::unique_ptr<net::URLFetcherResponseWriter>(
-      new ResponseWriter(weak_factory_.GetWeakPtr(), stream_id)));
+  fetcher->SaveResponseWithWriter(
+      std::unique_ptr<net::URLFetcherResponseWriter>(
+          new ResponseWriter(weak_factory_.GetWeakPtr(), stream_id)));
   fetcher->Start();
 }
 
@@ -509,7 +521,8 @@ void InspectableWebContentsImpl::SearchInPath(
     delegate_->DevToolsSearchInPath(request_id, file_system_path, query);
 }
 
-void InspectableWebContentsImpl::SetWhitelistedShortcuts(const std::string& message) {
+void InspectableWebContentsImpl::SetWhitelistedShortcuts(
+    const std::string& message) {
 }
 
 void InspectableWebContentsImpl::ZoomIn() {
@@ -548,16 +561,18 @@ void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
     agent_host_->DispatchProtocolMessage(this, message);
 }
 
-void InspectableWebContentsImpl::RecordActionUMA(const std::string& name, int action) {
+void InspectableWebContentsImpl::RecordActionUMA(const std::string& name,
+                                                 int action) {
   if (name == kDevToolsActionTakenHistogram)
     UMA_HISTOGRAM_ENUMERATION(name, action, kDevToolsActionTakenBoundary);
   else if (name == kDevToolsPanelShownHistogram)
     UMA_HISTOGRAM_ENUMERATION(name, action, kDevToolsPanelShownBoundary);
 }
 
-void InspectableWebContentsImpl::SendJsonRequest(const DispatchCallback& callback,
-                                         const std::string& browser_id,
-                                         const std::string& url) {
+void InspectableWebContentsImpl::SendJsonRequest(
+    const DispatchCallback& callback,
+    const std::string& browser_id,
+    const std::string& url) {
   callback.Run(nullptr);
 }
 
@@ -584,7 +599,8 @@ void InspectableWebContentsImpl::ClearPreferences() {
   update.Get()->Clear();
 }
 
-void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::string& message) {
+void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
+    const std::string& message) {
   std::string method;
   base::ListValue empty_params;
   base::ListValue* params = &empty_params;
@@ -728,14 +744,14 @@ void InspectableWebContentsImpl::OnWebContentsFocused() {
 void InspectableWebContentsImpl::DidStartNavigationToPendingEntry(
     const GURL& url,
     content::ReloadType reload_type) {
-  frontend_host_.reset(
-      content::DevToolsFrontendHost::Create(
-          web_contents()->GetMainFrame(),
-          base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-                     base::Unretained(this))));
+  frontend_host_.reset(content::DevToolsFrontendHost::Create(
+      web_contents()->GetMainFrame(),
+      base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
+                 base::Unretained(this))));
 }
 
-void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* source) {
+void InspectableWebContentsImpl::OnURLFetchComplete(
+    const net::URLFetcher* source) {
   DCHECK(source);
   auto it = pending_requests_.find(source);
   DCHECK(it != pending_requests_.end());

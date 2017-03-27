@@ -24,8 +24,9 @@ class DevToolsNetworkController {
   DevToolsNetworkInterceptor* GetInterceptor(const std::string& client_id);
 
  private:
-  using InterceptorMap = base::ScopedPtrHashMap<std::string,
-                                                std::unique_ptr<DevToolsNetworkInterceptor>>;
+  using InterceptorMap =
+      base::ScopedPtrHashMap<std::string,
+                             std::unique_ptr<DevToolsNetworkInterceptor>>;
 
   std::unique_ptr<DevToolsNetworkInterceptor> appcache_interceptor_;
   InterceptorMap interceptors_;

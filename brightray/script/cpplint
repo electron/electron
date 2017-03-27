@@ -7,21 +7,13 @@ import sys
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-CPPLINT = os.path.join(SOURCE_ROOT, 'vendor', 'google-styleguide', 'trunk', 'cpplint', 'cpplint.py')
-LINE_LENGTH = 100
+CPPLINT = os.path.join(SOURCE_ROOT, 'vendor', 'libchromiumcontent', 'vendor', 'depot_tools', 'cpplint.py')
 
 IGNORED_FILES = [
     os.path.join('browser', 'mac', 'bry_inspectable_web_contents_view.h'),
+    os.path.join('browser', 'mac', 'event_dispatching_window.h'),
+    os.path.join('browser', 'mac', 'notification_center_delegate.h'),
 ]
-
-FILTERS = [
-  '-build/header_guard',
-  '-build/include_what_you_use',
-  '-legal/copyright',
-  # cpplint doesn't like the BOOL& parameters that ui::WindowImpl uses.
-  '-runtime/references',
-]
-
 
 def main():
   os.chdir(SOURCE_ROOT)
@@ -41,7 +33,7 @@ def list_files(directories, filters):
 
 
 def cpplint(files):
-  return subprocess.call([sys.executable, CPPLINT, '--linelength=%d' % LINE_LENGTH, '--filter=' + ','.join(FILTERS)] + list(files))
+  return subprocess.call([sys.executable, CPPLINT] + list(files))
 
 
 if __name__ == '__main__':

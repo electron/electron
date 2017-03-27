@@ -94,7 +94,8 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
 
   if (!in_memory_ && !partition.empty())
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
-                 .Append(base::FilePath::FromUTF8Unsafe(MakePartitionName(partition)));
+                .Append(base::FilePath::FromUTF8Unsafe(
+                    MakePartitionName(partition)));
 
   content::BrowserContext::Initialize(this, path_);
 
@@ -168,8 +169,8 @@ base::FilePath BrowserContext::GetPath() const {
   return path_;
 }
 
-std::unique_ptr<content::ZoomLevelDelegate> BrowserContext::CreateZoomLevelDelegate(
-    const base::FilePath& partition_path) {
+std::unique_ptr<content::ZoomLevelDelegate>
+BrowserContext::CreateZoomLevelDelegate(const base::FilePath& partition_path) {
   if (!IsOffTheRecord()) {
     return base::MakeUnique<ZoomLevelDelegate>(prefs(), partition_path);
   }
@@ -210,7 +211,8 @@ content::PermissionManager* BrowserContext::GetPermissionManager() {
   return permission_manager_.get();
 }
 
-content::BackgroundSyncController* BrowserContext::GetBackgroundSyncController() {
+content::BackgroundSyncController*
+BrowserContext::GetBackgroundSyncController() {
   return nullptr;
 }
 

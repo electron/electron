@@ -18,7 +18,8 @@ class InspectableWebContentsView;
 
 class InspectableWebContents {
  public:
-  static InspectableWebContents* Create(const content::WebContents::CreateParams&);
+  static InspectableWebContents* Create(
+      const content::WebContents::CreateParams&);
 
   // The returned InspectableWebContents takes ownership of the passed-in
   // WebContents.

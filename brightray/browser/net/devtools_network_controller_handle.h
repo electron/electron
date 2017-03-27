@@ -31,8 +31,9 @@ class DevToolsNetworkControllerHandle {
 
  private:
   void LazyInitialize();
-  void SetNetworkStateOnIO(const std::string& client_id,
-                           std::unique_ptr<DevToolsNetworkConditions> conditions);
+  void SetNetworkStateOnIO(
+      const std::string& client_id,
+      std::unique_ptr<DevToolsNetworkConditions> conditions);
 
   std::unique_ptr<DevToolsNetworkController> controller_;
 

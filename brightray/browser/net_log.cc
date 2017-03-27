@@ -40,7 +40,8 @@ void NetLog::StartLogging(net::URLRequestContext* url_request_context) {
   if (!command_line->HasSwitch(switches::kLogNetLog))
     return;
 
-  base::FilePath log_path = command_line->GetSwitchValuePath(switches::kLogNetLog);
+  base::FilePath log_path =
+      command_line->GetSwitchValuePath(switches::kLogNetLog);
 #if defined(OS_WIN)
   log_file_.reset(_wfopen(log_path.value().c_str(), L"w"));
 #elif defined(OS_POSIX)

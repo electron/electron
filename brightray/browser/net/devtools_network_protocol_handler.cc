@@ -30,7 +30,8 @@ const char kErrorMessage[] = "message";
 }  //  namespace params
 
 const char kEmulateNetworkConditions[] = "Network.emulateNetworkConditions";
-const char kCanEmulateNetworkConditions[] = "Network.canEmulateNetworkConditions";
+const char kCanEmulateNetworkConditions[] =
+    "Network.canEmulateNetworkConditions";
 const char kId[] = "id";
 const char kMethod[] = "method";
 const char kParams[] = "params";

@@ -39,7 +39,8 @@ class BrowserClient : public content::ContentBrowserClient {
   content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
   content::MediaObserver* GetMediaObserver() override;
-  content::PlatformNotificationService* GetPlatformNotificationService() override;
+  content::PlatformNotificationService* GetPlatformNotificationService()
+      override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* additional_schemes) override;
   net::NetLog* GetNetLog() override;

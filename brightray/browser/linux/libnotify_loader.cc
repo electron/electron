@@ -1,5 +1,6 @@
 // This is generated file. Do not modify directly.
-// Path to the code generator: tools/generate_library_loader/generate_library_loader.py .
+// Path to the code generator:
+// tools/generate_library_loader/generate_library_loader.py .
 
 #include "browser/linux/libnotify_loader.h"
 
@@ -68,9 +69,9 @@ bool LibNotifyLoader::Load(const std::string& library_name) {
     return false;
   }
 
-  notify_notification_set_image_from_pixbuf =
-      reinterpret_cast<decltype(this->notify_notification_set_image_from_pixbuf)>(
-          dlsym(library_, "notify_notification_set_image_from_pixbuf"));
+  notify_notification_set_image_from_pixbuf = reinterpret_cast<decltype(
+      this->notify_notification_set_image_from_pixbuf)>(
+      dlsym(library_, "notify_notification_set_image_from_pixbuf"));
   if (!notify_notification_set_image_from_pixbuf) {
     CleanUp(true);
     return false;

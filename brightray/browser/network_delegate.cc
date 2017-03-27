@@ -25,7 +25,8 @@ const char kIgnoreConnectionsLimit[] = "ignore-connections-limit";
 NetworkDelegate::NetworkDelegate() {
   auto command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(kIgnoreConnectionsLimit)) {
-    std::string value = command_line->GetSwitchValueASCII(kIgnoreConnectionsLimit);
+    std::string value =
+        command_line->GetSwitchValueASCII(kIgnoreConnectionsLimit);
     ignore_connections_limit_domains_ = base::SplitString(
         value, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
   }
