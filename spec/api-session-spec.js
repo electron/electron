@@ -226,7 +226,7 @@ describe('session module', function () {
     it('clears localstorage data', function (done) {
       ipcMain.on('count', function (event, count) {
         ipcMain.removeAllListeners('count')
-        assert(!count)
+        assert.equal(count, 0)
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'localstorage.html'))
