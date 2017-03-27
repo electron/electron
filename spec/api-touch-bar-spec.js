@@ -56,6 +56,9 @@ describe('TouchBar module', function () {
         })
       ])
       window.setTouchBar(touchBar)
+      touchBar.replaceEscapeItem(new TouchBarButton({
+        label: 'foo'
+      }))
       label.label = 'baz'
       window.setTouchBar()
       window.setTouchBar(new TouchBar([new TouchBarLabel({label: 'two'})]))
