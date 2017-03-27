@@ -1247,7 +1247,7 @@ one through the `'paint'` event.
 
 #### `contents.getWebRTCIPHandlingPolicy()`
 
-* Returns `String` - Returns the WebRTC IP Handling Policy.
+Returns `String` - Returns the WebRTC IP Handling Policy.
 
 #### `contents.setWebRTCIPHandlingPolicy(policy)`
 
