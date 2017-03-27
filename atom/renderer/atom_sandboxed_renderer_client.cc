@@ -9,6 +9,7 @@
 #include "atom_natives.h"  // NOLINT: This file is generated with js2c
 
 #include "atom/common/api/api_messages.h"
+#include "atom/common/api/atom_bindings.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -85,6 +86,7 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   auto isolate = context->GetIsolate();
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
+  b.SetMethod("crash", AtomBindings::Crash);
 }
 
 class AtomSandboxedRenderFrameObserver : public content::RenderFrameObserver {
@@ -204,7 +206,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   std::string preload_bundle_native(node::preload_bundle_data,
       node::preload_bundle_data + sizeof(node::preload_bundle_data));
   std::stringstream ss;
-  ss << "(function(binding, preloadPath) {\n";
+  ss << "(function(binding, preloadPath, require) {\n";
   ss << preload_bundle_native << "\n";
   ss << "})";
   std::string preload_wrapper = ss.str();
