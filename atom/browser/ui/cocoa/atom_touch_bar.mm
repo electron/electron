@@ -126,7 +126,15 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
                                                           type:item_type];
   if (!identifier) return;
 
-  NSTouchBarItem* item = [touchBar itemForIdentifier:identifier];
+  NSTouchBar* targetTouchBar = touchBar;
+
+  std::string popover_id;
+  if (settings.Get("_popover", &popover_id)) {
+    NSPopoverTouchBarItem* popoverItem = [touchBar itemForIdentifier:[self identifierFromID:popover_id type:"popover"]];
+    targetTouchBar = popoverItem.popoverTouchBar;
+  }
+
+  NSTouchBarItem* item = [targetTouchBar itemForIdentifier:identifier];
   if (!item) return;
 
   if (item_type == "button") {
