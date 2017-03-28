@@ -906,6 +906,197 @@ describe('net module', function () {
       urlRequest.end()
     })
 
+    it('should throw if given an invalid redirect mode', function () {
+      const requestUrl = '/requestUrl'
+      const options = {
+        url: `${server.url}${requestUrl}`,
+        redirect: 'custom'
+      }
+      assert.throws(function () {
+        net.request(options)
+      }, 'redirect mode should be one of follow, error or manual')
+    })
+
+    it('should follow redirect when no redirect mode is provided', function (done) {
+      const requestUrl = '/301'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`
+      })
+      urlRequest.on('response', function (response) {
+        assert.equal(response.statusCode, 200)
+        done()
+      })
+      urlRequest.end()
+    })
+
+    it('should follow redirect chain when no redirect mode is provided', function (done) {
+      const requestUrl = '/redirectChain'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/redirectChain':
+            response.statusCode = '301'
+            response.setHeader('Location', '/301')
+            response.end()
+            break
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`
+      })
+      urlRequest.on('response', function (response) {
+        assert.equal(response.statusCode, 200)
+        done()
+      })
+      urlRequest.end()
+    })
+
+    it('should not follow redirect when mode is error', function (done) {
+      const requestUrl = '/301'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`,
+        redirect: 'error'
+      })
+      urlRequest.on('error', function (error) {
+        assert.equal(error.message, 'Request cannot follow redirect with the current redirect mode')
+      })
+      urlRequest.on('close', function () {
+        done()
+      })
+      urlRequest.end()
+    })
+
+    it('should allow follow redirect when mode is manual', function (done) {
+      const requestUrl = '/redirectChain'
+      let redirectCount = 0
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/redirectChain':
+            response.statusCode = '301'
+            response.setHeader('Location', '/301')
+            response.end()
+            break
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`,
+        redirect: 'manual'
+      })
+      urlRequest.on('response', function (response) {
+        assert.equal(response.statusCode, 200)
+        assert.equal(redirectCount, 2)
+        done()
+      })
+      urlRequest.on('redirect', function (status, method, url) {
+        if (url === `${server.url}/301` || url === `${server.url}/200`) {
+          redirectCount += 1
+          urlRequest.followRedirect()
+        }
+      })
+      urlRequest.end()
+    })
+
+    it('should allow cancelling redirect when mode is manual', function (done) {
+      const requestUrl = '/redirectChain'
+      let redirectCount = 0
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/redirectChain':
+            response.statusCode = '301'
+            response.setHeader('Location', '/redirect/1')
+            response.end()
+            break
+          case '/redirect/1':
+            response.statusCode = '200'
+            response.setHeader('Location', '/redirect/2')
+            response.end()
+            break
+          case '/redirect/2':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`,
+        redirect: 'manual'
+      })
+      urlRequest.on('response', function (response) {
+        assert.equal(response.statusCode, 200)
+        response.pause()
+        response.on('data', function (chunk) {
+        })
+        response.on('end', function () {
+          urlRequest.abort()
+        })
+        response.resume()
+      })
+      urlRequest.on('close', function () {
+        assert.equal(redirectCount, 1)
+        done()
+      })
+      urlRequest.on('redirect', function (status, method, url) {
+        if (url === `${server.url}/redirect/1`) {
+          redirectCount += 1
+          urlRequest.followRedirect()
+        }
+      })
+      urlRequest.end()
+    })
+
     it('should throw if given an invalid session option', function (done) {
       const requestUrl = '/requestUrl'
       try {

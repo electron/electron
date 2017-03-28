@@ -99,6 +99,11 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Methods for reporting events into JavaScript.
+  void OnReceivedRedirect(
+      int status_code,
+      const std::string& method,
+      const GURL& url,
+      scoped_refptr<net::HttpResponseHeaders> response_headers);
   void OnAuthenticationRequired(
       scoped_refptr<const net::AuthChallengeInfo> auth_info);
   void OnResponseStarted(
@@ -170,6 +175,7 @@ class URLRequest : public mate::EventEmitter<URLRequest> {
   bool Failed() const;
   bool Write(scoped_refptr<const net::IOBufferWithSize> buffer, bool is_last);
   void Cancel();
+  void FollowRedirect();
   bool SetExtraHeader(const std::string& name, const std::string& value);
   void RemoveExtraHeader(const std::string& name);
   void SetChunkedUpload(bool is_chunked_upload);

@@ -8,6 +8,7 @@
 #include "atom/browser/net/atom_url_request.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
@@ -145,6 +146,8 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
   dict.Get("method", &method);
   std::string url;
   dict.Get("url", &url);
+  std::string redirect_policy;
+  dict.Get("redirect", &redirect_policy);
   std::string partition;
   mate::Handle<api::Session> session;
   if (dict.Get("session", &session)) {
@@ -156,8 +159,8 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
   }
   auto browser_context = session->browser_context();
   auto api_url_request = new URLRequest(args->isolate(), args->GetThis());
-  auto atom_url_request =
-      AtomURLRequest::Create(browser_context, method, url, api_url_request);
+  auto atom_url_request = AtomURLRequest::Create(
+      browser_context, method, url, redirect_policy, api_url_request);
 
   api_url_request->atom_request_ = atom_url_request;
 
@@ -176,6 +179,7 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setExtraHeader", &URLRequest::SetExtraHeader)
       .SetMethod("removeExtraHeader", &URLRequest::RemoveExtraHeader)
       .SetMethod("setChunkedUpload", &URLRequest::SetChunkedUpload)
+      .SetMethod("followRedirect", &URLRequest::FollowRedirect)
       .SetMethod("_setLoadFlags", &URLRequest::SetLoadFlags)
       .SetProperty("notStarted", &URLRequest::NotStarted)
       .SetProperty("finished", &URLRequest::Finished)
@@ -246,6 +250,17 @@ void URLRequest::Cancel() {
   Close();
 }
 
+void URLRequest::FollowRedirect() {
+  if (request_state_.Canceled() || request_state_.Closed()) {
+    return;
+  }
+
+  DCHECK(atom_request_);
+  if (atom_request_) {
+    atom_request_->FollowRedirect();
+  }
+}
+
 bool URLRequest::SetExtraHeader(const std::string& name,
                                 const std::string& value) {
   // Request state must be in the initial non started state.
@@ -303,6 +318,24 @@ void URLRequest::SetLoadFlags(int flags) {
   if (atom_request_) {
     atom_request_->SetLoadFlags(flags);
   }
+}
+
+void URLRequest::OnReceivedRedirect(
+    int status_code,
+    const std::string& method,
+    const GURL& url,
+    scoped_refptr<net::HttpResponseHeaders> response_headers) {
+  if (request_state_.Canceled() || request_state_.Closed()) {
+    return;
+  }
+
+  DCHECK(atom_request_);
+  if (!atom_request_) {
+    return;
+  }
+
+  EmitRequestEvent(false, "redirect", status_code, method, url,
+                   response_headers.get());
 }
 
 void URLRequest::OnAuthenticationRequired(
