@@ -906,17 +906,15 @@ describe('net module', function () {
       urlRequest.end()
     })
 
-    it('should throw if given an invalid redirect mode', function (done) {
+    it('should throw if given an invalid redirect mode', function () {
       const requestUrl = '/requestUrl'
-      try {
-        const urlRequest = net.request({
-          url: `${server.url}${requestUrl}`,
-          redirect: 'custom'
-        })
-        urlRequest
-      } catch (exception) {
-        done()
+      const options = {
+        url: `${server.url}${requestUrl}`,
+        redirect: 'custom'
       }
+      assert.throws(function () {
+        net.request(options)
+      }, 'redirect mode should be one of follow, error or manual')
     })
 
     it('should follow redirect when no redirect mode is provided', function (done) {
