@@ -42,9 +42,6 @@ class CommonWebContentsDelegate
   void SetOwnerWindow(content::WebContents* web_contents,
                       NativeWindow* owner_window);
 
-  // Destroy the managed InspectableWebContents object.
-  void DestroyWebContents();
-
   // Returns the WebContents managed by this delegate.
   content::WebContents* GetWebContents() const;
 
@@ -113,6 +110,9 @@ class CommonWebContentsDelegate
   void GetDevToolsWindowWMClass(
       std::string* name, std::string* class_name) override;
 #endif
+
+  // Destroy the managed InspectableWebContents object.
+  void ResetManagedWebContents();
 
  private:
   // Callback for when DevToolsSaveToFile has completed.
