@@ -21,13 +21,13 @@ this for you.
 ### 2. Install [`electron-rebuild`][electron-rebuild], if you haven't done so already.
 
 ```shell
-npm install electron-rebuild --save-dev
+npm install electron-rebuild@1.2.1 --save-dev
 ```
 
 ### 3. Install [`electron-inspector`][electron-inspector]
 
 ```shell
-npm install electron-inspector --save-dev
+npm install electron-inspector@0.1.4 --save-dev
 ```
 
 ### 4. Start Electron
