@@ -56,4 +56,4 @@ void InspectableWebContentsViewMac::SetTitle(const base::string16& title) {
   [view_ setTitle:base::SysUTF16ToNSString(title)];
 }
 
-}
+} // namespace brightray
