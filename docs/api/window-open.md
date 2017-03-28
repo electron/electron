@@ -45,7 +45,7 @@ origin preference.
 ### Use Native `window.open()`
 
 If you want to use native `window.open()` implementation, pass `useNativeWindowOpen: true` in `webPreferences` option.
-Native `window.open()` allows synchronous access to opened windows so it is convenient choise if you need to open a dialog or a preferences window.
+Native `window.open()` allows synchronous access to opened windows so it is convenient choice if you need to open a dialog or a preferences window.
 
 The creation of the `BrowserWindow` is customizable in `WebContents`'s `new-window` event.
 
