@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import glob
 import os
 import re
@@ -87,7 +88,9 @@ def main():
   copy_chrome_binary('mksnapshot')
   copy_license()
 
-  if PLATFORM != 'win32':
+  args = parse_args()
+
+  if PLATFORM != 'win32' and not args.no_api_docs:
     create_api_json_schema()
 
   if PLATFORM == 'linux':
@@ -240,6 +243,14 @@ def create_symbols_zip():
     with scoped_cwd(DIST_DIR):
       pdbs = glob.glob('*.pdb')
       make_zip(os.path.join(DIST_DIR, pdb_name), pdbs + licenses, [])
+
+
+def parse_args():
+  parser = argparse.ArgumentParser(description='Create Electron Distribution')
+  parser.add_argument('--no_api_docs',
+                      action='store_true',
+                      help='Skip generating the Electron API Documentation!')
+  return parser.parse_args()
 
 
 if __name__ == '__main__':
