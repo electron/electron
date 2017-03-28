@@ -6,6 +6,7 @@
 #define CHROME_BROWSER_PRINTING_PRINT_JOB_H_
 
 #include <memory>
+#include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "base/message_loop/message_loop.h"
@@ -91,6 +92,9 @@ class PrintJob : public PrintJobWorkerOwner,
   PrintedDocument* document() const;
 
 #if defined(OS_WIN)
+  // Let the PrintJob know the 0-based |page_number| of a given printed page.
+  void AppendPrintedPage(int page_number);
+  
   void StartPdfToEmfConversion(
       const scoped_refptr<base::RefCountedMemory>& bytes,
       const gfx::Size& page_size,
@@ -153,6 +157,7 @@ class PrintJob : public PrintJobWorkerOwner,
 #if defined(OS_WIN)
   class PdfToEmfState;
   std::unique_ptr<PdfToEmfState> ptd_to_emf_state_;
+  std::vector<int> pdf_page_mapping_;
 #endif  // OS_WIN
 
   // Used at shutdown so that we can quit a nested message loop.
