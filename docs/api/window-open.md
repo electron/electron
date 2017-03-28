@@ -68,8 +68,7 @@ mainWindow.webContents.on('new-window', (event, url, frameName, disposition, opt
       width: 100,
       height: 100
     })
-    modal = new BrowserWindow(options)
-    event.newGuest = modal
+    event.newGuest = new BrowserWindow(options)
   }
 })
 ```
