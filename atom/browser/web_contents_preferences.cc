@@ -106,7 +106,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   // integration.
   if (IsSandboxed(web_contents))
     command_line->AppendSwitch(switches::kEnableSandbox);
-  if (UsesNativeWindowOpen(web_contents))
+  if (web_preferences.GetBoolean("nativeWindowOpen", &b) && b)
     command_line->AppendSwitch(switches::kNativeWindowOpen);
 
   // The preload script.
