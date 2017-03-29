@@ -20,6 +20,13 @@ describe('TouchBar module', function () {
     }, /Each item must be an instance of TouchBarItem/)
   })
 
+  it('throws an error when an invalid escape item is set', function () {
+    assert.throws(() => {
+      const touchBar = new TouchBar([])
+      touchBar.setEscapeItem('esc')
+    }, /Escape item must be an instance of TouchBarItem/)
+  })
+
   describe('BrowserWindow behavior', function () {
     let window
 
