@@ -182,12 +182,13 @@ AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {
 void AtomSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new AtomSandboxedRenderFrameObserver(render_frame, this);
-  new printing::PrintWebViewHelper(render_frame);
+  RendererClientBase::RenderFrameCreated(render_frame);
 }
 
 void AtomSandboxedRendererClient::RenderViewCreated(
     content::RenderView* render_view) {
   new AtomSandboxedRenderViewObserver(render_view, this);
+  RendererClientBase::RenderViewCreated(render_view);
 }
 
 void AtomSandboxedRendererClient::DidCreateScriptContext(
@@ -218,6 +219,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   // Create and initialize the binding object
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context);
+  AddRenderBindings(isolate, binding);
   v8::Local<v8::Value> args[] = {
     binding,
     mate::ConvertToV8(isolate, preload_script)

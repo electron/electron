@@ -9,53 +9,23 @@
 
 #include "atom_natives.h"  // NOLINT: This file is generated with js2c
 
-#include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/atom_constants.h"
-#include "atom/common/color_util.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_view_observer.h"
-#include "atom/renderer/content_settings_observer.h"
-#include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/node_array_buffer_bridge.h"
-#include "atom/renderer/preferences_manager.h"
 #include "atom/renderer/web_worker_observer.h"
 #include "base/command_line.h"
-#include "chrome/renderer/media/chrome_key_systems.h"
-#include "chrome/renderer/pepper/pepper_helper.h"
-#include "chrome/renderer/printing/print_web_view_helper.h"
-#include "chrome/renderer/tts_dispatcher.h"
-#include "content/public/common/content_constants.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
-#include "content/public/renderer/render_thread.h"
-#include "content/public/renderer/render_view.h"
-#include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
-#include "third_party/WebKit/public/web/WebFrameWidget.h"
-#include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/WebKit/public/web/WebPluginParams.h"
-#include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
-#include "third_party/WebKit/public/web/WebSecurityPolicy.h"
-#include "third_party/WebKit/public/web/WebView.h"
-
-#if defined(OS_MACOSX)
-#include "base/mac/mac_util.h"
-#include "base/strings/sys_string_conversions.h"
-#endif
-
-#if defined(OS_WIN)
-#include <shlobj.h>
-#endif
 
 #include "atom/common/node_includes.h"
 
@@ -184,33 +154,9 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
 };
 
-v8::Local<v8::Value> GetRenderProcessPreferences(
-    const PreferencesManager* preferences_manager, v8::Isolate* isolate) {
-  if (preferences_manager->preferences())
-    return mate::ConvertToV8(isolate, *preferences_manager->preferences());
-  else
-    return v8::Null(isolate);
-}
-
-void AddRenderBindings(v8::Isolate* isolate,
-                       v8::Local<v8::Object> process,
-                       const PreferencesManager* preferences_manager) {
-  mate::Dictionary dict(isolate, process);
-  dict.SetMethod(
-      "getRenderProcessPreferences",
-      base::Bind(GetRenderProcessPreferences, preferences_manager));
-}
-
 bool IsDevToolsExtension(content::RenderFrame* render_frame) {
   return static_cast<GURL>(render_frame->GetWebFrame()->document().url())
       .SchemeIs("chrome-extension");
-}
-
-std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
-  return base::SplitString(
-      custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 }
 
 }  // namespace
@@ -221,11 +167,6 @@ AtomRendererClient::AtomRendererClient()
       atom_bindings_(new AtomBindings(uv_default_loop())) {
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
-  // Parse --standard-schemes=scheme1,scheme2
-  std::vector<std::string> standard_schemes_list =
-      ParseSchemesCLISwitch(switches::kStandardSchemes);
-  for (const std::string& scheme : standard_schemes_list)
-    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -233,80 +174,19 @@ AtomRendererClient::~AtomRendererClient() {
 }
 
 void AtomRendererClient::RenderThreadStarted() {
-  blink::WebCustomElement::addEmbedderCustomElementName("webview");
-  blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
-
   OverrideNodeArrayBuffer();
-
-  preferences_manager_.reset(new PreferencesManager);
-
-#if defined(OS_WIN)
-  // Set ApplicationUserModelID in renderer process.
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  base::string16 app_id =
-      command_line->GetSwitchValueNative(switches::kAppUserModelId);
-  if (!app_id.empty()) {
-    SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
-  }
-#endif
-
-#if defined(OS_MACOSX)
-  // Disable rubber banding by default.
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (!command_line->HasSwitch(switches::kScrollBounce)) {
-    base::ScopedCFTypeRef<CFStringRef> key(
-        base::SysUTF8ToCFStringRef("NSScrollViewRubberbanding"));
-    base::ScopedCFTypeRef<CFStringRef> value(
-        base::SysUTF8ToCFStringRef("false"));
-    CFPreferencesSetAppValue(key, value, kCFPreferencesCurrentApplication);
-    CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
-  }
-#endif
+  RendererClientBase::RenderThreadStarted();
 }
 
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  new PepperHelper(render_frame);
   new AtomRenderFrameObserver(render_frame, this);
-  new ContentSettingsObserver(render_frame);
-  new printing::PrintWebViewHelper(render_frame);
-
-  // Allow file scheme to handle service worker by default.
-  // FIXME(zcbenz): Can this be moved elsewhere?
-  blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
-
-  // This is required for widevine plugin detection provided during runtime.
-  blink::resetPluginCache();
-
-  // Allow access to file scheme from pdf viewer.
-  blink::WebSecurityPolicy::addOriginAccessWhitelistEntry(
-      GURL(kPdfViewerUIOrigin), "file", "", true);
-
-  // Parse --secure-schemes=scheme1,scheme2
-  std::vector<std::string> secure_schemes_list =
-      ParseSchemesCLISwitch(switches::kSecureSchemes);
-  for (const std::string& secure_scheme : secure_schemes_list)
-    blink::WebSecurityPolicy::registerURLSchemeAsSecure(
-        blink::WebString::fromUTF8(secure_scheme));
+  RendererClientBase::RenderFrameCreated(render_frame);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
   new AtomRenderViewObserver(render_view, this);
-
-  blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
-  if (!web_frame_widget)
-    return;
-
-  base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
-  if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-    web_frame_widget->setBaseBackgroundColor(SK_ColorTRANSPARENT);
-  } else {  // normal window.
-    // If backgroundColor is specified then use it.
-    std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
-    // Otherwise use white background.
-    SkColor color = name.empty() ? SK_ColorWHITE : ParseHexColor(name);
-    web_frame_widget->setBaseBackgroundColor(color);
-  }
+  RendererClientBase::RenderViewCreated(render_view);
 }
 
 void AtomRendererClient::DidClearWindowObject(
@@ -335,26 +215,6 @@ void AtomRendererClient::RunScriptsAtDocumentEnd(
   }
 }
 
-blink::WebSpeechSynthesizer* AtomRendererClient::OverrideSpeechSynthesizer(
-    blink::WebSpeechSynthesizerClient* client) {
-  return new TtsDispatcher(client);
-}
-
-bool AtomRendererClient::OverrideCreatePlugin(
-    content::RenderFrame* render_frame,
-    blink::WebLocalFrame* frame,
-    const blink::WebPluginParams& params,
-    blink::WebPlugin** plugin) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (params.mimeType.utf8() == content::kBrowserPluginMimeType ||
-      params.mimeType.utf8() == kPdfPluginMimeType ||
-      command_line->HasSwitch(switches::kEnablePlugins))
-    return false;
-
-  *plugin = nullptr;
-  return true;
-}
-
 void AtomRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
   // Only allow node integration for the main frame, unless it is a devtools
@@ -374,8 +234,7 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
-  AddRenderBindings(env->isolate(), env->process_object(),
-                    preferences_manager_.get());
+  AddRenderBindings(env->isolate(), env->process_object());
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);
@@ -421,22 +280,6 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
   // we should solve this by patching Chromium in future.
   *send_referrer = true;
   return http_method == "GET";
-}
-
-content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
-    content::RenderFrame* render_frame,
-    const std::string& mime_type,
-    const GURL& original_url) {
-  if (mime_type == content::kBrowserPluginMimeType) {
-    return new GuestViewContainer(render_frame);
-  } else {
-    return nullptr;
-  }
-}
-
-void AtomRendererClient::AddSupportedKeySystems(
-    std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
-  AddChromeKeySystems(key_systems);
 }
 
 void AtomRendererClient::DidInitializeWorkerContextOnWorkerThread(
