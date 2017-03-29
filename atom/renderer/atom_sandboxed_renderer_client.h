@@ -22,7 +22,7 @@ class AtomSandboxedRendererClient : public content::ContentRendererClient {
   void WillReleaseScriptContext(
       v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
   void InvokeIpcCallback(v8::Handle<v8::Context> context,
-                         std::string callback_name,
+                         const std::string& callback_name,
                          std::vector<v8::Handle<v8::Value>> args);
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;
