@@ -115,8 +115,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (void)refreshTouchBarItem:(NSTouchBar*)touchBar
                          id:(NSTouchBarItemIdentifier)identifier
-                         withType:(std::string)item_type
-                         withSettings:(mate::PersistentDictionary)settings {
+                   withType:(std::string)item_type
+               withSettings:(mate::PersistentDictionary)settings {
   NSTouchBarItem* item = [touchBar itemForIdentifier:identifier];
   if (!item) return;
 
@@ -126,7 +126,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     [self updateLabel:(NSCustomTouchBarItem*)item withSettings:settings];
   } else if (item_type == "colorpicker") {
     [self updateColorPicker:(NSColorPickerTouchBarItem*)item
-              withSettings:settings];
+               withSettings:settings];
   } else if (item_type == "slider") {
     [self updateSlider:(NSSliderTouchBarItem*)item withSettings:settings];
   } else if (item_type == "popover") {
@@ -171,11 +171,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
   std::vector<std::string> popover_ids;
   if (settings.Get("_popover", &popover_ids)) {
-    for (size_t i = 0; i < popover_ids.size(); ++i) {
-      std::string popover_id = popover_ids[i];
+    for (auto& popover_id : popover_ids) {
       NSPopoverTouchBarItem* popoverItem = [touchBar itemForIdentifier:[self identifierFromID:popover_id type:"popover"]];
-      NSTouchBar* targetTouchBar = popoverItem.popoverTouchBar;
-      [self refreshTouchBarItem:targetTouchBar id:identifier withType:item_type withSettings:settings];
+      [self refreshTouchBarItem:popoverItem.popoverTouchBar id:identifier withType:item_type withSettings:settings];
     }
   }
   [self refreshTouchBarItem:touchBar id:identifier withType:item_type withSettings:settings];
