@@ -232,6 +232,12 @@ void NodeBindings::RunMessageLoop() {
 void NodeBindings::UvRunOnce() {
   node::Environment* env = uv_env();
 
+  // When doing navigation without restarting renderer process, it may happen
+  // that the node environment is destroyed but the message loop is still there.
+  // In this case we should not run uv loop.
+  if (!env)
+    return;
+
   // Use Locker in browser process.
   mate::Locker locker(env->isolate());
   v8::HandleScope handle_scope(env->isolate());
