@@ -465,17 +465,20 @@ describe('menu module', function () {
       assert.equal(item.submenu.items[3].role, 'cut')
       assert.equal(item.submenu.items[4].role, 'copy')
       assert.equal(item.submenu.items[5].role, 'paste')
+
       if (process.platform === 'darwin') {
         assert.equal(item.submenu.items[6].role, 'pasteandmatchstyle')
         assert.equal(item.submenu.items[7].role, 'delete')
         assert.equal(item.submenu.items[8].role, 'selectall')
       }
+
       if (process.platform === 'win32') {
         assert.equal(item.submenu.items[6].role, 'delete')
         assert.equal(item.submenu.items[7].type, 'separator')
         assert.equal(item.submenu.items[8].role, 'selectall')
       }
     })
+
     it('overrides default layout when submenu is specified', function () {
       var item = new MenuItem({role: 'editMenu', submenu: [{role: 'close'}]})
       assert.equal(item.label, 'Edit')
@@ -489,11 +492,13 @@ describe('menu module', function () {
       assert.equal(item.label, 'Window')
       assert.equal(item.submenu.items[0].role, 'minimize')
       assert.equal(item.submenu.items[1].role, 'close')
+
       if (process.platform === 'darwin') {
         assert.equal(item.submenu.items[2].type, 'separator')
         assert.equal(item.submenu.items[3].role, 'front')
       }
     })
+
     it('overrides default layout when submenu is specified', function () {
       var item = new MenuItem({role: 'windowMenu', submenu: [{role: 'copy'}]})
       assert.equal(item.label, 'Window')
