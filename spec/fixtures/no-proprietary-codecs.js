@@ -1,3 +1,9 @@
+// Verifies that Electron cannot play a video that uses proprietary codecs
+//
+// This application should be run with the ffmpeg that does not include
+// proprietary codecs to ensure Electron uses it instead of the version
+// that does include proprietary codecs.
+
 const {app, BrowserWindow, ipcMain} = require('electron')
 const path = require('path')
 const url = require('url')
