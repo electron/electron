@@ -7,7 +7,9 @@
 #include <stdio.h>
 
 #include "base/cancelable_callback.h"
+#include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/nix/xdg_util.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "url/gurl.h"
@@ -98,19 +100,22 @@ void OpenExternal(const GURL& url, bool activate,
 bool MoveItemToTrash(const base::FilePath& full_path) {
   std::string trash;
   if (getenv(ELECTRON_TRASH) != NULL) {
-     trash = getenv(ELECTRON_TRASH);
+    trash = getenv(ELECTRON_TRASH);
   } else {
     // Determine desktop environment and set accordingly.
-    std::string desktopEnv = getenv(DESKTOP_SESSION);
-    if (desktopEnv.find("plasma") != std::string::npos) {
+    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    base::nix::DesktopEnvironment desktop_env(
+        base::nix::GetDesktopEnvironment(env.get()));
+    if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
+        desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
       trash = "kioclient5";
-    } else if (desktopEnv.find("kde") != std::string::npos) {
+    } else if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE3) {
       trash = "kioclient";
     } else {
-      trash = ELECTRON_DEFAULT_TRASH; 
+      trash = ELECTRON_DEFAULT_TRASH;
     }
   }
-      
+
   std::vector<std::string> argv;
 
   if (trash.compare("kioclient5") == 0 || trash.compare("kioclient") == 0) {
