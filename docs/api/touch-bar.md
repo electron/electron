@@ -18,7 +18,7 @@ removed in future Electron releases.
 
 The following methods are available on instances of `TouchBar`:
 
-#### `touchBar.replaceEscapeItem([touchBarItem])`
+#### `touchBar.setEscapeItem([touchBarItem])`
 
 * `touchBarItem` (TouchBarButton | TouchBarColorPicker | TouchBarGroup | TouchBarLabel | TouchBarPopover | TouchBarScrubber | TouchBarSegmentedControl | TouchBarSlider | TouchBarSpacer) - (Optional) The touch bar item to replace the escape button with
 

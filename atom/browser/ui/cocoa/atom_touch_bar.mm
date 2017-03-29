@@ -147,11 +147,11 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   }
 }
 
-- (void)addNonDefaultTouchBarItems:(std::vector<mate::PersistentDictionary>)items {
+- (void)addNonDefaultTouchBarItems:(const std::vector<mate::PersistentDictionary>&)items {
   [self identifiersFromSettings:items];
 }
 
-- (void)setEscapeTouchBarItem:(mate::PersistentDictionary)item forTouchBar:(NSTouchBar*)touchBar {
+- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item forTouchBar:(NSTouchBar*)touchBar {
   std::string type;
   std::string item_id;
   NSTouchBarItemIdentifier identifier = nil;

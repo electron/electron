@@ -347,7 +347,7 @@ void NativeWindow::SetTouchBar(
 void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {
 }
 
-void NativeWindow::SetEscapeTouchBarItem(const mate::PersistentDictionary item) {
+void NativeWindow::SetEscapeTouchBarItem(const mate::PersistentDictionary& item) {
 }
 
 void NativeWindow::FocusOnWebView() {

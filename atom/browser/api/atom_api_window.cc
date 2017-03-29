@@ -853,7 +853,7 @@ void Window::RefreshTouchBarItem(const std::string& item_id) {
   window_->RefreshTouchBarItem(item_id);
 }
 
-void Window::SetEscapeTouchBarItem(const mate::PersistentDictionary item) {
+void Window::SetEscapeTouchBarItem(const mate::PersistentDictionary& item) {
   window_->SetEscapeTouchBarItem(item);
 }
 
