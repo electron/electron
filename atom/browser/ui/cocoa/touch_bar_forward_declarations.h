@@ -55,6 +55,7 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 @property(copy) NSArray* defaultItemIdentifiers;
 @property(copy, readonly) NSArray* itemIdentifiers;
 @property(copy, nullable) NSTouchBarItemIdentifier principalItemIdentifier;
+@property(copy, nullable) NSTouchBarItemIdentifier escapeKeyReplacementItemIdentifier;
 @property(copy) NSSet* templateItems;
 @property(nullable, weak) id<NSTouchBarDelegate> delegate;
 
