@@ -40,7 +40,7 @@ The `crashReporter` module has the following methods:
   * `companyName` String (optional)
   * `submitURL` String - URL that crash reports will be sent to as POST.
   * `productName` String (optional) - Defaults to `app.getName()`.
-  * `uploadToServer` Boolean (optional) _Linux_ _macOS_ - Whether crash reports should be sent to the server
+  * `uploadToServer` Boolean (optional) - Whether crash reports should be sent to the server
     Default is `true`.
   * `ignoreSystemCrashHandler` Boolean (optional) - Default is `false`.
   * `extra` Object (optional) - An object you can define that will be sent along with the
