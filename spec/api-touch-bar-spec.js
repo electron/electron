@@ -62,11 +62,13 @@ describe('TouchBar module', function () {
           showArrowButtons: true
         })
       ])
-      window.setTouchBar(touchBar)
-      touchBar.setEscapeItem(new TouchBarButton({
+      const escapeButton = new TouchBarButton({
         label: 'foo'
-      }))
+      })
+      window.setTouchBar(touchBar)
+      touchBar.setEscapeItem(escapeButton)
       label.label = 'baz'
+      escapeButton.label = 'hello'
       window.setTouchBar()
       window.setTouchBar(new TouchBar([new TouchBarLabel({label: 'two'})]))
       touchBar.setEscapeItem()
