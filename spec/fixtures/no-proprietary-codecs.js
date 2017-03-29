@@ -31,12 +31,11 @@ app.once('ready', () => {
     }
 
     if (message === 'error' && error === MEDIA_ERR_SRC_NOT_SUPPORTED) {
-      console.log('Video format not supported, proprietary codecs are not included')
       app.exit(0)
       return
     }
 
-    console.log(`Unexpected error: ${error}`)
+    console.log(`Unexpected response from page: ${message} ${error}`)
     app.exit(1)
   })
 })
