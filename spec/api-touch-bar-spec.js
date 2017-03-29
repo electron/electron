@@ -62,6 +62,7 @@ describe('TouchBar module', function () {
       label.label = 'baz'
       window.setTouchBar()
       window.setTouchBar(new TouchBar([new TouchBarLabel({label: 'two'})]))
+      touchBar.setEscapeItem()
     })
   })
 })
