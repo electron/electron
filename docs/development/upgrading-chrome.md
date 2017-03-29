@@ -45,7 +45,7 @@ Chrome/Node API changes.
   - 64-bit Linux
   - ARM Linux
 
-## Verify ffmpeg builds
+## Verify ffmpeg Support
 
 Electron ships with a version of `ffmpeg` that includes proprietary codecs by
 default. A version without these codecs is built and distributed with each
