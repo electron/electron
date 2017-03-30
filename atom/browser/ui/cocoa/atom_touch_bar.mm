@@ -414,7 +414,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
   NSMutableArray* generatedItems = [NSMutableArray array];
   NSMutableArray* identifiers = [self identifiersFromSettings:items];
-  for (NSUInteger i = 0; i < [identifiers count]; i++) {
+  for (NSUInteger i = 0; i < [identifiers count]; ++i) {
     if ([identifiers objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
       NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identifiers objectAtIndex:i]];
       if (generatedItem) {
@@ -474,7 +474,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("segments", &segments);
 
   control.segmentCount = segments.size();
-  for (size_t i = 0; i < segments.size(); i++) {
+  for (size_t i = 0; i < segments.size(); ++i) {
     std::string label;
     gfx::Image image;
     bool enabled = true;
