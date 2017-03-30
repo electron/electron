@@ -211,6 +211,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     width of the web page when zoomed, `false` will cause it to zoom to the
     width of the screen. This will also affect the behavior when calling
     `maximize()` directly. Default is `false`.
+  * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
+    window as a native tab on macOS 10.12+. Windows with the same tabbing
+    identifier will be grouped together.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
@@ -264,9 +267,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       canvas features. Default is `false`.
     * `scrollBounce` Boolean (optional) - Enables scroll bounce (rubber banding) effect on
       macOS. Default is `false`.
-    * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
-       window as a native tab on macOS 10.12+. Windows with the same tabbing identifier will
-       be grouped together.
     * `blinkFeatures` String (optional) - A list of feature strings separated by `,`, like
       `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
       strings can be found in the [RuntimeEnabledFeatures.json5][blink-feature-string]
