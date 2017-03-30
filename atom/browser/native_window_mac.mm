@@ -690,7 +690,8 @@ NativeWindowMac::NativeWindowMac(
 
   options.Get(options::kTitleBarStyle, &title_bar_style_);
 
-  options.Get(options::kTabbingIdentifier, &tabbing_identifier_);
+  std::string tabbingIdentifier;
+  options.Get(options::kTabbingIdentifier, &tabbingIdentifier);
 
   std::string windowType;
   options.Get(options::kType, &windowType);
@@ -766,13 +767,13 @@ NativeWindowMac::NativeWindowMac(
 
   // Create a tab only if tabbing identifier is specified and window has
   // a native title bar.
-  if (tabbing_identifier_.empty() || transparent() || !has_frame()) {
+  if (tabbingIdentifier.empty() || transparent() || !has_frame()) {
     if ([window_ respondsToSelector:@selector(tabbingMode)]) {
       [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
     }
   } else {
     if ([window_ respondsToSelector:@selector(tabbingIdentifier)]) {
-      [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbing_identifier_)];
+      [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbingIdentifier)];
     }
   }
 
