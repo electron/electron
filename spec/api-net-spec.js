@@ -960,6 +960,26 @@ describe('net module', function () {
       }, 'redirect mode should be one of follow, error or manual')
     })
 
+    it('should throw when calling getHeader without a name', function () {
+      assert.throws(function () {
+        net.request({url: `${server.url}/requestUrl`}).getHeader()
+      }, /`name` is required for getHeader\(name\)\./)
+
+      assert.throws(function () {
+        net.request({url: `${server.url}/requestUrl`}).getHeader(null)
+      }, /`name` is required for getHeader\(name\)\./)
+    })
+
+    it('should throw when calling removeHeader without a name', function () {
+      assert.throws(function () {
+        net.request({url: `${server.url}/requestUrl`}).removeHeader()
+      }, /`name` is required for removeHeader\(name\)\./)
+
+      assert.throws(function () {
+        net.request({url: `${server.url}/requestUrl`}).removeHeader(null)
+      }, /`name` is required for removeHeader\(name\)\./)
+    })
+
     it('should follow redirect when no redirect mode is provided', function (done) {
       const requestUrl = '/301'
       server.on('request', function (request, response) {
