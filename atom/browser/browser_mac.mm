@@ -180,7 +180,7 @@ std::string Browser::GetExecutableFileProductName() const {
 
 int Browser::DockBounce(BounceType type) {
   return [[AtomApplication sharedApplication]
-      requestUserAttention:(NSRequestUserAttentionType)type];
+      requestUserAttention:static_cast<NSRequestUserAttentionType>(type)];
 }
 
 void Browser::DockCancelBounce(int request_id) {
