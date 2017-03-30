@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/mac/foundation_util.h"
 #include "base/mac/mac_logging.h"
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/stringprintf.h"
@@ -72,10 +73,10 @@ std::string MessageForOSStatus(OSStatus status, const char* default_message) {
 // NSWorkspace#openURLs.
 std::string OpenURL(NSURL* ns_url, bool activate) {
   CFURLRef openingApp = nullptr;
-  OSStatus status = LSGetApplicationForURL((CFURLRef)ns_url,
-                                           kLSRolesAll,
-                                           nullptr,
-                                           &openingApp);
+    OSStatus status = LSGetApplicationForURL(base::mac::NSToCFCast(ns_url),
+                                             kLSRolesAll,
+                                             nullptr,
+                                             &openingApp);
   if (status != noErr)
     return MessageForOSStatus(status, "Failed to open");
 
@@ -167,7 +168,8 @@ bool OpenItem(const base::FilePath& full_path) {
 
   // Add the single path to the file list.  C-style cast to avoid both a
   // static_cast and a const_cast to get across the toll-free bridge.
-  CFURLRef pathURLRef = (CFURLRef)[NSURL fileURLWithPath:path_string];
+  CFURLRef pathURLRef = base::mac::NSToCFCast(
+      [NSURL fileURLWithPath:path_string]);
   FSRef pathRef;
   if (CFURLGetFSRef(pathURLRef, &pathRef)) {
     status = AEPutPtr(fileList.OutPointer(),  // theAEDescList
