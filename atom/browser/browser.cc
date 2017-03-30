@@ -44,7 +44,7 @@ void Browser::Quit() {
     return;
 
   atom::WindowList* window_list = atom::WindowList::GetInstance();
-  if (window_list->size() == 0)
+  if (window_list->empty())
     NotifyAndShutdown();
 
   window_list->CloseAllWindows();
@@ -66,7 +66,7 @@ void Browser::Exit(mate::Arguments* args) {
 
     // Must destroy windows before quitting, otherwise bad things can happen.
     atom::WindowList* window_list = atom::WindowList::GetInstance();
-    if (window_list->size() == 0) {
+    if (window_list->empty()) {
       Shutdown();
     } else {
       // Unlike Quit(), we do not ask to close window, but destroy the window

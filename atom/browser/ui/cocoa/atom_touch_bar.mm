@@ -319,7 +319,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
              withSettings:(const mate::PersistentDictionary&)settings {
   std::vector<std::string> colors;
-  if (settings.Get("availableColors", &colors) && colors.size() > 0) {
+  if (settings.Get("availableColors", &colors) && !colors.empty()) {
     NSColorList* color_list  = [[[NSColorList alloc] initWithName:@""] autorelease];
     for (size_t i = 0; i < colors.size(); ++i) {
       [color_list insertColor:[self colorFromHexColorString:colors[i]]

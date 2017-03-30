@@ -427,7 +427,7 @@ void OnClientCertificateSelected(
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
       data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
-  if (certs.size() > 0)
+  if (!certs.empty())
     delegate->ContinueWithCertificate(certs[0].get());
 }
 
