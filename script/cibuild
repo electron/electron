@@ -91,6 +91,7 @@ def main():
     run_script('build.py', ['-c', 'D'])
     if PLATFORM == 'win32' or target_arch == 'x64':
       run_script('test.py', ['--ci'])
+      run_script('verify-ffmpeg.py')
 
 
 def run_script(script, args=[]):
