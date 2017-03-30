@@ -336,6 +336,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
+enum {
+  NSWindowTabbingModeDisallowed = 2
+};
+@interface NSWindow (SierraSDK)
+- (void)setTabbingMode:(NSInteger)mode;
+- (void)setTabbingIdentifier:(NSString *)identifier;
+@end
+
 @interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate, NSTouchBarDelegate> {
  @private
   atom::NativeWindowMac* shell_;
@@ -656,8 +664,7 @@ NativeWindowMac::NativeWindowMac(
       was_fullscreen_(false),
       zoom_to_page_width_(false),
       attention_request_id_(0),
-      title_bar_style_(NORMAL),
-      tabbing_identifier_(""){
+      title_bar_style_(NORMAL) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -761,9 +768,13 @@ NativeWindowMac::NativeWindowMac(
     // Create a tab only if tabbing identifier is specified and window has
     // a native title bar.
     if (tabbing_identifier_.empty() || transparent() || !has_frame()) {
-      [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
+      if ([window_ respondsToSelector:@selector(tabbingMode)]) {
+        [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
+      }
     } else {
-      [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbing_identifier_)];
+      if ([window_ respondsToSelector:@selector(tabbingIdentifier)]) {
+        [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbing_identifier_)];
+      }
     }
   }
 
