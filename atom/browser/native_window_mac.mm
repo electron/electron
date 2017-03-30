@@ -336,6 +336,14 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
+enum {
+  NSWindowTabbingModeDisallowed = 2
+};
+@interface NSWindow (SierraSDK)
+- (void)setTabbingMode:(NSInteger)mode;
+- (void)setTabbingIdentifier:(NSString *)identifier;
+@end
+
 @interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate, NSTouchBarDelegate> {
  @private
   atom::NativeWindowMac* shell_;
@@ -682,6 +690,9 @@ NativeWindowMac::NativeWindowMac(
 
   options.Get(options::kTitleBarStyle, &title_bar_style_);
 
+  std::string tabbingIdentifier;
+  options.Get(options::kTabbingIdentifier, &tabbingIdentifier);
+
   std::string windowType;
   options.Get(options::kType, &windowType);
 
@@ -752,6 +763,18 @@ NativeWindowMac::NativeWindowMac(
     }
     // Remove non-transparent corners, see http://git.io/vfonD.
     [window_ setOpaque:NO];
+  }
+
+  // Create a tab only if tabbing identifier is specified and window has
+  // a native title bar.
+  if (tabbingIdentifier.empty() || transparent() || !has_frame()) {
+    if ([window_ respondsToSelector:@selector(tabbingMode)]) {
+      [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
+    }
+  } else {
+    if ([window_ respondsToSelector:@selector(tabbingIdentifier)]) {
+      [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbingIdentifier)];
+    }
   }
 
   // We will manage window's lifetime ourselves.
