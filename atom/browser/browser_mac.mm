@@ -65,7 +65,8 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   // Apple's defaults first, so we'll use the first option that isn't our bundle
   CFStringRef other = nil;
   for (CFIndex i = 0; i < CFArrayGetCount(bundleList); i++) {
-    other = (CFStringRef)CFArrayGetValueAtIndex(bundleList, i);
+    other = base::mac::CFCast<CFStringRef>(CFArrayGetValueAtIndex(bundleList,
+                                                                  i));
     if (![identifier isEqualToString: (__bridge NSString *)other]) {
       break;
     }

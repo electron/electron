@@ -474,7 +474,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("segments", &segments);
 
   control.segmentCount = segments.size();
-  for (int i = 0; i < (int)segments.size(); i++) {
+  for (size_t i = 0; i < segments.size(); i++) {
     std::string label;
     gfx::Image image;
     bool enabled = true;
@@ -581,7 +581,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::vector<mate::PersistentDictionary> items;
   if (!settings.Get("items", &items)) return nil;
 
-  if (index >= (long)items.size()) return nil;
+  if (index >= static_cast<NSInteger>(items.size())) return nil;
 
   mate::PersistentDictionary item = items[index];
 
