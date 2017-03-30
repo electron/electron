@@ -692,7 +692,7 @@ describe('BrowserWindow module', function () {
     })
   })
 
-  describe('"title-bar-style" option', function () {
+  describe('"titleBarStyle" option', function () {
     if (process.platform !== 'darwin') {
       return
     }
@@ -769,6 +769,20 @@ describe('BrowserWindow module', function () {
       })
       w.maximize()
       assert.equal(w.getSize()[0], 500)
+    })
+  })
+
+  describe('"tabbingIdentifier" option', function () {
+    it('can be set on a window', function () {
+      w.destroy()
+      w = new BrowserWindow({
+        tabbingIdentifier: 'group1'
+      })
+      w.destroy()
+      w = new BrowserWindow({
+        tabbingIdentifier: 'group2',
+        frame: false
+      })
     })
   })
 
