@@ -1262,7 +1262,7 @@ void NativeWindowMac::SetProgressBar(double progress, const NativeWindow::Progre
   NSDockTile* dock_tile = [NSApp dockTile];
 
   // For the first time API invoked, we need to create a ContentView in DockTile.
-  if (dock_tile.contentView == NULL) {
+  if (dock_tile.contentView == nullptr) {
     NSImageView* image_view = [[NSImageView alloc] init];
     [image_view setImage:[NSApp applicationIconImage]];
     [dock_tile setContentView:image_view];

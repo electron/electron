@@ -71,10 +71,10 @@ std::string MessageForOSStatus(OSStatus status, const char* default_message) {
 // thread safe, including LSGetApplicationForURL (> 10.2) and
 // NSWorkspace#openURLs.
 std::string OpenURL(NSURL* ns_url, bool activate) {
-  CFURLRef openingApp = NULL;
+  CFURLRef openingApp = nullptr;
   OSStatus status = LSGetApplicationForURL((CFURLRef)ns_url,
                                            kLSRolesAll,
-                                           NULL,
+                                           nullptr,
                                            &openingApp);
   if (status != noErr)
     return MessageForOSStatus(status, "Failed to open");
@@ -156,7 +156,7 @@ bool OpenItem(const base::FilePath& full_path) {
 
   // Create the list of files (only ever one) to open.
   base::mac::ScopedAEDesc<AEDescList> fileList;
-  status = AECreateList(NULL,  // factoringPtr
+  status = AECreateList(nullptr,  // factoringPtr
                         0,  // factoredSize
                         false,  // isRecord
                         fileList.OutPointer());  // resultList
@@ -202,8 +202,8 @@ bool OpenItem(const base::FilePath& full_path) {
                   kAENoReply + kAEAlwaysInteract,  // sendMode
                   kAENormalPriority,  // sendPriority
                   kAEDefaultTimeout,  // timeOutInTicks
-                  NULL, // idleProc
-                  NULL);  // filterProc
+                  nullptr, // idleProc
+                  nullptr);  // filterProc
   if (status != noErr) {
     OSSTATUS_LOG(WARNING, status)
         << "Could not send AE to Finder in OpenItem()";
