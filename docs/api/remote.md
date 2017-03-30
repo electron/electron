@@ -158,7 +158,7 @@ project/
 
 ```js
 // main process: main/index.js
-const { app } = require('electron')
+const {app} = require('electron')
 app.on('ready', () => { /* ... */ })
 ```
 
