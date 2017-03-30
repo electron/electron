@@ -158,17 +158,18 @@ internally buffered inside Electron process memory.
 #### `request.setHeader(name, value)`
 
 * `name` String - An extra HTTP header name.
-* `value` String - An extra HTTP header value.
+* `value` Object - An extra HTTP header value.
 
 Adds an extra HTTP header. The header name will issued as it is without
 lowercasing. It can be called only before first write. Calling this method after
-the first write will throw an error.
+the first write will throw an error. If the passed value is not a `String`, its
+`toString()` method will be called to obtain the final value.
 
 #### `request.getHeader(name)`
 
 * `name` String - Specify an extra header name.
 
-Returns String - The value of a previously set extra header name.
+Returns Object - The value of a previously set extra header name.
 
 #### `request.removeHeader(name)`
 

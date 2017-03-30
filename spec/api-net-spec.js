@@ -364,6 +364,49 @@ describe('net module', function () {
       urlRequest.end()
     })
 
+    it('should be able to set a non-string object as a header value', function (done) {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Integer-Value'
+      const customHeaderValue = 900
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case requestUrl:
+            assert.equal(request.headers[customHeaderName.toLowerCase()],
+              customHeaderValue.toString())
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.end()
+            break
+          default:
+            assert.equal(request.url, requestUrl)
+        }
+      })
+      const urlRequest = net.request({
+        method: 'GET',
+        url: `${server.url}${requestUrl}`
+      })
+      urlRequest.on('response', function (response) {
+        const statusCode = response.statusCode
+        assert.equal(statusCode, 200)
+        response.pause()
+        response.on('end', function () {
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.setHeader(customHeaderName, customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName),
+        customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName.toLowerCase()),
+        customHeaderValue)
+      urlRequest.write('')
+      assert.equal(urlRequest.getHeader(customHeaderName),
+        customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName.toLowerCase()),
+        customHeaderValue)
+      urlRequest.end()
+    })
+
     it('should not be able to set a custom HTTP request header after first write', function (done) {
       const requestUrl = '/requestUrl'
       const customHeaderName = 'Some-Custom-Header-Name'
