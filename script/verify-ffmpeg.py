@@ -35,7 +35,7 @@ def main():
   elif sys.platform == 'win32':
     electron = os.path.join(app_path, '{0}.exe'.format(PROJECT_NAME))
     ffmpeg_app_path = app_path
-    ffmpeg_name = 'libffmpeg.dll'
+    ffmpeg_name = 'ffmpeg.dll'
   else:
     electron = os.path.join(app_path, PROJECT_NAME)
     ffmpeg_app_path = app_path
