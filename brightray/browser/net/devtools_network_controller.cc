@@ -67,7 +67,7 @@ DevToolsNetworkInterceptor*
 DevToolsNetworkController::GetInterceptor(const std::string& client_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  if (!interceptors_.size() || client_id.empty())
+  if (interceptors_.empty() || client_id.empty())
     return nullptr;
 
   DevToolsNetworkInterceptor* interceptor = interceptors_.get(client_id);

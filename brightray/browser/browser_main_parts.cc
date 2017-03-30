@@ -54,7 +54,6 @@
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
 
-using content::BrowserThread;
 
 namespace brightray {
 
@@ -107,7 +106,7 @@ NOINLINE void WaitingForUIThreadToHandleIOError() {
 }
 
 int BrowserX11IOErrorHandler(Display* d) {
-  if (!BrowserThread::CurrentlyOn(BrowserThread::UI)) {
+  if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
     // Wait for the UI thread (which has a different connection to the X server)
     // to get the error. We can't call shutdown from this thread without
     // tripping an error. Doing it through a function so that we'll be able
