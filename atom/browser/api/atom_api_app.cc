@@ -520,7 +520,7 @@ void App::OnQuit() {
   int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
 
-  if (process_singleton_.get()) {
+  if (process_singleton_) {
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
@@ -695,7 +695,7 @@ std::string App::GetLocale() {
 
 bool App::MakeSingleInstance(
     const ProcessSingleton::NotificationCallback& callback) {
-  if (process_singleton_.get())
+  if (process_singleton_)
     return false;
 
   base::FilePath user_dir;
@@ -716,7 +716,7 @@ bool App::MakeSingleInstance(
 }
 
 void App::ReleaseSingleInstance() {
-  if (process_singleton_.get()) {
+  if (process_singleton_) {
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
