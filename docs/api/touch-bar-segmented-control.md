@@ -8,14 +8,19 @@ Process: [Main](../tutorial/quick-start.md#main-process)
 
 * `options` Object
   * `segmentStyle` String - (Optional) Style of the segments:
-    * `automatic` - Default
-    * `rounded`
-    * `textured-rounded`
-    * `round-rect`
-    * `textured-square`
-    * `capsule`
-    * `small-square`
-    * `separated`
+    * `automatic` - Default. The appearance of the segmented control is
+      automatically determined based on the type of window in which the control
+      is displayed and the position within the window.
+    * `rounded` - The control is displayed using the rounded style.
+    * `textured-rounded` - The control is displayed using the textured rounded
+      style.
+    * `round-rect` - The control is displayed using the round rect style.
+    * `textured-square` - The control is displayed using the textured square
+      style.
+    * `capsule` - The control is displayed using the capsule style
+    * `small-square` - The control is displayed using the small square style.
+    * `separated` - The segments in the control are displayed very close to each
+      other but not touching.
   * `segments` [SegmentedControlSegment[]](structures/segmented-control-segment.md) - An array of segments to place in this control
   * `selectedIndex` Integer (Optional) - The index of the currently selected segment, will update automatically with user interaction
   * `change` Function - Called when the user selects a new segment
