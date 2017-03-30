@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_certificate_trust.h"
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -810,6 +811,16 @@ void App::OnCertificateManagerModelCreated(
 }
 #endif
 
+#if defined(OS_MACOSX)
+void App::ShowCertificateTrust(atom::NativeWindow* parent_window,
+                               const net::X509Certificate& cert,
+                               std::string message,
+                               const ShowTrustCallback& callback,
+                               mate::Arguments* args) {
+  ShowCertificateTrustUI(parent_window, cert, message, callback);
+}
+#endif
+
 #if defined(OS_WIN)
 v8::Local<v8::Value> App::GetJumpListSettings() {
   JumpList jump_list(Browser::Get()->GetAppUserModelID());
@@ -949,6 +960,7 @@ void App::BuildPrototype(
                  base::Bind(&Browser::GetCurrentActivityType, browser))
       .SetMethod("setAboutPanelOptions",
                  base::Bind(&Browser::SetAboutPanelOptions, browser))
+      // .SetMethod("showCertificateTrust", &App::ShowCertificateTrust)
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
