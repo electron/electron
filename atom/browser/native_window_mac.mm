@@ -764,17 +764,15 @@ NativeWindowMac::NativeWindowMac(
     [window_ setOpaque:NO];
   }
 
-  if (base::mac::IsAtLeastOS10_12()) {
-    // Create a tab only if tabbing identifier is specified and window has
-    // a native title bar.
-    if (tabbing_identifier_.empty() || transparent() || !has_frame()) {
-      if ([window_ respondsToSelector:@selector(tabbingMode)]) {
-        [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
-      }
-    } else {
-      if ([window_ respondsToSelector:@selector(tabbingIdentifier)]) {
-        [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbing_identifier_)];
-      }
+  // Create a tab only if tabbing identifier is specified and window has
+  // a native title bar.
+  if (tabbing_identifier_.empty() || transparent() || !has_frame()) {
+    if ([window_ respondsToSelector:@selector(tabbingMode)]) {
+      [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
+    }
+  } else {
+    if ([window_ respondsToSelector:@selector(tabbingIdentifier)]) {
+      [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbing_identifier_)];
     }
   }
 
