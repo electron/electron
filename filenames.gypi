@@ -103,6 +103,8 @@
       'atom/browser/api/atom_api_app.h',
       'atom/browser/api/atom_api_auto_updater.cc',
       'atom/browser/api/atom_api_auto_updater.h',
+      'atom/browser/api/atom_api_certificate_trust_mac.mm',
+      'atom/browser/api/atom_api_certificate_trust.h',
       'atom/browser/api/atom_api_content_tracing.cc',
       'atom/browser/api/atom_api_cookies.cc',
       'atom/browser/api/atom_api_cookies.h',
