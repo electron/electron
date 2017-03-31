@@ -46,16 +46,8 @@ The `dialog` module has the following methods:
     * `noResolveAliases` - Disable the automatic alias (symlink) path
       resolution.  Selected aliases will now return the alias path instead of
       their target path. _macOS_
-  * `normalizeAccessKeys` Boolean (optional) - Normalize the keyboard access keys
-    across platforms. Default is `false`. Enabling this assumes `&` is used in
-    the button labels for the placement of the keyboard shortcut access key
-    and labels will be converted so they work correctly on each platform, `&`
-    characters are removed on macOS, converted to `_` on Linux, and left
-    untouched on Windows. For example, a button label of `Vie&w` will be
-    converted to `Vie_w` on Linux and `View` on macOS and can be selected
-    via `Alt-W` on Windows and Linux.
-    * `message` String (optional) _macOS_ - Message to display above input
-      boxes.
+  * `message` String (optional) _macOS_ - Message to display above input
+    boxes.
 * `callback` Function (optional)
   * `filePaths` String[] - An array of file paths chosen by the user
 
@@ -147,6 +139,14 @@ will be passed via `callback(filename)`
     others as command links in the dialog. This can make the dialog appear in
     the style of modern Windows apps. If you don't like this behavior, you can
     set `noLink` to `true`.
+  * `normalizeAccessKeys` Boolean (optional) - Normalize the keyboard access keys
+    across platforms. Default is `false`. Enabling this assumes `&` is used in
+    the button labels for the placement of the keyboard shortcut access key
+    and labels will be converted so they work correctly on each platform, `&`
+    characters are removed on macOS, converted to `_` on Linux, and left
+    untouched on Windows. For example, a button label of `Vie&w` will be
+    converted to `Vie_w` on Linux and `View` on macOS and can be selected
+    via `Alt-W` on Windows and Linux.
 * `callback` Function (optional)
   * `response` Number - The index of the button that was clicked
   * `checkboxChecked` Boolean - The checked state of the checkbox if
