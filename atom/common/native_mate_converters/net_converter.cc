@@ -73,6 +73,12 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   return dict.GetHandle();
 }
 
+bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(v8::Isolate* isolate,
+                                             v8::Local<v8::Value> val,
+                                             scoped_refptr<net::X509Certificate>* out) {
+  return true;
+}
+
 // static
 v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
     v8::Isolate* isolate, const net::CertPrincipal& val) {
