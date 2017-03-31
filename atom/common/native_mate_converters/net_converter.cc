@@ -82,7 +82,18 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
 
   std::string data;
   dict.Get("data", &data);
-  *out = net::X509Certificate::CreateFromBytes(data.c_str(), data.length());
+
+  auto certificate_list = net::X509Certificate::CreateCertificateListFromBytes(
+    data.c_str(), data.length(),
+    net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
+  if (certificate_list.empty())
+    return false;
+
+  auto certificate = certificate_list.front();
+  if (!certificate)
+    return false;
+
+  *out = certificate;
   return true;
 }
 
