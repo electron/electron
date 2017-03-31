@@ -54,7 +54,6 @@
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
 
-
 namespace brightray {
 
 namespace {
