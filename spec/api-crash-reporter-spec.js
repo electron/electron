@@ -103,7 +103,7 @@ describe('crashReporter module', function () {
             if (err) {
               return
             }
-            let dumps = files.filter((f) => /\.dmp$/.test(f))
+            const dumps = files.filter((file) => /\.dmp$/.test(file))
             if (!dumps.length) {
               return
             }
@@ -136,7 +136,7 @@ describe('crashReporter module', function () {
           //   not deleted.
           fs.readdir(crashesDir, (err, files) => {
             if (!err) {
-              for (let file of files) {
+              for (const file of files) {
                 if (/\.dmp$/.test(file)) {
                   fs.unlinkSync(path.join(crashesDir, file))
                 }

@@ -249,7 +249,7 @@ google_breakpad::CustomClientInfo* CrashReporterWin::GetCustomInfo(
       L"ver", base::UTF8ToWide(version).c_str()));
   if (!upload_to_server) {
     custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
-          L"skip_upload", L"1"));
+        L"skip_upload", L"1"));
   }
 
   for (StringMap::const_iterator iter = upload_parameters_.begin();
