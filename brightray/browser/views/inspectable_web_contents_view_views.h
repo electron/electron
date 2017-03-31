@@ -10,13 +10,10 @@
 namespace views {
 class WebView;
 class Widget;
+class WidgetDelegate;
 }
 
 namespace brightray {
-
-namespace { // NOLINT
-class DevToolsWindowDelegate;
-}
 
 class InspectableWebContentsImpl;
 
@@ -26,10 +23,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   explicit InspectableWebContentsViewViews(
       InspectableWebContentsImpl* inspectable_web_contents_impl);
   ~InspectableWebContentsViewViews();
-
-  DevToolsWindowDelegate* GetDevToolsWindowDelegate() const {
-    return devtools_window_delegate_;
-  }
 
   // InspectableWebContentsView:
   views::View* GetView() override;
@@ -61,7 +54,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
 
   DevToolsContentsResizingStrategy strategy_;
   bool devtools_visible_;
-  DevToolsWindowDelegate* devtools_window_delegate_;
+  views::WidgetDelegate* devtools_window_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewViews);
 };

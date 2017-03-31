@@ -178,7 +178,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
 
     views::Widget::InitParams params;
     params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
-    params.delegate = GetDevToolsWindowDelegate();
+    params.delegate = devtools_window_delegate_;
     params.bounds = inspectable_web_contents()->GetDevToolsBounds();
 
 #if defined(USE_X11)
@@ -203,7 +203,8 @@ void InspectableWebContentsViewViews::SetContentsResizingStrategy(
 
 void InspectableWebContentsViewViews::SetTitle(const base::string16& title) {
   if (devtools_window_) {
-    GetDevToolsWindowDelegate()->SetWindowTitle(title);
+    static_cast<DevToolsWindowDelegate*>(devtools_window_delegate_)
+        ->SetWindowTitle(title);
     devtools_window_->UpdateWindowTitle();
   }
 }
