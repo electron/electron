@@ -23,7 +23,7 @@ namespace {
 
 BrowserClient* g_browser_client;
 
-} // namespace
+}  // namespace
 
 BrowserClient* BrowserClient::Get() {
   return g_browser_client;

@@ -16,7 +16,7 @@ namespace {
 
 const char kChromeUIDevToolsBundledHost[] = "devtools";
 
-} // namespace
+}  // namespace
 
 // static
 WebUIControllerFactory* WebUIControllerFactory::GetInstance() {
