@@ -73,9 +73,16 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   return dict.GetHandle();
 }
 
-bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(v8::Isolate* isolate,
-                                             v8::Local<v8::Value> val,
-                                             scoped_refptr<net::X509Certificate>* out) {
+bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
+    v8::Isolate* isolate, v8::Local<v8::Value> val,
+    scoped_refptr<net::X509Certificate>* out) {
+  mate::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  std::string data;
+  dict.Get("data", &data);
+  *out = net::X509Certificate::CreateFromBytes(data.c_str(), data.length());
   return true;
 }
 
