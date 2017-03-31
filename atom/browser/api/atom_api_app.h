@@ -156,7 +156,7 @@ class App : public AtomBrowserClient::Delegate,
 
 #if defined(OS_MACOSX)
   void ShowCertificateTrust(atom::NativeWindow* parent_window,
-                            const net::X509Certificate& cert,
+                            const scoped_refptr<net::X509Certificate>& cert,
                             std::string message,
                             const ShowTrustCallback& callback,
                             mate::Arguments* args);

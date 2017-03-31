@@ -813,7 +813,7 @@ void App::OnCertificateManagerModelCreated(
 
 #if defined(OS_MACOSX)
 void App::ShowCertificateTrust(atom::NativeWindow* parent_window,
-                               const net::X509Certificate& cert,
+                               const scoped_refptr<net::X509Certificate>& cert,
                                std::string message,
                                const ShowTrustCallback& callback,
                                mate::Arguments* args) {
@@ -960,7 +960,7 @@ void App::BuildPrototype(
                  base::Bind(&Browser::GetCurrentActivityType, browser))
       .SetMethod("setAboutPanelOptions",
                  base::Bind(&Browser::SetAboutPanelOptions, browser))
-      // .SetMethod("showCertificateTrust", &App::ShowCertificateTrust)
+      .SetMethod("showCertificateTrust", &App::ShowCertificateTrust)
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))

@@ -21,12 +21,12 @@ namespace atom {
 namespace api {
 
 void ShowCertificateTrustUI(atom::NativeWindow* parent_window,
-                            const net::X509Certificate& cert,
+                            const scoped_refptr<net::X509Certificate>& cert,
                             std::string message,
                             const ShowTrustCallback& callback) {
   auto sec_policy = SecPolicyCreateBasicX509();
   SecTrustRef trust = nullptr;
-  SecTrustCreateWithCertificates(cert.CreateOSCertChainForCert(), sec_policy, &trust);
+  SecTrustCreateWithCertificates(cert->CreateOSCertChainForCert(), sec_policy, &trust);
   // CFRelease(sec_policy);
 
   NSWindow* window = parent_window ?

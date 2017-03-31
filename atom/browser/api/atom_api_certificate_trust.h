@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/callback_forward.h"
+#include "base/memory/ref_counted.h"
 
 namespace net {
 class X509Certificate;
@@ -22,7 +23,7 @@ namespace api {
 typedef base::Callback<void(bool result)> ShowTrustCallback;
 
 void ShowCertificateTrustUI(atom::NativeWindow* parent_window,
-                            const net::X509Certificate& cert,
+                            const scoped_refptr<net::X509Certificate>& cert,
                             std::string message,
                             const ShowTrustCallback& callback);
 
