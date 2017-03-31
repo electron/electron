@@ -336,13 +336,18 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
+#if !defined(MAC_OS_X_VERSION_10_12)
+
 enum {
   NSWindowTabbingModeDisallowed = 2
 };
+
 @interface NSWindow (SierraSDK)
 - (void)setTabbingMode:(NSInteger)mode;
-- (void)setTabbingIdentifier:(NSString *)identifier;
+- (void)setTabbingIdentifier:(NSString*)identifier;
 @end
+
+#endif  // MAC_OS_X_VERSION_10_12
 
 @interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate, NSTouchBarDelegate> {
  @private
