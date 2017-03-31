@@ -29,6 +29,7 @@ class AtomRendererClient : public RendererClientBase {
   // Get the context that the Electron API is running in.
   v8::Local<v8::Context> GetContext(
       blink::WebFrame* frame, v8::Isolate* isolate);
+  void SetupMainWorldOverrides(v8::Handle<v8::Context> context);
   bool isolated_world() { return isolated_world_; }
 
  private:
