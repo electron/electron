@@ -1,20 +1,24 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-var port = require('url').parse(window.location.href, true).query.port;
-var crashReporter = require('electron').crashReporter;
+var url = require('url').parse(window.location.href, true);
+var uploadToServer = !url.query.skipUpload;
+var port = url.query.port;
+var {crashReporter, ipcRenderer} = require('electron');
 crashReporter.start({
   productName: 'Zombies',
   companyName: 'Umbrella Corporation',
   submitURL: 'http://127.0.0.1:' + port,
-  uploadToServer: true,
+  uploadToServer: uploadToServer,
   ignoreSystemCrashHandler: true,
   extra: {
     'extra1': 'extra1',
     'extra2': 'extra2',
   }
 });
-
+if (!uploadToServer) {
+  ipcRenderer.sendSync('set-crash-directory', crashReporter.getCrashesDirectory())
+}
 setImmediate(function() { process.crash(); });
 </script>
 </body>

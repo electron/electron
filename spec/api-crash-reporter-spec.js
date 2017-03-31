@@ -1,5 +1,6 @@
 const assert = require('assert')
 const childProcess = require('child_process')
+const fs = require('fs')
 const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')
@@ -70,6 +71,93 @@ describe('crashReporter module', function () {
           },
           processType: 'browser',
           done: done
+        })
+      })
+
+      it('should not send minidump if uploadToServer is false', function (done) {
+        this.timeout(120000)
+
+        if (process.platform === 'darwin') {
+          crashReporter.setUploadToServer(false)
+        }
+
+        let server
+        let dumpFile
+        let crashesDir
+        const testDone = (uploaded) => {
+          if (uploaded) {
+            return done(new Error('fail'))
+          }
+          server.close()
+          if (process.platform === 'darwin') {
+            crashReporter.setUploadToServer(true)
+          }
+          assert(fs.existsSync(dumpFile))
+          fs.unlinkSync(dumpFile)
+          done()
+        }
+
+        let pollInterval
+        const pollDumpFile = () => {
+          fs.readdir(crashesDir, (err, files) => {
+            if (err) {
+              return
+            }
+            const dumps = files.filter((file) => /\.dmp$/.test(file))
+            if (!dumps.length) {
+              return
+            }
+            assert.equal(1, dumps.length)
+            dumpFile = path.join(crashesDir, dumps[0])
+            clearInterval(pollInterval)
+            // dump file should not be deleted when not uploading, so we wait
+            // 500 ms and assert it still exists in `testDone`
+            setTimeout(testDone, 500)
+          })
+        }
+
+        remote.ipcMain.once('set-crash-directory', (event, dir) => {
+          if (process.platform === 'linux') {
+            crashesDir = dir
+          } else {
+            crashesDir = crashReporter.getCrashesDirectory()
+            if (process.platform === 'darwin') {
+              // crashpad uses an extra subdirectory
+              crashesDir = path.join(crashesDir, 'completed')
+            }
+          }
+
+          // Before starting, remove all dump files in the crash directory.
+          // This is required because:
+          // - mac crashpad not seem to allow changing the crash directory after
+          //   the first "start" call.
+          // - Other tests in this suite may leave dumps there.
+          // - We want to verify in `testDone` that a dump file is created and
+          //   not deleted.
+          fs.readdir(crashesDir, (err, files) => {
+            if (!err) {
+              for (const file of files) {
+                if (/\.dmp$/.test(file)) {
+                  fs.unlinkSync(path.join(crashesDir, file))
+                }
+              }
+            }
+            event.returnValue = null  // allow the renderer to crash
+            pollInterval = setInterval(pollDumpFile, 100)
+          })
+        })
+
+        server = startServer({
+          callback (port) {
+            const crashUrl = url.format({
+              protocol: 'file',
+              pathname: path.join(fixtures, 'api', 'crash.html'),
+              search: `?port=${port}&skipUpload=1`
+            })
+            w.loadURL(crashUrl)
+          },
+          processType: 'renderer',
+          done: testDone.bind(null, true)
         })
       })
 
@@ -215,4 +303,5 @@ const startServer = ({callback, processType, done}) => {
     }
     callback(port)
   })
+  return server
 }
