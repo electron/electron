@@ -40,6 +40,8 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
     return inspectable_web_contents_;
   }
 
+  const base::string16& GetTitle() const { return title_; }
+
  private:
   // views::View:
   void Layout() override;
@@ -55,6 +57,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   DevToolsContentsResizingStrategy strategy_;
   bool devtools_visible_;
   views::WidgetDelegate* devtools_window_delegate_;
+  base::string16 title_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewViews);
 };
