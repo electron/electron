@@ -118,9 +118,9 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
   dict.Get("intermediates", &intermediates_encoded);
   std::vector<net::X509Certificate::OSCertHandle> intermediates;
   for (size_t i = 0; i < intermediates_encoded.size(); i++) {
-    auto data = intermediates_encoded[i];
+    auto intermediate_data = intermediates_encoded[i];
     scoped_refptr<net::X509Certificate> cert;
-    if (!CertFromData(data, &cert))
+    if (!CertFromData(intermediate_data, &cert))
       return false;
 
     intermediates.push_back(cert->os_cert_handle());
