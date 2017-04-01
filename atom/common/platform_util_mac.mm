@@ -73,10 +73,10 @@ std::string MessageForOSStatus(OSStatus status, const char* default_message) {
 // NSWorkspace#openURLs.
 std::string OpenURL(NSURL* ns_url, bool activate) {
   CFURLRef openingApp = nullptr;
-    OSStatus status = LSGetApplicationForURL(base::mac::NSToCFCast(ns_url),
-                                             kLSRolesAll,
-                                             nullptr,
-                                             &openingApp);
+  OSStatus status = LSGetApplicationForURL(base::mac::NSToCFCast(ns_url),
+                                           kLSRolesAll,
+                                           nullptr,
+                                           &openingApp);
   if (status != noErr)
     return MessageForOSStatus(status, "Failed to open");
 
