@@ -59,7 +59,8 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
            net::HashValue(
               val->CalculateFingerprint256(val->os_cert_handle())).ToString());
 
-  if (!val->GetIntermediateCertificates().empty()) {
+  auto intermediates = val->GetIntermediateCertificates();
+  if (!intermediates.empty()) {
     net::X509Certificate::OSCertHandles issuer_intermediates(
         val->GetIntermediateCertificates().begin() + 1,
         val->GetIntermediateCertificates().end());
@@ -68,6 +69,16 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
             val->GetIntermediateCertificates().front(),
             issuer_intermediates);
     dict.Set("issuerCert", issuer_cert);
+
+    std::vector<std::string> intermediates_encoded;
+    for (size_t i = 0; i < intermediates.size(); i++) {
+      auto native_cert = intermediates[i];
+      std::string encoded;
+      net::X509Certificate::GetPEMEncoded(native_cert, &encoded);
+      intermediates_encoded.push_back(encoded);
+    }
+
+    dict.Set("intermediates", intermediates_encoded);
   }
 
   return dict.GetHandle();
