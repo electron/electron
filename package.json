@@ -6,6 +6,7 @@
     "browserify": "^13.1.0",
     "electabul": "~0.0.4",
     "electron-docs-linter": "^2.1.0",
+    "electron-typescript-definitions": "^1.0.0",
     "request": "*",
     "standard": "^8.4.0",
     "standard-markdown": "^2.1.1"
@@ -32,6 +33,7 @@
     "clean": "python ./script/clean.py",
     "clean-build": "python ./script/clean.py --build",
     "coverage": "npm run instrument-code-coverage && npm test -- --use-instrumented-asar",
+    "generate-typescript-definitions": "electron-typescript-definitions --in=out/electron-api.json --out=out/electron.d.ts",
     "instrument-code-coverage": "electabul instrument --input-path ./lib --output-path ./out/coverage/electron.asar",
     "lint": "npm run lint-js && npm run lint-cpp && npm run lint-py && npm run lint-api-docs-js && npm run lint-api-docs",
     "lint-js": "standard && cd spec && standard",

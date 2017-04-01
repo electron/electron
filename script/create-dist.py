@@ -92,6 +92,7 @@ def main():
 
   if PLATFORM != 'win32' and not args.no_api_docs:
     create_api_json_schema()
+    copy_typescript_definitions()
 
   if PLATFORM == 'linux':
     strip_binaries()
@@ -143,6 +144,9 @@ def create_api_json_schema():
   execute(['electron-docs-linter', 'docs', '--outfile={0}'.format(outfile),
            '--version={}'.format(ELECTRON_VERSION.replace('v', ''))],
           env=env)
+
+def copy_typescript_definitions():
+    shutil.copy2(os.path.join(SOURCE_ROOT, 'out', 'electron.d.ts'), DIST_DIR)
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:
