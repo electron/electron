@@ -1358,22 +1358,22 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     // they are available in the minimum SDK version
     if (type == "selection") {
       // NSVisualEffectMaterialSelection
-      vibrancyType = static_cast<NSVisualEffectMaterial>( 4);
+      vibrancyType = static_cast<NSVisualEffectMaterial>(4);
     } else if (type == "menu") {
       // NSVisualEffectMaterialMenu
-      vibrancyType = static_cast<NSVisualEffectMaterial>( 5);
+      vibrancyType = static_cast<NSVisualEffectMaterial>(5);
     } else if (type == "popover") {
       // NSVisualEffectMaterialPopover
-      vibrancyType = static_cast<NSVisualEffectMaterial>( 6);
+      vibrancyType = static_cast<NSVisualEffectMaterial>(6);
     } else if (type == "sidebar") {
       // NSVisualEffectMaterialSidebar
-      vibrancyType = static_cast<NSVisualEffectMaterial>( 7);
+      vibrancyType = static_cast<NSVisualEffectMaterial>(7);
     } else if (type == "medium-light") {
       // NSVisualEffectMaterialMediumLight
-      vibrancyType = static_cast<NSVisualEffectMaterial>( 8);
+      vibrancyType = static_cast<NSVisualEffectMaterial>(8);
     } else if (type == "ultra-dark") {
       // NSVisualEffectMaterialUltraDark
-      vibrancyType = static_cast<NSVisualEffectMaterial>( 9);
+      vibrancyType = static_cast<NSVisualEffectMaterial>(9);
     }
   }
 
