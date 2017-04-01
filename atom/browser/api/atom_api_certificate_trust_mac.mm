@@ -15,6 +15,7 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/cert/x509_certificate.h"
+#include "net/cert/cert_database.h"
 
 namespace atom {
 
@@ -29,14 +30,20 @@ void ShowCertificateTrustUI(atom::NativeWindow* parent_window,
   SecTrustCreateWithCertificates(cert->CreateOSCertChainForCert(), sec_policy, &trust);
   // CFRelease(sec_policy);
 
-  NSWindow* window = parent_window ?
-      parent_window->GetNativeWindow() :
-      NULL;
+  // NSWindow* window = parent_window ?
+  //     parent_window->GetNativeWindow() :
+  //     NULL;
 
   auto msg = base::SysUTF8ToNSString(message);
 
   SFCertificateTrustPanel *panel = [[SFCertificateTrustPanel alloc] init];
-  [panel beginSheetForWindow:window modalDelegate:nil didEndSelector:NULL contextInfo:NULL trust:trust message:msg];
+  [panel runModalForTrust:trust message:msg];
+  // [panel beginSheetForWindow:window modalDelegate:nil didEndSelector:NULL contextInfo:NULL trust:trust message:msg];
+
+  auto cert_db = net::CertDatabase::GetInstance();
+  // This forces Chromium to reload the certificate since it might be trusted
+  // now.
+  cert_db->NotifyObserversCertDBChanged(cert.get());
 
   callback.Run(true);
   // CFRelease(trust);
