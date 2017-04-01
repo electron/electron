@@ -749,6 +749,7 @@ Returns:
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
   * `selectionArea` Object - Coordinates of first match region.
+  * `finalUpdate` Boolean
 
 Fired when a result is available for
 [`webview.findInPage`](webview-tag.md#webviewtagfindinpage) request.
