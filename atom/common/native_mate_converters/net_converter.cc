@@ -59,8 +59,7 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
            net::HashValue(
               val->CalculateFingerprint256(val->os_cert_handle())).ToString());
 
-  auto intermediates = val->GetIntermediateCertificates();
-  if (!intermediates.empty()) {
+  if (!val->GetIntermediateCertificates().empty()) {
     net::X509Certificate::OSCertHandles issuer_intermediates(
         val->GetIntermediateCertificates().begin() + 1,
         val->GetIntermediateCertificates().end());
@@ -69,15 +68,6 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
             val->GetIntermediateCertificates().front(),
             issuer_intermediates);
     dict.Set("issuerCert", issuer_cert);
-
-    std::vector<std::string> intermediates_encoded;
-    for (auto& native_cert : intermediates) {
-      std::string encoded;
-      net::X509Certificate::GetPEMEncoded(native_cert, &encoded);
-      intermediates_encoded.push_back(encoded);
-    }
-
-    dict.Set("intermediates", intermediates_encoded);
   }
 
   return dict.GetHandle();
@@ -113,24 +103,21 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
   if (!CertFromData(data, &leaf_cert))
     return false;
 
-  std::vector<std::string> intermediates_encoded;
-  dict.Get("intermediates", &intermediates_encoded);
-  std::vector<net::X509Certificate::OSCertHandle> intermediates;
-  for (size_t i = 0; i < intermediates_encoded.size(); i++) {
-    auto intermediate_data = intermediates_encoded[i];
-    scoped_refptr<net::X509Certificate> cert;
-    if (!CertFromData(intermediate_data, &cert))
+  scoped_refptr<net::X509Certificate> parent;
+  if (dict.Get("issuerCert", &parent)) {
+    auto parents = std::vector<net::X509Certificate::OSCertHandle>(
+                      parent->GetIntermediateCertificates());
+    parents.insert(parents.begin(), parent->os_cert_handle());
+    auto cert = net::X509Certificate::CreateFromHandle(
+      leaf_cert->os_cert_handle(), parents);
+    if (!cert)
       return false;
 
-    intermediates.push_back(cert->os_cert_handle());
+    *out = cert;
+  } else {
+    *out = leaf_cert;
   }
 
-  auto cert = net::X509Certificate::CreateFromHandle(
-    leaf_cert->os_cert_handle(), intermediates);
-  if (!cert)
-    return false;
-
-  *out = cert;
   return true;
 }
 
