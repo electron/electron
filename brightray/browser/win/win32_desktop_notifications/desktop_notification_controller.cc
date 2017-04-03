@@ -7,7 +7,8 @@
 #include "browser/win/win32_desktop_notifications/common.h"
 #include "browser/win/win32_desktop_notifications/toast.h"
 
-using namespace std;
+using std::make_shared;
+using std::shared_ptr;
 
 namespace brightray {
 

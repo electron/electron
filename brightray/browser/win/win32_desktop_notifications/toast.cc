@@ -8,7 +8,8 @@
 #pragma comment(lib, "msimg32.lib")
 #pragma comment(lib, "uxtheme.lib")
 
-using namespace std;
+using std::min;
+using std::shared_ptr;
 
 namespace brightray {
 
