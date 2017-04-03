@@ -24,8 +24,7 @@ class DevToolsWindowDelegate : public views::ClientView,
       : views::ClientView(widget, view),
         shell_(shell),
         view_(view),
-        widget_(widget),
-        title_(base::ASCIIToUTF16("Developer Tools")) {
+        widget_(widget) {
     // A WidgetDelegate should be deleted on DeleteDelegate.
     set_owned_by_client();
 
@@ -34,15 +33,13 @@ class DevToolsWindowDelegate : public views::ClientView,
   }
   virtual ~DevToolsWindowDelegate() {}
 
-  void SetWindowTitle(const base::string16& title) { title_ = title; }
-
   // views::WidgetDelegate:
   void DeleteDelegate() override { delete this; }
   views::View* GetInitiallyFocusedView() override { return view_; }
   bool CanResize() const override { return true; }
   bool CanMaximize() const override { return true; }
   bool CanMinimize() const override { return true; }
-  base::string16 GetWindowTitle() const override { return title_; }
+  base::string16 GetWindowTitle() const override { return shell_->GetTitle(); }
   gfx::ImageSkia GetWindowAppIcon() override { return GetWindowIcon(); }
   gfx::ImageSkia GetWindowIcon() override { return icon_; }
   views::Widget* GetWidget() override { return widget_; }
@@ -62,7 +59,6 @@ class DevToolsWindowDelegate : public views::ClientView,
   InspectableWebContentsViewViews* shell_;
   views::View* view_;
   views::Widget* widget_;
-  base::string16 title_;
   gfx::ImageSkia icon_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsWindowDelegate);
@@ -82,7 +78,8 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
       contents_web_view_(nullptr),
       devtools_web_view_(new views::WebView(nullptr)),
       devtools_visible_(false),
-      devtools_window_delegate_(nullptr) {
+      devtools_window_delegate_(nullptr),
+      title_(base::ASCIIToUTF16("Developer Tools")) {
   set_owned_by_client();
 
   if (inspectable_web_contents_->GetWebContents()->GetNativeView()) {
@@ -178,7 +175,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
 
     views::Widget::InitParams params;
     params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
-    params.delegate = GetDevToolsWindowDelegate();
+    params.delegate = devtools_window_delegate_;
     params.bounds = inspectable_web_contents()->GetDevToolsBounds();
 
 #if defined(USE_X11)
@@ -203,7 +200,7 @@ void InspectableWebContentsViewViews::SetContentsResizingStrategy(
 
 void InspectableWebContentsViewViews::SetTitle(const base::string16& title) {
   if (devtools_window_) {
-    GetDevToolsWindowDelegate()->SetWindowTitle(title);
+    title_ = title;
     devtools_window_->UpdateWindowTitle();
   }
 }
