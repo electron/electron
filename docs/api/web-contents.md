@@ -375,12 +375,8 @@ Returns:
 * `type` String
 * `image` NativeImage (optional)
 * `scale` Float (optional) - scaling factor for the custom cursor
-* `size` Object (optional) - the size of the `image`
-  * `width` Integer
-  * `height` Integer
-* `hotspot` Object (optional) - coordinates of the custom cursor's hotspot
-  * `x` Integer - x coordinate
-  * `y` Integer - y coordinate
+* `size` [Size](structures/size.md) (optional) - the size of the `image`
+* `hotspot` [Point](structures/point.md) (optional) - coordinates of the custom cursor's hotspot
 
 Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
@@ -1067,24 +1063,16 @@ app.on('ready', () => {
       (default: `desktop`)
     * `desktop` - Desktop screen type
     * `mobile` - Mobile screen type
-  * `screenSize` Object - Set the emulated screen size (screenPosition == mobile)
-    * `width` Integer - Set the emulated screen width
-    * `height` Integer - Set the emulated screen height
-  * `viewPosition` Object - Position the view on the screen
+  * `screenSize` [Size](structures/size.md) - Set the emulated screen size (screenPosition == mobile)
+  * `viewPosition` [Point](structures/point.md) - Position the view on the screen
       (screenPosition == mobile) (default: `{x: 0, y: 0}`)
-    * `x` Integer - Set the x axis offset from top left corner
-    * `y` Integer - Set the y axis offset from top left corner
   * `deviceScaleFactor` Integer - Set the device scale factor (if zero defaults to
       original device scale factor) (default: `0`)
-  * `viewSize` Object - Set the emulated view size (empty means no override)
-    * `width` Integer - Set the emulated view width
-    * `height` Integer - Set the emulated view height
+  * `viewSize` [Size](structures/size.md) - Set the emulated view size (empty means no override)
   * `fitToView` Boolean - Whether emulated view should be scaled down if
       necessary to fit into available space (default: `false`)
-  * `offset` Object - Offset of the emulated view inside available space (not in
-      fit to view mode) (default: `{x: 0, y: 0}`)
-    * `x` Float - Set the x axis offset from top left corner
-    * `y` Float - Set the y axis offset from top left corner
+  * `offset` [Point](structures/point.md) - Offset of the emulated view inside available space
+      (not in fit to view mode) (default: `{x: 0, y: 0}`)
   * `scale` Float - Scale of emulated view inside available space (not in fit to
       view mode) (default: `1`)
 

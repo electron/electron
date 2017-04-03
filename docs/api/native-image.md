@@ -219,10 +219,7 @@ Returns `Boolean` -  Whether the image is empty.
 
 #### `image.getSize()`
 
-Returns `Object`:
-
-* `width` Integer
-* `height` Integer
+Returns [`Size`](structures/size.md)
 
 #### `image.setTemplateImage(option)`
 
@@ -236,11 +233,7 @@ Returns `Boolean` - Whether the image is a template image.
 
 #### `image.crop(rect)`
 
-* `rect` Object - The area of the image to crop
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `rect` [Rectangle](structures/rectangle.md) - The area of the image to crop
 
 Returns `NativeImage` - The cropped image.
 
