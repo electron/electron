@@ -127,7 +127,8 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           std::string message,
                           const certificate_trust::ShowTrustCallback& callback,
                           mate::Arguments* args) {
-  certificate_trust::ShowCertificateTrust(parent_window, cert, message, callback);
+  certificate_trust::ShowCertificateTrust(parent_window, cert,
+                                          message, callback);
 }
 #endif
 
