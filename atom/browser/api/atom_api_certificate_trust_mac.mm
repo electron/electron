@@ -17,22 +17,71 @@
 #include "net/cert/x509_certificate.h"
 #include "net/cert/cert_database.h"
 
-@interface Trampoline : NSObject
+@interface TrustDelegate : NSObject {
+ @private
+  atom::api::ShowTrustCallback callback_;
+  SFCertificateTrustPanel* panel_;
+  scoped_refptr<net::X509Certificate> cert_;
+  SecTrustRef trust_;
+  CFArrayRef cert_chain_;
+  SecPolicyRef sec_policy_;
+}
 
-- (void)createPanelDidEnd:(NSWindow *)sheet
+- (id)initWithCallback:(const atom::api::ShowTrustCallback&)callback
+      panel:(SFCertificateTrustPanel*)panel
+      cert:(const scoped_refptr<net::X509Certificate>&)cert
+      trust:(SecTrustRef)trust
+      certChain:(CFArrayRef)certChain
+      secPolicy:(SecPolicyRef)secPolicy;
+
+- (void)panelDidEnd:(NSWindow *)sheet
         returnCode:(int)returnCode
-        contextInfo:(void *)contextInfo;
+        contextInfo:(void*)contextInfo;
 
 @end
 
-@implementation Trampoline
+@implementation TrustDelegate
 
-- (void)createPanelDidEnd:(NSWindow *)sheet
+- (void)dealloc {
+  [panel_ release];
+  CFRelease(trust_);
+  CFRelease(cert_chain_);
+  CFRelease(sec_policy_);
+
+  [super dealloc];
+}
+
+- (id)initWithCallback:(const atom::api::ShowTrustCallback&)callback
+      panel:(SFCertificateTrustPanel*)panel
+      cert:(const scoped_refptr<net::X509Certificate>&)cert
+      trust:(SecTrustRef)trust
+      certChain:(CFArrayRef)certChain
+      secPolicy:(SecPolicyRef)secPolicy {
+  if ((self = [super init])) {
+    callback_ = callback;
+    panel_ = panel;
+    cert_ = cert;
+    trust_ = trust;
+    cert_chain_ = certChain;
+    sec_policy_ = secPolicy;
+  }
+
+  return self;
+}
+
+- (void)panelDidEnd:(NSWindow *)sheet
         returnCode:(int)returnCode
-        contextInfo:(void *)contextInfo {
-  void (^block)(int) = (void (^)(int))contextInfo;
-  block(returnCode);
-  [(id)block autorelease];
+        contextInfo:(void*)contextInfo {
+  if (returnCode == NSFileHandlingPanelOKButton) {
+    auto cert_db = net::CertDatabase::GetInstance();
+    // This forces Chromium to reload the certificate since it might be trusted
+    // now.
+    cert_db->NotifyObserversCertDBChanged(cert_.get());
+  }
+
+  callback_.Run(returnCode);
+
+  [self autorelease];
 }
 
 @end
@@ -50,29 +99,24 @@ void ShowCertificateTrustUI(atom::NativeWindow* parent_window,
   SecTrustRef trust = nullptr;
   SecTrustCreateWithCertificates(cert_chain, sec_policy, &trust);
 
-  SFCertificateTrustPanel *panel = [[SFCertificateTrustPanel alloc] init];
-
-  void (^callbackBlock)(int) = [^(int returnCode) {
-    // if (returnCode == NSFileHandlingPanelOKButton) {
-      auto cert_db = net::CertDatabase::GetInstance();
-      // This forces Chromium to reload the certificate since it might be trusted
-      // now.
-      cert_db->NotifyObserversCertDBChanged(cert.get());
-    // }
-
-    callback.Run(returnCode);
-
-    [panel autorelease];
-    CFRelease(trust);
-    CFRelease(cert_chain);
-    CFRelease(sec_policy);
-  } copy];
-
   NSWindow* window = parent_window ?
       parent_window->GetNativeWindow() :
-      NULL;
+      nil;
   auto msg = base::SysUTF8ToNSString(message);
-  [panel beginSheetForWindow:window modalDelegate:nil didEndSelector:NULL contextInfo:callbackBlock trust:trust message:msg];
+
+  SFCertificateTrustPanel *panel = [[SFCertificateTrustPanel alloc] init];
+  auto delegate = [[TrustDelegate alloc] initWithCallback:callback
+                                         panel:panel
+                                         cert:cert
+                                         trust:trust
+                                         certChain:cert_chain
+                                         secPolicy:sec_policy];
+  [panel beginSheetForWindow:window
+         modalDelegate:delegate
+         didEndSelector:@selector(panelDidEnd:returnCode:contextInfo:)
+         contextInfo:nil
+         trust:trust
+         message:msg];
 }
 
 }  // namespace api
