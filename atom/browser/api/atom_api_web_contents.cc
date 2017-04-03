@@ -417,15 +417,22 @@ WebContents::~WebContents() {
       guest_delegate_->Destroy();
 
     RenderViewDeleted(web_contents()->GetRenderViewHost());
-    DestroyWebContents();
+
+    if (type_ == BROWSER_WINDOW && owner_window()) {
+      owner_window()->CloseContents(nullptr);
+    } else if (type_ == WEB_VIEW) {
+      DestroyWebContents(false /* async */);
+    } else {
+      DestroyWebContents(true /* async */);
+    }
   }
 }
 
-void WebContents::DestroyWebContents() {
+void WebContents::DestroyWebContents(bool async) {
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
   Emit("will-destroy");
-  ResetManagedWebContents();
+  ResetManagedWebContents(async);
 }
 
 bool WebContents::DidAddMessageToConsole(content::WebContents* source,
@@ -477,7 +484,7 @@ void WebContents::AddNewContents(content::WebContents* source,
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
       initial_rect.x(), initial_rect.y(), initial_rect.width(),
       initial_rect.height())) {
-    api_web_contents->DestroyWebContents();
+    api_web_contents->DestroyWebContents(false /* async */);
   }
 }
 

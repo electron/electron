@@ -112,7 +112,7 @@ class CommonWebContentsDelegate
 #endif
 
   // Destroy the managed InspectableWebContents object.
-  void ResetManagedWebContents();
+  void ResetManagedWebContents(bool async);
 
  private:
   // Callback for when DevToolsSaveToFile has completed.
