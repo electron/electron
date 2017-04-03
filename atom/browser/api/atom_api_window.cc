@@ -298,6 +298,16 @@ void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 }
 #endif
 
+#if defined(OS_MACOSX)
+void Window::OnWindowSheetBegin() {
+  Emit("sheet-begin");
+}
+
+void Window::OnWindowSheetEnd() {
+  Emit("sheet-end");
+}
+#endif
+
 // static
 mate::WrappableBase* Window::New(mate::Arguments* args) {
   if (!Browser::Get()->is_ready()) {

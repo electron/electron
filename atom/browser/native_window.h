@@ -245,6 +245,11 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
   #endif
 
+  #if defined(OS_MACOSX)
+  void NotifyWindowSheetBegin();
+  void NotifyWindowSheetEnd();
+  #endif
+
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
   }

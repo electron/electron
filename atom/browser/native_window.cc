@@ -590,6 +590,18 @@ void NativeWindow::NotifyWindowMessage(
 }
 #endif
 
+#if defined(OS_MACOSX)
+void NativeWindow::NotifyWindowSheetBegin() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetBegin();
+}
+
+void NativeWindow::NotifyWindowSheetEnd() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetEnd();
+}
+#endif
+
 std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
     const std::vector<DraggableRegion>& regions) {
   std::unique_ptr<SkRegion> sk_region(new SkRegion);

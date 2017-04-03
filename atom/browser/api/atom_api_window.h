@@ -93,6 +93,11 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
   #endif
 
+  #if defined(OS_MACOSX)
+  void OnWindowSheetBegin() override;
+  void OnWindowSheetEnd() override;
+  #endif
+
  private:
   void Init(v8::Isolate* isolate,
             v8::Local<v8::Object> wrapper,

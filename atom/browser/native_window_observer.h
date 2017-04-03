@@ -79,6 +79,11 @@ class NativeWindowObserver {
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
   #endif
 
+  #if defined(OS_MACOSX)
+  virtual void OnWindowSheetBegin() {}
+  virtual void OnWindowSheetEnd() {}
+  #endif
+
   // Called when renderer is hung.
   virtual void OnRendererUnresponsive() {}
 

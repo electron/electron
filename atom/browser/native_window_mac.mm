@@ -313,6 +313,14 @@ bool ScopedDisableResize::disable_resize_ = false;
   return rect;
 }
 
+- (void)windowWillBeginSheet:(NSNotification *)notification {
+  shell_->NotifyWindowSheetBegin();
+}
+
+- (void)windowDidEndSheet:(NSNotification *)notification {
+  shell_->NotifyWindowSheetEnd();
+}
+
 @end
 
 @interface AtomPreviewItem : NSObject <QLPreviewItem>
