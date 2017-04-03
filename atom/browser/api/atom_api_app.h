@@ -19,7 +19,6 @@
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
-#include "net/cert/x509_certificate.h"
 
 #if defined(USE_NSS_CERTS)
 #include "chrome/browser/certificate_manager_model.h"
