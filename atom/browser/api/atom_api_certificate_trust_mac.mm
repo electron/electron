@@ -17,6 +17,26 @@
 #include "net/cert/x509_certificate.h"
 #include "net/cert/cert_database.h"
 
+@interface Trampoline : NSObject
+
+- (void)createPanelDidEnd:(NSWindow *)sheet
+        returnCode:(int)returnCode
+        contextInfo:(void *)contextInfo;
+
+@end
+
+@implementation Trampoline
+
+- (void)createPanelDidEnd:(NSWindow *)sheet
+        returnCode:(int)returnCode
+        contextInfo:(void *)contextInfo {
+  void (^block)(int) = (void (^)(int))contextInfo;
+  block(returnCode);
+  [(id)block autorelease];
+}
+
+@end
+
 namespace atom {
 
 namespace api {
@@ -26,28 +46,33 @@ void ShowCertificateTrustUI(atom::NativeWindow* parent_window,
                             std::string message,
                             const ShowTrustCallback& callback) {
   auto sec_policy = SecPolicyCreateBasicX509();
+  auto cert_chain = cert->CreateOSCertChainForCert();
   SecTrustRef trust = nullptr;
-  SecTrustCreateWithCertificates(cert->CreateOSCertChainForCert(), sec_policy, &trust);
-  // CFRelease(sec_policy);
-
-  // NSWindow* window = parent_window ?
-  //     parent_window->GetNativeWindow() :
-  //     NULL;
-
-  auto msg = base::SysUTF8ToNSString(message);
+  SecTrustCreateWithCertificates(cert_chain, sec_policy, &trust);
 
   SFCertificateTrustPanel *panel = [[SFCertificateTrustPanel alloc] init];
-  [panel runModalForTrust:trust message:msg];
-  // [panel beginSheetForWindow:window modalDelegate:nil didEndSelector:NULL contextInfo:NULL trust:trust message:msg];
 
-  auto cert_db = net::CertDatabase::GetInstance();
-  // This forces Chromium to reload the certificate since it might be trusted
-  // now.
-  cert_db->NotifyObserversCertDBChanged(cert.get());
+  void (^callbackBlock)(int) = [^(int returnCode) {
+    // if (returnCode == NSFileHandlingPanelOKButton) {
+      auto cert_db = net::CertDatabase::GetInstance();
+      // This forces Chromium to reload the certificate since it might be trusted
+      // now.
+      cert_db->NotifyObserversCertDBChanged(cert.get());
+    // }
 
-  callback.Run(true);
-  // CFRelease(trust);
-  // [panel release];
+    callback.Run(returnCode);
+
+    [panel autorelease];
+    CFRelease(trust);
+    CFRelease(cert_chain);
+    CFRelease(sec_policy);
+  } copy];
+
+  NSWindow* window = parent_window ?
+      parent_window->GetNativeWindow() :
+      NULL;
+  auto msg = base::SysUTF8ToNSString(message);
+  [panel beginSheetForWindow:window modalDelegate:nil didEndSelector:NULL contextInfo:callbackBlock trust:trust message:msg];
 }
 
 }  // namespace api
