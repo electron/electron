@@ -187,6 +187,18 @@ describe('ipc module', function () {
       property.property = 1127
     })
 
+    it('rethrows errors getting/setting properties', function () {
+      const foo = remote.require(path.join(fixtures, 'module', 'error-properties.js'))
+
+      assert.throws(function () {
+        foo.bar
+      }, /getting error/)
+
+      assert.throws(function () {
+        foo.bar = 'test'
+      }, /setting error/)
+    })
+
     it('can construct an object from its member', function () {
       var call = remote.require(path.join(fixtures, 'module', 'call.js'))
       var obj = new call.constructor()
