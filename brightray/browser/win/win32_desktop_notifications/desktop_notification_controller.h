@@ -16,7 +16,8 @@ public:
     ~DesktopNotificationController();
 
     class Notification;
-    Notification AddNotification(std::wstring caption, std::wstring bodyText, HBITMAP image);
+    Notification AddNotification(std::wstring caption, std::wstring bodyText,
+                                 HBITMAP image);
     void CloseNotification(Notification& notification);
 
     // Event handlers -- override to receive the events
@@ -58,13 +59,16 @@ private:
 
     class Toast;
 
-    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
+                                    WPARAM wParam, LPARAM lParam);
     static DesktopNotificationController* Get(HWND hWnd)
     {
-        return reinterpret_cast<DesktopNotificationController*>(GetWindowLongPtr(hWnd, 0));
+        return reinterpret_cast<DesktopNotificationController*>(
+            GetWindowLongPtr(hWnd, 0));
     }
 
-    DesktopNotificationController(const DesktopNotificationController&) = delete;
+    DesktopNotificationController(
+        const DesktopNotificationController&) = delete;
 
     void InitializeFonts();
     void ClearAssets();
@@ -75,7 +79,9 @@ private:
     void DestroyToast(ToastInstance& inst);
 
 private:
-    static constexpr const TCHAR class_name_[] = TEXT("DesktopNotificationController");
+    static constexpr const TCHAR class_name_[] =
+        TEXT("DesktopNotificationController");
+
     HWND hwnd_controller_ = NULL;
     HFONT caption_font_ = NULL, body_font_ = NULL;
     std::vector<ToastInstance> instances_;

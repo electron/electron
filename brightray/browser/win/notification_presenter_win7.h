@@ -13,13 +13,16 @@ class NotificationPresenterWin7 :
 public:
     NotificationPresenterWin7() = default;
 
-    Win32Notification* GetNotificationObjectByRef(const DesktopNotificationController::Notification& ref);
+    Win32Notification* GetNotificationObjectByRef(
+        const DesktopNotificationController::Notification& ref);
+
     Win32Notification* GetNotificationObjectByTag(const std::string& tag);
 
 private:
     DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin7);
 
-    brightray::Notification* CreateNotificationObject(NotificationDelegate* delegate) override;
+    brightray::Notification* CreateNotificationObject(
+        NotificationDelegate* delegate) override;
 
     void OnNotificationClicked(Notification& notification) override;
     void OnNotificationDismissed(Notification& notification) override;

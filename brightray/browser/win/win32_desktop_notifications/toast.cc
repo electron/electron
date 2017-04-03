@@ -18,20 +18,34 @@ static COLORREF GetAccentColor()
     if(IsAppThemed())
     {
         HKEY hkey;
-        if(RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Microsoft\\Windows\\DWM"), 0, KEY_QUERY_VALUE, &hkey) == ERROR_SUCCESS)
+        if(RegOpenKeyEx(HKEY_CURRENT_USER,
+                        TEXT("SOFTWARE\\Microsoft\\Windows\\DWM"), 0,
+                        KEY_QUERY_VALUE, &hkey) == ERROR_SUCCESS)
         {
             COLORREF color;
             DWORD type, size;
-            if(RegQueryValueEx(hkey, TEXT("AccentColor"), nullptr, &type, (BYTE*)&color, &(size = sizeof(color))) == ERROR_SUCCESS && type == REG_DWORD)
+            if(RegQueryValueEx(hkey, TEXT("AccentColor"), nullptr,
+                               &type,
+                               (BYTE*)&color,
+                               &(size = sizeof(color))) == ERROR_SUCCESS &&
+               type == REG_DWORD)
             {
                 // convert from RGBA
-                color = RGB(GetRValue(color), GetGValue(color), GetBValue(color));
+                color = RGB(GetRValue(color),
+                            GetGValue(color),
+                            GetBValue(color));
                 success = true;
             }
-            else if(RegQueryValueEx(hkey, TEXT("ColorizationColor"), nullptr, &type, (BYTE*)&color, &(size = sizeof(color))) == ERROR_SUCCESS && type == REG_DWORD)
+            else if(RegQueryValueEx(hkey, TEXT("ColorizationColor"), nullptr,
+                                    &type,
+                                    (BYTE*)&color,
+                                    &(size = sizeof(color))) == ERROR_SUCCESS &&
+                    type == REG_DWORD)
             {
                 // convert from BGRA
-                color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
+                color = RGB(GetBValue(color),
+                            GetGValue(color),
+                            GetRValue(color));
                 success = true;
             }
 
@@ -48,8 +62,8 @@ static COLORREF GetAccentColor()
 static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
 {
     // We use StretchBlt for the scaling, but that discards the alpha channel.
-    // Therefore we first create a separate grayscale bitmap from the alpha channel,
-    // scale that separately and copy it back to the scaled color bitmap.
+    // So we first create a separate grayscale bitmap from the alpha channel,
+    // scale that separately, and copy it back to the scaled color bitmap.
 
     BITMAP bm;
     if(!GetObject(bitmap, sizeof(bm), &bm))
@@ -72,21 +86,27 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
         bmi.biCompression = BI_RGB;
 
         void* alphaSrcBits;
-        alphaSrcBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmi, DIB_RGB_COLORS, &alphaSrcBits, NULL, 0);
+        alphaSrcBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmi,
+                                          DIB_RGB_COLORS, &alphaSrcBits,
+                                          NULL, 0);
 
         if(alphaSrcBitmap)
         {
-            if(GetDIBits(hdcScreen, bitmap, 0, 0, 0, (BITMAPINFO*)&bmi, DIB_RGB_COLORS) &&
+            if(GetDIBits(hdcScreen, bitmap, 0, 0, 0,
+                         (BITMAPINFO*)&bmi, DIB_RGB_COLORS) &&
                bmi.biSizeImage > 0 &&
                (bmi.biSizeImage % 4) == 0)
             {
-                auto buf = (DWORD*)_aligned_malloc(bmi.biSizeImage, sizeof(DWORD));
+                auto buf = (BYTE*)_aligned_malloc(bmi.biSizeImage,
+                                                  sizeof(DWORD));
                 if(buf)
                 {
-                    GetDIBits(hdcScreen, bitmap, 0, bm.bmHeight, buf, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+                    GetDIBits(hdcScreen, bitmap, 0, bm.bmHeight, buf,
+                              (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
 
                     BYTE* dest = (BYTE*)alphaSrcBits;
-                    for(const DWORD *src = buf, *end = (DWORD*)((BYTE*)buf + bmi.biSizeImage);
+                    for(const DWORD *src = (DWORD*)buf,
+                                    *end = (DWORD*)(buf + bmi.biSizeImage);
                         src != end;
                         ++src, ++dest)
                     {
@@ -112,10 +132,14 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
         bmi.biCompression = BI_RGB;
 
         void* colorBits;
-        auto colorBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmi, DIB_RGB_COLORS, &colorBits, NULL, 0);
+        auto colorBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmi,
+                                            DIB_RGB_COLORS, &colorBits,
+                                            NULL, 0);
 
         void* alphaBits;
-        auto alphaBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmi, DIB_RGB_COLORS, &alphaBits, NULL, 0);
+        auto alphaBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmi,
+                                            DIB_RGB_COLORS, &alphaBits,
+                                            NULL, 0);
 
         HDC hdc = CreateCompatibleDC(NULL);
         HDC hdcSrc = CreateCompatibleDC(NULL);
@@ -127,12 +151,16 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
             // resize color channels
             SelectObject(hdc, colorBitmap);
             SelectObject(hdcSrc, bitmap);
-            StretchBlt(hdc, 0, 0, width, height, hdcSrc, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+            StretchBlt(hdc, 0, 0, width, height,
+                       hdcSrc, 0, 0, bm.bmWidth, bm.bmHeight,
+                       SRCCOPY);
 
             // resize alpha channel
             SelectObject(hdc, alphaBitmap);
             SelectObject(hdcSrc, alphaSrcBitmap);
-            StretchBlt(hdc, 0, 0, width, height, hdcSrc, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+            StretchBlt(hdc, 0, 0, width, height,
+                       hdcSrc, 0, 0, bm.bmWidth, bm.bmHeight,
+                       SRCCOPY);
 
             // flush before touching the bits
             GdiFlush();
@@ -149,7 +177,9 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
             }
 
             // create the resulting bitmap
-            resultBitmap = CreateDIBitmap(hdcScreen, &bmi, CBM_INIT, colorBits, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+            resultBitmap = CreateDIBitmap(hdcScreen, &bmi, CBM_INIT,
+                                          colorBits, (BITMAPINFO*)&bmi,
+                                          DIB_RGB_COLORS);
         }
 
         if(hdcSrc) DeleteDC(hdcSrc);
@@ -166,7 +196,8 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
     return resultBitmap;
 }
 
-DesktopNotificationController::Toast::Toast(HWND hWnd, shared_ptr<NotificationData>* data) :
+DesktopNotificationController::Toast::Toast(
+    HWND hWnd, shared_ptr<NotificationData>* data) :
     hwnd_(hWnd), data_(*data)
 {
     HDC hdcScreen = GetDC(NULL);
@@ -193,14 +224,17 @@ void DesktopNotificationController::Toast::Register(HINSTANCE hInstance)
     RegisterClassEx(&wc);
 }
 
-LRESULT DesktopNotificationController::Toast::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT DesktopNotificationController::Toast::WndProc(
+    HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch(message)
     {
     case WM_CREATE:
         {
             auto& cs = reinterpret_cast<const CREATESTRUCT*&>(lParam);
-            auto inst = new Toast(hWnd, static_cast<shared_ptr<NotificationData>*>(cs->lpCreateParams));
+            auto data =
+                static_cast<shared_ptr<NotificationData>*>(cs->lpCreateParams);
+            auto inst = new Toast(hWnd, data);
             SetWindowLongPtr(hWnd, 0, (LONG_PTR)inst);
         }
         break;
@@ -246,7 +280,8 @@ LRESULT DesktopNotificationController::Toast::WndProc(HWND hWnd, UINT message, W
             }
 
             POINT cursor = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-            inst->is_close_hot_ = (PtInRect(&inst->close_button_rect_, cursor) != FALSE);
+            inst->is_close_hot_ =
+                (PtInRect(&inst->close_button_rect_, cursor) != FALSE);
 
             if(!inst->is_non_interactive_)
                 inst->CancelDismiss();
@@ -285,9 +320,12 @@ LRESULT DesktopNotificationController::Toast::WndProc(HWND hWnd, UINT message, W
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-HWND DesktopNotificationController::Toast::Create(HINSTANCE hInstance, shared_ptr<NotificationData>& data)
+HWND DesktopNotificationController::Toast::Create(
+    HINSTANCE hInstance, shared_ptr<NotificationData>& data)
 {
-    return CreateWindowEx(WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOPMOST, class_name_, nullptr, WS_POPUP, 0, 0, 0, 0, NULL, NULL, hInstance, &data);
+    return CreateWindowEx(WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOPMOST,
+                          class_name_, nullptr, WS_POPUP, 0, 0, 0, 0,
+                          NULL, NULL, hInstance, &data);
 }
 
 void DesktopNotificationController::Toast::Draw()
@@ -319,9 +357,9 @@ void DesktopNotificationController::Toast::Draw()
 
     COLORREF foreColor, dimmedColor;
     {
-        // based on the lightness of background, we draw foreground in light or dark
-        // shades of gray blended onto the background with slight transparency
-        // to avoid sharp contrast
+        // based on the lightness of background, we draw foreground in light
+        // or dark shades of gray blended onto the background with slight
+        // transparency to avoid sharp contrast
 
         constexpr float alpha = 0.9f;
         constexpr float intensityLight[] = { (1.0f * alpha), (0.8f * alpha) };
@@ -395,7 +433,11 @@ void DesktopNotificationController::Toast::Draw()
         HDC hdcImage = CreateCompatibleDC(NULL);
         SelectBitmap(hdcImage, scaled_image_);
         BLENDFUNCTION blend = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
-        AlphaBlend(hdc_, margin_.cx, margin_.cy, imageInfo.bmWidth, imageInfo.bmHeight, hdcImage, 0, 0, imageInfo.bmWidth, imageInfo.bmHeight, blend);
+        AlphaBlend(hdc_, margin_.cx, margin_.cy,
+                   imageInfo.bmWidth, imageInfo.bmHeight,
+                   hdcImage, 0, 0,
+                   imageInfo.bmWidth, imageInfo.bmHeight,
+                   blend);
         DeleteDC(hdcImage);
     }
 
@@ -410,7 +452,8 @@ void DesktopNotificationController::Toast::Draw()
 
         SelectFont(hdc_, captionFont);
         SetTextColor(hdc_, foreColor);
-        DrawText(hdc_, data_->caption.data(), (UINT)data_->caption.length(), &rc, DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+        DrawText(hdc_, data_->caption.data(), (UINT)data_->caption.length(),
+                 &rc, DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
     }
 
     // body text
@@ -425,14 +468,18 @@ void DesktopNotificationController::Toast::Draw()
 
         SelectFont(hdc_, bodyFont);
         SetTextColor(hdc_, dimmedColor);
-        DrawText(hdc_, data_->body_text.data(), (UINT)data_->body_text.length(), &rc, DT_LEFT | DT_WORDBREAK | DT_NOPREFIX | DT_END_ELLIPSIS | DT_EDITCONTROL);
+        DrawText(hdc_, data_->body_text.data(), (UINT)data_->body_text.length(),
+                 &rc,
+                 DT_LEFT | DT_WORDBREAK | DT_NOPREFIX |
+                 DT_END_ELLIPSIS | DT_EDITCONTROL);
     }
 
     // close button
     {
         SelectFont(hdc_, captionFont);
         SetTextColor(hdc_, is_close_hot_ ? foreColor : dimmedColor);
-        ExtTextOut(hdc_, closePos.x, closePos.y, 0, nullptr, &close, 1, nullptr);
+        ExtTextOut(hdc_, closePos.x, closePos.y, 0, nullptr,
+                   &close, 1, nullptr);
     }
 
     is_content_updated_ = true;
@@ -510,18 +557,22 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
 
                     newSize.cx += imageDrawSize.cx + margin_.cx;
 
-                    auto heightWithImage = margin_.cy + (imageDrawSize.cy) + margin_.cy;
-                    if(newSize.cy < heightWithImage) newSize.cy = heightWithImage;
+                    auto heightWithImage =
+                        margin_.cy + (imageDrawSize.cy) + margin_.cy;
+                    if(newSize.cy < heightWithImage)
+                        newSize.cy = heightWithImage;
 
                     UpdateScaledImage(imageDrawSize);
                 }
             }
         }
 
-        if(newSize.cx != this->toast_size_.cx || newSize.cy != this->toast_size_.cy)
+        if(newSize.cx != this->toast_size_.cx ||
+           newSize.cy != this->toast_size_.cy)
         {
             HDC hdcScreen = GetDC(NULL);
-            auto newBitmap = CreateCompatibleBitmap(hdcScreen, newSize.cx, newSize.cy);
+            auto newBitmap = CreateCompatibleBitmap(hdcScreen,
+                                                    newSize.cx, newSize.cy);
             ReleaseDC(NULL, hdcScreen);
 
             if(newBitmap)
@@ -529,8 +580,16 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
                 if(SelectBitmap(hdc_, newBitmap))
                 {
                     RECT dirty1 = {}, dirty2 = {};
-                    if(toast_size_.cx < newSize.cx) dirty1 = { toast_size_.cx, 0, newSize.cx, toast_size_.cy };
-                    if(toast_size_.cy < newSize.cy) dirty2 = { 0, toast_size_.cy, newSize.cx, newSize.cy };
+                    if(toast_size_.cx < newSize.cx)
+                    {
+                        dirty1 = { toast_size_.cx, 0,
+                                   newSize.cx, toast_size_.cy };
+                    }
+                    if(toast_size_.cy < newSize.cy)
+                    {
+                        dirty2 = { 0, toast_size_.cy,
+                                   newSize.cx, newSize.cy };
+                    }
 
                     if(this->bitmap_) DeleteBitmap(this->bitmap_);
                     this->bitmap_ = newBitmap;
@@ -538,8 +597,9 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
 
                     Invalidate();
 
-                    // Resize also the DWM buffer to prevent flicker during window resizing.
-                    // Make sure any existing data is not overwritten by marking the dirty region.
+                    // Resize also the DWM buffer to prevent flicker during
+                    // window resizing. Make sure any existing data is not
+                    // overwritten by marking the dirty region.
                     {
                         POINT origin = { 0, 0 };
 
@@ -591,7 +651,8 @@ void DesktopNotificationController::Toast::UpdateContents()
         GetWindowRect(hwnd_, &rc);
         POINT origin = { 0, 0 };
         SIZE size = { rc.right - rc.left, rc.bottom - rc.top };
-        UpdateLayeredWindow(hwnd_, NULL, nullptr, &size, hdc_, &origin, 0, nullptr, 0);
+        UpdateLayeredWindow(hwnd_, NULL, nullptr, &size,
+                            hdc_, &origin, 0, nullptr, 0);
     }
 }
 
@@ -599,9 +660,9 @@ void DesktopNotificationController::Toast::Dismiss()
 {
     if(!is_non_interactive_)
     {
-        // Set a flag to prevent further interaction. We don't disable the HWND because
-        // we still want to receive mouse move messages in order to keep the toast under
-        // the cursor and not collapse it while dismissing.
+        // Set a flag to prevent further interaction. We don't disable the HWND
+        // because we still want to receive mouse move messages in order to keep
+        // the toast under the cursor and not collapse it while dismissing.
         is_non_interactive_ = true;
 
         AutoDismiss();
@@ -650,7 +711,8 @@ void DesktopNotificationController::Toast::SetVerticalPosition(int y)
         return;
 
     // Make sure the new animation's origin is at the current position
-    vertical_pos_ += (int)((vertical_pos_target_ - vertical_pos_) * stack_collapse_pos_);
+    vertical_pos_ +=
+        (int)((vertical_pos_target_ - vertical_pos_) * stack_collapse_pos_);
 
     // Set new target position and start the animation
     vertical_pos_target_ = y;
@@ -658,7 +720,8 @@ void DesktopNotificationController::Toast::SetVerticalPosition(int y)
     data_->controller->StartAnimation();
 }
 
-HDWP DesktopNotificationController::Toast::Animate(HDWP hdwp, const POINT& origin)
+HDWP DesktopNotificationController::Toast::Animate(
+    HDWP hdwp, const POINT& origin)
 {
     UpdateBufferSize();
 
@@ -682,7 +745,8 @@ HDWP DesktopNotificationController::Toast::Animate(HDWP hdwp, const POINT& origi
     POINT pt = { 0, 0 };
     SIZE size = { 0, 0 };
     BLENDFUNCTION blend;
-    UINT dwpFlags = SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_NOREDRAW | SWP_NOCOPYBITS;
+    UINT dwpFlags = SWP_NOACTIVATE | SWP_SHOWWINDOW |
+                    SWP_NOREDRAW | SWP_NOCOPYBITS;
 
     auto easeInPos = AnimateEaseIn();
     auto easeOutPos = AnimateEaseOut();
@@ -735,11 +799,13 @@ HDWP DesktopNotificationController::Toast::Animate(HDWP hdwp, const POINT& origi
     }
 
     // `UpdateLayeredWindowIndirect` updates position, size, and transparency.
-    // `DeferWindowPos` updates z-order, and also position and size in case ULWI fails,
-    // which can happen when one of the dimensions is zero (e.g. at the beginning of ease-in).
+    // `DeferWindowPos` updates z-order, and also position and size in case
+    // ULWI fails, which can happen when one of the dimensions is zero (e.g.
+    // at the beginning of ease-in).
 
     auto ulwResult = UpdateLayeredWindowIndirect(hwnd_, &ulw);
-    hdwp = DeferWindowPos(hdwp, hwnd_, HWND_TOPMOST, pt.x, pt.y, size.cx, size.cy, dwpFlags);
+    hdwp = DeferWindowPos(hdwp, hwnd_, HWND_TOPMOST,
+                          pt.x, pt.y, size.cx, size.cy, dwpFlags);
     return hdwp;
 }
 
@@ -770,7 +836,8 @@ float DesktopNotificationController::Toast::AnimateEaseIn()
         return ease_in_pos_;
 
     constexpr float duration = 500.0f;
-    float time = std::min(duration, (float)(GetTickCount() - ease_in_start_)) / duration;
+    float elapsed = GetTickCount() - ease_in_start_;
+    float time = std::min(duration, elapsed) / duration;
 
     // decelerating exponential ease
     const float a = -8.0f;
@@ -785,7 +852,8 @@ float DesktopNotificationController::Toast::AnimateEaseOut()
         return ease_out_pos_;
 
     constexpr float duration = 120.0f;
-    float time = std::min(duration, (float)(GetTickCount() - ease_out_start_)) / duration;
+    float elapsed = GetTickCount() - ease_out_start_;
+    float time = std::min(duration, elapsed) / duration;
 
     // accelerating circle ease
     auto pos = 1.0f - std::sqrt(1 - time * time);
@@ -799,7 +867,8 @@ float DesktopNotificationController::Toast::AnimateStackCollapse()
         return stack_collapse_pos_;
 
     constexpr float duration = 500.0f;
-    float time = std::min(duration, (float)(GetTickCount() - stack_collapse_start_)) / duration;
+    float elapsed = GetTickCount() - stack_collapse_start_;
+    float time = std::min(duration, elapsed) / duration;
 
     // decelerating exponential ease
     const float a = -8.0f;

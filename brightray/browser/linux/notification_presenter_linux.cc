@@ -22,7 +22,8 @@ NotificationPresenterLinux::NotificationPresenterLinux() {
 NotificationPresenterLinux::~NotificationPresenterLinux() {
 }
 
-Notification* NotificationPresenterLinux::CreateNotificationObject(NotificationDelegate* delegate) {
+Notification* NotificationPresenterLinux::CreateNotificationObject(
+    NotificationDelegate* delegate) {
   return new LibnotifyNotification(delegate, this);
 }
 

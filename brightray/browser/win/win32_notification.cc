@@ -5,7 +5,10 @@
 
 namespace brightray {
 
-void Win32Notification::Show(const base::string16& title, const base::string16& msg, const std::string& tag, const GURL& icon_url, const SkBitmap& icon, const bool silent)
+void Win32Notification::Show(
+    const base::string16& title, const base::string16& msg,
+    const std::string& tag, const GURL& icon_url,
+    const SkBitmap& icon, const bool silent)
 {
     auto presenter = static_cast<NotificationPresenterWin7*>(this->presenter());
     if(!presenter) return;
@@ -26,7 +29,8 @@ void Win32Notification::Show(const base::string16& title, const base::string16& 
             bmi.biCompression = BI_RGB;
 
             HDC hdcScreen = GetDC(NULL);
-            image = CreateDIBitmap(hdcScreen, &bmi, CBM_INIT, icon.getPixels(), (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+            image = CreateDIBitmap(hdcScreen, &bmi, CBM_INIT, icon.getPixels(),
+                                   (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
             ReleaseDC(NULL, hdcScreen);
 
             icon.unlockPixels();

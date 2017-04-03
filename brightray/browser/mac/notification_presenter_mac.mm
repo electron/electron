@@ -35,7 +35,8 @@ NotificationPresenterMac::~NotificationPresenterMac() {
   NSUserNotificationCenter.defaultUserNotificationCenter.delegate = nil;
 }
 
-Notification* NotificationPresenterMac::CreateNotificationObject(NotificationDelegate* delegate) {
+Notification* NotificationPresenterMac::CreateNotificationObject(
+    NotificationDelegate* delegate) {
   return new CocoaNotification(delegate, this);
 }
 

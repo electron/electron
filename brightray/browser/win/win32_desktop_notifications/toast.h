@@ -7,13 +7,15 @@ class DesktopNotificationController::Toast
 {
 public:
     static void Register(HINSTANCE hInstance);
-    static HWND Create(HINSTANCE hInstance, std::shared_ptr<NotificationData>& data);
+    static HWND Create(HINSTANCE hInstance,
+                       std::shared_ptr<NotificationData>& data);
     static Toast* Get(HWND hWnd)
     {
         return reinterpret_cast<Toast*>(GetWindowLongPtr(hWnd, 0));
     }
 
-    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
+                                    WPARAM wParam, LPARAM lParam);
 
     const std::shared_ptr<NotificationData>& GetNotification() const
     {
@@ -73,7 +75,8 @@ private:
     float AnimateStackCollapse();
 
 private:
-    static constexpr const TCHAR class_name_[] = TEXT("DesktopNotificationToast");
+    static constexpr const TCHAR class_name_[] =
+        TEXT("DesktopNotificationToast");
 
     const HWND hwnd_;
     HDC hdc_;
@@ -91,7 +94,9 @@ private:
     bool is_non_interactive_ = false;
     bool ease_in_active_ = false;
     bool ease_out_active_ = false;
-    bool is_content_updated_ = false, is_highlighted_ = false, is_close_hot_ = false;
+    bool is_content_updated_ = false;
+    bool is_highlighted_ = false;
+    bool is_close_hot_ = false;
     DWORD ease_in_start_, ease_out_start_, stack_collapse_start_;
     float ease_in_pos_ = 0, ease_out_pos_ = 0, stack_collapse_pos_ = 0;
 };

@@ -27,7 +27,8 @@ class NotificationPresenter {
 
  protected:
   NotificationPresenter();
-  virtual Notification* CreateNotificationObject(NotificationDelegate* delegate) = 0;
+  virtual Notification* CreateNotificationObject(
+      NotificationDelegate* delegate) = 0;
 
  private:
   friend class Notification;

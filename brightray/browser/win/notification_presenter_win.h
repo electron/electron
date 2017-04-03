@@ -42,7 +42,8 @@ class NotificationPresenterWin : public NotificationPresenter {
   base::string16 SaveIconToFilesystem(const SkBitmap& icon, const GURL& origin);
 
  private:
-  Notification* CreateNotificationObject(NotificationDelegate* delegate) override;
+  Notification* CreateNotificationObject(
+      NotificationDelegate* delegate) override;
 
   base::ScopedTempDir temp_dir_;
 

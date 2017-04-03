@@ -3,12 +3,14 @@
 
 namespace brightray {
 
-brightray::Notification* NotificationPresenterWin7::CreateNotificationObject(NotificationDelegate* delegate)
+brightray::Notification* NotificationPresenterWin7::CreateNotificationObject(
+    NotificationDelegate* delegate)
 {
     return new Win32Notification(delegate, this);
 }
 
-Win32Notification* NotificationPresenterWin7::GetNotificationObjectByRef(const DesktopNotificationController::Notification& ref)
+Win32Notification* NotificationPresenterWin7::GetNotificationObjectByRef(
+    const DesktopNotificationController::Notification& ref)
 {
     for(auto n : this->notifications())
     {
@@ -20,7 +22,8 @@ Win32Notification* NotificationPresenterWin7::GetNotificationObjectByRef(const D
     return nullptr;
 }
 
-Win32Notification* NotificationPresenterWin7::GetNotificationObjectByTag(const std::string& tag)
+Win32Notification* NotificationPresenterWin7::GetNotificationObjectByTag(
+    const std::string& tag)
 {
     for(auto n : this->notifications())
     {
@@ -32,13 +35,15 @@ Win32Notification* NotificationPresenterWin7::GetNotificationObjectByTag(const s
     return nullptr;
 }
 
-void NotificationPresenterWin7::OnNotificationClicked(Notification& notification)
+void NotificationPresenterWin7::OnNotificationClicked(
+    Notification& notification)
 {
     auto n = GetNotificationObjectByRef(notification);
     if(n) n->NotificationClicked();
 }
 
-void NotificationPresenterWin7::OnNotificationDismissed(Notification& notification)
+void NotificationPresenterWin7::OnNotificationDismissed(
+    Notification& notification)
 {
     auto n = GetNotificationObjectByRef(notification);
     if(n) n->NotificationDismissed();

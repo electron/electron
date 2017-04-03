@@ -28,7 +28,8 @@ HBITMAP CopyBitmap(HBITMAP bitmap)
             HDC hdcDst = CreateCompatibleDC(NULL);
             SelectBitmap(hdcSrc, bitmap);
             SelectBitmap(hdcDst, ret);
-            BitBlt(hdcDst, 0, 0, bm.bmWidth, bm.bmHeight, hdcSrc, 0, 0, SRCCOPY);
+            BitBlt(hdcDst, 0, 0, bm.bmWidth, bm.bmHeight,
+                   hdcSrc, 0, 0, SRCCOPY);
             DeleteDC(hdcDst);
             DeleteDC(hdcSrc);
         }
@@ -40,14 +41,19 @@ HBITMAP CopyBitmap(HBITMAP bitmap)
 HINSTANCE DesktopNotificationController::RegisterWndClasses()
 {
     // We keep a static `module` variable which serves a dual purpose:
-    // 1. Stores the HINSTANCE where the window classes are registered, which can be passed to `CreateWindow`
-    // 2. Indicates whether we already attempted the registration so that we don't do it twice (we don't retry
-    //    even if registration fails, as there is no point.
+    // 1. Stores the HINSTANCE where the window classes are registered,
+    //    which can be passed to `CreateWindow`
+    // 2. Indicates whether we already attempted the registration so that
+    //    we don't do it twice (we don't retry even if registration fails,
+    //    as there is no point).
     static HMODULE module = NULL;
 
     if(!module)
     {
-        if(GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCWSTR>(&RegisterWndClasses), &module))
+        if(GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                             reinterpret_cast<LPCWSTR>(&RegisterWndClasses),
+                             &module))
         {
             Toast::Register(module);
 
@@ -64,7 +70,8 @@ HINSTANCE DesktopNotificationController::RegisterWndClasses()
     return module;
 }
 
-DesktopNotificationController::DesktopNotificationController(unsigned maximumToasts)
+DesktopNotificationController::DesktopNotificationController(
+    unsigned maximumToasts)
 {
     instances_.reserve(maximumToasts);
 }
@@ -76,7 +83,8 @@ DesktopNotificationController::~DesktopNotificationController()
     ClearAssets();
 }
 
-LRESULT CALLBACK DesktopNotificationController::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK DesktopNotificationController::WndProc(
+    HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch(message)
     {
@@ -119,8 +127,9 @@ void DesktopNotificationController::StartAnimation()
 
     if(!is_animating_ && hwnd_controller_)
     {
-        // NOTE: 15ms is shorter than what we'd need for 60 fps, but since the timer
-        //       is not accurate we must request a higher frame rate to get at least 60
+        // NOTE: 15ms is shorter than what we'd need for 60 fps, but since
+        //       the timer is not accurate we must request a higher frame rate
+        //       to get at least 60
 
         SetTimer(hwnd_controller_, TimerID_Animate, 15, nullptr);
         is_animating_ = true;
@@ -152,11 +161,13 @@ void DesktopNotificationController::InitializeFonts()
             auto dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
             ReleaseDC(NULL, hdc);
 
-            metrics.lfMessageFont.lfHeight = (LONG)ScaleForDpi(baseHeight * 1.1f, dpiY);
+            metrics.lfMessageFont.lfHeight =
+                (LONG)ScaleForDpi(baseHeight * 1.1f, dpiY);
             body_font_ = CreateFontIndirect(&metrics.lfMessageFont);
 
             if(caption_font_) DeleteFont(caption_font_);
-            metrics.lfMessageFont.lfHeight = (LONG)ScaleForDpi(baseHeight * 1.4f, dpiY);
+            metrics.lfMessageFont.lfHeight =
+                (LONG)ScaleForDpi(baseHeight * 1.4f, dpiY);
             caption_font_ = CreateFontIndirect(&metrics.lfMessageFont);
         }
     }
@@ -266,7 +277,9 @@ void DesktopNotificationController::AnimateAll()
     CheckQueue();
 }
 
-DesktopNotificationController::Notification DesktopNotificationController::AddNotification(std::wstring caption, std::wstring bodyText, HBITMAP image)
+DesktopNotificationController::Notification
+    DesktopNotificationController::AddNotification(
+    std::wstring caption, std::wstring bodyText, HBITMAP image)
 {
     NotificationLink data(this);
 
@@ -280,7 +293,8 @@ DesktopNotificationController::Notification DesktopNotificationController::AddNo
     return ret;
 }
 
-void DesktopNotificationController::CloseNotification(Notification& notification)
+void DesktopNotificationController::CloseNotification(
+    Notification& notification)
 {
     // Remove it from the queue
     auto it = find(queue_.begin(), queue_.end(), notification.data_);
@@ -323,15 +337,20 @@ void DesktopNotificationController::CreateToast(NotificationLink&& data)
 
             ScreenMetrics scr;
             auto toast = Toast::Get(item.hwnd);
-            toastPos = toast->GetVerticalPosition() + toast->GetHeight() + scr.Y(toast_margin_<int>);
+            toastPos = toast->GetVerticalPosition() +
+                       toast->GetHeight() +
+                       scr.Y(toast_margin_<int>);
         }
 
         instances_.push_back({ hwnd, move(data) });
 
         if(!hwnd_controller_)
         {
-            // NOTE: We cannot use a message-only window because we need to receive system notifications
-            hwnd_controller_ = CreateWindow(class_name_, nullptr, 0, 0, 0, 0, 0, NULL, NULL, hInstance, this);
+            // NOTE: We cannot use a message-only window because we need to
+            //       receive system notifications
+            hwnd_controller_ = CreateWindow(class_name_, nullptr, 0,
+                                            0, 0, 0, 0,
+                                            NULL, NULL, hInstance, this);
         }
 
         auto toast = Toast::Get(hwnd);
@@ -339,12 +358,14 @@ void DesktopNotificationController::CreateToast(NotificationLink&& data)
     }
 }
 
-HWND DesktopNotificationController::GetToast(const NotificationData* data) const
+HWND DesktopNotificationController::GetToast(
+    const NotificationData* data) const
 {
-    auto it = find_if(instances_.cbegin(), instances_.cend(), [data](auto&& inst) {
-        auto toast = Toast::Get(inst.hwnd);
-        return data == toast->GetNotification().get();
-    });
+    auto it = find_if(instances_.cbegin(), instances_.cend(),
+        [data](auto&& inst) {
+            auto toast = Toast::Get(inst.hwnd);
+            return data == toast->GetNotification().get();
+        });
 
     return (it != instances_.cend()) ? it->hwnd : NULL;
 }
@@ -364,13 +385,15 @@ void DesktopNotificationController::DestroyToast(ToastInstance& inst)
 }
 
 
-DesktopNotificationController::Notification::Notification(const shared_ptr<NotificationData>& data) :
+DesktopNotificationController::Notification::Notification(
+    const shared_ptr<NotificationData>& data) :
     data_(data)
 {
     _ASSERT(data != nullptr);
 }
 
-bool DesktopNotificationController::Notification::operator==(const Notification& other) const
+bool DesktopNotificationController::Notification::operator==(
+    const Notification& other) const
 {
     return data_ == other.data_;
 }
@@ -384,7 +407,8 @@ void DesktopNotificationController::Notification::Close()
         data_->controller->CloseNotification(*this);
 }
 
-void DesktopNotificationController::Notification::Set(std::wstring caption, std::wstring bodyText, HBITMAP image)
+void DesktopNotificationController::Notification::Set(
+    std::wstring caption, std::wstring bodyText, HBITMAP image)
 {
     // No business calling this when not pointing to a valid instance
     _ASSERT(data_);
@@ -411,7 +435,8 @@ void DesktopNotificationController::Notification::Set(std::wstring caption, std:
 }
 
 
-DesktopNotificationController::NotificationLink::NotificationLink(DesktopNotificationController* controller) :
+DesktopNotificationController::NotificationLink::NotificationLink(
+    DesktopNotificationController* controller) :
     shared_ptr(make_shared<NotificationData>())
 {
     get()->controller = controller;
