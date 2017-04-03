@@ -123,10 +123,10 @@ void ShowSaveDialog(const file_dialog::DialogSettings& settings,
 
 // #if defined(OS_MACOSX)
 void ShowCertificateTrust(atom::NativeWindow* parent_window,
-                               const scoped_refptr<net::X509Certificate>& cert,
-                               std::string message,
-                               const certificate_trust::ShowTrustCallback& callback,
-                               mate::Arguments* args) {
+                          const scoped_refptr<net::X509Certificate>& cert,
+                          std::string message,
+                          const certificate_trust::ShowTrustCallback& callback,
+                          mate::Arguments* args) {
   certificate_trust::ShowCertificateTrust(parent_window, cert, message, callback);
 }
 // #endif
