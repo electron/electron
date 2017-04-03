@@ -115,8 +115,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (void)refreshTouchBarItem:(NSTouchBar*)touchBar
                          id:(NSTouchBarItemIdentifier)identifier
-                   withType:(std::string)item_type
-               withSettings:(mate::PersistentDictionary)settings {
+                   withType:(const std::string&)item_type
+               withSettings:(const mate::PersistentDictionary&)settings {
   NSTouchBarItem* item = [touchBar itemForIdentifier:identifier];
   if (!item) return;
 
