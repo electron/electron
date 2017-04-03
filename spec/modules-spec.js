@@ -136,7 +136,7 @@ describe('require', () => {
   describe('when loaded URL is not file: protocol', () => {
     it('searches for module under app directory', async () => {
       const w = new BrowserWindow({
-        show: false,
+        show: false
       })
       w.loadURL('about:blank')
       const result = await w.webContents.executeJavaScript('typeof require("q").when')
