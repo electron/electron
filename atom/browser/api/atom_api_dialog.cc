@@ -8,11 +8,13 @@
 
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/ui/certificate_trust.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/ui/message_box.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -119,6 +121,16 @@ void ShowSaveDialog(const file_dialog::DialogSettings& settings,
   }
 }
 
+// #if defined(OS_MACOSX)
+void ShowCertificateTrust(atom::NativeWindow* parent_window,
+                               const scoped_refptr<net::X509Certificate>& cert,
+                               std::string message,
+                               const certificate_trust::ShowTrustCallback& callback,
+                               mate::Arguments* args) {
+  certificate_trust::ShowCertificateTrust(parent_window, cert, message, callback);
+}
+// #endif
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
@@ -126,6 +138,9 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("showErrorBox", &atom::ShowErrorBox);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
   dict.SetMethod("showSaveDialog", &ShowSaveDialog);
+// #if defined(OS_MACOSX)
+  dict.SetMethod("showCertificateTrustDialog", &ShowCertificateTrust);
+// #endif
 }
 
 }  // namespace

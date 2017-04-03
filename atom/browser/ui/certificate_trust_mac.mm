@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_certificate_trust.h"
+#include "atom/browser/ui/certificate_trust.h"
 
 #import <Cocoa/Cocoa.h>
 #import <CoreServices/CoreServices.h>
@@ -14,12 +14,11 @@
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
-#include "net/cert/x509_certificate.h"
 #include "net/cert/cert_database.h"
 
 @interface TrustDelegate : NSObject {
  @private
-  atom::api::ShowTrustCallback callback_;
+  certificate_trust::ShowTrustCallback callback_;
   SFCertificateTrustPanel* panel_;
   scoped_refptr<net::X509Certificate> cert_;
   SecTrustRef trust_;
@@ -27,7 +26,7 @@
   SecPolicyRef sec_policy_;
 }
 
-- (id)initWithCallback:(const atom::api::ShowTrustCallback&)callback
+- (id)initWithCallback:(const certificate_trust::ShowTrustCallback&)callback
       panel:(SFCertificateTrustPanel*)panel
       cert:(const scoped_refptr<net::X509Certificate>&)cert
       trust:(SecTrustRef)trust
@@ -51,7 +50,7 @@
   [super dealloc];
 }
 
-- (id)initWithCallback:(const atom::api::ShowTrustCallback&)callback
+- (id)initWithCallback:(const certificate_trust::ShowTrustCallback&)callback
       panel:(SFCertificateTrustPanel*)panel
       cert:(const scoped_refptr<net::X509Certificate>&)cert
       trust:(SecTrustRef)trust
@@ -86,14 +85,12 @@
 
 @end
 
-namespace atom {
+namespace certificate_trust {
 
-namespace api {
-
-void ShowCertificateTrustUI(atom::NativeWindow* parent_window,
-                            const scoped_refptr<net::X509Certificate>& cert,
-                            std::string message,
-                            const ShowTrustCallback& callback) {
+void ShowCertificateTrust(atom::NativeWindow* parent_window,
+                          const scoped_refptr<net::X509Certificate>& cert,
+                          std::string message,
+                          const ShowTrustCallback& callback) {
   auto sec_policy = SecPolicyCreateBasicX509();
   auto cert_chain = cert->CreateOSCertChainForCert();
   SecTrustRef trust = nullptr;
@@ -119,6 +116,4 @@ void ShowCertificateTrustUI(atom::NativeWindow* parent_window,
          message:msg];
 }
 
-}  // namespace api
-
-}  // namespace atom
+}  // namespace certificate_trust

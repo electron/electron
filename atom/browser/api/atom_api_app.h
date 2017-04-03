@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_certificate_trust.h"
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/browser.h"
@@ -151,15 +150,6 @@ class App : public AtomBrowserClient::Delegate,
 
 #if defined(USE_NSS_CERTS)
   std::unique_ptr<CertificateManagerModel> certificate_manager_model_;
-#endif
-
-
-#if defined(OS_MACOSX)
-  void ShowCertificateTrust(atom::NativeWindow* parent_window,
-                            const scoped_refptr<net::X509Certificate>& cert,
-                            std::string message,
-                            const ShowTrustCallback& callback,
-                            mate::Arguments* args);
 #endif
 
   // Tracks tasks requesting file icons.
