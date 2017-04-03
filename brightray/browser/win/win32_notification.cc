@@ -1,5 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
-#include "win32_notification.h"
+#include "browser/win/win32_notification.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include <windows.h>
 

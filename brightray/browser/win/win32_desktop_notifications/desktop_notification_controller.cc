@@ -1,8 +1,8 @@
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
-#include "desktop_notification_controller.h"
-#include "common.h"
-#include "toast.h"
+#include "browser/win/win32_desktop_notifications/desktop_notification_controller.h"
+#include "browser/win/win32_desktop_notifications/common.h"
+#include "browser/win/win32_desktop_notifications/toast.h"
 #include <algorithm>
 #include <vector>
 #include <windowsx.h>

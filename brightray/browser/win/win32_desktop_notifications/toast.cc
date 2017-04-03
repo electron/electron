@@ -1,6 +1,6 @@
 #define NOMINMAX
-#include "toast.h"
-#include "common.h"
+#include "browser/win/win32_desktop_notifications/toast.h"
+#include "browser/win/win32_desktop_notifications/common.h"
 #include <algorithm>
 #include <uxtheme.h>
 #include <windowsx.h>
