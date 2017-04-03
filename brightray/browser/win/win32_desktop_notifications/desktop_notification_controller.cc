@@ -16,12 +16,12 @@ HBITMAP CopyBitmap(HBITMAP bitmap) {
     HBITMAP ret = NULL;
 
     BITMAP bm;
-    if(bitmap && GetObject(bitmap, sizeof(bm), &bm)) {
+    if (bitmap && GetObject(bitmap, sizeof(bm), &bm)) {
         HDC hdcScreen = GetDC(NULL);
         ret = CreateCompatibleBitmap(hdcScreen, bm.bmWidth, bm.bmHeight);
         ReleaseDC(NULL, hdcScreen);
 
-        if(ret) {
+        if (ret) {
             HDC hdcSrc = CreateCompatibleDC(NULL);
             HDC hdcDst = CreateCompatibleDC(NULL);
             SelectBitmap(hdcSrc, bitmap);
@@ -45,8 +45,8 @@ HINSTANCE DesktopNotificationController::RegisterWndClasses() {
     //    as there is no point).
     static HMODULE module = NULL;
 
-    if(!module) {
-        if(GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+    if (!module) {
+        if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
                              GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                              reinterpret_cast<LPCWSTR>(&RegisterWndClasses),
                              &module)) {
@@ -71,14 +71,14 @@ DesktopNotificationController::DesktopNotificationController(
 }
 
 DesktopNotificationController::~DesktopNotificationController() {
-    for(auto&& inst : instances_) DestroyToast(inst);
-    if(hwnd_controller_) DestroyWindow(hwnd_controller_);
+    for (auto&& inst : instances_) DestroyToast(inst);
+    if (hwnd_controller_) DestroyWindow(hwnd_controller_);
     ClearAssets();
 }
 
 LRESULT CALLBACK DesktopNotificationController::WndProc(
     HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
-    switch(message) {
+    switch (message) {
     case WM_CREATE:
         {
             auto& cs = reinterpret_cast<const CREATESTRUCT*&>(lParam);
@@ -87,7 +87,7 @@ LRESULT CALLBACK DesktopNotificationController::WndProc(
         break;
 
     case WM_TIMER:
-        if(wParam == TimerID_Animate) {
+        if (wParam == TimerID_Animate) {
             Get(hWnd)->AnimateAll();
         }
         return 0;
@@ -101,7 +101,7 @@ LRESULT CALLBACK DesktopNotificationController::WndProc(
         break;
 
     case WM_SETTINGCHANGE:
-        if(wParam == SPI_SETWORKAREA) {
+        if (wParam == SPI_SETWORKAREA) {
             Get(hWnd)->AnimateAll();
         }
         break;
@@ -113,7 +113,7 @@ LRESULT CALLBACK DesktopNotificationController::WndProc(
 void DesktopNotificationController::StartAnimation() {
     _ASSERT(hwnd_controller_);
 
-    if(!is_animating_ && hwnd_controller_) {
+    if (!is_animating_ && hwnd_controller_) {
         // NOTE: 15ms is shorter than what we'd need for 60 fps, but since
         //       the timer is not accurate we must request a higher frame rate
         //       to get at least 60
@@ -134,9 +134,9 @@ HFONT DesktopNotificationController::GetBodyFont() {
 }
 
 void DesktopNotificationController::InitializeFonts() {
-    if(!body_font_) {
+    if (!body_font_) {
         NONCLIENTMETRICS metrics = { sizeof(metrics) };
-        if(SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, &metrics, 0)) {
+        if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, &metrics, 0)) {
             auto baseHeight = metrics.lfMessageFont.lfHeight;
 
             HDC hdc = GetDC(NULL);
@@ -147,7 +147,7 @@ void DesktopNotificationController::InitializeFonts() {
                 (LONG)ScaleForDpi(baseHeight * 1.1f, dpiY);
             body_font_ = CreateFontIndirect(&metrics.lfMessageFont);
 
-            if(caption_font_) DeleteFont(caption_font_);
+            if (caption_font_) DeleteFont(caption_font_);
             metrics.lfMessageFont.lfHeight =
                 (LONG)ScaleForDpi(baseHeight * 1.4f, dpiY);
             caption_font_ = CreateFontIndirect(&metrics.lfMessageFont);
@@ -156,8 +156,8 @@ void DesktopNotificationController::InitializeFonts() {
 }
 
 void DesktopNotificationController::ClearAssets() {
-    if(caption_font_) { DeleteFont(caption_font_); caption_font_ = NULL; }
-    if(body_font_) { DeleteFont(body_font_); body_font_ = NULL; }
+    if (caption_font_) { DeleteFont(caption_font_); caption_font_ = NULL; }
+    if (body_font_) { DeleteFont(body_font_); body_font_ = NULL; }
 }
 
 void DesktopNotificationController::AnimateAll() {
@@ -167,35 +167,35 @@ void DesktopNotificationController::AnimateAll() {
 
     bool keepAnimating = false;
 
-    if(!instances_.empty()) {
+    if (!instances_.empty()) {
         RECT workArea;
-        if(SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0)) {
+        if (SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0)) {
             ScreenMetrics metrics;
             POINT origin = { workArea.right,
                              workArea.bottom - metrics.Y(toast_margin_<int>) };
 
             auto hdwp = BeginDeferWindowPos((int)instances_.size());
-            for(auto&& inst : instances_) {
-                if(!inst.hwnd) continue;
+            for (auto&& inst : instances_) {
+                if (!inst.hwnd) continue;
 
                 auto notification = Toast::Get(inst.hwnd);
                 hdwp = notification->Animate(hdwp, origin);
-                if(!hdwp) break;
+                if (!hdwp) break;
                 keepAnimating |= notification->IsAnimationActive();
             }
-            if(hdwp) EndDeferWindowPos(hdwp);
+            if (hdwp) EndDeferWindowPos(hdwp);
         }
     }
 
-    if(!keepAnimating) {
+    if (!keepAnimating) {
         _ASSERT(hwnd_controller_);
-        if(hwnd_controller_) KillTimer(hwnd_controller_, TimerID_Animate);
+        if (hwnd_controller_) KillTimer(hwnd_controller_, TimerID_Animate);
         is_animating_ = false;
     }
 
     // Purge dismissed notifications and collapse the stack between
     // items which are highlighted
-    if(!instances_.empty()) {
+    if (!instances_.empty()) {
         auto isAlive = [](ToastInstance& inst) {
             return inst.hwnd && IsWindowVisible(inst.hwnd);
         };
@@ -204,7 +204,7 @@ void DesktopNotificationController::AnimateAll() {
             return inst.hwnd && Toast::Get(inst.hwnd)->IsHighlighted();
         };
 
-        for(auto it = instances_.begin();; ++it) {
+        for (auto it = instances_.begin();; ++it) {
             // find next highlighted item
             auto it2 = find_if(it, instances_.end(), isHighlighted);
 
@@ -214,7 +214,7 @@ void DesktopNotificationController::AnimateAll() {
             // purge the dead items
             for_each(it, it2, [this](auto&& inst) { DestroyToast(inst); });
 
-            if(it2 == instances_.end()) {
+            if (it2 == instances_.end()) {
                 instances_.erase(it, it2);
                 break;
             }
@@ -224,16 +224,16 @@ void DesktopNotificationController::AnimateAll() {
     }
 
     // Set new toast positions
-    if(!instances_.empty()) {
+    if (!instances_.empty()) {
         ScreenMetrics metrics;
         auto margin = metrics.Y(toast_margin_<int>);
 
         int targetPos = 0;
-        for(auto&& inst : instances_) {
-            if(inst.hwnd) {
+        for (auto&& inst : instances_) {
+            if (inst.hwnd) {
                 auto toast = Toast::Get(inst.hwnd);
 
-                if(toast->IsHighlighted())
+                if (toast->IsHighlighted())
                     targetPos = toast->GetVerticalPosition();
                 else
                     toast->SetVerticalPosition(targetPos);
@@ -266,7 +266,7 @@ void DesktopNotificationController::CloseNotification(
     Notification& notification) {
     // Remove it from the queue
     auto it = find(queue_.begin(), queue_.end(), notification.data_);
-    if(it != queue_.end()) {
+    if (it != queue_.end()) {
         queue_.erase(it);
         this->OnNotificationClosed(notification);
         return;
@@ -274,14 +274,14 @@ void DesktopNotificationController::CloseNotification(
 
     // Dismiss active toast
     auto hwnd = GetToast(notification.data_.get());
-    if(hwnd) {
+    if (hwnd) {
         auto toast = Toast::Get(hwnd);
         toast->Dismiss();
     }
 }
 
 void DesktopNotificationController::CheckQueue() {
-    while(instances_.size() < instances_.capacity() && !queue_.empty()) {
+    while (instances_.size() < instances_.capacity() && !queue_.empty()) {
         CreateToast(move(queue_.front()));
         queue_.pop_front();
     }
@@ -290,9 +290,9 @@ void DesktopNotificationController::CheckQueue() {
 void DesktopNotificationController::CreateToast(NotificationLink&& data) {
     auto hInstance = RegisterWndClasses();
     auto hwnd = Toast::Create(hInstance, data);
-    if(hwnd) {
+    if (hwnd) {
         int toastPos = 0;
-        if(!instances_.empty()) {
+        if (!instances_.empty()) {
             auto& item = instances_.back();
             _ASSERT(item.hwnd);
 
@@ -305,7 +305,7 @@ void DesktopNotificationController::CreateToast(NotificationLink&& data) {
 
         instances_.push_back({ hwnd, move(data) });
 
-        if(!hwnd_controller_) {
+        if (!hwnd_controller_) {
             // NOTE: We cannot use a message-only window because we need to
             //       receive system notifications
             hwnd_controller_ = CreateWindow(class_name_, nullptr, 0,
@@ -330,7 +330,7 @@ HWND DesktopNotificationController::GetToast(
 }
 
 void DesktopNotificationController::DestroyToast(ToastInstance& inst) {
-    if(inst.hwnd) {
+    if (inst.hwnd) {
         auto data = Toast::Get(inst.hwnd)->GetNotification();
 
         DestroyWindow(inst.hwnd);
@@ -357,7 +357,7 @@ void DesktopNotificationController::Notification::Close() {
     // No business calling this when not pointing to a valid instance
     _ASSERT(data_);
 
-    if(data_->controller)
+    if (data_->controller)
         data_->controller->CloseNotification(*this);
 }
 
@@ -367,17 +367,17 @@ void DesktopNotificationController::Notification::Set(
     _ASSERT(data_);
 
     // Do nothing when the notification has been closed
-    if(!data_->controller)
+    if (!data_->controller)
         return;
 
-    if(data_->image) DeleteBitmap(data_->image);
+    if (data_->image) DeleteBitmap(data_->image);
 
     data_->caption = move(caption);
     data_->body_text = move(bodyText);
     data_->image = CopyBitmap(image);
 
     auto hwnd = data_->controller->GetToast(data_.get());
-    if(hwnd) {
+    if (hwnd) {
         auto toast = Toast::Get(hwnd);
         toast->ResetContents();
     }
@@ -395,7 +395,7 @@ DesktopNotificationController::NotificationLink::NotificationLink(
 
 DesktopNotificationController::NotificationLink::~NotificationLink() {
     auto p = get();
-    if(p) p->controller = nullptr;
+    if (p) p->controller = nullptr;
 }
 
 }

@@ -14,7 +14,7 @@ struct NotificationData {
     NotificationData() = default;
 
     ~NotificationData() {
-        if(image) DeleteObject(image);
+        if (image) DeleteObject(image);
     }
 
     NotificationData(const NotificationData& other) = delete;
@@ -34,9 +34,9 @@ struct ScreenMetrics {
         auto GetDpiForMonitor =
             (GetDpiForMonitor_t*)GetProcAddress(GetModuleHandle(TEXT("shcore")),
                                                 "GetDpiForMonitor");
-        if(GetDpiForMonitor) {
+        if (GetDpiForMonitor) {
             auto monitor = MonitorFromPoint({}, MONITOR_DEFAULTTOPRIMARY);
-            if(GetDpiForMonitor(monitor, 0, &dpi_x, &dpi_y) == S_OK)
+            if (GetDpiForMonitor(monitor, 0, &dpi_x, &dpi_y) == S_OK)
                 return;
         }
 

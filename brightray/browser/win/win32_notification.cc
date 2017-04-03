@@ -10,12 +10,12 @@ void Win32Notification::Show(
     const std::string& tag, const GURL& icon_url,
     const SkBitmap& icon, const bool silent) {
     auto presenter = static_cast<NotificationPresenterWin7*>(this->presenter());
-    if(!presenter) return;
+    if (!presenter) return;
 
     HBITMAP image = NULL;
 
-    if(!icon.drawsNothing()) {
-        if(icon.colorType() == kBGRA_8888_SkColorType) {
+    if (!icon.drawsNothing()) {
+        if (icon.colorType() == kBGRA_8888_SkColorType) {
             icon.lockPixels();
 
             BITMAPINFOHEADER bmi = { sizeof(BITMAPINFOHEADER) };
@@ -35,9 +35,9 @@ void Win32Notification::Show(
     }
 
     Win32Notification* existing = nullptr;
-    if(!tag.empty()) existing = presenter->GetNotificationObjectByTag(tag);
+    if (!tag.empty()) existing = presenter->GetNotificationObjectByTag(tag);
 
-    if(existing) {
+    if (existing) {
         existing->tag_.clear();
         this->notification_ref_ = std::move(existing->notification_ref_);
         this->notification_ref_.Set(title, msg, image);
@@ -48,7 +48,7 @@ void Win32Notification::Show(
 
     this->tag_ = tag;
 
-    if(image) DeleteObject(image);
+    if (image) DeleteObject(image);
 }
 
 void Win32Notification::Dismiss() {
