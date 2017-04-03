@@ -3,22 +3,19 @@
 
 namespace brightray {
 
-class DesktopNotificationController::Toast
-{
+class DesktopNotificationController::Toast {
 public:
     static void Register(HINSTANCE hInstance);
     static HWND Create(HINSTANCE hInstance,
                        std::shared_ptr<NotificationData>& data);
-    static Toast* Get(HWND hWnd)
-    {
+    static Toast* Get(HWND hWnd) {
         return reinterpret_cast<Toast*>(GetWindowLongPtr(hWnd, 0));
     }
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
                                     WPARAM wParam, LPARAM lParam);
 
-    const std::shared_ptr<NotificationData>& GetNotification() const
-    {
+    const std::shared_ptr<NotificationData>& GetNotification() const {
         return data_;
     }
 
@@ -28,21 +25,17 @@ public:
 
     void PopUp(int y);
     void SetVerticalPosition(int y);
-    int GetVerticalPosition() const
-    {
+    int GetVerticalPosition() const {
         return vertical_pos_target_;
     }
-    int GetHeight() const
-    {
+    int GetHeight() const {
         return toast_size_.cy;
     }
     HDWP Animate(HDWP hdwp, const POINT& origin);
-    bool IsAnimationActive() const
-    {
+    bool IsAnimationActive() const {
         return ease_in_active_ || ease_out_active_ || IsStackCollapseActive();
     }
-    bool IsHighlighted() const
-    {
+    bool IsHighlighted() const {
         _ASSERT(!(is_highlighted_ && !IsWindowVisible(hwnd_)));
         return is_highlighted_;
     }

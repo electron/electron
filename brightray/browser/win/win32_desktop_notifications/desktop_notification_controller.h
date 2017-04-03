@@ -9,8 +9,7 @@ namespace brightray {
 
 struct NotificationData;
 
-class DesktopNotificationController
-{
+class DesktopNotificationController {
 public:
     DesktopNotificationController(unsigned maximumToasts = 3);
     ~DesktopNotificationController();
@@ -61,8 +60,7 @@ private:
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
                                     WPARAM wParam, LPARAM lParam);
-    static DesktopNotificationController* Get(HWND hWnd)
-    {
+    static DesktopNotificationController* Get(HWND hWnd) {
         return reinterpret_cast<DesktopNotificationController*>(
             GetWindowLongPtr(hWnd, 0));
     }
@@ -89,8 +87,7 @@ private:
     bool is_animating_ = false;
 };
 
-class DesktopNotificationController::Notification
-{
+class DesktopNotificationController::Notification {
 public:
     Notification() = default;
     Notification(const std::shared_ptr<NotificationData>& data);

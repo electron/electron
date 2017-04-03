@@ -3,8 +3,7 @@
 
 namespace brightray {
 
-struct NotificationData
-{
+struct NotificationData {
     DesktopNotificationController* controller = nullptr;
 
     std::wstring caption;
@@ -14,8 +13,7 @@ struct NotificationData
 
     NotificationData() = default;
 
-    ~NotificationData()
-    {
+    ~NotificationData() {
         if(image) DeleteObject(image);
     }
 
@@ -24,23 +22,19 @@ struct NotificationData
 };
 
 template<typename T>
-inline T ScaleForDpi(T value, unsigned dpi)
-{
+inline T ScaleForDpi(T value, unsigned dpi) {
     return value * dpi / 96;
 }
 
-struct ScreenMetrics
-{
+struct ScreenMetrics {
     UINT dpi_x, dpi_y;
 
-    ScreenMetrics()
-    {
+    ScreenMetrics() {
         typedef HRESULT WINAPI GetDpiForMonitor_t(HMONITOR, int, UINT*, UINT*);
         auto GetDpiForMonitor =
             (GetDpiForMonitor_t*)GetProcAddress(GetModuleHandle(TEXT("shcore")),
                                                 "GetDpiForMonitor");
-        if(GetDpiForMonitor)
-        {
+        if(GetDpiForMonitor) {
             auto monitor = MonitorFromPoint({}, MONITOR_DEFAULTTOPRIMARY);
             if(GetDpiForMonitor(monitor, 0, &dpi_x, &dpi_y) == S_OK)
                 return;

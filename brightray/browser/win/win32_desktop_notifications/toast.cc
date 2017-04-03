@@ -13,24 +13,20 @@ using std::shared_ptr;
 
 namespace brightray {
 
-static COLORREF GetAccentColor()
-{
+static COLORREF GetAccentColor() {
     bool success = false;
-    if(IsAppThemed())
-    {
+    if(IsAppThemed()) {
         HKEY hkey;
         if(RegOpenKeyEx(HKEY_CURRENT_USER,
                         TEXT("SOFTWARE\\Microsoft\\Windows\\DWM"), 0,
-                        KEY_QUERY_VALUE, &hkey) == ERROR_SUCCESS)
-        {
+                        KEY_QUERY_VALUE, &hkey) == ERROR_SUCCESS) {
             COLORREF color;
             DWORD type, size;
             if(RegQueryValueEx(hkey, TEXT("AccentColor"), nullptr,
                                &type,
                                (BYTE*)&color,
                                &(size = sizeof(color))) == ERROR_SUCCESS &&
-               type == REG_DWORD)
-            {
+               type == REG_DWORD) {
                 // convert from RGBA
                 color = RGB(GetRValue(color),
                             GetGValue(color),
@@ -41,8 +37,7 @@ static COLORREF GetAccentColor()
                                     &type,
                                     (BYTE*)&color,
                                     &(size = sizeof(color))) == ERROR_SUCCESS &&
-                    type == REG_DWORD)
-            {
+                    type == REG_DWORD) {
                 // convert from BGRA
                 color = RGB(GetBValue(color),
                             GetGValue(color),
@@ -60,8 +55,7 @@ static COLORREF GetAccentColor()
 }
 
 // Stretches a bitmap to the specified size, preserves alpha channel
-static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
-{
+static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
     // We use StretchBlt for the scaling, but that discards the alpha channel.
     // So we first create a separate grayscale bitmap from the alpha channel,
     // scale that separately, and copy it back to the scaled color bitmap.
@@ -91,17 +85,14 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
                                           DIB_RGB_COLORS, &alphaSrcBits,
                                           NULL, 0);
 
-        if(alphaSrcBitmap)
-        {
+        if(alphaSrcBitmap) {
             if(GetDIBits(hdcScreen, bitmap, 0, 0, 0,
                          (BITMAPINFO*)&bmi, DIB_RGB_COLORS) &&
                bmi.biSizeImage > 0 &&
-               (bmi.biSizeImage % 4) == 0)
-            {
+               (bmi.biSizeImage % 4) == 0) {
                 auto buf = (BYTE*)_aligned_malloc(bmi.biSizeImage,
                                                   sizeof(DWORD));
-                if(buf)
-                {
+                if(buf) {
                     GetDIBits(hdcScreen, bitmap, 0, bm.bmHeight, buf,
                               (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
 
@@ -109,8 +100,7 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
                     for(const DWORD *src = (DWORD*)buf,
                                     *end = (DWORD*)(buf + bmi.biSizeImage);
                         src != end;
-                        ++src, ++dest)
-                    {
+                        ++src, ++dest) {
                         BYTE a = *src >> 24;
                         *dest++ = a;
                         *dest++ = a;
@@ -123,8 +113,7 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
         }
     }
 
-    if(alphaSrcBitmap)
-    {
+    if(alphaSrcBitmap) {
         BITMAPINFOHEADER bmi = { sizeof(BITMAPINFOHEADER) };
         bmi.biWidth = width;
         bmi.biHeight = height;
@@ -145,8 +134,7 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
         HDC hdc = CreateCompatibleDC(NULL);
         HDC hdcSrc = CreateCompatibleDC(NULL);
 
-        if(colorBitmap && alphaBitmap && hdc && hdcSrc)
-        {
+        if(colorBitmap && alphaBitmap && hdc && hdcSrc) {
             SetStretchBltMode(hdc, HALFTONE);
 
             // resize color channels
@@ -170,8 +158,7 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
             auto dest = (BYTE*)colorBits;
             auto src = (const BYTE*)alphaBits;
             auto end = src + (width * height * 4);
-            while(src != end)
-            {
+            while(src != end) {
                 dest[3] = src[0];
                 dest += 4;
                 src += 4;
@@ -199,22 +186,19 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height)
 
 DesktopNotificationController::Toast::Toast(
     HWND hWnd, shared_ptr<NotificationData>* data) :
-    hwnd_(hWnd), data_(*data)
-{
+    hwnd_(hWnd), data_(*data) {
     HDC hdcScreen = GetDC(NULL);
     hdc_ = CreateCompatibleDC(hdcScreen);
     ReleaseDC(NULL, hdcScreen);
 }
 
-DesktopNotificationController::Toast::~Toast()
-{
+DesktopNotificationController::Toast::~Toast() {
     DeleteDC(hdc_);
     if(bitmap_) DeleteBitmap(bitmap_);
     if(scaled_image_) DeleteBitmap(scaled_image_);
 }
 
-void DesktopNotificationController::Toast::Register(HINSTANCE hInstance)
-{
+void DesktopNotificationController::Toast::Register(HINSTANCE hInstance) {
     WNDCLASSEX wc = { sizeof(wc) };
     wc.lpfnWndProc = &Toast::WndProc;
     wc.lpszClassName = class_name_;
@@ -226,10 +210,8 @@ void DesktopNotificationController::Toast::Register(HINSTANCE hInstance)
 }
 
 LRESULT DesktopNotificationController::Toast::WndProc(
-    HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch(message)
-    {
+    HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    switch(message) {
     case WM_CREATE:
         {
             auto& cs = reinterpret_cast<const CREATESTRUCT*&>(lParam);
@@ -249,8 +231,7 @@ LRESULT DesktopNotificationController::Toast::WndProc(
         return MA_NOACTIVATE;
 
     case WM_TIMER:
-        if(wParam == TimerID_AutoDismiss)
-        {
+        if(wParam == TimerID_AutoDismiss) {
             Get(hWnd)->AutoDismiss();
         }
         return 0;
@@ -272,8 +253,7 @@ LRESULT DesktopNotificationController::Toast::WndProc(
     case WM_MOUSEMOVE:
         {
             auto inst = Get(hWnd);
-            if(!inst->is_highlighted_)
-            {
+            if(!inst->is_highlighted_) {
                 inst->is_highlighted_ = true;
 
                 TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, hWnd };
@@ -309,8 +289,7 @@ LRESULT DesktopNotificationController::Toast::WndProc(
     case WM_WINDOWPOSCHANGED:
         {
             auto& wp = reinterpret_cast<WINDOWPOS*&>(lParam);
-            if(wp->flags & SWP_HIDEWINDOW)
-            {
+            if(wp->flags & SWP_HIDEWINDOW) {
                 if(!IsWindowVisible(hWnd))
                     Get(hWnd)->is_highlighted_ = false;
             }
@@ -322,15 +301,13 @@ LRESULT DesktopNotificationController::Toast::WndProc(
 }
 
 HWND DesktopNotificationController::Toast::Create(
-    HINSTANCE hInstance, shared_ptr<NotificationData>& data)
-{
+    HINSTANCE hInstance, shared_ptr<NotificationData>& data) {
     return CreateWindowEx(WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOPMOST,
                           class_name_, nullptr, WS_POPUP, 0, 0, 0, 0,
                           NULL, NULL, hInstance, &data);
 }
 
-void DesktopNotificationController::Toast::Draw()
-{
+void DesktopNotificationController::Toast::Draw() {
     const COLORREF accent = GetAccentColor();
 
     COLORREF backColor;
@@ -405,8 +382,7 @@ void DesktopNotificationController::Toast::Draw()
     auto textOffsetX = margin_.cx;
 
     BITMAP imageInfo = {};
-    if(scaled_image_)
-    {
+    if(scaled_image_) {
         GetObject(scaled_image_, sizeof(imageInfo), &imageInfo);
 
         textOffsetX += margin_.cx + imageInfo.bmWidth;
@@ -429,8 +405,7 @@ void DesktopNotificationController::Toast::Draw()
     }
 
     // image
-    if(scaled_image_)
-    {
+    if(scaled_image_) {
         HDC hdcImage = CreateCompatibleDC(NULL);
         SelectBitmap(hdcImage, scaled_image_);
         BLENDFUNCTION blend = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
@@ -458,8 +433,7 @@ void DesktopNotificationController::Toast::Draw()
     }
 
     // body text
-    if(!data_->body_text.empty())
-    {
+    if(!data_->body_text.empty()) {
         RECT rc = {
             textOffsetX,
             2 * margin_.cy + tmCap.tmAscent,
@@ -486,34 +460,28 @@ void DesktopNotificationController::Toast::Draw()
     is_content_updated_ = true;
 }
 
-void DesktopNotificationController::Toast::Invalidate()
-{
+void DesktopNotificationController::Toast::Invalidate() {
     is_content_updated_ = false;
 }
 
-bool DesktopNotificationController::Toast::IsRedrawNeeded() const
-{
+bool DesktopNotificationController::Toast::IsRedrawNeeded() const {
     return !is_content_updated_;
 }
 
-void DesktopNotificationController::Toast::UpdateBufferSize()
-{
-    if(hdc_)
-    {
+void DesktopNotificationController::Toast::UpdateBufferSize() {
+    if(hdc_) {
         SIZE newSize;
         {
             TEXTMETRIC tmCap = {};
             HFONT font = data_->controller->GetCaptionFont();
-            if(font)
-            {
+            if(font) {
                 SelectFont(hdc_, font);
                 if(!GetTextMetrics(hdc_, &tmCap)) return;
             }
 
             TEXTMETRIC tmBody = {};
             font = data_->controller->GetBodyFont();
-            if(font)
-            {
+            if(font) {
                 SelectFont(hdc_, font);
                 if(!GetTextMetrics(hdc_, &tmBody)) return;
             }
@@ -526,28 +494,22 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
             if(!data_->body_text.empty())
                 newSize.cy += margin_.cy + (3 * tmBody.tmHeight);
 
-            if(data_->image)
-            {
+            if(data_->image) {
                 BITMAP bm;
-                if(GetObject(data_->image, sizeof(bm), &bm))
-                {
+                if(GetObject(data_->image, sizeof(bm), &bm)) {
                     // cap the image size
                     const int maxDimSize = 80;
 
                     auto width = bm.bmWidth;
                     auto height = bm.bmHeight;
-                    if(width < height)
-                    {
-                        if(height > maxDimSize)
-                        {
+                    if(width < height) {
+                        if(height > maxDimSize) {
                             width = width * maxDimSize / height;
                             height = maxDimSize;
                         }
                     }
-                    else
-                    {
-                        if(width > maxDimSize)
-                        {
+                    else {
+                        if(width > maxDimSize) {
                             height = height * maxDimSize / width;
                             width = maxDimSize;
                         }
@@ -569,25 +531,20 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
         }
 
         if(newSize.cx != this->toast_size_.cx ||
-           newSize.cy != this->toast_size_.cy)
-        {
+           newSize.cy != this->toast_size_.cy) {
             HDC hdcScreen = GetDC(NULL);
             auto newBitmap = CreateCompatibleBitmap(hdcScreen,
                                                     newSize.cx, newSize.cy);
             ReleaseDC(NULL, hdcScreen);
 
-            if(newBitmap)
-            {
-                if(SelectBitmap(hdc_, newBitmap))
-                {
+            if(newBitmap) {
+                if(SelectBitmap(hdc_, newBitmap)) {
                     RECT dirty1 = {}, dirty2 = {};
-                    if(toast_size_.cx < newSize.cx)
-                    {
+                    if(toast_size_.cx < newSize.cx) {
                         dirty1 = { toast_size_.cx, 0,
                                    newSize.cx, toast_size_.cy };
                     }
-                    if(toast_size_.cy < newSize.cy)
-                    {
+                    if(toast_size_.cy < newSize.cy) {
                         dirty2 = { 0, toast_size_.cy,
                                    newSize.cx, newSize.cy };
                     }
@@ -630,24 +587,20 @@ void DesktopNotificationController::Toast::UpdateBufferSize()
     }
 }
 
-void DesktopNotificationController::Toast::UpdateScaledImage(const SIZE& size)
-{
+void DesktopNotificationController::Toast::UpdateScaledImage(const SIZE& size) {
     BITMAP bm;
     if(!GetObject(scaled_image_, sizeof(bm), &bm) ||
        bm.bmWidth != size.cx ||
-       bm.bmHeight != size.cy)
-    {
+       bm.bmHeight != size.cy) {
         if(scaled_image_) DeleteBitmap(scaled_image_);
         scaled_image_ = StretchBitmap(data_->image, size.cx, size.cy);
     }
 }
 
-void DesktopNotificationController::Toast::UpdateContents()
-{
+void DesktopNotificationController::Toast::UpdateContents() {
     Draw();
 
-    if(IsWindowVisible(hwnd_))
-    {
+    if(IsWindowVisible(hwnd_)) {
         RECT rc;
         GetWindowRect(hwnd_, &rc);
         POINT origin = { 0, 0 };
@@ -657,10 +610,8 @@ void DesktopNotificationController::Toast::UpdateContents()
     }
 }
 
-void DesktopNotificationController::Toast::Dismiss()
-{
-    if(!is_non_interactive_)
-    {
+void DesktopNotificationController::Toast::Dismiss() {
+    if(!is_non_interactive_) {
         // Set a flag to prevent further interaction. We don't disable the HWND
         // because we still want to receive mouse move messages in order to keep
         // the toast under the cursor and not collapse it while dismissing.
@@ -670,28 +621,23 @@ void DesktopNotificationController::Toast::Dismiss()
     }
 }
 
-void DesktopNotificationController::Toast::AutoDismiss()
-{
+void DesktopNotificationController::Toast::AutoDismiss() {
     KillTimer(hwnd_, TimerID_AutoDismiss);
     StartEaseOut();
 }
 
-void DesktopNotificationController::Toast::CancelDismiss()
-{
+void DesktopNotificationController::Toast::CancelDismiss() {
     KillTimer(hwnd_, TimerID_AutoDismiss);
     ease_out_active_ = false;
     ease_out_pos_ = 0;
 }
 
-void DesktopNotificationController::Toast::ScheduleDismissal()
-{
+void DesktopNotificationController::Toast::ScheduleDismissal() {
     SetTimer(hwnd_, TimerID_AutoDismiss, 4000, nullptr);
 }
 
-void DesktopNotificationController::Toast::ResetContents()
-{
-    if(scaled_image_)
-    {
+void DesktopNotificationController::Toast::ResetContents() {
+    if(scaled_image_) {
         DeleteBitmap(scaled_image_);
         scaled_image_ = NULL;
     }
@@ -699,14 +645,12 @@ void DesktopNotificationController::Toast::ResetContents()
     Invalidate();
 }
 
-void DesktopNotificationController::Toast::PopUp(int y)
-{
+void DesktopNotificationController::Toast::PopUp(int y) {
     vertical_pos_target_ = vertical_pos_ = y;
     StartEaseIn();
 }
 
-void DesktopNotificationController::Toast::SetVerticalPosition(int y)
-{
+void DesktopNotificationController::Toast::SetVerticalPosition(int y) {
     // Don't restart animation if current target is the same
     if(y == vertical_pos_target_)
         return;
@@ -722,8 +666,7 @@ void DesktopNotificationController::Toast::SetVerticalPosition(int y)
 }
 
 HDWP DesktopNotificationController::Toast::Animate(
-    HDWP hdwp, const POINT& origin)
-{
+    HDWP hdwp, const POINT& origin) {
     UpdateBufferSize();
 
     if(IsRedrawNeeded())
@@ -764,8 +707,7 @@ HDWP DesktopNotificationController::Toast::Animate(
     ulw.pptDst = &pt;
     ulw.psize = &size;
 
-    if(ease_in_active_ && easeInPos == 1.0f)
-    {
+    if(ease_in_active_ && easeInPos == 1.0f) {
         ease_in_active_ = false;
         ScheduleDismissal();
     }
@@ -773,8 +715,7 @@ HDWP DesktopNotificationController::Toast::Animate(
     this->ease_in_pos_ = easeInPos;
     this->stack_collapse_pos_ = stackCollapsePos;
 
-    if(easeOutPos != this->ease_out_pos_)
-    {
+    if(easeOutPos != this->ease_out_pos_) {
         blend.BlendOp = AC_SRC_OVER;
         blend.BlendFlags = 0;
         blend.SourceConstantAlpha = (BYTE)(255 * (1.0f - easeOutPos));
@@ -785,8 +726,7 @@ HDWP DesktopNotificationController::Toast::Animate(
 
         this->ease_out_pos_ = easeOutPos;
 
-        if(easeOutPos == 1.0f)
-        {
+        if(easeOutPos == 1.0f) {
             ease_out_active_ = false;
 
             dwpFlags &= ~SWP_SHOWWINDOW;
@@ -794,8 +734,7 @@ HDWP DesktopNotificationController::Toast::Animate(
         }
     }
 
-    if(stackCollapsePos == 1.0f)
-    {
+    if(stackCollapsePos == 1.0f) {
         vertical_pos_ = vertical_pos_target_;
     }
 
@@ -810,29 +749,25 @@ HDWP DesktopNotificationController::Toast::Animate(
     return hdwp;
 }
 
-void DesktopNotificationController::Toast::StartEaseIn()
-{
+void DesktopNotificationController::Toast::StartEaseIn() {
     _ASSERT(!ease_in_active_);
     ease_in_start_ = GetTickCount();
     ease_in_active_ = true;
     data_->controller->StartAnimation();
 }
 
-void DesktopNotificationController::Toast::StartEaseOut()
-{
+void DesktopNotificationController::Toast::StartEaseOut() {
     _ASSERT(!ease_out_active_);
     ease_out_start_ = GetTickCount();
     ease_out_active_ = true;
     data_->controller->StartAnimation();
 }
 
-bool DesktopNotificationController::Toast::IsStackCollapseActive() const
-{
+bool DesktopNotificationController::Toast::IsStackCollapseActive() const {
     return (vertical_pos_ != vertical_pos_target_);
 }
 
-float DesktopNotificationController::Toast::AnimateEaseIn()
-{
+float DesktopNotificationController::Toast::AnimateEaseIn() {
     if(!ease_in_active_)
         return ease_in_pos_;
 
@@ -847,8 +782,7 @@ float DesktopNotificationController::Toast::AnimateEaseIn()
     return pos;
 }
 
-float DesktopNotificationController::Toast::AnimateEaseOut()
-{
+float DesktopNotificationController::Toast::AnimateEaseOut() {
     if(!ease_out_active_)
         return ease_out_pos_;
 
@@ -862,8 +796,7 @@ float DesktopNotificationController::Toast::AnimateEaseOut()
     return pos;
 }
 
-float DesktopNotificationController::Toast::AnimateStackCollapse()
-{
+float DesktopNotificationController::Toast::AnimateStackCollapse() {
     if(!IsStackCollapseActive())
         return stack_collapse_pos_;
 

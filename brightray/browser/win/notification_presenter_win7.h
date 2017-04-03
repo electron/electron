@@ -8,8 +8,7 @@ class Win32Notification;
 
 class NotificationPresenterWin7 :
     public NotificationPresenter,
-    public DesktopNotificationController
-{
+    public DesktopNotificationController {
 public:
     NotificationPresenterWin7() = default;
 
