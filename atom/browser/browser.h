@@ -102,7 +102,7 @@ class Browser : public WindowListObserver {
     std::vector<base::string16> args;
   };
   void SetLoginItemSettings(LoginItemSettings settings);
-  LoginItemSettings GetLoginItemSettings(LoginItemSettings options);
+  LoginItemSettings GetLoginItemSettings(const LoginItemSettings& options);
 
 #if defined(OS_MACOSX)
   // Hide the application.

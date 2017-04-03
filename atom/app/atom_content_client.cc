@@ -44,7 +44,7 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
 
   std::vector<std::string> flash_version_numbers = base::SplitString(
       version, ".", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  if (flash_version_numbers.size() < 1)
+  if (flash_version_numbers.empty())
     flash_version_numbers.push_back("11");
   // |SplitString()| puts in an empty string given an empty string. :(
   else if (flash_version_numbers[0].empty())

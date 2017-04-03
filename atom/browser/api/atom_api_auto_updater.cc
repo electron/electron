@@ -88,7 +88,7 @@ void AutoUpdater::SetFeedURL(const std::string& url, mate::Arguments* args) {
 void AutoUpdater::QuitAndInstall() {
   // If we don't have any window then quitAndInstall immediately.
   WindowList* window_list = WindowList::GetInstance();
-  if (window_list->size() == 0) {
+  if (window_list->empty()) {
     auto_updater::AutoUpdater::QuitAndInstall();
     return;
   }

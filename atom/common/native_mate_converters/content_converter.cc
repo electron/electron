@@ -168,11 +168,13 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       break;
   }
 
-  if (val == (content::PermissionType)(PermissionType::POINTER_LOCK))
+  if (val == static_cast<content::PermissionType>(PermissionType::POINTER_LOCK))
     return StringToV8(isolate, "pointerLock");
-  else if (val == (content::PermissionType)(PermissionType::FULLSCREEN))
+  else if (val ==
+           static_cast<content::PermissionType>(PermissionType::FULLSCREEN))
     return StringToV8(isolate, "fullscreen");
-  else if (val == (content::PermissionType)(PermissionType::OPEN_EXTERNAL))
+  else if (val ==
+           static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL))
     return StringToV8(isolate, "openExternal");
 
   return StringToV8(isolate, "unknown");

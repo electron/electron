@@ -233,7 +233,7 @@ class ResolveProxyHelper {
  public:
   ResolveProxyHelper(AtomBrowserContext* browser_context,
                      const GURL& url,
-                     Session::ResolveProxyCallback callback)
+                     const Session::ResolveProxyCallback& callback)
       : callback_(callback),
         original_thread_(base::ThreadTaskRunnerHandle::Get()) {
     scoped_refptr<net::URLRequestContextGetter> context_getter =

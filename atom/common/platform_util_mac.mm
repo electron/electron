@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/mac/foundation_util.h"
 #include "base/mac/mac_logging.h"
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/stringprintf.h"
@@ -71,10 +72,10 @@ std::string MessageForOSStatus(OSStatus status, const char* default_message) {
 // thread safe, including LSGetApplicationForURL (> 10.2) and
 // NSWorkspace#openURLs.
 std::string OpenURL(NSURL* ns_url, bool activate) {
-  CFURLRef openingApp = NULL;
-  OSStatus status = LSGetApplicationForURL((CFURLRef)ns_url,
+  CFURLRef openingApp = nullptr;
+  OSStatus status = LSGetApplicationForURL(base::mac::NSToCFCast(ns_url),
                                            kLSRolesAll,
-                                           NULL,
+                                           nullptr,
                                            &openingApp);
   if (status != noErr)
     return MessageForOSStatus(status, "Failed to open");
@@ -156,7 +157,7 @@ bool OpenItem(const base::FilePath& full_path) {
 
   // Create the list of files (only ever one) to open.
   base::mac::ScopedAEDesc<AEDescList> fileList;
-  status = AECreateList(NULL,  // factoringPtr
+  status = AECreateList(nullptr,  // factoringPtr
                         0,  // factoredSize
                         false,  // isRecord
                         fileList.OutPointer());  // resultList
@@ -167,7 +168,8 @@ bool OpenItem(const base::FilePath& full_path) {
 
   // Add the single path to the file list.  C-style cast to avoid both a
   // static_cast and a const_cast to get across the toll-free bridge.
-  CFURLRef pathURLRef = (CFURLRef)[NSURL fileURLWithPath:path_string];
+  CFURLRef pathURLRef = base::mac::NSToCFCast(
+      [NSURL fileURLWithPath:path_string]);
   FSRef pathRef;
   if (CFURLGetFSRef(pathURLRef, &pathRef)) {
     status = AEPutPtr(fileList.OutPointer(),  // theAEDescList
@@ -202,8 +204,8 @@ bool OpenItem(const base::FilePath& full_path) {
                   kAENoReply + kAEAlwaysInteract,  // sendMode
                   kAENormalPriority,  // sendPriority
                   kAEDefaultTimeout,  // timeOutInTicks
-                  NULL, // idleProc
-                  NULL);  // filterProc
+                  nullptr, // idleProc
+                  nullptr);  // filterProc
   if (status != noErr) {
     OSSTATUS_LOG(WARNING, status)
         << "Could not send AE to Finder in OpenItem()";

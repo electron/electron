@@ -70,7 +70,7 @@ Role kRolesMap[] = {
   // while its context menu is still open.
   [self cancel];
 
-  model_ = NULL;
+  model_ = nullptr;
   [super dealloc];
 }
 

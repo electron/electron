@@ -145,4 +145,4 @@ OffScreenRenderWidgetHostView::GetDelegatedFrameHost() const {
   return browser_compositor_->GetDelegatedFrameHost();
 }
 
-}   // namespace
+} // namespace atom

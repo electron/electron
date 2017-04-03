@@ -240,7 +240,7 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 }
 
 // Called when CapturePage is done.
-void OnCapturePageDone(base::Callback<void(const gfx::Image&)> callback,
+void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
                        const SkBitmap& bitmap,
                        content::ReadbackResponse response) {
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));

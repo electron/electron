@@ -319,7 +319,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
              withSettings:(const mate::PersistentDictionary&)settings {
   std::vector<std::string> colors;
-  if (settings.Get("availableColors", &colors) && colors.size() > 0) {
+  if (settings.Get("availableColors", &colors) && !colors.empty()) {
     NSColorList* color_list  = [[[NSColorList alloc] initWithName:@""] autorelease];
     for (size_t i = 0; i < colors.size(); ++i) {
       [color_list insertColor:[self colorFromHexColorString:colors[i]]
@@ -414,7 +414,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
   NSMutableArray* generatedItems = [NSMutableArray array];
   NSMutableArray* identifiers = [self identifiersFromSettings:items];
-  for (NSUInteger i = 0; i < [identifiers count]; i++) {
+  for (NSUInteger i = 0; i < [identifiers count]; ++i) {
     if ([identifiers objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
       NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identifiers objectAtIndex:i]];
       if (generatedItem) {
@@ -474,7 +474,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("segments", &segments);
 
   control.segmentCount = segments.size();
-  for (int i = 0; i < (int)segments.size(); i++) {
+  for (size_t i = 0; i < segments.size(); ++i) {
     std::string label;
     gfx::Image image;
     bool enabled = true;
@@ -581,7 +581,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::vector<mate::PersistentDictionary> items;
   if (!settings.Get("items", &items)) return nil;
 
-  if (index >= (long)items.size()) return nil;
+  if (index >= static_cast<NSInteger>(items.size())) return nil;
 
   mate::PersistentDictionary item = items[index];
 

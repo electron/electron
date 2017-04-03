@@ -238,7 +238,7 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
 
 void AtomSandboxedRendererClient::InvokeIpcCallback(
     v8::Handle<v8::Context> context,
-    std::string callback_name,
+    const std::string& callback_name,
     std::vector<v8::Handle<v8::Value>> args) {
   auto isolate = context->GetIsolate();
   auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString();
