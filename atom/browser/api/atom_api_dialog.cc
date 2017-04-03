@@ -121,7 +121,7 @@ void ShowSaveDialog(const file_dialog::DialogSettings& settings,
   }
 }
 
-// #if defined(OS_MACOSX)
+#if defined(OS_MACOSX)
 void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           const scoped_refptr<net::X509Certificate>& cert,
                           std::string message,
@@ -129,7 +129,7 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           mate::Arguments* args) {
   certificate_trust::ShowCertificateTrust(parent_window, cert, message, callback);
 }
-// #endif
+#endif
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
@@ -138,9 +138,9 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("showErrorBox", &atom::ShowErrorBox);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
   dict.SetMethod("showSaveDialog", &ShowSaveDialog);
-// #if defined(OS_MACOSX)
+#if defined(OS_MACOSX)
   dict.SetMethod("showCertificateTrustDialog", &ShowCertificateTrust);
-// #endif
+#endif
 }
 
 }  // namespace
