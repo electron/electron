@@ -2,6 +2,8 @@ const assert = require('assert')
 const Module = require('module')
 const path = require('path')
 const temp = require('temp')
+const {remote} = require('electron')
+const {BrowserWindow} = remote
 
 describe('third-party module', function () {
   var fixtures = path.join(__dirname, 'fixtures')
@@ -126,6 +128,20 @@ describe('Module._nodeModulePaths', function () {
         path.join(modulePath, 'node_modules'),
         path.resolve('/node_modules')
       ])
+    })
+  })
+})
+
+describe('require', () => {
+  describe('when loaded URL is not file: protocol', () => {
+    it('searches for module under app directory', async () => {
+      const w = new BrowserWindow({
+        show: false,
+      })
+      w.loadURL('about:blank')
+      const result = await w.webContents.executeJavaScript('typeof require("q").when')
+      assert.equal(result, 'function')
+      w.destroy()
     })
   })
 })
