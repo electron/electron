@@ -21,7 +21,7 @@ typedef base::Callback<void(bool result)> ShowTrustCallback;
 
 void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           const scoped_refptr<net::X509Certificate>& cert,
-                          std::string message,
+                          const std::string& message,
                           const ShowTrustCallback& callback);
 
 }  // namespace certificate_trust

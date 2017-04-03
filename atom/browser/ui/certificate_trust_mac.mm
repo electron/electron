@@ -89,7 +89,7 @@ namespace certificate_trust {
 
 void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           const scoped_refptr<net::X509Certificate>& cert,
-                          std::string message,
+                          const std::string& message,
                           const ShowTrustCallback& callback) {
   auto sec_policy = SecPolicyCreateBasicX509();
   auto cert_chain = cert->CreateOSCertChainForCert();
