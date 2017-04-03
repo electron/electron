@@ -71,8 +71,7 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
     dict.Set("issuerCert", issuer_cert);
 
     std::vector<std::string> intermediates_encoded;
-    for (size_t i = 0; i < intermediates.size(); i++) {
-      auto native_cert = intermediates[i];
+    for (auto& native_cert : intermediates) {
       std::string encoded;
       net::X509Certificate::GetPEMEncoded(native_cert, &encoded);
       intermediates_encoded.push_back(encoded);
