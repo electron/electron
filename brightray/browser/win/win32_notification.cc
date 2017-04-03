@@ -1,7 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include "browser/win/win32_notification.h"
-#include "third_party/skia/include/core/SkBitmap.h"
 #include <windows.h>
+#include "third_party/skia/include/core/SkBitmap.h"
 
 namespace brightray {
 

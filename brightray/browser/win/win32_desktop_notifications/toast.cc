@@ -1,9 +1,9 @@
 #define NOMINMAX
 #include "browser/win/win32_desktop_notifications/toast.h"
-#include "browser/win/win32_desktop_notifications/common.h"
-#include <algorithm>
 #include <uxtheme.h>
 #include <windowsx.h>
+#include <algorithm>
+#include "browser/win/win32_desktop_notifications/common.h"
 
 #pragma comment(lib, "msimg32.lib")
 #pragma comment(lib, "uxtheme.lib")
