@@ -199,6 +199,14 @@ describe('ipc module', function () {
       }, /setting error/)
     })
 
+    it('can set a remote property with a remote object', function () {
+      const foo = remote.require(path.join(fixtures, 'module', 'remote-object-set.js'))
+
+      assert.doesNotThrow(function () {
+        foo.bar = remote.getCurrentWindow()
+      })
+    })
+
     it('can construct an object from its member', function () {
       var call = remote.require(path.join(fixtures, 'module', 'call.js'))
       var obj = new call.constructor()
