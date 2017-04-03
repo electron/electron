@@ -23,7 +23,7 @@ describe('TouchBar module', function () {
   it('throws an error when an invalid escape item is set', function () {
     assert.throws(() => {
       const touchBar = new TouchBar([])
-      touchBar.setEscapeItem('esc')
+      touchBar.escapeItem = 'esc'
     }, /Escape item must be an instance of TouchBarItem/)
   })
 
@@ -66,12 +66,12 @@ describe('TouchBar module', function () {
         label: 'foo'
       })
       window.setTouchBar(touchBar)
-      touchBar.setEscapeItem(escapeButton)
+      touchBar.escapeItem = escapeButton
       label.label = 'baz'
       escapeButton.label = 'hello'
       window.setTouchBar()
       window.setTouchBar(new TouchBar([new TouchBarLabel({label: 'two'})]))
-      touchBar.setEscapeItem()
+      touchBar.escapeItem = null
     })
   })
 })

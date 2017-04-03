@@ -14,16 +14,15 @@ Creates a new touch bar with the specified items. Use
 **Note:** The TouchBar API is currently experimental and may change or be
 removed in future Electron releases.
 
-### Instance Methods
+### Instance Properties
 
-The following methods are available on instances of `TouchBar`:
+The following properties are available on instances of `TouchBar`:
 
-#### `touchBar.setEscapeItem([touchBarItem])`
+#### `touchBar.escapeItem`
 
-* `touchBarItem` (TouchBarButton | TouchBarColorPicker | TouchBarGroup | TouchBarLabel | TouchBarPopover | TouchBarScrubber | TouchBarSegmentedControl | TouchBarSlider | TouchBarSpacer) - (Optional) The touch bar item to replace the escape button with
-
-Replaces the "esc" button on the touchbar with the given TouchBarItem, if `touchBarItem` is not provided or is falsey the button is reset
-to the "esc" button automatically.
+The `TouchBarItem` that will replace the "esc" button on the touch bar when set.
+Setting to `null` restores the default "esc" button. Changing this value
+immediately updates the escape item in the touch bar.
 
 ## Examples
 
