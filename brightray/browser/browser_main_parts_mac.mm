@@ -19,4 +19,4 @@ void BrowserMainParts::InitializeMainNib() {
   [mainNib release];
 }
 
-}
+}  // namespace brightray

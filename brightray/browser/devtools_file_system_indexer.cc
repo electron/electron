@@ -205,7 +205,7 @@ vector<FilePath> Index::Search(string query) {
   vector<FilePath> result;
   FileIdsMap::const_iterator ids_it = file_ids_.begin();
   for (; ids_it != file_ids_.end(); ++ids_it) {
-    if (trigrams.size() == 0 ||
+    if (trigrams.empty() ||
         file_ids.find(ids_it->second) != file_ids.end()) {
       result.push_back(ids_it->first);
     }

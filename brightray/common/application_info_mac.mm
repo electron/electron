@@ -17,7 +17,7 @@ std::string ApplicationInfoDictionaryValue(CFStringRef key) {
   return ApplicationInfoDictionaryValue(base::mac::CFToNSCast(key));
 }
 
-}
+}  // namespace
 
 std::string GetApplicationName() {
   return ApplicationInfoDictionaryValue(kCFBundleNameKey);
@@ -27,4 +27,4 @@ std::string GetApplicationVersion() {
   return ApplicationInfoDictionaryValue(@"CFBundleShortVersionString");
 }
 
-}
+}  // namespace brightray

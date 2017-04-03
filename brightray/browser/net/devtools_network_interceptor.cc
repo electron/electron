@@ -108,7 +108,7 @@ uint64_t DevToolsNetworkInterceptor::UpdateThrottledRecords(
     uint64_t last_tick,
     base::TimeDelta tick_length) {
   if (tick_length.is_zero()) {
-    DCHECK(!records->size());
+    DCHECK(records->empty());
     return last_tick;
   }
 
@@ -195,7 +195,7 @@ base::TimeTicks DevToolsNetworkInterceptor::CalculateDesiredTime(
 
 void DevToolsNetworkInterceptor::ArmTimer(base::TimeTicks now) {
   size_t suspend_count = suspended_.size();
-  if (!download_.size() && !upload_.size() && !suspend_count) {
+  if (download_.empty() && upload_.empty() && !suspend_count) {
     timer_.Stop();
     return;
   }
