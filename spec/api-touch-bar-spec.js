@@ -90,5 +90,17 @@ describe('TouchBar module', function () {
       window.setTouchBar(touchBar)
       window.emit('-touch-bar-interaction', {}, button.id)
     })
+
+    it('calls the callback on the escape item when a window interaction event fires', function (done) {
+      const button = new TouchBarButton({
+        label: 'bar',
+        click: () => {
+          done()
+        }
+      })
+      const touchBar = new TouchBar({escapeItem: button})
+      window.setTouchBar(touchBar)
+      window.emit('-touch-bar-interaction', {}, button.id)
+    })
   })
 })
