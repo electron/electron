@@ -96,8 +96,7 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     return false;
 
   int process_id = current_instance->GetProcess()->GetID();
-  if (!(IsRendererSandboxed(process_id)
-      || RendererUsesNativeWindowOpen(process_id)))
+  if (!IsRendererSandboxed(process_id))
     // non-sandboxed renderers should always create a new SiteInstance
     return true;
 
