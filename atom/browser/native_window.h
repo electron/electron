@@ -174,6 +174,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetTouchBar(
       const std::vector<mate::PersistentDictionary>& items);
   virtual void RefreshTouchBarItem(const std::string& item_id);
+  virtual void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
 
   // Webview APIs.
   virtual void FocusOnWebView();

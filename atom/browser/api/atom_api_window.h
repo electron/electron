@@ -208,6 +208,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetVibrancy(mate::Arguments* args);
   void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
   void RefreshTouchBarItem(const std::string& item_id);
+  void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
 
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
 

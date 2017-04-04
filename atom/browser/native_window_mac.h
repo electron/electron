@@ -103,6 +103,7 @@ class NativeWindowMac : public NativeWindow,
   void SetTouchBar(
       const std::vector<mate::PersistentDictionary>& items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
+  void SetEscapeTouchBarItem(const mate::PersistentDictionary& item) override;
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;

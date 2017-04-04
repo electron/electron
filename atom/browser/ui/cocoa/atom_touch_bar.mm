@@ -145,7 +145,25 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   } else if (item_type == "scrubber") {
     [self updateScrubber:(NSCustomTouchBarItem*)item withSettings:settings];
   }
+}
 
+- (void)addNonDefaultTouchBarItems:(const std::vector<mate::PersistentDictionary>&)items {
+  [self identifiersFromSettings:items];
+}
+
+- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item forTouchBar:(NSTouchBar*)touchBar {
+  std::string type;
+  std::string item_id;
+  NSTouchBarItemIdentifier identifier = nil;
+  if (item.Get("type", &type) && item.Get("id", &item_id)) {
+    identifier = [self identifierFromID:item_id type:type];
+  }
+  if (identifier) {
+    [self addNonDefaultTouchBarItems:{ item }];
+    touchBar.escapeKeyReplacementItemIdentifier = identifier;
+  } else {
+    touchBar.escapeKeyReplacementItemIdentifier = nil;
+  }
 }
 
 - (void)buttonAction:(id)sender {

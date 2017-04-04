@@ -368,6 +368,7 @@ enum {
 - (void)enableWindowButtonsOffset;
 - (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings;
 - (void)refreshTouchBarItem:(const std::string&)item_id;
+- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item;
 
 @end
 
@@ -408,6 +409,11 @@ enum {
     return [atom_touch_bar_ makeItemForIdentifier:identifier];
   else
     return nil;
+}
+
+- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item {
+  if (atom_touch_bar_ && self.touchBar)
+    [atom_touch_bar_ setEscapeTouchBarItem:item forTouchBar:self.touchBar];
 }
 
 // NSWindow overrides.
@@ -1415,6 +1421,10 @@ void NativeWindowMac::SetTouchBar(
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
   [window_ refreshTouchBarItem:item_id];
+}
+
+void NativeWindowMac::SetEscapeTouchBarItem(const mate::PersistentDictionary& item) {
+  [window_ setEscapeTouchBarItem:item];
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {

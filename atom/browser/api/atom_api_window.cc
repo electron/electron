@@ -853,6 +853,10 @@ void Window::RefreshTouchBarItem(const std::string& item_id) {
   window_->RefreshTouchBarItem(item_id);
 }
 
+void Window::SetEscapeTouchBarItem(const mate::PersistentDictionary& item) {
+  window_->SetEscapeTouchBarItem(item);
+}
+
 int32_t Window::ID() const {
   return weak_map_id();
 }
@@ -975,6 +979,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setVibrancy", &Window::SetVibrancy)
       .SetMethod("_setTouchBarItems", &Window::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &Window::RefreshTouchBarItem)
+      .SetMethod("_setEscapeTouchBarItem", &Window::SetEscapeTouchBarItem)
 #if defined(OS_WIN)
       .SetMethod("hookWindowMessage", &Window::HookWindowMessage)
       .SetMethod("isWindowMessageHooked", &Window::IsWindowMessageHooked)
