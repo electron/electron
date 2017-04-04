@@ -175,6 +175,20 @@ it is usually used to report errors in early stage of startup.  If called
 before the app `ready`event on Linux, the message will be emitted to stderr,
 and no GUI dialog will appear.
 
+### `dialog.showCertificateTrustDialog([browserWindow, ]options, callback)` _macOS_
+
+* `browserWindow` BrowserWindow (optional)
+* `options` Object
+  * `certificate` [Certificate](structures/certificate.md) - The certificate to trust/import.
+  * `message` String - The message to display to the user.
+* `callback` Function
+
+Displays a modal dialog that shows a message and certificate information, and
+gives the user the option of trusting/importing the certificate.
+
+The `browserWindow` argument allows the dialog to attach itself to a parent
+window, making it modal.
+
 ## Sheets
 
 On macOS, dialogs are presented as sheets attached to a window if you provide
