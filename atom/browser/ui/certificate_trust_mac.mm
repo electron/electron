@@ -66,14 +66,12 @@
 - (void)panelDidEnd:(NSWindow*)sheet
         returnCode:(int)returnCode
         contextInfo:(void*)contextInfo {
-  if (returnCode == NSFileHandlingPanelOKButton) {
-    auto cert_db = net::CertDatabase::GetInstance();
-    // This forces Chromium to reload the certificate since it might be trusted
-    // now.
-    cert_db->NotifyObserversCertDBChanged(cert_.get());
-  }
+  auto cert_db = net::CertDatabase::GetInstance();
+  // This forces Chromium to reload the certificate since it might be trusted
+  // now.
+  cert_db->NotifyObserversCertDBChanged(cert_.get());
 
-  callback_.Run(returnCode == NSFileHandlingPanelOKButton ? true : false);
+  callback_.Run();
 
   [self autorelease];
 }

@@ -182,7 +182,6 @@ and no GUI dialog will appear.
   * `certificate` [Certificate](structures/certificate.md) - The certificate to trust/import.
   * `message` String - The message to display to the user.
 * `callback` Function
-  * `result` Boolean - Whether the user chose to cancel or continue.
 
 Displays a modal dialog that shows a message and certificate information, and
 gives the user the option of trusting/importing the certificate.

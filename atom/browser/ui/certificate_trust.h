@@ -17,7 +17,7 @@ class NativeWindow;
 
 namespace certificate_trust {
 
-typedef base::Callback<void(bool result)> ShowTrustCallback;
+typedef base::Callback<void(void)> ShowTrustCallback;
 
 void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           const scoped_refptr<net::X509Certificate>& cert,
