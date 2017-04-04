@@ -270,6 +270,10 @@ class PrintJob::PdfToEmfState {
   std::unique_ptr<PdfToEmfConverter> converter_;
 };
 
+void PrintJob::AppendPrintedPage(int page_number) {
+  pdf_page_mapping_.push_back(page_number);
+}
+
 void PrintJob::StartPdfToEmfConversion(
     const scoped_refptr<base::RefCountedMemory>& bytes,
     const gfx::Size& page_size,
@@ -298,14 +302,15 @@ void PrintJob::OnPdfToEmfPageConverted(int page_number,
                                        float scale_factor,
                                        std::unique_ptr<MetafilePlayer> emf) {
   DCHECK(ptd_to_emf_state_);
-  if (!document_.get() || !emf) {
+  if (!document_.get() || !emf || page_number < 0 ||
+      static_cast<size_t>(page_number) >= pdf_page_mapping_.size()) {
     ptd_to_emf_state_.reset();
     Cancel();
     return;
   }
 
   // Update the rendered document. It will send notifications to the listener.
-  document_->SetPage(page_number,
+  document_->SetPage(pdf_page_mapping_[page_number],
                      std::move(emf),
                      scale_factor,
                      ptd_to_emf_state_->page_size(),

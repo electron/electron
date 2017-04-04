@@ -153,6 +153,7 @@ void PrintViewManagerBase::OnDidPrintPage(
 
   ShouldQuitFromInnerMessageLoop();
 #else
+  print_job_->AppendPrintedPage(params.page_number);
   if (metafile_must_be_valid) {
     scoped_refptr<base::RefCountedBytes> bytes = new base::RefCountedBytes(
         reinterpret_cast<const unsigned char*>(shared_buf.memory()),
