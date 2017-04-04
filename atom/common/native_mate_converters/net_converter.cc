@@ -59,7 +59,8 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
            net::HashValue(
               val->CalculateFingerprint256(val->os_cert_handle())).ToString());
 
-  if (!val->GetIntermediateCertificates().empty()) {
+  auto intermediates = val->GetIntermediateCertificates();
+  if (!intermediates.empty()) {
     net::X509Certificate::OSCertHandles issuer_intermediates(
         val->GetIntermediateCertificates().begin() + 1,
         val->GetIntermediateCertificates().end());
@@ -68,9 +69,70 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
             val->GetIntermediateCertificates().front(),
             issuer_intermediates);
     dict.Set("issuerCert", issuer_cert);
+
+    std::vector<std::string> intermediates_encoded;
+    for (size_t i = 0; i < intermediates.size(); i++) {
+      auto native_cert = intermediates[i];
+      std::string encoded;
+      net::X509Certificate::GetPEMEncoded(native_cert, &encoded);
+      intermediates_encoded.push_back(encoded);
+    }
+
+    dict.Set("intermediates", intermediates_encoded);
   }
 
   return dict.GetHandle();
+}
+
+bool CertFromData(const std::string& data,
+    scoped_refptr<net::X509Certificate>* out) {
+  auto cert_list = net::X509Certificate::CreateCertificateListFromBytes(
+    data.c_str(), data.length(),
+    net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
+  if (cert_list.empty())
+    return false;
+
+  auto leaf_cert = cert_list.front();
+  if (!leaf_cert)
+    return false;
+
+  *out = leaf_cert;
+
+  return true;
+}
+
+bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
+    v8::Isolate* isolate, v8::Local<v8::Value> val,
+    scoped_refptr<net::X509Certificate>* out) {
+  mate::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  std::string data;
+  dict.Get("data", &data);
+  scoped_refptr<net::X509Certificate> leaf_cert;
+  if (!CertFromData(data, &leaf_cert))
+    return false;
+
+  std::vector<std::string> intermediates_encoded;
+  dict.Get("intermediates", &intermediates_encoded);
+  std::vector<net::X509Certificate::OSCertHandle> intermediates;
+  for (size_t i = 0; i < intermediates_encoded.size(); i++) {
+    auto intermediate_data = intermediates_encoded[i];
+    scoped_refptr<net::X509Certificate> cert;
+    if (!CertFromData(intermediate_data, &cert))
+      return false;
+
+    intermediates.push_back(cert->os_cert_handle());
+  }
+
+  auto cert = net::X509Certificate::CreateFromHandle(
+    leaf_cert->os_cert_handle(), intermediates);
+  if (!cert)
+    return false;
+
+  *out = cert;
+  return true;
 }
 
 // static
