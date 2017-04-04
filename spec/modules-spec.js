@@ -134,13 +134,21 @@ describe('Module._nodeModulePaths', function () {
 
 describe('require', () => {
   describe('when loaded URL is not file: protocol', () => {
-    it('searches for module under app directory', async () => {
-      const w = new BrowserWindow({
+    let w
+
+    beforeEach(() => {
+      w = new BrowserWindow({
         show: false
       })
+    })
+
+    it('searches for module under app directory', async () => {
       w.loadURL('about:blank')
       const result = await w.webContents.executeJavaScript('typeof require("q").when')
       assert.equal(result, 'function')
+    })
+
+    afterEach(() => {
       w.destroy()
     })
   })
