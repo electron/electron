@@ -1071,19 +1071,28 @@ describe('BrowserWindow module', function () {
     })
 
     describe('nativeWindowOpen option', () => {
-      it('allows synchronous access to window opened by window.open()', (done) => {
-        ipcMain.once('answer', function (event, content) {
-          assert.equal(content, 'Hello')
-          done()
-        })
+      beforeEach(() => {
         w.destroy()
         w = new BrowserWindow({
-          show: false,
+          show: true,
           webPreferences: {
             nativeWindowOpen: true
           }
         })
-        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open.html'))
+      })
+      it('opens window of about:blank with cross-scripting enabled', (done) => {
+        ipcMain.once('answer', function (event, content) {
+          assert.equal(content, 'Hello')
+          done()
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open.html#blank'))
+      })
+      it('opens window of same domain with cross-scripting enabled', (done) => {
+        ipcMain.once('answer', function (event, content) {
+          assert.equal(content, 'Hello')
+          done()
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open.html#file'))
       })
     })
   })
