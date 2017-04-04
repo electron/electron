@@ -45,7 +45,7 @@ bool CertFromData(const std::string& data,
   return true;
 }
 
-}
+}  // namespace
 
 // static
 v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
