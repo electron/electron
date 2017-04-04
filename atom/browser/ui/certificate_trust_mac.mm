@@ -28,7 +28,7 @@
       certChain:(CFArrayRef)certChain
       secPolicy:(SecPolicyRef)secPolicy;
 
-- (void)panelDidEnd:(NSWindow *)sheet
+- (void)panelDidEnd:(NSWindow*)sheet
         returnCode:(int)returnCode
         contextInfo:(void*)contextInfo;
 
@@ -63,7 +63,7 @@
   return self;
 }
 
-- (void)panelDidEnd:(NSWindow *)sheet
+- (void)panelDidEnd:(NSWindow*)sheet
         returnCode:(int)returnCode
         contextInfo:(void*)contextInfo {
   if (returnCode == NSFileHandlingPanelOKButton) {
@@ -73,7 +73,7 @@
     cert_db->NotifyObserversCertDBChanged(cert_.get());
   }
 
-  callback_.Run(returnCode);
+  callback_.Run(returnCode == NSFileHandlingPanelOKButton ? true : false);
 
   [self autorelease];
 }
@@ -96,7 +96,7 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
       nil;
   auto msg = base::SysUTF8ToNSString(message);
 
-  SFCertificateTrustPanel *panel = [[SFCertificateTrustPanel alloc] init];
+  auto panel = [[SFCertificateTrustPanel alloc] init];
   auto delegate = [[TrustDelegate alloc] initWithCallback:callback
                                          panel:panel
                                          cert:cert
