@@ -1,5 +1,6 @@
 const assert = require('assert')
 const childProcess = require('child_process')
+const fs = require('fs')
 const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')
@@ -11,85 +12,183 @@ const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
 describe('crashReporter module', function () {
-  var fixtures = path.resolve(__dirname, 'fixtures')
-  var w = null
-  var originalTempDirectory = null
-  var tempDirectory = null
-
-  beforeEach(function () {
-    w = new BrowserWindow({
-      show: false
-    })
-    tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
-    originalTempDirectory = app.getPath('temp')
-    app.setPath('temp', tempDirectory)
-  })
-
-  afterEach(function () {
-    app.setPath('temp', originalTempDirectory)
-    return closeWindow(w).then(function () { w = null })
-  })
-
   if (process.mas) {
     return
   }
+  var fixtures = path.resolve(__dirname, 'fixtures')
+  const generateSpecs = (description, browserWindowOpts) => {
+    describe(description, function () {
+      var w = null
+      var originalTempDirectory = null
+      var tempDirectory = null
 
-  it('should send minidump when renderer crashes', function (done) {
-    if (process.env.APPVEYOR === 'True') return done()
-    if (process.env.TRAVIS === 'true') return done()
+      beforeEach(function () {
+        w = new BrowserWindow(Object.assign({
+          show: false
+        }, browserWindowOpts))
+        tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
+        originalTempDirectory = app.getPath('temp')
+        app.setPath('temp', tempDirectory)
+      })
 
-    this.timeout(120000)
+      afterEach(function () {
+        app.setPath('temp', originalTempDirectory)
+        return closeWindow(w).then(function () { w = null })
+      })
 
-    startServer({
-      callback (port) {
-        const crashUrl = url.format({
-          protocol: 'file',
-          pathname: path.join(fixtures, 'api', 'crash.html'),
-          search: '?port=' + port
+      it('should send minidump when renderer crashes', function (done) {
+        if (process.env.APPVEYOR === 'True') return done()
+        if (process.env.TRAVIS === 'true') return done()
+
+        this.timeout(120000)
+
+        startServer({
+          callback (port) {
+            const crashUrl = url.format({
+              protocol: 'file',
+              pathname: path.join(fixtures, 'api', 'crash.html'),
+              search: '?port=' + port
+            })
+            w.loadURL(crashUrl)
+          },
+          processType: 'renderer',
+          done: done
         })
-        w.loadURL(crashUrl)
-      },
-      processType: 'renderer',
-      done: done
-    })
-  })
+      })
 
-  it('should send minidump when node processes crash', function (done) {
-    if (process.env.APPVEYOR === 'True') return done()
-    if (process.env.TRAVIS === 'true') return done()
+      it('should send minidump when node processes crash', function (done) {
+        if (process.env.APPVEYOR === 'True') return done()
+        if (process.env.TRAVIS === 'true') return done()
 
-    this.timeout(120000)
+        this.timeout(120000)
 
-    startServer({
-      callback (port) {
-        const crashesDir = path.join(app.getPath('temp'), `${app.getName()} Crashes`)
-        const version = app.getVersion()
-        const crashPath = path.join(fixtures, 'module', 'crash.js')
-        childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
-      },
-      processType: 'browser',
-      done: done
-    })
-  })
-
-  it('should send minidump with updated extra parameters', function (done) {
-    if (process.env.APPVEYOR === 'True') return done()
-    if (process.env.TRAVIS === 'true') return done()
-
-    this.timeout(10000)
-
-    startServer({
-      callback (port) {
-        const crashUrl = url.format({
-          protocol: 'file',
-          pathname: path.join(fixtures, 'api', 'crash-restart.html'),
-          search: '?port=' + port
+        startServer({
+          callback (port) {
+            const crashesDir = path.join(app.getPath('temp'), `${app.getName()} Crashes`)
+            const version = app.getVersion()
+            const crashPath = path.join(fixtures, 'module', 'crash.js')
+            childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
+          },
+          processType: 'browser',
+          done: done
         })
-        w.loadURL(crashUrl)
-      },
-      processType: 'renderer',
-      done: done
+      })
+
+      it('should not send minidump if uploadToServer is false', function (done) {
+        this.timeout(120000)
+
+        if (process.platform === 'darwin') {
+          crashReporter.setUploadToServer(false)
+        }
+
+        let server
+        let dumpFile
+        let crashesDir
+        const testDone = (uploaded) => {
+          if (uploaded) {
+            return done(new Error('fail'))
+          }
+          server.close()
+          if (process.platform === 'darwin') {
+            crashReporter.setUploadToServer(true)
+          }
+          assert(fs.existsSync(dumpFile))
+          fs.unlinkSync(dumpFile)
+          done()
+        }
+
+        let pollInterval
+        const pollDumpFile = () => {
+          fs.readdir(crashesDir, (err, files) => {
+            if (err) {
+              return
+            }
+            const dumps = files.filter((file) => /\.dmp$/.test(file))
+            if (!dumps.length) {
+              return
+            }
+            assert.equal(1, dumps.length)
+            dumpFile = path.join(crashesDir, dumps[0])
+            clearInterval(pollInterval)
+            // dump file should not be deleted when not uploading, so we wait
+            // 500 ms and assert it still exists in `testDone`
+            setTimeout(testDone, 500)
+          })
+        }
+
+        remote.ipcMain.once('set-crash-directory', (event, dir) => {
+          if (process.platform === 'linux') {
+            crashesDir = dir
+          } else {
+            crashesDir = crashReporter.getCrashesDirectory()
+            if (process.platform === 'darwin') {
+              // crashpad uses an extra subdirectory
+              crashesDir = path.join(crashesDir, 'completed')
+            }
+          }
+
+          // Before starting, remove all dump files in the crash directory.
+          // This is required because:
+          // - mac crashpad not seem to allow changing the crash directory after
+          //   the first "start" call.
+          // - Other tests in this suite may leave dumps there.
+          // - We want to verify in `testDone` that a dump file is created and
+          //   not deleted.
+          fs.readdir(crashesDir, (err, files) => {
+            if (!err) {
+              for (const file of files) {
+                if (/\.dmp$/.test(file)) {
+                  fs.unlinkSync(path.join(crashesDir, file))
+                }
+              }
+            }
+            event.returnValue = null  // allow the renderer to crash
+            pollInterval = setInterval(pollDumpFile, 100)
+          })
+        })
+
+        server = startServer({
+          callback (port) {
+            const crashUrl = url.format({
+              protocol: 'file',
+              pathname: path.join(fixtures, 'api', 'crash.html'),
+              search: `?port=${port}&skipUpload=1`
+            })
+            w.loadURL(crashUrl)
+          },
+          processType: 'renderer',
+          done: testDone.bind(null, true)
+        })
+      })
+
+      it('should send minidump with updated extra parameters', function (done) {
+        if (process.env.APPVEYOR === 'True') return done()
+        if (process.env.TRAVIS === 'true') return done()
+
+        this.timeout(10000)
+
+        startServer({
+          callback (port) {
+            const crashUrl = url.format({
+              protocol: 'file',
+              pathname: path.join(fixtures, 'api', 'crash-restart.html'),
+              search: '?port=' + port
+            })
+            w.loadURL(crashUrl)
+          },
+          processType: 'renderer',
+          done: done
+        })
+      })
     })
+  }
+
+  generateSpecs('without sandbox', {})
+  generateSpecs('with sandbox ', {
+    webPreferences: {
+      sandbox: true,
+      preload: path.join(fixtures, 'module', 'preload-sandbox.js')
+    }
   })
 
   describe('.start(options)', function () {
@@ -204,4 +303,5 @@ const startServer = ({callback, processType, done}) => {
     }
     callback(port)
   })
+  return server
 }

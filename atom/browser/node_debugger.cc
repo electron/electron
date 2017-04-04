@@ -164,7 +164,7 @@ void NodeDebugger::DidRead(net::test_server::StreamListenSocket* socket,
   buffer_.append(data, len);
 
   do {
-    if (buffer_.size() == 0)
+    if (buffer_.empty())
       return;
 
     // Read the "Content-Length" header.

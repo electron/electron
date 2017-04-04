@@ -336,6 +336,7 @@ Returns:
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
   * `selectionArea` Object - Coordinates of first match region.
+  * `finalUpdate` Boolean
 
 Emitted when a result is available for
 [`webContents.findInPage`] request.
@@ -1247,7 +1248,7 @@ one through the `'paint'` event.
 
 #### `contents.getWebRTCIPHandlingPolicy()`
 
-* Returns `String` - Returns the WebRTC IP Handling Policy.
+Returns `String` - Returns the WebRTC IP Handling Policy.
 
 #### `contents.setWebRTCIPHandlingPolicy(policy)`
 

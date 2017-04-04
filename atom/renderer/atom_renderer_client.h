@@ -8,15 +8,14 @@
 #include <string>
 #include <vector>
 
-#include "content/public/renderer/content_renderer_client.h"
+#include "atom/renderer/renderer_client_base.h"
 
 namespace atom {
 
 class AtomBindings;
-class PreferencesManager;
 class NodeBindings;
 
-class AtomRendererClient : public content::ContentRendererClient {
+class AtomRendererClient : public RendererClientBase {
  public:
   AtomRendererClient();
   virtual ~AtomRendererClient();
@@ -46,25 +45,12 @@ class AtomRendererClient : public content::ContentRendererClient {
   void RenderViewCreated(content::RenderView*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
-  blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
-      blink::WebSpeechSynthesizerClient* client) override;
-  bool OverrideCreatePlugin(content::RenderFrame* render_frame,
-                            blink::WebLocalFrame* frame,
-                            const blink::WebPluginParams& params,
-                            blink::WebPlugin** plugin) override;
   bool ShouldFork(blink::WebLocalFrame* frame,
                   const GURL& url,
                   const std::string& http_method,
                   bool is_initial_navigation,
                   bool is_server_redirect,
                   bool* send_referrer) override;
-  content::BrowserPluginDelegate* CreateBrowserPluginDelegate(
-      content::RenderFrame* render_frame,
-      const std::string& mime_type,
-      const GURL& original_url) override;
-  void AddSupportedKeySystems(
-      std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems)
-      override;
   void DidInitializeWorkerContextOnWorkerThread(
       v8::Local<v8::Context> context) override;
   void WillDestroyWorkerContextOnWorkerThread(
@@ -75,7 +61,6 @@ class AtomRendererClient : public content::ContentRendererClient {
 
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;
-  std::unique_ptr<PreferencesManager> preferences_manager_;
   bool isolated_world_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);

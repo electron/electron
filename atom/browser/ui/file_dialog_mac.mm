@@ -154,7 +154,7 @@ void ShowOpenDialog(const DialogSettings& settings,
 
   NSWindow* window = settings.parent_window ?
       settings.parent_window->GetNativeWindow() :
-      NULL;
+      nullptr;
   [dialog beginSheetModalForWindow:window
                  completionHandler:^(NSInteger chosen) {
     if (chosen == NSFileHandlingPanelCancelButton) {
@@ -193,7 +193,7 @@ void ShowSaveDialog(const DialogSettings& settings,
 
   NSWindow* window = settings.parent_window ?
     settings.parent_window->GetNativeWindow() :
-    NULL;
+    nullptr;
   [dialog beginSheetModalForWindow:window
                  completionHandler:^(NSInteger chosen) {
     if (chosen == NSFileHandlingPanelCancelButton) {

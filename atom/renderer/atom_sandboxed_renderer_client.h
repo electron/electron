@@ -7,12 +7,11 @@
 #include <string>
 #include <vector>
 
-#include "content/public/renderer/content_renderer_client.h"
-#include "content/public/renderer/render_frame.h"
+#include "atom/renderer/renderer_client_base.h"
 
 namespace atom {
 
-class AtomSandboxedRendererClient : public content::ContentRendererClient {
+class AtomSandboxedRendererClient : public RendererClientBase {
  public:
   AtomSandboxedRendererClient();
   virtual ~AtomSandboxedRendererClient();
@@ -22,7 +21,7 @@ class AtomSandboxedRendererClient : public content::ContentRendererClient {
   void WillReleaseScriptContext(
       v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
   void InvokeIpcCallback(v8::Handle<v8::Context> context,
-                         std::string callback_name,
+                         const std::string& callback_name,
                          std::vector<v8::Handle<v8::Value>> args);
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;

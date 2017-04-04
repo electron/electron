@@ -32,38 +32,38 @@ process.once('loaded', () => {
 
 ### `process.noAsar`
 
-Setting this to `true` can disable the support for `asar` archives in Node's
-built-in modules.
+A `Boolean` that controls ASAR support inside your application. Setting this to `true`
+will disable the support for `asar` archives in Node's built-in modules.
 
 ### `process.type`
 
-Current process's type, can be `"browser"` (i.e. main process) or `"renderer"`.
+A `String` representing the current process's type, can be `"browser"` (i.e. main process) or `"renderer"`.
 
 ### `process.versions.electron`
 
-Electron's version string.
+A `String` representing Electron's version string.
 
 ### `process.versions.chrome`
 
-Chrome's version string.
+A `String` representing Chrome's version string.
 
 ### `process.resourcesPath`
 
-Path to the resources directory.
+A `String` representing the path to the resources directory.
 
 ### `process.mas`
 
-For Mac App Store build, this property is `true`, for other builds it is
+A `Boolean`. For Mac App Store build, this property is `true`, for other builds it is
 `undefined`.
 
 ### `process.windowsStore`
 
-If the app is running as a Windows Store app (appx), this property is `true`,
+A `Boolean`. If the app is running as a Windows Store app (appx), this property is `true`,
 for otherwise it is `undefined`.
 
 ### `process.defaultApp`
 
-When app is started by being passed as parameter to the default app, this
+A `Boolean`. When app is started by being passed as parameter to the default app, this
 property is `true` in the main process, otherwise it is `undefined`.
 
 ## Methods

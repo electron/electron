@@ -287,7 +287,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 }
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
-    LoginItemSettings options) {
+    const LoginItemSettings& options) {
   LoginItemSettings settings;
   base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);

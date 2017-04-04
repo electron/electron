@@ -27,7 +27,7 @@ namespace {
 bool g_update_available = false;
 std::string update_url_ = "";
 
-}
+} // namespace
 
 std::string AutoUpdater::GetFeedURL() {
   return update_url_;

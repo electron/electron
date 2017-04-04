@@ -64,7 +64,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 }
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
-    LoginItemSettings options) {
+    const LoginItemSettings& options) {
   return LoginItemSettings();
 }
 

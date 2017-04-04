@@ -36,6 +36,7 @@ extern const char kAcceptFirstMouse[];
 extern const char kUseContentSize[];
 extern const char kZoomToPageWidth[];
 extern const char kTitleBarStyle[];
+extern const char kTabbingIdentifier[];
 extern const char kAutoHideMenuBar[];
 extern const char kEnableLargerThanScreen[];
 extern const char kDarkTheme[];

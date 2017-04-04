@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '1.6.4',
+    'version%': '1.6.5',
     'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
   },
   'includes': [
@@ -441,7 +441,13 @@
         'sandbox_args': [
           './lib/sandboxed_renderer/init.js',
           '-r',
-          './lib/sandboxed_renderer/api/exports/electron.js:electron'
+          './lib/sandboxed_renderer/api/exports/electron.js:electron',
+          '-r',
+          './lib/sandboxed_renderer/api/exports/fs.js:fs',
+          '-r',
+          './lib/sandboxed_renderer/api/exports/os.js:os',
+          '-r',
+          './lib/sandboxed_renderer/api/exports/child_process.js:child_process'
         ],
         'isolated_args': [
           'lib/isolated_renderer/init.js',

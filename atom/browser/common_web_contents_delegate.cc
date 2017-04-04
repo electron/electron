@@ -183,7 +183,7 @@ void CommonWebContentsDelegate::SetOwnerWindow(
   web_contents->SetUserData(relay->key, relay);
 }
 
-void CommonWebContentsDelegate::DestroyWebContents() {
+void CommonWebContentsDelegate::ResetManagedWebContents() {
   web_contents_.reset();
 }
 
@@ -338,7 +338,7 @@ void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
   }
 
   std::vector<FileSystem> file_systems;
-  for (auto file_system_path : file_system_paths) {
+  for (const auto& file_system_path : file_system_paths) {
     base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
     std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
                                                     path);

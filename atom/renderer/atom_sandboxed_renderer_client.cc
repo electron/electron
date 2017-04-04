@@ -9,6 +9,7 @@
 #include "atom_natives.h"  // NOLINT: This file is generated with js2c
 
 #include "atom/common/api/api_messages.h"
+#include "atom/common/api/atom_bindings.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -85,6 +86,7 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   auto isolate = context->GetIsolate();
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
+  b.SetMethod("crash", AtomBindings::Crash);
 }
 
 class AtomSandboxedRenderFrameObserver : public content::RenderFrameObserver {
@@ -180,12 +182,13 @@ AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {
 void AtomSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new AtomSandboxedRenderFrameObserver(render_frame, this);
-  new printing::PrintWebViewHelper(render_frame);
+  RendererClientBase::RenderFrameCreated(render_frame);
 }
 
 void AtomSandboxedRendererClient::RenderViewCreated(
     content::RenderView* render_view) {
   new AtomSandboxedRenderViewObserver(render_view, this);
+  RendererClientBase::RenderViewCreated(render_view);
 }
 
 void AtomSandboxedRendererClient::DidCreateScriptContext(
@@ -204,7 +207,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   std::string preload_bundle_native(node::preload_bundle_data,
       node::preload_bundle_data + sizeof(node::preload_bundle_data));
   std::stringstream ss;
-  ss << "(function(binding, preloadPath) {\n";
+  ss << "(function(binding, preloadPath, require) {\n";
   ss << preload_bundle_native << "\n";
   ss << "})";
   std::string preload_wrapper = ss.str();
@@ -216,6 +219,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   // Create and initialize the binding object
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context);
+  AddRenderBindings(isolate, binding);
   v8::Local<v8::Value> args[] = {
     binding,
     mate::ConvertToV8(isolate, preload_script)
@@ -234,7 +238,7 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
 
 void AtomSandboxedRendererClient::InvokeIpcCallback(
     v8::Handle<v8::Context> context,
-    std::string callback_name,
+    const std::string& callback_name,
     std::vector<v8::Handle<v8::Value>> args) {
   auto isolate = context->GetIsolate();
   auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString();

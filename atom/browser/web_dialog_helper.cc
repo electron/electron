@@ -51,7 +51,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
  private:
   friend class base::RefCounted<FileSelectHelper>;
 
-  ~FileSelectHelper() {}
+  ~FileSelectHelper() override {}
 
   void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths) {
     std::vector<content::FileChooserFileInfo> file_info;

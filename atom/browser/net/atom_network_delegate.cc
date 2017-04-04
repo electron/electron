@@ -402,7 +402,7 @@ void AtomNetworkDelegate::OnListenerResultInIO(
   if (!base::ContainsKey(callbacks_, id))
     return;
 
-  ReadFromResponseObject(*response.get(), out);
+  ReadFromResponseObject(*response, out);
 
   bool cancel = false;
   response->GetBoolean("cancel", &cancel);

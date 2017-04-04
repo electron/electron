@@ -46,7 +46,7 @@ void WindowList::RemoveWindow(NativeWindow* window) {
   for (WindowListObserver& observer : observers_.Get())
     observer.OnWindowRemoved(window);
 
-  if (windows.size() == 0) {
+  if (windows.empty()) {
     for (WindowListObserver& observer : observers_.Get())
       observer.OnWindowAllClosed();
   }
