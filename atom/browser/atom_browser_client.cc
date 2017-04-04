@@ -236,8 +236,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   if (delegate_) {
     auto app_path = static_cast<api::App*>(delegate_)->GetAppPath();
-    command_line->AppendSwitchASCII(switches::kAppPath,
-                                    app_path);
+    command_line->AppendSwitchASCII(switches::kAppPath, app_path);
   }
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
