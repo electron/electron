@@ -129,7 +129,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
   dict.SetMethod("showSaveDialog", &ShowSaveDialog);
 #if defined(OS_MACOSX)
-  dict.SetMethod("showCertificateTrustDialog", &certificate_trust::ShowCertificateTrust);
+  dict.SetMethod("showCertificateTrustDialog",
+                 &certificate_trust::ShowCertificateTrust);
 #endif
 }
 
