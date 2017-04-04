@@ -93,4 +93,20 @@ describe('dialog module', () => {
       }, /Error processing argument at index 1/)
     })
   })
+
+  describe('showCertificateTrustDialog', () => {
+    it('throws errors when the options are invalid', () => {
+      assert.throws(() => {
+        dialog.showCertificateTrustDialog()
+      }, /options must be an object/)
+
+      assert.throws(() => {
+        dialog.showCertificateTrustDialog({})
+      }, /certificate must be an object/)
+
+      assert.throws(() => {
+        dialog.showCertificateTrustDialog({certificate: {}, message: false})
+      }, /message must be a string/)
+    })
+  })
 })
