@@ -26,6 +26,27 @@
 
 namespace mate {
 
+namespace {
+
+bool CertFromData(const std::string& data,
+    scoped_refptr<net::X509Certificate>* out) {
+  auto cert_list = net::X509Certificate::CreateCertificateListFromBytes(
+    data.c_str(), data.length(),
+    net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
+  if (cert_list.empty())
+    return false;
+
+  auto leaf_cert = cert_list.front();
+  if (!leaf_cert)
+    return false;
+
+  *out = leaf_cert;
+
+  return true;
+}
+
+}
+
 // static
 v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
     v8::Isolate* isolate, const net::AuthChallengeInfo* val) {
@@ -71,23 +92,6 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   }
 
   return dict.GetHandle();
-}
-
-bool CertFromData(const std::string& data,
-    scoped_refptr<net::X509Certificate>* out) {
-  auto cert_list = net::X509Certificate::CreateCertificateListFromBytes(
-    data.c_str(), data.length(),
-    net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
-  if (cert_list.empty())
-    return false;
-
-  auto leaf_cert = cert_list.front();
-  if (!leaf_cert)
-    return false;
-
-  *out = leaf_cert;
-
-  return true;
 }
 
 bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
