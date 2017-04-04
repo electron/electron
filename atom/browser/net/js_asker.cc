@@ -59,7 +59,7 @@ void AskForOptions(v8::Isolate* isolate,
 }
 
 bool IsErrorOptions(base::Value* value, int* error) {
-  if (value->IsType(base::Value::TYPE_DICTIONARY)) {
+  if (value->IsType(base::Value::TYPE::DICTIONARY)) {
     base::DictionaryValue* dict = static_cast<base::DictionaryValue*>(value);
     if (dict->GetInteger("error", error))
       return true;

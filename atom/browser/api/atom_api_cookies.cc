@@ -228,8 +228,8 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   GetCookieStore(getter)->SetCookieWithDetailsAsync(
       GURL(url), name, value, domain, path, creation_time,
       expiration_time, last_access_time, secure, http_only,
-      net::CookieSameSite::DEFAULT_MODE, false,
-      net::COOKIE_PRIORITY_DEFAULT, base::Bind(OnSetCookie, callback));
+      net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT,
+      base::Bind(OnSetCookie, callback));
 }
 
 }  // namespace

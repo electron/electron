@@ -17,7 +17,7 @@ URLRequestStringJob::URLRequestStringJob(
 }
 
 void URLRequestStringJob::StartAsync(std::unique_ptr<base::Value> options) {
-  if (options->IsType(base::Value::TYPE_DICTIONARY)) {
+  if (options->IsType(base::Value::TYPE::DICTIONARY)) {
     base::DictionaryValue* dict =
         static_cast<base::DictionaryValue*>(options.get());
     dict->GetString("mimeType", &mime_type_);

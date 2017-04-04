@@ -181,7 +181,7 @@ bool Archive::Init() {
   std::string error;
   base::JSONReader reader;
   std::unique_ptr<base::Value> value(reader.ReadToValue(header));
-  if (!value || !value->IsType(base::Value::TYPE_DICTIONARY)) {
+  if (!value || !value->IsType(base::Value::TYPE::DICTIONARY)) {
     LOG(ERROR) << "Failed to parse header: " << error;
     return false;
   }
@@ -269,8 +269,9 @@ bool Archive::Realpath(const base::FilePath& path, base::FilePath* realpath) {
 }
 
 bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
-  if (external_files_.contains(path)) {
-    *out = external_files_.get(path)->path();
+  auto it = external_files_.find(path.value());
+  if (it != external_files_.end()) {
+    *out = it->second->path();
     return true;
   }
 
@@ -296,7 +297,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
 #endif
 
   *out = temp_file->path();
-  external_files_.set(path, std::move(temp_file));
+  external_files_[path.value()] = std::move(temp_file);
   return true;
 }
 

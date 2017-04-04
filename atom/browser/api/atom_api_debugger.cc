@@ -46,7 +46,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
   DCHECK(agent_host == agent_host_.get());
 
   std::unique_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
-  if (!parsed_message->IsType(base::Value::TYPE_DICTIONARY))
+  if (!parsed_message->IsType(base::Value::Type::DICTIONARY))
     return;
 
   base::DictionaryValue* dict =

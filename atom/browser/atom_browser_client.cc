@@ -296,27 +296,26 @@ void AtomBrowserClient::ResourceDispatcherHostCreated() {
 }
 
 bool AtomBrowserClient::CanCreateWindow(
+    int opener_render_process_id,
+    int opener_render_frame_id,
     const GURL& opener_url,
     const GURL& opener_top_level_frame_url,
     const GURL& source_origin,
-    WindowContainerType container_type,
+    content::mojom::WindowContainerType container_type,
     const GURL& target_url,
     const content::Referrer& referrer,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
-    const blink::WebWindowFeatures& features,
+    const blink::mojom::WindowFeatures& features,
     const std::vector<std::string>& additional_features,
     const scoped_refptr<content::ResourceRequestBodyImpl>& body,
     bool user_gesture,
     bool opener_suppressed,
     content::ResourceContext* context,
-    int render_process_id,
-    int opener_render_view_id,
-    int opener_render_frame_id,
     bool* no_javascript_access) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  if (IsRendererSandboxed(render_process_id)) {
+  if (IsRendererSandboxed(opener_render_process_id)) {
     *no_javascript_access = false;
     return true;
   }
@@ -330,7 +329,7 @@ bool AtomBrowserClient::CanCreateWindow(
                                     disposition,
                                     additional_features,
                                     body,
-                                    render_process_id,
+                                    opener_render_process_id,
                                     opener_render_frame_id));
   }
 

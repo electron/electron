@@ -50,15 +50,16 @@ bool AtomURLRequestJobFactory::InterceptProtocol(
     return false;
   ProtocolHandler* original_protocol_handler = protocol_handler_map_[scheme];
   protocol_handler_map_[scheme] = protocol_handler.release();
-  original_protocols_.set(scheme, base::WrapUnique(original_protocol_handler));
+  original_protocols_[scheme] = std::move(original_protocol_handler);
   return true;
 }
 
 bool AtomURLRequestJobFactory::UninterceptProtocol(const std::string& scheme) {
-  if (!original_protocols_.contains(scheme))
+  auto it = original_protocols_.find(scheme);
+  if (it == original_protocols_.end())
     return false;
-  protocol_handler_map_[scheme] =
-      original_protocols_.take_and_erase(scheme).release();
+  protocol_handler_map_[scheme] = std::move(it->second);
+  original_protocols_.erase(it);
   return true;
 }
 

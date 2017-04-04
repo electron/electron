@@ -198,7 +198,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
     case base::Value::TYPE_LIST:
       return ToV8Array(isolate, static_cast<const base::ListValue*>(value));
 
-    case base::Value::TYPE_DICTIONARY:
+    case base::Value::TYPE::DICTIONARY:
       return ToV8Object(isolate,
                         static_cast<const base::DictionaryValue*>(value));
 
