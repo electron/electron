@@ -91,10 +91,7 @@ The `screen` module has the following methods:
 
 ### `screen.getCursorScreenPoint()`
 
-Returns `Object`:
-
-* `x` Integer
-* `y` Integer
+Returns [`Point`](structures/point.md)
 
 The current absolute position of the mouse pointer.
 
@@ -108,9 +105,7 @@ Returns [`Display[]`](structures/display.md) - An array of displays that are cur
 
 ### `screen.getDisplayNearestPoint(point)`
 
-* `point` Object
-  * `x` Integer
-  * `y` Integer
+* `point` [Point](structures/point.md)
 
 Returns [`Display`](structures/display.md) - The display nearest the specified point.
 

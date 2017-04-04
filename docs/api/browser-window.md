@@ -682,10 +682,8 @@ Returns `Boolean` - Whether the window is in fullscreen mode.
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
-* `extraSize` Object (optional) - The extra size not to be included while
+* `extraSize` [Size](structures/size.md) - The extra size not to be included while
 maintaining the aspect ratio.
-  * `width` Integer
-  * `height` Integer
 
 This will make a window maintain an aspect ratio. The extra size allows a
 developer to have space, specified in pixels, not included within the aspect
