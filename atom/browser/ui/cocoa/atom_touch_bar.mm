@@ -113,19 +113,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   return nil;
 }
 
-
 - (void)refreshTouchBarItem:(NSTouchBar*)touchBar
-                         id:(const std::string&)item_id {
-  if (![self hasItemWithID:item_id]) return;
-
-  mate::PersistentDictionary settings = settings_[item_id];
-  std::string item_type;
-  settings.Get("type", &item_type);
-
-  NSTouchBarItemIdentifier identifier = [self identifierFromID:item_id
-                                                          type:item_type];
-  if (!identifier) return;
-
+                         id:(NSTouchBarItemIdentifier)identifier
+                   withType:(const std::string&)item_type
+               withSettings:(const mate::PersistentDictionary&)settings {
   NSTouchBarItem* item = [touchBar itemForIdentifier:identifier];
   if (!item) return;
 
@@ -164,6 +155,37 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   } else {
     touchBar.escapeKeyReplacementItemIdentifier = nil;
   }
+}
+
+- (void)refreshTouchBarItem:(NSTouchBar*)touchBar
+                         id:(const std::string&)item_id {
+  if (![self hasItemWithID:item_id]) return;
+
+  mate::PersistentDictionary settings = settings_[item_id];
+  std::string item_type;
+  settings.Get("type", &item_type);
+
+  auto identifier = [self identifierFromID:item_id type:item_type];
+  if (!identifier) return;
+
+  std::vector<std::string> popover_ids;
+  settings.Get("_popover", &popover_ids);
+  for (auto& popover_id : popover_ids) {
+    auto popoverIdentifier = [self identifierFromID:popover_id type:"popover"];
+    if (!popoverIdentifier) continue;
+
+    NSPopoverTouchBarItem* popoverItem =
+        [touchBar itemForIdentifier:popoverIdentifier];
+    [self refreshTouchBarItem:popoverItem.popoverTouchBar
+                           id:identifier
+                     withType:item_type
+                 withSettings:settings];
+  }
+
+  [self refreshTouchBarItem:touchBar
+                         id:identifier
+                   withType:item_type
+               withSettings:settings];
 }
 
 - (void)buttonAction:(id)sender {
