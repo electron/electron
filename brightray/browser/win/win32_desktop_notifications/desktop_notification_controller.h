@@ -11,11 +11,11 @@ struct NotificationData;
 
 class DesktopNotificationController {
  public:
-    explicit DesktopNotificationController(unsigned maximumToasts = 3);
+    explicit DesktopNotificationController(unsigned maximum_toasts = 3);
     ~DesktopNotificationController();
 
     class Notification;
-    Notification AddNotification(std::wstring caption, std::wstring bodyText,
+    Notification AddNotification(std::wstring caption, std::wstring body_text,
                                  HBITMAP image);
     void CloseNotification(Notification& notification);
 
@@ -58,11 +58,11 @@ class DesktopNotificationController {
 
     class Toast;
 
-    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
-                                    WPARAM wParam, LPARAM lParam);
-    static DesktopNotificationController* Get(HWND hWnd) {
+    static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
+                                    WPARAM wparam, LPARAM lparam);
+    static DesktopNotificationController* Get(HWND hwnd) {
         return reinterpret_cast<DesktopNotificationController*>(
-            GetWindowLongPtr(hWnd, 0));
+            GetWindowLongPtr(hwnd, 0));
     }
 
     DesktopNotificationController(
@@ -95,7 +95,7 @@ class DesktopNotificationController::Notification {
     bool operator==(const Notification& other) const;
 
     void Close();
-    void Set(std::wstring caption, std::wstring bodyText, HBITMAP image);
+    void Set(std::wstring caption, std::wstring body_text, HBITMAP image);
 
  private:
     std::shared_ptr<NotificationData> data_;

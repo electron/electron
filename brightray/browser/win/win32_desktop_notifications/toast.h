@@ -5,15 +5,15 @@ namespace brightray {
 
 class DesktopNotificationController::Toast {
  public:
-    static void Register(HINSTANCE hInstance);
-    static HWND Create(HINSTANCE hInstance,
+    static void Register(HINSTANCE hinstance);
+    static HWND Create(HINSTANCE hinstance,
                        std::shared_ptr<NotificationData>& data);
-    static Toast* Get(HWND hWnd) {
-        return reinterpret_cast<Toast*>(GetWindowLongPtr(hWnd, 0));
+    static Toast* Get(HWND hwnd) {
+        return reinterpret_cast<Toast*>(GetWindowLongPtr(hwnd, 0));
     }
 
-    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
-                                    WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
+                                    WPARAM wparam, LPARAM lparam);
 
     const std::shared_ptr<NotificationData>& GetNotification() const {
         return data_;
@@ -45,7 +45,7 @@ class DesktopNotificationController::Toast {
         TimerID_AutoDismiss = 1
     };
 
-    Toast(HWND hWnd, std::shared_ptr<NotificationData>* data);
+    Toast(HWND hwnd, std::shared_ptr<NotificationData>* data);
     ~Toast();
 
     void UpdateBufferSize();

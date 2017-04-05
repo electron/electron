@@ -67,11 +67,11 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
     if (width == 0 || height == 0)
         return NULL;
 
-    HBITMAP resultBitmap = NULL;
+    HBITMAP result_bitmap = NULL;
 
-    HDC hdcScreen = GetDC(NULL);
+    HDC hdc_screen = GetDC(NULL);
 
-    HBITMAP alphaSrcBitmap;
+    HBITMAP alpha_src_bitmap;
     {
         BITMAPINFOHEADER bmi = { sizeof(BITMAPINFOHEADER) };
         bmi.biWidth = bm.bmWidth;
@@ -80,14 +80,13 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
         bmi.biBitCount = bm.bmBitsPixel;
         bmi.biCompression = BI_RGB;
 
-        void* alphaSrcBits;
-        alphaSrcBitmap = CreateDIBSection(NULL,
-                                          reinterpret_cast<BITMAPINFO*>(&bmi),
-                                          DIB_RGB_COLORS, &alphaSrcBits,
-                                          NULL, 0);
+        void* alpha_src_bits;
+        alpha_src_bitmap =
+            CreateDIBSection(NULL, reinterpret_cast<BITMAPINFO*>(&bmi),
+                             DIB_RGB_COLORS, &alpha_src_bits, NULL, 0);
 
-        if (alphaSrcBitmap) {
-            if (GetDIBits(hdcScreen, bitmap, 0, 0, 0,
+        if (alpha_src_bitmap) {
+            if (GetDIBits(hdc_screen, bitmap, 0, 0, 0,
                           reinterpret_cast<BITMAPINFO*>(&bmi),
                           DIB_RGB_COLORS) &&
                 bmi.biSizeImage > 0 &&
@@ -96,7 +95,7 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
                     _aligned_malloc(bmi.biSizeImage, sizeof(DWORD)));
 
                 if (buf) {
-                    GetDIBits(hdcScreen, bitmap, 0, bm.bmHeight, buf,
+                    GetDIBits(hdc_screen, bitmap, 0, bm.bmHeight, buf,
                               reinterpret_cast<BITMAPINFO*>(&bmi),
                               DIB_RGB_COLORS);
 
@@ -104,7 +103,7 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
                     const DWORD *end =
                         reinterpret_cast<DWORD*>(buf + bmi.biSizeImage);
 
-                    BYTE* dest = reinterpret_cast<BYTE*>(alphaSrcBits);
+                    BYTE* dest = reinterpret_cast<BYTE*>(alpha_src_bits);
 
                     for (; src != end; ++src, ++dest) {
                         BYTE a = *src >> 24;
@@ -119,7 +118,7 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
         }
     }
 
-    if (alphaSrcBitmap) {
+    if (alpha_src_bitmap) {
         BITMAPINFOHEADER bmi = { sizeof(BITMAPINFOHEADER) };
         bmi.biWidth = width;
         bmi.biHeight = height;
@@ -127,44 +126,42 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
         bmi.biBitCount = 32;
         bmi.biCompression = BI_RGB;
 
-        void* colorBits;
-        auto colorBitmap = CreateDIBSection(NULL,
-                                            reinterpret_cast<BITMAPINFO*>(&bmi),
-                                            DIB_RGB_COLORS, &colorBits,
-                                            NULL, 0);
+        void* color_bits;
+        auto color_bitmap =
+            CreateDIBSection(NULL, reinterpret_cast<BITMAPINFO*>(&bmi),
+                             DIB_RGB_COLORS, &color_bits, NULL, 0);
 
-        void* alphaBits;
-        auto alphaBitmap = CreateDIBSection(NULL,
-                                            reinterpret_cast<BITMAPINFO*>(&bmi),
-                                            DIB_RGB_COLORS, &alphaBits,
-                                            NULL, 0);
+        void* alpha_bits;
+        auto alpha_bitmap =
+            CreateDIBSection(NULL, reinterpret_cast<BITMAPINFO*>(&bmi),
+                             DIB_RGB_COLORS, &alpha_bits, NULL, 0);
 
         HDC hdc = CreateCompatibleDC(NULL);
-        HDC hdcSrc = CreateCompatibleDC(NULL);
+        HDC hdc_src = CreateCompatibleDC(NULL);
 
-        if (colorBitmap && alphaBitmap && hdc && hdcSrc) {
+        if (color_bitmap && alpha_bitmap && hdc && hdc_src) {
             SetStretchBltMode(hdc, HALFTONE);
 
             // resize color channels
-            SelectObject(hdc, colorBitmap);
-            SelectObject(hdcSrc, bitmap);
+            SelectObject(hdc, color_bitmap);
+            SelectObject(hdc_src, bitmap);
             StretchBlt(hdc, 0, 0, width, height,
-                       hdcSrc, 0, 0, bm.bmWidth, bm.bmHeight,
+                       hdc_src, 0, 0, bm.bmWidth, bm.bmHeight,
                        SRCCOPY);
 
             // resize alpha channel
-            SelectObject(hdc, alphaBitmap);
-            SelectObject(hdcSrc, alphaSrcBitmap);
+            SelectObject(hdc, alpha_bitmap);
+            SelectObject(hdc_src, alpha_src_bitmap);
             StretchBlt(hdc, 0, 0, width, height,
-                       hdcSrc, 0, 0, bm.bmWidth, bm.bmHeight,
+                       hdc_src, 0, 0, bm.bmWidth, bm.bmHeight,
                        SRCCOPY);
 
             // flush before touching the bits
             GdiFlush();
 
             // apply the alpha channel
-            auto dest = reinterpret_cast<BYTE*>(colorBits);
-            auto src = reinterpret_cast<const BYTE*>(alphaBits);
+            auto dest = reinterpret_cast<BYTE*>(color_bits);
+            auto src = reinterpret_cast<const BYTE*>(alpha_bits);
             auto end = src + (width * height * 4);
             while (src != end) {
                 dest[3] = src[0];
@@ -173,32 +170,32 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
             }
 
             // create the resulting bitmap
-            resultBitmap = CreateDIBitmap(hdcScreen, &bmi, CBM_INIT,
-                                          colorBits,
-                                          reinterpret_cast<BITMAPINFO*>(&bmi),
-                                          DIB_RGB_COLORS);
+            result_bitmap = CreateDIBitmap(hdc_screen, &bmi, CBM_INIT,
+                                           color_bits,
+                                           reinterpret_cast<BITMAPINFO*>(&bmi),
+                                           DIB_RGB_COLORS);
         }
 
-        if (hdcSrc) DeleteDC(hdcSrc);
+        if (hdc_src) DeleteDC(hdc_src);
         if (hdc) DeleteDC(hdc);
 
-        if (alphaBitmap) DeleteObject(alphaBitmap);
-        if (colorBitmap) DeleteObject(colorBitmap);
+        if (alpha_bitmap) DeleteObject(alpha_bitmap);
+        if (color_bitmap) DeleteObject(color_bitmap);
 
-        DeleteObject(alphaSrcBitmap);
+        DeleteObject(alpha_src_bitmap);
     }
 
-    ReleaseDC(NULL, hdcScreen);
+    ReleaseDC(NULL, hdc_screen);
 
-    return resultBitmap;
+    return result_bitmap;
 }
 
 DesktopNotificationController::Toast::Toast(
-    HWND hWnd, shared_ptr<NotificationData>* data) :
-    hwnd_(hWnd), data_(*data) {
-    HDC hdcScreen = GetDC(NULL);
-    hdc_ = CreateCompatibleDC(hdcScreen);
-    ReleaseDC(NULL, hdcScreen);
+    HWND hwnd, shared_ptr<NotificationData>* data) :
+    hwnd_(hwnd), data_(*data) {
+    HDC hdc_screen = GetDC(NULL);
+    hdc_ = CreateCompatibleDC(hdc_screen);
+    ReleaseDC(NULL, hdc_screen);
 }
 
 DesktopNotificationController::Toast::~Toast() {
@@ -207,47 +204,47 @@ DesktopNotificationController::Toast::~Toast() {
     if (scaled_image_) DeleteBitmap(scaled_image_);
 }
 
-void DesktopNotificationController::Toast::Register(HINSTANCE hInstance) {
+void DesktopNotificationController::Toast::Register(HINSTANCE hinstance) {
     WNDCLASSEX wc = { sizeof(wc) };
     wc.lpfnWndProc = &Toast::WndProc;
     wc.lpszClassName = class_name_;
     wc.cbWndExtra = sizeof(Toast*);
-    wc.hInstance = hInstance;
+    wc.hInstance = hinstance;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 
     RegisterClassEx(&wc);
 }
 
 LRESULT DesktopNotificationController::Toast::WndProc(
-    HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {
     case WM_CREATE:
         {
-            auto& cs = reinterpret_cast<const CREATESTRUCT*&>(lParam);
+            auto& cs = reinterpret_cast<const CREATESTRUCT*&>(lparam);
             auto data =
                 static_cast<shared_ptr<NotificationData>*>(cs->lpCreateParams);
-            auto inst = new Toast(hWnd, data);
-            SetWindowLongPtr(hWnd, 0, (LONG_PTR)inst);
+            auto inst = new Toast(hwnd, data);
+            SetWindowLongPtr(hwnd, 0, (LONG_PTR)inst);
         }
         break;
 
     case WM_NCDESTROY:
-        delete Get(hWnd);
-        SetWindowLongPtr(hWnd, 0, 0);
+        delete Get(hwnd);
+        SetWindowLongPtr(hwnd, 0, 0);
         return 0;
 
     case WM_MOUSEACTIVATE:
         return MA_NOACTIVATE;
 
     case WM_TIMER:
-        if (wParam == TimerID_AutoDismiss) {
-            Get(hWnd)->AutoDismiss();
+        if (wparam == TimerID_AutoDismiss) {
+            Get(hwnd)->AutoDismiss();
         }
         return 0;
 
     case WM_LBUTTONDOWN:
         {
-            auto inst = Get(hWnd);
+            auto inst = Get(hwnd);
 
             inst->Dismiss();
 
@@ -261,15 +258,15 @@ LRESULT DesktopNotificationController::Toast::WndProc(
 
     case WM_MOUSEMOVE:
         {
-            auto inst = Get(hWnd);
+            auto inst = Get(hwnd);
             if (!inst->is_highlighted_) {
                 inst->is_highlighted_ = true;
 
-                TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, hWnd };
+                TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, hwnd };
                 TrackMouseEvent(&tme);
             }
 
-            POINT cursor = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            POINT cursor = { GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam) };
             inst->is_close_hot_ =
                 (PtInRect(&inst->close_button_rect_, cursor) != FALSE);
 
@@ -282,7 +279,7 @@ LRESULT DesktopNotificationController::Toast::WndProc(
 
     case WM_MOUSELEAVE:
         {
-            auto inst = Get(hWnd);
+            auto inst = Get(hwnd);
             inst->is_highlighted_ = false;
             inst->is_close_hot_ = false;
             inst->UpdateContents();
@@ -297,80 +294,80 @@ LRESULT DesktopNotificationController::Toast::WndProc(
 
     case WM_WINDOWPOSCHANGED:
         {
-            auto& wp = reinterpret_cast<WINDOWPOS*&>(lParam);
+            auto& wp = reinterpret_cast<WINDOWPOS*&>(lparam);
             if (wp->flags & SWP_HIDEWINDOW) {
-                if (!IsWindowVisible(hWnd))
-                    Get(hWnd)->is_highlighted_ = false;
+                if (!IsWindowVisible(hwnd))
+                    Get(hwnd)->is_highlighted_ = false;
             }
         }
         break;
     }
 
-    return DefWindowProc(hWnd, message, wParam, lParam);
+    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
 HWND DesktopNotificationController::Toast::Create(
-    HINSTANCE hInstance, shared_ptr<NotificationData>& data) {
+    HINSTANCE hinstance, shared_ptr<NotificationData>& data) {
     return CreateWindowEx(WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOPMOST,
                           class_name_, nullptr, WS_POPUP, 0, 0, 0, 0,
-                          NULL, NULL, hInstance, &data);
+                          NULL, NULL, hinstance, &data);
 }
 
 void DesktopNotificationController::Toast::Draw() {
     const COLORREF accent = GetAccentColor();
 
-    COLORREF backColor;
+    COLORREF back_color;
     {
         // base background color is 2/3 of accent
         // highlighted adds a bit of intensity to every channel
 
         int h = is_highlighted_ ? (0xff / 20) : 0;
 
-        backColor = RGB(min(0xff, (GetRValue(accent) * 2 / 3) + h),
-                        min(0xff, (GetGValue(accent) * 2 / 3) + h),
-                        min(0xff, (GetBValue(accent) * 2 / 3) + h));
+        back_color = RGB(min(0xff, (GetRValue(accent) * 2 / 3) + h),
+                         min(0xff, (GetGValue(accent) * 2 / 3) + h),
+                         min(0xff, (GetBValue(accent) * 2 / 3) + h));
     }
 
-    const float backLuma =
-        (GetRValue(backColor) * 0.299f / 255) +
-        (GetGValue(backColor) * 0.587f / 255) +
-        (GetBValue(backColor) * 0.114f / 255);
+    const float back_luma =
+        (GetRValue(back_color) * 0.299f / 255) +
+        (GetGValue(back_color) * 0.587f / 255) +
+        (GetBValue(back_color) * 0.114f / 255);
 
-    const struct { float r, g, b; } backF = {
-        GetRValue(backColor) / 255.0f,
-        GetGValue(backColor) / 255.0f,
-        GetBValue(backColor) / 255.0f,
+    const struct { float r, g, b; } back_f = {
+        GetRValue(back_color) / 255.0f,
+        GetGValue(back_color) / 255.0f,
+        GetBValue(back_color) / 255.0f,
     };
 
-    COLORREF foreColor, dimmedColor;
+    COLORREF fore_color, dimmed_color;
     {
         // based on the lightness of background, we draw foreground in light
         // or dark shades of gray blended onto the background with slight
         // transparency to avoid sharp contrast
 
         constexpr float alpha = 0.9f;
-        constexpr float intensityLight[] = { (1.0f * alpha), (0.8f * alpha) };
-        constexpr float intensityDark[] = { (0.1f * alpha), (0.3f * alpha) };
+        constexpr float intensity_light[] = { (1.0f * alpha), (0.8f * alpha) };
+        constexpr float intensity_dark[] = { (0.1f * alpha), (0.3f * alpha) };
 
         // select foreground intensity values (light or dark)
-        auto& i = (backLuma < 0.6f) ? intensityLight : intensityDark;
+        auto& i = (back_luma < 0.6f) ? intensity_light : intensity_dark;
 
         float r, g, b;
 
-        r = i[0] + backF.r * (1 - alpha);
-        g = i[0] + backF.g * (1 - alpha);
-        b = i[0] + backF.b * (1 - alpha);
-        foreColor = RGB(r * 0xff, g * 0xff, b * 0xff);
+        r = i[0] + back_f.r * (1 - alpha);
+        g = i[0] + back_f.g * (1 - alpha);
+        b = i[0] + back_f.b * (1 - alpha);
+        fore_color = RGB(r * 0xff, g * 0xff, b * 0xff);
 
-        r = i[1] + backF.r * (1 - alpha);
-        g = i[1] + backF.g * (1 - alpha);
-        b = i[1] + backF.b * (1 - alpha);
-        dimmedColor = RGB(r * 0xff, g * 0xff, b * 0xff);
+        r = i[1] + back_f.r * (1 - alpha);
+        g = i[1] + back_f.g * (1 - alpha);
+        b = i[1] + back_f.b * (1 - alpha);
+        dimmed_color = RGB(r * 0xff, g * 0xff, b * 0xff);
     }
 
     // Draw background
     {
-        auto brush = CreateSolidBrush(backColor);
+        auto brush = CreateSolidBrush(back_color);
 
         RECT rc = { 0, 0, toast_size_.cx, toast_size_.cy };
         FillRect(hdc_, &rc, brush);
@@ -381,24 +378,24 @@ void DesktopNotificationController::Toast::Draw() {
     SetBkMode(hdc_, TRANSPARENT);
 
     const auto close = L'\x2715';
-    auto captionFont = data_->controller->GetCaptionFont();
-    auto bodyFont = data_->controller->GetBodyFont();
+    auto caption_font = data_->controller->GetCaptionFont();
+    auto body_font = data_->controller->GetBodyFont();
 
-    TEXTMETRIC tmCap;
-    SelectFont(hdc_, captionFont);
-    GetTextMetrics(hdc_, &tmCap);
+    TEXTMETRIC tm_cap;
+    SelectFont(hdc_, caption_font);
+    GetTextMetrics(hdc_, &tm_cap);
 
-    auto textOffsetX = margin_.cx;
+    auto text_offset_x = margin_.cx;
 
-    BITMAP imageInfo = {};
+    BITMAP image_info = {};
     if (scaled_image_) {
-        GetObject(scaled_image_, sizeof(imageInfo), &imageInfo);
+        GetObject(scaled_image_, sizeof(image_info), &image_info);
 
-        textOffsetX += margin_.cx + imageInfo.bmWidth;
+        text_offset_x += margin_.cx + image_info.bmWidth;
     }
 
     // calculate close button rect
-    POINT closePos;
+    POINT close_pos;
     {
         SIZE extent = {};
         GetTextExtentPoint32W(hdc_, &close, 1, &extent);
@@ -406,37 +403,37 @@ void DesktopNotificationController::Toast::Draw() {
         close_button_rect_.right = toast_size_.cx;
         close_button_rect_.top = 0;
 
-        closePos.x = close_button_rect_.right - margin_.cy - extent.cx;
-        closePos.y = close_button_rect_.top + margin_.cy;
+        close_pos.x = close_button_rect_.right - margin_.cy - extent.cx;
+        close_pos.y = close_button_rect_.top + margin_.cy;
 
-        close_button_rect_.left = closePos.x - margin_.cy;
-        close_button_rect_.bottom = closePos.y + extent.cy + margin_.cy;
+        close_button_rect_.left = close_pos.x - margin_.cy;
+        close_button_rect_.bottom = close_pos.y + extent.cy + margin_.cy;
     }
 
     // image
     if (scaled_image_) {
-        HDC hdcImage = CreateCompatibleDC(NULL);
-        SelectBitmap(hdcImage, scaled_image_);
+        HDC hdc_image = CreateCompatibleDC(NULL);
+        SelectBitmap(hdc_image, scaled_image_);
         BLENDFUNCTION blend = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
         AlphaBlend(hdc_, margin_.cx, margin_.cy,
-                   imageInfo.bmWidth, imageInfo.bmHeight,
-                   hdcImage, 0, 0,
-                   imageInfo.bmWidth, imageInfo.bmHeight,
+                   image_info.bmWidth, image_info.bmHeight,
+                   hdc_image, 0, 0,
+                   image_info.bmWidth, image_info.bmHeight,
                    blend);
-        DeleteDC(hdcImage);
+        DeleteDC(hdc_image);
     }
 
     // caption
     {
         RECT rc = {
-            textOffsetX,
+            text_offset_x,
             margin_.cy,
             close_button_rect_.left,
             toast_size_.cy
         };
 
-        SelectFont(hdc_, captionFont);
-        SetTextColor(hdc_, foreColor);
+        SelectFont(hdc_, caption_font);
+        SetTextColor(hdc_, fore_color);
         DrawText(hdc_, data_->caption.data(), (UINT)data_->caption.length(),
                  &rc, DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
     }
@@ -444,14 +441,14 @@ void DesktopNotificationController::Toast::Draw() {
     // body text
     if (!data_->body_text.empty()) {
         RECT rc = {
-            textOffsetX,
-            2 * margin_.cy + tmCap.tmAscent,
+            text_offset_x,
+            2 * margin_.cy + tm_cap.tmAscent,
             toast_size_.cx - margin_.cx,
             toast_size_.cy - margin_.cy
         };
 
-        SelectFont(hdc_, bodyFont);
-        SetTextColor(hdc_, dimmedColor);
+        SelectFont(hdc_, body_font);
+        SetTextColor(hdc_, dimmed_color);
         DrawText(hdc_, data_->body_text.data(), (UINT)data_->body_text.length(),
                  &rc,
                  DT_LEFT | DT_WORDBREAK | DT_NOPREFIX |
@@ -460,9 +457,9 @@ void DesktopNotificationController::Toast::Draw() {
 
     // close button
     {
-        SelectFont(hdc_, captionFont);
-        SetTextColor(hdc_, is_close_hot_ ? foreColor : dimmedColor);
-        ExtTextOut(hdc_, closePos.x, closePos.y, 0, nullptr,
+        SelectFont(hdc_, caption_font);
+        SetTextColor(hdc_, is_close_hot_ ? fore_color : dimmed_color);
+        ExtTextOut(hdc_, close_pos.x, close_pos.y, 0, nullptr,
                    &close, 1, nullptr);
     }
 
@@ -479,87 +476,90 @@ bool DesktopNotificationController::Toast::IsRedrawNeeded() const {
 
 void DesktopNotificationController::Toast::UpdateBufferSize() {
     if (hdc_) {
-        SIZE newSize;
+        SIZE new_size;
         {
-            TEXTMETRIC tmCap = {};
+            TEXTMETRIC tm_cap = {};
             HFONT font = data_->controller->GetCaptionFont();
             if (font) {
                 SelectFont(hdc_, font);
-                if (!GetTextMetrics(hdc_, &tmCap)) return;
+                if (!GetTextMetrics(hdc_, &tm_cap)) return;
             }
 
-            TEXTMETRIC tmBody = {};
+            TEXTMETRIC tm_body = {};
             font = data_->controller->GetBodyFont();
             if (font) {
                 SelectFont(hdc_, font);
-                if (!GetTextMetrics(hdc_, &tmBody)) return;
+                if (!GetTextMetrics(hdc_, &tm_body)) return;
             }
 
-            this->margin_ = { tmCap.tmAveCharWidth * 2, tmCap.tmAscent / 2 };
+            this->margin_ = { tm_cap.tmAveCharWidth * 2, tm_cap.tmAscent / 2 };
 
-            newSize.cx = margin_.cx + (32 * tmCap.tmAveCharWidth) + margin_.cx;
-            newSize.cy = margin_.cy + (tmCap.tmHeight) + margin_.cy;
+            new_size.cx =
+                margin_.cx + (32 * tm_cap.tmAveCharWidth) + margin_.cx;
+            new_size.cy =
+                margin_.cy + (tm_cap.tmHeight) + margin_.cy;
 
             if (!data_->body_text.empty())
-                newSize.cy += margin_.cy + (3 * tmBody.tmHeight);
+                new_size.cy += margin_.cy + (3 * tm_body.tmHeight);
 
             if (data_->image) {
                 BITMAP bm;
                 if (GetObject(data_->image, sizeof(bm), &bm)) {
                     // cap the image size
-                    const int maxDimSize = 80;
+                    const int max_dim_size = 80;
 
                     auto width = bm.bmWidth;
                     auto height = bm.bmHeight;
                     if (width < height) {
-                        if (height > maxDimSize) {
-                            width = width * maxDimSize / height;
-                            height = maxDimSize;
+                        if (height > max_dim_size) {
+                            width = width * max_dim_size / height;
+                            height = max_dim_size;
                         }
                     } else {
-                        if (width > maxDimSize) {
-                            height = height * maxDimSize / width;
-                            width = maxDimSize;
+                        if (width > max_dim_size) {
+                            height = height * max_dim_size / width;
+                            width = max_dim_size;
                         }
                     }
 
                     ScreenMetrics scr;
-                    SIZE imageDrawSize = { scr.X(width), scr.Y(height) };
+                    SIZE image_draw_size = { scr.X(width), scr.Y(height) };
 
-                    newSize.cx += imageDrawSize.cx + margin_.cx;
+                    new_size.cx += image_draw_size.cx + margin_.cx;
 
-                    auto heightWithImage =
-                        margin_.cy + (imageDrawSize.cy) + margin_.cy;
-                    if (newSize.cy < heightWithImage)
-                        newSize.cy = heightWithImage;
+                    auto height_with_image =
+                        margin_.cy + (image_draw_size.cy) + margin_.cy;
 
-                    UpdateScaledImage(imageDrawSize);
+                    if (new_size.cy < height_with_image)
+                        new_size.cy = height_with_image;
+
+                    UpdateScaledImage(image_draw_size);
                 }
             }
         }
 
-        if (newSize.cx != this->toast_size_.cx ||
-           newSize.cy != this->toast_size_.cy) {
-            HDC hdcScreen = GetDC(NULL);
-            auto newBitmap = CreateCompatibleBitmap(hdcScreen,
-                                                    newSize.cx, newSize.cy);
-            ReleaseDC(NULL, hdcScreen);
+        if (new_size.cx != this->toast_size_.cx ||
+            new_size.cy != this->toast_size_.cy) {
+            HDC hdc_screen = GetDC(NULL);
+            auto new_bitmap = CreateCompatibleBitmap(hdc_screen,
+                                                     new_size.cx, new_size.cy);
+            ReleaseDC(NULL, hdc_screen);
 
-            if (newBitmap) {
-                if (SelectBitmap(hdc_, newBitmap)) {
+            if (new_bitmap) {
+                if (SelectBitmap(hdc_, new_bitmap)) {
                     RECT dirty1 = {}, dirty2 = {};
-                    if (toast_size_.cx < newSize.cx) {
+                    if (toast_size_.cx < new_size.cx) {
                         dirty1 = { toast_size_.cx, 0,
-                                   newSize.cx, toast_size_.cy };
+                                   new_size.cx, toast_size_.cy };
                     }
-                    if (toast_size_.cy < newSize.cy) {
+                    if (toast_size_.cy < new_size.cy) {
                         dirty2 = { 0, toast_size_.cy,
-                                   newSize.cx, newSize.cy };
+                                   new_size.cx, new_size.cy };
                     }
 
                     if (this->bitmap_) DeleteBitmap(this->bitmap_);
-                    this->bitmap_ = newBitmap;
-                    this->toast_size_ = newSize;
+                    this->bitmap_ = new_bitmap;
+                    this->toast_size_ = new_size;
 
                     Invalidate();
 
@@ -589,7 +589,7 @@ void DesktopNotificationController::Toast::UpdateBufferSize() {
                     return;
                 }
 
-                DeleteBitmap(newBitmap);
+                DeleteBitmap(new_bitmap);
             }
         }
     }
@@ -598,8 +598,8 @@ void DesktopNotificationController::Toast::UpdateBufferSize() {
 void DesktopNotificationController::Toast::UpdateScaledImage(const SIZE& size) {
     BITMAP bm;
     if (!GetObject(scaled_image_, sizeof(bm), &bm) ||
-       bm.bmWidth != size.cx ||
-       bm.bmHeight != size.cy) {
+        bm.bmWidth != size.cx ||
+        bm.bmHeight != size.cy) {
         if (scaled_image_) DeleteBitmap(scaled_image_);
         scaled_image_ = StretchBitmap(data_->image, size.cx, size.cy);
     }
@@ -680,7 +680,7 @@ HDWP DesktopNotificationController::Toast::Animate(
     if (IsRedrawNeeded())
         Draw();
 
-    POINT srcOrigin = { 0, 0 };
+    POINT src_origin = { 0, 0 };
 
     UPDATELAYEREDWINDOWINFO ulw;
     ulw.cbSize = sizeof(ulw);
@@ -688,7 +688,7 @@ HDWP DesktopNotificationController::Toast::Animate(
     ulw.pptDst = nullptr;
     ulw.psize = nullptr;
     ulw.hdcSrc = hdc_;
-    ulw.pptSrc = &srcOrigin;
+    ulw.pptSrc = &src_origin;
     ulw.crKey = 0;
     ulw.pblend = nullptr;
     ulw.dwFlags = 0;
@@ -700,41 +700,41 @@ HDWP DesktopNotificationController::Toast::Animate(
     UINT dwpFlags = SWP_NOACTIVATE | SWP_SHOWWINDOW |
                     SWP_NOREDRAW | SWP_NOCOPYBITS;
 
-    auto easeInPos = AnimateEaseIn();
-    auto easeOutPos = AnimateEaseOut();
-    auto stackCollapsePos = AnimateStackCollapse();
+    auto ease_in_pos = AnimateEaseIn();
+    auto ease_out_pos = AnimateEaseOut();
+    auto stack_collapse_pos = AnimateStackCollapse();
 
-    auto yOffset = (vertical_pos_target_ - vertical_pos_) * stackCollapsePos;
+    auto y_offset = (vertical_pos_target_ - vertical_pos_) * stack_collapse_pos;
 
-    size.cx = static_cast<int>(toast_size_.cx * easeInPos);
+    size.cx = static_cast<int>(toast_size_.cx * ease_in_pos);
     size.cy = toast_size_.cy;
 
     pt.x = origin.x - size.cx;
-    pt.y = static_cast<int>(origin.y - vertical_pos_ - yOffset - size.cy);
+    pt.y = static_cast<int>(origin.y - vertical_pos_ - y_offset - size.cy);
 
     ulw.pptDst = &pt;
     ulw.psize = &size;
 
-    if (ease_in_active_ && easeInPos == 1.0f) {
+    if (ease_in_active_ && ease_in_pos == 1.0f) {
         ease_in_active_ = false;
         ScheduleDismissal();
     }
 
-    this->ease_in_pos_ = easeInPos;
-    this->stack_collapse_pos_ = stackCollapsePos;
+    this->ease_in_pos_ = ease_in_pos;
+    this->stack_collapse_pos_ = stack_collapse_pos;
 
-    if (easeOutPos != this->ease_out_pos_) {
+    if (ease_out_pos != this->ease_out_pos_) {
         blend.BlendOp = AC_SRC_OVER;
         blend.BlendFlags = 0;
-        blend.SourceConstantAlpha = (BYTE)(255 * (1.0f - easeOutPos));
+        blend.SourceConstantAlpha = (BYTE)(255 * (1.0f - ease_out_pos));
         blend.AlphaFormat = 0;
 
         ulw.pblend = &blend;
         ulw.dwFlags = ULW_ALPHA;
 
-        this->ease_out_pos_ = easeOutPos;
+        this->ease_out_pos_ = ease_out_pos;
 
-        if (easeOutPos == 1.0f) {
+        if (ease_out_pos == 1.0f) {
             ease_out_active_ = false;
 
             dwpFlags &= ~SWP_SHOWWINDOW;
@@ -742,7 +742,7 @@ HDWP DesktopNotificationController::Toast::Animate(
         }
     }
 
-    if (stackCollapsePos == 1.0f) {
+    if (stack_collapse_pos == 1.0f) {
         vertical_pos_ = vertical_pos_target_;
     }
 
@@ -751,7 +751,7 @@ HDWP DesktopNotificationController::Toast::Animate(
     // ULWI fails, which can happen when one of the dimensions is zero (e.g.
     // at the beginning of ease-in).
 
-    auto ulwResult = UpdateLayeredWindowIndirect(hwnd_, &ulw);
+    auto ulw_result = UpdateLayeredWindowIndirect(hwnd_, &ulw);
     hdwp = DeferWindowPos(hdwp, hwnd_, HWND_TOPMOST,
                           pt.x, pt.y, size.cx, size.cy, dwpFlags);
     return hdwp;
