@@ -19,4 +19,16 @@ AtomContentUtilityClient::AtomContentUtilityClient() {
 AtomContentUtilityClient::~AtomContentUtilityClient() {
 }
 
+bool AtomContentUtilityClient::OnMessageReceived(
+    const IPC::Message& message) {
+#if defined(OS_WIN)
+  for (auto* handler : handlers_) {
+    if (handler->OnMessageReceived(message))
+      return true;
+  }
+#endif
+
+  return false;
+}
+
 }  // namespace atom
