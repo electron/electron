@@ -87,10 +87,10 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
 }
 
 bool AtomBrowserClient::ShouldCreateNewSiteInstance(
+    content::RenderFrameHost* render_frame_host,
     content::BrowserContext* browser_context,
     content::SiteInstance* current_instance,
     const GURL& url) {
-
   if (url.SchemeIs(url::kJavaScriptScheme))
     // "javacript:" scheme should always use same SiteInstance
     return false;
@@ -183,6 +183,7 @@ std::string AtomBrowserClient::GetApplicationLocale() {
 }
 
 void AtomBrowserClient::OverrideSiteInstanceForNavigation(
+    content::RenderFrameHost* render_frame_host,
     content::BrowserContext* browser_context,
     content::SiteInstance* current_instance,
     const GURL& url,
@@ -192,7 +193,8 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     return;
   }
 
-  if (!ShouldCreateNewSiteInstance(browser_context, current_instance, url))
+  if (!ShouldCreateNewSiteInstance(render_frame_host, browser_context,
+                                   current_instance, url))
     return;
 
   scoped_refptr<content::SiteInstance> site_instance =

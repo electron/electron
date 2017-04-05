@@ -54,6 +54,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
                            content::WebPreferences* prefs) override;
   std::string GetApplicationLocale() override;
   void OverrideSiteInstanceForNavigation(
+      content::RenderFrameHost* render_frame_host,
       content::BrowserContext* browser_context,
       content::SiteInstance* current_instance,
       const GURL& dest_url,
@@ -111,7 +112,8 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
 
  private:
-  bool ShouldCreateNewSiteInstance(content::BrowserContext* browser_context,
+  bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,
+                                   content::BrowserContext* browser_context,
                                    content::SiteInstance* current_instance,
                                    const GURL& dest_url);
   struct ProcessPreferences {
