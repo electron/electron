@@ -61,11 +61,11 @@ bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
   // Read in optional args arg
   std::vector<base::string16> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty())
-    *exe = base::StringPrintf(L"\"%s\" %s \"%%1\"",
+    *exe = base::StringPrintf(L"\"%ls\" %ls \"%%1\"",
                               exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
   else
-    *exe = base::StringPrintf(L"\"%s\" \"%%1\"", exe->c_str());
+    *exe = base::StringPrintf(L"\"%ls\" \"%%1\"", exe->c_str());
   return true;
 }
 
@@ -76,8 +76,7 @@ bool FormatCommandLineString(base::string16* exe,
   }
 
   if (!launch_args.empty()) {
-    base::string16 formatString = L"%s %s";
-    *exe = base::StringPrintf(formatString.c_str(),
+    *exe = base::StringPrintf(L"%ls %ls",
                               exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
   }
