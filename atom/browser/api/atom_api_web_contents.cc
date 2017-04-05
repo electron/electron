@@ -418,12 +418,18 @@ WebContents::~WebContents() {
 
     RenderViewDeleted(web_contents()->GetRenderViewHost());
 
-    if (type_ == BROWSER_WINDOW && owner_window()) {
-      owner_window()->CloseContents(nullptr);
-    } else if (type_ == WEB_VIEW) {
+    if (type_ == WEB_VIEW) {
       DestroyWebContents(false /* async */);
     } else {
-      DestroyWebContents(true /* async */);
+      if (type_ == BROWSER_WINDOW && owner_window()) {
+        owner_window()->CloseContents(nullptr);
+      } else {
+        DestroyWebContents(true /* async */);
+      }
+      // The WebContentsDestroyed will not be called automatically because we
+      // destroy the webContents in the next tick. So we have to manually
+      // call it here to make sure "destroyed" event is emitted.
+      WebContentsDestroyed();
     }
   }
 }
