@@ -260,7 +260,7 @@ DesktopNotificationController::Notification
     data->image = CopyBitmap(image);
 
     // Enqueue new notification
-    Notification ret = *queue_.insert(queue_.end(), move(data));
+    Notification ret { *queue_.insert(queue_.end(), move(data)) };
     CheckQueue();
     return ret;
 }

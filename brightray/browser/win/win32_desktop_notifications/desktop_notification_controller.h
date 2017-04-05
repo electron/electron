@@ -11,7 +11,7 @@ struct NotificationData;
 
 class DesktopNotificationController {
  public:
-    DesktopNotificationController(unsigned maximumToasts = 3);
+    explicit DesktopNotificationController(unsigned maximumToasts = 3);
     ~DesktopNotificationController();
 
     class Notification;
@@ -43,7 +43,7 @@ class DesktopNotificationController {
     // the `controller` member is cleared when the controller object
     // stops tracking the notification
     struct NotificationLink : std::shared_ptr<NotificationData> {
-        NotificationLink(DesktopNotificationController* controller);
+        explicit NotificationLink(DesktopNotificationController* controller);
         ~NotificationLink();
 
         NotificationLink(NotificationLink&&) = default;
@@ -90,7 +90,7 @@ class DesktopNotificationController {
 class DesktopNotificationController::Notification {
  public:
     Notification() = default;
-    Notification(const std::shared_ptr<NotificationData>& data);
+    explicit Notification(const std::shared_ptr<NotificationData>& data);
 
     bool operator==(const Notification& other) const;
 
