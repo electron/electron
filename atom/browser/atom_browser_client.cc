@@ -96,9 +96,20 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     return false;
 
   int process_id = current_instance->GetProcess()->GetID();
-  if (!IsRendererSandboxed(process_id))
-    // non-sandboxed renderers should always create a new SiteInstance
-    return true;
+  if (!IsRendererSandboxed(process_id)) {
+    if (!RendererUsesNativeWindowOpen(process_id)) {
+      // non-sandboxed renderers without native window.open should always create
+      // a new SiteInstance
+      return true;
+    }
+    auto web_contents =
+        content::WebContents::FromRenderFrameHost(render_frame_host);
+    if (root_web_contents_.find(web_contents) != root_web_contents_.end()) {
+      // non-sandboxed renderers with native.window.open always create a new
+      // SiteInstance in the root webcontents.
+      return true;
+    }
+  }
 
   // Create new a SiteInstance if navigating to a different site.
   auto src_url = current_instance->GetSiteURL();
@@ -149,6 +160,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   AddProcessPreferences(host->GetID(), process_prefs);
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
+
+  new RootWebContentsTracker(web_contents, this);
 }
 
 content::SpeechRecognitionManagerDelegate*
@@ -390,6 +403,18 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
     }
   }
   RemoveProcessPreferences(process_id);
+}
+
+AtomBrowserClient::RootWebContentsTracker::RootWebContentsTracker(
+    content::WebContents* web_contents,
+    AtomBrowserClient* client)
+    : content::WebContentsObserver(web_contents), client_(client) {
+  client->root_web_contents_.insert(web_contents);
+}
+
+void AtomBrowserClient::RootWebContentsTracker::WebContentsDestroyed() {
+  client_->root_web_contents_.erase(web_contents());
+  delete this;
 }
 
 }  // namespace atom

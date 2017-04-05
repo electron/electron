@@ -12,6 +12,7 @@
 
 #include "brightray/browser/browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "content/public/browser/web_contents_observer.h"
 
 namespace content {
 class QuotaPermissionContext;
@@ -135,6 +136,18 @@ class AtomBrowserClient : public brightray::BrowserClient,
       resource_dispatcher_host_delegate_;
 
   Delegate* delegate_;
+
+  class RootWebContentsTracker : public content::WebContentsObserver {
+   public:
+    RootWebContentsTracker(content::WebContents* web_contents,
+                           AtomBrowserClient* client);
+    void WebContentsDestroyed() override;
+
+   private:
+    AtomBrowserClient* client_;
+  };
+
+  std::set<content::WebContents*> root_web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };
