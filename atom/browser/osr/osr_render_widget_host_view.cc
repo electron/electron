@@ -16,10 +16,11 @@
 #include "components/display_compositor/gl_helper.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/renderer_host/render_widget_host_view_frame_subscriber.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
-#include "content/public/browser/render_widget_host_view_frame_subscriber.h"
+#include "media/base/video_frame.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"
@@ -337,6 +338,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
     const OnPaintCallback& callback,
     content::RenderWidgetHost* host,
+    bool is_guest_view_hack,
     NativeWindow* native_window)
     : render_widget_host_(content::RenderWidgetHostImpl::From(host)),
       native_window_(native_window),
@@ -355,19 +357,23 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   render_widget_host_->SetView(this);
 
 #if !defined(OS_MACOSX)
-  content::ImageTransportFactory* factory =
-      content::ImageTransportFactory::GetInstance();
   delegated_frame_host_ = base::MakeUnique<content::DelegatedFrameHost>(
-      factory->GetContextFactory()->AllocateFrameSinkId(), this);
+      AllocateFrameSinkId(is_guest_view_hack), this);
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 #endif
 
 #if defined(OS_MACOSX)
-  CreatePlatformWidget();
+  CreatePlatformWidget(is_guest_view_hack);
 #else
+  // On macOS the ui::Compositor is created/owned by the platform view.
+  content::ImageTransportFactory* factory =
+      content::ImageTransportFactory::GetInstance();
+  ui::ContextFactoryPrivate* context_factory_private =
+      factory->GetContextFactoryPrivate();
   compositor_.reset(
-      new ui::Compositor(content::GetContextFactory(),
+      new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
+                         content::GetContextFactory(), context_factory_private,
                          base::ThreadTaskRunnerHandle::Get()));
   compositor_->SetAcceleratedWidget(native_window_->GetAcceleratedWidget());
   compositor_->SetRootLayer(root_layer_.get());
@@ -399,6 +405,17 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
 #endif
 }
 
+void OffScreenRenderWidgetHostView::OnWindowResize() {
+  // In offscreen mode call RenderWidgetHostView's SetSize explicitly
+  auto size = native_window_->GetSize();
+  SetSize(size);
+}
+
+void OffScreenRenderWidgetHostView::OnWindowClosed() {
+  native_window_->RemoveObserver(this);
+  native_window_ = nullptr;
+}
+
 void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
   const base::TimeTicks frame_time = base::TimeTicks::Now();
   const base::TimeDelta vsync_period =
@@ -416,10 +433,17 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(
 
   base::TimeTicks deadline = display_time - estimated_browser_composite_time;
 
+  const cc::BeginFrameArgs& begin_frame_args =
+      cc::BeginFrameArgs::Create(BEGINFRAME_FROM_HERE,
+                                 begin_frame_source_.source_id(),
+                                 begin_frame_number_, frame_time, deadline,
+                                 vsync_period, cc::BeginFrameArgs::NORMAL);
+  DCHECK(begin_frame_args.IsValid());
+  begin_frame_number_++;
+
   render_widget_host_->Send(new ViewMsg_BeginFrame(
       render_widget_host_->GetRoutingID(),
-      cc::BeginFrameArgs::Create(BEGINFRAME_FROM_HERE, frame_time, deadline,
-                                 vsync_period, cc::BeginFrameArgs::NORMAL)));
+      begin_frame_args));
 }
 
 bool OffScreenRenderWidgetHostView::OnMessageReceived(
@@ -481,7 +505,7 @@ bool OffScreenRenderWidgetHostView::HasFocus() const {
 }
 
 bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() const {
-  return GetDelegatedFrameHost()->CanCopyToBitmap();
+  return GetDelegatedFrameHost()->CanCopyFromCompositingSurface();
 }
 
 void OffScreenRenderWidgetHostView::Show() {
@@ -561,7 +585,7 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
     last_scroll_offset_ = frame.metadata.root_scroll_offset;
   }
 
-  if (frame.delegated_frame_data) {
+  if (!frame.render_pass_list.empty()) {
     if (software_output_device_) {
       if (!begin_frame_timer_.get()) {
         software_output_device_->SetActive(painting_);
@@ -569,13 +593,11 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
 
       // The compositor will draw directly to the SoftwareOutputDevice which
       // then calls OnPaint.
-#if defined(OS_MACOSX)
-      browser_compositor_->SwapCompositorFrame(output_surface_id,
-                                               std::move(frame));
-#else
-      delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
-                                                std::move(frame));
-#endif
+      // We would normally call BrowserCompositorMac::SwapCompositorFrame on
+      // macOS, however it contains compositor resize logic that we don't want.
+      // Consequently we instead call the SwapDelegatedFrame method directly.
+      GetDelegatedFrameHost()->SwapDelegatedFrame(output_surface_id,
+                                                  std::move(frame));
     } else {
       if (!copy_frame_generator_.get()) {
         copy_frame_generator_.reset(
@@ -584,20 +606,17 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
 
       // Determine the damage rectangle for the current frame. This is the same
       // calculation that SwapDelegatedFrame uses.
-      cc::RenderPass* root_pass =
-          frame.delegated_frame_data->render_pass_list.back().get();
+      cc::RenderPass* root_pass = frame.render_pass_list.back().get();
       gfx::Size frame_size = root_pass->output_rect.size();
       gfx::Rect damage_rect =
           gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
       damage_rect.Intersect(gfx::Rect(frame_size));
 
-#if defined(OS_MACOSX)
-      browser_compositor_->SwapCompositorFrame(output_surface_id,
-                                               std::move(frame));
-#else
-      delegated_frame_host_->SwapDelegatedFrame(output_surface_id,
-                                                std::move(frame));
-#endif
+      // We would normally call BrowserCompositorMac::SwapCompositorFrame on
+      // macOS, however it contains compositor resize logic that we don't want.
+      // Consequently we instead call the SwapDelegatedFrame method directly.
+      GetDelegatedFrameHost()->SwapDelegatedFrame(output_surface_id,
+                                                  std::move(frame));
 
       // Request a copy of the last compositor frame which will eventually call
       // OnPaint asynchronously.
@@ -647,7 +666,7 @@ void OffScreenRenderWidgetHostView::SelectionBoundsChanged(
   const ViewHostMsg_SelectionBounds_Params &) {
 }
 
-void OffScreenRenderWidgetHostView::CopyFromCompositingSurface(
+void OffScreenRenderWidgetHostView::CopyFromSurface(
     const gfx::Rect& src_subrect,
     const gfx::Size& dst_size,
     const content::ReadbackRequestCallback& callback,
@@ -656,16 +675,12 @@ void OffScreenRenderWidgetHostView::CopyFromCompositingSurface(
     src_subrect, dst_size, callback, preferred_color_type);
 }
 
-void OffScreenRenderWidgetHostView::CopyFromCompositingSurfaceToVideoFrame(
+void OffScreenRenderWidgetHostView::CopyFromSurfaceToVideoFrame(
     const gfx::Rect& src_subrect,
-    const scoped_refptr<media::VideoFrame>& target,
+    scoped_refptr<media::VideoFrame> target,
     const base::Callback<void(const gfx::Rect&, bool)>& callback) {
   GetDelegatedFrameHost()->CopyFromCompositingSurfaceToVideoFrame(
     src_subrect, target, callback);
-}
-
-bool OffScreenRenderWidgetHostView::CanCopyToVideoFrame() const {
-  return GetDelegatedFrameHost()->CanCopyToVideoFrame();
 }
 
 void OffScreenRenderWidgetHostView::BeginFrameSubscription(
@@ -683,12 +698,6 @@ bool OffScreenRenderWidgetHostView::HasAcceleratedSurface(const gfx::Size &) {
 
 gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
-}
-
-void OffScreenRenderWidgetHostView::LockCompositingSurface() {
-}
-
-void OffScreenRenderWidgetHostView::UnlockCompositingSurface() {
 }
 
 void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
@@ -751,6 +760,40 @@ void OffScreenRenderWidgetHostView::SetBeginFrameSource(
 }
 
 #endif  // !defined(OS_MACOSX)
+
+bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpace(
+    const gfx::Point& point,
+    const cc::SurfaceId& original_surface,
+    gfx::Point* transformed_point) {
+  // Transformations use physical pixels rather than DIP, so conversion
+  // is necessary.
+  gfx::Point point_in_pixels =
+      gfx::ConvertPointToPixel(scale_factor_, point);
+  if (!GetDelegatedFrameHost()->TransformPointToLocalCoordSpace(
+          point_in_pixels, original_surface, transformed_point)) {
+    return false;
+  }
+
+  *transformed_point =
+      gfx::ConvertPointToDIP(scale_factor_, *transformed_point);
+  return true;
+}
+
+bool OffScreenRenderWidgetHostView::TransformPointToCoordSpaceForView(
+    const gfx::Point& point,
+    RenderWidgetHostViewBase* target_view,
+    gfx::Point* transformed_point) {
+  if (target_view == this) {
+    *transformed_point = point;
+    return true;
+  }
+
+  // In TransformPointToLocalCoordSpace() there is a Point-to-Pixel conversion,
+  // but it is not necessary here because the final target view is responsible
+  // for converting before computing the final transform.
+  return GetDelegatedFrameHost()->TransformPointToCoordSpaceForView(
+      point, target_view, transformed_point);
+}
 
 std::unique_ptr<cc::SoftwareOutputDevice>
   OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(
@@ -894,15 +937,20 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer() {
   GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels);
 }
 
-void OffScreenRenderWidgetHostView::OnWindowResize() {
-  // In offscreen mode call RenderWidgetHostView's SetSize explicitly
-  auto size = native_window_->GetSize();
-  SetSize(size);
-}
-
-void OffScreenRenderWidgetHostView::OnWindowClosed() {
-  native_window_->RemoveObserver(this);
-  native_window_ = nullptr;
+cc::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
+    bool is_guest_view_hack) {
+  // GuestViews have two RenderWidgetHostViews and so we need to make sure
+  // we don't have FrameSinkId collisions.
+  // The FrameSinkId generated here must be unique with FrameSinkId allocated
+  // in ContextFactoryPrivate.
+  content::ImageTransportFactory* factory =
+      content::ImageTransportFactory::GetInstance();
+  return is_guest_view_hack
+          ? factory->GetContextFactoryPrivate()->AllocateFrameSinkId()
+          : cc::FrameSinkId(base::checked_cast<uint32_t>(
+                                render_widget_host_->GetProcess()->GetID()),
+                            base::checked_cast<uint32_t>(
+                                render_widget_host_->GetRoutingID()));
 }
 
 }  // namespace atom

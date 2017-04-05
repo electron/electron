@@ -32,8 +32,7 @@ bool FrameSubscriber::ShouldCaptureFrame(
     base::TimeTicks present_time,
     scoped_refptr<media::VideoFrame>* storage,
     DeliverFrameCallback* callback) {
-  const auto host = view_ ? view_->GetRenderWidgetHost() : nullptr;
-  if (!view_ || !host)
+  if (!view_)
     return false;
 
   if (dirty_rect.IsEmpty())
@@ -54,7 +53,7 @@ bool FrameSubscriber::ShouldCaptureFrame(
 
   rect = gfx::Rect(rect.origin(), bitmap_size);
 
-  host->CopyFromBackingStore(
+  view_->CopyFromSurface(
       rect,
       rect.size(),
       base::Bind(&FrameSubscriber::OnFrameDelivered,

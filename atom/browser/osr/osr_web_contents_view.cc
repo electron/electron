@@ -79,7 +79,8 @@ content::RenderWidgetHostViewBase*
     content::RenderWidgetHost* render_widget_host, bool is_guest_view_hack) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   view_ = new OffScreenRenderWidgetHostView(
-      transparent_, callback_, render_widget_host, relay->window.get());
+      transparent_, callback_, render_widget_host,
+      is_guest_view_hack, relay->window.get());
   return view_;
 }
 
@@ -88,7 +89,7 @@ content::RenderWidgetHostViewBase*
     content::RenderWidgetHost* render_widget_host) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   view_ = new OffScreenRenderWidgetHostView(
-      transparent_, callback_, render_widget_host, relay->window.get());
+      transparent_, callback_, render_widget_host, false, relay->window.get());
   return view_;
 }
 
