@@ -159,6 +159,7 @@ void PrintViewManagerBase::OnDidPrintPage(
 
   ShouldQuitFromInnerMessageLoop();
 #else
+  print_job_->AppendPrintedPage(params.page_number);
   if (metafile_must_be_valid) {
     bool print_text_with_gdi =
         document->settings().print_text_with_gdi() &&
