@@ -27,4 +27,4 @@ private:
     void OnNotificationDismissed(Notification& notification) override;
 };
 
-}  // namespace
+}   // namespace brightray

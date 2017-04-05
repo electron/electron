@@ -103,4 +103,4 @@ private:
     friend class DesktopNotificationController;
 };
 
-}
+}   // namespace brightray

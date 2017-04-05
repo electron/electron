@@ -94,4 +94,4 @@ private:
     float ease_in_pos_ = 0, ease_out_pos_ = 0, stack_collapse_pos_ = 0;
 };
 
-}
+}   // namespace brightray

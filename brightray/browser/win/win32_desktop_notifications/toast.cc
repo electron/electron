@@ -819,4 +819,4 @@ float DesktopNotificationController::Toast::AnimateStackCollapse() {
     return pos;
 }
 
-}
+}   // namespace brightray

@@ -55,4 +55,4 @@ void Win32Notification::Dismiss() {
     notification_ref_.Close();
 }
 
-}
+}   // namespace brightray

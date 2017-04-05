@@ -29,4 +29,4 @@ private:
     std::string tag_;
 };
 
-}
+}   // namespace brightray

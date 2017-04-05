@@ -52,4 +52,4 @@ struct ScreenMetrics {
     template<class T> T Y(T value) const { return ScaleForDpi(value, dpi_y); }
 };
 
-}
+}   // namespace brightray

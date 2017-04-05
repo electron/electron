@@ -401,4 +401,4 @@ DesktopNotificationController::NotificationLink::~NotificationLink() {
     if (p) p->controller = nullptr;
 }
 
-}
+}   // namespace brightray

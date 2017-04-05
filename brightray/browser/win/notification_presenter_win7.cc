@@ -42,4 +42,4 @@ void NotificationPresenterWin7::OnNotificationDismissed(
     if (n) n->NotificationDismissed();
 }
 
-}
+}   // namespace brightray
