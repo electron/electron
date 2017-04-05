@@ -42,8 +42,7 @@ void Win32Notification::Show(
         existing->tag_.clear();
         this->notification_ref_ = std::move(existing->notification_ref_);
         this->notification_ref_.Set(title, msg, image);
-    }
-    else {
+    } else {
         this->notification_ref_ = presenter->AddNotification(title, msg, image);
     }
 

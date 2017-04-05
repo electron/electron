@@ -32,8 +32,7 @@ static COLORREF GetAccentColor() {
                             GetGValue(color),
                             GetBValue(color));
                 success = true;
-            }
-            else if (
+            } else if (
                 RegQueryValueEx(hkey, TEXT("ColorizationColor"), nullptr,
                                 &type,
                                 reinterpret_cast<BYTE*>(&color),
@@ -517,8 +516,7 @@ void DesktopNotificationController::Toast::UpdateBufferSize() {
                             width = width * maxDimSize / height;
                             height = maxDimSize;
                         }
-                    }
-                    else {
+                    } else {
                         if (width > maxDimSize) {
                             height = height * maxDimSize / width;
                             width = maxDimSize;
