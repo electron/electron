@@ -104,6 +104,10 @@ describe('BrowserWindow module', function () {
             response.statusCode = '200'
             response.end('hello')
             break
+          case '/title':
+            response.statusCode = '200'
+            response.end('<title>Hello</title>')
+            break
           default:
             done('unsupported endpoint')
         }
@@ -148,6 +152,7 @@ describe('BrowserWindow module', function () {
         { name: 'did-get-redirect-request', url: `${server.url}/301` },
         { name: 'did-get-response-details', url: `${server.url}/200` },
         { name: 'dom-ready', url: `${server.url}/200` },
+        { name: 'page-title-updated', url: `${server.url}/title` },
         { name: 'did-stop-loading', url: `${server.url}/200` },
         { name: 'did-finish-load', url: `${server.url}/200` },
         { name: 'did-frame-finish-load', url: `${server.url}/200` },

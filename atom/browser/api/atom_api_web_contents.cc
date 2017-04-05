@@ -829,10 +829,8 @@ void WebContents::DidFinishNavigation(
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
                               bool explicit_set) {
-  if (entry)
-    Emit("-page-title-updated", entry->GetTitle(), explicit_set);
-  else
-    Emit("-page-title-updated", "", explicit_set);
+  auto title = entry ? entry->GetTitle() : base::string16();
+  Emit("page-title-updated", title, explicit_set);
 }
 
 void WebContents::DidUpdateFaviconURL(
