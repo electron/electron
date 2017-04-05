@@ -5,7 +5,7 @@
 namespace brightray {
 
 class Win32Notification : public brightray::Notification {
-public:
+ public:
     Win32Notification(NotificationDelegate* delegate,
                       NotificationPresenterWin7* presenter) :
         Notification(delegate, presenter) {
@@ -23,7 +23,7 @@ public:
         return tag_;
     }
 
-private:
+ private:
     DISALLOW_COPY_AND_ASSIGN(Win32Notification);
     DesktopNotificationController::Notification notification_ref_;
     std::string tag_;

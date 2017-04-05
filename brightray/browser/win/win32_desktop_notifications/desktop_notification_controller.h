@@ -10,7 +10,7 @@ namespace brightray {
 struct NotificationData;
 
 class DesktopNotificationController {
-public:
+ public:
     DesktopNotificationController(unsigned maximumToasts = 3);
     ~DesktopNotificationController();
 
@@ -20,18 +20,18 @@ public:
     void CloseNotification(Notification& notification);
 
     // Event handlers -- override to receive the events
-private:
+ private:
     virtual void OnNotificationClosed(Notification& notification) {}
     virtual void OnNotificationClicked(Notification& notification) {}
     virtual void OnNotificationDismissed(Notification& notification) {}
 
-private:
+ private:
     static HINSTANCE RegisterWndClasses();
     void StartAnimation();
     HFONT GetCaptionFont();
     HFONT GetBodyFont();
 
-private:
+ private:
     enum TimerID {
         TimerID_Animate = 1
     };
@@ -76,7 +76,7 @@ private:
     HWND GetToast(const NotificationData* data) const;
     void DestroyToast(ToastInstance& inst);
 
-private:
+ private:
     static constexpr const TCHAR class_name_[] =
         TEXT("DesktopNotificationController");
 
@@ -88,7 +88,7 @@ private:
 };
 
 class DesktopNotificationController::Notification {
-public:
+ public:
     Notification() = default;
     Notification(const std::shared_ptr<NotificationData>& data);
 
@@ -97,7 +97,7 @@ public:
     void Close();
     void Set(std::wstring caption, std::wstring bodyText, HBITMAP image);
 
-private:
+ private:
     std::shared_ptr<NotificationData> data_;
 
     friend class DesktopNotificationController;

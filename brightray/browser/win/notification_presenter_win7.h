@@ -9,7 +9,7 @@ class Win32Notification;
 class NotificationPresenterWin7 :
     public NotificationPresenter,
     public DesktopNotificationController {
-public:
+ public:
     NotificationPresenterWin7() = default;
 
     Win32Notification* GetNotificationObjectByRef(
@@ -17,7 +17,7 @@ public:
 
     Win32Notification* GetNotificationObjectByTag(const std::string& tag);
 
-private:
+ private:
     DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin7);
 
     brightray::Notification* CreateNotificationObject(

@@ -4,7 +4,7 @@
 namespace brightray {
 
 class DesktopNotificationController::Toast {
-public:
+ public:
     static void Register(HINSTANCE hInstance);
     static HWND Create(HINSTANCE hInstance,
                        std::shared_ptr<NotificationData>& data);
@@ -40,7 +40,7 @@ public:
         return is_highlighted_;
     }
 
-private:
+ private:
     enum TimerID {
         TimerID_AutoDismiss = 1
     };
@@ -67,7 +67,7 @@ private:
     float AnimateEaseOut();
     float AnimateStackCollapse();
 
-private:
+ private:
     static constexpr const TCHAR class_name_[] =
         TEXT("DesktopNotificationToast");
 
