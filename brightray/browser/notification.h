@@ -47,6 +47,7 @@ class Notification {
  protected:
   Notification(NotificationDelegate* delegate,
                NotificationPresenter* presenter);
+
  public:
   virtual ~Notification();
 
