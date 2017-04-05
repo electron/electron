@@ -34,13 +34,13 @@ URLRequestBufferJob::URLRequestBufferJob(
 
 void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
   const base::BinaryValue* binary = nullptr;
-  if (options->IsType(base::Value::TYPE::DICTIONARY)) {
+  if (options->IsType(base::Value::Type::DICTIONARY)) {
     base::DictionaryValue* dict =
         static_cast<base::DictionaryValue*>(options.get());
     dict->GetString("mimeType", &mime_type_);
     dict->GetString("charset", &charset_);
     dict->GetBinary("data", &binary);
-  } else if (options->IsType(base::Value::TYPE_BINARY)) {
+  } else if (options->IsType(base::Value::Type::BINARY)) {
     options->GetAsBinary(&binary);
   }
 

@@ -185,7 +185,7 @@ std::unique_ptr<net::SourceStream> URLRequestAsarJob::SetUpSourceStream() {
   // Bug 9936 - .svgz files needs to be decompressed.
   return base::LowerCaseEqualsASCII(file_path_.Extension(), ".svgz")
       ? net::GzipSourceStream::Create(std::move(source),
-                                      net::SourceStream::TYPE_GZIP)
+                                      net::SourceStream::Type::GZIP)
       : std::move(source);
 }
 

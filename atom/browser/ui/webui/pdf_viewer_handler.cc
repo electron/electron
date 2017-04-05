@@ -131,7 +131,7 @@ void PdfViewerHandler::GetDefaultZoom(const base::ListValue* args) {
   double zoom_level = host_zoom_map->GetDefaultZoomLevel();
   ResolveJavascriptCallback(
       *callback_id,
-      base::FundamentalValue(content::ZoomLevelToZoomFactor(zoom_level)));
+      base::Value(content::ZoomLevelToZoomFactor(zoom_level)));
 }
 
 void PdfViewerHandler::GetInitialZoom(const base::ListValue* args) {
@@ -145,7 +145,7 @@ void PdfViewerHandler::GetInitialZoom(const base::ListValue* args) {
       content::HostZoomMap::GetZoomLevel(web_ui()->GetWebContents());
   ResolveJavascriptCallback(
       *callback_id,
-      base::FundamentalValue(content::ZoomLevelToZoomFactor(zoom_level)));
+      base::Value(content::ZoomLevelToZoomFactor(zoom_level)));
 }
 
 void PdfViewerHandler::SetZoom(const base::ListValue* args) {
@@ -159,7 +159,7 @@ void PdfViewerHandler::SetZoom(const base::ListValue* args) {
 
   content::HostZoomMap::SetZoomLevel(web_ui()->GetWebContents(),
                                      zoom_level);
-  ResolveJavascriptCallback(*callback_id, base::FundamentalValue(zoom_level));
+  ResolveJavascriptCallback(*callback_id, base::Value(zoom_level));
 }
 
 void PdfViewerHandler::GetStrings(const base::ListValue* args) {
@@ -204,7 +204,7 @@ void PdfViewerHandler::OnZoomLevelChanged(
   if (change.host == kPdfViewerUIHost) {
     CallJavascriptFunction(
         "cr.webUIListenerCallback", base::StringValue("onZoomLevelChanged"),
-        base::FundamentalValue(
+        base::Value(
             content::ZoomLevelToZoomFactor(change.zoom_level)));
   }
 }

@@ -181,7 +181,7 @@ bool Archive::Init() {
   std::string error;
   base::JSONReader reader;
   std::unique_ptr<base::Value> value(reader.ReadToValue(header));
-  if (!value || !value->IsType(base::Value::TYPE::DICTIONARY)) {
+  if (!value || !value->IsType(base::Value::Type::DICTIONARY)) {
     LOG(ERROR) << "Failed to parse header: " << error;
     return false;
   }

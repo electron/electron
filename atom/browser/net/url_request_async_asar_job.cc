@@ -18,10 +18,10 @@ URLRequestAsyncAsarJob::URLRequestAsyncAsarJob(
 
 void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options) {
   base::FilePath::StringType file_path;
-  if (options->IsType(base::Value::TYPE::DICTIONARY)) {
+  if (options->IsType(base::Value::Type::DICTIONARY)) {
     static_cast<base::DictionaryValue*>(options.get())->GetString(
         "path", &file_path);
-  } else if (options->IsType(base::Value::TYPE_STRING)) {
+  } else if (options->IsType(base::Value::Type::STRING)) {
     options->GetAsString(&file_path);
   }
 

@@ -213,13 +213,13 @@ Converter<scoped_refptr<ResourceRequestBodyImpl>>::ToV8(
     std::unique_ptr<base::DictionaryValue> post_data_dict(
         new base::DictionaryValue);
     auto type = element.type();
-    if (type == ResourceRequestBodyImpl::Element::TYPE_BYTES) {
+    if (type == ResourceRequestBodyImpl::Element::Type::BYTES) {
       std::unique_ptr<base::Value> bytes(
           base::BinaryValue::CreateWithCopiedBuffer(
               element.bytes(), static_cast<size_t>(element.length())));
       post_data_dict->SetString("type", "rawData");
       post_data_dict->Set("bytes", std::move(bytes));
-    } else if (type == ResourceRequestBodyImpl::Element::TYPE_FILE) {
+    } else if (type == ResourceRequestBodyImpl::Element::Type::FILE) {
       post_data_dict->SetString("type", "file");
       post_data_dict->SetStringWithoutPathExpansion(
           "filePath", element.path().AsUTF8Unsafe());
@@ -227,7 +227,7 @@ Converter<scoped_refptr<ResourceRequestBodyImpl>>::ToV8(
       post_data_dict->SetInteger("length", static_cast<int>(element.length()));
       post_data_dict->SetDouble(
           "modificationTime", element.expected_modification_time().ToDoubleT());
-    } else if (type == ResourceRequestBodyImpl::Element::TYPE_FILE_FILESYSTEM) {
+    } else if (type == ResourceRequestBodyImpl::Element::Type::FILE_FILESYSTEM) {
       post_data_dict->SetString("type", "fileSystem");
       post_data_dict->SetStringWithoutPathExpansion(
           "fileSystemURL", element.filesystem_url().spec());
@@ -235,7 +235,7 @@ Converter<scoped_refptr<ResourceRequestBodyImpl>>::ToV8(
       post_data_dict->SetInteger("length", static_cast<int>(element.length()));
       post_data_dict->SetDouble(
           "modificationTime", element.expected_modification_time().ToDoubleT());
-    } else if (type == ResourceRequestBodyImpl::Element::TYPE_BLOB) {
+    } else if (type == ResourceRequestBodyImpl::Element::Type::BLOB) {
       post_data_dict->SetString("type", "blob");
       post_data_dict->SetString("blobUUID", element.blob_uuid());
     }

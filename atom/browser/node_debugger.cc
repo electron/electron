@@ -58,7 +58,7 @@ NodeDebugger::NodeDebugger(v8::Isolate* isolate)
 
     // Start a new IO thread.
     base::Thread::Options options;
-    options.message_loop_type = base::MessageLoop::TYPE_IO;
+    options.message_loop_type = base::MessageLoop::Type::IO;
     if (!thread_.StartWithOptions(options)) {
       LOG(ERROR) << "Unable to start debugger thread";
       return;

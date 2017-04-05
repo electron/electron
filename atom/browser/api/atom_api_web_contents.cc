@@ -877,7 +877,7 @@ void WebContents::DevToolsOpened() {
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
 
   // Set inspected tabID.
-  base::FundamentalValue tab_id(ID());
+  base::Value tab_id(ID());
   managed_web_contents()->CallClientFunction(
       "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
 
