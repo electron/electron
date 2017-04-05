@@ -31,9 +31,11 @@ struct ScreenMetrics {
 
     ScreenMetrics() {
         typedef HRESULT WINAPI GetDpiForMonitor_t(HMONITOR, int, UINT*, UINT*);
-        auto GetDpiForMonitor =
-            (GetDpiForMonitor_t*)GetProcAddress(GetModuleHandle(TEXT("shcore")),
-                                                "GetDpiForMonitor");
+
+        auto GetDpiForMonitor = reinterpret_cast<GetDpiForMonitor_t*>(
+            GetProcAddress(GetModuleHandle(TEXT("shcore")),
+                           "GetDpiForMonitor"));
+
         if (GetDpiForMonitor) {
             auto monitor = MonitorFromPoint({}, MONITOR_DEFAULTTOPRIMARY);
             if (GetDpiForMonitor(monitor, 0, &dpi_x, &dpi_y) == S_OK)

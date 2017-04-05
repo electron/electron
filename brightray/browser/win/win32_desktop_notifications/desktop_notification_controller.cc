@@ -174,7 +174,9 @@ void DesktopNotificationController::AnimateAll() {
             POINT origin = { workArea.right,
                              workArea.bottom - metrics.Y(toast_margin_<int>) };
 
-            auto hdwp = BeginDeferWindowPos((int)instances_.size());
+            auto hdwp =
+                BeginDeferWindowPos(static_cast<int>(instances_.size()));
+
             for (auto&& inst : instances_) {
                 if (!inst.hwnd) continue;
 
@@ -183,6 +185,7 @@ void DesktopNotificationController::AnimateAll() {
                 if (!hdwp) break;
                 keepAnimating |= notification->IsAnimationActive();
             }
+
             if (hdwp) EndDeferWindowPos(hdwp);
         }
     }

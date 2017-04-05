@@ -27,7 +27,8 @@ void Win32Notification::Show(
 
             HDC hdcScreen = GetDC(NULL);
             image = CreateDIBitmap(hdcScreen, &bmi, CBM_INIT, icon.getPixels(),
-                                   (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+                                   reinterpret_cast<BITMAPINFO*>(&bmi),
+                                   DIB_RGB_COLORS);
             ReleaseDC(NULL, hdcScreen);
 
             icon.unlockPixels();

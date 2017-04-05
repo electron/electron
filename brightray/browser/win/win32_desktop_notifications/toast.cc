@@ -24,7 +24,7 @@ static COLORREF GetAccentColor() {
             DWORD type, size;
             if (RegQueryValueEx(hkey, TEXT("AccentColor"), nullptr,
                                 &type,
-                                (BYTE*)&color,
+                                reinterpret_cast<BYTE*>(&color),
                                 &(size = sizeof(color))) == ERROR_SUCCESS &&
                 type == REG_DWORD) {
                 // convert from RGBA
@@ -36,7 +36,7 @@ static COLORREF GetAccentColor() {
             else if (
                 RegQueryValueEx(hkey, TEXT("ColorizationColor"), nullptr,
                                 &type,
-                                (BYTE*)&color,
+                                reinterpret_cast<BYTE*>(&color),
                                 &(size = sizeof(color))) == ERROR_SUCCESS &&
                 type == REG_DWORD) {
                 // convert from BGRA
@@ -82,26 +82,32 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
         bmi.biCompression = BI_RGB;
 
         void* alphaSrcBits;
-        alphaSrcBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmi,
+        alphaSrcBitmap = CreateDIBSection(NULL,
+                                          reinterpret_cast<BITMAPINFO*>(&bmi),
                                           DIB_RGB_COLORS, &alphaSrcBits,
                                           NULL, 0);
 
         if (alphaSrcBitmap) {
             if (GetDIBits(hdcScreen, bitmap, 0, 0, 0,
-                         (BITMAPINFO*)&bmi, DIB_RGB_COLORS) &&
+                          reinterpret_cast<BITMAPINFO*>(&bmi),
+                          DIB_RGB_COLORS) &&
                 bmi.biSizeImage > 0 &&
                 (bmi.biSizeImage % 4) == 0) {
-                auto buf = (BYTE*)_aligned_malloc(bmi.biSizeImage,
-                                                  sizeof(DWORD));
+                auto buf = reinterpret_cast<BYTE*>(
+                    _aligned_malloc(bmi.biSizeImage, sizeof(DWORD)));
+
                 if (buf) {
                     GetDIBits(hdcScreen, bitmap, 0, bm.bmHeight, buf,
-                              (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+                              reinterpret_cast<BITMAPINFO*>(&bmi),
+                              DIB_RGB_COLORS);
 
-                    BYTE* dest = (BYTE*)alphaSrcBits;
-                    for (const DWORD *src = (DWORD*)buf,
-                                     *end = (DWORD*)(buf + bmi.biSizeImage);
-                         src != end;
-                         ++src, ++dest) {
+                    const DWORD *src = reinterpret_cast<DWORD*>(buf);
+                    const DWORD *end =
+                        reinterpret_cast<DWORD*>(buf + bmi.biSizeImage);
+
+                    BYTE* dest = reinterpret_cast<BYTE*>(alphaSrcBits);
+
+                    for (; src != end; ++src, ++dest) {
                         BYTE a = *src >> 24;
                         *dest++ = a;
                         *dest++ = a;
@@ -123,12 +129,14 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
         bmi.biCompression = BI_RGB;
 
         void* colorBits;
-        auto colorBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmi,
+        auto colorBitmap = CreateDIBSection(NULL,
+                                            reinterpret_cast<BITMAPINFO*>(&bmi),
                                             DIB_RGB_COLORS, &colorBits,
                                             NULL, 0);
 
         void* alphaBits;
-        auto alphaBitmap = CreateDIBSection(NULL, (BITMAPINFO*)&bmi,
+        auto alphaBitmap = CreateDIBSection(NULL,
+                                            reinterpret_cast<BITMAPINFO*>(&bmi),
                                             DIB_RGB_COLORS, &alphaBits,
                                             NULL, 0);
 
@@ -156,8 +164,8 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
             GdiFlush();
 
             // apply the alpha channel
-            auto dest = (BYTE*)colorBits;
-            auto src = (const BYTE*)alphaBits;
+            auto dest = reinterpret_cast<BYTE*>(colorBits);
+            auto src = reinterpret_cast<const BYTE*>(alphaBits);
             auto end = src + (width * height * 4);
             while (src != end) {
                 dest[3] = src[0];
@@ -167,7 +175,8 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
 
             // create the resulting bitmap
             resultBitmap = CreateDIBitmap(hdcScreen, &bmi, CBM_INIT,
-                                          colorBits, (BITMAPINFO*)&bmi,
+                                          colorBits,
+                                          reinterpret_cast<BITMAPINFO*>(&bmi),
                                           DIB_RGB_COLORS);
         }
 
@@ -657,8 +666,8 @@ void DesktopNotificationController::Toast::SetVerticalPosition(int y) {
         return;
 
     // Make sure the new animation's origin is at the current position
-    vertical_pos_ +=
-        (int)((vertical_pos_target_ - vertical_pos_) * stack_collapse_pos_);
+    vertical_pos_ += static_cast<int>(
+        (vertical_pos_target_ - vertical_pos_) * stack_collapse_pos_);
 
     // Set new target position and start the animation
     vertical_pos_target_ = y;
@@ -699,11 +708,11 @@ HDWP DesktopNotificationController::Toast::Animate(
 
     auto yOffset = (vertical_pos_target_ - vertical_pos_) * stackCollapsePos;
 
-    size.cx = (int)(toast_size_.cx * easeInPos);
+    size.cx = static_cast<int>(toast_size_.cx * easeInPos);
     size.cy = toast_size_.cy;
 
     pt.x = origin.x - size.cx;
-    pt.y = (int)(origin.y - vertical_pos_ - yOffset - size.cy);
+    pt.y = static_cast<int>(origin.y - vertical_pos_ - yOffset - size.cy);
 
     ulw.pptDst = &pt;
     ulw.psize = &size;
