@@ -24,9 +24,10 @@ class Win32Notification : public brightray::Notification {
     }
 
  private:
-    DISALLOW_COPY_AND_ASSIGN(Win32Notification);
     DesktopNotificationController::Notification notification_ref_;
     std::string tag_;
+
+    DISALLOW_COPY_AND_ASSIGN(Win32Notification);
 };
 
 }   // namespace brightray

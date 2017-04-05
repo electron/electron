@@ -18,13 +18,13 @@ class NotificationPresenterWin7 :
     Win32Notification* GetNotificationObjectByTag(const std::string& tag);
 
  private:
-    DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin7);
-
     brightray::Notification* CreateNotificationObject(
         NotificationDelegate* delegate) override;
 
     void OnNotificationClicked(Notification& notification) override;
     void OnNotificationDismissed(Notification& notification) override;
+
+    DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin7);
 };
 
 }   // namespace brightray
