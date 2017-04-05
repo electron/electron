@@ -7,6 +7,7 @@
 #include <string>
 
 #include "atom/common/atom_constants.h"
+#include "base/threading/sequenced_worker_pool.h"
 
 namespace atom {
 

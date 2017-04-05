@@ -33,9 +33,8 @@ void CreateResponseHeadersDictionary(const net::HttpResponseHeaders* headers,
   while (headers->EnumerateHeaderLines(&iter, &header_name, &header_value)) {
     base::Value* existing_value = nullptr;
     if (result->Get(header_name, &existing_value)) {
-      base::StringValue* existing_string_value =
-          static_cast<base::StringValue*>(existing_value);
-      existing_string_value->GetString()->append(", ").append(header_value);
+      std::string src = existing_value->GetString();
+      result->SetString(header_name, src + ", " + header_value);
     } else {
       result->SetString(header_name, header_value);
     }

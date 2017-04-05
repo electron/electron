@@ -1458,7 +1458,7 @@ void NativeWindowMac::SetEscapeTouchBarItem(const mate::PersistentDictionary& it
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
-  switch (event.type) {
+  switch (event.type()) {
     case blink::WebInputEvent::GestureScrollBegin:
     case blink::WebInputEvent::GestureScrollUpdate:
     case blink::WebInputEvent::GestureScrollEnd:

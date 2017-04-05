@@ -167,7 +167,7 @@ base::Value* V8ValueConverter::FromV8Value(
 v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
      v8::Isolate* isolate, const base::Value* value) const {
   switch (value->GetType()) {
-    case base::Value::Type::NULL:
+    case base::Value::Type::NONE:
       return v8::Null(isolate);
 
     case base::Value::Type::BOOLEAN: {
@@ -490,7 +490,7 @@ base::Value* V8ValueConverter::FromV8Object(
     // there *is* a "windowId" property, but since it should be an int, code
     // on the browser which doesn't additionally check for null will fail.
     // We can avoid all bugs related to this by stripping null.
-    if (strip_null_from_objects_ && child->IsType(base::Value::Type::NULL))
+    if (strip_null_from_objects_ && child->IsType(base::Value::Type::NONE))
       continue;
 
     result->SetWithoutPathExpansion(std::string(*name_utf8, name_utf8.length()),

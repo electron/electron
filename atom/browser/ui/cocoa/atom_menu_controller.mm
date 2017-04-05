@@ -87,7 +87,7 @@ Role kRolesMap[] = {
 
   const int count = model->GetItemCount();
   for (int index = 0; index < count; index++) {
-    if (model->GetTypeAt(index) == atom::AtomMenuModel::Type::SEPARATOR)
+    if (model->GetTypeAt(index) == atom::AtomMenuModel::TYPE_SEPARATOR)
       [self addSeparatorToMenu:menu_ atIndex:index];
     else
       [self addItemToMenu:menu_ atIndex:index fromModel:model];
@@ -109,7 +109,7 @@ Role kRolesMap[] = {
 
   const int count = model->GetItemCount();
   for (int index = 0; index < count; index++) {
-    if (model->GetTypeAt(index) == atom::AtomMenuModel::Type::SEPARATOR)
+    if (model->GetTypeAt(index) == atom::AtomMenuModel::TYPE_SEPARATOR)
       [self addSeparatorToMenu:menu atIndex:index];
     else
       [self addItemToMenu:menu atIndex:index fromModel:model];
@@ -145,7 +145,7 @@ Role kRolesMap[] = {
     [item setImage:icon.ToNSImage()];
 
   atom::AtomMenuModel::ItemType type = model->GetTypeAt(index);
-  if (type == atom::AtomMenuModel::Type::SUBMENU) {
+  if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
     // Recursively build a submenu from the sub-model at this index.
     [item setTarget:nil];
     [item setAction:nil];

@@ -225,7 +225,7 @@ void GlobalMenuBarX11::BuildMenuFromModel(AtomMenuModel* model,
     menuitem_property_set_bool(item, kPropertyVisible, model->IsVisibleAt(i));
 
     AtomMenuModel::ItemType type = model->GetTypeAt(i);
-    if (type == AtomMenuModel::Type::SEPARATOR) {
+    if (type == AtomMenuModel::TYPE_SEPARATOR) {
       menuitem_property_set(item, kPropertyType, kTypeSeparator);
     } else {
       std::string label = ui::ConvertAcceleratorsFromWindowsStyle(
@@ -236,7 +236,7 @@ void GlobalMenuBarX11::BuildMenuFromModel(AtomMenuModel* model,
       g_object_set_data(G_OBJECT(item), "model", model);
       SetMenuItemID(item, i);
 
-      if (type == AtomMenuModel::Type::SUBMENU) {
+      if (type == AtomMenuModel::TYPE_SUBMENU) {
         menuitem_property_set(item, kPropertyChildrenDisplay, kDisplaySubmenu);
         g_signal_connect(item, "about-to-show",
                          G_CALLBACK(OnSubMenuShowThunk), this);
@@ -248,10 +248,10 @@ void GlobalMenuBarX11::BuildMenuFromModel(AtomMenuModel* model,
         g_signal_connect(item, "item-activated",
                          G_CALLBACK(OnItemActivatedThunk), this);
 
-        if (type == AtomMenuModel::Type::CHECK ||
-            type == AtomMenuModel::Type::RADIO) {
+        if (type == AtomMenuModel::TYPE_CHECK ||
+            type == AtomMenuModel::TYPE_RADIO) {
           menuitem_property_set(item, kPropertyToggleType,
-              type == AtomMenuModel::Type::CHECK ? kToggleCheck : kToggleRadio);
+              type == AtomMenuModel::TYPE_CHECK ? kToggleCheck : kToggleRadio);
           menuitem_property_set_int(item, kPropertyToggleState,
               model->IsItemCheckedAt(i));
         }

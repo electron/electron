@@ -187,7 +187,7 @@ NativeWindowViews::NativeWindowViews(
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   params.bounds = bounds;
   params.delegate = this;
-  params.type = views::Widget::InitParams::Type::WINDOW;
+  params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.remove_standard_frame = !has_frame();
 
   if (transparent())
