@@ -105,8 +105,10 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     auto web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
     if (root_web_contents_.find(web_contents) != root_web_contents_.end()) {
-      // non-sandboxed renderers with native.window.open always create a new
-      // SiteInstance in the root webcontents.
+      // Root WebContents should always create new process
+      // to make sure native addons are loaded correctly after reload / navigation.
+      // (Non-root WebContents opened by window.open() should try to reuse process
+      //  to allow synchronous cross-window scripting.)
       return true;
     }
   }
