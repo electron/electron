@@ -15,6 +15,10 @@
         const content = popup.document.querySelector('h1').innerText;
         ipcRenderer.send('answer', content);
       };
+    },
+    'native-addon': () => {
+      const runas = require('runas');
+      ipcRenderer.send('answer', typeof runas);
     }
   }
   const test = location.hash.slice(1);
