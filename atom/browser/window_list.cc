@@ -27,6 +27,11 @@ WindowList* WindowList::GetInstance() {
 }
 
 // static
+WindowList::WindowVector WindowList::GetWindows() {
+  return GetInstance()->windows_;
+}
+
+// static
 void WindowList::AddWindow(NativeWindow* window) {
   DCHECK(window);
   // Push |window| on the appropriate list instance.
