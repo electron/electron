@@ -15,8 +15,8 @@
 #include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
+#include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/root_web_contents_tracker.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
@@ -105,7 +105,7 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     }
     auto web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
-    if (RootWebContentsTracker::IsRootWebContents(web_contents)) {
+    if (!ChildWebContentsTracker::IsChildWebContents(web_contents)) {
       // Root WebContents should always create new process
       // to make sure native addons are loaded correctly after reload / navigation.
       // (Non-root WebContents opened by window.open() should try to reuse process
