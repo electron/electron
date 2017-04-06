@@ -9,6 +9,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/root_web_contents_tracker.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -100,6 +101,7 @@ Window::Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
 
     // Creates the WebContents used by BrowserWindow.
     web_contents = WebContents::Create(isolate, web_preferences);
+    new RootWebContentsTracker(web_contents.get()->web_contents());
   }
 
   Init(isolate, wrapper, options, web_contents);

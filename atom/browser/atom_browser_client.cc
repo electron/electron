@@ -16,6 +16,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/root_web_contents_tracker.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
@@ -104,7 +105,7 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     }
     auto web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
-    if (root_web_contents_.find(web_contents) != root_web_contents_.end()) {
+    if (RootWebContentsTracker::IsRootWebContents(web_contents)) {
       // Root WebContents should always create new process
       // to make sure native addons are loaded correctly after reload / navigation.
       // (Non-root WebContents opened by window.open() should try to reuse process
@@ -162,8 +163,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   AddProcessPreferences(host->GetID(), process_prefs);
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
-
-  new RootWebContentsTracker(web_contents, this);
 }
 
 content::SpeechRecognitionManagerDelegate*
@@ -405,18 +404,6 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
     }
   }
   RemoveProcessPreferences(process_id);
-}
-
-AtomBrowserClient::RootWebContentsTracker::RootWebContentsTracker(
-    content::WebContents* web_contents,
-    AtomBrowserClient* client)
-    : content::WebContentsObserver(web_contents), client_(client) {
-  client->root_web_contents_.insert(web_contents);
-}
-
-void AtomBrowserClient::RootWebContentsTracker::WebContentsDestroyed() {
-  client_->root_web_contents_.erase(web_contents());
-  delete this;
 }
 
 }  // namespace atom
