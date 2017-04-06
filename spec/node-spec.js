@@ -92,10 +92,10 @@ describe('node feature', function () {
         })
       })
 
-      it('works when sending message to a forked process using the --eval argument', function (done) {
-        const source = "process.on('message', function (msg) { process.send(msg) })"
+      it('works when sending a message to a process forked with the --eval argument', function (done) {
+        const source = "process.on('message', (message) => { process.send(message) })"
         const forked = ChildProcess.fork('--eval', [source])
-        forked.on('message', (message) => {
+        forked.once('message', (message) => {
           assert.equal(message, 'hello')
           done()
         })
