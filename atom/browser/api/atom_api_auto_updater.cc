@@ -95,8 +95,7 @@ void AutoUpdater::QuitAndInstall() {
 
   // Otherwise do the restart after all windows have been closed.
   window_list->AddObserver(this);
-  for (NativeWindow* window : *window_list)
-    window->Close();
+  WindowList::CloseAllWindows();
 }
 
 // static
