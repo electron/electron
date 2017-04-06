@@ -137,6 +137,16 @@ describe('app module', function () {
         done()
       })
     })
+
+    it('closes all windows', function (done) {
+      var appPath = path.join(__dirname, 'fixtures', 'api', 'exit-closes-all-windows-app')
+      var electronPath = remote.getGlobal('process').execPath
+      appProcess = ChildProcess.spawn(electronPath, [appPath])
+      appProcess.on('close', function (code) {
+        assert.equal(code, 123)
+        done()
+      })
+    })
   })
 
   describe('app.relaunch', function () {
