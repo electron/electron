@@ -32,6 +32,11 @@ WindowList::WindowVector WindowList::GetWindows() {
 }
 
 // static
+bool WindowList::IsEmpty() {
+  return GetInstance()->windows_.empty();
+}
+
+// static
 void WindowList::AddWindow(NativeWindow* window) {
   DCHECK(window);
   // Push |window| on the appropriate list instance.

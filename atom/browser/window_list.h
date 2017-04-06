@@ -20,11 +20,8 @@ class WindowList {
  public:
   typedef std::vector<NativeWindow*> WindowVector;
 
-  bool empty() const { return windows_.empty(); }
-
-  static WindowList* GetInstance();
-
   static WindowVector GetWindows();
+  static bool IsEmpty();
 
   // Adds or removes |window| from the list it is associated with.
   static void AddWindow(NativeWindow* window);
@@ -44,6 +41,8 @@ class WindowList {
   static void DestroyAllWindows();
 
  private:
+  static WindowList* GetInstance();
+
   WindowList();
   ~WindowList();
 
