@@ -96,16 +96,14 @@ void RendererClientBase::RenderThreadStarted() {
 #endif
 
 #if defined(OS_MACOSX)
-  // Disable rubber banding by default.
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (!command_line->HasSwitch(switches::kScrollBounce)) {
-    base::ScopedCFTypeRef<CFStringRef> key(
-        base::SysUTF8ToCFStringRef("NSScrollViewRubberbanding"));
-    base::ScopedCFTypeRef<CFStringRef> value(
-        base::SysUTF8ToCFStringRef("false"));
-    CFPreferencesSetAppValue(key, value, kCFPreferencesCurrentApplication);
-    CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
-  }
+  bool scroll_bounce = command_line->HasSwitch(switches::kScrollBounce);
+  base::ScopedCFTypeRef<CFStringRef> rubber_banding_key(
+    base::SysUTF8ToCFStringRef("NSScrollViewRubberbanding"));
+  CFPreferencesSetAppValue(rubber_banding_key,
+                           scroll_bounce ? kCFBooleanTrue : kCFBooleanFalse,
+                           kCFPreferencesCurrentApplication);
+  CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
 #endif
 }
 
