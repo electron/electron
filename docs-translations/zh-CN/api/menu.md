@@ -19,6 +19,8 @@
 在 macOS 上设置应用菜单 `menu`。
 在 windows 和 linux，是为每个窗口都在其顶部设置菜单 `menu`。
 
+设置为 `null` 时，将在 Windows 和 Linux 上删除菜单条，但在 macOS 系统中无效。
+
 **注意：** 这个API必须在 `app` 模块的 `ready` 事件后调用。
 
 #### `Menu.getApplicationMenu()`
@@ -29,7 +31,7 @@
 
 * `action` String
 
-发送 `action` 给应用的第一个响应器.这个用来模仿 Cocoa 菜单的默认行为，通常你只需要使用 `MenuItem` 的属性 `role`.
+发送 `action` 给应用的第一个响应器.这个用来模仿 Cocoa 菜单的默认行为，通常你只需要使用 [`MenuItem`](menu-item.md) 的属性 [`role`](menu-item.md#roles).
 
 查看更多 macOS 的原生 action [macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7) .
 
@@ -47,15 +49,23 @@
 
 `menu` 对象有如下实例方法
 
-#### `menu.popup([browserWindow, x, y, positioningItem])`
+#### `menu.popup([browserWindow, options])`
 
-* `browserWindow` BrowserWindow (可选) - 默认为 `null`.
-* `x` Number (可选) - 默认为 -1.
-* `y` Number (**必须** 如果x设置了) - 默认为 -1.
-* `positioningItem` Number (可选) _macOS_ - 在指定坐标鼠标位置下面的菜单项的索引. 默认为
+* `browserWindow` BrowserWindow (可选) - 默认为当前激活的窗口.
+* `options` Object (可选)
+	* `x` Number (可选) - 默认为当前光标所在的位置.
+	* `y` Number (**必须** 如果x设置了) - 默认为当前光标所在的位置.
+	* `async` Boolean (可选) - 设置为 `true` 时，调用这个方法会立即返回。设置为 `false` 时，当菜单被选择或者被关闭时才会返回。默认为 `false`。
+	* `positioningItem` Number (可选) _macOS_ - 指定坐标鼠标位置下面的菜单项的索引. 默认为
   -1.
 
-在 `browserWindow` 中弹出 context menu .你可以选择性地提供指定的 `x, y` 来设置菜单应该放在哪里,否则它将默认地放在当前鼠标的位置.
+在 `browserWindow` 中弹出菜单.
+
+#### `menu.closePopup([browserWindow])`
+
+* `browserWindow` BrowserWindow (可选) - 默认为当前激活的窗口.
+
+在 `browserWindow` 关闭菜单.
 
 #### `menu.append(menuItem)`
 
@@ -95,76 +105,36 @@ const template = [
   {
     label: 'Edit',
     submenu: [
-      {
-        role: 'undo'
-      },
-      {
-        role: 'redo'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'cut'
-      },
-      {
-        role: 'copy'
-      },
-      {
-        role: 'paste'
-      },
-      {
-        role: 'pasteandmatchstyle'
-      },
-      {
-        role: 'delete'
-      },
-      {
-        role: 'selectall'
-      }
+      {role: 'undo'},
+      {role: 'redo'},
+      {type: 'separator'},
+      {role: 'cut'},
+      {role: 'copy'},
+      {role: 'paste'},
+      {role: 'pasteandmatchstyle'},
+      {role: 'delete'},
+      {role: 'selectall'}
     ]
   },
   {
     label: 'View',
     submenu: [
-      {
-        role: 'reload'
-      },
-      {
-        role: 'forcereload'
-      },
-      {
-        role: 'toggledevtools'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'resetzoom'
-      },
-      {
-        role: 'zoomin'
-      },
-      {
-        role: 'zoomout'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'togglefullscreen'
-      }
+      {role: 'reload'},
+      {role: 'forcereload'},
+      {role: 'toggledevtools'},
+      {type: 'separator'},
+      {role: 'resetzoom'},
+      {role: 'zoomin'},
+      {role: 'zoomout'},
+      {type: 'separator'},
+      {role: 'togglefullscreen'}
     ]
   },
   {
     role: 'window',
     submenu: [
-      {
-        role: 'minimize'
-      },
-      {
-        role: 'close'
-      }
+      {role: 'minimize'},
+      {role: 'close'}
     ]
   },
   {
@@ -182,76 +152,37 @@ if (process.platform === 'darwin') {
   template.unshift({
     label: app.getName(),
     submenu: [
-      {
-        role: 'about'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'services',
-        submenu: []
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'hide'
-      },
-      {
-        role: 'hideothers'
-      },
-      {
-        role: 'unhide'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'quit'
-      }
+      {role: 'about'},
+      {type: 'separator'},
+      {role: 'services', submenu: []},
+      {type: 'separator'},
+      {role: 'hide'},
+      {role: 'hideothers'},
+      {role: 'unhide'},
+      {type: 'separator'},
+      {role: 'quit'}
     ]
   })
-  // Edit menu.
+
+  // Edit menu
   template[1].submenu.push(
-    {
-      type: 'separator'
-    },
+    {type: 'separator'},
     {
       label: 'Speech',
       submenu: [
-        {
-          role: 'startspeaking'
-        },
-        {
-          role: 'stopspeaking'
-        }
+        {role: 'startspeaking'},
+        {role: 'stopspeaking'}
       ]
     }
   )
-  // Window menu.
+
+  // Window menu
   template[3].submenu = [
-    {
-      label: 'Close',
-      accelerator: 'CmdOrCtrl+W',
-      role: 'close'
-    },
-    {
-      label: 'Minimize',
-      accelerator: 'CmdOrCtrl+M',
-      role: 'minimize'
-    },
-    {
-      label: 'Zoom',
-      role: 'zoom'
-    },
-    {
-      type: 'separator'
-    },
-    {
-      label: 'Bring All to Front',
-      role: 'front'
-    }
+    {role: 'close'},
+    {role: 'minimize'},
+    {role: 'zoom'},
+    {type: 'separator'},
+    {role: 'front'}
   ]
 }
 
