@@ -71,8 +71,7 @@ void Browser::Exit(mate::Arguments* args) {
     } else {
       // Unlike Quit(), we do not ask to close window, but destroy the window
       // without asking.
-      for (NativeWindow* window : *window_list)
-        window->CloseContents(nullptr);  // e.g. Destroy()
+      atom::WindowList::DestroyAllWindows();
     }
   }
 }

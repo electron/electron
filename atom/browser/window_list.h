@@ -51,6 +51,9 @@ class WindowList {
   // Closes all windows.
   static void CloseAllWindows();
 
+  // Destroy all windows.
+  static void DestroyAllWindows();
+
  private:
   WindowList();
   ~WindowList();

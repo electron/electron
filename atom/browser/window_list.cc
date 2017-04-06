@@ -76,6 +76,13 @@ void WindowList::CloseAllWindows() {
       window->Close();
 }
 
+// static
+void WindowList::DestroyAllWindows() {
+  WindowVector windows = GetInstance()->windows_;
+  for (const auto& window : windows)
+    window->CloseContents(nullptr);  // e.g. Destroy()
+}
+
 WindowList::WindowList() {
 }
 
