@@ -1088,7 +1088,7 @@ describe('BrowserWindow module', function () {
       beforeEach(() => {
         w.destroy()
         w = new BrowserWindow({
-          show: true,
+          show: false,
           webPreferences: {
             nativeWindowOpen: true
           }
