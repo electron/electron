@@ -68,6 +68,9 @@ int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
   if (frame_->IsFullscreen())
     return HTCLIENT;
 
+  if (!bounds().Contains(cursor))
+    return HTNOWHERE;
+
   // Check for possible draggable region in the client area for the frameless
   // window.
   SkRegion* draggable_region = window_->draggable_region();
@@ -75,11 +78,18 @@ int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
     return HTCAPTION;
 
   // Support resizing frameless window by dragging the border.
-  int frame_component = ResizingBorderHitTest(cursor);
-  if (frame_component != HTNOWHERE)
-    return frame_component;
+  if (!frame_->IsMaximized()) {
+    int frame_component = ResizingBorderHitTest(cursor);
+    if (frame_component != HTNOWHERE)
+      return frame_component;
+  }
 
-  return HTCLIENT;
+  int client_component = frame_->client_view()->NonClientHitTest(cursor);
+  if (client_component != HTNOWHERE)
+    return client_component;
+
+  // Caption is a safe default.
+  return HTCAPTION;
 }
 
 void FramelessView::GetWindowMask(const gfx::Size& size,

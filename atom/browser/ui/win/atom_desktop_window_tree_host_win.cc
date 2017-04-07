@@ -5,6 +5,7 @@
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 
 #include "atom/browser/ui/win/message_handler_delegate.h"
+#include "ui/display/win/screen_win.h"
 
 namespace atom {
 
@@ -25,12 +26,26 @@ bool AtomDesktopWindowTreeHostWin::PreHandleMSG(
   return delegate_->PreHandleMSG(message, w_param, l_param, result);
 }
 
-/** Override the client area inset
- *  Returning true forces a border of 0 for frameless windows
- */
 bool AtomDesktopWindowTreeHostWin::GetClientAreaInsets(
     gfx::Insets* insets) const {
-  return !HasFrame();
+  const auto has_frame = HasFrame();
+  if (IsMaximized() && !has_frame) {
+    // Maximized windows are actually bigger than the screen, see:
+    // https://blogs.msdn.microsoft.com/oldnewthing/20120326-00/?p=8003
+    //
+    // We inset by the non-client area size to avoid cutting of the client
+    // area. Despite this, there is still some overflow (1-3px) depending
+    // on the DPI and side.
+    const auto style = GetWindowLong(GetHWND(), GWL_STYLE) & ~WS_CAPTION;
+    const auto ex_style = GetWindowLong(GetHWND(), GWL_EXSTYLE);
+    RECT r = {};
+    AdjustWindowRectEx(&r, style, FALSE, ex_style);
+
+    *insets = gfx::Insets(abs(r.top), abs(r.left), abs(r.bottom) - 2, abs(r.right));
+    return true;
+  }
+
+  return !has_frame;
 }
 
 }  // namespace atom
