@@ -50,7 +50,6 @@
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
-#include "content/browser/frame_host/navigation_entry_impl.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/web_contents/web_contents_impl.h"
@@ -60,9 +59,6 @@
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
-#include "content/public/browser/notification_details.h"
-#include "content/public/browser/notification_source.h"
-#include "content/public/browser/notification_types.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -272,22 +268,6 @@ void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
-// Set the background color of RenderWidgetHostView.
-void SetBackgroundColor(content::WebContents* web_contents) {
-  const auto view = web_contents->GetRenderWidgetHostView();
-  if (view) {
-    WebContentsPreferences* web_preferences =
-        WebContentsPreferences::FromWebContents(web_contents);
-    std::string color_name;
-    if (web_preferences->web_preferences()->GetString(options::kBackgroundColor,
-                                                      &color_name)) {
-      view->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      view->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
-}
-
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -400,7 +380,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
                                             content::WebContents *web_contents,
                                             mate::Handle<api::Session> session,
                                             const mate::Dictionary& options) {
-  content::WebContentsObserver::Observe(web_contents);
+  Observe(web_contents);
   InitWithWebContents(web_contents, session->browser_context());
 
   managed_web_contents()->GetView()->SetDelegate(this);
@@ -435,11 +415,6 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
     if (owner_window)
       SetOwnerWindow(owner_window);
   }
-
-  const content::NavigationController* controller =
-      &web_contents->GetController();
-  registrar_.Add(this, content::NOTIFICATION_NAV_ENTRY_PENDING,
-                 content::Source<content::NavigationController>(controller));
 
   Init(isolate);
   AttachAsUserData(web_contents);
@@ -827,30 +802,6 @@ void WebContents::DidGetRedirectForResourceRequest(
        details.headers.get());
 }
 
-void WebContents::DidStartNavigation(
-    content::NavigationHandle* navigation_handle) {
-  if (!navigation_handle->IsInMainFrame() || navigation_handle->IsSamePage())
-    return;
-
-  if (deferred_load_url_.id) {
-    auto web_contents = navigation_handle->GetWebContents();
-    auto& controller = web_contents->GetController();
-    int id = controller.GetPendingEntry()->GetUniqueID();
-    if (id == deferred_load_url_.id) {
-      if (!deferred_load_url_.params.url.is_empty()) {
-        auto params = deferred_load_url_.params;
-        deferred_load_url_.id = 0;
-        deferred_load_url_.params =
-            content::NavigationController::LoadURLParams(GURL());
-        controller.LoadURLWithParams(params);
-        SetBackgroundColor(web_contents);
-      } else {
-        deferred_load_url_.id = 0;
-      }
-    }
-  }
-}
-
 void WebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
@@ -891,41 +842,6 @@ void WebContents::DidUpdateFaviconURL(
       unique_urls.insert(url);
   }
   Emit("page-favicon-updated", unique_urls);
-}
-
-void WebContents::Observe(int type,
-                          const content::NotificationSource& source,
-                          const content::NotificationDetails& details) {
-  switch (type) {
-    case content::NOTIFICATION_NAV_ENTRY_PENDING: {
-      content::NavigationEntry* entry =
-          content::Details<content::NavigationEntry>(details).ptr();
-      content::NavigationEntryImpl* entry_impl =
-          static_cast<content::NavigationEntryImpl*>(entry);
-      // In NavigatorImpl::DidStartMainFrameNavigation when there is no
-      // browser side pending entry available it creates a new one based
-      // on existing pending entry, hence we track the unique id here
-      // instead in WebContents::LoadURL with controller.GetPendingEntry()
-      // TODO(deepak1556): Remove once we have
-      // https://codereview.chromium.org/2661743002.
-      if (entry_impl->frame_tree_node_id() == -1) {
-        deferred_load_url_.id = entry->GetUniqueID();
-      }
-      break;
-    }
-    default:
-      NOTREACHED();
-      break;
-  }
-}
-
-void WebContents::BeforeUnloadDialogCancelled() {
-  if (deferred_load_url_.id) {
-    auto& controller = web_contents()->GetController();
-    if (!controller.GetPendingEntry()) {
-      deferred_load_url_.id = 0;
-    }
-  }
 }
 
 void WebContents::DevToolsReloadPage() {
@@ -1096,16 +1012,23 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
-
-  if (deferred_load_url_.id) {
-    deferred_load_url_.params = params;
-    return;
-  }
-
   web_contents()->GetController().LoadURLWithParams(params);
+
+  // Set the background color of RenderWidgetHostView.
   // We have to call it right after LoadURL because the RenderViewHost is only
   // created after loading a page.
-  SetBackgroundColor(web_contents());
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view) {
+    WebContentsPreferences* web_preferences =
+        WebContentsPreferences::FromWebContents(web_contents());
+    std::string color_name;
+    if (web_preferences->web_preferences()->GetString(options::kBackgroundColor,
+                                                      &color_name)) {
+      view->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      view->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
 }
 
 void WebContents::DownloadURL(const GURL& url) {
