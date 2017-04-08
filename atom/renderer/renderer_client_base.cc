@@ -27,6 +27,7 @@
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
+#include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 
 #if defined(OS_MACOSX)
@@ -149,6 +150,12 @@ void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
     SkColor color = name.empty() ? SK_ColorWHITE : ParseHexColor(name);
     web_frame_widget->setBaseBackgroundColor(color);
   }
+}
+
+void RendererClientBase::DidClearWindowObject(
+    content::RenderFrame* render_frame) {
+  // Make sure every page will get a script context created.
+  render_frame->GetWebFrame()->executeScript(blink::WebScriptSource("void 0"));
 }
 
 blink::WebSpeechSynthesizer* RendererClientBase::OverrideSpeechSynthesizer(

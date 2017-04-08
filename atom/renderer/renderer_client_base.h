@@ -19,6 +19,8 @@ class RendererClientBase : public content::ContentRendererClient {
   RendererClientBase();
   virtual ~RendererClientBase();
 
+  virtual void DidClearWindowObject(content::RenderFrame* render_frame);
+
  protected:
   void AddRenderBindings(v8::Isolate* isolate,
                          v8::Local<v8::Object> binding_object);

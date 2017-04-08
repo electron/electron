@@ -100,9 +100,7 @@ class AtomSandboxedRenderFrameObserver : public content::RenderFrameObserver {
 
   // content::RenderFrameObserver:
   void DidClearWindowObject() override {
-    // Make sure every page will get a script context created.
-    render_frame_->GetWebFrame()->executeScript(
-        blink::WebScriptSource("void 0"));
+    renderer_client_->DidClearWindowObject(render_frame_);
   }
 
   void DidCreateScriptContext(v8::Handle<v8::Context> context,

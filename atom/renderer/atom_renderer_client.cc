@@ -25,7 +25,6 @@
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/WebKit/public/web/WebScriptSource.h"
 
 #include "atom/common/node_includes.h"
 
@@ -66,12 +65,6 @@ void AtomRendererClient::RenderFrameCreated(
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
   new AtomRenderViewObserver(render_view, this);
   RendererClientBase::RenderViewCreated(render_view);
-}
-
-void AtomRendererClient::DidClearWindowObject(
-    content::RenderFrame* render_frame) {
-  // Make sure every page will get a script context created.
-  render_frame->GetWebFrame()->executeScript(blink::WebScriptSource("void 0"));
 }
 
 void AtomRendererClient::RunScriptsAtDocumentStart(
