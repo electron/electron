@@ -58,7 +58,6 @@ void AtomRendererClient::RenderThreadStarted() {
 
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  new AtomRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 
