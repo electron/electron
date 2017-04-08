@@ -1099,6 +1099,7 @@ void OffScreenRenderWidgetHostView::OnPopupPaint(
     const gfx::Rect& damage_rect, const SkBitmap& bitmap) {
   if (popup_host_view_ && popup_bitmap_.get())
     bitmap.deepCopyTo(popup_bitmap_.get());
+  InvalidateBounds(popup_host_view_->popup_position_);
 }
 
 void OffScreenRenderWidgetHostView::HoldResize() {
