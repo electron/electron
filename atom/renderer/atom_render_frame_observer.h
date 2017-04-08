@@ -5,7 +5,7 @@
 #ifndef ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
 #define ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
 
-#include "atom/renderer/atom_renderer_client.h"
+#include "atom/renderer/renderer_client_base.h"
 #include "content/public/renderer/render_frame_observer.h"
 
 namespace atom {
@@ -25,7 +25,7 @@ enum ExtensionGroup {
 class AtomRenderFrameObserver : public content::RenderFrameObserver {
  public:
   AtomRenderFrameObserver(content::RenderFrame* frame,
-                          AtomRendererClient* renderer_client);
+                          RendererClientBase* renderer_client);
 
   // content::RenderFrameObserver:
   void DidClearWindowObject() override;
@@ -43,7 +43,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   bool IsIsolatedWorld(int world_id);
 
   content::RenderFrame* render_frame_;
-  AtomRendererClient* renderer_client_;
+  RendererClientBase* renderer_client_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
 };

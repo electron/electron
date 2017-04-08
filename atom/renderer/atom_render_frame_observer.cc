@@ -13,7 +13,7 @@ namespace atom {
 
 AtomRenderFrameObserver::AtomRenderFrameObserver(
     content::RenderFrame* frame,
-    AtomRendererClient* renderer_client)
+    RendererClientBase* renderer_client)
   : content::RenderFrameObserver(frame),
     render_frame_(frame),
     renderer_client_(renderer_client) {}
