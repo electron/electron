@@ -5,7 +5,7 @@ Eğer öyleyse, atom.io üzerinden [mevcut sürümler](https://electron.atom.io/
 ## SSS(Sıkça Sorulan Sorular)
 
 Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
-* [Electron SSS](https://github.com/electron/electron/tree/master/docs/faq/electron-faq.md)
+* [Electron SSS](https://github.com/electron/electron/blob/master/docs/faq.md)
 
 ## Klavuzlar
 
