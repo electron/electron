@@ -4,6 +4,7 @@
 
 #include "atom/browser/osr/osr_web_contents_view.h"
 
+#include "content/common/worker_messages.h"
 #include "content/public/browser/render_view_host.h"
 #include "third_party/WebKit/public/platform/WebScreenInfo.h"
 #include "ui/display/screen.h"
@@ -124,6 +125,11 @@ void OffScreenWebContentsView::RenderViewCreated(
     content::RenderViewHost* host) {
   if (GetView())
     GetView()->InstallTransparency();
+
+#if defined(OS_MACOSX)
+  host->Send(new WorkerProcessMsg_DisableExternalPopupMenus(
+      host->GetRoutingID()));
+#endif
 }
 
 void OffScreenWebContentsView::RenderViewSwappedIn(
