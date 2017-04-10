@@ -388,15 +388,15 @@ The following properties are available on instances of `Session`:
 
 #### `ses.cookies`
 
-A Cookies object for this session.
+A [Cookies](cookies.md) object for this session.
 
 #### `ses.webRequest`
 
-A WebRequest object for this session.
+A [WebRequest](web-request.md) object for this session.
 
 #### `ses.protocol`
 
-A Protocol object (an instance of [protocol](protocol.md) module) for this session.
+A [Protocol](protocol.md) object for this session.
 
 ```javascript
 const {app, session} = require('electron')
