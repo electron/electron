@@ -96,7 +96,7 @@ Inserts the `menuItem` to the `pos` position of the menu.
 
 #### `menu.items`
 
-A MenuItem[] array containing the menu's items.
+A `MenuItem[]` array containing the menu's items.
 
 Each `Menu` consists of multiple [`MenuItem`](menu-item.md)s and each `MenuItem`
 can have a submenu.
