@@ -98,6 +98,8 @@ By default, the frameless window is non-draggable. Apps need to specify
 `-webkit-app-region: no-drag` to exclude the non-draggable area from the
  draggable region. Note that only rectangular shapes are currently supported.
 
+Note: `-webkit-app-region: drag` is known to have problems while the developer tools are open. See this [GitHub issue](https://github.com/electron/electron/issues/3647) for more information including a workaround.
+
 To make the whole window draggable, you can add `-webkit-app-region: drag` as
 `body`'s style:
 
