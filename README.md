@@ -75,7 +75,7 @@ forums
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
 - [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turkish)*
+- [`electron-tr`](https://electron-tr.slack.com) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
 
 Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
