@@ -447,6 +447,8 @@
           '-r',
           './lib/sandboxed_renderer/api/exports/os.js:os',
           '-r',
+          './lib/sandboxed_renderer/api/exports/path.js:path',
+          '-r',
           './lib/sandboxed_renderer/api/exports/child_process.js:child_process'
         ],
         'isolated_args': [

@@ -17,7 +17,7 @@ crashReporter.start({
   }
 });
 if (!uploadToServer) {
-  ipcRenderer.sendSync('set-crash-directory', crashReporter.getCrashesDirectory())
+  ipcRenderer.sendSync('list-existing-dumps')
 }
 setImmediate(function() { process.crash(); });
 </script>
