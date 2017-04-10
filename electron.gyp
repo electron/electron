@@ -159,7 +159,6 @@
                 '<(libchromiumcontent_dir)/natives_blob.bin',
                 '<(libchromiumcontent_dir)/snapshot_blob.bin',
                 'external_binaries/d3dcompiler_47.dll',
-                'external_binaries/xinput1_3.dll',
               ],
             },
           ],
