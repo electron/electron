@@ -128,9 +128,14 @@
               'AdditionalManifestFiles': 'atom/browser/resources/win/atom.manifest',
             },
             'VCLinkerTool': {
-              # Chrome builds with this minimum environment which changes the
-              # values returned from APIs like GetSystemMetrics(SM_CXSIZEFRAME)
-              'MinimumRequiredVersion': '5.02'
+              # Chrome builds with this minimum environment which makes e.g.
+              # GetSystemMetrics(SM_CXSIZEFRAME) return Windows XP/2003
+              # compatible metrics. See: https://crbug.com/361720
+              #
+              # The following two settings translate to a linker flag
+              # of /SUBSYSTEM:WINDOWS,5.02
+              'MinimumRequiredVersion': '5.02',
+              'SubSystem': '2',
             },
           },
           'copies': [
