@@ -10,6 +10,7 @@
 #include "base/md5.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
+#include "browser/win/notification_presenter_win7.h"
 #include "browser/win/windows_toast_notification.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
@@ -36,6 +37,9 @@ bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
 
 // static
 NotificationPresenter* NotificationPresenter::Create() {
+  auto version = base::win::GetVersion();
+  if (version < base::win::VERSION_WIN8)
+    return new NotificationPresenterWin7;
   if (!WindowsToastNotification::Initialize())
     return nullptr;
   std::unique_ptr<NotificationPresenterWin> presenter(
@@ -64,6 +68,11 @@ base::string16 NotificationPresenterWin::SaveIconToFilesystem(
   if (SaveIconToPath(icon, path))
     return path.value();
   return base::UTF8ToUTF16(origin.spec());
+}
+
+Notification* NotificationPresenterWin::CreateNotificationObject(
+    NotificationDelegate* delegate) {
+  return new WindowsToastNotification(delegate, this);
 }
 
 }  // namespace brightray

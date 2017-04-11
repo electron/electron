@@ -47,16 +47,11 @@ class Notification {
  protected:
   Notification(NotificationDelegate* delegate,
                NotificationPresenter* presenter);
+
+ public:
   virtual ~Notification();
 
  private:
-  friend class NotificationPresenter;
-
-  // Can only be called by NotificationPresenter, the caller is responsible of
-  // freeing the returned instance.
-  static Notification* Create(NotificationDelegate* delegate,
-                              NotificationPresenter* presenter);
-
   NotificationDelegate* delegate_;
   NotificationPresenter* presenter_;
 

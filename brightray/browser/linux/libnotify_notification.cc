@@ -56,12 +56,6 @@ void log_and_clear_error(GError* error, const char* context) {
 }  // namespace
 
 // static
-Notification* Notification::Create(NotificationDelegate* delegate,
-                                   NotificationPresenter* presenter) {
-  return new LibnotifyNotification(delegate, presenter);
-}
-
-// static
 bool LibnotifyNotification::Initialize() {
   if (!libnotify_loader_.Load("libnotify.so.4") &&  // most common one
       !libnotify_loader_.Load("libnotify.so.5") &&

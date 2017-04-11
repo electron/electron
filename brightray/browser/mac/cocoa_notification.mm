@@ -12,12 +12,6 @@
 
 namespace brightray {
 
-// static
-Notification* Notification::Create(NotificationDelegate* delegate,
-                                   NotificationPresenter* presenter) {
-  return new CocoaNotification(delegate, presenter);
-}
-
 CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
                                      NotificationPresenter* presenter)
     : Notification(delegate, presenter) {

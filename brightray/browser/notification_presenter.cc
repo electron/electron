@@ -18,7 +18,7 @@ NotificationPresenter::~NotificationPresenter() {
 
 base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
     NotificationDelegate* delegate) {
-  Notification* notification = Notification::Create(delegate, this);
+  Notification* notification = CreateNotificationObject(delegate);
   notifications_.insert(notification);
   return notification->GetWeakPtr();
 }

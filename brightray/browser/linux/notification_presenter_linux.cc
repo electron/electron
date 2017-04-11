@@ -22,4 +22,9 @@ NotificationPresenterLinux::NotificationPresenterLinux() {
 NotificationPresenterLinux::~NotificationPresenterLinux() {
 }
 
+Notification* NotificationPresenterLinux::CreateNotificationObject(
+    NotificationDelegate* delegate) {
+  return new LibnotifyNotification(delegate, this);
+}
+
 }  // namespace brightray
