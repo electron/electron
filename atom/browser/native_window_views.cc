@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/native_browser_view.h"
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/ui/views/menu_layout.h"
 #include "atom/browser/window_list.h"
@@ -135,6 +136,7 @@ NativeWindowViews::NativeWindowViews(
     : NativeWindow(web_contents, options, parent),
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
+      browser_view_(nullptr),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
@@ -879,6 +881,20 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
 
   menu_bar_->SetMenu(menu_model);
   Layout();
+}
+
+void NativeWindowViews::SetBrowserView(NativeBrowserView* browser_view) {
+  if (browser_view_) {
+    RemoveChildView(browser_view_->GetInspectableWebContentsView()->GetView());
+    browser_view_ = nullptr;
+  }
+
+  if (!browser_view) {
+    return;
+  }
+
+  browser_view_ = browser_view;
+  AddChildView(browser_view->GetInspectableWebContentsView()->GetView());
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
