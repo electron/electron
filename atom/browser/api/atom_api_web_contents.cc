@@ -554,8 +554,8 @@ bool WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event,
     bool* is_keyboard_shortcut) {
-  if (event.type == blink::WebInputEvent::Type::RawKeyDown
-      || event.type == blink::WebInputEvent::Type::KeyUp)
+  if (event.type() == blink::WebInputEvent::Type::RawKeyDown ||
+      event.type() == blink::WebInputEvent::Type::KeyUp)
     return Emit("before-input-event", event);
   else
     return false;
