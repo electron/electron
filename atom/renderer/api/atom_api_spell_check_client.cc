@@ -51,13 +51,13 @@ SpellCheckClient::SpellCheckClient(const std::string& language,
 
 SpellCheckClient::~SpellCheckClient() {}
 
-void SpellCheckClient::spellCheck(
+void SpellCheckClient::checkSpelling(
     const blink::WebString& text,
     int& misspelling_start,
     int& misspelling_len,
     blink::WebVector<blink::WebString>* optional_suggestions) {
   std::vector<blink::WebTextCheckingResult> results;
-  SpellCheckText(base::string16(text), true, &results);
+  SpellCheckText(text.utf16(), true, &results);
   if (results.size() == 1) {
     misspelling_start = results[0].location;
     misspelling_len = results[0].length;
@@ -66,10 +66,8 @@ void SpellCheckClient::spellCheck(
 
 void SpellCheckClient::requestCheckingOfText(
     const blink::WebString& textToCheck,
-    const blink::WebVector<uint32_t>& markersInText,
-    const blink::WebVector<unsigned>& markerOffsets,
     blink::WebTextCheckingCompletion* completionCallback) {
-  base::string16 text(textToCheck);
+  base::string16 text(textToCheck.utf16());
   if (text.empty() || !HasWordCharacters(text, 0)) {
     completionCallback->didCancelCheckingText();
     return;

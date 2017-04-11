@@ -16,7 +16,7 @@
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "third_party/WebKit/public/web/WebCache.h"
+#include "third_party/WebKit/public/platform/WebCache.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebInputMethodController.h"
@@ -110,7 +110,8 @@ void WebFrame::SetLayoutZoomLevelLimits(double min_level, double max_level) {
 v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
     const base::string16& name, v8::Local<v8::Object> options) {
   blink::WebExceptionCode c = 0;
-  return web_frame_->document().registerEmbedderCustomElement(name, options, c);
+  return web_frame_->document().registerEmbedderCustomElement(
+      blink::WebString::fromUTF16(name), options, c);
 }
 
 void WebFrame::RegisterElementResizeCallback(
@@ -145,9 +146,6 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
 
 void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
   // TODO(pfrazee): Remove 2.0
-  // Register scheme to secure list (https, wss, data).
-  blink::WebSecurityPolicy::registerURLSchemeAsSecure(
-      blink::WebString::fromUTF8(scheme));
 }
 
 void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
@@ -200,7 +198,10 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
 void WebFrame::InsertText(const std::string& text) {
   web_frame_->frameWidget()
             ->getActiveWebInputMethodController()
-            ->commitText(blink::WebString::fromUTF8(text), 0);
+            ->commitText(blink::WebString::fromUTF8(text),
+                         blink::WebVector<blink::WebCompositionUnderline>(),
+                         blink::WebRange(),
+                         0);
 }
 
 void WebFrame::InsertCSS(const std::string& css) {
@@ -216,7 +217,7 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
   std::unique_ptr<blink::WebScriptExecutionCallback> callback(
       new ScriptExecutionCallback(completion_callback));
   web_frame_->requestExecuteScriptAndReturnValue(
-      blink::WebScriptSource(code),
+      blink::WebScriptSource(blink::WebString::fromUTF16(code)),
       has_user_gesture,
       callback.release());
 }

@@ -134,7 +134,8 @@ class PdfViewerUI::ResourceRequester
     content::ResourceDispatcherHostImpl::Get()->InitializeURLRequest(
         request.get(), content::Referrer(url, blink::WebReferrerPolicyDefault),
         false,  // download.
-        render_process_id, render_view_id, render_frame_id, resource_context);
+        render_process_id, render_view_id, render_frame_id,
+        content::PREVIEWS_OFF, resource_context);
 
     content::ResourceRequestInfoImpl* info =
         content::ResourceRequestInfoImpl::ForRequest(request.get());
