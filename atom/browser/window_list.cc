@@ -27,6 +27,16 @@ WindowList* WindowList::GetInstance() {
 }
 
 // static
+WindowList::WindowVector WindowList::GetWindows() {
+  return GetInstance()->windows_;
+}
+
+// static
+bool WindowList::IsEmpty() {
+  return GetInstance()->windows_.empty();
+}
+
+// static
 void WindowList::AddWindow(NativeWindow* window) {
   DCHECK(window);
   // Push |window| on the appropriate list instance.
@@ -74,6 +84,13 @@ void WindowList::CloseAllWindows() {
   for (const auto& window : windows)
     if (!window->IsClosed())
       window->Close();
+}
+
+// static
+void WindowList::DestroyAllWindows() {
+  WindowVector windows = GetInstance()->windows_;
+  for (const auto& window : windows)
+    window->CloseContents(nullptr);  // e.g. Destroy()
 }
 
 WindowList::WindowList() {
