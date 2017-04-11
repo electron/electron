@@ -126,7 +126,12 @@
             'VCManifestTool': {
               'EmbedManifest': 'true',
               'AdditionalManifestFiles': 'atom/browser/resources/win/atom.manifest',
-            }
+            },
+            'VCLinkerTool': {
+              'AdditionalOptions': [
+                "/SUBSYSTEM:WINDOWS,5.02"
+              ],
+            },
           },
           'copies': [
             {
