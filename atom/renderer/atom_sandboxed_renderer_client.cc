@@ -20,7 +20,6 @@
 #include "base/command_line.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_view.h"
 #include "content/public/renderer/render_view_observer.h"
 #include "ipc/ipc_message_macros.h"
@@ -89,50 +88,6 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   b.SetMethod("crash", AtomBindings::Crash);
 }
 
-class AtomSandboxedRenderFrameObserver : public content::RenderFrameObserver {
- public:
-  AtomSandboxedRenderFrameObserver(content::RenderFrame* frame,
-                                   AtomSandboxedRendererClient* renderer_client)
-      : content::RenderFrameObserver(frame),
-        render_frame_(frame),
-        world_id_(-1),
-        renderer_client_(renderer_client) {}
-
-  // content::RenderFrameObserver:
-  void DidClearWindowObject() override {
-    // Make sure every page will get a script context created.
-    render_frame_->GetWebFrame()->executeScript(
-        blink::WebScriptSource("void 0"));
-  }
-
-  void DidCreateScriptContext(v8::Handle<v8::Context> context,
-                              int extension_group,
-                              int world_id) override {
-    if (world_id_ != -1 && world_id_ != world_id)
-      return;
-    world_id_ = world_id;
-    renderer_client_->DidCreateScriptContext(context, render_frame_);
-  }
-
-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
-                                int world_id) override {
-    if (world_id_ != world_id)
-      return;
-    renderer_client_->WillReleaseScriptContext(context, render_frame_);
-  }
-
-  void OnDestruct() override {
-    delete this;
-  }
-
- private:
-  content::RenderFrame* render_frame_;
-  int world_id_;
-  AtomSandboxedRendererClient* renderer_client_;
-
-  DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRenderFrameObserver);
-};
-
 class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
  public:
   AtomSandboxedRenderViewObserver(content::RenderView* render_view,
@@ -181,7 +136,6 @@ AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {
 
 void AtomSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  new AtomSandboxedRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 

@@ -468,6 +468,8 @@
       'atom/renderer/api/atom_api_spell_check_client.h',
       'atom/renderer/api/atom_api_web_frame.cc',
       'atom/renderer/api/atom_api_web_frame.h',
+      'atom/renderer/atom_render_frame_observer.cc',
+      'atom/renderer/atom_render_frame_observer.h',
       'atom/renderer/atom_render_view_observer.cc',
       'atom/renderer/atom_render_view_observer.h',
       'atom/renderer/atom_renderer_client.cc',
