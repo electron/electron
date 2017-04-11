@@ -128,11 +128,9 @@
               'AdditionalManifestFiles': 'atom/browser/resources/win/atom.manifest',
             },
             'VCLinkerTool': {
-              'AdditionalOptions': [
-                # Chrome builds with this minimum environment which changes the
-                # values returned from APIs like GetSystemMetrics(SM_CXSIZEFRAME)
-                "/SUBSYSTEM:WINDOWS,5.02"
-              ],
+              # Chrome builds with this minimum environment which changes the
+              # values returned from APIs like GetSystemMetrics(SM_CXSIZEFRAME)
+              'MinimumRequiredVersion': '5.02'
             },
           },
           'copies': [
