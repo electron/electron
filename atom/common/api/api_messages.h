@@ -35,6 +35,8 @@ IPC_MESSAGE_ROUTED3(AtomViewMsg_Message,
                     base::string16 /* channel */,
                     base::ListValue /* arguments */)
 
+IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
+
 // Sent by the renderer when the draggable regions are updated.
 IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
                     std::vector<atom::DraggableRegion> /* regions */)
