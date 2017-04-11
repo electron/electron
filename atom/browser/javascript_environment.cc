@@ -8,6 +8,7 @@
 
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
@@ -18,6 +19,7 @@ namespace atom {
 
 JavascriptEnvironment::JavascriptEnvironment()
     : initialized_(Initialize()),
+      isolate_holder_(base::ThreadTaskRunnerHandle::Get()),
       isolate_(isolate_holder_.isolate()),
       isolate_scope_(isolate_),
       locker_(isolate_),
