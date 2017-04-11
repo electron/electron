@@ -129,6 +129,8 @@
             },
             'VCLinkerTool': {
               'AdditionalOptions': [
+                # Chrome builds with this minimum environment which changes the
+                # values returned from APIs like GetSystemMetrics(SM_CXSIZEFRAME)
                 "/SUBSYSTEM:WINDOWS,5.02"
               ],
             },
