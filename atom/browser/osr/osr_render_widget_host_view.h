@@ -282,7 +282,7 @@ class OffScreenRenderWidgetHostView
   OnPaintCallback parent_callback_;
 
   int frame_rate_;
-  int frame_rate_threshold_ms_;
+  int frame_rate_threshold_us_;
 
   base::Time last_time_;
 

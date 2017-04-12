@@ -101,68 +101,23 @@ class AtomResizeLock : public content::ResizeLock {
 
 class AtomCopyFrameGenerator {
  public:
-  AtomCopyFrameGenerator(int frame_rate_threshold_ms,
-                        OffScreenRenderWidgetHostView* view)
-    : frame_rate_threshold_ms_(frame_rate_threshold_ms),
-      view_(view),
-      frame_pending_(false),
-      frame_in_progress_(false),
+  AtomCopyFrameGenerator(OffScreenRenderWidgetHostView* view,
+                         int frame_rate_threshold_us)
+    : view_(view),
       frame_retry_count_(0),
+      next_frame_time_(base::TimeTicks::Now()),
+      frame_duration_(base::TimeDelta::FromMicroseconds(
+        frame_rate_threshold_us)),
       weak_ptr_factory_(this) {
     last_time_ = base::Time::Now();
   }
 
-  void GenerateCopyFrame(
-      bool force_frame,
-      const gfx::Rect& damage_rect) {
-    if (force_frame && !frame_pending_)
-      frame_pending_ = true;
-
-    if (!frame_pending_)
-      return;
-
-    if (!damage_rect.IsEmpty())
-      pending_damage_rect_.Union(damage_rect);
-
-    if (frame_in_progress_)
-      return;
-
-    frame_in_progress_ = true;
-
-    const int64_t frame_rate_delta =
-        (base::TimeTicks::Now() - frame_start_time_).InMilliseconds();
-    if (frame_rate_delta < frame_rate_threshold_ms_) {
-      content::BrowserThread::PostDelayedTask(content::BrowserThread::UI,
-        FROM_HERE,
-        base::Bind(&AtomCopyFrameGenerator::InternalGenerateCopyFrame,
-                   weak_ptr_factory_.GetWeakPtr()),
-        base::TimeDelta::FromMilliseconds(
-            frame_rate_threshold_ms_ - frame_rate_delta));
-      return;
-    }
-
-    InternalGenerateCopyFrame();
-  }
-
-  bool frame_pending() const { return frame_pending_; }
-
-  void set_frame_rate_threshold_ms(int frame_rate_threshold_ms) {
-    frame_rate_threshold_ms_ = frame_rate_threshold_ms;
-  }
-
- private:
-  void InternalGenerateCopyFrame() {
-    frame_pending_ = false;
-    frame_start_time_ = base::TimeTicks::Now();
-
+  void GenerateCopyFrame(const gfx::Rect& damage_rect) {
     if (!view_->render_widget_host())
       return;
 
-    const gfx::Rect damage_rect = pending_damage_rect_;
-    pending_damage_rect_.SetRect(0, 0, 0, 0);
-
     std::unique_ptr<cc::CopyOutputRequest> request =
-        cc::CopyOutputRequest::CreateRequest(base::Bind(
+        cc::CopyOutputRequest::CreateBitmapRequest(base::Bind(
             &AtomCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
             weak_ptr_factory_.GetWeakPtr(),
             damage_rect));
@@ -170,7 +125,13 @@ class AtomCopyFrameGenerator {
     request->set_area(gfx::Rect(view_->GetPhysicalBackingSize()));
     view_->GetRootLayer()->RequestCopyOfOutput(std::move(request));
   }
+  
+  void set_frame_rate_threshold_us(int frame_rate_threshold_us) {
+    frame_duration_ = base::TimeDelta::FromMicroseconds(
+      frame_rate_threshold_us);
+  }
 
+private:
   void CopyFromCompositingSurfaceHasResult(
       const gfx::Rect& damage_rect,
       std::unique_ptr<cc::CopyOutputResult> result) {
@@ -179,181 +140,63 @@ class AtomCopyFrameGenerator {
       OnCopyFrameCaptureFailure(damage_rect);
       return;
     }
-
-    if (result->HasTexture()) {
-      PrepareTextureCopyOutputResult(damage_rect, std::move(result));
-      return;
-    }
-
-    DCHECK(result->HasBitmap());
-    PrepareBitmapCopyOutputResult(damage_rect, std::move(result));
-  }
-
-  void PrepareTextureCopyOutputResult(
-      const gfx::Rect& damage_rect,
-      std::unique_ptr<cc::CopyOutputResult> result) {
-    DCHECK(result->HasTexture());
-    base::ScopedClosureRunner scoped_callback_runner(
-        base::Bind(&AtomCopyFrameGenerator::OnCopyFrameCaptureFailure,
-                   weak_ptr_factory_.GetWeakPtr(),
-                   damage_rect));
-
-    const gfx::Size& result_size = result->size();
-    SkIRect bitmap_size;
-    if (bitmap_)
-      bitmap_->getBounds(&bitmap_size);
-
-    if (!bitmap_ ||
-        bitmap_size.width() != result_size.width() ||
-        bitmap_size.height() != result_size.height()) {
-      bitmap_.reset(new SkBitmap);
-      bitmap_->allocN32Pixels(result_size.width(),
-                              result_size.height(),
-                              true);
-      if (bitmap_->drawsNothing())
-        return;
-    }
-
-    content::ImageTransportFactory* factory =
-        content::ImageTransportFactory::GetInstance();
-    display_compositor::GLHelper* gl_helper = factory->GetGLHelper();
-    if (!gl_helper)
-      return;
-
-    std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock(
-        new SkAutoLockPixels(*bitmap_));
-    uint8_t* pixels = static_cast<uint8_t*>(bitmap_->getPixels());
-
-    cc::TextureMailbox texture_mailbox;
-    std::unique_ptr<cc::SingleReleaseCallback> release_callback;
-    result->TakeTexture(&texture_mailbox, &release_callback);
-    DCHECK(texture_mailbox.IsTexture());
-    if (!texture_mailbox.IsTexture())
-      return;
-
-    ignore_result(scoped_callback_runner.Release());
-
-    gl_helper->CropScaleReadbackAndCleanMailbox(
-        texture_mailbox.mailbox(),
-        texture_mailbox.sync_token(),
-        result_size,
-        gfx::Rect(result_size),
-        result_size,
-        pixels,
-        kN32_SkColorType,
-        base::Bind(
-            &AtomCopyFrameGenerator::CopyFromCompositingSurfaceFinishedProxy,
-            weak_ptr_factory_.GetWeakPtr(),
-            base::Passed(&release_callback),
-            damage_rect,
-            base::Passed(&bitmap_),
-            base::Passed(&bitmap_pixels_lock)),
-        display_compositor::GLHelper::SCALER_QUALITY_FAST);
-  }
-
-  static void CopyFromCompositingSurfaceFinishedProxy(
-      base::WeakPtr<AtomCopyFrameGenerator> generator,
-      std::unique_ptr<cc::SingleReleaseCallback> release_callback,
-      const gfx::Rect& damage_rect,
-      std::unique_ptr<SkBitmap> bitmap,
-      std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock,
-      bool result) {
-    gpu::SyncToken sync_token;
-    if (result) {
-      display_compositor::GLHelper* gl_helper =
-          content::ImageTransportFactory::GetInstance()->GetGLHelper();
-      if (gl_helper)
-        gl_helper->GenerateSyncToken(&sync_token);
-    }
-    const bool lost_resource = !sync_token.HasData();
-    release_callback->Run(sync_token, lost_resource);
-
-    if (generator) {
-      generator->CopyFromCompositingSurfaceFinished(
-          damage_rect, std::move(bitmap), std::move(bitmap_pixels_lock),
-          result);
-    } else {
-      bitmap_pixels_lock.reset();
-      bitmap.reset();
-    }
-  }
-
-  void CopyFromCompositingSurfaceFinished(
-      const gfx::Rect& damage_rect,
-      std::unique_ptr<SkBitmap> bitmap,
-      std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock,
-      bool result) {
-    DCHECK(!bitmap_);
-    bitmap_ = std::move(bitmap);
-
-    if (result) {
-      OnCopyFrameCaptureSuccess(damage_rect, *bitmap_,
-                                std::move(bitmap_pixels_lock));
-    } else {
-      bitmap_pixels_lock.reset();
-      OnCopyFrameCaptureFailure(damage_rect);
-    }
-  }
-
-  void PrepareBitmapCopyOutputResult(
-      const gfx::Rect& damage_rect,
-      std::unique_ptr<cc::CopyOutputResult> result) {
+    
     DCHECK(result->HasBitmap());
     std::unique_ptr<SkBitmap> source = result->TakeBitmap();
     DCHECK(source);
     if (source) {
-      std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock(
-          new SkAutoLockPixels(*source));
-      OnCopyFrameCaptureSuccess(damage_rect, *source,
-                                std::move(bitmap_pixels_lock));
+      base::AutoLock autolock(lock_);
+      std::shared_ptr<SkBitmap> bitmap(source.release());
+      
+      base::TimeTicks now = base::TimeTicks::Now();
+      base::TimeDelta next_frame_in = next_frame_time_ - now;
+      if (next_frame_in > frame_duration_ / 4) {
+        next_frame_time_ += frame_duration_;
+        content::BrowserThread::PostDelayedTask(content::BrowserThread::UI,
+          FROM_HERE, 
+          base::Bind(&AtomCopyFrameGenerator::OnCopyFrameCaptureSuccess,
+            weak_ptr_factory_.GetWeakPtr(), 
+            damage_rect,
+            bitmap),
+          next_frame_in);
+      } else {
+        next_frame_time_ = now + frame_duration_;
+        OnCopyFrameCaptureSuccess(damage_rect, bitmap);
+      }
+      
+      frame_retry_count_ = 0;
     } else {
       OnCopyFrameCaptureFailure(damage_rect);
     }
   }
 
-  void OnCopyFrameCaptureFailure(
-      const gfx::Rect& damage_rect) {
-    pending_damage_rect_.Union(damage_rect);
-
+  void OnCopyFrameCaptureFailure(const gfx::Rect& damage_rect) {
     const bool force_frame = (++frame_retry_count_ <= kFrameRetryLimit);
-    OnCopyFrameCaptureCompletion(force_frame);
+    if (force_frame) {
+      // Retry with the same |damage_rect|.
+      content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+        base::Bind(&AtomCopyFrameGenerator::GenerateCopyFrame,
+          weak_ptr_factory_.GetWeakPtr(),
+          damage_rect));
+    }
   }
 
   void OnCopyFrameCaptureSuccess(
       const gfx::Rect& damage_rect,
-      const SkBitmap& bitmap,
-      std::unique_ptr<SkAutoLockPixels> bitmap_pixels_lock) {
-    view_->OnPaint(damage_rect, bitmap);
-
-    if (frame_retry_count_ > 0)
-      frame_retry_count_ = 0;
-
-    OnCopyFrameCaptureCompletion(false);
+      std::shared_ptr<SkBitmap> bitmap) {
+    base::AutoLock lock(onPaintLock_);
+    view_->OnPaint(damage_rect, *bitmap);
   }
-
-  void OnCopyFrameCaptureCompletion(bool force_frame) {
-    frame_in_progress_ = false;
-
-    if (frame_pending_) {
-      content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&AtomCopyFrameGenerator::GenerateCopyFrame,
-                   weak_ptr_factory_.GetWeakPtr(),
-                   force_frame,
-                   gfx::Rect()));
-    }
-  }
-
-  int frame_rate_threshold_ms_;
+  
+  base::Lock lock_;
+  base::Lock onPaintLock_;
   OffScreenRenderWidgetHostView* view_;
 
   base::Time last_time_;
 
-  base::TimeTicks frame_start_time_;
-  bool frame_pending_;
-  bool frame_in_progress_;
   int frame_retry_count_;
-  std::unique_ptr<SkBitmap> bitmap_;
-  gfx::Rect pending_damage_rect_;
+  base::TimeTicks next_frame_time_;
+  base::TimeDelta frame_duration_;
 
   base::WeakPtrFactory<AtomCopyFrameGenerator> weak_ptr_factory_;
 
@@ -362,12 +205,15 @@ class AtomCopyFrameGenerator {
 
 class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
  public:
-  AtomBeginFrameTimer(int frame_rate_threshold_ms,
+  AtomBeginFrameTimer(int frame_rate_threshold_us,
                       const base::Closure& callback)
       : callback_(callback) {
     time_source_.reset(new cc::DelayBasedTimeSource(
         content::BrowserThread::GetTaskRunnerForThread(
             content::BrowserThread::UI).get()));
+    time_source_->SetTimebaseAndInterval(
+         base::TimeTicks(),
+         base::TimeDelta::FromMicroseconds(frame_rate_threshold_us));
     time_source_->SetClient(this);
   }
 
@@ -379,10 +225,10 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
     return time_source_->Active();
   }
 
-  void SetFrameRateThresholdMs(int frame_rate_threshold_ms) {
+  void SetFrameRateThresholdUs(int frame_rate_threshold_us) {
     time_source_->SetTimebaseAndInterval(
         base::TimeTicks::Now(),
-        base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms));
+        base::TimeDelta::FromMicroseconds(frame_rate_threshold_us));
   }
 
  private:
@@ -412,7 +258,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       callback_(callback),
       parent_callback_(nullptr),
       frame_rate_(60),
-      frame_rate_threshold_ms_(0),
+      frame_rate_threshold_us_(0),
       last_time_(base::Time::Now()),
       scale_factor_(kDefaultScaleFactor),
       size_(native_window->GetSize()),
@@ -496,7 +342,7 @@ void OffScreenRenderWidgetHostView::OnWindowClosed() {
 void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
   const base::TimeTicks frame_time = base::TimeTicks::Now();
   const base::TimeDelta vsync_period =
-      base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms_);
+      base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_);
   SendBeginFrame(frame_time, vsync_period);
 }
 
@@ -689,7 +535,7 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
     } else {
       if (!copy_frame_generator_.get()) {
         copy_frame_generator_.reset(
-            new AtomCopyFrameGenerator(frame_rate_threshold_ms_, this));
+            new AtomCopyFrameGenerator(this, frame_rate_threshold_us_));
       }
 
       // Determine the damage rectangle for the current frame. This is the same
@@ -708,7 +554,7 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
 
       // Request a copy of the last compositor frame which will eventually call
       // OnPaint asynchronously.
-      copy_frame_generator_->GenerateCopyFrame(true, damage_rect);
+      copy_frame_generator_->GenerateCopyFrame(damage_rect);
     }
   }
 }
@@ -1062,7 +908,7 @@ void CopyBitmapTo(
     for (int i = 0; i < pos.height(); i++) {
       memcpy(dest + ((pos.y() + i) * destination.width() + pos.x()) * pixelsize,
         src + (i * source.width()) * pixelsize,
-        source.width() * pixelsize);
+        pos.width() * pixelsize);
     }
   }
 
@@ -1081,10 +927,10 @@ void OffScreenRenderWidgetHostView::OnPaint(
     gfx::Rect pos = popup_host_view_->popup_position_;
     gfx::Rect damage(damage_rect);
     damage.Union(pos);
-
+  
     SkBitmap copy = SkBitmapOperations::CreateTiledBitmap(bitmap,
       pos.x(), pos.y(), pos.width(), pos.height());
-
+  
     CopyBitmapTo(bitmap, *popup_bitmap_, pos);
     callback_.Run(damage, bitmap);
     CopyBitmapTo(bitmap, copy, pos);
@@ -1242,24 +1088,24 @@ OffScreenRenderWidgetHostView::GetDelegatedFrameHost() const {
 #endif
 
 void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
-  if (!force && frame_rate_threshold_ms_ != 0)
+  if (!force && frame_rate_threshold_us_ != 0)
     return;
 
-  frame_rate_threshold_ms_ = 1000 / frame_rate_;
+  frame_rate_threshold_us_ = 1000000 / frame_rate_;
 
   GetCompositor()->vsync_manager()->SetAuthoritativeVSyncInterval(
-      base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms_));
+      base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_));
 
-  if (copy_frame_generator_) {
-    copy_frame_generator_->set_frame_rate_threshold_ms(
-        frame_rate_threshold_ms_);
+  if (copy_frame_generator_.get()) {
+    copy_frame_generator_->set_frame_rate_threshold_us(
+        frame_rate_threshold_us_);
   }
 
-  if (begin_frame_timer_) {
-    begin_frame_timer_->SetFrameRateThresholdMs(frame_rate_threshold_ms_);
+  if (begin_frame_timer_.get()) {
+    begin_frame_timer_->SetFrameRateThresholdUs(frame_rate_threshold_us_);
   } else {
     begin_frame_timer_.reset(new AtomBeginFrameTimer(
-        frame_rate_threshold_ms_,
+        frame_rate_threshold_us_,
         base::Bind(&OffScreenRenderWidgetHostView::OnBeginFrameTimerTick,
                    weak_ptr_factory_.GetWeakPtr())));
   }
@@ -1273,7 +1119,7 @@ void OffScreenRenderWidgetHostView::InvalidateBounds(const gfx::Rect& bounds) {
   if (software_output_device_) {
     software_output_device_->OnPaint(bounds_in_pixels);
   } else if (copy_frame_generator_) {
-    copy_frame_generator_->GenerateCopyFrame(true, bounds_in_pixels);
+    copy_frame_generator_->GenerateCopyFrame(bounds_in_pixels);
   }
 }
 
