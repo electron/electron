@@ -23,7 +23,11 @@ win.on('closed', () => {
   win = null
 })
 
-let view = new BrowserView()
+let view = new BrowserView({
+  webPreferences: {
+    nodeIntegration: false
+  }
+})
 win.addChildView(view)
 view.setBounds(0, 0, 300, 300)
 view.webContents.loadURL('https://electron.atom.io')
