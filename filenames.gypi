@@ -322,8 +322,6 @@
       'atom/browser/ui/views/menu_bar.h',
       'atom/browser/ui/views/menu_delegate.cc',
       'atom/browser/ui/views/menu_delegate.h',
-      'atom/browser/ui/views/menu_layout.cc',
-      'atom/browser/ui/views/menu_layout.h',
       'atom/browser/ui/views/menu_model_adapter.cc',
       'atom/browser/ui/views/menu_model_adapter.h',
       'atom/browser/ui/views/native_frame_view.cc',
