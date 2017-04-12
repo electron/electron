@@ -200,22 +200,29 @@ void Noop(char*, void*) {
 }  // namespace
 
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
-    : image_(image) {
-  Init(isolate);
+    : image_(image), isolate_(isolate) {
+  Init(isolate_);
+  isolate_->AdjustAmountOfExternalAllocatedMemory(
+    image_.Width() * image_.Height() * 4);
 }
 
 #if defined(OS_WIN)
 NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
-    : hicon_path_(hicon_path) {
+    : hicon_path_(hicon_path), isolate_(isolate) {
   // Use the 256x256 icon as fallback icon.
   gfx::ImageSkia image_skia;
   ReadImageSkiaFromICO(&image_skia, GetHICON(256));
   image_ = gfx::Image(image_skia);
   Init(isolate);
+  isolate_->AdjustAmountOfExternalAllocatedMemory(
+    image_.Width() * image_.Height() * 4);
 }
 #endif
 
-NativeImage::~NativeImage() {}
+NativeImage::~NativeImage() {
+  isolate_->AdjustAmountOfExternalAllocatedMemory(
+    - image_.Width() * image_.Height() * 4);
+}
 
 #if defined(OS_WIN)
 HICON NativeImage::GetHICON(int size) {
@@ -352,6 +359,9 @@ mate::Handle<NativeImage> NativeImage::Resize(
   bool width_set = options.GetInteger("width", &width);
   bool height_set = options.GetInteger("height", &height);
   size.SetSize(width, height);
+  
+  isolate_->AdjustAmountOfExternalAllocatedMemory(
+    (width_set * height_set - width * height) * 4);
 
   if (width_set && !height_set) {
     // Scale height to preserve original aspect ratio
