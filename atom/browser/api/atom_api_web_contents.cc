@@ -1578,9 +1578,7 @@ bool WebContents::IsOffScreen() const {
 }
 
 void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {
-  mate::Handle<NativeImage> image =
-      NativeImage::Create(isolate(), gfx::Image::CreateFrom1xBitmap(bitmap));
-  Emit("paint", dirty_rect, image);
+  Emit("paint", dirty_rect, gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 void WebContents::StartPainting() {
