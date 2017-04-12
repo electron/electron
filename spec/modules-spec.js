@@ -4,6 +4,7 @@ const path = require('path')
 const temp = require('temp')
 const {remote} = require('electron')
 const {BrowserWindow} = remote
+const {closeWindow} = require('./window-helpers')
 
 describe('third-party module', function () {
   var fixtures = path.join(__dirname, 'fixtures')
@@ -142,14 +143,15 @@ describe('require', () => {
       })
     })
 
+    afterEach(async () => {
+      await closeWindow(w)
+      w = null
+    })
+
     it('searches for module under app directory', async () => {
       w.loadURL('about:blank')
       const result = await w.webContents.executeJavaScript('typeof require("q").when')
       assert.equal(result, 'function')
-    })
-
-    afterEach(() => {
-      w.destroy()
     })
   })
 })
