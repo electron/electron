@@ -1117,9 +1117,9 @@ void OffScreenRenderWidgetHostView::Invalidate() {
 
 void OffScreenRenderWidgetHostView::InvalidateBounds(const gfx::Rect& bounds) {
   if (software_output_device_) {
-    software_output_device_->OnPaint(bounds_in_pixels);
+    software_output_device_->OnPaint(bounds);
   } else if (copy_frame_generator_) {
-    copy_frame_generator_->GenerateCopyFrame(bounds_in_pixels);
+    copy_frame_generator_->GenerateCopyFrame(bounds);
   }
 }
 
