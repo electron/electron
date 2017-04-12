@@ -30,7 +30,7 @@ OffScreenWebContentsView::~OffScreenWebContentsView() {
 void OffScreenWebContentsView::SetWebContents(
     content::WebContents* web_contents) {
   web_contents_ = web_contents;
-  
+
   RenderViewCreated(web_contents_->GetRenderViewHost());
 }
 
@@ -141,7 +141,7 @@ void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {
 }
 
 void OffScreenWebContentsView::GetScreenInfo(
-    content::ScreenInfo* screen_info) const {  
+    content::ScreenInfo* screen_info) const {
   screen_info->depth = 24;
   screen_info->depth_per_component = 8;
   screen_info->orientation_angle = 0;

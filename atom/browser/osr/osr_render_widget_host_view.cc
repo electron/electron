@@ -125,13 +125,13 @@ class AtomCopyFrameGenerator {
     request->set_area(gfx::Rect(view_->GetPhysicalBackingSize()));
     view_->GetRootLayer()->RequestCopyOfOutput(std::move(request));
   }
-  
+
   void set_frame_rate_threshold_us(int frame_rate_threshold_us) {
     frame_duration_ = base::TimeDelta::FromMicroseconds(
       frame_rate_threshold_us);
   }
 
-private:
+ private:
   void CopyFromCompositingSurfaceHasResult(
       const gfx::Rect& damage_rect,
       std::unique_ptr<cc::CopyOutputResult> result) {
@@ -140,22 +140,22 @@ private:
       OnCopyFrameCaptureFailure(damage_rect);
       return;
     }
-    
+
     DCHECK(result->HasBitmap());
     std::unique_ptr<SkBitmap> source = result->TakeBitmap();
     DCHECK(source);
     if (source) {
       base::AutoLock autolock(lock_);
       std::shared_ptr<SkBitmap> bitmap(source.release());
-      
+
       base::TimeTicks now = base::TimeTicks::Now();
       base::TimeDelta next_frame_in = next_frame_time_ - now;
       if (next_frame_in > frame_duration_ / 4) {
         next_frame_time_ += frame_duration_;
         content::BrowserThread::PostDelayedTask(content::BrowserThread::UI,
-          FROM_HERE, 
+          FROM_HERE,
           base::Bind(&AtomCopyFrameGenerator::OnCopyFrameCaptureSuccess,
-            weak_ptr_factory_.GetWeakPtr(), 
+            weak_ptr_factory_.GetWeakPtr(),
             damage_rect,
             bitmap),
           next_frame_in);
@@ -163,7 +163,7 @@ private:
         next_frame_time_ = now + frame_duration_;
         OnCopyFrameCaptureSuccess(damage_rect, bitmap);
       }
-      
+
       frame_retry_count_ = 0;
     } else {
       OnCopyFrameCaptureFailure(damage_rect);
@@ -187,7 +187,7 @@ private:
     base::AutoLock lock(onPaintLock_);
     view_->OnPaint(damage_rect, *bitmap);
   }
-  
+
   base::Lock lock_;
   base::Lock onPaintLock_;
   OffScreenRenderWidgetHostView* view_;
@@ -927,10 +927,10 @@ void OffScreenRenderWidgetHostView::OnPaint(
     gfx::Rect pos = popup_host_view_->popup_position_;
     gfx::Rect damage(damage_rect);
     damage.Union(pos);
-  
+
     SkBitmap copy = SkBitmapOperations::CreateTiledBitmap(bitmap,
       pos.x(), pos.y(), pos.width(), pos.height());
-  
+
     CopyBitmapTo(bitmap, *popup_bitmap_, pos);
     callback_.Run(damage, bitmap);
     CopyBitmapTo(bitmap, copy, pos);

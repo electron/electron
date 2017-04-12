@@ -359,7 +359,7 @@ mate::Handle<NativeImage> NativeImage::Resize(
   bool width_set = options.GetInteger("width", &width);
   bool height_set = options.GetInteger("height", &height);
   size.SetSize(width, height);
-  
+
   isolate_->AdjustAmountOfExternalAllocatedMemory(
     (width_set * height_set - width * height) * 4);
 
