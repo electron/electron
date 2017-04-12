@@ -722,7 +722,7 @@ SkColor OffScreenRenderWidgetHostView::DelegatedFrameHostGetGutterColor(
     SkColor color) const {
   if (render_widget_host_->delegate() &&
       render_widget_host_->delegate()->IsFullscreenForCurrentTab()) {
-    return SK_ColorBLACK;
+    return SK_ColorWHITE;
   }
   return color;
 }
