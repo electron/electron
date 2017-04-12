@@ -8,6 +8,7 @@ const {BrowserView, BrowserWindow} = remote
 
 describe('View module', function () {
   var w = null
+  var view = null
 
   beforeEach(function () {
     w = new BrowserWindow({
@@ -21,17 +22,22 @@ describe('View module', function () {
   })
 
   afterEach(function () {
+    if (view) {
+      view.destroy()
+      view = null
+    }
+
     return closeWindow(w).then(function () { w = null })
   })
 
   describe('BrowserView.setBackgroundColor()', function () {
     it('does not throw for valid args', function () {
-      const view = new BrowserView()
+      view = new BrowserView()
       view.setBackgroundColor('#000')
     })
 
     it('throws for invalid args', function () {
-      const view = new BrowserView()
+      view = new BrowserView()
       assert.throws(function () {
         view.setBackgroundColor(null)
       }, /conversion failure/)
@@ -40,13 +46,13 @@ describe('View module', function () {
 
   describe('BrowserView.setAutoResize()', function () {
     it('does not throw for valid args', function () {
-      const view = new BrowserView()
+      view = new BrowserView()
       view.setAutoResize({})
       view.setAutoResize({ width: true, height: false })
     })
 
     it('throws for invalid args', function () {
-      const view = new BrowserView()
+      view = new BrowserView()
       assert.throws(function () {
         view.setAutoResize(null)
       }, /conversion failure/)
@@ -55,12 +61,12 @@ describe('View module', function () {
 
   describe('BrowserView.setBounds()', function () {
     it('does not throw for valid args', function () {
-      const view = new BrowserView()
+      view = new BrowserView()
       view.setBounds({ x: 0, y: 0, width: 1, height: 1 })
     })
 
     it('throws for invalid args', function () {
-      const view = new BrowserView()
+      view = new BrowserView()
       assert.throws(function () {
         view.setBounds(null)
       }, /conversion failure/)
@@ -72,12 +78,12 @@ describe('View module', function () {
 
   describe('BrowserWindow.setBrowserView()', function () {
     it('does not throw for valid args', function () {
-      const view = new BrowserView()
+      view = new BrowserView()
       w.setBrowserView(view)
     })
 
     it('does not throw if called multiple times with same view', function () {
-      const view = new BrowserView()
+      view = new BrowserView()
       w.setBrowserView(view)
       w.setBrowserView(view)
       w.setBrowserView(view)
