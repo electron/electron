@@ -17,6 +17,7 @@ class NativeBrowserViewMac : public NativeBrowserView {
       brightray::InspectableWebContentsView* web_contents_view);
   ~NativeBrowserViewMac() override;
 
+  void SetAutoResizeFlags(uint8_t flags) override;
   void SetBounds(const gfx::Rect& bounds) override;
   void SetBackgroundColor(SkColor color) override;
 

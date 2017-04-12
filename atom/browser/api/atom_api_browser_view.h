@@ -9,6 +9,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/native_browser_view.h"
 #include "native_mate/handle.h"
 
 namespace gfx {
@@ -50,6 +51,7 @@ class BrowserView : public mate::TrackableObject<BrowserView> {
             v8::Local<v8::Object> wrapper,
             const mate::Dictionary& options);
 
+  void SetAutoResize(AutoResizeFlags flags);
   void SetBounds(const gfx::Rect& bounds);
   void SetBackgroundColor(const std::string& color_name);
 

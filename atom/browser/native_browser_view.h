@@ -22,6 +22,11 @@ namespace api {
 class WebContents;
 }
 
+enum AutoResizeFlags {
+  kAutoResizeWidth = 0x1,
+  kAutoResizeHeight = 0x2,
+};
+
 class NativeBrowserView {
  public:
   virtual ~NativeBrowserView();
@@ -33,6 +38,7 @@ class NativeBrowserView {
     return web_contents_view_;
   }
 
+  virtual void SetAutoResizeFlags(uint8_t flags) = 0;
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
   virtual void SetBackgroundColor(SkColor color) = 0;
 

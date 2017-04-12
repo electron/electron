@@ -38,6 +38,21 @@ describe('View module', function () {
     })
   })
 
+  describe('BrowserView.setAutoResize()', function () {
+    it('does not throw for valid args', function () {
+      const view = new BrowserView()
+      view.setAutoResize({})
+      view.setAutoResize({ width: true, height: false })
+    })
+
+    it('throws for invalid args', function () {
+      const view = new BrowserView()
+      assert.throws(function () {
+        view.setAutoResize(null)
+      }, /conversion failure/)
+    })
+  })
+
   describe('BrowserView.setBounds()', function () {
     it('does not throw for valid args', function () {
       const view = new BrowserView()

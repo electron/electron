@@ -50,6 +50,14 @@ A `Integer` representing the unique ID of the view.
 
 Objects created with `new BrowserWindow` have the following instance methods:
 
+#### `win.setAutoResize(options)` _Experimental_
+
+* `options` Object
+  * `width`: If `true`, the view's width will grow and shrink together with
+    the window. `false` by default.
+  * `height`: If `true`, the view's height will grow and shrink together with
+    the window. `false` by default.
+
 #### `win.setBounds(bounds)` _Experimental_
 
 * `bounds` [Rectangle](structures/rectangle.md)

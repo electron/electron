@@ -16,6 +16,35 @@
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
 
+namespace mate {
+
+template <>
+struct Converter<atom::AutoResizeFlags> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     atom::AutoResizeFlags* auto_resize_flags) {
+    mate::Dictionary params;
+    if (!ConvertFromV8(isolate, val, &params)) {
+      return false;
+    }
+
+    uint8_t flags = 0;
+    bool width = false;
+    if (params.Get("width", &width) && width) {
+      flags |= atom::kAutoResizeWidth;
+    }
+    bool height = false;
+    if (params.Get("height", &height) && height) {
+      flags |= atom::kAutoResizeHeight;
+    }
+
+    *auto_resize_flags = static_cast<atom::AutoResizeFlags>(flags);
+    return true;
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 namespace api {
@@ -73,6 +102,10 @@ int32_t BrowserView::ID() const {
   return weak_map_id();
 }
 
+void BrowserView::SetAutoResize(AutoResizeFlags flags) {
+  view_->SetAutoResizeFlags(flags);
+}
+
 void BrowserView::SetBounds(const gfx::Rect& bounds) {
   view_->SetBounds(bounds);
 }
@@ -95,6 +128,7 @@ void BrowserView::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "BrowserView"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
+      .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
       .SetProperty("webContents", &BrowserView::WebContents)

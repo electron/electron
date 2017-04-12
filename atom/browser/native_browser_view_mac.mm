@@ -8,13 +8,33 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/geometry/rect.h"
 
+// Match view::Views behavior where the view sticks to the top-left origin.
+const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
+    NSViewMaxXMargin | NSViewMinYMargin;
+
 namespace atom {
 
 NativeBrowserViewMac::NativeBrowserViewMac(
     brightray::InspectableWebContentsView* web_contents_view)
-    : NativeBrowserView(web_contents_view) {}
+    : NativeBrowserView(web_contents_view) {
+  auto* view = GetInspectableWebContentsView()->GetNativeView();
+  view.autoresizingMask = kDefaultAutoResizingMask;
+}
 
 NativeBrowserViewMac::~NativeBrowserViewMac() {}
+
+void NativeBrowserViewMac::SetAutoResizeFlags(uint8_t flags) {
+  NSAutoresizingMaskOptions autoresizing_mask = kDefaultAutoResizingMask;
+  if (flags & kAutoResizeWidth) {
+    autoresizing_mask |= NSViewWidthSizable;
+  }
+  if (flags & kAutoResizeHeight) {
+    autoresizing_mask |= NSViewHeightSizable;
+  }
+
+  auto* view = GetInspectableWebContentsView()->GetNativeView();
+  view.autoresizingMask = autoresizing_mask;
+}
 
 void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
   auto* view = GetInspectableWebContentsView()->GetNativeView();
