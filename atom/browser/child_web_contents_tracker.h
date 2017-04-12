@@ -5,8 +5,8 @@
 
 namespace atom {
 
-// ChildWebContentsTracker tracks root WebContents created by
-// `new BrowserWindow`.
+// ChildWebContentsTracker tracks child WebContents
+// created by native `window.open()`
 class ChildWebContentsTracker : public content::WebContentsObserver {
  public:
   ChildWebContentsTracker(content::WebContents* web_contents);
