@@ -44,6 +44,10 @@ class WrappableBase {
   // This method should only be called by classes using Constructor.
   virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
+  // Marks wrapped object as high memory usage
+  // Deletes the wrapped object on the first round of GC callbacks
+  void MarkHighMemoryUsage() { high_memory_ = true; }
+
  private:
   friend struct internal::Destroyable;
 
@@ -54,6 +58,7 @@ class WrappableBase {
 
   v8::Isolate* isolate_;
   v8::Global<v8::Object> wrapper_;  // Weak
+  bool high_memory_;
 
   DISALLOW_COPY_AND_ASSIGN(WrappableBase);
 };

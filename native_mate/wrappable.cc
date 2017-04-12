@@ -11,12 +11,15 @@
 namespace mate {
 
 WrappableBase::WrappableBase()
-    : isolate_(nullptr) {
+    : isolate_(nullptr), high_memory_(false) {
 }
 
 WrappableBase::~WrappableBase() {
-  if (!wrapper_.IsEmpty())
-    GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
+  if (wrapper_.IsEmpty())
+    return;
+  
+  GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
+  wrapper_.ClearWeak();
   wrapper_.Reset();
 }
 
@@ -32,6 +35,7 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
   wrapper->SetAlignedPointerInInternalField(0, this);
   wrapper_.Reset(isolate, wrapper);
   wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
+  wrapper_.MarkIndependent();
 
   // Call object._init if we have one.
   v8::Local<v8::Function> init;
@@ -46,7 +50,11 @@ void WrappableBase::FirstWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
   WrappableBase* wrappable = data.GetParameter();
   wrappable->wrapper_.Reset();
-  data.SetSecondPassCallback(SecondWeakCallback);
+  if (wrappable->high_memory_) {
+    delete wrappable;
+  } else {
+    data.SetSecondPassCallback(SecondWeakCallback);
+  }
 }
 
 // static
