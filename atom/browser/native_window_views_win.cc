@@ -147,6 +147,14 @@ bool NativeWindowViews::PreHandleMSG(
       }
       return false;
     }
+    case WM_NCPAINT:
+    case WM_NCCALCSIZE: {
+      if (!has_frame()) {
+        *result = 0;
+        return true;
+      }
+      return false;
+    }
     default:
       return false;
   }

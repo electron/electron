@@ -283,7 +283,7 @@ NativeWindowViews::NativeWindowViews(
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
-    DWORD frame_style = WS_CAPTION;
+    DWORD frame_style = WS_CAPTION | WS_SYSMENU;
     if (resizable_)
       frame_style |= WS_THICKFRAME;
     if (minimizable_)
@@ -292,7 +292,7 @@ NativeWindowViews::NativeWindowViews(
       frame_style |= WS_MAXIMIZEBOX;
     // We should not show a frame for transparent window.
     if (!thick_frame_)
-      frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
+      frame_style &= ~(WS_THICKFRAME | WS_CAPTION | WS_SYSMENU);
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 
