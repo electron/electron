@@ -70,7 +70,7 @@ class App : public AtomBrowserClient::Delegate,
       std::unique_ptr<CertificateManagerModel> model);
 #endif
 
-  base::FilePath GetAppPath();
+  base::FilePath GetAppPath() const;
 
  protected:
   explicit App(v8::Isolate* isolate);

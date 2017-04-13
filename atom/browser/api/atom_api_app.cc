@@ -655,7 +655,7 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
     status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
-base::FilePath App::GetAppPath() {
+base::FilePath App::GetAppPath() const {
   return app_path_;
 }
 
