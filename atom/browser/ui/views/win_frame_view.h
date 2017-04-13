@@ -15,6 +15,7 @@ class WinFrameView : public FramelessView {
   virtual ~WinFrameView();
 
   // views::NonClientFrameView:
+  gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;
   int NonClientHitTest(const gfx::Point& point) override;
