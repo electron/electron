@@ -188,6 +188,7 @@ struct Converter<atom::api::WebContents::Type> {
     switch (val) {
       case Type::BACKGROUND_PAGE: type = "backgroundPage"; break;
       case Type::BROWSER_WINDOW: type = "window"; break;
+      case Type::BROWSER_VIEW: type = "browserView"; break;
       case Type::REMOTE: type = "remote"; break;
       case Type::WEB_VIEW: type = "webview"; break;
       case Type::OFF_SCREEN: type = "offscreen"; break;
@@ -202,10 +203,12 @@ struct Converter<atom::api::WebContents::Type> {
     std::string type;
     if (!ConvertFromV8(isolate, val, &type))
       return false;
-    if (type == "webview") {
-      *out = Type::WEB_VIEW;
-    } else if (type == "backgroundPage") {
+    if (type == "backgroundPage") {
       *out = Type::BACKGROUND_PAGE;
+    } else if (type == "browserView") {
+      *out = Type::BROWSER_VIEW;
+    } else if (type == "webview") {
+      *out = Type::WEB_VIEW;
     } else if (type == "offscreen") {
       *out = Type::OFF_SCREEN;
     } else {
@@ -306,6 +309,8 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
     type_ = WEB_VIEW;
   else if (options.Get("isBackgroundPage", &b) && b)
     type_ = BACKGROUND_PAGE;
+  else if (options.Get("isBrowserView", &b) && b)
+    type_ = BROWSER_VIEW;
   else if (options.Get("offscreen", &b) && b)
     type_ = OFF_SCREEN;
 
