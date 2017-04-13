@@ -24,6 +24,7 @@ FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
       view_(view),
       callback_(callback),
       only_dirty_(only_dirty),
+      source_id_for_copy_request_(base::UnguessableToken::Create()),
       weak_factory_(this) {
 }
 
@@ -61,6 +62,10 @@ bool FrameSubscriber::ShouldCaptureFrame(
       kBGRA_8888_SkColorType);
 
   return false;
+}
+
+const base::UnguessableToken& FrameSubscriber::GetSourceIdForCopyRequest() {
+  return source_id_for_copy_request_;
 }
 
 void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,

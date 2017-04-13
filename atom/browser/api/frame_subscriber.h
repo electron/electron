@@ -32,6 +32,7 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
                           base::TimeTicks present_time,
                           scoped_refptr<media::VideoFrame>* storage,
                           DeliverFrameCallback* callback) override;
+  const base::UnguessableToken& GetSourceIdForCopyRequest() override;
 
  private:
   void OnFrameDelivered(const FrameCaptureCallback& callback,
@@ -43,6 +44,8 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
   content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
   bool only_dirty_;
+
+  base::UnguessableToken source_id_for_copy_request_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_factory_;
 

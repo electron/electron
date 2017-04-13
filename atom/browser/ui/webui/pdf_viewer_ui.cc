@@ -203,7 +203,8 @@ PdfViewerUI::PdfViewerUI(content::BrowserContext* browser_context,
       content::WebContentsObserver(web_ui->GetWebContents()),
       src_(src) {
   pdf_handler_ = new PdfViewerHandler(src);
-  web_ui->AddMessageHandler(pdf_handler_);
+  web_ui->AddMessageHandler(
+      std::unique_ptr<content::WebUIMessageHandler>(pdf_handler_));
   content::URLDataSource::Add(browser_context, new BundledDataSource);
 }
 
