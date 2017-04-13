@@ -115,8 +115,9 @@ will be passed via `callback(filename)`
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
-  `"warning"`. On Windows, "question" displays the same icon as "info", unless
-  you set an icon using the "icon" option.
+  `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
+  you set an icon using the `"icon"` option. On macOS, both `"warning"` and
+  `"error"` display the same warning icon.
   * `buttons` String[] (optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
