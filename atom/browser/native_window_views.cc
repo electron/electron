@@ -70,20 +70,6 @@ const int kMenuBarHeight = 25;
 #endif
 
 #if defined(OS_WIN)
-gfx::Rect SubtractBorderSize(gfx::Rect bounds) {
-  gfx::Point borderSize = gfx::Point(
-      GetSystemMetrics(SM_CXSIZEFRAME) - 1,   // width
-      GetSystemMetrics(SM_CYSIZEFRAME) - 1);  // height
-  gfx::Point dpiAdjustedSize =
-      display::win::ScreenWin::ScreenToDIPPoint(borderSize);
-
-  bounds.set_x(bounds.x() + dpiAdjustedSize.x());
-  bounds.set_y(bounds.y() + dpiAdjustedSize.y());
-  bounds.set_width(bounds.width() - 2 * dpiAdjustedSize.x());
-  bounds.set_height(bounds.height() - 2 * dpiAdjustedSize.y());
-  return bounds;
-}
-
 void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
   DWORD style = ::GetWindowLong(handle, GWL_STYLE);
   if (on)
@@ -1279,16 +1265,6 @@ void NativeWindowViews::HandleKeyboardEvent(
 }
 
 void NativeWindowViews::Layout() {
-#if defined(OS_WIN)
-  // Reserve border space for maximized frameless window so we won't have the
-  // content go outside of screen.
-  if (!has_frame() && IsMaximized()) {
-    gfx::Rect bounds = SubtractBorderSize(GetContentsBounds());
-    web_view_->SetBoundsRect(bounds);
-    return;
-  }
-#endif
-
   const auto size = GetContentsBounds().size();
   const auto menu_bar_bounds =
       menu_bar_ ? gfx::Rect(0, 0, size.width(), kMenuBarHeight) : gfx::Rect();
