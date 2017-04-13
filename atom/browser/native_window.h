@@ -29,6 +29,7 @@ class SkRegion;
 
 namespace brightray {
 class InspectableWebContents;
+class InspectableWebContentsView;
 }
 
 namespace content {
@@ -65,7 +66,6 @@ class NativeWindow : public base::SupportsUserData,
   static NativeWindow* FromWebContents(content::WebContents* web_contents);
 
   void InitFromOptions(const mate::Dictionary& options);
-
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
   virtual bool IsClosed() const { return is_closed_; }
@@ -143,7 +143,16 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetContentProtection(bool enable) = 0;
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(AtomMenuModel* menu);
+
+  virtual void AddBrowserView(
+      brightray::InspectableWebContentsView* child_web_contents_view) = 0;
+  virtual void RemoveBrowserView(
+      brightray::InspectableWebContentsView* child_web_contents_view) = 0;
+  virtual void ResizeBrowserView(
+      brightray::InspectableWebContentsView* child_web_contents_view, const gfx::Rect& bounds) = 0;
+
   virtual void SetParentWindow(NativeWindow* parent);
+
   virtual gfx::NativeWindow GetNativeWindow() = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 

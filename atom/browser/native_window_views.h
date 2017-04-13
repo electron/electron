@@ -104,6 +104,14 @@ class NativeWindowViews : public NativeWindow,
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   void SetMenu(AtomMenuModel* menu_model) override;
+
+  void AddBrowserView(
+      brightray::InspectableWebContentsView* child_web_contents_view) override;
+  void RemoveBrowserView(
+      brightray::InspectableWebContentsView* child_web_contents_view) override;
+  void ResizeBrowserView(
+      brightray::InspectableWebContentsView* child_web_contents_view, const gfx::Rect& bounds) override;
+
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,

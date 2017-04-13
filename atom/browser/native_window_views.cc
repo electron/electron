@@ -881,6 +881,24 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   Layout();
 }
 
+void NativeWindowViews::AddBrowserView(
+    brightray::InspectableWebContentsView* child_web_contents_view) {
+  auto child_view = child_web_contents_view->GetView();
+  web_view_->AddChildView(child_view);
+}
+
+void NativeWindowViews::RemoveBrowserView(
+    brightray::InspectableWebContentsView* child_web_contents_view) {
+  auto child_view = child_web_contents_view->GetView();
+  web_view_->RemoveChildView(child_view);
+}
+
+void NativeWindowViews::ResizeBrowserView(
+    brightray::InspectableWebContentsView* child_web_contents_view, const gfx::Rect& bounds) {
+  auto child_view = child_web_contents_view->GetView();
+  child_view->SetBoundsRect(bounds);
+}
+
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
