@@ -57,6 +57,9 @@ const int StreamListenSocket::kSocketError = -1;
 StreamListenSocket::StreamListenSocket(SocketDescriptor s,
                                        StreamListenSocket::Delegate* del)
     : socket_delegate_(del),
+#if defined(OS_POSIX)
+      watcher_(FROM_HERE),
+#endif
       socket_(s),
       reads_paused_(false),
       has_pending_reads_(false) {
