@@ -81,6 +81,7 @@ bool AtomURLRequestJobFactory::HasProtocolHandler(
 void AtomURLRequestJobFactory::Clear() {
   for (auto& it : protocol_handler_map_)
     delete it.second;
+  protocol_handler_map_.clear();
 }
 
 net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
