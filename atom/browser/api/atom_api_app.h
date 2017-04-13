@@ -70,7 +70,7 @@ class App : public AtomBrowserClient::Delegate,
       std::unique_ptr<CertificateManagerModel> model);
 #endif
 
-  std::string GetAppPath();
+  base::FilePath GetAppPath();
 
  protected:
   explicit App(v8::Isolate* isolate);
@@ -117,7 +117,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnGpuProcessCrashed(base::TerminationStatus status) override;
 
  private:
-  void SetAppPath(const std::string& app_path);
+  void SetAppPath(const base::FilePath& app_path);
 
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);
@@ -158,7 +158,7 @@ class App : public AtomBrowserClient::Delegate,
   // Tracks tasks requesting file icons.
   base::CancelableTaskTracker cancelable_task_tracker_;
 
-  std::string app_path_;
+  base::FilePath app_path_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

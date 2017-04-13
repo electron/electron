@@ -655,11 +655,11 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
     status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
-std::string App::GetAppPath() {
+base::FilePath App::GetAppPath() {
   return app_path_;
 }
 
-void App::SetAppPath(const std::string& app_path) {
+void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
 }
 
