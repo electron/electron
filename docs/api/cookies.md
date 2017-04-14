@@ -105,6 +105,8 @@ on complete.
 Removes the cookies matching `url` and `name`, `callback` will called with
 `callback()` on complete.
 
-#### `cookies.flushStore()`
+#### `cookies.flushStore(callback)`
+
+* `callback` Function
 
 Writes any unwritten cookies data to disk.
