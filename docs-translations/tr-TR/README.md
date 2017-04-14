@@ -23,7 +23,7 @@ Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
 
 ## Eğitimler
 
-* [Quick Start](https://github.com/electron/electron/tree/master/docs/tutorial/quick-start.md)
+* [Hızlı Başlangıç](tutorial/quick-start.md)
 * [Desktop Environment Integration](https://github.com/electron/electron/tree/master/docs/tutorial/desktop-environment-integration.md)
 * [Online/Offline Event Detection](https://github.com/electron/electron/tree/master/docs/tutorial/online-offline-events.md)
 
