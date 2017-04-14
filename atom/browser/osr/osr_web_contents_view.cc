@@ -5,6 +5,7 @@
 #include "atom/browser/osr/osr_web_contents_view.h"
 
 #include "atom/common/api/api_messages.h"
+#include "content/browser/web_contents/web_contents_impl.h"
 #include "content/public/browser/render_view_host.h"
 #include "third_party/WebKit/public/platform/WebScreenInfo.h"
 #include "ui/display/screen.h"
@@ -112,11 +113,21 @@ content::RenderWidgetHostViewBase*
   OffScreenWebContentsView::CreateViewForPopupWidget(
     content::RenderWidgetHost* render_widget_host) {
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
+
+  content::WebContentsImpl *web_contents_impl =
+    static_cast<content::WebContentsImpl*>(web_contents_);
+
+  OffScreenRenderWidgetHostView *view =
+    static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents_impl->GetOuterWebContents()
+      ? web_contents_impl->GetOuterWebContents()->GetRenderWidgetHostView()
+      : web_contents_impl->GetRenderWidgetHostView());
+
   return new OffScreenRenderWidgetHostView(
       transparent_,
       callback_,
       render_widget_host,
-      GetView(),
+      view,
       relay->window.get());
 }
 
