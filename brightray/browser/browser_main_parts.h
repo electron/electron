@@ -15,7 +15,7 @@ class ViewsDelegate;
 }
 #endif
 
-#if defined(USE_AURA) && defined(USE_X11)
+#if defined(USE_AURA)
 namespace wm {
 class WMState;
 }
@@ -48,7 +48,7 @@ class BrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<ViewsDelegate> views_delegate_;
 #endif
 
-#if defined(USE_AURA) && defined(USE_X11)
+#if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;
 #endif
 

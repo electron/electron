@@ -24,6 +24,7 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/views/widget/desktop_aura/desktop_screen.h"
+#include "ui/wm/core/wm_state.h"
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -40,7 +41,6 @@
 #include "ui/base/x/x11_util.h"
 #include "ui/base/x/x11_util_internal.h"
 #include "ui/views/linux_ui/linux_ui.h"
-#include "ui/wm/core/wm_state.h"
 #endif
 
 #if defined(OS_WIN)
@@ -178,6 +178,9 @@ void BrowserMainParts::ToolkitInitialized() {
 
 #if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::instance()->Initialize();
+#endif
+
+#if defined(USE_AURA)
   wm_state_.reset(new wm::WMState);
 #endif
 
