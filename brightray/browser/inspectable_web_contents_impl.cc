@@ -310,6 +310,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
 
 void InspectableWebContentsImpl::CloseDevTools() {
   if (devtools_web_contents_) {
+    frontend_loaded_ = false;
     view_->CloseDevTools();
     devtools_web_contents_.reset();
     web_contents_->Focus();
