@@ -912,6 +912,38 @@ void App::GetFileIcon(const base::FilePath& path,
   }
 }
 
+v8::Local<v8::Value> App::GetAppMemoryInfo(v8::Isolate* isolate) {
+  AppIdProcessIterator processIterator;
+  auto processEntry = processIterator.NextProcessEntry();
+  mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate);
+
+  while(processEntry != nullptr) {
+    int64_t pid = processEntry->pid();
+    auto process = base::Process::OpenWithExtraPrivileges(pid);
+
+    std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateProcessMetrics(process.Handle()));
+
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    
+    dict.Set("workingSetSize",
+            static_cast<double>(metrics->GetWorkingSetSize() >> 10));
+    dict.Set("peakWorkingSetSize",
+            static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
+
+    size_t private_bytes, shared_bytes;
+    if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
+      dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
+      dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
+    }
+
+    result.Set(std::to_string(pid).c_str(), dict); 
+    processEntry = processIterator.NextProcessEntry();
+  }
+
+  return result.GetHandle();
+}
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -983,7 +1015,8 @@ void App::BuildPrototype(
                  &App::IsAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
-      .SetMethod("getFileIcon", &App::GetFileIcon);
+      .SetMethod("getFileIcon", &App::GetFileIcon)
+      .SetMethod("getAppMemoryInfo", &App::GetAppMemoryInfo);
 }
 
 }  // namespace api

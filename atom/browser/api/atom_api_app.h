@@ -13,6 +13,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "base/process/process_iterator.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
@@ -141,6 +142,8 @@ class App : public AtomBrowserClient::Delegate,
   void GetFileIcon(const base::FilePath& path,
                    mate::Arguments* args);
 
+  v8::Local<v8::Value> GetAppMemoryInfo(v8::Isolate* isolate);
+
 #if defined(OS_WIN)
   // Get the current Jump List settings.
   v8::Local<v8::Value> GetJumpListSettings();
@@ -161,6 +164,17 @@ class App : public AtomBrowserClient::Delegate,
   base::FilePath app_path_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
+};
+
+class AppIdProcessIterator : public base::ProcessIterator {
+ public:
+  AppIdProcessIterator() : base::ProcessIterator(NULL) {}
+
+ protected:
+  bool IncludeEntry() override {
+    return (entry().parent_pid() == base::GetCurrentProcId() ||
+            entry().pid() == base::GetCurrentProcId());
+  }
 };
 
 }  // namespace api
