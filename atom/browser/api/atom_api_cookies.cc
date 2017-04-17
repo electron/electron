@@ -180,8 +180,9 @@ void OnSetCookie(const Cookies::SetCallback& callback, bool success) {
 }
 
 // Flushes cookie store in IO thread.
-void FlushCookieStoreOnIOThread(scoped_refptr<net::URLRequestContextGetter> getter,
-                                const base::Closure& callback) {
+void FlushCookieStoreOnIOThread(
+    scoped_refptr<net::URLRequestContextGetter> getter,
+    const base::Closure& callback) {
   GetCookieStore(getter)->FlushStore(base::Bind(RunCallbackInUI, callback));
 }
 
