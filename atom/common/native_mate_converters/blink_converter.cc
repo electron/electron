@@ -280,7 +280,7 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   bool can_scroll = true;
   if (dict.Get("canScroll", &can_scroll) && !can_scroll) {
     out->hasPreciseScrollingDeltas = false;
-    out->modifiers &= ~blink::WebInputEvent::ControlKey;
+    out->setModifiers(out->modifiers() | blink::WebInputEvent::ControlKey);
   }
 #endif
   return true;

@@ -4,6 +4,9 @@
 
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 
+// There are conflicts between Xlib.h and this header.
+#include "atom/browser/native_window_views.h"  // NOLINT
+
 #include <X11/Xlib.h>
 
 // This conflicts with mate::Converter,
@@ -15,7 +18,6 @@
 #include <dlfcn.h>
 #include <glib-object.h>
 
-#include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"

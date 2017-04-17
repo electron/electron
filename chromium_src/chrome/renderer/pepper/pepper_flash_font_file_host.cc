@@ -15,7 +15,8 @@
 #include "ppapi/proxy/serialized_structs.h"
 
 #if defined(OS_LINUX) || defined(OS_OPENBSD)
-#include "content/public/common/child_process_sandbox_support_linux.h"
+#include "content/public/child/child_process_sandbox_support_linux.h"
+#include "content/public/common/common_sandbox_support_linux.h"
 #elif defined(OS_WIN)
 #include "third_party/skia/include/ports/SkFontMgr.h"
 #endif
