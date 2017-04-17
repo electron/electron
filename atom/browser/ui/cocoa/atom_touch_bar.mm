@@ -307,17 +307,17 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("label", &label);
   button.title = base::SysUTF8ToNSString(label);
 
-  std::string iconPosition = "left";
+  std::string iconPosition = "overlay";
   settings.Get("iconPosition", &iconPosition);
   gfx::Image image;
   if (settings.Get("icon", &image)) {
     button.image = image.AsNSImage();
-    if (iconPosition == "overlay") {
-        button.imagePosition = NSImageOverlaps;
+    if (iconPosition == "left") {
+        button.imagePosition = NSImageLeft;
     } else if (iconPosition == "right") {
         button.imagePosition = NSImageRight;
     } else {
-        button.imagePosition = NSImageLeft;
+        button.imagePosition = NSImageOverlaps;
     }
   }
 }
