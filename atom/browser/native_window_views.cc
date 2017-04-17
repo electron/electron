@@ -1267,7 +1267,8 @@ void NativeWindowViews::HandleKeyboardEvent(
 void NativeWindowViews::Layout() {
   const auto size = GetContentsBounds().size();
   const auto menu_bar_bounds =
-      menu_bar_ ? gfx::Rect(0, 0, size.width(), kMenuBarHeight) : gfx::Rect();
+      menu_bar_visible_ ? gfx::Rect(0, 0, size.width(), kMenuBarHeight)
+                        : gfx::Rect();
   if (menu_bar_) {
     menu_bar_->SetBoundsRect(menu_bar_bounds);
   }
