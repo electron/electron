@@ -29,8 +29,7 @@ class PrintingHandlerWin : public UtilityMessageHandler {
  private:
   // IPC message handlers.
   void OnRenderPDFPagesToMetafile(IPC::PlatformFileForTransit pdf_transit,
-                                  const PdfRenderSettings& settings,
-                                  bool print_text_with_gdi);
+                                  const PdfRenderSettings& settings);
   void OnRenderPDFPagesToMetafileGetPage(
       int page_number,
       IPC::PlatformFileForTransit output_file);
@@ -39,7 +38,8 @@ class PrintingHandlerWin : public UtilityMessageHandler {
   int LoadPDF(base::File pdf_file);
   bool RenderPdfPageToMetafile(int page_number,
                                base::File output_file,
-                               float* scale_factor);
+                               float* scale_factor,
+                               bool postscript);
 
   std::vector<char> pdf_data_;
   PdfRenderSettings pdf_rendering_settings_;

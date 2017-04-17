@@ -14,7 +14,6 @@
 #include "printing/page_size_margins.h"
 #include "printing/pdf_metafile_skia.h"
 #include "printing/units.h"
-#include "skia/ext/platform_device.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 
 
