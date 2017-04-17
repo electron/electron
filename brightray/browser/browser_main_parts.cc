@@ -163,7 +163,7 @@ void BrowserMainParts::PreEarlyInitialization() {
   base::FeatureList::SetInstance(std::move(feature_list));
 
 #if defined(USE_X11)
-  views::LinuxUI::SetInstance(BuildGtk2UI());
+  views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
 
   // Installs the X11 error handlers for the browser process used during
