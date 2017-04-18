@@ -107,7 +107,7 @@ describe('chromium feature', function () {
         if (labelFound) {
           done()
         } else {
-          done('No device labels found: ' + JSON.stringify(labels))
+          done(new Error(`No device labels found: ${JSON.stringify(labels)}`))
         }
       }).catch(done)
     })
