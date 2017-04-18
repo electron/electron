@@ -310,6 +310,16 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   gfx::Image image;
   if (settings.Get("icon", &image)) {
     button.image = image.AsNSImage();
+
+    std::string iconPosition;
+    settings.Get("iconPosition", &iconPosition);
+    if (iconPosition == "left") {
+      button.imagePosition = NSImageLeft;
+    } else if (iconPosition == "right") {
+      button.imagePosition = NSImageRight;
+    } else {
+      button.imagePosition = NSImageOverlaps;
+    }
   }
 }
 
