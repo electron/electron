@@ -67,8 +67,7 @@ npm install -g electron-windows-store
 │   └── atom.asar
 ├── snapshot_blob.bin
 ├── squirrel.exe
-├── ui_resources_200_percent.pak
-└── xinput1_3.dll
+└── ui_resources_200_percent.pak
 ```
 
 ## `electron-windows-store` 실행하기

@@ -16,9 +16,7 @@ namespace atom {
 
 void Browser::Focus() {
   // Focus on the first visible window.
-  WindowList* list = WindowList::GetInstance();
-  for (WindowList::iterator iter = list->begin(); iter != list->end(); ++iter) {
-    NativeWindow* window = *iter;
+  for (const auto& window : WindowList::GetWindows()) {
     if (window->IsVisible()) {
       window->Focus(true);
       break;

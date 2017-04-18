@@ -104,6 +104,7 @@ class NativeWindowViews : public NativeWindow,
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   void SetMenu(AtomMenuModel* menu_model) override;
+  void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -176,6 +177,7 @@ class NativeWindowViews : public NativeWindow,
       const content::NativeWebKeyboardEvent& event) override;
 
   // views::View:
+  void Layout() override;
   gfx::Size GetMinimumSize() override;
   gfx::Size GetMaximumSize() override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
@@ -188,6 +190,8 @@ class NativeWindowViews : public NativeWindow,
 
   std::unique_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
+
+  NativeBrowserView* browser_view_;
 
   std::unique_ptr<MenuBar> menu_bar_;
   bool menu_bar_autohide_;

@@ -60,9 +60,8 @@ The `desktopCapturer` module has the following methods:
 * `options` Object
   * `types` String[] - An array of Strings that lists the types of desktop sources
     to be captured, available types are `screen` and `window`.
-  * `thumbnailSize` Object (optional) - The size that the media source thumbnail should be scaled to.
-    * `width` Integer - Default is `150`
-    * `height` Integer - Default is `150`
+  * `thumbnailSize` [Size](structures/size.md) (optional) - The size that the media source thumbnail 
+    should be scaled to. Default is `150` x `150`.
 * `callback` Function
   * `error` Error
   * `sources` [DesktopCapturerSource[]](structures/desktop-capturer-source.md)

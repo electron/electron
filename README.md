@@ -5,7 +5,7 @@
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
-:memo: Available Translations: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/README.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/README.md) | [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/README.md) | [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW/project/README.md) | [Spanish](https://github.com/electron/electron/tree/master/docs-translations/es/project/README.md)
+:memo: Available Translations: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/README.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/README.md) | [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/README.md) | [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW/project/README.md) | [Spanish](https://github.com/electron/electron/tree/master/docs-translations/es/project/README.md) | [Turkish](https://github.com/electron/electron/tree/master/docs-translations/tr-TR/project/README.md)
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
@@ -75,7 +75,7 @@ forums
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
 - [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turkish)*
+- [`electron-tr`](https://electron-tr.slack.com) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
 
 Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)

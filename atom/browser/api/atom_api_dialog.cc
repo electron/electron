@@ -8,11 +8,13 @@
 
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/ui/certificate_trust.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/ui/message_box.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -127,6 +129,10 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("showErrorBox", &atom::ShowErrorBox);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
   dict.SetMethod("showSaveDialog", &ShowSaveDialog);
+#if defined(OS_MACOSX)
+  dict.SetMethod("showCertificateTrustDialog",
+                 &certificate_trust::ShowCertificateTrust);
+#endif
 }
 
 }  // namespace

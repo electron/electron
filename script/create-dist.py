@@ -43,7 +43,6 @@ TARGET_BINARIES = {
     'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
     'views_resources_200_percent.pak',
-    'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
   ],

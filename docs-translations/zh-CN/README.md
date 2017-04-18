@@ -26,6 +26,7 @@
 * [使用 Widevine CDM 插件](tutorial/using-widevine-cdm-plugin.md)
 * [通过自动化持续集成系统（CI）进行测试 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
 * [离屏渲染](tutorial/offscreen-rendering.md)
+* [快捷键](tutorial/keyboard-shortcuts.md)
 
 ## 教程
 
@@ -96,3 +97,6 @@
 * [调试步骤 (Windows)](development/debug-instructions-windows.md)
 * [在调试中使用 Symbol Server](development/setting-up-symbol-server.md)
 * [文档风格指南](styleguide.md)
+* [升级 Chrome](development/upgrading-chrome.md)
+* [Chromium 开发](development/chromium-development.md)
+* [V8 开发](development/v8-development.md)

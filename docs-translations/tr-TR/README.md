@@ -5,12 +5,12 @@ Eğer öyleyse, atom.io üzerinden [mevcut sürümler](https://electron.atom.io/
 ## SSS(Sıkça Sorulan Sorular)
 
 Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
-* [Electron SSS](https://github.com/electron/electron/tree/master/docs/faq/electron-faq.md)
+* [Electron SSS](https://github.com/electron/electron/blob/master/docs/faq.md)
 
 ## Klavuzlar
 
-* [Desteklenen Platformlar ](https://github.com/electron/electron/tree/master/docs/tutorial/supported-platforms.md)
-* [Uygulama Dağıtımı](https://github.com/electron/electron/tree/master/docs/tutorial/application-distribution.md)
+* [Desteklenen Platformlar ](tutorial/supported-platforms.md)
+* [Uygulama Dağıtımı](tutorial/application-distribution.md)
 * [Mac Uygulama Mağazası Başvuru Klavuzu](https://github.com/electron/electron/tree/master/docs/tutorial/mac-app-store-submission-guide.md)
 * [Uygulama Paketleme](https://github.com/electron/electron/tree/master/docs/tutorial/application-packaging.md)
 * [Native Node Modüllerini Kullanma](https://github.com/electron/electron/tree/master/docs/tutorial/using-native-node-modules.md)

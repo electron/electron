@@ -16,8 +16,11 @@ The `menu` class has the following static methods:
 
 * `menu` Menu
 
-Sets `menu` as the application menu on macOS. On Windows and Linux, the `menu`
-will be set as each window's top menu.
+Sets `menu` as the application menu on macOS. On Windows and Linux, the
+`menu` will be set as each window's top menu.
+
+Passing `null` will remove the menu bar on Windows and Linux but has no
+effect on macOS.
 
 **Note:** This API has to be called after the `ready` event of `app` module.
 

@@ -6,18 +6,30 @@ const {TouchBarButton, TouchBarColorPicker, TouchBarGroup} = TouchBar
 const {TouchBarLabel, TouchBarPopover, TouchBarScrubber, TouchBarSegmentedControl, TouchBarSlider, TouchBarSpacer} = TouchBar
 
 describe('TouchBar module', function () {
-  it('throws an error when created without an items array', function () {
+  it('throws an error when created without an options object', function () {
     assert.throws(() => {
       const touchBar = new TouchBar()
       touchBar.toString()
-    }, /Must specify items array as first argument/)
+    }, /Must specify options object as first argument/)
   })
 
   it('throws an error when created with invalid items', function () {
     assert.throws(() => {
-      const touchBar = new TouchBar([1, true, {}, []])
+      const touchBar = new TouchBar({items: [1, true, {}, []]})
       touchBar.toString()
     }, /Each item must be an instance of TouchBarItem/)
+  })
+
+  it('throws an error when an invalid escape item is set', function () {
+    assert.throws(() => {
+      const touchBar = new TouchBar({items: [], escapeItem: 'esc'})
+      touchBar.toString()
+    }, /Escape item must be an instance of TouchBarItem/)
+
+    assert.throws(() => {
+      const touchBar = new TouchBar({items: []})
+      touchBar.escapeItem = 'esc'
+    }, /Escape item must be an instance of TouchBarItem/)
   })
 
   describe('BrowserWindow behavior', function () {
@@ -55,10 +67,40 @@ describe('TouchBar module', function () {
           showArrowButtons: true
         })
       ])
+      const escapeButton = new TouchBarButton({
+        label: 'foo'
+      })
       window.setTouchBar(touchBar)
+      touchBar.escapeItem = escapeButton
       label.label = 'baz'
+      escapeButton.label = 'hello'
       window.setTouchBar()
       window.setTouchBar(new TouchBar([new TouchBarLabel({label: 'two'})]))
+      touchBar.escapeItem = null
+    })
+
+    it('calls the callback on the items when a window interaction event fires', function (done) {
+      const button = new TouchBarButton({
+        label: 'bar',
+        click: () => {
+          done()
+        }
+      })
+      const touchBar = new TouchBar({items: [button]})
+      window.setTouchBar(touchBar)
+      window.emit('-touch-bar-interaction', {}, button.id)
+    })
+
+    it('calls the callback on the escape item when a window interaction event fires', function (done) {
+      const button = new TouchBarButton({
+        label: 'bar',
+        click: () => {
+          done()
+        }
+      })
+      const touchBar = new TouchBar({escapeItem: button})
+      window.setTouchBar(touchBar)
+      window.emit('-touch-bar-interaction', {}, button.id)
     })
   })
 })

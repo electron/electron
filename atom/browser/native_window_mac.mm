@@ -7,6 +7,7 @@
 #include <Quartz/Quartz.h>
 #include <string>
 
+#include "atom/browser/native_browser_view_mac.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
@@ -19,9 +20,9 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "brightray/browser/mac/event_dispatching_window.h"
 #include "content/public/browser/browser_accessibility_state.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/skia/include/core/SkRegion.h"
@@ -368,6 +369,7 @@ enum {
 - (void)enableWindowButtonsOffset;
 - (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings;
 - (void)refreshTouchBarItem:(const std::string&)item_id;
+- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item;
 
 @end
 
@@ -408,6 +410,11 @@ enum {
     return [atom_touch_bar_ makeItemForIdentifier:identifier];
   else
     return nil;
+}
+
+- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item {
+  if (atom_touch_bar_ && self.touchBar)
+    [atom_touch_bar_ setEscapeTouchBarItem:item forTouchBar:self.touchBar];
 }
 
 // NSWindow overrides.
@@ -665,6 +672,7 @@ NativeWindowMac::NativeWindowMac(
     const mate::Dictionary& options,
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
+      browser_view_(nullptr),
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),
@@ -1263,6 +1271,26 @@ void NativeWindowMac::SetContentProtection(bool enable) {
                                  : NSWindowSharingReadOnly];
 }
 
+void NativeWindowMac::SetBrowserView(NativeBrowserView* browser_view) {
+  if (browser_view_) {
+    [browser_view_->GetInspectableWebContentsView()->GetNativeView()
+            removeFromSuperview];
+    browser_view_ = nullptr;
+  }
+
+  if (!browser_view) {
+    return;
+  }
+
+  browser_view_ = browser_view;
+  auto* native_view =
+      browser_view->GetInspectableWebContentsView()->GetNativeView();
+  [[window_ contentView] addSubview:native_view
+                         positioned:NSWindowAbove
+                         relativeTo:nil];
+  native_view.hidden = NO;
+}
+
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
   if (is_modal())
     return;
@@ -1415,6 +1443,10 @@ void NativeWindowMac::SetTouchBar(
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
   [window_ refreshTouchBarItem:item_id];
+}
+
+void NativeWindowMac::SetEscapeTouchBarItem(const mate::PersistentDictionary& item) {
+  [window_ setEscapeTouchBarItem:item];
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {

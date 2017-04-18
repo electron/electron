@@ -87,16 +87,14 @@ void AutoUpdater::SetFeedURL(const std::string& url, mate::Arguments* args) {
 
 void AutoUpdater::QuitAndInstall() {
   // If we don't have any window then quitAndInstall immediately.
-  WindowList* window_list = WindowList::GetInstance();
-  if (window_list->empty()) {
+  if (WindowList::IsEmpty()) {
     auto_updater::AutoUpdater::QuitAndInstall();
     return;
   }
 
   // Otherwise do the restart after all windows have been closed.
-  window_list->AddObserver(this);
-  for (NativeWindow* window : *window_list)
-    window->Close();
+  WindowList::AddObserver(this);
+  WindowList::CloseAllWindows();
 }
 
 // static

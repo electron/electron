@@ -47,6 +47,8 @@ class Dictionary;
 
 namespace atom {
 
+class NativeBrowserView;
+
 struct DraggableRegion;
 
 class NativeWindow : public base::SupportsUserData,
@@ -144,6 +146,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(AtomMenuModel* menu);
   virtual void SetParentWindow(NativeWindow* parent);
+  virtual void SetBrowserView(NativeBrowserView* browser_view) = 0;
   virtual gfx::NativeWindow GetNativeWindow() = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
@@ -174,6 +177,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetTouchBar(
       const std::vector<mate::PersistentDictionary>& items);
   virtual void RefreshTouchBarItem(const std::string& item_id);
+  virtual void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
 
   // Webview APIs.
   virtual void FocusOnWebView();
