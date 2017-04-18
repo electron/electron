@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # Download individual checksum files for Electron zip files from S3,
 # concatenate them, and upload to GitHub.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # usage: make_locale_paks build_dir [...]
 #
