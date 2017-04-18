@@ -172,6 +172,7 @@ std::string AtomBrowserClient::GetApplicationLocale() {
 }
 
 void AtomBrowserClient::OverrideSiteInstanceForNavigation(
+    content::RenderFrameHost* render_frame_host,
     content::BrowserContext* browser_context,
     content::SiteInstance* current_instance,
     const GURL& url,
