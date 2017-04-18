@@ -37,6 +37,8 @@ class WebContentsPreferences
   static void AppendExtraCommandLineSwitches(
       content::WebContents* web_contents, base::CommandLine* command_line);
 
+  static bool IsNodeIntegrationEnabled(content::WebContents* web_contents);
+
   static bool IsSandboxed(content::WebContents* web_contents);
 
   // Modify the WebPreferences according to |web_contents|'s preferences.

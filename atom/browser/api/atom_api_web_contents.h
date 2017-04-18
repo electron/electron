@@ -84,7 +84,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   int GetProcessID() const;
   Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
-  void LoadURL(const GURL& url, const mate::Dictionary& options);
+  void LoadURL(const GURL& url,
+               const mate::Dictionary& options,
+               mate::Arguments* args);
   void DownloadURL(const GURL& url);
   GURL GetURL() const;
   base::string16 GetTitle() const;

@@ -492,6 +492,14 @@ content::WebContents* WebContents::OpenURLFromTab(
     return nullptr;
   }
 
+  if (!params.url.SchemeIsFile() &&
+      WebContentsPreferences::IsNodeIntegrationEnabled(web_contents())) {
+    LOG(ERROR) << "Navigation has been blocked because using nodeIntegration "
+                  "with non-file:// URLs is dangerous See: "
+                  "https://electron.atom.io/docs/tutorial/security/";
+    return nullptr;
+  }
+
   // Give user a chance to cancel navigation.
   if (Emit("will-navigate", params.url))
     return nullptr;
@@ -967,13 +975,24 @@ bool WebContents::Equal(const WebContents* web_contents) const {
   return GetID() == web_contents->GetID();
 }
 
-void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
+void WebContents::LoadURL(const GURL& url,
+                          const mate::Dictionary& options,
+                          mate::Arguments* args) {
   if (!url.is_valid() || url.spec().size() > url::kMaxURLChars) {
     Emit("did-fail-load",
          static_cast<int>(net::ERR_INVALID_URL),
          net::ErrorToShortString(net::ERR_INVALID_URL),
          url.possibly_invalid_spec(),
          true);
+    return;
+  }
+
+  if (!url.SchemeIsFile() &&
+      WebContentsPreferences::IsNodeIntegrationEnabled(web_contents())) {
+    args->ThrowError(
+        "Loading non-file:// URLs with nodeIntegration is dangerous and has "
+        "been blocked! See: "
+        "https://electron.atom.io/docs/tutorial/security/");
     return;
   }
 
