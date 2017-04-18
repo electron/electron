@@ -1474,13 +1474,19 @@ describe('BrowserWindow module', function () {
       // Only implemented on macOS.
       if (process.platform !== 'darwin') return
 
-      it('can be changed with setKiosk method', function () {
+      it('can be changed with setKiosk method', function (done) {
         w.destroy()
         w = new BrowserWindow()
         w.setKiosk(true)
         assert.equal(w.isKiosk(), true)
-        w.setKiosk(false)
-        assert.equal(w.isKiosk(), false)
+
+        w.once('enter-full-screen', () => {
+          w.setKiosk(false)
+          assert.equal(w.isKiosk(), false)
+        })
+        w.once('leave-full-screen', () => {
+          done()
+        })
       })
     })
 
