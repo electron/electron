@@ -162,6 +162,8 @@
               # Required by webrtc:
               '$(SDKROOT)/System/Library/Frameworks/OpenGL.framework',
               '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
+              # Required by media:
+              '$(SDKROOT)/System/Library/Frameworks/VideoToolbox.framework',
             ],
           },
           'conditions':  [
