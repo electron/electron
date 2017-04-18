@@ -46,6 +46,7 @@
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
+#include "base/process/process_handle.h"
 #include "content/browser/frame_host/navigation_entry_impl.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/web_contents/web_contents_impl.h"
@@ -76,6 +77,7 @@
 #include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
+
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -959,6 +961,11 @@ int WebContents::GetProcessID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
+int WebContents::GetOSProcessID() const {
+  auto process_handle = web_contents()->GetRenderProcessHost()->GetHandle();
+  return base::GetProcId(process_handle);
+}
+
 WebContents::Type WebContents::GetType() const {
   return type_;
 }
@@ -1708,6 +1715,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .MakeDestroyable()
       .SetMethod("getId", &WebContents::GetID)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
+      .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
