@@ -90,13 +90,7 @@ describe('chromium feature', function () {
   })
 
   describe('navigator.mediaDevices', function () {
-    if (process.env.TRAVIS === 'true') {
-      return
-    }
-    if (isCI && process.platform === 'linux') {
-      return
-    }
-    if (isCI && process.platform === 'win32') {
+    if (isCI) {
       return
     }
 
