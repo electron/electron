@@ -219,6 +219,21 @@ describe('session module', function () {
         if (error) return done(error)
       })
     })
+
+    describe('ses.cookies.flushStore(callback)', function () {
+      it('flushes the cookies to disk and invokes the callback when done', function (done) {
+        session.defaultSession.cookies.set({
+          url: url,
+          name: 'foo',
+          value: 'bar'
+        }, (error) => {
+          if (error) return done(error)
+          session.defaultSession.cookies.flushStore(() => {
+            done()
+          })
+        })
+      })
+    })
   })
 
   describe('ses.clearStorageData(options)', function () {

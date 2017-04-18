@@ -179,6 +179,13 @@ void OnSetCookie(const Cookies::SetCallback& callback, bool success) {
       base::Bind(callback, success ? Cookies::SUCCESS : Cookies::FAILED));
 }
 
+// Flushes cookie store in IO thread.
+void FlushCookieStoreOnIOThread(
+    scoped_refptr<net::URLRequestContextGetter> getter,
+    const base::Closure& callback) {
+  GetCookieStore(getter)->FlushStore(base::Bind(RunCallbackInUI, callback));
+}
+
 // Sets cookie with |details| in IO thread.
 void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                    std::unique_ptr<base::DictionaryValue> details,
@@ -265,6 +272,13 @@ void Cookies::Set(const base::DictionaryValue& details,
       base::Bind(SetCookieOnIO, getter, Passed(&copied), callback));
 }
 
+void Cookies::FlushStore(const base::Closure& callback) {
+  auto getter = make_scoped_refptr(request_context_getter_);
+  content::BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(FlushCookieStoreOnIOThread, getter, callback));
+}
+
 void Cookies::OnCookieChanged(const net::CanonicalCookie& cookie,
                               bool removed,
                               net::CookieStore::ChangeCause cause) {
@@ -286,7 +300,8 @@ void Cookies::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("get", &Cookies::Get)
       .SetMethod("remove", &Cookies::Remove)
-      .SetMethod("set", &Cookies::Set);
+      .SetMethod("set", &Cookies::Set)
+      .SetMethod("flushStore", &Cookies::FlushStore);
 }
 
 }  // namespace api
