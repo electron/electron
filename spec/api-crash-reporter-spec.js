@@ -33,8 +33,10 @@ describe('crashReporter module', function () {
   const generateSpecs = (description, browserWindowOpts) => {
     describe(description, function () {
       var w = null
+      var stopServer = null
 
       beforeEach(function () {
+        stopServer = null
         w = new BrowserWindow(Object.assign({
           show: false
         }, browserWindowOpts))
@@ -44,13 +46,19 @@ describe('crashReporter module', function () {
         return closeWindow(w).then(function () { w = null })
       })
 
+      afterEach(function (done) {
+        if (stopServer != null) {
+          stopServer(done)
+        }
+      })
+
       it('should send minidump when renderer crashes', function (done) {
         if (process.env.APPVEYOR === 'True') return done()
         if (process.env.TRAVIS === 'true') return done()
 
         this.timeout(120000)
 
-        startServer({
+        stopServer = startServer({
           callback (port) {
             const crashUrl = url.format({
               protocol: 'file',
@@ -70,7 +78,7 @@ describe('crashReporter module', function () {
 
         this.timeout(120000)
 
-        startServer({
+        stopServer = startServer({
           callback (port) {
             const crashesDir = path.join(app.getPath('temp'), `${app.getName()} Crashes`)
             const version = app.getVersion()
@@ -85,7 +93,6 @@ describe('crashReporter module', function () {
       it('should not send minidump if uploadToServer is false', function (done) {
         this.timeout(120000)
 
-        let server
         let dumpFile
         let crashesDir = crashReporter.getCrashesDirectory()
         const existingDumpFiles = new Set()
@@ -98,7 +105,6 @@ describe('crashReporter module', function () {
           if (uploaded) {
             return done(new Error('fail'))
           }
-          server.close()
           if (process.platform === 'darwin') {
             crashReporter.setUploadToServer(true)
           }
@@ -139,7 +145,7 @@ describe('crashReporter module', function () {
           })
         })
 
-        server = startServer({
+        stopServer = startServer({
           callback (port) {
             const crashUrl = url.format({
               protocol: 'file',
@@ -159,7 +165,7 @@ describe('crashReporter module', function () {
 
         this.timeout(120000)
 
-        startServer({
+        stopServer = startServer({
           callback (port) {
             const crashUrl = url.format({
               protocol: 'file',
@@ -254,7 +260,6 @@ const waitForCrashReport = () => {
 const startServer = ({callback, processType, done}) => {
   var called = false
   var server = http.createServer((req, res) => {
-    server.close()
     var form = new multiparty.Form()
     form.parse(req, (error, fields) => {
       if (error) throw error
@@ -283,6 +288,15 @@ const startServer = ({callback, processType, done}) => {
       })
     })
   })
+
+  const activeConnections = new Set()
+  server.on('connection', (connection) => {
+    activeConnections.add(connection)
+    connection.once('close', () => {
+      activeConnections.delete(connection)
+    })
+  })
+
   let {port} = remote.process
   server.listen(port, '127.0.0.1', () => {
     port = server.address().port
@@ -295,5 +309,13 @@ const startServer = ({callback, processType, done}) => {
     }
     callback(port)
   })
-  return server
+
+  return function stopServer (done) {
+    for (const connection of activeConnections) {
+      connection.destroy()
+    }
+    server.close(function () {
+      done()
+    })
+  }
 }
