@@ -75,7 +75,7 @@ void BrowserView::Init(v8::Isolate* isolate,
 }
 
 BrowserView::~BrowserView() {
-  api_web_contents_->DestroyWebContents();
+  api_web_contents_->DestroyWebContents(true /* async */);
 }
 
 // static
