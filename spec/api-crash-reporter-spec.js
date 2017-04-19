@@ -96,10 +96,10 @@ describe('crashReporter module', function () {
                 '--application-name=Zombies',
                 `--crashes-directory=${crashesDir}`
               ], {
-               env: {
-                 ELECTRON_INTERNAL_CRASH_SERVICE: 1
-               },
-               detached: true
+                env: {
+                  ELECTRON_INTERNAL_CRASH_SERVICE: 1
+                },
+                detached: true
               })
               remote.process.crashServicePid = crashServiceProcess.pid
             }
