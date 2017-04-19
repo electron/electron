@@ -490,7 +490,7 @@ void WebContents::AddNewContents(content::WebContents* source,
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
       initial_rect.x(), initial_rect.y(), initial_rect.width(),
       initial_rect.height())) {
-    api_web_contents->DestroyWebContents(false /* async */);
+    api_web_contents->DestroyWebContents(true /* async */);
   }
 }
 
