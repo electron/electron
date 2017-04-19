@@ -157,7 +157,7 @@ describe('crashReporter module', function () {
         if (process.env.APPVEYOR === 'True') return done()
         if (process.env.TRAVIS === 'true') return done()
 
-        this.timeout(10000)
+        this.timeout(120000)
 
         startServer({
           callback (port) {
