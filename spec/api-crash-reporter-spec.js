@@ -49,6 +49,8 @@ describe('crashReporter module', function () {
       afterEach(function (done) {
         if (stopServer != null) {
           stopServer(done)
+        } else {
+          done()
         }
       })
 
