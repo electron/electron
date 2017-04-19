@@ -24,7 +24,10 @@ var argv = require('yargs')
   .argv
 
 var window = null
-process.port = 0 // will be used by crash-reporter spec.
+
+ // will be used by crash-reporter spec.
+process.port = 0
+process.crashServicePid = 0
 
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
@@ -327,6 +330,11 @@ ipcMain.on('navigate-with-pending-entry', (event, id) => {
   w.webContents.session.clearHostResolverCache(() => {
     w.loadURL('http://host')
   })
+})
+
+ipcMain.on('crash-service-pid', (event, pid) => {
+  process.crashServicePid = pid
+  event.returnValue = null
 })
 
 // Suspend listeners until the next event and then restore them

@@ -3,7 +3,7 @@
 <script type="text/javascript" charset="utf-8">
 
 const {port} = require('url').parse(window.location.href, true).query
-const {crashReporter} = require('electron')
+const {crashReporter, ipcRenderer} = require('electron')
 
 crashReporter.start({
   productName: 'Zombies',
@@ -17,6 +17,10 @@ crashReporter.start({
     extra3: 'extra3'
   }
 })
+
+if (process.platform === 'win32') {
+  ipcRenderer.sendSync('crash-service-pid', crashReporter._crashServiceProcess.pid)
+}
 
 setImmediate(() => {
   if (process.platform === 'darwin') {

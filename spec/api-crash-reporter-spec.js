@@ -46,6 +46,10 @@ describe('crashReporter module', function () {
         return closeWindow(w).then(function () { w = null })
       })
 
+      afterEach(function () {
+        stopCrashService()
+      })
+
       afterEach(function (done) {
         if (stopServer != null) {
           stopServer(done)
@@ -82,9 +86,24 @@ describe('crashReporter module', function () {
 
         stopServer = startServer({
           callback (port) {
-            const crashesDir = path.join(app.getPath('temp'), `${app.getName()} Crashes`)
+            const crashesDir = path.join(app.getPath('temp'), `Zombies Crashes`)
             const version = app.getVersion()
             const crashPath = path.join(fixtures, 'module', 'crash.js')
+
+            if (process.platform === 'win32') {
+              const crashServiceProcess = childProcess.spawn(process.execPath, [
+                `--reporter-url=http://127.0.0.1:${port}`,
+                '--application-name=Zombies',
+                `--crashes-directory=${crashesDir}`
+              ], {
+               env: {
+                 ELECTRON_INTERNAL_CRASH_SERVICE: 1
+               },
+               detached: true
+              })
+              remote.process.crashServicePid = crashServiceProcess.pid
+            }
+
             childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
           },
           processType: 'browser',
@@ -105,7 +124,7 @@ describe('crashReporter module', function () {
         }
         const testDone = (uploaded) => {
           if (uploaded) {
-            return done(new Error('fail'))
+            return done(new Error('Uploaded crash report'))
           }
           if (process.platform === 'darwin') {
             crashReporter.setUploadToServer(true)
@@ -319,5 +338,19 @@ const startServer = ({callback, processType, done}) => {
     server.close(function () {
       done()
     })
+  }
+}
+
+const stopCrashService = () => {
+  const {crashServicePid} = remote.process
+  if (crashServicePid) {
+    remote.process.crashServicePid = 0
+    try {
+      process.kill(crashServicePid)
+    } catch (error) {
+      if (error.code !== 'ESRCH') {
+        throw error
+      }
+    }
   }
 }
