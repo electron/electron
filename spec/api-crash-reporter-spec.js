@@ -176,7 +176,7 @@ describe('crashReporter module', function () {
   }
 
   generateSpecs('without sandbox', {})
-  generateSpecs('with sandbox ', {
+  generateSpecs('with sandbox', {
     webPreferences: {
       sandbox: true,
       preload: path.join(fixtures, 'module', 'preload-sandbox.js')
