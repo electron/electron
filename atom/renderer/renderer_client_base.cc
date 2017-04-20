@@ -30,6 +30,7 @@
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
+#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
 
 #if defined(OS_MACOSX)
 #include "base/mac/mac_util.h"
@@ -84,6 +85,13 @@ void RendererClientBase::AddRenderBindings(
 void RendererClientBase::RenderThreadStarted() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
+
+  // Parse --secure-schemes=scheme1,scheme2
+  std::vector<std::string> secure_schemes_list =
+      ParseSchemesCLISwitch(switches::kSecureSchemes);
+  for (const std::string& scheme : secure_schemes_list)
+    blink::SchemeRegistry::registerURLSchemeAsSecure(
+        WTF::String::fromUTF8(scheme.data(), scheme.length()));
 
   preferences_manager_.reset(new PreferencesManager);
 
