@@ -67,6 +67,8 @@ class NativeWindowObserver {
   virtual void OnWindowScrollTouchEnd() {}
   virtual void OnWindowScrollTouchEdge() {}
   virtual void OnWindowSwipe(const std::string& direction) {}
+  virtual void OnWindowSheetBegin() {}
+  virtual void OnWindowSheetEnd() {}
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}
@@ -77,11 +79,6 @@ class NativeWindowObserver {
   // Called when window message received
   #if defined(OS_WIN)
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
-  #endif
-
-  #if defined(OS_MACOSX)
-  virtual void OnWindowSheetBegin() {}
-  virtual void OnWindowSheetEnd() {}
   #endif
 
   // Called when renderer is hung.

@@ -263,6 +263,14 @@ void Window::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
 
+void Window::OnWindowSheetBegin() {
+  Emit("sheet-begin");
+}
+
+void Window::OnWindowSheetEnd() {
+  Emit("sheet-end");
+}
+
 void Window::OnWindowEnterHtmlFullScreen() {
   Emit("enter-html-full-screen");
 }
@@ -295,16 +303,6 @@ void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
         ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
         ToBuffer(isolate(), static_cast<void*>(&l_param), sizeof(LPARAM)));
   }
-}
-#endif
-
-#if defined(OS_MACOSX)
-void Window::OnWindowSheetBegin() {
-  Emit("sheet-begin");
-}
-
-void Window::OnWindowSheetEnd() {
-  Emit("sheet-end");
 }
 #endif
 

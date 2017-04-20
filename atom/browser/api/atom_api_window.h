@@ -79,6 +79,8 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowScrollTouchEnd() override;
   void OnWindowScrollTouchEdge() override;
   void OnWindowSwipe(const std::string& direction) override;
+  void OnWindowSheetBegin() override;
+  void OnWindowSheetEnd() override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
@@ -91,11 +93,6 @@ class Window : public mate::TrackableObject<Window>,
 
   #if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
-  #endif
-
-  #if defined(OS_MACOSX)
-  void OnWindowSheetBegin() override;
-  void OnWindowSheetEnd() override;
   #endif
 
  private:

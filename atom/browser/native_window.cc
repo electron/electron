@@ -554,6 +554,16 @@ void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
     observer.OnWindowSwipe(direction);
 }
 
+void NativeWindow::NotifyWindowSheetBegin() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetBegin();
+}
+
+void NativeWindow::NotifyWindowSheetEnd() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetEnd();
+}
+
 void NativeWindow::NotifyWindowLeaveFullScreen() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowLeaveFullScreen();
@@ -587,18 +597,6 @@ void NativeWindow::NotifyWindowMessage(
     UINT message, WPARAM w_param, LPARAM l_param) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowMessage(message, w_param, l_param);
-}
-#endif
-
-#if defined(OS_MACOSX)
-void NativeWindow::NotifyWindowSheetBegin() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowSheetBegin();
-}
-
-void NativeWindow::NotifyWindowSheetEnd() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowSheetEnd();
 }
 #endif
 

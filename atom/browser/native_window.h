@@ -233,6 +233,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowScrollTouchEnd();
   void NotifyWindowScrollTouchEdge();
   void NotifyWindowSwipe(const std::string& direction);
+  void NotifyWindowSheetBegin();
+  void NotifyWindowSheetEnd();
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
@@ -243,11 +245,6 @@ class NativeWindow : public base::SupportsUserData,
 
   #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
-  #endif
-
-  #if defined(OS_MACOSX)
-  void NotifyWindowSheetBegin();
-  void NotifyWindowSheetEnd();
   #endif
 
   void AddObserver(NativeWindowObserver* obs) {
