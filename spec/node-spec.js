@@ -85,7 +85,7 @@ describe('node feature', function () {
         child.stdout.on('data', (chunk) => {
           data += String(chunk)
         })
-        child.on('exit', (code) => {
+        child.on('close', (code) => {
           assert.equal(code, 0)
           assert.equal(data, 'pipes stdio')
           done()
