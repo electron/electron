@@ -38,17 +38,14 @@ global.sharedObject = {
   someProperty: 'default value'
 }
 ```
-
 ```javascript
 // In page 1.
 require('electron').remote.getGlobal('sharedObject').someProperty = 'new value'
 ```
-
 ```javascript
 // In page 2.
 console.log(require('electron').remote.getGlobal('sharedObject').someProperty)
 ```
-
 ## My app's window/tray disappeared after a few minutes.
 
 This happens when the variable which is used to store the window/tray gets
@@ -61,7 +58,6 @@ If you encounter this problem, the following articles may prove helpful:
 
 If you want a quick fix, you can make the variables global by changing your
 code from this:
-
 ```javascript
 const {app, Tray} = require('electron')
 app.on('ready', () => {
@@ -69,9 +65,7 @@ app.on('ready', () => {
   tray.setTitle('hello world')
 })
 ```
-
 to this:
-
 ```javascript
 const {app, Tray} = require('electron')
 let tray = null
@@ -80,7 +74,6 @@ app.on('ready', () => {
   tray.setTitle('hello world')
 })
 ```
-
 ## I can not use jQuery/RequireJS/Meteor/AngularJS in Electron.
 
 Due to the Node.js integration of Electron, there are some extra symbols
@@ -88,7 +81,6 @@ inserted into the DOM like `module`, `exports`, `require`. This causes problems
 for some libraries since they want to insert the symbols with the same names.
 
 To solve this, you can turn off node integration in Electron:
-
 ```javascript
 // In the main process.
 const {BrowserWindow} = require('electron')
@@ -99,55 +91,44 @@ let win = new BrowserWindow({
 })
 win.show()
 ```
-
 But if you want to keep the abilities of using Node.js and Electron APIs, you
 have to rename the symbols in the page before including other libraries:
-
 ```html
 <head>
-<script>
-window.nodeRequire = require;
-delete window.require;
-delete window.exports;
-delete window.module;
-</script>
-<script type="text/javascript" src="jquery.js"></script>
+    <script>
+        window.nodeRequire = require;
+        delete window.require;
+        delete window.exports;
+        delete window.module;
+    </script>
+    <script type="text/javascript" src="jquery.js"></script>
 </head>
 ```
-
 ## `require('electron').xxx` is undefined.
 
 When using Electron's built-in module you might encounter an error like this:
-
 ```
 > require('electron').webFrame.setZoomFactor(1.0)
 Uncaught TypeError: Cannot read property 'setZoomLevel' of undefined
 ```
-
 This is because you have the [npm `electron` module][electron-module] installed
 either locally or globally, which overrides Electron's built-in module.
 
 To verify whether you are using the correct built-in module, you can print the
 path of the `electron` module:
-
 ```javascript
 console.log(require.resolve('electron'))
 ```
-
 and then check if it is in the following form:
-
 ```
 "/path/to/Electron.app/Contents/Resources/atom.asar/renderer/api/lib/exports/electron.js"
 ```
-
 If it is something like `node_modules/electron/index.js`, then you have to
 either remove the npm `electron` module, or rename it.
-
 ```bash
 npm uninstall electron
 npm uninstall -g electron
 ```
-
 However if your are using the built-in module but still getting this error, it
 is very likely you are using the module in the wrong process. For example
 `electron.app` can only be used in the main process, while `electron.webFrame`
