@@ -554,6 +554,16 @@ void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
     observer.OnWindowSwipe(direction);
 }
 
+void NativeWindow::NotifyWindowSheetBegin() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetBegin();
+}
+
+void NativeWindow::NotifyWindowSheetEnd() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetEnd();
+}
+
 void NativeWindow::NotifyWindowLeaveFullScreen() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowLeaveFullScreen();
