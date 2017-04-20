@@ -13,12 +13,17 @@ const isCI = remote.getGlobal('isCi')
 describe('chromium feature', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var listener = null
+  let w = null
 
   afterEach(function () {
     if (listener != null) {
       window.removeEventListener('message', listener)
     }
     listener = null
+  })
+
+  afterEach(function () {
+    return closeWindow(w).then(function () { w = null })
   })
 
   describe('heap snapshot', function () {
@@ -44,11 +49,6 @@ describe('chromium feature', function () {
 
   describe('document.hidden', function () {
     var url = 'file://' + fixtures + '/pages/document-hidden.html'
-    var w = null
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
-    })
 
     it('is set correctly when window is not shown', function (done) {
       w = new BrowserWindow({
@@ -90,13 +90,7 @@ describe('chromium feature', function () {
   })
 
   describe('navigator.mediaDevices', function () {
-    if (process.env.TRAVIS === 'true') {
-      return
-    }
-    if (isCI && process.platform === 'linux') {
-      return
-    }
-    if (isCI && process.platform === 'win32') {
+    if (isCI) {
       return
     }
 
@@ -107,7 +101,7 @@ describe('chromium feature', function () {
         if (labelFound) {
           done()
         } else {
-          done('No device labels found: ' + JSON.stringify(labels))
+          done(new Error(`No device labels found: ${JSON.stringify(labels)}`))
         }
       }).catch(done)
     })
@@ -119,7 +113,7 @@ describe('chromium feature', function () {
       }
       const deviceIds = []
       const ses = session.fromPartition('persist:media-device-id')
-      let w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         webPreferences: {
           session: ses
@@ -155,11 +149,6 @@ describe('chromium feature', function () {
 
   describe('navigator.serviceWorker', function () {
     var url = 'file://' + fixtures + '/pages/service-worker/index.html'
-    var w = null
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
-    })
 
     it('should register for file scheme', function (done) {
       w = new BrowserWindow({
@@ -187,12 +176,6 @@ describe('chromium feature', function () {
     if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
       return
     }
-
-    let w = null
-
-    afterEach(() => {
-      return closeWindow(w).then(function () { w = null })
-    })
 
     it('returns a BrowserWindowProxy object', function () {
       var b = window.open('about:blank', '', 'show=no')
@@ -343,11 +326,6 @@ describe('chromium feature', function () {
 
   describe('window.opener', function () {
     let url = 'file://' + fixtures + '/pages/window-opener.html'
-    let w = null
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
-    })
 
     it('is null for main window', function (done) {
       w = new BrowserWindow({
@@ -849,7 +827,6 @@ describe('chromium feature', function () {
   })
 
   describe('PDF Viewer', function () {
-    let w = null
     const pdfSource = url.format({
       pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
       protocol: 'file',
@@ -863,10 +840,6 @@ describe('chromium feature', function () {
           preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
         }
       })
-    })
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
     })
 
     it('opens when loading a pdf resource as top level navigation', function (done) {
