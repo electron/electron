@@ -81,6 +81,7 @@ extern const char kStandardSchemes[];
 extern const char kRegisterServiceWorkerSchemes[];
 extern const char kSecureSchemes[];
 extern const char kAppUserModelId[];
+extern const char kAppPath[];
 
 extern const char kBackgroundColor[];
 extern const char kPreloadScript[];
