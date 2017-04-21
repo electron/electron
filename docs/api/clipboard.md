@@ -157,6 +157,14 @@ Returns `String` - Reads `format` type from the clipboard.
 
 Returns `Buffer` - Reads `format` type from the clipboard.
 
+### `clipboard.writeBuffer(format, buffer[, type])`
+
+* `format` String
+* `buffer` Buffer
+* `type` String (optional)
+
+Writes the `buffer` as `format` into the clipboard.
+
 ### `clipboard.write(data[, type])`
 
 * `data` Object
@@ -165,10 +173,17 @@ Returns `Buffer` - Reads `format` type from the clipboard.
   * `image` [NativeImage](native-image.md) (optional)
   * `rtf` String (optional)
   * `bookmark` String (optional) - The title of the url at `text`.
+  * `buffer` {[format: String]: Buffer} (optional) - The buffers for each format you want to write
 * `type` String (optional)
 
 ```javascript
 const {clipboard} = require('electron')
-clipboard.write({text: 'test', html: '<b>test</b>'})
+clipboard.write({
+  text: 'test',
+  html: '<b>test</b>',
+  buffer: {
+    'com.adobe.pdf': pdfData
+  }
+})
 ```
 Writes `data` to the clipboard.
