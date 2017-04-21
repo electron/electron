@@ -67,6 +67,10 @@ if (!process.mas) {
 
     describe('error event', function () {
       it('serializes correctly over the remote module', function (done) {
+        if (process.platform === 'linux') {
+          return done()
+        }
+
         autoUpdater.once('error', function (error) {
           assert.equal(error instanceof Error, true)
           assert.deepEqual(Object.getOwnPropertyNames(error), ['stack', 'message', 'name'])
