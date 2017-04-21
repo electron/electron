@@ -7,6 +7,8 @@
 #include <wincrypt.h>
 #include <windows.h>
 
+#include "base/callback.h"
+
 namespace certificate_trust {
 
 void ShowCertificateTrust(atom::NativeWindow* parent_window,
@@ -33,13 +35,11 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
         CERT_STORE_ADD_REPLACE_EXISTING,
         NULL);
 
-    // close certificate store
     CertCloseStore(hCertStore, CERT_CLOSE_STORE_FORCE_FLAG);
 
-    // free certificate
     CertFreeCertificateContext(pCertContext);
 
-    &callback;
+    callback.Run();
 }
 
 }  // namespace certificate_trust
