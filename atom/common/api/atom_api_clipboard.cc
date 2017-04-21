@@ -4,6 +4,8 @@
 
 #include "atom/common/api/atom_api_clipboard.h"
 
+#include <map>
+
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/strings/utf_string_conversions.h"
