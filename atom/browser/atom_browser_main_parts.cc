@@ -25,10 +25,6 @@
 #include "device/geolocation/geolocation_provider.h"
 #include "v8/include/v8-debug.h"
 
-#if defined(USE_AURA)
-#include "ui/wm/core/wm_state.h"
-#endif
-
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
@@ -60,10 +56,6 @@ void Erase(T* container, typename T::iterator iter) {
 
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
-
-#if defined(USE_AURA)
-wm::WMState* wm_state_ = nullptr;
-#endif
 
 AtomBrowserMainParts::AtomBrowserMainParts()
     : fake_browser_process_(new BrowserProcess),
@@ -166,10 +158,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
-
-#if defined(USE_AURA)
-  wm_state_ = new wm::WMState;
-#endif
 
 #if defined(USE_X11)
   ui::TouchFactory::SetTouchDeviceListFromCommandLine();
