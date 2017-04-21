@@ -176,7 +176,7 @@ it is usually used to report errors in early stage of startup.  If called
 before the app `ready`event on Linux, the message will be emitted to stderr,
 and no GUI dialog will appear.
 
-### `dialog.showCertificateTrustDialog([browserWindow, ]options, callback)` _macOS_
+### `dialog.showCertificateTrustDialog([browserWindow, ]options, callback)` _macOS_ _Windows_
 
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
@@ -187,8 +187,8 @@ and no GUI dialog will appear.
 Displays a modal dialog that shows a message and certificate information, and
 gives the user the option of trusting/importing the certificate.
 
-The `browserWindow` argument allows the dialog to attach itself to a parent
-window, making it modal.
+On macOS the `browserWindow` argument allows the dialog to attach itself to a parent
+window, making it modal. On Windows a modal dialog is not supported.
 
 ## Sheets
 
