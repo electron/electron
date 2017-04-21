@@ -163,7 +163,7 @@ Returns `Buffer` - Reads `format` type from the clipboard.
 * `buffer` Buffer
 * `type` String (optional)
 
-Writes the `buffer` as `format` into the clipboard.
+Writes the `buffer` into the clipboard as `format`.
 
 ### `clipboard.write(data[, type])`
 
