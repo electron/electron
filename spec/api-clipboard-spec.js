@@ -76,7 +76,7 @@ describe('clipboard module', function () {
         rtf: '{\\rtf1\\utf8 text}',
         bookmark: 'a title',
         image: p,
-        buffer: {
+        buffers: {
           [pdfType]: pdf
         }
       })

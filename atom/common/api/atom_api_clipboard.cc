@@ -86,7 +86,7 @@ void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {
   if (data.Get("image", &image))
     writer.WriteImage(image.AsBitmap());
 
-  if (data.Get("buffer", &customBuffers)) {
+  if (data.Get("buffers", &customBuffers)) {
     for (auto i = customBuffers.begin(); i != customBuffers.end(); ++i) {
       writer.WriteData(node::Buffer::Data(i->second),
                        node::Buffer::Length(i->second),
