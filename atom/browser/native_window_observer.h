@@ -78,6 +78,7 @@ class NativeWindowObserver {
 
   // Called when window message received
   #if defined(OS_WIN)
+  virtual void OnWindowEndSession() {}
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
   #endif
 

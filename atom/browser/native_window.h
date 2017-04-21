@@ -244,6 +244,7 @@ class NativeWindow : public base::SupportsUserData,
                                      const base::DictionaryValue& details);
 
   #if defined(OS_WIN)
+  void NotifyWindowEndSession();
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
   #endif
 

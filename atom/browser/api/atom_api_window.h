@@ -92,6 +92,7 @@ class Window : public mate::TrackableObject<Window>,
                             const base::DictionaryValue& details) override;
 
   #if defined(OS_WIN)
+  void Window::OnWindowEndSession() override;
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
   #endif
 
