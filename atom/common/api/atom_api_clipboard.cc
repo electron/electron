@@ -66,6 +66,7 @@ void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   base::string16 text, html, bookmark;
   gfx::Image image;
+  std::map<std::string, v8::Local<v8::Value>> customBuffers;
 
   if (data.Get("text", &text)) {
     writer.WriteText(text);
@@ -84,6 +85,14 @@ void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {
 
   if (data.Get("image", &image))
     writer.WriteImage(image.AsBitmap());
+
+  if (data.Get("buffer", &customBuffers)) {
+    for (auto i = customBuffers.begin(); i != customBuffers.end(); ++i) {
+      writer.WriteData(node::Buffer::Data(i->second),
+                       node::Buffer::Length(i->second),
+                       ui::Clipboard::GetFormatType(i->first));
+    }
+  }
 }
 
 base::string16 Clipboard::ReadText(mate::Arguments* args) {
