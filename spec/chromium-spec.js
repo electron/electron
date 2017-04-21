@@ -229,6 +229,31 @@ describe('chromium feature', function () {
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
 
+    it('disables JavaScript when it is disabled on the parent window', function (done) {
+      var b
+      app.once('web-contents-created', (event, contents) => {
+        contents.once('did-finish-load', () => {
+          app.once('browser-window-created', (event, window) => {
+            const preferences = window.webContents.getWebPreferences()
+            assert.equal(preferences.javascript, false)
+            window.destroy()
+            b.close()
+            done()
+          })
+          // Click link on page
+          contents.sendInputEvent({type: 'mouseDown', clickCount: 1, x: 1, y: 1})
+          contents.sendInputEvent({type: 'mouseUp', clickCount: 1, x: 1, y: 1})
+        })
+      })
+
+      var windowUrl = require('url').format({
+        pathname: `${fixtures}/pages/window-no-javascript.html`,
+        protocol: 'file',
+        slashes: true
+      })
+      b = window.open(windowUrl, '', 'javascript=no,show=no')
+    })
+
     it('does not override child options', function (done) {
       var b, size
       size = {
