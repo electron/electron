@@ -94,6 +94,17 @@ describe('clipboard module', function () {
     })
   })
 
+  describe('clipboard.writeBuffer(format, buffer)', () => {
+    it('writes a Buffer for the specified format', () => {
+      if (process.platform !== 'darwin') return
+
+      const buffer = Buffer.from('writeBuffer', 'utf8')
+      clipboard.writeBuffer('public.utf8-plain-text', buffer)
+      console.log(clipboard.readText())
+      assert.equal(clipboard.readText(), 'writeBuffer')
+    })
+  })
+
   describe('clipboard.readBuffer(format)', function () {
     it('returns a Buffer of the content for the specified format', function () {
       if (process.platform !== 'darwin') return

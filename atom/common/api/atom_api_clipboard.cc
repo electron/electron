@@ -53,6 +53,15 @@ v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
       args->isolate(), data.data(), data.length()).ToLocalChecked();
 }
 
+void Clipboard::WriteBuffer(const std::string& format_string,
+                            const v8::Local<v8::Value> buffer,
+                            mate::Arguments* args) {
+  auto format = ui::Clipboard::GetFormatType(format_string);
+  ui::ScopedClipboardWriter writer(GetClipboardType(args));
+  writer.WriteData(node::Buffer::Data(buffer), node::Buffer::Length(buffer),
+                   format);
+}
+
 void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   base::string16 text, html, bookmark;
@@ -191,6 +200,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("readFindText", &atom::api::Clipboard::ReadFindText);
   dict.SetMethod("writeFindText", &atom::api::Clipboard::WriteFindText);
   dict.SetMethod("readBuffer", &atom::api::Clipboard::ReadBuffer);
+  dict.SetMethod("writeBuffer", &atom::api::Clipboard::WriteBuffer);
   dict.SetMethod("clear", &atom::api::Clipboard::Clear);
 
   // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
