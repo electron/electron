@@ -107,7 +107,6 @@ describe('clipboard module', function () {
 
       const buffer = Buffer.from('writeBuffer', 'utf8')
       clipboard.writeBuffer('public.utf8-plain-text', buffer)
-      console.log(clipboard.readText())
       assert.equal(clipboard.readText(), 'writeBuffer')
     })
   })
