@@ -7,6 +7,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/node_includes.h"
 #include "base/time/time.h"
@@ -47,7 +48,9 @@ void AutoUpdater::OnError(const std::string& message) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
-  EmitCustomEvent(
+  mate::EmitEvent(
+      isolate(),
+      GetWrapper(),
       "error",
       error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked(),
       // Message is also emitted to keep compatibility with old code.
