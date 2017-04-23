@@ -34,7 +34,7 @@ exports.load = (appUrl) => {
       silent: true,
       icon: '/Users/samuel/Downloads/ninja.png',
       hasReply: true,
-      replyPlacehodler: 'Type Here!!'
+      replyPlaceholder: 'Type Here!!'
     });
     n.on('show', () => console.log('showed'));
     n.on('click', () => console.info('clicked!!'));
