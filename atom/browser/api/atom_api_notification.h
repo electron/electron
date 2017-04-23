@@ -11,6 +11,7 @@
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/notification_observer.h"
+#include "base/strings/utf_string_conversions.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
@@ -58,13 +59,13 @@ class Notification : public mate::TrackableObject<Notification>,
   void NotifyPropsUpdated();
 
  private:
-  base::string16 title_ = L"";
-  base::string16 body_ = L"";
+  base::string16 title_ = base::UTF8ToUTF16("");
+  base::string16 body_ = base::UTF8ToUTF16("");
   gfx::Image icon_;
-  base::string16 icon_path_ = L"";
+  base::string16 icon_path_ = base::UTF8ToUTF16("");
   bool has_icon_ = false;
   bool silent_ = false;
-  base::string16 reply_placeholder_ = L"";
+  base::string16 reply_placeholder_ = base::UTF8ToUTF16("");
   bool has_reply_ = false;
 
   int id_;
