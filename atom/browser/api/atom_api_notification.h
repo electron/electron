@@ -42,28 +42,29 @@ class Notification : public mate::TrackableObject<Notification>,
 
   // Prop Getters
   int GetID();
-  std::string GetTitle();
-  std::string GetBody();
+  base::string16 GetTitle();
+  base::string16 GetBody();
   bool GetSilent();
-  std::string GetReplyPlaceholder();
+  base::string16 GetReplyPlaceholder();
   bool GetHasReply();
 
   // Prop Setters
-  void SetTitle(std::string new_title);
-  void SetBody(std::string new_body);
+  void SetTitle(base::string16 new_title);
+  void SetBody(base::string16 new_body);
   void SetSilent(bool new_silent);
-  void SetReplyPlaceholder(std::string new_reply_placeholder);
+  void SetReplyPlaceholder(base::string16 new_reply_placeholder);
   void SetHasReply(bool new_has_reply);
 
   void NotifyPropsUpdated();
 
  private:
-  std::string title_ = "";
-  std::string body_ = "";
+  base::string16 title_ = L"";
+  base::string16 body_ = L"";
   gfx::Image icon_;
+  base::string16 icon_path_ = L"";
   bool has_icon_ = false;
   bool silent_ = false;
-  std::string reply_placeholder_ = "";
+  base::string16 reply_placeholder_ = L"";
   bool has_reply_ = false;
 
   int id_;

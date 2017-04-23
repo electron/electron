@@ -69,8 +69,8 @@ void Notification::OnInitialProps() {
 void Notification::NotifyPropsUpdated() {
   base::scoped_nsobject<NSUserNotification> notification_ = native_notifications_[id_];
 
-  [notification_ setTitle:base::SysUTF8ToNSString(title_)];
-  [notification_ setInformativeText:base::SysUTF8ToNSString(body_)];
+  [notification_ setTitle:base::SysUTF16ToNSString(title_)];
+  [notification_ setInformativeText:base::SysUTF16ToNSString(body_)];
 
   NSDictionary * userInfo = [NSMutableDictionary dictionary];
   [userInfo setValue:[NSNumber numberWithInt:id_] forKey:@"id"];
@@ -81,7 +81,7 @@ void Notification::NotifyPropsUpdated() {
   }
 
   if (has_reply_) {
-    [notification_ setResponsePlaceholder:base::SysUTF8ToNSString(reply_placeholder_)];
+    [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(reply_placeholder_)];
     [notification_ setHasReplyButton:true];
   }
 

@@ -33,6 +33,9 @@ Notification::Notification(v8::Isolate* isolate, v8::Local<v8::Object> wrapper, 
     opts.Get("title", &title_);
     opts.Get("body", &body_);
     has_icon_ = opts.Get("icon", &icon_);
+    if (has_icon_) {
+      opts.Get("icon", &icon_path_);
+    }
     opts.Get("silent", &silent_);
     opts.Get("replyPlaceholder", &reply_placeholder_);
     opts.Get("hasReply", &has_reply_);
@@ -63,17 +66,17 @@ Notification* Notification::FromID(int id) {
 
 // Getters
 int Notification::GetID() { return id_; } 
-std::string Notification::GetTitle() { return title_; }
-std::string Notification::GetBody() { return body_; }
+base::string16 Notification::GetTitle() { return title_; }
+base::string16 Notification::GetBody() { return body_; }
 bool Notification::GetSilent() { return silent_; }
-std::string Notification::GetReplyPlaceholder() { return reply_placeholder_; }
+base::string16 Notification::GetReplyPlaceholder() { return reply_placeholder_; }
 bool Notification::GetHasReply() { return has_reply_; }
 
 // Setters
-void Notification::SetTitle(std::string new_title) { title_ = new_title; NotifyPropsUpdated(); }
-void Notification::SetBody(std::string new_body) { body_ = new_body; NotifyPropsUpdated(); }
+void Notification::SetTitle(base::string16 new_title) { title_ = new_title; NotifyPropsUpdated(); }
+void Notification::SetBody(base::string16 new_body) { body_ = new_body; NotifyPropsUpdated(); }
 void Notification::SetSilent(bool new_silent) { silent_ = new_silent; NotifyPropsUpdated(); }
-void Notification::SetReplyPlaceholder(std::string new_reply_placeholder) { reply_placeholder_ = new_reply_placeholder; NotifyPropsUpdated(); }
+void Notification::SetReplyPlaceholder(base::string16 new_reply_placeholder) { reply_placeholder_ = new_reply_placeholder; NotifyPropsUpdated(); }
 void Notification::SetHasReply(bool new_has_reply) { has_reply_ = new_has_reply; NotifyPropsUpdated(); }
 
 void Notification::OnClicked() {
