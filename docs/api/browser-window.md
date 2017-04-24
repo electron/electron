@@ -498,6 +498,14 @@ Returns:
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
+#### Event: 'sheet-begin' _macOS_
+
+Emitted when the window opens a sheet.
+
+#### Event: 'sheet-end' _macOS_
+
+Emitted when the window has closed a sheet.
+
 ### Static Methods
 
 The `BrowserWindow` class has the following static methods:

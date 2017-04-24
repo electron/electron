@@ -79,6 +79,8 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowScrollTouchEnd() override;
   void OnWindowScrollTouchEdge() override;
   void OnWindowSwipe(const std::string& direction) override;
+  void OnWindowSheetBegin() override;
+  void OnWindowSheetEnd() override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;

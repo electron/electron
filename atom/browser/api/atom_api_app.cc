@@ -655,6 +655,14 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
     status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
+base::FilePath App::GetAppPath() const {
+  return app_path_;
+}
+
+void App::SetAppPath(const base::FilePath& app_path) {
+  app_path_ = app_path;
+}
+
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
   base::FilePath path;
@@ -959,6 +967,8 @@ void App::BuildPrototype(
       .SetMethod("isUnityRunning",
                  base::Bind(&Browser::IsUnityRunning, browser))
 #endif
+      .SetMethod("setAppPath", &App::SetAppPath)
+      .SetMethod("getAppPath", &App::GetAppPath)
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)

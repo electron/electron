@@ -263,6 +263,14 @@ void Window::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
 
+void Window::OnWindowSheetBegin() {
+  Emit("sheet-begin");
+}
+
+void Window::OnWindowSheetEnd() {
+  Emit("sheet-end");
+}
+
 void Window::OnWindowEnterHtmlFullScreen() {
   Emit("enter-html-full-screen");
 }
