@@ -193,7 +193,7 @@ void Window::OnWindowClosed() {
 
 #if defined(OS_WIN)
 void Window::OnWindowEndSession() {
-  Emit("endsession");
+  Emit("session-end");
 }
 #endif
 
