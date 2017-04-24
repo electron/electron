@@ -16,21 +16,25 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           const scoped_refptr<net::X509Certificate>& cert,
                           const std::string& message,
                           const ShowTrustCallback& callback) {
-    BOOL result = false;
-    HCERTSTORE hCertStore = NULL;
-    PCCERT_CONTEXT pCertContext = cert->CreateOSCertChainForCert();
-
     // opening the Trusted Root Certificate store for the current user
-    hCertStore = CertOpenStore(
+    auto hCertStore = CertOpenStore(
         CERT_STORE_PROV_SYSTEM,
         0,
         NULL,
         CERT_SYSTEM_STORE_CURRENT_USER,
+        // installing into Trusted Root Certificate Authorities, not Personal
         L"Root");
 
-    // NOTE: this is a blocking call which displays a prompt to the user to
-    //       confirm they trust this certificate
-    result = CertAddCertificateContextToStore(
+    if (hCertStore == NULL) {
+        callback.Run();
+        return;
+    }
+
+    auto pCertContext = cert->CreateOSCertChainForCert();
+
+    // This is a blocking call which displays a prompt to the user to confirm
+    // they trust this certificate
+    auto result = CertAddCertificateContextToStore(
         hCertStore,
         pCertContext,
         CERT_STORE_ADD_REPLACE_EXISTING,
