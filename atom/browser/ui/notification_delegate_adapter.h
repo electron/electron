@@ -12,17 +12,17 @@
 namespace atom {
 
 class AtomNotificationDelegateAdapter : public brightray::NotificationDelegate {
-  public:
-    atom::api::Notification* observer_;
-    AtomNotificationDelegateAdapter(atom::api::Notification* target);
+ public:
+  atom::api::Notification* observer_;
+  explicit AtomNotificationDelegateAdapter(atom::api::Notification* target);
 
-    void NotificationDisplayed();
-    void NotificationClosed();
-    void NotificationClick();
-    void NotificationDestroyed();
-    void NotificationFailed();
+  void NotificationDisplayed();
+  void NotificationClosed();
+  void NotificationClick();
+  void NotificationDestroyed();
+  void NotificationFailed();
 };
 
-}
+}  // namespace atom
 
-#endif // ATOM_BROWSER_UI_NOTIFICATION_DELEGATE_ADAPTER_H_
+#endif  // ATOM_BROWSER_UI_NOTIFICATION_DELEGATE_ADAPTER_H_

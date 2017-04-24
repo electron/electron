@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_UI_NOTIFICATION_OBSERVER_H_
 #define ATOM_BROWSER_UI_NOTIFICATION_OBSERVER_H_
 
+#include <string>
+
 namespace atom {
 
 class NotifictionObserver {

@@ -5,21 +5,22 @@
 #include "atom/browser/ui/win/toast_lib.h"
 #include "atom/browser/api/atom_api_notification.h"
 
-#ifndef ATOM_BROWSER_UI_TOAST_HANDLER_H_
-#define ATOM_BROWSER_UI_TOAST_HANDLER_H_
+#ifndef ATOM_BROWSER_UI_WIN_TOAST_HANDLER_H_
+#define ATOM_BROWSER_UI_WIN_TOAST_HANDLER_H_
 
 namespace atom {
 
 class AtomToastHandler : public WinToastLib::WinToastHandler {
  public:
   atom::api::Notification* observer_;
-  AtomToastHandler(atom::api::Notification* target);
+  explicit AtomToastHandler(atom::api::Notification* target);
 
   void toastActivated() override;
-  void toastDismissed(WinToastLib::WinToastHandler::WinToastDismissalReason state);
+  void toastDismissed(
+      WinToastLib::WinToastHandler::WinToastDismissalReason state);
   void toastFailed();
 };
 
-}
+}  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_TOAST_HANDLER_H_
+#endif  // ATOM_BROWSER_UI_WIN_TOAST_HANDLER_H_

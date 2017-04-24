@@ -15,14 +15,15 @@ AtomToastHandler::AtomToastHandler(atom::api::Notification* target) {
 
 void AtomToastHandler::toastActivated() {
   observer_->OnClicked();
-};
+}
 
-void AtomToastHandler::toastDismissed(WinToastLib::WinToastHandler::WinToastDismissalReason state) {
+void AtomToastHandler::toastDismissed(
+  WinToastLib::WinToastHandler::WinToastDismissalReason state) {
   // observer_->OnDismissed();
-};
+}
 
 void AtomToastHandler::toastFailed() {
   // observer_->OnErrored();
-};
-
 }
+
+}  // namespace atom

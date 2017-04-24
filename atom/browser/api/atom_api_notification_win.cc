@@ -48,7 +48,8 @@ void Notification::Show() {
 
   if (can_toast_) {
     atom::AtomToastHandler* handler = new atom::AtomToastHandler(this);
-    WinToastLib::WinToastTemplate::WinToastTemplateType toastType = WinToastLib::WinToastTemplate::TextOneLine;
+    WinToastLib::WinToastTemplate::WinToastTemplateType toastType =
+        WinToastLib::WinToastTemplate::TextOneLine;
     if (!has_icon_) {
       if (body_ != L"") {
         toastType = WinToastLib::WinToastTemplate::TextTwoLines;
@@ -62,40 +63,41 @@ void Notification::Show() {
         toastType = WinToastLib::WinToastTemplate::ImageWithOneLine;
       }
     }
-    WinToastLib::WinToastTemplate toast = WinToastLib::WinToastTemplate(toastType);
+    WinToastLib::WinToastTemplate toast =
+        WinToastLib::WinToastTemplate(toastType);
 
-    std::string filename = base::MD5String(base::UTF16ToUTF8(icon_path_)) + ".png";
-    base::FilePath savePath = temp_dir_.GetPath().Append(base::UTF8ToUTF16(filename));
+    std::string filename =
+        base::MD5String(base::UTF16ToUTF8(icon_path_)) + ".png";
+    base::FilePath savePath =
+        temp_dir_.GetPath().Append(base::UTF8ToUTF16(filename));
     if (has_icon_ && SaveIconToPath(image, savePath)) {
       toast.setImagePath(savePath.value());
     }
-    toast.setTextField(title_, WinToastLib::WinToastTemplate::TextField::FirstLine);
-    toast.setTextField(body_, WinToastLib::WinToastTemplate::TextField::SecondLine);
+    toast.setTextField(title_,
+                       WinToastLib::WinToastTemplate::TextField::FirstLine);
+    toast.setTextField(body_,
+                       WinToastLib::WinToastTemplate::TextField::SecondLine);
     toast.setSilent(silent_);
 
     WinToastLib::WinToast::instance()->showToast(toast, handler);
 
     OnShown();
   } else {
-    AtomNotificationDelegateAdapter* adapter = new AtomNotificationDelegateAdapter(this);
+    AtomNotificationDelegateAdapter* adapter =
+        new AtomNotificationDelegateAdapter(this);
     auto notif = presenter->CreateNotification(adapter);
     GURL nullUrl = *(new GURL);
-    notif->Show(
-      title_,
-      body_,
-      "",
-      nullUrl,
-      image,
-      silent_
-    );
+    notif->Show(title_, body_, "", nullUrl, image, silent_);
   }
 }
 
 void Notification::OnInitialProps() {
   if (!initialized_) {
     Browser* browser = Browser::Get();
-    WinToastLib::WinToast::instance()->setAppName(base::UTF8ToUTF16(browser->GetName()));
-    WinToastLib::WinToast::instance()->setAppUserModelId(browser->GetAppUserModelID());
+    WinToastLib::WinToast::instance()->setAppName(
+        base::UTF8ToUTF16(browser->GetName()));
+    WinToastLib::WinToast::instance()->setAppUserModelId(
+        browser->GetAppUserModelID());
     can_toast_ = WinToastLib::WinToast::instance()->initialize();
     temp_dir_.CreateUniqueTempDir();
   }
@@ -104,10 +106,6 @@ void Notification::OnInitialProps() {
   }
 }
 
-void Notification::NotifyPropsUpdated() {
-  
-}
-
-}
-
-}
+void Notification::NotifyPropsUpdated() {}
+}  // namespace api
+}  // namespace atom

@@ -20,7 +20,7 @@ namespace atom {
 namespace api {
 
 class Notification : public mate::TrackableObject<Notification>,
-             public NotifictionObserver {
+                     public NotifictionObserver {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
   static bool HasID(int id);
@@ -35,7 +35,9 @@ class Notification : public mate::TrackableObject<Notification>,
   void OnShown() override;
 
  protected:
-  Notification(v8::Isolate* isolate, v8::Local<v8::Object> wrapper, mate::Arguments* args);
+  Notification(v8::Isolate* isolate,
+               v8::Local<v8::Object> wrapper,
+               mate::Arguments* args);
   ~Notification() override;
 
   void OnInitialProps();
