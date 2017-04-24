@@ -229,6 +229,20 @@ describe('chromium feature', function () {
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
 
+    it('disables node integration when it is disabled on the parent window for chrome devtools URLs', function (done) {
+      var b
+      app.once('web-contents-created', (event, contents) => {
+        contents.once('did-finish-load', () => {
+          contents.executeJavaScript('typeof process').then((typeofProcessGlobal) => {
+            assert.equal(typeofProcessGlobal, 'undefined')
+            b.close()
+            done()
+          }).catch(done)
+        })
+      })
+      b = window.open('chrome-devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no')
+    })
+
     it('disables JavaScript when it is disabled on the parent window', function (done) {
       var b
       app.once('web-contents-created', (event, contents) => {
