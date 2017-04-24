@@ -191,6 +191,10 @@ void Window::OnWindowClosed() {
       FROM_HERE, GetDestroyClosure());
 }
 
+void Window::OnWindowEndSession() {
+  Emit("session-end");
+}
+
 void Window::OnWindowBlur() {
   Emit("blur");
 }
