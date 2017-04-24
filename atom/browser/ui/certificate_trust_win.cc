@@ -8,6 +8,7 @@
 #include <windows.h>
 
 #include "base/callback.h"
+#include "net/cert/cert_database.h"
 
 namespace certificate_trust {
 
@@ -34,6 +35,13 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
         pCertContext,
         CERT_STORE_ADD_REPLACE_EXISTING,
         NULL);
+
+    if (result) {
+        auto cert_db = net::CertDatabase::GetInstance();
+        // Force Chromium to reload the certificate since it might be trusted
+        // now.
+        cert_db->NotifyObserversCertDBChanged(cert.get());
+    }
 
     CertCloseStore(hCertStore, CERT_CLOSE_STORE_FORCE_FLAG);
 
