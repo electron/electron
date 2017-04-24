@@ -474,12 +474,10 @@ void NativeWindow::NotifyWindowClosed() {
     observer.OnWindowClosed();
 }
 
-#if defined(OS_WIN)
 void NativeWindow::NotifyWindowEndSession() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowEndSession();
 }
-#endif
 
 void NativeWindow::NotifyWindowBlur() {
   for (NativeWindowObserver& observer : observers_)

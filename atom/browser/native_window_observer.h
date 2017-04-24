@@ -40,6 +40,9 @@ class NativeWindowObserver {
   // Called when the window is closed.
   virtual void OnWindowClosed() {}
 
+  // Called when Windows sends WM_ENDSESSION message
+  virtual void OnWindowEndSession() {}
+
   // Called when window loses focus.
   virtual void OnWindowBlur() {}
 
@@ -78,7 +81,6 @@ class NativeWindowObserver {
 
   // Called when window message received
   #if defined(OS_WIN)
-  virtual void OnWindowEndSession() {}
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
   #endif
 

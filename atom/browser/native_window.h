@@ -218,6 +218,7 @@ class NativeWindow : public base::SupportsUserData,
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
   void NotifyWindowClosed();
+  void NotifyWindowEndSession();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();
@@ -244,7 +245,6 @@ class NativeWindow : public base::SupportsUserData,
                                      const base::DictionaryValue& details);
 
   #if defined(OS_WIN)
-  void NotifyWindowEndSession();
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
   #endif
 
