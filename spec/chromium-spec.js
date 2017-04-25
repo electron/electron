@@ -391,6 +391,14 @@ describe('chromium feature', function () {
       })
       b = window.open('', '__proto__')
     })
+
+    it('does not throw an exception when the features include webPreferences', function () {
+      let b
+      assert.doesNotThrow(function () {
+        b = window.open('', '', 'webPreferences=')
+      })
+      b.close()
+    })
   })
 
   describe('window.opener', function () {
