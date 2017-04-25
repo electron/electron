@@ -371,6 +371,26 @@ describe('chromium feature', function () {
         window.open('', '', {toString: 3})
       }, /Cannot convert object to primitive value/)
     })
+
+    it('sets the window title to the specified frameName', function (done) {
+      let b
+      app.once('browser-window-created', (event, createdWindow) => {
+        assert.equal(createdWindow.getTitle(), 'hello')
+        b.close()
+        done()
+      })
+      b = window.open('', 'hello')
+    })
+
+    it('does not throw an exception when the frameName is a built-in object property', function (done) {
+      let b
+      app.once('browser-window-created', (event, createdWindow) => {
+        assert.equal(createdWindow.getTitle(), '__proto__')
+        b.close()
+        done()
+      })
+      b = window.open('', '__proto__')
+    })
   })
 
   describe('window.opener', function () {
