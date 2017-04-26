@@ -3,7 +3,7 @@
 <script type="text/javascript" charset="utf-8">
   const url = require('url')
   if (url.parse(window.location.href, true).query.opened != null) {
-    // Ensure origin are properly checked by removing a single character from the end
+    // Ensure origins are properly checked by removing a single character from the end
     window.opener.postMessage('first message', window.location.origin.substring(0, window.location.origin.length - 1))
     window.opener.postMessage('second message', window.location.origin)
   } else {
