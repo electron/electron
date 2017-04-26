@@ -361,6 +361,16 @@ describe('chromium feature', function () {
       })
       b = window.open()
     })
+
+    it('throws an exception when the arguments cannot be converted to strings', function () {
+      assert.throws(function () {
+        window.open('', {toString: null})
+      }, /Cannot convert object to primitive value/)
+
+      assert.throws(function () {
+        window.open('', '', {toString: 3})
+      }, /Cannot convert object to primitive value/)
+    })
   })
 
   describe('window.opener', function () {
@@ -537,6 +547,14 @@ describe('chromium feature', function () {
         })
       })
       b = window.open('file://' + fixtures + '/pages/window-open-postMessage.html', '', 'show=no')
+    })
+
+    it('throws an exception when the targetOrigin cannot be converted to a string', function () {
+      var b = window.open('')
+      assert.throws(function () {
+        b.postMessage('test', {toString: null})
+      }, /Cannot convert object to primitive value/)
+      b.close()
     })
   })
 
