@@ -1,4 +1,5 @@
 const assert = require('assert')
+const fs = require('fs')
 const http = require('http')
 const path = require('path')
 const ws = require('ws')
@@ -617,6 +618,39 @@ describe('chromium feature', function () {
         slashes: true
       })
       document.body.appendChild(webview)
+    })
+
+    describe('targetOrigin argument', function () {
+      let serverURL
+      let server
+
+      beforeEach(function (done) {
+        server = http.createServer(function (req, res) {
+          res.writeHead(200)
+          const filePath = path.join(fixtures, 'pages', 'window-opener-targetOrigin.html')
+          res.end(fs.readFileSync(filePath, 'utf8'))
+        })
+        server.listen(0, '127.0.0.1', function () {
+          serverURL = `http://127.0.0.1:${server.address().port}`
+          done()
+        })
+      })
+
+      afterEach(function () {
+        server.close()
+      })
+
+      it('delivers messages that match the origin', function (done) {
+        let b
+        listener = function (event) {
+          window.removeEventListener('message', listener)
+          b.close()
+          assert.equal(event.data, 'second message')
+          done()
+        }
+        window.addEventListener('message', listener)
+        b = window.open(serverURL, '', 'show=no')
+      })
     })
   })
 
