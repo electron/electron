@@ -645,7 +645,7 @@ describe('chromium feature', function () {
         listener = function (event) {
           window.removeEventListener('message', listener)
           b.close()
-          assert.equal(event.data, 'second message')
+          assert.equal(event.data, 'deliver')
           done()
         }
         window.addEventListener('message', listener)

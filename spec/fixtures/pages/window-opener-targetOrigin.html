@@ -4,10 +4,16 @@
   const url = require('url')
   if (url.parse(window.location.href, true).query.opened != null) {
     // Ensure origins are properly checked by removing a single character from the end
-    window.opener.postMessage('first message', window.location.origin.substring(0, window.location.origin.length - 1))
-    window.opener.postMessage('second message', window.location.origin)
+    window.opener.postMessage('do not deliver substring origin', window.location.origin.substring(0, window.location.origin.length - 1))
+    window.opener.postMessage('do not deliver file://', 'file://')
+    window.opener.postMessage('do not deliver http without port', 'http://127.0.0.1')
+    window.opener.postMessage('do not deliver atom', 'atom://')
+    window.opener.postMessage('do not deliver null', 'null')
+    window.opener.postMessage('do not deliver \\:/', '\\:/')
+    window.opener.postMessage('do not deliver empty', '')
+    window.opener.postMessage('deliver', window.location.origin)
   } else {
-    const opened = window.open(`${window.location.href}?opened=true`)
+    const opened = window.open(`${window.location.href}?opened=true`, '', 'show=no')
     window.addEventListener('message', function (event) {
       window.opener.postMessage(event.data, '*')
       opened.close()
