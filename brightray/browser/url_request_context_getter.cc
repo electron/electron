@@ -15,6 +15,7 @@
 #include "base/command_line.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "content/public/browser/browser_thread.h"
@@ -92,12 +93,18 @@ URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
 net::HttpCache::BackendFactory*
 URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(
     const base::FilePath& base_path) {
+  auto& command_line = *base::CommandLine::ForCurrentProcess();
+  int max_size = 0;
+  if (command_line.HasSwitch(switches::kDiskCacheSize)) {
+    base::StringToInt(command_line.GetSwitchValueASCII(switches::kDiskCacheSize),
+                      &max_size);
+  }
   base::FilePath cache_path = base_path.Append(FILE_PATH_LITERAL("Cache"));
   return new net::HttpCache::DefaultBackend(
       net::DISK_CACHE,
       net::CACHE_BACKEND_DEFAULT,
       cache_path,
-      0,
+      max_size,
       BrowserThread::GetTaskRunnerForThread(BrowserThread::CACHE));
 }
 
