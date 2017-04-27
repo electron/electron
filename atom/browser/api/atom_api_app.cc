@@ -34,6 +34,7 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "content/public/browser/browser_child_process_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
@@ -934,7 +935,8 @@ v8::Local<v8::Value> App::GetAppMemoryInfo(v8::Isolate* isolate) {
 
 #if defined(OS_MACOSX)
     std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateProcessMetrics(process.Handle(), nullptr));
+      base::ProcessMetrics::CreateProcessMetrics(
+        process.Handle(), content::BrowserChildProcessHost::GetPortProvider()));
 #else
     std::unique_ptr<base::ProcessMetrics> metrics(
       base::ProcessMetrics::CreateProcessMetrics(process.Handle()));
