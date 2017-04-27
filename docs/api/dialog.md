@@ -184,11 +184,16 @@ and no GUI dialog will appear.
   * `message` String - The message to display to the user.
 * `callback` Function
 
-Displays a modal dialog that shows a message and certificate information, and
-gives the user the option of trusting/importing the certificate.
+On macOS, this displays a modal dialog that shows a message and certificate
+information, and gives the user the option of trusting/importing the
+certificate. If you provide a `browserWindow` argument the dialog will be
+attached to the parent window, makign it modal.
 
-On macOS the `browserWindow` argument allows the dialog to attach itself to a parent
-window, making it modal. On Windows a modal dialog is not supported.
+On Windows the options are more limited, due to the Win32 APIs used:
+
+ - the `message` argument is not used, as the OS provides it's own confirmation
+   dialog.
+ - it is not possible to make this confirmation dialog modal.
 
 ## Sheets
 
