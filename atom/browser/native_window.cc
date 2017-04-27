@@ -474,6 +474,11 @@ void NativeWindow::NotifyWindowClosed() {
     observer.OnWindowClosed();
 }
 
+void NativeWindow::NotifyWindowEndSession() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowEndSession();
+}
+
 void NativeWindow::NotifyWindowBlur() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowBlur();

@@ -229,6 +229,45 @@ describe('chromium feature', function () {
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
 
+    it('disables node integration when it is disabled on the parent window for chrome devtools URLs', function (done) {
+      var b
+      app.once('web-contents-created', (event, contents) => {
+        contents.once('did-finish-load', () => {
+          contents.executeJavaScript('typeof process').then((typeofProcessGlobal) => {
+            assert.equal(typeofProcessGlobal, 'undefined')
+            b.close()
+            done()
+          }).catch(done)
+        })
+      })
+      b = window.open('chrome-devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no')
+    })
+
+    it('disables JavaScript when it is disabled on the parent window', function (done) {
+      var b
+      app.once('web-contents-created', (event, contents) => {
+        contents.once('did-finish-load', () => {
+          app.once('browser-window-created', (event, window) => {
+            const preferences = window.webContents.getWebPreferences()
+            assert.equal(preferences.javascript, false)
+            window.destroy()
+            b.close()
+            done()
+          })
+          // Click link on page
+          contents.sendInputEvent({type: 'mouseDown', clickCount: 1, x: 1, y: 1})
+          contents.sendInputEvent({type: 'mouseUp', clickCount: 1, x: 1, y: 1})
+        })
+      })
+
+      var windowUrl = require('url').format({
+        pathname: `${fixtures}/pages/window-no-javascript.html`,
+        protocol: 'file',
+        slashes: true
+      })
+      b = window.open(windowUrl, '', 'javascript=no,show=no')
+    })
+
     it('does not override child options', function (done) {
       var b, size
       size = {
@@ -321,6 +360,44 @@ describe('chromium feature', function () {
         })
       })
       b = window.open()
+    })
+
+    it('throws an exception when the arguments cannot be converted to strings', function () {
+      assert.throws(function () {
+        window.open('', {toString: null})
+      }, /Cannot convert object to primitive value/)
+
+      assert.throws(function () {
+        window.open('', '', {toString: 3})
+      }, /Cannot convert object to primitive value/)
+    })
+
+    it('sets the window title to the specified frameName', function (done) {
+      let b
+      app.once('browser-window-created', (event, createdWindow) => {
+        assert.equal(createdWindow.getTitle(), 'hello')
+        b.close()
+        done()
+      })
+      b = window.open('', 'hello')
+    })
+
+    it('does not throw an exception when the frameName is a built-in object property', function (done) {
+      let b
+      app.once('browser-window-created', (event, createdWindow) => {
+        assert.equal(createdWindow.getTitle(), '__proto__')
+        b.close()
+        done()
+      })
+      b = window.open('', '__proto__')
+    })
+
+    it('does not throw an exception when the features include webPreferences', function () {
+      let b
+      assert.doesNotThrow(function () {
+        b = window.open('', '', 'webPreferences=')
+      })
+      b.close()
     })
   })
 
@@ -498,6 +575,14 @@ describe('chromium feature', function () {
         })
       })
       b = window.open('file://' + fixtures + '/pages/window-open-postMessage.html', '', 'show=no')
+    })
+
+    it('throws an exception when the targetOrigin cannot be converted to a string', function () {
+      var b = window.open('')
+      assert.throws(function () {
+        b.postMessage('test', {toString: null})
+      }, /Cannot convert object to primitive value/)
+      b.close()
     })
   })
 
@@ -878,6 +963,38 @@ describe('chromium feature', function () {
       }).catch(function (e) {
         done(e)
       })
+    })
+  })
+
+  describe('window.alert(message, title)', function () {
+    it('throws an exception when the arguments cannot be converted to strings', function () {
+      assert.throws(function () {
+        window.alert({toString: null})
+      }, /Cannot convert object to primitive value/)
+
+      assert.throws(function () {
+        window.alert('message', {toString: 3})
+      }, /Cannot convert object to primitive value/)
+    })
+  })
+
+  describe('window.confirm(message, title)', function () {
+    it('throws an exception when the arguments cannot be converted to strings', function () {
+      assert.throws(function () {
+        window.confirm({toString: null}, 'title')
+      }, /Cannot convert object to primitive value/)
+
+      assert.throws(function () {
+        window.confirm('message', {toString: 3})
+      }, /Cannot convert object to primitive value/)
+    })
+  })
+
+  describe('window.history.go(offset)', function () {
+    it('throws an exception when the argumnet cannot be converted to a string', function () {
+      assert.throws(function () {
+        window.history.go({toString: null})
+      }, /Cannot convert object to primitive value/)
     })
   })
 })

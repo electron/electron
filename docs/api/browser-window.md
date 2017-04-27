@@ -376,6 +376,11 @@ window.onbeforeunload = (e) => {
 Emitted when the window is closed. After you have received this event you should
 remove the reference to the window and avoid using it any more.
 
+#### Event: 'session-end' _Windows_
+
+Emitted when window session is going to end due to force shutdown or machine restart 
+or session log off.
+
 #### Event: 'unresponsive'
 
 Emitted when the web page becomes unresponsive.

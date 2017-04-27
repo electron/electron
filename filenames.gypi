@@ -89,6 +89,7 @@
       'default_app/index.html',
       'default_app/main.js',
       'default_app/package.json',
+      'default_app/renderer.js',
     ],
     'lib_sources': [
       'atom/app/atom_content_client.cc',

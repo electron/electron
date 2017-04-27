@@ -70,7 +70,7 @@ The `role` property can have following values:
 * `editMenu` - Whole default "Edit" menu (Undo, Copy, etc.)
 * `windowMenu` - Whole default "Window" menu (Minimize, Close, etc.)
 
-The following additional roles are avaiable on macOS:
+The following additional roles are available on macOS:
 
 * `about` - Map to the `orderFrontStandardAboutPanel` action
 * `hide` - Map to the `hide` action
@@ -120,4 +120,4 @@ A String representing the menu items visible label
 
 #### `menuItem.click`
 
-A Function that is fired when the MenuItem recieves a click event
+A Function that is fired when the MenuItem receives a click event
