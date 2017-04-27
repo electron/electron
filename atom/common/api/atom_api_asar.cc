@@ -6,16 +6,16 @@
 
 #include <vector>
 
-#include "atom_natives.h"  // NOLINT: This file is generated with coffee2c.
-
 #include "atom/common/asar/archive.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
+
+#include "atom/common/node_includes.h"
+#include "atom_natives.h"  // NOLINT: This file is generated with coffee2c.
 
 namespace {
 

@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "atom_natives.h"  // NOLINT: This file is generated with js2c
-
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
@@ -27,6 +25,7 @@
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 
 #include "atom/common/node_includes.h"
+#include "atom_natives.h"  // NOLINT: This file is generated with js2c
 
 namespace atom {
 
