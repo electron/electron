@@ -138,3 +138,13 @@ app.once('ready', () => {
   window.setTouchBar(touchBar)
 })
 ```
+
+### Running the above example
+
+To run the example above, you'll need to (assuming you've got a terminal open in the dirtectory you want to run the example):
+
+1. Save the above file to your computer as `touchbar.js`
+2. Install Electron via `npm install electron`
+3. Run the example inside Electron: `./node_modules/.bin/electron touchbar.js`
+
+You should then see a new Electron window and the app running in your touch bar (or touch bar emulator).
