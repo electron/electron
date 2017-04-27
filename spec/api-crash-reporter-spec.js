@@ -33,8 +33,10 @@ describe('crashReporter module', function () {
   const generateSpecs = (description, browserWindowOpts) => {
     describe(description, function () {
       var w = null
+      var stopServer = null
 
       beforeEach(function () {
+        stopServer = null
         w = new BrowserWindow(Object.assign({
           show: false
         }, browserWindowOpts))
@@ -44,13 +46,25 @@ describe('crashReporter module', function () {
         return closeWindow(w).then(function () { w = null })
       })
 
+      afterEach(function () {
+        stopCrashService()
+      })
+
+      afterEach(function (done) {
+        if (stopServer != null) {
+          stopServer(done)
+        } else {
+          done()
+        }
+      })
+
       it('should send minidump when renderer crashes', function (done) {
         if (process.env.APPVEYOR === 'True') return done()
         if (process.env.TRAVIS === 'true') return done()
 
         this.timeout(120000)
 
-        startServer({
+        stopServer = startServer({
           callback (port) {
             const crashUrl = url.format({
               protocol: 'file',
@@ -70,11 +84,26 @@ describe('crashReporter module', function () {
 
         this.timeout(120000)
 
-        startServer({
+        stopServer = startServer({
           callback (port) {
-            const crashesDir = path.join(app.getPath('temp'), `${app.getName()} Crashes`)
+            const crashesDir = path.join(app.getPath('temp'), `${process.platform === 'win32' ? 'Zombies' : app.getName()} Crashes`)
             const version = app.getVersion()
             const crashPath = path.join(fixtures, 'module', 'crash.js')
+
+            if (process.platform === 'win32') {
+              const crashServiceProcess = childProcess.spawn(process.execPath, [
+                `--reporter-url=http://127.0.0.1:${port}`,
+                '--application-name=Zombies',
+                `--crashes-directory=${crashesDir}`
+              ], {
+                env: {
+                  ELECTRON_INTERNAL_CRASH_SERVICE: 1
+                },
+                detached: true
+              })
+              remote.process.crashServicePid = crashServiceProcess.pid
+            }
+
             childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
           },
           processType: 'browser',
@@ -85,7 +114,6 @@ describe('crashReporter module', function () {
       it('should not send minidump if uploadToServer is false', function (done) {
         this.timeout(120000)
 
-        let server
         let dumpFile
         let crashesDir = crashReporter.getCrashesDirectory()
         const existingDumpFiles = new Set()
@@ -96,9 +124,8 @@ describe('crashReporter module', function () {
         }
         const testDone = (uploaded) => {
           if (uploaded) {
-            return done(new Error('fail'))
+            return done(new Error('Uploaded crash report'))
           }
-          server.close()
           if (process.platform === 'darwin') {
             crashReporter.setUploadToServer(true)
           }
@@ -139,7 +166,7 @@ describe('crashReporter module', function () {
           })
         })
 
-        server = startServer({
+        stopServer = startServer({
           callback (port) {
             const crashUrl = url.format({
               protocol: 'file',
@@ -157,9 +184,9 @@ describe('crashReporter module', function () {
         if (process.env.APPVEYOR === 'True') return done()
         if (process.env.TRAVIS === 'true') return done()
 
-        this.timeout(10000)
+        this.timeout(120000)
 
-        startServer({
+        stopServer = startServer({
           callback (port) {
             const crashUrl = url.format({
               protocol: 'file',
@@ -176,7 +203,7 @@ describe('crashReporter module', function () {
   }
 
   generateSpecs('without sandbox', {})
-  generateSpecs('with sandbox ', {
+  generateSpecs('with sandbox', {
     webPreferences: {
       sandbox: true,
       preload: path.join(fixtures, 'module', 'preload-sandbox.js')
@@ -254,7 +281,6 @@ const waitForCrashReport = () => {
 const startServer = ({callback, processType, done}) => {
   var called = false
   var server = http.createServer((req, res) => {
-    server.close()
     var form = new multiparty.Form()
     form.parse(req, (error, fields) => {
       if (error) throw error
@@ -283,6 +309,15 @@ const startServer = ({callback, processType, done}) => {
       })
     })
   })
+
+  const activeConnections = new Set()
+  server.on('connection', (connection) => {
+    activeConnections.add(connection)
+    connection.once('close', () => {
+      activeConnections.delete(connection)
+    })
+  })
+
   let {port} = remote.process
   server.listen(port, '127.0.0.1', () => {
     port = server.address().port
@@ -295,5 +330,27 @@ const startServer = ({callback, processType, done}) => {
     }
     callback(port)
   })
-  return server
+
+  return function stopServer (done) {
+    for (const connection of activeConnections) {
+      connection.destroy()
+    }
+    server.close(function () {
+      done()
+    })
+  }
+}
+
+const stopCrashService = () => {
+  const {crashServicePid} = remote.process
+  if (crashServicePid) {
+    remote.process.crashServicePid = 0
+    try {
+      process.kill(crashServicePid)
+    } catch (error) {
+      if (error.code !== 'ESRCH') {
+        throw error
+      }
+    }
+  }
 }

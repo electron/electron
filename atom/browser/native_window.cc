@@ -474,6 +474,11 @@ void NativeWindow::NotifyWindowClosed() {
     observer.OnWindowClosed();
 }
 
+void NativeWindow::NotifyWindowEndSession() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowEndSession();
+}
+
 void NativeWindow::NotifyWindowBlur() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowBlur();
@@ -552,6 +557,16 @@ void NativeWindow::NotifyWindowScrollTouchEdge() {
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowSwipe(direction);
+}
+
+void NativeWindow::NotifyWindowSheetBegin() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetBegin();
+}
+
+void NativeWindow::NotifyWindowSheetEnd() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetEnd();
 }
 
 void NativeWindow::NotifyWindowLeaveFullScreen() {

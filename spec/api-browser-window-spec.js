@@ -1228,6 +1228,54 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('sheet-begin event', function () {
+    if (process.platform !== 'darwin') {
+      return
+    }
+
+    let sheet = null
+
+    afterEach(function () {
+      return closeWindow(sheet, {assertSingleWindow: false}).then(function () { sheet = null })
+    })
+
+    it('emits when window opens a sheet', function (done) {
+      w.show()
+      w.once('sheet-begin', function () {
+        sheet.close()
+        done()
+      })
+      sheet = new BrowserWindow({
+        modal: true,
+        parent: w
+      })
+    })
+  })
+
+  describe('sheet-end event', function () {
+    if (process.platform !== 'darwin') {
+      return
+    }
+
+    let sheet = null
+
+    afterEach(function () {
+      return closeWindow(sheet, {assertSingleWindow: false}).then(function () { sheet = null })
+    })
+
+    it('emits when window has closed a sheet', function (done) {
+      w.show()
+      sheet = new BrowserWindow({
+        modal: true,
+        parent: w
+      })
+      w.once('sheet-end', function () {
+        done()
+      })
+      sheet.close()
+    })
+  })
+
   describe('beginFrameSubscription method', function () {
     // This test is too slow, only test it on CI.
     if (!isCI) return
@@ -1511,13 +1559,19 @@ describe('BrowserWindow module', function () {
       // Only implemented on macOS.
       if (process.platform !== 'darwin') return
 
-      it('can be changed with setKiosk method', function () {
+      it('can be changed with setKiosk method', function (done) {
         w.destroy()
         w = new BrowserWindow()
         w.setKiosk(true)
         assert.equal(w.isKiosk(), true)
-        w.setKiosk(false)
-        assert.equal(w.isKiosk(), false)
+
+        w.once('enter-full-screen', () => {
+          w.setKiosk(false)
+          assert.equal(w.isKiosk(), false)
+        })
+        w.once('leave-full-screen', () => {
+          done()
+        })
       })
     })
 

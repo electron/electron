@@ -218,6 +218,7 @@ class NativeWindow : public base::SupportsUserData,
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
   void NotifyWindowClosed();
+  void NotifyWindowEndSession();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();
@@ -233,6 +234,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowScrollTouchEnd();
   void NotifyWindowScrollTouchEdge();
   void NotifyWindowSwipe(const std::string& direction);
+  void NotifyWindowSheetBegin();
+  void NotifyWindowSheetEnd();
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();

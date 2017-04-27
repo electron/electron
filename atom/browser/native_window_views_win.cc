@@ -147,6 +147,11 @@ bool NativeWindowViews::PreHandleMSG(
       }
       return false;
     }
+    case WM_ENDSESSION: {
+      if (w_param) {
+        NotifyWindowEndSession();
+      }
+    }
     default:
       return false;
   }

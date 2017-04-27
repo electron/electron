@@ -16,6 +16,11 @@ crashReporter.start({
     'extra2': 'extra2',
   }
 });
+
+if (process.platform === 'win32') {
+  ipcRenderer.sendSync('crash-service-pid', crashReporter._crashServiceProcess.pid)
+}
+
 if (!uploadToServer) {
   ipcRenderer.sendSync('list-existing-dumps')
 }

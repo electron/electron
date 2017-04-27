@@ -28,6 +28,10 @@ effect on macOS.
 
 Returns `Menu` - The application menu, if set, or `null`, if not set.
 
+**Note:** The returned `Menu` instance doesn't support dynamic addition or
+removal of menu items. [Instance properties](#instance-properties) can still
+be dynamically modified.
+
 #### `Menu.sendActionToFirstResponder(action)` _macOS_
 
 * `action` String

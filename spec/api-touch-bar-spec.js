@@ -1,4 +1,5 @@
 const assert = require('assert')
+const path = require('path')
 const {BrowserWindow, TouchBar} = require('electron').remote
 const {closeWindow} = require('./window-helpers')
 
@@ -48,6 +49,11 @@ describe('TouchBar module', function () {
       const label = new TouchBarLabel({label: 'bar'})
       const touchBar = new TouchBar([
         new TouchBarButton({label: 'foo', backgroundColor: '#F00', click: () => {}}),
+        new TouchBarButton({
+          icon: path.join(__dirname, 'fixtures', 'assets', 'logo.png'),
+          iconPosition: 'right',
+          click: () => {}
+        }),
         new TouchBarColorPicker({selectedColor: '#F00', change: () => {}}),
         new TouchBarGroup({items: new TouchBar([new TouchBarLabel({label: 'hello'})])}),
         label,

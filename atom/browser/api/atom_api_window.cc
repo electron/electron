@@ -191,6 +191,10 @@ void Window::OnWindowClosed() {
       FROM_HERE, GetDestroyClosure());
 }
 
+void Window::OnWindowEndSession() {
+  Emit("session-end");
+}
+
 void Window::OnWindowBlur() {
   Emit("blur");
 }
@@ -261,6 +265,14 @@ void Window::OnWindowScrollTouchEdge() {
 
 void Window::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
+}
+
+void Window::OnWindowSheetBegin() {
+  Emit("sheet-begin");
+}
+
+void Window::OnWindowSheetEnd() {
+  Emit("sheet-end");
 }
 
 void Window::OnWindowEnterHtmlFullScreen() {
