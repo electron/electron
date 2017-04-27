@@ -932,8 +932,13 @@ v8::Local<v8::Value> App::GetAppMemoryInfo(v8::Isolate* isolate) {
     int64_t pid = processEntry->pid();
     auto process = base::Process::OpenWithExtraPrivileges(pid);
 
+#if defined(OS_MACOSX)
+    std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateProcessMetrics(process.Handle(), nullptr));
+#else
     std::unique_ptr<base::ProcessMetrics> metrics(
       base::ProcessMetrics::CreateProcessMetrics(process.Handle()));
+#endif
 
     mate::Dictionary pidDict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary memoryDict = mate::Dictionary::CreateEmpty(isolate);
