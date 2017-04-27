@@ -197,12 +197,28 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   }
 }
 
-bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
-  WebContentsPreferences* self;
+// static
+bool WebContentsPreferences::IsNodeIntegrationEnabled(
+    content::WebContents* web_contents) {
   if (!web_contents)
     return false;
 
-  self = FromWebContents(web_contents);
+  WebContentsPreferences* self = FromWebContents(web_contents);
+  if (!self)
+    return false;
+
+  base::DictionaryValue& web_preferences = self->web_preferences_;
+  bool nodeIntegration = true;
+  web_preferences.GetBoolean(options::kNodeIntegration, &nodeIntegration);
+  return nodeIntegration;
+}
+
+// static
+bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
+  if (!web_contents)
+    return false;
+
+  WebContentsPreferences* self = FromWebContents(web_contents);
   if (!self)
     return false;
 

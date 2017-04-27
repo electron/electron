@@ -542,4 +542,53 @@ describe('webContents module', function () {
       })
     })
   })
+
+
+  describe('nodeIntegration only works for file:// scheme', function () {
+    it('blocks non-file:// URLs when nodeIntegration is enabled', function (done) {
+      assert.throws(function () {
+        w.loadURL('https://www.google.com')
+      })
+      done()
+    })
+
+    it('blocks non-file:// navigations when nodeIntegration is enabled', function (done) {
+      w.webContents.on('will-navigate', function (event, url) {
+        assert.ok(false, 'unexpected will-navigate')
+        event.preventDefault()
+      })
+
+      w.loadURL(`file://${fixtures}/pages/will-navigate-google.html`)
+      setTimeout(done, 1000)
+    })
+
+    it('allows non-file:// URLs when nodeIntegration is disabled', function (done) {
+      w.destroy()
+      w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: false,
+        }
+      })
+
+      w.loadURL('https://www.google.com')
+      done()
+    })
+
+    it('allows non-file:// navigations when nodeIntegration is disabled', function (done) {
+      w.destroy()
+      w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: false,
+        }
+      })
+
+      w.webContents.on('will-navigate', function (event, url) {
+        assert.equal(url, 'https://www.google.com/')
+        event.preventDefault()
+        done()
+      })
+
+      w.loadURL(`file://${fixtures}/pages/will-navigate-google.html`)
+    })
+  })
 })
