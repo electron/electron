@@ -532,5 +532,15 @@ describe('app module', function () {
         })
       })
     })
+
+    describe('getAppMemoryInfo API', function () {
+      it('returns the process memory of all running electron processes', function () {
+        const appMemoryInfo = app.getAppMemoryInfo();
+        assert.ok(appMemoryInfo.length > 0, 'App memory info object is not > 0')
+        assert.ok(appMemoryInfo[0].memory.workingSetSize > 0, 'working set size is not > 0')
+        assert.ok(appMemoryInfo[0].memory.peakWorkingSetSize > 0, 'peak working set size is not > 0')
+        assert.ok(appMemoryInfo[0].pid > 0, 'pid is not > 0')
+      })
+    })
   })
 })

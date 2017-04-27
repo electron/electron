@@ -762,20 +762,7 @@ This method can only be called before app is ready.
 
 ### `app.getAppMemoryInfo()`
 
-Returns `Object[]`:
-
-* `pid` Integer - The process id for which memory info is collected for
-  * `workingSetSize` Integer - The amount of memory currently pinned to actual physical
-    RAM.
-  * `peakWorkingSetSize` Integer - The maximum amount of memory that has ever been pinned
-    to actual physical RAM.
-  * `privateBytes` Integer - The amount of memory not shared by other processes, such as
-    JS heap or HTML content.
-  * `sharedBytes` Integer - The amount of memory shared between processes, typically
-    memory consumed by the Electron code itself
-
-Returns an object giving memory usage statistics about all the processes associated with 
-the app. Note that all statistics are reported in Kilobytes.
+Returns [ProcessMemoryInfo[]](structures/process-memory-info.md):  Array of `ProcessMemoryInfo` objects that correspond to memory usage statistics of all the processes associated with the app.
 
 ### `app.setBadgeCount(count)` _Linux_ _macOS_
 

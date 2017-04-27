@@ -166,17 +166,6 @@ class App : public AtomBrowserClient::Delegate,
   DISALLOW_COPY_AND_ASSIGN(App);
 };
 
-class AppIdProcessIterator : public base::ProcessIterator {
- public:
-  AppIdProcessIterator() : base::ProcessIterator(NULL) {}
-
- protected:
-  bool IncludeEntry() override {
-    return (entry().parent_pid() == base::GetCurrentProcId() ||
-            entry().pid() == base::GetCurrentProcId());
-  }
-};
-
 }  // namespace api
 
 }  // namespace atom
