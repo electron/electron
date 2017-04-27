@@ -12,24 +12,6 @@
 
 namespace certificate_trust {
 
-BOOL AddCertificate(const HCERTSTORE certStore,
-                    const PCCERT_CONTEXT certContext,
-                    const scoped_refptr<net::X509Certificate>& cert) {
-  auto result = CertAddCertificateContextToStore(
-      certStore,
-      certContext,
-      CERT_STORE_ADD_REPLACE_EXISTING,
-      NULL);
-
-  if (result) {
-    // force Chromium to reload it's database for this certificate
-    auto cert_db = net::CertDatabase::GetInstance();
-    cert_db->NotifyObserversCertDBChanged(cert.get());
-  }
-
-  return result;
-}
-
 // Add the provided certificate to the Trusted Root Certificate Authorities
 // store for the current user.
 //
@@ -47,31 +29,19 @@ BOOL AddToTrustedRootStore(const PCCERT_CONTEXT certContext,
     return false;
   }
 
-  auto result = AddCertificate(rootCertStore, certContext, cert);
+  auto result = CertAddCertificateContextToStore(
+    rootCertStore,
+    certContext,
+    CERT_STORE_ADD_REPLACE_EXISTING,
+    NULL);
 
-  CertCloseStore(rootCertStore, CERT_CLOSE_STORE_FORCE_FLAG);
-
-  return result;
-}
-
-// Add the provided certificate to the Personal
-// certificate store for the current user.
-BOOL AddToPersonalStore(const PCCERT_CONTEXT certContext,
-                        const scoped_refptr<net::X509Certificate>& cert) {
-  auto userCertStore = CertOpenStore(
-      CERT_STORE_PROV_SYSTEM,
-      0,
-      NULL,
-      CERT_SYSTEM_STORE_CURRENT_USER,
-      L"My");
-
-  if (userCertStore == NULL) {
-      return false;
+  if (result) {
+    // force Chromium to reload it's database for this certificate
+    auto cert_db = net::CertDatabase::GetInstance();
+    cert_db->NotifyObserversCertDBChanged(cert.get());
   }
 
-  auto result = AddCertificate(userCertStore, certContext, cert);
-
-  CertCloseStore(userCertStore, CERT_CLOSE_STORE_FORCE_FLAG);
+  CertCloseStore(rootCertStore, CERT_CLOSE_STORE_FORCE_FLAG);
 
   return result;
 }
@@ -111,11 +81,6 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
                               NULL,
                               &chainContext)) {
     switch (chainContext->TrustStatus.dwErrorStatus) {
-      case CERT_TRUST_NO_ERROR:
-        AddToPersonalStore(pCertContext, cert);
-        break;
-
-      case CERT_TRUST_IS_UNTRUSTED_ROOT:
       case CERT_TRUST_IS_SELF_SIGNED:
         AddToTrustedRootStore(pCertContext, cert);
         break;
