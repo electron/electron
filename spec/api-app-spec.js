@@ -534,7 +534,7 @@ describe('app module', function () {
     })
   })
 
-  describe.only('getAppMemoryInfo() API', function () {
+  describe('getAppMemoryInfo() API', function () {
     it('returns the process memory of all running electron processes', function () {
       const appMemoryInfo = app.getAppMemoryInfo()
       assert.ok(appMemoryInfo.length > 0, 'App memory info object is not > 0')
