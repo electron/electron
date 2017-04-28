@@ -520,6 +520,15 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   else
     control.segmentStyle = NSSegmentStyleAutomatic;
 
+  std::string segmentMode;
+  settings.Get("mode", &segmentMode);
+  if (segmentMode == "multiple")
+    control.trackingMode = NSSegmentSwitchTrackingSelectAny;
+  else if (segmentMode == "buttons")
+    control.trackingMode = NSSegmentSwitchTrackingMomentary;
+  else
+    control.trackingMode = NSSegmentSwitchTrackingSelectOne;
+
   std::vector<mate::Dictionary> segments;
   settings.Get("segments", &segments);
 
