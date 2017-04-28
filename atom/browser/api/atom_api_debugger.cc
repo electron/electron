@@ -9,7 +9,6 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
