@@ -18,6 +18,7 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
 
@@ -142,7 +143,7 @@ class App : public AtomBrowserClient::Delegate,
   void GetFileIcon(const base::FilePath& path,
                    mate::Arguments* args);
 
-  v8::Local<v8::Value> GetAppMemoryInfo(v8::Isolate* isolate);
+  std::vector<mate::Dictionary> GetAppMemoryInfo(v8::Isolate* isolate);
 
 #if defined(OS_WIN)
   // Get the current Jump List settings.

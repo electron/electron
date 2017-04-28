@@ -40,7 +40,6 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "media/audio/audio_manager.h"
-#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -924,7 +923,7 @@ void App::GetFileIcon(const base::FilePath& path,
   }
 }
 
-v8::Local<v8::Value> App::GetAppMemoryInfo(v8::Isolate* isolate) {
+std::vector<mate::Dictionary> App::GetAppMemoryInfo(v8::Isolate* isolate) {
   AppIdProcessIterator process_iterator;
   auto processEntry = process_iterator.NextProcessEntry();
   std::vector<mate::Dictionary> result;
@@ -962,7 +961,7 @@ v8::Local<v8::Value> App::GetAppMemoryInfo(v8::Isolate* isolate) {
     processEntry = process_iterator.NextProcessEntry();
   }
 
-  return mate::ConvertToV8(isolate, result);
+  return result;
 }
 
 // static
