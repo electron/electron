@@ -218,6 +218,36 @@ When in-page navigation happens, the page URL changes but does not cause
 navigation outside of the page. Examples of this occurring are when anchor links
 are clicked or when the DOM `hashchange` event is triggered.
 
+#### Event: 'will-prevent-unload'
+
+Returns:
+
+* `event` Event
+
+Emitted when a `beforeunload` event handler is attempting to cancel a page unload.
+
+Calling `event.preventDefault()` will ignore the `beforeunload` event handler
+and allow the page to be unloaded.
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({width: 800, height: 600})
+win.webContents.on('will-prevent-unload', (event) => {
+  let choice = dialog.showMessageBox(mainWindow, {
+    type: 'question',
+    buttons: ['Leave', 'Stay'],
+    title: 'Do you want to leave this site?',
+    message: 'Changes you made may not be saved.',
+    defaultId: 0,
+    cancelId: 1
+  })
+  let leave = (choice === 0)
+  if (leave) {
+    event.preventDefault()
+  }
+})
+```
+
 #### Event: 'crashed'
 
 Returns:

@@ -13,6 +13,7 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
@@ -681,6 +682,15 @@ std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
   std::unique_ptr<BluetoothChooser> bluetooth_chooser(
       new BluetoothChooser(this, event_handler));
   return std::move(bluetooth_chooser);
+}
+
+content::JavaScriptDialogManager*
+WebContents::GetJavaScriptDialogManager(
+    content::WebContents* source) {
+  if (!dialog_manager_)
+    dialog_manager_.reset(new AtomJavaScriptDialogManager(this));
+
+  return dialog_manager_.get();
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {

@@ -266,6 +266,10 @@ ipcMain.on('prevent-next-will-attach-webview', (event) => {
   event.sender.once('will-attach-webview', event => event.preventDefault())
 })
 
+ipcMain.on('prevent-next-will-prevent-unload', (event, id) => {
+  webContents.fromId(id).once('will-prevent-unload', event => event.preventDefault())
+})
+
 ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
   event.sender.once('will-attach-webview', (event, webPreferences, params) => {
     params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`

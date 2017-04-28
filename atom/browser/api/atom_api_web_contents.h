@@ -41,6 +41,7 @@ namespace atom {
 
 struct SetSizeParams;
 class AtomBrowserContext;
+class AtomJavaScriptDialogManager;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
 
@@ -296,6 +297,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   std::unique_ptr<content::BluetoothChooser> RunBluetoothChooser(
       content::RenderFrameHost* frame,
       const content::BluetoothChooser::EventHandler& handler) override;
+  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
+      content::WebContents* source) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -388,6 +391,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
+  std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
 
   // The host webcontents that may contain this webcontents.

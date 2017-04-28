@@ -11,8 +11,14 @@
 
 namespace atom {
 
+namespace api {
+class WebContents;
+}
+
 class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
  public:
+  explicit AtomJavaScriptDialogManager(api::WebContents* api_web_contents);
+
   // content::JavaScriptDialogManager implementations.
   void RunJavaScriptDialog(
       content::WebContents* web_contents,
@@ -33,6 +39,7 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
   static void OnMessageBoxCallback(const DialogClosedCallback& callback,
                                    int code,
                                    bool checkbox_checked);
+  api::WebContents* api_web_contents_;
 };
 
 }  // namespace atom
