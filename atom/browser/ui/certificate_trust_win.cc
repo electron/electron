@@ -16,22 +16,22 @@ namespace certificate_trust {
 // store for the current user.
 //
 // This requires prompting the user to confirm they trust the certificate.
-BOOL AddToTrustedRootStore(const PCCERT_CONTEXT certContext,
+BOOL AddToTrustedRootStore(const PCCERT_CONTEXT cert_context,
                            const scoped_refptr<net::X509Certificate>& cert) {
-  auto rootCertStore = CertOpenStore(
+  auto root_cert_store = CertOpenStore(
       CERT_STORE_PROV_SYSTEM,
       0,
       NULL,
       CERT_SYSTEM_STORE_CURRENT_USER,
       L"Root");
 
-  if (rootCertStore == NULL) {
+  if (root_cert_store == NULL) {
     return false;
   }
 
   auto result = CertAddCertificateContextToStore(
-    rootCertStore,
-    certContext,
+    root_cert_store,
+    cert_context,
     CERT_STORE_ADD_REPLACE_EXISTING,
     NULL);
 
@@ -41,23 +41,23 @@ BOOL AddToTrustedRootStore(const PCCERT_CONTEXT certContext,
     cert_db->NotifyObserversCertDBChanged(cert.get());
   }
 
-  CertCloseStore(rootCertStore, CERT_CLOSE_STORE_FORCE_FLAG);
+  CertCloseStore(root_cert_store, CERT_CLOSE_STORE_FORCE_FLAG);
 
   return result;
 }
 
 CERT_CHAIN_PARA GetCertificateChainParameters() {
-  CERT_ENHKEY_USAGE enhkeyUsage;
-  enhkeyUsage.cUsageIdentifier = 0;
-  enhkeyUsage.rgpszUsageIdentifier = NULL;
+  CERT_ENHKEY_USAGE enhkey_usage;
+  enhkey_usage.cUsageIdentifier = 0;
+  enhkey_usage.rgpszUsageIdentifier = NULL;
 
-  CERT_USAGE_MATCH CertUsage;
+  CERT_USAGE_MATCH cert_usage;
   // ensure the rules are applied to the entire chain
-  CertUsage.dwType = USAGE_MATCH_TYPE_AND;
-  CertUsage.Usage = enhkeyUsage;
+  cert_usage.dwType = USAGE_MATCH_TYPE_AND;
+  cert_usage.Usage = enhkey_usage;
 
   CERT_CHAIN_PARA params = { sizeof(CERT_CHAIN_PARA) };
-  params.RequestedUsage = CertUsage;
+  params.RequestedUsage = cert_usage;
 
   return params;
 }
@@ -66,34 +66,30 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           const scoped_refptr<net::X509Certificate>& cert,
                           const std::string& message,
                           const ShowTrustCallback& callback) {
-  PCCERT_CHAIN_CONTEXT chainContext;
+  PCCERT_CHAIN_CONTEXT chain_context;
 
-  auto pCertContext = cert->CreateOSCertChainForCert();
+  auto cert_context = cert->CreateOSCertChainForCert();
 
   auto params = GetCertificateChainParameters();
 
   if (CertGetCertificateChain(NULL,
-                              pCertContext,
+                              cert_context,
                               NULL,
                               NULL,
                               &params,
                               NULL,
                               NULL,
-                              &chainContext)) {
-    switch (chainContext->TrustStatus.dwErrorStatus) {
-      case CERT_TRUST_IS_SELF_SIGNED:
-        AddToTrustedRootStore(pCertContext, cert);
-        break;
-
-      default:
-        // we can't handle other scenarios, giving up
-        break;
+                              &chain_context)) {
+    auto error_status = chain_context->TrustStatus.dwErrorStatus;
+    if (error_status == CERT_TRUST_IS_SELF_SIGNED) {
+      // this is the only scenario we're interested in supporting for now
+      AddToTrustedRootStore(cert_context, cert);
     }
 
-    CertFreeCertificateChain(chainContext);
+    CertFreeCertificateChain(chain_context);
   }
 
-  CertFreeCertificateContext(pCertContext);
+  CertFreeCertificateContext(cert_context);
 
   callback.Run();
 }
