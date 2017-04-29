@@ -187,13 +187,14 @@ and no GUI dialog will appear.
 On macOS, this displays a modal dialog that shows a message and certificate
 information, and gives the user the option of trusting/importing the
 certificate. If you provide a `browserWindow` argument the dialog will be
-attached to the parent window, makign it modal.
+attached to the parent window, making it modal.
 
 On Windows the options are more limited, due to the Win32 APIs used:
 
- - the `message` argument is not used, as the OS provides it's own confirmation
+ - The `message` argument is not used, as the OS provides its own confirmation
    dialog.
- - it is not possible to make this confirmation dialog modal.
+ - The `browserWindow` argument is ignored since it is not possible to make
+   this confirmation dialog modal.
 
 ## Sheets
 
