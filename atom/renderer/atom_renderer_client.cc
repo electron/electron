@@ -206,6 +206,8 @@ void AtomRendererClient::SetupMainWorldOverrides(
     dict.Set(options::kOpenerID,
              command_line->GetSwitchValueASCII(switches::kOpenerID));
   dict.Set("hiddenPage", command_line->HasSwitch(switches::kHiddenPage));
+  dict.Set("nativeWindowOpen",
+           command_line->HasSwitch(switches::kNativeWindowOpen));
 
   v8::Local<v8::Value> args[] = { binding };
   ignore_result(func->Call(context, v8::Null(isolate), 1, args));
