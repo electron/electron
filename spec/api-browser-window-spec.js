@@ -1122,6 +1122,28 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('nativeWindowOpen + contextIsolation options', () => {
+    beforeEach(() => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nativeWindowOpen: true,
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'native-window-open-isolated-preload.js')
+        }
+      })
+    })
+
+    it('opens window with cross-scripting enabled from isolated context', (done) => {
+      ipcMain.once('answer', (event, content) => {
+        assert.equal(content, 'Hello')
+        done()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-isolated.html'))
+    })
+  })
+
   describe('beforeunload handler', function () {
     it('returning undefined would not prevent close', function (done) {
       w.once('closed', function () {
