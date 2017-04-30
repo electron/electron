@@ -1099,14 +1099,14 @@ describe('BrowserWindow module', function () {
           assert.equal(content, 'Hello')
           done()
         })
-        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open.html#blank'))
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-blank.html'))
       })
       it('opens window of same domain with cross-scripting enabled', (done) => {
         ipcMain.once('answer', (event, content) => {
           assert.equal(content, 'Hello')
           done()
         })
-        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open.html#file'))
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-file.html'))
       })
       it('loads native addons correctly after reload', (done) => {
         ipcMain.once('answer', (event, content) => {
@@ -1117,7 +1117,7 @@ describe('BrowserWindow module', function () {
           })
           w.reload()
         })
-        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open.html#native-addon'))
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
       })
     })
   })
