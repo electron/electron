@@ -1098,6 +1098,10 @@ void NativeWindowMac::Show() {
 }
 
 void NativeWindowMac::ShowInactive() {
+  // Reattach the window to the parent to actually show it.
+  if (parent())
+    InternalSetParentWindow(parent(), true);
+  
   [window_ orderFrontRegardless];
 }
 
