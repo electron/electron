@@ -18,12 +18,12 @@ myNotification.onclick = () => {
 ```
 
 While code and user experience across operating systems are similar, there
-are fine differences.
+are subtle differences.
 
 ## Windows
 
 * On Windows 10, notifications "just work".
-* On Windows 8.1 and Windows 8, a shortcut to your app, with a [Application User
+* On Windows 8.1 and Windows 8, a shortcut to your app, with an [Application User
 Model ID][app-user-model-id], must be installed to the Start screen. Note,
 however, that it does not need to be pinned to the Start screen.
 * On Windows 7, notifications work via a custom implementation which visually
@@ -58,16 +58,16 @@ the notification away.
 
 ## macOS
 
-Notifications are straight-forward on macOS, you should however be aware of
+Notifications are straight-forward on macOS, but you should be aware of
 [Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html).
 
-Note that notifications are limited to 256 bytes in size - and will be truncated
+Note that notifications are limited to 256 bytes in size and will be truncated
 if you exceed that limit.
 
 ### Advanced Notifications
 
 Later versions of macOS allow for notifications with an input field, allowing the user
-to quickly respond to a notification. In order to send notifications with an input field,
+to quickly reply to a notification. In order to send notifications with an input field,
 use the userland module [node-mac-notifier](https://github.com/CharlieHess/node-mac-notifier).
 
 ### Do not disturb / Session State
@@ -79,7 +79,7 @@ This will allow you to detect ahead of time whether or not the notification will
 
 ## Linux
 
-Notifications are sent using `libnotify`, it can show notifications on any
+Notifications are sent using `libnotify` which can show notifications on any
 desktop environment that follows [Desktop Notifications
 Specification][notification-spec], including Cinnamon, Enlightenment, Unity,
 GNOME, KDE.
