@@ -914,8 +914,7 @@ NativeWindowMac::NativeWindowMac(
 
   // Only use native parent window for non-modal windows.
   if (parent && !is_modal()) {
-    // It will be properly attached on show and detached on hide.
-    InternalSetParentWindow(parent, false);
+    SetParentWindow(parent);
   }
 
   if (transparent()) {
@@ -1566,7 +1565,7 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent, bool attach)
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
-  InternalSetParentWindow(parent, true);
+  InternalSetParentWindow(parent, IsVisible());
 }
 
 gfx::NativeView NativeWindowMac::GetNativeView() const {
