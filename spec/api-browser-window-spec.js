@@ -1150,6 +1150,29 @@ describe('BrowserWindow module', function () {
         })
         w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
       })
+
+      it('releases memory after popup is closed', (done) => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            sandbox: true
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?allocate-memory'))
+        w.webContents.openDevTools({mode: 'detach'})
+        ipcMain.once('answer', function (event, {bytesBeforeOpen, bytesAfterOpen, bytesAfterClose}) {
+          const memoryIncreaseByOpen = bytesAfterOpen - bytesBeforeOpen
+          const memoryDecreaseByClose = bytesAfterOpen - bytesAfterClose
+          // decreased memory should be less than increased due to factors we
+          // can't control, but given the amount of memory allocated in the
+          // fixture, we can reasonably expect decrease to be at least 70% of
+          // increase
+          assert(memoryDecreaseByClose > memoryIncreaseByOpen * 0.7)
+          done()
+        })
+      })
     })
   })
 
