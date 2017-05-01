@@ -914,7 +914,8 @@ NativeWindowMac::NativeWindowMac(
 
   // Only use native parent window for non-modal windows.
   if (parent && !is_modal()) {
-    SetParentWindow(parent);
+    // It will be properly attached on show and detached on hide.
+    InternalSetParentWindow(parent, false);
   }
 
   if (transparent()) {
@@ -1085,6 +1086,10 @@ void NativeWindowMac::Show() {
                             completionHandler:^(NSModalResponse) {}];
     return;
   }
+  
+  // Reattach the window to the parent to actually show it.
+  if (parent())
+    InternalSetParentWindow(parent(), true);
 
   // This method is supposed to put focus on window, however if the app does not
   // have focus then "makeKeyAndOrderFront" will only show the window.
@@ -1103,6 +1108,10 @@ void NativeWindowMac::Hide() {
     [parent()->GetNativeWindow() endSheet:window_];
     return;
   }
+  
+  // Deattach the window from the parent before.
+  if (parent())
+    InternalSetParentWindow(parent(), false);
 
   [window_ orderOut:nil];
 }
@@ -1536,26 +1545,35 @@ void NativeWindowMac::SetBrowserView(NativeBrowserView* browser_view) {
   native_view.hidden = NO;
 }
 
-void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
+void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent, bool attach) {
   if (is_modal())
     return;
-
+  
   NativeWindow::SetParentWindow(parent);
-
+  
+  // Do not remove/add if we are already properly attached.
+  if (attach && parent && [window_ parentWindow] == parent->GetNativeWindow())
+    return;
+  
   // Remove current parent window.
   if ([window_ parentWindow])
     [[window_ parentWindow] removeChildWindow:window_];
-
-  // Set new current window.
-  if (parent)
+    
+  // Set new parent window.
+  // Note that this method will force the window to become visible.
+  if (parent && attach)
     [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
+}
+
+void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
+  InternalSetParentWindow(parent, true);
 }
 
 gfx::NativeView NativeWindowMac::GetNativeView() const {
   return inspectable_web_contents()->GetView()->GetNativeView();
 }
 
-gfx::NativeWindow NativeWindowMac::GetNativeWindow() const {
+gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
 }
 
