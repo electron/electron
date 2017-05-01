@@ -417,15 +417,28 @@ WebContents::~WebContents() {
       guest_delegate_->Destroy();
 
     RenderViewDeleted(web_contents()->GetRenderViewHost());
-    DestroyWebContents();
+
+    if (type_ == WEB_VIEW) {
+      DestroyWebContents(false /* async */);
+    } else {
+      if (type_ == BROWSER_WINDOW && owner_window()) {
+        owner_window()->CloseContents(nullptr);
+      } else {
+        DestroyWebContents(true /* async */);
+      }
+      // The WebContentsDestroyed will not be called automatically because we
+      // destroy the webContents in the next tick. So we have to manually
+      // call it here to make sure "destroyed" event is emitted.
+      WebContentsDestroyed();
+    }
   }
 }
 
-void WebContents::DestroyWebContents() {
+void WebContents::DestroyWebContents(bool async) {
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
   Emit("will-destroy");
-  ResetManagedWebContents();
+  ResetManagedWebContents(async);
 }
 
 bool WebContents::DidAddMessageToConsole(content::WebContents* source,
@@ -477,7 +490,7 @@ void WebContents::AddNewContents(content::WebContents* source,
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
       initial_rect.x(), initial_rect.y(), initial_rect.width(),
       initial_rect.height())) {
-    api_web_contents->DestroyWebContents();
+    api_web_contents->DestroyWebContents(true /* async */);
   }
 }
 
@@ -816,10 +829,8 @@ void WebContents::DidFinishNavigation(
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
                               bool explicit_set) {
-  if (entry)
-    Emit("-page-title-updated", entry->GetTitle(), explicit_set);
-  else
-    Emit("-page-title-updated", "", explicit_set);
+  auto title = entry ? entry->GetTitle() : base::string16();
+  Emit("page-title-updated", title, explicit_set);
 }
 
 void WebContents::DidUpdateFaviconURL(
