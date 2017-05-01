@@ -542,4 +542,70 @@ describe('webContents module', function () {
       })
     })
   })
+
+  describe('destroy()', () => {
+    let server
+
+    before(function (done) {
+      server = http.createServer((request, response) => {
+        switch (request.url) {
+          case '/404':
+            response.statusCode = '404'
+            response.end()
+            break
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end('hello')
+            break
+          default:
+            done('unsupported endpoint')
+        }
+      }).listen(0, '127.0.0.1', () => {
+        server.url = 'http://127.0.0.1:' + server.address().port
+        done()
+      })
+    })
+
+    after(function () {
+      server.close()
+      server = null
+    })
+
+    it('should not crash when invoked synchronously inside navigation observer', (done) => {
+      const events = [
+        { name: 'did-start-loading', url: `${server.url}/200` },
+        { name: 'did-get-redirect-request', url: `${server.url}/301` },
+        { name: 'did-get-response-details', url: `${server.url}/200` },
+        { name: 'dom-ready', url: `${server.url}/200` },
+        { name: 'did-stop-loading', url: `${server.url}/200` },
+        { name: 'did-finish-load', url: `${server.url}/200` },
+        // FIXME: Multiple Emit calls inside an observer assume that object
+        // will be alive till end of the observer. Synchronous `destroy` api
+        // violates this contract and crashes.
+        // { name: 'did-frame-finish-load', url: `${server.url}/200` },
+        { name: 'did-fail-load', url: `${server.url}/404` }
+      ]
+      const responseEvent = 'webcontents-destroyed'
+
+      function* genNavigationEvent () {
+        let eventOptions = null
+        while ((eventOptions = events.shift()) && events.length) {
+          eventOptions.responseEvent = responseEvent
+          ipcRenderer.send('test-webcontents-navigation-observer', eventOptions)
+          yield 1
+        }
+      }
+
+      let gen = genNavigationEvent()
+      ipcRenderer.on(responseEvent, () => {
+        if (!gen.next().value) done()
+      })
+      gen.next()
+    })
+  })
 })

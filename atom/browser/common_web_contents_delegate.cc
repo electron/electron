@@ -178,13 +178,23 @@ void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
 
 void CommonWebContentsDelegate::SetOwnerWindow(
     content::WebContents* web_contents, NativeWindow* owner_window) {
-  owner_window_ = owner_window->GetWeakPtr();
+  owner_window_ = owner_window ? owner_window->GetWeakPtr() : nullptr;
   NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
-  web_contents->SetUserData(relay->key, relay);
+  if (owner_window) {
+    web_contents->SetUserData(relay->key, relay);
+  } else {
+    web_contents->RemoveUserData(relay->key);
+    delete relay;
+  }
 }
 
-void CommonWebContentsDelegate::DestroyWebContents() {
-  web_contents_.reset();
+void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
+  if (async) {
+    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
+                                                    web_contents_.release());
+  } else {
+    web_contents_.reset();
+  }
 }
 
 content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
@@ -338,7 +348,7 @@ void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
   }
 
   std::vector<FileSystem> file_systems;
-  for (auto file_system_path : file_system_paths) {
+  for (const auto& file_system_path : file_system_paths) {
     base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
     std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
                                                     path);

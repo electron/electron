@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '1.6.4',
+    'version%': '1.6.7',
     'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
   },
   'includes': [
@@ -126,7 +126,17 @@
             'VCManifestTool': {
               'EmbedManifest': 'true',
               'AdditionalManifestFiles': 'atom/browser/resources/win/atom.manifest',
-            }
+            },
+            'VCLinkerTool': {
+              # Chrome builds with this minimum environment which makes e.g.
+              # GetSystemMetrics(SM_CXSIZEFRAME) return Windows XP/2003
+              # compatible metrics. See: https://crbug.com/361720
+              #
+              # The following two settings translate to a linker flag
+              # of /SUBSYSTEM:WINDOWS,5.02
+              'MinimumRequiredVersion': '5.02',
+              'SubSystem': '2',
+            },
           },
           'copies': [
             {
@@ -159,7 +169,6 @@
                 '<(libchromiumcontent_dir)/natives_blob.bin',
                 '<(libchromiumcontent_dir)/snapshot_blob.bin',
                 'external_binaries/d3dcompiler_47.dll',
-                'external_binaries/xinput1_3.dll',
               ],
             },
           ],
@@ -441,7 +450,15 @@
         'sandbox_args': [
           './lib/sandboxed_renderer/init.js',
           '-r',
-          './lib/sandboxed_renderer/api/exports/electron.js:electron'
+          './lib/sandboxed_renderer/api/exports/electron.js:electron',
+          '-r',
+          './lib/sandboxed_renderer/api/exports/fs.js:fs',
+          '-r',
+          './lib/sandboxed_renderer/api/exports/os.js:os',
+          '-r',
+          './lib/sandboxed_renderer/api/exports/path.js:path',
+          '-r',
+          './lib/sandboxed_renderer/api/exports/child_process.js:child_process'
         ],
         'isolated_args': [
           'lib/isolated_renderer/init.js',
@@ -543,6 +560,8 @@
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
               '$(SDKROOT)/System/Library/Frameworks/QuartzCore.framework',
               '$(SDKROOT)/System/Library/Frameworks/Quartz.framework',
+              '$(SDKROOT)/System/Library/Frameworks/Security.framework',
+              '$(SDKROOT)/System/Library/Frameworks/SecurityInterface.framework',
             ],
           },
           'mac_bundle': 1,

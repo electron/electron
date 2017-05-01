@@ -8,11 +8,13 @@
 
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/ui/certificate_trust.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/ui/message_box.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/net_converter.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -78,13 +80,14 @@ void ShowMessageBox(int type,
   if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(),
                                                         peek,
                                                         &callback)) {
-    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons,
-                         default_id, cancel_id, options, title, message, detail,
-                         checkbox_label, checkbox_checked, icon, callback);
+    atom::ShowMessageBox(window, static_cast<atom::MessageBoxType>(type),
+                         buttons, default_id, cancel_id, options, title,
+                         message, detail, checkbox_label, checkbox_checked,
+                         icon, callback);
   } else {
-    int chosen = atom::ShowMessageBox(window, (atom::MessageBoxType)type,
-                                      buttons, default_id, cancel_id,
-                                      options, title, message, detail, icon);
+    int chosen = atom::ShowMessageBox(
+        window, static_cast<atom::MessageBoxType>(type), buttons, default_id,
+        cancel_id, options, title, message, detail, icon);
     args->Return(chosen);
   }
 }
@@ -126,6 +129,10 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("showErrorBox", &atom::ShowErrorBox);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
   dict.SetMethod("showSaveDialog", &ShowSaveDialog);
+#if defined(OS_MACOSX)
+  dict.SetMethod("showCertificateTrustDialog",
+                 &certificate_trust::ShowCertificateTrust);
+#endif
 }
 
 }  // namespace

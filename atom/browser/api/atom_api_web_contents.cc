@@ -188,6 +188,7 @@ struct Converter<atom::api::WebContents::Type> {
     switch (val) {
       case Type::BACKGROUND_PAGE: type = "backgroundPage"; break;
       case Type::BROWSER_WINDOW: type = "window"; break;
+      case Type::BROWSER_VIEW: type = "browserView"; break;
       case Type::REMOTE: type = "remote"; break;
       case Type::WEB_VIEW: type = "webview"; break;
       case Type::OFF_SCREEN: type = "offscreen"; break;
@@ -202,10 +203,12 @@ struct Converter<atom::api::WebContents::Type> {
     std::string type;
     if (!ConvertFromV8(isolate, val, &type))
       return false;
-    if (type == "webview") {
-      *out = Type::WEB_VIEW;
-    } else if (type == "backgroundPage") {
+    if (type == "backgroundPage") {
       *out = Type::BACKGROUND_PAGE;
+    } else if (type == "browserView") {
+      *out = Type::BROWSER_VIEW;
+    } else if (type == "webview") {
+      *out = Type::WEB_VIEW;
     } else if (type == "offscreen") {
       *out = Type::OFF_SCREEN;
     } else {
@@ -240,7 +243,7 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 }
 
 // Called when CapturePage is done.
-void OnCapturePageDone(base::Callback<void(const gfx::Image&)> callback,
+void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
                        const SkBitmap& bitmap,
                        content::ReadbackResponse response) {
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
@@ -306,6 +309,8 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
     type_ = WEB_VIEW;
   else if (options.Get("isBackgroundPage", &b) && b)
     type_ = BACKGROUND_PAGE;
+  else if (options.Get("isBrowserView", &b) && b)
+    type_ = BROWSER_VIEW;
   else if (options.Get("offscreen", &b) && b)
     type_ = OFF_SCREEN;
 
@@ -411,12 +416,29 @@ WebContents::~WebContents() {
     if (type_ == WEB_VIEW)
       guest_delegate_->Destroy();
 
-    // The WebContentsDestroyed will not be called automatically because we
-    // unsubscribe from webContents before destroying it. So we have to manually
-    // call it here to make sure "destroyed" event is emitted.
     RenderViewDeleted(web_contents()->GetRenderViewHost());
-    WebContentsDestroyed();
+
+    if (type_ == WEB_VIEW) {
+      DestroyWebContents(false /* async */);
+    } else {
+      if (type_ == BROWSER_WINDOW && owner_window()) {
+        owner_window()->CloseContents(nullptr);
+      } else {
+        DestroyWebContents(true /* async */);
+      }
+      // The WebContentsDestroyed will not be called automatically because we
+      // destroy the webContents in the next tick. So we have to manually
+      // call it here to make sure "destroyed" event is emitted.
+      WebContentsDestroyed();
+    }
   }
+}
+
+void WebContents::DestroyWebContents(bool async) {
+  // This event is only for internal use, which is emitted when WebContents is
+  // being destroyed.
+  Emit("will-destroy");
+  ResetManagedWebContents(async);
 }
 
 bool WebContents::DidAddMessageToConsole(content::WebContents* source,
@@ -468,7 +490,7 @@ void WebContents::AddNewContents(content::WebContents* source,
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
       initial_rect.x(), initial_rect.y(), initial_rect.width(),
       initial_rect.height())) {
-    api_web_contents->DestroyWebContents();
+    api_web_contents->DestroyWebContents(true /* async */);
   }
 }
 
@@ -807,10 +829,8 @@ void WebContents::DidFinishNavigation(
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
                               bool explicit_set) {
-  if (entry)
-    Emit("-page-title-updated", entry->GetTitle(), explicit_set);
-  else
-    Emit("-page-title-updated", "", explicit_set);
+  auto title = entry ? entry->GetTitle() : base::string16();
+  Emit("page-title-updated", title, explicit_set);
 }
 
 void WebContents::DidUpdateFaviconURL(
@@ -919,10 +939,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
 // we need to make sure the api::WebContents is also deleted.
 void WebContents::WebContentsDestroyed() {
-  // This event is only for internal use, which is emitted when WebContents is
-  // being destroyed.
-  Emit("will-destroy");
-
   // Cleanup relationships with other parts.
   RemoveFromWeakMap();
 

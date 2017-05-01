@@ -172,6 +172,7 @@ std::string AtomBrowserClient::GetApplicationLocale() {
 }
 
 void AtomBrowserClient::OverrideSiteInstanceForNavigation(
+    content::RenderFrameHost* render_frame_host,
     content::BrowserContext* browser_context,
     content::SiteInstance* current_instance,
     const GURL& url,
@@ -233,6 +234,11 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     CoTaskMemFree(current_app_id);
   }
 #endif
+
+  if (delegate_) {
+    auto app_path = static_cast<api::App*>(delegate_)->GetAppPath();
+    command_line->AppendSwitchPath(switches::kAppPath, app_path);
+  }
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   if (!web_contents)

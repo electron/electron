@@ -7,6 +7,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/node_includes.h"
 #include "base/time/time.h"
@@ -47,7 +48,9 @@ void AutoUpdater::OnError(const std::string& message) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
-  EmitCustomEvent(
+  mate::EmitEvent(
+      isolate(),
+      GetWrapper(),
       "error",
       error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked(),
       // Message is also emitted to keep compatibility with old code.
@@ -87,16 +90,14 @@ void AutoUpdater::SetFeedURL(const std::string& url, mate::Arguments* args) {
 
 void AutoUpdater::QuitAndInstall() {
   // If we don't have any window then quitAndInstall immediately.
-  WindowList* window_list = WindowList::GetInstance();
-  if (window_list->size() == 0) {
+  if (WindowList::IsEmpty()) {
     auto_updater::AutoUpdater::QuitAndInstall();
     return;
   }
 
   // Otherwise do the restart after all windows have been closed.
-  window_list->AddObserver(this);
-  for (NativeWindow* window : *window_list)
-    window->Close();
+  WindowList::AddObserver(this);
+  WindowList::CloseAllWindows();
 }
 
 // static

@@ -8,6 +8,10 @@ applications can put a custom menu in the dock menu.
 This guide explains how to integrate your application into those desktop
 environments with Electron APIs.
 
+## Notifications
+
+See [Notifications](notifications.md)
+
 ## Recent documents (Windows & macOS)
 
 Windows and macOS provide easy access to a list of recent documents opened by

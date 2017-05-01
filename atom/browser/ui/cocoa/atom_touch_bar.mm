@@ -113,19 +113,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   return nil;
 }
 
-
 - (void)refreshTouchBarItem:(NSTouchBar*)touchBar
-                         id:(const std::string&)item_id {
-  if (![self hasItemWithID:item_id]) return;
-
-  mate::PersistentDictionary settings = settings_[item_id];
-  std::string item_type;
-  settings.Get("type", &item_type);
-
-  NSTouchBarItemIdentifier identifier = [self identifierFromID:item_id
-                                                          type:item_type];
-  if (!identifier) return;
-
+                         id:(NSTouchBarItemIdentifier)identifier
+                   withType:(const std::string&)item_type
+               withSettings:(const mate::PersistentDictionary&)settings {
   NSTouchBarItem* item = [touchBar itemForIdentifier:identifier];
   if (!item) return;
 
@@ -145,7 +136,56 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   } else if (item_type == "scrubber") {
     [self updateScrubber:(NSCustomTouchBarItem*)item withSettings:settings];
   }
+}
 
+- (void)addNonDefaultTouchBarItems:(const std::vector<mate::PersistentDictionary>&)items {
+  [self identifiersFromSettings:items];
+}
+
+- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item forTouchBar:(NSTouchBar*)touchBar {
+  std::string type;
+  std::string item_id;
+  NSTouchBarItemIdentifier identifier = nil;
+  if (item.Get("type", &type) && item.Get("id", &item_id)) {
+    identifier = [self identifierFromID:item_id type:type];
+  }
+  if (identifier) {
+    [self addNonDefaultTouchBarItems:{ item }];
+    touchBar.escapeKeyReplacementItemIdentifier = identifier;
+  } else {
+    touchBar.escapeKeyReplacementItemIdentifier = nil;
+  }
+}
+
+- (void)refreshTouchBarItem:(NSTouchBar*)touchBar
+                         id:(const std::string&)item_id {
+  if (![self hasItemWithID:item_id]) return;
+
+  mate::PersistentDictionary settings = settings_[item_id];
+  std::string item_type;
+  settings.Get("type", &item_type);
+
+  auto identifier = [self identifierFromID:item_id type:item_type];
+  if (!identifier) return;
+
+  std::vector<std::string> popover_ids;
+  settings.Get("_popover", &popover_ids);
+  for (auto& popover_id : popover_ids) {
+    auto popoverIdentifier = [self identifierFromID:popover_id type:"popover"];
+    if (!popoverIdentifier) continue;
+
+    NSPopoverTouchBarItem* popoverItem =
+        [touchBar itemForIdentifier:popoverIdentifier];
+    [self refreshTouchBarItem:popoverItem.popoverTouchBar
+                           id:identifier
+                     withType:item_type
+                 withSettings:settings];
+  }
+
+  [self refreshTouchBarItem:touchBar
+                         id:identifier
+                   withType:item_type
+               withSettings:settings];
 }
 
 - (void)buttonAction:(id)sender {
@@ -270,6 +310,16 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   gfx::Image image;
   if (settings.Get("icon", &image)) {
     button.image = image.AsNSImage();
+
+    std::string iconPosition;
+    settings.Get("iconPosition", &iconPosition);
+    if (iconPosition == "left") {
+      button.imagePosition = NSImageLeft;
+    } else if (iconPosition == "right") {
+      button.imagePosition = NSImageRight;
+    } else {
+      button.imagePosition = NSImageOverlaps;
+    }
   }
 }
 
@@ -319,7 +369,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
              withSettings:(const mate::PersistentDictionary&)settings {
   std::vector<std::string> colors;
-  if (settings.Get("availableColors", &colors) && colors.size() > 0) {
+  if (settings.Get("availableColors", &colors) && !colors.empty()) {
     NSColorList* color_list  = [[[NSColorList alloc] initWithName:@""] autorelease];
     for (size_t i = 0; i < colors.size(); ++i) {
       [color_list insertColor:[self colorFromHexColorString:colors[i]]
@@ -414,7 +464,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
   NSMutableArray* generatedItems = [NSMutableArray array];
   NSMutableArray* identifiers = [self identifiersFromSettings:items];
-  for (NSUInteger i = 0; i < [identifiers count]; i++) {
+  for (NSUInteger i = 0; i < [identifiers count]; ++i) {
     if ([identifiers objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
       NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identifiers objectAtIndex:i]];
       if (generatedItem) {
@@ -474,7 +524,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("segments", &segments);
 
   control.segmentCount = segments.size();
-  for (int i = 0; i < (int)segments.size(); i++) {
+  for (size_t i = 0; i < segments.size(); ++i) {
     std::string label;
     gfx::Image image;
     bool enabled = true;
@@ -581,7 +631,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::vector<mate::PersistentDictionary> items;
   if (!settings.Get("items", &items)) return nil;
 
-  if (index >= (long)items.size()) return nil;
+  if (index >= static_cast<NSInteger>(items.size())) return nil;
 
   mate::PersistentDictionary item = items[index];
 

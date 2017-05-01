@@ -107,20 +107,23 @@ console.log(dialog)
 * `options` Object
   * `type` String - 可以是 `"none"`, `"info"`, `"error"`, `"question"` 或
   `"warning"`. 在 Windows, "question" 与 "info" 展示图标相同, 除非你使用 "icon" 参数.
-  * `buttons` Array - buttons 内容，数组.
-  * `defaultId` Integer - 在message box 对话框打开的时候，设置默认button选中，值为在 buttons 数组中的button索引.
-  * `title` String - message box 的标题，一些平台不显示.
-  * `message` String - message box 内容.
-  * `detail` String - 额外信息.
-  * `icon` [NativeImage](native-image.md)
-  * `cancelId` Integer - 当用户关闭对话框的时候，不是通过点击对话框的button，就返回值.默认值为对应 "cancel" 或 "no" 标签button 的索引值, 或者如果没有这种button，就返回0. 在 macOS 和  Windows 上， "Cancel" button 的索引值将一直是 `cancelId`, 不管之前是不是特别指出的.
-  * `noLink` Boolean - 在 Windows ，Electron 将尝试识别哪个button 是普通 button (如 "Cancel" 或 "Yes"), 然后在对话框中以链接命令(command links)方式展现其它的 button . 这能让对话框展示得很炫酷.如果你不喜欢这种效果，你可以设置 `noLink` 为 `true`.
-  * `callback` Function (可选)
-    * `response` Number - The index of the button that was clicked
+  * `buttons` String[]- (可选)  - 按钮上文字的数组，在 Windows 系统中，空数组在按钮上会显示 “OK”.
+  * `defaultId` Integer (可选) - 在 message box 对话框打开的时候，设置默认选中的按钮，值为在 buttons 数组中的索引.
+  * `title` String (可选) - message box 的标题，一些平台不显示.
+  * `message` String (可选) - message box 的内容.
+  * `detail` String (可选)- 额外信息.
+  * `checkboxLabel` String (可选) - 如果有该参数，message box 中会显示一个 checkbox 复选框，它的勾选状态可以在 `callback` 回调方法中获取。
+  * `checkboxChecked` Boolean (可选) - checkbox 的初始值，默认为`false`.
+  * `icon` [NativeImage](native-image.md)(可选)
+  * `cancelId` Integer - 当用户不是通过按钮而是使用其他方式关闭对话框时，比如按`Esc`键，就返回该值.默认值为对应 "cancel" 或 "no" 标签 button 的索引值, 如果没有这种 button，就返回0. 该选项在 Windows 上无效.
+  * `noLink` Boolean(可选) - 在 Windows 系统中，Electron 将尝试识别哪个button 是普通 button (如 "Cancel" 或 "Yes"), 然后在对话框中以链接命令(command links)方式展现其它的 button . 这能让对话框展示得很炫酷.如果你不喜欢这种效果，你可以设置 `noLink` 为 `true`.
+* `callback` Function (可选)
+    * `response` Number - 被点击按钮的索引值。
+    * `checkboxChecked` Boolean - 如果设置了 `checkboxLabel` ,会显示 checkbox 的选中状态，否则显示 `false`
 
 返回 `Integer`，如果提供了回调，它会返回点击的按钮的索引或者 undefined 。
 
-展示 message box, 它会阻塞进程，直到 message box 关闭为止.返回点击按钮的索引值。
+显示 message box 时, 它会阻塞进程，直到 message box 关闭为止.返回点击按钮的索引值。
 
 `browserWindow` 参数允许对话框将自身附加到父窗口，使其成为模态。
 

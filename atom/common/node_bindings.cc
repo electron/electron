@@ -33,17 +33,18 @@
 // Electron's builtin modules.
 REFERENCE_MODULE(atom_browser_app);
 REFERENCE_MODULE(atom_browser_auto_updater);
+REFERENCE_MODULE(atom_browser_browser_view);
 REFERENCE_MODULE(atom_browser_content_tracing);
-REFERENCE_MODULE(atom_browser_dialog);
 REFERENCE_MODULE(atom_browser_debugger);
 REFERENCE_MODULE(atom_browser_desktop_capturer);
+REFERENCE_MODULE(atom_browser_dialog);
 REFERENCE_MODULE(atom_browser_download_item);
+REFERENCE_MODULE(atom_browser_global_shortcut);
 REFERENCE_MODULE(atom_browser_menu);
 REFERENCE_MODULE(atom_browser_net);
 REFERENCE_MODULE(atom_browser_power_monitor);
 REFERENCE_MODULE(atom_browser_power_save_blocker);
 REFERENCE_MODULE(atom_browser_protocol);
-REFERENCE_MODULE(atom_browser_global_shortcut);
 REFERENCE_MODULE(atom_browser_render_process_preferences);
 REFERENCE_MODULE(atom_browser_session);
 REFERENCE_MODULE(atom_browser_system_preferences);
@@ -231,6 +232,12 @@ void NodeBindings::RunMessageLoop() {
 
 void NodeBindings::UvRunOnce() {
   node::Environment* env = uv_env();
+
+  // When doing navigation without restarting renderer process, it may happen
+  // that the node environment is destroyed but the message loop is still there.
+  // In this case we should not run uv loop.
+  if (!env)
+    return;
 
   // Use Locker in browser process.
   mate::Locker locker(env->isolate());

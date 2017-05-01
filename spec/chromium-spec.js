@@ -1,4 +1,5 @@
 const assert = require('assert')
+const fs = require('fs')
 const http = require('http')
 const path = require('path')
 const ws = require('ws')
@@ -13,12 +14,17 @@ const isCI = remote.getGlobal('isCi')
 describe('chromium feature', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var listener = null
+  let w = null
 
   afterEach(function () {
     if (listener != null) {
       window.removeEventListener('message', listener)
     }
     listener = null
+  })
+
+  afterEach(function () {
+    return closeWindow(w).then(function () { w = null })
   })
 
   describe('heap snapshot', function () {
@@ -44,11 +50,6 @@ describe('chromium feature', function () {
 
   describe('document.hidden', function () {
     var url = 'file://' + fixtures + '/pages/document-hidden.html'
-    var w = null
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
-    })
 
     it('is set correctly when window is not shown', function (done) {
       w = new BrowserWindow({
@@ -90,13 +91,7 @@ describe('chromium feature', function () {
   })
 
   describe('navigator.mediaDevices', function () {
-    if (process.env.TRAVIS === 'true') {
-      return
-    }
-    if (isCI && process.platform === 'linux') {
-      return
-    }
-    if (isCI && process.platform === 'win32') {
+    if (isCI) {
       return
     }
 
@@ -107,7 +102,7 @@ describe('chromium feature', function () {
         if (labelFound) {
           done()
         } else {
-          done('No device labels found: ' + JSON.stringify(labels))
+          done(new Error(`No device labels found: ${JSON.stringify(labels)}`))
         }
       }).catch(done)
     })
@@ -119,7 +114,7 @@ describe('chromium feature', function () {
       }
       const deviceIds = []
       const ses = session.fromPartition('persist:media-device-id')
-      let w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         webPreferences: {
           session: ses
@@ -155,11 +150,6 @@ describe('chromium feature', function () {
 
   describe('navigator.serviceWorker', function () {
     var url = 'file://' + fixtures + '/pages/service-worker/index.html'
-    var w = null
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
-    })
 
     it('should register for file scheme', function (done) {
       w = new BrowserWindow({
@@ -187,12 +177,6 @@ describe('chromium feature', function () {
     if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
       return
     }
-
-    let w = null
-
-    afterEach(() => {
-      return closeWindow(w).then(function () { w = null })
-    })
 
     it('returns a BrowserWindowProxy object', function () {
       var b = window.open('about:blank', '', 'show=no')
@@ -244,6 +228,45 @@ describe('chromium feature', function () {
         slashes: true
       })
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
+    })
+
+    it('disables node integration when it is disabled on the parent window for chrome devtools URLs', function (done) {
+      var b
+      app.once('web-contents-created', (event, contents) => {
+        contents.once('did-finish-load', () => {
+          contents.executeJavaScript('typeof process').then((typeofProcessGlobal) => {
+            assert.equal(typeofProcessGlobal, 'undefined')
+            b.close()
+            done()
+          }).catch(done)
+        })
+      })
+      b = window.open('chrome-devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no')
+    })
+
+    it('disables JavaScript when it is disabled on the parent window', function (done) {
+      var b
+      app.once('web-contents-created', (event, contents) => {
+        contents.once('did-finish-load', () => {
+          app.once('browser-window-created', (event, window) => {
+            const preferences = window.webContents.getWebPreferences()
+            assert.equal(preferences.javascript, false)
+            window.destroy()
+            b.close()
+            done()
+          })
+          // Click link on page
+          contents.sendInputEvent({type: 'mouseDown', clickCount: 1, x: 1, y: 1})
+          contents.sendInputEvent({type: 'mouseUp', clickCount: 1, x: 1, y: 1})
+        })
+      })
+
+      var windowUrl = require('url').format({
+        pathname: `${fixtures}/pages/window-no-javascript.html`,
+        protocol: 'file',
+        slashes: true
+      })
+      b = window.open(windowUrl, '', 'javascript=no,show=no')
     })
 
     it('does not override child options', function (done) {
@@ -339,15 +362,48 @@ describe('chromium feature', function () {
       })
       b = window.open()
     })
+
+    it('throws an exception when the arguments cannot be converted to strings', function () {
+      assert.throws(function () {
+        window.open('', {toString: null})
+      }, /Cannot convert object to primitive value/)
+
+      assert.throws(function () {
+        window.open('', '', {toString: 3})
+      }, /Cannot convert object to primitive value/)
+    })
+
+    it('sets the window title to the specified frameName', function (done) {
+      let b
+      app.once('browser-window-created', (event, createdWindow) => {
+        assert.equal(createdWindow.getTitle(), 'hello')
+        b.close()
+        done()
+      })
+      b = window.open('', 'hello')
+    })
+
+    it('does not throw an exception when the frameName is a built-in object property', function (done) {
+      let b
+      app.once('browser-window-created', (event, createdWindow) => {
+        assert.equal(createdWindow.getTitle(), '__proto__')
+        b.close()
+        done()
+      })
+      b = window.open('', '__proto__')
+    })
+
+    it('does not throw an exception when the features include webPreferences', function () {
+      let b
+      assert.doesNotThrow(function () {
+        b = window.open('', '', 'webPreferences=')
+      })
+      b.close()
+    })
   })
 
   describe('window.opener', function () {
     let url = 'file://' + fixtures + '/pages/window-opener.html'
-    let w = null
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
-    })
 
     it('is null for main window', function (done) {
       w = new BrowserWindow({
@@ -521,6 +577,14 @@ describe('chromium feature', function () {
       })
       b = window.open('file://' + fixtures + '/pages/window-open-postMessage.html', '', 'show=no')
     })
+
+    it('throws an exception when the targetOrigin cannot be converted to a string', function () {
+      var b = window.open('')
+      assert.throws(function () {
+        b.postMessage('test', {toString: null})
+      }, /Cannot convert object to primitive value/)
+      b.close()
+    })
   })
 
   describe('window.opener.postMessage', function () {
@@ -554,6 +618,39 @@ describe('chromium feature', function () {
         slashes: true
       })
       document.body.appendChild(webview)
+    })
+
+    describe('targetOrigin argument', function () {
+      let serverURL
+      let server
+
+      beforeEach(function (done) {
+        server = http.createServer(function (req, res) {
+          res.writeHead(200)
+          const filePath = path.join(fixtures, 'pages', 'window-opener-targetOrigin.html')
+          res.end(fs.readFileSync(filePath, 'utf8'))
+        })
+        server.listen(0, '127.0.0.1', function () {
+          serverURL = `http://127.0.0.1:${server.address().port}`
+          done()
+        })
+      })
+
+      afterEach(function () {
+        server.close()
+      })
+
+      it('delivers messages that match the origin', function (done) {
+        let b
+        listener = function (event) {
+          window.removeEventListener('message', listener)
+          b.close()
+          assert.equal(event.data, 'deliver')
+          done()
+        }
+        window.addEventListener('message', listener)
+        b = window.open(serverURL, '', 'show=no')
+      })
     })
   })
 
@@ -849,7 +946,6 @@ describe('chromium feature', function () {
   })
 
   describe('PDF Viewer', function () {
-    let w = null
     const pdfSource = url.format({
       pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
       protocol: 'file',
@@ -863,10 +959,6 @@ describe('chromium feature', function () {
           preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
         }
       })
-    })
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
     })
 
     it('opens when loading a pdf resource as top level navigation', function (done) {
@@ -905,6 +997,38 @@ describe('chromium feature', function () {
       }).catch(function (e) {
         done(e)
       })
+    })
+  })
+
+  describe('window.alert(message, title)', function () {
+    it('throws an exception when the arguments cannot be converted to strings', function () {
+      assert.throws(function () {
+        window.alert({toString: null})
+      }, /Cannot convert object to primitive value/)
+
+      assert.throws(function () {
+        window.alert('message', {toString: 3})
+      }, /Cannot convert object to primitive value/)
+    })
+  })
+
+  describe('window.confirm(message, title)', function () {
+    it('throws an exception when the arguments cannot be converted to strings', function () {
+      assert.throws(function () {
+        window.confirm({toString: null}, 'title')
+      }, /Cannot convert object to primitive value/)
+
+      assert.throws(function () {
+        window.confirm('message', {toString: 3})
+      }, /Cannot convert object to primitive value/)
+    })
+  })
+
+  describe('window.history.go(offset)', function () {
+    it('throws an exception when the argumnet cannot be converted to a string', function () {
+      assert.throws(function () {
+        window.history.go({toString: null})
+      }, /Cannot convert object to primitive value/)
     })
   })
 })

@@ -26,22 +26,34 @@ const kOneKiloByte = 1024
 const kOneMegaByte = kOneKiloByte * kOneKiloByte
 
 describe('net module', function () {
-  describe('HTTP basics', function () {
-    let server
-    beforeEach(function (done) {
-      server = http.createServer()
-      server.listen(0, '127.0.0.1', function () {
-        server.url = 'http://127.0.0.1:' + server.address().port
-        done()
+  let server
+  const connections = new Set()
+
+  beforeEach(function (done) {
+    server = http.createServer()
+    server.listen(0, '127.0.0.1', function () {
+      server.url = `http://127.0.0.1:${server.address().port}`
+      done()
+    })
+    server.on('connection', (connection) => {
+      connections.add(connection)
+      connection.once('close', () => {
+        connections.delete(connection)
       })
     })
+  })
 
-    afterEach(function () {
-      server.close(function () {
-      })
+  afterEach(function (done) {
+    for (const connection of connections) {
+      connection.destroy()
+    }
+    server.close(function () {
       server = null
+      done()
     })
+  })
 
+  describe('HTTP basics', function () {
     it('should be able to issue a basic GET request', function (done) {
       const requestUrl = '/requestUrl'
       server.on('request', function (request, response) {
@@ -224,19 +236,7 @@ describe('net module', function () {
   })
 
   describe('ClientRequest API', function () {
-    let server
-    beforeEach(function (done) {
-      server = http.createServer()
-      server.listen(0, '127.0.0.1', function () {
-        server.url = 'http://127.0.0.1:' + server.address().port
-        done()
-      })
-    })
-
     afterEach(function () {
-      server.close(function () {
-      })
-      server = null
       session.defaultSession.webRequest.onBeforeRequest(null)
     })
 
@@ -346,6 +346,49 @@ describe('net module', function () {
         response.pause()
         response.on('data', function (chunk) {
         })
+        response.on('end', function () {
+          done()
+        })
+        response.resume()
+      })
+      urlRequest.setHeader(customHeaderName, customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName),
+        customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName.toLowerCase()),
+        customHeaderValue)
+      urlRequest.write('')
+      assert.equal(urlRequest.getHeader(customHeaderName),
+        customHeaderValue)
+      assert.equal(urlRequest.getHeader(customHeaderName.toLowerCase()),
+        customHeaderValue)
+      urlRequest.end()
+    })
+
+    it('should be able to set a non-string object as a header value', function (done) {
+      const requestUrl = '/requestUrl'
+      const customHeaderName = 'Some-Integer-Value'
+      const customHeaderValue = 900
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case requestUrl:
+            assert.equal(request.headers[customHeaderName.toLowerCase()],
+              customHeaderValue.toString())
+            response.statusCode = 200
+            response.statusMessage = 'OK'
+            response.end()
+            break
+          default:
+            assert.equal(request.url, requestUrl)
+        }
+      })
+      const urlRequest = net.request({
+        method: 'GET',
+        url: `${server.url}${requestUrl}`
+      })
+      urlRequest.on('response', function (response) {
+        const statusCode = response.statusCode
+        assert.equal(statusCode, 200)
+        response.pause()
         response.on('end', function () {
           done()
         })
@@ -906,6 +949,217 @@ describe('net module', function () {
       urlRequest.end()
     })
 
+    it('should throw if given an invalid redirect mode', function () {
+      const requestUrl = '/requestUrl'
+      const options = {
+        url: `${server.url}${requestUrl}`,
+        redirect: 'custom'
+      }
+      assert.throws(function () {
+        net.request(options)
+      }, 'redirect mode should be one of follow, error or manual')
+    })
+
+    it('should throw when calling getHeader without a name', function () {
+      assert.throws(function () {
+        net.request({url: `${server.url}/requestUrl`}).getHeader()
+      }, /`name` is required for getHeader\(name\)\./)
+
+      assert.throws(function () {
+        net.request({url: `${server.url}/requestUrl`}).getHeader(null)
+      }, /`name` is required for getHeader\(name\)\./)
+    })
+
+    it('should throw when calling removeHeader without a name', function () {
+      assert.throws(function () {
+        net.request({url: `${server.url}/requestUrl`}).removeHeader()
+      }, /`name` is required for removeHeader\(name\)\./)
+
+      assert.throws(function () {
+        net.request({url: `${server.url}/requestUrl`}).removeHeader(null)
+      }, /`name` is required for removeHeader\(name\)\./)
+    })
+
+    it('should follow redirect when no redirect mode is provided', function (done) {
+      const requestUrl = '/301'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`
+      })
+      urlRequest.on('response', function (response) {
+        assert.equal(response.statusCode, 200)
+        done()
+      })
+      urlRequest.end()
+    })
+
+    it('should follow redirect chain when no redirect mode is provided', function (done) {
+      const requestUrl = '/redirectChain'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/redirectChain':
+            response.statusCode = '301'
+            response.setHeader('Location', '/301')
+            response.end()
+            break
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`
+      })
+      urlRequest.on('response', function (response) {
+        assert.equal(response.statusCode, 200)
+        done()
+      })
+      urlRequest.end()
+    })
+
+    it('should not follow redirect when mode is error', function (done) {
+      const requestUrl = '/301'
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`,
+        redirect: 'error'
+      })
+      urlRequest.on('error', function (error) {
+        assert.equal(error.message, 'Request cannot follow redirect with the current redirect mode')
+      })
+      urlRequest.on('close', function () {
+        done()
+      })
+      urlRequest.end()
+    })
+
+    it('should allow follow redirect when mode is manual', function (done) {
+      const requestUrl = '/redirectChain'
+      let redirectCount = 0
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/redirectChain':
+            response.statusCode = '301'
+            response.setHeader('Location', '/301')
+            response.end()
+            break
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`,
+        redirect: 'manual'
+      })
+      urlRequest.on('response', function (response) {
+        assert.equal(response.statusCode, 200)
+        assert.equal(redirectCount, 2)
+        done()
+      })
+      urlRequest.on('redirect', function (status, method, url) {
+        if (url === `${server.url}/301` || url === `${server.url}/200`) {
+          redirectCount += 1
+          urlRequest.followRedirect()
+        }
+      })
+      urlRequest.end()
+    })
+
+    it('should allow cancelling redirect when mode is manual', function (done) {
+      const requestUrl = '/redirectChain'
+      let redirectCount = 0
+      server.on('request', function (request, response) {
+        switch (request.url) {
+          case '/redirectChain':
+            response.statusCode = '301'
+            response.setHeader('Location', '/redirect/1')
+            response.end()
+            break
+          case '/redirect/1':
+            response.statusCode = '200'
+            response.setHeader('Location', '/redirect/2')
+            response.end()
+            break
+          case '/redirect/2':
+            response.statusCode = '200'
+            response.end()
+            break
+          default:
+            assert(false)
+        }
+      })
+      const urlRequest = net.request({
+        url: `${server.url}${requestUrl}`,
+        redirect: 'manual'
+      })
+      urlRequest.on('response', function (response) {
+        assert.equal(response.statusCode, 200)
+        response.pause()
+        response.on('data', function (chunk) {
+        })
+        response.on('end', function () {
+          urlRequest.abort()
+        })
+        response.resume()
+      })
+      urlRequest.on('close', function () {
+        assert.equal(redirectCount, 1)
+        done()
+      })
+      urlRequest.on('redirect', function (status, method, url) {
+        if (url === `${server.url}/redirect/1`) {
+          redirectCount += 1
+          urlRequest.followRedirect()
+        }
+      })
+      urlRequest.end()
+    })
+
     it('should throw if given an invalid session option', function (done) {
       const requestUrl = '/requestUrl'
       try {
@@ -1109,21 +1363,8 @@ describe('net module', function () {
       urlRequest.end()
     })
   })
+
   describe('IncomingMessage API', function () {
-    let server
-    beforeEach(function (done) {
-      server = http.createServer()
-      server.listen(0, '127.0.0.1', function () {
-        server.url = 'http://127.0.0.1:' + server.address().port
-        done()
-      })
-    })
-
-    afterEach(function () {
-      server.close()
-      server = null
-    })
-
     it('response object should implement the IncomingMessage API', function (done) {
       const requestUrl = '/requestUrl'
       const customHeaderName = 'Some-Custom-Header-Name'
@@ -1290,21 +1531,8 @@ describe('net module', function () {
       urlRequest.end()
     })
   })
+
   describe('Stability and performance', function (done) {
-    let server
-    beforeEach(function (done) {
-      server = http.createServer()
-      server.listen(0, '127.0.0.1', function () {
-        server.url = 'http://127.0.0.1:' + server.address().port
-        done()
-      })
-    })
-
-    afterEach(function () {
-      server.close()
-      server = null
-    })
-
     it('should free unreferenced, never-started request objects without crash', function (done) {
       const requestUrl = '/requestUrl'
       ipcRenderer.once('api-net-spec-done', function () {
@@ -1320,6 +1548,7 @@ describe('net module', function () {
         })
       `)
     })
+
     it('should not collect on-going requests without crash', function (done) {
       const requestUrl = '/requestUrl'
       server.on('request', function (request, response) {
@@ -1361,6 +1590,7 @@ describe('net module', function () {
         urlRequest.end()
       `)
     })
+
     it('should collect unreferenced, ended requests without crash', function (done) {
       const requestUrl = '/requestUrl'
       server.on('request', function (request, response) {

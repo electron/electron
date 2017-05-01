@@ -2,20 +2,15 @@
 process.throwDeprecation = true
 
 const electron = require('electron')
-const app = electron.app
-const crashReporter = electron.crashReporter
-const ipcMain = electron.ipcMain
-const dialog = electron.dialog
-const BrowserWindow = electron.BrowserWindow
-const protocol = electron.protocol
-const webContents = electron.webContents
-const v8 = require('v8')
+const {app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents} = electron
 
-const Coverage = require('electabul').Coverage
+const {Coverage} = require('electabul')
+
 const fs = require('fs')
 const path = require('path')
 const url = require('url')
 const util = require('util')
+const v8 = require('v8')
 
 var argv = require('yargs')
   .boolean('ci')
@@ -24,7 +19,10 @@ var argv = require('yargs')
   .argv
 
 var window = null
-process.port = 0 // will be used by crash-reporter spec.
+
+ // will be used by crash-reporter spec.
+process.port = 0
+process.crashServicePid = 0
 
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
@@ -98,6 +96,12 @@ protocol.registerStandardSchemes([global.standardScheme, global.zoomScheme], { s
 
 app.on('window-all-closed', function () {
   app.quit()
+})
+
+app.on('web-contents-created', (event, contents) => {
+  contents.on('crashed', (event, killed) => {
+    console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
+  })
 })
 
 app.on('ready', function () {
@@ -327,6 +331,32 @@ ipcMain.on('navigate-with-pending-entry', (event, id) => {
   w.webContents.session.clearHostResolverCache(() => {
     w.loadURL('http://host')
   })
+})
+
+ipcMain.on('crash-service-pid', (event, pid) => {
+  process.crashServicePid = pid
+  event.returnValue = null
+})
+
+ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
+  let contents = null
+  let destroy = () => {}
+  if (options.id) {
+    const w = BrowserWindow.fromId(options.id)
+    contents = w.webContents
+    destroy = () => w.close()
+  } else {
+    contents = webContents.create()
+    destroy = () => contents.destroy()
+  }
+
+  contents.once(options.name, () => destroy())
+
+  contents.once('destroyed', () => {
+    event.sender.send(options.responseEvent)
+  })
+
+  contents.loadURL(options.url)
 })
 
 // Suspend listeners until the next event and then restore them

@@ -12,7 +12,8 @@ rendered.
 Unlike an `iframe`, the `webview` runs in a separate process than your
 app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
-safe from the embedded content.
+safe from the embedded content. **Note:** Most methods called on the
+webview from the host page require a syncronous call to the main process.
 
 For security purposes, `webview` can only be used in `BrowserWindow`s that have
 `nodeIntegration` enabled.
@@ -749,6 +750,7 @@ Returns:
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
   * `selectionArea` Object - Coordinates of first match region.
+  * `finalUpdate` Boolean
 
 Fired when a result is available for
 [`webview.findInPage`](webview-tag.md#webviewtagfindinpage) request.

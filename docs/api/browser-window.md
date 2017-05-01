@@ -211,6 +211,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     width of the web page when zoomed, `false` will cause it to zoom to the
     width of the screen. This will also affect the behavior when calling
     `maximize()` directly. Default is `false`.
+  * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
+    window as a native tab on macOS 10.12+. Windows with the same tabbing
+    identifier will be grouped together.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
@@ -225,6 +228,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](process.md#event-loaded).
+    * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
+      associated with the window, making it compatible with the Chromium
+      OS-level sandbox and disabling the Node.js engine. This is not the same as
+      the `nodeIntegration` option and the APIs available to the preload script
+      are more limited. Read more about the option [here](sandbox-option.md).
+      **Note:** This option is currently experimental and may change or be
+      removed in future Electron releases.
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
       page. Instead of passing the Session object directly, you can also choose to
       use the `partition` option instead, which accepts a partition string. When
@@ -282,7 +292,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       window. Defaults to `false`. See the
       [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
       more details.
-    * `sandbox` Boolean (optional) - Whether to enable Chromium OS-level sandbox.
     * `contextIsolation` Boolean (optional) - Whether to run Electron APIs and
       the specified `preload` script in a separate JavaScript context. Defaults
       to `false`. The context that the `preload` script runs in will still
@@ -366,6 +375,11 @@ window.onbeforeunload = (e) => {
 
 Emitted when the window is closed. After you have received this event you should
 remove the reference to the window and avoid using it any more.
+
+#### Event: 'session-end' _Windows_
+
+Emitted when window session is going to end due to force shutdown or machine restart 
+or session log off.
 
 #### Event: 'unresponsive'
 
@@ -488,6 +502,14 @@ Returns:
 * `direction` String
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
+
+#### Event: 'sheet-begin' _macOS_
+
+Emitted when the window opens a sheet.
+
+#### Event: 'sheet-end' _macOS_
+
+Emitted when the window has closed a sheet.
 
 ### Static Methods
 
@@ -673,10 +695,8 @@ Returns `Boolean` - Whether the window is in fullscreen mode.
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
-* `extraSize` Object (optional) - The extra size not to be included while
+* `extraSize` [Size](structures/size.md) - The extra size not to be included while
 maintaining the aspect ratio.
-  * `width` Integer
-  * `height` Integer
 
 This will make a window maintain an aspect ratio. The extra size allows a
 developer to have space, specified in pixels, not included within the aspect
@@ -1280,6 +1300,13 @@ Sets the touchBar layout for the current window. Specifying `null` or
 machine has a touch bar and is running on macOS 10.12.1+.
 
 **Note:** The TouchBar API is currently experimental and may change or be
+removed in future Electron releases.
+
+#### `win.setBrowserView(browserView)` _Experimental_
+
+* `browserView` [BrowserView](browser-view.md)
+
+**Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62

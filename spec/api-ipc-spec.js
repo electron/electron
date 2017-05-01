@@ -175,8 +175,14 @@ describe('ipc module', function () {
     it('can change its properties', function () {
       var property = remote.require(path.join(fixtures, 'module', 'property.js'))
       assert.equal(property.property, 1127)
+
+      property.property = null
+      assert.equal(property.property, null)
+      property.property = undefined
+      assert.equal(property.property, undefined)
       property.property = 1007
       assert.equal(property.property, 1007)
+
       assert.equal(property.getFunctionProperty(), 'foo-browser')
       property.func.property = 'bar'
       assert.equal(property.getFunctionProperty(), 'bar-browser')
@@ -185,6 +191,26 @@ describe('ipc module', function () {
       var property2 = remote.require(path.join(fixtures, 'module', 'property.js'))
       assert.equal(property2.property, 1007)
       property.property = 1127
+    })
+
+    it('rethrows errors getting/setting properties', function () {
+      const foo = remote.require(path.join(fixtures, 'module', 'error-properties.js'))
+
+      assert.throws(function () {
+        foo.bar
+      }, /getting error/)
+
+      assert.throws(function () {
+        foo.bar = 'test'
+      }, /setting error/)
+    })
+
+    it('can set a remote property with a remote object', function () {
+      const foo = remote.require(path.join(fixtures, 'module', 'remote-object-set.js'))
+
+      assert.doesNotThrow(function () {
+        foo.bar = remote.getCurrentWindow()
+      })
     })
 
     it('can construct an object from its member', function () {

@@ -851,12 +851,12 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
   GetCompositor()->vsync_manager()->SetAuthoritativeVSyncInterval(
       base::TimeDelta::FromMilliseconds(frame_rate_threshold_ms_));
 
-  if (copy_frame_generator_.get()) {
+  if (copy_frame_generator_) {
     copy_frame_generator_->set_frame_rate_threshold_ms(
         frame_rate_threshold_ms_);
   }
 
-  if (begin_frame_timer_.get()) {
+  if (begin_frame_timer_) {
     begin_frame_timer_->SetFrameRateThresholdMs(frame_rate_threshold_ms_);
   } else {
     begin_frame_timer_.reset(new AtomBeginFrameTimer(
@@ -871,7 +871,7 @@ void OffScreenRenderWidgetHostView::Invalidate() {
 
   if (software_output_device_) {
     software_output_device_->OnPaint(bounds_in_pixels);
-  } else if (copy_frame_generator_.get()) {
+  } else if (copy_frame_generator_) {
     copy_frame_generator_->GenerateCopyFrame(true, bounds_in_pixels);
   }
 }

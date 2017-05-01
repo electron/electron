@@ -85,11 +85,21 @@ describe('node feature', function () {
         child.stdout.on('data', (chunk) => {
           data += String(chunk)
         })
-        child.on('exit', (code) => {
+        child.on('close', (code) => {
           assert.equal(code, 0)
           assert.equal(data, 'pipes stdio')
           done()
         })
+      })
+
+      it('works when sending a message to a process forked with the --eval argument', function (done) {
+        const source = "process.on('message', (message) => { process.send(message) })"
+        const forked = ChildProcess.fork('--eval', [source])
+        forked.once('message', (message) => {
+          assert.equal(message, 'hello')
+          done()
+        })
+        forked.send('hello')
       })
     })
 

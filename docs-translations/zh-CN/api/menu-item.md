@@ -15,26 +15,24 @@
     * `menuItem` MenuItem
     * `browserWindow` BrowserWindow
     * `event` Event
-  * `role` String (可选) - 定义菜单项的行为，在指定 `click` 属性时将会被忽略。
-  * `type` String (可选) - 取值 `normal`, `separator`, `submenu`, `checkbox` or `radio`。
+  * `role` String (可选) - 定义菜单项的行为，在指定 `click` 属性时将会被忽略。参见 [roles](#roles).
+  * `type` String (可选) - 取值 `normal`, `separator`, `submenu`, `checkbox` 或 `radio`。
   * `label` String - (可选)
   * `sublabel` String - (可选)
   * `accelerator` [Accelerator](accelerator.md) (可选)
   * `icon` ([NativeImage](native-image.md) | String) (可选)
   * `enabled` Boolean (可选) - 如果为 false，菜单项将显示为灰色不可点击。
-    unclickable.
   * `visible` Boolean (可选) - 如果为 false，菜单项将完全隐藏。
   * `checked` Boolean (可选) - 只为 `checkbox` 或 `radio` 类型的菜单项。
   * `submenu` (MenuItemConstructorOptions[] | Menu) (可选) - 应当作为 `submenu` 菜单项的特定类型，当它作为 `type: 'submenu'` 菜单项的特定类型时可以忽略。如果它的值不是 `Menu`，将自动转为 `Menu.buildFromTemplate`。
-  * `id` String (可选) - 标志一个菜单的唯一性。如果被定义使用，它将被用作这个菜单项的参考位置属性。
+  * `id` String (可选) - 菜单的唯一标识。如果被定义使用，它将被用作这个菜单项的参考位置属性。
   * `position` String (可选) - 定义菜单的具体指定位置信息。
 
-在创建菜单项时，如果有匹配的方法，建议指定 `role` 属性，
-而不是试图手动实现在一个 `click` 函数中的行为。
-内置的 `role` 行为将提供最好的原生体验。
+### Roles
+Roles 允许菜单项有预定义的行为。最好为每个菜单项指定一个行为，而不是自己实现一个 `click` 函数中的行为。内置的 `role` 行为将提供最好的原生体验。
 
-当使用 `role' 时，`label' 和 `accelerator` 是可选的，默认为
-到每个平台的适当值。
+当使用 `role` 时，`label` 和 `accelerator` 的值是可选的，会针对每个平台设置默认值。
+
 
 `role`属性值可以为：
 
@@ -56,6 +54,8 @@
 * `resetzoom` - 将对焦页面的缩放级别重置为原始大小
 * `zoomin` - 将聚焦页面缩小10％
 * `zoomout` - 将聚焦页面放大10％
+* `editMenu` - 完整的默认 "Edit" 编辑菜单(拷贝，黏贴，等)
+* `windowMenu` - 完整的默认 "Window" 窗口菜单(最小化，关闭，等)
 
 在 macOS 上，`role` 还可以有以下值：
 

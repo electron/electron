@@ -427,7 +427,7 @@ void OnClientCertificateSelected(
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
       data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
-  if (certs.size() > 0)
+  if (!certs.empty())
     delegate->ContinueWithCertificate(certs[0].get());
 }
 
@@ -520,7 +520,7 @@ void App::OnQuit() {
   int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
 
-  if (process_singleton_.get()) {
+  if (process_singleton_) {
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
@@ -655,6 +655,14 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
     status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
+base::FilePath App::GetAppPath() const {
+  return app_path_;
+}
+
+void App::SetAppPath(const base::FilePath& app_path) {
+  app_path_ = app_path;
+}
+
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
   base::FilePath path;
@@ -695,7 +703,7 @@ std::string App::GetLocale() {
 
 bool App::MakeSingleInstance(
     const ProcessSingleton::NotificationCallback& callback) {
-  if (process_singleton_.get())
+  if (process_singleton_)
     return false;
 
   base::FilePath user_dir;
@@ -716,7 +724,7 @@ bool App::MakeSingleInstance(
 }
 
 void App::ReleaseSingleInstance() {
-  if (process_singleton_.get()) {
+  if (process_singleton_) {
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
@@ -959,6 +967,8 @@ void App::BuildPrototype(
       .SetMethod("isUnityRunning",
                  base::Bind(&Browser::IsUnityRunning, browser))
 #endif
+      .SetMethod("setAppPath", &App::SetAppPath)
+      .SetMethod("getAppPath", &App::GetAppPath)
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)

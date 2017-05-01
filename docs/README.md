@@ -104,3 +104,6 @@ an issue:
 * [Debug Instructions (Windows)](development/debug-instructions-windows.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
 * [Documentation Styleguide](styleguide.md)
+* [Upgrading Chrome](development/upgrading-chrome.md)
+* [Chromium Development](development/chromium-development.md)
+* [V8 Development](development/v8-development.md)
