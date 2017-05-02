@@ -72,6 +72,6 @@ Clone 並使用 [`electron/electron-quick-start`](https://github.com/electron/el
 在 [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 查看由社群維護的清單，包括實用的應用程式、工具以及資源。
 
-## 憑證
+## 授權條款
 
 MIT © 2016 Github
