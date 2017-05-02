@@ -177,10 +177,12 @@ def update_node_modules(dirname, env=None):
     if os.environ.has_key('CI'):
       try:
         execute_stdout(args, env)
+        execute_stdout([NPM, 'rebuild'], env)
       except subprocess.CalledProcessError:
         pass
     else:
       execute_stdout(args, env)
+      execute_stdout([NPM, 'rebuild'], env)
 
 
 def update_electron_modules(dirname, target_arch):
