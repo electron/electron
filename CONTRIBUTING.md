@@ -18,9 +18,9 @@ propose changes to this document in a pull request.
 but before doing that please read the notes below and include as many details as
 possible with your report. If you can, please include:
   * The version of Electron you are using
-  * The operating system you are using
-  * If applicable, what you were doing when the issue arose and what you
-  expected to happen
+  * The specifications of the operating system you are using
+  * If applicable, what you were doing when the issue arose, what you
+  expected to happen and what actually happened
 * Other things that will help resolve your issue:
   * Screenshots and animated GIFs
   * Error output that appears in your terminal, dev tools or as an alert
@@ -56,7 +56,7 @@ possible with your report. If you can, please include:
 
 ### Git Commit Messages
 
-* Use the present tense ("Add feature" not "Added feature")
+* Use the present tense ("Add feature", not "Added feature")
 * Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
 * Limit the first line to 72 characters or less
 * Reference issues and pull requests liberally
