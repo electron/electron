@@ -270,8 +270,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       pending_resize_(false),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
-#if !defined(OS_MACOSX)
   bool is_guest_view_hack = parent_host_view_ != nullptr;
+#if !defined(OS_MACOSX)
   delegated_frame_host_ = base::MakeUnique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack), this);
 
