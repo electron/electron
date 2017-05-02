@@ -204,7 +204,7 @@ NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
   Init(isolate);
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
     isolate->AdjustAmountOfExternalAllocatedMemory(
-      image_.ToImageSkia()->bitmap()->getSize());
+      image_.ToImageSkia()->bitmap()->computeSize64());
   }
   MarkHighMemoryUsage();
 }
@@ -218,7 +218,7 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
   image_ = gfx::Image(image_skia);
   Init(isolate);
   isolate->AdjustAmountOfExternalAllocatedMemory(
-    image_.ToImageSkia()->bitmap()->getSize());
+    image_.ToImageSkia()->bitmap()->computeSize64());
   MarkHighMemoryUsage();
 }
 #endif
@@ -226,7 +226,7 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
 NativeImage::~NativeImage() {
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
     isolate()->AdjustAmountOfExternalAllocatedMemory(
-      - static_cast<int64_t>(image_.ToImageSkia()->bitmap()->getSize()));
+      - image_.ToImageSkia()->bitmap()->computeSize64());
   }
 }
 
