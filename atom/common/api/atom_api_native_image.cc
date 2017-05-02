@@ -204,6 +204,7 @@ NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
   Init(isolate_);
   isolate_->AdjustAmountOfExternalAllocatedMemory(
     image_.Width() * image_.Height() * 4);
+  MarkHighMemoryUsage();
 }
 
 #if defined(OS_WIN)
@@ -216,6 +217,7 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
   Init(isolate);
   isolate_->AdjustAmountOfExternalAllocatedMemory(
     image_.Width() * image_.Height() * 4);
+  MarkHighMemoryUsage();
 }
 #endif
 
