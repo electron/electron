@@ -190,8 +190,8 @@ def update_electron_modules(dirname, target_arch):
   version = get_electron_version()
   env['npm_config_arch']    = target_arch
   env['npm_config_target']  = version
-  env['npm_config_tarball'] = os.path.join(SOURCE_ROOT, 'dist',
-                                           'node-{0}.tar.gz'.format(version))
+  env['npm_config_nodedir'] = os.path.join(SOURCE_ROOT, 'dist',
+                                           'node-{0}'.format(version))
   update_node_modules(dirname, env)
 
 
