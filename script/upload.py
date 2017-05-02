@@ -101,6 +101,7 @@ def main():
     run_python_script('upload-windows-pdb.py')
 
     # Upload node headers.
+    run_python_script('create-node-headers.py', '-v', args.version)
     run_python_script('upload-node-headers.py', '-v', args.version)
 
 
