@@ -4,9 +4,9 @@
 
 #include "atom/browser/osr/osr_output_device.h"
 
-#include "third_party/skia/src/core/SkColor.h"
+#include "third_party/skia/include/core/SkColor.h"
+#include "third_party/skia/include/core/SkRect.h"
 #include "third_party/skia/src/core/SkDevice.h"
-#include "third_party/skia/src/core/SkRect.h"
 #include "ui/gfx/skia_util.h"
 
 namespace atom {
