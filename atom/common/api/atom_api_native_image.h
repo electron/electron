@@ -99,7 +99,6 @@ class NativeImage : public mate::Wrappable<NativeImage> {
 #endif
 
   gfx::Image image_;
-  v8::Isolate* isolate_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeImage);
 };
