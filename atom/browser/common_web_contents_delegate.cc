@@ -188,8 +188,13 @@ void CommonWebContentsDelegate::SetOwnerWindow(
   }
 }
 
-void CommonWebContentsDelegate::ResetManagedWebContents() {
-  web_contents_.reset();
+void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
+  if (async) {
+    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
+                                                    web_contents_.release());
+  } else {
+    web_contents_.reset();
+  }
 }
 
 content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
