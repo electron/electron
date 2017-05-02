@@ -153,6 +153,7 @@ def create_typescript_definitions():
   outfile = os.path.relpath(os.path.join(DIST_DIR, 'electron.d.ts'))
   execute(['electron-typescript-definitions', '--in={0}'.format(infile),
            '--out={0}'.format(outfile)], env=env)
+  execute(['tslint', outfile], env=env)
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:
