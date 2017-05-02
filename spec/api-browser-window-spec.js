@@ -1278,7 +1278,7 @@ describe('BrowserWindow module', function () {
             const currentWebContents = webContents.getAllWebContents().map((i) => i.id)
             assert.deepEqual(currentWebContents, initialWebContents)
             done()
-          }, 100);
+          }, 100)
         })
         w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
       })
