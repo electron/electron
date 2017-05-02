@@ -15,7 +15,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_switches.h"
-#include "media/base/media_resources.h"
+#include "media/base/localized_strings.h"
 #include "net/proxy/proxy_resolver_v8.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/material_design/material_design_controller.h"
@@ -163,7 +163,7 @@ void BrowserMainParts::PreEarlyInitialization() {
   base::FeatureList::SetInstance(std::move(feature_list));
 
 #if defined(USE_X11)
-  views::LinuxUI::SetInstance(BuildGtk2UI());
+  views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
 
   // Installs the X11 error handlers for the browser process used during

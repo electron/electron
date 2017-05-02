@@ -35,6 +35,7 @@
           '<(libchromiumcontent_src_dir)/third_party/khronos',
           '<(libchromiumcontent_src_dir)/third_party/WebKit',
           '<(libchromiumcontent_dir)/gen',
+          '<(libchromiumcontent_dir)/gen/third_party/WebKit',
         ],
       },
       'sources': [ '<@(brightray_sources)' ],
@@ -161,6 +162,8 @@
               # Required by webrtc:
               '$(SDKROOT)/System/Library/Frameworks/OpenGL.framework',
               '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
+              # Required by media:
+              '$(SDKROOT)/System/Library/Frameworks/VideoToolbox.framework',
             ],
           },
           'conditions':  [

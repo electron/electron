@@ -5,8 +5,12 @@
 #ifndef BROWSER_DEVTOOLS_NETWORK_CONTROLLER_H_
 #define BROWSER_DEVTOOLS_NETWORK_CONTROLLER_H_
 
-#include "base/containers/scoped_ptr_hash_map.h"
+#include <unordered_map>
+#include <memory>
+#include <string>
+
 #include "base/macros.h"
+#include "base/threading/thread_checker.h"
 
 namespace brightray {
 
@@ -21,12 +25,13 @@ class DevToolsNetworkController {
 
   void SetNetworkState(const std::string& client_id,
                        std::unique_ptr<DevToolsNetworkConditions> conditions);
+
   DevToolsNetworkInterceptor* GetInterceptor(const std::string& client_id);
 
  private:
   using InterceptorMap =
-      base::ScopedPtrHashMap<std::string,
-                             std::unique_ptr<DevToolsNetworkInterceptor>>;
+      std::unordered_map<std::string,
+                         std::unique_ptr<DevToolsNetworkInterceptor>>;
 
   std::unique_ptr<DevToolsNetworkInterceptor> appcache_interceptor_;
   InterceptorMap interceptors_;

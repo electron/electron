@@ -134,10 +134,6 @@ bool NetworkDelegate::OnCanEnablePrivacyMode(
   return false;
 }
 
-bool NetworkDelegate::OnAreStrictSecureCookiesEnabled() const {
-  return true;
-}
-
 bool NetworkDelegate::OnAreExperimentalCookieFeaturesEnabled() const {
   return true;
 }

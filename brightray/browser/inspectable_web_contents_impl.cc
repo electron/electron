@@ -61,11 +61,6 @@ const char kFrontendHostMethod[] = "method";
 const char kFrontendHostParams[] = "params";
 const char kTitleFormat[] = "Developer Tools - %s";
 
-const char kDevToolsActionTakenHistogram[] = "DevTools.ActionTaken";
-const int kDevToolsActionTakenBoundary = 100;
-const char kDevToolsPanelShownHistogram[] = "DevTools.PanelShown";
-const int kDevToolsPanelShownBoundary = 20;
-
 const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 
 void RectToDictionary(const gfx::Rect& bounds, base::DictionaryValue* dict) {
@@ -171,7 +166,7 @@ int ResponseWriter::Initialize(const net::CompletionCallback& callback) {
 int ResponseWriter::Write(net::IOBuffer* buffer,
                           int num_bytes,
                           const net::CompletionCallback& callback) {
-  auto* id = new base::FundamentalValue(stream_id_);
+  auto* id = new base::Value(stream_id_);
   base::StringValue* chunk =
       new base::StringValue(std::string(buffer->data(), num_bytes));
 
@@ -240,9 +235,14 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
 }
 
 InspectableWebContentsImpl::~InspectableWebContentsImpl() {
-  if (devtools_web_contents_)
-    devtools_web_contents_->Close();
-  Observe(nullptr);
+  // Unsubscribe from devtools and Clean up resources.
+  if (devtools_web_contents_) {
+    devtools_web_contents_->SetDelegate(nullptr);
+    // Calling this also unsubscribes the observer, so WebContentsDestroyed
+    // won't be called again.
+    WebContentsDestroyed();
+  }
+  // Let destructor destroy devtools_web_contents_.
 }
 
 InspectableWebContentsView* InspectableWebContentsImpl::GetView() const {
@@ -310,6 +310,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
 
 void InspectableWebContentsImpl::CloseDevTools() {
   if (devtools_web_contents_) {
+    frontend_loaded_ = false;
     view_->CloseDevTools();
     devtools_web_contents_.reset();
     web_contents_->Focus();
@@ -563,14 +564,6 @@ void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
     agent_host_->DispatchProtocolMessage(this, message);
 }
 
-void InspectableWebContentsImpl::RecordActionUMA(const std::string& name,
-                                                 int action) {
-  if (name == kDevToolsActionTakenHistogram)
-    UMA_HISTOGRAM_ENUMERATION(name, action, kDevToolsActionTakenBoundary);
-  else if (name == kDevToolsPanelShownHistogram)
-    UMA_HISTOGRAM_ENUMERATION(name, action, kDevToolsPanelShownBoundary);
-}
-
 void InspectableWebContentsImpl::SendJsonRequest(
     const DispatchCallback& callback,
     const std::string& browser_id,
@@ -639,7 +632,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessage(
     return;
   }
 
-  base::FundamentalValue total_size(static_cast<int>(message.length()));
+  base::Value total_size(static_cast<int>(message.length()));
   for (size_t pos = 0; pos < message.length(); pos += kMaxMessageChunkSize) {
     base::StringValue message_value(message.substr(pos, kMaxMessageChunkSize));
     CallClientFunction("DevToolsAPI.dispatchMessageChunk",
@@ -664,6 +657,7 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
   frontend_loaded_ = false;
+  Observe(nullptr);
   Detach();
 
   for (const auto& pair : pending_requests_)
@@ -686,10 +680,12 @@ bool InspectableWebContentsImpl::DidAddMessageToConsole(
 
 bool InspectableWebContentsImpl::ShouldCreateWebContents(
     content::WebContents* web_contents,
+    content::SiteInstance* source_site_instance,
     int32_t route_id,
     int32_t main_frame_route_id,
     int32_t main_frame_widget_route_id,
-    WindowContainerType window_container_type,
+    content::mojom::WindowContainerType window_container_type,
+    const GURL& opener_url,
     const std::string& frame_name,
     const GURL& target_url,
     const std::string& partition_id,
@@ -706,6 +702,7 @@ void InspectableWebContentsImpl::HandleKeyboardEvent(
 }
 
 void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
+  // This is where the devtools closes itself (by clicking the x button).
   CloseDevTools();
 }
 
@@ -777,7 +774,7 @@ void InspectableWebContentsImpl::OnURLFetchComplete(
 
 void InspectableWebContentsImpl::SendMessageAck(int request_id,
                                                 const base::Value* arg) {
-  base::FundamentalValue id_value(request_id);
+  base::Value id_value(request_id);
   CallClientFunction("DevToolsAPI.embedderMessageAck",
                      &id_value, arg, nullptr);
 }

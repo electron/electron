@@ -195,9 +195,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     std::unique_ptr<net::CookieStore> cookie_store =
         content::CreateCookieStore(cookie_config);
     storage_->set_cookie_store(std::move(cookie_store));
-    storage_->set_channel_id_service(base::WrapUnique(
-        new net::ChannelIDService(new net::DefaultChannelIDStore(nullptr),
-                                  base::WorkerPool::GetTaskRunner(true))));
+    storage_->set_channel_id_service(base::MakeUnique<net::ChannelIDService>(
+        new net::DefaultChannelIDStore(nullptr)));
 
     std::string accept_lang = l10n_util::GetApplicationLocale("");
     storage_->set_http_user_agent_settings(base::WrapUnique(
@@ -354,9 +353,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
          it != protocol_interceptors_.rend();
          ++it) {
       top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
-          std::move(top_job_factory), base::WrapUnique(*it)));
+          std::move(top_job_factory), std::move(*it)));
     }
-    protocol_interceptors_.weak_clear();
+    protocol_interceptors_.clear();
 
     storage_->set_job_factory(std::move(top_job_factory));
   }

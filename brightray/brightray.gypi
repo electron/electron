@@ -92,8 +92,6 @@
       'Common_Base': {
         'abstract': 1,
         'defines': [
-          # Used by content_browser_client.h:
-          'ENABLE_WEBRTC',
           # We are using Release version libchromiumcontent:
           'NDEBUG',
           # Needed by gin:

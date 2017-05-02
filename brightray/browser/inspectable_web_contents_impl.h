@@ -107,7 +107,6 @@ class InspectableWebContentsImpl :
   void SetDevicesUpdatesEnabled(bool enabled) override;
   void DispatchProtocolMessageFromDevToolsFrontend(
       const std::string& message) override;
-  void RecordActionUMA(const std::string& name, int action) override;
   void SendJsonRequest(const DispatchCallback& callback,
                        const std::string& browser_id,
                        const std::string& url) override;
@@ -143,10 +142,12 @@ class InspectableWebContentsImpl :
                               const base::string16& source_id) override;
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
+      content::SiteInstance* source_site_instance,
       int32_t route_id,
       int32_t main_frame_route_id,
       int32_t main_frame_widget_route_id,
-      WindowContainerType window_container_type,
+      content::mojom::WindowContainerType window_container_type,
+      const GURL& opener_url,
       const std::string& frame_name,
       const GURL& target_url,
       const std::string& partition_id,
