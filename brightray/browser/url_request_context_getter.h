@@ -18,6 +18,10 @@ namespace base {
 class MessageLoop;
 }
 
+namespace content {
+class StreamContext;
+}
+
 namespace net {
 class HostMappingRules;
 class HostResolver;
@@ -58,6 +62,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       return nullptr;
     }
     virtual MediaDeviceIDSalt* GetMediaDeviceIDSalt() { return nullptr; }
+    virtual content::StreamContext* GetStreamContext() { return nullptr; }
   };
 
   URLRequestContextGetter(
@@ -81,6 +86,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }
   MediaDeviceIDSalt* GetMediaDeviceIDSalt() const {
     return delegate_->GetMediaDeviceIDSalt();
+  }
+  content::StreamContext* stream_context() const {
+    return delegate_->GetStreamContext();
   }
 
  private:
