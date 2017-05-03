@@ -87,21 +87,21 @@ The following additional roles are available on macOS:
 When specifying a `role` on macOS, `label` and `accelerator` are the only
 options that will affect the menu item. All other options will be ignored.
 
-### Instance Properties
+## Instance Properties
 
 The following properties are available on instances of `MenuItem`:
 
-#### `menuItem.enabled`
+### `menuItem.enabled`
 
 A Boolean indicating whether the item is enabled, this property can be
 dynamically changed.
 
-#### `menuItem.visible`
+### `menuItem.visible`
 
 A Boolean indicating whether the item is visible, this property can be
 dynamically changed.
 
-#### `menuItem.checked`
+### `menuItem.checked`
 
 A Boolean indicating whether the item is checked, this property can be
 dynamically changed.
