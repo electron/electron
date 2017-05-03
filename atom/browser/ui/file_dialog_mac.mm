@@ -73,7 +73,8 @@ void SetupDialog(NSSavePanel* dialog,
   }
 
   if (default_dir)
-    [dialog setDirectoryURL:[NSURL fileURLWithPath:default_dir]];
+    [dialog setDirectoryURL:[NSURL fileURLWithPath:[
+        default_dir stringByExpandingTildeInPath]]];
   if (default_filename)
     [dialog setNameFieldStringValue:default_filename];
 
