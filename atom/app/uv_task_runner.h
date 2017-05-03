@@ -10,6 +10,7 @@
 #include "base/callback.h"
 #include "base/single_thread_task_runner.h"
 #include "vendor/node/deps/uv/include/uv.h"
+using namespace std;
 
 namespace atom {
 
@@ -35,7 +36,7 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
 
   uv_loop_t* loop_;
 
-  std::map<uv_timer_t*, base::Closure> tasks_;
+  map<uv_timer_t*, base::Closure> tasks_;
 
   DISALLOW_COPY_AND_ASSIGN(UvTaskRunner);
 };
