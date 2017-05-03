@@ -69,6 +69,10 @@ int NodeMain(int argc, char *argv[]) {
 
     node::LoadEnvironment(env);
 
+    // Start debugger.
+    if (node::use_debug_agent)
+      node::StartDebug(env, node::debug_wait_connect);
+
     bool more;
     do {
       more = uv_run(env->event_loop(), UV_RUN_ONCE);
