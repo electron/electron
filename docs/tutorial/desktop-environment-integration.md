@@ -10,7 +10,7 @@ environments with Electron APIs.
 
 ## Notifications (Windows, Linux, macOS)
 
-All three operating systems provide means for applications to send notifications
+All three operating systems provide means for tapplications to send notifications
 to the user. Electron conveniently allows developers to send notifications with
 the [HTML5 Notification API](https://notifications.spec.whatwg.org/), using
 the currently running operating system's native notification APIs to display it.
@@ -188,7 +188,7 @@ The user tasks will still show even after your application closes, so the icon
 and program path specified for a task should exist until your application is
 uninstalled.
 
-## Thumbnail Toolbars
+## Thumbnail Toolbars (Windows)
 
 On Windows you can add a thumbnail toolbar with specified buttons in a taskbar
 layout of an application window. It provides users a way to access to a
