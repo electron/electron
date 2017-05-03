@@ -117,7 +117,7 @@ def args_to_defines(args):
 
 def check_root():
   if os.geteuid() == 0:
-    print "We suggest not running this as root, unless you're really sure."
+    print("We suggest not running this as root, unless you're really sure.")
     choice = raw_input("Do you want to continue? [y/N]: ")
     if choice not in ('y', 'Y'):
       sys.exit(0)
