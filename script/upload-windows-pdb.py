@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#This python script is to be used to upload windows pdb
 
 import os
 import glob
