@@ -81,9 +81,9 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
                               NULL,
                               &chain_context)) {
     auto error_status = chain_context->TrustStatus.dwErrorStatus;
-    if (error_status == CERT_TRUST_IS_SELF_SIGNED
-      || error_status == CERT_TRUST_IS_UNTRUSTED_ROOT) {
-      // this is the only scenario we're interested in supporting
+    if (error_status == CERT_TRUST_IS_SELF_SIGNED ||
+        error_status == CERT_TRUST_IS_UNTRUSTED_ROOT) {
+      // these are the only scenarios we're interested in supporting
       AddToTrustedRootStore(cert_context, cert);
     }
 
