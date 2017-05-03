@@ -739,7 +739,7 @@ NativeWindowMac::NativeWindowMac(
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
-  if (resizable) {
+  if (maximizable) {
     styleMask |= NSResizableWindowMask;
   }
 
