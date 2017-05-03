@@ -291,6 +291,7 @@
       'atom/browser/ui/atom_menu_model.h',
       'atom/browser/ui/certificate_trust.h',
       'atom/browser/ui/certificate_trust_mac.mm',
+      'atom/browser/ui/certificate_trust_win.cc',
       'atom/browser/ui/cocoa/atom_menu_controller.h',
       'atom/browser/ui/cocoa/atom_menu_controller.mm',
       'atom/browser/ui/cocoa/atom_touch_bar.h',
