@@ -84,7 +84,7 @@ The structure of a renamed app would be like:
 MyApp.app/Contents
 ├── Info.plist
 ├── MacOS/
-│   └── MyApp
+│   └── Electron
 └── Frameworks/
     ├── MyApp Helper EH.app
     |   ├── Info.plist
