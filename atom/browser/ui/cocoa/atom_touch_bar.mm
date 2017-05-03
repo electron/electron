@@ -224,6 +224,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   NSString* item_id = [NSString stringWithFormat:@"%ld", ((NSSegmentedControl*)sender).tag];
   base::DictionaryValue details;
   details.SetInteger("selectedIndex", ((NSSegmentedControl*)sender).selectedSegment);
+  details.SetBoolean("isSelected", [((NSSegmentedControl*)sender) isSelectedForSegment:((NSSegmentedControl*)sender).selectedSegment]);
   window_->NotifyTouchBarItemInteraction([item_id UTF8String],
                                          details);
 }
