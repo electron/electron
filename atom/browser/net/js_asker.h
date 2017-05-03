@@ -82,6 +82,9 @@ class JsAsker : public RequestJob {
                    base::Bind(&JsAsker::OnResponse,
                               weak_factory_.GetWeakPtr())));
   }
+
+  int GetResponseCode() const override { return 200; }
+
   void GetResponseInfo(net::HttpResponseInfo* info) override {
     info->headers = new net::HttpResponseHeaders("");
   }

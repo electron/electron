@@ -149,8 +149,6 @@ describe('chromium feature', function () {
   })
 
   describe('navigator.serviceWorker', function () {
-    var url = 'file://' + fixtures + '/pages/service-worker/index.html'
-
     it('should register for file scheme', function (done) {
       w = new BrowserWindow({
         show: false
@@ -169,7 +167,45 @@ describe('chromium feature', function () {
           })
         }
       })
-      w.loadURL(url)
+      w.loadURL(`file://${fixtures}/pages/service-worker/index.html`)
+    })
+
+    it('should register for intercepted file scheme', function (done) {
+      const customSession = session.fromPartition('intercept-file')
+      customSession.protocol.interceptBufferProtocol('file', function (request, callback) {
+        const file = url.parse(request.url).pathname
+        const content = fs.readFileSync(path.normalize(file))
+        const ext = path.extname(file)
+        let type = 'text/html'
+        if (ext === '.js') {
+          type = 'application/javascript'
+        }
+        callback({data: content, mimeType: type})
+      }, function (error) {
+        if (error) done(error)
+      })
+
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: customSession
+        }
+      })
+      w.webContents.on('ipc-message', function (event, args) {
+        if (args[0] === 'reload') {
+          w.webContents.reload()
+        } else if (args[0] === 'error') {
+          done('unexpected error : ' + args[1])
+        } else if (args[0] === 'response') {
+          assert.equal(args[1], 'Hello from serviceWorker!')
+          customSession.clearStorageData({
+            storages: ['serviceworkers']
+          }, function () {
+            customSession.protocol.uninterceptProtocol('file', (error) => done(error))
+          })
+        }
+      })
+      w.loadURL(`file://${fixtures}/pages/service-worker/index.html`)
     })
   })
 
