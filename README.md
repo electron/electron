@@ -41,6 +41,8 @@ prebuilt binaries, debug symbols, and more.
 
 ## Documentation
 
+Check out the [awesome](https://github.com/sindresorhus/awesome-electron) list from [@sindresorhus](https://github.com/sindresorhus) to see a curated list of some excellent apps built using electron, as well as some helpful resources on getting started.
+
 Guides and the API reference are located in the
 [docs](https://github.com/electron/electron/tree/master/docs) directory. It also
 contains documents describing how to build and contribute to Electron.
