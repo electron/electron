@@ -64,6 +64,12 @@ contains documents describing how to build and contribute to Electron.
 Clone and run the [`electron/electron-quick-start`](https://github.com/electron/electron-quick-start)
 repository to see a minimal Electron app in action.
 
+## Supported Operating Systems
+
+- Ubuntu: 14.04 and higher
+- Mac: OS X 10.8.0 and higher
+- Windows: Win7 or higher
+
 ## Community
 
 You can ask questions and interact with the community in the following
