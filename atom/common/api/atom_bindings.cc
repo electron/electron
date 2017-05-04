@@ -41,10 +41,9 @@ v8::Local<v8::Value> GetIOCounters(v8::Isolate* isolate) {
   std::unique_ptr<base::ProcessMetrics> metrics(
       base::ProcessMetrics::CreateCurrentProcessMetrics());
   base::IoCounters io_counters;
-  const bool got_counters = metrics->GetIOCounters(&io_counters);
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
 
-  if (got_counters) {
+  if (metrics->GetIOCounters(&io_counters)) {
     dict.Set("readOperationCount", io_counters.ReadOperationCount);
     dict.Set("writeOperationCount", io_counters.WriteOperationCount);
     dict.Set("otherOperationCount", io_counters.OtherOperationCount);
