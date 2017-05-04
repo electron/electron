@@ -956,7 +956,7 @@ std::vector<mate::Dictionary> App::GetAppMemoryInfo(v8::Isolate* isolate) {
     }
 
     pid_dict.Set("memory", memory_dict);
-    pid_dict.Set("pid", std::to_string(pid));
+    pid_dict.Set("pid", pid);
     result.push_back(pid_dict);
     process_entry = process_iterator.NextProcessEntry();
   }
