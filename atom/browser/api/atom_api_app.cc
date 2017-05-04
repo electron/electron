@@ -959,6 +959,8 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetAboutPanelOptions, browser))
 #endif
 #if defined(OS_WIN)
+      .SetMethod("getDefaultProtocolClient",
+                 base::Bind(&Browser::GetDefaultProtocolClient, browser))
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
       .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
       .SetMethod("setJumpList", &App::SetJumpList)
