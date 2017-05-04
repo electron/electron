@@ -11,6 +11,9 @@ describe('process module', function () {
 
   describe('process.getIOCounters()', function () {
     it('returns an io counters object', function () {
+      if (process.platform !== 'win32') {
+        return;
+      }
       var ioCounters = process.getIOCounters()
       assert.equal(typeof ioCounters.readOperationCount, 'number')
       assert.equal(typeof ioCounters.writeOperationCount, 'number')

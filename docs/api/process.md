@@ -123,7 +123,7 @@ Returns:
 
 * `CPUUsage` [CPUUsage](structures/cpu-usage.md)
 
-### `process.getIOCounters()`
+### `process.getIOCounters()` _Windows_ _Linux_
 
 Returns:
 
