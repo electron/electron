@@ -73,7 +73,7 @@ ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron -g
 - [`electron-br`](https://electron-br.slack.com) *(葡萄牙语－巴西)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(韩语)*
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(日语)*
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(土耳其)*
+- [`electron-tr`](http://electron-tr.herokuapp.com) *(土耳其)*
 - [`electron-id`](https://electron-id.slack.com) *(印度尼西亚)*
 
 查看 [awesome-electron](https://github.com/sindresorhus/awesome-electron)

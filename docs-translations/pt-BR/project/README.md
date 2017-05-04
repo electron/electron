@@ -61,7 +61,7 @@ Você pode fazer perguntas e interagir com a comunidade nos seguintes locais:
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(Japanese)*
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turkish)*
+- [`electron-tr`](http://electron-tr.herokuapp.com) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
 
 Confira [awesome-electron](https://github.com/sindresorhus/awesome-electron) para uma lista mantida pela comunidade de exemplos de aplicativos úteis, ferramentas e recursos.
