@@ -11,7 +11,7 @@ describe('process module', function () {
 
   describe('process.getIOCounters()', function () {
     it('returns an io counters object', function () {
-      if (process.platform !== 'win32') {
+      if (process.platform === 'darwin') {
         return
       }
       const ioCounters = process.getIOCounters()
