@@ -760,6 +760,10 @@ Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
 
+### `app.getAppMemoryInfo()`
+
+Returns [ProcessMemoryInfo[]](structures/process-memory-info.md):  Array of `ProcessMemoryInfo` objects that correspond to memory usage statistics of all the processes associated with the app.
+
 ### `app.setBadgeCount(count)` _Linux_ _macOS_
 
 * `count` Integer
