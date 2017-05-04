@@ -925,11 +925,11 @@ void App::GetFileIcon(const base::FilePath& path,
 
 std::vector<mate::Dictionary> App::GetAppMemoryInfo(v8::Isolate* isolate) {
   AppIdProcessIterator process_iterator;
-  auto processEntry = process_iterator.NextProcessEntry();
+  auto process_entry = process_iterator.NextProcessEntry();
   std::vector<mate::Dictionary> result;
 
-  while (processEntry != nullptr) {
-    int64_t pid = processEntry->pid();
+  while (process_entry != nullptr) {
+    int64_t pid = process_entry->pid();
     auto process = base::Process::OpenWithExtraPrivileges(pid);
 
 #if defined(OS_MACOSX)
@@ -941,24 +941,24 @@ std::vector<mate::Dictionary> App::GetAppMemoryInfo(v8::Isolate* isolate) {
       base::ProcessMetrics::CreateProcessMetrics(process.Handle()));
 #endif
 
-    mate::Dictionary pidDict = mate::Dictionary::CreateEmpty(isolate);
-    mate::Dictionary memoryDict = mate::Dictionary::CreateEmpty(isolate);
+    mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
+    mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
 
-    memoryDict.Set("workingSetSize",
+    memory_dict.Set("workingSetSize",
             static_cast<double>(metrics->GetWorkingSetSize() >> 10));
-    memoryDict.Set("peakWorkingSetSize",
+    memory_dict.Set("peakWorkingSetSize",
             static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
 
     size_t private_bytes, shared_bytes;
     if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
-      memoryDict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
-      memoryDict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
+      memory_dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
+      memory_dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
     }
 
-    pidDict.Set("memory", memoryDict);
-    pidDict.Set("pid", std::to_string(pid));
-    result.push_back(pidDict);
-    processEntry = process_iterator.NextProcessEntry();
+    pid_dict.Set("memory", memory_dict);
+    pid_dict.Set("pid", std::to_string(pid));
+    result.push_back(pid_dict);
+    process_entry = process_iterator.NextProcessEntry();
   }
 
   return result;
