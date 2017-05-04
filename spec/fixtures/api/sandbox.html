@@ -1,5 +1,18 @@
 <html>
 <script type="text/javascript" charset="utf-8">
+  function timeout(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms)
+    })
+  }
+  async function invokeGc () {
+    // it seems calling window.gc once does not guarantee garbage will be
+    // collected, so we repeat 10 times with interval of 100 ms
+    for (let i = 0; i < 10; i++) {
+      window.gc()
+      await timeout(100)
+    }
+  }
   if (window.opener) {
     window.callback = () => {
       opener.require('electron').ipcRenderer.send('answer', document.body.innerHTML)
@@ -7,6 +20,20 @@
   } else {
     const {ipcRenderer} = require('electron')
     const tests = {
+      'allocate-memory': async () => {
+        await invokeGc()
+        const {privateBytes: bytesBeforeOpen} = process.getProcessMemoryInfo()
+        let w = open('./allocate-memory.html')
+        await invokeGc()
+        const {privateBytes: bytesAfterOpen} = process.getProcessMemoryInfo()
+        w.close()
+        w = null
+        await invokeGc()
+        const {privateBytes: bytesAfterClose} = process.getProcessMemoryInfo()
+        ipcRenderer.send('answer', {
+          bytesBeforeOpen, bytesAfterOpen, bytesAfterClose
+        })
+      },
       'window-events': () => {
         document.title = 'changed'
       },

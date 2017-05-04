@@ -9,6 +9,7 @@
 
 #include "base/macros.h"
 #include "base/strings/string16.h"
+#include "native_mate/arguments.h"
 #include "v8/include/v8.h"
 #include "vendor/node/deps/uv/include/uv.h"
 
@@ -32,6 +33,10 @@ class AtomBindings {
 
   static void Log(const base::string16& message);
   static void Crash();
+  static void Hang();
+  static v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate);
+  static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
+      mate::Arguments* args);
 
  private:
   void ActivateUVLoop(v8::Isolate* isolate);
