@@ -3,7 +3,7 @@ const assert = require('assert')
 describe('process module', function () {
   describe('process.getCPUUsage()', function () {
     it('returns a cpu usage object', function () {
-      var cpuUsage = process.getCPUUsage()
+      const cpuUsage = process.getCPUUsage()
       assert.equal(typeof cpuUsage.percentCPUUsage, 'number')
       assert.equal(typeof cpuUsage.idleWakeupsPerSecond, 'number')
     })
@@ -14,7 +14,7 @@ describe('process module', function () {
       if (process.platform !== 'win32') {
         return
       }
-      var ioCounters = process.getIOCounters()
+      const ioCounters = process.getIOCounters()
       assert.equal(typeof ioCounters.readOperationCount, 'number')
       assert.equal(typeof ioCounters.writeOperationCount, 'number')
       assert.equal(typeof ioCounters.otherOperationCount, 'number')
