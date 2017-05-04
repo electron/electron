@@ -14,6 +14,7 @@
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
 #include "base/process/process_metrics.h"
+#include "base/sys_info.h"
 #include "native_mate/dictionary.h"
 
 namespace atom {
@@ -52,6 +53,8 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("log", &Log);
   dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
   dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
+  dict.SetMethod("getCPUUsage", &GetCPUUsage);
+  dict.SetMethod("getIOCounters", &GetIOCounters);
 #if defined(OS_POSIX)
   dict.SetMethod("setFdLimit", &base::SetFdLimit);
 #endif
@@ -167,6 +170,39 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
   dict.Set("swapTotal", mem_info.swap_total);
   dict.Set("swapFree", mem_info.swap_free);
 #endif
+
+  return dict.GetHandle();
+}
+
+// static
+v8::Local<v8::Value> AtomBindings::GetCPUUsage(v8::Isolate* isolate) {
+  std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateCurrentProcessMetrics());
+
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  int processor_count = base::SysInfo::NumberOfProcessors();
+  dict.Set("percentCPUUsage",
+           metrics->GetPlatformIndependentCPUUsage() / processor_count);
+  dict.Set("idleWakeupsPerSecond", metrics->GetIdleWakeupsPerSecond());
+
+  return dict.GetHandle();
+}
+
+// static
+v8::Local<v8::Value> AtomBindings::GetIOCounters(v8::Isolate* isolate) {
+  std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateCurrentProcessMetrics());
+  base::IoCounters io_counters;
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+
+  if (metrics->GetIOCounters(&io_counters)) {
+    dict.Set("readOperationCount", io_counters.ReadOperationCount);
+    dict.Set("writeOperationCount", io_counters.WriteOperationCount);
+    dict.Set("otherOperationCount", io_counters.OtherOperationCount);
+    dict.Set("readTransferCount", io_counters.ReadTransferCount);
+    dict.Set("writeTransferCount", io_counters.WriteTransferCount);
+    dict.Set("otherTransferCount", io_counters.OtherTransferCount);
+  }
 
   return dict.GetHandle();
 }
