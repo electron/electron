@@ -151,7 +151,7 @@ def create_typescript_definitions():
   infile = os.path.relpath(os.path.join(DIST_DIR, 'electron-api.json'))
   outfile = os.path.relpath(os.path.join(DIST_DIR, 'electron.d.ts'))
   tslintconfig = os.path.relpath(os.path.join(DIST_DIR,
-           'node_modules/electron-typescript-definitions/tslint.json'))
+           '../node_modules/electron-typescript-definitions/tslint.json'))
   execute(['electron-typescript-definitions', '--in={0}'.format(infile),
            '--out={0}'.format(outfile)], env=env)
   execute(['tslint', '--config', tslintconfig, outfile], env=env)
