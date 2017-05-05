@@ -8,6 +8,7 @@
 #include <list>
 
 #include "base/macros.h"
+#include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
 #include "native_mate/arguments.h"
 #include "v8/include/v8.h"
@@ -37,7 +38,7 @@ class AtomBindings {
   static v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
       mate::Arguments* args);
-  static v8::Local<v8::Value> GetCPUUsage(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetCPUUsage(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetIOCounters(v8::Isolate* isolate);
 
  private:
@@ -47,6 +48,7 @@ class AtomBindings {
 
   uv_async_t call_next_tick_async_;
   std::list<node::Environment*> pending_next_ticks_;
+  std::unique_ptr<base::ProcessMetrics> metrics_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBindings);
 };
