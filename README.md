@@ -72,6 +72,7 @@ locations:
 forums
 - `#atom-shell` channel on Freenode
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
+- [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
 - [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
