@@ -13,6 +13,7 @@
     "electron": "cli.js"
   },
   "main": "index.js",
+  "types": "electron.d.ts",
   "dependencies": {
     "extract-zip": "^1.0.3",
     "electron-download": "^3.0.1"
