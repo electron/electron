@@ -13,7 +13,6 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
-#include "base/process/process_metrics.h"
 #include "base/sys_info.h"
 #include "native_mate/dictionary.h"
 
@@ -37,6 +36,7 @@ void FatalErrorCallback(const char* location, const char* message) {
 AtomBindings::AtomBindings(uv_loop_t* loop) {
   uv_async_init(loop, &call_next_tick_async_, OnCallNextTick);
   call_next_tick_async_.data = this;
+  metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
 AtomBindings::~AtomBindings() {
@@ -53,7 +53,8 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("log", &Log);
   dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
   dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
-  dict.SetMethod("getCPUUsage", &GetCPUUsage);
+  dict.SetMethod("getCPUUsage",
+      base::Bind(&AtomBindings::GetCPUUsage, base::Unretained(this)));
   dict.SetMethod("getIOCounters", &GetIOCounters);
 #if defined(OS_POSIX)
   dict.SetMethod("setFdLimit", &base::SetFdLimit);
@@ -174,16 +175,12 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
   return dict.GetHandle();
 }
 
-// static
 v8::Local<v8::Value> AtomBindings::GetCPUUsage(v8::Isolate* isolate) {
-  std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateCurrentProcessMetrics());
-
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   int processor_count = base::SysInfo::NumberOfProcessors();
   dict.Set("percentCPUUsage",
-           metrics->GetPlatformIndependentCPUUsage() / processor_count);
-  dict.Set("idleWakeupsPerSecond", metrics->GetIdleWakeupsPerSecond());
+           metrics_->GetPlatformIndependentCPUUsage() / processor_count);
+  dict.Set("idleWakeupsPerSecond", metrics_->GetIdleWakeupsPerSecond());
 
   return dict.GetHandle();
 }
