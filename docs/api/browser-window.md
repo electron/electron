@@ -307,6 +307,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       'Electron Isolated Context' entry in the combo box at the top of the
       Console tab. **Note:** This option is currently experimental and may
       change or be removed in future Electron releases.
+    * `enableWebViewOverride` Boolean (optional) - Whether to enable [webview-tag](webview-tag.md)
+      ignoring the security restriction based on `nodeIntegration`. Enabling this option will
+      have security implication on creating `webview` with `nodeIntegration` disabled. To avoid the
+      security risk, listen to `will-create-webview` event on [web-contents](web-contents.md) and 
+      stop creating `webview` or removing preload scripts.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

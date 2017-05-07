@@ -8,7 +8,7 @@ const {closeWindow} = require('./window-helpers')
 
 const isCI = remote.getGlobal('isCi')
 
-describe('<webview> tag', function () {
+describe.only('<webview> tag', function () {
   this.timeout(3 * 60 * 1000)
 
   var fixtures = path.join(__dirname, 'fixtures')
@@ -32,6 +32,43 @@ describe('<webview> tag', function () {
     w = new BrowserWindow({show: false})
     ipcMain.once('pong', function () {
       done()
+    })
+    w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
+  })
+
+  it('is disabled when nodeIntegration is disabled', function (done) {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        preload: path.join(fixtures, 'module', 'preload-webview.js')
+      }
+    })
+    ipcMain.once('webview', function (event, type) {
+      if (type === 'undefined') {
+        done()
+      } else {
+        done('WebView still exists')
+      }
+    })
+    w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
+  })
+
+  it('is enabled when override is set', function (done) {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        preload: path.join(fixtures, 'module', 'preload-webview.js'),
+        enableWebViewOverride: true
+      }
+    })
+    ipcMain.once('webview', function (event, type) {
+      if (type !== 'undefined') {
+        done()
+      } else {
+        done('WebView is not created')
+      }
     })
     w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
   })

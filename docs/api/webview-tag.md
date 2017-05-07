@@ -15,6 +15,10 @@ between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content. **Note:** Most methods called on the
 webview from the host page require a syncronous call to the main process.
 
+For security purposes, `webview` can only be used in `BrowserWindow`s that have
+`nodeIntegration` enabled. You can override this security restiction using
+`enableWebViewOverride` option on [browser-window](browser-window.md).
+
 ## Example
 
 To embed a web page in your app, add the `webview` tag to your app's embedder
