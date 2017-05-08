@@ -96,8 +96,9 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(
   auto& command_line = *base::CommandLine::ForCurrentProcess();
   int max_size = 0;
   if (command_line.HasSwitch(switches::kDiskCacheSize)) {
-    base::StringToInt(command_line.GetSwitchValueASCII(switches::kDiskCacheSize),
-                      &max_size);
+    base::StringToInt(
+        command_line.GetSwitchValueASCII(switches::kDiskCacheSize),
+        &max_size);
   }
   base::FilePath cache_path = base_path.Append(FILE_PATH_LITERAL("Cache"));
   return new net::HttpCache::DefaultBackend(
