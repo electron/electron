@@ -130,7 +130,7 @@ class Archive : public mate::Wrappable<Archive> {
 void InitAsarSupport(v8::Isolate* isolate,
                      v8::Local<v8::Value> process,
                      v8::Local<v8::Value> require) {
-  // Evaluate asar_init.coffee.
+  // Evaluate asar_init.js.
   const char* asar_init_native = reinterpret_cast<const char*>(
       static_cast<const unsigned char*>(node::asar_init_data));
   v8::Local<v8::Script> asar_init = v8::Script::Compile(v8::String::NewFromUtf8(
