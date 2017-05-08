@@ -45,7 +45,7 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
 
       std::vector<std::string> args = {
         "--no-rate-limit",
-        "--no-upload-gzip",  // no all servers accept gzip
+        "--no-upload-gzip",  // not all servers accept gzip
       };
 
       crashpad::CrashpadClient crashpad_client;

@@ -15,7 +15,7 @@
 #include "native_mate/wrappable.h"
 
 #include "atom/common/node_includes.h"
-#include "atom_natives.h"  // NOLINT: This file is generated with coffee2c.
+#include "atom_natives.h"  // NOLINT: This file is generated with js2c.
 
 namespace {
 
