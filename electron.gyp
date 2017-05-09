@@ -81,7 +81,7 @@
               # is marked for no PIE (ASLR).
               'postbuild_name': 'Make More Helpers',
               'action': [
-                'brightray/tools/mac/make_more_helpers.sh',
+                'tools/mac/make_more_helpers.sh',
                 'Frameworks',
                 '<(product_name)',
               ],
