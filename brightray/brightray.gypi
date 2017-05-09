@@ -1,6 +1,6 @@
 {
   'includes': [
-    'vendor/download/libchromiumcontent/filenames.gypi',
+    '../vendor/download/libchromiumcontent/filenames.gypi',
   ],
   'variables': {
     'libchromiumcontent_component%': 1,

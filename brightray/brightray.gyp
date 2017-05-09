@@ -23,7 +23,7 @@
       'direct_dependent_settings': {
         'include_dirs': [
           '.',
-          '..',
+          '../vendor',
           '<(libchromiumcontent_src_dir)',
           '<(libchromiumcontent_src_dir)/gpu',
           '<(libchromiumcontent_src_dir)/skia/config',

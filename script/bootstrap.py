@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import errno
 import os
 import subprocess
 import sys
@@ -12,6 +13,7 @@ from lib.util import execute_stdout, get_electron_version, scoped_cwd
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
+DOWNLOAD_DIR = os.path.join(VENDOR_DIR, 'download')
 PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
 
 NPM = 'npm'
@@ -40,8 +42,7 @@ def main():
   # Redirect to use local libchromiumcontent build.
   if args.build_libchromiumcontent:
     build_libchromiumcontent(args.verbose, args.target_arch, defines)
-    dist_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
-                            'libchromiumcontent', 'dist', 'main')
+    dist_dir = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'dist', 'main')
     libcc_source_path = os.path.join(dist_dir, 'src')
     libcc_shared_library_path = os.path.join(dist_dir, 'shared_library')
     libcc_static_library_path = os.path.join(dist_dir, 'static_library')
@@ -53,9 +54,9 @@ def main():
 
   setup_python_libs()
   update_node_modules('.')
-  bootstrap_brightray(args.dev, args.url, args.target_arch,
-                      libcc_source_path, libcc_shared_library_path,
-                      libcc_static_library_path)
+  setup_libchromiumcontent(args.dev, args.target_arch, args.url,
+                           libcc_source_path, libcc_shared_library_path,
+                           libcc_static_library_path)
 
   if PLATFORM == 'linux':
     download_sysroot(args.target_arch)
@@ -135,10 +136,33 @@ def setup_python_libs():
       execute_stdout([sys.executable, 'setup.py', 'build'])
 
 
+def setup_libchromiumcontent(is_dev, target_arch, url,
+                             libcc_source_path,
+                             libcc_shared_library_path,
+                             libcc_static_library_path):
+  target_dir = os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')
+  download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
+                          'download')
+  args = ['-f', '-c', LIBCHROMIUMCONTENT_COMMIT, '--target_arch', target_arch,
+          url, target_dir]
+  if (libcc_source_path != None and
+      libcc_shared_library_path != None and
+      libcc_static_library_path != None):
+    args += ['--libcc_source_path', libcc_source_path,
+            '--libcc_shared_library_path', libcc_shared_library_path,
+            '--libcc_static_library_path', libcc_static_library_path]
+    mkdir_p(target_dir)
+  else:
+    mkdir_p(DOWNLOAD_DIR)
+  if is_dev:
+    subprocess.check_call([sys.executable, download] + args)
+  else:
+    subprocess.check_call([sys.executable, download, '-s'] + args)
+
 def bootstrap_brightray(is_dev, url, target_arch, libcc_source_path,
                         libcc_shared_library_path,
                         libcc_static_library_path):
-  bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
+  bootstrap = os.path.join(SOURCE_ROOT, 'brightray', 'script', 'bootstrap')
   args = [
     '--commit', LIBCHROMIUMCONTENT_COMMIT,
     '--target_arch', target_arch,
@@ -225,8 +249,7 @@ def download_sysroot(target_arch):
                   '--arch', target_arch])
 
 def create_chrome_version_h():
-  version_file = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
-                              'libchromiumcontent', 'VERSION')
+  version_file = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'VERSION')
   target_file = os.path.join(SOURCE_ROOT, 'atom', 'common', 'chrome_version.h')
   template_file = os.path.join(SOURCE_ROOT, 'script', 'chrome_version.h.in')
 
@@ -269,6 +292,14 @@ def create_node_headers():
   execute_stdout([sys.executable,
                   os.path.join(SOURCE_ROOT, 'script', 'create-node-headers.py'),
                   '--version', get_electron_version()])
+
+
+def mkdir_p(path):
+  try:
+    os.makedirs(path)
+  except OSError as e:
+    if e.errno != errno.EEXIST:
+      raise
 
 
 if __name__ == '__main__':

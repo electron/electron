@@ -22,8 +22,8 @@ def main():
     remove_directory('node_modules')
     remove_directory('spec/node_modules')
 
-    remove_directory('vendor/brightray/vendor/download/libchromiumcontent')
-    remove_directory('vendor/brightray/vendor/libchromiumcontent/src')
+    remove_directory('vendor/download/libchromiumcontent')
+    remove_directory('vendor/libchromiumcontent/src')
 
     remove_directory(os.path.expanduser('~/.node-gyp'))
 

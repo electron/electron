@@ -81,7 +81,7 @@
               # is marked for no PIE (ASLR).
               'postbuild_name': 'Make More Helpers',
               'action': [
-                'vendor/brightray/tools/mac/make_more_helpers.sh',
+                'brightray/tools/mac/make_more_helpers.sh',
                 'Frameworks',
                 '<(product_name)',
               ],
@@ -220,7 +220,7 @@
       'dependencies': [
         'atom_js2c',
         'vendor/pdf_viewer/pdf_viewer.gyp:pdf_viewer',
-        'vendor/brightray/brightray.gyp:brightray',
+        'brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node',
       ],
       'defines': [
@@ -244,7 +244,7 @@
       'include_dirs': [
         '.',
         'chromium_src',
-        'vendor/brightray',
+        'brightray',
         'vendor/native_mate',
         # Include atom_natives.h.
         '<(SHARED_INTERMEDIATE_DIR)',
@@ -271,7 +271,7 @@
         ],
       },
       'export_dependent_settings': [
-        'vendor/brightray/brightray.gyp:brightray',
+        'brightray/brightray.gyp:brightray',
       ],
       'conditions': [
         ['libchromiumcontent_component', {
