@@ -310,7 +310,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `overrideWebViewSecurity` Boolean (optional) - Whether to enable [webview-tag](webview-tag.md)
       ignoring the security restriction based on `nodeIntegration`. Enabling this option will
       have security implication on creating `webview` with `nodeIntegration` disabled. To avoid the
-      security risk, listen to `will-create-webview` event on [web-contents](web-contents.md) and 
+      security risk, listen to `will-attach-webview` event on [web-contents](web-contents.md) and 
       stop creating `webview` or removing preload scripts.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/

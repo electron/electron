@@ -406,9 +406,6 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
 
   Init(isolate);
   AttachAsUserData(web_contents);
-
-  if (IsGuest())
-    Emit("did-create-webview");
 }
 
 WebContents::~WebContents() {
