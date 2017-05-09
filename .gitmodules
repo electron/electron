@@ -22,3 +22,9 @@
 [submodule "vendor/pdf_viewer"]
 	path = vendor/pdf_viewer
 	url = https://github.com/electron/pdf-viewer.git
+[submodule "vendor/gyp"]
+	path = vendor/gyp
+	url = https://github.com/electron/gyp
+[submodule "vendor/libchromiumcontent"]
+	path = vendor/libchromiumcontent
+	url = https://github.com/electron/libchromiumcontent
