@@ -340,6 +340,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Observe(int type,
                const content::NotificationSource& source,
                const content::NotificationDetails& details) override;
+  void BeforeUnloadDialogCancelled() override;
 
   // brightray::InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;

@@ -1197,6 +1197,60 @@ describe('BrowserWindow module', function () {
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html'))
     })
+
+    it('emits for each close attempt', function (done) {
+      var beforeUnloadCount = 0
+      w.on('onbeforeunload', function () {
+        beforeUnloadCount++
+        if (beforeUnloadCount < 3) {
+          w.close()
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', function () {
+        w.close()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+
+    it('emits for each reload attempt', function (done) {
+      var beforeUnloadCount = 0
+      w.on('onbeforeunload', function () {
+        beforeUnloadCount++
+        if (beforeUnloadCount < 3) {
+          w.reload()
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', function () {
+        w.webContents.once('did-finish-load', function () {
+          assert.fail('Reload was not prevented')
+        })
+        w.reload()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+
+    it('emits for each navigation attempt', function (done) {
+      var beforeUnloadCount = 0
+      w.on('onbeforeunload', function () {
+        beforeUnloadCount++
+        if (beforeUnloadCount < 3) {
+          w.loadURL('about:blank')
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', function () {
+        w.webContents.once('did-finish-load', function () {
+          assert.fail('Navigation was not prevented')
+        })
+        w.loadURL('about:blank')
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
   })
 
   describe('new-window event', function () {
