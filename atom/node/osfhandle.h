@@ -21,6 +21,12 @@ namespace node {
 __declspec(dllexport) int open_osfhandle(intptr_t osfhandle, int flags);
 __declspec(dllexport) int close(int fd);
 
+// Memory allocation functions from Node's module, used by ArrayBuffer allocator
+// to make sure memories are allocated and freed with the same allocator.
+__declspec(dllexport) void* ArrayBufferCalloc(size_t length);
+__declspec(dllexport) void* ArrayBufferMalloc(size_t length);
+__declspec(dllexport) void ArrayBufferFree(void* data, size_t length);
+
 // A trick to force referencing symbols.
 __declspec(dllexport) void ReferenceSymbols();
 
