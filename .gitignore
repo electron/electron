@@ -27,3 +27,10 @@ node_modules/
 *.vcxproj.filters
 *.sln
 *.log
+/brightray/brightray.opensdf
+/brightray/brightray.sdf
+/brightray/brightray.sln
+/brightray/brightray.vcxproj*
+/brightray/brightray.suo
+/brightray/brightray.v12.suo
+/brightray/brightray.xcodeproj/
