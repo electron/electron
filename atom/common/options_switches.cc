@@ -129,7 +129,7 @@ const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
 const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
 
 // Enable the web view tag irrespective of node-integration setting.
-const char kEnableWebViewOverride[] = "enableWebViewOverride";
+const char kOverrideWebViewSecurity[] = "overrideWebViewSecurity";
 
 }  // namespace options
 
@@ -175,7 +175,7 @@ const char kGuestInstanceID[]  = "guest-instance-id";
 const char kOpenerID[]         = "opener-id";
 const char kScrollBounce[]     = "scroll-bounce";
 const char kHiddenPage[]       = "hidden-page";
-const char kEnableWebViewOverride[]  = "enable-webview-override";
+const char kOverrideWebViewSecurity[]  = "override-webview-security";
 
 // Command switch passed to renderer process to control nodeIntegration.
 const char kNodeIntegrationInWorker[]  = "node-integration-in-worker";

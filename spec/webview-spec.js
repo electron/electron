@@ -60,7 +60,7 @@ describe('<webview> tag', function () {
       webPreferences: {
         nodeIntegration: false,
         preload: path.join(fixtures, 'module', 'preload-webview.js'),
-        enableWebViewOverride: true
+        overrideWebViewSecurity: true
       }
     })
     ipcMain.once('webview', function (event, type) {

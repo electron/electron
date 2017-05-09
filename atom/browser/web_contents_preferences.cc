@@ -102,11 +102,11 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
   // Check if webview tag creation is overriden.
-  bool enable_webview_override = false;
-  web_preferences.GetBoolean(options::kEnableWebViewOverride,
-                             &enable_webview_override);
-  command_line->AppendSwitchASCII(switches::kEnableWebViewOverride,
-                                  enable_webview_override ? "true" : "false");
+  bool override_webview_security = false;
+  web_preferences.GetBoolean(options::kOverrideWebViewSecurity,
+                             &override_webview_security);
+  command_line->AppendSwitchASCII(switches::kOverrideWebViewSecurity,
+                                  override_webview_security ? "true" : "false");
 
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js

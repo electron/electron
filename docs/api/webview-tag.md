@@ -17,7 +17,7 @@ webview from the host page require a syncronous call to the main process.
 
 For security purposes, `webview` can only be used in `BrowserWindow`s that have
 `nodeIntegration` enabled. You can override this security restiction using
-`enableWebViewOverride` option on [browser-window](browser-window.md).
+`overrideWebViewSecurity` option on [browser-window](browser-window.md).
 
 ## Example
 
