@@ -178,13 +178,23 @@ void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
 
 void CommonWebContentsDelegate::SetOwnerWindow(
     content::WebContents* web_contents, NativeWindow* owner_window) {
-  owner_window_ = owner_window->GetWeakPtr();
+  owner_window_ = owner_window ? owner_window->GetWeakPtr() : nullptr;
   NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
-  web_contents->SetUserData(relay->key, relay);
+  if (owner_window) {
+    web_contents->SetUserData(relay->key, relay);
+  } else {
+    web_contents->RemoveUserData(relay->key);
+    delete relay;
+  }
 }
 
-void CommonWebContentsDelegate::DestroyWebContents() {
-  web_contents_.reset();
+void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
+  if (async) {
+    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
+                                                    web_contents_.release());
+  } else {
+    web_contents_.reset();
+  }
 }
 
 content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
@@ -294,10 +304,11 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
   if (it != saved_files_.end() && !save_as) {
     path = it->second;
   } else {
-    file_dialog::Filters filters;
-    base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
-    if (!file_dialog::ShowSaveDialog(owner_window(), url, "", default_path,
-                                     filters, &path)) {
+    file_dialog::DialogSettings settings;
+    settings.parent_window = owner_window();
+    settings.title = url;
+    settings.default_path = base::FilePath::FromUTF8Unsafe(url);
+    if (!file_dialog::ShowSaveDialog(settings, &path)) {
       base::StringValue url_value(url);
       web_contents_->CallClientFunction(
           "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
@@ -337,7 +348,7 @@ void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
   }
 
   std::vector<FileSystem> file_systems;
-  for (auto file_system_path : file_system_paths) {
+  for (const auto& file_system_path : file_system_paths) {
     base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
     std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
                                                     path);
@@ -358,12 +369,11 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     const base::FilePath& file_system_path) {
   base::FilePath path = file_system_path;
   if (path.empty()) {
-    file_dialog::Filters filters;
-    base::FilePath default_path;
     std::vector<base::FilePath> paths;
-    int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
-    if (!file_dialog::ShowOpenDialog(owner_window(), "", "", default_path,
-                                     filters, flag, &paths))
+    file_dialog::DialogSettings settings;
+    settings.parent_window = owner_window();
+    settings.properties = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
+    if (!file_dialog::ShowOpenDialog(settings, &paths))
       return;
 
     path = paths[0];

@@ -104,8 +104,7 @@ NativeWindow::~NativeWindow() {
 // static
 NativeWindow* NativeWindow::FromWebContents(
     content::WebContents* web_contents) {
-  WindowList& window_list = *WindowList::GetInstance();
-  for (NativeWindow* window : window_list) {
+  for (const auto& window : WindowList::GetWindows()) {
     if (window->web_contents() == web_contents)
       return window;
   }
@@ -340,6 +339,17 @@ void NativeWindow::SetAutoHideCursor(bool auto_hide) {
 void NativeWindow::SetVibrancy(const std::string& filename) {
 }
 
+void NativeWindow::SetTouchBar(
+    const std::vector<mate::PersistentDictionary>& items) {
+}
+
+void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {
+}
+
+void NativeWindow::SetEscapeTouchBarItem(
+    const mate::PersistentDictionary& item) {
+}
+
 void NativeWindow::FocusOnWebView() {
   web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }
@@ -464,6 +474,11 @@ void NativeWindow::NotifyWindowClosed() {
     observer.OnWindowClosed();
 }
 
+void NativeWindow::NotifyWindowEndSession() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowEndSession();
+}
+
 void NativeWindow::NotifyWindowBlur() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowBlur();
@@ -531,7 +546,7 @@ void NativeWindow::NotifyWindowScrollTouchBegin() {
 
 void NativeWindow::NotifyWindowScrollTouchEnd() {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowScrollTouchEdge();
+    observer.OnWindowScrollTouchEnd();
 }
 
 void NativeWindow::NotifyWindowScrollTouchEdge() {
@@ -542,6 +557,16 @@ void NativeWindow::NotifyWindowScrollTouchEdge() {
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowSwipe(direction);
+}
+
+void NativeWindow::NotifyWindowSheetBegin() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetBegin();
+}
+
+void NativeWindow::NotifyWindowSheetEnd() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetEnd();
 }
 
 void NativeWindow::NotifyWindowLeaveFullScreen() {
@@ -563,6 +588,13 @@ void NativeWindow::NotifyWindowExecuteWindowsCommand(
     const std::string& command) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnExecuteWindowsCommand(command);
+}
+
+void NativeWindow::NotifyTouchBarItemInteraction(
+    const std::string& item_id,
+    const base::DictionaryValue& details) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnTouchBarItemResult(item_id, details);
 }
 
 #if defined(OS_WIN)

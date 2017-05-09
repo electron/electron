@@ -20,6 +20,8 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   AtomContentUtilityClient();
   ~AtomContentUtilityClient() override;
 
+  bool OnMessageReceived(const IPC::Message& message) override;
+
  private:
 #if defined(OS_WIN)
   typedef ScopedVector<UtilityMessageHandler> Handlers;

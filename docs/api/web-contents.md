@@ -157,9 +157,20 @@ requested by `window.open` or an external link like `<a target='_blank'>`.
 
 By default a new `BrowserWindow` will be created for the `url`.
 
-Calling `event.preventDefault()` will prevent creating new windows. In such case, the
-`event.newGuest` may be set with a reference to a `BrowserWindow` instance to make it
-used by the Electron's runtime.
+Calling `event.preventDefault()` will prevent Electron from automatically creating a
+new `BrowserWindow`. If you call `event.preventDefault()` and manually create a new
+`BrowserWindow` then you must set `event.newGuest` to reference the new `BrowserWindow`
+instance, failing to do so may result in unexpected behavior. For example:
+
+```javascript
+myBrowserWindow.webContents.on('new-window', (event, url) => {
+  event.preventDefault()
+  const win = new BrowserWindow({show: false})
+  win.once('ready-to-show', () => win.show())
+  win.loadURL(url)
+  event.newGuest = win
+})
+```
 
 #### Event: 'will-navigate'
 
@@ -325,6 +336,7 @@ Returns:
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
   * `selectionArea` Object - Coordinates of first match region.
+  * `finalUpdate` Boolean
 
 Emitted when a result is available for
 [`webContents.findInPage`] request.
@@ -363,12 +375,8 @@ Returns:
 * `type` String
 * `image` NativeImage (optional)
 * `scale` Float (optional) - scaling factor for the custom cursor
-* `size` Object (optional) - the size of the `image`
-  * `width` Integer
-  * `height` Integer
-* `hotspot` Object (optional) - coordinates of the custom cursor's hotspot
-  * `x` Integer - x coordinate
-  * `y` Integer - y coordinate
+* `size` [Size](structures/size.md) (optional) - the size of the `image`
+* `hotspot` [Point](structures/point.md) (optional) - coordinates of the custom cursor's hotspot
 
 Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
@@ -502,6 +510,24 @@ win.loadURL('http://github.com')
 
 Emitted when the devtools window instructs the webContents to reload
 
+#### Event: 'will-attach-webview'
+
+Returns:
+
+* `event` Event
+* `webPreferences` Object - The web preferences that will be used by the guest
+  page. This object can be modified to adjust the preferences for the guest
+  page.
+* `params` Object - The other `<webview>` parameters such as the `src` URL.
+  This object can be modified to adjust the parameters of the guest page.
+
+Emitted when a `<webview>`'s web contents is being attached to this web
+contents. Calling `event.preventDefault()` will destroy the guest page.
+
+This event can be used to configure `webPreferences` for the `webContents`
+of a `<webview>` before it's loaded, and provides the ability to set settings
+that can't be set via `<webview>` attributes.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
@@ -512,6 +538,7 @@ Emitted when the devtools window instructs the webContents to reload
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
   * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[] - (optional)
+  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Loads the `url` in the window. The `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`. If the load should bypass http cache then
@@ -642,7 +669,7 @@ Injects CSS into the current web page.
 #### `contents.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
-* `userGesture` Boolean (optional)
+* `userGesture` Boolean (optional) - Default is `false`.
 * `callback` Function (optional) - Called after script has been executed.
   * `result` Any
 
@@ -1072,24 +1099,16 @@ app.on('ready', () => {
       (default: `desktop`)
     * `desktop` - Desktop screen type
     * `mobile` - Mobile screen type
-  * `screenSize` Object - Set the emulated screen size (screenPosition == mobile)
-    * `width` Integer - Set the emulated screen width
-    * `height` Integer - Set the emulated screen height
-  * `viewPosition` Object - Position the view on the screen
+  * `screenSize` [Size](structures/size.md) - Set the emulated screen size (screenPosition == mobile)
+  * `viewPosition` [Point](structures/point.md) - Position the view on the screen
       (screenPosition == mobile) (default: `{x: 0, y: 0}`)
-    * `x` Integer - Set the x axis offset from top left corner
-    * `y` Integer - Set the y axis offset from top left corner
   * `deviceScaleFactor` Integer - Set the device scale factor (if zero defaults to
       original device scale factor) (default: `0`)
-  * `viewSize` Object - Set the emulated view size (empty means no override)
-    * `width` Integer - Set the emulated view width
-    * `height` Integer - Set the emulated view height
+  * `viewSize` [Size](structures/size.md) - Set the emulated view size (empty means no override)
   * `fitToView` Boolean - Whether emulated view should be scaled down if
       necessary to fit into available space (default: `false`)
-  * `offset` Object - Offset of the emulated view inside available space (not in
-      fit to view mode) (default: `{x: 0, y: 0}`)
-    * `x` Float - Set the x axis offset from top left corner
-    * `y` Float - Set the y axis offset from top left corner
+  * `offset` [Point](structures/point.md) - Offset of the emulated view inside available space
+      (not in fit to view mode) (default: `{x: 0, y: 0}`)
   * `scale` Float - Scale of emulated view inside available space (not in fit to
       view mode) (default: `1`)
 
@@ -1169,7 +1188,7 @@ End subscribing for frame presentation events.
 #### `contents.startDrag(item)`
 
 * `item` Object
-  * `file` String - The path to the file being dragged.
+  * `file` String or `files` Array - The path(s) to the file(s) being dragged.
   * `icon` [NativeImage](native-image.md) - The image must be non-empty on
     macOS.
 
@@ -1187,7 +1206,7 @@ the cursor when dragging.
 * `callback` Function - `(error) => {}`.
   * `error` Error
 
-Returns true if the process of saving page has been initiated successfully.
+Returns `Boolean` - true if the process of saving page has been initiated successfully.
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -1246,8 +1265,35 @@ Returns `Integer` - If *offscreen rendering* is enabled returns the current fram
 
 #### `contents.invalidate()`
 
+Schedules a full repaint of the window this web contents is in.
+
 If *offscreen rendering* is enabled invalidates the frame and generates a new
 one through the `'paint'` event.
+
+#### `contents.getWebRTCIPHandlingPolicy()`
+
+Returns `String` - Returns the WebRTC IP Handling Policy.
+
+#### `contents.setWebRTCIPHandlingPolicy(policy)`
+
+* `policy` String - Specify the WebRTC IP Handling Policy.
+  * `default` - Exposes user's public and local IPs.  This is the default
+  behavior.  When this policy is used, WebRTC has the right to enumerate all
+  interfaces and bind them to discover public interfaces.
+  * `default_public_interface_only` - Exposes user's public IP, but does not
+  expose user's local IP.  When this policy is used, WebRTC should only use the
+  default route used by http. This doesn't expose any local addresses.
+  * `default_public_and_private_interfaces` - Exposes user's public and local
+  IPs.  When this policy is used, WebRTC should only use the default route used
+  by http. This also exposes the associated default private address. Default
+  route is the route chosen by the OS on a multi-homed endpoint.
+  * `disable_non_proxied_udp` - Does not expose public or local IPs.  When this
+  policy is used, WebRTC should only use TCP to contact peers or servers unless
+  the proxy server supports UDP.
+
+Setting the WebRTC IP handling policy allows you to control which IPs are
+exposed via WebRTC.  See [BrowserLeaks](https://browserleaks.com/webrtc) for
+more details.
 
 ### Instance Properties
 

@@ -30,14 +30,16 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "brightray/browser/brightray_paths.h"
+#include "chrome/browser/browser_process.h"
+#include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "content/public/browser/browser_child_process_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "media/audio/audio_manager.h"
-#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -335,6 +337,26 @@ namespace api {
 
 namespace {
 
+class AppIdProcessIterator : public base::ProcessIterator {
+ public:
+  AppIdProcessIterator() : base::ProcessIterator(nullptr) {}
+
+ protected:
+  bool IncludeEntry() override {
+    return (entry().parent_pid() == base::GetCurrentProcId() ||
+            entry().pid() == base::GetCurrentProcId());
+  }
+};
+
+IconLoader::IconSize GetIconSizeByString(const std::string& size) {
+  if (size == "small") {
+    return IconLoader::IconSize::SMALL;
+  } else if (size == "large") {
+    return IconLoader::IconSize::LARGE;
+  }
+  return IconLoader::IconSize::NORMAL;
+}
+
 // Return the path constant from string.
 int GetPathConstant(const std::string& name) {
   if (name == "appData")
@@ -416,7 +438,7 @@ void OnClientCertificateSelected(
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
       data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
-  if (certs.size() > 0)
+  if (!certs.empty())
     delegate->ContinueWithCertificate(certs[0].get());
 }
 
@@ -462,6 +484,21 @@ int ImportIntoCertStore(
 }
 #endif
 
+void OnIconDataAvailable(v8::Isolate* isolate,
+                         const App::FileIconCallback& callback,
+                         gfx::Image* icon) {
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+
+  if (icon && !icon->IsEmpty()) {
+    callback.Run(v8::Null(isolate), *icon);
+  } else {
+    v8::Local<v8::String> error_message =
+      v8::String::NewFromUtf8(isolate, "Failed to get file icon.");
+    callback.Run(v8::Exception::Error(error_message), gfx::Image());
+  }
+}
+
 }  // namespace
 
 App::App(v8::Isolate* isolate) {
@@ -494,7 +531,7 @@ void App::OnQuit() {
   int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
 
-  if (process_singleton_.get()) {
+  if (process_singleton_) {
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
@@ -629,6 +666,14 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
     status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
+base::FilePath App::GetAppPath() const {
+  return app_path_;
+}
+
+void App::SetAppPath(const base::FilePath& app_path) {
+  app_path_ = app_path;
+}
+
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   bool succeed = false;
   base::FilePath path;
@@ -669,7 +714,7 @@ std::string App::GetLocale() {
 
 bool App::MakeSingleInstance(
     const ProcessSingleton::NotificationCallback& callback) {
-  if (process_singleton_.get())
+  if (process_singleton_)
     return false;
 
   base::FilePath user_dir;
@@ -690,7 +735,7 @@ bool App::MakeSingleInstance(
 }
 
 void App::ReleaseSingleInstance() {
-  if (process_singleton_.get()) {
+  if (process_singleton_) {
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
@@ -841,6 +886,84 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 }
 #endif  // defined(OS_WIN)
 
+void App::GetFileIcon(const base::FilePath& path,
+                      mate::Arguments* args) {
+  mate::Dictionary options;
+  IconLoader::IconSize icon_size;
+  FileIconCallback callback;
+
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+
+  base::FilePath normalized_path = path.NormalizePathSeparators();
+
+  if (!args->GetNext(&options)) {
+    icon_size = IconLoader::IconSize::NORMAL;
+  } else {
+    std::string icon_size_string;
+    options.Get("size", &icon_size_string);
+    icon_size = GetIconSizeByString(icon_size_string);
+  }
+
+  if (!args->GetNext(&callback)) {
+    args->ThrowError("Missing required callback function");
+    return;
+  }
+
+  auto icon_manager = g_browser_process->GetIconManager();
+  gfx::Image* icon =
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
+  if (icon) {
+    callback.Run(v8::Null(isolate()), *icon);
+  } else {
+    icon_manager->LoadIcon(
+        normalized_path, icon_size,
+        base::Bind(&OnIconDataAvailable, isolate(), callback),
+        &cancelable_task_tracker_);
+  }
+}
+
+std::vector<mate::Dictionary> App::GetAppMemoryInfo(v8::Isolate* isolate) {
+  AppIdProcessIterator process_iterator;
+  auto process_entry = process_iterator.NextProcessEntry();
+  std::vector<mate::Dictionary> result;
+
+  while (process_entry != nullptr) {
+    int64_t pid = process_entry->pid();
+    auto process = base::Process::OpenWithExtraPrivileges(pid);
+
+#if defined(OS_MACOSX)
+    std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateProcessMetrics(
+        process.Handle(), content::BrowserChildProcessHost::GetPortProvider()));
+#else
+    std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateProcessMetrics(process.Handle()));
+#endif
+
+    mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
+    mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
+
+    memory_dict.Set("workingSetSize",
+            static_cast<double>(metrics->GetWorkingSetSize() >> 10));
+    memory_dict.Set("peakWorkingSetSize",
+            static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
+
+    size_t private_bytes, shared_bytes;
+    if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
+      memory_dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
+      memory_dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
+    }
+
+    pid_dict.Set("memory", memory_dict);
+    pid_dict.Set("pid", pid);
+    result.push_back(pid_dict);
+    process_entry = process_iterator.NextProcessEntry();
+  }
+
+  return result;
+}
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -896,6 +1019,8 @@ void App::BuildPrototype(
       .SetMethod("isUnityRunning",
                  base::Bind(&Browser::IsUnityRunning, browser))
 #endif
+      .SetMethod("setAppPath", &App::SetAppPath)
+      .SetMethod("getAppPath", &App::GetAppPath)
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
@@ -909,7 +1034,9 @@ void App::BuildPrototype(
       .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
-                 &App::DisableHardwareAcceleration);
+                 &App::DisableHardwareAcceleration)
+      .SetMethod("getFileIcon", &App::GetFileIcon)
+      .SetMethod("getAppMemoryInfo", &App::GetAppMemoryInfo);
 }
 
 }  // namespace api

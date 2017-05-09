@@ -97,6 +97,10 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration ? "true" : "false");
 
+  // Whether to enable node integration in Worker.
+  if (web_preferences.GetBoolean(options::kNodeIntegrationInWorker, &b) && b)
+    command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
+
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.
@@ -129,13 +133,6 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   std::string color;
   if (web_preferences.GetString(options::kBackgroundColor, &color))
     command_line->AppendSwitchASCII(switches::kBackgroundColor, color);
-
-  // The zoom factor.
-  double zoom_factor = 1.0;
-  if (web_preferences.GetDouble(options::kZoomFactor, &zoom_factor) &&
-      zoom_factor != 1.0)
-    command_line->AppendSwitchASCII(switches::kZoomFactor,
-                                    base::DoubleToString(zoom_factor));
 
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
@@ -254,15 +251,28 @@ void WebContentsPreferences::OverrideWebkitPrefs(
       prefs->fantasy_font_family_map[content::kCommonScript] = font;
   }
   int size;
-  if (self->web_preferences_.GetInteger("defaultFontSize", &size))
+  if (self->GetInteger("defaultFontSize", &size))
     prefs->default_font_size = size;
-  if (self->web_preferences_.GetInteger("defaultMonospaceFontSize", &size))
+  if (self->GetInteger("defaultMonospaceFontSize", &size))
     prefs->default_fixed_font_size = size;
-  if (self->web_preferences_.GetInteger("minimumFontSize", &size))
+  if (self->GetInteger("minimumFontSize", &size))
     prefs->minimum_font_size = size;
   std::string encoding;
   if (self->web_preferences_.GetString("defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
+}
+
+bool WebContentsPreferences::GetInteger(const std::string& attributeName,
+                                        int* intValue) {
+  // if it is already an integer, no conversion needed
+  if (web_preferences_.GetInteger(attributeName, intValue))
+    return true;
+
+  base::string16 stringValue;
+  if (web_preferences_.GetString(attributeName, &stringValue))
+    return base::StringToInt(stringValue, intValue);
+
+  return false;
 }
 
 }  // namespace atom

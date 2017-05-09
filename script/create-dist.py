@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import glob
 import os
 import re
@@ -9,8 +10,7 @@ import sys
 import stat
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       get_target_arch, get_chromedriver_version, \
-                       get_zip_name
+                       get_target_arch, get_zip_name
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
                      execute, electron_gyp
 
@@ -32,6 +32,7 @@ TARGET_BINARIES = {
   'win32': [
     '{0}.exe'.format(PROJECT_NAME),  # 'electron.exe'
     'content_shell.pak',
+    'pdf_viewer_resources.pak',
     'd3dcompiler_47.dll',
     'icudtl.dat',
     'libEGL.dll',
@@ -42,13 +43,13 @@ TARGET_BINARIES = {
     'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
     'views_resources_200_percent.pak',
-    'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
   ],
   'linux': [
     PROJECT_NAME,  # 'electron'
     'content_shell.pak',
+    'pdf_viewer_resources.pak',
     'icudtl.dat',
     'libffmpeg.so',
     'libnode.so',
@@ -86,15 +87,18 @@ def main():
   copy_chrome_binary('mksnapshot')
   copy_license()
 
-  if PLATFORM != 'win32':
+  args = parse_args()
+
+  if PLATFORM != 'win32' and not args.no_api_docs:
     create_api_json_schema()
+    create_typescript_definitions()
 
   if PLATFORM == 'linux':
     strip_binaries()
 
   create_version()
   create_dist_zip()
-  create_chrome_binary_zip('chromedriver', get_chromedriver_version())
+  create_chrome_binary_zip('chromedriver', ELECTRON_VERSION)
   create_chrome_binary_zip('mksnapshot', ELECTRON_VERSION)
   create_ffmpeg_zip()
   create_symbols_zip()
@@ -132,9 +136,25 @@ def copy_license():
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
 def create_api_json_schema():
+  node_bin_dir = os.path.join(SOURCE_ROOT, 'node_modules', '.bin')
+  env = os.environ.copy()
+  env['PATH'] = os.path.pathsep.join([node_bin_dir, env['PATH']])
   outfile = os.path.relpath(os.path.join(DIST_DIR, 'electron-api.json'))
   execute(['electron-docs-linter', 'docs', '--outfile={0}'.format(outfile),
-           '--version={}'.format(ELECTRON_VERSION.replace('v', ''))])
+           '--version={}'.format(ELECTRON_VERSION.replace('v', ''))],
+          env=env)
+
+def create_typescript_definitions():
+  node_bin_dir = os.path.join(SOURCE_ROOT, 'node_modules', '.bin')
+  env = os.environ.copy()
+  env['PATH'] = os.path.pathsep.join([node_bin_dir, env['PATH']])
+  infile = os.path.relpath(os.path.join(DIST_DIR, 'electron-api.json'))
+  outfile = os.path.relpath(os.path.join(DIST_DIR, 'electron.d.ts'))
+  tslintconfig = os.path.relpath(os.path.join(DIST_DIR,
+           '../node_modules/electron-typescript-definitions/tslint.json'))
+  execute(['electron-typescript-definitions', '--in={0}'.format(infile),
+           '--out={0}'.format(outfile)], env=env)
+  execute(['tslint', '--config', tslintconfig, outfile], env=env)
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:
@@ -235,6 +255,14 @@ def create_symbols_zip():
     with scoped_cwd(DIST_DIR):
       pdbs = glob.glob('*.pdb')
       make_zip(os.path.join(DIST_DIR, pdb_name), pdbs + licenses, [])
+
+
+def parse_args():
+  parser = argparse.ArgumentParser(description='Create Electron Distribution')
+  parser.add_argument('--no_api_docs',
+                      action='store_true',
+                      help='Skip generating the Electron API Documentation!')
+  return parser.parse_args()
 
 
 if __name__ == '__main__':

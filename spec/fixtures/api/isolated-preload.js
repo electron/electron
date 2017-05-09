@@ -1,3 +1,8 @@
+// Ensure fetch works from isolated world origin
+fetch('http://localhost:1234')
+fetch('https://localhost:1234')
+fetch(`file://${__filename}`)
+
 const {ipcRenderer, webFrame} = require('electron')
 
 window.foo = 3

@@ -219,6 +219,21 @@ describe('session module', function () {
         if (error) return done(error)
       })
     })
+
+    describe('ses.cookies.flushStore(callback)', function () {
+      it('flushes the cookies to disk and invokes the callback when done', function (done) {
+        session.defaultSession.cookies.set({
+          url: url,
+          name: 'foo',
+          value: 'bar'
+        }, (error) => {
+          if (error) return done(error)
+          session.defaultSession.cookies.flushStore(() => {
+            done()
+          })
+        })
+      })
+    })
   })
 
   describe('ses.clearStorageData(options)', function () {
@@ -226,7 +241,7 @@ describe('session module', function () {
     it('clears localstorage data', function (done) {
       ipcMain.on('count', function (event, count) {
         ipcMain.removeAllListeners('count')
-        assert(!count)
+        assert.equal(count, 0)
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'localstorage.html'))
@@ -313,11 +328,11 @@ describe('session module', function () {
       fs.unlinkSync(downloadFilePath)
     }
 
-    it('can download using BrowserWindow.loadURL', function (done) {
+    it('can download using WebContents.downloadURL', function (done) {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', false, false)
-        w.loadURL(url + ':' + port)
+        w.webContents.downloadURL(url + ':' + port)
         ipcRenderer.once('download-done', function (event, state, url,
                                                     mimeType, receivedBytes,
                                                     totalBytes, disposition,
@@ -355,7 +370,7 @@ describe('session module', function () {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', true, false)
-        w.loadURL(url + ':' + port + '/')
+        w.webContents.downloadURL(url + ':' + port + '/')
         ipcRenderer.once('download-done', function (event, state, url,
                                                     mimeType, receivedBytes,
                                                     totalBytes, disposition,
@@ -378,7 +393,7 @@ describe('session module', function () {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', true, false)
-        w.loadURL(url + ':' + port + '/?testFilename')
+        w.webContents.downloadURL(url + ':' + port + '/?testFilename')
         ipcRenderer.once('download-done', function (event, state, url,
                                                     mimeType, receivedBytes,
                                                     totalBytes, disposition,
@@ -556,9 +571,10 @@ describe('session module', function () {
       server.close()
     })
 
-    it('accepts the request when the callback is called with true', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
-        callback(true)
+    it('accepts the request when the callback is called with 0', function (done) {
+      session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult}, callback) {
+        assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
+        callback(0)
       })
 
       w.webContents.once('did-finish-load', function () {
@@ -568,8 +584,37 @@ describe('session module', function () {
       w.loadURL(`https://127.0.0.1:${server.address().port}`)
     })
 
-    it('rejects the request when the callback is called with false', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+    describe('deprecated function signature', function () {
+      it('supports accepting the request', function (done) {
+        session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+          assert.equal(hostname, '127.0.0.1')
+          callback(true)
+        })
+
+        w.webContents.once('did-finish-load', function () {
+          assert.equal(w.webContents.getTitle(), 'hello')
+          done()
+        })
+        w.loadURL(`https://127.0.0.1:${server.address().port}`)
+      })
+
+      it('supports rejecting the request', function (done) {
+        session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+          assert.equal(hostname, '127.0.0.1')
+          callback(false)
+        })
+
+        var url = `https://127.0.0.1:${server.address().port}`
+        w.webContents.once('did-finish-load', function () {
+          assert.equal(w.webContents.getTitle(), url)
+          done()
+        })
+        w.loadURL(url)
+      })
+    })
+
+    it('rejects the request when the callback is called with -2', function (done) {
+      session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult}, callback) {
         assert.equal(hostname, '127.0.0.1')
         assert.equal(certificate.issuerName, 'Intermediate CA')
         assert.equal(certificate.subjectName, 'localhost')
@@ -580,7 +625,8 @@ describe('session module', function () {
         assert.equal(certificate.issuerCert.issuerCert.issuer.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.subject.commonName, 'Root CA')
         assert.equal(certificate.issuerCert.issuerCert.issuerCert, undefined)
-        callback(false)
+        assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
+        callback(-2)
       })
 
       var url = `https://127.0.0.1:${server.address().port}`

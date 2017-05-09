@@ -9,6 +9,8 @@ const {closeWindow} = require('./window-helpers')
 
 const {app, BrowserWindow, ipcMain} = remote
 
+const isCI = remote.getGlobal('isCi')
+
 describe('electron module', function () {
   it('does not expose internal modules to require', function () {
     assert.throws(function () {
@@ -131,6 +133,16 @@ describe('app module', function () {
         if (process.platform !== 'win32') {
           assert.notEqual(output.indexOf('Exit event with code: 123'), -1)
         }
+        assert.equal(code, 123)
+        done()
+      })
+    })
+
+    it('closes all windows', function (done) {
+      var appPath = path.join(__dirname, 'fixtures', 'api', 'exit-closes-all-windows-app')
+      var electronPath = remote.getGlobal('process').execPath
+      appProcess = ChildProcess.spawn(electronPath, [appPath])
+      appProcess.on('close', function (code) {
         assert.equal(code, 123)
         done()
       })
@@ -454,6 +466,84 @@ describe('app module', function () {
       app.setAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
       assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), true)
       assert.equal(app.isDefaultProtocolClient(protocol), false)
+    })
+  })
+
+  describe('getFileIcon() API', function () {
+    // FIXME Get these specs running on Linux CI
+    if (process.platform === 'linux' && isCI) return
+
+    const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
+    const sizes = {
+      small: 16,
+      normal: 32,
+      large: process.platform === 'win32' ? 32 : 48
+    }
+
+    it('fetches a non-empty icon', function (done) {
+      app.getFileIcon(iconPath, function (err, icon) {
+        assert.equal(err, null)
+        assert.equal(icon.isEmpty(), false)
+        done()
+      })
+    })
+
+    it('fetches normal icon size by default', function (done) {
+      app.getFileIcon(iconPath, function (err, icon) {
+        const size = icon.getSize()
+        assert.equal(err, null)
+        assert.equal(size.height, sizes.normal)
+        assert.equal(size.width, sizes.normal)
+        done()
+      })
+    })
+
+    describe('size option', function () {
+      it('fetches a small icon', function (done) {
+        app.getFileIcon(iconPath, { size: 'small' }, function (err, icon) {
+          const size = icon.getSize()
+          assert.equal(err, null)
+          assert.equal(size.height, sizes.small)
+          assert.equal(size.width, sizes.small)
+          done()
+        })
+      })
+
+      it('fetches a normal icon', function (done) {
+        app.getFileIcon(iconPath, { size: 'normal' }, function (err, icon) {
+          const size = icon.getSize()
+          assert.equal(err, null)
+          assert.equal(size.height, sizes.normal)
+          assert.equal(size.width, sizes.normal)
+          done()
+        })
+      })
+
+      it('fetches a large icon', function (done) {
+        // macOS does not support large icons
+        if (process.platform === 'darwin') return done()
+
+        app.getFileIcon(iconPath, { size: 'large' }, function (err, icon) {
+          const size = icon.getSize()
+          assert.equal(err, null)
+          assert.equal(size.height, sizes.large)
+          assert.equal(size.width, sizes.large)
+          done()
+        })
+      })
+    })
+  })
+
+  describe('getAppMemoryInfo() API', function () {
+    it('returns the process memory of all running electron processes', function () {
+      const appMemoryInfo = app.getAppMemoryInfo()
+      assert.ok(appMemoryInfo.length > 0, 'App memory info object is not > 0')
+      for (const {memory, pid} of appMemoryInfo) {
+        assert.ok(memory.workingSetSize > 0, 'working set size is not > 0')
+        assert.ok(memory.privateBytes > 0, 'private bytes is not > 0')
+        assert.ok(memory.sharedBytes > 0, 'shared bytes is not > 0')
+        assert.ok(pid > 0, 'pid is not > 0')
+      }
     })
   })
 })

@@ -356,6 +356,27 @@ Windows, 使应用的第一个窗口获取焦点.
 * `pictures` 用户图片目录的路径.
 * `videos` 用户视频目录的路径.
 
+### `app.getFileIcon(path[, options], callback)`
+* `path` String
+* `options` Object(可选)
+	*  `size` String
+		* `small` - 16x16
+    	* `normal` - 32x32
+   		* `large` - Linux 为 48x48, Windows 为 32x32, Mac 系统不支持
+* `callback` Function
+  * `error` Error
+  * `icon` [NativeImage](native-image.md)
+
+  
+获取文件关联的图标.
+
+在 Windows 系统中, 有2种图标类型:
+
+- 图标与某些文件扩展名关联, 比如 `.mp3`, `.png`, 等等.
+- 图标在文件内部, 比如 `.exe`, `.dll`, `.ico`.
+
+在 Linux 和 Mac 系统中, 图标取决于应用程序相关文件的 mime 类型
+
 ### `app.setPath(name, path)`
 
 * `name` String

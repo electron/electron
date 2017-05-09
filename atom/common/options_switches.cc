@@ -51,6 +51,9 @@ const char kZoomToPageWidth[] = "zoomToPageWidth";
 // The requested title bar style for the window
 const char kTitleBarStyle[] = "titleBarStyle";
 
+// Tabbing identifier for the window if native tabs are enabled on macOS.
+const char kTabbingIdentifier[] = "tabbingIdentifier";
+
 // The menu bar is hidden unless "Alt" is pressed.
 const char kAutoHideMenuBar[] = "autoHideMenuBar";
 
@@ -122,6 +125,9 @@ const char kBlinkFeatures[] = "blinkFeatures";
 // Disable blink features.
 const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
 
+// Enable the node integration in WebWorker.
+const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
+
 }  // namespace options
 
 namespace switches {
@@ -153,9 +159,11 @@ const char kSecureSchemes[] = "secure-schemes";
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
 
+// The application path
+const char kAppPath[] = "app-path";
+
 // The command line switch versions of the options.
 const char kBackgroundColor[]  = "background-color";
-const char kZoomFactor[]       = "zoom-factor";
 const char kPreloadScript[]    = "preload";
 const char kPreloadURL[]       = "preload-url";
 const char kNodeIntegration[]  = "node-integration";
@@ -164,6 +172,9 @@ const char kGuestInstanceID[]  = "guest-instance-id";
 const char kOpenerID[]         = "opener-id";
 const char kScrollBounce[]     = "scroll-bounce";
 const char kHiddenPage[]       = "hidden-page";
+
+// Command switch passed to renderer process to control nodeIntegration.
+const char kNodeIntegrationInWorker[]  = "node-integration-in-worker";
 
 // Widevine options
 // Path to Widevine CDM binaries.

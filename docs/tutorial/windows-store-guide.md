@@ -69,8 +69,7 @@ The output should look roughly like this:
 │   └── atom.asar
 ├── snapshot_blob.bin
 ├── squirrel.exe
-├── ui_resources_200_percent.pak
-└── xinput1_3.dll
+└── ui_resources_200_percent.pak
 ```
 
 ## Step 2: Running electron-windows-store
@@ -125,7 +124,7 @@ Cortana integration, or live tiles.
 To check out how an Electron app that uses a background task to send toast
 notifications and live tiles, [check out the Microsoft-provided sample][background-task].
 
-## Optional: Convert using Container Virtualiziation
+## Optional: Convert using Container Virtualization
 
 To generate the AppX package, the `electron-windows-store` CLI uses a template
 that should work for most Electron apps. However, if you are using a custom

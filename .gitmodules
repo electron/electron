@@ -22,3 +22,6 @@
 [submodule "vendor/boto"]
 	path = vendor/boto
 	url = https://github.com/boto/boto.git
+[submodule "vendor/pdf_viewer"]
+	path = vendor/pdf_viewer
+	url = https://github.com/electron/pdf-viewer.git

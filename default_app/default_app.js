@@ -15,6 +15,9 @@ exports.load = (appUrl) => {
       height: 600,
       autoHideMenuBar: true,
       backgroundColor: '#FFFFFF',
+      webPreferences: {
+        nodeIntegrationInWorker: true
+      },
       useContentSize: true
     }
     if (process.platform === 'linux') {

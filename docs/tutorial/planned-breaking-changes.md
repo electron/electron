@@ -57,6 +57,15 @@ crashReporter.start({
 })
 ```
 
+## `menu`
+
+```js
+// Deprecated
+menu.popup(browserWindow, 100, 200, 2)
+// Replace with
+menu.popup(browserWindow, {x: 100, y: 200, positioningItem: 2})
+```
+
 ## `nativeImage`
 
 ```js
@@ -90,6 +99,19 @@ process.versions.electron
 * `process.versions.electron` and `process.version.chrome` will be made
   read-only properties for consistency with the other `process.versions`
   properties set by Node.
+
+## `session`
+
+```js
+// Deprecated
+ses.setCertificateVerifyProc(function (hostname, certificate, callback) {
+  callback(true)
+})
+// Replace with
+ses.setCertificateVerifyProc(function (request, callback) {
+  callback(0)
+})
+```
 
 ## `Tray`
 

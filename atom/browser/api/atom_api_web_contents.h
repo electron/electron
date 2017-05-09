@@ -13,6 +13,8 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/common/cursors/webcursor.h"
+#include "content/public/browser/notification_observer.h"
+#include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
@@ -40,20 +42,23 @@ namespace atom {
 
 struct SetSizeParams;
 class AtomBrowserContext;
+class WebContentsZoomController;
 class WebViewGuestDelegate;
 
 namespace api {
 
 class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
-                    public content::WebContentsObserver {
+                    public content::WebContentsObserver,
+                    public content::NotificationObserver {
  public:
   enum Type {
     BACKGROUND_PAGE,  // A DevTools extension background page.
-    BROWSER_WINDOW,  // Used by BrowserWindow.
-    REMOTE,  // Thin wrap around an existing WebContents.
-    WEB_VIEW,  // Used by <webview>.
-    OFF_SCREEN,  // Used for offscreen rendering
+    BROWSER_WINDOW,   // Used by BrowserWindow.
+    BROWSER_VIEW,     // Used by BrowserView.
+    REMOTE,           // Thin wrap around an existing WebContents.
+    WEB_VIEW,         // Used by <webview>.
+    OFF_SCREEN,       // Used for offscreen rendering
   };
 
   // For node.js callback function type: function(error, buffer)
@@ -73,6 +78,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  // Notifies to destroy any guest web contents before destroying self.
+  void DestroyWebContents(bool async);
+
   int64_t GetID() const;
   int GetProcessID() const;
   Type GetType() const;
@@ -89,6 +97,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void GoBack();
   void GoForward();
   void GoToOffset(int offset);
+  const std::string GetWebRTCIPHandlingPolicy() const;
+  void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
   bool IsCrashed() const;
   void SetUserAgent(const std::string& user_agent, mate::Arguments* args);
   std::string GetUserAgent();
@@ -176,6 +186,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   int GetFrameRate() const;
   void Invalidate();
 
+  // Methods for zoom handling.
+  void SetZoomLevel(double level);
+  double GetZoomLevel();
+  void SetZoomFactor(double factor);
+  double GetZoomFactor();
+
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
                                    const GURL& origin,
@@ -201,6 +217,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   content::WebContents* HostWebContents();
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
+
+  WebContentsZoomController* GetZoomController() { return zoom_controller_; }
 
  protected:
   WebContents(v8::Isolate* isolate,
@@ -301,6 +319,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const content::ResourceRequestDetails& details) override;
   void DidGetRedirectForResourceRequest(
       const content::ResourceRedirectDetails& details) override;
+  void DidStartNavigation(
+      content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -318,6 +338,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
                            const MediaPlayerId& id) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
+  // content::NotificationObserver:
+  void Observe(int type,
+               const content::NotificationSource& source,
+               const content::NotificationDetails& details) override;
+
   // brightray::InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
 
@@ -327,6 +352,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsClosed() override;
 
  private:
+  struct LoadURLParams {
+    LoadURLParams() : params(GURL()), id(0) {}
+
+    content::NavigationController::LoadURLParams params;
+    int id;
+  };
+
   AtomBrowserContext* GetBrowserContext() const;
 
   uint32_t GetNextRequestId() {
@@ -345,6 +377,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // Called when received a synchronous message from renderer to
+  // set temporary zoom level.
+  void OnSetTemporaryZoomLevel(double level, IPC::Message* reply_msg);
+
+  // Called when received a synchronous message from renderer to
+  // get the zoom level.
+  void OnGetZoomLevel(IPC::Message* reply_msg);
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
@@ -353,6 +393,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;
+
+  // The zoom controller for this webContents.
+  WebContentsZoomController* zoom_controller_;
 
   // The type of current WebContents.
   Type type_;
@@ -365,6 +408,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether to enable devtools.
   bool enable_devtools_;
+
+  // Container to hold url parms for deferred load when
+  // there is a pending navigation entry.
+  LoadURLParams deferred_load_url_;
+  content::NotificationRegistrar registrar_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

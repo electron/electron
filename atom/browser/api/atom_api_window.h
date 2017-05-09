@@ -16,6 +16,7 @@
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
 #include "native_mate/handle.h"
+#include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 
 class GURL;
@@ -51,6 +52,8 @@ class Window : public mate::TrackableObject<Window>,
 
   NativeWindow* window() const { return window_.get(); }
 
+  int32_t ID() const;
+
  protected:
   Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
          const mate::Dictionary& options);
@@ -60,6 +63,7 @@ class Window : public mate::TrackableObject<Window>,
   void WillCloseWindow(bool* prevent_default) override;
   void WillDestroyNativeObject() override;
   void OnWindowClosed() override;
+  void OnWindowEndSession() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
   void OnWindowShow() override;
@@ -76,6 +80,8 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowScrollTouchEnd() override;
   void OnWindowScrollTouchEdge() override;
   void OnWindowSwipe(const std::string& direction) override;
+  void OnWindowSheetBegin() override;
+  void OnWindowSheetEnd() override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
@@ -83,6 +89,8 @@ class Window : public mate::TrackableObject<Window>,
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
+  void OnTouchBarItemResult(const std::string& item_id,
+                            const base::DictionaryValue& details) override;
 
   #if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
@@ -175,6 +183,8 @@ class Window : public mate::TrackableObject<Window>,
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
   v8::Local<v8::Value> GetParentWindow() const;
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
+  v8::Local<v8::Value> GetBrowserView() const;
+  void SetBrowserView(v8::Local<v8::Value> value);
   bool IsModal() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
 
@@ -201,8 +211,10 @@ class Window : public mate::TrackableObject<Window>,
   void SetAutoHideCursor(bool auto_hide);
 
   void SetVibrancy(mate::Arguments* args);
+  void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
+  void RefreshTouchBarItem(const std::string& item_id);
+  void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
 
-  int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
 
   // Remove this window from parent window's |child_windows_|.
@@ -213,6 +225,7 @@ class Window : public mate::TrackableObject<Window>,
   MessageCallbackMap messages_callback_map_;
 #endif
 
+  v8::Global<v8::Value> browser_view_;
   v8::Global<v8::Value> web_contents_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;

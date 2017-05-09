@@ -21,6 +21,7 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
+#include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -45,6 +46,8 @@ class Dictionary;
 }
 
 namespace atom {
+
+class NativeBrowserView;
 
 struct DraggableRegion;
 
@@ -124,6 +127,7 @@ class NativeWindow : public base::SupportsUserData,
                               std::string* error = nullptr) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
+  virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;
@@ -142,6 +146,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(AtomMenuModel* menu);
   virtual void SetParentWindow(NativeWindow* parent);
+  virtual void SetBrowserView(NativeBrowserView* browser_view) = 0;
   virtual gfx::NativeWindow GetNativeWindow() = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
 
@@ -167,6 +172,12 @@ class NativeWindow : public base::SupportsUserData,
 
   // Vibrancy API
   virtual void SetVibrancy(const std::string& type);
+
+  // Touchbar API
+  virtual void SetTouchBar(
+      const std::vector<mate::PersistentDictionary>& items);
+  virtual void RefreshTouchBarItem(const std::string& item_id);
+  virtual void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
 
   // Webview APIs.
   virtual void FocusOnWebView();
@@ -207,6 +218,7 @@ class NativeWindow : public base::SupportsUserData,
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
   void NotifyWindowClosed();
+  void NotifyWindowEndSession();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();
@@ -222,11 +234,15 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowScrollTouchEnd();
   void NotifyWindowScrollTouchEdge();
   void NotifyWindowSwipe(const std::string& direction);
+  void NotifyWindowSheetBegin();
+  void NotifyWindowSheetEnd();
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
+  void NotifyTouchBarItemInteraction(const std::string& item_id,
+                                     const base::DictionaryValue& details);
 
   #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);

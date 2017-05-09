@@ -35,9 +35,9 @@ without visual flash, there are two solutions for different situations.
 
 ### Using `ready-to-show` event
 
-While loading the page, the `ready-to-show` event will be emitted when renderer
-process has done drawing for the first time, showing window after this event
-will have no visual flash:
+While loading the page, the `ready-to-show` event will be emitted when the renderer
+process has rendered the page for the first time if the window has not been shown yet. Showing
+the window after this event will have no visual flash:
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -47,7 +47,7 @@ win.once('ready-to-show', () => {
 })
 ```
 
-This is event is usually emitted after the `did-finish-load` event, but for
+This event is usually emitted after the `did-finish-load` event, but for
 pages with many remote resources, it may be emitted before the `did-finish-load`
 event.
 
@@ -211,10 +211,16 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     width of the web page when zoomed, `false` will cause it to zoom to the
     width of the screen. This will also affect the behavior when calling
     `maximize()` directly. Default is `false`.
+  * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
+    window as a native tab on macOS 10.12+. Windows with the same tabbing
+    identifier will be grouped together.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
       is `true`.
+    * `nodeIntegrationInWorker` Boolean (optional) - Whether node integration is
+      enabled in web workers. Default is `false`. More about this can be found
+      in [Multithreading](../tutorial/multithreading.md).
     * `preload` String (optional) - Specifies a script that will be loaded before other
       scripts run in the page. This script will always have access to node APIs
       no matter whether node integration is turned on or off. The value should
@@ -222,6 +228,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](process.md#event-loaded).
+    * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
+      associated with the window, making it compatible with the Chromium
+      OS-level sandbox and disabling the Node.js engine. This is not the same as
+      the `nodeIntegration` option and the APIs available to the preload script
+      are more limited. Read more about the option [here](sandbox-option.md).
+      **Note:** This option is currently experimental and may change or be
+      removed in future Electron releases.
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
       page. Instead of passing the Session object directly, you can also choose to
       use the `partition` option instead, which accepts a partition string. When
@@ -256,12 +269,12 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       macOS. Default is `false`.
     * `blinkFeatures` String (optional) - A list of feature strings separated by `,`, like
       `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
-      strings can be found in the [RuntimeEnabledFeatures.in][blink-feature-string]
+      strings can be found in the [RuntimeEnabledFeatures.json5][blink-feature-string]
       file.
     * `disableBlinkFeatures` String (optional) - A list of feature strings separated by `,`,
       like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
       feature strings can be found in the
-      [RuntimeEnabledFeatures.in][blink-feature-string] file.
+      [RuntimeEnabledFeatures.json5][blink-feature-string] file.
     * `defaultFontFamily` Object (optional) - Sets the default font for the font-family.
       * `standard` String (optional) - Defaults to `Times New Roman`.
       * `serif` String (optional) - Defaults to `Times New Roman`.
@@ -279,7 +292,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       window. Defaults to `false`. See the
       [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
       more details.
-    * `sandbox` Boolean (optional) - Whether to enable Chromium OS-level sandbox.
     * `contextIsolation` Boolean (optional) - Whether to run Electron APIs and
       the specified `preload` script in a separate JavaScript context. Defaults
       to `false`. The context that the `preload` script runs in will still
@@ -364,6 +376,11 @@ window.onbeforeunload = (e) => {
 Emitted when the window is closed. After you have received this event you should
 remove the reference to the window and avoid using it any more.
 
+#### Event: 'session-end' _Windows_
+
+Emitted when window session is going to end due to force shutdown or machine restart 
+or session log off.
+
 #### Event: 'unresponsive'
 
 Emitted when the web page becomes unresponsive.
@@ -390,7 +407,7 @@ Emitted when the window is hidden.
 
 #### Event: 'ready-to-show'
 
-Emitted when the web page has been rendered and window can be displayed without
+Emitted when the web page has been rendered (while not being shown) and window can be displayed without
 a visual flash.
 
 #### Event: 'maximize'
@@ -485,6 +502,14 @@ Returns:
 * `direction` String
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
+
+#### Event: 'sheet-begin' _macOS_
+
+Emitted when the window opens a sheet.
+
+#### Event: 'sheet-end' _macOS_
+
+Emitted when the window has closed a sheet.
 
 ### Static Methods
 
@@ -632,7 +657,8 @@ Returns `Boolean` - Whether current window is a modal window.
 
 #### `win.maximize()`
 
-Maximizes the window.
+Maximizes the window. This will also show (but not focus) the window if it
+isn't being displayed already.
 
 #### `win.unmaximize()`
 
@@ -669,10 +695,8 @@ Returns `Boolean` - Whether the window is in fullscreen mode.
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
-* `extraSize` Object (optional) - The extra size not to be included while
+* `extraSize` [Size](structures/size.md) - The extra size not to be included while
 maintaining the aspect ratio.
-  * `width` Integer
-  * `height` Integer
 
 This will make a window maintain an aspect ratio. The extra size allows a
 developer to have space, specified in pixels, not included within the aspect
@@ -853,7 +877,7 @@ On Linux always returns `true`.
   [macOS docs][window-levels] for more details.
 * `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
   this window relative to the given `level`. The default is `0`. Note that Apple
-  discourages setting levels higher than 1 above `screen-saver`. 
+  discourages setting levels higher than 1 above `screen-saver`.
 
 Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
@@ -1004,6 +1028,7 @@ Same as `webContents.capturePage([rect, ]callback)`.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
   * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[] - (optional)
+  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Same as `webContents.loadURL(url[, options])`.
 
@@ -1266,7 +1291,25 @@ Controls whether to hide cursor when typing.
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
-[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+#### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
+
+* `touchBar` TouchBar
+
+Sets the touchBar layout for the current window. Specifying `null` or
+`undefined` clears the touch bar. This method only has an effect if the
+machine has a touch bar and is running on macOS 10.12.1+.
+
+**Note:** The TouchBar API is currently experimental and may change or be
+removed in future Electron releases.
+
+#### `win.setBrowserView(browserView)` _Experimental_
+
+* `browserView` [BrowserView](browser-view.md)
+
+**Note:** The BrowserView API is currently experimental and may change or be
+removed in future Electron releases.
+
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels

@@ -1,4 +1,4 @@
-[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
+[![Electron Logo](https://electron.atom.io/images/electron-logo.svg)](https://electron.atom.io/)
 
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kvxe4byi7jcxbe26/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
@@ -7,7 +7,7 @@
 
 Electron框架，让您可使用JavaScript, HTML 及 CSS 编写桌面程序。
 它是基于[Node.js](https://nodejs.org/)和[Chromium](http://www.chromium.org)开发的，
-[Atom editor](https://github.com/atom/atom)以及很多其他的[apps](http://electron.atom.io/apps)就是使用Electron编写的。
+[Atom editor](https://github.com/atom/atom)以及很多其他的[apps](https://electron.atom.io/apps)就是使用Electron编写的。
 
 请关注Twitter [@ElectronJS](https://twitter.com/electronjs) 以获得重要通告。
 
@@ -73,7 +73,7 @@ ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ npm install electron -g
 - [`electron-br`](https://electron-br.slack.com) *(葡萄牙语－巴西)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(韩语)*
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(日语)*
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(土耳其)*
+- [`electron-tr`](http://electron-tr.herokuapp.com) *(土耳其)*
 - [`electron-id`](https://electron-id.slack.com) *(印度尼西亚)*
 
 查看 [awesome-electron](https://github.com/sindresorhus/awesome-electron)

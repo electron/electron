@@ -1,6 +1,6 @@
 # systemPreferences
 
-> 获取系统偏好设置.
+> 获取系统偏好设置。
 
 可使用的进程: [主进程](../tutorial/quick-start.md#main-process)
 
@@ -15,20 +15,20 @@ console.log(systemPreferences.isDarkMode())
 
 ### Event: 'accent-color-changed' _Windows_
 
-返回:
+返回：
 
 * `event` Event
 * `newColor` String - 用户给系统颜色设置的新的 RGBA 色值。
 
 ### Event: 'color-changed' _Windows_
 
-返回:
+返回：
 
 * `event` Event
 
 ### Event: 'inverted-color-scheme-changed' _Windows_
 
-返回:
+返回：
 
 * `event` Event
 * `invertedColorScheme` Boolean - 如果一个反色的配色方案正在被使用，比如一个高对比度的主题，则返回 `true` ，否则返回 `false` 。
@@ -37,7 +37,7 @@ console.log(systemPreferences.isDarkMode())
 
 ### `systemPreferences.isDarkMode()` _macOS_
 
-返回 `Boolean` - 系统是否处于深色模式.
+返回 `Boolean` - 系统是否处于深色模式。
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 

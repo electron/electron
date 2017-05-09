@@ -31,19 +31,27 @@ struct Converter<CrashReporter::UploadReportResult> {
 
 namespace {
 
+void SetExtraParameter(const std::string& key, mate::Arguments* args) {
+  std::string value;
+  if (args->GetNext(&value))
+    CrashReporter::GetInstance()->SetExtraParameter(key, value);
+  else
+    CrashReporter::GetInstance()->RemoveExtraParameter(key);
+}
+
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  auto report = base::Unretained(CrashReporter::GetInstance());
-  dict.SetMethod("start",
-                 base::Bind(&CrashReporter::Start, report));
-  dict.SetMethod("_getUploadedReports",
-                 base::Bind(&CrashReporter::GetUploadedReports, report));
-  dict.SetMethod("_setUploadToServer",
-                 base::Bind(&CrashReporter::SetUploadToServer, report));
-  dict.SetMethod("_getUploadToServer",
-                 base::Bind(&CrashReporter::GetUploadToServer, report));
+  auto reporter = base::Unretained(CrashReporter::GetInstance());
+  dict.SetMethod("start", base::Bind(&CrashReporter::Start, reporter));
+  dict.SetMethod("setExtraParameter", &SetExtraParameter);
+  dict.SetMethod("getUploadedReports",
+                 base::Bind(&CrashReporter::GetUploadedReports, reporter));
+  dict.SetMethod("setUploadToServer",
+                 base::Bind(&CrashReporter::SetUploadToServer, reporter));
+  dict.SetMethod("getUploadToServer",
+                 base::Bind(&CrashReporter::GetUploadToServer, reporter));
 }
 
 }  // namespace

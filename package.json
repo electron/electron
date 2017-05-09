@@ -1,11 +1,12 @@
 {
   "name": "electron",
-  "version": "1.5.1",
+  "version": "1.6.8",
   "devDependencies": {
     "asar": "^0.11.0",
     "browserify": "^13.1.0",
     "electabul": "~0.0.4",
-    "electron-docs-linter": "^1.16.1",
+    "electron-docs-linter": "^2.1.0",
+    "electron-typescript-definitions": "^1.0.1",
     "request": "*",
     "standard": "^8.4.0",
     "standard-markdown": "^2.1.1"
@@ -30,6 +31,7 @@
     "bump-version": "./script/bump-version.py",
     "build": "python ./script/build.py -c D",
     "clean": "python ./script/clean.py",
+    "clean-build": "python ./script/clean.py --build",
     "coverage": "npm run instrument-code-coverage && npm test -- --use-instrumented-asar",
     "instrument-code-coverage": "electabul instrument --input-path ./lib --output-path ./out/coverage/electron.asar",
     "lint": "npm run lint-js && npm run lint-cpp && npm run lint-py && npm run lint-api-docs-js && npm run lint-api-docs",

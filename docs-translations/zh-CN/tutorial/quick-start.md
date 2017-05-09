@@ -195,6 +195,6 @@ $ cd electron-quick-start
 $ npm install && npm start
 ```
 
-更多 apps 例子，查看 electron 社区创建的 [list of boilerplates](http://electron.atom.io/community/#boilerplates)。
+更多 apps 例子，查看 electron 社区创建的 [list of boilerplates](https://electron.atom.io/community/#boilerplates)。
 
 [share-data]: ../faq.md#how-to-share-data-between-web-pages

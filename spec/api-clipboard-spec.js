@@ -1,8 +1,8 @@
 const assert = require('assert')
 const path = require('path')
+const {Buffer} = require('buffer')
 
-const clipboard = require('electron').clipboard
-const nativeImage = require('electron').nativeImage
+const {clipboard, nativeImage} = require('electron')
 
 describe('clipboard module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
@@ -45,10 +45,10 @@ describe('clipboard module', function () {
     it('returns title and url', function () {
       if (process.platform === 'linux') return
 
-      clipboard.writeBookmark('a title', 'http://electron.atom.io')
+      clipboard.writeBookmark('a title', 'https://electron.atom.io')
       assert.deepEqual(clipboard.readBookmark(), {
         title: 'a title',
-        url: 'http://electron.atom.io'
+        url: 'https://electron.atom.io'
       })
 
       clipboard.writeText('no bookmark')
@@ -91,6 +91,16 @@ describe('clipboard module', function () {
 
       clipboard.writeFindText('find this')
       assert.equal(clipboard.readFindText(), 'find this')
+    })
+  })
+
+  describe('clipboard.readBuffer(format)', function () {
+    it('returns a Buffer of the content for the specified format', function () {
+      if (process.platform !== 'darwin') return
+
+      const buffer = Buffer.from('this is binary', 'utf8')
+      clipboard.writeText(buffer.toString())
+      assert(buffer.equals(clipboard.readBuffer('public.utf8-plain-text')))
     })
   })
 })

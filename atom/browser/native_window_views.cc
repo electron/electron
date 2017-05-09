@@ -7,8 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/native_browser_view_views.h"
 #include "atom/browser/ui/views/menu_bar.h"
-#include "atom/browser/ui/views/menu_layout.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
@@ -48,6 +48,7 @@
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
+#include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
@@ -134,6 +135,7 @@ NativeWindowViews::NativeWindowViews(
     : NativeWindow(web_contents, options, parent),
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
+      browser_view_(nullptr),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
@@ -204,8 +206,7 @@ NativeWindowViews::NativeWindowViews(
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget =
-      new views::DesktopNativeWidgetAura(window_.get());
+  params.native_widget = new AtomDesktopNativeWidgetAura(window_.get());
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
       this,
       window_.get(),
@@ -273,9 +274,6 @@ NativeWindowViews::NativeWindowViews(
   if (!window_type.empty())
     SetWindowType(GetAcceleratedWidget(), window_type);
 #endif
-
-  // Add web view.
-  SetLayoutManager(new MenuLayout(this, kMenuBarHeight));
 
   AddChildView(web_view_);
 
@@ -695,6 +693,10 @@ void NativeWindowViews::Center() {
   window_->CenterWindow(GetSize());
 }
 
+void NativeWindowViews::Invalidate() {
+  window_->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
+}
+
 void NativeWindowViews::SetTitle(const std::string& title) {
   title_ = title;
   window_->UpdateWindowTitle();
@@ -875,6 +877,24 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
 
   menu_bar_->SetMenu(menu_model);
   Layout();
+}
+
+void NativeWindowViews::SetBrowserView(NativeBrowserView* browser_view) {
+  if (browser_view_) {
+    web_view_->RemoveChildView(
+        browser_view_->GetInspectableWebContentsView()->GetView());
+    browser_view_ = nullptr;
+  }
+
+  if (!browser_view) {
+    return;
+  }
+
+  // Add as child of the main web view to avoid (0, 0) origin from overlapping
+  // with menu bar.
+  browser_view_ = browser_view;
+  web_view_->AddChildView(
+      browser_view->GetInspectableWebContentsView()->GetView());
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
@@ -1241,6 +1261,43 @@ void NativeWindowViews::HandleKeyboardEvent(
   } else {
     // When any other keys except single Alt have been pressed/released:
     menu_bar_alt_pressed_ = false;
+  }
+}
+
+void NativeWindowViews::Layout() {
+  const auto size = GetContentsBounds().size();
+  const auto menu_bar_bounds =
+      menu_bar_visible_ ? gfx::Rect(0, 0, size.width(), kMenuBarHeight)
+                        : gfx::Rect();
+  if (menu_bar_) {
+    menu_bar_->SetBoundsRect(menu_bar_bounds);
+  }
+
+  const auto old_web_view_size = web_view_ ? web_view_->size() : gfx::Size();
+  if (web_view_) {
+    web_view_->SetBoundsRect(
+        gfx::Rect(0, menu_bar_bounds.height(), size.width(),
+                  size.height() - menu_bar_bounds.height()));
+  }
+  const auto new_web_view_size = web_view_ ? web_view_->size() : gfx::Size();
+
+  if (browser_view_) {
+    const auto flags = static_cast<NativeBrowserViewViews*>(browser_view_)
+                           ->GetAutoResizeFlags();
+    int width_delta = 0;
+    int height_delta = 0;
+    if (flags & kAutoResizeWidth) {
+      width_delta = new_web_view_size.width() - old_web_view_size.width();
+    }
+    if (flags & kAutoResizeHeight) {
+      height_delta = new_web_view_size.height() - old_web_view_size.height();
+    }
+
+    auto* view = browser_view_->GetInspectableWebContentsView()->GetView();
+    auto new_view_size = view->size();
+    new_view_size.set_width(new_view_size.width() + width_delta);
+    new_view_size.set_height(new_view_size.height() + height_delta);
+    view->SetSize(new_view_size);
   }
 }
 

@@ -32,6 +32,7 @@ an issue:
 * [Using Widevine CDM Plugin](tutorial/using-widevine-cdm-plugin.md)
 * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
 * [Offscreen Rendering](tutorial/offscreen-rendering.md)
+* [Keyboard Shortcuts](tutorial/keyboard-shortcuts.md)
 
 ## Tutorials
 
@@ -39,6 +40,7 @@ an issue:
 * [Desktop Environment Integration](tutorial/desktop-environment-integration.md)
 * [Online/Offline Event Detection](tutorial/online-offline-events.md)
 * [REPL](tutorial/repl.md)
+* [Native Notifications](tutorial/notifications.md)
 
 ## API References
 
@@ -102,3 +104,6 @@ an issue:
 * [Debug Instructions (Windows)](development/debug-instructions-windows.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
 * [Documentation Styleguide](styleguide.md)
+* [Upgrading Chrome](development/upgrading-chrome.md)
+* [Chromium Development](development/chromium-development.md)
+* [V8 Development](development/v8-development.md)

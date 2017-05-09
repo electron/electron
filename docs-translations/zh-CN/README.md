@@ -12,8 +12,8 @@
 
 * [术语表](glossary.md)
 * [支持平台](tutorial/supported-platforms.md)
-* [安全性](tutorial/security.md) 未翻译
-* [Electron 版本管理](tutorial/electron-versioning.md) 未翻译
+* [安全性](tutorial/security.md)
+* [Electron 版本管理](tutorial/electron-versioning.md)
 * [分发应用](tutorial/application-distribution.md)
 * [提交应用到 Mac App Store](tutorial/mac-app-store-submission-guide.md)
 * [Windows 商店提交指引](tutorial/windows-store-guide.md)
@@ -24,15 +24,16 @@
 * [使用开发人员工具扩展](tutorial/devtools-extension.md)
 * [使用 Pepper Flash 插件](tutorial/using-pepper-flash-plugin.md)
 * [使用 Widevine CDM 插件](tutorial/using-widevine-cdm-plugin.md)
-* [通过自动化持续集成系统（CI）进行测试 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md) 未翻译
-* [离屏渲染](tutorial/offscreen-rendering.md) 未翻译
+* [通过自动化持续集成系统（CI）进行测试 (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
+* [离屏渲染](tutorial/offscreen-rendering.md)
+* [快捷键](tutorial/keyboard-shortcuts.md)
 
 ## 教程
 
 * [快速入门](tutorial/quick-start.md)
 * [桌面环境集成](tutorial/desktop-environment-integration.md)
 * [在线/离线事件探测](tutorial/online-offline-events.md)
-* [应答式编译器（REPL）](tutorial/repl.md) 未翻译
+* [交互式解释器（REPL）](tutorial/repl.md)
 
 ## API文档
 
@@ -85,14 +86,17 @@
 ## 开发
 
 * [代码规范](development/coding-style.md)
-* [在 C++ 代码中使用 clang格式化工具](development/clang-format.md) 未翻译
+* [在 C++ 代码中使用 clang-format 工具](development/clang-format.md)
 * [源码目录结构](development/source-code-directory-structure.md)
 * [与 NW.js（原 node-webkit）在技术上的差异](development/atom-shell-vs-node-webkit.md)
 * [构建系统概览](development/build-system-overview.md)
 * [构建步骤（macOS）](development/build-instructions-osx.md)
 * [构建步骤（Windows）](development/build-instructions-windows.md)
 * [构建步骤（Linux）](development/build-instructions-linux.md)
-* [调试步骤 (macOS)](development/debug-instructions-macos.md) 未翻译
-* [调试步骤 (Windows)](development/debug-instructions-windows.md) 未翻译
+* [调试步骤 (macOS)](development/debug-instructions-macos.md)
+* [调试步骤 (Windows)](development/debug-instructions-windows.md)
 * [在调试中使用 Symbol Server](development/setting-up-symbol-server.md)
-* [文档风格规范](styleguide.md) 未翻译
+* [文档风格指南](styleguide.md)
+* [升级 Chrome](development/upgrading-chrome.md)
+* [Chromium 开发](development/chromium-development.md)
+* [V8 开发](development/v8-development.md)

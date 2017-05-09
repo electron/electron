@@ -86,6 +86,42 @@ describe('BrowserWindow module', function () {
   })
 
   describe('BrowserWindow.close()', function () {
+    let server
+
+    before(function (done) {
+      server = http.createServer((request, response) => {
+        switch (request.url) {
+          case '/404':
+            response.statusCode = '404'
+            response.end()
+            break
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end('hello')
+            break
+          case '/title':
+            response.statusCode = '200'
+            response.end('<title>Hello</title>')
+            break
+          default:
+            done('unsupported endpoint')
+        }
+      }).listen(0, '127.0.0.1', () => {
+        server.url = 'http://127.0.0.1:' + server.address().port
+        done()
+      })
+    })
+
+    after(function () {
+      server.close()
+      server = null
+    })
+
     it('should emit unload handler', function (done) {
       w.webContents.on('did-finish-load', function () {
         w.close()
@@ -108,6 +144,38 @@ describe('BrowserWindow module', function () {
         w.close()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false.html'))
+    })
+
+    it('should not crash when invoked synchronously inside navigation observer', function (done) {
+      const events = [
+        { name: 'did-start-loading', url: `${server.url}/200` },
+        { name: 'did-get-redirect-request', url: `${server.url}/301` },
+        { name: 'did-get-response-details', url: `${server.url}/200` },
+        { name: 'dom-ready', url: `${server.url}/200` },
+        { name: 'page-title-updated', url: `${server.url}/title` },
+        { name: 'did-stop-loading', url: `${server.url}/200` },
+        { name: 'did-finish-load', url: `${server.url}/200` },
+        { name: 'did-frame-finish-load', url: `${server.url}/200` },
+        { name: 'did-fail-load', url: `${server.url}/404` }
+      ]
+      const responseEvent = 'window-webContents-destroyed'
+
+      function* genNavigationEvent () {
+        let eventOptions = null
+        while ((eventOptions = events.shift()) && events.length) {
+          let w = new BrowserWindow({show: false})
+          eventOptions.id = w.id
+          eventOptions.responseEvent = responseEvent
+          ipcRenderer.send('test-webcontents-navigation-observer', eventOptions)
+          yield 1
+        }
+      }
+
+      let gen = genNavigationEvent()
+      ipcRenderer.on(responseEvent, function () {
+        if (!gen.next().value) done()
+      })
+      gen.next()
     })
   })
 
@@ -229,6 +297,11 @@ describe('BrowserWindow module', function () {
       w.loadURL(`data:image/png;base64,${data}`)
     })
 
+    it('should not crash when there is a pending navigation entry', function (done) {
+      ipcRenderer.once('navigated-with-pending-entry', () => done())
+      ipcRenderer.send('navigate-with-pending-entry', w.id)
+    })
+
     describe('POST navigations', function () {
       afterEach(() => {
         w.webContents.session.webRequest.onBeforeSendHeaders(null)
@@ -277,6 +350,14 @@ describe('BrowserWindow module', function () {
         })
         w.loadURL(server.url)
       })
+    })
+
+    it('should support support base url for data urls', (done) => {
+      ipcMain.once('answer', function (event, test) {
+        assert.equal(test, 'test')
+        done()
+      })
+      w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {baseURLForDataURL: `file://${path.join(fixtures, 'api')}${path.sep}`})
     })
   })
 
@@ -679,7 +760,7 @@ describe('BrowserWindow module', function () {
     })
   })
 
-  describe('"title-bar-style" option', function () {
+  describe('"titleBarStyle" option', function () {
     if (process.platform !== 'darwin') {
       return
     }
@@ -759,6 +840,20 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('"tabbingIdentifier" option', function () {
+    it('can be set on a window', function () {
+      w.destroy()
+      w = new BrowserWindow({
+        tabbingIdentifier: 'group1'
+      })
+      w.destroy()
+      w = new BrowserWindow({
+        tabbingIdentifier: 'group2',
+        frame: false
+      })
+    })
+  })
+
   describe('"web-preferences" option', function () {
     afterEach(function () {
       ipcMain.removeAllListeners('answer')
@@ -801,8 +896,9 @@ describe('BrowserWindow module', function () {
     describe('"node-integration" option', function () {
       it('disables node integration when specified to false', function (done) {
         var preload = path.join(fixtures, 'module', 'send-later.js')
-        ipcMain.once('answer', function (event, test) {
-          assert.equal(test, 'undefined')
+        ipcMain.once('answer', function (event, typeofProcess, typeofBuffer) {
+          assert.equal(typeofProcess, 'undefined')
+          assert.equal(typeofBuffer, 'undefined')
           done()
         })
         w.destroy()
@@ -1054,6 +1150,29 @@ describe('BrowserWindow module', function () {
         })
         w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
       })
+
+      it('releases memory after popup is closed', (done) => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            sandbox: true
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?allocate-memory'))
+        w.webContents.openDevTools({mode: 'detach'})
+        ipcMain.once('answer', function (event, {bytesBeforeOpen, bytesAfterOpen, bytesAfterClose}) {
+          const memoryIncreaseByOpen = bytesAfterOpen - bytesBeforeOpen
+          const memoryDecreaseByClose = bytesAfterOpen - bytesAfterClose
+          // decreased memory should be less than increased due to factors we
+          // can't control, but given the amount of memory allocated in the
+          // fixture, we can reasonably expect decrease to be at least 70% of
+          // increase
+          assert(memoryDecreaseByClose > memoryIncreaseByOpen * 0.7)
+          done()
+        })
+      })
     })
   })
 
@@ -1160,6 +1279,54 @@ describe('BrowserWindow module', function () {
       })
       w.show()
       w.minimize()
+    })
+  })
+
+  describe('sheet-begin event', function () {
+    if (process.platform !== 'darwin') {
+      return
+    }
+
+    let sheet = null
+
+    afterEach(function () {
+      return closeWindow(sheet, {assertSingleWindow: false}).then(function () { sheet = null })
+    })
+
+    it('emits when window opens a sheet', function (done) {
+      w.show()
+      w.once('sheet-begin', function () {
+        sheet.close()
+        done()
+      })
+      sheet = new BrowserWindow({
+        modal: true,
+        parent: w
+      })
+    })
+  })
+
+  describe('sheet-end event', function () {
+    if (process.platform !== 'darwin') {
+      return
+    }
+
+    let sheet = null
+
+    afterEach(function () {
+      return closeWindow(sheet, {assertSingleWindow: false}).then(function () { sheet = null })
+    })
+
+    it('emits when window has closed a sheet', function (done) {
+      w.show()
+      sheet = new BrowserWindow({
+        modal: true,
+        parent: w
+      })
+      w.once('sheet-end', function () {
+        done()
+      })
+      sheet.close()
     })
   })
 
@@ -1446,13 +1613,19 @@ describe('BrowserWindow module', function () {
       // Only implemented on macOS.
       if (process.platform !== 'darwin') return
 
-      it('can be changed with setKiosk method', function () {
+      it('can be changed with setKiosk method', function (done) {
         w.destroy()
         w = new BrowserWindow()
         w.setKiosk(true)
         assert.equal(w.isKiosk(), true)
-        w.setKiosk(false)
-        assert.equal(w.isKiosk(), false)
+
+        w.once('enter-full-screen', () => {
+          w.setKiosk(false)
+          assert.equal(w.isKiosk(), false)
+        })
+        w.once('leave-full-screen', () => {
+          done()
+        })
       })
     })
 
@@ -1837,8 +2010,16 @@ describe('BrowserWindow module', function () {
       })
     })
 
-    it('resolves the returned promise with the result', function (done) {
+    it('resolves the returned promise with the result when a callback is specified', function (done) {
       ipcRenderer.send('executeJavaScript', code, true)
+      ipcRenderer.once('executeJavaScript-promise-response', function (event, result) {
+        assert.equal(result, expected)
+        done()
+      })
+    })
+
+    it('resolves the returned promise with the result when no callback is specified', function (done) {
+      ipcRenderer.send('executeJavaScript', code, false)
       ipcRenderer.once('executeJavaScript-promise-response', function (event, result) {
         assert.equal(result, expected)
         done()

@@ -148,7 +148,7 @@ Electronアプリ内でウェブページのような外部コンテンツを埋
 
 ```html
 <webview src="https://github.com" partition="persist:github"></webview>
-<webview src="http://electron.atom.io" partition="electron"></webview>
+<webview src="https://electron.atom.io" partition="electron"></webview>
 ```
 
 ページで使用されるセッションを設定します。もし、`partition`が`persist:`から始まる場合、アプリ上の同じ`partition`を指定した全てのページで有効な永続セッションを使用します。
@@ -741,4 +741,4 @@ DevToolsが閉じられた際に発生します。
 
 DevToolsにフォーカスが当たった際 / 開かれた際に発生します。
 
-[blink-feature-string]: https://code.google.com/p/chromium/codesearch#chromium/src/out/Debug/gen/blink/platform/RuntimeEnabledFeatures.cpp&sq=package:chromium&type=cs&l=527
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62

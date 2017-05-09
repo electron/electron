@@ -19,6 +19,10 @@ describe('dialog module', () => {
       assert.throws(() => {
         dialog.showOpenDialog({defaultPath: {}})
       }, /Default path must be a string/)
+
+      assert.throws(() => {
+        dialog.showOpenDialog({message: {}})
+      }, /Message must be a string/)
     })
   })
 
@@ -35,6 +39,14 @@ describe('dialog module', () => {
       assert.throws(() => {
         dialog.showSaveDialog({defaultPath: {}})
       }, /Default path must be a string/)
+
+      assert.throws(() => {
+        dialog.showSaveDialog({message: {}})
+      }, /Message must be a string/)
+
+      assert.throws(() => {
+        dialog.showSaveDialog({nameFieldLabel: {}})
+      }, /Name field label must be a string/)
     })
   })
 
@@ -59,6 +71,10 @@ describe('dialog module', () => {
       assert.throws(() => {
         dialog.showMessageBox({detail: 3.14})
       }, /Detail must be a string/)
+
+      assert.throws(() => {
+        dialog.showMessageBox({checkboxLabel: false})
+      }, /checkboxLabel must be a string/)
     })
   })
 
@@ -75,6 +91,22 @@ describe('dialog module', () => {
       assert.throws(() => {
         dialog.showErrorBox('three', 4)
       }, /Error processing argument at index 1/)
+    })
+  })
+
+  describe('showCertificateTrustDialog', () => {
+    it('throws errors when the options are invalid', () => {
+      assert.throws(() => {
+        dialog.showCertificateTrustDialog()
+      }, /options must be an object/)
+
+      assert.throws(() => {
+        dialog.showCertificateTrustDialog({})
+      }, /certificate must be an object/)
+
+      assert.throws(() => {
+        dialog.showCertificateTrustDialog({certificate: {}, message: false})
+      }, /message must be a string/)
     })
   })
 })

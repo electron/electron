@@ -250,10 +250,10 @@ On Windows it is
   * `scrollBounce` Boolean - macOS에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화
     합니다. 기본값은 `false`입니다.
   * `blinkFeatures` String - 활성화 할 `CSSVariables,KeyboardEventKey`같이 `,`로
-    구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+    구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.json5][blink-feature-string]
     파일에서 찾을 수 있습니다.
   * `disableBlinkFeatures` String - 비활성화 할 `CSSVariables,KeyboardEventKey`같이
-    `,`로 구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+    `,`로 구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.json5][blink-feature-string]
     파일에서 찾을 수 있습니다.
   * `defaultFontFamily` Object - font-family의 기본 폰트를 지정합니다.
     * `standard` String - 기본값 `Times New Roman`.
@@ -1174,6 +1174,6 @@ Returns `BrowserWindow` - 부모 윈도우.
 
 Returns `BrowserWindow[]` - 모든 자식 윈도우.
 
-[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look

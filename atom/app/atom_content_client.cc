@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/atom_constants.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/options_switches.h"
@@ -18,6 +19,7 @@
 #include "content/public/common/content_constants.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/user_agent.h"
+#include "pdf/pdf.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -42,7 +44,7 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
 
   std::vector<std::string> flash_version_numbers = base::SplitString(
       version, ".", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  if (flash_version_numbers.size() < 1)
+  if (flash_version_numbers.empty())
     flash_version_numbers.push_back("11");
   // |SplitString()| puts in an empty string given an empty string. :(
   else if (flash_version_numbers[0].empty())
@@ -107,6 +109,25 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
   return widevine_cdm;
 }
 #endif
+
+void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
+  content::PepperPluginInfo pdf_info;
+  pdf_info.is_internal = true;
+  pdf_info.is_out_of_process = true;
+  pdf_info.name = "Chromium PDF Viewer";
+  pdf_info.description = "Portable Document Format";
+  pdf_info.path = base::FilePath::FromUTF8Unsafe(kPdfPluginPath);
+  content::WebPluginMimeType pdf_mime_type(kPdfPluginMimeType, "pdf",
+                                           "Portable Document Format");
+  pdf_info.mime_types.push_back(pdf_mime_type);
+  pdf_info.internal_entry_points.get_interface = chrome_pdf::PPP_GetInterface;
+  pdf_info.internal_entry_points.initialize_module =
+      chrome_pdf::PPP_InitializeModule;
+  pdf_info.internal_entry_points.shutdown_module =
+      chrome_pdf::PPP_ShutdownModule;
+  pdf_info.permissions = ppapi::PERMISSION_PRIVATE | ppapi::PERMISSION_DEV;
+  plugins->push_back(pdf_info);
+}
 
 void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
                                         const char* separator,
@@ -190,6 +211,7 @@ void AtomContentClient::AddPepperPlugins(
 #if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_PEPPER_CDMS)
   AddWidevineCdmFromCommandLine(plugins);
 #endif
+  ComputeBuiltInPlugins(plugins);
 }
 
 void AtomContentClient::AddServiceWorkerSchemes(

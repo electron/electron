@@ -127,7 +127,7 @@ available in "core".
 ### V8
 
 V8 is Google's open source JavaScript engine. It is written in C++ and is
-used in Google Chrome, the open source browser from Google. V8 can run
+used in Google Chrome. V8 can run
 standalone, or can be embedded into any C++ application.
 
 ### webview

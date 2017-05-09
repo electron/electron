@@ -125,8 +125,10 @@ Returns:
 * `event` Event
 * `hasVisibleWindows` Boolean
 
-Emitted when the application is activated, which usually happens when the user
-clicks on the application's dock icon.
+Emitted when the application is activated. Various actions can trigger
+this event, such as launching the application for the first time, attempting
+to re-launch the application when it's already running, or clicking on the 
+application's dock or taskbar icon.
 
 ### Event: 'continue-activity' _macOS_
 
@@ -400,6 +402,28 @@ You can request the following paths by the name:
 * `pictures` Directory for a user's pictures.
 * `videos` Directory for a user's videos.
 * `pepperFlashSystemPlugin`  Full path to the system version of the Pepper Flash plugin.
+
+### `app.getFileIcon(path[, options], callback)`
+
+* `path` String
+* `options` Object (optional)
+  * `size` String
+    * `small` - 16x16
+    * `normal` - 32x32
+    * `large` - 48x48 on _Linux_, 32x32 on _Windows_, unsupported on _macOS_.
+* `callback` Function
+  * `error` Error
+  * `icon` [NativeImage](native-image.md)
+
+Fetches a path's associated icon.
+
+On _Windows_, there a 2 kinds of icons:
+
+- Icons associated with certain file extensions, like `.mp3`, `.png`, etc.
+- Icons inside the file itself, like `.exe`, `.dll`, `.ico`.
+
+On _Linux_ and _macOS_, icons depend on the application associated with file
+mime type.
 
 ### `app.setPath(name, path)`
 
@@ -736,6 +760,10 @@ Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
 
+### `app.getAppMemoryInfo()`
+
+Returns [ProcessMemoryInfo[]](structures/process-memory-info.md):  Array of `ProcessMemoryInfo` objects that correspond to memory usage statistics of all the processes associated with the app.
+
 ### `app.setBadgeCount(count)` _Linux_ _macOS_
 
 * `count` Integer
@@ -796,11 +824,11 @@ Returns `Object`:
     `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
     is opened to know the current value. This setting is only supported on
     macOS.
-  * `path` String (optional) _Windows_ - The executable to launch at login.
-    Defaults to `process.execPath`.
-  * `args` String[] (optional) _Windows_ - The command-line arguments to pass to
-    the executable. Defaults to an empty array. Take care to wrap paths in
-    quotes.
+* `path` String (optional) _Windows_ - The executable to launch at login.
+  Defaults to `process.execPath`.
+* `args` String[] (optional) _Windows_ - The command-line arguments to pass to
+  the executable. Defaults to an empty array. Take care to wrap paths in
+  quotes.
 
 Set the app's login item settings.
 

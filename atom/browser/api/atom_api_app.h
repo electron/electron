@@ -13,8 +13,12 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "base/process/process_iterator.h"
+#include "base/task/cancelable_task_tracker.h"
+#include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
 
@@ -43,6 +47,9 @@ class App : public AtomBrowserClient::Delegate,
             public BrowserObserver,
             public content::GpuDataManagerObserver {
  public:
+  using FileIconCallback = base::Callback<void(v8::Local<v8::Value>,
+                                               const gfx::Image&)>;
+
   static mate::Handle<App> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
@@ -64,6 +71,8 @@ class App : public AtomBrowserClient::Delegate,
       const net::CompletionCallback& callback,
       std::unique_ptr<CertificateManagerModel> model);
 #endif
+
+  base::FilePath GetAppPath() const;
 
  protected:
   explicit App(v8::Isolate* isolate);
@@ -110,6 +119,8 @@ class App : public AtomBrowserClient::Delegate,
   void OnGpuProcessCrashed(base::TerminationStatus status) override;
 
  private:
+  void SetAppPath(const base::FilePath& app_path);
+
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);
   void SetPath(mate::Arguments* args,
@@ -129,6 +140,10 @@ class App : public AtomBrowserClient::Delegate,
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);
 #endif
+  void GetFileIcon(const base::FilePath& path,
+                   mate::Arguments* args);
+
+  std::vector<mate::Dictionary> GetAppMemoryInfo(v8::Isolate* isolate);
 
 #if defined(OS_WIN)
   // Get the current Jump List settings.
@@ -143,6 +158,11 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(USE_NSS_CERTS)
   std::unique_ptr<CertificateManagerModel> certificate_manager_model_;
 #endif
+
+  // Tracks tasks requesting file icons.
+  base::CancelableTaskTracker cancelable_task_tracker_;
+
+  base::FilePath app_path_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

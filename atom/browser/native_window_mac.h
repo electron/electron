@@ -71,6 +71,7 @@ class NativeWindowMac : public NativeWindow,
                       int relativeLevel, std::string* error) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
+  void Invalidate() override;
   void SetTitle(const std::string& title) override;
   std::string GetTitle() override;
   void FlashFrame(bool flash) override;
@@ -86,6 +87,7 @@ class NativeWindowMac : public NativeWindow,
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore) override;
   void SetContentProtection(bool enable) override;
+  void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeWindow GetNativeWindow() override;
   gfx::AcceleratedWidget GetAcceleratedWidget() override;
@@ -99,6 +101,10 @@ class NativeWindowMac : public NativeWindow,
   void SetAutoHideCursor(bool auto_hide) override;
 
   void SetVibrancy(const std::string& type) override;
+  void SetTouchBar(
+      const std::vector<mate::PersistentDictionary>& items) override;
+  void RefreshTouchBarItem(const std::string& item_id) override;
+  void SetEscapeTouchBarItem(const mate::PersistentDictionary& item) override;
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;
@@ -158,6 +164,8 @@ class NativeWindowMac : public NativeWindow,
 
   // The view that will fill the whole frameless window.
   base::scoped_nsobject<FullSizeContentView> content_view_;
+
+  NativeBrowserView* browser_view_;
 
   std::vector<DraggableRegion> draggable_regions_;
 

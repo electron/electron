@@ -9,7 +9,6 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
@@ -45,12 +44,23 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
                                        const std::string& message) {
   DCHECK(agent_host == agent_host_.get());
 
-  std::unique_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
-  if (!parsed_message->IsType(base::Value::TYPE_DICTIONARY))
-    return;
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
 
-  base::DictionaryValue* dict =
-      static_cast<base::DictionaryValue*>(parsed_message.get());
+  v8::Local<v8::String> local_message =
+      v8::String::NewFromUtf8(isolate(), message.data());
+  v8::MaybeLocal<v8::Value> parsed_message = v8::JSON::Parse(
+      isolate()->GetCurrentContext(), local_message);
+  if (parsed_message.IsEmpty()) {
+    return;
+  }
+
+  std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue());
+  if (!mate::ConvertFromV8(isolate(), parsed_message.ToLocalChecked(),
+                           dict.get())) {
+    return;
+  }
+
   int id;
   if (!dict->GetInteger("id", &id)) {
     std::string method;

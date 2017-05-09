@@ -13,6 +13,7 @@
 #include "net/base/io_buffer.h"
 #include "net/base/load_flags.h"
 #include "net/base/upload_bytes_element_reader.h"
+#include "net/url_request/redirect_info.h"
 
 namespace {
 const int kBufferSize = 4096;
@@ -58,6 +59,7 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
     AtomBrowserContext* browser_context,
     const std::string& method,
     const std::string& url,
+    const std::string& redirect_policy,
     api::URLRequest* delegate) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
@@ -76,7 +78,7 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
   if (content::BrowserThread::PostTask(
           content::BrowserThread::IO, FROM_HERE,
           base::Bind(&AtomURLRequest::DoInitialize, atom_url_request,
-                     request_context_getter, method, url))) {
+                     request_context_getter, method, url, redirect_policy))) {
     return atom_url_request;
   }
   return nullptr;
@@ -93,10 +95,12 @@ void AtomURLRequest::Terminate() {
 void AtomURLRequest::DoInitialize(
     scoped_refptr<net::URLRequestContextGetter> request_context_getter,
     const std::string& method,
-    const std::string& url) {
+    const std::string& url,
+    const std::string& redirect_policy) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   DCHECK(request_context_getter);
 
+  redirect_policy_ = redirect_policy;
   request_context_getter_ = request_context_getter;
   request_context_getter_->AddObserver(this);
   auto context = request_context_getter_->GetURLRequestContext();
@@ -148,6 +152,13 @@ void AtomURLRequest::Cancel() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   content::BrowserThread::PostTask(content::BrowserThread::IO, FROM_HERE,
                                    base::Bind(&AtomURLRequest::DoCancel, this));
+}
+
+void AtomURLRequest::FollowRedirect() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(&AtomURLRequest::DoFollowRedirect, this));
 }
 
 void AtomURLRequest::SetExtraHeader(const std::string& name,
@@ -246,6 +257,13 @@ void AtomURLRequest::DoCancel() {
   DoTerminate();
 }
 
+void AtomURLRequest::DoFollowRedirect() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (request_ && request_->is_redirecting() && redirect_policy_ == "manual") {
+    request_->FollowDeferredRedirect();
+  }
+}
+
 void AtomURLRequest::DoSetExtraHeader(const std::string& name,
                                       const std::string& value) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
@@ -295,6 +313,29 @@ void AtomURLRequest::DoSetLoadFlags(int flags) const {
     return;
   }
   request_->SetLoadFlags(request_->load_flags() | flags);
+}
+
+void AtomURLRequest::OnReceivedRedirect(net::URLRequest* request,
+                                        const net::RedirectInfo& info,
+                                        bool* defer_redirect) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  if (!request_ || redirect_policy_ == "follow")
+    return;
+
+  if (redirect_policy_ == "error") {
+    request->Cancel();
+    DoCancelWithError(
+        "Request cannot follow redirect with the current redirect mode", true);
+  } else if (redirect_policy_ == "manual") {
+    *defer_redirect = true;
+    scoped_refptr<net::HttpResponseHeaders> response_headers =
+        request->response_headers();
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI, FROM_HERE,
+        base::Bind(&AtomURLRequest::InformDelegateReceivedRedirect, this,
+                   info.status_code, info.new_method, info.new_url,
+                   response_headers));
+  }
 }
 
 void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
@@ -348,6 +389,14 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
   DCHECK_EQ(request, request_.get());
 
   const auto status = request_->status();
+  if (status.error() == bytes_read &&
+      bytes_read == net::ERR_CONTENT_DECODING_INIT_FAILED) {
+    // When the request job is unable to create a source stream for the
+    // content encoding, we fail the request.
+    DoCancelWithError(net::ErrorToString(net::ERR_CONTENT_DECODING_INIT_FAILED),
+                      true);
+    return;
+  }
 
   bool response_error = false;
   bool data_ended = false;
@@ -397,6 +446,16 @@ bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&AtomURLRequest::InformDelegateResponseData, this,
                  buffer_copy));
+}
+
+void AtomURLRequest::InformDelegateReceivedRedirect(
+    int status_code,
+    const std::string& method,
+    const GURL& url,
+    scoped_refptr<net::HttpResponseHeaders> response_headers) const {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  if (delegate_)
+    delegate_->OnReceivedRedirect(status_code, method, url, response_headers);
 }
 
 void AtomURLRequest::InformDelegateAuthenticationRequired(

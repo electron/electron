@@ -23,11 +23,11 @@ const int kDefaultHeight = 300;
 }  // namespace
 
 WebViewGuestDelegate::WebViewGuestDelegate()
-    : guest_host_(nullptr),
+    : embedder_zoom_controller_(nullptr),
+      guest_host_(nullptr),
       auto_size_enabled_(false),
       is_full_page_plugin_(false),
-      api_web_contents_(nullptr) {
-}
+      api_web_contents_(nullptr) {}
 
 WebViewGuestDelegate::~WebViewGuestDelegate() {
 }
@@ -39,6 +39,10 @@ void WebViewGuestDelegate::Initialize(api::WebContents* api_web_contents) {
 
 void WebViewGuestDelegate::Destroy() {
   // Give the content module an opportunity to perform some cleanup.
+  if (embedder_zoom_controller_) {
+    embedder_zoom_controller_->RemoveObserver(this);
+    embedder_zoom_controller_ = nullptr;
+  }
   guest_host_->WillDestroy();
   guest_host_ = nullptr;
 }
@@ -107,6 +111,11 @@ void WebViewGuestDelegate::DidFinishNavigation(
 
 void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {
   api_web_contents_->Emit("did-attach");
+  embedder_zoom_controller_ =
+      WebContentsZoomController::FromWebContents(embedder_web_contents_);
+  auto zoom_controller = api_web_contents_->GetZoomController();
+  embedder_zoom_controller_->AddObserver(this);
+  zoom_controller->SetEmbedderZoomController(embedder_zoom_controller_);
 }
 
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
@@ -132,6 +141,22 @@ void WebViewGuestDelegate::WillAttach(
   embedder_web_contents_ = embedder_web_contents;
   is_full_page_plugin_ = is_full_page_plugin;
   completion_callback.Run();
+}
+
+void WebViewGuestDelegate::OnZoomLevelChanged(
+    content::WebContents* web_contents,
+    double level,
+    bool is_temporary) {
+  if (web_contents == GetOwnerWebContents()) {
+    if (is_temporary) {
+      api_web_contents_->GetZoomController()->SetTemporaryZoomLevel(level);
+    } else {
+      api_web_contents_->GetZoomController()->SetZoomLevel(level);
+    }
+    // Change the default zoom factor to match the embedders' new zoom level.
+    double zoom_factor = content::ZoomLevelToZoomFactor(level);
+    api_web_contents_->GetZoomController()->SetDefaultZoomFactor(zoom_factor);
+  }
 }
 
 void WebViewGuestDelegate::GuestSizeChangedDueToAutoSize(

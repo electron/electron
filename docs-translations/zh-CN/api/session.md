@@ -1,46 +1,64 @@
 # session
 
-`session` 模块可以用来创建一个新的 `Session` 对象.
+> 管理浏览器会话，Cookie，缓存，代理设置等。
 
-你也可以通过使用 [`webContents`](web-contents.md) 的属性 `session` 来使用一个已有页面的 `session` ，`webContents` 是[`BrowserWindow`](browser-window.md) 的属性.
+进程： [Main](../glossary.md#main-process)
+
+`session` 模块可以用来创建一个新的 `Session` 对象。
+
+你也可以通过使用 [`webContents`](web-contents.md) 的属性 `session` 来使用一个已有页面的 `session` ，`webContents` 是[`BrowserWindow`](browser-window.md) 的属性。
 
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow
+const {BrowserWindow} = require('electron')
 
-var win = new BrowserWindow({ width: 800, height: 600 })
+let win = new BrowserWindow({width: 800, height: 600})
 win.loadURL('http://github.com')
 
-var ses = win.webContents.session
+const ses = win.webContents.session
+console.log(ses.getUserAgent())
 ```
 
 ## 方法
 
-`session` 模块有如下方法:
+`session` 模块有如下方法：
 
-### session.fromPartition(partition)
+### `session.fromPartition(partition[, options])`
 
 * `partition` String
+* `options` Object
+  * `cache` Boolean - 是否启用缓存。
 
-从字符串 `partition` 返回一个新的 `Session` 实例.
+从字符串 `partition` 返回一个新的 `Session` 实例。
 
-如果 `partition` 以 `persist:` 开头，那么这个page将使用一个持久的 session，这个 session 将对应用的所有 page 可用.如果没前缀，这个 page 将使用一个历史 session.如果 `partition` 为空，那么将返回应用的默认 session .
+返回 `Session` - 一个来自 `partition` 字符串的会话实例。当存在时
+`Session` 与同一个 `partition`，它会被返回；否则一个新
+`Session` 实例将使用 `options` 创建。
+
+如果 `partition` 以 `persist:` 开头，那么这个 page 将使用一个持久的 session，这个 session 将对应用的所有 page 可用。如果没前缀，这个 page 将使用一个历史 session。如果 `partition` 为空，那么将返回应用的默认 session。
+
+要用 `options` 创建一个 `Session`，你必须确保 `Session` 与
+`partition` 从来没有被使用过。没有办法改变现有 `Session` 对象的 `options'。
 
 ## 属性
 
-`session` 模块有如下属性:
+`session` 模块有如下属性：
 
 ### session.defaultSession
 
-返回应用的默认 session 对象.
+返回应用的默认 `Session` 对象。
 
 ## Class: Session
 
-可以在 `session` 模块中创建一个 `Session` 对象 :
+> 获取和设置会话的属性。
+
+进程: [Main](../glossary.md#main-process)
+
+可以在 `session` 模块中创建一个 `Session` 对象：
 
 ```javascript
-const session = require('electron').session
-
-var ses = session.fromPartition('persist:name')
+const {session} = require('electron')
+const ses = session.fromPartition('persist:name')
+console.log(ses.getUserAgent())
 ```
 
 ### 实例事件
@@ -55,12 +73,13 @@ var ses = session.fromPartition('persist:name')
 
 当 Electron 将要从 `webContents` 下载 `item` 时触发.
 
-调用 `event.preventDefault()` 可以取消下载，并且在进程的下个 tick中，这个 `item` 也不可用.
+调用 `event.preventDefault()` 可以取消下载，并且在进程的下个 tick 中，这个 `item` 也不可用。
 
 ```javascript
-session.defaultSession.on('will-download', function (event, item, webContents) {
+const {session} = require('electron')
+session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault()
-  require('request')(item.getURL(), function (data) {
+  require('request')(item.getURL(), (data) => {
     require('fs').writeFileSync('/somewhere', data)
   })
 })
@@ -68,7 +87,7 @@ session.defaultSession.on('will-download', function (event, item, webContents) {
 
 ### 实例方法
 
-实例 `Session` 有以下方法:
+实例 `Session` 有以下方法：
 
 #### `ses.cookies`
 

@@ -10,6 +10,9 @@ Follow the guidelines below for building Electron on Windows.
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [Node.js](http://nodejs.org/download/)
 * [Git](http://git-scm.com)
+* [Debugging Tools for Windows](https://msdn.microsoft.com/en-us/library/windows/hardware/ff551063.aspx)
+  if you plan on creating a full distribution since `symstore.exe` is used for
+  creating a symbol store from `.pdb` files.
 
 If you don't currently have a Windows installation,
 [dev.microsoftedge.com](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/)
@@ -82,6 +85,14 @@ To clean the build files:
 ```powershell
 $ npm run clean
 ```
+
+To clean only `out` and `dist` directories:
+
+```bash
+$ npm run clean-build
+```
+
+**Note:** Both clean commands require running `bootstrap` again before building.
 
 ## Tests
 
