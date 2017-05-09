@@ -52,5 +52,5 @@ void Initialize(v8::Handle<v8::Object> exports) {
   JavaScript.
 
 
-[chromium-gin-lib]: https://code.google.com/p/chromium/codesearch#chromium/src/gin/README&sq=package:chromium
+[chromium-gin-lib]: https://code.google.com/p/chromium/codesearch#chromium/src/gin/README.md&sq=package:chromium
 [electron]: http://electron.atom.io/
