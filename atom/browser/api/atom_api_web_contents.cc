@@ -1282,10 +1282,10 @@ void WebContents::Print(mate::Arguments* args) {
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList(
     mate::Arguments* args) {
-  std::vector<printing::PrinterBasicInfo> printerList;
-  auto printBackend = printing::PrintBackend::CreateInstance(nullptr);
-  printBackend->EnumeratePrinters(&printerList);
-  return printerList;
+  std::vector<printing::PrinterBasicInfo> printers;
+  auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
+  print_backend->EnumeratePrinters(&printers);
+  return printers;
 }
 
 void WebContents::PrintToPDF(const base::DictionaryValue& setting,

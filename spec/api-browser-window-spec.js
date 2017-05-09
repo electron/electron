@@ -1114,6 +1114,23 @@ describe('BrowserWindow module', function () {
         })
       })
 
+      it('can get printer list', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload
+          }
+        })
+        w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+        w.webContents.once('did-finish-load', function () {
+          const pl = w.webContents.printerList()
+          assert.equal(Array.isArray(pl), true)
+          done()
+        })
+      })
+
       it('can print to PDF', function (done) {
         w.destroy()
         w = new BrowserWindow({
