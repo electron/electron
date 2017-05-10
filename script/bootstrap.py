@@ -159,25 +159,6 @@ def setup_libchromiumcontent(is_dev, target_arch, url,
   else:
     subprocess.check_call([sys.executable, download, '-s'] + args)
 
-def bootstrap_brightray(is_dev, url, target_arch, libcc_source_path,
-                        libcc_shared_library_path,
-                        libcc_static_library_path):
-  bootstrap = os.path.join(SOURCE_ROOT, 'brightray', 'script', 'bootstrap')
-  args = [
-    '--commit', LIBCHROMIUMCONTENT_COMMIT,
-    '--target_arch', target_arch,
-    url
-  ]
-  if is_dev:
-    args = ['--dev'] + args
-  if (libcc_source_path != None and
-      libcc_shared_library_path != None and
-      libcc_static_library_path != None):
-    args += ['--libcc_source_path', libcc_source_path,
-             '--libcc_shared_library_path', libcc_shared_library_path,
-             '--libcc_static_library_path', libcc_static_library_path]
-  execute_stdout([sys.executable, bootstrap] + args)
-
 
 def set_clang_env(env):
   llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
