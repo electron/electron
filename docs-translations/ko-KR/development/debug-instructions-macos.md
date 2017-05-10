@@ -38,7 +38,7 @@ LLDB 는 강력한 도구이며 코드 검사를 위한 다양한 전략을 제�
 명령의 C++ 부분에서 멈추길 원하며 그것은 Electron 소스 내에 있습니다.
 
 관련 코드는 `./atom/` 에서 찾을 수 있으며 마찬가지로 Brightray 도
-`./vendor/brightray/browser` 와 `./vendor/brightray/common` 에서 찾을 수
+`./brightray/browser` 와 `./brightray/common` 에서 찾을 수
 있습니다. 당신이 열정적이라면, Chromium 을 직접 디버깅할 수 있으며,
 `chromium_src` 에서 찾을 수 있습니다.
 
