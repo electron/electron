@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+
+import os
+import subprocess
+import sys
+
+
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+GYP = os.path.join(SOURCE_ROOT, 'vendor', 'gyp', 'gyp_main.py')
+
+
+def main():
+    os.chdir(SOURCE_ROOT)
+    return (run_gyp() or build())
+
+
+def run_gyp():
+    env = os.environ.copy()
+    gyp_pylib = os.path.join(os.path.dirname(GYP), 'pylib')
+    env['PYTHONPATH'] = os.path.pathsep.join([gyp_pylib,
+                                              env.get('PYTHONPATH', '')])
+    env['GYP_DEFINES'] = 'libchromiumcontent_component=static_library'
+    return subprocess.call([sys.executable, GYP, '--depth', '.',
+                            '-Ibrightray.gypi', 'brightray.gyp'], env=env)
+
+
+def build():
+    if sys.platform == 'darwin':
+        return subprocess.call(['xcodebuild'])
+    if sys.platform == 'linux2':
+        return subprocess.call(['make'])
+
+    assert sys.platform == 'win32', sys.platform
+    program_files = os.environ.get('PROGRAMFILES(X86)', os.environ['PROGRAMFILES'])
+    msbuild = os.path.join(program_files, 'MSBuild', '12.0', 'Bin', 'MSBuild.exe')
+    return subprocess.call([msbuild, 'brightray.sln'])
+
+
+if __name__ == '__main__':
+    sys.exit(main())

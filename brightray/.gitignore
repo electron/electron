@@ -1,0 +1,17 @@
+/brightray.opensdf
+/brightray.sdf
+/brightray.sln
+/brightray.vcxproj*
+/brightray.suo
+/brightray.v12.suo
+/brightray.xcodeproj/
+/build/
+
+# Vim
+*.swp
+
+# Linux
+Makefile
+*.Makefile
+*.mk
+out/
