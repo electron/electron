@@ -57,10 +57,10 @@ Objects created with `new BrowserView` have the following instance methods:
 #### `view.setAutoResize(options)` _Experimental_
 
 * `options` Object
-  * `width`: If `true`, the view's width will grow and shrink together with
-    the window. `false` by default.
-  * `height`: If `true`, the view's height will grow and shrink together with
-    the window. `false` by default.
+  * `width` Boolean - If `true`, the view's width will grow and shrink together
+    with the window. `false` by default.
+  * `height` Boolean - If `true`, the view's height will grow and shrink
+    together with the window. `false` by default.
 
 #### `view.setBounds(bounds)` _Experimental_
 
