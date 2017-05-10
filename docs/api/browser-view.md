@@ -44,7 +44,7 @@ Objects created with `new BrowserView` have the following properties:
 
 #### `view.webContents` _Experimental_
 
-A [`webContents`](web-contents.md) object owned by this view.
+A [`WebContents`](web-contents.md) object owned by this view.
 
 #### `win.id` _Experimental_
 
