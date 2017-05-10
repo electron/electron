@@ -1,4 +1,4 @@
-// Type definitions for Electron 1.6.8
+// Type definitions for Electron 1.6.9
 // Project: http://electron.atom.io/
 // Definitions by: The Electron Team <https://github.com/electron/electron>
 // Definitions: https://github.com/electron/electron-typescript-definitions
@@ -2333,7 +2333,7 @@ declare namespace Electron {
      * Note: The following methods are useful specifically to resume a cancelled item
      * when session is restarted.
      */
-    getState(): string;
+    getState(): ('progressing' | 'completed' | 'cancelled' | 'interrupted');
     /**
      * If the size is unknown, it returns 0.
      */
