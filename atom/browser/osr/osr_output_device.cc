@@ -53,12 +53,11 @@ SkCanvas* OffScreenOutputDevice::BeginPaint(const gfx::Rect& damage_rect) {
 
   damage_rect_ = damage_rect;
   SkIRect damage = SkIRect::MakeXYWH(
-    damage_rect_.x(), 
-    damage_rect_.y(), 
-    damage_rect_.width(), 
-    damage_rect_.height()
-  );
-  
+    damage_rect_.x(),
+    damage_rect_.y(),
+    damage_rect_.width(),
+    damage_rect_.height());
+
   if (transparent_) {
     bitmap_->erase(SK_ColorTRANSPARENT, damage);
   } else {
