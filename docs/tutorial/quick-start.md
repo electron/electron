@@ -74,7 +74,7 @@ like this:
 ```
 
 __Note__: If the `main` field is not present in `package.json`, Electron will
-attempt to load an `index.js`.
+fail with an error saying `SyntaxError: Unexpected token`.
 
 The `main.js` should create windows and handle system events, a typical
 example being:
