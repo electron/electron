@@ -74,8 +74,8 @@ def copy_headers(dist_headers_dir):
                      dist_headers_dir)
 
   # Copy V8 headers from chromium's repository.
-  src = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
-                    'libchromiumcontent', 'src')
+  src = os.path.join(SOURCE_ROOT, 'vendor', 'download', 'libchromiumcontent',
+                     'src')
   for dirpath, _, filenames in os.walk(os.path.join(src, 'v8')):
     for filename in filenames:
       extension = os.path.splitext(filename)[1]
