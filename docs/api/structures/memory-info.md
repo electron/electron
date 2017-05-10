@@ -1,6 +1,6 @@
 # MemoryInfo Object
 
-* `workingSetSize` Integer - Process id of the process.
+* `pid` Integer - Process id of the process.
 * `workingSetSize` Integer - The amount of memory currently pinned to actual physical RAM.
 * `peakWorkingSetSize` Integer - The maximum amount of memory that has ever been pinned
   to actual physical RAM.
