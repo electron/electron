@@ -1150,6 +1150,29 @@ describe('BrowserWindow module', function () {
         })
         w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
       })
+
+      it('releases memory after popup is closed', (done) => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            sandbox: true
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?allocate-memory'))
+        w.webContents.openDevTools({mode: 'detach'})
+        ipcMain.once('answer', function (event, {bytesBeforeOpen, bytesAfterOpen, bytesAfterClose}) {
+          const memoryIncreaseByOpen = bytesAfterOpen - bytesBeforeOpen
+          const memoryDecreaseByClose = bytesAfterOpen - bytesAfterClose
+          // decreased memory should be less than increased due to factors we
+          // can't control, but given the amount of memory allocated in the
+          // fixture, we can reasonably expect decrease to be at least 70% of
+          // increase
+          assert(memoryDecreaseByClose > memoryIncreaseByOpen * 0.7)
+          done()
+        })
+      })
     })
   })
 
@@ -1173,6 +1196,60 @@ describe('BrowserWindow module', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html'))
+    })
+
+    it('emits for each close attempt', function (done) {
+      var beforeUnloadCount = 0
+      w.on('onbeforeunload', function () {
+        beforeUnloadCount++
+        if (beforeUnloadCount < 3) {
+          w.close()
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', function () {
+        w.close()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+
+    it('emits for each reload attempt', function (done) {
+      var beforeUnloadCount = 0
+      w.on('onbeforeunload', function () {
+        beforeUnloadCount++
+        if (beforeUnloadCount < 3) {
+          w.reload()
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', function () {
+        w.webContents.once('did-finish-load', function () {
+          assert.fail('Reload was not prevented')
+        })
+        w.reload()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+
+    it('emits for each navigation attempt', function (done) {
+      var beforeUnloadCount = 0
+      w.on('onbeforeunload', function () {
+        beforeUnloadCount++
+        if (beforeUnloadCount < 3) {
+          w.loadURL('about:blank')
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', function () {
+        w.webContents.once('did-finish-load', function () {
+          assert.fail('Navigation was not prevented')
+        })
+        w.loadURL('about:blank')
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
     })
   })
 

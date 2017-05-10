@@ -7,12 +7,12 @@
 
 :memo: Traducciones disponibles: [Koreano](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/README.md) | [Chino Simplificado](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/README.md) | [Portugués Brasileño](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/README.md) | [Chino Tradicional](https://github.com/electron/electron/tree/master/docs-translations/zh-TW/project/README.md)
 
-Electron es un framework que permite escribir aplicaciones de escritorio multiplataforma 
-usando JavaScript, HTML y CSS. Está basado en [Node.js](https://nodejs.org/) con 
+Electron es un framework que permite escribir aplicaciones de escritorio multiplataforma
+usando JavaScript, HTML y CSS. Está basado en [Node.js](https://nodejs.org/) con
 [Chromium](http://www.chromium.org). Es usado por [Atom
 editor](https://github.com/atom/atom) y muchas otras [aplicaciones](https://electron.atom.io/apps).
 
-Sigue a [@ElectronJS](https://twitter.com/electronjs) en Twitter para estar informado de anuncios 
+Sigue a [@ElectronJS](https://twitter.com/electronjs) en Twitter para estar informado de anuncios
 importantes.
 
 Este proyecto se adhiere al [Código de Conducta convenido para Colaboradores](CODE_OF_CONDUCT.md).
@@ -41,7 +41,7 @@ los prebuilt binaries, debug symbols, y más.
 
 ## Documentación
 
-Las guías y API de referencia están disponibles en el directorio 
+Las guías y API de referencia están disponibles en el directorio
 [docs](https://github.com/electron/electron/tree/master/docs). Ahí también
 puedes encontrar documentos que describen cómo construir y contribuir en Electron.
 
@@ -67,14 +67,14 @@ para ver una aplicación mínima en acción.
 ## Comunidad
 
 Puedes preguntar y interactuar con la comunidad en los siguientes lugares:
-- [`electron`](http://discuss.atom.io/c/electron) Categoría en los Foros de 
+- [`electron`](http://discuss.atom.io/c/electron) Categoría en los Foros de
 Atom.
 - `#atom-shell` canal de IRC en Freenode
 - [`Atom`](http://atom-slack.herokuapp.com/) canales en Slack
 - [`electron-br`](https://electron-br.slack.com) *(Portugués Brasileño)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Koreano)*
 - [`electron-jp`](https://electron-jp.slack.com) *(Japonés)*
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turco)*
+- [`electron-tr`](http://electron-tr.herokuapp.com) *(Turco)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonés*
 
 Mira [awesome-electron](https://github.com/sindresorhus/awesome-electron)

@@ -873,6 +873,15 @@ void WebContents::Observe(int type,
   }
 }
 
+void WebContents::BeforeUnloadDialogCancelled() {
+  if (deferred_load_url_.id) {
+    auto& controller = web_contents()->GetController();
+    if (!controller.GetPendingEntry()) {
+      deferred_load_url_.id = 0;
+    }
+  }
+}
+
 void WebContents::DevToolsReloadPage() {
   Emit("devtools-reload-page");
 }

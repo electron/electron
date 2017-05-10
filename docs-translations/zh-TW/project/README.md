@@ -66,12 +66,12 @@ Clone 並使用 [`electron/electron-quick-start`](https://github.com/electron/el
 - [`electron-br`](https://electron-br.slack.com) *(葡萄牙語－巴西)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(韓語)*
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(日語)*
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(土耳其)*
+- [`electron-tr`](http://electron-tr.herokuapp.com) *(土耳其)*
 - [`electron-id`](https://electron-id.slack.com) *(印度尼西亞)*
 
 在 [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 查看由社群維護的清單，包括實用的應用程式、工具以及資源。
 
-## 憑證
+## 授權條款
 
 MIT © 2016 Github

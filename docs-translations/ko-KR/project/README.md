@@ -73,7 +73,7 @@ npm install electron --save-dev
 - [`electron-br`](https://electron-br.slack.com) *(브라질)* 커뮤니티
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(한국)* 커뮤니티
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(일본)* 커뮤니티
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(터키)* 커뮤니티
+- [`electron-tr`](http://electron-tr.herokuapp.com) *(터키)* 커뮤니티
 - [`electron-id`](https://electron-id.slack.com) *(인도네시아)* 커뮤니티
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron) 프로젝트에

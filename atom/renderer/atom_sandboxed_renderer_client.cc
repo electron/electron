@@ -86,6 +86,9 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
   b.SetMethod("crash", AtomBindings::Crash);
+  b.SetMethod("hang", AtomBindings::Hang);
+  b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
+  b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
 }
 
 class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
