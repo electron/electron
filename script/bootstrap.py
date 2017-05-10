@@ -63,6 +63,7 @@ def main():
   create_chrome_version_h()
   touch_config_gypi()
   run_update(defines, args.msvs)
+  create_node_headers()
   update_electron_modules('spec', args.target_arch)
 
 
@@ -176,17 +177,21 @@ def update_node_modules(dirname, env=None):
     if os.environ.has_key('CI'):
       try:
         execute_stdout(args, env)
+        execute_stdout([NPM, 'rebuild'], env)
       except subprocess.CalledProcessError:
         pass
     else:
       execute_stdout(args, env)
+      execute_stdout([NPM, 'rebuild'], env)
 
 
 def update_electron_modules(dirname, target_arch):
   env = os.environ.copy()
+  version = get_electron_version()
   env['npm_config_arch']    = target_arch
-  env['npm_config_target']  = get_electron_version()
-  env['npm_config_disturl'] = 'https://atom.io/download/electron'
+  env['npm_config_target']  = version
+  env['npm_config_nodedir'] = os.path.join(SOURCE_ROOT, 'dist',
+                                           'node-{0}'.format(version))
   update_node_modules(dirname, env)
 
 
@@ -258,6 +263,12 @@ def run_update(defines, msvs):
     args += ['--msvs']
 
   execute_stdout(args)
+
+
+def create_node_headers():
+  execute_stdout([sys.executable,
+                  os.path.join(SOURCE_ROOT, 'script', 'create-node-headers.py'),
+                  '--version', get_electron_version()])
 
 
 if __name__ == '__main__':

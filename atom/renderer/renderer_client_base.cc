@@ -30,6 +30,7 @@
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
+#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
 
 #if defined(OS_MACOSX)
 #include "base/mac/mac_util.h"
@@ -85,6 +86,13 @@ void RendererClientBase::RenderThreadStarted() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
+  // Parse --secure-schemes=scheme1,scheme2
+  std::vector<std::string> secure_schemes_list =
+      ParseSchemesCLISwitch(switches::kSecureSchemes);
+  for (const std::string& scheme : secure_schemes_list)
+    blink::SchemeRegistry::registerURLSchemeAsSecure(
+        WTF::String::fromUTF8(scheme.data(), scheme.length()));
+
   preferences_manager_.reset(new PreferencesManager);
 
 #if defined(OS_WIN)
@@ -126,13 +134,6 @@ void RendererClientBase::RenderFrameCreated(
   // Allow access to file scheme from pdf viewer.
   blink::WebSecurityPolicy::addOriginAccessWhitelistEntry(
       GURL(kPdfViewerUIOrigin), "file", "", true);
-
-  // Parse --secure-schemes=scheme1,scheme2
-  std::vector<std::string> secure_schemes_list =
-      ParseSchemesCLISwitch(switches::kSecureSchemes);
-  for (const std::string& secure_scheme : secure_schemes_list)
-    blink::WebSecurityPolicy::registerURLSchemeAsSecure(
-        blink::WebString::fromUTF8(secure_scheme));
 }
 
 void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {

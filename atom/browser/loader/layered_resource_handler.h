@@ -26,8 +26,9 @@ class LayeredResourceHandler : public content::LayeredResourceHandler {
   ~LayeredResourceHandler() override;
 
   // content::LayeredResourceHandler:
-  bool OnResponseStarted(content::ResourceResponse* response,
-                         bool* defer) override;
+  void OnResponseStarted(
+      content::ResourceResponse* response,
+      std::unique_ptr<content::ResourceController> controller) override;
 
  private:
   Delegate* delegate_;

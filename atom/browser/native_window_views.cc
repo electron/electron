@@ -86,7 +86,7 @@ bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
 
 bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
   typedef content::NativeWebKeyboardEvent::Modifiers Modifiers;
-  int modifiers = event.modifiers;
+  int modifiers = event.modifiers();
   modifiers &= ~Modifiers::NumLockOn;
   modifiers &= ~Modifiers::CapsLockOn;
   return (modifiers == Modifiers::AltKey) ||
@@ -767,13 +767,14 @@ void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
-  wm::SetShadowType(
+  wm::SetShadowElevation(
       GetNativeWindow(),
-      has_shadow ? wm::SHADOW_TYPE_RECTANGULAR : wm::SHADOW_TYPE_NONE);
+      has_shadow ? wm::ShadowElevation::MEDIUM : wm::ShadowElevation::NONE);
 }
 
 bool NativeWindowViews::HasShadow() {
-  return wm::GetShadowType(GetNativeWindow()) != wm::SHADOW_TYPE_NONE;
+  return GetNativeWindow()->GetProperty(wm::kShadowElevationKey)
+      != wm::ShadowElevation::NONE;
 }
 
 void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
@@ -1234,10 +1235,10 @@ void NativeWindowViews::HandleKeyboardEvent(
   // Show accelerator when "Alt" is pressed.
   if (menu_bar_visible_ && IsAltKey(event))
     menu_bar_->SetAcceleratorVisibility(
-        event.type == blink::WebInputEvent::RawKeyDown);
+        event.type() == blink::WebInputEvent::RawKeyDown);
 
   // Show the submenu when "Alt+Key" is pressed.
-  if (event.type == blink::WebInputEvent::RawKeyDown && !IsAltKey(event) &&
+  if (event.type() == blink::WebInputEvent::RawKeyDown && !IsAltKey(event) &&
       IsAltModifier(event)) {
     if (!menu_bar_visible_ &&
         (menu_bar_->GetAcceleratorIndex(event.windowsKeyCode) != -1))
@@ -1250,10 +1251,10 @@ void NativeWindowViews::HandleKeyboardEvent(
     return;
 
   // Toggle the menu bar only when a single Alt is released.
-  if (event.type == blink::WebInputEvent::RawKeyDown && IsAltKey(event)) {
+  if (event.type() == blink::WebInputEvent::RawKeyDown && IsAltKey(event)) {
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
-  } else if (event.type == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
+  } else if (event.type() == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
              menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;

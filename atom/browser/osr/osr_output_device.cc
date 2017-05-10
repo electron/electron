@@ -4,7 +4,7 @@
 
 #include "atom/browser/osr/osr_output_device.h"
 
-#include "third_party/skia/include/core/SkDevice.h"
+#include "third_party/skia/src/core/SkDevice.h"
 #include "ui/gfx/skia_util.h"
 
 namespace atom {

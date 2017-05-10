@@ -17,10 +17,6 @@ enum World {
   ISOLATED_WORLD = 999
 };
 
-enum ExtensionGroup {
-  MAIN_GROUP = 1
-};
-
 // Helper class to forward the messages to the client.
 class AtomRenderFrameObserver : public content::RenderFrameObserver {
  public:
@@ -30,7 +26,6 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   // content::RenderFrameObserver:
   void DidClearWindowObject() override;
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
-                              int extension_group,
                               int world_id) override;
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override;

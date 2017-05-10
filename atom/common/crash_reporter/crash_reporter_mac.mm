@@ -43,11 +43,16 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
       base::FilePath handler_path =
           framework_bundle_path.Append("Resources").Append("crashpad_handler");
 
+      std::vector<std::string> args = {
+        "--no-rate-limit",
+        "--no-upload-gzip",  // not all servers accept gzip
+      };
+
       crashpad::CrashpadClient crashpad_client;
       crashpad_client.StartHandler(handler_path, crashes_dir, crashes_dir,
                                    submit_url,
                                    StringMap(),
-                                   std::vector<std::string>(),
+                                   args,
                                    true,
                                    false);
     }  // @autoreleasepool

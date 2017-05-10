@@ -76,6 +76,7 @@
 #include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
+#include "ui/events/base_event_utils.h"
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -567,8 +568,8 @@ bool WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event,
     bool* is_keyboard_shortcut) {
-  if (event.type == blink::WebInputEvent::Type::RawKeyDown
-      || event.type == blink::WebInputEvent::Type::KeyUp)
+  if (event.type() == blink::WebInputEvent::Type::RawKeyDown ||
+      event.type() == blink::WebInputEvent::Type::KeyUp)
     return Emit("before-input-event", event);
   else
     return false;
@@ -897,7 +898,7 @@ void WebContents::DevToolsOpened() {
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
 
   // Set inspected tabID.
-  base::FundamentalValue tab_id(ID());
+  base::Value tab_id(ID());
   managed_web_contents()->CallClientFunction(
       "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
 
@@ -970,7 +971,7 @@ void WebContents::NavigationEntryCommitted(
 
 int64_t WebContents::GetID() const {
   int64_t process_id = web_contents()->GetRenderProcessHost()->GetID();
-  int64_t routing_id = web_contents()->GetRoutingID();
+  int64_t routing_id = web_contents()->GetRenderViewHost()->GetRoutingID();
   int64_t rv = (process_id << 32) + routing_id;
   return rv;
 }
@@ -1326,7 +1327,7 @@ void WebContents::SelectAll() {
 }
 
 void WebContents::Unselect() {
-  web_contents()->Unselect();
+  web_contents()->CollapseSelection();
 }
 
 void WebContents::Replace(const base::string16& word) {
@@ -1416,7 +1417,10 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       return;
     }
   } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
-    content::NativeWebKeyboardEvent keyboard_event;
+    content::NativeWebKeyboardEvent keyboard_event(
+        blink::WebKeyboardEvent::RawKeyDown,
+        blink::WebInputEvent::NoModifiers,
+        ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
       host->ForwardKeyboardEvent(keyboard_event);
       return;
@@ -1506,8 +1510,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
   }
 
   const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  if (!view || !host) {
+  if (!view) {
     callback.Run(gfx::Image());
     return;
   }
@@ -1527,10 +1530,10 @@ void WebContents::CapturePage(mate::Arguments* args) {
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
-  host->CopyFromBackingStore(gfx::Rect(rect.origin(), view_size),
-                             bitmap_size,
-                             base::Bind(&OnCapturePageDone, callback),
-                             kBGRA_8888_SkColorType);
+  view->CopyFromSurface(gfx::Rect(rect.origin(), view_size),
+                        bitmap_size,
+                        base::Bind(&OnCapturePageDone, callback),
+                        kBGRA_8888_SkColorType);
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {

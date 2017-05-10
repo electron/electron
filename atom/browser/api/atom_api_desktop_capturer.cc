@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_desktop_capturer.h"
 
+using base::PlatformThreadRef;
+
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/strings/utf_string_conversions.h"

@@ -121,10 +121,12 @@ void OffScreenRenderWidgetHostView::SelectionChanged(
   RenderWidgetHostViewBase::SelectionChanged(text, offset, range);
 }
 
-void OffScreenRenderWidgetHostView::CreatePlatformWidget() {
+void OffScreenRenderWidgetHostView::CreatePlatformWidget(
+    bool is_guest_view_hack) {
   mac_helper_ = new MacHelper(this);
   browser_compositor_.reset(new content::BrowserCompositorMac(
-      mac_helper_, mac_helper_, render_widget_host_->is_hidden(), true));
+      mac_helper_, mac_helper_, render_widget_host_->is_hidden(), true,
+      AllocateFrameSinkId(is_guest_view_hack)));
 }
 
 void OffScreenRenderWidgetHostView::DestroyPlatformWidget() {

@@ -74,6 +74,9 @@ struct PrintMsg_PrintPages_Params {
 
 IPC_ENUM_TRAITS_MAX_VALUE(printing::MarginType,
                           printing::MARGIN_TYPE_LAST)
+IPC_ENUM_TRAITS_MIN_MAX_VALUE(printing::DuplexMode,
+                              printing::UNKNOWN_DUPLEX_MODE,
+                              printing::SHORT_EDGE)
 IPC_ENUM_TRAITS_MAX_VALUE(blink::WebPrintScalingOption,
                           blink::WebPrintScalingOptionLast)
 
@@ -310,39 +313,3 @@ IPC_MESSAGE_ROUTED1(PrintHostMsg_MetafileReadyForPrinting,
 IPC_MESSAGE_ROUTED2(PrintHostMsg_PrintPreviewFailed,
                     int /* document cookie */,
                     int /* request_id */);
-
-#if defined(OS_WIN)
-// Tell the utility process to start rendering the given PDF into a metafile.
-// Utility process would be alive until
-// ChromeUtilityMsg_RenderPDFPagesToMetafiles_Stop message.
-IPC_MESSAGE_CONTROL3(ChromeUtilityMsg_RenderPDFPagesToMetafiles,
-                     IPC::PlatformFileForTransit /* input_file */,
-                     printing::PdfRenderSettings /* settings */,
-                     bool /* print_text_with_gdi */)
-
-// Requests conversion of the next page.
-IPC_MESSAGE_CONTROL2(ChromeUtilityMsg_RenderPDFPagesToMetafiles_GetPage,
-                     int /* page_number */,
-                     IPC::PlatformFileForTransit /* output_file */)
-
-// Requests utility process to stop conversion and exit.
-IPC_MESSAGE_CONTROL0(ChromeUtilityMsg_RenderPDFPagesToMetafiles_Stop)
-
-// Reply when the utility process loaded PDF. |page_count| is 0, if loading
-// failed.
-IPC_MESSAGE_CONTROL1(ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageCount,
-                     int /* page_count */)
-
-// Reply when the utility process rendered the PDF page.
-IPC_MESSAGE_CONTROL2(ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageDone,
-                     bool /* success */,
-                     float /* scale_factor */)
-
-// Request that the given font characters be loaded by the browser so it's
-// cached by the OS. Please see
-// PdfToEmfUtilityProcessHostClient::OnPreCacheFontCharacters for details.
-IPC_SYNC_MESSAGE_CONTROL2_0(ChromeUtilityHostMsg_PreCacheFontCharacters,
-                            LOGFONT /* font_data */,
-                            base::string16 /* characters */)
-
-#endif

@@ -9,8 +9,10 @@
 // This conflicts with mate::Converter,
 #undef True
 #undef False
-// and V8.
+// and V8,
 #undef None
+// and url_request_status.h,
+#undef Status
 
 #include <dlfcn.h>
 #include <glib-object.h>

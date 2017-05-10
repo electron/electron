@@ -237,9 +237,6 @@
         'USING_V8_SHARED',
         'USING_V8_PLATFORM_SHARED',
         'USING_V8_BASE_SHARED',
-        # Remove this after enable_plugins becomes a feature flag.
-        'ENABLE_PLUGINS',
-        'USE_PROPRIETARY_CODECS',
       ],
       'sources': [
         '<@(lib_sources)',
