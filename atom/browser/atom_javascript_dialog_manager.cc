@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/message_box.h"
 #include "base/bind.h"
@@ -17,6 +18,10 @@ using content::JavaScriptDialogType;
 
 namespace atom {
 
+AtomJavaScriptDialogManager::AtomJavaScriptDialogManager(
+    api::WebContents* api_web_contents)
+    : api_web_contents_(api_web_contents) {}
+
 void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,
     const GURL& origin_url,
@@ -25,7 +30,6 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     const base::string16& default_prompt_text,
     const DialogClosedCallback& callback,
     bool* did_suppress_message) {
-
   if (dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT &&
       dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
     callback.Run(false, base::string16());
@@ -49,8 +53,9 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     content::WebContents* web_contents,
     bool is_reload,
     const DialogClosedCallback& callback) {
-  // FIXME(zcbenz): the |message_text| is removed, figure out what should we do.
-  callback.Run(false, base::ASCIIToUTF16("This should not be displayed"));
+  bool default_prevented = api_web_contents_->Emit("will-prevent-unload");
+  callback.Run(default_prevented, base::string16());
+  return;
 }
 
 void AtomJavaScriptDialogManager::CancelDialogs(
