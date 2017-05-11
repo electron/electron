@@ -1644,6 +1644,18 @@ void WebContents::Invalidate() {
   }
 }
 
+gfx::Size WebContents::GetSizeForNewRenderView(
+    content::WebContents* wc) const {
+  if (IsOffScreen() && wc == web_contents()) {
+    auto relay = NativeWindowRelay::FromWebContents(web_contents());
+    if (relay) {
+      return relay->window->GetSize();
+    }
+  }
+
+  return gfx::Size();
+}
+
 void WebContents::SetZoomLevel(double level) {
   zoom_controller_->SetZoomLevel(level);
 }
