@@ -217,8 +217,10 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
   ReadImageSkiaFromICO(&image_skia, GetHICON(256));
   image_ = gfx::Image(image_skia);
   Init(isolate);
-  isolate->AdjustAmountOfExternalAllocatedMemory(
-    image_.ToImageSkia()->bitmap()->computeSize64());
+  if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
+    isolate->AdjustAmountOfExternalAllocatedMemory(
+      image_.ToImageSkia()->bitmap()->computeSize64());
+  }
   MarkHighMemoryUsage();
 }
 #endif
