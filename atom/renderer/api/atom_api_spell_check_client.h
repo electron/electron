@@ -13,6 +13,10 @@
 #include "native_mate/scoped_persistent.h"
 #include "third_party/WebKit/public/web/WebSpellCheckClient.h"
 
+namespace blink {
+struct WebTextCheckingResult;
+}
+
 namespace atom {
 
 namespace api {
@@ -27,15 +31,13 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
 
  private:
   // blink::WebSpellCheckClient:
-  void spellCheck(
+  void checkSpelling(
       const blink::WebString& text,
       int& misspelledOffset,
       int& misspelledLength,
       blink::WebVector<blink::WebString>* optionalSuggestions) override;
   void requestCheckingOfText(
       const blink::WebString& textToCheck,
-      const blink::WebVector<uint32_t>& markersInText,
-      const blink::WebVector<unsigned>& markerOffsets,
       blink::WebTextCheckingCompletion* completionCallback) override;
   void showSpellingUI(bool show) override;
   bool isShowingSpellingUI() override;

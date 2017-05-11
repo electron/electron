@@ -16,15 +16,15 @@
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "third_party/WebKit/public/web/WebCache.h"
+#include "third_party/WebKit/public/platform/WebCache.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebInputMethodController.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebScriptExecutionCallback.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
-#include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 #include "third_party/WebKit/public/web/WebView.h"
+#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
 
 #include "atom/common/node_includes.h"
 
@@ -110,7 +110,8 @@ void WebFrame::SetLayoutZoomLevelLimits(double min_level, double max_level) {
 v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
     const base::string16& name, v8::Local<v8::Object> options) {
   blink::WebExceptionCode c = 0;
-  return web_frame_->document().registerEmbedderCustomElement(name, options, c);
+  return web_frame_->document().registerEmbedderCustomElement(
+      blink::WebString::fromUTF16(name), options, c);
 }
 
 void WebFrame::RegisterElementResizeCallback(
@@ -145,15 +146,14 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
 
 void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
   // TODO(pfrazee): Remove 2.0
-  // Register scheme to secure list (https, wss, data).
-  blink::WebSecurityPolicy::registerURLSchemeAsSecure(
-      blink::WebString::fromUTF8(scheme));
+  blink::SchemeRegistry::registerURLSchemeAsSecure(
+      WTF::String::fromUTF8(scheme.data(), scheme.length()));
 }
 
 void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
   // Register scheme to bypass pages's Content Security Policy.
-  blink::WebSecurityPolicy::registerURLSchemeAsBypassingContentSecurityPolicy(
-      blink::WebString::fromUTF8(scheme));
+  blink::SchemeRegistry::registerURLSchemeAsBypassingContentSecurityPolicy(
+      WTF::String::fromUTF8(scheme.data(), scheme.length()));
 }
 
 void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
@@ -175,32 +175,36 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
     }
   }
   // Register scheme to privileged list (https, wss, data, chrome-extension)
-  blink::WebString privileged_scheme(blink::WebString::fromUTF8(scheme));
+  WTF::String privileged_scheme(
+      WTF::String::fromUTF8(scheme.data(), scheme.length()));
   if (secure) {
     // TODO(pfrazee): Remove 2.0
-    blink::WebSecurityPolicy::registerURLSchemeAsSecure(privileged_scheme);
+    blink::SchemeRegistry::registerURLSchemeAsSecure(privileged_scheme);
   }
   if (bypassCSP) {
-    blink::WebSecurityPolicy::registerURLSchemeAsBypassingContentSecurityPolicy(
+    blink::SchemeRegistry::registerURLSchemeAsBypassingContentSecurityPolicy(
         privileged_scheme);
   }
   if (allowServiceWorkers) {
-    blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers(
+    blink::SchemeRegistry::registerURLSchemeAsAllowingServiceWorkers(
         privileged_scheme);
   }
   if (supportFetchAPI) {
-    blink::WebSecurityPolicy::registerURLSchemeAsSupportingFetchAPI(
+    blink::SchemeRegistry::registerURLSchemeAsSupportingFetchAPI(
         privileged_scheme);
   }
   if (corsEnabled) {
-    blink::WebSecurityPolicy::registerURLSchemeAsCORSEnabled(privileged_scheme);
+    blink::SchemeRegistry::registerURLSchemeAsCORSEnabled(privileged_scheme);
   }
 }
 
 void WebFrame::InsertText(const std::string& text) {
   web_frame_->frameWidget()
             ->getActiveWebInputMethodController()
-            ->commitText(blink::WebString::fromUTF8(text), 0);
+            ->commitText(blink::WebString::fromUTF8(text),
+                         blink::WebVector<blink::WebCompositionUnderline>(),
+                         blink::WebRange(),
+                         0);
 }
 
 void WebFrame::InsertCSS(const std::string& css) {
@@ -216,7 +220,7 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
   std::unique_ptr<blink::WebScriptExecutionCallback> callback(
       new ScriptExecutionCallback(completion_callback));
   web_frame_->requestExecuteScriptAndReturnValue(
-      blink::WebScriptSource(code),
+      blink::WebScriptSource(blink::WebString::fromUTF16(code)),
       has_user_gesture,
       callback.release());
 }

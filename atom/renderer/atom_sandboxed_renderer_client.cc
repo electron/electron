@@ -6,14 +6,11 @@
 
 #include <string>
 
-#include "atom_natives.h"  // NOLINT: This file is generated with js2c
-
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_view_observer.h"
@@ -30,6 +27,9 @@
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebView.h"
+
+#include "atom/common/node_includes.h"
+#include "atom_natives.h"  // NOLINT: This file is generated with js2c
 
 namespace atom {
 
@@ -86,6 +86,9 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
   b.SetMethod("crash", AtomBindings::Crash);
+  b.SetMethod("hang", AtomBindings::Hang);
+  b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
+  b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
 }
 
 class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {

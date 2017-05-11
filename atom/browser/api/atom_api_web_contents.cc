@@ -77,6 +77,7 @@
 #include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
+#include "ui/events/base_event_utils.h"
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -418,15 +419,28 @@ WebContents::~WebContents() {
       guest_delegate_->Destroy();
 
     RenderViewDeleted(web_contents()->GetRenderViewHost());
-    DestroyWebContents();
+
+    if (type_ == WEB_VIEW) {
+      DestroyWebContents(false /* async */);
+    } else {
+      if (type_ == BROWSER_WINDOW && owner_window()) {
+        owner_window()->CloseContents(nullptr);
+      } else {
+        DestroyWebContents(true /* async */);
+      }
+      // The WebContentsDestroyed will not be called automatically because we
+      // destroy the webContents in the next tick. So we have to manually
+      // call it here to make sure "destroyed" event is emitted.
+      WebContentsDestroyed();
+    }
   }
 }
 
-void WebContents::DestroyWebContents() {
+void WebContents::DestroyWebContents(bool async) {
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
   Emit("will-destroy");
-  ResetManagedWebContents();
+  ResetManagedWebContents(async);
 }
 
 bool WebContents::DidAddMessageToConsole(content::WebContents* source,
@@ -479,7 +493,7 @@ void WebContents::AddNewContents(content::WebContents* source,
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
       initial_rect.x(), initial_rect.y(), initial_rect.width(),
       initial_rect.height())) {
-    api_web_contents->DestroyWebContents();
+    api_web_contents->DestroyWebContents(true /* async */);
   }
 }
 
@@ -556,8 +570,8 @@ bool WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event,
     bool* is_keyboard_shortcut) {
-  if (event.type == blink::WebInputEvent::Type::RawKeyDown
-      || event.type == blink::WebInputEvent::Type::KeyUp)
+  if (event.type() == blink::WebInputEvent::Type::RawKeyDown ||
+      event.type() == blink::WebInputEvent::Type::KeyUp)
     return Emit("before-input-event", event);
   else
     return false;
@@ -818,10 +832,8 @@ void WebContents::DidFinishNavigation(
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
                               bool explicit_set) {
-  if (entry)
-    Emit("-page-title-updated", entry->GetTitle(), explicit_set);
-  else
-    Emit("-page-title-updated", "", explicit_set);
+  auto title = entry ? entry->GetTitle() : base::string16();
+  Emit("page-title-updated", title, explicit_set);
 }
 
 void WebContents::DidUpdateFaviconURL(
@@ -863,6 +875,15 @@ void WebContents::Observe(int type,
   }
 }
 
+void WebContents::BeforeUnloadDialogCancelled() {
+  if (deferred_load_url_.id) {
+    auto& controller = web_contents()->GetController();
+    if (!controller.GetPendingEntry()) {
+      deferred_load_url_.id = 0;
+    }
+  }
+}
+
 void WebContents::DevToolsReloadPage() {
   Emit("devtools-reload-page");
 }
@@ -879,7 +900,7 @@ void WebContents::DevToolsOpened() {
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
 
   // Set inspected tabID.
-  base::FundamentalValue tab_id(ID());
+  base::Value tab_id(ID());
   managed_web_contents()->CallClientFunction(
       "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
 
@@ -952,7 +973,7 @@ void WebContents::NavigationEntryCommitted(
 
 int64_t WebContents::GetID() const {
   int64_t process_id = web_contents()->GetRenderProcessHost()->GetID();
-  int64_t routing_id = web_contents()->GetRoutingID();
+  int64_t routing_id = web_contents()->GetRenderViewHost()->GetRoutingID();
   int64_t rv = (process_id << 32) + routing_id;
   return rv;
 }
@@ -1308,7 +1329,7 @@ void WebContents::SelectAll() {
 }
 
 void WebContents::Unselect() {
-  web_contents()->Unselect();
+  web_contents()->CollapseSelection();
 }
 
 void WebContents::Replace(const base::string16& word) {
@@ -1398,7 +1419,10 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       return;
     }
   } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
-    content::NativeWebKeyboardEvent keyboard_event;
+    content::NativeWebKeyboardEvent keyboard_event(
+        blink::WebKeyboardEvent::RawKeyDown,
+        blink::WebInputEvent::NoModifiers,
+        ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
       host->ForwardKeyboardEvent(keyboard_event);
       return;
@@ -1488,8 +1512,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
   }
 
   const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  if (!view || !host) {
+  if (!view) {
     callback.Run(gfx::Image());
     return;
   }
@@ -1509,10 +1532,10 @@ void WebContents::CapturePage(mate::Arguments* args) {
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
-  host->CopyFromBackingStore(gfx::Rect(rect.origin(), view_size),
-                             bitmap_size,
-                             base::Bind(&OnCapturePageDone, callback),
-                             kBGRA_8888_SkColorType);
+  view->CopyFromSurface(gfx::Rect(rect.origin(), view_size),
+                        bitmap_size,
+                        base::Bind(&OnCapturePageDone, callback),
+                        kBGRA_8888_SkColorType);
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {

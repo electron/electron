@@ -93,9 +93,9 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
   std::vector<std::string> codecs;
   codecs.push_back(kCdmSupportedCodecVp8);
   codecs.push_back(kCdmSupportedCodecVp9);
-#if defined(USE_PROPRIETARY_CODECS)
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
   codecs.push_back(kCdmSupportedCodecAvc1);
-#endif  // defined(USE_PROPRIETARY_CODECS)
+#endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
   std::string codec_string = base::JoinString(
       codecs, std::string(1, kCdmSupportedCodecsValueDelimiter));
   widevine_cdm_mime_type.additional_param_names.push_back(
@@ -198,11 +198,19 @@ base::string16 AtomContentClient::GetLocalizedString(int message_id) const {
   return l10n_util::GetStringUTF16(message_id);
 }
 
-void AtomContentClient::AddAdditionalSchemes(
-    std::vector<url::SchemeWithType>* standard_schemes,
-    std::vector<url::SchemeWithType>* referrer_schemes,
-    std::vector<std::string>* savable_schemes) {
-  standard_schemes->push_back({"chrome-extension", url::SCHEME_WITHOUT_PORT});
+void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
+  schemes->standard_schemes.push_back("chrome-extension");
+
+  std::vector<std::string> splited;
+  ConvertStringWithSeparatorToVector(&splited, ",",
+                                     switches::kRegisterServiceWorkerSchemes);
+  for (const std::string& scheme : splited)
+    schemes->service_worker_schemes.push_back(scheme);
+  schemes->service_worker_schemes.push_back(url::kFileScheme);
+
+  ConvertStringWithSeparatorToVector(&splited, ",", switches::kSecureSchemes);
+  for (const std::string& scheme : splited)
+    schemes->secure_schemes.push_back(scheme);
 }
 
 void AtomContentClient::AddPepperPlugins(
@@ -213,26 +221,5 @@ void AtomContentClient::AddPepperPlugins(
 #endif
   ComputeBuiltInPlugins(plugins);
 }
-
-void AtomContentClient::AddServiceWorkerSchemes(
-    std::set<std::string>* service_worker_schemes) {
-  std::vector<std::string> schemes;
-  ConvertStringWithSeparatorToVector(&schemes, ",",
-                                     switches::kRegisterServiceWorkerSchemes);
-  for (const std::string& scheme : schemes)
-    service_worker_schemes->insert(scheme);
-
-  service_worker_schemes->insert(url::kFileScheme);
-}
-
-void AtomContentClient::AddSecureSchemesAndOrigins(
-    std::set<std::string>* secure_schemes,
-    std::set<GURL>* secure_origins) {
-  std::vector<std::string> schemes;
-  ConvertStringWithSeparatorToVector(&schemes, ",", switches::kSecureSchemes);
-  for (const std::string& scheme : schemes)
-    secure_schemes->insert(scheme);
-}
-
 
 }  // namespace atom

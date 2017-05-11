@@ -7,6 +7,8 @@
 #include <io.h>
 
 #define U_I18N_IMPLEMENTATION
+#define U_COMMON_IMPLEMENTATION
+#define U_COMBINED_IMPLEMENTATION
 
 #include "third_party/icu/source/common/unicode/ubidi.h"
 #include "third_party/icu/source/common/unicode/uchar.h"
@@ -15,6 +17,7 @@
 #include "third_party/icu/source/common/unicode/unorm.h"
 #include "third_party/icu/source/common/unicode/urename.h"
 #include "third_party/icu/source/common/unicode/ustring.h"
+#include "third_party/icu/source/i18n/unicode/dtitvfmt.h"
 #include "third_party/icu/source/i18n/unicode/measfmt.h"
 #include "third_party/icu/source/i18n/unicode/translit.h"
 #include "third_party/icu/source/i18n/unicode/ucsdet.h"
@@ -22,6 +25,7 @@
 #include "third_party/icu/source/i18n/unicode/uregex.h"
 #include "third_party/icu/source/i18n/unicode/uspoof.h"
 #include "third_party/icu/source/i18n/unicode/usearch.h"
+#include "util-inl.h"
 #include "v8-profiler.h"
 #include "v8-inspector.h"
 
@@ -33,6 +37,18 @@ int open_osfhandle(intptr_t osfhandle, int flags) {
 
 int close(int fd) {
   return _close(fd);
+}
+
+void* ArrayBufferCalloc(size_t length) {
+  return UncheckedCalloc(length);
+}
+
+void* ArrayBufferMalloc(size_t length) {
+  return UncheckedMalloc(length);
+}
+
+void ArrayBufferFree(void* data, size_t length) {
+  return ::free(data);
 }
 
 void ReferenceSymbols() {
@@ -60,6 +76,9 @@ void ReferenceSymbols() {
   UMeasureFormatWidth width = UMEASFMT_WIDTH_WIDE;
   UErrorCode status = U_ZERO_ERROR;
   icu::MeasureFormat format(icu::Locale::getRoot(), width, status);
+  icu::DateInterval internal(0, 0);
+  icu::DateIntervalFormat::createInstance(UnicodeString(),
+                                          icu::Locale::getRoot(), status);
   reinterpret_cast<icu::Transliterator*>(nullptr)->clone();
 }
 

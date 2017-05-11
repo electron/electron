@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '1.6.7',
+    'version%': '1.7.0',
     'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
   },
   'includes': [
@@ -237,9 +237,6 @@
         'USING_V8_SHARED',
         'USING_V8_PLATFORM_SHARED',
         'USING_V8_BASE_SHARED',
-        # Remove this after enable_plugins becomes a feature flag.
-        'ENABLE_PLUGINS',
-        'USE_PROPRIETARY_CODECS',
       ],
       'sources': [
         '<@(lib_sources)',

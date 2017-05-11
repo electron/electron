@@ -69,6 +69,7 @@ class OffScreenRenderWidgetHostView
   OffScreenRenderWidgetHostView(bool transparent,
                                 const OnPaintCallback& callback,
                                 content::RenderWidgetHost* render_widget_host,
+                                bool is_guest_view_hack,
                                 NativeWindow* native_window);
   ~OffScreenRenderWidgetHostView() override;
 
@@ -126,23 +127,20 @@ class OffScreenRenderWidgetHostView
 #endif
   void SelectionBoundsChanged(const ViewHostMsg_SelectionBounds_Params &)
     override;
-  void CopyFromCompositingSurface(const gfx::Rect &,
-    const gfx::Size &,
-    const content::ReadbackRequestCallback &,
-    const SkColorType) override;
-  void CopyFromCompositingSurfaceToVideoFrame(
-    const gfx::Rect &,
-    const scoped_refptr<media::VideoFrame> &,
-    const base::Callback<void(const gfx::Rect &, bool),
-    base::internal::CopyMode::Copyable> &) override;
-  bool CanCopyToVideoFrame(void) const override;
+  void CopyFromSurface(
+      const gfx::Rect& src_subrect,
+      const gfx::Size& dst_size,
+      const content::ReadbackRequestCallback& callback,
+      const SkColorType color_type) override;
+  void CopyFromSurfaceToVideoFrame(
+      const gfx::Rect& src_subrect,
+      scoped_refptr<media::VideoFrame> target,
+      const base::Callback<void(const gfx::Rect&, bool)>& callback) override;
   void BeginFrameSubscription(
     std::unique_ptr<content::RenderWidgetHostViewFrameSubscriber>) override;
   void EndFrameSubscription() override;
   bool HasAcceleratedSurface(const gfx::Size &) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
-  void LockCompositingSurface(void) override;
-  void UnlockCompositingSurface(void) override;
   void ImeCompositionRangeChanged(
     const gfx::Range &, const std::vector<gfx::Rect>&) override;
   gfx::Size GetPhysicalBackingSize() const override;
@@ -166,6 +164,15 @@ class OffScreenRenderWidgetHostView
   void SetBeginFrameSource(cc::BeginFrameSource* source) override;
 #endif  // !defined(OS_MACOSX)
 
+  bool TransformPointToLocalCoordSpace(
+      const gfx::Point& point,
+      const cc::SurfaceId& original_surface,
+      gfx::Point* transformed_point) override;
+  bool TransformPointToCoordSpaceForView(
+      const gfx::Point& point,
+      RenderWidgetHostViewBase* target_view,
+      gfx::Point* transformed_point) override;
+
   // ui::CompositorDelegate:
   std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
       ui::Compositor* compositor) override;
@@ -182,7 +189,7 @@ class OffScreenRenderWidgetHostView
                       base::TimeDelta vsync_period);
 
 #if defined(OS_MACOSX)
-  void CreatePlatformWidget();
+  void CreatePlatformWidget(bool is_guest_view_hack);
   void DestroyPlatformWidget();
 #endif
 
@@ -210,6 +217,8 @@ class OffScreenRenderWidgetHostView
   void SetupFrameRate(bool force);
   void ResizeRootLayer();
 
+  cc::FrameSinkId AllocateFrameSinkId(bool is_guest_view_hack);
+
   // Weak ptrs.
   content::RenderWidgetHostImpl* render_widget_host_;
   NativeWindow* native_window_;
@@ -235,6 +244,10 @@ class OffScreenRenderWidgetHostView
 
   std::unique_ptr<AtomCopyFrameGenerator> copy_frame_generator_;
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
+
+  // Provides |source_id| for BeginFrameArgs that we create.
+  cc::StubBeginFrameSource begin_frame_source_;
+  uint64_t begin_frame_number_ = cc::BeginFrameArgs::kStartingFrameNumber;
 
 #if defined(OS_MACOSX)
   CALayer* background_layer_;

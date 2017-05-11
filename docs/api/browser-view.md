@@ -44,7 +44,7 @@ Objects created with `new BrowserView` have the following properties:
 
 #### `view.webContents` _Experimental_
 
-A [`webContents`](web-contents.md) object owned by this view.
+A [`WebContents`](web-contents.md) object owned by this view.
 
 #### `win.id` _Experimental_
 
@@ -57,10 +57,10 @@ Objects created with `new BrowserWindow` have the following instance methods:
 #### `win.setAutoResize(options)` _Experimental_
 
 * `options` Object
-  * `width`: If `true`, the view's width will grow and shrink together with
-    the window. `false` by default.
-  * `height`: If `true`, the view's height will grow and shrink together with
-    the window. `false` by default.
+  * `width` Boolean - If `true`, the view's width will grow and shrink together
+    with the window. `false` by default.
+  * `height` Boolean - If `true`, the view's height will grow and shrink
+    together with the window. `false` by default.
 
 #### `win.setBounds(bounds)` _Experimental_
 

@@ -17,13 +17,13 @@ URLRequestStringJob::URLRequestStringJob(
 }
 
 void URLRequestStringJob::StartAsync(std::unique_ptr<base::Value> options) {
-  if (options->IsType(base::Value::TYPE_DICTIONARY)) {
+  if (options->IsType(base::Value::Type::DICTIONARY)) {
     base::DictionaryValue* dict =
         static_cast<base::DictionaryValue*>(options.get());
     dict->GetString("mimeType", &mime_type_);
     dict->GetString("charset", &charset_);
     dict->GetString("data", &data_);
-  } else if (options->IsType(base::Value::TYPE_STRING)) {
+  } else if (options->IsType(base::Value::Type::STRING)) {
     options->GetAsString(&data_);
   }
   net::URLRequestSimpleJob::Start();

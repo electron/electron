@@ -188,8 +188,13 @@ void CommonWebContentsDelegate::SetOwnerWindow(
   }
 }
 
-void CommonWebContentsDelegate::ResetManagedWebContents() {
-  web_contents_.reset();
+void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
+  if (async) {
+    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
+                                                    web_contents_.release());
+  } else {
+    web_contents_.reset();
+  }
 }
 
 content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
@@ -489,9 +494,9 @@ void CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated(
     int request_id,
     const std::string& file_system_path,
     int total_work) {
-  base::FundamentalValue request_id_value(request_id);
+  base::Value request_id_value(request_id);
   base::StringValue file_system_path_value(file_system_path);
-  base::FundamentalValue total_work_value(total_work);
+  base::Value total_work_value(total_work);
   web_contents_->CallClientFunction("DevToolsAPI.indexingTotalWorkCalculated",
                                     &request_id_value,
                                     &file_system_path_value,
@@ -502,9 +507,9 @@ void CommonWebContentsDelegate::OnDevToolsIndexingWorked(
     int request_id,
     const std::string& file_system_path,
     int worked) {
-  base::FundamentalValue request_id_value(request_id);
+  base::Value request_id_value(request_id);
   base::StringValue file_system_path_value(file_system_path);
-  base::FundamentalValue worked_value(worked);
+  base::Value worked_value(worked);
   web_contents_->CallClientFunction("DevToolsAPI.indexingWorked",
                                     &request_id_value,
                                     &file_system_path_value,
@@ -515,7 +520,7 @@ void CommonWebContentsDelegate::OnDevToolsIndexingDone(
     int request_id,
     const std::string& file_system_path) {
   devtools_indexing_jobs_.erase(request_id);
-  base::FundamentalValue request_id_value(request_id);
+  base::Value request_id_value(request_id);
   base::StringValue file_system_path_value(file_system_path);
   web_contents_->CallClientFunction("DevToolsAPI.indexingDone",
                                     &request_id_value,
@@ -531,7 +536,7 @@ void CommonWebContentsDelegate::OnDevToolsSearchCompleted(
   for (const auto& file_path : file_paths) {
     file_paths_value.AppendString(file_path);
   }
-  base::FundamentalValue request_id_value(request_id);
+  base::Value request_id_value(request_id);
   base::StringValue file_system_path_value(file_system_path);
   web_contents_->CallClientFunction("DevToolsAPI.searchCompleted",
                                     &request_id_value,

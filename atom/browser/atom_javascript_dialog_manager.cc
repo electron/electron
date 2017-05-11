@@ -13,27 +13,27 @@
 #include "base/strings/utf_string_conversions.h"
 #include "ui/gfx/image/image_skia.h"
 
-using content::JavaScriptMessageType;
+using content::JavaScriptDialogType;
 
 namespace atom {
 
 void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,
     const GURL& origin_url,
-    JavaScriptMessageType message_type,
+    JavaScriptDialogType dialog_type,
     const base::string16& message_text,
     const base::string16& default_prompt_text,
     const DialogClosedCallback& callback,
     bool* did_suppress_message) {
 
-  if (message_type != JavaScriptMessageType::JAVASCRIPT_MESSAGE_TYPE_ALERT &&
-      message_type != JavaScriptMessageType::JAVASCRIPT_MESSAGE_TYPE_CONFIRM) {
+  if (dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT &&
+      dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
     callback.Run(false, base::string16());
     return;
   }
 
   std::vector<std::string> buttons = {"OK"};
-  if (message_type == JavaScriptMessageType::JAVASCRIPT_MESSAGE_TYPE_CONFIRM) {
+  if (dialog_type == JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
     buttons.push_back("Cancel");
   }
 
@@ -55,7 +55,6 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
 
 void AtomJavaScriptDialogManager::CancelDialogs(
     content::WebContents* web_contents,
-    bool suppress_callbacks,
     bool reset_state) {
 }
 

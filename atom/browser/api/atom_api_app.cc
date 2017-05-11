@@ -34,12 +34,12 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "content/public/browser/browser_child_process_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "media/audio/audio_manager.h"
-#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -337,6 +337,17 @@ namespace api {
 
 namespace {
 
+class AppIdProcessIterator : public base::ProcessIterator {
+ public:
+  AppIdProcessIterator() : base::ProcessIterator(nullptr) {}
+
+ protected:
+  bool IncludeEntry() override {
+    return (entry().parent_pid() == base::GetCurrentProcId() ||
+            entry().pid() == base::GetCurrentProcId());
+  }
+};
+
 IconLoader::IconSize GetIconSizeByString(const std::string& size) {
   if (size == "small") {
     return IconLoader::IconSize::SMALL;
@@ -453,8 +464,8 @@ int ImportIntoCertStore(
 
   if (!cert_path.empty()) {
     if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
-      auto module = model->cert_db()->GetPublicModule();
-      rv = model->ImportFromPKCS12(module,
+      auto module = model->cert_db()->GetPrivateSlot();
+      rv = model->ImportFromPKCS12(module.get(),
                                    file_data,
                                    password,
                                    true,
@@ -912,6 +923,47 @@ void App::GetFileIcon(const base::FilePath& path,
   }
 }
 
+std::vector<mate::Dictionary> App::GetAppMemoryInfo(v8::Isolate* isolate) {
+  AppIdProcessIterator process_iterator;
+  auto process_entry = process_iterator.NextProcessEntry();
+  std::vector<mate::Dictionary> result;
+
+  while (process_entry != nullptr) {
+    int64_t pid = process_entry->pid();
+    auto process = base::Process::OpenWithExtraPrivileges(pid);
+
+#if defined(OS_MACOSX)
+    std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateProcessMetrics(
+        process.Handle(), content::BrowserChildProcessHost::GetPortProvider()));
+#else
+    std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateProcessMetrics(process.Handle()));
+#endif
+
+    mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
+    mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
+
+    memory_dict.Set("workingSetSize",
+            static_cast<double>(metrics->GetWorkingSetSize() >> 10));
+    memory_dict.Set("peakWorkingSetSize",
+            static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
+
+    size_t private_bytes, shared_bytes;
+    if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
+      memory_dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
+      memory_dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
+    }
+
+    pid_dict.Set("memory", memory_dict);
+    pid_dict.Set("pid", pid);
+    result.push_back(pid_dict);
+    process_entry = process_iterator.NextProcessEntry();
+  }
+
+  return result;
+}
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -983,7 +1035,8 @@ void App::BuildPrototype(
                  &App::IsAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
-      .SetMethod("getFileIcon", &App::GetFileIcon);
+      .SetMethod("getFileIcon", &App::GetFileIcon)
+      .SetMethod("getAppMemoryInfo", &App::GetAppMemoryInfo);
 }
 
 }  // namespace api

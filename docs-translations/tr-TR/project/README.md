@@ -72,7 +72,7 @@ Asağıdaki sayfalardan sorular sorabilir ve topluluk ile etkileşime geçebilir
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
 - [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turkish)*
+- [`electron-tr`](http://electron-tr.herokuapp.com) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
 
 Topluluk tarafından sağlanan örnek uygulamaları, aracları ve kaynaklara ulaşmak için

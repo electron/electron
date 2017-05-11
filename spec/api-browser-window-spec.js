@@ -86,6 +86,42 @@ describe('BrowserWindow module', function () {
   })
 
   describe('BrowserWindow.close()', function () {
+    let server
+
+    before(function (done) {
+      server = http.createServer((request, response) => {
+        switch (request.url) {
+          case '/404':
+            response.statusCode = '404'
+            response.end()
+            break
+          case '/301':
+            response.statusCode = '301'
+            response.setHeader('Location', '/200')
+            response.end()
+            break
+          case '/200':
+            response.statusCode = '200'
+            response.end('hello')
+            break
+          case '/title':
+            response.statusCode = '200'
+            response.end('<title>Hello</title>')
+            break
+          default:
+            done('unsupported endpoint')
+        }
+      }).listen(0, '127.0.0.1', () => {
+        server.url = 'http://127.0.0.1:' + server.address().port
+        done()
+      })
+    })
+
+    after(function () {
+      server.close()
+      server = null
+    })
+
     it('should emit unload handler', function (done) {
       w.webContents.on('did-finish-load', function () {
         w.close()
@@ -108,6 +144,38 @@ describe('BrowserWindow module', function () {
         w.close()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false.html'))
+    })
+
+    it('should not crash when invoked synchronously inside navigation observer', function (done) {
+      const events = [
+        { name: 'did-start-loading', url: `${server.url}/200` },
+        { name: 'did-get-redirect-request', url: `${server.url}/301` },
+        { name: 'did-get-response-details', url: `${server.url}/200` },
+        { name: 'dom-ready', url: `${server.url}/200` },
+        { name: 'page-title-updated', url: `${server.url}/title` },
+        { name: 'did-stop-loading', url: `${server.url}/200` },
+        { name: 'did-finish-load', url: `${server.url}/200` },
+        { name: 'did-frame-finish-load', url: `${server.url}/200` },
+        { name: 'did-fail-load', url: `${server.url}/404` }
+      ]
+      const responseEvent = 'window-webContents-destroyed'
+
+      function* genNavigationEvent () {
+        let eventOptions = null
+        while ((eventOptions = events.shift()) && events.length) {
+          let w = new BrowserWindow({show: false})
+          eventOptions.id = w.id
+          eventOptions.responseEvent = responseEvent
+          ipcRenderer.send('test-webcontents-navigation-observer', eventOptions)
+          yield 1
+        }
+      }
+
+      let gen = genNavigationEvent()
+      ipcRenderer.on(responseEvent, function () {
+        if (!gen.next().value) done()
+      })
+      gen.next()
     })
   })
 
@@ -1082,6 +1150,29 @@ describe('BrowserWindow module', function () {
         })
         w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
       })
+
+      it('releases memory after popup is closed', (done) => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            sandbox: true
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?allocate-memory'))
+        w.webContents.openDevTools({mode: 'detach'})
+        ipcMain.once('answer', function (event, {bytesBeforeOpen, bytesAfterOpen, bytesAfterClose}) {
+          const memoryIncreaseByOpen = bytesAfterOpen - bytesBeforeOpen
+          const memoryDecreaseByClose = bytesAfterOpen - bytesAfterClose
+          // decreased memory should be less than increased due to factors we
+          // can't control, but given the amount of memory allocated in the
+          // fixture, we can reasonably expect decrease to be at least 70% of
+          // increase
+          assert(memoryDecreaseByClose > memoryIncreaseByOpen * 0.7)
+          done()
+        })
+      })
     })
 
     describe('nativeWindowOpen option', () => {
@@ -1169,6 +1260,60 @@ describe('BrowserWindow module', function () {
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html'))
+    })
+
+    it('emits for each close attempt', function (done) {
+      var beforeUnloadCount = 0
+      w.on('onbeforeunload', function () {
+        beforeUnloadCount++
+        if (beforeUnloadCount < 3) {
+          w.close()
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', function () {
+        w.close()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+
+    it('emits for each reload attempt', function (done) {
+      var beforeUnloadCount = 0
+      w.on('onbeforeunload', function () {
+        beforeUnloadCount++
+        if (beforeUnloadCount < 3) {
+          w.reload()
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', function () {
+        w.webContents.once('did-finish-load', function () {
+          assert.fail('Reload was not prevented')
+        })
+        w.reload()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
+    })
+
+    it('emits for each navigation attempt', function (done) {
+      var beforeUnloadCount = 0
+      w.on('onbeforeunload', function () {
+        beforeUnloadCount++
+        if (beforeUnloadCount < 3) {
+          w.loadURL('about:blank')
+        } else if (beforeUnloadCount === 3) {
+          done()
+        }
+      })
+      w.webContents.once('did-finish-load', function () {
+        w.webContents.once('did-finish-load', function () {
+          assert.fail('Navigation was not prevented')
+        })
+        w.loadURL('about:blank')
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'beforeunload-false-prevent3.html'))
     })
   })
 

@@ -62,6 +62,10 @@ struct Converter<net::CookieStore::ChangeCause> {
     switch (val) {
       case net::CookieStore::ChangeCause::INSERTED:
       case net::CookieStore::ChangeCause::EXPLICIT:
+      case net::CookieStore::ChangeCause::EXPLICIT_DELETE_BETWEEN:
+      case net::CookieStore::ChangeCause::EXPLICIT_DELETE_PREDICATE:
+      case net::CookieStore::ChangeCause::EXPLICIT_DELETE_SINGLE:
+      case net::CookieStore::ChangeCause::EXPLICIT_DELETE_CANONICAL:
         return mate::StringToV8(isolate, "explicit");
       case net::CookieStore::ChangeCause::OVERWRITE:
         return mate::StringToV8(isolate, "overwrite");
@@ -228,8 +232,8 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   GetCookieStore(getter)->SetCookieWithDetailsAsync(
       GURL(url), name, value, domain, path, creation_time,
       expiration_time, last_access_time, secure, http_only,
-      net::CookieSameSite::DEFAULT_MODE, false,
-      net::COOKIE_PRIORITY_DEFAULT, base::Bind(OnSetCookie, callback));
+      net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT,
+      base::Bind(OnSetCookie, callback));
 }
 
 }  // namespace

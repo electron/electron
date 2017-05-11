@@ -116,3 +116,15 @@ Returns `Object`:
 
 Returns an object giving memory usage statistics about the entire system. Note
 that all statistics are reported in Kilobytes.
+
+### `process.getCPUUsage()`
+
+Returns:
+
+* `CPUUsage` [CPUUsage](structures/cpu-usage.md)
+
+### `process.getIOCounters()` _Windows_ _Linux_
+
+Returns:
+
+* `IOCounters` [IOCounters](structures/io-counters.md)

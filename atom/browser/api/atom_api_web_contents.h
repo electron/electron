@@ -78,7 +78,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Notifies to destroy any guest web contents before destroying self.
-  void DestroyWebContents();
+  void DestroyWebContents(bool async);
 
   int64_t GetID() const;
   int GetProcessID() const;
@@ -340,6 +340,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Observe(int type,
                const content::NotificationSource& source,
                const content::NotificationDetails& details) override;
+  void BeforeUnloadDialogCancelled() override;
 
   // brightray::InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;

@@ -10,10 +10,10 @@
 #include "v8/include/v8.h"
 
 namespace base {
-class BinaryValue;
 class DictionaryValue;
 class ListValue;
 class Value;
+using BinaryValue = Value;
 }
 
 namespace atom {

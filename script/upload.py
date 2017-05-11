@@ -81,6 +81,7 @@ def main():
   if PLATFORM == 'darwin':
     upload_electron(github, release, os.path.join(DIST_DIR,
                     'electron-api.json'))
+    upload_electron(github, release, os.path.join(DIST_DIR, 'electron.d.ts'))
     upload_electron(github, release, os.path.join(DIST_DIR, DSYM_NAME))
   elif PLATFORM == 'win32':
     upload_electron(github, release, os.path.join(DIST_DIR, PDB_NAME))
@@ -101,6 +102,7 @@ def main():
     run_python_script('upload-windows-pdb.py')
 
     # Upload node headers.
+    run_python_script('create-node-headers.py', '-v', args.version)
     run_python_script('upload-node-headers.py', '-v', args.version)
 
 
