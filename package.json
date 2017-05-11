@@ -6,7 +6,7 @@
     "browserify": "^13.1.0",
     "electabul": "~0.0.4",
     "electron-docs-linter": "^2.1.0",
-    "electron-typescript-definitions": "^1.2.0",
+    "electron-typescript-definitions": "^1.2.3",
     "request": "*",
     "standard": "^8.4.0",
     "standard-markdown": "^2.1.1"
@@ -40,6 +40,8 @@
     "lint-py": "python ./script/pylint.py",
     "lint-api-docs-js": "standard-markdown docs && standard-markdown docs-translations",
     "lint-api-docs": "electron-docs-linter",
+    "create-api-json": "electron-docs-linter docs --outfile=out/electron-api.json --version=$npm_package_version",
+    "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=out/electron-api.json --out=out/electron.d.ts",
     "preinstall": "node -e 'process.exit(0)'",
     "release": "./script/upload.py -p",
     "repl": "python ./script/start.py --interactive",
