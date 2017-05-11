@@ -1314,6 +1314,10 @@ void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
     [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
 }
 
+gfx::NativeView NativeWindowMac::GetNativeView() {
+  return inspectable_web_contents()->GetView()->GetNativeView();
+}
+
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
 }

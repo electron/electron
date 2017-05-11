@@ -924,6 +924,10 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
 #endif
 }
 
+gfx::NativeView NativeWindowViews::GetNativeView() {
+  return window_->GetNativeView();
+}
+
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
   return window_->GetNativeWindow();
 }
