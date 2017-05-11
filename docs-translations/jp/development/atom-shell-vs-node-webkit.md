@@ -16,7 +16,7 @@ Electron は Node.js ランタイムのように動作します。 Electron の 
 
 __2. ビルドシステム__
 
-Chromium の全てのコードをビルドする複雑さを回避するため、Electron は [`libchromiumcontent`](https://github.com/brightray/libchromiumcontent) を通して Chromium の Content API にアクセスします。
+Chromium の全てのコードをビルドする複雑さを回避するため、Electron は [`libchromiumcontent`](https://github.com/electron/libchromiumcontent) を通して Chromium の Content API にアクセスします。
 
 `libchromiumcontent` は Chromium の Content モジュールとそれに依存する全てを含んだ単一の共有ライブラリです。
 おかげで Electron をビルドするためにパワフルなマシンを用意する必要はありません。

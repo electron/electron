@@ -10,7 +10,7 @@ from lib.util import electron_gyp, execute, rm_rf, safe_mkdir, s3put
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 SYMBOLS_DIR = 'dist\\symbols'
-DOWNLOAD_DIR = 'vendor\\brightray\\vendor\\download\\libchromiumcontent'
+DOWNLOAD_DIR = 'vendor\\download\\libchromiumcontent'
 
 PROJECT_NAME = electron_gyp()['project_name%']
 PRODUCT_NAME = electron_gyp()['product_name%']

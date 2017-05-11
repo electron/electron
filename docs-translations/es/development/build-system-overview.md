@@ -6,8 +6,8 @@ los siguientes archivos `gyp` contienen las principales reglas para la contrucci
 
   * `atom.gyp` define en si como se compila en Electron.
   * `common.gypi` ajusta las configuraciones de generación de Node para  construir junto con Chromium.
-  * `vendor/brightray/brightray.gyp` define cómo se construye `brightray` e incluye las configuraciones predeterminadas para linkear con Chromium.
-  * `vendor/brightray/brightray.gypi` incluye configuraciones de generación generales sobre la construcción.
+  * `brightray/brightray.gyp` define cómo se construye `brightray` e incluye las configuraciones predeterminadas para linkear con Chromium.
+  * `brightray/brightray.gypi` incluye configuraciones de generación generales sobre la construcción.
 
 #Construir un componente
 Desde Chromium es un proyecto bastante largo, la etapa de enlace final puede tomar pocos minutos, lo que hace que sea difícil para el desarrollo. Con el fin de resolver esto, Chromium introdujo el "componente de construcción", que se basa en construir cada componente como una libreria  compartida por separado, haciendo que se enlace muy rápido, pero sacrificando el tamaño del archivo y el rendimiento.
