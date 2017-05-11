@@ -6,7 +6,6 @@
 
 #include "atom/app/uv_task_runner.h"
 #include "atom/browser/javascript_environment.h"
-#include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -50,11 +49,6 @@ int NodeMain(int argc, char *argv[]) {
     node::Environment* env = node::CreateEnvironment(
         &isolate_data, gin_env.context(), argc, argv,
         exec_argc, exec_argv);
-
-    // Start our custom debugger implementation.
-    NodeDebugger node_debugger(gin_env.isolate());
-    if (node_debugger.IsRunning())
-      env->AssignToContext(v8::Debug::GetDebugContext(gin_env.isolate()));
 
     mate::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)
