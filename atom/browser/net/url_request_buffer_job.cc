@@ -67,7 +67,7 @@ void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
 }
 
 void URLRequestBufferJob::GetResponseInfo(net::HttpResponseInfo* info) {
-  std::string status("HTTP/1.1 ");
+  std::string status("HTTP/1.1 200 OK");
   status.append(base::IntToString(status_code_));
   status.append(" ");
   status.append(net::GetHttpReasonPhrase(status_code_));
