@@ -13,6 +13,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_response_headers.h"
+#include "net/http/http_status_code.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_request_job.h"
 #include "v8/include/v8.h"
@@ -83,7 +84,7 @@ class JsAsker : public RequestJob {
                               weak_factory_.GetWeakPtr())));
   }
 
-  int GetResponseCode() const override { return 200; }
+  int GetResponseCode() const override { return net::HTTP_OK; }
 
   void GetResponseInfo(net::HttpResponseInfo* info) override {
     info->headers = new net::HttpResponseHeaders("");
