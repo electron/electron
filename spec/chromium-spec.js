@@ -173,7 +173,11 @@ describe('chromium feature', function () {
     it('should register for intercepted file scheme', function (done) {
       const customSession = session.fromPartition('intercept-file')
       customSession.protocol.interceptBufferProtocol('file', function (request, callback) {
-        const file = url.parse(request.url).pathname
+        let file = url.parse(request.url).pathname
+        // Remove leading slash before drive letter on Windows
+        if (file[0] === '/' && process.platform === 'win32') {
+          file = file.slice(1)
+        }
         const content = fs.readFileSync(path.normalize(file))
         const ext = path.extname(file)
         let type = 'text/html'
