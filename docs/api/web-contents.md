@@ -230,10 +230,10 @@ Calling `event.preventDefault()` will ignore the `beforeunload` event handler
 and allow the page to be unloaded.
 
 ```javascript
-const {BrowserWindow} = require('electron')
-let win = new BrowserWindow({width: 800, height: 600})
+const {BrowserWindow, dialog} = require('electron')
+const win = new BrowserWindow({width: 800, height: 600})
 win.webContents.on('will-prevent-unload', (event) => {
-  let choice = dialog.showMessageBox(mainWindow, {
+  const choice = dialog.showMessageBox(win, {
     type: 'question',
     buttons: ['Leave', 'Stay'],
     title: 'Do you want to leave this site?',
@@ -241,7 +241,7 @@ win.webContents.on('will-prevent-unload', (event) => {
     defaultId: 0,
     cancelId: 1
   })
-  let leave = (choice === 0)
+  const leave = (choice === 0)
   if (leave) {
     event.preventDefault()
   }
