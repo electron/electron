@@ -202,6 +202,8 @@
       'atom/browser/browser_mac.mm',
       'atom/browser/browser_win.cc',
       'atom/browser/browser_observer.h',
+      'atom/browser/child_web_contents_tracker.cc',
+      'atom/browser/child_web_contents_tracker.h',
       'atom/browser/common_web_contents_delegate_mac.mm',
       'atom/browser/common_web_contents_delegate_views.cc',
       'atom/browser/common_web_contents_delegate.cc',

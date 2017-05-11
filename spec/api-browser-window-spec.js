@@ -1174,6 +1174,70 @@ describe('BrowserWindow module', function () {
         })
       })
     })
+
+    describe('nativeWindowOpen option', () => {
+      beforeEach(() => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nativeWindowOpen: true
+          }
+        })
+      })
+
+      it('opens window of about:blank with cross-scripting enabled', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          assert.equal(content, 'Hello')
+          done()
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-blank.html'))
+      })
+
+      it('opens window of same domain with cross-scripting enabled', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          assert.equal(content, 'Hello')
+          done()
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-file.html'))
+      })
+
+      if (process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1) {
+        it('loads native addons correctly after reload', (done) => {
+          ipcMain.once('answer', (event, content) => {
+            assert.equal(content, 'function')
+            ipcMain.once('answer', (event, content) => {
+              assert.equal(content, 'function')
+              done()
+            })
+            w.reload()
+          })
+          w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
+        })
+      }
+    })
+  })
+
+  describe('nativeWindowOpen + contextIsolation options', () => {
+    beforeEach(() => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nativeWindowOpen: true,
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'native-window-open-isolated-preload.js')
+        }
+      })
+    })
+
+    it('opens window with cross-scripting enabled from isolated context', (done) => {
+      ipcMain.once('answer', (event, content) => {
+        assert.equal(content, 'Hello')
+        done()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-isolated.html'))
+    })
   })
 
   describe('beforeunload handler', function () {
