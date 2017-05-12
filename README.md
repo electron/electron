@@ -58,6 +58,7 @@ contains documents describing how to build and contribute to Electron.
 - [Ukrainian](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
 - [Russian](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
 - [French](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)
+- [Indonesian](https://github.com/electron/electron/tree/master/docs-translations/id)
 
 ## Quick Start
 
