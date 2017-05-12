@@ -858,6 +858,8 @@ std::unique_ptr<cc::SoftwareOutputDevice>
   DCHECK(!copy_frame_generator_);
   DCHECK(!software_output_device_);
 
+  ResizeRootLayer();
+
   software_output_device_ = new OffScreenOutputDevice(
       transparent_,
       base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
@@ -1127,8 +1129,8 @@ void OffScreenRenderWidgetHostView::InvalidateBounds(const gfx::Rect& bounds) {
 void OffScreenRenderWidgetHostView::ResizeRootLayer() {
   SetupFrameRate(false);
 
-  const float orgScaleFactor = scale_factor_;
-  const bool scaleFactorDidChange = (orgScaleFactor != scale_factor_);
+  const float compositorScaleFactor = GetCompositor()->device_scale_factor();
+  const bool scaleFactorDidChange = (compositorScaleFactor != scale_factor_);
 
   gfx::Size size;
   if (!IsPopupWidget())
