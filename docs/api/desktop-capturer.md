@@ -51,7 +51,7 @@ To capture both audio and video from the entire desktop the constraints passed
 to [`navigator.mediaDevices.getUserMedia`] must include `chromeMediaSource: 'desktop'`,
 for both `audio` and `video`, but should not include a `chromeMediaSourceId` constraint.
 
-```
+```javascript
 const constraints = {
   audio: {
     mandatory: {
