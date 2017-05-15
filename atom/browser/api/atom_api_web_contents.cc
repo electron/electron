@@ -1008,7 +1008,7 @@ int WebContents::GetProcessID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
 }
 
-int WebContents::GetOSProcessID() const {
+base::ProcessId WebContents::GetOSProcessID() const {
   auto process_handle = web_contents()->GetRenderProcessHost()->GetHandle();
   return base::GetProcId(process_handle);
 }
