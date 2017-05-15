@@ -12,7 +12,6 @@
 #include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
-#include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
@@ -129,17 +128,10 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   node_bindings_->Initialize();
 
-  // Support the "--debug" switch.
-  node_debugger_.reset(new NodeDebugger(js_env_->isolate()));
-
   // Create the global environment.
   node::Environment* env =
       node_bindings_->CreateEnvironment(js_env_->context());
   node_env_.reset(new NodeEnvironment(env));
-
-  // Make sure node can get correct environment when debugging.
-  if (node_debugger_->IsRunning())
-    env->AssignToContext(v8::Debug::GetDebugContext(js_env_->isolate()));
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
