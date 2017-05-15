@@ -1259,6 +1259,10 @@ Setting the WebRTC IP handling policy allows you to control which IPs are
 exposed via WebRTC.  See [BrowserLeaks](https://browserleaks.com/webrtc) for
 more details.
 
+#### `contents.getOSProcessId()`
+
+Returns `Integer` - The `pid` of the associated renderer process.
+
 ### Instance Properties
 
 #### `contents.id`
