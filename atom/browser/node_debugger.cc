@@ -5,6 +5,7 @@
 #include "atom/browser/node_debugger.h"
 
 #include "base/command_line.h"
+#include "base/strings/utf_string_conversions.h"
 #include "libplatform/libplatform.h"
 
 namespace atom {
@@ -21,8 +22,13 @@ void NodeDebugger::Start() {
     return;
 
   node::DebugOptions options;
-  for (auto& arg : base::CommandLine::ForCurrentProcess()->argv())
+  for (auto& arg : base::CommandLine::ForCurrentProcess()->argv()) {
+#if defined(OS_WIN)
+    options.ParseOption(base::UTF16ToUTF8(arg));
+#else
     options.ParseOption(arg);
+#endif
+  }
 
   if (options.inspector_enabled()) {
     // Use custom platform since the gin platform does not work correctly
