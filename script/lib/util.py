@@ -122,7 +122,7 @@ def make_zip(zip_file_path, files, dirs):
   safe_unlink(zip_file_path)
   if sys.platform == 'darwin':
     files += dirs
-    execute(['zip', '-r', '-y', zip_file_path] + files)
+    execute(['zip', '-r', zip_file_path] + files)
   else:
     zip_file = zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED)
     for filename in files:
