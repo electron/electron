@@ -10,8 +10,8 @@ var desktopCapturer = require('electron').desktopCapturer;
 desktopCapturer.getSources({types: ['window', 'screen']}, function(error, sources) {
   if (error) throw error;
   for (var i = 0; i < sources.length; ++i) {
-    if (sources[i].name == "Electron") {
-      navigator.webkitGetUserMedia({
+    if (sources[i].name == 'Electron') {
+      navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
           mandatory: {
@@ -38,14 +38,27 @@ function getUserMediaError(e) {
 }
 ```
 
-When creating a constraints object for the `navigator.webkitGetUserMedia` call,
+When creating a constraints object for the `navigator.mediaDevices.getUserMedia` call,
 if you are using a source from `desktopCapturer` your `chromeMediaSource` must
 be set to `"desktop"` and your `audio` must be set to `false`. 
 
-If you wish to
-capture the audio and video from the entire desktop you can set
-`chromeMediaSource` to `"screen"` and `audio` to `true`. When using this method
-you cannot specify a `chromeMediaSourceId`.
+If you wish to capture the audio and video from the entire desktop, you should set the 
+`chromeMediaSource` constraint to `"desktop"` on both `audio` and `video`. When using this method
+you should omit the `chromeMediaSourceId`.
+```
+{ 
+  audio: { 
+    mandatory: {
+      chromeMediaSource: 'desktop'
+    }
+  },
+  video: {
+    mandatory: {
+      chromeMediaSource: 'desktop'
+    }
+  }
+}
+```
 
 ## Methods
 
@@ -66,7 +79,7 @@ Starts a request to get all desktop sources, `callback` will be called with
 The `sources` is an array of `Source` objects, each `Source` represents a
 captured screen or individual window, and has following properties:
 * `id` String - The id of the captured window or screen used in
-  `navigator.webkitGetUserMedia`. The format looks like `window:XX` or
+  `navigator.mediaDevices.getUserMedia`. The format looks like `window:XX` or
   `screen:XX` where `XX` is a random generated number.
 * `name` String - The described name of the capturing screen or window. If the
   source is a screen, the name will be `Entire Screen` or `Screen <index>`; if
