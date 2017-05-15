@@ -36,6 +36,10 @@ Debug-related flags, see the [Debugging the Main Process][debugging-main-process
 
 Enables remote debugging over HTTP on the specified `port`.
 
+## --disk-cache-size=`size`
+
+Forces the maximum disk space to be used by the disk cache, in bytes.
+
 ## --js-flags=`flags`
 
 Specifies the flags passed to the Node JS engine. It has to be passed when starting
