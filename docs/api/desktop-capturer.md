@@ -1,7 +1,7 @@
 # desktopCapturer
 
 > Access information about media sources that can be used to capture audio and
-> video from the desktop using the [`navigator.webkitGetUserMedia`] API.
+> video from the desktop using the [`navigator.mediaDevices.getUserMedia`] API.
 
 Process: [Renderer](../glossary.md#renderer-process)
 
@@ -48,8 +48,23 @@ passed to [`navigator.mediaDevices.getUserMedia`] must include
 `chromeMediaSource: 'desktop'`, and `audio: false`.
 
 To capture both audio and video from the entire desktop the constraints passed
-to [`navigator.mediaDevices.getUserMedia`] must include `chromeMediaSource: 'screen'`,
-and `audio: true`, but should not include a `chromeMediaSourceId` constraint.
+to [`navigator.mediaDevices.getUserMedia`] must include `chromeMediaSource: 'desktop'`,
+for both `audio` and `video`, but should not include a `chromeMediaSourceId` constraint.
+
+```
+const constraints = {
+  audio: {
+    mandatory: {
+      chromeMediaSource: 'desktop'
+    }
+  },
+  video: {
+    mandatory: {
+      chromeMediaSource: 'desktop'
+    }
+  }
+};
+```
 
 ## Methods
 
