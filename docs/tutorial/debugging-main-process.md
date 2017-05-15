@@ -27,7 +27,7 @@ Like `--inspector` but pauses execution on the first line of JavaScript.
 ## External Debuggers
 
 You will need to use a debugger that supports the V8 inspector protocol.
-You can use Chrome to connect a debugger by visiting `chrome://inspect`
-and selecting to inspect the launched Electron app present there.
 
+- Connect Chrome by visiting `chrome://inspect` and selecting to inspect the
+  launched Electron app present there.
 - [Debugging the Main Process in VSCode](debugging-main-process-vscode.md)
