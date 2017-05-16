@@ -647,4 +647,20 @@ describe('webContents module', function () {
       gen.next()
     })
   })
+
+  describe('History API', () => {
+    it('should push state after calling history.pushState() from the same url', (done) => {
+      w.loadURL('about:blank')
+      w.webContents.once('did-finish-load', () => {
+        // History should have current page by now.
+        assert.equal(w.webContents.length(), 1)
+
+        w.webContents.executeJavaScript('window.history.pushState({}, "")', (result) => {
+          // Initial page + pushed state
+          assert.equal(w.webContents.length(), 2)
+          done()
+        })
+      })
+    })
+  })
 })
