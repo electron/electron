@@ -6,9 +6,11 @@
 
 #include <io.h>
 
+#if !defined(DEBUG)
 #define U_I18N_IMPLEMENTATION
 #define U_COMMON_IMPLEMENTATION
 #define U_COMBINED_IMPLEMENTATION
+#endif
 
 #include "third_party/icu/source/common/unicode/ubidi.h"
 #include "third_party/icu/source/common/unicode/uchar.h"

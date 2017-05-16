@@ -198,12 +198,6 @@ node::Environment* NodeBindings::CreateEnvironment(
   PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
 
-  // Set process._debugWaitConnect if --debug-brk was specified to stop
-  // the debugger on the first line
-  if (browser_env_ == BROWSER &&
-      base::CommandLine::ForCurrentProcess()->HasSwitch("debug-brk"))
-    process.Set("_debugWaitConnect", true);
-
   return env;
 }
 

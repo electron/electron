@@ -12,6 +12,7 @@
 #include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
+#include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
@@ -132,6 +133,10 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node::Environment* env =
       node_bindings_->CreateEnvironment(js_env_->context());
   node_env_.reset(new NodeEnvironment(env));
+
+  // Enable support for v8 inspector
+  node_debugger_.reset(new NodeDebugger(env));
+  node_debugger_->Start();
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), env->process_object());

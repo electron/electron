@@ -43,7 +43,7 @@
     'V8_BASE': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
-    'v8_inspector': 'false',
+    'v8_inspector': 'true',
   },
   # Settings to compile node under Windows.
   'target_defaults': {

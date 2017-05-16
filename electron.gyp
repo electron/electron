@@ -227,6 +227,7 @@
         # We need to access internal implementations of Node.
         'NODE_WANT_INTERNALS=1',
         'NODE_SHARED_MODE',
+        'HAVE_INSPECTOR=1',
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
