@@ -1,4 +1,4 @@
-// Type definitions for Electron 1.7.0
+// Type definitions for Electron 1.6.10
 // Project: http://electron.atom.io/
 // Definitions by: The Electron Team <https://github.com/electron/electron>
 // Definitions: https://github.com/electron/electron-typescript-definitions
@@ -131,40 +131,40 @@ declare namespace Electron {
      * https://www.chromium.org/developers/design-documents/accessibility for more
      * details.
      */
-    on(event: 'accessibility-support-changed', listener: (event?: Event,
+    on(event: 'accessibility-support-changed', listener: (event: Event,
                                                           /**
                                                            * `true` when Chrome's accessibility support is enabled, `false` otherwise.
                                                            */
-                                                          accessibilitySupportEnabled?: boolean) => void): this;
-    once(event: 'accessibility-support-changed', listener: (event?: Event,
+                                                          accessibilitySupportEnabled: boolean) => void): this;
+    once(event: 'accessibility-support-changed', listener: (event: Event,
                                                           /**
                                                            * `true` when Chrome's accessibility support is enabled, `false` otherwise.
                                                            */
-                                                          accessibilitySupportEnabled?: boolean) => void): this;
-    addListener(event: 'accessibility-support-changed', listener: (event?: Event,
+                                                          accessibilitySupportEnabled: boolean) => void): this;
+    addListener(event: 'accessibility-support-changed', listener: (event: Event,
                                                           /**
                                                            * `true` when Chrome's accessibility support is enabled, `false` otherwise.
                                                            */
-                                                          accessibilitySupportEnabled?: boolean) => void): this;
-    removeListener(event: 'accessibility-support-changed', listener: (event?: Event,
+                                                          accessibilitySupportEnabled: boolean) => void): this;
+    removeListener(event: 'accessibility-support-changed', listener: (event: Event,
                                                           /**
                                                            * `true` when Chrome's accessibility support is enabled, `false` otherwise.
                                                            */
-                                                          accessibilitySupportEnabled?: boolean) => void): this;
+                                                          accessibilitySupportEnabled: boolean) => void): this;
     /**
      * Emitted when the application is activated. Various actions can trigger this
      * event, such as launching the application for the first time, attempting to
      * re-launch the application when it's already running, or clicking on the
      * application's dock or taskbar icon.
      */
-    on(event: 'activate', listener: (event?: Event,
-                                     hasVisibleWindows?: boolean) => void): this;
-    once(event: 'activate', listener: (event?: Event,
-                                     hasVisibleWindows?: boolean) => void): this;
-    addListener(event: 'activate', listener: (event?: Event,
-                                     hasVisibleWindows?: boolean) => void): this;
-    removeListener(event: 'activate', listener: (event?: Event,
-                                     hasVisibleWindows?: boolean) => void): this;
+    on(event: 'activate', listener: (event: Event,
+                                     hasVisibleWindows: boolean) => void): this;
+    once(event: 'activate', listener: (event: Event,
+                                     hasVisibleWindows: boolean) => void): this;
+    addListener(event: 'activate', listener: (event: Event,
+                                     hasVisibleWindows: boolean) => void): this;
+    removeListener(event: 'activate', listener: (event: Event,
+                                     hasVisibleWindows: boolean) => void): this;
     /**
      * Emitted before the application starts closing its windows. Calling
      * event.preventDefault() will prevent the default behaviour, which is terminating
@@ -172,84 +172,84 @@ declare namespace Electron {
      * autoUpdater.quitAndInstall() then before-quit is emitted after emitting close
      * event on all windows and closing them.
      */
-    on(event: 'before-quit', listener: (event?: Event) => void): this;
-    once(event: 'before-quit', listener: (event?: Event) => void): this;
-    addListener(event: 'before-quit', listener: (event?: Event) => void): this;
-    removeListener(event: 'before-quit', listener: (event?: Event) => void): this;
+    on(event: 'before-quit', listener: (event: Event) => void): this;
+    once(event: 'before-quit', listener: (event: Event) => void): this;
+    addListener(event: 'before-quit', listener: (event: Event) => void): this;
+    removeListener(event: 'before-quit', listener: (event: Event) => void): this;
     /**
      * Emitted when a browserWindow gets blurred.
      */
-    on(event: 'browser-window-blur', listener: (event?: Event,
-                                                window?: BrowserWindow) => void): this;
-    once(event: 'browser-window-blur', listener: (event?: Event,
-                                                window?: BrowserWindow) => void): this;
-    addListener(event: 'browser-window-blur', listener: (event?: Event,
-                                                window?: BrowserWindow) => void): this;
-    removeListener(event: 'browser-window-blur', listener: (event?: Event,
-                                                window?: BrowserWindow) => void): this;
+    on(event: 'browser-window-blur', listener: (event: Event,
+                                                window: BrowserWindow) => void): this;
+    once(event: 'browser-window-blur', listener: (event: Event,
+                                                window: BrowserWindow) => void): this;
+    addListener(event: 'browser-window-blur', listener: (event: Event,
+                                                window: BrowserWindow) => void): this;
+    removeListener(event: 'browser-window-blur', listener: (event: Event,
+                                                window: BrowserWindow) => void): this;
     /**
      * Emitted when a new browserWindow is created.
      */
-    on(event: 'browser-window-created', listener: (event?: Event,
-                                                   window?: BrowserWindow) => void): this;
-    once(event: 'browser-window-created', listener: (event?: Event,
-                                                   window?: BrowserWindow) => void): this;
-    addListener(event: 'browser-window-created', listener: (event?: Event,
-                                                   window?: BrowserWindow) => void): this;
-    removeListener(event: 'browser-window-created', listener: (event?: Event,
-                                                   window?: BrowserWindow) => void): this;
+    on(event: 'browser-window-created', listener: (event: Event,
+                                                   window: BrowserWindow) => void): this;
+    once(event: 'browser-window-created', listener: (event: Event,
+                                                   window: BrowserWindow) => void): this;
+    addListener(event: 'browser-window-created', listener: (event: Event,
+                                                   window: BrowserWindow) => void): this;
+    removeListener(event: 'browser-window-created', listener: (event: Event,
+                                                   window: BrowserWindow) => void): this;
     /**
      * Emitted when a browserWindow gets focused.
      */
-    on(event: 'browser-window-focus', listener: (event?: Event,
-                                                 window?: BrowserWindow) => void): this;
-    once(event: 'browser-window-focus', listener: (event?: Event,
-                                                 window?: BrowserWindow) => void): this;
-    addListener(event: 'browser-window-focus', listener: (event?: Event,
-                                                 window?: BrowserWindow) => void): this;
-    removeListener(event: 'browser-window-focus', listener: (event?: Event,
-                                                 window?: BrowserWindow) => void): this;
+    on(event: 'browser-window-focus', listener: (event: Event,
+                                                 window: BrowserWindow) => void): this;
+    once(event: 'browser-window-focus', listener: (event: Event,
+                                                 window: BrowserWindow) => void): this;
+    addListener(event: 'browser-window-focus', listener: (event: Event,
+                                                 window: BrowserWindow) => void): this;
+    removeListener(event: 'browser-window-focus', listener: (event: Event,
+                                                 window: BrowserWindow) => void): this;
     /**
      * Emitted when failed to verify the certificate for url, to trust the certificate
      * you should prevent the default behavior with event.preventDefault() and call
      * callback(true).
      */
-    on(event: 'certificate-error', listener: (event?: Event,
-                                              webContents?: WebContents,
-                                              url?: string,
+    on(event: 'certificate-error', listener: (event: Event,
+                                              webContents: WebContents,
+                                              url: string,
                                               /**
                                                * The error code
                                                */
-                                              error?: string,
-                                              certificate?: Certificate,
-                                              callback?: (isTrusted?: boolean) => void) => void): this;
-    once(event: 'certificate-error', listener: (event?: Event,
-                                              webContents?: WebContents,
-                                              url?: string,
+                                              error: string,
+                                              certificate: Certificate,
+                                              callback: (isTrusted: boolean) => void) => void): this;
+    once(event: 'certificate-error', listener: (event: Event,
+                                              webContents: WebContents,
+                                              url: string,
                                               /**
                                                * The error code
                                                */
-                                              error?: string,
-                                              certificate?: Certificate,
-                                              callback?: (isTrusted?: boolean) => void) => void): this;
-    addListener(event: 'certificate-error', listener: (event?: Event,
-                                              webContents?: WebContents,
-                                              url?: string,
+                                              error: string,
+                                              certificate: Certificate,
+                                              callback: (isTrusted: boolean) => void) => void): this;
+    addListener(event: 'certificate-error', listener: (event: Event,
+                                              webContents: WebContents,
+                                              url: string,
                                               /**
                                                * The error code
                                                */
-                                              error?: string,
-                                              certificate?: Certificate,
-                                              callback?: (isTrusted?: boolean) => void) => void): this;
-    removeListener(event: 'certificate-error', listener: (event?: Event,
-                                              webContents?: WebContents,
-                                              url?: string,
+                                              error: string,
+                                              certificate: Certificate,
+                                              callback: (isTrusted: boolean) => void) => void): this;
+    removeListener(event: 'certificate-error', listener: (event: Event,
+                                              webContents: WebContents,
+                                              url: string,
                                               /**
                                                * The error code
                                                */
-                                              error?: string,
-                                              certificate?: Certificate,
-                                              callback?: (isTrusted?: boolean) => void) => void): this;
+                                              error: string,
+                                              certificate: Certificate,
+                                              callback: (isTrusted: boolean) => void) => void): this;
     /**
      * Emitted during Handoff when an activity from a different device wants to be
      * resumed. You should call event.preventDefault() if you want to handle this
@@ -258,79 +258,79 @@ declare namespace Electron {
      * type. Supported activity types are specified in the app's Info.plist under the
      * NSUserActivityTypes key.
      */
-    on(event: 'continue-activity', listener: (event?: Event,
+    on(event: 'continue-activity', listener: (event: Event,
                                               /**
                                                * A string identifying the activity. Maps to .
                                                */
-                                              type?: string,
+                                              type: string,
                                               /**
                                                * Contains app-specific state stored by the activity on another device.
                                                */
-                                              userInfo?: any) => void): this;
-    once(event: 'continue-activity', listener: (event?: Event,
+                                              userInfo: any) => void): this;
+    once(event: 'continue-activity', listener: (event: Event,
                                               /**
                                                * A string identifying the activity. Maps to .
                                                */
-                                              type?: string,
+                                              type: string,
                                               /**
                                                * Contains app-specific state stored by the activity on another device.
                                                */
-                                              userInfo?: any) => void): this;
-    addListener(event: 'continue-activity', listener: (event?: Event,
+                                              userInfo: any) => void): this;
+    addListener(event: 'continue-activity', listener: (event: Event,
                                               /**
                                                * A string identifying the activity. Maps to .
                                                */
-                                              type?: string,
+                                              type: string,
                                               /**
                                                * Contains app-specific state stored by the activity on another device.
                                                */
-                                              userInfo?: any) => void): this;
-    removeListener(event: 'continue-activity', listener: (event?: Event,
+                                              userInfo: any) => void): this;
+    removeListener(event: 'continue-activity', listener: (event: Event,
                                               /**
                                                * A string identifying the activity. Maps to .
                                                */
-                                              type?: string,
+                                              type: string,
                                               /**
                                                * Contains app-specific state stored by the activity on another device.
                                                */
-                                              userInfo?: any) => void): this;
+                                              userInfo: any) => void): this;
     /**
      * Emitted when the gpu process crashes or is killed.
      */
-    on(event: 'gpu-process-crashed', listener: (event?: Event,
-                                                killed?: boolean) => void): this;
-    once(event: 'gpu-process-crashed', listener: (event?: Event,
-                                                killed?: boolean) => void): this;
-    addListener(event: 'gpu-process-crashed', listener: (event?: Event,
-                                                killed?: boolean) => void): this;
-    removeListener(event: 'gpu-process-crashed', listener: (event?: Event,
-                                                killed?: boolean) => void): this;
+    on(event: 'gpu-process-crashed', listener: (event: Event,
+                                                killed: boolean) => void): this;
+    once(event: 'gpu-process-crashed', listener: (event: Event,
+                                                killed: boolean) => void): this;
+    addListener(event: 'gpu-process-crashed', listener: (event: Event,
+                                                killed: boolean) => void): this;
+    removeListener(event: 'gpu-process-crashed', listener: (event: Event,
+                                                killed: boolean) => void): this;
     /**
      * Emitted when webContents wants to do basic auth. The default behavior is to
      * cancel all authentications, to override this you should prevent the default
      * behavior with event.preventDefault() and call callback(username, password) with
      * the credentials.
      */
-    on(event: 'login', listener: (event?: Event,
-                                  webContents?: WebContents,
-                                  request?: Request,
-                                  authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
-    once(event: 'login', listener: (event?: Event,
-                                  webContents?: WebContents,
-                                  request?: Request,
-                                  authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
-    addListener(event: 'login', listener: (event?: Event,
-                                  webContents?: WebContents,
-                                  request?: Request,
-                                  authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
-    removeListener(event: 'login', listener: (event?: Event,
-                                  webContents?: WebContents,
-                                  request?: Request,
-                                  authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
+    on(event: 'login', listener: (event: Event,
+                                  webContents: WebContents,
+                                  request: Request,
+                                  authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
+    once(event: 'login', listener: (event: Event,
+                                  webContents: WebContents,
+                                  request: Request,
+                                  authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
+    addListener(event: 'login', listener: (event: Event,
+                                  webContents: WebContents,
+                                  request: Request,
+                                  authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
+    removeListener(event: 'login', listener: (event: Event,
+                                  webContents: WebContents,
+                                  request: Request,
+                                  authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
     /**
      * Emitted when the user wants to open a file with the application. The open-file
      * event is usually emitted when the application is already open and the OS wants
@@ -341,86 +341,86 @@ declare namespace Electron {
      * event.preventDefault() if you want to handle this event. On Windows, you have to
      * parse process.argv (in the main process) to get the filepath.
      */
-    on(event: 'open-file', listener: (event?: Event,
-                                      path?: string) => void): this;
-    once(event: 'open-file', listener: (event?: Event,
-                                      path?: string) => void): this;
-    addListener(event: 'open-file', listener: (event?: Event,
-                                      path?: string) => void): this;
-    removeListener(event: 'open-file', listener: (event?: Event,
-                                      path?: string) => void): this;
+    on(event: 'open-file', listener: (event: Event,
+                                      path: string) => void): this;
+    once(event: 'open-file', listener: (event: Event,
+                                      path: string) => void): this;
+    addListener(event: 'open-file', listener: (event: Event,
+                                      path: string) => void): this;
+    removeListener(event: 'open-file', listener: (event: Event,
+                                      path: string) => void): this;
     /**
      * Emitted when the user wants to open a URL with the application. Your
      * application's Info.plist file must define the url scheme within the
      * CFBundleURLTypes key, and set NSPrincipalClass to AtomApplication. You should
      * call event.preventDefault() if you want to handle this event.
      */
-    on(event: 'open-url', listener: (event?: Event,
-                                     url?: string) => void): this;
-    once(event: 'open-url', listener: (event?: Event,
-                                     url?: string) => void): this;
-    addListener(event: 'open-url', listener: (event?: Event,
-                                     url?: string) => void): this;
-    removeListener(event: 'open-url', listener: (event?: Event,
-                                     url?: string) => void): this;
+    on(event: 'open-url', listener: (event: Event,
+                                     url: string) => void): this;
+    once(event: 'open-url', listener: (event: Event,
+                                     url: string) => void): this;
+    addListener(event: 'open-url', listener: (event: Event,
+                                     url: string) => void): this;
+    removeListener(event: 'open-url', listener: (event: Event,
+                                     url: string) => void): this;
     /**
      * Emitted when the application is quitting.
      */
-    on(event: 'quit', listener: (event?: Event,
-                                 exitCode?: number) => void): this;
-    once(event: 'quit', listener: (event?: Event,
-                                 exitCode?: number) => void): this;
-    addListener(event: 'quit', listener: (event?: Event,
-                                 exitCode?: number) => void): this;
-    removeListener(event: 'quit', listener: (event?: Event,
-                                 exitCode?: number) => void): this;
+    on(event: 'quit', listener: (event: Event,
+                                 exitCode: number) => void): this;
+    once(event: 'quit', listener: (event: Event,
+                                 exitCode: number) => void): this;
+    addListener(event: 'quit', listener: (event: Event,
+                                 exitCode: number) => void): this;
+    removeListener(event: 'quit', listener: (event: Event,
+                                 exitCode: number) => void): this;
     /**
      * Emitted when Electron has finished initializing. On macOS, launchInfo holds the
      * userInfo of the NSUserNotification that was used to open the application, if it
      * was launched from Notification Center. You can call app.isReady() to check if
      * this event has already fired.
      */
-    on(event: 'ready', listener: (launchInfo?: any) => void): this;
-    once(event: 'ready', listener: (launchInfo?: any) => void): this;
-    addListener(event: 'ready', listener: (launchInfo?: any) => void): this;
-    removeListener(event: 'ready', listener: (launchInfo?: any) => void): this;
+    on(event: 'ready', listener: (launchInfo: any) => void): this;
+    once(event: 'ready', listener: (launchInfo: any) => void): this;
+    addListener(event: 'ready', listener: (launchInfo: any) => void): this;
+    removeListener(event: 'ready', listener: (launchInfo: any) => void): this;
     /**
      * Emitted when a client certificate is requested. The url corresponds to the
      * navigation entry requesting the client certificate and callback can be called
      * with an entry filtered from the list. Using event.preventDefault() prevents the
      * application from using the first certificate from the store.
      */
-    on(event: 'select-client-certificate', listener: (event?: Event,
-                                                      webContents?: WebContents,
-                                                      url?: string,
-                                                      certificateList?: Certificate[],
-                                                      callback?: (certificate?: Certificate) => void) => void): this;
-    once(event: 'select-client-certificate', listener: (event?: Event,
-                                                      webContents?: WebContents,
-                                                      url?: string,
-                                                      certificateList?: Certificate[],
-                                                      callback?: (certificate?: Certificate) => void) => void): this;
-    addListener(event: 'select-client-certificate', listener: (event?: Event,
-                                                      webContents?: WebContents,
-                                                      url?: string,
-                                                      certificateList?: Certificate[],
-                                                      callback?: (certificate?: Certificate) => void) => void): this;
-    removeListener(event: 'select-client-certificate', listener: (event?: Event,
-                                                      webContents?: WebContents,
-                                                      url?: string,
-                                                      certificateList?: Certificate[],
-                                                      callback?: (certificate?: Certificate) => void) => void): this;
+    on(event: 'select-client-certificate', listener: (event: Event,
+                                                      webContents: WebContents,
+                                                      url: string,
+                                                      certificateList: Certificate[],
+                                                      callback: (certificate?: Certificate) => void) => void): this;
+    once(event: 'select-client-certificate', listener: (event: Event,
+                                                      webContents: WebContents,
+                                                      url: string,
+                                                      certificateList: Certificate[],
+                                                      callback: (certificate?: Certificate) => void) => void): this;
+    addListener(event: 'select-client-certificate', listener: (event: Event,
+                                                      webContents: WebContents,
+                                                      url: string,
+                                                      certificateList: Certificate[],
+                                                      callback: (certificate?: Certificate) => void) => void): this;
+    removeListener(event: 'select-client-certificate', listener: (event: Event,
+                                                      webContents: WebContents,
+                                                      url: string,
+                                                      certificateList: Certificate[],
+                                                      callback: (certificate?: Certificate) => void) => void): this;
     /**
      * Emitted when a new webContents is created.
      */
-    on(event: 'web-contents-created', listener: (event?: Event,
-                                                 webContents?: WebContents) => void): this;
-    once(event: 'web-contents-created', listener: (event?: Event,
-                                                 webContents?: WebContents) => void): this;
-    addListener(event: 'web-contents-created', listener: (event?: Event,
-                                                 webContents?: WebContents) => void): this;
-    removeListener(event: 'web-contents-created', listener: (event?: Event,
-                                                 webContents?: WebContents) => void): this;
+    on(event: 'web-contents-created', listener: (event: Event,
+                                                 webContents: WebContents) => void): this;
+    once(event: 'web-contents-created', listener: (event: Event,
+                                                 webContents: WebContents) => void): this;
+    addListener(event: 'web-contents-created', listener: (event: Event,
+                                                 webContents: WebContents) => void): this;
+    removeListener(event: 'web-contents-created', listener: (event: Event,
+                                                 webContents: WebContents) => void): this;
     /**
      * Emitted when the application has finished basic startup. On Windows and Linux,
      * the will-finish-launching event is the same as the ready event; on macOS, this
@@ -439,10 +439,10 @@ declare namespace Electron {
      * the application. See the description of the window-all-closed event for the
      * differences between the will-quit and window-all-closed events.
      */
-    on(event: 'will-quit', listener: (event?: Event) => void): this;
-    once(event: 'will-quit', listener: (event?: Event) => void): this;
-    addListener(event: 'will-quit', listener: (event?: Event) => void): this;
-    removeListener(event: 'will-quit', listener: (event?: Event) => void): this;
+    on(event: 'will-quit', listener: (event: Event) => void): this;
+    once(event: 'will-quit', listener: (event: Event) => void): this;
+    addListener(event: 'will-quit', listener: (event: Event) => void): this;
+    removeListener(event: 'will-quit', listener: (event: Event) => void): this;
     /**
      * Emitted when all windows have been closed. If you do not subscribe to this event
      * and all windows are closed, the default behavior is to quit the app; however, if
@@ -493,12 +493,12 @@ declare namespace Electron {
      * Fetches a path's associated icon. On Windows, there a 2 kinds of icons: On Linux
      * and macOS, icons depend on the application associated with file mime type.
      */
-    getFileIcon(path: string, options: FileIconOptions, callback: (error?: Error, icon?: NativeImage) => void): void;
+    getFileIcon(path: string, options: FileIconOptions, callback: (error: Error, icon: NativeImage) => void): void;
     /**
      * Fetches a path's associated icon. On Windows, there a 2 kinds of icons: On Linux
      * and macOS, icons depend on the application associated with file mime type.
      */
-    getFileIcon(path: string, callback: (error?: Error, icon?: NativeImage) => void): void;
+    getFileIcon(path: string, callback: (error: Error, icon: NativeImage) => void): void;
     getJumpListSettings(): JumpListSettings;
     /**
      * Note: When distributing your packaged app, you have to also ship the locales
@@ -534,7 +534,7 @@ declare namespace Electron {
      * success while any other value indicates failure according to chromium
      * net_error_list.
      */
-    importCertificate(options: ImportCertificateOptions, callback: (result?: number) => void): void;
+    importCertificate(options: ImportCertificateOptions, callback: (result: number) => void): void;
     isAccessibilitySupportEnabled(): boolean;
     /**
      * This method checks if the current executable is the default handler for a
@@ -567,7 +567,7 @@ declare namespace Electron {
      * and you have to use this method to ensure single instance. An example of
      * activating the window of primary instance when a second instance starts:
      */
-    makeSingleInstance(callback: (argv?: string[], workingDirectory?: string) => void): void;
+    makeSingleInstance(callback: (argv: string[], workingDirectory: string) => void): boolean;
     /**
      * Try to close all windows. The before-quit event will be emitted first. If all
      * windows are successfully closed, the will-quit event will be emitted and by
@@ -684,8 +684,8 @@ declare namespace Electron {
      * them.
      */
     show(): void;
-    commandLine?: CommandLine;
-    dock?: Dock;
+    commandLine: CommandLine;
+    dock: Dock;
   }
 
   interface AutoUpdater extends EventEmitter {
@@ -702,10 +702,10 @@ declare namespace Electron {
     /**
      * Emitted when there is an error while updating.
      */
-    on(event: 'error', listener: (error?: Error) => void): this;
-    once(event: 'error', listener: (error?: Error) => void): this;
-    addListener(event: 'error', listener: (error?: Error) => void): this;
-    removeListener(event: 'error', listener: (error?: Error) => void): this;
+    on(event: 'error', listener: (error: Error) => void): this;
+    once(event: 'error', listener: (error: Error) => void): this;
+    addListener(event: 'error', listener: (error: Error) => void): this;
+    removeListener(event: 'error', listener: (error: Error) => void): this;
     /**
      * Emitted when there is an available update. The update is downloaded
      * automatically.
@@ -718,26 +718,26 @@ declare namespace Electron {
      * Emitted when an update has been downloaded. On Windows only releaseName is
      * available.
      */
-    on(event: 'update-downloaded', listener: (event?: Event,
-                                              releaseNotes?: string,
-                                              releaseName?: string,
-                                              releaseDate?: Date,
-                                              updateURL?: string) => void): this;
-    once(event: 'update-downloaded', listener: (event?: Event,
-                                              releaseNotes?: string,
-                                              releaseName?: string,
-                                              releaseDate?: Date,
-                                              updateURL?: string) => void): this;
-    addListener(event: 'update-downloaded', listener: (event?: Event,
-                                              releaseNotes?: string,
-                                              releaseName?: string,
-                                              releaseDate?: Date,
-                                              updateURL?: string) => void): this;
-    removeListener(event: 'update-downloaded', listener: (event?: Event,
-                                              releaseNotes?: string,
-                                              releaseName?: string,
-                                              releaseDate?: Date,
-                                              updateURL?: string) => void): this;
+    on(event: 'update-downloaded', listener: (event: Event,
+                                              releaseNotes: string,
+                                              releaseName: string,
+                                              releaseDate: Date,
+                                              updateURL: string) => void): this;
+    once(event: 'update-downloaded', listener: (event: Event,
+                                              releaseNotes: string,
+                                              releaseName: string,
+                                              releaseDate: Date,
+                                              updateURL: string) => void): this;
+    addListener(event: 'update-downloaded', listener: (event: Event,
+                                              releaseNotes: string,
+                                              releaseName: string,
+                                              releaseDate: Date,
+                                              updateURL: string) => void): this;
+    removeListener(event: 'update-downloaded', listener: (event: Event,
+                                              releaseNotes: string,
+                                              releaseName: string,
+                                              releaseDate: Date,
+                                              updateURL: string) => void): this;
     /**
      * Emitted when there is no available update.
      */
@@ -769,8 +769,8 @@ declare namespace Electron {
 
     // Docs: http://electron.atom.io/docs/api/structures/bluetooth-device
 
-    deviceId?: string;
-    deviceName?: string;
+    deviceId: string;
+    deviceName: string;
   }
 
   class BrowserView extends EventEmitter {
@@ -779,13 +779,13 @@ declare namespace Electron {
 
     constructor(options?: BrowserViewConstructorOptions);
     setAutoResize(options: AutoResizeOptions): void;
-    setBackgroundColor(color?: string): void;
+    setBackgroundColor(color: string): void;
     /**
      * Resizes and moves the view to the supplied bounds relative to the window.
      */
     setBounds(bounds: Rectangle): void;
     id: number;
-    webContents: webContents;
+    webContents: WebContents;
   }
 
   class BrowserWindow extends EventEmitter {
@@ -799,14 +799,14 @@ declare namespace Electron {
      * and the APPCOMMAND_ prefix is stripped off. e.g. APPCOMMAND_BROWSER_BACKWARD is
      * emitted as browser-backward.
      */
-    on(event: 'app-command', listener: (event?: Event,
-                                        command?: string) => void): this;
-    once(event: 'app-command', listener: (event?: Event,
-                                        command?: string) => void): this;
-    addListener(event: 'app-command', listener: (event?: Event,
-                                        command?: string) => void): this;
-    removeListener(event: 'app-command', listener: (event?: Event,
-                                        command?: string) => void): this;
+    on(event: 'app-command', listener: (event: Event,
+                                        command: string) => void): this;
+    once(event: 'app-command', listener: (event: Event,
+                                        command: string) => void): this;
+    addListener(event: 'app-command', listener: (event: Event,
+                                        command: string) => void): this;
+    removeListener(event: 'app-command', listener: (event: Event,
+                                        command: string) => void): this;
     /**
      * Emitted when the window loses focus.
      */
@@ -822,10 +822,10 @@ declare namespace Electron {
      * window is reloaded. In Electron, returning any value other than undefined would
      * cancel the close. For example:
      */
-    on(event: 'close', listener: (event?: Event) => void): this;
-    once(event: 'close', listener: (event?: Event) => void): this;
-    addListener(event: 'close', listener: (event?: Event) => void): this;
-    removeListener(event: 'close', listener: (event?: Event) => void): this;
+    on(event: 'close', listener: (event: Event) => void): this;
+    once(event: 'close', listener: (event: Event) => void): this;
+    addListener(event: 'close', listener: (event: Event) => void): this;
+    removeListener(event: 'close', listener: (event: Event) => void): this;
     /**
      * Emitted when the window is closed. After you have received this event you should
      * remove the reference to the window and avoid using it any more.
@@ -909,14 +909,14 @@ declare namespace Electron {
      * Emitted when the document changed its title, calling event.preventDefault() will
      * prevent the native window's title from changing.
      */
-    on(event: 'page-title-updated', listener: (event?: Event,
-                                               title?: string) => void): this;
-    once(event: 'page-title-updated', listener: (event?: Event,
-                                               title?: string) => void): this;
-    addListener(event: 'page-title-updated', listener: (event?: Event,
-                                               title?: string) => void): this;
-    removeListener(event: 'page-title-updated', listener: (event?: Event,
-                                               title?: string) => void): this;
+    on(event: 'page-title-updated', listener: (event: Event,
+                                               title: string) => void): this;
+    once(event: 'page-title-updated', listener: (event: Event,
+                                               title: string) => void): this;
+    addListener(event: 'page-title-updated', listener: (event: Event,
+                                               title: string) => void): this;
+    removeListener(event: 'page-title-updated', listener: (event: Event,
+                                               title: string) => void): this;
     /**
      * Emitted when the web page has been rendered (while not being shown) and window
      * can be displayed without a visual flash.
@@ -999,14 +999,14 @@ declare namespace Electron {
     /**
      * Emitted on 3-finger swipe. Possible directions are up, right, down, left.
      */
-    on(event: 'swipe', listener: (event?: Event,
-                                  direction?: string) => void): this;
-    once(event: 'swipe', listener: (event?: Event,
-                                  direction?: string) => void): this;
-    addListener(event: 'swipe', listener: (event?: Event,
-                                  direction?: string) => void): this;
-    removeListener(event: 'swipe', listener: (event?: Event,
-                                  direction?: string) => void): this;
+    on(event: 'swipe', listener: (event: Event,
+                                  direction: string) => void): this;
+    once(event: 'swipe', listener: (event: Event,
+                                  direction: string) => void): this;
+    addListener(event: 'swipe', listener: (event: Event,
+                                  direction: string) => void): this;
+    removeListener(event: 'swipe', listener: (event: Event,
+                                  direction: string) => void): this;
     /**
      * Emitted when the window exits from a maximized state.
      */
@@ -1054,11 +1054,11 @@ declare namespace Electron {
     /**
      * Same as webContents.capturePage([rect, ]callback).
      */
-    capturePage(callback: (image?: NativeImage) => void): void;
+    capturePage(callback: (image: NativeImage) => void): void;
     /**
      * Same as webContents.capturePage([rect, ]callback).
      */
-    capturePage(rect: Rectangle, callback: (image?: NativeImage) => void): void;
+    capturePage(rect: Rectangle, callback: (image: NativeImage) => void): void;
     /**
      * Moves window to the center of the screen.
      */
@@ -1478,43 +1478,43 @@ declare namespace Electron {
     /**
      * PEM encoded data
      */
-    data?: string;
+    data: string;
     /**
      * Fingerprint of the certificate
      */
-    fingerprint?: string;
+    fingerprint: string;
     /**
      * Issuer principal
      */
-    issuer?: CertificatePrincipal;
+    issuer: CertificatePrincipal;
     /**
      * Issuer certificate (if not self-signed)
      */
-    issuerCert?: Certificate;
+    issuerCert: Certificate;
     /**
      * Issuer's Common Name
      */
-    issuerName?: string;
+    issuerName: string;
     /**
      * Hex value represented string
      */
-    serialNumber?: string;
+    serialNumber: string;
     /**
      * Subject principal
      */
-    subject?: CertificatePrincipal;
+    subject: CertificatePrincipal;
     /**
      * Subject's Common Name
      */
-    subjectName?: string;
+    subjectName: string;
     /**
      * End date of the certificate being valid in seconds
      */
-    validExpiry?: number;
+    validExpiry: number;
     /**
      * Start date of the certificate being valid in seconds
      */
-    validStart?: number;
+    validStart: number;
   }
 
   interface CertificatePrincipal {
@@ -1524,27 +1524,27 @@ declare namespace Electron {
     /**
      * Common Name
      */
-    commonName?: string;
+    commonName: string;
     /**
      * Country or region
      */
-    country?: string;
+    country: string;
     /**
      * Locality
      */
-    locality?: string;
+    locality: string;
     /**
      * Organization names
      */
-    organizations?: string[];
+    organizations: string[];
     /**
      * Organization Unit names
      */
-    organizationUnits?: string[];
+    organizationUnits: string[];
     /**
      * State or province
      */
-    state?: string;
+    state: string;
   }
 
   class ClientRequest extends EventEmitter {
@@ -1577,22 +1577,22 @@ declare namespace Electron {
                                   /**
                                    * an error object providing some information about the failure.
                                    */
-                                  error?: Error) => void): this;
+                                  error: Error) => void): this;
     once(event: 'error', listener: (
                                   /**
                                    * an error object providing some information about the failure.
                                    */
-                                  error?: Error) => void): this;
+                                  error: Error) => void): this;
     addListener(event: 'error', listener: (
                                   /**
                                    * an error object providing some information about the failure.
                                    */
-                                  error?: Error) => void): this;
+                                  error: Error) => void): this;
     removeListener(event: 'error', listener: (
                                   /**
                                    * an error object providing some information about the failure.
                                    */
-                                  error?: Error) => void): this;
+                                  error: Error) => void): this;
     /**
      * Emitted just after the last chunk of the request's data has been written into
      * the request object.
@@ -1607,54 +1607,54 @@ declare namespace Electron {
      * empty credentials will cancel the request and report an authentication error on
      * the response object:
      */
-    on(event: 'login', listener: (authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
-    once(event: 'login', listener: (authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
-    addListener(event: 'login', listener: (authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
-    removeListener(event: 'login', listener: (authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
+    on(event: 'login', listener: (authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
+    once(event: 'login', listener: (authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
+    addListener(event: 'login', listener: (authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
+    removeListener(event: 'login', listener: (authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
     /**
      * Emitted when there is redirection and the mode is manual. Calling
      * request.followRedirect will continue with the redirection.
      */
-    on(event: 'redirect', listener: (statusCode?: number,
-                                     method?: string,
-                                     redirectUrl?: string,
-                                     responseHeaders?: any) => void): this;
-    once(event: 'redirect', listener: (statusCode?: number,
-                                     method?: string,
-                                     redirectUrl?: string,
-                                     responseHeaders?: any) => void): this;
-    addListener(event: 'redirect', listener: (statusCode?: number,
-                                     method?: string,
-                                     redirectUrl?: string,
-                                     responseHeaders?: any) => void): this;
-    removeListener(event: 'redirect', listener: (statusCode?: number,
-                                     method?: string,
-                                     redirectUrl?: string,
-                                     responseHeaders?: any) => void): this;
+    on(event: 'redirect', listener: (statusCode: number,
+                                     method: string,
+                                     redirectUrl: string,
+                                     responseHeaders: any) => void): this;
+    once(event: 'redirect', listener: (statusCode: number,
+                                     method: string,
+                                     redirectUrl: string,
+                                     responseHeaders: any) => void): this;
+    addListener(event: 'redirect', listener: (statusCode: number,
+                                     method: string,
+                                     redirectUrl: string,
+                                     responseHeaders: any) => void): this;
+    removeListener(event: 'redirect', listener: (statusCode: number,
+                                     method: string,
+                                     redirectUrl: string,
+                                     responseHeaders: any) => void): this;
     on(event: 'response', listener: (
                                      /**
                                       * An object representing the HTTP response message.
                                       */
-                                     response?: IncomingMessage) => void): this;
+                                     response: IncomingMessage) => void): this;
     once(event: 'response', listener: (
                                      /**
                                       * An object representing the HTTP response message.
                                       */
-                                     response?: IncomingMessage) => void): this;
+                                     response: IncomingMessage) => void): this;
     addListener(event: 'response', listener: (
                                      /**
                                       * An object representing the HTTP response message.
                                       */
-                                     response?: IncomingMessage) => void): this;
+                                     response: IncomingMessage) => void): this;
     removeListener(event: 'response', listener: (
                                      /**
                                       * An object representing the HTTP response message.
                                       */
-                                     response?: IncomingMessage) => void): this;
+                                     response: IncomingMessage) => void): this;
     constructor(options: any | string);
     /**
      * Cancels an ongoing HTTP transaction. If the request has already emitted the
@@ -1771,19 +1771,19 @@ declare namespace Electron {
      * Once all child processes have acknowledged the captureMonitoringSnapshot request
      * the callback will be called with a file that contains the traced data.
      */
-    captureMonitoringSnapshot(resultFilePath: string, callback: (resultFilePath?: string) => void): void;
+    captureMonitoringSnapshot(resultFilePath: string, callback: (resultFilePath: string) => void): void;
     /**
      * Get a set of category groups. The category groups can change as new code paths
      * are reached. Once all child processes have acknowledged the getCategories
      * request the callback is invoked with an array of category groups.
      */
-    getCategories(callback: (categories?: string[]) => void): void;
+    getCategories(callback: (categories: string[]) => void): void;
     /**
      * Get the maximum usage across processes of trace buffer as a percentage of the
      * full state. When the TraceBufferUsage value is determined the callback is
      * called.
      */
-    getTraceBufferUsage(callback: (value?: number, percentage?: number) => void): void;
+    getTraceBufferUsage(callback: (value: number, percentage: number) => void): void;
     /**
      * Start monitoring on all processes. Monitoring begins immediately locally and
      * asynchronously on child processes as soon as they receive the startMonitoring
@@ -1825,7 +1825,7 @@ declare namespace Electron {
      * is not empty or into a temporary file. The actual file path will be passed to
      * callback if it's not null.
      */
-    stopRecording(resultFilePath: string, callback: (resultFilePath?: string) => void): void;
+    stopRecording(resultFilePath: string, callback: (resultFilePath: string) => void): void;
   }
 
   interface Cookie {
@@ -1852,7 +1852,7 @@ declare namespace Electron {
     /**
      * The name of the cookie.
      */
-    name?: string;
+    name: string;
     /**
      * The path of the cookie.
      */
@@ -1869,7 +1869,7 @@ declare namespace Electron {
     /**
      * The value of the cookie.
      */
-    value?: string;
+    value: string;
   }
 
   class Cookies extends EventEmitter {
@@ -1880,58 +1880,58 @@ declare namespace Electron {
      * Emitted when a cookie is changed because it was added, edited, removed, or
      * expired.
      */
-    on(event: 'changed', listener: (event?: Event,
+    on(event: 'changed', listener: (event: Event,
                                     /**
                                      * The cookie that was changed
                                      */
-                                    cookie?: Cookie,
+                                    cookie: Cookie,
                                     /**
                                      * The cause of the change with one of the following values:
                                      */
-                                    cause?: ('explicit' | 'overwrite' | 'expired' | 'evicted' | 'expired-overwrite'),
+                                    cause: ('explicit' | 'overwrite' | 'expired' | 'evicted' | 'expired-overwrite'),
                                     /**
                                      * `true` if the cookie was removed, `false` otherwise.
                                      */
-                                    removed?: boolean) => void): this;
-    once(event: 'changed', listener: (event?: Event,
+                                    removed: boolean) => void): this;
+    once(event: 'changed', listener: (event: Event,
                                     /**
                                      * The cookie that was changed
                                      */
-                                    cookie?: Cookie,
+                                    cookie: Cookie,
                                     /**
                                      * The cause of the change with one of the following values:
                                      */
-                                    cause?: ('explicit' | 'overwrite' | 'expired' | 'evicted' | 'expired-overwrite'),
+                                    cause: ('explicit' | 'overwrite' | 'expired' | 'evicted' | 'expired-overwrite'),
                                     /**
                                      * `true` if the cookie was removed, `false` otherwise.
                                      */
-                                    removed?: boolean) => void): this;
-    addListener(event: 'changed', listener: (event?: Event,
+                                    removed: boolean) => void): this;
+    addListener(event: 'changed', listener: (event: Event,
                                     /**
                                      * The cookie that was changed
                                      */
-                                    cookie?: Cookie,
+                                    cookie: Cookie,
                                     /**
                                      * The cause of the change with one of the following values:
                                      */
-                                    cause?: ('explicit' | 'overwrite' | 'expired' | 'evicted' | 'expired-overwrite'),
+                                    cause: ('explicit' | 'overwrite' | 'expired' | 'evicted' | 'expired-overwrite'),
                                     /**
                                      * `true` if the cookie was removed, `false` otherwise.
                                      */
-                                    removed?: boolean) => void): this;
-    removeListener(event: 'changed', listener: (event?: Event,
+                                    removed: boolean) => void): this;
+    removeListener(event: 'changed', listener: (event: Event,
                                     /**
                                      * The cookie that was changed
                                      */
-                                    cookie?: Cookie,
+                                    cookie: Cookie,
                                     /**
                                      * The cause of the change with one of the following values:
                                      */
-                                    cause?: ('explicit' | 'overwrite' | 'expired' | 'evicted' | 'expired-overwrite'),
+                                    cause: ('explicit' | 'overwrite' | 'expired' | 'evicted' | 'expired-overwrite'),
                                     /**
                                      * `true` if the cookie was removed, `false` otherwise.
                                      */
-                                    removed?: boolean) => void): this;
+                                    removed: boolean) => void): this;
     /**
      * Writes any unwritten cookies data to disk.
      */
@@ -1941,7 +1941,7 @@ declare namespace Electron {
      * with callback(error, cookies) on complete. cookies is an Array of cookie
      * objects.
      */
-    get(filter: Filter, callback: (error?: Error, cookies?: Cookies[]) => void): void;
+    get(filter: Filter, callback: (error: Error, cookies: Cookies[]) => void): void;
     /**
      * Removes the cookies matching url and name, callback will called with callback()
      * on complete.
@@ -1951,7 +1951,7 @@ declare namespace Electron {
      * Sets a cookie with details, callback will be called with callback(error) on
      * complete.
      */
-    set(details: Details, callback: (error?: Error) => void): void;
+    set(details: Details, callback: (error: Error) => void): void;
   }
 
   interface CPUUsage {
@@ -1962,19 +1962,19 @@ declare namespace Electron {
      * The number of average idle cpu wakeups per second since the last call to
      * getCPUUsage. First call returns 0.
      */
-    idleWakeupsPerSecond?: number;
+    idleWakeupsPerSecond: number;
     /**
      * Percentage of CPU used since the last call to getCPUUsage. First call returns 0.
      */
-    percentCPUUsage?: number;
+    percentCPUUsage: number;
   }
 
   interface CrashReport {
 
     // Docs: http://electron.atom.io/docs/api/structures/crash-report
 
-    date?: string;
-    ID?: number;
+    date: string;
+    ID: number;
   }
 
   interface CrashReporter extends EventEmitter {
@@ -2044,69 +2044,69 @@ declare namespace Electron {
      * Emitted when debugging session is terminated. This happens either when
      * webContents is closed or devtools is invoked for the attached webContents.
      */
-    on(event: 'detach', listener: (event?: Event,
+    on(event: 'detach', listener: (event: Event,
                                    /**
                                     * Reason for detaching debugger.
                                     */
-                                   reason?: string) => void): this;
-    once(event: 'detach', listener: (event?: Event,
+                                   reason: string) => void): this;
+    once(event: 'detach', listener: (event: Event,
                                    /**
                                     * Reason for detaching debugger.
                                     */
-                                   reason?: string) => void): this;
-    addListener(event: 'detach', listener: (event?: Event,
+                                   reason: string) => void): this;
+    addListener(event: 'detach', listener: (event: Event,
                                    /**
                                     * Reason for detaching debugger.
                                     */
-                                   reason?: string) => void): this;
-    removeListener(event: 'detach', listener: (event?: Event,
+                                   reason: string) => void): this;
+    removeListener(event: 'detach', listener: (event: Event,
                                    /**
                                     * Reason for detaching debugger.
                                     */
-                                   reason?: string) => void): this;
+                                   reason: string) => void): this;
     /**
      * Emitted whenever debugging target issues instrumentation event.
      */
-    on(event: 'message', listener: (event?: Event,
+    on(event: 'message', listener: (event: Event,
                                     /**
                                      * Method name.
                                      */
-                                    method?: string,
+                                    method: string,
                                     /**
                                      * Event parameters defined by the 'parameters' attribute in the remote debugging
                                      * protocol.
                                      */
-                                    params?: any) => void): this;
-    once(event: 'message', listener: (event?: Event,
+                                    params: any) => void): this;
+    once(event: 'message', listener: (event: Event,
                                     /**
                                      * Method name.
                                      */
-                                    method?: string,
+                                    method: string,
                                     /**
                                      * Event parameters defined by the 'parameters' attribute in the remote debugging
                                      * protocol.
                                      */
-                                    params?: any) => void): this;
-    addListener(event: 'message', listener: (event?: Event,
+                                    params: any) => void): this;
+    addListener(event: 'message', listener: (event: Event,
                                     /**
                                      * Method name.
                                      */
-                                    method?: string,
+                                    method: string,
                                     /**
                                      * Event parameters defined by the 'parameters' attribute in the remote debugging
                                      * protocol.
                                      */
-                                    params?: any) => void): this;
-    removeListener(event: 'message', listener: (event?: Event,
+                                    params: any) => void): this;
+    removeListener(event: 'message', listener: (event: Event,
                                     /**
                                      * Method name.
                                      */
-                                    method?: string,
+                                    method: string,
                                     /**
                                      * Event parameters defined by the 'parameters' attribute in the remote debugging
                                      * protocol.
                                      */
-                                    params?: any) => void): this;
+                                    params: any) => void): this;
     /**
      * Attaches the debugger to the webContents.
      */
@@ -2119,7 +2119,7 @@ declare namespace Electron {
     /**
      * Send given command to the debugging target.
      */
-    sendCommand(method: string, commandParams?: any, callback?: (error?: any, result?: any) => void): void;
+    sendCommand(method: string, commandParams?: any, callback?: (error: any, result: any) => void): void;
   }
 
   interface DesktopCapturer extends EventEmitter {
@@ -2132,7 +2132,7 @@ declare namespace Electron {
      * DesktopCapturerSource objects, each DesktopCapturerSource represents a screen or
      * an individual window that can be captured.
      */
-    getSources(options: SourcesOptions, callback: (error?: Error, sources?: DesktopCapturerSource[]) => void): void;
+    getSources(options: SourcesOptions, callback: (error: Error, sources: DesktopCapturerSource[]) => void): void;
   }
 
   interface DesktopCapturerSource {
@@ -2140,22 +2140,24 @@ declare namespace Electron {
     // Docs: http://electron.atom.io/docs/api/structures/desktop-capturer-source
 
     /**
-     * The identifier of a window or screen that can be used as a constraint when
-     * calling []. The format of the identifier will be or , where is a random
-     * generated number.
+     * The identifier of a window or screen that can be used as a chromeMediaSourceId
+     * constraint when calling [navigator.webkitGetUserMedia]. The format of the
+     * identifier will be window:XX or screen:XX, where XX is a random generated
+     * number.
      */
-    id?: string;
+    id: string;
     /**
-     * A screen source will be named either or , while the name of a window source will
-     * match the window title.
+     * A screen source will be named either Entire Screen or Screen <index>, while the
+     * name of a window source will match the window title.
      */
-    name?: string;
+    name: string;
     /**
      * A thumbnail image. There is no guarantee that the size of the thumbnail is the
-     * same as the specified in the passed to . The actual size depends on the scale of
-     * the screen or window.
+     * same as the thumbnailSize specified in the options passed to
+     * desktopCapturer.getSources. The actual size depends on the scale of the screen
+     * or window.
      */
-    thumbnail?: NativeImage;
+    thumbnail: NativeImage;
   }
 
   interface Dialog extends EventEmitter {
@@ -2200,7 +2202,7 @@ declare namespace Electron {
      * is passed, the API call will be asynchronous and the result will be passed via
      * callback(response).
      */
-    showMessageBox(browserWindow: BrowserWindow, options: MessageBoxOptions, callback?: (response?: number, checkboxChecked?: boolean) => void): number;
+    showMessageBox(browserWindow: BrowserWindow, options: MessageBoxOptions, callback?: (response: number, checkboxChecked: boolean) => void): number;
     /**
      * Shows a message box, it will block the process until the message box is closed.
      * It returns the index of the clicked button. The browserWindow argument allows
@@ -2208,7 +2210,7 @@ declare namespace Electron {
      * is passed, the API call will be asynchronous and the result will be passed via
      * callback(response).
      */
-    showMessageBox(options: MessageBoxOptions, callback?: (response?: number, checkboxChecked?: boolean) => void): number;
+    showMessageBox(options: MessageBoxOptions, callback?: (response: number, checkboxChecked: boolean) => void): number;
     /**
      * The browserWindow argument allows the dialog to attach itself to a parent
      * window, making it modal. The filters specifies an array of file types that can
@@ -2221,7 +2223,7 @@ declare namespace Electron {
      * file selector and a directory selector, so if you set properties to ['openFile',
      * 'openDirectory'] on these platforms, a directory selector will be shown.
      */
-    showOpenDialog(browserWindow: BrowserWindow, options: OpenDialogOptions, callback?: (filePaths?: string[]) => void): string[];
+    showOpenDialog(browserWindow: BrowserWindow, options: OpenDialogOptions, callback?: (filePaths: string[]) => void): string[];
     /**
      * The browserWindow argument allows the dialog to attach itself to a parent
      * window, making it modal. The filters specifies an array of file types that can
@@ -2234,7 +2236,7 @@ declare namespace Electron {
      * file selector and a directory selector, so if you set properties to ['openFile',
      * 'openDirectory'] on these platforms, a directory selector will be shown.
      */
-    showOpenDialog(options: OpenDialogOptions, callback?: (filePaths?: string[]) => void): string[];
+    showOpenDialog(options: OpenDialogOptions, callback?: (filePaths: string[]) => void): string[];
     /**
      * The browserWindow argument allows the dialog to attach itself to a parent
      * window, making it modal. The filters specifies an array of file types that can
@@ -2242,7 +2244,7 @@ declare namespace Electron {
      * the API call will be asynchronous and the result will be passed via
      * callback(filename)
      */
-    showSaveDialog(browserWindow: BrowserWindow, options: SaveDialogOptions, callback?: (filename?: string) => void): string;
+    showSaveDialog(browserWindow: BrowserWindow, options: SaveDialogOptions, callback?: (filename: string) => void): string;
     /**
      * The browserWindow argument allows the dialog to attach itself to a parent
      * window, making it modal. The filters specifies an array of file types that can
@@ -2250,33 +2252,33 @@ declare namespace Electron {
      * the API call will be asynchronous and the result will be passed via
      * callback(filename)
      */
-    showSaveDialog(options: SaveDialogOptions, callback?: (filename?: string) => void): string;
+    showSaveDialog(options: SaveDialogOptions, callback?: (filename: string) => void): string;
   }
 
   interface Display {
 
     // Docs: http://electron.atom.io/docs/api/structures/display
 
-    bounds?: Rectangle;
+    bounds: Rectangle;
     /**
      * Unique identifier associated with the display.
      */
-    id?: number;
+    id: number;
     /**
      * Can be 0, 90, 180, 270, represents screen rotation in clock-wise degrees.
      */
-    rotation?: number;
+    rotation: number;
     /**
      * Output device's pixel scale factor.
      */
-    scaleFactor?: number;
-    size?: Size;
+    scaleFactor: number;
+    size: Size;
     /**
-     * Can be , , .
+     * Can be available, unavailable, unknown.
      */
-    touchSupport?: ('available' | 'unavailable' | 'unknown');
-    workArea?: Rectangle;
-    workAreaSize?: Size;
+    touchSupport: ('available' | 'unavailable' | 'unknown');
+    workArea: Rectangle;
+    workAreaSize: Size;
   }
 
   class DownloadItem extends EventEmitter {
@@ -2288,26 +2290,26 @@ declare namespace Electron {
      * download, a cancelled download (via downloadItem.cancel()), and interrupted
      * download that can't be resumed. The state can be one of following:
      */
-    on(event: 'done', listener: (event?: Event,
-                                 state?: string) => void): this;
-    once(event: 'done', listener: (event?: Event,
-                                 state?: string) => void): this;
-    addListener(event: 'done', listener: (event?: Event,
-                                 state?: string) => void): this;
-    removeListener(event: 'done', listener: (event?: Event,
-                                 state?: string) => void): this;
+    on(event: 'done', listener: (event: Event,
+                                 state: string) => void): this;
+    once(event: 'done', listener: (event: Event,
+                                 state: string) => void): this;
+    addListener(event: 'done', listener: (event: Event,
+                                 state: string) => void): this;
+    removeListener(event: 'done', listener: (event: Event,
+                                 state: string) => void): this;
     /**
      * Emitted when the download has been updated and is not done. The state can be one
      * of following:
      */
-    on(event: 'updated', listener: (event?: Event,
-                                    state?: string) => void): this;
-    once(event: 'updated', listener: (event?: Event,
-                                    state?: string) => void): this;
-    addListener(event: 'updated', listener: (event?: Event,
-                                    state?: string) => void): this;
-    removeListener(event: 'updated', listener: (event?: Event,
-                                    state?: string) => void): this;
+    on(event: 'updated', listener: (event: Event,
+                                    state: string) => void): this;
+    once(event: 'updated', listener: (event: Event,
+                                    state: string) => void): this;
+    addListener(event: 'updated', listener: (event: Event,
+                                    state: string) => void): this;
+    removeListener(event: 'updated', listener: (event: Event,
+                                    state: string) => void): this;
     /**
      * Cancels the download operation.
      */
@@ -2365,8 +2367,8 @@ declare namespace Electron {
 
     // Docs: http://electron.atom.io/docs/api/structures/file-filter
 
-    extensions?: string[];
-    name?: string;
+    extensions: string[];
+    name: string;
   }
 
   interface GlobalShortcut extends EventEmitter {
@@ -2416,22 +2418,22 @@ declare namespace Electron {
                                  /**
                                   * A chunk of response body's data.
                                   */
-                                 chunk?: Buffer) => void): this;
+                                 chunk: Buffer) => void): this;
     once(event: 'data', listener: (
                                  /**
                                   * A chunk of response body's data.
                                   */
-                                 chunk?: Buffer) => void): this;
+                                 chunk: Buffer) => void): this;
     addListener(event: 'data', listener: (
                                  /**
                                   * A chunk of response body's data.
                                   */
-                                 chunk?: Buffer) => void): this;
+                                 chunk: Buffer) => void): this;
     removeListener(event: 'data', listener: (
                                  /**
                                   * A chunk of response body's data.
                                   */
-                                 chunk?: Buffer) => void): this;
+                                 chunk: Buffer) => void): this;
     /**
      * Indicates that response body has ended.
      */
@@ -2465,27 +2467,27 @@ declare namespace Electron {
     /**
      * Then number of I/O other operations.
      */
-    otherOperationCount?: number;
+    otherOperationCount: number;
     /**
      * Then number of I/O other transfers.
      */
-    otherTransferCount?: number;
+    otherTransferCount: number;
     /**
      * The number of I/O read operations.
      */
-    readOperationCount?: number;
+    readOperationCount: number;
     /**
      * The number of I/O read transfers.
      */
-    readTransferCount?: number;
+    readTransferCount: number;
     /**
      * The number of I/O write operations.
      */
-    writeOperationCount?: number;
+    writeOperationCount: number;
     /**
      * The number of I/O write transfers.
      */
-    writeTransferCount?: number;
+    writeTransferCount: number;
   }
 
   interface IpcMain extends EventEmitter {
@@ -2564,11 +2566,11 @@ declare namespace Electron {
     // Docs: http://electron.atom.io/docs/api/structures/jump-list-category
 
     /**
-     * Array of objects if is or , otherwise it should be omitted.
+     * Array of objects if type is tasks or custom, otherwise it should be omitted.
      */
     items?: JumpListItem[];
     /**
-     * Must be set if is , otherwise it should be omitted.
+     * Must be set if type is custom, otherwise it should be omitted.
      */
     name?: string;
     /**
@@ -2582,11 +2584,13 @@ declare namespace Electron {
     // Docs: http://electron.atom.io/docs/api/structures/jump-list-item
 
     /**
-     * The command line arguments when is executed. Should only be set if is .
+     * The command line arguments when program is executed. Should only be set if type
+     * is task.
      */
     args?: string;
     /**
-     * Description of the task (displayed in a tooltip). Should only be set if is .
+     * Description of the task (displayed in a tooltip). Should only be set if type is
+     * task.
      */
     description?: string;
     /**
@@ -2598,22 +2602,22 @@ declare namespace Electron {
     iconIndex?: number;
     /**
      * The absolute path to an icon to be displayed in a Jump List, which can be an
-     * arbitrary resource file that contains an icon (e.g. , , ). You can usually
-     * specify to show the program icon.
+     * arbitrary resource file that contains an icon (e.g. .ico, .exe, .dll). You can
+     * usually specify process.execPath to show the program icon.
      */
     iconPath?: string;
     /**
-     * Path of the file to open, should only be set if is .
+     * Path of the file to open, should only be set if type is file.
      */
     path?: string;
     /**
-     * Path of the program to execute, usually you should specify which opens the
-     * current program. Should only be set if is .
+     * Path of the program to execute, usually you should specify process.execPath
+     * which opens the current program. Should only be set if type is task.
      */
     program?: string;
     /**
-     * The text to be displayed for the item in the Jump List. Should only be set if is
-     * .
+     * The text to be displayed for the item in the Jump List. Should only be set if
+     * type is task.
      */
     title?: string;
     /**
@@ -2629,34 +2633,34 @@ declare namespace Electron {
     /**
      * The maximum amount of memory that has ever been pinned to actual physical RAM.
      */
-    peakWorkingSetSize?: number;
+    peakWorkingSetSize: number;
+    /**
+     * Process id of the process.
+     */
+    pid: number;
     /**
      * The amount of memory not shared by other processes, such as JS heap or HTML
      * content.
      */
-    privateBytes?: number;
+    privateBytes: number;
     /**
      * The amount of memory shared between processes, typically memory consumed by the
      * Electron code itself
      */
-    sharedBytes?: number;
-    /**
-     * Process id of the process.
-     */
-    workingSetSize?: number;
+    sharedBytes: number;
     /**
      * The amount of memory currently pinned to actual physical RAM.
      */
-    workingSetSize?: number;
+    workingSetSize: number;
   }
 
   interface MemoryUsageDetails {
 
     // Docs: http://electron.atom.io/docs/api/structures/memory-usage-details
 
-    count?: number;
-    liveSize?: number;
-    size?: number;
+    count: number;
+    liveSize: number;
+    size: number;
   }
 
   class Menu {
@@ -2728,11 +2732,11 @@ declare namespace Electron {
     /**
      * The actual Buffer content
      */
-    data?: Buffer;
+    data: Buffer;
     /**
      * The mimeType of the Buffer that you are sending
      */
-    mimeType?: string;
+    mimeType: string;
   }
 
   class NativeImage {
@@ -2750,7 +2754,7 @@ declare namespace Electron {
     /**
      * Creates a new NativeImage instance from dataURL.
      */
-    static createFromDataURL(dataURL: string): void;
+    static createFromDataURL(dataURL: string): NativeImage;
     /**
      * Creates a new NativeImage instance from a file located at path. This method
      * returns an empty image if the path does not exist, cannot be read, or is not a
@@ -2812,8 +2816,8 @@ declare namespace Electron {
 
     // Docs: http://electron.atom.io/docs/api/structures/point
 
-    x?: number;
-    y?: number;
+    x: number;
+    y: number;
   }
 
   interface PowerMonitor extends EventEmitter {
@@ -2879,11 +2883,11 @@ declare namespace Electron {
     /**
      * Memory information of the process.
      */
-    memory?: MemoryInfo;
+    memory: MemoryInfo;
     /**
      * Process id of the process.
      */
-    pid?: number;
+    pid: number;
   }
 
   interface Protocol extends EventEmitter {
@@ -2894,34 +2898,34 @@ declare namespace Electron {
      * Intercepts scheme protocol and uses handler as the protocol's new handler which
      * sends a Buffer as a response.
      */
-    interceptBufferProtocol(scheme: string, handler: (request?: InterceptBufferProtocolRequest, callback?: (buffer?: Buffer) => void) => void, completion?: (error?: Error) => void): void;
+    interceptBufferProtocol(scheme: string, handler: (request: InterceptBufferProtocolRequest, callback: (buffer?: Buffer) => void) => void, completion?: (error: Error) => void): void;
     /**
      * Intercepts scheme protocol and uses handler as the protocol's new handler which
      * sends a file as a response.
      */
-    interceptFileProtocol(scheme: string, handler: (request?: InterceptFileProtocolRequest, callback?: (filePath?: string) => void) => void, completion?: (error?: Error) => void): void;
+    interceptFileProtocol(scheme: string, handler: (request: InterceptFileProtocolRequest, callback: (filePath: string) => void) => void, completion?: (error: Error) => void): void;
     /**
      * Intercepts scheme protocol and uses handler as the protocol's new handler which
      * sends a new HTTP request as a response.
      */
-    interceptHttpProtocol(scheme: string, handler: (request?: InterceptHttpProtocolRequest, callback?: (redirectRequest?: RedirectRequest) => void) => void, completion?: (error?: Error) => void): void;
+    interceptHttpProtocol(scheme: string, handler: (request: InterceptHttpProtocolRequest, callback: (redirectRequest: RedirectRequest) => void) => void, completion?: (error: Error) => void): void;
     /**
      * Intercepts scheme protocol and uses handler as the protocol's new handler which
      * sends a String as a response.
      */
-    interceptStringProtocol(scheme: string, handler: (request?: InterceptStringProtocolRequest, callback?: (data?: string) => void) => void, completion?: (error?: Error) => void): void;
+    interceptStringProtocol(scheme: string, handler: (request: InterceptStringProtocolRequest, callback: (data?: string) => void) => void, completion?: (error: Error) => void): void;
     /**
      * The callback will be called with a boolean that indicates whether there is
      * already a handler for scheme.
      */
-    isProtocolHandled(scheme: string, callback: (error?: Error) => void): void;
+    isProtocolHandled(scheme: string, callback: (error: Error) => void): void;
     /**
      * Registers a protocol of scheme that will send a Buffer as a response. The usage
      * is the same with registerFileProtocol, except that the callback should be called
      * with either a Buffer object or an object that has the data, mimeType, and
      * charset properties. Example:
      */
-    registerBufferProtocol(scheme: string, handler: (request?: RegisterBufferProtocolRequest, callback?: (buffer?: Buffer | MimeTypedBuffer) => void) => void, completion?: (error?: Error) => void): void;
+    registerBufferProtocol(scheme: string, handler: (request: RegisterBufferProtocolRequest, callback: (buffer?: Buffer | MimeTypedBuffer) => void) => void, completion?: (error: Error) => void): void;
     /**
      * Registers a protocol of scheme that will send the file as a response. The
      * handler will be called with handler(request, callback) when a request is going
@@ -2937,7 +2941,7 @@ declare namespace Electron {
      * want to call protocol.registerStandardSchemes to have your scheme treated as a
      * standard scheme.
      */
-    registerFileProtocol(scheme: string, handler: (request?: RegisterFileProtocolRequest, callback?: (filePath?: string) => void) => void, completion?: (error?: Error) => void): void;
+    registerFileProtocol(scheme: string, handler: (request: RegisterFileProtocolRequest, callback: (filePath?: string) => void) => void, completion?: (error: Error) => void): void;
     /**
      * Registers a protocol of scheme that will send an HTTP request as a response. The
      * usage is the same with registerFileProtocol, except that the callback should be
@@ -2946,7 +2950,7 @@ declare namespace Electron {
      * current session. If you want the request to have a different session you should
      * set session to null. For POST requests the uploadData object must be provided.
      */
-    registerHttpProtocol(scheme: string, handler: (request?: RegisterHttpProtocolRequest, callback?: (redirectRequest?: RedirectRequest) => void) => void, completion?: (error?: Error) => void): void;
+    registerHttpProtocol(scheme: string, handler: (request: RegisterHttpProtocolRequest, callback: (redirectRequest: RedirectRequest) => void) => void, completion?: (error: Error) => void): void;
     registerServiceWorkerSchemes(schemes: string[]): void;
     /**
      * A standard scheme adheres to what RFC 3986 calls generic URI syntax. For example
@@ -2971,31 +2975,31 @@ declare namespace Electron {
      * with either a String or an object that has the data, mimeType, and charset
      * properties.
      */
-    registerStringProtocol(scheme: string, handler: (request?: RegisterStringProtocolRequest, callback?: (data?: string) => void) => void, completion?: (error?: Error) => void): void;
+    registerStringProtocol(scheme: string, handler: (request: RegisterStringProtocolRequest, callback: (data?: string) => void) => void, completion?: (error: Error) => void): void;
     /**
      * Remove the interceptor installed for scheme and restore its original handler.
      */
-    uninterceptProtocol(scheme: string, completion?: (error?: Error) => void): void;
+    uninterceptProtocol(scheme: string, completion?: (error: Error) => void): void;
     /**
      * Unregisters the custom protocol of scheme.
      */
-    unregisterProtocol(scheme: string, completion?: (error?: Error) => void): void;
+    unregisterProtocol(scheme: string, completion?: (error: Error) => void): void;
   }
 
   interface Rectangle {
 
     // Docs: http://electron.atom.io/docs/api/structures/rectangle
 
-    height?: number;
-    width?: number;
+    height: number;
+    width: number;
     /**
      * The x coordinate of the origin of the rectangle
      */
-    x?: number;
+    x: number;
     /**
      * The y coordinate of the origin of the rectangle
      */
-    y?: number;
+    y: number;
   }
 
   interface Remote extends MainInterface {
@@ -3024,11 +3028,11 @@ declare namespace Electron {
      * Origin of the server whose associated client certificate must be removed from
      * the cache.
      */
-    origin?: string;
+    origin: string;
     /**
-     * .
+     * clientCertificate.
      */
-    type?: string;
+    type: string;
   }
 
   interface RemovePassword {
@@ -3041,23 +3045,24 @@ declare namespace Electron {
      */
     origin?: string;
     /**
-     * Credentials of the authentication. Must be provided if removing by .
+     * Credentials of the authentication. Must be provided if removing by origin.
      */
     password?: string;
     /**
-     * Realm of the authentication. Must be provided if removing by .
+     * Realm of the authentication. Must be provided if removing by origin.
      */
     realm?: string;
     /**
-     * Scheme of the authentication. Can be , , , . Must be provided if removing by .
+     * Scheme of the authentication. Can be basic, digest, ntlm, negotiate. Must be
+     * provided if removing by origin.
      */
     scheme?: ('basic' | 'digest' | 'ntlm' | 'negotiate');
     /**
-     * .
+     * password.
      */
-    type?: string;
+    type: string;
     /**
-     * Credentials of the authentication. Must be provided if removing by .
+     * Credentials of the authentication. Must be provided if removing by origin.
      */
     username?: string;
   }
@@ -3069,42 +3074,42 @@ declare namespace Electron {
     /**
      * Emitted when newDisplay has been added.
      */
-    on(event: 'display-added', listener: (event?: Event,
-                                          newDisplay?: Display) => void): this;
-    once(event: 'display-added', listener: (event?: Event,
-                                          newDisplay?: Display) => void): this;
-    addListener(event: 'display-added', listener: (event?: Event,
-                                          newDisplay?: Display) => void): this;
-    removeListener(event: 'display-added', listener: (event?: Event,
-                                          newDisplay?: Display) => void): this;
+    on(event: 'display-added', listener: (event: Event,
+                                          newDisplay: Display) => void): this;
+    once(event: 'display-added', listener: (event: Event,
+                                          newDisplay: Display) => void): this;
+    addListener(event: 'display-added', listener: (event: Event,
+                                          newDisplay: Display) => void): this;
+    removeListener(event: 'display-added', listener: (event: Event,
+                                          newDisplay: Display) => void): this;
     /**
      * Emitted when one or more metrics change in a display. The changedMetrics is an
      * array of strings that describe the changes. Possible changes are bounds,
      * workArea, scaleFactor and rotation.
      */
-    on(event: 'display-metrics-changed', listener: (event?: Event,
-                                                    display?: Display,
-                                                    changedMetrics?: string[]) => void): this;
-    once(event: 'display-metrics-changed', listener: (event?: Event,
-                                                    display?: Display,
-                                                    changedMetrics?: string[]) => void): this;
-    addListener(event: 'display-metrics-changed', listener: (event?: Event,
-                                                    display?: Display,
-                                                    changedMetrics?: string[]) => void): this;
-    removeListener(event: 'display-metrics-changed', listener: (event?: Event,
-                                                    display?: Display,
-                                                    changedMetrics?: string[]) => void): this;
+    on(event: 'display-metrics-changed', listener: (event: Event,
+                                                    display: Display,
+                                                    changedMetrics: string[]) => void): this;
+    once(event: 'display-metrics-changed', listener: (event: Event,
+                                                    display: Display,
+                                                    changedMetrics: string[]) => void): this;
+    addListener(event: 'display-metrics-changed', listener: (event: Event,
+                                                    display: Display,
+                                                    changedMetrics: string[]) => void): this;
+    removeListener(event: 'display-metrics-changed', listener: (event: Event,
+                                                    display: Display,
+                                                    changedMetrics: string[]) => void): this;
     /**
      * Emitted when oldDisplay has been removed.
      */
-    on(event: 'display-removed', listener: (event?: Event,
-                                            oldDisplay?: Display) => void): this;
-    once(event: 'display-removed', listener: (event?: Event,
-                                            oldDisplay?: Display) => void): this;
-    addListener(event: 'display-removed', listener: (event?: Event,
-                                            oldDisplay?: Display) => void): this;
-    removeListener(event: 'display-removed', listener: (event?: Event,
-                                            oldDisplay?: Display) => void): this;
+    on(event: 'display-removed', listener: (event: Event,
+                                            oldDisplay: Display) => void): this;
+    once(event: 'display-removed', listener: (event: Event,
+                                            oldDisplay: Display) => void): this;
+    addListener(event: 'display-removed', listener: (event: Event,
+                                            oldDisplay: Display) => void): this;
+    removeListener(event: 'display-removed', listener: (event: Event,
+                                            oldDisplay: Display) => void): this;
     getAllDisplays(): Display[];
     /**
      * The current absolute position of the mouse pointer.
@@ -3169,18 +3174,18 @@ declare namespace Electron {
      * event.preventDefault() will cancel the download and item will not be available
      * from next tick of the process.
      */
-    on(event: 'will-download', listener: (event?: Event,
-                                          item?: DownloadItem,
-                                          webContents?: WebContents) => void): this;
-    once(event: 'will-download', listener: (event?: Event,
-                                          item?: DownloadItem,
-                                          webContents?: WebContents) => void): this;
-    addListener(event: 'will-download', listener: (event?: Event,
-                                          item?: DownloadItem,
-                                          webContents?: WebContents) => void): this;
-    removeListener(event: 'will-download', listener: (event?: Event,
-                                          item?: DownloadItem,
-                                          webContents?: WebContents) => void): this;
+    on(event: 'will-download', listener: (event: Event,
+                                          item: DownloadItem,
+                                          webContents: WebContents) => void): this;
+    once(event: 'will-download', listener: (event: Event,
+                                          item: DownloadItem,
+                                          webContents: WebContents) => void): this;
+    addListener(event: 'will-download', listener: (event: Event,
+                                          item: DownloadItem,
+                                          webContents: WebContents) => void): this;
+    removeListener(event: 'will-download', listener: (event: Event,
+                                          item: DownloadItem,
+                                          webContents: WebContents) => void): this;
     /**
      * Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
      * authentication.
@@ -3223,17 +3228,17 @@ declare namespace Electron {
      * Writes any unwritten DOMStorage data to disk.
      */
     flushStorageData(): void;
-    getBlobData(identifier: string, callback: (result?: Buffer) => void): Blob;
+    getBlobData(identifier: string, callback: (result: Buffer) => void): Blob;
     /**
      * Callback is invoked with the session's current cache size.
      */
-    getCacheSize(callback: (size?: number) => void): void;
+    getCacheSize(callback: (size: number) => void): void;
     getUserAgent(): string;
     /**
      * Resolves the proxy information for url. The callback will be called with
      * callback(proxy) when the request is performed.
      */
-    resolveProxy(url: string, callback: (proxy?: string) => void): void;
+    resolveProxy(url: string, callback: (proxy: string) => void): void;
     /**
      * Sets the certificate verify proc for session, the proc will be called with
      * proc(request, callback) whenever a server certificate verification is requested.
@@ -3241,7 +3246,7 @@ declare namespace Electron {
      * Calling setCertificateVerifyProc(null) will revert back to default certificate
      * verify proc.
      */
-    setCertificateVerifyProc(proc: (request?: CertificateVerifyProcRequest, callback?: (verificationResult?: number) => void) => void): void;
+    setCertificateVerifyProc(proc: (request: CertificateVerifyProcRequest, callback: (verificationResult: number) => void) => void): void;
     /**
      * Sets download saving directory. By default, the download directory will be the
      * Downloads under the respective app folder.
@@ -3252,7 +3257,7 @@ declare namespace Electron {
      * session. Calling callback(true) will allow the permission and callback(false)
      * will reject it.
      */
-    setPermissionRequestHandler(handler: (webContents?: WebContents, permission?: string, callback?: (permissionGranted?: boolean) => void) => void): void;
+    setPermissionRequestHandler(handler: (webContents: WebContents, permission: string, callback: (permissionGranted: boolean) => void) => void): void;
     /**
      * Sets the proxy settings. When pacScript and proxyRules are provided together,
      * the proxyRules option is ignored and pacScript configuration is applied. The
@@ -3289,7 +3294,7 @@ declare namespace Electron {
      * Open the given external protocol URL in the desktop's default manner. (For
      * example, mailto: URLs in the user's default mail agent).
      */
-    openExternal(url: string, options?: OpenExternalOptions, callback?: (error?: Error) => void): boolean;
+    openExternal(url: string, options?: OpenExternalOptions, callback?: (error: Error) => void): boolean;
     /**
      * Open the given file in the desktop's default manner.
      */
@@ -3322,8 +3327,8 @@ declare namespace Electron {
      */
     appUserModelId?: string;
     /**
-     * The arguments to be applied to when launching from this shortcut. Default is
-     * empty.
+     * The arguments to be applied to target when launching from this shortcut. Default
+     * is empty.
      */
     args?: string;
     /**
@@ -3335,80 +3340,80 @@ declare namespace Electron {
      */
     description?: string;
     /**
-     * The path to the icon, can be a DLL or EXE. and have to be set together. Default
-     * is empty, which uses the target's icon.
+     * The path to the icon, can be a DLL or EXE. icon and iconIndex have to be set
+     * together. Default is empty, which uses the target's icon.
      */
     icon?: string;
     /**
-     * The resource ID of icon when is a DLL or EXE. Default is 0.
+     * The resource ID of icon when icon is a DLL or EXE. Default is 0.
      */
     iconIndex?: number;
     /**
      * The target to launch from this shortcut.
      */
-    target?: string;
+    target: string;
   }
 
   interface Size {
 
     // Docs: http://electron.atom.io/docs/api/structures/size
 
-    height?: number;
-    width?: number;
+    height: number;
+    width: number;
   }
 
   interface SystemPreferences extends EventEmitter {
 
     // Docs: http://electron.atom.io/docs/api/system-preferences
 
-    on(event: 'accent-color-changed', listener: (event?: Event,
+    on(event: 'accent-color-changed', listener: (event: Event,
                                                  /**
                                                   * The new RGBA color the user assigned to be their system accent color.
                                                   */
-                                                 newColor?: string) => void): this;
-    once(event: 'accent-color-changed', listener: (event?: Event,
+                                                 newColor: string) => void): this;
+    once(event: 'accent-color-changed', listener: (event: Event,
                                                  /**
                                                   * The new RGBA color the user assigned to be their system accent color.
                                                   */
-                                                 newColor?: string) => void): this;
-    addListener(event: 'accent-color-changed', listener: (event?: Event,
+                                                 newColor: string) => void): this;
+    addListener(event: 'accent-color-changed', listener: (event: Event,
                                                  /**
                                                   * The new RGBA color the user assigned to be their system accent color.
                                                   */
-                                                 newColor?: string) => void): this;
-    removeListener(event: 'accent-color-changed', listener: (event?: Event,
+                                                 newColor: string) => void): this;
+    removeListener(event: 'accent-color-changed', listener: (event: Event,
                                                  /**
                                                   * The new RGBA color the user assigned to be their system accent color.
                                                   */
-                                                 newColor?: string) => void): this;
-    on(event: 'color-changed', listener: (event?: Event) => void): this;
-    once(event: 'color-changed', listener: (event?: Event) => void): this;
-    addListener(event: 'color-changed', listener: (event?: Event) => void): this;
-    removeListener(event: 'color-changed', listener: (event?: Event) => void): this;
-    on(event: 'inverted-color-scheme-changed', listener: (event?: Event,
+                                                 newColor: string) => void): this;
+    on(event: 'color-changed', listener: (event: Event) => void): this;
+    once(event: 'color-changed', listener: (event: Event) => void): this;
+    addListener(event: 'color-changed', listener: (event: Event) => void): this;
+    removeListener(event: 'color-changed', listener: (event: Event) => void): this;
+    on(event: 'inverted-color-scheme-changed', listener: (event: Event,
                                                           /**
                                                            * `true` if an inverted color scheme, such as a high contrast theme, is being
                                                            * used, `false` otherwise.
                                                            */
-                                                          invertedColorScheme?: boolean) => void): this;
-    once(event: 'inverted-color-scheme-changed', listener: (event?: Event,
+                                                          invertedColorScheme: boolean) => void): this;
+    once(event: 'inverted-color-scheme-changed', listener: (event: Event,
                                                           /**
                                                            * `true` if an inverted color scheme, such as a high contrast theme, is being
                                                            * used, `false` otherwise.
                                                            */
-                                                          invertedColorScheme?: boolean) => void): this;
-    addListener(event: 'inverted-color-scheme-changed', listener: (event?: Event,
+                                                          invertedColorScheme: boolean) => void): this;
+    addListener(event: 'inverted-color-scheme-changed', listener: (event: Event,
                                                           /**
                                                            * `true` if an inverted color scheme, such as a high contrast theme, is being
                                                            * used, `false` otherwise.
                                                            */
-                                                          invertedColorScheme?: boolean) => void): this;
-    removeListener(event: 'inverted-color-scheme-changed', listener: (event?: Event,
+                                                          invertedColorScheme: boolean) => void): this;
+    removeListener(event: 'inverted-color-scheme-changed', listener: (event: Event,
                                                           /**
                                                            * `true` if an inverted color scheme, such as a high contrast theme, is being
                                                            * used, `false` otherwise.
                                                            */
-                                                          invertedColorScheme?: boolean) => void): this;
+                                                          invertedColorScheme: boolean) => void): this;
     getAccentColor(): string;
     getColor(color: '3d-dark-shadow' | '3d-face' | '3d-highlight' | '3d-light' | '3d-shadow' | 'active-border' | 'active-caption' | 'active-caption-gradient' | 'app-workspace' | 'button-text' | 'caption-text' | 'desktop' | 'disabled-text' | 'highlight' | 'highlight-text' | 'hotlight' | 'inactive-border' | 'inactive-caption' | 'inactive-caption-gradient' | 'inactive-caption-text' | 'info-background' | 'info-text' | 'menu' | 'menu-highlight' | 'menubar' | 'menu-text' | 'scrollbar' | 'window' | 'window-frame' | 'window-text'): string;
     /**
@@ -3446,7 +3451,7 @@ declare namespace Electron {
      * Same as subscribeNotification, but uses NSNotificationCenter for local defaults.
      * This is necessary for events such as NSUserDefaultsDidChangeNotification
      */
-    subscribeLocalNotification(event: string, callback: (event?: string, userInfo?: any) => void): void;
+    subscribeLocalNotification(event: string, callback: (event: string, userInfo: any) => void): void;
     /**
      * Subscribes to native notifications of macOS, callback will be called with
      * callback(event, userInfo) when the corresponding event happens. The userInfo is
@@ -3455,7 +3460,7 @@ declare namespace Electron {
      * unsubscribe the event. Under the hood this API subscribes to
      * NSDistributedNotificationCenter, example values of event are:
      */
-    subscribeNotification(event: string, callback: (event?: string, userInfo?: any) => void): void;
+    subscribeNotification(event: string, callback: (event: string, userInfo: any) => void): void;
     /**
      * Same as unsubscribeNotification, but removes the subscriber from
      * NSNotificationCenter.
@@ -3472,49 +3477,50 @@ declare namespace Electron {
     // Docs: http://electron.atom.io/docs/api/structures/task
 
     /**
-     * The command line arguments when is executed.
+     * The command line arguments when program is executed.
      */
-    arguments?: string;
+    arguments: string;
     /**
      * Description of this task.
      */
-    description?: string;
+    description: string;
     /**
      * The icon index in the icon file. If an icon file consists of two or more icons,
      * set this value to identify the icon. If an icon file consists of one icon, this
      * value is 0.
      */
-    iconIndex?: number;
+    iconIndex: number;
     /**
      * The absolute path to an icon to be displayed in a JumpList, which can be an
-     * arbitrary resource file that contains an icon. You can usually specify to show
-     * the icon of the program.
+     * arbitrary resource file that contains an icon. You can usually specify
+     * process.execPath to show the icon of the program.
      */
-    iconPath?: string;
+    iconPath: string;
     /**
-     * Path of the program to execute, usually you should specify which opens the
-     * current program.
+     * Path of the program to execute, usually you should specify process.execPath
+     * which opens the current program.
      */
-    program?: string;
+    program: string;
     /**
      * The string to be displayed in a JumpList.
      */
-    title?: string;
+    title: string;
   }
 
   interface ThumbarButton {
 
     // Docs: http://electron.atom.io/docs/api/structures/thumbar-button
 
-    click?: Function;
+    click: Function;
     /**
-     * Control specific states and behaviors of the button. By default, it is .
+     * Control specific states and behaviors of the button. By default, it is
+     * ['enabled'].
      */
     flags?: string[];
     /**
      * The icon showing in thumbnail toolbar.
      */
-    icon?: NativeImage;
+    icon: NativeImage;
     /**
      * The text of the button's tooltip.
      */
@@ -3652,49 +3658,49 @@ declare namespace Electron {
     /**
      * Emitted when the tray icon is clicked.
      */
-    on(event: 'click', listener: (event?: Event,
+    on(event: 'click', listener: (event: Event,
                                   /**
                                    * The bounds of tray icon
                                    */
-                                  bounds?: Rectangle) => void): this;
-    once(event: 'click', listener: (event?: Event,
+                                  bounds: Rectangle) => void): this;
+    once(event: 'click', listener: (event: Event,
                                   /**
                                    * The bounds of tray icon
                                    */
-                                  bounds?: Rectangle) => void): this;
-    addListener(event: 'click', listener: (event?: Event,
+                                  bounds: Rectangle) => void): this;
+    addListener(event: 'click', listener: (event: Event,
                                   /**
                                    * The bounds of tray icon
                                    */
-                                  bounds?: Rectangle) => void): this;
-    removeListener(event: 'click', listener: (event?: Event,
+                                  bounds: Rectangle) => void): this;
+    removeListener(event: 'click', listener: (event: Event,
                                   /**
                                    * The bounds of tray icon
                                    */
-                                  bounds?: Rectangle) => void): this;
+                                  bounds: Rectangle) => void): this;
     /**
      * Emitted when the tray icon is double clicked.
      */
-    on(event: 'double-click', listener: (event?: Event,
+    on(event: 'double-click', listener: (event: Event,
                                          /**
                                           * The bounds of tray icon
                                           */
-                                         bounds?: Rectangle) => void): this;
-    once(event: 'double-click', listener: (event?: Event,
+                                         bounds: Rectangle) => void): this;
+    once(event: 'double-click', listener: (event: Event,
                                          /**
                                           * The bounds of tray icon
                                           */
-                                         bounds?: Rectangle) => void): this;
-    addListener(event: 'double-click', listener: (event?: Event,
+                                         bounds: Rectangle) => void): this;
+    addListener(event: 'double-click', listener: (event: Event,
                                          /**
                                           * The bounds of tray icon
                                           */
-                                         bounds?: Rectangle) => void): this;
-    removeListener(event: 'double-click', listener: (event?: Event,
+                                         bounds: Rectangle) => void): this;
+    removeListener(event: 'double-click', listener: (event: Event,
                                          /**
                                           * The bounds of tray icon
                                           */
-                                         bounds?: Rectangle) => void): this;
+                                         bounds: Rectangle) => void): this;
     /**
      * Emitted when a drag operation ends on the tray or ends at another location.
      */
@@ -3726,72 +3732,72 @@ declare namespace Electron {
     /**
      * Emitted when dragged files are dropped in the tray icon.
      */
-    on(event: 'drop-files', listener: (event?: Event,
+    on(event: 'drop-files', listener: (event: Event,
                                        /**
                                         * The paths of the dropped files.
                                         */
-                                       files?: string[]) => void): this;
-    once(event: 'drop-files', listener: (event?: Event,
+                                       files: string[]) => void): this;
+    once(event: 'drop-files', listener: (event: Event,
                                        /**
                                         * The paths of the dropped files.
                                         */
-                                       files?: string[]) => void): this;
-    addListener(event: 'drop-files', listener: (event?: Event,
+                                       files: string[]) => void): this;
+    addListener(event: 'drop-files', listener: (event: Event,
                                        /**
                                         * The paths of the dropped files.
                                         */
-                                       files?: string[]) => void): this;
-    removeListener(event: 'drop-files', listener: (event?: Event,
+                                       files: string[]) => void): this;
+    removeListener(event: 'drop-files', listener: (event: Event,
                                        /**
                                         * The paths of the dropped files.
                                         */
-                                       files?: string[]) => void): this;
+                                       files: string[]) => void): this;
     /**
      * Emitted when dragged text is dropped in the tray icon.
      */
-    on(event: 'drop-text', listener: (event?: Event,
+    on(event: 'drop-text', listener: (event: Event,
                                       /**
                                        * the dropped text string
                                        */
-                                      text?: string) => void): this;
-    once(event: 'drop-text', listener: (event?: Event,
+                                      text: string) => void): this;
+    once(event: 'drop-text', listener: (event: Event,
                                       /**
                                        * the dropped text string
                                        */
-                                      text?: string) => void): this;
-    addListener(event: 'drop-text', listener: (event?: Event,
+                                      text: string) => void): this;
+    addListener(event: 'drop-text', listener: (event: Event,
                                       /**
                                        * the dropped text string
                                        */
-                                      text?: string) => void): this;
-    removeListener(event: 'drop-text', listener: (event?: Event,
+                                      text: string) => void): this;
+    removeListener(event: 'drop-text', listener: (event: Event,
                                       /**
                                        * the dropped text string
                                        */
-                                      text?: string) => void): this;
+                                      text: string) => void): this;
     /**
      * Emitted when the tray icon is right clicked.
      */
-    on(event: 'right-click', listener: (event?: Event,
+    on(event: 'right-click', listener: (event: Event,
                                         /**
                                          * The bounds of tray icon
                                          */
-                                        bounds?: Rectangle) => void): this;
-    once(event: 'right-click', listener: (event?: Event,
+                                        bounds: Rectangle) => void): this;
+    once(event: 'right-click', listener: (event: Event,
                                         /**
                                          * The bounds of tray icon
                                          */
-                                        bounds?: Rectangle) => void): this;
-    addListener(event: 'right-click', listener: (event?: Event,
+                                        bounds: Rectangle) => void): this;
+    addListener(event: 'right-click', listener: (event: Event,
                                         /**
                                          * The bounds of tray icon
                                          */
-                                        bounds?: Rectangle) => void): this;
-    removeListener(event: 'right-click', listener: (event?: Event,
+                                        bounds: Rectangle) => void): this;
+    removeListener(event: 'right-click', listener: (event: Event,
                                         /**
                                          * The bounds of tray icon
                                          */
-                                        bounds?: Rectangle) => void): this;
+                                        bounds: Rectangle) => void): this;
     constructor(image: NativeImage | string);
     /**
      * Destroys the tray icon immediately.
@@ -3847,11 +3853,11 @@ declare namespace Electron {
     /**
      * UUID of blob data to upload.
      */
-    blobUUID?: string;
+    blobUUID: string;
     /**
-     * .
+     * blob.
      */
-    type?: string;
+    type: string;
   }
 
   interface UploadData {
@@ -3861,15 +3867,15 @@ declare namespace Electron {
     /**
      * UUID of blob data. Use method to retrieve the data.
      */
-    blobUUID?: string;
+    blobUUID: string;
     /**
      * Content being sent.
      */
-    bytes?: Buffer;
+    bytes: Buffer;
     /**
      * Path of file being uploaded.
      */
-    file?: string;
+    file: string;
   }
 
   interface UploadFile {
@@ -3879,23 +3885,23 @@ declare namespace Electron {
     /**
      * Path of file to be uploaded.
      */
-    filePath?: string;
+    filePath: string;
     /**
-     * Number of bytes to read from . Defaults to .
+     * Number of bytes to read from offset. Defaults to 0.
      */
-    length?: number;
+    length: number;
     /**
      * Last Modification time in number of seconds sine the UNIX epoch.
      */
-    modificationTime?: number;
+    modificationTime: number;
     /**
-     * Defaults to .
+     * Defaults to 0.
      */
-    offset?: number;
+    offset: number;
     /**
-     * .
+     * file.
      */
-    type?: string;
+    type: string;
   }
 
   interface UploadFileSystem {
@@ -3905,23 +3911,23 @@ declare namespace Electron {
     /**
      * FileSystem url to read data for upload.
      */
-    filsSystemURL?: string;
+    filsSystemURL: string;
     /**
-     * Number of bytes to read from . Defaults to .
+     * Number of bytes to read from offset. Defaults to 0.
      */
-    length?: number;
+    length: number;
     /**
      * Last Modification time in number of seconds sine the UNIX epoch.
      */
-    modificationTime?: number;
+    modificationTime: number;
     /**
-     * Defaults to .
+     * Defaults to 0.
      */
-    offset?: number;
+    offset: number;
     /**
-     * .
+     * fileSystem.
      */
-    type?: string;
+    type: string;
   }
 
   interface UploadRawData {
@@ -3931,11 +3937,11 @@ declare namespace Electron {
     /**
      * Data to be uploaded.
      */
-    bytes?: Buffer;
+    bytes: Buffer;
     /**
-     * .
+     * rawData.
      */
-    type?: string;
+    type: string;
   }
 
   class WebContents extends EventEmitter {
@@ -3950,84 +3956,84 @@ declare namespace Electron {
      * event.preventDefault will prevent the page keydown/keyup events from being
      * dispatched.
      */
-    on(event: 'before-input-event', listener: (event?: Event,
+    on(event: 'before-input-event', listener: (event: Event,
                                                /**
                                                 * Input properties
                                                 */
-                                               input?: Input) => void): this;
-    once(event: 'before-input-event', listener: (event?: Event,
+                                               input: Input) => void): this;
+    once(event: 'before-input-event', listener: (event: Event,
                                                /**
                                                 * Input properties
                                                 */
-                                               input?: Input) => void): this;
-    addListener(event: 'before-input-event', listener: (event?: Event,
+                                               input: Input) => void): this;
+    addListener(event: 'before-input-event', listener: (event: Event,
                                                /**
                                                 * Input properties
                                                 */
-                                               input?: Input) => void): this;
-    removeListener(event: 'before-input-event', listener: (event?: Event,
+                                               input: Input) => void): this;
+    removeListener(event: 'before-input-event', listener: (event: Event,
                                                /**
                                                 * Input properties
                                                 */
-                                               input?: Input) => void): this;
+                                               input: Input) => void): this;
     /**
      * Emitted when failed to verify the certificate for url. The usage is the same
      * with the certificate-error event of app.
      */
-    on(event: 'certificate-error', listener: (event?: Event,
-                                              url?: string,
+    on(event: 'certificate-error', listener: (event: Event,
+                                              url: string,
                                               /**
                                                * The error code
                                                */
-                                              error?: string,
-                                              certificate?: Certificate,
-                                              callback?: (isTrusted?: boolean) => void) => void): this;
-    once(event: 'certificate-error', listener: (event?: Event,
-                                              url?: string,
+                                              error: string,
+                                              certificate: Certificate,
+                                              callback: (isTrusted: boolean) => void) => void): this;
+    once(event: 'certificate-error', listener: (event: Event,
+                                              url: string,
                                               /**
                                                * The error code
                                                */
-                                              error?: string,
-                                              certificate?: Certificate,
-                                              callback?: (isTrusted?: boolean) => void) => void): this;
-    addListener(event: 'certificate-error', listener: (event?: Event,
-                                              url?: string,
+                                              error: string,
+                                              certificate: Certificate,
+                                              callback: (isTrusted: boolean) => void) => void): this;
+    addListener(event: 'certificate-error', listener: (event: Event,
+                                              url: string,
                                               /**
                                                * The error code
                                                */
-                                              error?: string,
-                                              certificate?: Certificate,
-                                              callback?: (isTrusted?: boolean) => void) => void): this;
-    removeListener(event: 'certificate-error', listener: (event?: Event,
-                                              url?: string,
+                                              error: string,
+                                              certificate: Certificate,
+                                              callback: (isTrusted: boolean) => void) => void): this;
+    removeListener(event: 'certificate-error', listener: (event: Event,
+                                              url: string,
                                               /**
                                                * The error code
                                                */
-                                              error?: string,
-                                              certificate?: Certificate,
-                                              callback?: (isTrusted?: boolean) => void) => void): this;
+                                              error: string,
+                                              certificate: Certificate,
+                                              callback: (isTrusted: boolean) => void) => void): this;
     /**
      * Emitted when there is a new context menu that needs to be handled.
      */
-    on(event: 'context-menu', listener: (event?: Event,
-                                         params?: ContextMenuParams) => void): this;
-    once(event: 'context-menu', listener: (event?: Event,
-                                         params?: ContextMenuParams) => void): this;
-    addListener(event: 'context-menu', listener: (event?: Event,
-                                         params?: ContextMenuParams) => void): this;
-    removeListener(event: 'context-menu', listener: (event?: Event,
-                                         params?: ContextMenuParams) => void): this;
+    on(event: 'context-menu', listener: (event: Event,
+                                         params: ContextMenuParams) => void): this;
+    once(event: 'context-menu', listener: (event: Event,
+                                         params: ContextMenuParams) => void): this;
+    addListener(event: 'context-menu', listener: (event: Event,
+                                         params: ContextMenuParams) => void): this;
+    removeListener(event: 'context-menu', listener: (event: Event,
+                                         params: ContextMenuParams) => void): this;
     /**
      * Emitted when the renderer process crashes or is killed.
      */
-    on(event: 'crashed', listener: (event?: Event,
-                                    killed?: boolean) => void): this;
-    once(event: 'crashed', listener: (event?: Event,
-                                    killed?: boolean) => void): this;
-    addListener(event: 'crashed', listener: (event?: Event,
-                                    killed?: boolean) => void): this;
-    removeListener(event: 'crashed', listener: (event?: Event,
-                                    killed?: boolean) => void): this;
+    on(event: 'crashed', listener: (event: Event,
+                                    killed: boolean) => void): this;
+    once(event: 'crashed', listener: (event: Event,
+                                    killed: boolean) => void): this;
+    addListener(event: 'crashed', listener: (event: Event,
+                                    killed: boolean) => void): this;
+    removeListener(event: 'crashed', listener: (event: Event,
+                                    killed: boolean) => void): this;
     /**
      * Emitted when the cursor's type changes. The type parameter can be default,
      * crosshair, pointer, text, wait, help, e-resize, n-resize, ne-resize, nw-resize,
@@ -4040,8 +4046,8 @@ declare namespace Electron {
      * and scale, size and hotspot will hold additional information about the custom
      * cursor.
      */
-    on(event: 'cursor-changed', listener: (event?: Event,
-                                           type?: string,
+    on(event: 'cursor-changed', listener: (event: Event,
+                                           type: string,
                                            image?: NativeImage,
                                            /**
                                             * scaling factor for the custom cursor
@@ -4055,8 +4061,8 @@ declare namespace Electron {
                                             * coordinates of the custom cursor's hotspot
                                             */
                                            hotspot?: Point) => void): this;
-    once(event: 'cursor-changed', listener: (event?: Event,
-                                           type?: string,
+    once(event: 'cursor-changed', listener: (event: Event,
+                                           type: string,
                                            image?: NativeImage,
                                            /**
                                             * scaling factor for the custom cursor
@@ -4070,8 +4076,8 @@ declare namespace Electron {
                                             * coordinates of the custom cursor's hotspot
                                             */
                                            hotspot?: Point) => void): this;
-    addListener(event: 'cursor-changed', listener: (event?: Event,
-                                           type?: string,
+    addListener(event: 'cursor-changed', listener: (event: Event,
+                                           type: string,
                                            image?: NativeImage,
                                            /**
                                             * scaling factor for the custom cursor
@@ -4085,8 +4091,8 @@ declare namespace Electron {
                                             * coordinates of the custom cursor's hotspot
                                             */
                                            hotspot?: Point) => void): this;
-    removeListener(event: 'cursor-changed', listener: (event?: Event,
-                                           type?: string,
+    removeListener(event: 'cursor-changed', listener: (event: Event,
+                                           type: string,
                                            image?: NativeImage,
                                            /**
                                             * scaling factor for the custom cursor
@@ -4148,26 +4154,26 @@ declare namespace Electron {
      * cancelled, e.g. window.stop() is invoked. The full list of error codes and their
      * meaning is available here.
      */
-    on(event: 'did-fail-load', listener: (event?: Event,
-                                          errorCode?: number,
-                                          errorDescription?: string,
-                                          validatedURL?: string,
-                                          isMainFrame?: boolean) => void): this;
-    once(event: 'did-fail-load', listener: (event?: Event,
-                                          errorCode?: number,
-                                          errorDescription?: string,
-                                          validatedURL?: string,
-                                          isMainFrame?: boolean) => void): this;
-    addListener(event: 'did-fail-load', listener: (event?: Event,
-                                          errorCode?: number,
-                                          errorDescription?: string,
-                                          validatedURL?: string,
-                                          isMainFrame?: boolean) => void): this;
-    removeListener(event: 'did-fail-load', listener: (event?: Event,
-                                          errorCode?: number,
-                                          errorDescription?: string,
-                                          validatedURL?: string,
-                                          isMainFrame?: boolean) => void): this;
+    on(event: 'did-fail-load', listener: (event: Event,
+                                          errorCode: number,
+                                          errorDescription: string,
+                                          validatedURL: string,
+                                          isMainFrame: boolean) => void): this;
+    once(event: 'did-fail-load', listener: (event: Event,
+                                          errorCode: number,
+                                          errorDescription: string,
+                                          validatedURL: string,
+                                          isMainFrame: boolean) => void): this;
+    addListener(event: 'did-fail-load', listener: (event: Event,
+                                          errorCode: number,
+                                          errorDescription: string,
+                                          validatedURL: string,
+                                          isMainFrame: boolean) => void): this;
+    removeListener(event: 'did-fail-load', listener: (event: Event,
+                                          errorCode: number,
+                                          errorDescription: string,
+                                          validatedURL: string,
+                                          isMainFrame: boolean) => void): this;
     /**
      * Emitted when the navigation is done, i.e. the spinner of the tab has stopped
      * spinning, and the onload event was dispatched.
@@ -4179,120 +4185,120 @@ declare namespace Electron {
     /**
      * Emitted when a frame has done navigation.
      */
-    on(event: 'did-frame-finish-load', listener: (event?: Event,
-                                                  isMainFrame?: boolean) => void): this;
-    once(event: 'did-frame-finish-load', listener: (event?: Event,
-                                                  isMainFrame?: boolean) => void): this;
-    addListener(event: 'did-frame-finish-load', listener: (event?: Event,
-                                                  isMainFrame?: boolean) => void): this;
-    removeListener(event: 'did-frame-finish-load', listener: (event?: Event,
-                                                  isMainFrame?: boolean) => void): this;
+    on(event: 'did-frame-finish-load', listener: (event: Event,
+                                                  isMainFrame: boolean) => void): this;
+    once(event: 'did-frame-finish-load', listener: (event: Event,
+                                                  isMainFrame: boolean) => void): this;
+    addListener(event: 'did-frame-finish-load', listener: (event: Event,
+                                                  isMainFrame: boolean) => void): this;
+    removeListener(event: 'did-frame-finish-load', listener: (event: Event,
+                                                  isMainFrame: boolean) => void): this;
     /**
      * Emitted when a redirect is received while requesting a resource.
      */
-    on(event: 'did-get-redirect-request', listener: (event?: Event,
-                                                     oldURL?: string,
-                                                     newURL?: string,
-                                                     isMainFrame?: boolean,
-                                                     httpResponseCode?: number,
-                                                     requestMethod?: string,
-                                                     referrer?: string,
-                                                     headers?: any) => void): this;
-    once(event: 'did-get-redirect-request', listener: (event?: Event,
-                                                     oldURL?: string,
-                                                     newURL?: string,
-                                                     isMainFrame?: boolean,
-                                                     httpResponseCode?: number,
-                                                     requestMethod?: string,
-                                                     referrer?: string,
-                                                     headers?: any) => void): this;
-    addListener(event: 'did-get-redirect-request', listener: (event?: Event,
-                                                     oldURL?: string,
-                                                     newURL?: string,
-                                                     isMainFrame?: boolean,
-                                                     httpResponseCode?: number,
-                                                     requestMethod?: string,
-                                                     referrer?: string,
-                                                     headers?: any) => void): this;
-    removeListener(event: 'did-get-redirect-request', listener: (event?: Event,
-                                                     oldURL?: string,
-                                                     newURL?: string,
-                                                     isMainFrame?: boolean,
-                                                     httpResponseCode?: number,
-                                                     requestMethod?: string,
-                                                     referrer?: string,
-                                                     headers?: any) => void): this;
+    on(event: 'did-get-redirect-request', listener: (event: Event,
+                                                     oldURL: string,
+                                                     newURL: string,
+                                                     isMainFrame: boolean,
+                                                     httpResponseCode: number,
+                                                     requestMethod: string,
+                                                     referrer: string,
+                                                     headers: any) => void): this;
+    once(event: 'did-get-redirect-request', listener: (event: Event,
+                                                     oldURL: string,
+                                                     newURL: string,
+                                                     isMainFrame: boolean,
+                                                     httpResponseCode: number,
+                                                     requestMethod: string,
+                                                     referrer: string,
+                                                     headers: any) => void): this;
+    addListener(event: 'did-get-redirect-request', listener: (event: Event,
+                                                     oldURL: string,
+                                                     newURL: string,
+                                                     isMainFrame: boolean,
+                                                     httpResponseCode: number,
+                                                     requestMethod: string,
+                                                     referrer: string,
+                                                     headers: any) => void): this;
+    removeListener(event: 'did-get-redirect-request', listener: (event: Event,
+                                                     oldURL: string,
+                                                     newURL: string,
+                                                     isMainFrame: boolean,
+                                                     httpResponseCode: number,
+                                                     requestMethod: string,
+                                                     referrer: string,
+                                                     headers: any) => void): this;
     /**
      * Emitted when details regarding a requested resource are available. status
      * indicates the socket connection to download the resource.
      */
-    on(event: 'did-get-response-details', listener: (event?: Event,
-                                                     status?: boolean,
-                                                     newURL?: string,
-                                                     originalURL?: string,
-                                                     httpResponseCode?: number,
-                                                     requestMethod?: string,
-                                                     referrer?: string,
-                                                     headers?: any,
-                                                     resourceType?: string) => void): this;
-    once(event: 'did-get-response-details', listener: (event?: Event,
-                                                     status?: boolean,
-                                                     newURL?: string,
-                                                     originalURL?: string,
-                                                     httpResponseCode?: number,
-                                                     requestMethod?: string,
-                                                     referrer?: string,
-                                                     headers?: any,
-                                                     resourceType?: string) => void): this;
-    addListener(event: 'did-get-response-details', listener: (event?: Event,
-                                                     status?: boolean,
-                                                     newURL?: string,
-                                                     originalURL?: string,
-                                                     httpResponseCode?: number,
-                                                     requestMethod?: string,
-                                                     referrer?: string,
-                                                     headers?: any,
-                                                     resourceType?: string) => void): this;
-    removeListener(event: 'did-get-response-details', listener: (event?: Event,
-                                                     status?: boolean,
-                                                     newURL?: string,
-                                                     originalURL?: string,
-                                                     httpResponseCode?: number,
-                                                     requestMethod?: string,
-                                                     referrer?: string,
-                                                     headers?: any,
-                                                     resourceType?: string) => void): this;
+    on(event: 'did-get-response-details', listener: (event: Event,
+                                                     status: boolean,
+                                                     newURL: string,
+                                                     originalURL: string,
+                                                     httpResponseCode: number,
+                                                     requestMethod: string,
+                                                     referrer: string,
+                                                     headers: any,
+                                                     resourceType: string) => void): this;
+    once(event: 'did-get-response-details', listener: (event: Event,
+                                                     status: boolean,
+                                                     newURL: string,
+                                                     originalURL: string,
+                                                     httpResponseCode: number,
+                                                     requestMethod: string,
+                                                     referrer: string,
+                                                     headers: any,
+                                                     resourceType: string) => void): this;
+    addListener(event: 'did-get-response-details', listener: (event: Event,
+                                                     status: boolean,
+                                                     newURL: string,
+                                                     originalURL: string,
+                                                     httpResponseCode: number,
+                                                     requestMethod: string,
+                                                     referrer: string,
+                                                     headers: any,
+                                                     resourceType: string) => void): this;
+    removeListener(event: 'did-get-response-details', listener: (event: Event,
+                                                     status: boolean,
+                                                     newURL: string,
+                                                     originalURL: string,
+                                                     httpResponseCode: number,
+                                                     requestMethod: string,
+                                                     referrer: string,
+                                                     headers: any,
+                                                     resourceType: string) => void): this;
     /**
      * Emitted when a navigation is done. This event is not emitted for in-page
      * navigations, such as clicking anchor links or updating the window.location.hash.
      * Use did-navigate-in-page event for this purpose.
      */
-    on(event: 'did-navigate', listener: (event?: Event,
-                                         url?: string) => void): this;
-    once(event: 'did-navigate', listener: (event?: Event,
-                                         url?: string) => void): this;
-    addListener(event: 'did-navigate', listener: (event?: Event,
-                                         url?: string) => void): this;
-    removeListener(event: 'did-navigate', listener: (event?: Event,
-                                         url?: string) => void): this;
+    on(event: 'did-navigate', listener: (event: Event,
+                                         url: string) => void): this;
+    once(event: 'did-navigate', listener: (event: Event,
+                                         url: string) => void): this;
+    addListener(event: 'did-navigate', listener: (event: Event,
+                                         url: string) => void): this;
+    removeListener(event: 'did-navigate', listener: (event: Event,
+                                         url: string) => void): this;
     /**
      * Emitted when an in-page navigation happened. When in-page navigation happens,
      * the page URL changes but does not cause navigation outside of the page. Examples
      * of this occurring are when anchor links are clicked or when the DOM hashchange
      * event is triggered.
      */
-    on(event: 'did-navigate-in-page', listener: (event?: Event,
-                                                 url?: string,
-                                                 isMainFrame?: boolean) => void): this;
-    once(event: 'did-navigate-in-page', listener: (event?: Event,
-                                                 url?: string,
-                                                 isMainFrame?: boolean) => void): this;
-    addListener(event: 'did-navigate-in-page', listener: (event?: Event,
-                                                 url?: string,
-                                                 isMainFrame?: boolean) => void): this;
-    removeListener(event: 'did-navigate-in-page', listener: (event?: Event,
-                                                 url?: string,
-                                                 isMainFrame?: boolean) => void): this;
+    on(event: 'did-navigate-in-page', listener: (event: Event,
+                                                 url: string,
+                                                 isMainFrame: boolean) => void): this;
+    once(event: 'did-navigate-in-page', listener: (event: Event,
+                                                 url: string,
+                                                 isMainFrame: boolean) => void): this;
+    addListener(event: 'did-navigate-in-page', listener: (event: Event,
+                                                 url: string,
+                                                 isMainFrame: boolean) => void): this;
+    removeListener(event: 'did-navigate-in-page', listener: (event: Event,
+                                                 url: string,
+                                                 isMainFrame: boolean) => void): this;
     /**
      * Corresponds to the points in time when the spinner of the tab started spinning.
      */
@@ -4310,41 +4316,41 @@ declare namespace Electron {
     /**
      * Emitted when the document in the given frame is loaded.
      */
-    on(event: 'dom-ready', listener: (event?: Event) => void): this;
-    once(event: 'dom-ready', listener: (event?: Event) => void): this;
-    addListener(event: 'dom-ready', listener: (event?: Event) => void): this;
-    removeListener(event: 'dom-ready', listener: (event?: Event) => void): this;
+    on(event: 'dom-ready', listener: (event: Event) => void): this;
+    once(event: 'dom-ready', listener: (event: Event) => void): this;
+    addListener(event: 'dom-ready', listener: (event: Event) => void): this;
+    removeListener(event: 'dom-ready', listener: (event: Event) => void): this;
     /**
      * Emitted when a result is available for [webContents.findInPage] request.
      */
-    on(event: 'found-in-page', listener: (event?: Event,
-                                          result?: Result) => void): this;
-    once(event: 'found-in-page', listener: (event?: Event,
-                                          result?: Result) => void): this;
-    addListener(event: 'found-in-page', listener: (event?: Event,
-                                          result?: Result) => void): this;
-    removeListener(event: 'found-in-page', listener: (event?: Event,
-                                          result?: Result) => void): this;
+    on(event: 'found-in-page', listener: (event: Event,
+                                          result: Result) => void): this;
+    once(event: 'found-in-page', listener: (event: Event,
+                                          result: Result) => void): this;
+    addListener(event: 'found-in-page', listener: (event: Event,
+                                          result: Result) => void): this;
+    removeListener(event: 'found-in-page', listener: (event: Event,
+                                          result: Result) => void): this;
     /**
      * Emitted when webContents wants to do basic auth. The usage is the same with the
      * login event of app.
      */
-    on(event: 'login', listener: (event?: Event,
-                                  request?: Request,
-                                  authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
-    once(event: 'login', listener: (event?: Event,
-                                  request?: Request,
-                                  authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
-    addListener(event: 'login', listener: (event?: Event,
-                                  request?: Request,
-                                  authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
-    removeListener(event: 'login', listener: (event?: Event,
-                                  request?: Request,
-                                  authInfo?: AuthInfo,
-                                  callback?: (username?: string, password?: string) => void) => void): this;
+    on(event: 'login', listener: (event: Event,
+                                  request: Request,
+                                  authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
+    once(event: 'login', listener: (event: Event,
+                                  request: Request,
+                                  authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
+    addListener(event: 'login', listener: (event: Event,
+                                  request: Request,
+                                  authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
+    removeListener(event: 'login', listener: (event: Event,
+                                  request: Request,
+                                  authInfo: AuthInfo,
+                                  callback: (username: string, password: string) => void) => void): this;
     /**
      * Emitted when media is paused or done playing.
      */
@@ -4369,140 +4375,140 @@ declare namespace Electron {
      * BrowserWindow instance, failing to do so may result in unexpected behavior. For
      * example:
      */
-    on(event: 'new-window', listener: (event?: Event,
-                                       url?: string,
-                                       frameName?: string,
+    on(event: 'new-window', listener: (event: Event,
+                                       url: string,
+                                       frameName: string,
                                        /**
                                         * Can be `default`, `foreground-tab`, `background-tab`, `new-window`,
                                         * `save-to-disk` and `other`.
                                         */
-                                       disposition?: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other'),
+                                       disposition: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other'),
                                        /**
                                         * The options which will be used for creating the new `BrowserWindow`.
                                         */
-                                       options?: any,
+                                       options: any,
                                        /**
                                         * The non-standard features (features not handled by Chromium or Electron) given
                                         * to `window.open()`.
                                         */
-                                       additionalFeatures?: string[]) => void): this;
-    once(event: 'new-window', listener: (event?: Event,
-                                       url?: string,
-                                       frameName?: string,
+                                       additionalFeatures: string[]) => void): this;
+    once(event: 'new-window', listener: (event: Event,
+                                       url: string,
+                                       frameName: string,
                                        /**
                                         * Can be `default`, `foreground-tab`, `background-tab`, `new-window`,
                                         * `save-to-disk` and `other`.
                                         */
-                                       disposition?: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other'),
+                                       disposition: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other'),
                                        /**
                                         * The options which will be used for creating the new `BrowserWindow`.
                                         */
-                                       options?: any,
+                                       options: any,
                                        /**
                                         * The non-standard features (features not handled by Chromium or Electron) given
                                         * to `window.open()`.
                                         */
-                                       additionalFeatures?: string[]) => void): this;
-    addListener(event: 'new-window', listener: (event?: Event,
-                                       url?: string,
-                                       frameName?: string,
+                                       additionalFeatures: string[]) => void): this;
+    addListener(event: 'new-window', listener: (event: Event,
+                                       url: string,
+                                       frameName: string,
                                        /**
                                         * Can be `default`, `foreground-tab`, `background-tab`, `new-window`,
                                         * `save-to-disk` and `other`.
                                         */
-                                       disposition?: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other'),
+                                       disposition: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other'),
                                        /**
                                         * The options which will be used for creating the new `BrowserWindow`.
                                         */
-                                       options?: any,
+                                       options: any,
                                        /**
                                         * The non-standard features (features not handled by Chromium or Electron) given
                                         * to `window.open()`.
                                         */
-                                       additionalFeatures?: string[]) => void): this;
-    removeListener(event: 'new-window', listener: (event?: Event,
-                                       url?: string,
-                                       frameName?: string,
+                                       additionalFeatures: string[]) => void): this;
+    removeListener(event: 'new-window', listener: (event: Event,
+                                       url: string,
+                                       frameName: string,
                                        /**
                                         * Can be `default`, `foreground-tab`, `background-tab`, `new-window`,
                                         * `save-to-disk` and `other`.
                                         */
-                                       disposition?: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other'),
+                                       disposition: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other'),
                                        /**
                                         * The options which will be used for creating the new `BrowserWindow`.
                                         */
-                                       options?: any,
+                                       options: any,
                                        /**
                                         * The non-standard features (features not handled by Chromium or Electron) given
                                         * to `window.open()`.
                                         */
-                                       additionalFeatures?: string[]) => void): this;
+                                       additionalFeatures: string[]) => void): this;
     /**
      * Emitted when page receives favicon urls.
      */
-    on(event: 'page-favicon-updated', listener: (event?: Event,
+    on(event: 'page-favicon-updated', listener: (event: Event,
                                                  /**
                                                   * Array of URLs
                                                   */
-                                                 favicons?: string[]) => void): this;
-    once(event: 'page-favicon-updated', listener: (event?: Event,
+                                                 favicons: string[]) => void): this;
+    once(event: 'page-favicon-updated', listener: (event: Event,
                                                  /**
                                                   * Array of URLs
                                                   */
-                                                 favicons?: string[]) => void): this;
-    addListener(event: 'page-favicon-updated', listener: (event?: Event,
+                                                 favicons: string[]) => void): this;
+    addListener(event: 'page-favicon-updated', listener: (event: Event,
                                                  /**
                                                   * Array of URLs
                                                   */
-                                                 favicons?: string[]) => void): this;
-    removeListener(event: 'page-favicon-updated', listener: (event?: Event,
+                                                 favicons: string[]) => void): this;
+    removeListener(event: 'page-favicon-updated', listener: (event: Event,
                                                  /**
                                                   * Array of URLs
                                                   */
-                                                 favicons?: string[]) => void): this;
+                                                 favicons: string[]) => void): this;
     /**
      * Emitted when a new frame is generated. Only the dirty area is passed in the
      * buffer.
      */
-    on(event: 'paint', listener: (event?: Event,
-                                  dirtyRect?: Rectangle,
+    on(event: 'paint', listener: (event: Event,
+                                  dirtyRect: Rectangle,
                                   /**
                                    * The image data of the whole frame.
                                    */
-                                  image?: NativeImage) => void): this;
-    once(event: 'paint', listener: (event?: Event,
-                                  dirtyRect?: Rectangle,
+                                  image: NativeImage) => void): this;
+    once(event: 'paint', listener: (event: Event,
+                                  dirtyRect: Rectangle,
                                   /**
                                    * The image data of the whole frame.
                                    */
-                                  image?: NativeImage) => void): this;
-    addListener(event: 'paint', listener: (event?: Event,
-                                  dirtyRect?: Rectangle,
+                                  image: NativeImage) => void): this;
+    addListener(event: 'paint', listener: (event: Event,
+                                  dirtyRect: Rectangle,
                                   /**
                                    * The image data of the whole frame.
                                    */
-                                  image?: NativeImage) => void): this;
-    removeListener(event: 'paint', listener: (event?: Event,
-                                  dirtyRect?: Rectangle,
+                                  image: NativeImage) => void): this;
+    removeListener(event: 'paint', listener: (event: Event,
+                                  dirtyRect: Rectangle,
                                   /**
                                    * The image data of the whole frame.
                                    */
-                                  image?: NativeImage) => void): this;
+                                  image: NativeImage) => void): this;
     /**
      * Emitted when a plugin process has crashed.
      */
-    on(event: 'plugin-crashed', listener: (event?: Event,
-                                           name?: string,
-                                           version?: string) => void): this;
-    once(event: 'plugin-crashed', listener: (event?: Event,
-                                           name?: string,
-                                           version?: string) => void): this;
-    addListener(event: 'plugin-crashed', listener: (event?: Event,
-                                           name?: string,
-                                           version?: string) => void): this;
-    removeListener(event: 'plugin-crashed', listener: (event?: Event,
-                                           name?: string,
-                                           version?: string) => void): this;
+    on(event: 'plugin-crashed', listener: (event: Event,
+                                           name: string,
+                                           version: string) => void): this;
+    once(event: 'plugin-crashed', listener: (event: Event,
+                                           name: string,
+                                           version: string) => void): this;
+    addListener(event: 'plugin-crashed', listener: (event: Event,
+                                           name: string,
+                                           version: string) => void): this;
+    removeListener(event: 'plugin-crashed', listener: (event: Event,
+                                           name: string,
+                                           version: string) => void): this;
     /**
      * Emitted when bluetooth device needs to be selected on call to
      * navigator.bluetooth.requestDevice. To use navigator.bluetooth api webBluetooth
@@ -4510,49 +4516,49 @@ declare namespace Electron {
      * device will be selected. callback should be called with deviceId to be selected,
      * passing empty string to callback will cancel the request.
      */
-    on(event: 'select-bluetooth-device', listener: (event?: Event,
-                                                    devices?: BluetoothDevice[],
-                                                    callback?: (deviceId?: string) => void) => void): this;
-    once(event: 'select-bluetooth-device', listener: (event?: Event,
-                                                    devices?: BluetoothDevice[],
-                                                    callback?: (deviceId?: string) => void) => void): this;
-    addListener(event: 'select-bluetooth-device', listener: (event?: Event,
-                                                    devices?: BluetoothDevice[],
-                                                    callback?: (deviceId?: string) => void) => void): this;
-    removeListener(event: 'select-bluetooth-device', listener: (event?: Event,
-                                                    devices?: BluetoothDevice[],
-                                                    callback?: (deviceId?: string) => void) => void): this;
+    on(event: 'select-bluetooth-device', listener: (event: Event,
+                                                    devices: BluetoothDevice[],
+                                                    callback: (deviceId: string) => void) => void): this;
+    once(event: 'select-bluetooth-device', listener: (event: Event,
+                                                    devices: BluetoothDevice[],
+                                                    callback: (deviceId: string) => void) => void): this;
+    addListener(event: 'select-bluetooth-device', listener: (event: Event,
+                                                    devices: BluetoothDevice[],
+                                                    callback: (deviceId: string) => void) => void): this;
+    removeListener(event: 'select-bluetooth-device', listener: (event: Event,
+                                                    devices: BluetoothDevice[],
+                                                    callback: (deviceId: string) => void) => void): this;
     /**
      * Emitted when a client certificate is requested. The usage is the same with the
      * select-client-certificate event of app.
      */
-    on(event: 'select-client-certificate', listener: (event?: Event,
-                                                      url?: string,
-                                                      certificateList?: Certificate[],
-                                                      callback?: (certificate?: Certificate) => void) => void): this;
-    once(event: 'select-client-certificate', listener: (event?: Event,
-                                                      url?: string,
-                                                      certificateList?: Certificate[],
-                                                      callback?: (certificate?: Certificate) => void) => void): this;
-    addListener(event: 'select-client-certificate', listener: (event?: Event,
-                                                      url?: string,
-                                                      certificateList?: Certificate[],
-                                                      callback?: (certificate?: Certificate) => void) => void): this;
-    removeListener(event: 'select-client-certificate', listener: (event?: Event,
-                                                      url?: string,
-                                                      certificateList?: Certificate[],
-                                                      callback?: (certificate?: Certificate) => void) => void): this;
+    on(event: 'select-client-certificate', listener: (event: Event,
+                                                      url: string,
+                                                      certificateList: Certificate[],
+                                                      callback: (certificate: Certificate) => void) => void): this;
+    once(event: 'select-client-certificate', listener: (event: Event,
+                                                      url: string,
+                                                      certificateList: Certificate[],
+                                                      callback: (certificate: Certificate) => void) => void): this;
+    addListener(event: 'select-client-certificate', listener: (event: Event,
+                                                      url: string,
+                                                      certificateList: Certificate[],
+                                                      callback: (certificate: Certificate) => void) => void): this;
+    removeListener(event: 'select-client-certificate', listener: (event: Event,
+                                                      url: string,
+                                                      certificateList: Certificate[],
+                                                      callback: (certificate: Certificate) => void) => void): this;
     /**
      * Emitted when mouse moves over a link or the keyboard moves the focus to a link.
      */
-    on(event: 'update-target-url', listener: (event?: Event,
-                                              url?: string) => void): this;
-    once(event: 'update-target-url', listener: (event?: Event,
-                                              url?: string) => void): this;
-    addListener(event: 'update-target-url', listener: (event?: Event,
-                                              url?: string) => void): this;
-    removeListener(event: 'update-target-url', listener: (event?: Event,
-                                              url?: string) => void): this;
+    on(event: 'update-target-url', listener: (event: Event,
+                                              url: string) => void): this;
+    once(event: 'update-target-url', listener: (event: Event,
+                                              url: string) => void): this;
+    addListener(event: 'update-target-url', listener: (event: Event,
+                                              url: string) => void): this;
+    removeListener(event: 'update-target-url', listener: (event: Event,
+                                              url: string) => void): this;
     /**
      * Emitted when a <webview>'s web contents is being attached to this web contents.
      * Calling event.preventDefault() will destroy the guest page. This event can be
@@ -4560,50 +4566,50 @@ declare namespace Electron {
      * loaded, and provides the ability to set settings that can't be set via <webview>
      * attributes.
      */
-    on(event: 'will-attach-webview', listener: (event?: Event,
+    on(event: 'will-attach-webview', listener: (event: Event,
                                                 /**
                                                  * The web preferences that will be used by the guest page. This object can be
                                                  * modified to adjust the preferences for the guest page.
                                                  */
-                                                webPreferences?: any,
+                                                webPreferences: any,
                                                 /**
                                                  * The other `<webview>` parameters such as the `src` URL. This object can be
                                                  * modified to adjust the parameters of the guest page.
                                                  */
-                                                params?: any) => void): this;
-    once(event: 'will-attach-webview', listener: (event?: Event,
+                                                params: any) => void): this;
+    once(event: 'will-attach-webview', listener: (event: Event,
                                                 /**
                                                  * The web preferences that will be used by the guest page. This object can be
                                                  * modified to adjust the preferences for the guest page.
                                                  */
-                                                webPreferences?: any,
+                                                webPreferences: any,
                                                 /**
                                                  * The other `<webview>` parameters such as the `src` URL. This object can be
                                                  * modified to adjust the parameters of the guest page.
                                                  */
-                                                params?: any) => void): this;
-    addListener(event: 'will-attach-webview', listener: (event?: Event,
+                                                params: any) => void): this;
+    addListener(event: 'will-attach-webview', listener: (event: Event,
                                                 /**
                                                  * The web preferences that will be used by the guest page. This object can be
                                                  * modified to adjust the preferences for the guest page.
                                                  */
-                                                webPreferences?: any,
+                                                webPreferences: any,
                                                 /**
                                                  * The other `<webview>` parameters such as the `src` URL. This object can be
                                                  * modified to adjust the parameters of the guest page.
                                                  */
-                                                params?: any) => void): this;
-    removeListener(event: 'will-attach-webview', listener: (event?: Event,
+                                                params: any) => void): this;
+    removeListener(event: 'will-attach-webview', listener: (event: Event,
                                                 /**
                                                  * The web preferences that will be used by the guest page. This object can be
                                                  * modified to adjust the preferences for the guest page.
                                                  */
-                                                webPreferences?: any,
+                                                webPreferences: any,
                                                 /**
                                                  * The other `<webview>` parameters such as the `src` URL. This object can be
                                                  * modified to adjust the parameters of the guest page.
                                                  */
-                                                params?: any) => void): this;
+                                                params: any) => void): this;
     /**
      * Emitted when a user or the page wants to start navigation. It can happen when
      * the window.location object is changed or a user clicks a link in the page. This
@@ -4613,14 +4619,14 @@ declare namespace Electron {
      * window.location.hash. Use did-navigate-in-page event for this purpose. Calling
      * event.preventDefault() will prevent the navigation.
      */
-    on(event: 'will-navigate', listener: (event?: Event,
-                                          url?: string) => void): this;
-    once(event: 'will-navigate', listener: (event?: Event,
-                                          url?: string) => void): this;
-    addListener(event: 'will-navigate', listener: (event?: Event,
-                                          url?: string) => void): this;
-    removeListener(event: 'will-navigate', listener: (event?: Event,
-                                          url?: string) => void): this;
+    on(event: 'will-navigate', listener: (event: Event,
+                                          url: string) => void): this;
+    once(event: 'will-navigate', listener: (event: Event,
+                                          url: string) => void): this;
+    addListener(event: 'will-navigate', listener: (event: Event,
+                                          url: string) => void): this;
+    removeListener(event: 'will-navigate', listener: (event: Event,
+                                          url: string) => void): this;
     /**
      * Adds the specified path to DevTools workspace. Must be used after DevTools
      * creation:
@@ -4638,7 +4644,7 @@ declare namespace Electron {
      * set to true, frameBuffer will only contain the repainted area. onlyDirty
      * defaults to false.
      */
-    beginFrameSubscription(callback: (frameBuffer?: Buffer, dirtyRect?: Rectangle) => void): void;
+    beginFrameSubscription(callback: (frameBuffer: Buffer, dirtyRect: Rectangle) => void): void;
     /**
      * Begin subscribing for presentation events and captured frames, the callback will
      * be called with callback(frameBuffer, dirtyRect) when there is a presentation
@@ -4651,7 +4657,7 @@ declare namespace Electron {
      * set to true, frameBuffer will only contain the repainted area. onlyDirty
      * defaults to false.
      */
-    beginFrameSubscription(onlyDirty: boolean, callback: (frameBuffer?: Buffer, dirtyRect?: Rectangle) => void): void;
+    beginFrameSubscription(onlyDirty: boolean, callback: (frameBuffer: Buffer, dirtyRect: Rectangle) => void): void;
     canGoBack(): boolean;
     canGoForward(): boolean;
     canGoToOffset(offset: number): boolean;
@@ -4660,13 +4666,13 @@ declare namespace Electron {
      * called with callback(image). The image is an instance of NativeImage that stores
      * data of the snapshot. Omitting rect will capture the whole visible page.
      */
-    capturePage(rect: Rectangle, callback: (image?: NativeImage) => void): void;
+    capturePage(rect: Rectangle, callback: (image: NativeImage) => void): void;
     /**
      * Captures a snapshot of the page within rect. Upon completion callback will be
      * called with callback(image). The image is an instance of NativeImage that stores
      * data of the snapshot. Omitting rect will capture the whole visible page.
      */
-    capturePage(callback: (image?: NativeImage) => void): void;
+    capturePage(callback: (image: NativeImage) => void): void;
     /**
      * Clears the navigation history.
      */
@@ -4716,7 +4722,7 @@ declare namespace Electron {
      *  We recommend that you use the returned Promise to handle code that results in a
      * Promise.
      */
-    executeJavaScript(code: string, userGesture?: boolean, callback?: (result?: any) => void): Promise<any>;
+    executeJavaScript(code: string, userGesture?: boolean, callback?: (result: any) => void): Promise<any>;
     /**
      * Starts a request to find all matches for the text in the web page and returns an
      * Integer representing the request id used for the request. The result of the
@@ -4732,12 +4738,12 @@ declare namespace Electron {
      * Sends a request to get current zoom factor, the callback will be called with
      * callback(zoomFactor).
      */
-    getZoomFactor(callback: (zoomFactor?: number) => void): void;
+    getZoomFactor(callback: (zoomFactor: number) => void): void;
     /**
      * Sends a request to get current zoom level, the callback will be called with
      * callback(zoomLevel).
      */
-    getZoomLevel(callback: (zoomLevel?: number) => void): void;
+    getZoomLevel(callback: (zoomLevel: number) => void): void;
     /**
      * Makes the browser go back a web page.
      */
@@ -4758,7 +4764,7 @@ declare namespace Electron {
      * Checks if any ServiceWorker is registered and returns a boolean as response to
      * callback.
      */
-    hasServiceWorker(callback: (hasWorker?: boolean) => void): void;
+    hasServiceWorker(callback: (hasWorker: boolean) => void): void;
     /**
      * Injects CSS into the current web page.
      */
@@ -4826,7 +4832,7 @@ declare namespace Electron {
      * options will be regarded as: Use page-break-before: always; CSS style to force
      * to print to a new page. An example of webContents.printToPDF:
      */
-    printToPDF(options: PrintToPDFOptions, callback: (error?: Error, data?: Buffer) => void): void;
+    printToPDF(options: PrintToPDFOptions, callback: (error: Error, data: Buffer) => void): void;
     /**
      * Executes the editing command redo in web page.
      */
@@ -4851,7 +4857,7 @@ declare namespace Electron {
      * Executes the editing command replaceMisspelling in web page.
      */
     replaceMisspelling(text: string): void;
-    savePage(fullPath: string, saveType: 'HTMLOnly' | 'HTMLComplete' | 'MHTML', callback: (error?: Error) => void): boolean;
+    savePage(fullPath: string, saveType: 'HTMLOnly' | 'HTMLComplete' | 'MHTML', callback: (error: Error) => void): boolean;
     /**
      * Executes the editing command selectAll in web page.
      */
@@ -4956,7 +4962,7 @@ declare namespace Electron {
      * callback when the JS promise is fulfilled or false when the JS promise is
      * rejected.
      */
-    unregisterServiceWorker(callback: (success?: boolean) => void): void;
+    unregisterServiceWorker(callback: (success: boolean) => void): void;
     /**
      * Executes the editing command unselect in web page.
      */
@@ -4986,7 +4992,7 @@ declare namespace Electron {
      * requestFullScreen can only be invoked by a gesture from the user. Setting
      * userGesture to true will remove this limitation.
      */
-    executeJavaScript(code: string, userGesture?: boolean, callback?: (result?: any) => void): Promise<any>;
+    executeJavaScript(code: string, userGesture?: boolean, callback?: (result: any) => void): Promise<any>;
     /**
      * Returns an object describing usage information of Blink's internal memory
      * caches. This will generate:
@@ -5056,13 +5062,13 @@ declare namespace Electron {
      * The listener will be called with listener(details) when a server initiated
      * redirect is about to occur.
      */
-    onBeforeRedirect(filter: OnBeforeRedirectFilter, listener: (details?: OnBeforeRedirectDetails) => void): void;
+    onBeforeRedirect(filter: OnBeforeRedirectFilter, listener: (details: OnBeforeRedirectDetails) => void): void;
     /**
      * The listener will be called with listener(details, callback) when a request is
      * about to occur. The uploadData is an array of UploadData objects. The callback
      * has to be called with an response object.
      */
-    onBeforeRequest(filter: OnBeforeRequestFilter, listener: (details?: OnBeforeRequestDetails, callback?: (response?: Response) => void) => void): void;
+    onBeforeRequest(filter: OnBeforeRequestFilter, listener: (details: OnBeforeRequestDetails, callback: (response: Response) => void) => void): void;
     /**
      * The listener will be called with listener(details, callback) before sending an
      * HTTP request, once the request headers are available. This may occur after a TCP
@@ -5073,11 +5079,11 @@ declare namespace Electron {
     /**
      * The listener will be called with listener(details) when a request is completed.
      */
-    onCompleted(filter: OnCompletedFilter, listener: (details?: OnCompletedDetails) => void): void;
+    onCompleted(filter: OnCompletedFilter, listener: (details: OnCompletedDetails) => void): void;
     /**
      * The listener will be called with listener(details) when an error occurs.
      */
-    onErrorOccurred(filter: OnErrorOccurredFilter, listener: (details?: OnErrorOccurredDetails) => void): void;
+    onErrorOccurred(filter: OnErrorOccurredFilter, listener: (details: OnErrorOccurredDetails) => void): void;
     /**
      * The listener will be called with listener(details, callback) when HTTP response
      * headers of a request have been received. The callback has to be called with an
@@ -5089,13 +5095,13 @@ declare namespace Electron {
      * response body is received. For HTTP requests, this means that the status line
      * and response headers are available.
      */
-    onResponseStarted(filter: OnResponseStartedFilter, listener: (details?: OnResponseStartedDetails) => void): void;
+    onResponseStarted(filter: OnResponseStartedFilter, listener: (details: OnResponseStartedDetails) => void): void;
     /**
      * The listener will be called with listener(details) just before a request is
      * going to be sent to the server, modifications of previous onBeforeSendHeaders
      * response are visible by the time this listener is fired.
      */
-    onSendHeaders(filter: OnSendHeadersFilter, listener: (details?: OnSendHeadersDetails) => void): void;
+    onSendHeaders(filter: OnSendHeadersFilter, listener: (details: OnSendHeadersDetails) => void): void;
   }
 
   interface WebviewTag extends HTMLElement {
@@ -5293,12 +5299,12 @@ declare namespace Electron {
      * Captures a snapshot of the webview's page. Same as
      * webContents.capturePage([rect, ]callback).
      */
-    capturePage(callback: (image?: NativeImage) => void): void;
+    capturePage(callback: (image: NativeImage) => void): void;
     /**
      * Captures a snapshot of the webview's page. Same as
      * webContents.capturePage([rect, ]callback).
      */
-    capturePage(rect: Rectangle, callback: (image?: NativeImage) => void): void;
+    capturePage(rect: Rectangle, callback: (image: NativeImage) => void): void;
     /**
      * Clears the navigation history.
      */
@@ -5324,7 +5330,7 @@ declare namespace Electron {
      * context in the page. HTML APIs like requestFullScreen, which require user
      * action, can take advantage of this option for automation.
      */
-    executeJavaScript(code: string, userGesture: boolean, callback?: (result?: any) => void): void;
+    executeJavaScript(code: string, userGesture: boolean, callback?: (result: any) => void): void;
     /**
      * Starts a request to find all matches for the text in the web page and returns an
      * Integer representing the request id used for the request. The result of the
@@ -5398,7 +5404,7 @@ declare namespace Electron {
      * Prints webview's web page as PDF, Same as webContents.printToPDF(options,
      * callback).
      */
-    printToPDF(options: PrintToPDFOptions, callback: (error?: Error, data?: Buffer) => void): void;
+    printToPDF(options: PrintToPDFOptions, callback: (error: Error, data: Buffer) => void): void;
     /**
      * Executes editing command redo in page.
      */
@@ -5605,13 +5611,13 @@ declare namespace Electron {
     /**
      * The scale factor to add the image representation for.
      */
-    scaleFactor?: number;
+    scaleFactor: number;
     /**
-     * Defaults to 0. Required if a bitmap buffer is specified as .
+     * Defaults to 0. Required if a bitmap buffer is specified as buffer.
      */
     width?: number;
     /**
-     * Defaults to 0. Required if a bitmap buffer is specified as .
+     * Defaults to 0. Required if a bitmap buffer is specified as buffer.
      */
     height?: number;
     /**
@@ -5634,7 +5640,8 @@ declare namespace Electron {
      */
     appIconPath?: string;
     /**
-     * Index of the icon in . Ignored when is not set. Default is .
+     * Index of the icon in appIconPath. Ignored when appIconPath is not set. Default
+     * is 0.
      */
     appIconIndex?: number;
     /**
@@ -5648,22 +5655,24 @@ declare namespace Electron {
   }
 
   interface AuthInfo {
-    isProxy?: boolean;
-    scheme?: string;
-    host?: string;
-    port?: number;
-    realm?: string;
+    isProxy: boolean;
+    scheme: string;
+    host: string;
+    port: number;
+    realm: string;
   }
 
   interface AutoResizeOptions {
     /**
-     * default.
+     * If true, the view's width will grow and shrink together with the window. false
+     * by default.
      */
-    false?: by;
+    width: boolean;
     /**
-     * default.
+     * If true, the view's height will grow and shrink together with the window. false
+     * by default.
      */
-    false?: by;
+    height: boolean;
   }
 
   interface BitmapOptions {
@@ -5682,11 +5691,11 @@ declare namespace Electron {
 
   interface BrowserWindowConstructorOptions {
     /**
-     * Window's width in pixels. Default is .
+     * Window's width in pixels. Default is 800.
      */
     width?: number;
     /**
-     * Window's height in pixels. Default is .
+     * Window's height in pixels. Default is 600.
      */
     height?: number;
     /**
@@ -5700,8 +5709,9 @@ declare namespace Electron {
      */
     y?: number;
     /**
-     * The and would be used as web page's size, which means the actual window's size
-     * will include window frame's size and be slightly larger. Default is .
+     * The width and height would be used as web page's size, which means the actual
+     * window's size will include window frame's size and be slightly larger. Default
+     * is false.
      */
     useContentSize?: boolean;
     /**
@@ -5709,11 +5719,11 @@ declare namespace Electron {
      */
     center?: boolean;
     /**
-     * Window's minimum width. Default is .
+     * Window's minimum width. Default is 0.
      */
     minWidth?: number;
     /**
-     * Window's minimum height. Default is .
+     * Window's minimum height. Default is 0.
      */
     minHeight?: number;
     /**
@@ -5725,114 +5735,118 @@ declare namespace Electron {
      */
     maxHeight?: number;
     /**
-     * Whether window is resizable. Default is .
+     * Whether window is resizable. Default is true.
      */
     resizable?: boolean;
     /**
-     * Whether window is movable. This is not implemented on Linux. Default is .
+     * Whether window is movable. This is not implemented on Linux. Default is true.
      */
     movable?: boolean;
     /**
-     * Whether window is minimizable. This is not implemented on Linux. Default is .
+     * Whether window is minimizable. This is not implemented on Linux. Default is
+     * true.
      */
     minimizable?: boolean;
     /**
-     * Whether window is maximizable. This is not implemented on Linux. Default is .
+     * Whether window is maximizable. This is not implemented on Linux. Default is
+     * true.
      */
     maximizable?: boolean;
     /**
-     * Whether window is closable. This is not implemented on Linux. Default is .
+     * Whether window is closable. This is not implemented on Linux. Default is true.
      */
     closable?: boolean;
     /**
-     * Whether the window can be focused. Default is . On Windows setting also implies
-     * setting . On Linux setting makes the window stop interacting with wm, so the
-     * window will always stay on top in all workspaces.
+     * Whether the window can be focused. Default is true. On Windows setting
+     * focusable: false also implies setting skipTaskbar: true. On Linux setting
+     * focusable: false makes the window stop interacting with wm, so the window will
+     * always stay on top in all workspaces.
      */
     focusable?: boolean;
     /**
-     * Whether the window should always stay on top of other windows. Default is .
+     * Whether the window should always stay on top of other windows. Default is false.
      */
     alwaysOnTop?: boolean;
     /**
-     * Whether the window should show in fullscreen. When explicitly set to the
-     * fullscreen button will be hidden or disabled on macOS. Default is .
+     * Whether the window should show in fullscreen. When explicitly set to false the
+     * fullscreen button will be hidden or disabled on macOS. Default is false.
      */
     fullscreen?: boolean;
     /**
      * Whether the window can be put into fullscreen mode. On macOS, also whether the
      * maximize/zoom button should toggle full screen mode or maximize window. Default
-     * is .
+     * is true.
      */
     fullscreenable?: boolean;
     /**
-     * Whether to show the window in taskbar. Default is .
+     * Whether to show the window in taskbar. Default is false.
      */
     skipTaskbar?: boolean;
     /**
-     * The kiosk mode. Default is .
+     * The kiosk mode. Default is false.
      */
     kiosk?: boolean;
     /**
-     * Default window title. Default is .
+     * Default window title. Default is "Electron".
      */
     title?: string;
     /**
-     * The window icon. On Windows it is recommended to use icons to get best visual
-     * effects, you can also leave it undefined so the executable's icon will be used.
+     * The window icon. On Windows it is recommended to use ICO icons to get best
+     * visual effects, you can also leave it undefined so the executable's icon will be
+     * used.
      */
     icon?: NativeImage | string;
     /**
-     * Whether window should be shown when created. Default is .
+     * Whether window should be shown when created. Default is true.
      */
     show?: boolean;
     /**
-     * Specify to create a . Default is .
+     * Specify false to create a . Default is true.
      */
     frame?: boolean;
     /**
-     * Specify parent window. Default is .
+     * Specify parent window. Default is null.
      */
     parent?: BrowserWindow;
     /**
      * Whether this is a modal window. This only works when the window is a child
-     * window. Default is .
+     * window. Default is false.
      */
     modal?: boolean;
     /**
      * Whether the web view accepts a single mouse-down event that simultaneously
-     * activates the window. Default is .
+     * activates the window. Default is false.
      */
     acceptFirstMouse?: boolean;
     /**
-     * Whether to hide cursor when typing. Default is .
+     * Whether to hide cursor when typing. Default is false.
      */
     disableAutoHideCursor?: boolean;
     /**
-     * Auto hide the menu bar unless the key is pressed. Default is .
+     * Auto hide the menu bar unless the Alt key is pressed. Default is false.
      */
     autoHideMenuBar?: boolean;
     /**
-     * Enable the window to be resized larger than screen. Default is .
+     * Enable the window to be resized larger than screen. Default is false.
      */
     enableLargerThanScreen?: boolean;
     /**
-     * Window's background color as Hexadecimal value, like or or (alpha is supported).
-     * Default is (white).
+     * Window's background color as Hexadecimal value, like #66CD00 or #FFF or
+     * #80FFFFFF (alpha is supported). Default is #FFF (white).
      */
     backgroundColor?: string;
     /**
      * Whether window should have a shadow. This is only implemented on macOS. Default
-     * is .
+     * is true.
      */
     hasShadow?: boolean;
     /**
      * Forces using dark theme for the window, only works on some GTK+3 desktop
-     * environments. Default is .
+     * environments. Default is false.
      */
     darkTheme?: boolean;
     /**
-     * Makes the window . Default is .
+     * Makes the window . Default is false.
      */
     transparent?: boolean;
     /**
@@ -5840,25 +5854,27 @@ declare namespace Electron {
      */
     type?: string;
     /**
-     * The style of window title bar. Default is . Possible values are:
+     * The style of window title bar. Default is default. Possible values are:
      */
     titleBarStyle?: ('default' | 'hidden' | 'hidden-inset');
     /**
-     * Use style for frameless windows on Windows, which adds standard window frame.
-     * Setting it to will remove window shadow and window animations. Default is .
+     * Use WS_THICKFRAME style for frameless windows on Windows, which adds standard
+     * window frame. Setting it to false will remove window shadow and window
+     * animations. Default is true.
      */
     thickFrame?: boolean;
     /**
-     * Add a type of vibrancy effect to the window, only on macOS. Can be , , , , , , ,
-     * , or .
+     * Add a type of vibrancy effect to the window, only on macOS. Can be
+     * appearance-based, light, dark, titlebar, selection, menu, popover, sidebar,
+     * medium-light or ultra-dark.
      */
     vibrancy?: ('appearance-based' | 'light' | 'dark' | 'titlebar' | 'selection' | 'menu' | 'popover' | 'sidebar' | 'medium-light' | 'ultra-dark');
     /**
      * Controls the behavior on macOS when option-clicking the green stoplight button
-     * on the toolbar or by clicking the Window > Zoom menu item. If , the window will
-     * grow to the preferred width of the web page when zoomed, will cause it to zoom
-     * to the width of the screen. This will also affect the behavior when calling
-     * directly. Default is .
+     * on the toolbar or by clicking the Window > Zoom menu item. If true, the window
+     * will grow to the preferred width of the web page when zoomed, false will cause
+     * it to zoom to the width of the screen. This will also affect the behavior when
+     * calling maximize() directly. Default is false.
      */
     zoomToPageWidth?: boolean;
     /**
@@ -5876,35 +5892,36 @@ declare namespace Electron {
     /**
      * The certificate to trust/import.
      */
-    certificate?: Certificate;
+    certificate: Certificate;
     /**
      * The message to display to the user.
      */
-    message?: string;
+    message: string;
   }
 
   interface CertificateVerifyProcRequest {
-    hostname?: string;
-    certificate?: Certificate;
+    hostname: string;
+    certificate: Certificate;
     /**
      * Verification result from chromium.
      */
-    error?: string;
+    error: string;
   }
 
   interface ClearStorageDataOptions {
     /**
-     * Should follow ’s representation .
+     * Should follow window.location.origin’s representation scheme://host:port.
      */
-    origin?: string;
+    origin: string;
     /**
-     * The types of storages to clear, can contain: , , , , , , ,
+     * The types of storages to clear, can contain: appcache, cookies, filesystem,
+     * indexdb, localstorage, shadercache, websql, serviceworkers
      */
-    storages?: string[];
+    storages: string[];
     /**
-     * The types of quotas to clear, can contain: , , .
+     * The types of quotas to clear, can contain: temporary, persistent, syncable.
      */
-    quotas?: string[];
+    quotas: string[];
   }
 
   interface CommandLine {
@@ -5913,113 +5930,115 @@ declare namespace Electron {
      * will not affect process.argv, and is mainly used by developers to control some
      * low-level Chromium behaviors.
      */
-    appendSwitch?: (the_switch: string, value?: string) => void;
+    appendSwitch: (the_switch: string, value?: string) => void;
     /**
      * Append an argument to Chromium's command line. The argument will be quoted
      * correctly. Note: This will not affect process.argv.
      */
-    appendArgument?: (value: string) => void;
+    appendArgument: (value: string) => void;
   }
 
   interface Config {
     /**
      * The URL associated with the PAC file.
      */
-    pacScript?: string;
+    pacScript: string;
     /**
      * Rules indicating which proxies to use.
      */
-    proxyRules?: string;
+    proxyRules: string;
     /**
      * Rules indicating which URLs should bypass the proxy settings.
      */
-    proxyBypassRules?: string;
+    proxyBypassRules: string;
   }
 
   interface ConsoleMessageEvent extends Event {
-    level?: number;
-    message?: string;
-    line?: number;
-    sourceId?: string;
+    level: number;
+    message: string;
+    line: number;
+    sourceId: string;
   }
 
   interface ContextMenuParams {
     /**
      * x coordinate
      */
-    x?: number;
+    x: number;
     /**
      * y coordinate
      */
-    y?: number;
+    y: number;
     /**
      * URL of the link that encloses the node the context menu was invoked on.
      */
-    linkURL?: string;
+    linkURL: string;
     /**
      * Text associated with the link. May be an empty string if the contents of the
      * link are an image.
      */
-    linkText?: string;
+    linkText: string;
     /**
      * URL of the top level page that the context menu was invoked on.
      */
-    pageURL?: string;
+    pageURL: string;
     /**
      * URL of the subframe that the context menu was invoked on.
      */
-    frameURL?: string;
+    frameURL: string;
     /**
      * Source URL for the element that the context menu was invoked on. Elements with
      * source URLs are images, audio and video.
      */
-    srcURL?: string;
+    srcURL: string;
     /**
-     * Type of the node the context menu was invoked on. Can be , , , , , or .
+     * Type of the node the context menu was invoked on. Can be none, image, audio,
+     * video, canvas, file or plugin.
      */
-    mediaType?: ('none' | 'image' | 'audio' | 'video' | 'canvas' | 'file' | 'plugin');
+    mediaType: ('none' | 'image' | 'audio' | 'video' | 'canvas' | 'file' | 'plugin');
     /**
      * Whether the context menu was invoked on an image which has non-empty contents.
      */
-    hasImageContents?: boolean;
+    hasImageContents: boolean;
     /**
      * Whether the context is editable.
      */
-    isEditable?: boolean;
+    isEditable: boolean;
     /**
      * Text of the selection that the context menu was invoked on.
      */
-    selectionText?: string;
+    selectionText: string;
     /**
      * Title or alt text of the selection that the context was invoked on.
      */
-    titleText?: string;
+    titleText: string;
     /**
      * The misspelled word under the cursor, if any.
      */
-    misspelledWord?: string;
+    misspelledWord: string;
     /**
      * The character encoding of the frame on which the menu was invoked.
      */
-    frameCharset?: string;
+    frameCharset: string;
     /**
      * If the context menu was invoked on an input field, the type of that field.
-     * Possible values are , , , .
+     * Possible values are none, plainText, password, other.
      */
-    inputFieldType?: string;
+    inputFieldType: string;
     /**
-     * Input source that invoked the context menu. Can be , , , , .
+     * Input source that invoked the context menu. Can be none, mouse, keyboard, touch,
+     * touchMenu.
      */
-    menuSourceType?: ('none' | 'mouse' | 'keyboard' | 'touch' | 'touchMenu');
+    menuSourceType: ('none' | 'mouse' | 'keyboard' | 'touch' | 'touchMenu');
     /**
      * The flags for the media element the context menu was invoked on.
      */
-    mediaFlags?: MediaFlags;
+    mediaFlags: MediaFlags;
     /**
      * These flags indicate whether the renderer believes it is able to perform the
      * corresponding action.
      */
-    editFlags?: EditFlags;
+    editFlags: EditFlags;
   }
 
   interface CrashReporterStartOptions {
@@ -6027,17 +6046,17 @@ declare namespace Electron {
     /**
      * URL that crash reports will be sent to as POST.
      */
-    submitURL?: string;
+    submitURL: string;
     /**
-     * Defaults to .
+     * Defaults to app.getName().
      */
     productName?: string;
     /**
-     * Whether crash reports should be sent to the server Default is .
+     * Whether crash reports should be sent to the server Default is true.
      */
     uploadToServer?: boolean;
     /**
-     * Default is .
+     * Default is false.
      */
     ignoreSystemCrashHandler?: boolean;
     /**
@@ -6066,28 +6085,28 @@ declare namespace Electron {
     /**
      * Absolute path of the download.
      */
-    path?: string;
+    path: string;
     /**
      * Complete URL chain for the download.
      */
-    urlChain?: string[];
+    urlChain: string[];
     mimeType?: string;
     /**
      * Start range for the download.
      */
-    offset?: number;
+    offset: number;
     /**
      * Total length of the download.
      */
-    length?: number;
+    length: number;
     /**
      * Last-Modified header value.
      */
-    lastModified?: string;
+    lastModified: string;
     /**
      * ETag header value.
      */
-    eTag?: string;
+    eTag: string;
     /**
      * Time when download was started in number of seconds since UNIX epoch.
      */
@@ -6100,7 +6119,7 @@ declare namespace Electron {
     image?: NativeImage;
     rtf?: string;
     /**
-     * The title of the url at .
+     * The title of the url at text.
      */
     bookmark?: string;
   }
@@ -6109,7 +6128,7 @@ declare namespace Electron {
     /**
      * The url to associate the cookie with.
      */
-    url?: string;
+    url: string;
     /**
      * The name of the cookie. Empty by default if omitted.
      */
@@ -6146,44 +6165,44 @@ declare namespace Electron {
   }
 
   interface DidChangeThemeColorEvent extends Event {
-    themeColor?: string;
+    themeColor: string;
   }
 
   interface DidFailLoadEvent extends Event {
-    errorCode?: number;
-    errorDescription?: string;
-    validatedURL?: string;
-    isMainFrame?: boolean;
+    errorCode: number;
+    errorDescription: string;
+    validatedURL: string;
+    isMainFrame: boolean;
   }
 
   interface DidFrameFinishLoadEvent extends Event {
-    isMainFrame?: boolean;
+    isMainFrame: boolean;
   }
 
   interface DidGetRedirectRequestEvent extends Event {
-    oldURL?: string;
-    newURL?: string;
-    isMainFrame?: boolean;
+    oldURL: string;
+    newURL: string;
+    isMainFrame: boolean;
   }
 
   interface DidGetResponseDetailsEvent extends Event {
-    status?: boolean;
-    newURL?: string;
-    originalURL?: string;
-    httpResponseCode?: number;
-    requestMethod?: string;
-    referrer?: string;
-    headers?: Headers;
-    resourceType?: string;
+    status: boolean;
+    newURL: string;
+    originalURL: string;
+    httpResponseCode: number;
+    requestMethod: string;
+    referrer: string;
+    headers: Headers;
+    resourceType: string;
   }
 
   interface DidNavigateEvent extends Event {
-    url?: string;
+    url: string;
   }
 
   interface DidNavigateInPageEvent extends Event {
-    isMainFrame?: boolean;
-    url?: string;
+    isMainFrame: boolean;
+    url: string;
   }
 
   interface DisplayBalloonOptions {
@@ -6199,37 +6218,37 @@ declare namespace Electron {
      * dock icon will bounce for one second. However, the request remains active until
      * either the application becomes active or the request is canceled.
      */
-    bounce?: (type?: 'critical' | 'informational') => number;
+    bounce: (type?: 'critical' | 'informational') => number;
     /**
      * Cancel the bounce of id.
      */
-    cancelBounce?: (id: number) => void;
+    cancelBounce: (id: number) => void;
     /**
      * Bounces the Downloads stack if the filePath is inside the Downloads folder.
      */
-    downloadFinished?: (filePath: string) => void;
+    downloadFinished: (filePath: string) => void;
     /**
      * Sets the string to be displayed in the dock’s badging area.
      */
-    setBadge?: (text: string) => void;
-    getBadge?: () => string;
+    setBadge: (text: string) => void;
+    getBadge: () => string;
     /**
      * Hides the dock icon.
      */
-    hide?: () => void;
+    hide: () => void;
     /**
      * Shows the dock icon.
      */
-    show?: () => void;
-    isVisible?: () => boolean;
+    show: () => void;
+    isVisible: () => boolean;
     /**
      * Sets the application's dock menu.
      */
-    setMenu?: (menu: Menu) => void;
+    setMenu: (menu: Menu) => void;
     /**
      * Sets the image associated with this dock icon.
      */
-    setIcon?: (image: NativeImage | string) => void;
+    setIcon: (image: NativeImage | string) => void;
   }
 
   interface EnableNetworkEmulationOptions {
@@ -6252,13 +6271,13 @@ declare namespace Electron {
   }
 
   interface FileIconOptions {
-    size?: ('small' | 'normal' | 'large');
+    size: ('small' | 'normal' | 'large');
   }
 
   interface Filter {
     /**
-     * Retrieves cookies which are associated with . Empty implies retrieving cookies
-     * of all urls.
+     * Retrieves cookies which are associated with url. Empty implies retrieving
+     * cookies of all urls.
      */
     url?: string;
     /**
@@ -6266,11 +6285,11 @@ declare namespace Electron {
      */
     name?: string;
     /**
-     * Retrieves cookies whose domains match or are subdomains of
+     * Retrieves cookies whose domains match or are subdomains of domains
      */
     domain?: string;
     /**
-     * Retrieves cookies whose path matches .
+     * Retrieves cookies whose path matches path.
      */
     path?: string;
     /**
@@ -6285,128 +6304,128 @@ declare namespace Electron {
 
   interface FindInPageOptions {
     /**
-     * Whether to search forward or backward, defaults to .
+     * Whether to search forward or backward, defaults to true.
      */
     forward?: boolean;
     /**
-     * Whether the operation is first request or a follow up, defaults to .
+     * Whether the operation is first request or a follow up, defaults to false.
      */
     findNext?: boolean;
     /**
-     * Whether search should be case-sensitive, defaults to .
+     * Whether search should be case-sensitive, defaults to false.
      */
     matchCase?: boolean;
     /**
-     * Whether to look only at the start of words. defaults to .
+     * Whether to look only at the start of words. defaults to false.
      */
     wordStart?: boolean;
     /**
-     * When combined with , accepts a match in the middle of a word if the match begins
-     * with an uppercase letter followed by a lowercase or non-letter. Accepts several
-     * other intra-word matches, defaults to .
+     * When combined with wordStart, accepts a match in the middle of a word if the
+     * match begins with an uppercase letter followed by a lowercase or non-letter.
+     * Accepts several other intra-word matches, defaults to false.
      */
     medialCapitalAsWordStart?: boolean;
   }
 
   interface FoundInPageEvent extends Event {
-    result?: FoundInPageResult;
+    result: FoundInPageResult;
   }
 
   interface FromPartitionOptions {
     /**
      * Whether to enable cache.
      */
-    cache?: boolean;
+    cache: boolean;
   }
 
   interface ImportCertificateOptions {
     /**
      * Path for the pkcs12 file.
      */
-    certificate?: string;
+    certificate: string;
     /**
      * Passphrase for the certificate.
      */
-    password?: string;
+    password: string;
   }
 
   interface Input {
     /**
-     * Either or
+     * Either keyUp or keyDown
      */
-    type?: string;
+    type: string;
     /**
      * Equivalent to
      */
-    key?: string;
+    key: string;
     /**
      * Equivalent to
      */
-    code?: string;
+    code: string;
     /**
      * Equivalent to
      */
-    isAutoRepeat?: boolean;
+    isAutoRepeat: boolean;
     /**
      * Equivalent to
      */
-    shift?: boolean;
+    shift: boolean;
     /**
      * Equivalent to
      */
-    control?: boolean;
+    control: boolean;
     /**
      * Equivalent to
      */
-    alt?: boolean;
+    alt: boolean;
     /**
      * Equivalent to
      */
-    meta?: boolean;
+    meta: boolean;
   }
 
   interface InterceptBufferProtocolRequest {
-    url?: string;
-    referrer?: string;
-    method?: string;
-    uploadData?: UploadData[];
+    url: string;
+    referrer: string;
+    method: string;
+    uploadData: UploadData[];
   }
 
   interface InterceptFileProtocolRequest {
-    url?: string;
-    referrer?: string;
-    method?: string;
-    uploadData?: UploadData[];
+    url: string;
+    referrer: string;
+    method: string;
+    uploadData: UploadData[];
   }
 
   interface InterceptHttpProtocolRequest {
-    url?: string;
-    referrer?: string;
-    method?: string;
-    uploadData?: UploadData[];
+    url: string;
+    referrer: string;
+    method: string;
+    uploadData: UploadData[];
   }
 
   interface InterceptStringProtocolRequest {
-    url?: string;
-    referrer?: string;
-    method?: string;
-    uploadData?: UploadData[];
+    url: string;
+    referrer: string;
+    method: string;
+    uploadData: UploadData[];
   }
 
   interface IpcMessageEvent extends Event {
-    channel?: string;
-    args?: any[];
+    channel: string;
+    args: any[];
   }
 
   interface Item {
     /**
-     * or Array The path(s) to the file(s) being dragged.
+     * or files Array The path(s) to the file(s) being dragged.
      */
-    file?: string;
+    file: string;
     /**
      * The image must be non-empty on macOS.
      */
-    icon?: NativeImage;
+    icon: NativeImage;
   }
 
   interface JumpListSettings {
@@ -6414,19 +6433,19 @@ declare namespace Electron {
      * The minimum number of items that will be shown in the Jump List (for a more
      * detailed description of this value see the ).
      */
-    minItems?: number;
+    minItems: number;
     /**
-     * Array of objects that correspond to items that the user has explicitly removed
-     * from custom categories in the Jump List. These items must not be re-added to the
-     * Jump List in the call to , Windows will not display any custom category that
-     * contains any of the removed items.
+     * Array of JumpListItem objects that correspond to items that the user has
+     * explicitly removed from custom categories in the Jump List. These items must not
+     * be re-added to the Jump List in the call to app.setJumpList(), Windows will not
+     * display any custom category that contains any of the removed items.
      */
-    removedItems?: JumpListItem[];
+    removedItems: JumpListItem[];
   }
 
   interface LoadCommitEvent extends Event {
-    url?: string;
-    isMainFrame?: boolean;
+    url: string;
+    isMainFrame: boolean;
   }
 
   interface LoadURLOptions {
@@ -6442,10 +6461,10 @@ declare namespace Electron {
      * Extra headers separated by "\n"
      */
     extraHeaders?: string;
-    postData?: UploadRawData | UploadFile | UploadFileSystem | UploadBlob;
+    postData?: UploadRawData[] | UploadFile[] | UploadFileSystem[] | UploadBlob[];
     /**
      * Base url (with trailing path separator) for files to be loaded by the data url.
-     * This is needed only if the specified is a data url and needs to load other
+     * This is needed only if the specified url is a data url and needs to load other
      * files.
      */
     baseURLForDataURL?: string;
@@ -6454,36 +6473,36 @@ declare namespace Electron {
   interface LoginItemSettings {
     options?: Options;
     /**
-     * if the app is set to open at login.
+     * true if the app is set to open at login.
      */
-    openAtLogin?: boolean;
+    openAtLogin: boolean;
     /**
-     * if the app is set to open as hidden at login. This setting is only supported on
-     * macOS.
+     * true if the app is set to open as hidden at login. This setting is only
+     * supported on macOS.
      */
-    openAsHidden?: boolean;
+    openAsHidden: boolean;
     /**
-     * if the app was opened at login automatically. This setting is only supported on
-     * macOS.
+     * true if the app was opened at login automatically. This setting is only
+     * supported on macOS.
      */
-    wasOpenedAtLogin?: boolean;
+    wasOpenedAtLogin: boolean;
     /**
-     * if the app was opened as a hidden login item. This indicates that the app should
-     * not open any windows at startup. This setting is only supported on macOS.
+     * true if the app was opened as a hidden login item. This indicates that the app
+     * should not open any windows at startup. This setting is only supported on macOS.
      */
-    wasOpenedAsHidden?: boolean;
+    wasOpenedAsHidden: boolean;
     /**
-     * if the app was opened as a login item that should restore the state from the
-     * previous session. This indicates that the app should restore the windows that
-     * were open the last time the app was closed. This setting is only supported on
-     * macOS.
+     * true if the app was opened as a login item that should restore the state from
+     * the previous session. This indicates that the app should restore the windows
+     * that were open the last time the app was closed. This setting is only supported
+     * on macOS.
      */
-    restoreState?: boolean;
+    restoreState: boolean;
   }
 
   interface LoginItemSettingsOptions {
     /**
-     * The executable path to compare against. Defaults to .
+     * The executable path to compare against. Defaults to process.execPath.
      */
     path?: string;
     /**
@@ -6494,16 +6513,17 @@ declare namespace Electron {
 
   interface MenuItemConstructorOptions {
     /**
-     * Will be called with when the menu item is clicked.
+     * Will be called with click(menuItem, browserWindow, event) when the menu item is
+     * clicked.
      */
-    click?: (menuItem?: MenuItem, browserWindow?: BrowserWindow, event?: Event) => void;
+    click?: (menuItem: MenuItem, browserWindow: BrowserWindow, event: Event) => void;
     /**
-     * Define the action of the menu item, when specified the property will be ignored.
-     * See .
+     * Define the action of the menu item, when specified the click property will be
+     * ignored. See .
      */
     role?: string;
     /**
-     * Can be , , , or .
+     * Can be normal, separator, submenu, checkbox or radio.
      */
     type?: ('normal' | 'separator' | 'submenu' | 'checkbox' | 'radio');
     label?: string;
@@ -6519,12 +6539,13 @@ declare namespace Electron {
      */
     visible?: boolean;
     /**
-     * Should only be specified for or type menu items.
+     * Should only be specified for checkbox or radio type menu items.
      */
     checked?: boolean;
     /**
-     * Should be specified for type menu items. If is specified, the can be omitted. If
-     * the value is not a then it will be automatically converted to one using .
+     * Should be specified for submenu type menu items. If submenu is specified, the
+     * type: 'submenu' can be omitted. If the value is not a Menu then it will be
+     * automatically converted to one using Menu.buildFromTemplate.
      */
     submenu?: MenuItemConstructorOptions[] | Menu;
     /**
@@ -6541,8 +6562,9 @@ declare namespace Electron {
 
   interface MessageBoxOptions {
     /**
-     * Can be , , , or . On Windows, displays the same icon as , unless you set an icon
-     * using the option. On macOS, both and display the same warning icon.
+     * Can be "none", "info", "error", "question" or "warning". On Windows, "question"
+     * displays the same icon as "info", unless you set an icon using the "icon"
+     * option. On macOS, both "warning" and "error" display the same warning icon.
      */
     type?: string;
     /**
@@ -6562,74 +6584,75 @@ declare namespace Electron {
     /**
      * Content of the message box.
      */
-    message?: string;
+    message: string;
     /**
      * Extra information of the message.
      */
     detail?: string;
     /**
      * If provided, the message box will include a checkbox with the given label. The
-     * checkbox state can be inspected only when using .
+     * checkbox state can be inspected only when using callback.
      */
     checkboxLabel?: string;
     /**
-     * Initial checked state of the checkbox. by default.
+     * Initial checked state of the checkbox. false by default.
      */
     checkboxChecked?: boolean;
     icon?: NativeImage;
     /**
-     * The index of the button to be used to cancel the dialog, via the key. By default
-     * this is assigned to the first button with "cancel" or "no" as the label. If no
-     * such labeled buttons exist and this option is not set, will be used as the
-     * return value or callback response. This option is ignored on Windows.
+     * The index of the button to be used to cancel the dialog, via the Esc key. By
+     * default this is assigned to the first button with "cancel" or "no" as the label.
+     * If no such labeled buttons exist and this option is not set, 0 will be used as
+     * the return value or callback response. This option is ignored on Windows.
      */
     cancelId?: number;
     /**
-     * On Windows Electron will try to figure out which one of the are common buttons
-     * (like "Cancel" or "Yes"), and show the others as command links in the dialog.
-     * This can make the dialog appear in the style of modern Windows apps. If you
-     * don't like this behavior, you can set to .
+     * On Windows Electron will try to figure out which one of the buttons are common
+     * buttons (like "Cancel" or "Yes"), and show the others as command links in the
+     * dialog. This can make the dialog appear in the style of modern Windows apps. If
+     * you don't like this behavior, you can set noLink to true.
      */
     noLink?: boolean;
     /**
-     * Normalize the keyboard access keys across platforms. Default is . Enabling this
-     * assumes is used in the button labels for the placement of the keyboard shortcut
-     * access key and labels will be converted so they work correctly on each platform,
-     * characters are removed on macOS, converted to on Linux, and left untouched on
-     * Windows. For example, a button label of will be converted to on Linux and on
-     * macOS and can be selected via on Windows and Linux.
+     * Normalize the keyboard access keys across platforms. Default is false. Enabling
+     * this assumes & is used in the button labels for the placement of the keyboard
+     * shortcut access key and labels will be converted so they work correctly on each
+     * platform, & characters are removed on macOS, converted to _ on Linux, and left
+     * untouched on Windows. For example, a button label of Vie&w will be converted to
+     * Vie_w on Linux and View on macOS and can be selected via Alt-W on Windows and
+     * Linux.
      */
     normalizeAccessKeys?: boolean;
   }
 
   interface NewWindowEvent extends Event {
-    url?: string;
-    frameName?: string;
+    url: string;
+    frameName: string;
     /**
      * Can be `default`, `foreground-tab`, `background-tab`, `new-window`,
      * `save-to-disk` and `other`.
      */
-    disposition?: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other');
+    disposition: ('default' | 'foreground-tab' | 'background-tab' | 'new-window' | 'save-to-disk' | 'other');
     /**
      * The options which should be used for creating the new `BrowserWindow`.
      */
-    options?: Options;
+    options: Options;
   }
 
   interface OnBeforeRedirectDetails {
-    id?: string;
-    url?: string;
-    method?: string;
-    resourceType?: string;
-    timestamp?: number;
-    redirectURL?: string;
-    statusCode?: number;
+    id: string;
+    url: string;
+    method: string;
+    resourceType: string;
+    timestamp: number;
+    redirectURL: string;
+    statusCode: number;
     /**
      * The server IP address that the request was actually sent to.
      */
     ip?: string;
-    fromCache?: boolean;
-    responseHeaders?: ResponseHeaders;
+    fromCache: boolean;
+    responseHeaders: ResponseHeaders;
   }
 
   interface OnBeforeRedirectFilter {
@@ -6637,16 +6660,16 @@ declare namespace Electron {
      * Array of URL patterns that will be used to filter out the requests that do not
      * match the URL patterns.
      */
-    urls?: string[];
+    urls: string[];
   }
 
   interface OnBeforeRequestDetails {
-    id?: number;
-    url?: string;
-    method?: string;
-    resourceType?: string;
-    timestamp?: number;
-    uploadData?: UploadData[];
+    id: number;
+    url: string;
+    method: string;
+    resourceType: string;
+    timestamp: number;
+    uploadData: UploadData[];
   }
 
   interface OnBeforeRequestFilter {
@@ -6654,7 +6677,7 @@ declare namespace Electron {
      * Array of URL patterns that will be used to filter out the requests that do not
      * match the URL patterns.
      */
-    urls?: string[];
+    urls: string[];
   }
 
   interface OnBeforeSendHeadersFilter {
@@ -6662,19 +6685,19 @@ declare namespace Electron {
      * Array of URL patterns that will be used to filter out the requests that do not
      * match the URL patterns.
      */
-    urls?: string[];
+    urls: string[];
   }
 
   interface OnCompletedDetails {
-    id?: number;
-    url?: string;
-    method?: string;
-    resourceType?: string;
-    timestamp?: number;
-    responseHeaders?: ResponseHeaders;
-    fromCache?: boolean;
-    statusCode?: number;
-    statusLine?: string;
+    id: number;
+    url: string;
+    method: string;
+    resourceType: string;
+    timestamp: number;
+    responseHeaders: ResponseHeaders;
+    fromCache: boolean;
+    statusCode: number;
+    statusLine: string;
   }
 
   interface OnCompletedFilter {
@@ -6682,20 +6705,20 @@ declare namespace Electron {
      * Array of URL patterns that will be used to filter out the requests that do not
      * match the URL patterns.
      */
-    urls?: string[];
+    urls: string[];
   }
 
   interface OnErrorOccurredDetails {
-    id?: number;
-    url?: string;
-    method?: string;
-    resourceType?: string;
-    timestamp?: number;
-    fromCache?: boolean;
+    id: number;
+    url: string;
+    method: string;
+    resourceType: string;
+    timestamp: number;
+    fromCache: boolean;
     /**
      * The error description.
      */
-    error?: string;
+    error: string;
   }
 
   interface OnErrorOccurredFilter {
@@ -6703,7 +6726,7 @@ declare namespace Electron {
      * Array of URL patterns that will be used to filter out the requests that do not
      * match the URL patterns.
      */
-    urls?: string[];
+    urls: string[];
   }
 
   interface OnHeadersReceivedFilter {
@@ -6711,22 +6734,22 @@ declare namespace Electron {
      * Array of URL patterns that will be used to filter out the requests that do not
      * match the URL patterns.
      */
-    urls?: string[];
+    urls: string[];
   }
 
   interface OnResponseStartedDetails {
-    id?: number;
-    url?: string;
-    method?: string;
-    resourceType?: string;
-    timestamp?: number;
-    responseHeaders?: ResponseHeaders;
+    id: number;
+    url: string;
+    method: string;
+    resourceType: string;
+    timestamp: number;
+    responseHeaders: ResponseHeaders;
     /**
      * Indicates whether the response was fetched from disk cache.
      */
-    fromCache?: boolean;
-    statusCode?: number;
-    statusLine?: string;
+    fromCache: boolean;
+    statusCode: number;
+    statusLine: string;
   }
 
   interface OnResponseStartedFilter {
@@ -6734,16 +6757,16 @@ declare namespace Electron {
      * Array of URL patterns that will be used to filter out the requests that do not
      * match the URL patterns.
      */
-    urls?: string[];
+    urls: string[];
   }
 
   interface OnSendHeadersDetails {
-    id?: number;
-    url?: string;
-    method?: string;
-    resourceType?: string;
-    timestamp?: number;
-    requestHeaders?: RequestHeaders;
+    id: number;
+    url: string;
+    method: string;
+    resourceType: string;
+    timestamp: number;
+    requestHeaders: RequestHeaders;
   }
 
   interface OnSendHeadersFilter {
@@ -6751,15 +6774,16 @@ declare namespace Electron {
      * Array of URL patterns that will be used to filter out the requests that do not
      * match the URL patterns.
      */
-    urls?: string[];
+    urls: string[];
   }
 
   interface OpenDevToolsOptions {
     /**
-     * Opens the devtools with specified dock state, can be , , , . Defaults to last
-     * used dock state. In mode it's possible to dock back. In mode it's not.
+     * Opens the devtools with specified dock state, can be right, bottom, undocked,
+     * detach. Defaults to last used dock state. In undocked mode it's possible to dock
+     * back. In detach mode it's not.
      */
-    mode?: ('right' | 'bottom' | 'undocked' | 'detach');
+    mode: ('right' | 'bottom' | 'undocked' | 'detach');
   }
 
   interface OpenDialogOptions {
@@ -6784,65 +6808,66 @@ declare namespace Electron {
 
   interface OpenExternalOptions {
     /**
-     * to bring the opened application to the foreground. The default is .
+     * true to bring the opened application to the foreground. The default is true.
      */
-    activate?: boolean;
+    activate: boolean;
   }
 
   interface PageFaviconUpdatedEvent extends Event {
     /**
      * Array of URLs.
      */
-    favicons?: string[];
+    favicons: string[];
   }
 
   interface PageTitleUpdatedEvent extends Event {
-    title?: string;
-    explicitSet?: boolean;
+    title: string;
+    explicitSet: boolean;
   }
 
   interface Parameters {
     /**
-     * Specify the screen type to emulate (default: )
+     * Specify the screen type to emulate (default: desktop)
      */
-    screenPosition?: ('desktop' | 'mobile');
+    screenPosition: ('desktop' | 'mobile');
     /**
      * Set the emulated screen size (screenPosition == mobile)
      */
-    screenSize?: Size;
+    screenSize: Size;
     /**
-     * Position the view on the screen (screenPosition == mobile) (default: )
+     * Position the view on the screen (screenPosition == mobile) (default: {x: 0, y:
+     * 0})
      */
-    viewPosition?: Point;
+    viewPosition: Point;
     /**
      * Set the device scale factor (if zero defaults to original device scale factor)
-     * (default: )
+     * (default: 0)
      */
-    deviceScaleFactor?: number;
+    deviceScaleFactor: number;
     /**
      * Set the emulated view size (empty means no override)
      */
-    viewSize?: Size;
+    viewSize: Size;
     /**
      * Whether emulated view should be scaled down if necessary to fit into available
-     * space (default: )
+     * space (default: false)
      */
-    fitToView?: boolean;
+    fitToView: boolean;
     /**
      * Offset of the emulated view inside available space (not in fit to view mode)
-     * (default: )
+     * (default: {x: 0, y: 0})
      */
-    offset?: Point;
+    offset: Point;
     /**
      * Scale of emulated view inside available space (not in fit to view mode)
-     * (default: )
+     * (default: 1)
      */
-    scale?: number;
+    scale: number;
   }
 
   interface PluginCrashedEvent extends Event {
-    name?: string;
-    version?: string;
+    name: string;
+    version: string;
   }
 
   interface PopupOptions {
@@ -6851,12 +6876,12 @@ declare namespace Electron {
      */
     x?: number;
     /**
-     * ( if is used) Default is the current mouse cursor position.
+     * ( if x is used) Default is the current mouse cursor position.
      */
-    y?: number;
+    y: number;
     /**
-     * Set to to have this method return immediately called, to return after the menu
-     * has been selected or closed. Defaults to .
+     * Set to true to have this method return immediately called, false to return after
+     * the menu has been selected or closed. Defaults to false.
      */
     async?: boolean;
     /**
@@ -6868,13 +6893,13 @@ declare namespace Electron {
 
   interface PrintOptions {
     /**
-     * Don't ask user for print settings. Default is .
+     * Don't ask user for print settings. Default is false.
      */
-    silent?: boolean;
+    silent: boolean;
     /**
-     * Also prints the background color and image of the web page. Default is .
+     * Also prints the background color and image of the web page. Default is false.
      */
-    printBackground?: boolean;
+    printBackground: boolean;
   }
 
   interface PrintToPDFOptions {
@@ -6884,8 +6909,8 @@ declare namespace Electron {
      */
     marginsType?: number;
     /**
-     * Specify page size of the generated PDF. Can be , , , , , or an Object containing
-     * and in microns.
+     * Specify page size of the generated PDF. Can be A3, A4, A5, Legal, Letter,
+     * Tabloid or an Object containing height and width in microns.
      */
     pageSize?: string;
     /**
@@ -6897,7 +6922,7 @@ declare namespace Electron {
      */
     printSelectionOnly?: boolean;
     /**
-     * for landscape, for portrait.
+     * true for landscape, false for portrait.
      */
     landscape?: boolean;
   }
@@ -6906,82 +6931,82 @@ declare namespace Electron {
     /**
      * The amount of memory currently pinned to actual physical RAM.
      */
-    workingSetSize?: number;
+    workingSetSize: number;
     /**
      * The maximum amount of memory that has ever been pinned to actual physical RAM.
      */
-    peakWorkingSetSize?: number;
+    peakWorkingSetSize: number;
     /**
      * The amount of memory not shared by other processes, such as JS heap or HTML
      * content.
      */
-    privateBytes?: number;
+    privateBytes: number;
     /**
      * The amount of memory shared between processes, typically memory consumed by the
      * Electron code itself
      */
-    sharedBytes?: number;
+    sharedBytes: number;
   }
 
   interface ProgressBarOptions {
     /**
-     * Mode for the progress bar. Can be , , , , or .
+     * Mode for the progress bar. Can be none, normal, indeterminate, error, or paused.
      */
-    mode?: ('none' | 'normal' | 'indeterminate' | 'error');
+    mode: ('none' | 'normal' | 'indeterminate' | 'error');
   }
 
   interface Provider {
     /**
-     * Returns
+     * Returns Boolean
      */
-    spellCheck?: (text?: string) => void;
+    spellCheck: (text: string) => void;
   }
 
   interface ReadBookmark {
-    title?: string;
-    url?: string;
+    title: string;
+    url: string;
   }
 
   interface RedirectRequest {
-    url?: string;
-    method?: string;
+    url: string;
+    method: string;
     session?: Session;
     uploadData?: UploadData;
   }
 
   interface RegisterBufferProtocolRequest {
-    url?: string;
-    referrer?: string;
-    method?: string;
-    uploadData?: UploadData[];
+    url: string;
+    referrer: string;
+    method: string;
+    uploadData: UploadData[];
   }
 
   interface RegisterFileProtocolRequest {
-    url?: string;
-    referrer?: string;
-    method?: string;
-    uploadData?: UploadData[];
+    url: string;
+    referrer: string;
+    method: string;
+    uploadData: UploadData[];
   }
 
   interface RegisterHttpProtocolRequest {
-    url?: string;
-    referrer?: string;
-    method?: string;
-    uploadData?: UploadData[];
+    url: string;
+    referrer: string;
+    method: string;
+    uploadData: UploadData[];
   }
 
   interface RegisterStandardSchemesOptions {
     /**
-     * to register the scheme as secure. Default .
+     * true to register the scheme as secure. Default false.
      */
     secure?: boolean;
   }
 
   interface RegisterStringProtocolRequest {
-    url?: string;
-    referrer?: string;
-    method?: string;
-    uploadData?: UploadData[];
+    url: string;
+    referrer: string;
+    method: string;
+    uploadData: UploadData[];
   }
 
   interface RegisterURLSchemeAsPrivilegedOptions {
@@ -7013,9 +7038,9 @@ declare namespace Electron {
   }
 
   interface Request {
-    method?: string;
-    url?: string;
-    referrer?: string;
+    method: string;
+    url: string;
+    referrer: string;
   }
 
   interface ResizeOptions {
@@ -7028,21 +7053,21 @@ declare namespace Electron {
      */
     height?: number;
     /**
-     * The desired quality of the resize image. Possible values are , or . The default
-     * is . These values express a desired quality/speed tradeoff. They are translated
-     * into an algorithm-specific method that depends on the capabilities (CPU, GPU) of
-     * the underlying platform. It is possible for all three methods to be mapped to
-     * the same algorithm on a given platform.
+     * The desired quality of the resize image. Possible values are good, better or
+     * best. The default is best. These values express a desired quality/speed
+     * tradeoff. They are translated into an algorithm-specific method that depends on
+     * the capabilities (CPU, GPU) of the underlying platform. It is possible for all
+     * three methods to be mapped to the same algorithm on a given platform.
      */
     quality?: string;
   }
 
   interface ResourceUsage {
-    images?: MemoryUsageDetails;
-    cssStyleSheets?: MemoryUsageDetails;
-    xslStyleSheets?: MemoryUsageDetails;
-    fonts?: MemoryUsageDetails;
-    other?: MemoryUsageDetails;
+    images: MemoryUsageDetails;
+    cssStyleSheets: MemoryUsageDetails;
+    xslStyleSheets: MemoryUsageDetails;
+    fonts: MemoryUsageDetails;
+    other: MemoryUsageDetails;
   }
 
   interface Response {
@@ -7055,20 +7080,20 @@ declare namespace Electron {
   }
 
   interface Result {
-    requestId?: number;
+    requestId: number;
     /**
      * Position of the active match.
      */
-    activeMatchOrdinal?: number;
+    activeMatchOrdinal: number;
     /**
      * Number of Matches.
      */
-    matches?: number;
+    matches: number;
     /**
      * Coordinates of first match region.
      */
-    selectionArea?: SelectionArea;
-    finalUpdate?: boolean;
+    selectionArea: SelectionArea;
+    finalUpdate: boolean;
   }
 
   interface SaveDialogOptions {
@@ -7089,20 +7114,22 @@ declare namespace Electron {
      */
     nameFieldLabel?: string;
     /**
-     * Show the tags input box, defaults to .
+     * Show the tags input box, defaults to true.
      */
     showsTagField?: boolean;
   }
 
   interface Settings {
     /**
-     * to open the app at login, to remove the app as a login item. Defaults to .
+     * true to open the app at login, false to remove the app as a login item. Defaults
+     * to false.
      */
     openAtLogin?: boolean;
     /**
-     * to open the app as hidden. Defaults to . The user can edit this setting from the
-     * System Preferences so should be checked when the app is opened to know the
-     * current value. This setting is only supported on macOS.
+     * true to open the app as hidden. Defaults to false. The user can edit this
+     * setting from the System Preferences so
+     * app.getLoginItemStatus().wasOpenedAsHidden should be checked when the app is
+     * opened to know the current value. This setting is only supported on macOS.
      */
     openAsHidden?: boolean;
   }
@@ -7118,42 +7145,43 @@ declare namespace Electron {
   interface SourcesOptions {
     /**
      * An array of Strings that lists the types of desktop sources to be captured,
-     * available types are and .
+     * available types are screen and window.
      */
-    types?: string[];
+    types: string[];
     /**
-     * The size that the media source thumbnail should be scaled to. Default is x .
+     * The size that the media source thumbnail should be scaled to. Default is 150 x
+     * 150.
      */
     thumbnailSize?: Size;
   }
 
   interface StartMonitoringOptions {
-    categoryFilter?: string;
-    traceOptions?: string;
+    categoryFilter: string;
+    traceOptions: string;
   }
 
   interface StartRecordingOptions {
-    categoryFilter?: string;
-    traceOptions?: string;
+    categoryFilter: string;
+    traceOptions: string;
   }
 
   interface SystemMemoryInfo {
     /**
      * The total amount of physical memory in Kilobytes available to the system.
      */
-    total?: number;
+    total: number;
     /**
      * The total amount of memory not being used by applications or disk cache.
      */
-    free?: number;
+    free: number;
     /**
      * The total amount of swap memory in Kilobytes available to the system.
      */
-    swapTotal?: number;
+    swapTotal: number;
     /**
      * The free amount of swap memory in Kilobytes available to the system.
      */
-    swapFree?: number;
+    swapFree: number;
   }
 
   interface ToBitmapOptions {
@@ -7183,7 +7211,7 @@ declare namespace Electron {
      */
     label?: string;
     /**
-     * Button background color in hex format, i.e .
+     * Button background color in hex format, i.e #ABCDEF.
      */
     backgroundColor?: string;
     /**
@@ -7191,9 +7219,9 @@ declare namespace Electron {
      */
     icon?: NativeImage;
     /**
-     * Can be , or .
+     * Can be left, right or overlay.
      */
-    iconPosition?: ('left' | 'right' | 'overlay');
+    iconPosition: ('left' | 'right' | 'overlay');
     /**
      * Function to call when the button is clicked.
      */
@@ -7206,20 +7234,20 @@ declare namespace Electron {
      */
     availableColors?: string[];
     /**
-     * The selected hex color in the picker, i.e .
+     * The selected hex color in the picker, i.e #ABCDEF.
      */
     selectedColor?: string;
     /**
      * Function to call when a color is selected.
      */
-    change?: (color?: string) => void;
+    change?: (color: string) => void;
   }
 
   interface TouchBarGroupConstructorOptions {
     /**
      * Items to display as a group.
      */
-    items?: TouchBar;
+    items: TouchBar;
   }
 
   interface TouchBarLabelConstructorOptions {
@@ -7228,7 +7256,7 @@ declare namespace Electron {
      */
     label?: string;
     /**
-     * Hex color of text, i.e .
+     * Hex color of text, i.e #ABCDEF.
      */
     textColor?: string;
   }
@@ -7247,8 +7275,8 @@ declare namespace Electron {
      */
     items?: TouchBar;
     /**
-     * to display a close button on the left of the popover, to not show it. Default is
-     * .
+     * true to display a close button on the left of the popover, false to not show it.
+     * Default is true.
      */
     showCloseButton?: boolean;
   }
@@ -7257,35 +7285,35 @@ declare namespace Electron {
     /**
      * An array of items to place in this scrubber
      */
-    items?: ScrubberItem[];
+    items: ScrubberItem[];
     /**
      * Called when the user taps an item that was not the last tapped item
      */
-    select?: (selectedIndex?: number) => void;
+    select: (selectedIndex: number) => void;
     /**
      * Called when the user taps any item
      */
-    highlight?: (highlightedIndex?: number) => void;
+    highlight: (highlightedIndex: number) => void;
     /**
-     * Selected item style. Defaults to .
+     * Selected item style. Defaults to null.
      */
-    selectedStyle?: string;
+    selectedStyle: string;
     /**
-     * Selected overlay item style. Defaults to .
+     * Selected overlay item style. Defaults to null.
      */
-    overlayStyle?: string;
+    overlayStyle: string;
     /**
-     * Defaults to .
+     * Defaults to false.
      */
-    showArrowButtons?: boolean;
+    showArrowButtons: boolean;
     /**
-     * Defaults to .
+     * Defaults to free.
      */
-    mode?: string;
+    mode: string;
     /**
-     * Defaults to .
+     * Defaults to true.
      */
-    continuous?: boolean;
+    continuous: boolean;
   }
 
   interface TouchBarSegmentedControlConstructorOptions {
@@ -7300,7 +7328,7 @@ declare namespace Electron {
     /**
      * An array of segments to place in this control.
      */
-    segments?: SegmentedControlSegment[];
+    segments: SegmentedControlSegment[];
     /**
      * The index of the currently selected segment, will update automatically with user
      * interaction. When the mode is multiple it will be the last selected item.
@@ -7309,7 +7337,7 @@ declare namespace Electron {
     /**
      * Called when the user selects a new segment
      */
-    change?: (selectedIndex?: number, isSelected?: boolean) => void;
+    change: (selectedIndex: number, isSelected: boolean) => void;
   }
 
   interface TouchBarSliderConstructorOptions {
@@ -7332,7 +7360,7 @@ declare namespace Electron {
     /**
      * Function to call when the slider is changed.
      */
-    change?: (newValue?: number) => void;
+    change?: (newValue: number) => void;
   }
 
   interface TouchBarSpacerConstructorOptions {
@@ -7343,7 +7371,7 @@ declare namespace Electron {
   }
 
   interface UpdateTargetUrlEvent extends Event {
-    url?: string;
+    url: string;
   }
 
   interface Versions {
@@ -7358,58 +7386,58 @@ declare namespace Electron {
   }
 
   interface WillNavigateEvent extends Event {
-    url?: string;
+    url: string;
   }
 
   interface EditFlags {
     /**
      * Whether the renderer believes it can undo.
      */
-    canUndo?: boolean;
+    canUndo: boolean;
     /**
      * Whether the renderer believes it can redo.
      */
-    canRedo?: boolean;
+    canRedo: boolean;
     /**
      * Whether the renderer believes it can cut.
      */
-    canCut?: boolean;
+    canCut: boolean;
     /**
      * Whether the renderer believes it can copy
      */
-    canCopy?: boolean;
+    canCopy: boolean;
     /**
      * Whether the renderer believes it can paste.
      */
-    canPaste?: boolean;
+    canPaste: boolean;
     /**
      * Whether the renderer believes it can delete.
      */
-    canDelete?: boolean;
+    canDelete: boolean;
     /**
      * Whether the renderer believes it can select all.
      */
-    canSelectAll?: boolean;
+    canSelectAll: boolean;
   }
 
   interface Extra {
   }
 
   interface FoundInPageResult {
-    requestId?: number;
+    requestId: number;
     /**
      * Position of the active match.
      */
-    activeMatchOrdinal?: number;
+    activeMatchOrdinal: number;
     /**
      * Number of Matches.
      */
-    matches?: number;
+    matches: number;
     /**
      * Coordinates of first match region.
      */
-    selectionArea?: SelectionArea;
-    finalUpdate?: boolean;
+    selectionArea: SelectionArea;
+    finalUpdate: boolean;
   }
 
   interface Headers {
@@ -7419,40 +7447,40 @@ declare namespace Electron {
     /**
      * Whether the media element has crashed.
      */
-    inError?: boolean;
+    inError: boolean;
     /**
      * Whether the media element is paused.
      */
-    isPaused?: boolean;
+    isPaused: boolean;
     /**
      * Whether the media element is muted.
      */
-    isMuted?: boolean;
+    isMuted: boolean;
     /**
      * Whether the media element has audio.
      */
-    hasAudio?: boolean;
+    hasAudio: boolean;
     /**
      * Whether the media element is looping.
      */
-    isLooping?: boolean;
+    isLooping: boolean;
     /**
      * Whether the media element's controls are visible.
      */
-    isControlsVisible?: boolean;
+    isControlsVisible: boolean;
     /**
      * Whether the media element's controls are toggleable.
      */
-    canToggleControls?: boolean;
+    canToggleControls: boolean;
     /**
      * Whether the media element can be rotated.
      */
-    canRotate?: boolean;
+    canRotate: boolean;
   }
 
   interface Normal {
-    width?: number;
-    height?: number;
+    width: number;
+    height: number;
   }
 
   interface Options {
@@ -7469,17 +7497,17 @@ declare namespace Electron {
 
   interface WebPreferences {
     /**
-     * Whether to enable DevTools. If it is set to , can not use to open DevTools.
-     * Default is .
+     * Whether to enable DevTools. If it is set to false, can not use
+     * BrowserWindow.webContents.openDevTools() to open DevTools. Default is true.
      */
     devTools?: boolean;
     /**
-     * Whether node integration is enabled. Default is .
+     * Whether node integration is enabled. Default is true.
      */
     nodeIntegration?: boolean;
     /**
-     * Whether node integration is enabled in web workers. Default is . More about this
-     * can be found in .
+     * Whether node integration is enabled in web workers. Default is false. More about
+     * this can be found in .
      */
     nodeIntegrationInWorker?: boolean;
     /**
@@ -7493,84 +7521,86 @@ declare namespace Electron {
     /**
      * If set, this will sandbox the renderer associated with the window, making it
      * compatible with the Chromium OS-level sandbox and disabling the Node.js engine.
-     * This is not the same as the option and the APIs available to the preload script
-     * are more limited. Read more about the option . This option is currently
-     * experimental and may change or be removed in future Electron releases.
+     * This is not the same as the nodeIntegration option and the APIs available to the
+     * preload script are more limited. Read more about the option . This option is
+     * currently experimental and may change or be removed in future Electron releases.
      */
     sandbox?: boolean;
     /**
      * Sets the session used by the page. Instead of passing the Session object
-     * directly, you can also choose to use the option instead, which accepts a
-     * partition string. When both and are provided, will be preferred. Default is the
-     * default session.
+     * directly, you can also choose to use the partition option instead, which accepts
+     * a partition string. When both session and partition are provided, session will
+     * be preferred. Default is the default session.
      */
     session?: Session;
     /**
      * Sets the session used by the page according to the session's partition string.
-     * If starts with , the page will use a persistent session available to all pages
-     * in the app with the same . If there is no prefix, the page will use an in-memory
-     * session. By assigning the same , multiple pages can share the same session.
-     * Default is the default session.
+     * If partition starts with persist:, the page will use a persistent session
+     * available to all pages in the app with the same partition. If there is no
+     * persist: prefix, the page will use an in-memory session. By assigning the same
+     * partition, multiple pages can share the same session. Default is the default
+     * session.
      */
     partition?: string;
     /**
-     * The default zoom factor of the page, represents . Default is .
+     * The default zoom factor of the page, 3.0 represents 300%. Default is 1.0.
      */
     zoomFactor?: number;
     /**
-     * Enables JavaScript support. Default is .
+     * Enables JavaScript support. Default is true.
      */
     javascript?: boolean;
     /**
-     * When , it will disable the same-origin policy (usually using testing websites by
-     * people), and set to if this options has not been set by user. Default is .
+     * When false, it will disable the same-origin policy (usually using testing
+     * websites by people), and set allowRunningInsecureContent to true if this options
+     * has not been set by user. Default is true.
      */
     webSecurity?: boolean;
     /**
      * Allow an https page to run JavaScript, CSS or plugins from http URLs. Default is
-     * .
+     * false.
      */
     allowRunningInsecureContent?: boolean;
     /**
-     * Enables image support. Default is .
+     * Enables image support. Default is true.
      */
     images?: boolean;
     /**
-     * Make TextArea elements resizable. Default is .
+     * Make TextArea elements resizable. Default is true.
      */
     textAreasAreResizable?: boolean;
     /**
-     * Enables WebGL support. Default is .
+     * Enables WebGL support. Default is true.
      */
     webgl?: boolean;
     /**
-     * Enables WebAudio support. Default is .
+     * Enables WebAudio support. Default is true.
      */
     webaudio?: boolean;
     /**
-     * Whether plugins should be enabled. Default is .
+     * Whether plugins should be enabled. Default is false.
      */
     plugins?: boolean;
     /**
-     * Enables Chromium's experimental features. Default is .
+     * Enables Chromium's experimental features. Default is false.
      */
     experimentalFeatures?: boolean;
     /**
-     * Enables Chromium's experimental canvas features. Default is .
+     * Enables Chromium's experimental canvas features. Default is false.
      */
     experimentalCanvasFeatures?: boolean;
     /**
-     * Enables scroll bounce (rubber banding) effect on macOS. Default is .
+     * Enables scroll bounce (rubber banding) effect on macOS. Default is false.
      */
     scrollBounce?: boolean;
     /**
-     * A list of feature strings separated by , like to enable. The full list of
-     * supported feature strings can be found in the file.
+     * A list of feature strings separated by ,, like CSSVariables,KeyboardEventKey to
+     * enable. The full list of supported feature strings can be found in the file.
      */
     blinkFeatures?: string;
     /**
-     * A list of feature strings separated by , like to disable. The full list of
-     * supported feature strings can be found in the file.
+     * A list of feature strings separated by ,, like CSSVariables,KeyboardEventKey to
+     * disable. The full list of supported feature strings can be found in the file.
      */
     disableBlinkFeatures?: string;
     /**
@@ -7578,71 +7608,71 @@ declare namespace Electron {
      */
     defaultFontFamily?: DefaultFontFamily;
     /**
-     * Defaults to .
+     * Defaults to 16.
      */
     defaultFontSize?: number;
     /**
-     * Defaults to .
+     * Defaults to 13.
      */
     defaultMonospaceFontSize?: number;
     /**
-     * Defaults to .
+     * Defaults to 0.
      */
     minimumFontSize?: number;
     /**
-     * Defaults to .
+     * Defaults to ISO-8859-1.
      */
     defaultEncoding?: string;
     /**
      * Whether to throttle animations and timers when the page becomes background.
-     * Defaults to .
+     * Defaults to true.
      */
     backgroundThrottling?: boolean;
     /**
-     * Whether to enable offscreen rendering for the browser window. Defaults to . See
-     * the for more details.
+     * Whether to enable offscreen rendering for the browser window. Defaults to false.
+     * See the for more details.
      */
     offscreen?: boolean;
     /**
-     * Whether to run Electron APIs and the specified script in a separate JavaScript
-     * context. Defaults to . The context that the script runs in will still have full
-     * access to the and globals but it will use its own set of JavaScript builtins (,
-     * , , etc.) and will be isolated from any changes made to the global environment
-     * by the loaded page. The Electron API will only be available in the script and
-     * not the loaded page. This option should be used when loading potentially
-     * untrusted remote content to ensure the loaded content cannot tamper with the
-     * script and any Electron APIs being used. This option uses the same technique
-     * used by . You can access this context in the dev tools by selecting the
-     * 'Electron Isolated Context' entry in the combo box at the top of the Console
-     * tab. This option is currently experimental and may change or be removed in
-     * future Electron releases.
+     * Whether to run Electron APIs and the specified preload script in a separate
+     * JavaScript context. Defaults to false. The context that the preload script runs
+     * in will still have full access to the document and window globals but it will
+     * use its own set of JavaScript builtins (Array, Object, JSON, etc.) and will be
+     * isolated from any changes made to the global environment by the loaded page. The
+     * Electron API will only be available in the preload script and not the loaded
+     * page. This option should be used when loading potentially untrusted remote
+     * content to ensure the loaded content cannot tamper with the preload script and
+     * any Electron APIs being used. This option uses the same technique used by . You
+     * can access this context in the dev tools by selecting the 'Electron Isolated
+     * Context' entry in the combo box at the top of the Console tab. This option is
+     * currently experimental and may change or be removed in future Electron releases.
      */
     contextIsolation?: boolean;
   }
 
   interface DefaultFontFamily {
     /**
-     * Defaults to .
+     * Defaults to Times New Roman.
      */
     standard?: string;
     /**
-     * Defaults to .
+     * Defaults to Times New Roman.
      */
     serif?: string;
     /**
-     * Defaults to .
+     * Defaults to Arial.
      */
     sansSerif?: string;
     /**
-     * Defaults to .
+     * Defaults to Courier New.
      */
     monospace?: string;
     /**
-     * Defaults to .
+     * Defaults to Script.
      */
     cursive?: string;
     /**
-     * Defaults to .
+     * Defaults to Impact.
      */
     fantasy?: string;
   }
@@ -7693,8 +7723,8 @@ declare namespace NodeJS {
      * Causes the main thread of the current process crash.
      */
     crash(): void;
-    getCPUUsage(CPUUsage: CPUUsage): void;
-    getIOCounters(IOCounters: IOCounters): void;
+    getCPUUsage(CPUUsage: Electron.CPUUsage): void;
+    getIOCounters(IOCounters: Electron.IOCounters): void;
     /**
      * Returns an object giving memory usage statistics about the current process. Note
      * that all statistics are reported in Kilobytes.
