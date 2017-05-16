@@ -7,6 +7,7 @@
 #include "base/command_line.h"
 #include "base/strings/utf_string_conversions.h"
 #include "libplatform/libplatform.h"
+#include "native_mate/dictionary.h"
 
 namespace atom {
 
@@ -34,6 +35,13 @@ void NodeDebugger::Start() {
     // Use custom platform since the gin platform does not work correctly
     // with node's inspector agent
     platform_.reset(v8::platform::CreateDefaultPlatform());
+
+    // Set process._debugWaitConnect if --inspect-brk was specified to stop
+    // the debugger on the first line
+    if (options.wait_for_connect()) {
+      mate::Dictionary process(env_->isolate(), env_->process_object());
+      process.Set("_debugWaitConnect", true);
+    }
 
     inspector->Start(platform_.get(), nullptr, options);
   }
