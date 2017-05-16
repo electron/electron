@@ -17,7 +17,9 @@
 #include "base/task/cancelable_task_tracker.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
+#include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
+#include "content/public/browser/render_process_host.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
@@ -40,12 +42,26 @@ namespace atom {
 enum class JumpListResult : int;
 #endif
 
+struct ProcessMetric {
+  std::string type;
+  base::ProcessId pid;
+  std::unique_ptr<base::ProcessMetrics> metrics;
+  ProcessMetric(std::string type,
+                base::ProcessId pid,
+                std::unique_ptr<base::ProcessMetrics> metrics) {
+    this->type = type;
+    this->pid = pid;
+    this->metrics = std::move(metrics);
+  }
+};
+
 namespace api {
 
 class App : public AtomBrowserClient::Delegate,
             public mate::EventEmitter<App>,
             public BrowserObserver,
-            public content::GpuDataManagerObserver {
+            public content::GpuDataManagerObserver,
+            public content::BrowserChildProcessObserver {
  public:
   using FileIconCallback = base::Callback<void(v8::Local<v8::Value>,
                                                const gfx::Image&)>;
@@ -73,6 +89,10 @@ class App : public AtomBrowserClient::Delegate,
 #endif
 
   base::FilePath GetAppPath() const;
+  void RenderProcessReady(
+      content::RenderProcessHost* host);
+  void RenderProcessDisconnected(
+      content::RenderProcessHost* host);
 
  protected:
   explicit App(v8::Isolate* isolate);
@@ -118,8 +138,19 @@ class App : public AtomBrowserClient::Delegate,
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus status) override;
 
+  // content::BrowserChildProcessObserver:
+  void BrowserChildProcessLaunchedAndConnected(
+      const content::ChildProcessData& data) override;
+  void BrowserChildProcessHostDisconnected(
+      const content::ChildProcessData& data) override;
+
  private:
   void SetAppPath(const base::FilePath& app_path);
+  void ChildProcessLaunched(
+      int process_type,
+      base::ProcessId id);
+  void ChildProcessDisconnected(
+      base::ProcessId pid);
 
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);
@@ -143,7 +174,7 @@ class App : public AtomBrowserClient::Delegate,
   void GetFileIcon(const base::FilePath& path,
                    mate::Arguments* args);
 
-  std::vector<mate::Dictionary> GetAppMemoryInfo(v8::Isolate* isolate);
+  std::vector<mate::Dictionary> GetAppMetrics(v8::Isolate* isolate);
 
 #if defined(OS_WIN)
   // Get the current Jump List settings.
@@ -163,6 +194,11 @@ class App : public AtomBrowserClient::Delegate,
   base::CancelableTaskTracker cancelable_task_tracker_;
 
   base::FilePath app_path_;
+
+  using ProcessMetricMap =
+      std::unordered_map<base::ProcessId,
+                         std::unique_ptr<atom::ProcessMetric>>;
+  ProcessMetricMap app_metrics_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

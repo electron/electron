@@ -408,6 +408,16 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
     }
   }
   RemoveProcessPreferences(process_id);
+  if (delegate_) {
+    static_cast<api::App*>(delegate_)->RenderProcessDisconnected(host);
+  }
+}
+
+void AtomBrowserClient::RenderProcessReady(
+    content::RenderProcessHost* host) {
+  if (delegate_) {
+    static_cast<api::App*>(delegate_)->RenderProcessReady(host);
+  }
 }
 
 }  // namespace atom

@@ -109,6 +109,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
+  void RenderProcessReady(content::RenderProcessHost* host) override;
 
  private:
   bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,

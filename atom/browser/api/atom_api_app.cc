@@ -29,12 +29,14 @@
 #include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
+#include "base/sys_info.h"
 #include "brightray/browser/brightray_paths.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_child_process_host.h"
+#include "content/public/browser/child_process_data.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_frame_host.h"
@@ -505,6 +507,19 @@ App::App(v8::Isolate* isolate) {
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
+  content::BrowserChildProcessObserver::Add(this);
+  int pid = 0;
+  #if defined(OS_WIN)
+    pid = GetCurrentProcessId();
+  #elif defined(OS_POSIX)
+    pid = getpid();
+  #endif
+  std::unique_ptr<atom::ProcessMetric> process_metric(
+              new atom::ProcessMetric(
+                      "Browser",
+                      pid,
+                      base::ProcessMetrics::CreateCurrentProcessMetrics()));
+  app_metrics_[pid] = std::move(process_metric);
   Init(isolate);
 }
 
@@ -513,6 +528,7 @@ App::~App() {
       nullptr);
   Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
+  content::BrowserChildProcessObserver::Remove(this);
 }
 
 void App::OnBeforeQuit(bool* prevent_default) {
@@ -664,6 +680,58 @@ void App::SelectClientCertificate(
 void App::OnGpuProcessCrashed(base::TerminationStatus status) {
   Emit("gpu-process-crashed",
     status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
+}
+
+void App::BrowserChildProcessLaunchedAndConnected(
+    const content::ChildProcessData& data) {
+  this->ChildProcessLaunched(
+    data.process_type,
+    base::GetProcId(data.handle));
+}
+
+void App::BrowserChildProcessHostDisconnected(
+    const content::ChildProcessData& data) {
+  this->ChildProcessDisconnected(
+    base::GetProcId(data.handle));
+}
+
+void App::RenderProcessReady(
+    content::RenderProcessHost* host) {
+  this->ChildProcessLaunched(
+    content::PROCESS_TYPE_RENDERER,
+    base::GetProcId(host->GetHandle()));
+}
+
+void App::RenderProcessDisconnected(
+    content::RenderProcessHost* host) {
+  this->ChildProcessDisconnected(
+    base::GetProcId(host->GetHandle()));
+}
+
+void App::ChildProcessLaunched(
+    int process_type,
+    base::ProcessId pid) {
+  auto process = base::Process::OpenWithExtraPrivileges(pid);
+
+#if defined(OS_MACOSX)
+    std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateProcessMetrics(
+        process.Handle(), content::BrowserChildProcessHost::GetPortProvider()));
+#else
+    std::unique_ptr<base::ProcessMetrics> metrics(
+      base::ProcessMetrics::CreateProcessMetrics(process.Handle()));
+#endif
+  std::unique_ptr<atom::ProcessMetric> process_metric(
+              new atom::ProcessMetric(
+                      content::GetProcessTypeNameInEnglish(process_type),
+                      pid,
+                      std::move(metrics)));
+  app_metrics_[pid] = std::move(process_metric);
+}
+
+void App::ChildProcessDisconnected(
+    base::ProcessId pid) {
+  app_metrics_.erase(pid);
 }
 
 base::FilePath App::GetAppPath() const {
@@ -923,42 +991,40 @@ void App::GetFileIcon(const base::FilePath& path,
   }
 }
 
-std::vector<mate::Dictionary> App::GetAppMemoryInfo(v8::Isolate* isolate) {
-  AppIdProcessIterator process_iterator;
-  auto process_entry = process_iterator.NextProcessEntry();
+std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
   std::vector<mate::Dictionary> result;
+  int processor_count = base::SysInfo::NumberOfProcessors();
 
-  while (process_entry != nullptr) {
-    int64_t pid = process_entry->pid();
-    auto process = base::Process::OpenWithExtraPrivileges(pid);
-
-#if defined(OS_MACOSX)
-    std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateProcessMetrics(
-        process.Handle(), content::BrowserChildProcessHost::GetPortProvider()));
-#else
-    std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateProcessMetrics(process.Handle()));
-#endif
-
+  for (const auto& process_metric : app_metrics_) {
     mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
+    mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
 
     memory_dict.Set("workingSetSize",
-            static_cast<double>(metrics->GetWorkingSetSize() >> 10));
+            static_cast<double>(
+              process_metric.second->metrics->GetWorkingSetSize() >> 10));
     memory_dict.Set("peakWorkingSetSize",
-            static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
+            static_cast<double>(
+              process_metric.second->metrics->GetPeakWorkingSetSize() >> 10));
 
     size_t private_bytes, shared_bytes;
-    if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
+    if (process_metric.second->metrics->GetMemoryBytes(
+                  &private_bytes,
+                  &shared_bytes)) {
       memory_dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
       memory_dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
     }
 
     pid_dict.Set("memory", memory_dict);
-    pid_dict.Set("pid", pid);
+    cpu_dict.Set("percentCPUUsage",
+        process_metric.second->metrics->GetPlatformIndependentCPUUsage()
+        / processor_count);
+    cpu_dict.Set("idleWakeupsPerSecond",
+        process_metric.second->metrics->GetIdleWakeupsPerSecond());
+    pid_dict.Set("cpu", cpu_dict);
+    pid_dict.Set("pid", process_metric.second->pid);
+    pid_dict.Set("type", process_metric.second->type);
     result.push_back(pid_dict);
-    process_entry = process_iterator.NextProcessEntry();
   }
 
   return result;
@@ -1036,7 +1102,9 @@ void App::BuildPrototype(
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
       .SetMethod("getFileIcon", &App::GetFileIcon)
-      .SetMethod("getAppMemoryInfo", &App::GetAppMemoryInfo);
+      // TODO(juturu): Deprecate getAppMemoryInfo.
+      .SetMethod("getAppMemoryInfo", &App::GetAppMetrics)
+      .SetMethod("getAppMetrics", &App::GetAppMetrics);
 }
 
 }  // namespace api

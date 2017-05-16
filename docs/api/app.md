@@ -762,9 +762,13 @@ Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
 
-### `app.getAppMemoryInfo()`
+### `app.getAppMemoryInfo()` _Deprecate_
 
-Returns [ProcessMemoryInfo[]](structures/process-memory-info.md):  Array of `ProcessMemoryInfo` objects that correspond to memory usage statistics of all the processes associated with the app.
+Returns [ProcessMetric[]](structures/process-metric.md):  Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
+
+### `app.getAppMetrics()`
+
+Returns [ProcessMetric[]](structures/process-metric.md):  Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
 
 ### `app.setBadgeCount(count)` _Linux_ _macOS_
 
