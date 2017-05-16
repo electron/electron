@@ -101,12 +101,8 @@ std::string OpenURL(NSURL* ns_url, bool activate) {
 }  // namespace
 
 namespace platform_util {
-
-bool ShowItemInFolder(const base::FilePath& path) {
-  // The API only takes absolute path.
-  base::FilePath full_path =
-      path.IsAbsolute() ? path : base::MakeAbsoluteFilePath(path);
-
+  
+void ShowItemInFolder(const base::FilePath& full_path) {
   DCHECK([NSThread isMainThread]);
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   if (!path_string || ![[NSWorkspace sharedWorkspace] selectFile:path_string
@@ -253,5 +249,92 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
 void Beep() {
   NSBeep();
 }
+
+#if defined MAS_BUILD
+void SetProcessTitleActivityMonitor(const std::string& name) {
+  // NB: Can't be implemented with public APIs
+}
+#else
+void SetProcessTitleActivityMonitor(const std::string& name) {
+  if (name.length() < 1) {
+    NOTREACHED() << "SetProcessTitleActivityMonitor given bad name.";
+    return;
+  }
+
+  CFStringRef process_name = base::SysUTF8ToCFStringRef(name);
+
+  // Private CFType used in these LaunchServices calls.
+  typedef CFTypeRef PrivateLSASN;
+  typedef PrivateLSASN (*LSGetCurrentApplicationASNType)();
+  typedef OSStatus (*LSSetApplicationInformationItemType)(int, PrivateLSASN,
+                                                          CFStringRef,
+                                                          CFStringRef,
+                                                          CFDictionaryRef*);
+
+  static LSGetCurrentApplicationASNType ls_get_current_application_asn_func =
+      NULL;
+  static LSSetApplicationInformationItemType
+      ls_set_application_information_item_func = NULL;
+  static CFStringRef ls_display_name_key = NULL;
+
+  static bool did_symbol_lookup = false;
+  if (!did_symbol_lookup) {
+    did_symbol_lookup = true;
+    CFBundleRef launch_services_bundle =
+        CFBundleGetBundleWithIdentifier(CFSTR("com.apple.LaunchServices"));
+    if (!launch_services_bundle) {
+      LOG(ERROR) << "Failed to look up LaunchServices bundle";
+      return;
+    }
+
+    ls_get_current_application_asn_func =
+        reinterpret_cast<LSGetCurrentApplicationASNType>(
+            CFBundleGetFunctionPointerForName(
+                launch_services_bundle, CFSTR("_LSGetCurrentApplicationASN")));
+    if (!ls_get_current_application_asn_func)
+      LOG(ERROR) << "Could not find _LSGetCurrentApplicationASN";
+
+    ls_set_application_information_item_func =
+        reinterpret_cast<LSSetApplicationInformationItemType>(
+            CFBundleGetFunctionPointerForName(
+                launch_services_bundle,
+                CFSTR("_LSSetApplicationInformationItem")));
+    if (!ls_set_application_information_item_func)
+      LOG(ERROR) << "Could not find _LSSetApplicationInformationItem";
+
+    CFStringRef* key_pointer = reinterpret_cast<CFStringRef*>(
+        CFBundleGetDataPointerForName(launch_services_bundle,
+                                      CFSTR("_kLSDisplayNameKey")));
+    ls_display_name_key = key_pointer ? *key_pointer : NULL;
+    if (!ls_display_name_key)
+      LOG(ERROR) << "Could not find _kLSDisplayNameKey";
+
+    // Internally, this call relies on the Mach ports that are started up by the
+    // Carbon Process Manager.  In debug builds this usually happens due to how
+    // the logging layers are started up; but in release, it isn't started in as
+    // much of a defined order.  So if the symbols had to be loaded, go ahead
+    // and force a call to make sure the manager has been initialized and hence
+    // the ports are opened.
+    ProcessSerialNumber psn;
+    GetCurrentProcess(&psn);
+  }
+  if (!ls_get_current_application_asn_func ||
+      !ls_set_application_information_item_func ||
+      !ls_display_name_key) {
+    return;
+  }
+
+  PrivateLSASN asn = ls_get_current_application_asn_func();
+
+  // Constant used by WebKit; what exactly it means is unknown.
+  const int magic_session_constant = -2;
+  OSErr err =
+      ls_set_application_information_item_func(magic_session_constant, asn,
+                                               ls_display_name_key,
+                                               process_name,
+                                               NULL /* optional out param */);
+  LOG_IF(ERROR, err) << "Call to set process name failed, err " << err;
+}
+#endif
 
 }  // namespace platform_util

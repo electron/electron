@@ -57,6 +57,8 @@ bool MoveItemToTrash(const base::FilePath& full_path);
 
 void Beep();
 
+void SetProcessTitleActivityMonitor(const std::string& name);
+
 }  // namespace platform_util
 
 #endif  // ATOM_COMMON_PLATFORM_UTIL_H_

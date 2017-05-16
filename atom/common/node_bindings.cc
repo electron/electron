@@ -11,6 +11,9 @@
 #include "atom/common/api/locker.h"
 #include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
+#include "atom/common/platform_util.h"
+#include "base/command_line.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/environment.h"
@@ -190,9 +193,11 @@ node::Environment* NodeBindings::CreateEnvironment(
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.Set("type", process_type);
   process.Set("resourcesPath", resources_path);
+
   // Do not set DOM globals for renderer process.
   if (browser_env_ != BROWSER)
     process.Set("_noBrowserGlobals", resources_path);
+
   // The path to helper app.
   base::FilePath helper_exec_path;
   PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
@@ -203,6 +208,10 @@ node::Environment* NodeBindings::CreateEnvironment(
   if (browser_env_ == BROWSER &&
       base::CommandLine::ForCurrentProcess()->HasSwitch("debug-brk"))
     process.Set("_debugWaitConnect", true);
+
+  process.SetMethod(
+    "setProcessTitle",
+    &platform_util::SetProcessTitleActivityMonitor);
 
   return env;
 }
