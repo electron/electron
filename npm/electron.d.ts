@@ -1,4 +1,4 @@
-// Type definitions for Electron 1.6.10
+// Type definitions for Electron 1.7.1
 // Project: http://electron.atom.io/
 // Definitions by: The Electron Team <https://github.com/electron/electron>
 // Definitions: https://github.com/electron/electron-typescript-definitions
@@ -2199,16 +2199,16 @@ declare namespace Electron {
      * Shows a message box, it will block the process until the message box is closed.
      * It returns the index of the clicked button. The browserWindow argument allows
      * the dialog to attach itself to a parent window, making it modal. If a callback
-     * is passed, the API call will be asynchronous and the result will be passed via
-     * callback(response).
+     * is passed, the dialog will not block the process. The API call will be
+     * asynchronous and the result will be passed via callback(response).
      */
     showMessageBox(browserWindow: BrowserWindow, options: MessageBoxOptions, callback?: (response: number, checkboxChecked: boolean) => void): number;
     /**
      * Shows a message box, it will block the process until the message box is closed.
      * It returns the index of the clicked button. The browserWindow argument allows
      * the dialog to attach itself to a parent window, making it modal. If a callback
-     * is passed, the API call will be asynchronous and the result will be passed via
-     * callback(response).
+     * is passed, the dialog will not block the process. The API call will be
+     * asynchronous and the result will be passed via callback(response).
      */
     showMessageBox(options: MessageBoxOptions, callback?: (response: number, checkboxChecked: boolean) => void): number;
     /**
@@ -4628,6 +4628,15 @@ declare namespace Electron {
     removeListener(event: 'will-navigate', listener: (event: Event,
                                           url: string) => void): this;
     /**
+     * Emitted when a beforeunload event handler is attempting to cancel a page unload.
+     * Calling event.preventDefault() will ignore the beforeunload event handler and
+     * allow the page to be unloaded.
+     */
+    on(event: 'will-prevent-unload', listener: (event: Event) => void): this;
+    once(event: 'will-prevent-unload', listener: (event: Event) => void): this;
+    addListener(event: 'will-prevent-unload', listener: (event: Event) => void): this;
+    removeListener(event: 'will-prevent-unload', listener: (event: Event) => void): this;
+    /**
      * Adds the specified path to DevTools workspace. Must be used after DevTools
      * creation:
      */
@@ -4730,6 +4739,7 @@ declare namespace Electron {
      */
     findInPage(text: string, options?: FindInPageOptions): void;
     getFrameRate(): number;
+    getOSProcessId(): number;
     getTitle(): string;
     getURL(): string;
     getUserAgent(): string;
@@ -7648,6 +7658,10 @@ declare namespace Electron {
      * currently experimental and may change or be removed in future Electron releases.
      */
     contextIsolation?: boolean;
+    /**
+     * Whether to use native window.open(). Defaults to false.
+     */
+    nativeWindowOpen?: boolean;
   }
 
   interface DefaultFontFamily {
