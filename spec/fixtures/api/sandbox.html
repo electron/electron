@@ -13,13 +13,28 @@
       await timeout(100)
     }
   }
-  if (window.opener) {
+
+  const [,test] = window.location.href.split('?')
+  if (window.opener && test !== 'reload-remote') {
     window.callback = () => {
       opener.require('electron').ipcRenderer.send('answer', document.body.innerHTML)
     }
   } else {
-    const {ipcRenderer} = require('electron')
+    const {ipcRenderer, remote} = require('electron')
     const tests = {
+      'reload-remote-child': () => {
+        open(`${location.protocol}//${location.pathname}?reload-remote`)
+      },
+      'reload-remote': async () => {
+        const p = ipcRenderer.sendSync('get-remote-module-path')
+        const Hello = remote.require(p)
+        if (!ipcRenderer.sendSync('reloaded')) {
+          ipcRenderer.send('reload')
+          return
+        }
+        await invokeGc()
+        ipcRenderer.send('answer', new Hello().say())
+      },
       'allocate-memory': async () => {
         await invokeGc()
         const {privateBytes: bytesBeforeOpen} = process.getProcessMemoryInfo()
@@ -95,7 +110,6 @@
         popup.close()
     }, false)
 
-    let [,test] = window.location.href.split('?')
     if (tests.hasOwnProperty(test))
       tests[test]()
   }
