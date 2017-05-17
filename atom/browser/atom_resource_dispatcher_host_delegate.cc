@@ -125,8 +125,9 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     std::string* payload) {
   const content::ResourceRequestInfo* info =
       content::ResourceRequestInfo::ForRequest(request);
-  content::WebContents* web_contents = info->GetWebContentsGetterForRequest().Run();
-  if (mime_type == "application/pdf" && info->IsMainFrame() && 
+  content::WebContents* web_contents =
+      info->GetWebContentsGetterForRequest().Run();
+  if (mime_type == "application/pdf" && info->IsMainFrame() &&
       WebContentsPreferences::IsPluginsEnabled(web_contents)) {
     *origin = GURL(kPdfViewerUIOrigin);
     content::BrowserThread::PostTask(
