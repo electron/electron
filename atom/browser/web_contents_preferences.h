@@ -39,6 +39,7 @@ class WebContentsPreferences
 
   static bool IsSandboxed(content::WebContents* web_contents);
   static bool UsesNativeWindowOpen(content::WebContents* web_contents);
+  static bool IsPluginsEnabled(content::WebContents* web_contents);
 
   // Modify the WebPreferences according to |web_contents|'s preferences.
   static void OverrideWebkitPrefs(
