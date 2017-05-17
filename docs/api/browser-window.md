@@ -1,4 +1,4 @@
-# BrowserWindow
+©# BrowserWindow
 
 > Create and control browser windows.
 
@@ -308,11 +308,14 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       Console tab. **Note:** This option is currently experimental and may
       change or be removed in future Electron releases.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native `window.open()`. Defaults to `false`.
-    * `overrideWebViewSecurity` Boolean (optional) - Whether to enable [webview-tag](webview-tag.md)
-      ignoring the security restriction based on `nodeIntegration`. Enabling this option will
-      have security implication on creating `webview` with `nodeIntegration` disabled. To avoid the
-      security risk, listen to `will-attach-webview` event on [web-contents](web-contents.md) and
-      stop creating `webview` or removing preload scripts.
+    * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
+      Defaults to the value of the `nodeIntegration` option. **Note:** The
+      preload script to the `<webview>` will have node integration enabled
+      when it executed so you should ensure remote content is not able to create
+      a `<webview>` tag with a possibly malicious `preload` script. You can use
+      the `will-attach-webview` event on [web-contents](web-contents.md) to
+      strip away the `preload` script and to validate or alter the `<webview>`'s
+      initial settings.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

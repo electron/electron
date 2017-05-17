@@ -54,13 +54,13 @@ describe('<webview> tag', function () {
     w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
   })
 
-  it('is enabled when override is set', function (done) {
+  it('is enabled when the webviewTag option is enabled and the nodeIntegration option is disabled', function (done) {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
         nodeIntegration: false,
         preload: path.join(fixtures, 'module', 'preload-webview.js'),
-        overrideWebViewSecurity: true
+        webviewTag: true
       }
     })
     ipcMain.once('webview', function (event, type) {
