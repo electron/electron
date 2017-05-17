@@ -521,6 +521,12 @@ void Window::SetClosable(bool closable) {
 }
 
 bool Window::IsClosable() {
+  for (v8::Local<v8::Value> value : child_windows_.Values(isolate())) {
+    mate::Handle<Window> child;
+    if (mate::ConvertFromV8(isolate(), value, &child) &&
+      child->IsVisible() && child->IsModal())
+      return false;
+  }
   return window_->IsClosable();
 }
 

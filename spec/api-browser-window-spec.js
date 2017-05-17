@@ -1574,7 +1574,7 @@ describe('BrowserWindow module', function () {
       })
     })
 
-    describe('closable state', function () {
+    describe.only('closable state', function () {
       it('can be changed with closable option', function () {
         w.destroy()
         w = new BrowserWindow({show: false, closable: false})
@@ -1586,6 +1586,17 @@ describe('BrowserWindow module', function () {
         w.setClosable(false)
         assert.equal(w.isClosable(), false)
         w.setClosable(true)
+        assert.equal(w.isClosable(), true)
+      })
+
+      it('can be affected by child window', function () {
+        let c = new BrowserWindow({show: false, parent: w, modal: true})
+        assert.equal(w.isClosable(), true)
+        c.show()
+        assert.equal(w.isClosable(), false)
+
+        c.destroy()
+        c = new BrowserWindow({show: true, parent: w, modal: false})
         assert.equal(w.isClosable(), true)
       })
     })
