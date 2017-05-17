@@ -1140,6 +1140,18 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/pages/c.html'
       document.body.appendChild(webview)
     })
+
+    it('supports removing the preload script', (done) => {
+      ipcRenderer.send('disable-preload-on-next-will-attach-webview')
+      webview.addEventListener('console-message', (event) => {
+        assert.equal(event.message, 'undefined')
+        done()
+      })
+      webview.setAttribute('nodeintegration', 'yes')
+      webview.setAttribute('preload', path.join(fixtures, 'module', 'preload-set-global.js'))
+      webview.src = 'file://' + fixtures + '/pages/a.html'
+      document.body.appendChild(webview)
+    })
   })
 
   it('loads devtools extensions registered on the parent window', function (done) {
