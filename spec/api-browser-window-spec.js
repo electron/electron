@@ -2338,6 +2338,8 @@ describe('BrowserWindow module', function () {
     beforeEach(function () {
       if (w != null) w.destroy()
       w = new BrowserWindow({
+        width: 100,
+        height: 100,
         show: false,
         webPreferences: {
           backgroundThrottling: false,
@@ -2346,9 +2348,12 @@ describe('BrowserWindow module', function () {
       })
     })
 
-    it('creates offscreen window', function (done) {
-      w.webContents.once('paint', function (event, rect, data, size) {
+    it('creates offscreen window with correct size', function (done) {
+      w.webContents.once('paint', function (event, rect, data) {
         assert.notEqual(data.length, 0)
+        let size = data.getSize()
+        assertWithinDelta(size.width, 100, 2, 'width')
+        assertWithinDelta(size.height, 100, 2, 'height')
         done()
       })
       w.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
@@ -2369,7 +2374,7 @@ describe('BrowserWindow module', function () {
 
     describe('window.webContents.isPainting()', function () {
       it('returns whether is currently painting', function (done) {
-        w.webContents.once('paint', function (event, rect, data, size) {
+        w.webContents.once('paint', function (event, rect, data) {
           assert.equal(w.webContents.isPainting(), true)
           done()
         })
@@ -2393,7 +2398,7 @@ describe('BrowserWindow module', function () {
         w.webContents.on('dom-ready', function () {
           w.webContents.stopPainting()
           w.webContents.startPainting()
-          w.webContents.once('paint', function (event, rect, data, size) {
+          w.webContents.once('paint', function (event, rect, data) {
             assert.equal(w.webContents.isPainting(), true)
             done()
           })
@@ -2404,7 +2409,7 @@ describe('BrowserWindow module', function () {
 
     describe('window.webContents.getFrameRate()', function () {
       it('has default frame rate', function (done) {
-        w.webContents.once('paint', function (event, rect, data, size) {
+        w.webContents.once('paint', function (event, rect, data) {
           assert.equal(w.webContents.getFrameRate(), 60)
           done()
         })
@@ -2416,7 +2421,7 @@ describe('BrowserWindow module', function () {
       it('sets custom frame rate', function (done) {
         w.webContents.on('dom-ready', function () {
           w.webContents.setFrameRate(30)
-          w.webContents.once('paint', function (event, rect, data, size) {
+          w.webContents.once('paint', function (event, rect, data) {
             assert.equal(w.webContents.getFrameRate(), 30)
             done()
           })
