@@ -6,6 +6,7 @@
 
 #include "atom/browser/login_handler.h"
 #include "atom/browser/web_contents_permission_helper.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/platform_util.h"
 #include "base/strings/stringprintf.h"
@@ -124,7 +125,9 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     std::string* payload) {
   const content::ResourceRequestInfo* info =
       content::ResourceRequestInfo::ForRequest(request);
-  if (mime_type == "application/pdf" && info->IsMainFrame()) {
+  content::WebContents* web_contents = info->GetWebContentsGetterForRequest().Run();
+  if (mime_type == "application/pdf" && info->IsMainFrame() && 
+      WebContentsPreferences::IsPluginsEnabled(web_contents)) {
     *origin = GURL(kPdfViewerUIOrigin);
     content::BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,

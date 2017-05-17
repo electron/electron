@@ -212,6 +212,37 @@ bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
   return sandboxed;
 }
 
+bool WebContentsPreferences::UsesNativeWindowOpen(
+    content::WebContents* web_contents) {
+  WebContentsPreferences* self;
+  if (!web_contents)
+    return false;
+
+  self = FromWebContents(web_contents);
+  if (!self)
+    return false;
+
+  base::DictionaryValue& web_preferences = self->web_preferences_;
+  bool use = false;
+  web_preferences.GetBoolean("nativeWindowOpen", &use);
+  return use;
+}
+
+bool WebContentsPreferences::IsPluginsEnabled(content::WebContents* web_contents) {
+  WebContentsPreferences* self;
+  if (!web_contents)
+    return false;
+
+  self = FromWebContents(web_contents);
+  if (!self)
+    return false;
+
+  base::DictionaryValue& web_preferences = self->web_preferences_;
+  bool plugins = false;
+  web_preferences.GetBoolean("plugins", &plugins);
+  return plugins;
+}
+
 // static
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebContents* web_contents, content::WebPreferences* prefs) {
