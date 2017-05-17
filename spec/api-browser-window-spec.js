@@ -1161,7 +1161,6 @@ describe('BrowserWindow module', function () {
           }
         })
         w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?allocate-memory'))
-        w.webContents.openDevTools({mode: 'detach'})
         ipcMain.once('answer', function (event, {bytesBeforeOpen, bytesAfterOpen, bytesAfterClose}) {
           const memoryIncreaseByOpen = bytesAfterOpen - bytesBeforeOpen
           const memoryDecreaseByClose = bytesAfterOpen - bytesAfterClose
@@ -1170,6 +1169,73 @@ describe('BrowserWindow module', function () {
           // fixture, we can reasonably expect decrease to be at least 70% of
           // increase
           assert(memoryDecreaseByClose > memoryIncreaseByOpen * 0.7)
+          done()
+        })
+      })
+
+      // see #9387
+      it('properly manages remote object references after page reload', (done) => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            sandbox: true
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?reload-remote'))
+
+        ipcMain.on('get-remote-module-path', (event) => {
+          event.returnValue = path.join(fixtures, 'module', 'hello.js')
+        })
+
+        let reload = false
+        ipcMain.on('reloaded', (event) => {
+          event.returnValue = reload
+          reload = !reload
+        })
+
+        ipcMain.once('reload', (event) => {
+          event.sender.reload()
+        })
+
+        ipcMain.once('answer', (event, arg) => {
+          ipcMain.removeAllListeners('reloaded')
+          ipcMain.removeAllListeners('get-remote-module-path')
+          assert.equal(arg, 'hi')
+          done()
+        })
+      })
+
+      it('properly manages remote object references after page reload in child window', (done) => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            sandbox: true
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?reload-remote-child'))
+
+        ipcMain.on('get-remote-module-path', (event) => {
+          event.returnValue = path.join(fixtures, 'module', 'hello-child.js')
+        })
+
+        let reload = false
+        ipcMain.on('reloaded', (event) => {
+          event.returnValue = reload
+          reload = !reload
+        })
+
+        ipcMain.once('reload', (event) => {
+          event.sender.reload()
+        })
+
+        ipcMain.once('answer', (event, arg) => {
+          ipcMain.removeAllListeners('reloaded')
+          ipcMain.removeAllListeners('get-remote-module-path')
+          assert.equal(arg, 'hi child window')
           done()
         })
       })
