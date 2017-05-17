@@ -228,7 +228,8 @@ bool WebContentsPreferences::UsesNativeWindowOpen(
   return use;
 }
 
-bool WebContentsPreferences::IsPluginsEnabled(content::WebContents* web_contents) {
+bool WebContentsPreferences::IsPluginsEnabled(
+    content::WebContents* web_contents) {
   WebContentsPreferences* self;
   if (!web_contents)
     return false;
