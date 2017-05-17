@@ -75,11 +75,12 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void PlatformDestroy();
 #endif
 
+  OffScreenRenderWidgetHostView* GetView() const;
+
   const bool transparent_;
   OnPaintCallback callback_;
 
   // Weak refs.
-  OffScreenRenderWidgetHostView* view_;
   content::WebContents* web_contents_;
 
 #if defined(OS_MACOSX)

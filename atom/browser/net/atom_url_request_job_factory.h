@@ -9,9 +9,9 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-#include "base/containers/scoped_ptr_hash_map.h"
 #include "net/url_request/url_request_job_factory.h"
 
 namespace atom {
@@ -64,7 +64,7 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   ProtocolHandlerMap protocol_handler_map_;
 
   // Map that stores the original protocols of schemes.
-  using OriginalProtocolsMap = base::ScopedPtrHashMap<
+  using OriginalProtocolsMap = std::unordered_map<
       std::string, std::unique_ptr<ProtocolHandler>>;
   // Can only be accessed in IO thread.
   OriginalProtocolsMap original_protocols_;

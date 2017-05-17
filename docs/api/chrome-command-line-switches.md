@@ -28,13 +28,17 @@ Disables the disk cache for HTTP requests.
 
 Disable HTTP/2 and SPDY/3.1 protocols.
 
-## --debug=`port` and --debug-brk=`port`
+## --inspect=`port` and --inspect-brk=`port`
 
 Debug-related flags, see the [Debugging the Main Process][debugging-main-process] guide for details.
 
 ## --remote-debugging-port=`port`
 
 Enables remote debugging over HTTP on the specified `port`.
+
+## --disk-cache-size=`size`
+
+Forces the maximum disk space to be used by the disk cache, in bytes.
 
 ## --js-flags=`flags`
 

@@ -10,8 +10,8 @@ from lib.util import electron_gyp, execute, rm_rf
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
-CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
-                            'download', 'libchromiumcontent', 'static_library')
+CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'download',
+                            'libchromiumcontent', 'static_library')
 
 
 def main(destination):

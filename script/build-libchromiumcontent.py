@@ -22,8 +22,8 @@ def main():
   # ./script/update -t x64 --defines=''
   # ./script/build --no_shared_library -t x64
   # ./script/create-dist -c static_library -t x64 --no_zip
-  script_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
-                            'libchromiumcontent', 'script')
+  script_dir = os.path.join(SOURCE_ROOT, 'vendor', 'libchromiumcontent',
+                            'script')
   bootstrap = os.path.join(script_dir, 'bootstrap')
   update = os.path.join(script_dir, 'update')
   build = os.path.join(script_dir, 'build')

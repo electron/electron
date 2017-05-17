@@ -20,8 +20,8 @@ ELECTRON_VERSION = get_electron_version()
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
-CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
-                            'download', 'libchromiumcontent', 'static_library')
+CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'download',
+                            'libchromiumcontent', 'static_library')
 
 PROJECT_NAME = electron_gyp()['project_name%']
 PRODUCT_NAME = electron_gyp()['product_name%']
@@ -152,7 +152,6 @@ def create_typescript_definitions():
   outfile = os.path.relpath(os.path.join(DIST_DIR, 'electron.d.ts'))
   execute(['electron-typescript-definitions', '--in={0}'.format(infile),
            '--out={0}'.format(outfile)], env=env)
-  execute(['tslint', outfile], env=env)
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:

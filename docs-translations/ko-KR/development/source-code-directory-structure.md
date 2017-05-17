@@ -67,7 +67,7 @@ Electron 저장소는 몇 가지 외부 벤더 의존성을 가지고 있으며 
 ```sh
 $ git status
 
-	modified:   vendor/brightray (new commits)
+	modified:   brightray (new commits)
 	modified:   vendor/node (new commits)
 ```
 

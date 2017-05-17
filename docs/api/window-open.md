@@ -45,3 +45,40 @@ has to be a field of `BrowserWindow`'s options.
 
 Sends a message to the parent window with the specified origin or `*` for no
 origin preference.
+
+### Use Native `window.open()`
+
+If you want to use native `window.open()` implementation, pass `useNativeWindowOpen: true` in `webPreferences` option.
+Native `window.open()` allows synchronous access to opened windows so it is convenient choice if you need to open a dialog or a preferences window.
+
+The creation of the `BrowserWindow` is customizable in `WebContents`'s `new-window` event.
+
+```javascript
+// main process
+const mainWindow = new BrowserWindow({
+  width: 800,
+  height: 600,
+  webPreferences: {
+    nativeWindowOpen: true
+  }
+})
+mainWindow.webContents.on('new-window', (event, url, frameName, disposition, options, additionalFeatures) => {
+  if (frameName === 'modal') {
+    // open window as modal
+    event.preventDefault()
+    Object.assign(options, {
+      modal: true,
+      parent: mainWindow,
+      width: 100,
+      height: 100
+    })
+    event.newGuest = new BrowserWindow(options)
+  }
+})
+```
+
+```javascript
+// renderer process (mainWindow)
+let modal = window.open('', 'modal')
+modal.document.write('<h1>Hello</h1>')
+```

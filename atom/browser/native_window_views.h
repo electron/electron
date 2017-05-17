@@ -106,6 +106,7 @@ class NativeWindowViews : public NativeWindow,
   void SetMenu(AtomMenuModel* menu_model) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
+  gfx::NativeView GetNativeView() override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;

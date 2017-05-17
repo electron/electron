@@ -80,23 +80,22 @@ class AtomBrowserClient : public brightray::BrowserClient,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
   void ResourceDispatcherHostCreated() override;
   bool CanCreateWindow(
+      int opener_render_process_id,
+      int opener_render_frame_id,
       const GURL& opener_url,
       const GURL& opener_top_level_frame_url,
       const GURL& source_origin,
-      WindowContainerType container_type,
+      content::mojom::WindowContainerType container_type,
       const GURL& target_url,
       const content::Referrer& referrer,
       const std::string& frame_name,
       WindowOpenDisposition disposition,
-      const blink::WebWindowFeatures& features,
+      const blink::mojom::WindowFeatures& features,
       const std::vector<std::string>& additional_features,
       const scoped_refptr<content::ResourceRequestBodyImpl>& body,
       bool user_gesture,
       bool opener_suppressed,
       content::ResourceContext* context,
-      int render_process_id,
-      int opener_render_view_id,
-      int opener_render_frame_id,
       bool* no_javascript_access) override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* schemes) override;
@@ -112,19 +111,24 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
 
  private:
-  bool ShouldCreateNewSiteInstance(content::BrowserContext* browser_context,
+  bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,
+                                   content::BrowserContext* browser_context,
                                    content::SiteInstance* current_instance,
                                    const GURL& dest_url);
-  // Add/remove a process id to `sandboxed_renderers_`.
-  void AddSandboxedRendererId(int process_id);
-  void RemoveSandboxedRendererId(int process_id);
+  struct ProcessPreferences {
+    bool sandbox;
+    bool native_window_open;
+  };
+  void AddProcessPreferences(int process_id, ProcessPreferences prefs);
+  void RemoveProcessPreferences(int process_id);
   bool IsRendererSandboxed(int process_id);
+  bool RendererUsesNativeWindowOpen(int process_id);
 
   // pending_render_process => current_render_process.
   std::map<int, int> pending_processes_;
-  // Set that contains the process ids of all sandboxed renderers
-  std::set<int> sandboxed_renderers_;
-  base::Lock sandboxed_renderers_lock_;
+
+  std::map<int, ProcessPreferences> process_preferences_;
+  base::Lock process_preferences_lock_;
 
   std::unique_ptr<AtomResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;

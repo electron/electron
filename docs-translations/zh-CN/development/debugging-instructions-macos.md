@@ -22,7 +22,7 @@ Current executable set to './out/D/Electron.app' (x86_64).
 
 LLDB是一个强大的工具，支持进行多种策略的代码检查。 在这做一个基本的介绍，让我们假设你从 JavaScript 调用一个不正常的命令 - 所以你想打断该命令的 C++ 对应的 Electron 源。
 
-相关的代码文件可以在 `./atom/` 以及 Brightray 中找到, 找到 `./vendor/brightray/browser` 和 `./vendor/brightray/common`. 如果是内核，你也可以直接调试 Chromium，这显然在 `chromium_src` 中。
+相关的代码文件可以在 `./atom/` 以及 Brightray 中找到, 找到 `./brightray/browser` 和 `./brightray/common`. 如果是内核，你也可以直接调试 Chromium，这显然在 `chromium_src` 中。
 
 让我们假设你想调试 `app.setName()`, 在 `browser.cc` 中定义为 `Browser::SetName()`. 使用 `breakpoint` 命令进行断点，指定文件和断点位置::
 

@@ -8,16 +8,45 @@
 
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/content_switches.h"
-#include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
+
+#if defined(OS_WIN)
+#include "atom/node/osfhandle.h"
+#endif
 
 #include "atom/common/node_includes.h"
 
 namespace atom {
 
+void* ArrayBufferAllocator::Allocate(size_t length) {
+#if defined(OS_WIN)
+  return node::ArrayBufferCalloc(length);
+#else
+  return calloc(1, length);
+#endif
+}
+
+void* ArrayBufferAllocator::AllocateUninitialized(size_t length) {
+#if defined(OS_WIN)
+  return node::ArrayBufferMalloc(length);
+#else
+  return malloc(length);
+#endif
+}
+
+void ArrayBufferAllocator::Free(void* data, size_t length) {
+#if defined(OS_WIN)
+  node::ArrayBufferFree(data, length);
+#else
+  free(data);
+#endif
+}
+
 JavascriptEnvironment::JavascriptEnvironment()
     : initialized_(Initialize()),
+      isolate_holder_(base::ThreadTaskRunnerHandle::Get()),
       isolate_(isolate_holder_.isolate()),
       isolate_scope_(isolate_),
       locker_(isolate_),
@@ -44,7 +73,7 @@ bool JavascriptEnvironment::Initialize() {
 
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::IsolateHolder::kStableV8Extras,
-                                 gin::ArrayBufferAllocator::SharedInstance());
+                                 &allocator_);
   return true;
 }
 

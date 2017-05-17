@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '1.6.8',
+    'version%': '1.7.1',
     'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
   },
   'includes': [
@@ -81,7 +81,7 @@
               # is marked for no PIE (ASLR).
               'postbuild_name': 'Make More Helpers',
               'action': [
-                'vendor/brightray/tools/mac/make_more_helpers.sh',
+                'tools/mac/make_more_helpers.sh',
                 'Frameworks',
                 '<(product_name)',
               ],
@@ -220,13 +220,14 @@
       'dependencies': [
         'atom_js2c',
         'vendor/pdf_viewer/pdf_viewer.gyp:pdf_viewer',
-        'vendor/brightray/brightray.gyp:brightray',
+        'brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node',
       ],
       'defines': [
         # We need to access internal implementations of Node.
         'NODE_WANT_INTERNALS=1',
         'NODE_SHARED_MODE',
+        'HAVE_INSPECTOR=1',
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
@@ -237,9 +238,6 @@
         'USING_V8_SHARED',
         'USING_V8_PLATFORM_SHARED',
         'USING_V8_BASE_SHARED',
-        # Remove this after enable_plugins becomes a feature flag.
-        'ENABLE_PLUGINS',
-        'USE_PROPRIETARY_CODECS',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -247,7 +245,7 @@
       'include_dirs': [
         '.',
         'chromium_src',
-        'vendor/brightray',
+        'brightray',
         'vendor/native_mate',
         # Include atom_natives.h.
         '<(SHARED_INTERMEDIATE_DIR)',
@@ -274,7 +272,7 @@
         ],
       },
       'export_dependent_settings': [
-        'vendor/brightray/brightray.gyp:brightray',
+        'brightray/brightray.gyp:brightray',
       ],
       'conditions': [
         ['libchromiumcontent_component', {

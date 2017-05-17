@@ -20,7 +20,6 @@ using brightray::DevToolsFileSystemIndexer;
 namespace atom {
 
 class AtomBrowserContext;
-class AtomJavaScriptDialogManager;
 class NativeWindow;
 class WebDialogHelper;
 
@@ -62,8 +61,6 @@ class CommonWebContentsDelegate
       content::WebContents* source,
       const content::OpenURLParams& params) override;
   bool CanOverscrollContent() const override;
-  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
-      content::WebContents* source) override;
   content::ColorChooser* OpenColorChooser(
       content::WebContents* web_contents,
       SkColor color,
@@ -147,7 +144,6 @@ class CommonWebContentsDelegate
   bool native_fullscreen_;
 
   std::unique_ptr<WebDialogHelper> web_dialog_helper_;
-  std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
 
   // Make sure BrowserContext is alwasys destroyed after WebContents.

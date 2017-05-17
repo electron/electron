@@ -33,9 +33,8 @@ void CreateResponseHeadersDictionary(const net::HttpResponseHeaders* headers,
   while (headers->EnumerateHeaderLines(&iter, &header_name, &header_value)) {
     base::Value* existing_value = nullptr;
     if (result->Get(header_name, &existing_value)) {
-      base::StringValue* existing_string_value =
-          static_cast<base::StringValue*>(existing_value);
-      existing_string_value->GetString()->append(", ").append(header_value);
+      std::string src = existing_value->GetString();
+      result->SetString(header_name, src + ", " + header_value);
     } else {
       result->SetString(header_name, header_value);
     }
@@ -131,7 +130,7 @@ void PdfViewerHandler::GetDefaultZoom(const base::ListValue* args) {
   double zoom_level = host_zoom_map->GetDefaultZoomLevel();
   ResolveJavascriptCallback(
       *callback_id,
-      base::FundamentalValue(content::ZoomLevelToZoomFactor(zoom_level)));
+      base::Value(content::ZoomLevelToZoomFactor(zoom_level)));
 }
 
 void PdfViewerHandler::GetInitialZoom(const base::ListValue* args) {
@@ -145,7 +144,7 @@ void PdfViewerHandler::GetInitialZoom(const base::ListValue* args) {
       content::HostZoomMap::GetZoomLevel(web_ui()->GetWebContents());
   ResolveJavascriptCallback(
       *callback_id,
-      base::FundamentalValue(content::ZoomLevelToZoomFactor(zoom_level)));
+      base::Value(content::ZoomLevelToZoomFactor(zoom_level)));
 }
 
 void PdfViewerHandler::SetZoom(const base::ListValue* args) {
@@ -159,7 +158,7 @@ void PdfViewerHandler::SetZoom(const base::ListValue* args) {
 
   content::HostZoomMap::SetZoomLevel(web_ui()->GetWebContents(),
                                      zoom_level);
-  ResolveJavascriptCallback(*callback_id, base::FundamentalValue(zoom_level));
+  ResolveJavascriptCallback(*callback_id, base::Value(zoom_level));
 }
 
 void PdfViewerHandler::GetStrings(const base::ListValue* args) {
@@ -204,7 +203,7 @@ void PdfViewerHandler::OnZoomLevelChanged(
   if (change.host == kPdfViewerUIHost) {
     CallJavascriptFunction(
         "cr.webUIListenerCallback", base::StringValue("onZoomLevelChanged"),
-        base::FundamentalValue(
+        base::Value(
             content::ZoomLevelToZoomFactor(change.zoom_level)));
   }
 }

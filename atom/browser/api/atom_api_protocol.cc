@@ -50,20 +50,25 @@ void RegisterStandardSchemes(const std::vector<std::string>& schemes,
                              mate::Arguments* args) {
   g_standard_schemes = schemes;
 
+  mate::Dictionary opts;
+  bool secure = false;
+  args->GetNext(&opts) && opts.Get("secure", &secure);
+
+  // Dynamically register the schemes.
   auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
   for (const std::string& scheme : schemes) {
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    if (secure) {
+      url::AddSecureScheme(scheme.c_str());
+    }
     policy->RegisterWebSafeScheme(scheme);
   }
 
-  // add switches to register as standard
+  // Add the schemes to command line switches, so child processes can also
+  // register them.
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       atom::switches::kStandardSchemes, base::JoinString(schemes, ","));
-
-  mate::Dictionary opts;
-  bool secure = false;
-  if (args->GetNext(&opts) && opts.Get("secure", &secure) && secure) {
-    // add switches to register as secure
+  if (secure) {
     base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       atom::switches::kSecureSchemes, base::JoinString(schemes, ","));
   }

@@ -41,6 +41,7 @@ namespace atom {
 
 struct SetSizeParams;
 class AtomBrowserContext;
+class AtomJavaScriptDialogManager;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
 
@@ -82,6 +83,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   int64_t GetID() const;
   int GetProcessID() const;
+  base::ProcessId GetOSProcessID() const;
   Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
@@ -183,6 +185,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
   void Invalidate();
+  gfx::Size GetSizeForNewRenderView(content::WebContents*) const override;
 
   // Methods for zoom handling.
   void SetZoomLevel(double level);
@@ -296,6 +299,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   std::unique_ptr<content::BluetoothChooser> RunBluetoothChooser(
       content::RenderFrameHost* frame,
       const content::BluetoothChooser::EventHandler& handler) override;
+  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
+      content::WebContents* source) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -340,6 +345,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Observe(int type,
                const content::NotificationSource& source,
                const content::NotificationDetails& details) override;
+  void BeforeUnloadDialogCancelled() override;
 
   // brightray::InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
@@ -387,6 +393,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
 
+  std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
 
   // The host webcontents that may contain this webcontents.

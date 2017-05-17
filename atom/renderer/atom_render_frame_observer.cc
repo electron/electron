@@ -24,7 +24,6 @@ void AtomRenderFrameObserver::DidClearWindowObject() {
 
 void AtomRenderFrameObserver::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
-    int extension_group,
     int world_id) {
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
@@ -62,8 +61,7 @@ void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");
-  frame->executeScriptInIsolatedWorld(
-      World::ISOLATED_WORLD, &source, 1, ExtensionGroup::MAIN_GROUP);
+  frame->executeScriptInIsolatedWorld(World::ISOLATED_WORLD, &source, 1);
 }
 
 bool AtomRenderFrameObserver::IsMainWorld(int world_id) {

@@ -42,7 +42,7 @@ $ ./out/D/electron.exe ~/my-electron-app/
 중인 프로세스와 중단점을 자동으로 찾아냅니다.
 
 관련된 코드 파일들은 `./atom/`에서 찾을 수 있으며 또한 Brightray 안
-`./vendor/brightray/browser`와 `./vendor/brightray/common`에서도 찾을 수 있습니다.
+`./brightray/browser`와 `./brightray/common`에서도 찾을 수 있습니다.
 만약 하드코어를 좋아한다면, Chromium을 직접 디버깅할 수도 있습니다. 확실히
 `chromium_src` 안에서 찾을 수 있습니다.
 

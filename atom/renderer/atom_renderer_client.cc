@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "atom_natives.h"  // NOLINT: This file is generated with js2c
-
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
@@ -27,6 +25,7 @@
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 
 #include "atom/common/node_includes.h"
+#include "atom_natives.h"  // NOLINT: This file is generated with js2c
 
 namespace atom {
 
@@ -172,8 +171,7 @@ void AtomRendererClient::WillDestroyWorkerContextOnWorkerThread(
 v8::Local<v8::Context> AtomRendererClient::GetContext(
     blink::WebFrame* frame, v8::Isolate* isolate) {
   if (isolated_world())
-    return frame->worldScriptContext(
-        isolate, World::ISOLATED_WORLD, ExtensionGroup::MAIN_GROUP);
+    return frame->worldScriptContext(isolate, World::ISOLATED_WORLD);
   else
     return frame->mainWorldScriptContext();
 }
@@ -206,6 +204,8 @@ void AtomRendererClient::SetupMainWorldOverrides(
     dict.Set(options::kOpenerID,
              command_line->GetSwitchValueASCII(switches::kOpenerID));
   dict.Set("hiddenPage", command_line->HasSwitch(switches::kHiddenPage));
+  dict.Set("nativeWindowOpen",
+           command_line->HasSwitch(switches::kNativeWindowOpen));
 
   v8::Local<v8::Value> args[] = { binding };
   ignore_result(func->Call(context, v8::Null(isolate), 1, args));
