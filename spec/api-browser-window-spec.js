@@ -1574,7 +1574,7 @@ describe('BrowserWindow module', function () {
       })
     })
 
-    describe.only('closable state', function () {
+    describe('closable state', function () {
       it('can be changed with closable option', function () {
         w.destroy()
         w = new BrowserWindow({show: false, closable: false})
