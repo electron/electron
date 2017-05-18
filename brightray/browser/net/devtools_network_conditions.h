@@ -5,11 +5,7 @@
 #ifndef BROWSER_DEVTOOLS_NETWORK_CONDITIONS_H_
 #define BROWSER_DEVTOOLS_NETWORK_CONDITIONS_H_
 
-#include <string>
-#include <vector>
-
 #include "base/macros.h"
-#include "url/gurl.h"
 
 namespace brightray {
 

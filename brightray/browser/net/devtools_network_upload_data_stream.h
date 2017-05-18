@@ -10,7 +10,6 @@
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "browser/net/devtools_network_interceptor.h"
-#include "net/base/completion_callback.h"
 #include "net/base/upload_data_stream.h"
 
 namespace brightray {

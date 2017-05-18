@@ -5,8 +5,6 @@
 #ifndef BROWSER_BRIGHTRAY_PATHS_H_
 #define BROWSER_BRIGHTRAY_PATHS_H_
 
-#include "base/compiler_specific.h"
-
 #if defined(OS_WIN)
 #include "base/base_paths_win.h"
 #elif defined(OS_MACOSX)

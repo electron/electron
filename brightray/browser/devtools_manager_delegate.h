@@ -7,7 +7,6 @@
 
 #include "base/macros.h"
 #include "base/compiler_specific.h"
-#include "content/browser/devtools/devtools_http_handler.h"
 #include "content/public/browser/devtools_manager_delegate.h"
 
 namespace brightray {

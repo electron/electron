@@ -5,10 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
 #define BRIGHTRAY_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
 
-#include "base/callback.h"
 #include "base/memory/singleton.h"
 #include "content/public/browser/media_observer.h"
-#include "content/public/browser/web_contents_delegate.h"
 #include "content/public/common/media_stream_request.h"
 
 namespace brightray {

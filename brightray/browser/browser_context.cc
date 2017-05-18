@@ -9,7 +9,6 @@
 #include "browser/browser_client.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
-#include "browser/permission_manager.h"
 #include "browser/special_storage_policy.h"
 #include "browser/zoom_level_delegate.h"
 #include "common/application_info.h"

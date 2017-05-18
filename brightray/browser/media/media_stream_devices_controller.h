@@ -5,8 +5,6 @@
 #ifndef BRIGHTRAY_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
 #define BRIGHTRAY_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
 
-#include <string>
-
 #include "content/public/browser/web_contents_delegate.h"
 
 namespace brightray {

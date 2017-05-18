@@ -6,7 +6,7 @@
 #define BRIGHTRAY_BROWSER_BROWSER_MAIN_PARTS_H_
 
 #include "base/compiler_specific.h"
-#include "base/memory/ref_counted.h"
+#include "base/macros.h"
 #include "content/public/browser/browser_main_parts.h"
 
 #if defined(TOOLKIT_VIEWS)

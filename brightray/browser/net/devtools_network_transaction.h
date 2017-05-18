@@ -13,7 +13,6 @@
 #include "net/base/load_states.h"
 #include "net/base/request_priority.h"
 #include "net/http/http_transaction.h"
-#include "net/websockets/websocket_handshake_stream_base.h"
 
 namespace brightray {
 

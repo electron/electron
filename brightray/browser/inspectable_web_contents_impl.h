@@ -22,10 +22,6 @@
 class PrefService;
 class PrefRegistrySimple;
 
-namespace content {
-class DevToolsAgentHost;
-}
-
 namespace brightray {
 
 class InspectableWebContentsDelegate;

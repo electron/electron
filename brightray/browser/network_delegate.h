@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "net/base/network_delegate.h"
-#include "net/proxy/proxy_server.h"
 
 namespace brightray {
 
