@@ -114,7 +114,6 @@
       'common/application_info_win.cc',
       'common/content_client.cc',
       'common/content_client.h',
-      'common/mac/foundation_util.h',
       'common/mac/main_application_bundle.h',
       'common/mac/main_application_bundle.mm',
       'common/main_delegate.cc',
