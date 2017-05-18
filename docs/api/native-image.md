@@ -153,6 +153,8 @@ Creates a new `NativeImage` instance from `buffer`.
 
 * `dataURL` String
 
+Returns `NativeImage`
+
 Creates a new `NativeImage` instance from `dataURL`.
 
 ## Class: NativeImage

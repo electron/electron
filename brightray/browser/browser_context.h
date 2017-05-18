@@ -89,6 +89,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   // URLRequestContextGetter::Delegate:
   net::NetworkDelegate* CreateNetworkDelegate() override;
   MediaDeviceIDSalt* GetMediaDeviceIDSalt() override;
+  content::StreamContext* GetStreamContext() override;
 
   base::FilePath GetPath() const override;
 

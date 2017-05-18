@@ -55,6 +55,7 @@ struct PrintMsg_Print_Params {
   base::string16 title;
   base::string16 url;
   bool should_print_backgrounds;
+  base::string16 device_name;
 };
 
 struct PrintMsg_PrintPages_Params {
@@ -233,9 +234,10 @@ IPC_STRUCT_END()
 
 // Tells the render view to switch the CSS to print media type, renders every
 // requested pages and switch back the CSS to display media type.
-IPC_MESSAGE_ROUTED2(PrintMsg_PrintPages,
+IPC_MESSAGE_ROUTED3(PrintMsg_PrintPages,
                     bool /* silent print */,
-                    bool /* print page's background */)
+                    bool /* print page's background */,
+                    base::string16 /* device name*/)
 
 // Tells the render view that printing is done so it can clean up.
 IPC_MESSAGE_ROUTED1(PrintMsg_PrintingDone,
@@ -279,6 +281,11 @@ IPC_MESSAGE_ROUTED1(PrintHostMsg_DidPrintPage,
 // The renderer wants to know the default print settings.
 IPC_SYNC_MESSAGE_ROUTED0_1(PrintHostMsg_GetDefaultPrintSettings,
                            PrintMsg_Print_Params /* default_settings */)
+
+// you can set the printer
+IPC_SYNC_MESSAGE_ROUTED1_1(PrintHostMsg_InitSettingWithDeviceName,
+    base::string16, /* device name */
+    PrintMsg_Print_Params /* default_settings */)
 
 // The renderer wants to update the current print settings with new
 // |job_settings|.

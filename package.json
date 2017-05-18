@@ -1,12 +1,12 @@
 {
   "name": "electron",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "devDependencies": {
     "asar": "^0.11.0",
     "browserify": "^13.1.0",
     "electabul": "~0.0.4",
-    "electron-docs-linter": "^2.1.0",
-    "electron-typescript-definitions": "^1.2.3",
+    "electron-docs-linter": "^2.3.3",
+    "electron-typescript-definitions": "^1.2.5",
     "request": "*",
     "standard": "^8.4.0",
     "standard-markdown": "^2.1.1"

@@ -23,6 +23,7 @@
 #include "components/prefs/pref_service_factory.h"
 
 #include "base/strings/string_util.h"
+#include "content/browser/streams/stream_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
@@ -163,6 +164,10 @@ MediaDeviceIDSalt* BrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
     media_device_id_salt_.reset(new MediaDeviceIDSalt(prefs_.get()));
   return media_device_id_salt_.get();
+}
+
+content::StreamContext* BrowserContext::GetStreamContext() {
+  return content::StreamContext::GetFor(this);
 }
 
 base::FilePath BrowserContext::GetPath() const {

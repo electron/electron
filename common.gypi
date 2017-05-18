@@ -16,7 +16,7 @@
     'openssl_no_asm': 1,
     'use_openssl_def': 0,
     'OPENSSL_PRODUCT': 'libopenssl.a',
-    'node_release_urlbase': 'https://atom.io/download/atom-shell',
+    'node_release_urlbase': 'https://atom.io/download/electron',
     'node_byteorder': '<!(node <(DEPTH)/tools/get-endianness.js)',
     'node_target_type': 'shared_library',
     'node_install_npm': 'false',
@@ -43,7 +43,7 @@
     'V8_BASE': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
-    'v8_inspector': 'false',
+    'v8_inspector': 'true',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
