@@ -4,15 +4,14 @@
 
 #include "brightray/browser/browser_main_parts.h"
 
-#include "brightray/browser/browser_context.h"
-#include "brightray/browser/devtools_manager_delegate.h"
-#include "brightray/browser/web_ui_controller_factory.h"
-#include "brightray/common/main_delegate.h"
-
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "brightray/browser/browser_context.h"
+#include "brightray/browser/devtools_manager_delegate.h"
+#include "brightray/browser/web_ui_controller_factory.h"
+#include "brightray/common/main_delegate.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_switches.h"
 #include "media/base/localized_strings.h"
