@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #include "base/memory/weak_ptr.h"
-#include "browser/net/devtools_network_interceptor.h"
+#include "brightray/browser/net/devtools_network_interceptor.h"
 #include "net/base/completion_callback.h"
 #include "net/base/load_states.h"
 #include "net/base/request_priority.h"

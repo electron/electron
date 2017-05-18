@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/devtools_manager_delegate.h"
+#include "brightray/browser/devtools_manager_delegate.h"
 
 #include <vector>
 
@@ -12,8 +12,8 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "browser/net/devtools_network_protocol_handler.h"
-#include "common/content_client.h"
+#include "brightray/browser/net/devtools_network_protocol_handler.h"
+#include "brightray/common/content_client.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/devtools_socket_factory.h"

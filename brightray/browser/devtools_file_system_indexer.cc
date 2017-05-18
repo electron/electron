@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "browser/devtools_file_system_indexer.h"
+#include "brightray/browser/devtools_file_system_indexer.h"
 
 #include <stddef.h>
 

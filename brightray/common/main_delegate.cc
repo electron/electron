@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "common/main_delegate.h"
+#include "brightray/common/main_delegate.h"
 
 #include <memory>
 
 #include "base/command_line.h"
 #include "base/path_service.h"
-#include "browser/browser_client.h"
-#include "common/content_client.h"
+#include "brightray/browser/browser_client.h"
+#include "brightray/common/content_client.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"

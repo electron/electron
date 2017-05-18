@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/media/media_stream_devices_controller.h"
+#include "brightray/browser/media/media_stream_devices_controller.h"
 
-#include "browser/media/media_capture_devices_dispatcher.h"
+#include "brightray/browser/media/media_capture_devices_dispatcher.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/media_stream_request.h"
 

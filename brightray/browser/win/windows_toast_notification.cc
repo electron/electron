@@ -6,15 +6,15 @@
 // this code
 // and released it as MIT to the world.
 
-#include "browser/win/windows_toast_notification.h"
+#include "brightray/browser/win/windows_toast_notification.h"
 
 #include <shlobj.h>
 
 #include "base/strings/utf_string_conversions.h"
-#include "browser/notification_delegate.h"
-#include "browser/win/notification_presenter_win.h"
-#include "browser/win/scoped_hstring.h"
-#include "common/application_info.h"
+#include "brightray/browser/notification_delegate.h"
+#include "brightray/browser/win/notification_presenter_win.h"
+#include "brightray/browser/win/scoped_hstring.h"
+#include "brightray/common/application_info.h"
 #include "content/public/browser/browser_thread.h"
 
 using ABI::Windows::Data::Xml::Dom::IXmlAttribute;

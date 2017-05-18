@@ -1,7 +1,7 @@
 #ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
 #define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
 
-#include "browser/inspectable_web_contents_view.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 
 #include "base/mac/scoped_nsobject.h"
 

@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "browser/linux/libnotify_loader.h"
-#include "browser/notification.h"
+#include "brightray/browser/linux/libnotify_loader.h"
+#include "brightray/browser/notification.h"
 #include "ui/base/glib/glib_signal.h"
 
 namespace brightray {

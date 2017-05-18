@@ -1,6 +1,6 @@
 #pragma once
-#include "browser/notification_presenter.h"
-#include "browser/win/win32_desktop_notifications/desktop_notification_controller.h"
+#include "brightray/browser/notification_presenter.h"
+#include "brightray/browser/win/win32_desktop_notifications/desktop_notification_controller.h"
 
 namespace brightray {
 

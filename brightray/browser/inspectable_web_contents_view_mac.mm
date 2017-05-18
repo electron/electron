@@ -1,11 +1,11 @@
-#include "browser/inspectable_web_contents_view_mac.h"
+#include "brightray/browser/inspectable_web_contents_view_mac.h"
 
 #import <AppKit/AppKit.h>
 
 #include "base/strings/sys_string_conversions.h"
-#include "browser/inspectable_web_contents.h"
-#include "browser/inspectable_web_contents_view_delegate.h"
-#import "browser/mac/bry_inspectable_web_contents_view.h"
+#include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#import "brightray/browser/mac/bry_inspectable_web_contents_view.h"
 
 namespace brightray {
 

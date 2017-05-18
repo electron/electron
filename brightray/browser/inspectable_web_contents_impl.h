@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
-#include "browser/devtools_contents_resizing_strategy.h"
-#include "browser/devtools_embedder_message_dispatcher.h"
-#include "browser/inspectable_web_contents.h"
+#include "brightray/browser/devtools_contents_resizing_strategy.h"
+#include "brightray/browser/devtools_embedder_message_dispatcher.h"
+#include "brightray/browser/inspectable_web_contents.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"

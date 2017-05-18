@@ -10,9 +10,9 @@
 
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
-#include "browser/net/devtools_network_controller_handle.h"
-#include "browser/permission_manager.h"
-#include "browser/url_request_context_getter.h"
+#include "brightray/browser/net/devtools_network_controller_handle.h"
+#include "brightray/browser/permission_manager.h"
+#include "brightray/browser/url_request_context_getter.h"
 #include "content/public/browser/browser_context.h"
 
 class PrefRegistrySimple;

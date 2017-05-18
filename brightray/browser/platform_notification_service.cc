@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/platform_notification_service.h"
+#include "brightray/browser/platform_notification_service.h"
 
-#include "browser/browser_client.h"
-#include "browser/notification.h"
-#include "browser/notification_delegate_adapter.h"
-#include "browser/notification_presenter.h"
+#include "brightray/browser/browser_client.h"
+#include "brightray/browser/notification.h"
+#include "brightray/browser/notification_delegate_adapter.h"
+#include "brightray/browser/notification_presenter.h"
 #include "content/public/common/notification_resources.h"
 #include "content/public/common/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"

@@ -1,9 +1,9 @@
-#include "browser/mac/bry_inspectable_web_contents_view.h"
+#include "brightray/browser/mac/bry_inspectable_web_contents_view.h"
 
-#include "browser/inspectable_web_contents_impl.h"
-#include "browser/inspectable_web_contents_view_delegate.h"
-#include "browser/inspectable_web_contents_view_mac.h"
-#include "browser/mac/event_dispatching_window.h"
+#include "brightray/browser/inspectable_web_contents_impl.h"
+#include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#include "brightray/browser/inspectable_web_contents_view_mac.h"
+#include "brightray/browser/mac/event_dispatching_window.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 

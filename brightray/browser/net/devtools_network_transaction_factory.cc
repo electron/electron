@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/net/devtools_network_transaction_factory.h"
+#include "brightray/browser/net/devtools_network_transaction_factory.h"
 
 #include <set>
 #include <string>
 
-#include "browser/net/devtools_network_controller.h"
-#include "browser/net/devtools_network_transaction.h"
+#include "brightray/browser/net/devtools_network_controller.h"
+#include "brightray/browser/net/devtools_network_transaction.h"
 #include "content/public/browser/service_worker_context.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_network_layer.h"

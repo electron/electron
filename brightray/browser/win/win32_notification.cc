@@ -1,6 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 
-#include "browser/win/win32_notification.h"
+#include "brightray/browser/win/win32_notification.h"
 
 #include <windows.h>
 #include <string>

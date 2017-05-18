@@ -1,6 +1,6 @@
-#include "browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents.h"
 
-#include "browser/inspectable_web_contents_impl.h"
+#include "brightray/browser/inspectable_web_contents_impl.h"
 
 namespace brightray {
 

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "browser/net_log.h"
+#include "brightray/browser/net_log.h"
 #include "content/public/browser/content_browser_client.h"
 
 namespace brightray {

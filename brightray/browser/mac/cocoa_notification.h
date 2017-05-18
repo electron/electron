@@ -10,7 +10,7 @@
 #include <string>
 
 #include "base/mac/scoped_nsobject.h"
-#include "browser/notification.h"
+#include "brightray/browser/notification.h"
 
 namespace brightray {
 

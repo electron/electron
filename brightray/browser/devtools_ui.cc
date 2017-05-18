@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/devtools_ui.h"
+#include "brightray/browser/devtools_ui.h"
 
 #include <string>
 

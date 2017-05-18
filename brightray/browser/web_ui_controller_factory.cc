@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/web_ui_controller_factory.h"
+#include "brightray/browser/web_ui_controller_factory.h"
 
 #include "base/memory/singleton.h"
-#include "browser/devtools_ui.h"
+#include "brightray/browser/devtools_ui.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
 #include "content/public/common/url_constants.h"

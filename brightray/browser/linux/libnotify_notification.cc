@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "browser/linux/libnotify_notification.h"
+#include "brightray/browser/linux/libnotify_notification.h"
 
 #include "base/files/file_enumerator.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "browser/notification_delegate.h"
+#include "brightray/browser/notification_delegate.h"
+#include "brightray/common/application_info.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
-#include "common/application_info.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 
 namespace brightray {

@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "base/macros.h"
-#include "browser/notification_delegate.h"
+#include "brightray/browser/notification_delegate.h"
 
 namespace brightray {
 

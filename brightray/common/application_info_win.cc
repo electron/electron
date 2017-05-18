@@ -1,4 +1,4 @@
-#include "common/application_info.h"
+#include "brightray/common/application_info.h"
 
 #include <memory>
 

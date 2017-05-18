@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/browser_main_parts.h"
+#include "brightray/browser/browser_main_parts.h"
 
-#include "browser/browser_context.h"
-#include "browser/devtools_manager_delegate.h"
-#include "browser/web_ui_controller_factory.h"
-#include "common/main_delegate.h"
+#include "brightray/browser/browser_context.h"
+#include "brightray/browser/devtools_manager_delegate.h"
+#include "brightray/browser/web_ui_controller_factory.h"
+#include "brightray/common/main_delegate.h"
 
 #include "base/command_line.h"
 #include "base/feature_list.h"
@@ -28,7 +28,7 @@
 #endif
 
 #if defined(TOOLKIT_VIEWS)
-#include "browser/views/views_delegate.h"
+#include "brightray/browser/views/views_delegate.h"
 #endif
 
 #if defined(USE_X11)
@@ -36,7 +36,7 @@
 #include "base/nix/xdg_util.h"
 #include "base/path_service.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "browser/brightray_paths.h"
+#include "brightray/browser/brightray_paths.h"
 #include "chrome/browser/ui/libgtkui/gtk_ui.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/base/x/x11_util_internal.h"

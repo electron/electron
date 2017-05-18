@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "browser/special_storage_policy.h"
+#include "brightray/browser/special_storage_policy.h"
 
 namespace brightray {
 

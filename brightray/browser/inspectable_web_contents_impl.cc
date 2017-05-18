@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/inspectable_web_contents_impl.h"
+#include "brightray/browser/inspectable_web_contents_impl.h"
 
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
@@ -12,12 +12,12 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
-#include "browser/browser_client.h"
-#include "browser/browser_context.h"
-#include "browser/browser_main_parts.h"
-#include "browser/inspectable_web_contents_delegate.h"
-#include "browser/inspectable_web_contents_view.h"
-#include "browser/inspectable_web_contents_view_delegate.h"
+#include "brightray/browser/browser_client.h"
+#include "brightray/browser/browser_context.h"
+#include "brightray/browser/browser_main_parts.h"
+#include "brightray/browser/inspectable_web_contents_delegate.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
+#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/url_request_context_getter.h"
+#include "brightray/browser/url_request_context_getter.h"
 
 #include <algorithm>
 
@@ -12,11 +12,11 @@
 #include "base/strings/string_util.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
-#include "browser/net/devtools_network_controller_handle.h"
-#include "browser/net/devtools_network_transaction_factory.h"
-#include "browser/net_log.h"
-#include "browser/network_delegate.h"
-#include "common/switches.h"
+#include "brightray/browser/net/devtools_network_controller_handle.h"
+#include "brightray/browser/net/devtools_network_transaction_factory.h"
+#include "brightray/browser/net_log.h"
+#include "brightray/browser/network_delegate.h"
+#include "brightray/common/switches.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
 #include "content/public/common/content_switches.h"

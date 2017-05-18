@@ -4,7 +4,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/win/notification_presenter_win.h"
+#include "brightray/browser/win/notification_presenter_win.h"
 
 #include <string>
 #include <vector>
@@ -13,8 +13,8 @@
 #include "base/md5.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
-#include "browser/win/notification_presenter_win7.h"
-#include "browser/win/windows_toast_notification.h"
+#include "brightray/browser/win/notification_presenter_win7.h"
+#include "brightray/browser/win/windows_toast_notification.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"
