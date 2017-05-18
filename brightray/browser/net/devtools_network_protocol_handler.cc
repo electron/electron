@@ -39,7 +39,6 @@ const char kError[] = "error";
 // JSON RPC 2.0 spec: http://www.jsonrpc.org/specification#error_object
 const int kErrorInvalidParams = -32602;
 
-
 bool ParseCommand(const base::DictionaryValue* command,
                   int* id,
                   std::string* method,

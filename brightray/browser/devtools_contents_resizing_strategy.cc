@@ -17,7 +17,6 @@ DevToolsContentsResizingStrategy::DevToolsContentsResizingStrategy(
           !bounds_.y()) {
 }
 
-
 void DevToolsContentsResizingStrategy::CopyFrom(
     const DevToolsContentsResizingStrategy& strategy) {
   bounds_ = strategy.bounds();

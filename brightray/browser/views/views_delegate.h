@@ -59,8 +59,6 @@ class ViewsDelegate : public views::ViewsDelegate {
   DISALLOW_COPY_AND_ASSIGN(ViewsDelegate);
 };
 
-
-
 }  // namespace brightray
 
 #endif  // BRIGHTRAY_BROWSER_VIEWS_VIEWS_DELEGATE_H_

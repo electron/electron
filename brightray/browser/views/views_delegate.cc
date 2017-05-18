@@ -100,7 +100,6 @@ void ViewsDelegate::OnBeforeWidgetInit(
   }
 }
 
-
 bool ViewsDelegate::WindowManagerProvidesTitleBar(bool maximized) {
 #if defined(OS_LINUX)
   // On Ubuntu Unity, the system always provides a title bar for maximized

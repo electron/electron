@@ -145,7 +145,6 @@ class DispatcherImpl : public DevToolsEmbedderMessageDispatcher {
                                               base::Unretained(delegate)));
   }
 
-
  private:
   using Handler = base::Callback<bool(const DispatchCallback&,
                                       const base::ListValue&)>;

@@ -344,7 +344,6 @@ void DesktopNotificationController::DestroyToast(ToastInstance& inst) {
     }
 }
 
-
 DesktopNotificationController::Notification::Notification(
     const shared_ptr<NotificationData>& data) :
     data_(data) {
@@ -388,7 +387,6 @@ void DesktopNotificationController::Notification::Set(
     // Change of contents can affect size and position of all toasts
     data_->controller->StartAnimation();
 }
-
 
 DesktopNotificationController::NotificationLink::NotificationLink(
     DesktopNotificationController* controller) :
