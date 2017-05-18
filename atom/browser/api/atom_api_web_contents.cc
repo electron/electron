@@ -146,7 +146,7 @@ struct Converter<printing::PrinterBasicInfo> {
     dict.Set("name", val.printer_name);
     dict.Set("description", val.printer_description);
     dict.Set("status", val.printer_status);
-    dict.Set("isDefault", val.is_default);
+    dict.Set("isDefault", val.is_default ? true : false);
     dict.Set("options", val.options);
     return dict.GetHandle();
   }
