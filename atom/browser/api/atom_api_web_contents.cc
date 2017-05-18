@@ -143,9 +143,9 @@ struct Converter<printing::PrinterBasicInfo> {
     static v8::Local<v8::Value>
     ToV8(v8::Isolate* isolate, const printing::PrinterBasicInfo& val) {
       mate::Dictionary dict(isolate, v8::Object::New(isolate));
-      dict.Set("printerName", val.printer_name);
-      dict.Set("printerDescription", val.printer_description);
-      dict.Set("printerStatus", val.printer_status);
+      dict.Set("name", val.printer_name);
+      dict.Set("description", val.printer_description);
+      dict.Set("status", val.printer_status);
       dict.Set("isDefault", val.is_default);
       dict.Set("options", val.options);
       return dict.GetHandle();
@@ -1872,7 +1872,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::UnregisterServiceWorker)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
       .SetMethod("print", &WebContents::Print)
-      .SetMethod("printerList", &WebContents::GetPrinterList)
+      .SetMethod("getPrinters", &WebContents::GetPrinterList)
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
