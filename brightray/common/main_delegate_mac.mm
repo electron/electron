@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#import "main_delegate.h"
+#import "brightray/common/main_delegate.h"
 
 #include "base/command_line.h"
 #include "base/mac/bundle_locations.h"
