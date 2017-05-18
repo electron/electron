@@ -116,9 +116,8 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
 #endif
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_GetDefaultPrintSettings,
                                     OnGetDefaultPrintSettings)
-
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_InitSettingWithDeviceName,
-                                  OnInitSettingWithDeviceName)
+                                    OnInitSettingWithDeviceName)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_ScriptedPrint, OnScriptedPrint)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_UpdatePrintSettings,
                                     OnUpdatePrintSettings)

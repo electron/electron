@@ -41,7 +41,7 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // this function. Returns false if printing is impossible at the moment.
   virtual bool PrintNow(content::RenderFrameHost* rfh,
                         bool silent, bool print_background,
-                        const base::string16&);
+                        const base::string16& device_name);
 #endif  // !DISABLE_BASIC_PRINTING
 
   // PrintedPagesSource implementation.

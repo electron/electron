@@ -122,7 +122,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   void Print(mate::Arguments* args);
-  std::vector<printing::PrinterBasicInfo> GetPrinterList(mate::Arguments* args);
+  std::vector<printing::PrinterBasicInfo> GetPrinterList();
   void SetEmbedder(const WebContents* embedder);
 
   // Print current page as PDF.

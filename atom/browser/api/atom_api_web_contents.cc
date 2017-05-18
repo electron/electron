@@ -140,16 +140,16 @@ struct Converter<PrintSettings> {
 
 template<>
 struct Converter<printing::PrinterBasicInfo> {
-    static v8::Local<v8::Value>
-    ToV8(v8::Isolate* isolate, const printing::PrinterBasicInfo& val) {
-      mate::Dictionary dict(isolate, v8::Object::New(isolate));
-      dict.Set("name", val.printer_name);
-      dict.Set("description", val.printer_description);
-      dict.Set("status", val.printer_status);
-      dict.Set("isDefault", val.is_default);
-      dict.Set("options", val.options);
-      return dict.GetHandle();
-    }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const printing::PrinterBasicInfo& val) {
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("name", val.printer_name);
+    dict.Set("description", val.printer_description);
+    dict.Set("status", val.printer_status);
+    dict.Set("isDefault", val.is_default);
+    dict.Set("options", val.options);
+    return dict.GetHandle();
+  }
 };
 
 template<>
@@ -1322,9 +1322,7 @@ void WebContents::Print(mate::Arguments* args) {
                settings.device_name);
 }
 
-
-std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList(
-    mate::Arguments* args) {
+std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
   auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
   print_backend->EnumeratePrinters(&printers);

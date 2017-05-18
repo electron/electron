@@ -64,7 +64,7 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
 
   // Set deviceName
   void OnInitSettingWithDeviceName(const base::string16& device_name,
-                                    IPC::Message* reply_msg);
+                                   IPC::Message* reply_msg);
 
   void OnGetDefaultPrintSettingsReply(scoped_refptr<PrinterQuery> printer_query,
                                       IPC::Message* reply_msg);

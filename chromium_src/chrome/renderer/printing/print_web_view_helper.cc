@@ -1026,7 +1026,8 @@ bool PrintWebViewHelper::InitPrintSettings(bool fit_to_paper_size,
 }
 
 bool PrintWebViewHelper::CalculateNumberOfPages(blink::WebLocalFrame* frame,
-                                                const blink::WebNode& node, int* number_of_pages,
+                                                const blink::WebNode& node,
+                                                int* number_of_pages,
                                                 const base::string16& device_name) {
   DCHECK(frame);
   bool fit_to_paper_size = !(PrintingNodeOrPdfFrame(frame, node));
