@@ -307,7 +307,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       network_session_params.enable_http2 = false;
 
     // --ignore-certificate-errors
-    if (command_line.HasSwitch(switches::kIgnoreCertificateErrors))
+    if (command_line.HasSwitch(::switches::kIgnoreCertificateErrors))
       network_session_params.ignore_certificate_errors = true;
 
     // --host-rules
