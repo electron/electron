@@ -6,11 +6,10 @@
 
 #include <memory>
 
-#include "browser/browser_client.h"
-#include "common/content_client.h"
-
 #include "base/command_line.h"
 #include "base/path_service.h"
+#include "browser/browser_client.h"
+#include "common/content_client.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"

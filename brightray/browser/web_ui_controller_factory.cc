@@ -4,8 +4,8 @@
 
 #include "browser/web_ui_controller_factory.h"
 
-#include "browser/devtools_ui.h"
 #include "base/memory/singleton.h"
+#include "browser/devtools_ui.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
 #include "content/public/common/url_constants.h"

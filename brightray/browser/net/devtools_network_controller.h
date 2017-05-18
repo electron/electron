@@ -5,9 +5,9 @@
 #ifndef BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_CONTROLLER_H_
 #define BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_CONTROLLER_H_
 
-#include <unordered_map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include "base/macros.h"
 #include "base/threading/thread_checker.h"

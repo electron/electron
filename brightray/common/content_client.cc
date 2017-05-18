@@ -4,8 +4,8 @@
 
 #include "common/content_client.h"
 
-#include "base/strings/stringprintf.h"
 #include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
 #include "common/application_info.h"
 #include "content/public/common/user_agent.h"
 #include "ui/base/l10n/l10n_util.h"

@@ -1,9 +1,8 @@
 #import "common/application_info.h"
 
 #import "base/mac/foundation_util.h"
-#import "common/mac/main_application_bundle.h"
-
 #import "base/strings/sys_string_conversions.h"
+#import "common/mac/main_application_bundle.h"
 
 namespace brightray {
 

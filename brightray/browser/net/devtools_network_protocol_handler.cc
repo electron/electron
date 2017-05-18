@@ -6,11 +6,10 @@
 
 #include <string>
 
+#include "base/strings/stringprintf.h"
 #include "browser/browser_context.h"
 #include "browser/net/devtools_network_conditions.h"
 #include "browser/net/devtools_network_controller.h"
-
-#include "base/strings/stringprintf.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
 

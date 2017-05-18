@@ -5,15 +5,15 @@
 
 #import "main_delegate.h"
 
-#include "base/mac/foundation_util.h"
-#include "common/application_info.h"
-#include "common/mac/main_application_bundle.h"
 
 #include "base/command_line.h"
 #include "base/mac/bundle_locations.h"
+#include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
+#include "common/application_info.h"
+#include "common/mac/main_application_bundle.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/resource/resource_bundle.h"

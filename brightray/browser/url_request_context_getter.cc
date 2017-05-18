@@ -6,18 +6,17 @@
 
 #include <algorithm>
 
+#include "base/command_line.h"
+#include "base/memory/ptr_util.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
+#include "base/threading/sequenced_worker_pool.h"
+#include "base/threading/worker_pool.h"
 #include "browser/net/devtools_network_controller_handle.h"
 #include "browser/net/devtools_network_transaction_factory.h"
 #include "browser/net_log.h"
 #include "browser/network_delegate.h"
 #include "common/switches.h"
-
-#include "base/command_line.h"
-#include "base/memory/ptr_util.h"
-#include "base/strings/string_util.h"
-#include "base/strings/string_number_conversions.h"
-#include "base/threading/sequenced_worker_pool.h"
-#include "base/threading/worker_pool.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
 #include "content/public/common/content_switches.h"
@@ -51,9 +50,9 @@
 #include "net/url_request/url_request_context_storage.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
+#include "storage/browser/quota/special_storage_policy.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
-#include "storage/browser/quota/special_storage_policy.h"
 
 #if defined(USE_NSS_CERTS)
 #include "net/cert_net/nss_ocsp.h"

@@ -4,24 +4,21 @@
 
 #include "browser/browser_context.h"
 
-#include "browser/media/media_device_id_salt.h"
+#include "base/files/file_path.h"
+#include "base/path_service.h"
+#include "base/strings/string_util.h"
 #include "browser/brightray_paths.h"
 #include "browser/browser_client.h"
 #include "browser/inspectable_web_contents_impl.h"
+#include "browser/media/media_device_id_salt.h"
 #include "browser/network_delegate.h"
 #include "browser/special_storage_policy.h"
 #include "browser/zoom_level_delegate.h"
 #include "common/application_info.h"
-
-#include "base/files/file_path.h"
-#include "base/path_service.h"
-
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/pref_service_factory.h"
-
-#include "base/strings/string_util.h"
 #include "content/browser/streams/stream_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"

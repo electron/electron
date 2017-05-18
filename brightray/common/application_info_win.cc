@@ -1,6 +1,6 @@
-#include <memory>
-
 #include "common/application_info.h"
+
+#include <memory>
 
 #include "base/file_version_info.h"
 #include "base/strings/utf_string_conversions.h"

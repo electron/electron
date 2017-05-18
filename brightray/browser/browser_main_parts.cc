@@ -33,8 +33,8 @@
 
 #if defined(USE_X11)
 #include "base/environment.h"
-#include "base/path_service.h"
 #include "base/nix/xdg_util.h"
+#include "base/path_service.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "browser/brightray_paths.h"
 #include "chrome/browser/ui/libgtkui/gtk_ui.h"

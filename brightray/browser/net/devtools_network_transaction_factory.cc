@@ -9,7 +9,6 @@
 
 #include "browser/net/devtools_network_controller.h"
 #include "browser/net/devtools_network_transaction.h"
-
 #include "content/public/browser/service_worker_context.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_network_layer.h"

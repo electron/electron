@@ -8,8 +8,8 @@
 #include "browser/notification.h"
 #include "browser/notification_delegate_adapter.h"
 #include "browser/notification_presenter.h"
-#include "content/public/common/platform_notification_data.h"
 #include "content/public/common/notification_resources.h"
+#include "content/public/common/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 
 namespace brightray {

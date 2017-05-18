@@ -4,11 +4,10 @@
 
 #include "browser/net/devtools_network_controller.h"
 
+#include "base/bind.h"
 #include "browser/net/devtools_network_conditions.h"
 #include "browser/net/devtools_network_interceptor.h"
 #include "browser/net/devtools_network_transaction.h"
-
-#include "base/bind.h"
 #include "content/public/browser/browser_thread.h"
 
 using content::BrowserThread;

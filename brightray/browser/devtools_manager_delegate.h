@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "base/macros.h"
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "content/public/browser/devtools_manager_delegate.h"
 
 namespace brightray {

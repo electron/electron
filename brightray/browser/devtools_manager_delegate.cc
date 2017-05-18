@@ -6,14 +6,13 @@
 
 #include <vector>
 
-#include "browser/net/devtools_network_protocol_handler.h"
-
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "browser/net/devtools_network_protocol_handler.h"
 #include "common/content_client.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
@@ -25,10 +24,9 @@
 #include "content/public/common/user_agent.h"
 #include "content/shell/grit/shell_resources.h"
 #include "net/base/net_errors.h"
-#include "net/socket/tcp_server_socket.h"
 #include "net/socket/stream_socket.h"
+#include "net/socket/tcp_server_socket.h"
 #include "ui/base/resource/resource_bundle.h"
-
 
 namespace brightray {
 

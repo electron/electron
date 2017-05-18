@@ -1,8 +1,7 @@
 #import <AppKit/AppKit.h>
 
-#include "browser/devtools_contents_resizing_strategy.h"
-
 #include "base/mac/scoped_nsobject.h"
+#include "browser/devtools_contents_resizing_strategy.h"
 #include "ui/base/cocoa/base_view.h"
 
 namespace brightray {
