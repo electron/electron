@@ -5,59 +5,47 @@ Wersja Chrome Electron jest zazwyczaj aktualizowana co tydzień lub dwa, po wypu
 
 Jedynie stabilne wersje Chrome są wykorzystywane. Jeżeli ważne poprawki są w beta lub rozwojowej wersji, zostaną one zaportowane. 
 
-Po więcej informacji, proszę zapoznaj się z [bezpieczeństwo](tutorial/security.md).
+Po więcej informacji, proszę zapoznaj się z [informacjami bezpieczeństwa](tutorial/security.md).
 
-## When will Electron upgrade to latest Node.js?
+## Kiedy Electron zostanie zaktualizowany do najnowszej wersji Node.js?
+Wtedy, gdy nowa wersja Node.js zostanie wypuszczona. Zazwyczaj czekamy miesiąc przed aktualizacją w Electron. Dzięki temu unikamy ewentualnych problemów z bugami.
 
-When a new version of Node.js gets released, we usually wait for about a month
-before upgrading the one in Electron. So we can avoid getting affected by bugs
-introduced in new Node.js versions, which happens very often.
+Nowe funkcje Node.js są zazwyczaj wprowadzane wraz z aktualizacjami V8. Odkąd Electron używa V8 dostarczanego przeglądarce Chrome, nowe funkcje Node.js są zazwyczaj dostępne w Electron.
 
-New features of Node.js are usually brought by V8 upgrades, since Electron is
-using the V8 shipped by Chrome browser, the shiny new JavaScript feature of a
-new Node.js version is usually already in Electron.
-
-## How to share data between web pages?
-
-To share data between web pages (the renderer processes) the simplest way is to
-use HTML5 APIs which are already available in browsers. Good candidates are
+## Jak przekazywać informacje pomiędzy stronami?
+Aby przekazywać dane pomiędzy stronami (proces renderujący) najprostszą drogą będzie użycie części API HTML5, która jest dostarczana przeglądarkom. Mowa o
 [Storage API][storage], [`localStorage`][local-storage],
-[`sessionStorage`][session-storage], and [IndexedDB][indexed-db].
+[`sessionStorage`][session-storage] lub [IndexedDB][indexed-db].
 
-Or you can use the IPC system, which is specific to Electron, to store objects
-in the main process as a global variable, and then to access them from the
-renderers through the `remote` property of `electron` module:
+Lub możesz użyć IPC system, który jest specyficzny dla Electron, aby przechowywać obiekty w głównym procesie jako zmienna globalna i dopiero wtedy uzyskiwać dostęp do niej z poziomu renderera przez właściwość `remote` z modułu `electron`:
+
+
 
 ```javascript
-// In the main process.
+// W głównym procesie.
 global.sharedObject = {
   someProperty: 'default value'
 }
 ```
 
 ```javascript
-// In page 1.
+// Na stronie pierwszej.
 require('electron').remote.getGlobal('sharedObject').someProperty = 'new value'
 ```
 
 ```javascript
-// In page 2.
+// Na stronie drugiej.
 console.log(require('electron').remote.getGlobal('sharedObject').someProperty)
 ```
 
-## My app's window/tray disappeared after a few minutes.
+## Okno/ikona w zasobniku mojej aplikacji nie pojawia się po kilku minutrach.
+Może się tak dziać, gdy zmienna przechowująca dane o oknie/ikonie z zasobnika zostanie pochłonięta przez garbage collector.
 
-This happens when the variable which is used to store the window/tray gets
-garbage collected.
-
-If you encounter this problem, the following articles may prove helpful:
-
+Jeżeli zauważyłeś ten problem, poniższe artykuły mogą okazać się pomocne:
 * [Memory Management][memory-management]
 * [Variable Scope][variable-scope]
 
-If you want a quick fix, you can make the variables global by changing your
-code from this:
-
+Jeżeli chcesz to szybko naprawić, możesz zrobić zmienne globalną zmieniając swój kod z tego:
 ```javascript
 const {app, Tray} = require('electron')
 app.on('ready', () => {
@@ -66,7 +54,7 @@ app.on('ready', () => {
 })
 ```
 
-to this:
+na to:
 
 ```javascript
 const {app, Tray} = require('electron')
