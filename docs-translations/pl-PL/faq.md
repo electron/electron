@@ -1,15 +1,11 @@
-# Electron FAQ
+# Electron - pytania i odpowiedzi
 
-## When will Electron upgrade to latest Chrome?
+## Kiedy Electron zostanie zaktualizowany do najnowszej wersji Chrome?
+Wersja Chrome Electron jest zazwyczaj aktualizowana co tydzień lub dwa, po wypuszczeniu nowej wersji Chrome. Ten czas jest luźny i zazwyczaj zależy od ilości czasu potrzebnej do zaktualizowania. 
 
-The Chrome version of Electron is usually bumped within one or two weeks after
-a new stable Chrome version gets released. This estimate is not guaranteed and
-depends on the amount of work involved with upgrading.
+Jedynie stabilne wersje Chrome są wykorzystywane. Jeżeli ważne poprawki są w beta lub rozwojowej wersji, zostaną one zaportowane. 
 
-Only the stable channel of Chrome is used. If an important fix is in beta or dev
-channel, we will back-port it.
-
-For more information, please see the [security introduction](tutorial/security.md).
+Po więcej informacji, proszę zapoznaj się z [bezpieczeństwo](tutorial/security.md).
 
 ## When will Electron upgrade to latest Node.js?
 
