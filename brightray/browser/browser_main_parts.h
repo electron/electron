@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_MAIN_PARTS_H_
 #define BRIGHTRAY_BROWSER_BROWSER_MAIN_PARTS_H_
 
+#include <memory>
+
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "content/public/browser/browser_main_parts.h"
