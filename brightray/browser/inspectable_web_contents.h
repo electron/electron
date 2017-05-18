@@ -1,5 +1,5 @@
-#ifndef BRIGHTRAY_INSPECTABLE_WEB_CONTENTS_H_
-#define BRIGHTRAY_INSPECTABLE_WEB_CONTENTS_H_
+#ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_H_
+#define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_H_
 
 #include "content/public/browser/web_contents.h"
 
@@ -50,4 +50,4 @@ class InspectableWebContents {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_H_

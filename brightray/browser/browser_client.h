@@ -64,4 +64,4 @@ class BrowserClient : public content::ContentBrowserClient {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_

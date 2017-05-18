@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BROWSER_DEVTOOLS_NETWORK_TRANSACTION_FACTORY_H_
-#define BROWSER_DEVTOOLS_NETWORK_TRANSACTION_FACTORY_H_
+#ifndef BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_TRANSACTION_FACTORY_H_
+#define BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_TRANSACTION_FACTORY_H_
 
 #include "base/macros.h"
 #include "net/base/request_priority.h"
@@ -36,4 +36,4 @@ class DevToolsNetworkTransactionFactory : public net::HttpTransactionFactory {
 
 }  // namespace brightray
 
-#endif  // BROWSER_DEVTOOLS_NETWORK_TRANSACTION_FACTORY_H_
+#endif  // BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_TRANSACTION_FACTORY_H_

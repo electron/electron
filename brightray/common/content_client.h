@@ -31,4 +31,4 @@ class ContentClient : public content::ContentClient {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_COMMON_CONTENT_CLIENT_H_

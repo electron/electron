@@ -42,4 +42,4 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_

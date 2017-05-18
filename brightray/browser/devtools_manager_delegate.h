@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
-#define BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
+#ifndef BRIGHTRAY_BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
+#define BRIGHTRAY_BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
 
 #include "base/macros.h"
 #include "base/compiler_specific.h"
@@ -38,4 +38,4 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
 
 }  // namespace brightray
 
-#endif  // BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
+#endif  // BRIGHTRAY_BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_

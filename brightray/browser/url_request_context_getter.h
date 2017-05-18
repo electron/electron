@@ -120,4 +120,4 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_

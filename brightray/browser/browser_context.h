@@ -140,4 +140,4 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_

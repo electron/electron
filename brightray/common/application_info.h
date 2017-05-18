@@ -10,4 +10,4 @@ std::string GetApplicationVersion();
 
 }
 
-#endif
+#endif  // BRIGHTRAY_COMMON_APPLICATION_INFO_H_

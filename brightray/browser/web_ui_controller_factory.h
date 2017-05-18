@@ -42,4 +42,4 @@ class WebUIControllerFactory : public content::WebUIControllerFactory {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_WEB_UI_CONTROLLER_FACTORY_H_

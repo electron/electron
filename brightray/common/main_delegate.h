@@ -60,4 +60,5 @@ class MainDelegate : public content::ContentMainDelegate {
 };
 
 }  // namespace brightray
-#endif
+
+#endif  // BRIGHTRAY_COMMON_MAIN_DELEGATE_H_

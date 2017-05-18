@@ -76,4 +76,4 @@ class NetworkDelegate : public net::NetworkDelegate {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_

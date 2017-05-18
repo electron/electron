@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_NET_LOG_H_
-#define BROWSER_NET_LOG_H_
+#ifndef BRIGHTRAY_BROWSER_NET_LOG_H_
+#define BRIGHTRAY_BROWSER_NET_LOG_H_
 
 #include "base/files/scoped_file.h"
 #include "net/log/net_log.h"
@@ -27,4 +27,4 @@ class NetLog : public net::NetLog {
 
 }  // namespace brightray
 
-#endif  // BROWSER_NET_LOG_H_
+#endif  // BRIGHTRAY_BROWSER_NET_LOG_H_

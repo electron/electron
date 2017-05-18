@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_
-#define BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_
+#ifndef BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_
+#define BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_
 
 #include "browser/linux/libnotify_loader.h"
 #include "browser/notification.h"
@@ -41,4 +41,4 @@ class LibnotifyNotification : public Notification {
 
 }  // namespace brightray
 
-#endif  // BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_
+#endif  // BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_

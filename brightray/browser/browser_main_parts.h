@@ -57,4 +57,4 @@ class BrowserMainParts : public content::BrowserMainParts {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_BROWSER_MAIN_PARTS_H_

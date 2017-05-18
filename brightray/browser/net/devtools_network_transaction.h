@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_DEVTOOLS_NETWORK_TRANSACTION_H_
-#define BROWSER_DEVTOOLS_NETWORK_TRANSACTION_H_
+#ifndef BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_TRANSACTION_H_
+#define BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_TRANSACTION_H_
 
 #include <stdint.h>
 
@@ -104,4 +104,4 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
 
 }  // namespace brightray
 
-#endif  // BROWSER_DEVTOOLS_NETWORK_TRANSACTION_H_
+#endif  // BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_TRANSACTION_H_

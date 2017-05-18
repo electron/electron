@@ -195,4 +195,4 @@ class InspectableWebContentsImpl :
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
