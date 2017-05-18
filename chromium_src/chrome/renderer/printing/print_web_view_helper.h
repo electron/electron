@@ -99,7 +99,9 @@ class PrintWebViewHelper
 
   // Message handlers ---------------------------------------------------------
 #if !defined(DISABLE_BASIC_PRINTING)
-  void OnPrintPages(bool silent, bool print_background, const base::string16&);
+  void OnPrintPages(bool silent,
+                    bool print_background,
+                    const base::string16& device_name);
   void OnPrintingDone(bool success);
 #endif  // !DISABLE_BASIC_PRINTING
   void OnPrintPreview(const base::DictionaryValue& settings);
