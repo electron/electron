@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_COMMON_CONTENT_CLIENT_H_
 #define BRIGHTRAY_COMMON_CONTENT_CLIENT_H_
 
+#include <string>
+
 #include "base/compiler_specific.h"
 #include "content/public/common/content_client.h"
 

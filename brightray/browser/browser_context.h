@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 
 #include <map>
+#include <string>
 
 #include "browser/net/devtools_network_controller_handle.h"
 #include "browser/permission_manager.h"

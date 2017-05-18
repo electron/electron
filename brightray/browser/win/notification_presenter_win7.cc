@@ -1,4 +1,7 @@
 #include "browser/win/notification_presenter_win7.h"
+
+#include <string>
+
 #include "browser/win/win32_notification.h"
 
 namespace brightray {

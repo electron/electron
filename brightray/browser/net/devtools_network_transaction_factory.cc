@@ -4,6 +4,9 @@
 
 #include "browser/net/devtools_network_transaction_factory.h"
 
+#include <set>
+#include <string>
+
 #include "browser/net/devtools_network_controller.h"
 #include "browser/net/devtools_network_transaction.h"
 

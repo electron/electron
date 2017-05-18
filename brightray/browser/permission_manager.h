@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_PERMISSION_MANAGER_H_
 #define BRIGHTRAY_BROWSER_PERMISSION_MANAGER_H_
 
+#include <vector>
+
 #include "base/callback_forward.h"
 #include "base/macros.h"
 #include "content/public/browser/permission_manager.h"

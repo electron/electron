@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_
 #define BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_
 
+#include <string>
+
 #include "browser/linux/libnotify_loader.h"
 #include "browser/notification.h"
 #include "ui/base/glib/glib_signal.h"

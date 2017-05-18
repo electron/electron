@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
 #define BRIGHTRAY_BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
 
+#include <string>
+
 #include "base/macros.h"
 #include "base/compiler_specific.h"
 #include "content/public/browser/devtools_manager_delegate.h"

@@ -1,6 +1,8 @@
 #ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_H_
 #define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_H_
 
+#include <string>
+
 #include "content/public/browser/web_contents.h"
 
 namespace base {

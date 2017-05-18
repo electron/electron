@@ -6,6 +6,10 @@
 #ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
 #define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
 
+#include <map>
+#include <string>
+#include <vector>
+
 #include "browser/inspectable_web_contents.h"
 
 #include "browser/devtools_contents_resizing_strategy.h"

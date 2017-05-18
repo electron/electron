@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_VIEWS_VIEWS_DELEGATE_H_
 #define BRIGHTRAY_BROWSER_VIEWS_VIEWS_DELEGATE_H_
 
+#include <string>
+
 #include "base/compiler_specific.h"
 #include "ui/views/views_delegate.h"
 

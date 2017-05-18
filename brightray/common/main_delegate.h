@@ -6,6 +6,7 @@
 #define BRIGHTRAY_COMMON_MAIN_DELEGATE_H_
 
 #include <memory>
+#include <string>
 
 #include "base/macros.h"
 #include "content/public/app/content_main_delegate.h"

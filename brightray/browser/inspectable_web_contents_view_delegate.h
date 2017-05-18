@@ -1,6 +1,8 @@
 #ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
 #define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
 
+#include <string>
+
 #include "ui/gfx/image/image_skia.h"
 
 namespace brightray {

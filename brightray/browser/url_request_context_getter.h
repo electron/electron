@@ -5,6 +5,9 @@
 #ifndef BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 #define BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 
+#include <string>
+#include <vector>
+
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"

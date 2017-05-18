@@ -4,6 +4,8 @@
 
 #include "browser/net/devtools_network_transaction.h"
 
+#include <string>
+
 #include "browser/net/devtools_network_controller.h"
 #include "browser/net/devtools_network_upload_data_stream.h"
 #include "net/base/load_timing_info.h"

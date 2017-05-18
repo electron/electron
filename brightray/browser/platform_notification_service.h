@@ -5,6 +5,9 @@
 #ifndef BRIGHTRAY_BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
 #define BRIGHTRAY_BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
 
+#include <set>
+#include <string>
+
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/platform_notification_service.h"
 

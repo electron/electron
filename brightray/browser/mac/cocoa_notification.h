@@ -7,6 +7,8 @@
 
 #import <Foundation/Foundation.h>
 
+#include <string>
+
 #include "base/mac/scoped_nsobject.h"
 #include "browser/notification.h"
 

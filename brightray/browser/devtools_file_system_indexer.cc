@@ -6,7 +6,9 @@
 
 #include <stddef.h>
 
+#include <algorithm>
 #include <iterator>
+#include <set>
 
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"

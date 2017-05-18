@@ -5,6 +5,7 @@
 #include "browser/zoom_level_delegate.h"
 
 #include <functional>
+#include <vector>
 
 #include "base/bind.h"
 #include "base/strings/string_number_conversions.h"

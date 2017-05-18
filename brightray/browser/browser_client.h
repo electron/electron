@@ -5,6 +5,9 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 #define BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 
+#include <string>
+#include <vector>
+
 #include "browser/net_log.h"
 #include "content/public/browser/content_browser_client.h"
 

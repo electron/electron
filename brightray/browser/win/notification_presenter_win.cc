@@ -6,6 +6,9 @@
 
 #include "browser/win/notification_presenter_win.h"
 
+#include <string>
+#include <vector>
+
 #include "base/files/file_util.h"
 #include "base/md5.h"
 #include "base/strings/utf_string_conversions.h"
