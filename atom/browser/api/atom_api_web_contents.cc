@@ -44,6 +44,7 @@
 #include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "base/values.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
@@ -74,6 +75,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
+#include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
@@ -93,6 +95,7 @@ namespace {
 struct PrintSettings {
   bool silent;
   bool print_background;
+  base::string16 device_name;
 };
 
 }  // namespace
@@ -130,7 +133,22 @@ struct Converter<PrintSettings> {
       return false;
     dict.Get("silent", &(out->silent));
     dict.Get("printBackground", &(out->print_background));
+    dict.Get("deviceName", &(out->device_name));
     return true;
+  }
+};
+
+template<>
+struct Converter<printing::PrinterBasicInfo> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const printing::PrinterBasicInfo& val) {
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("name", val.printer_name);
+    dict.Set("description", val.printer_description);
+    dict.Set("status", val.printer_status);
+    dict.Set("isDefault", val.is_default ? true : false);
+    dict.Set("options", val.options);
+    return dict.GetHandle();
   }
 };
 
@@ -1291,7 +1309,7 @@ bool WebContents::IsAudioMuted() {
 }
 
 void WebContents::Print(mate::Arguments* args) {
-  PrintSettings settings = { false, false };
+  PrintSettings settings = { false, false, base::string16() };
   if (args->Length() == 1 && !args->GetNext(&settings)) {
     args->ThrowError();
     return;
@@ -1300,7 +1318,15 @@ void WebContents::Print(mate::Arguments* args) {
   printing::PrintViewManagerBasic::FromWebContents(web_contents())->
       PrintNow(web_contents()->GetMainFrame(),
                settings.silent,
-               settings.print_background);
+               settings.print_background,
+               settings.device_name);
+}
+
+std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
+  std::vector<printing::PrinterBasicInfo> printers;
+  auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
+  print_backend->EnumeratePrinters(&printers);
+  return printers;
 }
 
 void WebContents::PrintToPDF(const base::DictionaryValue& setting,
@@ -1844,6 +1870,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::UnregisterServiceWorker)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
       .SetMethod("print", &WebContents::Print)
+      .SetMethod("getPrinters", &WebContents::GetPrinterList)
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)

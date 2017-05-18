@@ -659,12 +659,13 @@ void PrintWebViewHelper::OnDestruct() {
 }
 
 #if !defined(DISABLE_BASIC_PRINTING)
-void PrintWebViewHelper::OnPrintPages(bool silent, bool print_background) {
+void PrintWebViewHelper::OnPrintPages(bool silent, bool print_background,
+                                      const base::string16& device_name) {
   if (ipc_nesting_level_> 1)
     return;
 
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
-  Print(frame, blink::WebNode(), silent, print_background);
+  Print(frame, blink::WebNode(), silent, print_background, device_name);
 }
 #endif  // !DISABLE_BASIC_PRINTING
 
@@ -847,7 +848,8 @@ void PrintWebViewHelper::PrintNode(const blink::WebNode& node) {
 void PrintWebViewHelper::Print(blink::WebLocalFrame* frame,
                                const blink::WebNode& node,
                                bool silent,
-                               bool print_background) {
+                               bool print_background,
+                               const base::string16& device_name) {
   // If still not finished with earlier print request simply ignore.
   if (prep_frame_view_)
     return;
@@ -855,7 +857,7 @@ void PrintWebViewHelper::Print(blink::WebLocalFrame* frame,
   FrameReference frame_ref(frame);
 
   int expected_page_count = 0;
-  if (!CalculateNumberOfPages(frame, node, &expected_page_count)) {
+  if (!CalculateNumberOfPages(frame, node, &expected_page_count, device_name)) {
     DidFinishPrinting(FAIL_PRINT_INIT);
     return;  // Failed to init print page settings.
   }
@@ -991,10 +993,16 @@ void PrintWebViewHelper::ComputePageLayoutInPointsForCss(
   CalculatePageLayoutFromPrintParams(params, page_layout_in_points);
 }
 
-bool PrintWebViewHelper::InitPrintSettings(bool fit_to_paper_size) {
+bool PrintWebViewHelper::InitPrintSettings(bool fit_to_paper_size,
+                                           const base::string16& device_name) {
   PrintMsg_PrintPages_Params settings;
-  Send(new PrintHostMsg_GetDefaultPrintSettings(routing_id(),
-                                                &settings.params));
+  if (device_name.empty()) {
+    Send(new PrintHostMsg_GetDefaultPrintSettings(routing_id(),
+                                                  &settings.params));
+  } else {
+    Send(new PrintHostMsg_InitSettingWithDeviceName(routing_id(), device_name,
+                                                    &settings.params));
+  }
   // Check if the printer returned any settings, if the settings is empty, we
   // can safely assume there are no printer drivers configured. So we safely
   // terminate.
@@ -1019,10 +1027,11 @@ bool PrintWebViewHelper::InitPrintSettings(bool fit_to_paper_size) {
 
 bool PrintWebViewHelper::CalculateNumberOfPages(blink::WebLocalFrame* frame,
                                                 const blink::WebNode& node,
-                                                int* number_of_pages) {
+                                                int* number_of_pages,
+                                                const base::string16& device_name) {
   DCHECK(frame);
   bool fit_to_paper_size = !(PrintingNodeOrPdfFrame(frame, node));
-  if (!InitPrintSettings(fit_to_paper_size)) {
+  if (!InitPrintSettings(fit_to_paper_size, device_name)) {
     notify_browser_of_print_failure_ = false;
     Send(new PrintHostMsg_ShowInvalidPrinterSettingsError(routing_id()));
     return false;

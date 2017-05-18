@@ -916,18 +916,26 @@ Unregisters any ServiceWorker if present and returns a boolean as
 response to `callback` when the JS promise is fulfilled or false
 when the JS promise is rejected.
 
+#### `contents.getPrinters()`
+
+Get the system printer list.
+
+Returns [PrinterInfo[]](structures/printer-info.md)
+
 #### `contents.print([options])`
 
 * `options` Object (optional)
   * `silent` Boolean - Don't ask user for print settings. Default is `false`.
   * `printBackground` Boolean - Also prints the background color and image of
     the web page. Default is `false`.
+  * `deviceName` String - Set the printer device name to use. Default is `''`.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
-up system's default printer and default settings for printing.
+the system's default printer if `deviceName` is empty and the default settings
+for printing.
 
 Calling `window.print()` in web page is equivalent to calling
-`webContents.print({silent: false, printBackground: false})`.
+`webContents.print({silent: false, printBackground: false, deviceName: ''})`.
 
 Use `page-break-before: always; ` CSS style to force to print to a new page.
 

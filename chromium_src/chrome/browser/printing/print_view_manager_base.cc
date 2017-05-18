@@ -67,11 +67,12 @@ PrintViewManagerBase::~PrintViewManagerBase() {
 
 #if !defined(DISABLE_BASIC_PRINTING)
 bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
-                                    bool silent, bool print_background) {
+                                    bool silent, bool print_background,
+                                    const base::string16& device_name) {
   int32_t id = rfh->GetRoutingID();
   return PrintNowInternal(
       rfh,
-      base::MakeUnique<PrintMsg_PrintPages>(id, silent, print_background));
+      base::MakeUnique<PrintMsg_PrintPages>(id, silent, print_background, device_name));
 }
 #endif  // !DISABLE_BASIC_PRINTING
 

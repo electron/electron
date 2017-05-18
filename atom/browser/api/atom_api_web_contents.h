@@ -18,6 +18,7 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
+#include "printing/backend/print_backend.h"
 #include "ui/gfx/image/image.h"
 
 namespace blink {
@@ -121,6 +122,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   void Print(mate::Arguments* args);
+  std::vector<printing::PrinterBasicInfo> GetPrinterList();
   void SetEmbedder(const WebContents* embedder);
 
   // Print current page as PDF.
