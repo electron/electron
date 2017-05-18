@@ -136,6 +136,7 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
     IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
+    IPC_MESSAGE_HANDLER(AtomViewMsg_Offscreen, OnOffscreen)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -167,6 +168,10 @@ void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,
          child = child->nextSibling())
       EmitIPCEvent(child, channel, args);
   }
+}
+
+void AtomRenderViewObserver::OnOffscreen() {
+  blink::WebView::setUseExternalPopupMenus(false);
 }
 
 }  // namespace atom

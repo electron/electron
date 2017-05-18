@@ -9,7 +9,7 @@ import sys
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
     'https://s3.amazonaws.com/github-janky-artifacts/libchromiumcontent'
 LIBCHROMIUMCONTENT_COMMIT = os.getenv('LIBCHROMIUMCONTENT_COMMIT') or \
-    '4a0e32606e52c12c50c2e3a0973d015d8cdff494'
+    'ecc5298428a02f8acb9af285c75e1491715ae4dd'
 
 PLATFORM = {
   'cygwin': 'win32',
@@ -31,8 +31,8 @@ def get_platform_key():
 def get_target_arch():
   try:
     target_arch_path = os.path.join(__file__, '..', '..', '..', 'vendor',
-                                    'brightray', 'vendor', 'download',
-                                    'libchromiumcontent', '.target_arch')
+                                    'download', 'libchromiumcontent',
+                                    '.target_arch')
     with open(os.path.normpath(target_arch_path)) as f:
       return f.read().strip()
   except IOError as e:

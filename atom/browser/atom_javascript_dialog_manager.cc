@@ -7,33 +7,37 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/message_box.h"
 #include "base/bind.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/gfx/image/image_skia.h"
 
-using content::JavaScriptMessageType;
+using content::JavaScriptDialogType;
 
 namespace atom {
+
+AtomJavaScriptDialogManager::AtomJavaScriptDialogManager(
+    api::WebContents* api_web_contents)
+    : api_web_contents_(api_web_contents) {}
 
 void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,
     const GURL& origin_url,
-    JavaScriptMessageType message_type,
+    JavaScriptDialogType dialog_type,
     const base::string16& message_text,
     const base::string16& default_prompt_text,
     const DialogClosedCallback& callback,
     bool* did_suppress_message) {
-
-  if (message_type != JavaScriptMessageType::JAVASCRIPT_MESSAGE_TYPE_ALERT &&
-      message_type != JavaScriptMessageType::JAVASCRIPT_MESSAGE_TYPE_CONFIRM) {
+  if (dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT &&
+      dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
     callback.Run(false, base::string16());
     return;
   }
 
   std::vector<std::string> buttons = {"OK"};
-  if (message_type == JavaScriptMessageType::JAVASCRIPT_MESSAGE_TYPE_CONFIRM) {
+  if (dialog_type == JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
     buttons.push_back("Cancel");
   }
 
@@ -49,13 +53,13 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     content::WebContents* web_contents,
     bool is_reload,
     const DialogClosedCallback& callback) {
-  // FIXME(zcbenz): the |message_text| is removed, figure out what should we do.
-  callback.Run(false, base::ASCIIToUTF16("This should not be displayed"));
+  bool default_prevented = api_web_contents_->Emit("will-prevent-unload");
+  callback.Run(default_prevented, base::string16());
+  return;
 }
 
 void AtomJavaScriptDialogManager::CancelDialogs(
     content::WebContents* web_contents,
-    bool suppress_callbacks,
     bool reset_state) {
 }
 

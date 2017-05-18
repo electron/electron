@@ -14,6 +14,14 @@ class Environment;
 
 namespace atom {
 
+// ArrayBuffer's allocator, used on Chromium's side.
+class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+ public:
+  void* Allocate(size_t length) override;
+  void* AllocateUninitialized(size_t length) override;
+  void Free(void* data, size_t length) override;
+};
+
 // Manage the V8 isolate and context automatically.
 class JavascriptEnvironment {
  public:
@@ -31,6 +39,7 @@ class JavascriptEnvironment {
   bool Initialize();
 
   bool initialized_;
+  ArrayBufferAllocator allocator_;
   gin::IsolateHolder isolate_holder_;
   v8::Isolate* isolate_;
   v8::Isolate::Scope isolate_scope_;

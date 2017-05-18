@@ -131,7 +131,7 @@ int AtomPermissionManager::RequestPermissions(
 
   auto web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
-  int request_id = pending_requests_.Add(new PendingRequest(
+  int request_id = pending_requests_.Add(base::MakeUnique<PendingRequest>(
       render_frame_host, permissions, response_callback));
 
   for (size_t i = 0; i < permissions.size(); ++i) {
@@ -185,12 +185,6 @@ blink::mojom::PermissionStatus AtomPermissionManager::GetPermissionStatus(
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
   return blink::mojom::PermissionStatus::GRANTED;
-}
-
-void AtomPermissionManager::RegisterPermissionUsage(
-    content::PermissionType permission,
-    const GURL& requesting_origin,
-    const GURL& embedding_origin) {
 }
 
 int AtomPermissionManager::SubscribePermissionStatusChange(

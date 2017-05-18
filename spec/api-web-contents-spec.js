@@ -324,6 +324,20 @@ describe('webContents module', function () {
     })
   })
 
+  describe('getOSProcessId()', function () {
+    it('returns a valid procress id', function (done) {
+      assert.strictEqual(w.webContents.getOSProcessId(), 0)
+
+      w.webContents.once('did-finish-load', () => {
+        const pid = w.webContents.getOSProcessId()
+        assert.equal(typeof pid, 'number')
+        assert(pid > 0, `pid ${pid} is not greater than 0`)
+        done()
+      })
+      w.loadURL('about:blank')
+    })
+  })
+
   describe('zoom api', () => {
     const zoomScheme = remote.getGlobal('zoomScheme')
     const hostZoomMap = {
@@ -540,6 +554,31 @@ describe('webContents module', function () {
         w.webContents.setWebRTCIPHandlingPolicy(policy)
         assert.equal(w.webContents.getWebRTCIPHandlingPolicy(), policy)
       })
+    })
+  })
+
+  describe('will-prevent-unload event', function () {
+    it('does not emit if beforeunload returns undefined', function (done) {
+      w.once('closed', function () {
+        done()
+      })
+      w.webContents.on('will-prevent-unload', function (e) {
+        assert.fail('should not have fired')
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
+    })
+
+    it('emits if beforeunload returns false', (done) => {
+      w.webContents.on('will-prevent-unload', () => {
+        done()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'))
+    })
+
+    it('supports calling preventDefault on will-prevent-unload events', function (done) {
+      ipcRenderer.send('prevent-next-will-prevent-unload', w.webContents.id)
+      w.once('closed', () => done())
+      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'))
     })
   })
 

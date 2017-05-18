@@ -9,8 +9,8 @@ from lib.util import electron_gyp, rm_rf
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-FFMPEG_LIBCC_PATH = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
-                                 'download', 'libchromiumcontent', 'ffmpeg')
+FFMPEG_LIBCC_PATH = os.path.join(SOURCE_ROOT, 'vendor', 'download',
+                                 'libchromiumcontent', 'ffmpeg')
 
 PROJECT_NAME = electron_gyp()['project_name%']
 PRODUCT_NAME = electron_gyp()['product_name%']

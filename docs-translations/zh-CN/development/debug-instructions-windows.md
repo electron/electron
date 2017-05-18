@@ -22,7 +22,7 @@ $ ./out/D/electron.exe ~/my-electron-app/
 
 然后，打开 Visual Studio。 Electron 不是使用 Visual Studio 构建的，因此不包含项目文件 - 但是您可以打开源代码文件 "As File"，这意味着 Visual Studio 将自己打开它们。 您仍然可以设置断点 - Visual Studio 将自动确定源代码与附加过程中运行的代码相匹配，并相应地中断。
 
-相关的代码文件可以在 `./atom/` 以及 Brightray 中找到, 找到 `./vendor/brightray/browser` 和 `./vendor/brightray/common`. 如果是内核，你也可以直接调试 Chromium，这显然在 `chromium_src` 中。
+相关的代码文件可以在 `./atom/` 以及 Brightray 中找到, 找到 `./brightray/browser` 和 `./brightray/common`. 如果是内核，你也可以直接调试 Chromium，这显然在 `chromium_src` 中。
 
 ### 附加
 

@@ -1,7 +1,7 @@
 {
   'includes': [
     'toolchain.gypi',
-    'vendor/brightray/brightray.gypi',
+    'brightray/brightray.gypi',
   ],
   'variables': {
     # Tell crashpad to build as external project.
@@ -16,7 +16,7 @@
     'openssl_no_asm': 1,
     'use_openssl_def': 0,
     'OPENSSL_PRODUCT': 'libopenssl.a',
-    'node_release_urlbase': 'https://atom.io/download/atom-shell',
+    'node_release_urlbase': 'https://atom.io/download/electron',
     'node_byteorder': '<!(node <(DEPTH)/tools/get-endianness.js)',
     'node_target_type': 'shared_library',
     'node_install_npm': 'false',
@@ -43,7 +43,7 @@
     'V8_BASE': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
-    'v8_inspector': 'false',
+    'v8_inspector': 'true',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
@@ -240,6 +240,7 @@
       4302,  # (atldlgs.h) 'type cast': truncation from 'LPCTSTR' to 'WORD'
       4458,  # (atldlgs.h) declaration of 'dwCommonButtons' hides class member
       4503,  # decorated name length exceeded, name was truncated
+      4714,  # (atomicstring.h) function marked as __forceinline not inlined
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page
       4838,  # (atlgdi.h) conversion from 'int' to 'UINT' requires a narrowing conversion

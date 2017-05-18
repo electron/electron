@@ -1,7 +1,7 @@
 # desktopCapturer
 
 > Access information about media sources that can be used to capture audio and
-> video from the desktop using the [`navigator.webkitGetUserMedia`] API.
+> video from the desktop using the [`navigator.mediaDevices.getUserMedia`] API.
 
 Process: [Renderer](../glossary.md#renderer-process)
 
@@ -16,7 +16,7 @@ desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
   if (error) throw error
   for (let i = 0; i < sources.length; ++i) {
     if (sources[i].name === 'Electron') {
-      navigator.webkitGetUserMedia({
+      navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
           mandatory: {
@@ -44,12 +44,27 @@ function handleError (e) {
 ```
 
 To capture video from a source provided by `desktopCapturer` the constraints
-passed to [`navigator.webkitGetUserMedia`] must include
+passed to [`navigator.mediaDevices.getUserMedia`] must include
 `chromeMediaSource: 'desktop'`, and `audio: false`.
 
 To capture both audio and video from the entire desktop the constraints passed
-to [`navigator.webkitGetUserMedia`] must include `chromeMediaSource: 'screen'`,
-and `audio: true`, but should not include a `chromeMediaSourceId` constraint.
+to [`navigator.mediaDevices.getUserMedia`] must include `chromeMediaSource: 'desktop'`,
+for both `audio` and `video`, but should not include a `chromeMediaSourceId` constraint.
+
+```javascript
+const constraints = {
+  audio: {
+    mandatory: {
+      chromeMediaSource: 'desktop'
+    }
+  },
+  video: {
+    mandatory: {
+      chromeMediaSource: 'desktop'
+    }
+  }
+}
+```
 
 ## Methods
 
@@ -60,7 +75,7 @@ The `desktopCapturer` module has the following methods:
 * `options` Object
   * `types` String[] - An array of Strings that lists the types of desktop sources
     to be captured, available types are `screen` and `window`.
-  * `thumbnailSize` [Size](structures/size.md) (optional) - The size that the media source thumbnail 
+  * `thumbnailSize` [Size](structures/size.md) (optional) - The size that the media source thumbnail
     should be scaled to. Default is `150` x `150`.
 * `callback` Function
   * `error` Error
@@ -73,4 +88,4 @@ and calls `callback(error, sources)` when finished.
 objects, each `DesktopCapturerSource` represents a screen or an individual window that can be
 captured.
 
-[`navigator.webkitGetUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/Navigator/getUserMedia
+[`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia

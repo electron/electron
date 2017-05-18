@@ -5,7 +5,7 @@
 /dist/
 /external_binaries/
 /out/
-/vendor/brightray/vendor/download/
+/vendor/download/
 /vendor/debian_wheezy_amd64-sysroot/
 /vendor/debian_wheezy_arm-sysroot/
 /vendor/debian_wheezy_i386-sysroot/
@@ -27,3 +27,10 @@ node_modules/
 *.vcxproj.filters
 *.sln
 *.log
+/brightray/brightray.opensdf
+/brightray/brightray.sdf
+/brightray/brightray.sln
+/brightray/brightray.vcxproj*
+/brightray/brightray.suo
+/brightray/brightray.v12.suo
+/brightray/brightray.xcodeproj/

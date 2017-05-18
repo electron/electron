@@ -15,12 +15,12 @@ LayeredResourceHandler::LayeredResourceHandler(
 
 LayeredResourceHandler::~LayeredResourceHandler() {}
 
-bool LayeredResourceHandler::OnResponseStarted(
+void LayeredResourceHandler::OnResponseStarted(
     content::ResourceResponse* response,
-    bool* defer) {
+    std::unique_ptr<content::ResourceController> controller) {
   if (delegate_)
     delegate_->OnResponseStarted(response);
-  return next_handler_->OnResponseStarted(response, defer);
+  next_handler_->OnResponseStarted(response, std::move(controller));
 }
 
 }  // namespace atom

@@ -47,7 +47,7 @@ source code matches the code running in the attached process and break
 accordingly.
 
 Relevant code files can be found in `./atom/` as well as in Brightray, found in
-`./vendor/brightray/browser` and `./vendor/brightray/common`. If you're hardcore,
+`./brightray/browser` and `./brightray/common`. If you're hardcore,
 you can also debug Chromium directly, which is obviously found in `chromium_src`.
 
 ### Attaching

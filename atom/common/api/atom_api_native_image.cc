@@ -202,6 +202,11 @@ void Noop(char*, void*) {
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
     : image_(image) {
   Init(isolate);
+  if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
+    isolate->AdjustAmountOfExternalAllocatedMemory(
+      image_.ToImageSkia()->bitmap()->computeSize64());
+  }
+  MarkHighMemoryUsage();
 }
 
 #if defined(OS_WIN)
@@ -212,10 +217,20 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
   ReadImageSkiaFromICO(&image_skia, GetHICON(256));
   image_ = gfx::Image(image_skia);
   Init(isolate);
+  if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
+    isolate->AdjustAmountOfExternalAllocatedMemory(
+      image_.ToImageSkia()->bitmap()->computeSize64());
+  }
+  MarkHighMemoryUsage();
 }
 #endif
 
-NativeImage::~NativeImage() {}
+NativeImage::~NativeImage() {
+  if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
+    isolate()->AdjustAmountOfExternalAllocatedMemory(
+      - image_.ToImageSkia()->bitmap()->computeSize64());
+  }
+}
 
 #if defined(OS_WIN)
 HICON NativeImage::GetHICON(int size) {

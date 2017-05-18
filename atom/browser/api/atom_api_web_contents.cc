@@ -13,6 +13,8 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_javascript_dialog_manager.h"
+#include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
@@ -39,6 +41,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
+#include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
@@ -49,6 +52,7 @@
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/frame_host/navigation_entry_impl.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
@@ -78,6 +82,7 @@
 #include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
+#include "ui/events/base_event_utils.h"
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -332,6 +337,9 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
   else if (options.Get("offscreen", &b) && b)
     type_ = OFF_SCREEN;
 
+  // Init embedder earlier
+  options.Get("embedder", &embedder_);
+
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
@@ -356,7 +364,18 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
         session->browser_context(), site_instance);
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
-    web_contents = content::WebContents::Create(params);
+
+    if (embedder_ && embedder_->IsOffScreen()) {
+      auto* view = new OffScreenWebContentsView(false,
+          base::Bind(&WebContents::OnPaint, base::Unretained(this)));
+      params.view = view;
+      params.delegate_view = view;
+
+      web_contents = content::WebContents::Create(params);
+      view->SetWebContents(web_contents);
+    } else {
+      web_contents = content::WebContents::Create(params);
+    }
   } else if (IsOffScreen()) {
     bool transparent = false;
     options.Get("transparent", &transparent);
@@ -406,7 +425,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
     guest_delegate_->Initialize(this);
 
     NativeWindow* owner_window = nullptr;
-    if (options.Get("embedder", &embedder_) && embedder_) {
+    if (embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
       auto relay =
           NativeWindowRelay::FromWebContents(embedder_->web_contents());
@@ -502,6 +521,7 @@ void WebContents::AddNewContents(content::WebContents* source,
                                  const gfx::Rect& initial_rect,
                                  bool user_gesture,
                                  bool* was_blocked) {
+  new ChildWebContentsTracker(new_contents);
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto api_web_contents = CreateFrom(isolate(), new_contents);
@@ -585,8 +605,8 @@ bool WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event,
     bool* is_keyboard_shortcut) {
-  if (event.type == blink::WebInputEvent::Type::RawKeyDown
-      || event.type == blink::WebInputEvent::Type::KeyUp)
+  if (event.type() == blink::WebInputEvent::Type::RawKeyDown ||
+      event.type() == blink::WebInputEvent::Type::KeyUp)
     return Emit("before-input-event", event);
   else
     return false;
@@ -696,6 +716,15 @@ std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
   std::unique_ptr<BluetoothChooser> bluetooth_chooser(
       new BluetoothChooser(this, event_handler));
   return std::move(bluetooth_chooser);
+}
+
+content::JavaScriptDialogManager*
+WebContents::GetJavaScriptDialogManager(
+    content::WebContents* source) {
+  if (!dialog_manager_)
+    dialog_manager_.reset(new AtomJavaScriptDialogManager(this));
+
+  return dialog_manager_.get();
 }
 
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
@@ -890,6 +919,15 @@ void WebContents::Observe(int type,
   }
 }
 
+void WebContents::BeforeUnloadDialogCancelled() {
+  if (deferred_load_url_.id) {
+    auto& controller = web_contents()->GetController();
+    if (!controller.GetPendingEntry()) {
+      deferred_load_url_.id = 0;
+    }
+  }
+}
+
 void WebContents::DevToolsReloadPage() {
   Emit("devtools-reload-page");
 }
@@ -906,7 +944,7 @@ void WebContents::DevToolsOpened() {
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
 
   // Set inspected tabID.
-  base::FundamentalValue tab_id(ID());
+  base::Value tab_id(ID());
   managed_web_contents()->CallClientFunction(
       "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
 
@@ -979,13 +1017,18 @@ void WebContents::NavigationEntryCommitted(
 
 int64_t WebContents::GetID() const {
   int64_t process_id = web_contents()->GetRenderProcessHost()->GetID();
-  int64_t routing_id = web_contents()->GetRoutingID();
+  int64_t routing_id = web_contents()->GetRenderViewHost()->GetRoutingID();
   int64_t rv = (process_id << 32) + routing_id;
   return rv;
 }
 
 int WebContents::GetProcessID() const {
   return web_contents()->GetRenderProcessHost()->GetID();
+}
+
+base::ProcessId WebContents::GetOSProcessID() const {
+  auto process_handle = web_contents()->GetRenderProcessHost()->GetHandle();
+  return base::GetProcId(process_handle);
 }
 
 WebContents::Type WebContents::GetType() const {
@@ -1345,7 +1388,7 @@ void WebContents::SelectAll() {
 }
 
 void WebContents::Unselect() {
-  web_contents()->Unselect();
+  web_contents()->CollapseSelection();
 }
 
 void WebContents::Replace(const base::string16& word) {
@@ -1420,30 +1463,31 @@ bool WebContents::SendIPCMessage(bool all_frames,
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
                                  v8::Local<v8::Value> input_event) {
-  const auto view = web_contents()->GetRenderWidgetHostView();
+  const auto view = static_cast<content::RenderWidgetHostViewBase*>(
+    web_contents()->GetRenderWidgetHostView());
   if (!view)
-    return;
-  const auto host = view->GetRenderWidgetHost();
-  if (!host)
     return;
 
   int type = mate::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::isMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
-      host->ForwardMouseEvent(mouse_event);
+      view->ProcessMouseEvent(mouse_event, ui::LatencyInfo());
       return;
     }
   } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
-    content::NativeWebKeyboardEvent keyboard_event;
+    content::NativeWebKeyboardEvent keyboard_event(
+        blink::WebKeyboardEvent::RawKeyDown,
+        blink::WebInputEvent::NoModifiers,
+        ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
-      host->ForwardKeyboardEvent(keyboard_event);
+      view->ProcessKeyboardEvent(keyboard_event);
       return;
     }
   } else if (type == blink::WebInputEvent::MouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      host->ForwardWheelEvent(mouse_wheel_event);
+      view->ProcessMouseWheelEvent(mouse_wheel_event, ui::LatencyInfo());
       return;
     }
   }
@@ -1525,8 +1569,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
   }
 
   const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  if (!view || !host) {
+  if (!view) {
     callback.Run(gfx::Image());
     return;
   }
@@ -1546,10 +1589,10 @@ void WebContents::CapturePage(mate::Arguments* args) {
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
-  host->CopyFromBackingStore(gfx::Rect(rect.origin(), view_size),
-                             bitmap_size,
-                             base::Bind(&OnCapturePageDone, callback),
-                             kBGRA_8888_SkColorType);
+  view->CopyFromSurface(gfx::Rect(rect.origin(), view_size),
+                        bitmap_size,
+                        base::Bind(&OnCapturePageDone, callback),
+                        kBGRA_8888_SkColorType);
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
@@ -1581,9 +1624,7 @@ bool WebContents::IsOffScreen() const {
 }
 
 void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {
-  mate::Handle<NativeImage> image =
-      NativeImage::Create(isolate(), gfx::Image::CreateFrom1xBitmap(bitmap));
-  Emit("paint", dirty_rect, image);
+  Emit("paint", dirty_rect, gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 void WebContents::StartPainting() {
@@ -1645,6 +1686,18 @@ void WebContents::Invalidate() {
     if (window)
       window->Invalidate();
   }
+}
+
+gfx::Size WebContents::GetSizeForNewRenderView(
+    content::WebContents* wc) const {
+  if (IsOffScreen() && wc == web_contents()) {
+    auto relay = NativeWindowRelay::FromWebContents(web_contents());
+    if (relay) {
+      return relay->window->GetSize();
+    }
+  }
+
+  return gfx::Size();
 }
 
 void WebContents::SetZoomLevel(double level) {
@@ -1747,6 +1800,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .MakeDestroyable()
       .SetMethod("getId", &WebContents::GetID)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
+      .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("downloadURL", &WebContents::DownloadURL)

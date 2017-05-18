@@ -1,0 +1,9 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = require('electron')
+  const runas = require('runas')
+  ipcRenderer.send('answer', typeof runas)
+</script>
+</body>
+</html>

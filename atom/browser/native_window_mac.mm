@@ -1314,6 +1314,10 @@ void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
     [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
 }
 
+gfx::NativeView NativeWindowMac::GetNativeView() {
+  return inspectable_web_contents()->GetView()->GetNativeView();
+}
+
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
 }
@@ -1458,7 +1462,7 @@ void NativeWindowMac::SetEscapeTouchBarItem(const mate::PersistentDictionary& it
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
-  switch (event.type) {
+  switch (event.type()) {
     case blink::WebInputEvent::GestureScrollBegin:
     case blink::WebInputEvent::GestureScrollUpdate:
     case blink::WebInputEvent::GestureScrollEnd:

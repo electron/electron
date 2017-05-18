@@ -69,7 +69,7 @@
   auto cert_db = net::CertDatabase::GetInstance();
   // This forces Chromium to reload the certificate since it might be trusted
   // now.
-  cert_db->NotifyObserversCertDBChanged(cert_.get());
+  cert_db->NotifyObserversCertDBChanged();
 
   callback_.Run();
 

@@ -41,7 +41,7 @@ class GtkMessageBox : public NativeWindowObserver {
                 const gfx::ImageSkia& icon)
       : cancel_id_(cancel_id),
         checkbox_checked_(false),
-        parent_(static_cast<NativeWindowViews*>(parent_window)) {
+        parent_(static_cast<NativeWindow*>(parent_window)) {
     // Create dialog.
     dialog_ = gtk_message_dialog_new(
         nullptr,  // parent
@@ -94,7 +94,7 @@ class GtkMessageBox : public NativeWindowObserver {
     // Parent window.
     if (parent_) {
       parent_->AddObserver(this);
-      parent_->SetEnabled(false);
+      static_cast<NativeWindowViews*>(parent_)->SetEnabled(false);
       libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
       gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     }
@@ -104,7 +104,7 @@ class GtkMessageBox : public NativeWindowObserver {
     gtk_widget_destroy(dialog_);
     if (parent_) {
       parent_->RemoveObserver(this);
-      parent_->SetEnabled(true);
+      static_cast<NativeWindowViews*>(parent_)->SetEnabled(true);
     }
   }
 
@@ -179,7 +179,7 @@ class GtkMessageBox : public NativeWindowObserver {
 
   bool checkbox_checked_;
 
-  NativeWindowViews* parent_;
+  NativeWindow* parent_;
   GtkWidget* dialog_;
   MessageBoxCallback callback_;
 
