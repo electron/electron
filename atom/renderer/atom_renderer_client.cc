@@ -16,7 +16,6 @@
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/atom_render_view_observer.h"
-#include "atom/renderer/node_array_buffer_bridge.h"
 #include "atom/renderer/web_worker_observer.h"
 #include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"
@@ -51,7 +50,6 @@ AtomRendererClient::~AtomRendererClient() {
 }
 
 void AtomRendererClient::RenderThreadStarted() {
-  OverrideNodeArrayBuffer();
   RendererClientBase::RenderThreadStarted();
 }
 
