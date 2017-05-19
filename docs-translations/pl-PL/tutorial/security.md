@@ -9,7 +9,6 @@ Pamiętając o tym, bądź ostrożny wyświetlając treści z niezabezpieczonych
 Po więcej informacji jak prawidłowo ujawnić luke w bezpieczeństwie Electon zajrzyj do [Bezpieczeństwo](https://github.com/electron/electron/tree/master/SECURITY.md)
 
 ## Chromium Security Issues and Upgrades
-
 While Electron strives to support new versions of Chromium as soon as possible,
 developers should be aware that upgrading is a serious undertaking - involving
 hand-editing dozens or even hundreds of files. Given the resources and
@@ -23,19 +22,17 @@ interested in hearing more about specific use cases from the people that build
 things on top of Electron. Pull requests and contributions supporting this
 effort are always very welcome.
 
-## Ignoring Above Advice
+Podczas gdy Electron stara się wspierać nowe wersje Chromium najszybciej jak to możliwe, twórcy oprogramowania powinni być świadomi, że aktualizowanie jest poważnym przedsięwzięciem, podczas którego ręcznie edytowanych jest setki plików. Biorąc to pod uwagę wersja, nad którą pracują programiści może nie być jeszcze dostępna. Electron może nie działać na najnowszej wersji Chromium przez kilka dni lub tygodni.
 
-A security issue exists whenever you receive code from a remote destination and
-execute it locally. As an example, consider a remote website being displayed
-inside a browser window. If an attacker somehow manages to change said content
-(either by attacking the source directly, or by sitting between your app and
-the actual destination), they will be able to execute native code on the user's
-machine.
-
+## Ignorowanie powyższych informacji
 > :warning: Under no circumstances should you load and execute remote code with
 Node integration enabled. Instead, use only local files (packaged together with
 your application) to execute Node code. To display remote content, use the
 `webview` tag and make sure to disable the `nodeIntegration`.
+
+Niebezpieczeństwo związane z wykonywaniem kodu występuje wszędzie gdzie ten kod otrzymujesz, a wykonywany jest lokalnie. Na przykład wyobraź sobie osadzoną stronę w oknie przeglądarki. Jeżeli atakujący w jakiś sposób zmieni treść (atakując źródło lub podmieniając przesyłane treści), będzie w stanie wykonać kod natywnie na maszynie użytkownika. 
+
+
 
 #### Checklist
 
