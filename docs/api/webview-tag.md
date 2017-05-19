@@ -16,7 +16,7 @@ safe from the embedded content. **Note:** Most methods called on the
 webview from the host page require a syncronous call to the main process.
 
 For security purposes, `webview` can only be used in `BrowserWindow`s that have
-`nodeIntegration` enabled.
+`nodeIntegration` disabled.
 
 ## Example
 
