@@ -34,54 +34,6 @@ Tu są pytania, które występują bardzo często. Sprawdź to zanim zadasz pyta
 * [REPL](tutorial/repl.md)
 * [Natywne powiadomienia](tutorial/notifications.md)
 
-## Referencje API
-
-* [Synopsis](api/synopsis.md)
-* [Process Object](api/process.md)
-* [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
-* [Environment Variables](api/environment-variables.md)
-
-### Niestandardowe elementy DOM:
-
-* [`File` Obiekt](api/file-object.md)
-* [`<webview>` Tag](api/webview-tag.md)
-* [`window.open` Funkcja](api/window-open.md)
-
-### Moduły głównego procesu:
-
-* [app](api/app.md)
-* [autoUpdater](api/auto-updater.md)
-* [BrowserWindow](api/browser-window.md)
-* [contentTracing](api/content-tracing.md)
-* [dialog](api/dialog.md)
-* [globalShortcut](api/global-shortcut.md)
-* [ipcMain](api/ipc-main.md)
-* [Menu](api/menu.md)
-* [MenuItem](api/menu-item.md)
-* [net](api/net.md)
-* [powerMonitor](api/power-monitor.md)
-* [powerSaveBlocker](api/power-save-blocker.md)
-* [protocol](api/protocol.md)
-* [session](api/session.md)
-* [systemPreferences](api/system-preferences.md)
-* [Tray](api/tray.md)
-* [webContents](api/web-contents.md)
-
-### Moduły procesu renderującego (Web Page):
-
-* [desktopCapturer](api/desktop-capturer.md)
-* [ipcRenderer](api/ipc-renderer.md)
-* [remote](api/remote.md)
-* [webFrame](api/web-frame.md)
-
-### Moduły dla obydwu procesów:
-
-* [clipboard](api/clipboard.md)
-* [crashReporter](api/crash-reporter.md)
-* [nativeImage](api/native-image.md)
-* [screen](api/screen.md)
-* [shell](api/shell.md)
-
 ## Rozwój oprogramowania
 
 * [Styl kodowania](development/coding-style.md)
