@@ -126,6 +126,10 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
   } else if (trash.compare("trash-cli") == 0) {
     argv.push_back("trash-put");
     argv.push_back(full_path.value());
+  } else if (trash.compare("gio") == 0) {
+    argv.push_back("gio");
+    argv.push_back("trash");
+    argv.push_back(full_path.value());
   } else {
     argv.push_back(ELECTRON_DEFAULT_TRASH);
     argv.push_back(full_path.value());
