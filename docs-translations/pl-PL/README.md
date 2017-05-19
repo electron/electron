@@ -6,7 +6,7 @@ Tu są pytania, które występują bardzo często. Sprawdź to zanim zadasz pyta
 
 * [Electron FAQ](faq.md)
 
-## Przewodnik
+## Przewodniki
 
 * [Słownik pojęć](glossary.md)
 * [Wspierane platformy](tutorial/supported-platforms.md)
@@ -26,7 +26,7 @@ Tu są pytania, które występują bardzo często. Sprawdź to zanim zadasz pyta
 * [Renderowanie poza ekranem](tutorial/offscreen-rendering.md)
 * [Skróty klawiszowe](tutorial/keyboard-shortcuts.md)
 
-## Przewodniki
+## Poradniki
 
 * [Szybki start](tutorial/quick-start.md)
 * [Integracja ze środowiskiem pulpitowym](tutorial/desktop-environment-integration.md)
