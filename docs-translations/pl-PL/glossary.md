@@ -6,9 +6,7 @@ ASAR to skrót pochodzący od Atom Shell Archive Format. Archiwum [asar][asar] j
 
 Format ASAR został utworzony aby zwiększyć wydajność w systemie Windows.
 ### Brightray
-Brightray to statyczna biblioteka czyni [libchromiumcontent] łatwiejszą do użycia w aplikacjach.
-
-Brightray to niskopoziomowa zależność Electron, która nie dotyczy większości użytkowników Electron. 
+Brightray to statyczna biblioteka czyni [libchromiumcontent] łatwiejszą do użycia w aplikacjach. Brightray to niskopoziomowa zależność Electron, która nie dotyczy większości użytkowników Electron. 
 
 ### DMG
 Apple Disk Image to format pakowania używany przez macOS. Pliki DMG są powszechnie używane do dystrbuowania instalatorów aplikacji. [electron-builder] wspiera `dmg` jako cel budowania. 
@@ -27,7 +25,7 @@ Każdy plik `main.js` jest wyszczególniony we właściwości w pliku `package.j
 Zobacz także: [Proces (process)](#process), [Proces renderujący (renderer process)](#renderer-process)
 
 ### MAS
-Akronim dla Apple Mac App Store. Po więcej informacji jak dodać aplikację do MAS zajrzyj do [Mac App Store Submission Guide]
+Akronim dla Apple Mac App Store. Po więcej informacji jak dodać aplikację do MAS zajrzyj do [Przewodnik dodawania do Mac App Store]
 
 ### moduły natywne (native modules)
 Moduły natywne (ang. native modules) zwane także dodatkami w Node.js to moduły napisane w C lub C++ które mogą być załadowane do Node.js lub Electron przy użyciu funkcji require(). Używane są jak zwykłe moduły Node.js. Służą głównie dostarczając interfejs pomiędzy uruchomionym JavaScript w Node.js i bibliotekami C/C++.
@@ -35,43 +33,29 @@ Moduły natywne (ang. native modules) zwane także dodatkami w Node.js to moduł
 Zobacz także [Używanie natywnych modułów Node].
 
 ## NSIS
-Nullsoft Scriptable Install System is a script-driven Installer
-authoring tool for Microsoft Windows. It is released under a combination of
-free software licenses, and is a widely-used alternative to commercial
-proprietary products like InstallShield. [electron-builder] supports NSIS
-as a build target.
+Nullsoft Scriptable Install System to operujący na skryptach instalator stworzony dla Microsoft Windows. Został wydany pod kombinacją wielu darmowych licencji i jest powszechnie używany jako alternatywa dla komercyjnych produktów takich jak InstallShield. [electron-builder] wspiera NSIS jako cel budowania.
 
-### process
+### Proces (ang. process)
+Proces to instancja programu komputerowego która jest aktualnie wykonywana. Aplikacje Electron wykorzystują główny proces [main] oraz jeden lub wiele procesów renderujących [renderer].
 
-A process is an instance of a computer program that is being executed. Electron
-apps that make use of the [main] and one or many [renderer] process are
-actually running several programs simultaneously.
+W Node.js i Electron każdy uruchomiony proces posiada obiekt `process`. Jest to globalny obiekt, który dostarcza informacje o aktualnym procesie i pozwala nim sterować. Jako obiekt globalny jest dostępny bez potrzeby stosowania require().  
 
-In Node.js and Electron, each running process has a `process` object. This
-object is a global that provides information about, and control over, the
-current process. As a global, it is always available to applications without
-using require().
+Zobacz także: [Proces (process)](#process), [Proces renderujący (renderer process)](#renderer-process)
 
-See also: [main process](#main-process), [renderer process](#renderer-process)
+### Proces renderujący (ang. renderer process)
+Zobacz także: [Proces (process)](#process), [Proces główny (main process)](#main-process)
 
-### renderer process
+Proces renderujący to okno przeglądarki w twojej aplikacji. W przeciwieństwie do procesu głównego może istnieć wiele procesów renderujących i każdy będzie uruchomiony oddzielnie. Mogą być one także ukrywane.
 
-The renderer process is a browser window in your app. Unlike the main process,
-there can be multiple of these and each is run in a separate process.
-They can also be hidden.
-
-In normal browsers, web pages usually run in a sandboxed environment and are not
-allowed access to native resources. Electron users, however, have the power to
-use Node.js APIs in web pages allowing lower level operating system
-interactions.
-
-See also: [process](#process), [main process](#main-process)
+W normalnych przeglądarkach strony są zazwyczaj uruchamiane w oddzielonych środowiskach i nie mają dostępu do natywnych zasobów systemu. Użytkownicy Electron dzięki API Node.js mają możliwość używania i uruchamiania na stronach nisko poziomowych operacji systemowych.
 
 ### Squirrel
 
 Squirrel is an open-source framework that enables Electron apps to update
 automatically as new versions are released. See the [autoUpdater] API for
 info about getting started with Squirrel.
+
+Squirrel to framework na licencji open source, który pozwala na automatyczne aktualizacje aplikacji Electron gdy zostanie wypuszczona nowa wersja. Zobacz [autoUpdater] API po więcej informacji dotyczących Squirrel.
 
 ### userland
 
@@ -108,7 +92,7 @@ embedded content.
 [autoUpdater]: api/auto-updater.md
 [electron-builder]: https://github.com/electron-userland/electron-builder
 [libchromiumcontent]: #libchromiumcontent
-[Mac App Store Submission Guide]: tutorials/mac-app-store-submission-guide.md
+[Przewodnik dodawania do Mac App Store]: tutorials/mac-app-store-submission-guide.md
 [main]: #main-process
 [renderer]: #renderer-process
 [Używanie natywnych modułów Node]: tutorial/using-native-node-modules.md
