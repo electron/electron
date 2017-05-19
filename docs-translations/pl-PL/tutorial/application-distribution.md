@@ -93,50 +93,18 @@ MyApp.app/Contents
 
 Możesz zmienić nazwę pliku `electron` na jakąkolwiek zechcesz.
 
-## Packaging Tools
-
-Apart from packaging your app manually, you can also choose to use third party
-packaging tools to do the work for you:
+## Narzędzia pakujące
+Poza pakowaniem ręcznym, możesz wybierać spośród zewnętrznych narzędzi pakujących, które zrobią tę pracę za ciebie.
 
 * [electron-builder](https://github.com/electron-userland/electron-builder)
 * [electron-packager](https://github.com/electron-userland/electron-packager)
 
-## Rebranding by Rebuilding Electron from Source
-
-It is also possible to rebrand Electron by changing the product name and
-building it from source. To do this you need to modify the `atom.gyp` file and
-have a clean rebuild.
-
-### grunt-build-atom-shell
-
-Manually checking out Electron's code and rebuilding could be complicated, so
-a Grunt task has been created that will handle this automatically:
-[grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell).
-
-This task will automatically handle editing the `.gyp` file, building from
-source, then rebuilding your app's native Node modules to match the new
-executable name.
-
-### Creating a Custom Electron Fork
-
-Creating a custom fork of Electron is almost certainly not something you will
-need to do in order to build your app, even for "Production Level" applications.
-Using a tool such as `electron-packager` or `electron-builder` will allow you to
-"Rebrand" Electron without having to do these steps.
-
-You need to fork Electron when you have custom C++ code that you have patched
-directly into Electron, that either cannot be upstreamed, or has been rejected
-from the official version. As maintainers of Electron, we very much would like
-to make your scenario work, so please try as hard as you can to get your changes
-into the official version of Electron, it will be much much easier on you, and
-we appreciate your help.
-
 #### Creating a Custom Release with surf-build
 
-1. Install [Surf](https://github.com/surf-build/surf), via npm:
+1. Zainstaluj [Surf](https://github.com/surf-build/surf), przez npm:
   `npm install -g surf-build@latest`
 
-2. Create a new S3 bucket and create the following empty directory structure:
+2. Stwórz nowy S3 bucket and utwórz w nim strukturę pustych katalogów jak poniżej:
 
     ```
     - atom-shell/
@@ -144,22 +112,20 @@ we appreciate your help.
       - dist/
     ```
 
-3. Set the following Environment Variables:
+3. Ustaw zmienne środowiskowe:
 
-  * `ELECTRON_GITHUB_TOKEN` - a token that can create releases on GitHub
+  * `ELECTRON_GITHUB_TOKEN` - token mogący tworzyć nową wersję na GitHub
   * `ELECTRON_S3_ACCESS_KEY`, `ELECTRON_S3_BUCKET`, `ELECTRON_S3_SECRET_KEY` -
-    the place where you'll upload node.js headers as well as symbols
-  * `ELECTRON_RELEASE` - Set to `true` and the upload part will run, leave unset
-    and `surf-build` will just do CI-type checks, appropriate to run for every
-    pull request.
-  * `CI` - Set to `true` or else it will fail
-  * `GITHUB_TOKEN` - set it to the same as `ELECTRON_GITHUB_TOKEN`
-  * `SURF_TEMP` - set to `C:\Temp` on Windows to prevent path too long issues
-  * `TARGET_ARCH` - set to `ia32` or `x64`  
+    miejsce gdzie będziesz wysyłał nagłówki node.js jako symbole
+  * `ELECTRON_RELEASE` - ustaw na `true` i część wysyłana zostanie uruchomiona, pozostaw nieokreślone a wtedy `surf-build` wykona jedynie sprawdzenie CI-type
+  * `CI` - ustaw na true, w innym przypadku nie powiedzie się
+  * `GITHUB_TOKEN` - ustaw tak jak `ELECTRON_GITHUB_TOKEN`
+  * `SURF_TEMP` - ustaw na `C:\Temp` aby uniknąć problemów ze zbyt długą nazwą ścieżki docelowej
+  * `TARGET_ARCH` - ustaw na `ia32` lub `x64`  
 
-4. In `script/upload.py`, you _must_ set `ELECTRON_REPO` to your fork (`MYORG/electron`),
-  especially if you are a contributor to Electron proper.
+4. W pliku `script/upload.py`,  _musisz_ ustawić `ELECTRON_REPO` na twojego forka (`MYORG/electron`),
+  zwłaszcza, jeśli jesteś współautorem Electronu.
 
-5. `surf-build -r https://github.com/MYORG/electron -s YOUR_COMMIT -n 'surf-PLATFORM-ARCH'`
+5. `surf-build -r https://github.com/MYORG/electron -s TWÓJ_COMMIT -n 'surf-PLATFORM-ARCH'`
 
-6. Wait a very, very long time for the build to complete.
+6. Poczekaj na zakończenie.
