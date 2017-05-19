@@ -6,46 +6,28 @@ ASAR to skrót pochodzący od Atom Shell Archive Format. Archiwum [asar][asar] j
 
 Format ASAR został utworzony aby zwiększyć wydajność w systemie Windows.
 ### Brightray
+Brightray to statyczna biblioteka czyni [libchromiumcontent] łatwiejszą do użycia w aplikacjach.
 
-Brightray is a static library that makes [libchromiumcontent]
-easier to use in applications.
-
-Brightray is a low-level dependency of Electron that does not concern the
-majority of Electron users.
+Brightray to niskopoziomowa zależność Electron, która nie dotyczy większości użytkowników Electron. 
 
 ### DMG
-
-An Apple Disk Image is a packaging format used by macOS. DMG files are
-commonly used for distributing application "installers". [electron-builder]
-supports `dmg` as a build target.
+Apple Disk Image to format pakowania używany przez macOS. Pliki DMG są powszechnie używane do dystrbuowania instalatorów aplikacji. [electron-builder] wspiera `dmg` jako cel budowania. 
 
 ### IPC
-
-IPC stands for Inter-Process Communication. Electron uses IPC to send
-serialized JSON messages between the [main] and [renderer] processes.
+IPC oznacza Inter-Process Communication. Electron używa IPC do wysyłania serializowanych wiadomości JSON pomiędzy głównym i renderującym procesem.
 
 ### libchromiumcontent
-
-A single, shared library that includes the Chromium Content module and all its
-dependencies (e.g., Blink, [V8], etc.).
+Pojedyncza, udostępniana biblioteka, która zawiera moduł zawartości Chromium i wszystkie jego zależności (takie jak Blink, V8 i inne). 
 
 ### main process
+Główny proces (ang. main process) powszechnie nazywany plikiem `main.js` to plik startowy każdej aplikacji Electron. Kontroluje funkcjonowanie aplikacji począwszy od otwarcia do zamknięcia. Zarządza także natywnymi elementami takimi jak Menu, Menu Bar, Dock, Tray i pozostałymi. Główny proces odpowiada za tworzenie nowych procesów renderujących w aplikacji. Pełne API Node jest wbudowane w ten proces.  
 
-The main process, commonly a file named `main.js`, is the entry point to every
-Electron app. It controls the life of the app, from open to close. It also
-manages native elements such as the Menu, Menu Bar, Dock, Tray, etc.  The
-main process is responsible for creating each new renderer process in the app.
-The full Node API is built in.
+Każdy plik `main.js` jest wyszczególniony we właściwości w pliku `package.json`. Dzięki temu plikowi `electron` wie jaki plik powinien uruchomić.
 
-Every app's main process file is specified in the `main` property in
-`package.json`. This is how `electron .` knows what file to execute at startup.
-
-See also: [process](#process), [renderer process](#renderer-process)
+Zobacz także: [Proces (process)](#process), [Proces renderujący (renderer process)](#renderer-process)
 
 ### MAS
-
-Acronym for Apple's Mac App Store. For details on submitting your app to the
-MAS, see the [Mac App Store Submission Guide].
+Akronim dla Apple Mac App Store. Po więcej informacji jak dodać aplikację do MAS zajrzyj do [Mac App Store Submission Guide]
 
 ### native modules
 
