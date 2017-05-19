@@ -749,7 +749,7 @@ void WebContents::RenderFrameCreated(content::RenderFrameHost* host) {
     host->GetRoutingID(), routing_id()));
 }
 
-void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host, 
+void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
     content::RenderFrameHost* new_host) {
   Send(new AtomAutofillViewHostMsg_RoutingId(
     new_host->GetRoutingID(), routing_id()));
@@ -1628,14 +1628,14 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
 void WebContents::OnShowAutofillPopup(
     int routing_id,
     const gfx::RectF& bounds,
-    const std::vector<base::string16>& values, 
-    const std::vector<base::string16>& labels) {  
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {
   auto relay = reinterpret_cast<NativeWindowViews*>(
     NativeWindow::FromWebContents(web_contents()));
   autofill_popup_->CreateView(
     routing_id,
     web_contents(),
-    relay->widget(), 
+    relay->widget(),
     bounds);
   autofill_popup_->SetItems(values, labels);
 }

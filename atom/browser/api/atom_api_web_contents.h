@@ -309,7 +309,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
   void RenderViewCreated(content::RenderViewHost*) override;
   void RenderFrameCreated(content::RenderFrameHost*) override;
-  void RenderFrameHostChanged(content::RenderFrameHost*, 
+  void RenderFrameHostChanged(content::RenderFrameHost*,
                               content::RenderFrameHost*) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
@@ -377,10 +377,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
-  
+
   void OnShowAutofillPopup(int routing_id,
                            const gfx::RectF& bounds,
-                           const std::vector<base::string16>& values, 
+                           const std::vector<base::string16>& values,
                            const std::vector<base::string16>& labels);
   void OnHideAutofillPopup();
 

@@ -2,14 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
 #include "atom/browser/ui/autofill_popup.h"
 #include "atom/common/api/api_messages.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
-#include "ui/gfx/text_utils.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/vector2d.h"
+#include "ui/gfx/text_utils.h"
 
 namespace atom {
 
@@ -97,9 +101,9 @@ display::Display GetDisplayNearestPoint(
 
 AutofillPopup::AutofillPopup(gfx::NativeView container_view)
     : container_view_(container_view) {
-  bold_font_list_ = 
+  bold_font_list_ =
     gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
-  smaller_font_list_ = 
+  smaller_font_list_ =
     gfx::FontList().DeriveWithSizeDelta(kSmallerFontSizeDelta);
 }
 
@@ -110,19 +114,20 @@ AutofillPopup::~AutofillPopup() {
 void AutofillPopup::CreateView(
     int routing_id,
     content::WebContents* web_contents,
-    views::Widget* parent_widget, 
+    views::Widget* parent_widget,
     const gfx::RectF& r) {
   web_contents_ = web_contents;
-  gfx::Rect lb(std::floor(r.x()), std::floor(r.y() + r.height()), 
+  gfx::Rect lb(std::floor(r.x()), std::floor(r.y() + r.height()),
                std::floor(r.width()), std::floor(r.height()));
   gfx::Point menu_position(lb.origin());
-  views::View::ConvertPointToScreen(parent_widget->GetContentsView(), &menu_position);
+  views::View::ConvertPointToScreen(
+    parent_widget->GetContentsView(), &menu_position);
   popup_bounds_ = gfx::Rect(menu_position, lb.size());
   element_bounds_ = popup_bounds_;
-  
+
   view_.reset(new AutofillPopupView(this, parent_widget));
   view_->Show();
-  
+
   frame_routing_id_ = routing_id;
 }
 
@@ -152,7 +157,7 @@ void AutofillPopup::UpdatePopupBounds() {
   int desired_width = GetDesiredPopupWidth();
   int desired_height = GetDesiredPopupHeight();
   bool is_rtl = false;
-      
+
   gfx::Point top_left_corner_of_popup =
       element_bounds_.origin() +
       gfx::Vector2d(element_bounds_.width() - desired_width, -desired_height);
@@ -187,10 +192,10 @@ int AutofillPopup::GetDesiredPopupWidth() {
   int popup_width = element_bounds_.width();
 
   for (int i = 0; i < values_.size(); ++i) {
-    int row_size = kEndPadding + 2 * kPopupBorderThickness + 
-      gfx::GetStringWidth(GetValueAt(i), GetValueFontListForRow(i)) + 
+    int row_size = kEndPadding + 2 * kPopupBorderThickness +
+      gfx::GetStringWidth(GetValueAt(i), GetValueFontListForRow(i)) +
       gfx::GetStringWidth(GetLabelAt(i), GetLabelFontListForRow(i));
-    if (GetLabelAt(i).length() > 0) 
+    if (GetLabelAt(i).length() > 0)
       row_size += kNamePadding + kEndPadding;
 
     popup_width = std::max(popup_width, row_size);
@@ -243,7 +248,7 @@ int AutofillPopup::LineFromY(int y) const {
     if (y <= current_height)
       return i;
   }
-  
+
   return values_.size() - 1;
 }
 

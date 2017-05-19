@@ -80,7 +80,7 @@ void AutofillPopupView::Show() {
 
   if (initialize_widget)
     views::WidgetFocusManager::GetInstance()->AddFocusChangeListener(this);
-    
+
   keypress_callback_ = base::Bind(&AutofillPopupView::HandleKeyPressEvent,
     base::Unretained(this));
   auto host = popup_->web_contents_->GetRenderViewHost()->GetWidget();
@@ -129,13 +129,13 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
       entry_rect,
       GetNativeTheme()->GetSystemColor(
           popup_->GetBackgroundColorIDForRow(index)));
-  
+
   const bool is_rtl = false;
   const int text_align =
     is_rtl ? gfx::Canvas::TEXT_ALIGN_RIGHT : gfx::Canvas::TEXT_ALIGN_LEFT;
   gfx::Rect value_rect = entry_rect;
   value_rect.Inset(kEndPadding, 0);
-  
+
   int x_align_left = value_rect.x();
   const int value_width = gfx::GetStringWidth(
      popup_->GetValueAt(index),
@@ -143,7 +143,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
   int value_x_align_left = x_align_left;
   value_x_align_left =
     is_rtl ? value_rect.right() - value_width : value_rect.x();
-  
+
   canvas->DrawStringRectWithFlags(
       popup_->GetValueAt(index),
       popup_->GetValueFontListForRow(index),
@@ -159,7 +159,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
         popup_->GetLabelAt(index),
         popup_->GetLabelFontListForRow(index));
     int label_x_align_left = x_align_left;
-    label_x_align_left = 
+    label_x_align_left =
       is_rtl ? value_rect.x() : value_rect.right() - label_width;
 
     canvas->DrawStringRectWithFlags(
@@ -191,15 +191,15 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
 void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   if (!popup_)
     return;
-  
+
   canvas->DrawColor(GetNativeTheme()->GetSystemColor(
       ui::NativeTheme::kColorId_ResultsTableNormalBackground));
   OnPaintBorder(canvas);
-  
+
   DCHECK_EQ(popup_->GetLineCount(), child_count());
   for (int i = 0; i < popup_->GetLineCount(); ++i) {
     gfx::Rect line_rect = popup_->GetRowBounds(i);
-  
+
     DrawAutofillEntry(canvas, i, line_rect);
   }
 }

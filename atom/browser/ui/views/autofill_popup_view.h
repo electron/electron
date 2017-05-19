@@ -57,12 +57,12 @@ class AutofillPopupView : public views::WidgetDelegateView,
   explicit AutofillPopupView(AutofillPopup* popup,
                              views::Widget* parent_widget);
   ~AutofillPopupView() override;
-  
+
   void Show();
   void Hide();
-  
+
   void OnSuggestionsChanged();
-  
+
   int GetSelectedLine() { return selected_line_.value_or(-1); }
 
   void WriteDragDataForView(
@@ -71,8 +71,8 @@ class AutofillPopupView : public views::WidgetDelegateView,
     return ui::DragDropTypes::DRAG_NONE;
   }
   bool CanStartDragForView(
-    views::View*, const gfx::Point&, const gfx::Point&) override { 
-    return false; 
+    views::View*, const gfx::Point&, const gfx::Point&) override {
+    return false;
   }
 
  private:
@@ -88,9 +88,9 @@ class AutofillPopupView : public views::WidgetDelegateView,
   // child views are used for accessibility events only. We need child views to
   // populate the correct |AXNodeData| when user selects a suggestion.
   void CreateChildViews();
-   
+
   void DoUpdateBoundsAndRedrawPopup();
-   
+
   // views::Views implementation.
   void OnPaint(gfx::Canvas* canvas) override;
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
@@ -103,7 +103,7 @@ class AutofillPopupView : public views::WidgetDelegateView,
   void OnGestureEvent(ui::GestureEvent* event) override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
   bool HandleKeyPressEvent(const content::NativeWebKeyboardEvent& event);
-  
+
   // views::WidgetFocusChangeListener implementation.
   void OnNativeFocusChanged(gfx::NativeView focused_now) override;
 
@@ -131,10 +131,10 @@ class AutofillPopupView : public views::WidgetDelegateView,
 
   // The time when the popup was shown.
   base::Time show_time_;
-  
+
   // The index of the currently selected line
   base::Optional<int> selected_line_;
-  
+
   // The registered keypress callback, responsible for switching lines on
   // key presses
   content::RenderWidgetHost::KeyPressEventCallback keypress_callback_;

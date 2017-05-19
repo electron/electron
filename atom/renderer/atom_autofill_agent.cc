@@ -4,6 +4,8 @@
 
 #include "atom/renderer/atom_autofill_agent.h"
 
+#include <vector>
+
 #include "atom/common/api/api_messages.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
@@ -17,11 +19,11 @@
 #include "ui/gfx/geometry/rect_f.h"
 
 namespace atom {
-  
+
 namespace {
 const size_t kMaxDataLength = 1024;
 const size_t kMaxListSize = 512;
-  
+
 void GetDataListSuggestions(const blink::WebInputElement& element,
     std::vector<base::string16>* values,
     std::vector<base::string16>* labels) {
@@ -45,7 +47,7 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
       (*strings)[i].resize(kMaxDataLength);
   }
 }
-} // namespace
+}  // namespace
 
 AutofillAgent::AutofillAgent(
     content::RenderFrame* frame)
@@ -73,10 +75,10 @@ void AutofillAgent::textFieldDidEndEditing(
 }
 
 void AutofillAgent::textFieldDidChange(
-    const blink::WebFormControlElement& element) {  
+    const blink::WebFormControlElement& element) {
   if (!IsUserGesture() && !render_frame()->IsPasting())
     return;
-    
+
   weak_ptr_factory_.InvalidateWeakPtrs();
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::Bind(&AutofillAgent::textFieldDidChangeImpl,
@@ -84,14 +86,14 @@ void AutofillAgent::textFieldDidChange(
 }
 
 void AutofillAgent::textFieldDidChangeImpl(
-    const blink::WebFormControlElement& element) {  
+    const blink::WebFormControlElement& element) {
   ShowSuggestionsOptions options;
   options.requires_caret_at_end = true;
   ShowSuggestions(element, options);
 }
 
 void AutofillAgent::textFieldDidReceiveKeyDown(
-    const blink::WebInputElement& element, 
+    const blink::WebInputElement& element,
     const blink::WebKeyboardEvent& event) {
   if (event.windowsKeyCode == ui::VKEY_DOWN ||
       event.windowsKeyCode == ui::VKEY_UP) {
@@ -113,7 +115,7 @@ void AutofillAgent::dataListOptionsChanged(
     const blink::WebInputElement& element) {
   if (!element.focused())
     return;
-    
+
   ShowSuggestionsOptions options;
   options.requires_caret_at_end = true;
   ShowSuggestions(element, options);
@@ -136,7 +138,7 @@ void AutofillAgent::ShowSuggestions(
     if (!input_element->isTextField())
       return;
   }
-  
+
   blink::WebString value = element.editingValue();
   if (value.length() > kMaxDataLength ||
       (!options.autofill_on_empty_values && value.isEmpty()) ||
@@ -146,7 +148,7 @@ void AutofillAgent::ShowSuggestions(
     HidePopup();
     return;
   }
-  
+
   std::vector<base::string16> data_list_values;
   std::vector<base::string16> data_list_labels;
   if (input_element) {
@@ -155,7 +157,7 @@ void AutofillAgent::ShowSuggestions(
     TrimStringVectorForIPC(&data_list_values);
     TrimStringVectorForIPC(&data_list_labels);
   }
-  
+
   ShowPopup(element, data_list_values, data_list_labels);
 }
 
@@ -196,7 +198,7 @@ void AutofillAgent::ShowPopup(
     const blink::WebFormControlElement& element,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
-  gfx::RectF bounds = 
+  gfx::RectF bounds =
     render_frame_->GetRenderView()->ElementBoundsInWindow(element);
   Send(new AtomAutofillViewMsg_ShowPopup(
     web_contents_routing_id_, routing_id(), bounds, values, labels));

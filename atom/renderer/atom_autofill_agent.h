@@ -5,6 +5,8 @@
 #ifndef ATOM_RENDERER_ATOM_AUTOFILL_AGENT_H_
 #define ATOM_RENDERER_ATOM_AUTOFILL_AGENT_H_
 
+#include <vector>
+
 #include "base/memory/weak_ptr.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "third_party/WebKit/public/web/WebAutofillClient.h"
@@ -14,14 +16,14 @@
 
 namespace atom {
 
-class AutofillAgent : public content::RenderFrameObserver, 
+class AutofillAgent : public content::RenderFrameObserver,
                                 public blink::WebAutofillClient {
  public:
-  AutofillAgent(content::RenderFrame* frame);
+  explicit AutofillAgent(content::RenderFrame* frame);
 
   // content::RenderFrameObserver:
   void OnDestruct() override;
-  
+
   void DidChangeScrollOffset() override;
   void FocusedNodeChanged(const blink::WebNode&) override;
 
@@ -31,9 +33,9 @@ class AutofillAgent : public content::RenderFrameObserver,
     bool autofill_on_empty_values;
     bool requires_caret_at_end;
   };
-   
+
   bool OnMessageReceived(const IPC::Message& message) override;
-  void OnWebContentsRoutingIdReceived(int);
+  void OnWebContentsRoutingIdReceived(int routing_id);
 
   // blink::WebAutofillClient:
   void textFieldDidEndEditing(const blink::WebInputElement&) override;
@@ -43,7 +45,7 @@ class AutofillAgent : public content::RenderFrameObserver,
                                   const blink::WebKeyboardEvent&) override;
   void openTextDataListChooser(const blink::WebInputElement&) override;
   void dataListOptionsChanged(const blink::WebInputElement&) override;
-  
+
   bool IsUserGesture() const;
   void HidePopup();
   void ShowPopup(const blink::WebFormControlElement&,
