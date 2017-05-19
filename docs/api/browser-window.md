@@ -310,12 +310,12 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native `window.open()`. Defaults to `false`.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to the value of the `nodeIntegration` option. **Note:** The
-      preload script to the `<webview>` will have node integration enabled
-      when it executed so you should ensure remote content is not able to create
-      a `<webview>` tag with a possibly malicious `preload` script. You can use
-      the `will-attach-webview` event on [web-contents](web-contents.md) to
-      strip away the `preload` script and to validate or alter the `<webview>`'s
-      initial settings.
+      `preload` script configured for the `<webview>` will have node integration
+      enabled when it is executed so you should ensure remote/untrusted content
+      is not able to create a `<webview>` tag with a possibly malicious `preload`
+      script. You can use the `will-attach-webview` event on [webContents](web-contents.md)
+      to strip away the `preload` script and to validate or alter the
+      `<webview>`'s initial settings.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
