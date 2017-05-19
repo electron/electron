@@ -1,13 +1,8 @@
-# Application Distribution
+# Dystrybowanie aplikacji
 
-To distribute your app with Electron, you need to download Electron's [prebuilt
-binaries](https://github.com/electron/electron/releases). Next, the folder
-containing your app should be named `app` and placed in Electron's resources
-directory as shown in the following examples. Note that the location of
-Electron's prebuilt binaries is indicated with `electron/` in the examples
-below.
+Aby rozpowszechniać aplikacją powinieneś pobrać pre-budowane pliki binarne Electron. Następnie folder zawierający powinien być nazwany `app` i umieszczony w katalogu z zawartością Electron jak w poniższym przykładzie.
 
-On macOS:
+na macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -16,7 +11,7 @@ electron/Electron.app/Contents/Resources/app/
 └── index.html
 ```
 
-On Windows and Linux:
+na Windows i Linux:
 
 ```text
 electron/resources/app
@@ -29,8 +24,9 @@ Then execute `Electron.app` (or `electron` on Linux, `electron.exe` on Windows),
 and Electron will start as your app. The `electron` directory will then be
 your distribution to deliver to final users.
 
-## Packaging Your App into a File
+Następnie uruchom `Electron.app` (lub `electron` na Linux, `electron.exe` na Windows) a Electron uruchomi twoją aplikację. Folder `electron` będzie służył do rozpowszechniania pomiędzy użytkowników.
 
+## Pakowanie twojej aplikacji do pliku
 Apart from shipping your app by copying all of its source files, you can also
 package your app into an [asar](https://github.com/electron/asar) archive to avoid
 exposing your app's source code to users.
@@ -39,47 +35,40 @@ To use an `asar` archive to replace the `app` folder, you need to rename the
 archive to `app.asar`, and put it under Electron's resources directory like
 below, and Electron will then try to read the archive and start from it.
 
-On macOS:
+Poza dostarczanie plików źródłowych twojej aplikacji, możesz także spakować je do pojedynczego archiwum [asar](https://github.com/electron/asar) aby uniknąć bezpośredniego ujawniania plików źródłowych twojej aplikacji.
+
+na macOS:
 
 ```text
 electron/Electron.app/Contents/Resources/
 └── app.asar
 ```
 
-On Windows and Linux:
+na Windows i Linux:
 
 ```text
 electron/resources/
 └── app.asar
 ```
 
-More details can be found in [Application packaging](application-packaging.md).
+po więcej informacji zajrzyj do [Pakowanie aplikacji](application-packaging.md).
 
-## Rebranding with Downloaded Binaries
-
-After bundling your app into Electron, you will want to rebrand Electron
-before distributing it to users.
+## Przemianowanie z pobranymi plikami binarnymi
+Po spakowaniu aplikacji do Electron, możesz chcieć zmienić nieco informacji i sposób w jaki przedstawiają się jej pliki przed opublikowaniem użytkownikom.
 
 ### Windows
-
-You can rename `electron.exe` to any name you like, and edit its icon and other
-information with tools like [rcedit](https://github.com/atom/rcedit).
+Możesz zmienić nazwę pliku `electron.exe` na jaką tylko zechcesz i edytować jej ikonę i inne informacje narzędziem jak na przykład [rcedit](https://github.com/atom/rcedit).
 
 ### macOS
 
-You can rename `Electron.app` to any name you want, and you also have to rename
-the `CFBundleDisplayName`, `CFBundleIdentifier` and `CFBundleName` fields in the
-following files:
+Możesz zmienić nazwę `Electron.app` na jaką tylko zechcesz, oraz zmienić nazwę pól `CFBundleDisplayName`, `CFBundleIdentifier` oraz `CFBundleName` w podanych plikach:
 
 * `Electron.app/Contents/Info.plist`
 * `Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist`
 
-You can also rename the helper app to avoid showing `Electron Helper` in the
-Activity Monitor, but make sure you have renamed the helper app's executable
-file's name.
+Możesz także zmienić nazwę aplikacji pomocniczej, aby uniknąć pojawieniu się `Electron Helper` w monitorze aktywności, ale upewnij się, że zmieniona nazwa to nadal nazwa wykonywanlna.
 
-The structure of a renamed app would be like:
-
+Struktura przetworzonej aplikacji powinna wyglądać mniej więcej tak:
 ```
 MyApp.app/Contents
 ├── Info.plist
@@ -102,7 +91,7 @@ MyApp.app/Contents
 
 ### Linux
 
-You can rename the `electron` executable to any name you like.
+Możesz zmienić nazwę pliku `electron` na jakąkolwiek zechcesz.
 
 ## Packaging Tools
 
