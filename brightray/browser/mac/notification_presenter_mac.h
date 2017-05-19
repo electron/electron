@@ -3,12 +3,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_MAC_H_
-#define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_MAC_H_
+#ifndef BRIGHTRAY_BROWSER_MAC_NOTIFICATION_PRESENTER_MAC_H_
+#define BRIGHTRAY_BROWSER_MAC_NOTIFICATION_PRESENTER_MAC_H_
 
 #include "base/mac/scoped_nsobject.h"
-#include "browser/mac/notification_center_delegate.h"
-#include "browser/notification_presenter.h"
+#include "brightray/browser/mac/notification_center_delegate.h"
+#include "brightray/browser/notification_presenter.h"
 
 namespace brightray {
 
@@ -33,4 +33,4 @@ class NotificationPresenterMac : public NotificationPresenter {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_MAC_NOTIFICATION_PRESENTER_MAC_H_

@@ -5,6 +5,9 @@
 #ifndef BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 #define BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 
+#include <string>
+#include <vector>
+
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
@@ -16,6 +19,10 @@
 
 namespace base {
 class MessageLoop;
+}
+
+namespace content {
+class StreamContext;
 }
 
 namespace net {
@@ -58,6 +65,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       return nullptr;
     }
     virtual MediaDeviceIDSalt* GetMediaDeviceIDSalt() { return nullptr; }
+    virtual content::StreamContext* GetStreamContext() { return nullptr; }
   };
 
   URLRequestContextGetter(
@@ -81,6 +89,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }
   MediaDeviceIDSalt* GetMediaDeviceIDSalt() const {
     return delegate_->GetMediaDeviceIDSalt();
+  }
+  content::StreamContext* stream_context() const {
+    return delegate_->GetStreamContext();
   }
 
  private:
@@ -112,4 +123,4 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_

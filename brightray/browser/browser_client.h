@@ -5,13 +5,14 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 #define BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 
-#include "browser/net_log.h"
-#include "content/public/browser/browser_context.h"
+#include <string>
+#include <vector>
+
+#include "brightray/browser/net_log.h"
 #include "content/public/browser/content_browser_client.h"
 
 namespace brightray {
 
-class BrowserContext;
 class BrowserMainParts;
 class NotificationPresenter;
 class PlatformNotificationService;
@@ -66,4 +67,4 @@ class BrowserClient : public content::ContentBrowserClient {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_

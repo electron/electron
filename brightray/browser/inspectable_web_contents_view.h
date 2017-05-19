@@ -56,4 +56,4 @@ class InspectableWebContentsView {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_H_

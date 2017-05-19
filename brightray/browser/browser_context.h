@@ -6,13 +6,13 @@
 #define BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 
 #include <map>
-
-#include "browser/net/devtools_network_controller_handle.h"
-#include "browser/permission_manager.h"
-#include "browser/url_request_context_getter.h"
+#include <string>
 
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
+#include "brightray/browser/net/devtools_network_controller_handle.h"
+#include "brightray/browser/permission_manager.h"
+#include "brightray/browser/url_request_context_getter.h"
 #include "content/public/browser/browser_context.h"
 
 class PrefRegistrySimple;
@@ -89,6 +89,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   // URLRequestContextGetter::Delegate:
   net::NetworkDelegate* CreateNetworkDelegate() override;
   MediaDeviceIDSalt* GetMediaDeviceIDSalt() override;
+  content::StreamContext* GetStreamContext() override;
 
   base::FilePath GetPath() const override;
 
@@ -139,4 +140,4 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_

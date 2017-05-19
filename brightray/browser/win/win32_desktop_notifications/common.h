@@ -10,7 +10,6 @@ struct NotificationData {
     std::wstring body_text;
     HBITMAP image = NULL;
 
-
     NotificationData() = default;
 
     ~NotificationData() {

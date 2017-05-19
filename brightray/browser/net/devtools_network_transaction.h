@@ -2,18 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_DEVTOOLS_NETWORK_TRANSACTION_H_
-#define BROWSER_DEVTOOLS_NETWORK_TRANSACTION_H_
+#ifndef BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_TRANSACTION_H_
+#define BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_TRANSACTION_H_
 
 #include <stdint.h>
 
 #include "base/memory/weak_ptr.h"
-#include "browser/net/devtools_network_interceptor.h"
+#include "brightray/browser/net/devtools_network_interceptor.h"
 #include "net/base/completion_callback.h"
 #include "net/base/load_states.h"
 #include "net/base/request_priority.h"
 #include "net/http/http_transaction.h"
-#include "net/websockets/websocket_handshake_stream_base.h"
 
 namespace brightray {
 
@@ -105,4 +104,4 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
 
 }  // namespace brightray
 
-#endif  // BROWSER_DEVTOOLS_NETWORK_TRANSACTION_H_
+#endif  // BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_TRANSACTION_H_

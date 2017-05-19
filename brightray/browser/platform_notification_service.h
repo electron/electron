@@ -2,8 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
-#define BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
+#ifndef BRIGHTRAY_BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
+#define BRIGHTRAY_BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
+
+#include <set>
+#include <string>
 
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/platform_notification_service.h"
@@ -58,4 +61,4 @@ class PlatformNotificationService
 
 }  // namespace brightray
 
-#endif  // BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_
+#endif  // BRIGHTRAY_BROWSER_PLATFORM_NOTIFICATION_SERVICE_H_

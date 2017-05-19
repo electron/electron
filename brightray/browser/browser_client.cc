@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/browser_client.h"
+#include "brightray/browser/browser_client.h"
 
 #include "base/path_service.h"
-#include "browser/browser_context.h"
-#include "browser/browser_main_parts.h"
-#include "browser/devtools_manager_delegate.h"
-#include "browser/media/media_capture_devices_dispatcher.h"
-#include "browser/notification_presenter.h"
-#include "browser/platform_notification_service.h"
+#include "brightray/browser/browser_context.h"
+#include "brightray/browser/browser_main_parts.h"
+#include "brightray/browser/devtools_manager_delegate.h"
+#include "brightray/browser/media/media_capture_devices_dispatcher.h"
+#include "brightray/browser/notification_presenter.h"
+#include "brightray/browser/platform_notification_service.h"
 #include "content/public/common/url_constants.h"
 
 namespace brightray {

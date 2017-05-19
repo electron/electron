@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/permission_manager.h"
+#include "brightray/browser/permission_manager.h"
 
 #include "base/callback.h"
 #include "content/public/browser/child_process_security_policy.h"

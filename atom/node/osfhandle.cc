@@ -27,7 +27,6 @@
 #include "third_party/icu/source/i18n/unicode/uregex.h"
 #include "third_party/icu/source/i18n/unicode/uspoof.h"
 #include "third_party/icu/source/i18n/unicode/usearch.h"
-#include "util-inl.h"
 #include "v8-profiler.h"
 #include "v8-inspector.h"
 
@@ -39,18 +38,6 @@ int open_osfhandle(intptr_t osfhandle, int flags) {
 
 int close(int fd) {
   return _close(fd);
-}
-
-void* ArrayBufferCalloc(size_t length) {
-  return UncheckedCalloc(length);
-}
-
-void* ArrayBufferMalloc(size_t length) {
-  return UncheckedMalloc(length);
-}
-
-void ArrayBufferFree(void* data, size_t length) {
-  return ::free(data);
 }
 
 void ReferenceSymbols() {

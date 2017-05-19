@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "common/switches.h"
+#include "brightray/common/switches.h"
 
 namespace brightray {
 
@@ -49,9 +49,6 @@ const char kAuthServerWhitelist[] = "auth-server-whitelist";
 // Whitelist containing servers for which Kerberos delegation is allowed.
 const char kAuthNegotiateDelegateWhitelist[] =
     "auth-negotiate-delegate-whitelist";
-
-// Ignores certificate-related errors.
-const char kIgnoreCertificateErrors[] = "ignore-certificate-errors";
 
 // Forces the maximum disk space to be used by the disk cache, in bytes.
 const char kDiskCacheSize[] = "disk-cache-size";

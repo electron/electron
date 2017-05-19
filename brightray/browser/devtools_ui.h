@@ -24,4 +24,4 @@ class DevToolsUI : public content::WebUIController {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_DEVTOOLS_UI_H_

@@ -3,10 +3,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_LINUX_H_
-#define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_LINUX_H_
+#ifndef BRIGHTRAY_BROWSER_LINUX_NOTIFICATION_PRESENTER_LINUX_H_
+#define BRIGHTRAY_BROWSER_LINUX_NOTIFICATION_PRESENTER_LINUX_H_
 
-#include "browser/notification_presenter.h"
+#include "brightray/browser/notification_presenter.h"
 
 namespace brightray {
 
@@ -24,4 +24,4 @@ class NotificationPresenterLinux : public NotificationPresenter {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_LINUX_NOTIFICATION_PRESENTER_LINUX_H_

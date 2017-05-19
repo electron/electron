@@ -1,10 +1,9 @@
-#include "browser/views/inspectable_web_contents_view_views.h"
-
-#include "browser/inspectable_web_contents_delegate.h"
-#include "browser/inspectable_web_contents_impl.h"
-#include "browser/inspectable_web_contents_view_delegate.h"
+#include "brightray/browser/views/inspectable_web_contents_view_views.h"
 
 #include "base/strings/utf_string_conversions.h"
+#include "brightray/browser/inspectable_web_contents_delegate.h"
+#include "brightray/browser/inspectable_web_contents_impl.h"
+#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "ui/views/controls/label.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"

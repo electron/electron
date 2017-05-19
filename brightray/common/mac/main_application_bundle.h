@@ -18,4 +18,4 @@ base::FilePath MainApplicationBundlePath();
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_COMMON_MAC_MAIN_APPLICATION_BUNDLE_H_

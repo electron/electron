@@ -1,4 +1,4 @@
-#include "browser/inspectable_web_contents_view_delegate.h"
+#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 
 namespace brightray {
 

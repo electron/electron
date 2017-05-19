@@ -22,10 +22,16 @@ IGNORE_FILES = [
   os.path.join('brightray', 'browser', 'mac', 'event_dispatching_window.h'),
   os.path.join('brightray', 'browser', 'mac',
                'notification_center_delegate.h'),
+  os.path.join('brightray', 'browser', 'win', 'notification_presenter_win7.h'),
+  os.path.join('brightray', 'browser', 'win', 'win32_desktop_notifications',
+               'common.h'),
   os.path.join('brightray', 'browser', 'win', 'win32_desktop_notifications',
                'desktop_notification_controller.cc'),
   os.path.join('brightray', 'browser', 'win', 'win32_desktop_notifications',
-               'desktop_notification_controller.h')
+               'desktop_notification_controller.h'),
+  os.path.join('brightray', 'browser', 'win', 'win32_desktop_notifications',
+               'toast.h'),
+  os.path.join('brightray', 'browser', 'win', 'win32_notification.h')
 ]
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 #define BRIGHTRAY_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 
+#include <string>
+
 #include "base/files/file_path.h"
 #include "base/macros.h"
 #include "components/prefs/pref_service.h"
