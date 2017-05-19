@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "browser/net/devtools_network_upload_data_stream.h"
+#include "brightray/browser/net/devtools_network_upload_data_stream.h"
 
 #include "net/base/net_errors.h"
 

@@ -245,7 +245,6 @@
       'include_dirs': [
         '.',
         'chromium_src',
-        'brightray',
         'vendor/native_mate',
         # Include atom_natives.h.
         '<(SHARED_INTERMEDIATE_DIR)',

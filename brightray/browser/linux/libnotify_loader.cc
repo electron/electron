@@ -2,7 +2,7 @@
 // Path to the code generator:
 // tools/generate_library_loader/generate_library_loader.py .
 
-#include "browser/linux/libnotify_loader.h"
+#include "brightray/browser/linux/libnotify_loader.h"
 
 #include <dlfcn.h>
 

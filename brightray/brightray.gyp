@@ -11,7 +11,7 @@
       'target_name': 'brightray',
       'type': 'static_library',
       'include_dirs': [
-        '.',
+        '..',
         '<(libchromiumcontent_src_dir)',
         '<(libchromiumcontent_src_dir)/skia/config',
         '<(libchromiumcontent_src_dir)/third_party/boringssl/src/include',
@@ -22,7 +22,6 @@
       ],
       'direct_dependent_settings': {
         'include_dirs': [
-          '.',
           '../vendor',
           '<(libchromiumcontent_src_dir)',
           '<(libchromiumcontent_src_dir)/gpu',

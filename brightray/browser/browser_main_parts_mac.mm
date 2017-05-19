@@ -1,4 +1,4 @@
-#import "browser_main_parts.h"
+#import "brightray/browser/browser_main_parts.h"
 
 #import "base/logging.h"
 #import "base/mac/bundle_locations.h"

@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/net/devtools_network_controller_handle.h"
+#include "brightray/browser/net/devtools_network_controller_handle.h"
 
 #include "base/bind.h"
-#include "browser/net/devtools_network_conditions.h"
-#include "browser/net/devtools_network_controller.h"
+#include "brightray/browser/net/devtools_network_conditions.h"
+#include "brightray/browser/net/devtools_network_controller.h"
 #include "content/public/browser/browser_thread.h"
 
 using content::BrowserThread;

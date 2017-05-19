@@ -12,8 +12,9 @@
 #include <windows.h>
 #include <windows.ui.notifications.h>
 #include <wrl/implements.h>
+#include <string>
 
-#include "browser/notification.h"
+#include "brightray/browser/notification.h"
 
 using Microsoft::WRL::ClassicCom;
 using Microsoft::WRL::ComPtr;

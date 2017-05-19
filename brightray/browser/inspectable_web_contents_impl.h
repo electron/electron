@@ -6,12 +6,14 @@
 #ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
 #define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
 
-#include "browser/inspectable_web_contents.h"
-
-#include "browser/devtools_contents_resizing_strategy.h"
-#include "browser/devtools_embedder_message_dispatcher.h"
+#include <map>
+#include <string>
+#include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "brightray/browser/devtools_contents_resizing_strategy.h"
+#include "brightray/browser/devtools_embedder_message_dispatcher.h"
+#include "brightray/browser/inspectable_web_contents.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -21,10 +23,6 @@
 
 class PrefService;
 class PrefRegistrySimple;
-
-namespace content {
-class DevToolsAgentHost;
-}
 
 namespace brightray {
 
@@ -199,4 +197,4 @@ class InspectableWebContentsImpl :
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_

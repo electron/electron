@@ -2,13 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_MAC_COCOA_NOTIFICATION_H_
-#define BROWSER_MAC_COCOA_NOTIFICATION_H_
+#ifndef BRIGHTRAY_BROWSER_MAC_COCOA_NOTIFICATION_H_
+#define BRIGHTRAY_BROWSER_MAC_COCOA_NOTIFICATION_H_
 
 #import <Foundation/Foundation.h>
 
+#include <string>
+
 #include "base/mac/scoped_nsobject.h"
-#include "browser/notification.h"
+#include "brightray/browser/notification.h"
 
 namespace brightray {
 
@@ -39,4 +41,4 @@ class CocoaNotification : public Notification {
 
 }  // namespace brightray
 
-#endif  // BROWSER_MAC_COCOA_NOTIFICATION_H_
+#endif  // BRIGHTRAY_BROWSER_MAC_COCOA_NOTIFICATION_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_DEVTOOLS_NETWORK_PROTOCOL_HANDLER_H_
-#define BROWSER_DEVTOOLS_NETWORK_PROTOCOL_HANDLER_H_
+#ifndef BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_PROTOCOL_HANDLER_H_
+#define BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_PROTOCOL_HANDLER_H_
 
 #include "base/macros.h"
 #include "base/values.h"
@@ -45,4 +45,4 @@ class DevToolsNetworkProtocolHandler {
 
 }  // namespace brightray
 
-#endif  // BROWSER_DEVTOOLS_NETWORK_PROTOCOL_HANDLER_H_
+#endif  // BRIGHTRAY_BROWSER_NET_DEVTOOLS_NETWORK_PROTOCOL_HANDLER_H_

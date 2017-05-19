@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "browser/devtools_contents_resizing_strategy.h"
+#include "brightray/browser/devtools_contents_resizing_strategy.h"
 
 #include <algorithm>
 
@@ -16,7 +16,6 @@ DevToolsContentsResizingStrategy::DevToolsContentsResizingStrategy(
       hide_inspected_contents_(bounds_.IsEmpty() && !bounds_.x() &&
           !bounds_.y()) {
 }
-
 
 void DevToolsContentsResizingStrategy::CopyFrom(
     const DevToolsContentsResizingStrategy& strategy) {

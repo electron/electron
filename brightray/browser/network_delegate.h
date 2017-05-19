@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "net/base/network_delegate.h"
-#include "net/proxy/proxy_server.h"
 
 namespace brightray {
 
@@ -77,4 +76,4 @@ class NetworkDelegate : public net::NetworkDelegate {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_

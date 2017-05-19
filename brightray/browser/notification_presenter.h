@@ -42,4 +42,4 @@ class NotificationPresenter {
 
 }  // namespace brightray
 
-#endif
+#endif  // BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_H_

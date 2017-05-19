@@ -6,7 +6,6 @@
 #define BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_LOADER_H_
 
 #include <libnotify/notify.h>
-
 #include <string>
 
 class LibNotifyLoader {

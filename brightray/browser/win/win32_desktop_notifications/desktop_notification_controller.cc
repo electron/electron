@@ -1,11 +1,11 @@
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
-#include "browser/win/win32_desktop_notifications/desktop_notification_controller.h"
+#include "brightray/browser/win/win32_desktop_notifications/desktop_notification_controller.h"
 #include <windowsx.h>
 #include <algorithm>
 #include <vector>
-#include "browser/win/win32_desktop_notifications/common.h"
-#include "browser/win/win32_desktop_notifications/toast.h"
+#include "brightray/browser/win/win32_desktop_notifications/common.h"
+#include "brightray/browser/win/win32_desktop_notifications/toast.h"
 
 using std::make_shared;
 using std::shared_ptr;
@@ -344,7 +344,6 @@ void DesktopNotificationController::DestroyToast(ToastInstance& inst) {
     }
 }
 
-
 DesktopNotificationController::Notification::Notification(
     const shared_ptr<NotificationData>& data) :
     data_(data) {
@@ -388,7 +387,6 @@ void DesktopNotificationController::Notification::Set(
     // Change of contents can affect size and position of all toasts
     data_->controller->StartAnimation();
 }
-
 
 DesktopNotificationController::NotificationLink::NotificationLink(
     DesktopNotificationController* controller) :

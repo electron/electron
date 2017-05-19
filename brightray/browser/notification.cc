@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "browser/notification.h"
+#include "brightray/browser/notification.h"
 
-#include "browser/notification_delegate.h"
-#include "browser/notification_presenter.h"
+#include "brightray/browser/notification_delegate.h"
+#include "brightray/browser/notification_presenter.h"
 
 namespace brightray {
 

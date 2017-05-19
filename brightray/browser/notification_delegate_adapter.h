@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_NOTIFICATION_DELEGATE_ADAPTER_H_
-#define BROWSER_NOTIFICATION_DELEGATE_ADAPTER_H_
+#ifndef BRIGHTRAY_BROWSER_NOTIFICATION_DELEGATE_ADAPTER_H_
+#define BRIGHTRAY_BROWSER_NOTIFICATION_DELEGATE_ADAPTER_H_
 
 #include <memory>
 
 #include "base/macros.h"
-#include "browser/notification_delegate.h"
+#include "brightray/browser/notification_delegate.h"
 
 namespace brightray {
 
@@ -35,4 +35,4 @@ class NotificationDelegateAdapter : public NotificationDelegate {
 
 }  // namespace brightray
 
-#endif  // BROWSER_NOTIFICATION_DELEGATE_ADAPTER_H_
+#endif  // BRIGHTRAY_BROWSER_NOTIFICATION_DELEGATE_ADAPTER_H_

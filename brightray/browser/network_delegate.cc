@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/network_delegate.h"
+#include "brightray/browser/network_delegate.h"
 
 #include <string>
 #include <vector>

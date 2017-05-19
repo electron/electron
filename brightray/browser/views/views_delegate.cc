@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/views/views_delegate.h"
+#include "brightray/browser/views/views_delegate.h"
 
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/widget/native_widget_aura.h"
@@ -99,7 +99,6 @@ void ViewsDelegate::OnBeforeWidgetInit(
     params->native_widget = new views::DesktopNativeWidgetAura(delegate);
   }
 }
-
 
 bool ViewsDelegate::WindowManagerProvidesTitleBar(bool maximized) {
 #if defined(OS_LINUX)

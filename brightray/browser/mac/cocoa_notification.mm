@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "browser/mac/cocoa_notification.h"
+#include "brightray/browser/mac/cocoa_notification.h"
 
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
-#include "browser/notification_delegate.h"
-#include "browser/notification_presenter.h"
+#include "brightray/browser/notification_delegate.h"
+#include "brightray/browser/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
 
 namespace brightray {

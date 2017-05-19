@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/net/devtools_network_protocol_handler.h"
+#include "brightray/browser/net/devtools_network_protocol_handler.h"
 
-#include "browser/browser_context.h"
-#include "browser/net/devtools_network_conditions.h"
-#include "browser/net/devtools_network_controller.h"
+#include <string>
 
 #include "base/strings/stringprintf.h"
+#include "brightray/browser/browser_context.h"
+#include "brightray/browser/net/devtools_network_conditions.h"
+#include "brightray/browser/net/devtools_network_controller.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
-
 
 namespace brightray {
 
@@ -38,7 +38,6 @@ const char kParams[] = "params";
 const char kError[] = "error";
 // JSON RPC 2.0 spec: http://www.jsonrpc.org/specification#error_object
 const int kErrorInvalidParams = -32602;
-
 
 bool ParseCommand(const base::DictionaryValue* command,
                   int* id,

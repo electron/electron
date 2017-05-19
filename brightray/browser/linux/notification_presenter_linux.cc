@@ -3,9 +3,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser/linux/notification_presenter_linux.h"
+#include "brightray/browser/linux/notification_presenter_linux.h"
 
-#include "browser/linux/libnotify_notification.h"
+#include "brightray/browser/linux/libnotify_notification.h"
 
 namespace brightray {
 
