@@ -64,6 +64,7 @@ extern const char kScrollBounce[];
 extern const char kBlinkFeatures[];
 extern const char kDisableBlinkFeatures[];
 extern const char kNodeIntegrationInWorker[];
+extern const char kWebviewTag[];
 
 }   // namespace options
 
@@ -94,6 +95,7 @@ extern const char kScrollBounce[];
 extern const char kHiddenPage[];
 extern const char kNativeWindowOpen[];
 extern const char kNodeIntegrationInWorker[];
+extern const char kWebviewTag[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];

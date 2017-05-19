@@ -101,6 +101,13 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (web_preferences.GetBoolean(options::kNodeIntegrationInWorker, &b) && b)
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
+  // Check if webview tag creation is enabled, default to nodeIntegration value.
+  // TODO(kevinsawicki): Default to false in 2.0
+  bool webview_tag = node_integration;
+  web_preferences.GetBoolean(options::kWebviewTag, &webview_tag);
+  command_line->AppendSwitchASCII(switches::kWebviewTag,
+                                  webview_tag ? "true" : "false");
+
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.

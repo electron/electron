@@ -128,6 +128,9 @@ const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
 // Enable the node integration in WebWorker.
 const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
 
+// Enable the web view tag.
+const char kWebviewTag[] = "webviewTag";
+
 }  // namespace options
 
 namespace switches {
@@ -173,6 +176,7 @@ const char kOpenerID[]         = "opener-id";
 const char kScrollBounce[]     = "scroll-bounce";
 const char kHiddenPage[]       = "hidden-page";
 const char kNativeWindowOpen[] = "native-window-open";
+const char kWebviewTag[]       = "webview-tag";
 
 // Command switch passed to renderer process to control nodeIntegration.
 const char kNodeIntegrationInWorker[]  = "node-integration-in-worker";

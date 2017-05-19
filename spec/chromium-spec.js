@@ -309,6 +309,26 @@ describe('chromium feature', function () {
       b = window.open(windowUrl, '', 'javascript=no,show=no')
     })
 
+    it('disables the <webview> tag when it is disabled on the parent window', function (done) {
+      let b
+      listener = function (event) {
+        assert.equal(event.data.isWebViewGlobalUndefined, true)
+        b.close()
+        done()
+      }
+      window.addEventListener('message', listener)
+
+      var windowUrl = require('url').format({
+        pathname: `${fixtures}/pages/window-opener-no-webview-tag.html`,
+        protocol: 'file',
+        query: {
+          p: `${fixtures}/pages/window-opener-webview.html`
+        },
+        slashes: true
+      })
+      b = window.open(windowUrl, '', 'webviewTag=no,nodeIntegration=yes,show=no')
+    })
+
     it('does not override child options', function (done) {
       var b, size
       size = {

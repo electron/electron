@@ -54,6 +54,25 @@ describe('<webview> tag', function () {
     w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
   })
 
+  it('is enabled when the webviewTag option is enabled and the nodeIntegration option is disabled', function (done) {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        preload: path.join(fixtures, 'module', 'preload-webview.js'),
+        webviewTag: true
+      }
+    })
+    ipcMain.once('webview', function (event, type) {
+      if (type !== 'undefined') {
+        done()
+      } else {
+        done('WebView is not created')
+      }
+    })
+    w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
+  })
+
   describe('src attribute', function () {
     it('specifies the page to load', function (done) {
       webview.addEventListener('console-message', function (e) {
@@ -1119,6 +1138,18 @@ describe('<webview> tag', function () {
         done()
       })
       webview.src = 'file://' + fixtures + '/pages/c.html'
+      document.body.appendChild(webview)
+    })
+
+    it('supports removing the preload script', (done) => {
+      ipcRenderer.send('disable-preload-on-next-will-attach-webview')
+      webview.addEventListener('console-message', (event) => {
+        assert.equal(event.message, 'undefined')
+        done()
+      })
+      webview.setAttribute('nodeintegration', 'yes')
+      webview.setAttribute('preload', path.join(fixtures, 'module', 'preload-set-global.js'))
+      webview.src = 'file://' + fixtures + '/pages/a.html'
       document.body.appendChild(webview)
     })
   })

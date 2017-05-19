@@ -15,9 +15,6 @@ between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content. **Note:** Most methods called on the
 webview from the host page require a syncronous call to the main process.
 
-For security purposes, `webview` can only be used in `BrowserWindow`s that have
-`nodeIntegration` enabled.
-
 ## Example
 
 To embed a web page in your app, add the `webview` tag to your app's embedder
@@ -149,6 +146,9 @@ will be loaded by `require` in guest page under the hood.
 When the guest page doesn't have node integration this script will still have
 access to all Node APIs, but global objects injected by Node will be deleted
 after this script has finished executing.
+
+**Note:** This option will be appear as `preloadURL` (not `preload`) in
+the `webPreferences` specified to the `will-attach-webview` event.
 
 ### `httpreferrer`
 

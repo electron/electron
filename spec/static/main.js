@@ -277,6 +277,14 @@ ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
   })
 })
 
+ipcMain.on('disable-preload-on-next-will-attach-webview', (event, id) => {
+  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
+    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'webview-stripped-preload.html')}`
+    delete webPreferences.preload
+    delete webPreferences.preloadURL
+  })
+})
+
 ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
   const consoleWarn = console.warn
   let warningMessage = null

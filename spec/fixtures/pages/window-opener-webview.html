@@ -1,0 +1,11 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  document.addEventListener('DOMContentLoaded', function (event) {
+    window.opener.postMessage({
+      isWebViewGlobalUndefined: typeof WebView === 'undefined'
+    }, '*')
+  })
+</script>
+</body>
+</html>
