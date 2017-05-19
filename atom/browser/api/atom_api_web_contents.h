@@ -12,6 +12,7 @@
 #include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
+#include "atom/browser/ui/autofill_popup.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/notification_registrar.h"
@@ -307,6 +308,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
   void RenderViewCreated(content::RenderViewHost*) override;
+  void RenderFrameCreated(content::RenderFrameHost*) override;
+  void RenderFrameHostChanged(content::RenderFrameHost*, 
+                              content::RenderFrameHost*) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
   void DocumentLoadedInFrame(
@@ -373,6 +377,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
+  
+  void OnShowAutofillPopup(int routing_id,
+                           const gfx::RectF& bounds,
+                           const std::vector<base::string16>& values, 
+                           const std::vector<base::string16>& labels);
+  void OnHideAutofillPopup();
 
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,
@@ -397,6 +407,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
+  AutofillPopup* autofill_popup_;
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;

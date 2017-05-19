@@ -17,6 +17,7 @@
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/native_window_views.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/osr/osr_output_device.h"
 #include "atom/browser/osr/osr_render_widget_host_view.h"
@@ -83,6 +84,7 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/gfx/geometry/rect_f.h"
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -441,6 +443,8 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   registrar_.Add(this, content::NOTIFICATION_NAV_ENTRY_PENDING,
                  content::Source<content::NavigationController>(controller));
 
+  autofill_popup_ = new AutofillPopup(web_contents->GetNativeView());
+
   Init(isolate);
   AttachAsUserData(web_contents);
 }
@@ -740,6 +744,17 @@ void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
     impl->disable_hidden_ = !background_throttling_;
 }
 
+void WebContents::RenderFrameCreated(content::RenderFrameHost* host) {
+  Send(new AtomAutofillViewHostMsg_RoutingId(
+    host->GetRoutingID(), routing_id()));
+}
+
+void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host, 
+    content::RenderFrameHost* new_host) {
+  Send(new AtomAutofillViewHostMsg_RoutingId(
+    new_host->GetRoutingID(), routing_id()));
+}
+
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
 }
@@ -976,6 +991,8 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
                                     OnGetZoomLevel)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
       handled = false)
+    IPC_MESSAGE_HANDLER(AtomAutofillViewMsg_ShowPopup, OnShowAutofillPopup)
+    IPC_MESSAGE_HANDLER(AtomAutofillViewMsg_HidePopup, OnHideAutofillPopup)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -1606,6 +1623,24 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   } else {
     Emit("cursor-changed", CursorTypeToString(info));
   }
+}
+
+void WebContents::OnShowAutofillPopup(
+    int routing_id,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values, 
+    const std::vector<base::string16>& labels) {  
+  auto relay = reinterpret_cast<NativeWindowViews*>(
+    NativeWindow::FromWebContents(web_contents()));
+  autofill_popup_->CreateView(
+    routing_id,
+    web_contents(),
+    relay->widget(), 
+    bounds);
+  autofill_popup_->SetItems(values, labels);
+}
+void WebContents::OnHideAutofillPopup() {
+  autofill_popup_->Hide();
 }
 
 void WebContents::SetSize(const SetSizeParams& params) {
