@@ -1,29 +1,12 @@
-# Security, Native Capabilities, and Your Responsibility
+# Bezpieczeństwo, możliwości natywne i twoja odpowiedzialność
+Jako web developerzy, zazwyczaj cieszymy się mocnym bezpieczeństwem naszych przeglądarek. Ryzyko związane z kodem, który piszemy jest relatywnei mała. Nasze strony posiadają ograniczoną zdolność i działają w `piaskownicach`, a także wierzymy, że użytkownicy korzystający z przeglądarki zbudowanej przez duże zespoły inżynierów są zdolni do szybkiego wykrywania nowych zagrożeń.  
 
-As web developers, we usually enjoy the strong security net of the browser - the
-risks associated with the code we write are relatively small.  Our websites are
-granted limited powers in a sandbox, and we trust that our users enjoy a browser
-built by a large team of engineers that is able to quickly respond to newly
-discovered security threats.
+Kiedy pracujesz z Electron, istotne jest aby zrozumieć, że nie jest on stroną internetową. Pozwala na wykorzystanie wbudowanych funkcjonalności aplikacji pulpitowych. Wykorzystujesz podobne technologie, ale twój kod jest znacznie potężniejszy. JavaScript ma dostęp do plików systemowych, powłoki i wielu innych funkcji. To pozwala tworzyć wysokiej jakości natywne aplikacje, jednak stanowi także zagrożenie ze względu na większe uprawnienia i możliwości, którymi dysponujesz. 
 
-When working with Electron, it is important to understand that Electron is not
-a web browser. It allows you to build feature-rich desktop applications with
-familiar web technologies, but your code wields much greater power. JavaScript
-can access the filesystem, user shell, and more. This allows you to build
-high quality native applications, but the inherent security risks scale with the
-additional powers granted to your code.
+Pamiętając o tym, bądź ostrożny wyświetlając treści z niezabezpieczonych źródeł. Warto wspomnieć, że popularne aplikacje stworzone przy użyciu Electon (Atom, Slack, Visual Studio Code i inne) wyświetlają zazwyczaj zawartość lokalną (lub bezpieczną, zabezpieczoną zdalnie zawartość bez integracji Node). Jeżeli twoja aplikacja wykonuje kod ze źródeł dostępnych online, na twoich barkach spoczywa odpowiedzialność nad upewnieniem się, że kod nie jest niebezpieczny lub "złośliwy".
 
-With that in mind, be aware that displaying arbitrary content from untrusted
-sources poses a severe security risk that Electron is not intended to handle.
-In fact, the most popular Electron apps (Atom, Slack, Visual Studio Code, etc)
-display primarily local content (or trusted, secure remote content without Node
-integration) – if your application executes code from an online source, it is
-your responsibility to ensure that the code is not malicious.
-
-## Reporting Security Issues
-
-For information on how to properly disclose an Electron vulnerability,
-see [SECURITY.md](https://github.com/electron/electron/tree/master/SECURITY.md)
+## Zgłaszanie błędów bezpieczeństwa
+Po więcej informacji jak prawidłowo ujawnić luke w bezpieczeństwie Electon zajrzyj do [Bezpieczeństwo](https://github.com/electron/electron/tree/master/SECURITY.md)
 
 ## Chromium Security Issues and Upgrades
 
