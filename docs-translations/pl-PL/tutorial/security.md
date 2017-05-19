@@ -25,38 +25,27 @@ effort are always very welcome.
 Podczas gdy Electron stara się wspierać nowe wersje Chromium najszybciej jak to możliwe, twórcy oprogramowania powinni być świadomi, że aktualizowanie jest poważnym przedsięwzięciem, podczas którego ręcznie edytowanych jest setki plików. Biorąc to pod uwagę wersja, nad którą pracują programiści może nie być jeszcze dostępna. Electron może nie działać na najnowszej wersji Chromium przez kilka dni lub tygodni.
 
 ## Ignorowanie powyższych informacji
-> :warning: Under no circumstances should you load and execute remote code with
-Node integration enabled. Instead, use only local files (packaged together with
-your application) to execute Node code. To display remote content, use the
-`webview` tag and make sure to disable the `nodeIntegration`.
-
 Niebezpieczeństwo związane z wykonywaniem kodu występuje wszędzie gdzie ten kod otrzymujesz, a wykonywany jest lokalnie. Na przykład wyobraź sobie osadzoną stronę w oknie przeglądarki. Jeżeli atakujący w jakiś sposób zmieni treść (atakując źródło lub podmieniając przesyłane treści), będzie w stanie wykonać kod natywnie na maszynie użytkownika. 
 
-
+> :warning: 
+W żadnym wypadku nie należy ładować i wykonywać zdalnego kodu z włączoną integracją Node. Zamiast tego należy używać tylko plików lokalnych (pakowanych razem z aplikacją) w celu wykonania kodu Node. Aby wyświetlić zawartość zdalną, użyj tagu `webview` i upewnij się, że wyłączono `nodeIntegration`.
 
 #### Checklist
+Nie jest to lista wyczerpująca temat bezpieczeństwa, ale może pomóc podnieść jej poziom:
 
-This is not bulletproof, but at the least, you should attempt the following:
+* Wyświetlaj tylko bezpieczną zawartość (https)
+* Wyłącz integrację Node we wszystkich rendererach, które wyświetlają zdalną zawartość
+* Włącz izolowanie kontekstu we wszystkich rendererach, które wyświetlają zdalną zawartość
+* Użyj `ses.setPermissionRequestHandler()` we wszystkich sesjach, które ładują zdalną zawartość
+* Nie wyłączaj `webSecurity`. Wyłączenie tego, wyłączy regułę same-origin
+* Zdefiniuj regułę [`Content-Security`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/)
+* Nadpisz i wyłącz [`eval`](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6-L8), który pozwala na uruchamianie string jako kodu
+* Nie ustawiaj `allowRunningInsecureContent` jako true
+* Nie włączaj `experimentalFeatures` i `experimentalCanvasFeatures` jeżeli nie jesteś pewien, że wiesz co robisz
+* Nie używaj `blinkFeatures` jeżeli nie jesteś pewien, że wiesz co robisz
+* WebViews: Nie dodawaj atrybutu `nodeintegration`
+* WebViews: Nie używaj `disablewebsecurity`
+* WebViews: Nie używaj `allowpopups`
+* WebViews: Nie używaj `insertCSS` i `executeJavaScript`ze zdalnym CSS/JS
 
-* Only display secure (https) content
-* Disable the Node integration in all renderers that display remote content
-  (setting `nodeIntegration` to `false` in `webPreferences`)
-* Enable context isolation in all renderers that display remote content
-  (setting `contextIsolation` to `true` in `webPreferences`)
-* Use `ses.setPermissionRequestHandler()` in all sessions that load remote content
-* Do not disable `webSecurity`. Disabling it will disable the same-origin policy.
-* Define a [`Content-Security-Policy`](http://www.html5rocks.com/en/tutorials/security/content-security-policy/)
-, and use restrictive rules (i.e. `script-src 'self'`)
-* [Override and disable `eval`](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6-L8)
-, which allows strings to be executed as code.
-* Do not set `allowRunningInsecureContent` to true.
-* Do not enable `experimentalFeatures` or `experimentalCanvasFeatures` unless
-  you know what you're doing.
-* Do not use `blinkFeatures` unless you know what you're doing.
-* WebViews: Do not add the `nodeintegration` attribute.
-* WebViews: Do not use `disablewebsecurity`
-* WebViews: Do not use `allowpopups`
-* WebViews: Do not use `insertCSS` or `executeJavaScript` with remote CSS/JS.
-
-Again, this list merely minimizes the risk, it does not remove it. If your goal
-is to display a website, a browser will be a more secure option.
+Ponownie, lista jedynie minimalizuje zagrożenie, ale nie likwiduje go. Jeżeli chcesz wyświetlić stronę internetową przeglądarka jest bezpieczniejszą opcją.
