@@ -19,7 +19,7 @@ Process: [Main](../glossary.md#main-process)
 
 It creates a new `Notification` with native properties as set by the `options`.
 
-### `new Notification([options])`
+### `new Notification([options])` _Experimental_
 
 * `options` Object
   * `title` String - A title for the notification, which will be shown at the top of the notification window when it is shown
