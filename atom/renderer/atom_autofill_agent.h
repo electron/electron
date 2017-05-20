@@ -9,6 +9,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "content/public/renderer/render_view_observer.h"
 #include "third_party/WebKit/public/web/WebAutofillClient.h"
 #include "third_party/WebKit/public/web/WebFormControlElement.h"
 #include "third_party/WebKit/public/web/WebInputElement.h"
@@ -20,6 +21,7 @@ class AutofillAgent : public content::RenderFrameObserver,
                                 public blink::WebAutofillClient {
  public:
   explicit AutofillAgent(content::RenderFrame* frame);
+  ~AutofillAgent();
 
   // content::RenderFrameObserver:
   void OnDestruct() override;
@@ -28,6 +30,21 @@ class AutofillAgent : public content::RenderFrameObserver,
   void FocusedNodeChanged(const blink::WebNode&) override;
 
  private:
+
+  class Helper : public content::RenderViewObserver {
+   public:
+    Helper(AutofillAgent* agent);
+
+    // content::RenderViewObserver implementation.
+    void OnDestruct() override {}
+    void OnMouseDown(const blink::WebNode&) override;
+    void FocusChangeComplete() override;
+
+   private:
+    AutofillAgent* agent_;
+  };
+  friend class Helper;
+
   struct ShowSuggestionsOptions {
     ShowSuggestionsOptions();
     bool autofill_on_empty_values;
@@ -55,8 +72,20 @@ class AutofillAgent : public content::RenderFrameObserver,
                        const ShowSuggestionsOptions& options);
   void OnAcceptSuggestion(base::string16 suggestion);
 
+  void DoFocusChangeComplete();
+
   content::RenderFrame* render_frame_;
   int web_contents_routing_id_;
+
+  Helper* helper_;
+
+  // True when the last click was on the focused node.
+  bool focused_node_was_last_clicked_;
+
+  // This is set to false when the focus changes, then set back to true soon
+  // afterwards. This helps track whether an event happened after a node was
+  // already focused, or if it caused the focus to change.
+  bool was_focused_before_now_;
 
   base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_;
 

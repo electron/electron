@@ -53,8 +53,15 @@ AutofillAgent::AutofillAgent(
     content::RenderFrame* frame)
   : content::RenderFrameObserver(frame),
     render_frame_(frame),
+    helper_(new Helper(this)),
+    focused_node_was_last_clicked_(false),
+    was_focused_before_now_(false),
     weak_ptr_factory_(this) {
   render_frame_->GetWebFrame()->setAutofillClient(this);
+}
+
+AutofillAgent::~AutofillAgent() {
+  delete helper_;
 }
 
 void AutofillAgent::OnDestruct() {
@@ -66,6 +73,7 @@ void AutofillAgent::DidChangeScrollOffset() {
 }
 
 void AutofillAgent::FocusedNodeChanged(const blink::WebNode&) {
+  was_focused_before_now_ = false;
   HidePopup();
 }
 
@@ -161,12 +169,17 @@ void AutofillAgent::ShowSuggestions(
   ShowPopup(element, data_list_values, data_list_labels);
 }
 
-void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
-  auto element = render_frame_->GetWebFrame()->document().focusedElement();
-  if (element.isFormControlElement()) {
-    toWebInputElement(&element)->setAutofillValue(
-      blink::WebString::fromUTF16(suggestion));
-  }
+AutofillAgent::Helper::Helper(AutofillAgent* agent)
+  : content::RenderViewObserver(agent->render_frame_->GetRenderView()),
+    agent_(agent) {
+}
+
+void AutofillAgent::Helper::OnMouseDown(const blink::WebNode& node) {
+  agent_->focused_node_was_last_clicked_ = !node.isNull() && node.focused();
+}
+
+void AutofillAgent::Helper::FocusChangeComplete() {
+  agent_->DoFocusChangeComplete();
 }
 
 bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
@@ -202,6 +215,29 @@ void AutofillAgent::ShowPopup(
     render_frame_->GetRenderView()->ElementBoundsInWindow(element);
   Send(new AtomAutofillViewMsg_ShowPopup(
     web_contents_routing_id_, routing_id(), bounds, values, labels));
+}
+
+void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
+  auto element = render_frame_->GetWebFrame()->document().focusedElement();
+  if (element.isFormControlElement()) {
+    toWebInputElement(&element)->setAutofillValue(
+      blink::WebString::fromUTF16(suggestion));
+  }
+}
+
+void AutofillAgent::DoFocusChangeComplete() {
+  auto element = render_frame_->GetWebFrame()->document().focusedElement();
+  if (element.isNull() || !element.isFormControlElement())
+    return;
+
+  if (focused_node_was_last_clicked_ && was_focused_before_now_) {
+    ShowSuggestionsOptions options;
+    options.autofill_on_empty_values = true;
+    ShowSuggestions(*toWebInputElement(&element), options);
+  }
+
+  was_focused_before_now_ = true;
+  focused_node_was_last_clicked_ = false;
 }
 
 }  // namespace atom
