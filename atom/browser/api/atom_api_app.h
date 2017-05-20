@@ -148,7 +148,7 @@ class App : public AtomBrowserClient::Delegate,
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(
       int process_type,
-      base::ProcessId id);
+      base::ProcessHandle handle);
   void ChildProcessDisconnected(
       base::ProcessId pid);
 

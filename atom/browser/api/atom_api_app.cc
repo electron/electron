@@ -686,7 +686,7 @@ void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
   this->ChildProcessLaunched(
     data.process_type,
-    base::GetProcId(data.handle));
+    data.handle);
 }
 
 void App::BrowserChildProcessHostDisconnected(
@@ -699,7 +699,7 @@ void App::RenderProcessReady(
     content::RenderProcessHost* host) {
   this->ChildProcessLaunched(
     content::PROCESS_TYPE_RENDERER,
-    base::GetProcId(host->GetHandle()));
+    host->GetHandle());
 }
 
 void App::RenderProcessDisconnected(
@@ -710,16 +710,16 @@ void App::RenderProcessDisconnected(
 
 void App::ChildProcessLaunched(
     int process_type,
-    base::ProcessId pid) {
-  auto process = base::Process::OpenWithExtraPrivileges(pid);
+    base::ProcessHandle handle) {
+  auto pid = base::GetProcId(handle);
 
 #if defined(OS_MACOSX)
     std::unique_ptr<base::ProcessMetrics> metrics(
       base::ProcessMetrics::CreateProcessMetrics(
-        process.Handle(), content::BrowserChildProcessHost::GetPortProvider()));
+        handle, content::BrowserChildProcessHost::GetPortProvider()));
 #else
     std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateProcessMetrics(process.Handle()));
+      base::ProcessMetrics::CreateProcessMetrics(handle));
 #endif
   std::unique_ptr<atom::ProcessMetric> process_metric(
               new atom::ProcessMetric(
