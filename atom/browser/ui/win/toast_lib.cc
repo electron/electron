@@ -245,18 +245,6 @@ bool WinToast::isCompatible() {
            (DllImporter::WindowsDeleteString == nullptr));
 }
 
-std::wstring WinToast::configureAUMI(_In_ const std::wstring& company,
-                                     _In_ const std::wstring& name,
-                                     _In_ const std::wstring& surname,
-                                     _In_ const std::wstring& versionInfo) {
-  std::wstring aumi = company;
-  aumi += L"." + name;
-  aumi += L"." + surname;
-  aumi += L"." + versionInfo;
-
-  return aumi;
-}
-
 bool WinToast::initialize() {
   if (_aumi.empty() || _appName.empty()) {
     return _isInitialized = false;
@@ -271,135 +259,24 @@ bool WinToast::initialize() {
     return _isInitialized = false;
   }
 
-  HRESULT hr = validateShellLink();
-  if (FAILED(hr)) {
-    hr = createShellLink();
-  }
-
+  HRESULT hr = DllImporter::Wrap_GetActivationFactory(
+      WinToastStringWrapper(
+          RuntimeClass_Windows_UI_Notifications_ToastNotificationManager)
+          .Get(),
+      &_notificationManager);
   if (SUCCEEDED(hr)) {
-    hr = DllImporter::Wrap_GetActivationFactory(
-        WinToastStringWrapper(
-            RuntimeClass_Windows_UI_Notifications_ToastNotificationManager)
-            .Get(),
-        &_notificationManager);
+    hr = notificationManager()->CreateToastNotifierWithId(
+        WinToastStringWrapper(_aumi).Get(), &_notifier);
     if (SUCCEEDED(hr)) {
-      hr = notificationManager()->CreateToastNotifierWithId(
-          WinToastStringWrapper(_aumi).Get(), &_notifier);
-      if (SUCCEEDED(hr)) {
-        hr = DllImporter::Wrap_GetActivationFactory(
-            WinToastStringWrapper(
-                RuntimeClass_Windows_UI_Notifications_ToastNotification)
-                .Get(),
-            &_notificationFactory);
-      }
+      hr = DllImporter::Wrap_GetActivationFactory(
+          WinToastStringWrapper(
+              RuntimeClass_Windows_UI_Notifications_ToastNotification)
+              .Get(),
+          &_notificationFactory);
     }
   }
 
   return _isInitialized = SUCCEEDED(hr);
-}
-
-HRESULT WinToast::validateShellLink() {
-  WCHAR _path[MAX_PATH];
-  Util::defaultShellLinkPath(_appName, _path);
-  // Check if the file exist
-  DWORD attr = GetFileAttributes(_path);
-  if (attr >= 0xFFFFFFF) {
-    std::wcout << "Error, shell link not found. Try to create a new one in: "
-               << _path << std::endl;
-    return E_FAIL;
-  }
-
-  // Let's load the file as shell link to validate.
-  // - Create a shell link
-  // - Create a persistant file
-  // - Load the path as data for the persistant file
-  // - Read the property AUMI and validate with the current
-  // - Review if AUMI is equal.
-  ComPtr<IShellLink> shellLink;
-  HRESULT hr = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
-                                IID_PPV_ARGS(&shellLink));
-  if (SUCCEEDED(hr)) {
-    ComPtr<IPersistFile> persistFile;
-    hr = shellLink.As(&persistFile);
-    if (SUCCEEDED(hr)) {
-      hr = persistFile->Load(_path, STGM_READWRITE);
-      if (SUCCEEDED(hr)) {
-        ComPtr<IPropertyStore> propertyStore;
-        hr = shellLink.As(&propertyStore);
-        if (SUCCEEDED(hr)) {
-          PROPVARIANT appIdPropVar;
-          hr = propertyStore->GetValue(PKEY_AppUserModel_ID, &appIdPropVar);
-          if (SUCCEEDED(hr)) {
-            WCHAR AUMI[MAX_PATH];
-            hr = DllImporter::PropVariantToString(appIdPropVar, AUMI, MAX_PATH);
-            if (SUCCEEDED(hr)) {
-              hr = (_aumi == AUMI) ? S_OK : E_FAIL;
-            } else {  // AUMI Changed for the same app, let's update the current
-                      // value! =)
-              PropVariantClear(&appIdPropVar);
-              hr = InitPropVariantFromString(_aumi.c_str(), &appIdPropVar);
-              if (SUCCEEDED(hr)) {
-                hr =
-                    propertyStore->SetValue(PKEY_AppUserModel_ID, appIdPropVar);
-                if (SUCCEEDED(hr)) {
-                  hr = propertyStore->Commit();
-                  if (SUCCEEDED(hr) && SUCCEEDED(persistFile->IsDirty())) {
-                    hr = persistFile->Save(_path, TRUE);
-                  }
-                }
-              }
-            }
-            PropVariantClear(&appIdPropVar);
-          }
-        }
-      }
-    }
-  }
-  return hr;
-}
-
-HRESULT WinToast::createShellLink() {
-  WCHAR exePath[MAX_PATH];
-  WCHAR slPath[MAX_PATH];
-  Util::defaultShellLinkPath(_appName, slPath);
-  Util::defaultExecutablePath(exePath);
-  ComPtr<IShellLink> shellLink;
-  HRESULT hr = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
-                                IID_PPV_ARGS(&shellLink));
-  if (SUCCEEDED(hr)) {
-    hr = shellLink->SetPath(exePath);
-    if (SUCCEEDED(hr)) {
-      hr = shellLink->SetArguments(L"");
-      if (SUCCEEDED(hr)) {
-        hr = shellLink->SetWorkingDirectory(exePath);
-        if (SUCCEEDED(hr)) {
-          ComPtr<IPropertyStore> propertyStore;
-          hr = shellLink.As(&propertyStore);
-          if (SUCCEEDED(hr)) {
-            PROPVARIANT appIdPropVar;
-            hr = InitPropVariantFromString(_aumi.c_str(), &appIdPropVar);
-            if (SUCCEEDED(hr)) {
-              hr = propertyStore->SetValue(PKEY_AppUserModel_ID, appIdPropVar);
-              if (SUCCEEDED(hr)) {
-                hr = propertyStore->Commit();
-                if (SUCCEEDED(hr)) {
-                  ComPtr<IPersistFile> persistFile;
-                  hr = shellLink.As(&persistFile);
-                  if (SUCCEEDED(hr)) {
-                    hr = persistFile->Save(slPath, TRUE);
-                  }
-                }
-              }
-            }
-            PropVariantClear(&appIdPropVar);
-          }
-        }
-      }
-    }
-  }
-  CoTaskMemFree(exePath);
-  CoTaskMemFree(slPath);
-  return hr;
 }
 
 bool WinToast::showToast(_In_ const WinToastTemplate& toast,

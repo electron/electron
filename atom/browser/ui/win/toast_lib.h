@@ -152,10 +152,6 @@ class WinToast {
  public:
   static WinToast* instance();
   static bool isCompatible();
-  static std::wstring configureAUMI(_In_ const std::wstring& company,
-                                    _In_ const std::wstring& name,
-                                    _In_ const std::wstring& surname,
-                                    _In_ const std::wstring& versionInfo);
   bool initialize();
   bool isInitialized() const { return _isInitialized; }
   bool showToast(_In_ const WinToastTemplate& toast,
@@ -187,8 +183,6 @@ class WinToast {
   }
   IToastNotification* notification() const { return _notification.Get(); }
 
-  HRESULT validateShellLink();
-  HRESULT createShellLink();
   HRESULT setImageField(_In_ const std::wstring& path);
   HRESULT setTextField(_In_ const std::wstring& text, _In_ int pos);
   bool makeSilent(bool is_silent);
