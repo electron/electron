@@ -1635,6 +1635,7 @@ void WebContents::OnShowAutofillPopup(
   autofill_popup_->CreateView(
     routing_id,
     web_contents(),
+    IsOffScreen() || (embedder_ && embedder_->IsOffScreen()),
     relay->widget(),
     bounds);
   autofill_popup_->SetItems(values, labels);

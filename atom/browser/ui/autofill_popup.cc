@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include "atom/browser/osr/osr_render_widget_host_view.h"
+#include "atom/browser/osr/osr_view_proxy.h"
 #include "atom/browser/ui/autofill_popup.h"
 #include "atom/common/api/api_messages.h"
 #include "ui/display/display.h"
@@ -100,7 +102,7 @@ display::Display GetDisplayNearestPoint(
 }  // namespace
 
 AutofillPopup::AutofillPopup(gfx::NativeView container_view)
-    : container_view_(container_view) {
+    : container_view_(container_view), view_(nullptr) {
   bold_font_list_ =
     gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
   smaller_font_list_ =
@@ -114,27 +116,37 @@ AutofillPopup::~AutofillPopup() {
 void AutofillPopup::CreateView(
     int routing_id,
     content::WebContents* web_contents,
+    bool offscreen,
     views::Widget* parent_widget,
     const gfx::RectF& r) {
   web_contents_ = web_contents;
   gfx::Rect lb(std::floor(r.x()), std::floor(r.y() + r.height()),
                std::floor(r.width()), std::floor(r.height()));
   gfx::Point menu_position(lb.origin());
+  popup_bounds_in_view_ = lb;
   views::View::ConvertPointToScreen(
     parent_widget->GetContentsView(), &menu_position);
   popup_bounds_ = gfx::Rect(menu_position, lb.size());
   element_bounds_ = popup_bounds_;
 
-  view_.reset(new AutofillPopupView(this, parent_widget));
+  Hide();
+  view_ = new AutofillPopupView(this, parent_widget);
   view_->Show();
+
+  if (offscreen) {
+    auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
+        web_contents->GetRenderWidgetHostView());
+    view_->view_proxy_.reset(new OffscreenViewProxy(view_));
+    osr_rwhv->AddViewProxy(view_->view_proxy_.get());
+  }
 
   frame_routing_id_ = routing_id;
 }
 
 void AutofillPopup::Hide() {
-  if (view_.get()) {
+  if (view_) {
     view_->Hide();
-    view_.reset();
+    view_ = nullptr;
   }
 }
 
@@ -143,7 +155,7 @@ void AutofillPopup::SetItems(const std::vector<base::string16>& values,
   values_ = values;
   labels_ = labels;
   UpdatePopupBounds();
-  if (view_.get()) {
+  if (view_) {
     view_->OnSuggestionsChanged();
   }
 }
@@ -182,6 +194,8 @@ void AutofillPopup::UpdatePopupBounds() {
 
   popup_bounds_ = gfx::Rect(popup_x_and_width.first, popup_y_and_height.first,
       popup_x_and_width.second, popup_y_and_height.second);
+  popup_bounds_in_view_ = gfx::Rect(popup_bounds_in_view_.origin(),
+      gfx::Size(popup_x_and_width.second, popup_y_and_height.second));
 }
 
 int AutofillPopup::GetDesiredPopupHeight() {
@@ -222,7 +236,7 @@ const gfx::FontList& AutofillPopup::GetLabelFontListForRow(int index) const {
 
 ui::NativeTheme::ColorId AutofillPopup::GetBackgroundColorIDForRow(
     int index) const {
-  return index == view_->GetSelectedLine()
+  return (view_ && index == view_->GetSelectedLine())
       ? ui::NativeTheme::kColorId_ResultsTableHoveredBackground
       : ui::NativeTheme::kColorId_ResultsTableNormalBackground;
 }

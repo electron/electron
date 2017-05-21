@@ -4,6 +4,7 @@
 
 #include "atom/browser/ui/views/autofill_popup_view.h"
 #include "base/bind.h"
+#include "base/i18n/rtl.h"
 #include "content/public/browser/render_view_host.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/canvas.h"
@@ -21,6 +22,7 @@ AutofillPopupView::AutofillPopupView(
     views::Widget* parent_widget)
     : popup_(popup),
       parent_widget_(parent_widget),
+      view_proxy_(nullptr),
       weak_ptr_factory_(this) {
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
@@ -36,12 +38,19 @@ AutofillPopupView::~AutofillPopupView() {
 
   RemoveObserver();
 
+  if (view_proxy_.get()) {
+    view_proxy_->ResetView();
+  }
+
   if (GetWidget()) {
     GetWidget()->Close();
   }
 }
 
 void AutofillPopupView::Show() {
+  if (!popup_)
+    return;
+
   const bool initialize_widget = !GetWidget();
   if (initialize_widget) {
     parent_widget_->AddObserver(this);
@@ -88,9 +97,11 @@ void AutofillPopupView::Show() {
 }
 
 void AutofillPopupView::Hide() {
-  auto host = popup_->web_contents_->GetRenderViewHost()->GetWidget();
-  host->RemoveKeyPressEventCallback(keypress_callback_);
-  popup_ = NULL;
+  if (popup_) {
+    auto host = popup_->web_contents_->GetRenderViewHost()->GetWidget();
+    host->RemoveKeyPressEventCallback(keypress_callback_);
+    popup_ = NULL;
+  }
 
   RemoveObserver();
 
@@ -102,11 +113,14 @@ void AutofillPopupView::Hide() {
 }
 
 void AutofillPopupView::OnSuggestionsChanged() {
+  if (!popup_)
+    return;
+
+  CreateChildViews();
   if (popup_->GetLineCount() == 0) {
     popup_->Hide();
     return;
   }
-  CreateChildViews();
   DoUpdateBoundsAndRedrawPopup();
 }
 
@@ -116,21 +130,25 @@ void AutofillPopupView::OnSelectedRowChanged(
   SchedulePaint();
 
   if (current_row_selection) {
-    DCHECK_LT(*current_row_selection, child_count());
-    child_at(*current_row_selection)
-        ->NotifyAccessibilityEvent(ui::AX_EVENT_SELECTION, true);
+    int selected = current_row_selection.value_or(-1);
+    if (selected == -1 || selected >= child_count())
+      return;
+    child_at(selected)->NotifyAccessibilityEvent(ui::AX_EVENT_SELECTION, true);
   }
 }
 
 void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
                                           int index,
                                           const gfx::Rect& entry_rect) {
+  if (!popup_)
+    return;
+
   canvas->FillRect(
       entry_rect,
       GetNativeTheme()->GetSystemColor(
           popup_->GetBackgroundColorIDForRow(index)));
 
-  const bool is_rtl = false;
+  const bool is_rtl = base::i18n::IsRTL();
   const int text_align =
     is_rtl ? gfx::Canvas::TEXT_ALIGN_RIGHT : gfx::Canvas::TEXT_ALIGN_LEFT;
   gfx::Rect value_rect = entry_rect;
@@ -174,6 +192,9 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
 }
 
 void AutofillPopupView::CreateChildViews() {
+  if (!popup_)
+    return;
+
   RemoveAllChildViews(true);
 
   for (int i = 0; i < popup_->GetLineCount(); ++i) {
@@ -184,23 +205,39 @@ void AutofillPopupView::CreateChildViews() {
 }
 
 void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
+  if (!popup_)
+    return;
+
   GetWidget()->SetBounds(popup_->popup_bounds_);
   SchedulePaint();
 }
 
 void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
-  if (!popup_)
+  if (!popup_ || popup_->GetLineCount() != child_count())
     return;
+  gfx::Canvas* draw_canvas = canvas;
+  SkBitmap bitmap;
 
-  canvas->DrawColor(GetNativeTheme()->GetSystemColor(
+  if (view_proxy_.get()) {
+    bitmap.allocN32Pixels(popup_->popup_bounds_in_view_.width(),
+                          popup_->popup_bounds_in_view_.height(),
+                          true);
+    draw_canvas = new gfx::Canvas(new SkCanvas(bitmap), 1.0);
+  }
+
+  draw_canvas->DrawColor(GetNativeTheme()->GetSystemColor(
       ui::NativeTheme::kColorId_ResultsTableNormalBackground));
-  OnPaintBorder(canvas);
+  OnPaintBorder(draw_canvas);
 
-  DCHECK_EQ(popup_->GetLineCount(), child_count());
   for (int i = 0; i < popup_->GetLineCount(); ++i) {
     gfx::Rect line_rect = popup_->GetRowBounds(i);
 
-    DrawAutofillEntry(canvas, i, line_rect);
+    DrawAutofillEntry(draw_canvas, i, line_rect);
+  }
+
+  if (view_proxy_.get()) {
+    view_proxy_->SetBounds(popup_->popup_bounds_in_view_);
+    view_proxy_->SetBitmap(bitmap);
   }
 }
 
@@ -292,22 +329,25 @@ void AutofillPopupView::OnGestureEvent(ui::GestureEvent* event) {
 
 bool AutofillPopupView::AcceleratorPressed(
     const ui::Accelerator& accelerator) {
-  DCHECK_EQ(accelerator.modifiers(), ui::EF_NONE);
+  if (accelerator.modifiers() != ui::EF_NONE)
+    return false;
 
   if (accelerator.key_code() == ui::VKEY_ESCAPE) {
-    popup_->Hide();
+    if (popup_)
+      popup_->Hide();
     return true;
   }
 
   if (accelerator.key_code() == ui::VKEY_RETURN)
     return AcceptSelectedLine();
 
-  NOTREACHED();
   return false;
 }
 
 bool AutofillPopupView::HandleKeyPressEvent(
     const content::NativeWebKeyboardEvent& event) {
+  if (!popup_)
+    return false;
   switch (event.windowsKeyCode) {
     case ui::VKEY_UP:
       SelectPreviousLine();
@@ -338,43 +378,49 @@ bool AutofillPopupView::HandleKeyPressEvent(
 }
 
 void AutofillPopupView::OnNativeFocusChanged(gfx::NativeView focused_now) {
-  if (GetWidget() && GetWidget()->GetNativeView() != focused_now)
+  if (GetWidget() && GetWidget()->GetNativeView() != focused_now && popup_)
     popup_->Hide();
 }
 
 void AutofillPopupView::OnWidgetBoundsChanged(views::Widget* widget,
                                               const gfx::Rect& new_bounds) {
-  DCHECK_EQ(widget, parent_widget_);
-  popup_->Hide();
+  if (widget != parent_widget_)
+    return;
+  if (popup_)
+    popup_->Hide();
 }
 
 void AutofillPopupView::AcceptSuggestion(int index) {
+  if (!popup_)
+    return;
+
   popup_->AcceptSuggestion(index);
   popup_->Hide();
 }
 
 bool AutofillPopupView::AcceptSelectedLine() {
-  if (!selected_line_)
+  if (!selected_line_ || selected_line_.value() >= popup_->GetLineCount())
     return false;
 
-  DCHECK_LT(*selected_line_, popup_->GetLineCount());
-
-  AcceptSuggestion(*selected_line_);
+  AcceptSuggestion(selected_line_.value());
   return true;
 }
 
 void AutofillPopupView::AcceptSelection(const gfx::Point& point) {
+  if (!popup_)
+    return;
+
   SetSelectedLine(popup_->LineFromY(point.y()));
   AcceptSelectedLine();
 }
 
 void AutofillPopupView::SetSelectedLine(base::Optional<int> selected_line) {
+  if (!popup_)
+    return;
   if (selected_line_ == selected_line)
     return;
-
-  if (selected_line) {
-    DCHECK_LT(*selected_line, popup_->GetLineCount());
-  }
+  if (selected_line && selected_line.value() >= popup_->GetLineCount())
+    return;
 
   auto previous_selected_line(selected_line_);
   selected_line_ = selected_line;
@@ -382,10 +428,16 @@ void AutofillPopupView::SetSelectedLine(base::Optional<int> selected_line) {
 }
 
 void AutofillPopupView::SetSelection(const gfx::Point& point) {
+  if (!popup_)
+    return;
+
   SetSelectedLine(popup_->LineFromY(point.y()));
 }
 
 void AutofillPopupView::SelectNextLine() {
+  if (!popup_)
+    return;
+
   int new_selected_line = selected_line_ ? *selected_line_ + 1 : 0;
   if (new_selected_line >= popup_->GetLineCount())
     new_selected_line = 0;
@@ -394,6 +446,9 @@ void AutofillPopupView::SelectNextLine() {
 }
 
 void AutofillPopupView::SelectPreviousLine() {
+  if (!popup_)
+    return;
+
   int new_selected_line = selected_line_.value_or(0) - 1;
   if (new_selected_line < 0)
     new_selected_line = popup_->GetLineCount() - 1;

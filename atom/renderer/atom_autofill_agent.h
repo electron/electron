@@ -30,10 +30,9 @@ class AutofillAgent : public content::RenderFrameObserver,
   void FocusedNodeChanged(const blink::WebNode&) override;
 
  private:
-
   class Helper : public content::RenderViewObserver {
    public:
-    Helper(AutofillAgent* agent);
+    explicit Helper(AutofillAgent* agent);
 
     // content::RenderViewObserver implementation.
     void OnDestruct() override {}

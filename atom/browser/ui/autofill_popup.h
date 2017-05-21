@@ -23,7 +23,7 @@ class AutofillPopup {
   ~AutofillPopup();
 
   void CreateView(int routing_id, content::WebContents* web_contents,
-    views::Widget* widget, const gfx::RectF& bounds);
+    bool offscreen, views::Widget* widget, const gfx::RectF& bounds);
   void Hide();
 
   void SetItems(const std::vector<base::string16>& values,
@@ -54,6 +54,7 @@ class AutofillPopup {
 
   // Popup location
   gfx::Rect popup_bounds_;
+  gfx::Rect popup_bounds_in_view_;
 
   // Bounds of the autofilled element
   gfx::Rect element_bounds_;
@@ -72,7 +73,7 @@ class AutofillPopup {
   content::WebContents* web_contents_;
 
   // The popup view
-  std::unique_ptr<AutofillPopupView> view_;
+  AutofillPopupView* view_;
 
   DISALLOW_COPY_AND_ASSIGN(AutofillPopup);
 };

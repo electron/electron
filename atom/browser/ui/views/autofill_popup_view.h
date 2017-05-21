@@ -7,6 +7,7 @@
 
 #include "atom/browser/ui/autofill_popup.h"
 
+#include "atom/browser/osr/osr_view_proxy.h"
 #include "base/optional.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_widget_host.h"
@@ -76,6 +77,8 @@ class AutofillPopupView : public views::WidgetDelegateView,
   }
 
  private:
+  friend class AutofillPopup;
+
   void OnSelectedRowChanged(base::Optional<int> previous_row_selection,
                             base::Optional<int> current_row_selection);
 
@@ -134,6 +137,8 @@ class AutofillPopupView : public views::WidgetDelegateView,
 
   // The index of the currently selected line
   base::Optional<int> selected_line_;
+
+  std::unique_ptr<OffscreenViewProxy> view_proxy_;
 
   // The registered keypress callback, responsible for switching lines on
   // key presses

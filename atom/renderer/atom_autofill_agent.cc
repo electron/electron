@@ -73,6 +73,7 @@ void AutofillAgent::DidChangeScrollOffset() {
 }
 
 void AutofillAgent::FocusedNodeChanged(const blink::WebNode&) {
+  focused_node_was_last_clicked_ = false;
   was_focused_before_now_ = false;
   HidePopup();
 }
@@ -138,8 +139,6 @@ void AutofillAgent::ShowSuggestions(
     const blink::WebFormControlElement& element,
     const ShowSuggestionsOptions& options) {
   if (!element.isEnabled() || element.isReadOnly())
-    return;
-  if (!element.suggestedValue().isEmpty())
     return;
   const blink::WebInputElement* input_element = toWebInputElement(&element);
   if (input_element) {
@@ -220,7 +219,7 @@ void AutofillAgent::ShowPopup(
 void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
   auto element = render_frame_->GetWebFrame()->document().focusedElement();
   if (element.isFormControlElement()) {
-    toWebInputElement(&element)->setAutofillValue(
+    toWebInputElement(&element)->setSuggestedValue(
       blink::WebString::fromUTF16(suggestion));
   }
 }
@@ -233,7 +232,9 @@ void AutofillAgent::DoFocusChangeComplete() {
   if (focused_node_was_last_clicked_ && was_focused_before_now_) {
     ShowSuggestionsOptions options;
     options.autofill_on_empty_values = true;
-    ShowSuggestions(*toWebInputElement(&element), options);
+    auto input_element = toWebInputElement(&element);
+    if (input_element)
+      ShowSuggestions(*input_element, options);
   }
 
   was_focused_before_now_ = true;

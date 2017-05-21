@@ -244,6 +244,8 @@
       'atom/browser/osr/osr_render_widget_host_view.cc',
       'atom/browser/osr/osr_render_widget_host_view.h',
       'atom/browser/osr/osr_render_widget_host_view_mac.mm',
+      'atom/browser/osr/osr_view_proxy.cc',
+      'atom/browser/osr/osr_view_proxy.h',
       'atom/browser/net/about_protocol_handler.cc',
       'atom/browser/net/about_protocol_handler.h',
       'atom/browser/net/asar/asar_protocol_handler.cc',
