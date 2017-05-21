@@ -106,8 +106,8 @@ class NativeWindowViews : public NativeWindow,
   void SetMenu(AtomMenuModel* menu_model) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
-  gfx::NativeView GetNativeView() override;
-  gfx::NativeWindow GetNativeWindow() override;
+  gfx::NativeView GetNativeView() const override;
+  gfx::NativeWindow GetNativeWindow() const override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
   void SetProgressBar(double progress, const ProgressState state) override;
@@ -118,7 +118,7 @@ class NativeWindowViews : public NativeWindow,
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
 
-  gfx::AcceleratedWidget GetAcceleratedWidget() override;
+  gfx::AcceleratedWidget GetAcceleratedWidget() const override;
 
 #if defined(OS_WIN)
   void SetIcon(HICON small_icon, HICON app_icon);
@@ -171,16 +171,16 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // NativeWindow:
-  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) override;
-  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) override;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
 
   // views::View:
   void Layout() override;
-  gfx::Size GetMinimumSize() override;
-  gfx::Size GetMaximumSize() override;
+  gfx::Size GetMinimumSize() const override;
+  gfx::Size GetMaximumSize() const override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Register accelerators supported by the menu model.

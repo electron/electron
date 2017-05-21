@@ -924,11 +924,11 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
 #endif
 }
 
-gfx::NativeView NativeWindowViews::GetNativeView() {
+gfx::NativeView NativeWindowViews::GetNativeView() const {
   return window_->GetNativeView();
 }
 
-gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
+gfx::NativeWindow NativeWindowViews::GetNativeWindow() const {
   return window_->GetNativeWindow();
 }
 
@@ -999,7 +999,7 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   return false;
 }
 
-gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
+gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
@@ -1180,7 +1180,7 @@ void NativeWindowViews::OnWidgetMove() {
 }
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
-    const gfx::Rect& bounds) {
+    const gfx::Rect& bounds) const {
   if (!has_frame())
     return bounds;
 
@@ -1201,7 +1201,7 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 }
 
 gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
-    const gfx::Rect& bounds) {
+    const gfx::Rect& bounds) const {
   if (!has_frame())
     return bounds;
 
@@ -1306,11 +1306,11 @@ void NativeWindowViews::Layout() {
   }
 }
 
-gfx::Size NativeWindowViews::GetMinimumSize() {
+gfx::Size NativeWindowViews::GetMinimumSize() const {
   return NativeWindow::GetMinimumSize();
 }
 
-gfx::Size NativeWindowViews::GetMaximumSize() {
+gfx::Size NativeWindowViews::GetMaximumSize() const {
   return NativeWindow::GetMaximumSize();
 }
 
