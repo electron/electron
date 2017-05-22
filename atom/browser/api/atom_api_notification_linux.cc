@@ -7,8 +7,8 @@
 #include <libnotify/notify.h>
 
 #include "atom/browser/browser.h"
-#include "browser/linux/libnotify_loader.h"
-#include "browser/linux/libnotify_notification.h"
+#include "brightray/browser/linux/libnotify_loader.h"
+#include "brightray/browser/linux/libnotify_notification.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 

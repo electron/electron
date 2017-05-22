@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "browser/notification_delegate.h"
+#include "brightray/browser/notification_delegate.h"
 
 #include "atom/browser/api/atom_api_notification.h"
 

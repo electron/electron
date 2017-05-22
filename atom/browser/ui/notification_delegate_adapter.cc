@@ -5,7 +5,7 @@
 #include "atom/browser/ui/notification_delegate_adapter.h"
 
 #include "atom/browser/api/atom_api_notification.h"
-#include "browser/notification_delegate.h"
+#include "brightray/browser/notification_delegate.h"
 
 namespace atom {
 

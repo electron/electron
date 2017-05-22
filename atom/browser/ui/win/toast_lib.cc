@@ -24,7 +24,7 @@
 
 #include <string>
 
-#include "browser/win/scoped_hstring.h"
+#include "brightray/browser/win/scoped_hstring.h"
 
 #pragma comment(lib, "shlwapi")
 #pragma comment(lib, "user32")
