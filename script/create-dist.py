@@ -9,8 +9,7 @@ import subprocess
 import sys
 import stat
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       get_target_arch, get_zip_name
+from lib.config import BASE_URL, PLATFORM, get_target_arch, get_zip_name
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
                      execute, electron_gyp
 

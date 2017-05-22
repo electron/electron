@@ -3,12 +3,13 @@
 import argparse
 import errno
 import os
+import re
 import subprocess
 import sys
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       enable_verbose_mode, is_verbose_mode, get_target_arch
-from lib.util import execute_stdout, get_electron_version, scoped_cwd
+from lib.config import BASE_URL, PLATFORM,  enable_verbose_mode, \
+                       is_verbose_mode, get_target_arch
+from lib.util import execute, execute_stdout, get_electron_version, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -143,8 +144,8 @@ def setup_libchromiumcontent(is_dev, target_arch, url,
   target_dir = os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')
   download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
                           'download')
-  args = ['-f', '-c', LIBCHROMIUMCONTENT_COMMIT, '--target_arch', target_arch,
-          url, target_dir]
+  args = ['-f', '-c', get_libchromiumcontent_commit(), '--target_arch',
+          target_arch, url, target_dir]
   if (libcc_source_path != None and
       libcc_shared_library_path != None and
       libcc_static_library_path != None):
@@ -273,6 +274,17 @@ def create_node_headers():
   execute_stdout([sys.executable,
                   os.path.join(SOURCE_ROOT, 'script', 'create-node-headers.py'),
                   '--version', get_electron_version()])
+
+
+def get_libchromiumcontent_commit():
+  commit = os.getenv('LIBCHROMIUMCONTENT_COMMIT')
+  if commit:
+    return commit
+
+  # Extract full SHA-1 of libcc submodule commit
+  output = execute(['git', 'submodule', 'status', 'vendor/libchromiumcontent'])
+  commit = re.split('^(?:\s*)([a-f0-9]{40})(?:\s+)', output)[1]
+  return commit
 
 
 def mkdir_p(path):
