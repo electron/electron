@@ -99,7 +99,7 @@ Poza pakowaniem ręcznym, możesz wybierać spośród zewnętrznych narzędzi pa
 * [electron-builder](https://github.com/electron-userland/electron-builder)
 * [electron-packager](https://github.com/electron-userland/electron-packager)
 
-#### Creating a Custom Release with surf-build
+#### Tworzenie nietypowego wydania z wykorzystaniem surf-build 
 
 1. Zainstaluj [Surf](https://github.com/surf-build/surf), przez npm:
   `npm install -g surf-build@latest`
