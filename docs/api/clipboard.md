@@ -157,6 +157,14 @@ Returns `String` - Reads `format` type from the clipboard.
 
 Returns `Buffer` - Reads `format` type from the clipboard.
 
+### `clipboard.writeBuffer(format, buffer[, type])` _Experimental_
+
+* `format` String
+* `buffer` Buffer
+* `type` String (optional)
+
+Writes the `buffer` into the clipboard as `format`.
+
 ### `clipboard.write(data[, type])`
 
 * `data` Object

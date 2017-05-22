@@ -49,6 +49,9 @@ class Clipboard {
 
   static v8::Local<v8::Value> ReadBuffer(const std::string& format_string,
                                          mate::Arguments* args);
+  static void WriteBuffer(const std::string& format_string,
+                          const v8::Local<v8::Value> buffer,
+                          mate::Arguments* args);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Clipboard);
