@@ -1,6 +1,5 @@
 const assert = require('assert')
 const path = require('path')
-const fs = require('fs')
 const {Buffer} = require('buffer')
 
 const {clipboard, nativeImage} = require('electron')
@@ -68,23 +67,17 @@ describe('clipboard module', function () {
       var i = nativeImage.createFromPath(p)
       var markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>'
       var bookmark = {title: 'a title', url: 'test'}
-      const pdfType = process.platform === 'darwin' ? 'com.adobe.pdf' : 'application/pdf'
-      const pdf = fs.readFileSync(path.join(fixtures, 'assets', 'cat.pdf'))
       clipboard.write({
         text: 'test',
         html: '<b>Hi</b>',
         rtf: '{\\rtf1\\utf8 text}',
         bookmark: 'a title',
-        image: p,
-        buffers: {
-          [pdfType]: pdf
-        }
+        image: p
       })
       assert.equal(clipboard.readText(), text)
       assert.equal(clipboard.readHTML(), markup)
       assert.equal(clipboard.readRTF(), rtf)
       assert.equal(clipboard.readImage().toDataURL(), i.toDataURL())
-      assert.deepEqual(clipboard.readBuffer(pdfType), pdf)
 
       if (process.platform !== 'linux') {
         assert.deepEqual(clipboard.readBookmark(), bookmark)
