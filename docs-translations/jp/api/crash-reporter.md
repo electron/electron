@@ -45,7 +45,7 @@ crashReporter.start({
 
 ### `crashReporter.getUploadedReports()`
 
-滑ってのアップロードされたクラッシュレポートが返されます。それぞれのレポートには日付とアップロードされたIDが含まれます。
+すべてのアップロードされたクラッシュレポートが返されます。それぞれのレポートには日付とアップロードされたIDが含まれます。
 
 ## crash-reporter Payload
 
