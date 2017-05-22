@@ -207,7 +207,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 }
 
 bool WebContentsPreferences::IsPreferenceEnabled(
-    const std::string& attributeName,
+    const std::string& attribute_name,
     content::WebContents* web_contents) {
   WebContentsPreferences* self;
   if (!web_contents)
@@ -218,9 +218,9 @@ bool WebContentsPreferences::IsPreferenceEnabled(
     return false;
 
   base::DictionaryValue& web_preferences = self->web_preferences_;
-  bool boolValue = false;
-  web_preferences.GetBoolean(attributeName, &boolValue);
-  return boolValue;
+  bool bool_value = false;
+  web_preferences.GetBoolean(attribute_name, &bool_value);
+  return bool_value;
 }
 
 bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {

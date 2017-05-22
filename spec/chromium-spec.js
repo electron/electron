@@ -1048,10 +1048,7 @@ describe('chromium feature', function () {
     it('should download a pdf when plugins are disabled', function (done) {
       createBrowserWindow(false)
       ipcRenderer.sendSync('set-download-option', false, false)
-      ipcRenderer.once('download-done', function (event, state, url,
-                                                mimeType, receivedBytes,
-                                                totalBytes, disposition,
-                                                filename) {
+      ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
         assert.equal(state, 'completed')
         assert.equal(filename, 'cat.pdf')
         assert.equal(mimeType, 'application/pdf')
