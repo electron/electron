@@ -206,22 +206,8 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   }
 }
 
-bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
-  WebContentsPreferences* self;
-  if (!web_contents)
-    return false;
-
-  self = FromWebContents(web_contents);
-  if (!self)
-    return false;
-
-  base::DictionaryValue& web_preferences = self->web_preferences_;
-  bool sandboxed = false;
-  web_preferences.GetBoolean("sandbox", &sandboxed);
-  return sandboxed;
-}
-
-bool WebContentsPreferences::UsesNativeWindowOpen(
+bool WebContentsPreferences::IsPreferenceEnabled(
+    const std::string& attribute_name,
     content::WebContents* web_contents) {
   WebContentsPreferences* self;
   if (!web_contents)
@@ -232,9 +218,23 @@ bool WebContentsPreferences::UsesNativeWindowOpen(
     return false;
 
   base::DictionaryValue& web_preferences = self->web_preferences_;
-  bool use = false;
-  web_preferences.GetBoolean("nativeWindowOpen", &use);
-  return use;
+  bool bool_value = false;
+  web_preferences.GetBoolean(attribute_name, &bool_value);
+  return bool_value;
+}
+
+bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
+  return IsPreferenceEnabled("sandbox", web_contents);
+}
+
+bool WebContentsPreferences::UsesNativeWindowOpen(
+    content::WebContents* web_contents) {
+  return IsPreferenceEnabled("nativeWindowOpen", web_contents);
+}
+
+bool WebContentsPreferences::IsPluginsEnabled(
+    content::WebContents* web_contents) {
+  return IsPreferenceEnabled("plugins", web_contents);
 }
 
 // static

@@ -4,13 +4,16 @@
 
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 
+#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/login_handler.h"
 #include "atom/browser/web_contents_permission_helper.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/platform_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/download_manager.h"
 #include "content/public/browser/stream_info.h"
 #include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
@@ -68,6 +71,17 @@ void OnPdfResourceIntercepted(
   content::WebContents* web_contents = web_contents_getter.Run();
   if (!web_contents)
     return;
+
+  if (!WebContentsPreferences::IsPluginsEnabled(web_contents)) {
+    auto browser_context = web_contents->GetBrowserContext();
+    auto download_manager =
+      content::BrowserContext::GetDownloadManager(browser_context);
+
+    download_manager->DownloadUrl(
+        content::DownloadUrlParameters::CreateForWebContentsMainFrame(
+            web_contents, original_url));
+    return;
+  }
 
   // The URL passes the original pdf resource url, that will be requested
   // by the webui page.

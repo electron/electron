@@ -1012,16 +1012,18 @@ describe('chromium feature', function () {
       slashes: true
     })
 
-    beforeEach(function () {
+    function createBrowserWindow ({plugins}) {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
+          preload: path.join(fixtures, 'module', 'preload-inject-ipc.js'),
+          plugins: plugins
         }
       })
-    })
+    }
 
     it('opens when loading a pdf resource as top level navigation', function (done) {
+      createBrowserWindow({plugins: true})
       ipcMain.once('pdf-loaded', function (event, success) {
         if (success) done()
       })
@@ -1043,7 +1045,21 @@ describe('chromium feature', function () {
       w.webContents.loadURL(pdfSource)
     })
 
+    it('should download a pdf when plugins are disabled', function (done) {
+      createBrowserWindow({plugins: false})
+      ipcRenderer.sendSync('set-download-option', false, false)
+      ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
+        assert.equal(state, 'completed')
+        assert.equal(filename, 'cat.pdf')
+        assert.equal(mimeType, 'application/pdf')
+        fs.unlinkSync(path.join(fixtures, 'mock.pdf'))
+        done()
+      })
+      w.webContents.loadURL(pdfSource)
+    })
+
     it('should not open when pdf is requested as sub resource', function (done) {
+      createBrowserWindow({plugins: true})
       webFrame.registerURLSchemeAsPrivileged('file', {
         secure: false,
         bypassCSP: false,
