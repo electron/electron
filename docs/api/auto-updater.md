@@ -58,6 +58,11 @@ The server-side setup is also different from macOS. You can read the documents o
 There is no built-in support for auto-updater on Linux, so it is recommended to
 use the distribution's package manager to update your app.
 
+## Usage
+```javascript
+var autoUpdater = require('electron').remote.autoUpdater;
+```
+
 ## Events
 
 The `autoUpdater` object emits the following events:
