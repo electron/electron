@@ -54,24 +54,6 @@ def GetSha1(filename):
   return sha1.hexdigest()
 
 
-def InstallDefaultSysroots(host_arch):
-  """Install the default set of sysroot images.
-
-  This includes at least the sysroot for host architecture, and the 32-bit
-  sysroot for building the v8 snapshot image.  It can also include the cross
-  compile sysroot for ARM/MIPS if cross compiling environment can be detected.
-
-  Another reason we're installing this by default is so that developers can
-  compile and run on our supported platforms without having to worry about
-  flipping things back and forth and whether the sysroots have been downloaded
-  or not.
-  """
-  InstallSysroot('amd64')
-  InstallSysroot('i386')
-  InstallSysroot('arm')
-  InstallSysroot('arm64')
-
-
 def main(args):
   parser = optparse.OptionParser('usage: %prog [OPTIONS]', description=__doc__)
   parser.add_option('--running-as-hook', action='store_true',
@@ -148,7 +130,7 @@ def InstallSysroot(target_platform, target_arch):
       with open(tarball, "wb") as f:
         f.write(response.read())
       break
-    except:
+    except Exception:
       pass
   else:
     raise Error('Failed to download %s' % url)
