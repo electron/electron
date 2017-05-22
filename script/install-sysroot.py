@@ -121,7 +121,7 @@ def InstallSysroot(target_platform, target_arch):
   revision = sysroot_dict['Revision']
   tarball_filename = sysroot_dict['Tarball']
   tarball_sha1sum = sysroot_dict['Sha1Sum']
-  sysroot = os.path.join(linux_dir, sysroot_dict['SysrootDir'])
+  sysroot = os.path.join(linux_dir, 'vendor', sysroot_dict['SysrootDir'])
 
   url = '%s/%s/%s/%s' % (URL_PREFIX, URL_PATH, revision, tarball_filename)
 
