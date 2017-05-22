@@ -112,7 +112,7 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificati
 * `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`,
   `url`, `array`, `dictionary`
 
-Get the value of `key` in system preferences.
+Returns `any` - The value of `key` in system preferences.
 
 This API uses `NSUserDefaults` on macOS. Some popular `key` and `type`s are:
 
