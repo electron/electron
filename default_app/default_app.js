@@ -1,4 +1,4 @@
-const {app, BrowserWindow, Notification} = require('electron')
+const {app, BrowserWindow} = require('electron')
 const path = require('path')
 
 let mainWindow = null
@@ -27,19 +27,5 @@ exports.load = (appUrl) => {
     mainWindow = new BrowserWindow(options)
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
-
-    const n = new Notification({
-      title: 'Hello World',
-      body: 'This is the long and complicated body for this notification that just goes on and on and on and never really seems to stop',
-      silent: true,
-      icon: path.resolve('C:\\Users\\Samuel\\Downloads\\icon.png'),
-      hasReply: true,
-      replyPlaceholder: 'Type Here!!'
-    })
-    n.on('show', () => console.log('showed'))
-    n.on('click', () => console.info('clicked!!'))
-    n.on('reply', (e, reply) => console.log('Replied:', reply))
-
-    n.show()
   })
 }
