@@ -173,17 +173,10 @@ Writes the `buffer` into the clipboard as `format`.
   * `image` [NativeImage](native-image.md) (optional)
   * `rtf` String (optional)
   * `bookmark` String (optional) - The title of the url at `text`.
-  * `buffers` {[format: String]: Buffer} (optional) _Experimental_ - The buffers for each format you want to write
 * `type` String (optional)
 
 ```javascript
 const {clipboard} = require('electron')
-clipboard.write({
-  text: 'test',
-  html: '<b>test</b>',
-  buffers: {
-    'com.adobe.pdf': pdfData
-  }
-})
+clipboard.write({text: 'test', html: '<b>test</b>'})
 ```
 Writes `data` to the clipboard.
