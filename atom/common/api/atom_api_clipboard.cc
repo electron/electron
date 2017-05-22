@@ -53,13 +53,17 @@ v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
       args->isolate(), data.data(), data.length()).ToLocalChecked();
 }
 
-void Clipboard::WriteBuffer(const std::string& format_string,
+void Clipboard::WriteBuffer(const std::string& format,
                             const v8::Local<v8::Value> buffer,
                             mate::Arguments* args) {
-  auto format = ui::Clipboard::GetFormatType(format_string);
+  if (!node::Buffer::HasInstance(buffer)) {
+    args->ThrowError("buffer must be a node Buffer");
+    return;
+  }
+
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteData(node::Buffer::Data(buffer), node::Buffer::Length(buffer),
-                   format);
+                   ui::Clipboard::GetFormatType(format));
 }
 
 void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {

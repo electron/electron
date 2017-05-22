@@ -109,6 +109,12 @@ describe('clipboard module', function () {
       clipboard.writeBuffer('public.utf8-plain-text', buffer)
       assert.equal(clipboard.readText(), 'writeBuffer')
     })
+
+    it('throws an error when a non-Buffer is specified', () => {
+      assert.throws(() => {
+        clipboard.writeBuffer('public.utf8-plain-text', 'hello')
+      }, /buffer must be a node Buffer/)
+    })
   })
 
   describe('clipboard.readBuffer(format)', function () {
