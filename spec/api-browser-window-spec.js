@@ -1412,6 +1412,111 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('document.visibilityState', function () {
+    afterEach(function () {
+      ipcMain.removeAllListeners('pong')
+    })
+
+    function onNextVisibleEvent (callback) {
+      ipcMain.on('pong', function listener (event, visibilityState, hidden) {
+        if (visibilityState === 'visible' && hidden === false) {
+          ipcMain.removeListener('pong', listener)
+          callback()
+        }
+      })
+    }
+
+    function onNextHiddenEvent (callback) {
+      ipcMain.on('pong', function listener (event, visibilityState, hidden) {
+        if (visibilityState === 'hidden' && hidden === true) {
+          ipcMain.removeListener('pong', listener)
+          callback()
+        }
+      })
+    }
+
+    it('visibilityState is initially visible despite window being hidden', function (done) {
+      w.destroy()
+      w = new BrowserWindow({ show: false, width: 100, height: 100 })
+
+      let readyToShow = false
+      w.on('ready-to-show', function () {
+        readyToShow = true
+      })
+
+      ipcMain.once('pong', function (event, visibilityState, hidden) {
+        assert.ok(!readyToShow)
+        assert.equal(visibilityState, 'visible')
+        assert.equal(hidden, false)
+
+        ipcMain.once('pong', function (event, visibilityState, hidden) {
+          assert.ok(false)
+        })
+
+        setTimeout(done, 1000)
+        w.show()
+      })
+
+      w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
+    })
+
+    it('visibilityState changes when window is shown and hidden', function (done) {
+      w.destroy()
+      w = new BrowserWindow({
+        width: 100,
+        height: 100
+      })
+
+      onNextVisibleEvent(() => {
+        onNextHiddenEvent(() => {
+          onNextVisibleEvent(() => {
+            onNextHiddenEvent(done)
+            w.minimize()
+          })
+          w.show()
+          w.focus()
+        })
+        w.hide()
+      })
+
+      w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
+    })
+
+    it('visibilityState remains visible if backgroundThrottling is disabled', function (done) {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        width: 100,
+        height: 100,
+        webPreferences: {
+          backgroundThrottling: false
+        }
+      })
+
+      onNextVisibleEvent(() => {
+        onNextVisibleEvent(() => {
+          done(new Error('Unexpected visibility change event to visible'))
+        })
+        onNextHiddenEvent(() => {
+          done(new Error('Unexpected visibility change event to hidden'))
+        })
+
+        w.once('show', () => {
+          w.once('hide', () => {
+            w.once('show', () => {
+              done()
+            })
+            w.show()
+          })
+          w.hide()
+        })
+        w.show()
+      })
+
+      w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
+    })
+  })
+
   describe('new-window event', function () {
     if (isCI && process.platform === 'darwin') {
       return
@@ -2318,9 +2423,7 @@ describe('BrowserWindow module', function () {
         typeofArrayPush: 'number',
         typeofFunctionApply: 'boolean',
         typeofPreloadExecuteJavaScriptProperty: 'number',
-        typeofOpenedWindow: 'object',
-        documentHidden: true,
-        documentVisibilityState: 'hidden'
+        typeofOpenedWindow: 'object'
       }
     }
 

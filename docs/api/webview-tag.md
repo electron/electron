@@ -60,12 +60,11 @@ container when used with traditional and flexbox layouts (since v0.36.11). Pleas
 do not overwrite the default `display:flex;` CSS property, unless specifying
 `display:inline-flex;` for inline layout.
 
-`webview` has issues being hidden using the `hidden` attribute or using `display: none;`.
-It can cause unusual rendering behaviour within its child `browserplugin` object
-and the web page is reloaded, when the `webview` is un-hidden, as opposed to just
-becoming visible again. The recommended approach is to hide the `webview` using
-CSS by zeroing the `width` & `height` and allowing the element to shrink to the 0px
-dimensions via `flex`.
+`webview` has issues being hidden using the `hidden` attribute or using
+`display: none;`. It can cause unusual rendering behaviour within its child
+`browserplugin` object and the web page is reloaded when the `webview` is
+un-hidden. The recommended approach is to hide the `webview` using
+`visibility: hidden`.
 
 ```html
 <style>
@@ -75,9 +74,7 @@ dimensions via `flex`.
     height:480px;
   }
   webview.hide {
-    flex: 0 1;
-    width: 0px;
-    height: 0px;
+    visibility: hidden;
   }
 </style>
 ```

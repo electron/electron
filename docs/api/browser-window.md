@@ -97,6 +97,25 @@ child.once('ready-to-show', () => {
 })
 ```
 
+### Page visibility
+
+The [Page Visibility API][page-visibility-api] works as follows:
+
+* On all platforms, the visibility state tracks whether the window is
+  hidden/minimized or not.
+* Additionally, on macOS, the visibility state also tracks the window
+  occlusion state. If the window is occluded (i.e. fully covered) by another
+  window, the visibility state will be `hidden`. On other platforms, the
+  visibility state will be `hidden` only when the window is minimized or
+  explicitly hidden with `win.hide()`.
+* If a `BrowserWindow` is created with `show: false`, the initial visibility
+  state will be `visible` despite the window actually being hidden.
+* If `backgroundThrottling` is disabled, the visibility state will remain
+  `visible` even if the window is minimized, occluded, or hidden.
+
+It is recommended that you pause expensive operations when the visibility
+state is `hidden` in order to minimize power consumption.
+
 ### Platform notices
 
 * On macOS modal windows will be displayed as sheets attached to the parent window.
@@ -294,7 +313,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `minimumFontSize` Integer (optional) - Defaults to `0`.
     * `defaultEncoding` String (optional) - Defaults to `ISO-8859-1`.
     * `backgroundThrottling` Boolean (optional) - Whether to throttle animations and timers
-      when the page becomes background. Defaults to `true`.
+      when the page becomes background. This also affects the
+      [Page Visibility API][#page-visibility]. Defaults to `true`.
     * `offscreen` Boolean (optional) - Whether to enable offscreen rendering for the browser
       window. Defaults to `false`. See the
       [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
@@ -1326,6 +1346,7 @@ removed in future Electron releases.
 removed in future Electron releases.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
+[page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels

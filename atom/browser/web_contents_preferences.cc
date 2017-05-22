@@ -186,23 +186,20 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures,
                                     disable_blink_features);
 
-  // The initial visibility state.
-  NativeWindow* window = NativeWindow::FromWebContents(web_contents);
-
-  // Use embedder window for webviews
-  if (guest_instance_id && !window) {
+  if (guest_instance_id) {
+    // Webview `document.visibilityState` tracks window visibility so we need
+    // to let it know if the window happens to be hidden right now.
     auto manager = WebViewManager::GetWebViewManager(web_contents);
     if (manager) {
       auto embedder = manager->GetEmbedder(guest_instance_id);
-      if (embedder)
-        window = NativeWindow::FromWebContents(embedder);
+      if (embedder) {
+        auto window = NativeWindow::FromWebContents(embedder);
+        const bool visible = window->IsVisible() && !window->IsMinimized();
+        if (!visible) {
+          command_line->AppendSwitch(switches::kHiddenPage);
+        }
+      }
     }
-  }
-
-  if (window) {
-    bool visible = window->IsVisible() && !window->IsMinimized();
-    if (!visible)  // Default state is visible.
-      command_line->AppendSwitch(switches::kHiddenPage);
   }
 }
 

@@ -48,35 +48,6 @@ describe('chromium feature', function () {
     })
   })
 
-  describe('document.hidden', function () {
-    var url = 'file://' + fixtures + '/pages/document-hidden.html'
-
-    it('is set correctly when window is not shown', function (done) {
-      w = new BrowserWindow({
-        show: false
-      })
-      w.webContents.once('ipc-message', function (event, args) {
-        assert.deepEqual(args, ['hidden', true])
-        done()
-      })
-      w.loadURL(url)
-    })
-
-    it('is set correctly when window is inactive', function (done) {
-      if (isCI && process.platform === 'win32') return done()
-
-      w = new BrowserWindow({
-        show: false
-      })
-      w.webContents.once('ipc-message', function (event, args) {
-        assert.deepEqual(args, ['hidden', false])
-        done()
-      })
-      w.showInactive()
-      w.loadURL(url)
-    })
-  })
-
   xdescribe('navigator.webkitGetUserMedia', function () {
     it('calls its callbacks', function (done) {
       navigator.webkitGetUserMedia({

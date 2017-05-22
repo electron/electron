@@ -485,9 +485,7 @@ describe('<webview> tag', function () {
             typeofArrayPush: 'number',
             typeofFunctionApply: 'boolean',
             typeofPreloadExecuteJavaScriptProperty: 'number',
-            typeofOpenedWindow: 'object',
-            documentHidden: isCI,
-            documentVisibilityState: isCI ? 'hidden' : 'visible'
+            typeofOpenedWindow: 'object'
           }
         })
         done()
