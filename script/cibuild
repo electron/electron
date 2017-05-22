@@ -32,7 +32,8 @@ LINUX_DEPS_ARM = [
 def main():
   os.environ['CI'] = '1'
 
-  if os.environ.has_key('JANKY_SHA1'):
+  is_janky = os.environ.has_key('JANKY_SHA1')
+  if is_janky:
     setup_nodenv()
 
   # Ignore the CXX and CC env in CI.
@@ -88,7 +89,9 @@ def main():
     run_script('upload.py')
   else:
     run_script('build.py', ['-c', 'D'])
-    if PLATFORM == 'win32' or target_arch == 'x64':
+    if PLATFORM == 'win32' or \
+       (PLATFORM == 'darwin' and target_arch == 'x64') or \
+       (PLATFORM == 'linux' and not is_janky and target_arch == 'x64'):
       run_script('test.py', ['--ci'])
       run_script('verify-ffmpeg.py')
 
