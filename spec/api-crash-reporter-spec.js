@@ -9,17 +9,10 @@ const url = require('url')
 const {closeWindow} = require('./window-helpers')
 
 const {remote} = require('electron')
-const isCI = remote.getGlobal('isCi')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
 describe('crashReporter module', function () {
   if (process.mas) {
-    return
-  }
-
-  // FIXME internal Linux CI is failing when it detects a process crashes
-  // which is a false positive here since crashes are explicitly triggered
-  if (isCI && process.platform === 'linux') {
     return
   }
 
