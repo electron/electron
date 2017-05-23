@@ -1685,5 +1685,24 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/pages/window-open.html'
       document.body.appendChild(webview)
     })
+
+    it('emits a browser-window-created event', (done) => {
+      app.once('browser-window-created', () => {
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/window-open.html'
+      document.body.appendChild(webview)
+    })
+
+    it('emits a web-contents-created event', (done) => {
+      app.on('web-contents-created', function listener (event, contents) {
+        if (contents.getType() === 'window') {
+          app.removeListener('web-contents-created', listener)
+          done()
+        }
+      })
+      webview.src = 'file://' + fixtures + '/pages/window-open.html'
+      document.body.appendChild(webview)
+    })
   })
 })
