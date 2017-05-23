@@ -94,6 +94,7 @@ happens because the Release target binary contains debugging symbols.
 To reduce the file size, run the `create-dist.py` script:
 
 ```bash
+$ npm run lint-api-docs
 $ ./script/create-dist.py
 ```
 
