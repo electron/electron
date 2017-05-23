@@ -1653,6 +1653,7 @@ describe('<webview> tag', function () {
 
   describe('nativeWindowOpen option', () => {
     beforeEach(function () {
+      webview.setAttribute('allowpopups', 'on')
       webview.setAttribute('nodeintegration', 'on')
       webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
     })
