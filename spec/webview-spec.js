@@ -524,17 +524,6 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/pages/target-name.html'
       document.body.appendChild(webview)
     })
-
-    it('emits when nativeWindowOpen is enabled', function(done) {
-      webview.addEventListener('new-window', function (e) {
-        assert.equal(e.url, 'http://host/')
-        assert.equal(e.frameName, 'host')
-        done()
-      })
-      webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
-      webview.src = 'file://' + fixtures + '/pages/window-open.html'
-      document.body.appendChild(webview)
-    })
   })
 
   describe('ipc-message event', function () {
@@ -1663,14 +1652,16 @@ describe('<webview> tag', function () {
   })
 
   describe('nativeWindowOpen option', () => {
+    beforeEach(function () {
+      webview.setAttribute('nodeintegration', 'on')
+      webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
+    })
+
     it('opens window of about:blank with cross-scripting enabled', (done) => {
       ipcMain.once('answer', (event, content) => {
         assert.equal(content, 'Hello')
         done()
       })
-
-      webview.setAttribute('nodeintegration', 'on')
-      webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
       webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-blank.html')
       document.body.appendChild(webview)
     })
@@ -1680,9 +1671,17 @@ describe('<webview> tag', function () {
         assert.equal(content, 'Hello')
         done()
       })
-      webview.setAttribute('nodeintegration', 'on')
-      webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
       webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-file.html')
+      document.body.appendChild(webview)
+    })
+
+    it('emits a new-window event', (done) => {
+      webview.addEventListener('new-window', function (e) {
+        assert.equal(e.url, 'http://host/')
+        assert.equal(e.frameName, 'host')
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/window-open.html'
       document.body.appendChild(webview)
     })
   })
