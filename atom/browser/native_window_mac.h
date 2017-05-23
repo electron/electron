@@ -89,9 +89,9 @@ class NativeWindowMac : public NativeWindow,
   void SetContentProtection(bool enable) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
-  gfx::NativeView GetNativeView() override;
-  gfx::NativeWindow GetNativeWindow() override;
-  gfx::AcceleratedWidget GetAcceleratedWidget() override;
+  gfx::NativeView GetNativeView() const override;
+  gfx::NativeWindow GetNativeWindow() const override;
+  gfx::AcceleratedWidget GetAcceleratedWidget() const override;
   void SetProgressBar(double progress, const ProgressState state) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
@@ -140,8 +140,8 @@ class NativeWindowMac : public NativeWindow,
 
  private:
   // NativeWindow:
-  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds);
-  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds);
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const;
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const;
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
 

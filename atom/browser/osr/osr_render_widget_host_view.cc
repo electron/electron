@@ -1041,14 +1041,14 @@ void OffScreenRenderWidgetHostView::OnPaint(
         pos.x(), pos.y(), pos.width(), pos.height()));
     }
 
-    for (int i = 0; i < damages.size(); i++) {
+    for (size_t i = 0; i < damages.size(); i++) {
       CopyBitmapTo(bitmap, *(bitmaps[i]), damages[i]);
     }
 
     damage.Intersect(GetViewBounds());
     callback_.Run(damage, bitmap);
 
-    for (int i = 0; i < damages.size(); i++) {
+    for (size_t i = 0; i < damages.size(); i++) {
       CopyBitmapTo(bitmap, originals[i], damages[i]);
     }
   }

@@ -205,7 +205,7 @@ int AutofillPopup::GetDesiredPopupHeight() {
 int AutofillPopup::GetDesiredPopupWidth() {
   int popup_width = element_bounds_.width();
 
-  for (int i = 0; i < values_.size(); ++i) {
+  for (size_t i = 0; i < values_.size(); ++i) {
     int row_size = kEndPadding + 2 * kPopupBorderThickness +
       gfx::GetStringWidth(GetValueAt(i), GetValueFontListForRow(i)) +
       gfx::GetStringWidth(GetLabelAt(i), GetLabelFontListForRow(i));
@@ -256,7 +256,7 @@ base::string16 AutofillPopup::GetLabelAt(int i) {
 int AutofillPopup::LineFromY(int y) const {
   int current_height = kPopupBorderThickness;
 
-  for (int i = 0; i < values_.size(); ++i) {
+  for (size_t i = 0; i < values_.size(); ++i) {
     current_height += kRowHeight;
 
     if (y <= current_height)
