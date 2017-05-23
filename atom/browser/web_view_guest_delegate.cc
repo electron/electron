@@ -191,6 +191,8 @@ content::SiteInstance* WebViewGuestDelegate::GetOwnerSiteInstance() {
 
 content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
     const content::WebContents::CreateParams& create_params) {
+  // Code below mirrors what content::WebContentsImpl::CreateNewWindow
+  // does for non-guest sources
   content::WebContents::CreateParams guest_params(create_params);
   guest_params.initial_size =
       embedder_web_contents_->GetContainerBounds().size();
