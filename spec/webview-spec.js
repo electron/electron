@@ -524,6 +524,17 @@ describe('<webview> tag', function () {
       webview.src = 'file://' + fixtures + '/pages/target-name.html'
       document.body.appendChild(webview)
     })
+
+    it('emits when nativeWindowOpen is enabled', function(done) {
+      webview.addEventListener('new-window', function (e) {
+        assert.equal(e.url, 'http://host/')
+        assert.equal(e.frameName, 'host')
+        done()
+      })
+      webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
+      webview.src = 'file://' + fixtures + '/pages/window-open.html'
+      document.body.appendChild(webview)
+    })
   })
 
   describe('ipc-message event', function () {
