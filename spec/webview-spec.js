@@ -1650,4 +1650,18 @@ describe('<webview> tag', function () {
       w.loadURL(`file://${fixtures}/pages/webview-origin-zoom-level.html`)
     })
   })
+
+  describe('nativeWindowOpen option', () => {
+    it('opens a windows with cross-scripting enabled', (done) => {
+      ipcMain.once('answer', (event, content) => {
+        assert.equal(content, 'Hello')
+        done()
+      })
+
+      webview.setAttribute('nodeintegration', 'on')
+      webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
+      webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-blank.html')
+      document.body.appendChild(webview)
+    })
+  })
 })
