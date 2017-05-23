@@ -1652,7 +1652,7 @@ describe('<webview> tag', function () {
   })
 
   describe('nativeWindowOpen option', () => {
-    it('opens a windows with cross-scripting enabled', (done) => {
+    it('opens window of about:blank with cross-scripting enabled', (done) => {
       ipcMain.once('answer', (event, content) => {
         assert.equal(content, 'Hello')
         done()
@@ -1661,6 +1661,17 @@ describe('<webview> tag', function () {
       webview.setAttribute('nodeintegration', 'on')
       webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
       webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-blank.html')
+      document.body.appendChild(webview)
+    })
+
+    it('opens window of same domain with cross-scripting enabled', (done) => {
+      ipcMain.once('answer', (event, content) => {
+        assert.equal(content, 'Hello')
+        done()
+      })
+      webview.setAttribute('nodeintegration', 'on')
+      webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
+      webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-file.html')
       document.body.appendChild(webview)
     })
   })
