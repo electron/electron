@@ -318,13 +318,73 @@ v8::Local<v8::Value> NativeImage::GetBitmap(mate::Arguments* args) {
   const SkBitmap bitmap =
       image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
   SkPixelRef* ref = bitmap.pixelRef();
-  if (!ref)
+  if (!ref){
     return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-  return node::Buffer::New(args->isolate(),
-                           reinterpret_cast<char*>(ref->pixels()),
-                           bitmap.getSafeSize(),
-                           &Noop,
-                           nullptr).ToLocalChecked();
+  }
+
+  	return node::Buffer::New(args->isolate(),
+                         reinterpret_cast<char*>(ref->pixels()),
+                         bitmap.getSafeSize(),
+                         &Noop,
+                         nullptr).ToLocalChecked();
+    
+}
+
+v8::Local<v8::Value> NativeImage::GetBitmapMonochrome(mate::Arguments* args) {
+  float scale_factor = GetScaleFactorFromOptions(args);
+
+  const SkBitmap bitmap =
+      image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
+  SkPixelRef* ref = bitmap.pixelRef();
+  if (!ref){
+    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  }
+  
+  	int width = bitmap.width();
+  	int height = bitmap.height();
+	int size = width*height;
+	int monochromeBitmapBytes = size/8;
+	unsigned char* monochromeBitmap = new unsigned char[monochromeBitmapBytes]();
+
+	int bytesPerPixel = bitmap.bytesPerPixel();
+	if(bytesPerPixel != 4){
+		args->ThrowError("unsupported bytes per pixel");
+			return v8::Undefined(args->isolate());
+	}
+
+	char *pixels = (char*)ref->pixels();
+	for(int i=0; i <size*4; i+=4){
+		int pixelNumber = i/4;
+		unsigned char b = pixels[i+0];
+		unsigned char g = pixels[i+1];
+		unsigned char r = pixels[i+2];
+		unsigned char a = pixels[i+3];
+
+		bool blackOrWhite = 0;
+
+		if (a > 126) { // checking transparency
+            int grayscale = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+            if (grayscale < 128) { // checking color
+                blackOrWhite = 1;
+            }
+        }
+
+        int memorySlot = pixelNumber/8;
+
+        if(blackOrWhite){
+        	unsigned char slot = monochromeBitmap[memorySlot];
+        	unsigned char mask = 1 << (7 - (pixelNumber%8));
+        	slot = slot | mask;
+        	monochromeBitmap[memorySlot] = slot;
+        }
+	}
+
+	return node::Buffer::New(args->isolate(),
+	                       reinterpret_cast<char*>(monochromeBitmap),
+	                       monochromeBitmapBytes,
+	                       &Noop,
+	                       nullptr).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(v8::Isolate* isolate,
@@ -549,6 +609,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
       .SetMethod("toBitmap", &NativeImage::ToBitmap)
       .SetMethod("getBitmap", &NativeImage::GetBitmap)
+      .SetMethod("getBitmapMonochrome", &NativeImage::GetBitmapMonochrome)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)

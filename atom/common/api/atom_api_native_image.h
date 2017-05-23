@@ -75,6 +75,7 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
   v8::Local<v8::Value> ToBitmap(mate::Arguments* args);
   v8::Local<v8::Value> GetBitmap(mate::Arguments* args);
+  v8::Local<v8::Value> GetBitmapMonochrome(mate::Arguments* args);
   v8::Local<v8::Value> GetNativeHandle(
     v8::Isolate* isolate,
     mate::Arguments* args);
