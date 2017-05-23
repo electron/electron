@@ -1,0 +1,9 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = require('electron')
+  const popup = window.open()
+  ipcRenderer.send('answer', {windowOpenReturnedNull: popup == null})
+</script>
+</body>
+</html>

@@ -1676,6 +1676,16 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
+    it('returns null from window.open when allowpopups is not set', (done) => {
+      webview.removeAttribute('allowpopups')
+      ipcMain.once('answer', (event, {windowOpenReturnedNull}) => {
+        assert.equal(windowOpenReturnedNull, true)
+        done()
+      })
+      webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-no-allowpopups.html')
+      document.body.appendChild(webview)
+    })
+
     it('emits a new-window event', (done) => {
       webview.addEventListener('new-window', function (e) {
         assert.equal(e.url, 'http://host/')
