@@ -64,6 +64,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   bool CanBeEmbeddedInsideCrossProcessFrames() override;
   content::RenderWidgetHost* GetOwnerRenderWidgetHost() override;
   content::SiteInstance* GetOwnerSiteInstance() override;
+  content::WebContents* CreateNewGuestWindow(
+     const content::WebContents::CreateParams& create_params) override;
 
   // WebContentsZoomController::Observer:
   void OnZoomLevelChanged(content::WebContents* web_contents,
