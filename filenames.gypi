@@ -135,6 +135,7 @@
       'atom/browser/api/atom_api_protocol.h',
       'atom/browser/api/atom_api_render_process_preferences.cc',
       'atom/browser/api/atom_api_render_process_preferences.h',
+      'atom/browser/api/atom_api_screen_mac.mm',
       'atom/browser/api/atom_api_screen.cc',
       'atom/browser/api/atom_api_screen.h',
       'atom/browser/api/atom_api_session.cc',

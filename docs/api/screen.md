@@ -95,6 +95,12 @@ Returns [`Point`](structures/point.md)
 
 The current absolute position of the mouse pointer.
 
+### `screen.getMenuBarHeight()`
+
+Returns [`Integer`] - Height
+
+The height of toolbar in pixels.
+
 ### `screen.getPrimaryDisplay()`
 
 Returns [`Display`](structures/display.md) - The primary display.
