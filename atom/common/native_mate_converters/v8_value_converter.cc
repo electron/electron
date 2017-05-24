@@ -17,30 +17,10 @@
 
 namespace atom {
 
-namespace {
-
-const int kMaxRecursionDepth = 100;
-
-}  // namespace
-
 // The state of a call to FromV8Value.
 class V8ValueConverter::FromV8ValueState {
  public:
-  // Level scope which updates the current depth of some FromV8ValueState.
-  class Level {
-   public:
-    explicit Level(FromV8ValueState* state) : state_(state) {
-      state_->max_recursion_depth_--;
-    }
-    ~Level() {
-      state_->max_recursion_depth_++;
-    }
-
-   private:
-    FromV8ValueState* state_;
-  };
-
-  FromV8ValueState() : max_recursion_depth_(kMaxRecursionDepth) {}
+  FromV8ValueState() {}
 
   // If |handle| is not in |unique_map_|, then add it to |unique_map_| and
   // return true.
@@ -303,10 +283,6 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     FromV8ValueState* state,
     v8::Local<v8::Value> val,
     v8::Isolate* isolate) const {
-  FromV8ValueState::Level state_level(state);
-  if (state->HasReachedMaxRecursionDepth())
-    return nullptr;
-
   if (val->IsExternal())
     return base::Value::CreateNullValue().release();
 
