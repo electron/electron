@@ -854,7 +854,7 @@ describe('BrowserWindow module', function () {
     })
   })
 
-  describe('"web-preferences" option', function () {
+  describe('"webPreferences" option', function () {
     afterEach(function () {
       ipcMain.removeAllListeners('answer')
     })
