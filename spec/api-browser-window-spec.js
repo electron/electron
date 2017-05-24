@@ -1285,6 +1285,14 @@ describe('BrowserWindow module', function () {
         w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-file.html'))
       })
 
+      it('blocks accessing cross-origin frames', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          assert.equal(content, 'Blocked a frame with origin "file://" from accessing a cross-origin frame.')
+          done()
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-cross-origin.html'))
+      })
+
       it('opens window from <iframe> tags', (done) => {
         ipcMain.once('answer', (event, content) => {
           assert.equal(content, 'Hello')
