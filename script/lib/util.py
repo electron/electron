@@ -170,11 +170,11 @@ def execute(argv, env=os.environ):
     raise e
 
 
-def execute_stdout(argv, env=os.environ):
+def execute_stdout(argv, env=os.environ, cwd=None):
   if is_verbose_mode():
     print ' '.join(argv)
     try:
-      subprocess.check_call(argv, env=env)
+      subprocess.check_call(argv, env=env, cwd=cwd)
     except subprocess.CalledProcessError as e:
       print e.output
       raise e

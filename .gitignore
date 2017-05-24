@@ -6,6 +6,10 @@
 /external_binaries/
 /out/
 /vendor/download/
+/vendor/debian_jessie_amd64-sysroot/
+/vendor/debian_jessie_arm-sysroot/
+/vendor/debian_jessie_arm64-sysroot/
+/vendor/debian_jessie_i386-sysroot/
 /vendor/debian_wheezy_amd64-sysroot/
 /vendor/debian_wheezy_arm-sysroot/
 /vendor/debian_wheezy_i386-sysroot/

@@ -52,6 +52,9 @@
               # incorrect results when passed to pkg-config
               'sysroot%': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
             }],
+            ['target_arch=="arm64"', {
+              'sysroot%': '<(source_root)/vendor/debian_jessie_arm64-sysroot',
+            }],
             ['target_arch=="ia32"', {
               'sysroot%': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
             }],

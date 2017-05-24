@@ -228,7 +228,8 @@ def download_sysroot(target_arch):
     target_arch = 'amd64'
   execute_stdout([sys.executable,
                   os.path.join(SOURCE_ROOT, 'script', 'install-sysroot.py'),
-                  '--arch', target_arch])
+                  '--arch', target_arch],
+                  cwd=VENDOR_DIR)
 
 def create_chrome_version_h():
   version_file = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'VERSION')
