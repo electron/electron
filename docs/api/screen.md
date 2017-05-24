@@ -97,7 +97,7 @@ The current absolute position of the mouse pointer.
 
 ### `screen.getMenuBarHeight()` _macOS_
 
-Returns [`Integer`] - Height
+Returns `Integer` - Height
 
 The height of toolbar in pixels.
 
