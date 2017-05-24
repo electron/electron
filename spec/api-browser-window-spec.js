@@ -1285,6 +1285,14 @@ describe('BrowserWindow module', function () {
         w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-file.html'))
       })
 
+      it('opens window from <iframe> tags', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          assert.equal(content, 'Hello')
+          done()
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-iframe.html'))
+      })
+
       if (process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1) {
         it('loads native addons correctly after reload', (done) => {
           ipcMain.once('answer', (event, content) => {
