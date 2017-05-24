@@ -218,11 +218,6 @@ bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
   return IsPreferenceEnabled("sandbox", web_contents);
 }
 
-bool WebContentsPreferences::UsesNativeWindowOpen(
-    content::WebContents* web_contents) {
-  return IsPreferenceEnabled("nativeWindowOpen", web_contents);
-}
-
 bool WebContentsPreferences::IsPluginsEnabled(
     content::WebContents* web_contents) {
   return IsPreferenceEnabled("plugins", web_contents);
