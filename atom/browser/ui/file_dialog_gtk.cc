@@ -72,8 +72,12 @@ class FileChooserDialog {
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_),
             settings.default_path.value().c_str());
       } else {
-        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_),
-            settings.default_path.DirName().value().c_str());
+        if (settings.default_path.IsAbsolute()) {
+          gtk_file_chooser_set_current_folder(
+              GTK_FILE_CHOOSER(dialog_),
+              settings.default_path.DirName().value().c_str());
+        }
+
         gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog_),
             settings.default_path.BaseName().value().c_str());
       }
