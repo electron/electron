@@ -7,7 +7,7 @@
     try {
       if (popup.location.toString() !== 'about:blank') {
         clearInterval(intervalID)
-        ipcRenderer.send('answer', 'did not throw error')
+        ipcRenderer.send('answer', `Did not throw error accessing location: ${popup.location}`)
       }
     } catch (error) {
       clearInterval(intervalID)

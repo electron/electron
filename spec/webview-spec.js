@@ -1686,6 +1686,15 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
+    it('blocks accessing cross-origin frames', (done) => {
+      ipcMain.once('answer', (event, content) => {
+        assert.equal(content, 'Blocked a frame with origin "file://" from accessing a cross-origin frame.')
+        done()
+      })
+      webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-cross-origin.html')
+      document.body.appendChild(webview)
+    })
+
     it('emits a new-window event', (done) => {
       webview.addEventListener('new-window', function (e) {
         assert.equal(e.url, 'http://host/')
