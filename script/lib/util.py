@@ -265,7 +265,7 @@ def update_electron_modules(dirname, target_arch, nodedir):
   env['npm_config_target']  = version
   env['npm_config_nodedir'] = nodedir
   update_node_modules(dirname, env)
-  execute_stdout([NPM, 'rebuild'], env)
+  execute_stdout([NPM, 'rebuild'], env, dirname)
 
 
 def update_node_modules(dirname, env=None):

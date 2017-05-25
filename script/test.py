@@ -28,8 +28,7 @@ def main():
 
   spec_modules = os.path.join(SOURCE_ROOT, 'spec', 'node_modules')
   if args.rebuild_native_modules or not os.path.isdir(spec_modules):
-    rebuild_native_modules(spec_modules,
-                           os.path.join(SOURCE_ROOT, 'out', config))
+    rebuild_native_modules(config, spec_modules)
 
   if sys.platform == 'darwin':
     electron = os.path.join(SOURCE_ROOT, 'out', config,
@@ -79,6 +78,10 @@ def parse_args():
                       help='Rebuild native modules used by specs',
                       action='store_true',
                       required=False)
+  parser.add_argument('--ci',
+                      help='Run tests in CI mode',
+                      action='store_true',
+                      required=False)
   parser.add_argument('-v', '--verbose',
                       action='store_true',
                       help='Prints the output of the subprocesses')
@@ -112,20 +115,28 @@ def run_python_script(script, *args):
   return execute([sys.executable, script_path] + list(args))
 
 
-def rebuild_native_modules(modules_path, out_dir):
+def rebuild_native_modules(config, modules_path):
+  out_dir = os.path.join(SOURCE_ROOT, 'out', config)
   version = get_electron_version()
+  node_dir = os.path.join(out_dir, 'node-{0}'.format(version))
 
   run_python_script('create-node-headers.py',
                     '--version', version,
                     '--directory', out_dir)
 
   if PLATFORM == 'win32':
-    iojs_lib = os.path.join(out_dir, 'Release', 'iojs.lib')
+    lib_dir = os.path.join(node_dir, 'Release')
+    safe_mkdir(lib_dir)
+    iojs_lib = os.path.join(lib_dir, 'iojs.lib')
     atom_lib = os.path.join(out_dir, 'node.dll.lib')
     shutil.copy2(atom_lib, iojs_lib)
 
-  update_electron_modules(os.path.dirname(modules_path), get_target_arch(),
-                          os.path.join(out_dir, 'node-{0}'.format(version)))
+  # Native modules can only be compiled against release builds on Windows
+  if config == 'R' or PLATFORM != 'win32':
+    update_electron_modules(os.path.dirname(modules_path), get_target_arch(),
+                            node_dir)
+  else:
+    update_node_modules(os.path.dirname(modules_path))
 
 
 if __name__ == '__main__':
