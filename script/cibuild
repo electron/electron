@@ -89,7 +89,7 @@ def main():
   else:
     run_script('build.py', ['-c', 'D'])
     if PLATFORM == 'win32' or target_arch == 'x64':
-      run_script('test.py', ['--ci'])
+      run_script('test.py', ['--ci', '--rebuild_native_modules'])
       run_script('verify-ffmpeg.py')
 
 
