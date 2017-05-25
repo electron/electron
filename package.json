@@ -27,6 +27,7 @@
     "browserify": "browserify",
     "bump-version": "./script/bump-version.py",
     "build": "python ./script/build.py -c D",
+    "rebuild-test-modules": "python ./script/rebuild-test-modules.py",
     "clean": "python ./script/clean.py",
     "clean-build": "python ./script/clean.py --build",
     "coverage": "npm run instrument-code-coverage && npm test -- --use_instrumented_asar",
