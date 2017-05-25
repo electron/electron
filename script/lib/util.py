@@ -15,11 +15,15 @@ import urllib2
 import os
 import zipfile
 
-from config import is_verbose_mode
+from config import is_verbose_mode, PLATFORM
 from env_util import get_vs_env
 
 BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
                                         'boto'))
+
+NPM = 'npm'
+if sys.platform in ['win32', 'cygwin']:
+  NPM += '.cmd'
 
 
 def get_host_arch():
@@ -244,3 +248,41 @@ def import_vs_env(target_arch):
     vs_arch = 'x86_amd64'
   env = get_vs_env('14.0', vs_arch)
   os.environ.update(env)
+
+
+def set_clang_env(env):
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
+                          'Release+Asserts', 'bin')
+  env['CC']  = os.path.join(llvm_dir, 'clang')
+  env['CXX'] = os.path.join(llvm_dir, 'clang++')
+
+
+def update_electron_modules(dirname, target_arch, nodedir):
+  env = os.environ.copy()
+  version = get_electron_version()
+  env['npm_config_arch']    = target_arch
+  env['npm_config_target']  = version
+  env['npm_config_nodedir'] = nodedir
+  update_node_modules(dirname, env)
+
+
+def update_node_modules(dirname, env=None):
+  if env is None:
+    env = os.environ.copy()
+  if PLATFORM == 'linux':
+    # Use prebuilt clang for building native modules.
+    set_clang_env(env)
+    env['npm_config_clang'] = '1'
+  with scoped_cwd(dirname):
+    args = [NPM, 'install']
+    if is_verbose_mode():
+      args += ['--verbose']
+    # Ignore npm install errors when running in CI.
+    if os.environ.has_key('CI'):
+      try:
+        execute_stdout(args, env)
+      except subprocess.CalledProcessError:
+        pass
+    else:
+      execute_stdout(args, env)
