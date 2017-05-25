@@ -72,7 +72,7 @@ def main():
                                              os.environ.get('PATH', '')])
 
   is_release = os.environ.has_key('ELECTRON_RELEASE')
-  args = ['--target_arch=' + target_arch]
+  args = ['--target_arch=' + target_arch, '-v']
   if not is_release:
     args += ['--dev']
   run_script('bootstrap.py', args)
