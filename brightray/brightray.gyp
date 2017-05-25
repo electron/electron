@@ -244,6 +244,8 @@
                   '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
                   # components/wifi/BUILD.gn:
                   '$(SDKROOT)/System/Library/Frameworks/CoreWLAN.framework',
+                  # printing/BUILD.gn:
+                  '-lcups',
                 ],
               },
             }],
