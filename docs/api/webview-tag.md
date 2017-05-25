@@ -13,7 +13,7 @@ Unlike an `iframe`, the `webview` runs in a separate process than your
 app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content. **Note:** Most methods called on the
-webview from the host page require a syncronous call to the main process.
+webview from the host page require a synchronous call to the main process.
 
 ## Example
 
