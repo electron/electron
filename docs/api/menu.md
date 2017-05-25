@@ -116,7 +116,9 @@ An example of creating the application menu in the main process with the
 simple template API:
 
 ```javascript
-const {app, Menu} = require('electron')
+const electron = require('electron')
+const app = electron.app
+const Menu = electron.Menu
 
 const template = [
   {
