@@ -89,6 +89,8 @@ if (global.isCi) {
   })
 }
 
+global.nativeModulesEnabled = process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1
+
 // Register app as standard scheme.
 global.standardScheme = 'app'
 global.zoomScheme = 'zoom'

@@ -12,6 +12,7 @@ const {ipcRenderer, remote, screen} = require('electron')
 const {app, ipcMain, BrowserWindow, protocol, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
+const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
 describe('BrowserWindow module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
@@ -1301,19 +1302,19 @@ describe('BrowserWindow module', function () {
         w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-iframe.html'))
       })
 
-      if (process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1) {
-        it('loads native addons correctly after reload', (done) => {
+      it('loads native addons correctly after reload', (done) => {
+        if (!nativeModulesEnabled) return done()
+
+        ipcMain.once('answer', (event, content) => {
+          assert.equal(content, 'function')
           ipcMain.once('answer', (event, content) => {
             assert.equal(content, 'function')
-            ipcMain.once('answer', (event, content) => {
-              assert.equal(content, 'function')
-              done()
-            })
-            w.reload()
+            done()
           })
-          w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
+          w.reload()
         })
-      }
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
+      })
     })
   })
 
