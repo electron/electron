@@ -8,7 +8,7 @@ import sys
 
 from lib.config import PLATFORM, enable_verbose_mode, get_target_arch
 from lib.util import electron_gyp, execute, get_electron_version, rm_rf, \
-                     update_electron_modules
+                     safe_mkdir, update_electron_modules
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
