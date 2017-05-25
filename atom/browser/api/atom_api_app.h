@@ -89,10 +89,8 @@ class App : public AtomBrowserClient::Delegate,
 #endif
 
   base::FilePath GetAppPath() const;
-  void RenderProcessReady(
-      content::RenderProcessHost* host);
-  void RenderProcessDisconnected(
-      content::RenderProcessHost* host);
+  void RenderProcessReady(content::RenderProcessHost* host);
+  void RenderProcessDisconnected(content::RenderProcessHost* host);
 
  protected:
   explicit App(v8::Isolate* isolate);
@@ -146,11 +144,8 @@ class App : public AtomBrowserClient::Delegate,
 
  private:
   void SetAppPath(const base::FilePath& app_path);
-  void ChildProcessLaunched(
-      int process_type,
-      base::ProcessHandle handle);
-  void ChildProcessDisconnected(
-      base::ProcessId pid);
+  void ChildProcessLaunched(int process_type, base::ProcessHandle handle);
+  void ChildProcessDisconnected(base::ProcessId pid);
 
   // Get/Set the pre-defined path in PathService.
   base::FilePath GetPath(mate::Arguments* args, const std::string& name);

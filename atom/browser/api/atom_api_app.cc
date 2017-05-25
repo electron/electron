@@ -508,12 +508,7 @@ App::App(v8::Isolate* isolate) {
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
   content::BrowserChildProcessObserver::Add(this);
-  int pid = 0;
-  #if defined(OS_WIN)
-    pid = GetCurrentProcessId();
-  #elif defined(OS_POSIX)
-    pid = getpid();
-  #endif
+  base::ProcessId pid = base::GetCurrentProcId();
   std::unique_ptr<atom::ProcessMetric> process_metric(
               new atom::ProcessMetric(
                       "Browser",
@@ -691,8 +686,7 @@ void App::BrowserChildProcessLaunchedAndConnected(
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  this->ChildProcessDisconnected(
-    base::GetProcId(data.handle));
+  this->ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
 void App::RenderProcessReady(
@@ -704,8 +698,7 @@ void App::RenderProcessReady(
 
 void App::RenderProcessDisconnected(
     content::RenderProcessHost* host) {
-  this->ChildProcessDisconnected(
-    base::GetProcId(host->GetHandle()));
+  this->ChildProcessDisconnected(base::GetProcId(host->GetHandle()));
 }
 
 void App::ChildProcessLaunched(
