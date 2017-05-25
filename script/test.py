@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import os
 import shutil
 import subprocess
@@ -17,9 +18,8 @@ PRODUCT_NAME = electron_gyp()['product_name%']
 def main():
   os.chdir(SOURCE_ROOT)
 
-  config = 'D'
-  if len(sys.argv) == 2 and sys.argv[1] == '-R':
-    config = 'R'
+  args = parse_args()
+  config = args.configuration
 
   if sys.platform == 'darwin':
     electron = os.path.join(SOURCE_ROOT, 'out', config,
@@ -36,10 +36,9 @@ def main():
     electron = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
     resources_path = os.path.join(SOURCE_ROOT, 'out', config)
 
-  use_instrumented_asar = '--use-instrumented-asar' in sys.argv
   returncode = 0
   try:
-    if use_instrumented_asar:
+    if args.use_instrumented_asar:
       install_instrumented_asar_file(resources_path)
     subprocess.check_call([electron, 'spec'] + sys.argv[1:])
   except subprocess.CalledProcessError as e:
@@ -47,7 +46,7 @@ def main():
   except KeyboardInterrupt:
     returncode = 0
 
-  if use_instrumented_asar:
+  if args.use_instrumented_asar:
     restore_uninstrumented_asar_file(resources_path)
 
   if os.environ.has_key('OUTPUT_TO_FILE'):
@@ -58,6 +57,19 @@ def main():
 
 
   return returncode
+
+
+def parse_args():
+  parser = argparse.ArgumentParser(description='Run Electron tests')
+  parser.add_argument('--use_instrumented_asar',
+                      help='Run tests with coverage instructed asar file',
+                      action='store_true',
+                      required=False)
+  parser.add_argument('-c', '--configuration',
+                      help='Build configuration to run tests against',
+                      default='D',
+                      required=False)
+  return parser.parse_args()
 
 
 def install_instrumented_asar_file(resources_path):
