@@ -65,7 +65,6 @@ def main():
   create_chrome_version_h()
   touch_config_gypi()
   run_update(defines, args.msvs)
-  create_node_headers()
   update_electron_modules('spec', args.target_arch)
 
 
@@ -183,12 +182,10 @@ def update_node_modules(dirname, env=None):
     if os.environ.has_key('CI'):
       try:
         execute_stdout(args, env)
-        execute_stdout([NPM, 'rebuild'], env)
       except subprocess.CalledProcessError:
         pass
     else:
       execute_stdout(args, env)
-      execute_stdout([NPM, 'rebuild'], env)
 
 
 def update_electron_modules(dirname, target_arch):
@@ -269,12 +266,6 @@ def run_update(defines, msvs):
     args += ['--msvs']
 
   execute_stdout(args)
-
-
-def create_node_headers():
-  execute_stdout([sys.executable,
-                  os.path.join(SOURCE_ROOT, 'script', 'create-node-headers.py'),
-                  '--version', get_electron_version()])
 
 
 def get_libchromiumcontent_commit():
