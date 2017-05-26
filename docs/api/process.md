@@ -119,8 +119,8 @@ that all statistics are reported in Kilobytes.
 
 ### `process.getCPUUsage()`
 
-Returns [`CPUUsage`](structures/cpu-usage.md)
+Returns [`Electron.CPUUsage`](structures/cpu-usage.md)
 
 ### `process.getIOCounters()` _Windows_ _Linux_
 
-Returns [`IOCounters`](structures/io-counters.md)
+Returns [`Electron.IOCounters`](structures/io-counters.md)
