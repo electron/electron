@@ -182,7 +182,7 @@ def create_or_get_release_draft(github, releases, tag, tag_exists):
 
 
 def create_release_draft(github, tag):
-  name = '{0} {1}'.format(PROJECT_NAME, tag)
+  name = '{0} {1} beta'.format(PROJECT_NAME, tag)
   if os.environ.has_key('CI'):
     body = '(placeholder)'
   else:
@@ -191,7 +191,7 @@ def create_release_draft(github, tag):
     sys.stderr.write('Quit due to empty release note.\n')
     sys.exit(0)
 
-  data = dict(tag_name=tag, name=name, body=body, draft=True)
+  data = dict(tag_name=tag, name=name, body=body, draft=True, prerelease=True)
   r = github.repos(ELECTRON_REPO).releases.post(data=data)
   return r
 
