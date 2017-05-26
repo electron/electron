@@ -510,10 +510,10 @@ App::App(v8::Isolate* isolate) {
   content::BrowserChildProcessObserver::Add(this);
   base::ProcessId pid = base::GetCurrentProcId();
   std::unique_ptr<atom::ProcessMetric> process_metric(
-              new atom::ProcessMetric(
-                      "Browser",
-                      pid,
-                      base::ProcessMetrics::CreateCurrentProcessMetrics()));
+      new atom::ProcessMetric(
+          "Browser",
+          pid,
+          base::ProcessMetrics::CreateCurrentProcessMetrics()));
   app_metrics_[pid] = std::move(process_metric);
   Init(isolate);
 }
@@ -679,26 +679,20 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  this->ChildProcessLaunched(
-    data.process_type,
-    data.handle);
+  ChildProcessLaunched(data.process_type, data.handle);
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  this->ChildProcessDisconnected(base::GetProcId(data.handle));
+  ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
-void App::RenderProcessReady(
-    content::RenderProcessHost* host) {
-  this->ChildProcessLaunched(
-    content::PROCESS_TYPE_RENDERER,
-    host->GetHandle());
+void App::RenderProcessReady(content::RenderProcessHost* host) {
+  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetHandle());
 }
 
-void App::RenderProcessDisconnected(
-    content::RenderProcessHost* host) {
-  this->ChildProcessDisconnected(base::GetProcId(host->GetHandle()));
+void App::RenderProcessDisconnected(content::RenderProcessHost* host) {
+  ChildProcessDisconnected(base::GetProcId(host->GetHandle()));
 }
 
 void App::ChildProcessLaunched(
@@ -707,23 +701,22 @@ void App::ChildProcessLaunched(
   auto pid = base::GetProcId(handle);
 
 #if defined(OS_MACOSX)
-    std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateProcessMetrics(
-        handle, content::BrowserChildProcessHost::GetPortProvider()));
+  std::unique_ptr<base::ProcessMetrics> metrics(
+    base::ProcessMetrics::CreateProcessMetrics(
+      handle, content::BrowserChildProcessHost::GetPortProvider()));
 #else
-    std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateProcessMetrics(handle));
+  std::unique_ptr<base::ProcessMetrics> metrics(
+    base::ProcessMetrics::CreateProcessMetrics(handle));
 #endif
   std::unique_ptr<atom::ProcessMetric> process_metric(
-              new atom::ProcessMetric(
-                      content::GetProcessTypeNameInEnglish(process_type),
-                      pid,
-                      std::move(metrics)));
+      new atom::ProcessMetric(
+          content::GetProcessTypeNameInEnglish(process_type),
+          pid,
+          std::move(metrics)));
   app_metrics_[pid] = std::move(process_metric);
 }
 
-void App::ChildProcessDisconnected(
-    base::ProcessId pid) {
+void App::ChildProcessDisconnected(base::ProcessId pid) {
   app_metrics_.erase(pid);
 }
 
@@ -1095,9 +1088,9 @@ void App::BuildPrototype(
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
       .SetMethod("getFileIcon", &App::GetFileIcon)
-      // TODO(juturu): Deprecate getAppMemoryInfo.
-      .SetMethod("getAppMemoryInfo", &App::GetAppMetrics)
-      .SetMethod("getAppMetrics", &App::GetAppMetrics);
+      .SetMethod("getAppMetrics", &App::GetAppMetrics)
+      // TODO(juturu): Remove in 2.0, deprecate before then with warnings
+      .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
 }
 
 }  // namespace api

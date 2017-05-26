@@ -413,8 +413,7 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
   }
 }
 
-void AtomBrowserClient::RenderProcessReady(
-    content::RenderProcessHost* host) {
+void AtomBrowserClient::RenderProcessReady(content::RenderProcessHost* host) {
   if (delegate_) {
     static_cast<api::App*>(delegate_)->RenderProcessReady(host);
   }

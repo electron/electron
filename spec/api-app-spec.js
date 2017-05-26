@@ -535,7 +535,7 @@ describe('app module', function () {
   })
 
   describe('getAppMetrics() API', function () {
-    it('returns the process memory of all running electron processes', function () {
+    it('returns memory and cpu stats of all running electron processes', function () {
       const appMetrics = app.getAppMetrics()
       assert.ok(appMetrics.length > 0, 'App memory info object is not > 0')
       for (const {memory, pid, type, cpu} of appMetrics) {

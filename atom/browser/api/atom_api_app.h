@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_APP_H_
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/api/event_emitter.h"
@@ -46,7 +47,8 @@ struct ProcessMetric {
   std::string type;
   base::ProcessId pid;
   std::unique_ptr<base::ProcessMetrics> metrics;
-  ProcessMetric(std::string type,
+
+  ProcessMetric(const std::string& type,
                 base::ProcessId pid,
                 std::unique_ptr<base::ProcessMetrics> metrics) {
     this->type = type;

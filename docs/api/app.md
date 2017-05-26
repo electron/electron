@@ -127,7 +127,7 @@ Returns:
 
 Emitted when the application is activated. Various actions can trigger
 this event, such as launching the application for the first time, attempting
-to re-launch the application when it's already running, or clicking on the 
+to re-launch the application when it's already running, or clicking on the
 application's dock or taskbar icon.
 
 ### Event: 'continue-activity' _macOS_
@@ -762,9 +762,10 @@ Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
 
-### `app.getAppMemoryInfo()` _Deprecate_
+### `app.getAppMemoryInfo()` _Deprecated_
 
 Returns [ProcessMetric[]](structures/process-metric.md):  Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
+**Note:** This method is deprecated, use `app.getAppMetrics()` instead.
 
 ### `app.getAppMetrics()`
 
