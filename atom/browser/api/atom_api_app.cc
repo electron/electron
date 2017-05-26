@@ -995,16 +995,15 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
 
     memory_dict.Set("workingSetSize",
-            static_cast<double>(
-              process_metric.second->metrics->GetWorkingSetSize() >> 10));
+        static_cast<double>(
+            process_metric.second->metrics->GetWorkingSetSize() >> 10));
     memory_dict.Set("peakWorkingSetSize",
-            static_cast<double>(
-              process_metric.second->metrics->GetPeakWorkingSetSize() >> 10));
+        static_cast<double>(
+            process_metric.second->metrics->GetPeakWorkingSetSize() >> 10));
 
     size_t private_bytes, shared_bytes;
-    if (process_metric.second->metrics->GetMemoryBytes(
-                  &private_bytes,
-                  &shared_bytes)) {
+    if (process_metric.second->metrics->GetMemoryBytes(&private_bytes,
+                                                       &shared_bytes)) {
       memory_dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
       memory_dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
     }
