@@ -1,4 +1,4 @@
-// Type definitions for Electron 1.7.1
+// Type definitions for Electron 1.7.2
 // Project: http://electron.atom.io/
 // Definitions by: The Electron Team <https://github.com/electron/electron>
 // Definitions: https://github.com/electron/electron-typescript-definitions
@@ -482,10 +482,16 @@ declare namespace Electron {
      */
     focus(): void;
     /**
-     * Returns ProcessMemoryInfo[]:  Array of ProcessMemoryInfo objects that correspond
-     * to memory usage statistics of all the processes associated with the app.
+     * Returns ProcessMetric[]:  Array of ProcessMetric objects that correspond to
+     * memory and cpu usage statistics of all the processes associated with the app.
+     * Note: This method is deprecated, use app.getAppMetrics() instead.
      */
     getAppMemoryInfo(): void;
+    /**
+     * Returns ProcessMetric[]:  Array of ProcessMetric objects that correspond to
+     * memory and cpu usage statistics of all the processes associated with the app.
+     */
+    getAppMetrics(): void;
     getAppPath(): string;
     getBadgeCount(): number;
     getCurrentActivityType(): string;
@@ -493,12 +499,12 @@ declare namespace Electron {
      * Fetches a path's associated icon. On Windows, there a 2 kinds of icons: On Linux
      * and macOS, icons depend on the application associated with file mime type.
      */
-    getFileIcon(path: string, options: FileIconOptions, callback: (error: Error, icon: NativeImage) => void): void;
+    getFileIcon(path: string, callback: (error: Error, icon: NativeImage) => void): void;
     /**
      * Fetches a path's associated icon. On Windows, there a 2 kinds of icons: On Linux
      * and macOS, icons depend on the application associated with file mime type.
      */
-    getFileIcon(path: string, callback: (error: Error, icon: NativeImage) => void): void;
+    getFileIcon(path: string, options: FileIconOptions, callback: (error: Error, icon: NativeImage) => void): void;
     getJumpListSettings(): JumpListSettings;
     /**
      * Note: When distributing your packaged app, you have to also ship the locales
@@ -1736,6 +1742,10 @@ declare namespace Electron {
      */
     writeBookmark(title: string, url: string, type?: string): void;
     /**
+     * Writes the buffer into the clipboard as format.
+     */
+    writeBuffer(format: string, buffer: Buffer, type?: string): void;
+    /**
      * Writes the text into the find pasteboard as plain text. This method uses
      * synchronous IPC when called from the renderer process.
      */
@@ -2505,9 +2515,9 @@ declare namespace Electron {
      */
     once(channel: string, listener: Function): this;
     /**
-     * Removes all listeners, or those of the specified channel.
+     * Removes listeners of the specified channel.
      */
-    removeAllListeners(channel?: string): this;
+    removeAllListeners(channel: string): this;
     /**
      * Removes the specified listener from the listener array for the specified
      * channel.
@@ -2876,18 +2886,36 @@ declare namespace Electron {
     stop(id: number): void;
   }
 
-  interface ProcessMemoryInfo {
+  interface PrinterInfo {
 
-    // Docs: http://electron.atom.io/docs/api/structures/process-memory-info
+    // Docs: http://electron.atom.io/docs/api/structures/printer-info
+
+    description: string;
+    isDefault: boolean;
+    name: string;
+    status: number;
+  }
+
+  interface ProcessMetric {
+
+    // Docs: http://electron.atom.io/docs/api/structures/process-metric
 
     /**
-     * Memory information of the process.
+     * CPU usage of the process.
+     */
+    cpu: CPUUsage;
+    /**
+     * Memory information for the process.
      */
     memory: MemoryInfo;
     /**
      * Process id of the process.
      */
     pid: number;
+    /**
+     * Process type (Browser or Tab or GPU etc).
+     */
+    type: string;
   }
 
   interface Protocol extends EventEmitter {
@@ -3417,10 +3445,9 @@ declare namespace Electron {
     getAccentColor(): string;
     getColor(color: '3d-dark-shadow' | '3d-face' | '3d-highlight' | '3d-light' | '3d-shadow' | 'active-border' | 'active-caption' | 'active-caption-gradient' | 'app-workspace' | 'button-text' | 'caption-text' | 'desktop' | 'disabled-text' | 'highlight' | 'highlight-text' | 'hotlight' | 'inactive-border' | 'inactive-caption' | 'inactive-caption-gradient' | 'inactive-caption-text' | 'info-background' | 'info-text' | 'menu' | 'menu-highlight' | 'menubar' | 'menu-text' | 'scrollbar' | 'window' | 'window-frame' | 'window-text'): string;
     /**
-     * Get the value of key in system preferences. This API uses NSUserDefaults on
-     * macOS. Some popular key and types are:
+     * This API uses NSUserDefaults on macOS. Some popular key and types are:
      */
-    getUserDefault(key: string, type: 'string' | 'boolean' | 'integer' | 'float' | 'double' | 'url' | 'array' | 'dictionary'): void;
+    getUserDefault(key: string, type: 'string' | 'boolean' | 'integer' | 'float' | 'double' | 'url' | 'array' | 'dictionary'): any;
     /**
      * This method returns true if DWM composition (Aero Glass) is enabled, and false
      * otherwise. An example of using it to determine if you should create a
@@ -4564,7 +4591,8 @@ declare namespace Electron {
      * Calling event.preventDefault() will destroy the guest page. This event can be
      * used to configure webPreferences for the webContents of a <webview> before it's
      * loaded, and provides the ability to set settings that can't be set via <webview>
-     * attributes.
+     * attributes. Note: The specified preload script option will be appear as
+     * preloadURL (not preload) in the webPreferences object emitted with this event.
      */
     on(event: 'will-attach-webview', listener: (event: Event,
                                                 /**
@@ -4675,13 +4703,13 @@ declare namespace Electron {
      * called with callback(image). The image is an instance of NativeImage that stores
      * data of the snapshot. Omitting rect will capture the whole visible page.
      */
-    capturePage(rect: Rectangle, callback: (image: NativeImage) => void): void;
+    capturePage(callback: (image: NativeImage) => void): void;
     /**
      * Captures a snapshot of the page within rect. Upon completion callback will be
      * called with callback(image). The image is an instance of NativeImage that stores
      * data of the snapshot. Omitting rect will capture the whole visible page.
      */
-    capturePage(callback: (image: NativeImage) => void): void;
+    capturePage(rect: Rectangle, callback: (image: NativeImage) => void): void;
     /**
      * Clears the navigation history.
      */
@@ -4740,6 +4768,10 @@ declare namespace Electron {
     findInPage(text: string, options?: FindInPageOptions): void;
     getFrameRate(): number;
     getOSProcessId(): number;
+    /**
+     * Get the system printer list. Returns PrinterInfo[]
+     */
+    getPrinters(): void;
     getTitle(): string;
     getURL(): string;
     getUserAgent(): string;
@@ -4827,11 +4859,11 @@ declare namespace Electron {
      */
     pasteAndMatchStyle(): void;
     /**
-     * Prints window's web page. When silent is set to true, Electron will pick up
-     * system's default printer and default settings for printing. Calling
-     * window.print() in web page is equivalent to calling webContents.print({silent:
-     * false, printBackground: false}). Use page-break-before: always; CSS style to
-     * force to print to a new page.
+     * Prints window's web page. When silent is set to true, Electron will pick the
+     * system's default printer if deviceName is empty and the default settings for
+     * printing. Calling window.print() in web page is equivalent to calling
+     * webContents.print({silent: false, printBackground: false, deviceName: ''}). Use
+     * page-break-before: always; CSS style to force to print to a new page.
      */
     print(options?: PrintOptions): void;
     /**
@@ -5569,7 +5601,8 @@ declare namespace Electron {
      * will be loaded by require in guest page under the hood. When the guest page
      * doesn't have node integration this script will still have access to all Node
      * APIs, but global objects injected by Node will be deleted after this script has
-     * finished executing.
+     * finished executing. Note: This option will be appear as preloadURL (not preload)
+     * in the webPreferences specified to the will-attach-webview event.
      */
     preload?: string;
     /**
@@ -6910,6 +6943,10 @@ declare namespace Electron {
      * Also prints the background color and image of the web page. Default is false.
      */
     printBackground: boolean;
+    /**
+     * Set the printer device name to use. Default is ''.
+     */
+    deviceName?: string;
   }
 
   interface PrintToPDFOptions {
@@ -7662,6 +7699,15 @@ declare namespace Electron {
      * Whether to use native window.open(). Defaults to false.
      */
     nativeWindowOpen?: boolean;
+    /**
+     * Whether to enable the . Defaults to the value of the nodeIntegration option. The
+     * preload script configured for the <webview> will have node integration enabled
+     * when it is executed so you should ensure remote/untrusted content is not able to
+     * create a <webview> tag with a possibly malicious preload script. You can use the
+     * will-attach-webview event on to strip away the preload script and to validate or
+     * alter the <webview>'s initial settings.
+     */
+    webviewTag?: boolean;
   }
 
   interface DefaultFontFamily {
