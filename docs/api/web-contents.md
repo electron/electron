@@ -923,7 +923,7 @@ when the JS promise is rejected.
 
 Get the system printer list.
 
-Returns [PrinterInfo[]](structures/printer-info.md)
+Returns [`PrinterInfo[]`](structures/printer-info.md)
 
 #### `contents.print([options])`
 
