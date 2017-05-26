@@ -710,11 +710,11 @@ void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
 
 #if defined(OS_MACOSX)
   std::unique_ptr<base::ProcessMetrics> metrics(
-    base::ProcessMetrics::CreateProcessMetrics(
-      handle, content::BrowserChildProcessHost::GetPortProvider()));
+      base::ProcessMetrics::CreateProcessMetrics(
+          handle, content::BrowserChildProcessHost::GetPortProvider()));
 #else
   std::unique_ptr<base::ProcessMetrics> metrics(
-    base::ProcessMetrics::CreateProcessMetrics(handle));
+      base::ProcessMetrics::CreateProcessMetrics(handle));
 #endif
   std::unique_ptr<atom::ProcessMetric> process_metric(
       new atom::ProcessMetric(process_type, pid, std::move(metrics)));
