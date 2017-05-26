@@ -687,17 +687,25 @@ void App::BrowserChildProcessHostDisconnected(
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
+void App::BrowserChildProcessCrashed(const content::ChildProcessData& data,
+                                     int exit_code) {
+  ChildProcessDisconnected(base::GetProcId(data.handle));
+}
+
+void App::BrowserChildProcessKilled(const content::ChildProcessData& data,
+                                    int exit_code) {
+  ChildProcessDisconnected(base::GetProcId(data.handle));
+}
+
 void App::RenderProcessReady(content::RenderProcessHost* host) {
   ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetHandle());
 }
 
-void App::RenderProcessDisconnected(content::RenderProcessHost* host) {
-  ChildProcessDisconnected(base::GetProcId(host->GetHandle()));
+void App::RenderProcessDisconnected(base::ProcessId host_pid) {
+  ChildProcessDisconnected(host_pid);
 }
 
-void App::ChildProcessLaunched(
-    int process_type,
-    base::ProcessHandle handle) {
+void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
   auto pid = base::GetProcId(handle);
 
 #if defined(OS_MACOSX)

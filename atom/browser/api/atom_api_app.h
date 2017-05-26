@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_APP_H_
 #define ATOM_BROWSER_API_ATOM_API_APP_H_
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -92,7 +93,7 @@ class App : public AtomBrowserClient::Delegate,
 
   base::FilePath GetAppPath() const;
   void RenderProcessReady(content::RenderProcessHost* host);
-  void RenderProcessDisconnected(content::RenderProcessHost* host);
+  void RenderProcessDisconnected(base::ProcessId host_pid);
 
  protected:
   explicit App(v8::Isolate* isolate);
@@ -143,6 +144,10 @@ class App : public AtomBrowserClient::Delegate,
       const content::ChildProcessData& data) override;
   void BrowserChildProcessHostDisconnected(
       const content::ChildProcessData& data) override;
+  void BrowserChildProcessCrashed(
+      const content::ChildProcessData& data, int exit_code) override;
+  void BrowserChildProcessKilled(
+      const content::ChildProcessData& data, int exit_code) override;
 
  private:
   void SetAppPath(const base::FilePath& app_path);
