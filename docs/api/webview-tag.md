@@ -543,6 +543,7 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
   * `silent` Boolean - Don't ask user for print settings. Default is `false`.
   * `printBackground` Boolean - Also prints the background color and image of
     the web page. Default is `false`.
+  * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
 
 Prints `webview`'s web page. Same as `webContents.print([options])`.
 
