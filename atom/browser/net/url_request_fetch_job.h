@@ -17,15 +17,15 @@ namespace atom {
 
 class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
                            public net::URLFetcherDelegate,
-                           public brightray::URLRequestContextGetter::Delegate,
-                           public content::StreamReadObserver {
+                           public brightray::URLRequestContextGetter::Delegate {
  public:
   URLRequestFetchJob(net::URLRequest*, net::NetworkDelegate*);
 
   // Called by response writer.
   void HeadersCompleted();
-
-  content::Stream* stream() const { return stream_.get(); }
+  int DataAvailable(net::IOBuffer* buffer,
+                    int num_bytes,
+                    const net::CompletionCallback& callback);
 
  protected:
   // JsAsker:
@@ -38,26 +38,28 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
   bool GetMimeType(std::string* mime_type) const override;
   void GetResponseInfo(net::HttpResponseInfo* info) override;
   int GetResponseCode() const override;
-  int64_t GetTotalReceivedBytes() const override;
 
   // net::URLFetcherDelegate:
   void OnURLFetchComplete(const net::URLFetcher* source) override;
 
-  // content::StreamReadObserver:
-  void OnDataAvailable(content::Stream* stream) override;
-
  private:
-  void ClearStream();
+  int BufferCopy(net::IOBuffer* source, int num_bytes,
+                 net::IOBuffer* target, int target_size);
+  void ClearPendingBuffer();
+  void ClearWriteBuffer();
 
   scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
   std::unique_ptr<net::URLFetcher> fetcher_;
   std::unique_ptr<net::HttpResponseInfo> response_info_;
-  scoped_refptr<content::Stream> stream_;
 
   // Saved arguments passed to ReadRawData.
   scoped_refptr<net::IOBuffer> pending_buffer_;
   int pending_buffer_size_;
-  int total_bytes_read_;
+
+  // Saved arguments passed to DataAvailable.
+  scoped_refptr<net::IOBuffer> write_buffer_;
+  int write_num_bytes_;
+  net::CompletionCallback write_callback_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestFetchJob);
 };
