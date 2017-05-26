@@ -534,16 +534,28 @@ describe('app module', function () {
     })
   })
 
-  describe('getAppMemoryInfo() API', function () {
-    it('returns the process memory of all running electron processes', function () {
-      const appMemoryInfo = app.getAppMemoryInfo()
-      assert.ok(appMemoryInfo.length > 0, 'App memory info object is not > 0')
-      for (const {memory, pid} of appMemoryInfo) {
+  describe('getAppMetrics() API', function () {
+    it('returns memory and cpu stats of all running electron processes', function () {
+      const appMetrics = app.getAppMetrics()
+      assert.ok(appMetrics.length > 0, 'App memory info object is not > 0')
+      const types = []
+      for (const {memory, pid, type, cpu} of appMetrics) {
         assert.ok(memory.workingSetSize > 0, 'working set size is not > 0')
         assert.ok(memory.privateBytes > 0, 'private bytes is not > 0')
         assert.ok(memory.sharedBytes > 0, 'shared bytes is not > 0')
         assert.ok(pid > 0, 'pid is not > 0')
+        assert.ok(type.length > 0, 'process type is null')
+        types.push(type)
+        assert.equal(typeof cpu.percentCPUUsage, 'number')
+        assert.equal(typeof cpu.idleWakeupsPerSecond, 'number')
       }
+
+      if (process.platform !== 'linux') {
+        assert.ok(types.includes('GPU'))
+      }
+
+      assert.ok(types.includes('Browser'))
+      assert.ok(types.includes('Tab'))
     })
   })
 })

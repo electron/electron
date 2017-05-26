@@ -410,4 +410,24 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
   RemoveProcessPreferences(process_id);
 }
 
+void AtomBrowserClient::RenderProcessReady(content::RenderProcessHost* host) {
+  render_process_host_pids_[host->GetID()] = base::GetProcId(host->GetHandle());
+  if (delegate_) {
+    static_cast<api::App*>(delegate_)->RenderProcessReady(host);
+  }
+}
+
+void AtomBrowserClient::RenderProcessExited(content::RenderProcessHost* host,
+                                            base::TerminationStatus status,
+                                            int exit_code) {
+  auto host_pid = render_process_host_pids_.find(host->GetID());
+  if (host_pid != render_process_host_pids_.end()) {
+    if (delegate_) {
+      static_cast<api::App*>(delegate_)->RenderProcessDisconnected(
+          host_pid->second);
+    }
+    render_process_host_pids_.erase(host_pid);
+  }
+}
+
 }  // namespace atom

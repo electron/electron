@@ -109,6 +109,10 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
+  void RenderProcessReady(content::RenderProcessHost* host) override;
+  void RenderProcessExited(content::RenderProcessHost* host,
+                           base::TerminationStatus status,
+                           int exit_code) override;
 
  private:
   bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,
@@ -128,6 +132,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   std::map<int, int> pending_processes_;
 
   std::map<int, ProcessPreferences> process_preferences_;
+  std::map<int, base::ProcessId> render_process_host_pids_;
   base::Lock process_preferences_lock_;
 
   std::unique_ptr<AtomResourceDispatcherHostDelegate>
