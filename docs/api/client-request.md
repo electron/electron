@@ -169,7 +169,7 @@ the first write will throw an error. If the passed value is not a `String`, its
 
 * `name` String - Specify an extra header name.
 
-Returns Object - The value of a previously set extra header name.
+Returns `Object` - The value of a previously set extra header name.
 
 #### `request.removeHeader(name)`
 
