@@ -9,18 +9,14 @@
 
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
-#include "base/guid.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
-#include "brightray/browser/url_request_context_getter.h"
-#include "content/browser/streams/stream_context.h"
 #include "native_mate/dictionary.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
-#include "url/url_constants.h"
 
 using content::BrowserThread;
 
@@ -66,8 +62,7 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
       job_->HeadersCompleted();
       first_write_ = false;
     }
-    job_->stream()->AddData(buffer->data(), num_bytes);
-    return num_bytes;
+    return job_->DataAvailable(buffer, num_bytes, callback);
   }
   int Finish(int net_error, const net::CompletionCallback& callback) override {
     return net::OK;
@@ -82,11 +77,12 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 
 }  // namespace
 
-URLRequestFetchJob::URLRequestFetchJob(net::URLRequest* request,
-                                       net::NetworkDelegate* network_delegate)
+URLRequestFetchJob::URLRequestFetchJob(
+    net::URLRequest* request, net::NetworkDelegate* network_delegate)
     : JsAsker<net::URLRequestJob>(request, network_delegate),
       pending_buffer_size_(0),
-      total_bytes_read_(0) {}
+      write_num_bytes_(0) {
+}
 
 void URLRequestFetchJob::BeforeStartInUI(
     v8::Isolate* isolate, v8::Local<v8::Value> value) {
@@ -173,22 +169,7 @@ void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
   fetcher_->SetExtraRequestHeaders(
       request()->extra_request_headers().ToString());
 
-  // Create readable stream for URLFetcher response.
-  content::StreamContext* stream_context =
-      static_cast<brightray::URLRequestContextGetter*>(request_context_getter())
-          ->stream_context();
-
-  if (stream_context) {
-    GURL stream_url(std::string(url::kBlobScheme) + ":" +
-                    formated_url.GetOrigin().spec() + base::GenerateGUID());
-    stream_ =
-        new content::Stream(stream_context->registry(), nullptr, stream_url);
-    stream_->SetReadObserver(this);
-    fetcher_->Start();
-  } else {
-    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::CANCELED,
-                                           net::ERR_ABORTED));
-  }
+  fetcher_->Start();
 }
 
 void URLRequestFetchJob::HeadersCompleted() {
@@ -197,30 +178,30 @@ void URLRequestFetchJob::HeadersCompleted() {
   NotifyHeadersComplete();
 }
 
-void URLRequestFetchJob::Kill() {
-  JsAsker<URLRequestJob>::Kill();
-  ClearStream();
-  fetcher_.reset();
+int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer,
+                                      int num_bytes,
+                                      const net::CompletionCallback& callback) {
+  // When pending_buffer_ is empty, there's no ReadRawData() operation waiting
+  // for IO completion, we have to save the parameters until the request is
+  // ready to read data.
+  if (!pending_buffer_.get()) {
+    write_buffer_ = buffer;
+    write_num_bytes_ = num_bytes;
+    write_callback_ = callback;
+    return net::ERR_IO_PENDING;
+  }
+
+  // Write data to the pending buffer and clear them after the writing.
+  int bytes_read = BufferCopy(buffer, num_bytes,
+                              pending_buffer_.get(), pending_buffer_size_);
+  ClearPendingBuffer();
+  ReadRawDataComplete(bytes_read);
+  return bytes_read;
 }
 
-void URLRequestFetchJob::OnDataAvailable(content::Stream* stream) {
-  if (!pending_buffer_.get())
-    return;
-
-  int result = 0;
-  auto state = stream_->ReadRawData(pending_buffer_.get(), pending_buffer_size_,
-                                    &result);
-  if (state == content::Stream::STREAM_ABORTED)
-    result = net::ERR_CONNECTION_RESET;
-
-  // Clear the buffers before notifying the read is complete, so that it is
-  // safe for the observer to read.
-  pending_buffer_ = nullptr;
-  pending_buffer_size_ = 0;
-
-  if (result > 0)
-    total_bytes_read_ += result;
-  ReadRawDataComplete(result);
+void URLRequestFetchJob::Kill() {
+  JsAsker<URLRequestJob>::Kill();
+  fetcher_.reset();
 }
 
 int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
@@ -229,23 +210,21 @@ int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
     return net::OK;
   }
 
-  int bytes_read = 0;
-  switch (stream_->ReadRawData(dest, dest_size, &bytes_read)) {
-    case content::Stream::STREAM_HAS_DATA:
-      total_bytes_read_ += bytes_read;
-      return bytes_read;
-    case content::Stream::STREAM_COMPLETE:
-      return stream_->GetStatus();
-    case content::Stream::STREAM_EMPTY:
-      pending_buffer_ = dest;
-      pending_buffer_size_ = dest_size;
-      return net::ERR_IO_PENDING;
-    case content::Stream::STREAM_ABORTED:
-      // Handle this as connection reset.
-      return net::ERR_CONNECTION_RESET;
+  // When write_buffer_ is empty, there is no data valable yet, we have to save
+  // the dest buffer util DataAvailable.
+  if (!write_buffer_.get()) {
+    pending_buffer_ = dest;
+    pending_buffer_size_ = dest_size;
+    return net::ERR_IO_PENDING;
   }
-  NOTREACHED();
-  return net::ERR_FAILED;
+
+  // Read from the write buffer and clear them after reading.
+  int bytes_read = BufferCopy(write_buffer_.get(), write_num_bytes_,
+                              dest, dest_size);
+  net::CompletionCallback write_callback = write_callback_;
+  ClearWriteBuffer();
+  write_callback.Run(bytes_read);
+  return bytes_read;
 }
 
 bool URLRequestFetchJob::GetMimeType(std::string* mime_type) const {
@@ -267,18 +246,11 @@ int URLRequestFetchJob::GetResponseCode() const {
   return response_info_->headers->response_code();
 }
 
-int64_t URLRequestFetchJob::GetTotalReceivedBytes() const {
-  int64_t total_received_bytes = 0;
-  if (response_info_)
-    total_received_bytes = response_info_->headers->raw_headers().size();
-  if (stream_.get())
-    total_received_bytes += total_bytes_read_;
-  return total_received_bytes;
-}
-
 void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
-  auto status = fetcher_->GetStatus();
-  if (status.is_success()) {
+  ClearPendingBuffer();
+  ClearWriteBuffer();
+
+  if (fetcher_->GetStatus().is_success()) {
     if (!response_info_) {
       // Since we notify header completion only after first write there will be
       // no response object constructed for http respones with no content 204.
@@ -286,16 +258,28 @@ void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
       HeadersCompleted();
       return;
     }
-    stream_->Finalize(0);
+    ReadRawDataComplete(0);
   } else {
-    stream_->Finalize(status.error());
-    NotifyStartError(status);
+    NotifyStartError(fetcher_->GetStatus());
   }
 }
 
-void URLRequestFetchJob::ClearStream() {
-  stream_->RemoveReadObserver(this);
-  stream_ = nullptr;
+int URLRequestFetchJob::BufferCopy(net::IOBuffer* source, int num_bytes,
+                                   net::IOBuffer* target, int target_size) {
+  int bytes_written = std::min(num_bytes, target_size);
+  memcpy(target->data(), source->data(), bytes_written);
+  return bytes_written;
+}
+
+void URLRequestFetchJob::ClearPendingBuffer() {
+  pending_buffer_ = nullptr;
+  pending_buffer_size_ = 0;
+}
+
+void URLRequestFetchJob::ClearWriteBuffer() {
+  write_buffer_ = nullptr;
+  write_num_bytes_ = 0;
+  write_callback_.Reset();
 }
 
 }  // namespace atom
