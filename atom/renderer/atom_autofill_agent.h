@@ -18,10 +18,9 @@
 namespace atom {
 
 class AutofillAgent : public content::RenderFrameObserver,
-                                public blink::WebAutofillClient {
+                      public blink::WebAutofillClient {
  public:
   explicit AutofillAgent(content::RenderFrame* frame);
-  ~AutofillAgent();
 
   // content::RenderFrameObserver:
   void OnDestruct() override;
@@ -51,7 +50,6 @@ class AutofillAgent : public content::RenderFrameObserver,
   };
 
   bool OnMessageReceived(const IPC::Message& message) override;
-  void OnWebContentsRoutingIdReceived(int routing_id);
 
   // blink::WebAutofillClient:
   void textFieldDidEndEditing(const blink::WebInputElement&) override;
@@ -73,10 +71,7 @@ class AutofillAgent : public content::RenderFrameObserver,
 
   void DoFocusChangeComplete();
 
-  content::RenderFrame* render_frame_;
-  int web_contents_routing_id_;
-
-  Helper* helper_;
+  std::unique_ptr<Helper> helper_;
 
   // True when the last click was on the focused node.
   bool focused_node_was_last_clicked_;

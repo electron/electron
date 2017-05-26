@@ -181,6 +181,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;
+  bool IsOffScreenOrEmbedderOffscreen() const;
   void OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap);
   void StartPainting();
   void StopPainting();
@@ -308,9 +309,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
   void RenderViewCreated(content::RenderViewHost*) override;
-  void RenderFrameCreated(content::RenderFrameHost*) override;
-  void RenderFrameHostChanged(content::RenderFrameHost*,
-                              content::RenderFrameHost*) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
   void DocumentLoadedInFrame(
@@ -333,6 +331,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   bool OnMessageReceived(const IPC::Message& message) override;
+  bool OnMessageReceived(const IPC::Message& message,
+                         content::RenderFrameHost* frame_host) override;
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
@@ -378,12 +378,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
 
-  void OnShowAutofillPopup(int routing_id,
-                           const gfx::RectF& bounds,
-                           const std::vector<base::string16>& values,
-                           const std::vector<base::string16>& labels);
-  void OnHideAutofillPopup();
-
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,
                          const base::ListValue& args);
@@ -407,7 +401,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
-  AutofillPopup* autofill_popup_;
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;

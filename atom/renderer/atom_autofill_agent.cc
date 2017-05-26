@@ -52,16 +52,11 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
 AutofillAgent::AutofillAgent(
     content::RenderFrame* frame)
   : content::RenderFrameObserver(frame),
-    render_frame_(frame),
     helper_(new Helper(this)),
     focused_node_was_last_clicked_(false),
     was_focused_before_now_(false),
     weak_ptr_factory_(this) {
-  render_frame_->GetWebFrame()->setAutofillClient(this);
-}
-
-AutofillAgent::~AutofillAgent() {
-  delete helper_;
+  render_frame()->GetWebFrame()->setAutofillClient(this);
 }
 
 void AutofillAgent::OnDestruct() {
@@ -169,7 +164,7 @@ void AutofillAgent::ShowSuggestions(
 }
 
 AutofillAgent::Helper::Helper(AutofillAgent* agent)
-  : content::RenderViewObserver(agent->render_frame_->GetRenderView()),
+  : content::RenderViewObserver(agent->render_frame()->GetRenderView()),
     agent_(agent) {
 }
 
@@ -184,9 +179,7 @@ void AutofillAgent::Helper::FocusChangeComplete() {
 bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AutofillAgent, message)
-    IPC_MESSAGE_HANDLER(AtomAutofillViewHostMsg_RoutingId,
-      OnWebContentsRoutingIdReceived)
-    IPC_MESSAGE_HANDLER(AtomAutofillViewMsg_AcceptSuggestion,
+    IPC_MESSAGE_HANDLER(AtomAutofillFrameMsg_AcceptSuggestion,
       OnAcceptSuggestion)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
@@ -194,16 +187,12 @@ bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
-void AutofillAgent::OnWebContentsRoutingIdReceived(int id) {
-  web_contents_routing_id_ = id;
-}
-
 bool AutofillAgent::IsUserGesture() const {
   return blink::WebUserGestureIndicator::isProcessingUserGesture();
 }
 
 void AutofillAgent::HidePopup() {
-  Send(new AtomAutofillViewMsg_HidePopup(web_contents_routing_id_));
+  Send(new AtomAutofillFrameHostMsg_HidePopup(render_frame()->GetRoutingID()));
 }
 
 void AutofillAgent::ShowPopup(
@@ -211,13 +200,13 @@ void AutofillAgent::ShowPopup(
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
   gfx::RectF bounds =
-    render_frame_->GetRenderView()->ElementBoundsInWindow(element);
-  Send(new AtomAutofillViewMsg_ShowPopup(
-    web_contents_routing_id_, routing_id(), bounds, values, labels));
+    render_frame()->GetRenderView()->ElementBoundsInWindow(element);
+  Send(new AtomAutofillFrameHostMsg_ShowPopup(
+    render_frame()->GetRoutingID(), bounds, values, labels));
 }
 
 void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
-  auto element = render_frame_->GetWebFrame()->document().focusedElement();
+  auto element = render_frame()->GetWebFrame()->document().focusedElement();
   if (element.isFormControlElement()) {
     toWebInputElement(&element)->setSuggestedValue(
       blink::WebString::fromUTF16(suggestion));
@@ -225,7 +214,7 @@ void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
 }
 
 void AutofillAgent::DoFocusChangeComplete() {
-  auto element = render_frame_->GetWebFrame()->document().focusedElement();
+  auto element = render_frame()->GetWebFrame()->document().focusedElement();
   if (element.isNull() || !element.isFormControlElement())
     return;
 

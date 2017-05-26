@@ -31,8 +31,9 @@ AutofillPopupView::AutofillPopupView(
 
 AutofillPopupView::~AutofillPopupView() {
   if (popup_) {
-    auto host = popup_->web_contents_->GetRenderViewHost()->GetWidget();
+    auto host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
     host->RemoveKeyPressEventCallback(keypress_callback_);
+    popup_->view_ = nullptr;
     popup_ = nullptr;
   }
 
@@ -92,23 +93,24 @@ void AutofillPopupView::Show() {
 
   keypress_callback_ = base::Bind(&AutofillPopupView::HandleKeyPressEvent,
     base::Unretained(this));
-  auto host = popup_->web_contents_->GetRenderViewHost()->GetWidget();
+  auto host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
   host->AddKeyPressEventCallback(keypress_callback_);
+
+  NotifyAccessibilityEvent(ui::AX_EVENT_MENU_START, true);
 }
 
 void AutofillPopupView::Hide() {
   if (popup_) {
-    auto host = popup_->web_contents_->GetRenderViewHost()->GetWidget();
+    auto host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
     host->RemoveKeyPressEventCallback(keypress_callback_);
-    popup_ = NULL;
+    popup_ = nullptr;
   }
 
   RemoveObserver();
+  NotifyAccessibilityEvent(ui::AX_EVENT_MENU_END, true);
 
   if (GetWidget()) {
     GetWidget()->Close();
-  } else {
-    delete this;
   }
 }
 

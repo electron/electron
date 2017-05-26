@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "atom/browser/ui/views/autofill_popup_view.h"
-#include "content/public/browser/web_contents.h"
+#include "content/public/browser/render_frame_host.h"
 #include "ui/gfx/font_list.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/views/widget/widget.h"
@@ -22,7 +22,7 @@ class AutofillPopup {
   explicit AutofillPopup(gfx::NativeView);
   ~AutofillPopup();
 
-  void CreateView(int routing_id, content::WebContents* web_contents,
+  void CreateView(content::RenderFrameHost* render_frame,
     bool offscreen, views::Widget* widget, const gfx::RectF& bounds);
   void Hide();
 
@@ -69,10 +69,9 @@ class AutofillPopup {
 
   // For sending the accepted suggestion to the render frame that
   // asked to open the popup
-  int frame_routing_id_;
-  content::WebContents* web_contents_;
+  content::RenderFrameHost* frame_host_;
 
-  // The popup view
+  // The popup view. The lifetime is managed by the owning Widget
   AutofillPopupView* view_;
 
   DISALLOW_COPY_AND_ASSIGN(AutofillPopup);

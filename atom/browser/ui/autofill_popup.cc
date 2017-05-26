@@ -114,12 +114,11 @@ AutofillPopup::~AutofillPopup() {
 }
 
 void AutofillPopup::CreateView(
-    int routing_id,
-    content::WebContents* web_contents,
+    content::RenderFrameHost* frame_host,
     bool offscreen,
     views::Widget* parent_widget,
     const gfx::RectF& r) {
-  web_contents_ = web_contents;
+  frame_host_ = frame_host;
   gfx::Rect lb(std::floor(r.x()), std::floor(r.y() + r.height()),
                std::floor(r.width()), std::floor(r.height()));
   gfx::Point menu_position(lb.origin());
@@ -135,12 +134,10 @@ void AutofillPopup::CreateView(
 
   if (offscreen) {
     auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-        web_contents->GetRenderWidgetHostView());
+        frame_host_->GetView());
     view_->view_proxy_.reset(new OffscreenViewProxy(view_));
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
   }
-
-  frame_routing_id_ = routing_id;
 }
 
 void AutofillPopup::Hide() {
@@ -161,8 +158,8 @@ void AutofillPopup::SetItems(const std::vector<base::string16>& values,
 }
 
 void AutofillPopup::AcceptSuggestion(int index) {
-  web_contents_->Send(new AtomAutofillViewMsg_AcceptSuggestion(
-    frame_routing_id_, GetValueAt(index)));
+  frame_host_->Send(new AtomAutofillFrameMsg_AcceptSuggestion(
+    frame_host_->GetRoutingID(), GetValueAt(index)));
 }
 
 void AutofillPopup::UpdatePopupBounds() {

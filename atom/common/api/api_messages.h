@@ -38,19 +38,15 @@ IPC_MESSAGE_ROUTED3(AtomViewMsg_Message,
 
 IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
 
-IPC_MESSAGE_ROUTED4(AtomAutofillViewMsg_ShowPopup,
-                    int /* routing_id */,
+IPC_MESSAGE_ROUTED3(AtomAutofillFrameHostMsg_ShowPopup,
                     gfx::RectF /* bounds */,
                     std::vector<base::string16> /* values */,
                     std::vector<base::string16> /* labels */)
 
-IPC_MESSAGE_ROUTED0(AtomAutofillViewMsg_HidePopup)
+IPC_MESSAGE_ROUTED0(AtomAutofillFrameHostMsg_HidePopup)
 
-IPC_MESSAGE_ROUTED1(AtomAutofillViewMsg_AcceptSuggestion,
+IPC_MESSAGE_ROUTED1(AtomAutofillFrameMsg_AcceptSuggestion,
                     base::string16 /* suggestion */)
-
-IPC_MESSAGE_ROUTED1(AtomAutofillViewHostMsg_RoutingId,
-                    int /* id */)
 
 // Sent by the renderer when the draggable regions are updated.
 IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,

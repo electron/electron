@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_browser_view_views.h"
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/window_list.h"
@@ -318,6 +319,8 @@ NativeWindowViews::NativeWindowViews(
 
   window_->CenterWindow(size);
   Layout();
+
+  autofill_popup_.reset(new AutofillPopup(GetNativeView()));
 
 #if defined(OS_WIN)
   // Save initial window state.
@@ -1267,6 +1270,26 @@ void NativeWindowViews::HandleKeyboardEvent(
     // When any other keys except single Alt have been pressed/released:
     menu_bar_alt_pressed_ = false;
   }
+}
+
+void NativeWindowViews::ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {
+  auto wc = atom::api::WebContents::FromWrappedClass(
+    v8::Isolate::GetCurrent(), web_contents());
+  autofill_popup_->CreateView(
+    frame_host,
+    wc->IsOffScreenOrEmbedderOffscreen(),
+    widget(),
+    bounds);
+  autofill_popup_->SetItems(values, labels);
+}
+
+void NativeWindowViews::HideAutofillPopup(
+    content::RenderFrameHost* frame_host) {
+  autofill_popup_->Hide();
 }
 
 void NativeWindowViews::Layout() {
