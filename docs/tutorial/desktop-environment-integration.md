@@ -337,16 +337,16 @@ ipcMain.on('ondragstart', (event, filePath) => {
 })
 ```
 
-[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-os-x-windows
-[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-os-x-windows
-[setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows
-[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress
-[setoverlayicon]: ../api/browser-window.md#winsetoverlayiconoverlay-description-windows-7
-[setrepresentedfilename]: ../api/browser-window.md#winsetrepresentedfilenamefilename-os-x
-[setdocumentedited]: ../api/browser-window.md#winsetdocumenteditededited-os-x
+[addrecentdocument]: ../api/app#appaddrecentdocumentpath-os-x-windows
+[clearrecentdocuments]: ../api/app#appclearrecentdocuments-os-x-windows
+[setusertaskstasks]: ../api/app#appsetusertaskstasks-windows
+[setprogressbar]: ../api/browser-window#winsetprogressbarprogress
+[setoverlayicon]: ../api/browser-window#winsetoverlayiconoverlay-description-windows-7
+[setrepresentedfilename]: ../api/browser-window#winsetrepresentedfilenamefilename-os-x
+[setdocumentedited]: ../api/browser-window#winsetdocumenteditededited-os-x
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
-[setthumbarbuttons]: ../api/browser-window.md#winsetthumbarbuttonsbuttons-windows-7
+[setthumbarbuttons]: ../api/browser-window#winsetthumbarbuttonsbuttons-windows-7
 [tray-balloon]: ../api/tray.md#traydisplayballoonoptions-windows
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [notification-spec]: https://developer.gnome.org/notification-spec/
