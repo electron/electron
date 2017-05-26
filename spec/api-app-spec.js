@@ -550,7 +550,10 @@ describe('app module', function () {
         assert.equal(typeof cpu.idleWakeupsPerSecond, 'number')
       }
 
-      assert.ok(types.includes('GPU'))
+      if (process.platform !== 'linux') {
+        assert.ok(types.includes('GPU'))
+      }
+
       assert.ok(types.includes('Browser'))
       assert.ok(types.includes('Tab'))
     })
