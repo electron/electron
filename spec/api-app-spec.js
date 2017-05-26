@@ -550,7 +550,7 @@ describe('app module', function () {
         assert.equal(typeof cpu.idleWakeupsPerSecond, 'number')
       }
 
-      if (process.platform !== 'linux') {
+      if (process.platform === 'darwin') {
         assert.ok(types.includes('GPU'))
       }
 

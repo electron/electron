@@ -122,11 +122,13 @@ class AtomBrowserClient : public brightray::BrowserClient,
   struct ProcessPreferences {
     bool sandbox;
     bool native_window_open;
+    bool disable_popups;
   };
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
   bool IsRendererSandboxed(int process_id);
   bool RendererUsesNativeWindowOpen(int process_id);
+  bool RendererDisablesPopups(int process_id);
 
   // pending_render_process => current_render_process.
   std::map<int, int> pending_processes_;

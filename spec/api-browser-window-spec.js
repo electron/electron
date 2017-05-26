@@ -854,7 +854,7 @@ describe('BrowserWindow module', function () {
     })
   })
 
-  describe('"web-preferences" option', function () {
+  describe('"webPreferences" option', function () {
     afterEach(function () {
       ipcMain.removeAllListeners('answer')
     })
@@ -1283,6 +1283,22 @@ describe('BrowserWindow module', function () {
           done()
         })
         w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-file.html'))
+      })
+
+      it('blocks accessing cross-origin frames', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          assert.equal(content, 'Blocked a frame with origin "file://" from accessing a cross-origin frame.')
+          done()
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-cross-origin.html'))
+      })
+
+      it('opens window from <iframe> tags', (done) => {
+        ipcMain.once('answer', (event, content) => {
+          assert.equal(content, 'Hello')
+          done()
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-iframe.html'))
       })
 
       if (process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1) {

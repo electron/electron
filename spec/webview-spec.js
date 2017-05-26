@@ -1650,4 +1650,78 @@ describe('<webview> tag', function () {
       w.loadURL(`file://${fixtures}/pages/webview-origin-zoom-level.html`)
     })
   })
+
+  describe('nativeWindowOpen option', () => {
+    beforeEach(function () {
+      webview.setAttribute('allowpopups', 'on')
+      webview.setAttribute('nodeintegration', 'on')
+      webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
+    })
+
+    it('opens window of about:blank with cross-scripting enabled', (done) => {
+      ipcMain.once('answer', (event, content) => {
+        assert.equal(content, 'Hello')
+        done()
+      })
+      webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-blank.html')
+      document.body.appendChild(webview)
+    })
+
+    it('opens window of same domain with cross-scripting enabled', (done) => {
+      ipcMain.once('answer', (event, content) => {
+        assert.equal(content, 'Hello')
+        done()
+      })
+      webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-file.html')
+      document.body.appendChild(webview)
+    })
+
+    it('returns null from window.open when allowpopups is not set', (done) => {
+      webview.removeAttribute('allowpopups')
+      ipcMain.once('answer', (event, {windowOpenReturnedNull}) => {
+        assert.equal(windowOpenReturnedNull, true)
+        done()
+      })
+      webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-no-allowpopups.html')
+      document.body.appendChild(webview)
+    })
+
+    it('blocks accessing cross-origin frames', (done) => {
+      ipcMain.once('answer', (event, content) => {
+        assert.equal(content, 'Blocked a frame with origin "file://" from accessing a cross-origin frame.')
+        done()
+      })
+      webview.src = 'file://' + path.join(fixtures, 'api', 'native-window-open-cross-origin.html')
+      document.body.appendChild(webview)
+    })
+
+    it('emits a new-window event', (done) => {
+      webview.addEventListener('new-window', function (e) {
+        assert.equal(e.url, 'http://host/')
+        assert.equal(e.frameName, 'host')
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/window-open.html'
+      document.body.appendChild(webview)
+    })
+
+    it('emits a browser-window-created event', (done) => {
+      app.once('browser-window-created', () => {
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/window-open.html'
+      document.body.appendChild(webview)
+    })
+
+    it('emits a web-contents-created event', (done) => {
+      app.on('web-contents-created', function listener (event, contents) {
+        if (contents.getType() === 'window') {
+          app.removeListener('web-contents-created', listener)
+          done()
+        }
+      })
+      webview.src = 'file://' + fixtures + '/pages/window-open.html'
+      document.body.appendChild(webview)
+    })
+  })
 })

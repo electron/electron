@@ -237,6 +237,11 @@ bool WebContentsPreferences::IsPluginsEnabled(
   return IsPreferenceEnabled("plugins", web_contents);
 }
 
+bool WebContentsPreferences::DisablePopups(
+    content::WebContents* web_contents) {
+  return IsPreferenceEnabled("disablePopups", web_contents);
+}
+
 // static
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebContents* web_contents, content::WebPreferences* prefs) {

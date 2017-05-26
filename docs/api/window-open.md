@@ -46,12 +46,22 @@ has to be a field of `BrowserWindow`'s options.
 Sends a message to the parent window with the specified origin or `*` for no
 origin preference.
 
-### Use Native `window.open()`
+### Using Chrome's `window.open()` implementation
 
-If you want to use native `window.open()` implementation, pass `useNativeWindowOpen: true` in `webPreferences` option.
-Native `window.open()` allows synchronous access to opened windows so it is convenient choice if you need to open a dialog or a preferences window.
+If you want to use Chrome's built-in `window.open()` implementation, set
+`nativeWindowOpen` to `true` in the `webPreferences` options object.
 
-The creation of the `BrowserWindow` is customizable in `WebContents`'s `new-window` event.
+Native `window.open()` allows synchronous access to opened windows so it is
+convenient choice if you need to open a dialog or a preferences window.
+
+This option can also be set on `<webview>` tags as well:
+
+```html
+<webview webpreferences="nativeWindowOpen=yes"></webview>
+```
+
+The creation of the `BrowserWindow` is customizable via `WebContents`'s
+`new-window` event.
 
 ```javascript
 // main process
