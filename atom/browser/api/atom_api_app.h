@@ -45,11 +45,11 @@ enum class JumpListResult : int;
 #endif
 
 struct ProcessMetric {
-  std::string type;
+  int type;
   base::ProcessId pid;
   std::unique_ptr<base::ProcessMetrics> metrics;
 
-  ProcessMetric(const std::string& type,
+  ProcessMetric(int type,
                 base::ProcessId pid,
                 std::unique_ptr<base::ProcessMetrics> metrics) {
     this->type = type;

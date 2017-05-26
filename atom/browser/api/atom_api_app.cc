@@ -511,7 +511,7 @@ App::App(v8::Isolate* isolate) {
   base::ProcessId pid = base::GetCurrentProcId();
   std::unique_ptr<atom::ProcessMetric> process_metric(
       new atom::ProcessMetric(
-          "Browser",
+          content::PROCESS_TYPE_BROWSER,
           pid,
           base::ProcessMetrics::CreateCurrentProcessMetrics()));
   app_metrics_[pid] = std::move(process_metric);
@@ -717,10 +717,7 @@ void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
     base::ProcessMetrics::CreateProcessMetrics(handle));
 #endif
   std::unique_ptr<atom::ProcessMetric> process_metric(
-      new atom::ProcessMetric(
-          content::GetProcessTypeNameInEnglish(process_type),
-          pid,
-          std::move(metrics)));
+      new atom::ProcessMetric(process_type, pid, std::move(metrics)));
   app_metrics_[pid] = std::move(process_metric);
 }
 
@@ -1016,7 +1013,8 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
         process_metric.second->metrics->GetIdleWakeupsPerSecond());
     pid_dict.Set("cpu", cpu_dict);
     pid_dict.Set("pid", process_metric.second->pid);
-    pid_dict.Set("type", process_metric.second->type);
+    pid_dict.Set("type",
+        content::GetProcessTypeNameInEnglish(process_metric.second->type));
     result.push_back(pid_dict);
   }
 
