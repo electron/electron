@@ -119,7 +119,7 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
 
   for (int i = 0; i < child_count(); ++i) {
     views::View* view = child_at(i);
-    if (view->bounds().Contains(location) &&
+    if (view->GetMirroredBounds().Contains(location) &&
         (menu_model_->GetTypeAt(i) == AtomMenuModel::TYPE_SUBMENU)) {
       *menu_model = menu_model_->GetSubmenuModelAt(i);
       *button = static_cast<views::MenuButton*>(view);

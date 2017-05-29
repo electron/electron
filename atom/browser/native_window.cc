@@ -251,7 +251,7 @@ void NativeWindow::SetSizeConstraints(
   SetContentSizeConstraints(content_constraints);
 }
 
-extensions::SizeConstraints NativeWindow::GetSizeConstraints() {
+extensions::SizeConstraints NativeWindow::GetSizeConstraints() const {
   extensions::SizeConstraints content_constraints = GetContentSizeConstraints();
   extensions::SizeConstraints window_constraints;
   if (content_constraints.HasMaximumSize()) {
@@ -272,7 +272,7 @@ void NativeWindow::SetContentSizeConstraints(
   size_constraints_ = size_constraints;
 }
 
-extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() {
+extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() const {
   return size_constraints_;
 }
 
@@ -282,7 +282,7 @@ void NativeWindow::SetMinimumSize(const gfx::Size& size) {
   SetSizeConstraints(size_constraints);
 }
 
-gfx::Size NativeWindow::GetMinimumSize() {
+gfx::Size NativeWindow::GetMinimumSize() const {
   return GetSizeConstraints().GetMinimumSize();
 }
 
@@ -292,7 +292,7 @@ void NativeWindow::SetMaximumSize(const gfx::Size& size) {
   SetSizeConstraints(size_constraints);
 }
 
-gfx::Size NativeWindow::GetMaximumSize() {
+gfx::Size NativeWindow::GetMaximumSize() const {
   return GetSizeConstraints().GetMaximumSize();
 }
 

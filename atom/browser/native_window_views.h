@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "atom/browser/ui/accelerator_util.h"
+#include "atom/browser/ui/autofill_popup.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -106,8 +107,8 @@ class NativeWindowViews : public NativeWindow,
   void SetMenu(AtomMenuModel* menu_model) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
-  gfx::NativeView GetNativeView() override;
-  gfx::NativeWindow GetNativeWindow() override;
+  gfx::NativeView GetNativeView() const override;
+  gfx::NativeWindow GetNativeWindow() const override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
   void SetProgressBar(double progress, const ProgressState state) override;
@@ -118,7 +119,7 @@ class NativeWindowViews : public NativeWindow,
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
 
-  gfx::AcceleratedWidget GetAcceleratedWidget() override;
+  gfx::AcceleratedWidget GetAcceleratedWidget() const override;
 
 #if defined(OS_WIN)
   void SetIcon(HICON small_icon, HICON app_icon);
@@ -171,16 +172,22 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // NativeWindow:
-  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) override;
-  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) override;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
+  void ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) override;
+  void HideAutofillPopup(content::RenderFrameHost* frame_host) override;
 
   // views::View:
   void Layout() override;
-  gfx::Size GetMinimumSize() override;
-  gfx::Size GetMaximumSize() override;
+  gfx::Size GetMinimumSize() const override;
+  gfx::Size GetMaximumSize() const override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Register accelerators supported by the menu model.
@@ -193,6 +200,8 @@ class NativeWindowViews : public NativeWindow,
   views::View* web_view_;  // Managed by inspectable_web_contents_.
 
   NativeBrowserView* browser_view_;
+
+  std::unique_ptr<AutofillPopup> autofill_popup_;
 
   std::unique_ptr<MenuBar> menu_bar_;
   bool menu_bar_autohide_;

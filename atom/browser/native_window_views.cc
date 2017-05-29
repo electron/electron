@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_browser_view_views.h"
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/window_list.h"
@@ -318,6 +319,8 @@ NativeWindowViews::NativeWindowViews(
 
   window_->CenterWindow(size);
   Layout();
+
+  autofill_popup_.reset(new AutofillPopup(GetNativeView()));
 
 #if defined(OS_WIN)
   // Save initial window state.
@@ -924,11 +927,11 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
 #endif
 }
 
-gfx::NativeView NativeWindowViews::GetNativeView() {
+gfx::NativeView NativeWindowViews::GetNativeView() const {
   return window_->GetNativeView();
 }
 
-gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
+gfx::NativeWindow NativeWindowViews::GetNativeWindow() const {
   return window_->GetNativeWindow();
 }
 
@@ -999,7 +1002,7 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   return false;
 }
 
-gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
+gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
@@ -1180,7 +1183,7 @@ void NativeWindowViews::OnWidgetMove() {
 }
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
-    const gfx::Rect& bounds) {
+    const gfx::Rect& bounds) const {
   if (!has_frame())
     return bounds;
 
@@ -1201,7 +1204,7 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 }
 
 gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
-    const gfx::Rect& bounds) {
+    const gfx::Rect& bounds) const {
   if (!has_frame())
     return bounds;
 
@@ -1269,6 +1272,26 @@ void NativeWindowViews::HandleKeyboardEvent(
   }
 }
 
+void NativeWindowViews::ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {
+  auto wc = atom::api::WebContents::FromWrappedClass(
+    v8::Isolate::GetCurrent(), web_contents());
+  autofill_popup_->CreateView(
+    frame_host,
+    wc->IsOffScreenOrEmbedderOffscreen(),
+    widget(),
+    bounds);
+  autofill_popup_->SetItems(values, labels);
+}
+
+void NativeWindowViews::HideAutofillPopup(
+    content::RenderFrameHost* frame_host) {
+  autofill_popup_->Hide();
+}
+
 void NativeWindowViews::Layout() {
   const auto size = GetContentsBounds().size();
   const auto menu_bar_bounds =
@@ -1306,11 +1329,11 @@ void NativeWindowViews::Layout() {
   }
 }
 
-gfx::Size NativeWindowViews::GetMinimumSize() {
+gfx::Size NativeWindowViews::GetMinimumSize() const {
   return NativeWindow::GetMinimumSize();
 }
 
-gfx::Size NativeWindowViews::GetMaximumSize() {
+gfx::Size NativeWindowViews::GetMaximumSize() const {
   return NativeWindow::GetMaximumSize();
 }
 

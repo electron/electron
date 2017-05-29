@@ -11,6 +11,7 @@
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
+#include "atom/renderer/atom_autofill_agent.h"
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/guest_view_container.h"
@@ -120,6 +121,7 @@ void RendererClientBase::RenderThreadStarted() {
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new AtomRenderFrameObserver(render_frame, this);
+  new AutofillAgent(render_frame);
   new PepperHelper(render_frame);
   new ContentSettingsObserver(render_frame);
   new printing::PrintWebViewHelper(render_frame);

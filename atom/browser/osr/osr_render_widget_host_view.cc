@@ -4,6 +4,7 @@
 
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "base/callback_helpers.h"
@@ -22,9 +23,12 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
 #include "media/base/video_frame.h"
+#include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"
+#include "ui/events/base_event_utils.h"
+#include "ui/events/event_constants.h"
 #include "ui/events/latency_info.h"
 #include "ui/gfx/geometry/dip_util.h"
 #include "ui/gfx/native_widget_types.h"
@@ -36,6 +40,70 @@ namespace {
 
 const float kDefaultScaleFactor = 1.0;
 const int kFrameRetryLimit = 2;
+
+ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
+  ui::EventType type = ui::EventType::ET_UNKNOWN;
+  switch (event.type()) {
+    case blink::WebInputEvent::MouseDown:
+      type = ui::EventType::ET_MOUSE_PRESSED;
+      break;
+    case blink::WebInputEvent::MouseUp:
+      type = ui::EventType::ET_MOUSE_RELEASED;
+      break;
+    case blink::WebInputEvent::MouseMove:
+      type = ui::EventType::ET_MOUSE_MOVED;
+      break;
+    case blink::WebInputEvent::MouseEnter:
+      type = ui::EventType::ET_MOUSE_ENTERED;
+      break;
+    case blink::WebInputEvent::MouseLeave:
+      type = ui::EventType::ET_MOUSE_EXITED;
+      break;
+    case blink::WebInputEvent::MouseWheel:
+      type = ui::EventType::ET_MOUSEWHEEL;
+      break;
+    default:
+      type = ui::EventType::ET_UNKNOWN;
+      break;
+  }
+
+  int button_flags = 0;
+  switch (event.button) {
+    case blink::WebMouseEvent::Button::X1:
+      button_flags |= ui::EventFlags::EF_BACK_MOUSE_BUTTON;
+      break;
+    case blink::WebMouseEvent::Button::X2:
+      button_flags |= ui::EventFlags::EF_FORWARD_MOUSE_BUTTON;
+      break;
+    case blink::WebMouseEvent::Button::Left:
+      button_flags |= ui::EventFlags::EF_LEFT_MOUSE_BUTTON;
+      break;
+    case blink::WebMouseEvent::Button::Middle:
+      button_flags |= ui::EventFlags::EF_MIDDLE_MOUSE_BUTTON;
+      break;
+    case blink::WebMouseEvent::Button::Right:
+      button_flags |= ui::EventFlags::EF_RIGHT_MOUSE_BUTTON;
+      break;
+    default:
+      button_flags = 0;
+      break;
+  }
+
+  ui::MouseEvent ui_event(type,
+    gfx::Point(std::floor(event.x), std::floor(event.y)),
+    gfx::Point(std::floor(event.x), std::floor(event.y)),
+    ui::EventTimeForNow(),
+    button_flags, button_flags);
+  ui_event.SetClickCount(event.clickCount);
+
+  return ui_event;
+}
+
+ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
+    blink::WebMouseWheelEvent event) {
+  return ui::MouseWheelEvent(UiMouseEventFromWebMouseEvent(event),
+    std::floor(event.deltaX), std::floor(event.deltaY));
+}
 
 #if !defined(OS_MACOSX)
 
@@ -619,6 +687,8 @@ void OffScreenRenderWidgetHostView::Destroy() {
         child_host_view_->CancelWidget();
       for (auto guest_host_view : guest_host_views_)
         guest_host_view->CancelWidget();
+      for (auto proxy_view : proxy_views_)
+        proxy_view->RemoveObserver();
       Hide();
     }
   }
@@ -835,6 +905,22 @@ void OffScreenRenderWidgetHostView::RemoveGuestHostView(
   guest_host_views_.erase(guest_host);
 }
 
+void OffScreenRenderWidgetHostView::AddViewProxy(OffscreenViewProxy* proxy) {
+  proxy->SetObserver(this);
+  proxy_views_.insert(proxy);
+}
+
+void OffScreenRenderWidgetHostView::RemoveViewProxy(OffscreenViewProxy* proxy) {
+  proxy->RemoveObserver();
+  proxy_views_.erase(proxy);
+}
+
+void OffScreenRenderWidgetHostView::ProxyViewDestroyed(
+    OffscreenViewProxy* proxy) {
+  proxy_views_.erase(proxy);
+  Invalidate();
+}
+
 void OffScreenRenderWidgetHostView::RegisterGuestViewFrameSwappedCallback(
     content::RenderWidgetHostViewGuest* guest_host_view) {
   guest_host_view->RegisterFrameSwappedCallback(base::MakeUnique<base::Closure>(
@@ -906,12 +992,16 @@ void CopyBitmapTo(
   char* dest = static_cast<char*>(destination.getPixels());
   int pixelsize = source.bytesPerPixel();
 
-  if (pos.x() + pos.width() <= destination.width() &&
-    pos.y() + pos.height() <= destination.height()) {
-    for (int i = 0; i < pos.height(); i++) {
+  int width = pos.x() + pos.width() <= destination.width() ? pos.width()
+    : pos.width() - ((pos.x() + pos.width()) - destination.width());
+  int height = pos.y() + pos.height() <= destination.height() ? pos.height()
+    : pos.height() - ((pos.y() + pos.height()) - destination.height());
+
+  if (width > 0 && height > 0) {
+    for (int i = 0; i < height; i++) {
       memcpy(dest + ((pos.y() + i) * destination.width() + pos.x()) * pixelsize,
         src + (i * source.width()) * pixelsize,
-        pos.width() * pixelsize);
+        width * pixelsize);
     }
   }
 
@@ -926,19 +1016,41 @@ void OffScreenRenderWidgetHostView::OnPaint(
 
   if (parent_callback_) {
     parent_callback_.Run(damage_rect, bitmap);
-  } else if (popup_host_view_ && popup_bitmap_.get()) {
-    gfx::Rect pos = popup_host_view_->popup_position_;
-    gfx::Rect damage(damage_rect);
-    damage.Union(pos);
-
-    SkBitmap copy = SkBitmapOperations::CreateTiledBitmap(bitmap,
-      pos.x(), pos.y(), pos.width(), pos.height());
-
-    CopyBitmapTo(bitmap, *popup_bitmap_, pos);
-    callback_.Run(damage, bitmap);
-    CopyBitmapTo(bitmap, copy, pos);
   } else {
-    callback_.Run(damage_rect, bitmap);
+    gfx::Rect damage(damage_rect);
+
+    std::vector<gfx::Rect> damages;
+    std::vector<const SkBitmap*> bitmaps;
+    std::vector<SkBitmap> originals;
+
+    if (popup_host_view_ && popup_bitmap_.get()) {
+      gfx::Rect pos = popup_host_view_->popup_position_;
+      damage.Union(pos);
+      damages.push_back(pos);
+      bitmaps.push_back(popup_bitmap_.get());
+      originals.push_back(SkBitmapOperations::CreateTiledBitmap(bitmap,
+        pos.x(), pos.y(), pos.width(), pos.height()));
+    }
+
+    for (auto proxy_view : proxy_views_) {
+      gfx::Rect pos = proxy_view->GetBounds();
+      damage.Union(pos);
+      damages.push_back(pos);
+      bitmaps.push_back(proxy_view->GetBitmap());
+      originals.push_back(SkBitmapOperations::CreateTiledBitmap(bitmap,
+        pos.x(), pos.y(), pos.width(), pos.height()));
+    }
+
+    for (size_t i = 0; i < damages.size(); i++) {
+      CopyBitmapTo(bitmap, *(bitmaps[i]), damages[i]);
+    }
+
+    damage.Intersect(GetViewBounds());
+    callback_.Run(damage, bitmap);
+
+    for (size_t i = 0; i < damages.size(); i++) {
+      CopyBitmapTo(bitmap, originals[i], damages[i]);
+    }
   }
 
   ReleaseResize();
@@ -949,6 +1061,11 @@ void OffScreenRenderWidgetHostView::OnPopupPaint(
   if (popup_host_view_ && popup_bitmap_.get())
     bitmap.deepCopyTo(popup_bitmap_.get());
   InvalidateBounds(popup_host_view_->popup_position_);
+}
+
+void OffScreenRenderWidgetHostView::OnProxyViewPaint(
+    const gfx::Rect& damage_rect) {
+  InvalidateBounds(damage_rect);
 }
 
 void OffScreenRenderWidgetHostView::HoldResize() {
@@ -992,6 +1109,21 @@ void OffScreenRenderWidgetHostView::ProcessKeyboardEvent(
 void OffScreenRenderWidgetHostView::ProcessMouseEvent(
     const blink::WebMouseEvent& event,
     const ui::LatencyInfo& latency) {
+  for (auto proxy_view : proxy_views_) {
+    gfx::Rect bounds = proxy_view->GetBounds();
+    if (bounds.Contains(event.x, event.y)) {
+      blink::WebMouseEvent proxy_event(event);
+      proxy_event.x -= bounds.x();
+      proxy_event.y -= bounds.y();
+      proxy_event.windowX = proxy_event.x;
+      proxy_event.windowY = proxy_event.y;
+
+      ui::MouseEvent ui_event = UiMouseEventFromWebMouseEvent(proxy_event);
+      proxy_view->OnEvent(&ui_event);
+      return;
+    }
+  }
+
   if (!IsPopupWidget()) {
     if (popup_host_view_ &&
         popup_host_view_->popup_position_.Contains(event.x, event.y)) {
@@ -1005,6 +1137,7 @@ void OffScreenRenderWidgetHostView::ProcessMouseEvent(
       return;
     }
   }
+
   if (!render_widget_host_)
     return;
   render_widget_host_->ForwardMouseEvent(event);
@@ -1013,6 +1146,21 @@ void OffScreenRenderWidgetHostView::ProcessMouseEvent(
 void OffScreenRenderWidgetHostView::ProcessMouseWheelEvent(
     const blink::WebMouseWheelEvent& event,
     const ui::LatencyInfo& latency) {
+  for (auto proxy_view : proxy_views_) {
+    gfx::Rect bounds = proxy_view->GetBounds();
+    if (bounds.Contains(event.x, event.y)) {
+      blink::WebMouseWheelEvent proxy_event(event);
+      proxy_event.x -= bounds.x();
+      proxy_event.y -= bounds.y();
+      proxy_event.windowX = proxy_event.x;
+      proxy_event.windowY = proxy_event.y;
+
+      ui::MouseWheelEvent ui_event =
+        UiMouseWheelEventFromWebMouseEvent(proxy_event);
+      proxy_view->OnEvent(&ui_event);
+      return;
+    }
+  }
   if (!IsPopupWidget()) {
     if (popup_host_view_) {
       if (popup_host_view_->popup_position_.Contains(event.x, event.y)) {

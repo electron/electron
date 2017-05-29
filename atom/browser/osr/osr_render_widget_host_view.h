@@ -16,6 +16,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/osr/osr_output_device.h"
+#include "atom/browser/osr/osr_view_proxy.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
 #include "base/time/time.h"
@@ -68,7 +69,8 @@ class OffScreenRenderWidgetHostView
 #if !defined(OS_MACOSX)
       public content::DelegatedFrameHostClient,
 #endif
-      public NativeWindowObserver {
+      public NativeWindowObserver,
+      public OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
                                 const OnPaintCallback& callback,
@@ -208,6 +210,9 @@ class OffScreenRenderWidgetHostView
   void CancelWidget();
   void AddGuestHostView(OffScreenRenderWidgetHostView* guest_host);
   void RemoveGuestHostView(OffScreenRenderWidgetHostView* guest_host);
+  void AddViewProxy(OffscreenViewProxy* proxy);
+  void RemoveViewProxy(OffscreenViewProxy* proxy);
+  void ProxyViewDestroyed(OffscreenViewProxy* proxy);
 
   void RegisterGuestViewFrameSwappedCallback(
       content::RenderWidgetHostViewGuest* guest_host_view);
@@ -216,6 +221,7 @@ class OffScreenRenderWidgetHostView
 
   void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
   void OnPopupPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
+  void OnProxyViewPaint(const gfx::Rect& damage_rect);
 
   bool IsPopupWidget() const {
     return popup_type_ != blink::WebPopupTypeNone;
@@ -273,6 +279,7 @@ class OffScreenRenderWidgetHostView
   std::unique_ptr<SkBitmap> popup_bitmap_;
   OffScreenRenderWidgetHostView* child_host_view_;
   std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
+  std::set<OffscreenViewProxy*> proxy_views_;
 
   NativeWindow* native_window_;
   OffScreenOutputDevice* software_output_device_;

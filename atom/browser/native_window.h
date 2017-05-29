@@ -18,10 +18,12 @@
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
 #include "content/public/browser/readback_types.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "native_mate/persistent_dictionary.h"
+#include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -98,14 +100,14 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Rect GetContentBounds();
   virtual void SetSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
-  virtual extensions::SizeConstraints GetSizeConstraints();
+  virtual extensions::SizeConstraints GetSizeConstraints() const;
   virtual void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
-  virtual extensions::SizeConstraints GetContentSizeConstraints();
+  virtual extensions::SizeConstraints GetContentSizeConstraints() const;
   virtual void SetMinimumSize(const gfx::Size& size);
-  virtual gfx::Size GetMinimumSize();
+  virtual gfx::Size GetMinimumSize() const;
   virtual void SetMaximumSize(const gfx::Size& size);
-  virtual gfx::Size GetMaximumSize();
+  virtual gfx::Size GetMaximumSize() const;
   virtual void SetSheetOffset(const double offsetX, const double offsetY);
   virtual double GetSheetOffsetX();
   virtual double GetSheetOffsetY();
@@ -147,9 +149,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetMenu(AtomMenuModel* menu);
   virtual void SetParentWindow(NativeWindow* parent);
   virtual void SetBrowserView(NativeBrowserView* browser_view) = 0;
-  virtual gfx::NativeView GetNativeView() = 0;
-  virtual gfx::NativeWindow GetNativeWindow() = 0;
-  virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
+  virtual gfx::NativeView GetNativeView() const = 0;
+  virtual gfx::NativeWindow GetNativeWindow() const = 0;
+  virtual gfx::AcceleratedWidget GetAcceleratedWidget() const = 0;
 
   // Taskbar/Dock APIs.
   enum ProgressState {
@@ -215,6 +217,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
+  virtual void ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {}
+  virtual void HideAutofillPopup(content::RenderFrameHost* frame_host) {}
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
@@ -281,8 +289,10 @@ class NativeWindow : public base::SupportsUserData,
       const std::vector<DraggableRegion>& regions);
 
   // Converts between content bounds and window bounds.
-  virtual gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) = 0;
-  virtual gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) = 0;
+  virtual gfx::Rect ContentBoundsToWindowBounds(
+      const gfx::Rect& bounds) const = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(
+      const gfx::Rect& bounds) const = 0;
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
