@@ -17,7 +17,6 @@
 #include "atom/common/node_includes.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "common/string_conversion.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "third_party/skia/include/core/SkBitmap.h"

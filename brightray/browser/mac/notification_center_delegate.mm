@@ -29,7 +29,6 @@
        didActivateNotification:(NSUserNotification *)notif {
   auto notification = presenter_->GetNotification(notif);
   if (notification) {
-    notification->NotificationClicked();
     if (notif.activationType == NSUserNotificationActivationTypeReplied){
       notification->NotificationReplied([notif.response.string UTF8String]);
     } else {
