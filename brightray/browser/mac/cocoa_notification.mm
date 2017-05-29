@@ -28,7 +28,9 @@ void CocoaNotification::Show(const base::string16& title,
                              const std::string& tag,
                              const GURL& icon_url,
                              const SkBitmap& icon,
-                             const bool silent) {
+                             const bool silent,
+                             const bool has_reply,
+                             const base::string16 reply_placeholder) {
   notification_.reset([[NSUserNotification alloc] init]);
   [notification_ setTitle:base::SysUTF16ToNSString(title)];
   [notification_ setInformativeText:base::SysUTF16ToNSString(body)];
@@ -46,6 +48,11 @@ void CocoaNotification::Show(const base::string16& title,
     [notification_ setSoundName:NSUserNotificationDefaultSoundName];
   }
 
+  if (has_reply) {
+    [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(reply_placeholder)];
+    [notification_ setHasReplyButton:true];
+  }
+
   [NSUserNotificationCenter.defaultUserNotificationCenter
       deliverNotification:notification_];
 }
@@ -59,6 +66,10 @@ void CocoaNotification::Dismiss() {
 
 void CocoaNotification::NotificationDisplayed() {
   delegate()->NotificationDisplayed();
+}
+
+void CocoaNotification::NotificationReplied(const std::string reply) {
+  delegate()->NotificationReplied(reply);
 }
 
 }  // namespace brightray

@@ -1,4 +1,4 @@
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow, Notification} = require('electron')
 const path = require('path')
 
 let mainWindow = null
@@ -27,5 +27,14 @@ exports.load = (appUrl) => {
     mainWindow = new BrowserWindow(options)
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
+
+    const n = new Notification({
+      title: 'Foo',
+      body: 'Bar',
+      hasReply: true,
+      replyPlaceholder: 'foo'
+    });
+    n.on('reply', (...args) => console.log(args));
+    n.show();
   })
 }

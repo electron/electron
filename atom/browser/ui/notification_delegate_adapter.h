@@ -21,6 +21,7 @@ class AtomNotificationDelegateAdapter : public brightray::NotificationDelegate {
   void NotificationClick();
   void NotificationDestroyed();
   void NotificationFailed();
+  void NotificationReplied(std::string reply);
 };
 
 }  // namespace atom

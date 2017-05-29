@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_NOTIFICATION_DELEGATE_H_
 
 #include "content/public/browser/desktop_notification_delegate.h"
+#include <string>
 
 namespace brightray {
 
@@ -16,6 +17,9 @@ class NotificationDelegate : public content::DesktopNotificationDelegate {
 
   // Failed to send the notification.
   virtual void NotificationFailed() {}
+
+  // Notification was replied to
+  virtual void NotificationReplied(std::string reply) {}
 };
 
 }  // namespace brightray

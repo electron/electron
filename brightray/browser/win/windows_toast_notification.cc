@@ -89,7 +89,9 @@ void WindowsToastNotification::Show(const base::string16& title,
                                     const std::string& tag,
                                     const GURL& icon_url,
                                     const SkBitmap& icon,
-                                    const bool silent) {
+                                    const bool silent,
+                                    const bool hasReply,
+                                    const base::string16 replyPlaceholder) {
   auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
   std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
 

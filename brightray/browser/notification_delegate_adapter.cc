@@ -30,4 +30,8 @@ void NotificationDelegateAdapter::NotificationClick() {
   delegate_->NotificationClick();
 }
 
+// void NotificationDelegateAdapter::NotificationReplied(std::string reply) {
+//   delegate_->NotificationReplied(reply);
+// }
+
 }  // namespace brightray

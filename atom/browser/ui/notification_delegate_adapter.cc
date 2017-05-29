@@ -20,6 +20,9 @@ void AtomNotificationDelegateAdapter::NotificationClosed() {}
 void AtomNotificationDelegateAdapter::NotificationClick() {
   observer_->OnClicked();
 }
+void AtomNotificationDelegateAdapter::NotificationReplied(std::string reply) {
+  observer_->OnReplied(reply);
+}
 void AtomNotificationDelegateAdapter::NotificationDestroyed() {}
 void AtomNotificationDelegateAdapter::NotificationFailed() {}
 
