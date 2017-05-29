@@ -1135,7 +1135,7 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
     `numLock`, `left`, `right`.
 
 Sends an input `event` to the page.
-'BrowserWindow` needs to be focused for `sendInputEvent()` to work.
+'Browser Window` needs to be focused for `sendInputEvent()` to work.
 
 For keyboard events, the `event` object also have following properties:
 
