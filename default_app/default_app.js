@@ -33,8 +33,9 @@ exports.load = (appUrl) => {
       body: 'Bar',
       hasReply: true,
       replyPlaceholder: 'foo'
-    });
-    n.on('reply', (...args) => console.log(args));
-    n.show();
+    })
+    n.on('reply', (...args) => console.log('reply', ...args))
+    n.on('click', (...args) => console.log('click', ...args))
+    n.show()
   })
 }

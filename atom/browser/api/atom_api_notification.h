@@ -12,6 +12,8 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/notification_observer.h"
 #include "base/strings/utf_string_conversions.h"
+#include "brightray/browser/notification.h"
+#include "brightray/browser/notification_presenter.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
@@ -69,6 +71,7 @@ class Notification : public mate::TrackableObject<Notification>,
   bool silent_ = false;
   base::string16 reply_placeholder_ = base::UTF8ToUTF16("");
   bool has_reply_ = false;
+  brightray::NotificationPresenter* presenter_;
 
   int id_;
 

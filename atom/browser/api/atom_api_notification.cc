@@ -9,15 +9,21 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/ui/notification_delegate_adapter.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "common/string_conversion.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/image/image.h"
+#include "url/gurl.h"
 
 namespace atom {
 
@@ -119,6 +125,33 @@ void Notification::OnReplied(std::string reply) {
 
 void Notification::OnShown() {
   Emit("show");
+}
+
+void Notification::NotifyPropsUpdated() {}
+
+// Showing notifications
+void Notification::Show() {
+  SkBitmap image = *(new SkBitmap);
+  if (has_icon_) {
+    image = *(icon_.ToSkBitmap());
+  }
+
+  std::unique_ptr<AtomNotificationDelegateAdapter> adapter(
+      new AtomNotificationDelegateAdapter(this));
+  auto notif = presenter_->CreateNotification(adapter.get());
+  if (notif) {
+    ignore_result(adapter.release());  // it will release itself automatically.
+    GURL nullUrl = *(new GURL);
+    notif->Show(title_, body_, "", nullUrl, image, silent_, has_reply_, reply_placeholder_);
+  }
+}
+
+bool initialized_ = false;
+void Notification::OnInitialProps() {
+  if (!initialized_) {
+    presenter_ = brightray::NotificationPresenter::Create();
+    initialized_ = true;
+  }
 }
 
 // static
