@@ -23,7 +23,9 @@ void AtomNotificationDelegateAdapter::NotificationClick() {
 void AtomNotificationDelegateAdapter::NotificationReplied(std::string reply) {
   observer_->OnReplied(reply);
 }
-void AtomNotificationDelegateAdapter::NotificationDestroyed() {}
+void AtomNotificationDelegateAdapter::NotificationDestroyed() {
+  observer_->OnClosed();
+}
 void AtomNotificationDelegateAdapter::NotificationFailed() {}
 
 }  // namespace atom

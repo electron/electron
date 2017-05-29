@@ -126,6 +126,10 @@ void Notification::OnShown() {
   Emit("show");
 }
 
+void Notification::OnClosed() {
+  Emit("close");
+}
+
 void Notification::NotifyPropsUpdated() {}
 
 // Showing notifications

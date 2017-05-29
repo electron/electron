@@ -14,6 +14,7 @@ class NotifictionObserver {
   virtual void OnClicked() {}
   virtual void OnReplied(std::string reply) {}
   virtual void OnShown() {}
+  virtual void OnClosed() {}
 
  protected:
   virtual ~NotifictionObserver() {}

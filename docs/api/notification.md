@@ -37,16 +37,7 @@ Objects created with `new Notification` emit the following events:
 **Note:** Some events are only available on specific operating systems and are
 labeled as such.
 
-#### Event: 'click'
-
-Returns:
-
-* `event` Event
-
-Emitted when the document changed its title, calling `event.preventDefault()`
-will prevent the native window's title from changing.
-
-#### Event: 'close'
+#### Event: 'show'
 
 Returns:
 
@@ -63,6 +54,17 @@ Returns:
 * `event` Event
 
 Emitted when the notification is clicked by the user.
+
+#### Event: 'close'
+
+Returns:
+
+* `event` Event
+
+Emitted when the notification is closed by manual intervention from the user.
+
+This event is not guarunteed to be emitted in all cases where the notification
+is closed.
 
 #### Event: 'reply' _macOS_
 

@@ -35,6 +35,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void OnClicked() override;
   void OnReplied(std::string reply) override;
   void OnShown() override;
+  void OnClosed() override;
 
  protected:
   Notification(v8::Isolate* isolate,
