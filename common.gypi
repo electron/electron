@@ -11,6 +11,7 @@
     'chromeos': 0,
     # Reflects node's config.gypi.
     'component%': 'static_library',
+    'use_gtk3': 1,
     'python': 'python',
     'openssl_fips': '',
     'openssl_no_asm': 1,
