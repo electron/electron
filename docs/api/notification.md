@@ -19,6 +19,14 @@ Process: [Main](../glossary.md#main-process)
 
 It creates a new `Notification` with native properties as set by the `options`.
 
+### Static Methods
+
+The `Notification` class has the following static methods:
+
+#### `BrowserWindow.isSupported()`
+
+Returns `Boolean` - Whether or not desktop notifications are supported on the current system
+
 ### `new Notification([options])` _Experimental_
 
 * `options` Object

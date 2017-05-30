@@ -132,6 +132,10 @@ void Notification::OnInitialProps() {
   }
 }
 
+bool Notification::IsSupported() {
+  return !!brightray::BrowserClient::Get()->GetNotificationPresenter();
+}
+
 // static
 void Notification::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
@@ -166,6 +170,8 @@ void Initialize(v8::Local<v8::Object> exports,
   mate::Dictionary dict(isolate, exports);
   dict.Set("Notification",
            Notification::GetConstructor(isolate)->GetFunction());
+
+  dict.SetMethod("isSupported", &Notification::IsSupported);
 }
 
 }  // namespace

@@ -27,7 +27,7 @@ class Notification {
                     const GURL& icon_url,
                     const SkBitmap& icon,
                     bool silent,
-                    bool hasReply,
+                    bool has_reply,
                     const base::string16& reply_placeholder) = 0;
   // Closes the notification, this instance will be destroyed after the
   // notification gets closed.

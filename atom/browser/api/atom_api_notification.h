@@ -25,8 +25,7 @@ class Notification : public mate::TrackableObject<Notification>,
                      public brightray::NotificationDelegate {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
-  static bool HasID(int id);
-  static Notification* FromID(int id);
+  static bool IsSupported();
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

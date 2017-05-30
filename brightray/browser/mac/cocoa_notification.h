@@ -27,8 +27,8 @@ class CocoaNotification : public Notification {
             const GURL& icon_url,
             const SkBitmap& icon,
             bool silent,
-            const bool hasReply,
-            const base::string16 replyPlaceholder) override;
+            const bool has_reply,
+            const base::string16 reply_placeholder) override;
   void Dismiss() override;
 
   void NotificationDisplayed();
