@@ -34,6 +34,7 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/browser/gpu/compositor_util.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_child_process_host.h"
 #include "content/public/browser/child_process_data.h"
@@ -1021,6 +1022,34 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
   return result;
 }
 
+static mate::Dictionary ConvertDictionary(
+    v8::Isolate* isolate, const base::DictionaryValue &dict) {
+  auto result = mate::Dictionary::CreateEmpty(isolate);
+
+  for (base::DictionaryValue::Iterator iterator(dict);
+       !iterator.IsAtEnd();
+       iterator.Advance()) {
+    auto& key = iterator.key();
+    auto& value = iterator.value();
+    if (value.is_string()) {
+      std::string strValue;
+      if (value.GetAsString(&strValue)) {
+        result.Set(key, strValue);
+      }
+    }
+  }
+
+  return result;
+}
+
+mate::Dictionary App::GetGPUFeatureStatus(v8::Isolate* isolate) {
+  if (auto status = content::GetFeatureStatus()) {
+    return ConvertDictionary(isolate, *status);
+  } else {
+    return mate::Dictionary::CreateEmpty(isolate);
+  }
+}
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -1094,6 +1123,7 @@ void App::BuildPrototype(
                  &App::DisableHardwareAcceleration)
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
+      .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
       .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
 }

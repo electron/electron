@@ -177,6 +177,7 @@ class App : public AtomBrowserClient::Delegate,
                    mate::Arguments* args);
 
   std::vector<mate::Dictionary> GetAppMetrics(v8::Isolate* isolate);
+  mate::Dictionary GetGPUFeatureStatus(v8::Isolate* isolate);
 
 #if defined(OS_WIN)
   // Get the current Jump List settings.
