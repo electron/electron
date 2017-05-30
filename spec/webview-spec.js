@@ -7,6 +7,7 @@ const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} =
 const {closeWindow} = require('./window-helpers')
 
 const isCI = remote.getGlobal('isCi')
+const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
 describe('<webview> tag', function () {
   this.timeout(3 * 60 * 1000)
@@ -171,23 +172,23 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     })
 
-    if (process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1) {
-      it('loads native modules when navigation happens', function (done) {
-        var listener = function () {
-          webview.removeEventListener('did-finish-load', listener)
-          var listener2 = function (e) {
-            assert.equal(e.message, 'function')
-            done()
-          }
-          webview.addEventListener('console-message', listener2)
-          webview.reload()
+    it('loads native modules when navigation happens', function (done) {
+      if (!nativeModulesEnabled) return done()
+
+      var listener = function () {
+        webview.removeEventListener('did-finish-load', listener)
+        var listener2 = function (e) {
+          assert.equal(e.message, 'function')
+          done()
         }
-        webview.addEventListener('did-finish-load', listener)
-        webview.setAttribute('nodeintegration', 'on')
-        webview.src = 'file://' + fixtures + '/pages/native-module.html'
-        document.body.appendChild(webview)
-      })
-    }
+        webview.addEventListener('console-message', listener2)
+        webview.reload()
+      }
+      webview.addEventListener('did-finish-load', listener)
+      webview.setAttribute('nodeintegration', 'on')
+      webview.src = 'file://' + fixtures + '/pages/native-module.html'
+      document.body.appendChild(webview)
+    })
   })
 
   describe('preload attribute', function () {

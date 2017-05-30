@@ -33,26 +33,34 @@ HEADERS_FILES = [
 
 
 def main():
-  safe_mkdir(DIST_DIR)
-
   args = parse_args()
-  node_headers_dir = os.path.join(DIST_DIR, 'node-{0}'.format(args.version))
-  iojs_headers_dir = os.path.join(DIST_DIR, 'iojs-{0}'.format(args.version))
-  iojs2_headers_dir = os.path.join(DIST_DIR,
+
+  safe_mkdir(args.directory)
+
+  node_headers_dir = os.path.join(args.directory,
+                                  'node-{0}'.format(args.version))
+  iojs_headers_dir = os.path.join(args.directory,
+                                  'iojs-{0}'.format(args.version))
+  iojs2_headers_dir = os.path.join(args.directory,
                                    'iojs-{0}-headers'.format(args.version))
 
   copy_headers(node_headers_dir)
-  create_header_tarball(node_headers_dir)
+  create_header_tarball(args.directory, node_headers_dir)
+
   copy_headers(iojs_headers_dir)
-  create_header_tarball(iojs_headers_dir)
+  create_header_tarball(args.directory, iojs_headers_dir)
+
   copy_headers(iojs2_headers_dir)
-  create_header_tarball(iojs2_headers_dir)
+  create_header_tarball(args.directory, iojs2_headers_dir)
 
 
 def parse_args():
   parser = argparse.ArgumentParser(description='create node header tarballs')
   parser.add_argument('-v', '--version', help='Specify the version',
                       required=True)
+  parser.add_argument('-d', '--directory', help='Specify the output directory',
+                      default=DIST_DIR,
+                      required=False)
   return parser.parse_args()
 
 
@@ -85,9 +93,9 @@ def copy_headers(dist_headers_dir):
                        os.path.join(dist_headers_dir, 'deps'))
 
 
-def create_header_tarball(dist_headers_dir):
+def create_header_tarball(directory, dist_headers_dir):
   target = dist_headers_dir + '.tar.gz'
-  with scoped_cwd(DIST_DIR):
+  with scoped_cwd(directory):
     tarball = tarfile.open(name=target, mode='w:gz')
     tarball.add(os.path.relpath(dist_headers_dir))
     tarball.close()

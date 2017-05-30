@@ -5,38 +5,41 @@ const {remote} = require('electron')
 const {BrowserWindow} = remote
 const {closeWindow} = require('./window-helpers')
 
+const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
+
 describe('modules support', function () {
   var fixtures = path.join(__dirname, 'fixtures')
 
   describe('third-party module', function () {
-    if (process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1) {
-      describe('runas', function () {
-        it('can be required in renderer', function () {
-          require('runas')
-        })
+    describe('runas', function () {
+      if (!nativeModulesEnabled) return
 
-        it('can be required in node binary', function (done) {
-          var runas = path.join(fixtures, 'module', 'runas.js')
-          var child = require('child_process').fork(runas)
-          child.on('message', function (msg) {
-            assert.equal(msg, 'ok')
-            done()
-          })
-        })
+      it('can be required in renderer', function () {
+        require('runas')
       })
 
-      describe('ffi', function () {
-        if (process.platform === 'win32') return
-
-        it('does not crash', function () {
-          var ffi = require('ffi')
-          var libm = ffi.Library('libm', {
-            ceil: ['double', ['double']]
-          })
-          assert.equal(libm.ceil(1.5), 2)
+      it('can be required in node binary', function (done) {
+        var runas = path.join(fixtures, 'module', 'runas.js')
+        var child = require('child_process').fork(runas)
+        child.on('message', function (msg) {
+          assert.equal(msg, 'ok')
+          done()
         })
       })
-    }
+    })
+
+    describe('ffi', function () {
+      if (!nativeModulesEnabled) return
+      if (process.platform === 'win32') return
+
+      it('does not crash', function () {
+        var ffi = require('ffi')
+        var libm = ffi.Library('libm', {
+          ceil: ['double', ['double']]
+        })
+        assert.equal(libm.ceil(1.5), 2)
+      })
+    })
 
     describe('q', function () {
       var Q = require('q')
