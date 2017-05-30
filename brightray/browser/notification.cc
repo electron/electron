@@ -17,21 +17,29 @@ Notification::Notification(NotificationDelegate* delegate,
 }
 
 Notification::~Notification() {
-  delegate()->NotificationDestroyed();
+  if (delegate())
+    delegate()->NotificationDestroyed();
+}
+
+void Notification::set_delegate(NotificationDelegate* delegate) {
+  delegate_ = delegate;
 }
 
 void Notification::NotificationClicked() {
-  delegate()->NotificationClick();
+  if (delegate())
+    delegate()->NotificationClick();
   Destroy();
 }
 
 void Notification::NotificationDismissed() {
-  delegate()->NotificationClosed();
+  if (delegate())
+    delegate()->NotificationClosed();
   Destroy();
 }
 
 void Notification::NotificationFailed() {
-  delegate()->NotificationFailed();
+  if (delegate())
+    delegate()->NotificationFailed();
   Destroy();
 }
 

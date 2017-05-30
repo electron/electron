@@ -10,9 +10,9 @@
 #include <vector>
 
 #include "atom/browser/api/trackable_object.h"
-#include "atom/browser/ui/notification_observer.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification.h"
+#include "brightray/browser/notification_delegate.h"
 #include "brightray/browser/notification_presenter.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
@@ -22,7 +22,7 @@ namespace atom {
 namespace api {
 
 class Notification : public mate::TrackableObject<Notification>,
-                     public NotifictionObserver {
+                     public brightray::NotificationDelegate {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
   static bool HasID(int id);
@@ -31,11 +31,12 @@ class Notification : public mate::TrackableObject<Notification>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  // NotificationObserver:
-  void OnClicked() override;
-  void OnReplied(std::string reply) override;
-  void OnShown() override;
-  void OnClosed() override;
+  // NotificationDelegate:
+  void NotificationClick() override;
+  void NotificationReplied(const std::string reply) override;
+  void NotificationDisplayed() override;
+  void NotificationDestroyed() override;
+  void NotificationClosed() override;
 
  protected:
   Notification(v8::Isolate* isolate,
@@ -47,7 +48,6 @@ class Notification : public mate::TrackableObject<Notification>,
   void Show();
 
   // Prop Getters
-  int GetID();
   base::string16 GetTitle();
   base::string16 GetBody();
   bool GetSilent();
@@ -55,26 +55,24 @@ class Notification : public mate::TrackableObject<Notification>,
   bool GetHasReply();
 
   // Prop Setters
-  void SetTitle(base::string16 new_title);
-  void SetBody(base::string16 new_body);
+  void SetTitle(const base::string16& new_title);
+  void SetBody(const base::string16& new_body);
   void SetSilent(bool new_silent);
-  void SetReplyPlaceholder(base::string16 new_reply_placeholder);
+  void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetHasReply(bool new_has_reply);
 
-  void NotifyPropsUpdated();
-
  private:
-  base::string16 title_ = base::UTF8ToUTF16("");
-  base::string16 body_ = base::UTF8ToUTF16("");
+  base::string16 title_;
+  base::string16 body_;
   gfx::Image icon_;
-  base::string16 icon_path_ = base::UTF8ToUTF16("");
+  base::string16 icon_path_;
   bool has_icon_ = false;
   bool silent_ = false;
-  base::string16 reply_placeholder_ = base::UTF8ToUTF16("");
+  base::string16 reply_placeholder_;
   bool has_reply_ = false;
   brightray::NotificationPresenter* presenter_;
 
-  int id_;
+  base::WeakPtr<brightray::Notification> notification_;
 
   DISALLOW_COPY_AND_ASSIGN(Notification);
 };

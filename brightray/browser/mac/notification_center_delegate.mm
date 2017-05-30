@@ -21,7 +21,7 @@
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
         didDeliverNotification:(NSUserNotification*)notif {
   auto notification = presenter_->GetNotification(notif);
-  if (notification) 
+  if (notification)
     notification->NotificationDisplayed();
 }
 

@@ -26,9 +26,9 @@ class Notification {
                     const std::string& tag,
                     const GURL& icon_url,
                     const SkBitmap& icon,
-                    const bool silent,
-                    const bool hasReply,
-                    const base::string16 replyPlaceholder) = 0;
+                    bool silent,
+                    bool hasReply,
+                    const base::string16& reply_placeholder) = 0;
   // Closes the notification, this instance will be destroyed after the
   // notification gets closed.
   virtual void Dismiss() = 0;
@@ -54,6 +54,7 @@ class Notification {
 
  public:
   virtual ~Notification();
+  void set_delegate(NotificationDelegate* delegate);
 
  private:
   NotificationDelegate* delegate_;

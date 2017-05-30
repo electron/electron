@@ -6,7 +6,7 @@ Process: [Main](../glossary.md#main-process)
 
 ## Using in the renderer process
 
-If you want to use Notifications in a renderer process you should use the [HTML5 Notification API](../tutorial/notifications.md)
+If you want to show Notifications from a renderer process you should use the [HTML5 Notification API](../tutorial/notifications.md)
 
 ## Class: Notification
 
