@@ -88,8 +88,8 @@ void Notification::SetBody(const base::string16& new_body) {
 void Notification::SetSilent(bool new_silent) {
   silent_ = new_silent;
 }
-void Notification::SetReplyPlaceholder(const base::string16& new_reply_placeholder) {
-  reply_placeholder_ = new_reply_placeholder;
+void Notification::SetReplyPlaceholder(const base::string16& new_placeholder) {
+  reply_placeholder_ = new_placeholder;
 }
 void Notification::SetHasReply(bool new_has_reply) {
   has_reply_ = new_has_reply;
@@ -118,7 +118,8 @@ void Notification::Show() {
   if (presenter_) {
     notification_ = presenter_->CreateNotification(this);
     if (notification_) {
-      notification_->Show(title_, body_, "", GURL(), icon_.AsBitmap(), silent_, has_reply_, reply_placeholder_);
+      notification_->Show(title_, body_, "", GURL(), icon_.AsBitmap(), silent_,
+                          has_reply_, reply_placeholder_);
     }
   }
 }

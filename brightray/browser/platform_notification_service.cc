@@ -31,7 +31,8 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
     return;
   if (allowed)
     notification->Show(data.title, data.body, data.tag, data.icon, icon,
-                       audio_muted ? true : data.silent, false, base::UTF8ToUTF16(""));
+                       audio_muted ? true : data.silent, false,
+                       base::UTF8ToUTF16(""));
   else
     notification->Destroy();
 }

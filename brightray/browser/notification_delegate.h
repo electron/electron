@@ -5,8 +5,9 @@
 #ifndef BRIGHTRAY_BROWSER_NOTIFICATION_DELEGATE_H_
 #define BRIGHTRAY_BROWSER_NOTIFICATION_DELEGATE_H_
 
-#include "content/public/browser/desktop_notification_delegate.h"
 #include <string>
+
+#include "content/public/browser/desktop_notification_delegate.h"
 
 namespace brightray {
 
