@@ -1022,32 +1022,10 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
   return result;
 }
 
-static mate::Dictionary ConvertDictionary(
-    v8::Isolate* isolate, const base::DictionaryValue &dict) {
-  auto result = mate::Dictionary::CreateEmpty(isolate);
-
-  for (base::DictionaryValue::Iterator iterator(dict);
-       !iterator.IsAtEnd();
-       iterator.Advance()) {
-    auto& key = iterator.key();
-    auto& value = iterator.value();
-    if (value.is_string()) {
-      std::string strValue;
-      if (value.GetAsString(&strValue)) {
-        result.Set(key, strValue);
-      }
-    }
-  }
-
-  return result;
-}
-
-mate::Dictionary App::GetGPUFeatureStatus(v8::Isolate* isolate) {
-  if (auto status = content::GetFeatureStatus()) {
-    return ConvertDictionary(isolate, *status);
-  } else {
-    return mate::Dictionary::CreateEmpty(isolate);
-  }
+v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
+  auto status = content::GetFeatureStatus();
+  return mate::ConvertToV8(isolate,
+                           status ? *status : base::DictionaryValue());
 }
 
 // static
