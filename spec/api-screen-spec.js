@@ -29,5 +29,4 @@ describe('screen module', function () {
       assert.equal(typeof screenHeight, 'number')
     })
   })
-
 })
