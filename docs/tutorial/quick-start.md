@@ -102,6 +102,9 @@ function createWindow () {
   // Open the DevTools.
   win.webContents.openDevTools()
 
+  // by default the window would open in the background
+  mainWindow.focus();
+
   // Emitted when the window is closed.
   win.on('closed', () => {
     // Dereference the window object, usually you would store windows
