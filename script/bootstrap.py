@@ -156,13 +156,6 @@ def setup_libchromiumcontent(is_dev, target_arch, url,
     subprocess.check_call([sys.executable, download, '-s'] + args)
 
 
-def set_clang_env(env):
-  llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
-                          'Release+Asserts', 'bin')
-  env['CC']  = os.path.join(llvm_dir, 'clang')
-  env['CXX'] = os.path.join(llvm_dir, 'clang++')
-
-
 def update_win32_python():
   with scoped_cwd(VENDOR_DIR):
     if not os.path.exists('python_26'):
