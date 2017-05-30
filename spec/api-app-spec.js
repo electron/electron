@@ -558,4 +558,14 @@ describe('app module', function () {
       assert.ok(types.includes('Tab'))
     })
   })
+
+  describe('getGPUFeatureStatus() API', function () {
+    if (process.platform !== 'darwin') return
+
+    it('returns the graphic features statuses', function () {
+      const features = app.getGPUFeatureStatus()
+      assert.equal(typeof features.webgl, 'string')
+      assert.equal(typeof features.gpu_compositing, 'string')
+    })
+  })
 })
