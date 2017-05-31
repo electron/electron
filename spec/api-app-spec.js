@@ -560,8 +560,6 @@ describe('app module', function () {
   })
 
   describe('getGPUFeatureStatus() API', function () {
-    if (process.platform !== 'darwin') return
-
     it('returns the graphic features statuses', function () {
       const features = app.getGPUFeatureStatus()
       assert.equal(typeof features.webgl, 'string')
