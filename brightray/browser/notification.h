@@ -20,13 +20,17 @@ class NotificationPresenter;
 
 class Notification {
  public:
+  virtual ~Notification();
+
   // Shows the notification.
   virtual void Show(const base::string16& title,
                     const base::string16& msg,
                     const std::string& tag,
                     const GURL& icon_url,
                     const SkBitmap& icon,
-                    const bool silent) = 0;
+                    bool silent,
+                    bool has_reply,
+                    const base::string16& reply_placeholder) = 0;
   // Closes the notification, this instance will be destroyed after the
   // notification gets closed.
   virtual void Dismiss() = 0;
@@ -43,15 +47,13 @@ class Notification {
     return weak_factory_.GetWeakPtr();
   }
 
+  void set_delegate(NotificationDelegate* delegate) { delegate_ = delegate; }
   NotificationDelegate* delegate() const { return delegate_; }
   NotificationPresenter* presenter() const { return presenter_; }
 
  protected:
   Notification(NotificationDelegate* delegate,
                NotificationPresenter* presenter);
-
- public:
-  virtual ~Notification();
 
  private:
   NotificationDelegate* delegate_;

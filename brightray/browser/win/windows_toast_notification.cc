@@ -89,7 +89,9 @@ void WindowsToastNotification::Show(const base::string16& title,
                                     const std::string& tag,
                                     const GURL& icon_url,
                                     const SkBitmap& icon,
-                                    const bool silent) {
+                                    bool silent,
+                                    bool has_reply,
+                                    const base::string16& reply_placeholder) {
   auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
   std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
 
@@ -131,7 +133,8 @@ void WindowsToastNotification::Show(const base::string16& title,
     return;
   }
 
-  delegate()->NotificationDisplayed();
+  if (delegate())
+    delegate()->NotificationDisplayed();
 }
 
 void WindowsToastNotification::Dismiss() {
@@ -144,7 +147,7 @@ bool WindowsToastNotification::GetToastXml(
     const std::wstring& title,
     const std::wstring& msg,
     const std::wstring& icon_path,
-    const bool silent,
+    bool silent,
     IXmlDocument** toast_xml) {
   ABI::Windows::UI::Notifications::ToastTemplateType template_type;
   if (title.empty() || msg.empty()) {

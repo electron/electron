@@ -4,6 +4,7 @@
 
 #include "brightray/browser/platform_notification_service.h"
 
+#include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/notification.h"
 #include "brightray/browser/notification_delegate_adapter.h"
@@ -30,7 +31,8 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
     return;
   if (allowed)
     notification->Show(data.title, data.body, data.tag, data.icon, icon,
-                       audio_muted ? true : data.silent);
+                       audio_muted ? true : data.silent, false,
+                       base::UTF8ToUTF16(""));
   else
     notification->Destroy();
 }

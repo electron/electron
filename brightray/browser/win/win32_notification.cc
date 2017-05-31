@@ -12,7 +12,8 @@ namespace brightray {
 void Win32Notification::Show(
     const base::string16& title, const base::string16& msg,
     const std::string& tag, const GURL& icon_url,
-    const SkBitmap& icon, const bool silent) {
+    const SkBitmap& icon, bool silent,
+    bool has_reply, const base::string16& reply_placeholder) {
     auto presenter = static_cast<NotificationPresenterWin7*>(this->presenter());
     if (!presenter) return;
 

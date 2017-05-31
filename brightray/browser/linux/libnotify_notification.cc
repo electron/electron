@@ -88,7 +88,9 @@ void LibnotifyNotification::Show(const base::string16& title,
                                  const std::string& tag,
                                  const GURL& icon_url,
                                  const SkBitmap& icon,
-                                 const bool silent) {
+                                 bool silent,
+                                 bool has_reply,
+                                 const base::string16& reply_placeholder) {
   notification_ = libnotify_loader_.notify_notification_new(
       base::UTF16ToUTF8(title).c_str(),
       base::UTF16ToUTF8(body).c_str(),
@@ -137,7 +139,8 @@ void LibnotifyNotification::Show(const base::string16& title,
     return;
   }
 
-  delegate()->NotificationDisplayed();
+  if (delegate())
+    delegate()->NotificationDisplayed();
 }
 
 void LibnotifyNotification::Dismiss() {

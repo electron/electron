@@ -26,10 +26,13 @@ class CocoaNotification : public Notification {
             const std::string& tag,
             const GURL& icon_url,
             const SkBitmap& icon,
-            const bool silent) override;
+            bool silent,
+            const bool has_reply,
+            const base::string16& reply_placeholder) override;
   void Dismiss() override;
 
   void NotificationDisplayed();
+  void NotificationReplied(const std::string& reply);
 
   NSUserNotification* notification() const { return notification_; }
 

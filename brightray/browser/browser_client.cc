@@ -36,7 +36,7 @@ BrowserClient::~BrowserClient() {
 
 NotificationPresenter* BrowserClient::GetNotificationPresenter() {
   if (!notification_presenter_) {
-    // Create a new presenter if on OS X, Linux, or Windows 8+
+    // Create a new presenter if on OS X, Linux, or Windows 7+
     notification_presenter_.reset(NotificationPresenter::Create());
   }
   return notification_presenter_.get();
