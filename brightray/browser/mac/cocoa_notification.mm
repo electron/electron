@@ -69,7 +69,7 @@ void CocoaNotification::NotificationDisplayed() {
     delegate()->NotificationDisplayed();
 }
 
-void CocoaNotification::NotificationReplied(const std::string reply) {
+void CocoaNotification::NotificationReplied(const std::string& reply) {
   if (delegate())
     delegate()->NotificationReplied(reply);
 }

@@ -21,10 +21,6 @@ Notification::~Notification() {
     delegate()->NotificationDestroyed();
 }
 
-void Notification::set_delegate(NotificationDelegate* delegate) {
-  delegate_ = delegate;
-}
-
 void Notification::NotificationClicked() {
   if (delegate())
     delegate()->NotificationClick();

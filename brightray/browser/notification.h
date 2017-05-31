@@ -20,6 +20,8 @@ class NotificationPresenter;
 
 class Notification {
  public:
+  virtual ~Notification();
+
   // Shows the notification.
   virtual void Show(const base::string16& title,
                     const base::string16& msg,
@@ -45,16 +47,13 @@ class Notification {
     return weak_factory_.GetWeakPtr();
   }
 
+  void set_delegate(NotificationDelegate* delegate) { delegate_ = delegate; }
   NotificationDelegate* delegate() const { return delegate_; }
   NotificationPresenter* presenter() const { return presenter_; }
 
  protected:
   Notification(NotificationDelegate* delegate,
                NotificationPresenter* presenter);
-
- public:
-  virtual ~Notification();
-  void set_delegate(NotificationDelegate* delegate);
 
  private:
   NotificationDelegate* delegate_;

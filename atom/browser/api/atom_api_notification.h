@@ -32,7 +32,7 @@ class Notification : public mate::TrackableObject<Notification>,
 
   // NotificationDelegate:
   void NotificationClick() override;
-  void NotificationReplied(const std::string reply) override;
+  void NotificationReplied(const std::string& reply) override;
   void NotificationDisplayed() override;
   void NotificationDestroyed() override;
   void NotificationClosed() override;
@@ -43,7 +43,6 @@ class Notification : public mate::TrackableObject<Notification>,
                mate::Arguments* args);
   ~Notification() override;
 
-  void OnInitialProps();
   void Show();
 
   // Prop Getters
@@ -69,6 +68,7 @@ class Notification : public mate::TrackableObject<Notification>,
   bool silent_ = false;
   base::string16 reply_placeholder_;
   bool has_reply_ = false;
+
   brightray::NotificationPresenter* presenter_;
 
   base::WeakPtr<brightray::Notification> notification_;

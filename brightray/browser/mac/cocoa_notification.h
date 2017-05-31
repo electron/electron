@@ -32,7 +32,7 @@ class CocoaNotification : public Notification {
   void Dismiss() override;
 
   void NotificationDisplayed();
-  void NotificationReplied(const std::string reply);
+  void NotificationReplied(const std::string& reply);
 
   NSUserNotification* notification() const { return notification_; }
 

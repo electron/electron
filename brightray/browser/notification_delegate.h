@@ -20,7 +20,7 @@ class NotificationDelegate : public content::DesktopNotificationDelegate {
   virtual void NotificationFailed() {}
 
   // Notification was replied to
-  virtual void NotificationReplied(const std::string reply) {}
+  virtual void NotificationReplied(const std::string& reply) {}
 };
 
 }  // namespace brightray
