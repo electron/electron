@@ -34,6 +34,7 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/browser/gpu/compositor_util.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_child_process_host.h"
 #include "content/public/browser/child_process_data.h"
@@ -1021,6 +1022,12 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
   return result;
 }
 
+v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
+  auto status = content::GetFeatureStatus();
+  return mate::ConvertToV8(isolate,
+                           status ? *status : base::DictionaryValue());
+}
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -1094,6 +1101,7 @@ void App::BuildPrototype(
                  &App::DisableHardwareAcceleration)
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
+      .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
       .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
 }
