@@ -63,7 +63,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request(`${server.url}${requestUrl}`)
@@ -89,7 +89,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -120,7 +120,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request(`${server.url}${requestUrl}`)
@@ -157,7 +157,7 @@ describe('net module', function () {
             })
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -197,7 +197,7 @@ describe('net module', function () {
             })
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -252,7 +252,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
@@ -300,7 +300,7 @@ describe('net module', function () {
           assert.ifError(error)
         })
         response.on('aborted', function () {
-          assert(false)
+          assert.fail('response aborted')
         })
       })
       urlRequest.on('finish', function () {
@@ -310,7 +310,7 @@ describe('net module', function () {
         assert.ifError(error)
       })
       urlRequest.on('abort', function () {
-        assert(false)
+        assert.fail('request aborted')
       })
       urlRequest.on('close', function () {
         requestCloseEventEmitted = true
@@ -333,7 +333,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -420,7 +420,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -459,7 +459,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -500,7 +500,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -545,7 +545,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       customSession.cookies.set({
@@ -582,7 +582,7 @@ describe('net module', function () {
     it('should be able to abort an HTTP request before first write', function (done) {
       const requestUrl = '/requestUrl'
       server.on('request', function (request, response) {
-        assert(false)
+        assert.fail('Unexpected request event')
       })
 
       let requestAbortEventEmitted = false
@@ -593,13 +593,13 @@ describe('net module', function () {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', function (response) {
-        assert(false)
+        assert.fail('Unexpected response event')
       })
       urlRequest.on('finish', function () {
-        assert(false)
+        assert.fail('Unexpected finish event')
       })
       urlRequest.on('error', function () {
-        assert(false)
+        assert.fail('Unexpected error event')
       })
       urlRequest.on('abort', function () {
         requestAbortEventEmitted = true
@@ -625,7 +625,7 @@ describe('net module', function () {
             cancelRequest()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
@@ -637,13 +637,13 @@ describe('net module', function () {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', function (response) {
-        assert(false)
+        assert.fail('Unexpected response event')
       })
       urlRequest.on('finish', function () {
-        assert(false)
+        assert.fail('Unexpected finish event')
       })
       urlRequest.on('error', function () {
-        assert(false)
+        assert.fail('Unexpected error event')
       })
       urlRequest.on('abort', function () {
         requestAbortEventEmitted = true
@@ -678,7 +678,7 @@ describe('net module', function () {
             })
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
@@ -691,13 +691,13 @@ describe('net module', function () {
         url: `${server.url}${requestUrl}`
       })
       urlRequest.on('response', function (response) {
-        assert(false)
+        assert.fail('Unexpected response event')
       })
       urlRequest.on('finish', function () {
         requestFinishEventEmitted = true
       })
       urlRequest.on('error', function () {
-        assert(false)
+        assert.fail('Unexpected error event')
       })
       urlRequest.on('abort', function () {
         requestAbortEventEmitted = true
@@ -729,7 +729,7 @@ describe('net module', function () {
             response.write(randomString(kOneKiloByte))
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
@@ -751,11 +751,11 @@ describe('net module', function () {
         response.on('data', function (chunk) {
         })
         response.on('end', function () {
-          assert(false)
+          assert.fail('Unexpected end event')
         })
         response.resume()
         response.on('error', function () {
-          assert(false)
+          assert.fail('Unexpected error event')
         })
         response.on('aborted', function () {
           responseAbortedEventEmitted = true
@@ -766,7 +766,7 @@ describe('net module', function () {
         requestFinishEventEmitted = true
       })
       urlRequest.on('error', function () {
-        assert(false)
+        assert.fail('Unexpected error event')
       })
       urlRequest.on('abort', function () {
         requestAbortEventEmitted = true
@@ -794,7 +794,7 @@ describe('net module', function () {
             cancelRequest()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
@@ -806,14 +806,14 @@ describe('net module', function () {
         method: 'GET',
         url: `${server.url}${requestUrl}`
       })
-      urlRequest.on('response', function (response) {
-        assert(false)
+      urlRequest.on('response', function () {
+        assert.fail('Unexpected response event')
       })
       urlRequest.on('finish', function () {
         requestFinishEventEmitted = true
       })
       urlRequest.on('error', function () {
-        assert(false)
+        assert.fail('Unexpected error event')
       })
       urlRequest.on('abort', function () {
         ++requestAbortEventCount
@@ -845,14 +845,14 @@ describe('net module', function () {
       server.on('request', function (request, response) {
         switch (request.url) {
           case requestUrl:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
             break
           case redirectUrl:
             requestIsRedirected = true
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
@@ -896,20 +896,20 @@ describe('net module', function () {
       server.on('request', function (request, response) {
         switch (request.url) {
           case requestUrl:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
             break
           case redirectUrl:
             requestIsRedirected = true
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
       session.defaultSession.webRequest.onBeforeRequest(
         function (details, callback) {
-          assert(false, 'Request should not be intercepted by the default session')
+          assert.fail('Request should not be intercepted by the default session')
         })
 
       let customSession = session.fromPartition(customPartitionName, {
@@ -994,7 +994,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -1026,7 +1026,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -1053,7 +1053,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -1089,7 +1089,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -1130,7 +1130,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -1181,20 +1181,20 @@ describe('net module', function () {
       server.on('request', function (request, response) {
         switch (request.url) {
           case requestUrl:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
             break
           case redirectUrl:
             requestIsRedirected = true
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
       session.defaultSession.webRequest.onBeforeRequest(
         function (details, callback) {
-          assert(false, 'Request should not be intercepted by the default session')
+          assert.fail('Request should not be intercepted by the default session')
         })
 
       let customSession = session.fromPartition(customPartitionName, {
@@ -1262,7 +1262,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
@@ -1315,7 +1315,7 @@ describe('net module', function () {
             })
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
 
@@ -1347,7 +1347,7 @@ describe('net module', function () {
             request.socket.destroy()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       let requestErrorEventEmitted = false
@@ -1378,7 +1378,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       const urlRequest = net.request({
@@ -1442,7 +1442,7 @@ describe('net module', function () {
             })
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       ipcRenderer.once('api-net-spec-done', function () {
@@ -1487,7 +1487,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       let requestCloseEventEmitted = false
@@ -1563,7 +1563,7 @@ describe('net module', function () {
             })
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       ipcRenderer.once('api-net-spec-done', function () {
@@ -1601,7 +1601,7 @@ describe('net module', function () {
             response.end()
             break
           default:
-            assert(false)
+            assert.fail(`Unexpected url: ${request.url}`)
         }
       })
       ipcRenderer.once('api-net-spec-done', function () {
