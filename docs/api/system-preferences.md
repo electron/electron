@@ -141,7 +141,7 @@ This API uses `NSUserDefaults` on macOS. Some popular `key` and `type`s are:
 
 ### `systemPreferences.isAeroGlassEnabled()` _Windows_
 
-This method returns `true` if [DWM composition][dwm-composition] (Aero Glass) is
+Returns `Boolean` - `true` if [DWM composition][dwm-composition] (Aero Glass) is
 enabled, and `false` otherwise.
 
 An example of using it to determine if you should create a transparent window or
