@@ -1949,6 +1949,41 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('BrowserWindow.setFullScreen(false)', function () {
+    // only applicable to windows: https://github.com/electron/electron/issues/6036
+    if (process.platform !== 'win32') return
+
+    it('should restore a normal visible window from a fullscreen startup state', function (done) {
+      w.webContents.once('did-finish-load', function () {
+        // start fullscreen and hidden
+        w.setFullScreen(true)
+        w.once('show', function () {
+          // restore window to normal state
+          w.setFullScreen(false)
+        })
+        w.once('leave-full-screen', function () {
+          assert.equal(w.isVisible(), true)
+          assert.equal(w.isFullScreen(), false)
+          done()
+        })
+        w.show()
+      })
+      w.loadURL('about:blank')
+    })
+
+    it('should keep window hidden if already in hidden state', function (done) {
+      w.webContents.once('did-finish-load', function () {
+        w.setFullScreen(false)
+        setTimeout(() => {
+          assert.equal(w.isVisible(), false)
+          assert.equal(w.isFullScreen(), false)
+          done()
+        }, 1000)
+      })
+      w.loadURL('about:blank')
+    })
+  })
+
   describe('parent window', function () {
     let c = null
 
