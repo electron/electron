@@ -480,6 +480,8 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
 
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
+  bool fullscreen_to_normal_detected = IsFullscreen() && !fullscreen;
+
   if (fullscreen) {
     last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
     NotifyWindowEnterFullScreen();
@@ -505,6 +507,16 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // We set the new value after notifying, so we can handle the size event
   // correctly.
   window_->SetFullscreen(fullscreen);
+
+  // If restoring from fullscreen and the window isn't visible, force visible,
+  // else a non-responsive window shell could be rendered.
+  // (this situation may arise when app starts with fullscreen: true)
+  // Note: the following must be after "window_->SetFullscreen(fullscreen);"
+  if (fullscreen_to_normal_detected && !IsVisible()) {
+    LONG frame_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
+    frame_style |= WS_VISIBLE;
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
+  }
 #else
   if (IsVisible())
     window_->SetFullscreen(fullscreen);
