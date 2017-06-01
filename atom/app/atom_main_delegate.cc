@@ -130,9 +130,6 @@ void AtomMainDelegate::PreSandboxStartup() {
     // Disable setuid sandbox since it is not longer required on linux(namespace
     // sandbox is available on most distros).
     command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
-  } else {
-    // Disable renderer sandbox for most of node's functions.
-    command_line->AppendSwitch(::switches::kNoSandbox);
   }
 
   // Allow file:// URIs to read other file:// URIs by default.
