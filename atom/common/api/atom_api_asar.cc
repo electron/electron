@@ -17,6 +17,10 @@
 #include "atom/common/node_includes.h"
 #include "atom_natives.h"  // NOLINT: This file is generated with js2c.
 
+#if defined(OS_MACOSX)
+#include "atom/common/asar/manifest_asar_mac.h"
+#endif
+
 namespace {
 
 class Archive : public mate::Wrappable<Archive> {
@@ -154,11 +158,30 @@ void InitAsarSupport(v8::Isolate* isolate,
   }
 }
 
+// if checksum specified, we must search only in the app.asar
+// (otherwise you can simply remove signed app.asar
+// and put unverified code to app directory)
+std::vector<std::string> GetSearchPath() {
+  #if defined(OS_MACOSX)
+  if (asar::GetAsarChecksums().empty()) {
+    return {"app", "app.asar", "default_app.asar"};
+  } else {
+    return {"app.asar"};
+  }
+  #else
+  return {"app", "app.asar", "default_app.asar"};
+  #endif
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createArchive", &Archive::Create);
   dict.SetMethod("initAsarSupport", &InitAsarSupport);
+  #if defined(OS_MACOSX)
+  dict.SetMethod("getChecksums", &asar::GetAsarChecksums);
+  #endif
+  dict.SetMethod("getSearchPath", &GetSearchPath);
 }
 
 }  // namespace
