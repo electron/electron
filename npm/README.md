@@ -59,6 +59,8 @@ If you want to change the architecture that is downloaded (e.g., `ia32` on an
 npm install --arch=ia32 electron
 ```
 
+If you need to force a re-download of the asset and the SHASUM file set the `force_no_cache` enviroment variable to true.
+
 ## About
 
 Works on Mac, Windows and Linux OSes that Electron supports (e.g. Electron
