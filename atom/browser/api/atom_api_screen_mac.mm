@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #import "atom/browser/api/atom_api_screen.h"
-
 #import <Cocoa/Cocoa.h>
 
 namespace atom {
