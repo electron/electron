@@ -44,6 +44,7 @@
     "release": "./script/upload.py -p",
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
-    "test": "python ./script/test.py"
+    "test": "python ./script/test.py",
+    "test-asar-integrity": "./spec/node_modules/.bin/mocha ./spec/asar-integrity-test"
   }
 }

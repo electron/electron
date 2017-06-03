@@ -7,13 +7,13 @@
 
 namespace asar {
 
-std::string GetAsarChecksums() {
+std::string GetAsarIntegrity() {
   NSBundle* bundle = chrome::OuterAppBundle();
   if (!bundle) {
     return "";
   }
 
-  NSString *checksums = [bundle objectForInfoDictionaryKey:@"AsarChecksums"];
+  NSString *checksums = [bundle objectForInfoDictionaryKey:@"AsarIntegrity"];
   return checksums ? std::string([checksums UTF8String]) : "";
 }
 

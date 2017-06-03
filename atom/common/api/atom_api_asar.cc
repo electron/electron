@@ -163,7 +163,7 @@ void InitAsarSupport(v8::Isolate* isolate,
 // and put unverified code to app directory)
 std::vector<std::string> GetSearchPath() {
   #if defined(OS_MACOSX)
-  if (asar::GetAsarChecksums().empty()) {
+  if (asar::GetAsarIntegrity().empty()) {
     return {"app", "app.asar", "default_app.asar"};
   } else {
     return {"app.asar"};
@@ -179,7 +179,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("createArchive", &Archive::Create);
   dict.SetMethod("initAsarSupport", &InitAsarSupport);
   #if defined(OS_MACOSX)
-  dict.SetMethod("getChecksums", &asar::GetAsarChecksums);
+  dict.SetMethod("getIntegrity", &asar::GetAsarIntegrity);
   #endif
   dict.SetMethod("getSearchPath", &GetSearchPath);
 }

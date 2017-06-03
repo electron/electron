@@ -9,7 +9,7 @@
 
 namespace asar {
 
-std::string GetAsarChecksums();
+std::string GetAsarIntegrity();
 
 }  // namespace asar
 
