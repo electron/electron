@@ -75,8 +75,11 @@ void SetupDialog(NSSavePanel* dialog,
 
   if (settings.filters.empty())
     [dialog setAllowsOtherFileTypes:YES];
-  else
+  else {
+    // Set setAllowedFileTypes before setNameFieldStringValue as it might
+    // override the extension set using setNameFieldStringValue
     SetAllowedFileTypes(dialog, settings.filters);
+  }
 
   if (default_dir)
     [dialog setDirectoryURL:[NSURL fileURLWithPath:default_dir]];
