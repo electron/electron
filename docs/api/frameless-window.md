@@ -48,6 +48,18 @@ let win = new BrowserWindow({titleBarStyle: 'hiddenInset'})
 win.show()
 ```
 
+#### `customButtonsOnHover`
+
+Uses custom drawn close, miniaturize, and fullscreen buttons that display
+when hovering in the top left of the window. These custom buttons prevent issues
+with mouse events that occur with the standard window toolbar buttons.
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({titleBarStyle: 'customButtonsOnHover', frame: false})
+win.show()
+```
+
 ## Transparent window
 
 By setting the `transparent` option to `true`, you can also make the frameless
