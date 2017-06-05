@@ -14,8 +14,6 @@
 #include "atom/browser/common_web_contents_delegate.h"
 #include "atom/browser/ui/autofill_popup.h"
 #include "content/common/cursors/webcursor.h"
-#include "content/public/browser/notification_observer.h"
-#include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
@@ -51,8 +49,7 @@ namespace api {
 
 class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
-                    public content::WebContentsObserver,
-                    public content::NotificationObserver {
+                    public content::WebContentsObserver {
  public:
   enum Type {
     BACKGROUND_PAGE,  // A DevTools extension background page.
@@ -326,8 +323,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const content::ResourceRequestDetails& details) override;
   void DidGetRedirectForResourceRequest(
       const content::ResourceRedirectDetails& details) override;
-  void DidStartNavigation(
-      content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -347,12 +342,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
                            const MediaPlayerId& id) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
-  // content::NotificationObserver:
-  void Observe(int type,
-               const content::NotificationSource& source,
-               const content::NotificationDetails& details) override;
-  void BeforeUnloadDialogCancelled() override;
-
   // brightray::InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
 
@@ -362,13 +351,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsClosed() override;
 
  private:
-  struct LoadURLParams {
-    LoadURLParams() : params(GURL()), id(0) {}
-
-    content::NavigationController::LoadURLParams params;
-    int id;
-  };
-
   AtomBrowserContext* GetBrowserContext() const;
 
   uint32_t GetNextRequestId() {
@@ -419,11 +401,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether to enable devtools.
   bool enable_devtools_;
-
-  // Container to hold url parms for deferred load when
-  // there is a pending navigation entry.
-  LoadURLParams deferred_load_url_;
-  content::NotificationRegistrar registrar_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
