@@ -26,7 +26,7 @@ a chromeless window. Instead of setting `frame` to `false` which disables
 both the titlebar and window controls, you may want to have the title bar
 hidden and your content extend to the full window size, yet still preserve
 the window controls ("traffic lights") for standard window actions.
-You can do so by specifying the new `titleBarStyle` option:
+You can do so by specifying the `titleBarStyle` option:
 
 #### `hidden`
 
@@ -38,13 +38,13 @@ let win = new BrowserWindow({titleBarStyle: 'hidden'})
 win.show()
 ```
 
-#### `hidden-inset`
+#### `hiddenInset`
 
 Results in a hidden title bar with an alternative look where the traffic light buttons are slightly more inset from the window edge.
 
 ```javascript
 const {BrowserWindow} = require('electron')
-let win = new BrowserWindow({titleBarStyle: 'hidden-inset'})
+let win = new BrowserWindow({titleBarStyle: 'hiddenInset'})
 win.show()
 ```
 
