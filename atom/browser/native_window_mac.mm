@@ -778,7 +778,7 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
       return false;
     if (title_bar_style == "hidden") {
       *out = atom::NativeWindowMac::HIDDEN;
-    } else if (title_bar_style == "hidden-inset" ||  // Deprecate this after 2.0
+    } else if (title_bar_style == "hidden-inset" ||  // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
                title_bar_style == "hiddenInset") {
       *out = atom::NativeWindowMac::HIDDEN_INSET;
     } else if (title_bar_style == "customButtonsOnHover") {
