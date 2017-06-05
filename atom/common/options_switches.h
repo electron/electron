@@ -49,6 +49,7 @@ extern const char kHasShadow[];
 extern const char kFocusable[];
 extern const char kWebPreferences[];
 extern const char kVibrancyType[];
+extern const char kCustomWindowButtons[];
 
 // WebPreferences.
 extern const char kZoomFactor[];

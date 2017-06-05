@@ -90,6 +90,9 @@ const char kWebPreferences[] = "webPreferences";
 // Add a vibrancy effect to the browser window
 const char kVibrancyType[] = "vibrancy";
 
+// Use custom buttons for window close, minimize, maximize on macOS
+const char kCustomWindowButtons[] = "customWindowButtons";
+
 // The factor of which page should be zoomed.
 const char kZoomFactor[] = "zoomFactor";
 
