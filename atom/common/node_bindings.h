@@ -60,6 +60,9 @@ class NodeBindings {
   // Called to poll events in new thread.
   virtual void PollEvents() = 0;
 
+  // Are we running with elevated privileges.
+  virtual bool IsElevated() = 0;
+
   // Run the libuv loop for once.
   void UvRunOnce();
 

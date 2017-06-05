@@ -23,6 +23,8 @@ class NodeBindingsLinux : public NodeBindings {
 
   void PollEvents() override;
 
+  bool IsElevated() override;
+
   // Epoll to poll for uv's backend fd.
   int epoll_;
 

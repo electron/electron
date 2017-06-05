@@ -191,6 +191,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.Set("type", process_type);
   process.Set("resourcesPath", resources_path);
+  process.Set("isElevated", IsElevated());
   // Do not set DOM globals for renderer process.
   if (browser_env_ != BROWSER)
     process.Set("_noBrowserGlobals", resources_path);

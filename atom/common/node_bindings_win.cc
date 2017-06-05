@@ -44,6 +44,28 @@ void NodeBindingsWin::PollEvents() {
                                overlapped);
 }
 
+// Return whether the current process is running with elevated privileges.
+// http://stackoverflow.com/a/8196291
+bool NodeBindingsWin::IsElevated() {
+  bool fRet = false;
+  HANDLE hToken = NULL;
+  if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+    TOKEN_ELEVATION Elevation;
+    DWORD cbSize = sizeof(TOKEN_ELEVATION);
+    if (GetTokenInformation(hToken,
+                            TokenElevation,
+                            &Elevation,
+                            sizeof(Elevation),
+                            &cbSize)) {
+      fRet = Elevation.TokenIsElevated;
+    }
+  }
+  if (hToken) {
+    CloseHandle(hToken);
+  }
+  return fRet;
+}
+
 // static
 NodeBindings* NodeBindings::Create(BrowserEnvironment browser_env) {
   return new NodeBindingsWin(browser_env);
