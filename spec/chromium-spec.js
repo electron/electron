@@ -1114,7 +1114,6 @@ describe('chromium feature', function () {
         w = new BrowserWindow({
           show: false
         })
-        w.loadURL('about:blank')
         w.webContents.once('did-finish-load', () => {
           // History should have current page by now.
           assert.equal(w.webContents.length(), 1)
@@ -1125,6 +1124,7 @@ describe('chromium feature', function () {
             done()
           })
         })
+        w.loadURL('about:blank')
       })
     })
   })
