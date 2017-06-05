@@ -701,14 +701,14 @@ enum {
 // Custom window button methods
 
 - (void)performClose:(id)sender {
-  if (shell_->custom_window_buttons())
+  if (shell_->title_bar_style() == atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
     [[self delegate] windowShouldClose:self];
   else
     [super performClose:sender];
 }
 
 - (void)performMiniaturize:(id)sender {
-  if (shell_->custom_window_buttons())
+  if (shell_->title_bar_style() == atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
     [self miniaturize:self];
   else
     [super performMiniaturize:sender];
@@ -782,6 +782,8 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
     } else if (title_bar_style == "hidden-inset" ||  // Deprecate this after 2.0
                title_bar_style == "hiddenInset") {
       *out = atom::NativeWindowMac::HIDDEN_INSET;
+    } else if (title_bar_style == "customButtonsOnHover") {
+      *out = atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER;
     } else {
       return false;
     }
@@ -802,7 +804,6 @@ NativeWindowMac::NativeWindowMac(
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),
-      custom_window_buttons_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
   int width = 800, height = 600;
@@ -844,10 +845,8 @@ NativeWindowMac::NativeWindowMac(
     useStandardWindow = false;
   }
 
-  options.Get(options::kCustomWindowButtons, &custom_window_buttons_);
-
   NSUInteger styleMask = NSTitledWindowMask;
-  if (custom_window_buttons_ &&
+  if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER &&
       base::mac::IsAtLeastOS10_10() &&
       (!useStandardWindow || transparent() || !has_frame())) {
     styleMask = NSFullSizeContentViewWindowMask;
@@ -906,7 +905,7 @@ NativeWindowMac::NativeWindowMac(
   if (transparent() || !has_frame()) {
     if (base::mac::IsAtLeastOS10_10()) {
       // Don't show title bar.
-      if (custom_window_buttons_) {
+      if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
         [window_ setTitlebarAppearsTransparent:YES];
       }
       [window_ setTitleVisibility:NSWindowTitleHidden];
@@ -1692,7 +1691,7 @@ void NativeWindowMac::InstallView() {
     // The fullscreen button should always be hidden for frameless window.
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
-    if (custom_window_buttons_) {
+    if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
       NSView* buttons = [[SemaphoreView alloc] initWithFrame:NSZeroRect];
       buttons.frame = CGRectMake(0,
           [content_view_ bounds].size.height - buttons.frame.size.height,

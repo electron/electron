@@ -191,14 +191,20 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     Default is `false`.
   * `type` String (optional) - The type of window, default is normal window. See more about
     this below.
-  * `titleBarStyle` String (optional) - The style of window title bar. Default is `default`. Possible values are:
+  * `titleBarStyle` String (optional) - The style of window title bar.
+    Default is `default`. Possible values are:
     * `default` - Results in the standard gray opaque Mac title
       bar.
     * `hidden` - Results in a hidden title bar and a full size content window, yet
       the title bar still has the standard window controls ("traffic lights") in
       the top left.
-    * `hidden-inset` - Results in a hidden title bar with an alternative look
+    * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
+    * `customButtonsOnHover` Boolean (optional) - Draw custom close, minimize,
+      and full screen buttons on macOS frameless windows. These buttons will not
+      display unless hovered over in the top left of the window. These custom
+      buttons prevent issues with mouse events that occur with the standard
+      window toolbar buttons. **Note:** This option is currently experimental.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
@@ -214,11 +220,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
     window as a native tab on macOS 10.12+. Windows with the same tabbing
     identifier will be grouped together.
-  * `customWindowButtons` Boolean (optional) - Draw custom close, minimize,
-    and full screen buttons on macOS frameless windows. These buttons will not
-    display unless hovered over in the top left of the window. These custom
-    buttons prevent issues with mouse events that occur with the standard
-    window toolbar buttons. **Note:** This option is currently experimental.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default

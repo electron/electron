@@ -127,12 +127,11 @@ class NativeWindowMac : public NativeWindow,
     NORMAL,
     HIDDEN,
     HIDDEN_INSET,
+    CUSTOM_BUTTONS_ON_HOVER,
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
-
-  bool custom_window_buttons() const { return custom_window_buttons_; }
 
  protected:
   // Return a vector of non-draggable regions that fill a window of size
@@ -177,8 +176,6 @@ class NativeWindowMac : public NativeWindow,
   bool was_fullscreen_;
 
   bool zoom_to_page_width_;
-
-  bool custom_window_buttons_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
 
