@@ -52,7 +52,8 @@ win.show()
 
 Uses custom drawn close, miniaturize, and fullscreen buttons that display
 when hovering in the top left of the window. These custom buttons prevent issues
-with mouse events that occur with the standard window toolbar buttons.
+with mouse events that occur with the standard window toolbar buttons. This
+option is only applicable for frameless windows.
 
 ```javascript
 const {BrowserWindow} = require('electron')
