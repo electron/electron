@@ -127,6 +127,7 @@ class NativeWindowMac : public NativeWindow,
     NORMAL,
     HIDDEN,
     HIDDEN_INSET,
+    CUSTOM_BUTTONS_ON_HOVER,
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
