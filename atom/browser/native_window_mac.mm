@@ -56,81 +56,91 @@ bool ScopedDisableResize::disable_resize_ = false;
 BOOL mouseInside = NO;
 
 - (id)initWithFrame:(NSRect)frame {
-    self = [super initWithFrame:frame];
-    if (self) {
+  self = [super initWithFrame:frame];
 
-        // create buttons
-        NSButton *closeButton = [NSWindow standardWindowButton:NSWindowCloseButton forStyleMask:NSTitledWindowMask];
-        NSButton *minitButton = [NSWindow standardWindowButton:NSWindowMiniaturizeButton forStyleMask:NSTitledWindowMask];
-        NSButton *fullScreenButton = [NSWindow standardWindowButton:NSWindowZoomButton forStyleMask:NSTitledWindowMask];
+  if (self) {
+    // create buttons
+    NSButton* closeButton = [NSWindow standardWindowButton:NSWindowCloseButton
+                                              forStyleMask:NSTitledWindowMask];
+    NSButton* minitButton = [NSWindow standardWindowButton:NSWindowMiniaturizeButton
+                                              forStyleMask:NSTitledWindowMask];
+    NSButton* fullScreenButton = [NSWindow standardWindowButton:NSWindowZoomButton
+                                                   forStyleMask:NSTitledWindowMask];
 
-        // size view for buttons
-        const int top = 3;
-        const int bottom = 3;
-        const int left = 7;
-        const int between = 6;
-        const int right = 6;
-        auto buttonsSize = NSMakeRect(0,
-            0,
-            left + closeButton.frame.size.width + between + minitButton.frame.size.width + between + fullScreenButton.frame.size.width + right,
-            top + closeButton.frame.size.height + bottom);
-        // NSView* buttons = [[SemaphoreView alloc] initWithFrame:buttonsSize];
-        [self setFrame:buttonsSize];
+    // size view for buttons
+    const int top = 3;
+    const int bottom = 3;
+    const int left = 7;
+    const int between = 6;
+    const int right = 6;
 
-        //set their location
-        [closeButton setFrame:NSMakeRect(7,
-            buttonsSize.size.height - closeButton.frame.size.height - 3,
-            closeButton.frame.size.width,
-            closeButton.frame.size.height)];
-        [minitButton setFrame:NSMakeRect(7 + closeButton.frame.size.width + 6,
-            buttonsSize.size.height - minitButton.frame.size.height - 3,
-            minitButton.frame.size.width,
-            minitButton.frame.size.height)];
-        [fullScreenButton setFrame:NSMakeRect(7 + closeButton.frame.size.width + 6 + minitButton.frame.size.width + 6,
-            buttonsSize.size.height - fullScreenButton.frame.size.height - 3,
-            fullScreenButton.frame.size.width,
-            fullScreenButton.frame.size.height)];
+    auto buttonsSize = NSMakeRect(0,
+        0,
+        left + closeButton.frame.size.width + between + minitButton.frame.size.width + between + fullScreenButton.frame.size.width + right,
+        top + closeButton.frame.size.height + bottom);
+    [self setFrame:buttonsSize];
 
-        //add buttons to the window
-        [self addSubview:closeButton];
-        [self addSubview:minitButton];
-        [self addSubview:fullScreenButton];
+    //set their location
+    [closeButton setFrame:NSMakeRect(left,
+        buttonsSize.size.height - closeButton.frame.size.height - top,
+        closeButton.frame.size.width,
+        closeButton.frame.size.height)];
+    [minitButton setFrame:NSMakeRect(
+        left + closeButton.frame.size.width + between,
+        buttonsSize.size.height - minitButton.frame.size.height - top,
+        minitButton.frame.size.width,
+        minitButton.frame.size.height)];
+    [fullScreenButton setFrame:NSMakeRect(
+        left + closeButton.frame.size.width + between + minitButton.frame.size.width + between,
+        buttonsSize.size.height - fullScreenButton.frame.size.height - top,
+        fullScreenButton.frame.size.width,
+        fullScreenButton.frame.size.height)];
 
-        // stay in upper left corner
-        [self setAutoresizingMask: NSViewMaxXMargin | NSViewMinYMargin];
+    //add buttons to the window
+    [self addSubview:closeButton];
+    [self addSubview:minitButton];
+    [self addSubview:fullScreenButton];
 
-        // refresh for initial conditions
-        [self setNeedsDisplayForButtons];
-    }
-    return self;
+    // stay in upper left corner
+    [self setAutoresizingMask: NSViewMaxXMargin | NSViewMinYMargin];
+
+    // refresh for initial conditions
+    [self setNeedsDisplayForButtons];
+  }
+
+  return self;
 }
 
-- (BOOL)_mouseInGroup:(NSButton *)button {
-    return mouseInside;
+- (BOOL)_mouseInGroup:(NSButton*)button {
+  return mouseInside;
 }
 
 - (void)updateTrackingAreas {
-    NSTrackingArea *const trackingArea = [[NSTrackingArea alloc] initWithRect:NSZeroRect options:(NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways | NSTrackingInVisibleRect) owner:self userInfo:nil];
-    [self addTrackingArea:trackingArea];
+  NSTrackingArea* const trackingArea =
+      [[NSTrackingArea alloc] initWithRect:NSZeroRect
+                                   options:NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways | NSTrackingInVisibleRect
+                                     owner:self
+                                  userInfo:nil];
+  [self addTrackingArea:trackingArea];
 }
 
-- (void)mouseEntered:(NSEvent *)event {
-    [super mouseEntered:event];
-    mouseInside = YES;
-    [self setNeedsDisplayForButtons];
+- (void)mouseEntered:(NSEvent*)event {
+  [super mouseEntered:event];
+  mouseInside = YES;
+  [self setNeedsDisplayForButtons];
 }
 
-- (void)mouseExited:(NSEvent *)event {
-    [super mouseExited:event];
-    mouseInside = NO;
-    [self setNeedsDisplayForButtons];
+- (void)mouseExited:(NSEvent*)event {
+  [super mouseExited:event];
+  mouseInside = NO;
+  [self setNeedsDisplayForButtons];
 }
 
 - (void)setNeedsDisplayForButtons {
-    for (NSView *subview in self.subviews) {
-        [subview setHidden:!mouseInside];
-        [subview setNeedsDisplay:YES];
-    }
+  for (NSView* subview in self.subviews) {
+    [subview setHidden:!mouseInside];
+    [subview setNeedsDisplay:YES];
+  }
 }
 
 @end
@@ -685,26 +695,27 @@ enum {
   [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
 }
 
-- (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
-    return ([menuItem action] == @selector(performClose:) || [menuItem action] == @selector(performMiniaturize:)) ? YES : [super validateMenuItem:menuItem];
+// Custom window button methods
+
+- (BOOL)validateMenuItem:(NSMenuItem*)menuItem {
+  return ([menuItem action] == @selector(performClose:) || [menuItem action] == @selector(performMiniaturize:)) ? YES : [super validateMenuItem:menuItem];
 }
 
 - (BOOL)windowShouldClose:(id)sender {
-    return YES;
+  return YES;
 }
 
 - (void)performClose:(id)sender {
-    if([[self delegate] respondsToSelector:@selector(windowShouldClose:)]) {
-        if(![[self delegate] windowShouldClose:self]) return;
-    }
-    else if([self respondsToSelector:@selector(windowShouldClose:)]) {
-        if(![self windowShouldClose:self]) return;
-    }
-    [self close];
+  if ([[self delegate] respondsToSelector:@selector(windowShouldClose:)]) {
+    if (![[self delegate] windowShouldClose:self]) return;
+  } else if ([self respondsToSelector:@selector(windowShouldClose:)]) {
+    if (![self windowShouldClose:self]) return;
+  }
+  [self close];
 }
 
 - (void)performMiniaturize:(id)sender {
-    [self miniaturize:self];
+  [self miniaturize:self];
 }
 
 @end
