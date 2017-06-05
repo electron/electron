@@ -119,11 +119,10 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)updateTrackingAreas {
-  NSTrackingArea* const trackingArea =
-      [[NSTrackingArea alloc] initWithRect:NSZeroRect
-                                   options:NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways | NSTrackingInVisibleRect
-                                     owner:self
-                                  userInfo:nil];
+  auto trackingArea = [[[NSTrackingArea alloc] initWithRect:NSZeroRect
+                                                    options:NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways | NSTrackingInVisibleRect
+                                                      owner:self
+                                                   userInfo:nil] autorelease];
   [self addTrackingArea:trackingArea];
 }
 
