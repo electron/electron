@@ -46,19 +46,22 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 }  // namespace
 
-// This view encapsuate Quit, Minimize and Full Screen buttons. It is being
-// used for frameless window.
-@interface SemaphoreView : NSView
+// This view encapsuates the Quit, Minimize and Full Screen buttons. It is being
+// used for frameless windows.
+@interface SemaphoreView : NSView {
+ @private
+  BOOL mouse_inside_;
+}
 @end
 
 @implementation SemaphoreView
-
-BOOL mouseInside = NO;
 
 - (id)initWithFrame:(NSRect)frame {
   self = [super initWithFrame:frame];
 
   if (self) {
+    mouse_inside_ = NO;
+
     // create buttons
     NSButton* closeButton = [NSWindow standardWindowButton:NSWindowCloseButton
                                               forStyleMask:NSTitledWindowMask];
@@ -112,7 +115,7 @@ BOOL mouseInside = NO;
 }
 
 - (BOOL)_mouseInGroup:(NSButton*)button {
-  return mouseInside;
+  return mouse_inside_;
 }
 
 - (void)updateTrackingAreas {
@@ -126,19 +129,19 @@ BOOL mouseInside = NO;
 
 - (void)mouseEntered:(NSEvent*)event {
   [super mouseEntered:event];
-  mouseInside = YES;
+  mouse_inside_ = YES;
   [self setNeedsDisplayForButtons];
 }
 
 - (void)mouseExited:(NSEvent*)event {
   [super mouseExited:event];
-  mouseInside = NO;
+  mouse_inside_ = NO;
   [self setNeedsDisplayForButtons];
 }
 
 - (void)setNeedsDisplayForButtons {
   for (NSView* subview in self.subviews) {
-    [subview setHidden:!mouseInside];
+    [subview setHidden:!mouse_inside_];
     [subview setNeedsDisplay:YES];
   }
 }
