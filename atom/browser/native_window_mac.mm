@@ -701,21 +701,17 @@ enum {
 // Custom window button methods
 
 - (void)performClose:(id)sender {
-  if (shell_->custom_window_buttons()) {
+  if (shell_->custom_window_buttons())
     [[self delegate] windowShouldClose:self];
-    return;
-  }
-
-  [super performClose:sender];
+  else
+    [super performClose:sender];
 }
 
 - (void)performMiniaturize:(id)sender {
-  if (shell_->custom_window_buttons()) {
+  if (shell_->custom_window_buttons())
     [self miniaturize:self];
-    return;
-  }
-
-  [super performMiniaturize:sender];
+  else
+    [super performMiniaturize:sender];
 }
 
 @end
@@ -851,7 +847,6 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kCustomWindowButtons, &custom_window_buttons_);
 
   NSUInteger styleMask = NSTitledWindowMask;
-
   if (custom_window_buttons_ &&
       base::mac::IsAtLeastOS10_10() &&
       (!useStandardWindow || transparent() || !has_frame())) {
