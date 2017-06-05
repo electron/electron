@@ -1100,11 +1100,32 @@ describe('chromium feature', function () {
     })
   })
 
-  describe('window.history.go(offset)', function () {
-    it('throws an exception when the argumnet cannot be converted to a string', function () {
-      assert.throws(function () {
-        window.history.go({toString: null})
-      }, /Cannot convert object to primitive value/)
+  describe('window.history', function () {
+    describe('window.history.go(offset)', function () {
+      it('throws an exception when the argumnet cannot be converted to a string', function () {
+        assert.throws(function () {
+          window.history.go({toString: null})
+        }, /Cannot convert object to primitive value/)
+      })
+    })
+
+    describe('window.history.pushState', function () {
+      it('should push state after calling history.pushState() from the same url', (done) => {
+        w = new BrowserWindow({
+          show: false
+        })
+        w.webContents.once('did-finish-load', () => {
+          // History should have current page by now.
+          assert.equal(w.webContents.length(), 1)
+
+          w.webContents.executeJavaScript('window.history.pushState({}, "")', () => {
+            // Initial page + pushed state
+            assert.equal(w.webContents.length(), 2)
+            done()
+          })
+        })
+        w.loadURL('about:blank')
+      })
     })
   })
 })
