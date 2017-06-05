@@ -40,6 +40,10 @@ class Screen : public mate::EventEmitter<Screen>,
   display::Display GetDisplayNearestPoint(const gfx::Point& point);
   display::Display GetDisplayMatching(const gfx::Rect& match_rect);
 
+#if defined(OS_MACOSX)
+  int getMenuBarHeight();
+#endif
+
   // display::DisplayObserver:
   void OnDisplayAdded(const display::Display& new_display) override;
   void OnDisplayRemoved(const display::Display& old_display) override;
