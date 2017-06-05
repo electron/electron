@@ -1691,7 +1691,8 @@ void NativeWindowMac::InstallView() {
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
-      NSView* buttons = [[SemaphoreView alloc] initWithFrame:NSZeroRect];
+      NSView* buttons =
+          [[[SemaphoreView alloc] initWithFrame:NSZeroRect] autorelease];
       buttons.frame = CGRectMake(0,
           [content_view_ bounds].size.height - buttons.frame.size.height,
           buttons.frame.size.width,
