@@ -214,6 +214,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
     window as a native tab on macOS 10.12+. Windows with the same tabbing
     identifier will be grouped together.
+  * `customWindowButtons` Boolean (optional) - Draw custom close, minimize,
+    and full screen buttons on macOS frameless windows. These buttons will not
+    display unless hovered over in the top left of the window. These custom
+    buttons prevent issues with mouse events that occur with the standard
+    window toolbar buttons. **Note:** This option is currently experimental.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
