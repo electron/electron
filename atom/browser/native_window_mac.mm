@@ -46,15 +46,15 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 }  // namespace
 
-// This view encapsuates the Quit, Minimize and Full Screen buttons. It is being
-// used for frameless windows.
-@interface SemaphoreView : NSView {
+// Custom Quit, Minimize and Full Screen button container for frameless
+// windows.
+@interface CustomWindowButtonView : NSView {
  @private
   BOOL mouse_inside_;
 }
 @end
 
-@implementation SemaphoreView
+@implementation CustomWindowButtonView
 
 - (id)initWithFrame:(NSRect)frame {
   self = [super initWithFrame:frame];
@@ -1691,13 +1691,15 @@ void NativeWindowMac::InstallView() {
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
-      NSView* buttons =
-          [[[SemaphoreView alloc] initWithFrame:NSZeroRect] autorelease];
-      buttons.frame = CGRectMake(0,
-          [content_view_ bounds].size.height - buttons.frame.size.height,
-          buttons.frame.size.width,
-          buttons.frame.size.height);
-      [content_view_ addSubview:buttons];
+      NSView* window_button_view = [[[CustomWindowButtonView alloc]
+          initWithFrame:NSZeroRect] autorelease];
+      window_button_view.frame =
+          CGRectMake(0,
+                     [content_view_ bounds].size.height -
+                         window_button_view.frame.size.height,
+                     window_button_view.frame.size.width,
+                     window_button_view.frame.size.height);
+      [content_view_ addSubview:window_button_view];
     } else {
       if (title_bar_style_ != NORMAL) {
         if (base::mac::IsOS10_9()) {
