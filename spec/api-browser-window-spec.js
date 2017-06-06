@@ -1515,6 +1515,8 @@ describe('BrowserWindow module', function () {
     })
 
     it('visibilityState changes when window is minimized', function (done) {
+      if (isCI && process.platform === 'linux') return done()
+
       w = new BrowserWindow({width: 100, height: 100})
 
       onNextVisibilityChange(function (visibilityState, hidden) {
