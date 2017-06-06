@@ -1412,7 +1412,7 @@ describe('BrowserWindow module', function () {
     })
   })
 
-  describe('document.visibilityState', function () {
+  describe('document.visibilityState/hidden', function () {
     afterEach(function () {
       ipcMain.removeAllListeners('pong')
     })
