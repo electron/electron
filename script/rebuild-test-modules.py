@@ -41,7 +41,7 @@ def main():
     shutil.copy2(atom_lib, iojs_lib)
 
   # Native modules can only be compiled against release builds on Windows
-  if config == 'R' or PLATFORM != 'win32':
+  if config[0] == 'R' or PLATFORM != 'win32':
     update_electron_modules(os.path.dirname(spec_modules), get_target_arch(),
                             node_dir)
   else:
