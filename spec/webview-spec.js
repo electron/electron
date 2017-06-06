@@ -6,7 +6,6 @@ const {ipcRenderer, remote} = require('electron')
 const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} = remote
 const {closeWindow} = require('./window-helpers')
 
-const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
 describe('<webview> tag', function () {
