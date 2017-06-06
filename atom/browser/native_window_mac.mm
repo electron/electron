@@ -59,56 +59,52 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (id)initWithFrame:(NSRect)frame {
   self = [super initWithFrame:frame];
 
+  NSButton* close_button = [NSWindow standardWindowButton:NSWindowCloseButton
+                                             forStyleMask:NSTitledWindowMask];
+  NSButton* miniaturize_button =
+      [NSWindow standardWindowButton:NSWindowMiniaturizeButton
+                        forStyleMask:NSTitledWindowMask];
+  NSButton* zoom_button = [NSWindow standardWindowButton:NSWindowZoomButton
+                                            forStyleMask:NSTitledWindowMask];
+
+  CGFloat x = 0;
+  const CGFloat space_between = 20;
+
+  [close_button setFrameOrigin:NSMakePoint(x, 0)];
+  x += space_between;
+  [self addSubview:close_button];
+
+  [miniaturize_button setFrameOrigin:NSMakePoint(x, 0)];
+  x += space_between;
+  [self addSubview:miniaturize_button];
+
+  [zoom_button setFrameOrigin:NSMakePoint(x, 0)];
+  x += space_between;
+  [self addSubview:zoom_button];
+
+  const auto last_button_frame = zoom_button.frame;
+  [self setFrameSize:NSMakeSize(last_button_frame.origin.x +
+                                    last_button_frame.size.width,
+                                last_button_frame.size.height)];
+
   mouse_inside_ = NO;
-
-  NSButton* closeButton = [NSWindow standardWindowButton:NSWindowCloseButton
-                                            forStyleMask:NSTitledWindowMask];
-  NSButton* minitButton = [NSWindow standardWindowButton:NSWindowMiniaturizeButton
-                                            forStyleMask:NSTitledWindowMask];
-  NSButton* fullScreenButton = [NSWindow standardWindowButton:NSWindowZoomButton
-                                                 forStyleMask:NSTitledWindowMask];
-
-  // size view for buttons
-  const int top = 3;
-  const int bottom = 3;
-  const int left = 7;
-  const int between = 6;
-  const int right = 6;
-
-  auto buttonsSize = NSMakeRect(0,
-      0,
-      left + closeButton.frame.size.width + between + minitButton.frame.size.width + between + fullScreenButton.frame.size.width + right,
-      top + closeButton.frame.size.height + bottom);
-  [self setFrame:buttonsSize];
-
-  //set their location
-  [closeButton setFrame:NSMakeRect(left,
-      buttonsSize.size.height - closeButton.frame.size.height - top,
-      closeButton.frame.size.width,
-      closeButton.frame.size.height)];
-  [minitButton setFrame:NSMakeRect(
-      left + closeButton.frame.size.width + between,
-      buttonsSize.size.height - minitButton.frame.size.height - top,
-      minitButton.frame.size.width,
-      minitButton.frame.size.height)];
-  [fullScreenButton setFrame:NSMakeRect(
-      left + closeButton.frame.size.width + between + minitButton.frame.size.width + between,
-      buttonsSize.size.height - fullScreenButton.frame.size.height - top,
-      fullScreenButton.frame.size.width,
-      fullScreenButton.frame.size.height)];
-
-  //add buttons to the window
-  [self addSubview:closeButton];
-  [self addSubview:minitButton];
-  [self addSubview:fullScreenButton];
-
-  // stay in upper left corner
-  [self setAutoresizingMask: NSViewMaxXMargin | NSViewMinYMargin];
-
-  // refresh for initial conditions
   [self setNeedsDisplayForButtons];
 
   return self;
+}
+
+- (void)viewDidMoveToWindow {
+  if (!self.window) {
+    return;
+  }
+
+  // Stay in upper left corner.
+  const CGFloat top_margin = 3;
+  const CGFloat left_margin = 7;
+  [self setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
+  [self setFrameOrigin:NSMakePoint(left_margin, self.window.frame.size.height -
+                                                    self.frame.size.height -
+                                                    top_margin)];
 }
 
 - (BOOL)_mouseInGroup:(NSButton*)button {
@@ -116,11 +112,13 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)updateTrackingAreas {
-  auto trackingArea = [[[NSTrackingArea alloc] initWithRect:NSZeroRect
-                                                    options:NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways | NSTrackingInVisibleRect
-                                                      owner:self
-                                                   userInfo:nil] autorelease];
-  [self addTrackingArea:trackingArea];
+  auto tracking_area = [[[NSTrackingArea alloc]
+      initWithRect:NSZeroRect
+           options:NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways |
+                   NSTrackingInVisibleRect
+             owner:self
+          userInfo:nil] autorelease];
+  [self addTrackingArea:tracking_area];
 }
 
 - (void)mouseEntered:(NSEvent*)event {
@@ -1690,12 +1688,6 @@ void NativeWindowMac::InstallView() {
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
       NSView* window_button_view = [[[CustomWindowButtonView alloc]
           initWithFrame:NSZeroRect] autorelease];
-      window_button_view.frame =
-          CGRectMake(0,
-                     [content_view_ bounds].size.height -
-                         window_button_view.frame.size.height,
-                     window_button_view.frame.size.width,
-                     window_button_view.frame.size.height);
       [content_view_ addSubview:window_button_view];
     } else {
       if (title_bar_style_ != NORMAL) {
