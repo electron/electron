@@ -1413,77 +1413,108 @@ describe('BrowserWindow module', function () {
   })
 
   describe('document.visibilityState/hidden', function () {
+    beforeEach(function () {
+      w.destroy()
+    })
+
+    function onVisibilityChange (callback) {
+      ipcMain.on('pong', function (event, visibilityState, hidden) {
+        if (event.sender.id === w.webContents.id) {
+          callback(visibilityState, hidden)
+        }
+      })
+    }
+
+    function onNextVisibilityChange (callback) {
+      ipcMain.once('pong', function (event, visibilityState, hidden) {
+        if (event.sender.id === w.webContents.id) {
+          callback(visibilityState, hidden)
+        }
+      })
+    }
+
     afterEach(function () {
       ipcMain.removeAllListeners('pong')
     })
 
-    function onNextVisibleEvent (callback) {
-      ipcMain.on('pong', function listener (event, visibilityState, hidden) {
-        if (visibilityState === 'visible' && hidden === false) {
-          ipcMain.removeListener('pong', listener)
-          callback()
-        }
-      })
-    }
-
-    function onNextHiddenEvent (callback) {
-      ipcMain.on('pong', function listener (event, visibilityState, hidden) {
-        if (visibilityState === 'hidden' && hidden === true) {
-          ipcMain.removeListener('pong', listener)
-          callback()
-        }
-      })
-    }
-
     it('visibilityState is initially visible despite window being hidden', function (done) {
-      w.destroy()
       w = new BrowserWindow({ show: false, width: 100, height: 100 })
 
       let readyToShow = false
-      w.on('ready-to-show', function () {
+      w.once('ready-to-show', function () {
         readyToShow = true
       })
 
-      ipcMain.once('pong', function (event, visibilityState, hidden) {
-        assert.ok(!readyToShow)
+      onNextVisibilityChange(function (visibilityState, hidden) {
+        assert.equal(readyToShow, false)
         assert.equal(visibilityState, 'visible')
         assert.equal(hidden, false)
 
-        ipcMain.once('pong', function (event, visibilityState, hidden) {
-          assert.ok(false)
-        })
-
-        setTimeout(done, 1000)
-        w.show()
+        done()
       })
 
       w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
     })
 
-    it('visibilityState changes when window is shown and hidden', function (done) {
-      w.destroy()
-      w = new BrowserWindow({
-        width: 100,
-        height: 100
-      })
+    it('visibilityState changes when window is hidden', function (done) {
+      w = new BrowserWindow({width: 100, height: 100})
 
-      onNextVisibleEvent(() => {
-        onNextHiddenEvent(() => {
-          onNextVisibleEvent(() => {
-            onNextHiddenEvent(done)
-            w.minimize()
-          })
-          w.show()
-          w.focus()
+      onNextVisibilityChange(function (visibilityState, hidden) {
+        assert.equal(visibilityState, 'visible')
+        assert.equal(hidden, false)
+
+        onNextVisibilityChange(function (visibilityState, hidden) {
+          assert.equal(visibilityState, 'hidden')
+          assert.equal(hidden, true)
+
+          done()
         })
+
         w.hide()
       })
 
       w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
     })
 
+    it('visibilityState changes when window is shown', function (done) {
+      w = new BrowserWindow({width: 100, height: 100})
+
+      onNextVisibilityChange(function (visibilityState, hidden) {
+        onVisibilityChange(function (visibilityState, hidden) {
+          if (!hidden) {
+            assert.equal(visibilityState, 'visible')
+            done()
+          }
+        })
+
+        w.hide()
+        w.show()
+      })
+
+      w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
+    })
+
+    it('visibilityState changes when window is minimized', function (done) {
+      w = new BrowserWindow({width: 100, height: 100})
+
+      onNextVisibilityChange(function (visibilityState, hidden) {
+        assert.equal(visibilityState, 'visible')
+        assert.equal(hidden, false)
+
+        onNextVisibilityChange(function (visibilityState, hidden) {
+          assert.equal(visibilityState, 'hidden')
+          assert.equal(hidden, true)
+
+          done()
+        })
+
+        w.minimize()
+      })
+
+      w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
+    })
+
     it('visibilityState remains visible if backgroundThrottling is disabled', function (done) {
-      w.destroy()
       w = new BrowserWindow({
         show: false,
         width: 100,
@@ -1493,25 +1524,25 @@ describe('BrowserWindow module', function () {
         }
       })
 
-      onNextVisibleEvent(() => {
-        onNextVisibleEvent(() => {
-          done(new Error('Unexpected visibility change event to visible'))
-        })
-        onNextHiddenEvent(() => {
-          done(new Error('Unexpected visibility change event to hidden'))
-        })
+      onNextVisibilityChange(function (visibilityState, hidden) {
+        assert.equal(visibilityState, 'visible')
+        assert.equal(hidden, false)
 
-        w.once('show', () => {
-          w.once('hide', () => {
-            w.once('show', () => {
-              done()
-            })
-            w.show()
-          })
-          w.hide()
+        onNextVisibilityChange(function (visibilityState, hidden) {
+          done(new Error(`Unexpected visibility change event. visibilityState: ${visibilityState} hidden: ${hidden}`))
         })
-        w.show()
       })
+
+      w.once('show', () => {
+        w.once('hide', () => {
+          w.once('show', () => {
+            done()
+          })
+          w.show()
+        })
+        w.hide()
+      })
+      w.show()
 
       w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
     })
