@@ -59,57 +59,54 @@ bool ScopedDisableResize::disable_resize_ = false;
 - (id)initWithFrame:(NSRect)frame {
   self = [super initWithFrame:frame];
 
-  if (self) {
-    mouse_inside_ = NO;
+  mouse_inside_ = NO;
 
-    // create buttons
-    NSButton* closeButton = [NSWindow standardWindowButton:NSWindowCloseButton
-                                              forStyleMask:NSTitledWindowMask];
-    NSButton* minitButton = [NSWindow standardWindowButton:NSWindowMiniaturizeButton
-                                              forStyleMask:NSTitledWindowMask];
-    NSButton* fullScreenButton = [NSWindow standardWindowButton:NSWindowZoomButton
-                                                   forStyleMask:NSTitledWindowMask];
+  NSButton* closeButton = [NSWindow standardWindowButton:NSWindowCloseButton
+                                            forStyleMask:NSTitledWindowMask];
+  NSButton* minitButton = [NSWindow standardWindowButton:NSWindowMiniaturizeButton
+                                            forStyleMask:NSTitledWindowMask];
+  NSButton* fullScreenButton = [NSWindow standardWindowButton:NSWindowZoomButton
+                                                 forStyleMask:NSTitledWindowMask];
 
-    // size view for buttons
-    const int top = 3;
-    const int bottom = 3;
-    const int left = 7;
-    const int between = 6;
-    const int right = 6;
+  // size view for buttons
+  const int top = 3;
+  const int bottom = 3;
+  const int left = 7;
+  const int between = 6;
+  const int right = 6;
 
-    auto buttonsSize = NSMakeRect(0,
-        0,
-        left + closeButton.frame.size.width + between + minitButton.frame.size.width + between + fullScreenButton.frame.size.width + right,
-        top + closeButton.frame.size.height + bottom);
-    [self setFrame:buttonsSize];
+  auto buttonsSize = NSMakeRect(0,
+      0,
+      left + closeButton.frame.size.width + between + minitButton.frame.size.width + between + fullScreenButton.frame.size.width + right,
+      top + closeButton.frame.size.height + bottom);
+  [self setFrame:buttonsSize];
 
-    //set their location
-    [closeButton setFrame:NSMakeRect(left,
-        buttonsSize.size.height - closeButton.frame.size.height - top,
-        closeButton.frame.size.width,
-        closeButton.frame.size.height)];
-    [minitButton setFrame:NSMakeRect(
-        left + closeButton.frame.size.width + between,
-        buttonsSize.size.height - minitButton.frame.size.height - top,
-        minitButton.frame.size.width,
-        minitButton.frame.size.height)];
-    [fullScreenButton setFrame:NSMakeRect(
-        left + closeButton.frame.size.width + between + minitButton.frame.size.width + between,
-        buttonsSize.size.height - fullScreenButton.frame.size.height - top,
-        fullScreenButton.frame.size.width,
-        fullScreenButton.frame.size.height)];
+  //set their location
+  [closeButton setFrame:NSMakeRect(left,
+      buttonsSize.size.height - closeButton.frame.size.height - top,
+      closeButton.frame.size.width,
+      closeButton.frame.size.height)];
+  [minitButton setFrame:NSMakeRect(
+      left + closeButton.frame.size.width + between,
+      buttonsSize.size.height - minitButton.frame.size.height - top,
+      minitButton.frame.size.width,
+      minitButton.frame.size.height)];
+  [fullScreenButton setFrame:NSMakeRect(
+      left + closeButton.frame.size.width + between + minitButton.frame.size.width + between,
+      buttonsSize.size.height - fullScreenButton.frame.size.height - top,
+      fullScreenButton.frame.size.width,
+      fullScreenButton.frame.size.height)];
 
-    //add buttons to the window
-    [self addSubview:closeButton];
-    [self addSubview:minitButton];
-    [self addSubview:fullScreenButton];
+  //add buttons to the window
+  [self addSubview:closeButton];
+  [self addSubview:minitButton];
+  [self addSubview:fullScreenButton];
 
-    // stay in upper left corner
-    [self setAutoresizingMask: NSViewMaxXMargin | NSViewMinYMargin];
+  // stay in upper left corner
+  [self setAutoresizingMask: NSViewMaxXMargin | NSViewMinYMargin];
 
-    // refresh for initial conditions
-    [self setNeedsDisplayForButtons];
-  }
+  // refresh for initial conditions
+  [self setNeedsDisplayForButtons];
 
   return self;
 }
