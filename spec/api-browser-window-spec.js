@@ -1494,6 +1494,26 @@ describe('BrowserWindow module', function () {
       w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
     })
 
+    it('visibilityState changes when window is shown inactive', function (done) {
+      if (isCI && process.platform === 'win32') return done()
+
+      w = new BrowserWindow({width: 100, height: 100})
+
+      onNextVisibilityChange(function (visibilityState, hidden) {
+        onVisibilityChange(function (visibilityState, hidden) {
+          if (!hidden) {
+            assert.equal(visibilityState, 'visible')
+            done()
+          }
+        })
+
+        w.hide()
+        w.showInactive()
+      })
+
+      w.loadURL('file://' + path.join(fixtures, 'pages', 'visibilitychange.html'))
+    })
+
     it('visibilityState changes when window is minimized', function (done) {
       w = new BrowserWindow({width: 100, height: 100})
 
