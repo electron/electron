@@ -40,8 +40,8 @@ with each platform's message loop to avoid hacking Chromium. See the
 __4. Multi-context__
 
 If you are an experienced NW.js user, you should be familiar with the
-concept of Node context and web context. These concepts were invented because
-of how NW.js was implemented.
+concept of Node context and web context in [Seperate Context mode](http://docs.nwjs.io/en/latest/For%20Users/Advanced/JavaScript%20Contexts%20in%20NW.js/#separate-context-mode). These concepts were invented because
+of how NW.js was implemented. But However Note: In NW.js 0.13 it introduced [Mixed context mode](http://docs.nwjs.io/en/latest/For%20Users/Advanced/JavaScript%20Contexts%20in%20NW.js/#mixed-context-mode) which allows you to work with [Multiple Contexts](http://docs.nwjs.io/en/latest/For%20Users/Advanced/JavaScript%20Contexts%20in%20NW.js/#working-with-multiple-contexts) with some work arounds.
 
 By using the [multi-context](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/)
 feature of Node, Electron doesn't introduce a new JavaScript context in web
