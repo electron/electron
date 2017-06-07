@@ -207,7 +207,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)windowWillMiniaturize:(NSNotification*)notification {
   NSWindow* window = shell_->GetNativeWindow();
-  // store the current level to be restored in windowDidDeminiaturize
+  // store the current status window level to be restored in windowDidDeminiaturize
   level_ = NSStatusWindowLevel;
   [window setLevel:NSNormalWindowLevel];
 }
