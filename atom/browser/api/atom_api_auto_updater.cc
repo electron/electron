@@ -89,6 +89,10 @@ void AutoUpdater::SetFeedURL(const std::string& url, mate::Arguments* args) {
 }
 
 void AutoUpdater::QuitAndInstall() {
+  bool should_quit = Browser::Get()->HandleBeforeQuit();
+  if (!should_quit)
+    return;
+
   // If we don't have any window then quitAndInstall immediately.
   if (WindowList::IsEmpty()) {
     auto_updater::AutoUpdater::QuitAndInstall();

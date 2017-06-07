@@ -209,6 +209,11 @@ class Browser : public WindowListObserver {
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
 
+  // Send the before-quit message. Does not actually start closing windows.
+  // Exposed so that other parts of the application can implement specialized
+  // quit flows while still emitting the proper quit events.
+  bool HandleBeforeQuit();
+
  protected:
   // Returns the version of application bundle or executable file.
   std::string GetExecutableFileVersion() const;
@@ -218,9 +223,6 @@ class Browser : public WindowListObserver {
 
   // Send the will-quit message and then shutdown the application.
   void NotifyAndShutdown();
-
-  // Send the before-quit message and start closing windows.
-  bool HandleBeforeQuit();
 
   bool is_quiting_;
 
