@@ -75,6 +75,7 @@ bool ScopedDisableResize::disable_resize_ = false;
  @private
   atom::NativeWindowMac* shell_;
   bool is_zooming_;
+  int level_;
 }
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
 @end
@@ -204,11 +205,20 @@ bool ScopedDisableResize::disable_resize_ = false;
   shell_->NotifyWindowMoved();
 }
 
+- (void)windowWillMiniaturize:(NSNotification*)notification {
+  NSWindow* window = shell_->GetNativeWindow();
+  // store the current level to be restored in windowDidDeminiaturize
+  level_ = NSStatusWindowLevel;
+  [window setLevel:NSNormalWindowLevel];
+}
+
 - (void)windowDidMiniaturize:(NSNotification*)notification {
   shell_->NotifyWindowMinimize();
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
+  NSWindow* window = shell_->GetNativeWindow();
+  [window setLevel:level_];
   shell_->NotifyWindowRestore();
 }
 
