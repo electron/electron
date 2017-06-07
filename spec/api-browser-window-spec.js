@@ -407,6 +407,17 @@ describe('BrowserWindow module', function () {
       assert(!w.isVisible())
     })
 
+    it('should defullscreen the window', function (done) {
+      this.timeout(10000)
+      w.setFullScreen(true)
+
+      w.once('enter-full-screen', () => w.hide())
+      w.once('hide', () => {
+        assert(!w.isFullScreen())
+        done()
+      })
+    })
+
     it('emits when window is hidden', function (done) {
       w.show()
       w.once('hide', function () {

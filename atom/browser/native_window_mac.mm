@@ -1063,6 +1063,22 @@ void NativeWindowMac::Hide() {
     return;
   }
 
+  if (IsFullscreen()) {
+    __block __weak id fullcreenObserver;
+    fullcreenObserver = [[NSNotificationCenter defaultCenter]
+        addObserverForName:NSWindowDidExitFullScreenNotification
+        object:nil
+        queue:nil
+        usingBlock:^(NSNotification *note) {
+            [window_ orderOut:nil];
+            [[NSNotificationCenter defaultCenter] removeObserver:fullcreenObserver];
+        }
+    ];
+
+    SetFullScreen(false);
+    return;
+  }
+
   [window_ orderOut:nil];
 }
 
