@@ -194,9 +194,11 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       auto embedder = manager->GetEmbedder(guest_instance_id);
       if (embedder) {
         auto window = NativeWindow::FromWebContents(embedder);
-        const bool visible = window->IsVisible() && !window->IsMinimized();
-        if (!visible) {
-          command_line->AppendSwitch(switches::kHiddenPage);
+        if (window) {
+          const bool visible = window->IsVisible() && !window->IsMinimized();
+          if (!visible) {
+            command_line->AppendSwitch(switches::kHiddenPage);
+          }
         }
       }
     }
