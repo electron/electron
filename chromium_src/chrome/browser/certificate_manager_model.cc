@@ -5,6 +5,7 @@
 #include "chrome/browser/certificate_manager_model.h"
 
 #include <utility>
+#include <memory>
 
 #include "base/bind.h"
 #include "base/logging.h"
@@ -23,11 +24,11 @@ using content::BrowserThread;
 
 namespace {
 
-net::NSSCertDatabase* g_nss_cert_database = nullptr;
-
 net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
     content::ResourceContext* context,
     const base::Callback<void(net::NSSCertDatabase*)>& callback) {
+  static std::unique_ptr<net::NSSCertDatabase> g_nss_cert_database;
+
   // This initialization is not thread safe. This CHECK ensures that this code
   // is only run on a single thread.
   CHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
@@ -35,13 +36,13 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
     // Linux has only a single persistent slot compared to ChromeOS's separate
     // public and private slot.
     // Redirect any slot usage to this persistent slot on Linux.
-    g_nss_cert_database = new net::NSSCertDatabase(
+    g_nss_cert_database.reset(new net::NSSCertDatabase(
         crypto::ScopedPK11Slot(
             crypto::GetPersistentNSSKeySlot()) /* public slot */,
         crypto::ScopedPK11Slot(
-            crypto::GetPersistentNSSKeySlot()) /* private slot */);
+            crypto::GetPersistentNSSKeySlot()) /* private slot */));
   }
-  return g_nss_cert_database;
+  return g_nss_cert_database.get();
 }
 
 }  // namespace

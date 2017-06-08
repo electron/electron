@@ -20,9 +20,9 @@ namespace extensions {
 // static
 GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  static GlobalShortcutListenerWin* instance =
-      new GlobalShortcutListenerWin();
-  return instance;
+  static std::unique_ptr<GlobalShortcutListenerWin> instance(
+      new GlobalShortcutListenerWin());
+  return instance.get();
 }
 
 GlobalShortcutListenerWin::GlobalShortcutListenerWin()
