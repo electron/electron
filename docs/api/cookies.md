@@ -68,12 +68,10 @@ The following methods are available on instances of `Cookies`:
   * `session` Boolean (optional) - Filters out session or persistent cookies.
 * `callback` Function
   * `error` Error
-  * `cookies` Cookies[]
+  * `cookies` [Cookie[]](structures/cookie.md) - an array of cookie objects.
 
 Sends a request to get all cookies matching `details`, `callback` will be called
 with `callback(error, cookies)` on complete.
-
-`cookies` is an Array of [`cookie`](structures/cookie.md) objects.
 
 #### `cookies.set(details, callback)`
 
