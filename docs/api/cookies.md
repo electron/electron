@@ -68,7 +68,7 @@ The following methods are available on instances of `Cookies`:
   * `session` Boolean (optional) - Filters out session or persistent cookies.
 * `callback` Function
   * `error` Error
-  * `cookies` Cookies[]
+  * `cookies` Cookie[]
 
 Sends a request to get all cookies matching `details`, `callback` will be called
 with `callback(error, cookies)` on complete.
