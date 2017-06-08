@@ -1,4 +1,4 @@
-// Type definitions for Electron 1.7.2
+// Type definitions for Electron 1.7.3
 // Project: http://electron.atom.io/
 // Definitions by: The Electron Team <https://github.com/electron/electron>
 // Definitions: https://github.com/electron/electron-typescript-definitions
@@ -62,6 +62,7 @@ declare namespace Electron {
     Menu: typeof Electron.Menu;
     MenuItem: typeof Electron.MenuItem;
     net: Electron.Net;
+    Notification: typeof Electron.Notification;
     powerMonitor: Electron.PowerMonitor;
     powerSaveBlocker: Electron.PowerSaveBlocker;
     protocol: Electron.Protocol;
@@ -105,6 +106,7 @@ declare namespace Electron {
     MenuItem: typeof Electron.MenuItem;
     nativeImage: typeof Electron.NativeImage;
     net: Electron.Net;
+    Notification: typeof Electron.Notification;
     powerMonitor: Electron.PowerMonitor;
     powerSaveBlocker: Electron.PowerSaveBlocker;
     protocol: Electron.Protocol;
@@ -481,17 +483,8 @@ declare namespace Electron {
      * the active app. On Windows, focuses on the application's first window.
      */
     focus(): void;
-    /**
-     * Returns ProcessMetric[]:  Array of ProcessMetric objects that correspond to
-     * memory and cpu usage statistics of all the processes associated with the app.
-     * Note: This method is deprecated, use app.getAppMetrics() instead.
-     */
-    getAppMemoryInfo(): void;
-    /**
-     * Returns ProcessMetric[]:  Array of ProcessMetric objects that correspond to
-     * memory and cpu usage statistics of all the processes associated with the app.
-     */
-    getAppMetrics(): void;
+    getAppMemoryInfo(): ProcessMetric[];
+    getAppMetrics(): ProcessMetric[];
     getAppPath(): string;
     getBadgeCount(): number;
     getCurrentActivityType(): string;
@@ -499,12 +492,13 @@ declare namespace Electron {
      * Fetches a path's associated icon. On Windows, there a 2 kinds of icons: On Linux
      * and macOS, icons depend on the application associated with file mime type.
      */
-    getFileIcon(path: string, callback: (error: Error, icon: NativeImage) => void): void;
+    getFileIcon(path: string, options: FileIconOptions, callback: (error: Error, icon: NativeImage) => void): void;
     /**
      * Fetches a path's associated icon. On Windows, there a 2 kinds of icons: On Linux
      * and macOS, icons depend on the application associated with file mime type.
      */
-    getFileIcon(path: string, options: FileIconOptions, callback: (error: Error, icon: NativeImage) => void): void;
+    getFileIcon(path: string, callback: (error: Error, icon: NativeImage) => void): void;
+    getGpuFeatureStatus(): GPUFeatureStatus;
     getJumpListSettings(): JumpListSettings;
     /**
      * Note: When distributing your packaged app, you have to also ship the locales
@@ -1678,10 +1672,7 @@ declare namespace Electron {
      * Continues any deferred redirection request when the redirection mode is manual.
      */
     followRedirect(): void;
-    /**
-     * Returns Object - The value of a previously set extra header name.
-     */
-    getHeader(name: string): void;
+    getHeader(name: string): Header;
     /**
      * Removes a previously set extra header name. This method can be called only
      * before first write. Trying to call it after the first write will throw an error.
@@ -1948,10 +1939,9 @@ declare namespace Electron {
     flushStore(callback: Function): void;
     /**
      * Sends a request to get all cookies matching details, callback will be called
-     * with callback(error, cookies) on complete. cookies is an Array of cookie
-     * objects.
+     * with callback(error, cookies) on complete.
      */
-    get(filter: Filter, callback: (error: Error, cookies: Cookies[]) => void): void;
+    get(filter: Filter, callback: (error: Error, cookies: Cookie[]) => void): void;
     /**
      * Removes the cookies matching url and name, callback will called with callback()
      * on complete.
@@ -2409,6 +2399,64 @@ declare namespace Electron {
     unregisterAll(): void;
   }
 
+  interface GPUFeatureStatus {
+
+    // Docs: http://electron.atom.io/docs/api/structures/gpu-feature-status
+
+    /**
+     * Canvas
+     */
+    '2d_canvas': string;
+    /**
+     * Flash
+     */
+    flash_3d: string;
+    /**
+     * Flash Stage3D
+     */
+    flash_stage3d: string;
+    /**
+     * Flash Stage3D Baseline profile
+     */
+    flash_stage3d_baseline: string;
+    /**
+     * Compositing
+     */
+    gpu_compositing: string;
+    /**
+     * Multiple Raster Threads
+     */
+    multiple_raster_threads: string;
+    /**
+     * Native GpuMemoryBuffers
+     */
+    native_gpu_memory_buffers: string;
+    /**
+     * Rasterization
+     */
+    rasterization: string;
+    /**
+     * Video Decode
+     */
+    video_decode: string;
+    /**
+     * Video Encode
+     */
+    video_encode: string;
+    /**
+     * VPx Video Decode
+     */
+    vpx_decode: string;
+    /**
+     * WebGL
+     */
+    webgl: string;
+    /**
+     * WebGL2
+     */
+    webgl2: string;
+  }
+
   class IncomingMessage extends EventEmitter {
 
     // Docs: http://electron.atom.io/docs/api/incoming-message
@@ -2822,6 +2870,70 @@ declare namespace Electron {
     request(options: any | string): ClientRequest;
   }
 
+  class Notification extends EventEmitter {
+
+    // Docs: http://electron.atom.io/docs/api/notification
+
+    /**
+     * Emitted when the notification is clicked by the user.
+     */
+    on(event: 'click', listener: (event: Event) => void): this;
+    once(event: 'click', listener: (event: Event) => void): this;
+    addListener(event: 'click', listener: (event: Event) => void): this;
+    removeListener(event: 'click', listener: (event: Event) => void): this;
+    /**
+     * Emitted when the notification is closed by manual intervention from the user.
+     * This event is not guarunteed to be emitted in all cases where the notification
+     * is closed.
+     */
+    on(event: 'close', listener: (event: Event) => void): this;
+    once(event: 'close', listener: (event: Event) => void): this;
+    addListener(event: 'close', listener: (event: Event) => void): this;
+    removeListener(event: 'close', listener: (event: Event) => void): this;
+    /**
+     * Emitted when the user clicks the "Reply" button on a notification with hasReply:
+     * true.
+     */
+    on(event: 'reply', listener: (event: Event,
+                                  /**
+                                   * The string the user entered into the inline reply field
+                                   */
+                                  reply: string) => void): this;
+    once(event: 'reply', listener: (event: Event,
+                                  /**
+                                   * The string the user entered into the inline reply field
+                                   */
+                                  reply: string) => void): this;
+    addListener(event: 'reply', listener: (event: Event,
+                                  /**
+                                   * The string the user entered into the inline reply field
+                                   */
+                                  reply: string) => void): this;
+    removeListener(event: 'reply', listener: (event: Event,
+                                  /**
+                                   * The string the user entered into the inline reply field
+                                   */
+                                  reply: string) => void): this;
+    /**
+     * Emitted when the notification is shown to the user, note this could be fired
+     * multiple times as a notification can be shown multiple times through the show()
+     * method.
+     */
+    on(event: 'show', listener: (event: Event) => void): this;
+    once(event: 'show', listener: (event: Event) => void): this;
+    addListener(event: 'show', listener: (event: Event) => void): this;
+    removeListener(event: 'show', listener: (event: Event) => void): this;
+    constructor(options: NotificationConstructorOptions);
+    static isSupported(): boolean;
+    /**
+     * Immediately shows the notification to the user, please note this means unlike
+     * the HTML5 Notification implementation, simply instantiating a new Notification
+     * does not immediately show it to the user, you need to call this method before
+     * the OS will display it.
+     */
+    show(): void;
+  }
+
   interface Point {
 
     // Docs: http://electron.atom.io/docs/api/structures/point
@@ -3145,6 +3257,7 @@ declare namespace Electron {
     getCursorScreenPoint(): Point;
     getDisplayMatching(rect: Rectangle): Display;
     getDisplayNearestPoint(point: Point): Display;
+    getMenuBarHeight(): number;
     getPrimaryDisplay(): Display;
   }
 
@@ -3449,12 +3562,10 @@ declare namespace Electron {
      */
     getUserDefault(key: string, type: 'string' | 'boolean' | 'integer' | 'float' | 'double' | 'url' | 'array' | 'dictionary'): any;
     /**
-     * This method returns true if DWM composition (Aero Glass) is enabled, and false
-     * otherwise. An example of using it to determine if you should create a
-     * transparent window or not (transparent windows won't work correctly when DWM
-     * composition is disabled):
+     * An example of using it to determine if you should create a transparent window or
+     * not (transparent windows won't work correctly when DWM composition is disabled):
      */
-    isAeroGlassEnabled(): void;
+    isAeroGlassEnabled(): boolean;
     isDarkMode(): boolean;
     isInvertedColorScheme(): boolean;
     isSwipeTrackingFromScrollEventsEnabled(): boolean;
@@ -4769,9 +4880,9 @@ declare namespace Electron {
     getFrameRate(): number;
     getOSProcessId(): number;
     /**
-     * Get the system printer list. Returns PrinterInfo[]
+     * Get the system printer list.
      */
-    getPrinters(): void;
+    getPrinters(): PrinterInfo[];
     getTitle(): string;
     getURL(): string;
     getUserAgent(): string;
@@ -4913,10 +5024,11 @@ declare namespace Electron {
      */
     send(channel: string, ...args: any[]): void;
     /**
-     * Sends an input event to the page. For keyboard events, the event object also
-     * have following properties: For mouse events, the event object also have
-     * following properties: For the mouseWheel event, the event object also have
-     * following properties:
+     * Sends an input event to the page. Note: The BrowserWindow containing the
+     * contents needs to be focused for sendInputEvent() to work. For keyboard events,
+     * the event object also have following properties: For mouse events, the event
+     * object also have following properties: For the mouseWheel event, the event
+     * object also have following properties:
      */
     sendInputEvent(event: Event): void;
     /**
@@ -5899,7 +6011,7 @@ declare namespace Electron {
     /**
      * The style of window title bar. Default is default. Possible values are:
      */
-    titleBarStyle?: ('default' | 'hidden' | 'hidden-inset');
+    titleBarStyle?: ('default' | 'hidden' | 'hidden-inset' | 'hiddenInset' | 'customButtonsOnHover');
     /**
      * Use WS_THICKFRAME style for frameless windows on Windows, which adds standard
      * window frame. Setting it to false will remove window shadow and window
@@ -6381,6 +6493,13 @@ declare namespace Electron {
     cache: boolean;
   }
 
+  interface Header {
+    /**
+     * Specify an extra header name.
+     */
+    name: string;
+  }
+
   interface ImportCertificateOptions {
     /**
      * Path for the pkcs12 file.
@@ -6682,6 +6801,34 @@ declare namespace Electron {
     options: Options;
   }
 
+  interface NotificationConstructorOptions {
+    /**
+     * A title for the notification, which will be shown at the top of the notification
+     * window when it is shown
+     */
+    title: string;
+    /**
+     * The body text of the notification, which will be displayed below the title
+     */
+    body: string;
+    /**
+     * Whether or not to emit an OS notification noise when showing the notification
+     */
+    silent?: boolean;
+    /**
+     * An icon to use in the notification
+     */
+    icon?: NativeImage;
+    /**
+     * Whether or not to add an inline reply option to the notification.
+     */
+    hasReply?: boolean;
+    /**
+     * The placeholder to write in the inline reply input field.
+     */
+    replyPlaceholder?: string;
+  }
+
   interface OnBeforeRedirectDetails {
     id: string;
     url: string;
@@ -6915,13 +7062,13 @@ declare namespace Electron {
 
   interface PopupOptions {
     /**
-     * Default is the current mouse cursor position.
+     * Default is the current mouse cursor position. Must be declared if y is declared.
      */
     x?: number;
     /**
-     * ( if x is used) Default is the current mouse cursor position.
+     * Default is the current mouse cursor position. Must be declared if x is declared.
      */
-    y: number;
+    y?: number;
     /**
      * Set to true to have this method return immediately called, false to return after
      * the menu has been selected or closed. Defaults to false.
@@ -7671,8 +7818,8 @@ declare namespace Electron {
      */
     defaultEncoding?: string;
     /**
-     * Whether to throttle animations and timers when the page becomes background.
-     * Defaults to true.
+     * Whether to throttle animations and timers when the page becomes background. This
+     * also affects the [Page Visibility API][#page-visibility]. Defaults to true.
      */
     backgroundThrottling?: boolean;
     /**
@@ -7783,8 +7930,8 @@ declare namespace NodeJS {
      * Causes the main thread of the current process crash.
      */
     crash(): void;
-    getCPUUsage(CPUUsage: Electron.CPUUsage): void;
-    getIOCounters(IOCounters: Electron.IOCounters): void;
+    getCPUUsage(): Electron.CPUUsage;
+    getIOCounters(): Electron.IOCounters;
     /**
      * Returns an object giving memory usage statistics about the current process. Note
      * that all statistics are reported in Kilobytes.
