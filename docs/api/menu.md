@@ -16,7 +16,7 @@ The `menu` class has the following static methods:
 
 * `menu` Menu
 
-Sets `menu` as the application menu on macOS. On Windows and Linux, the
+Sets `menu` as the application menu on macOS and linux. On Windows, the
 `menu` will be set as each window's top menu.
 
 Passing `null` will remove the menu bar on Windows and Linux but has no
