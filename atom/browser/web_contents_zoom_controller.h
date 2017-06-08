@@ -28,7 +28,7 @@ class WebContentsZoomController
    protected:
     virtual ~Observer() {}
   };
-  
+
   // Defines how zoom changes are handled.
   enum ZoomMode {
     // Results in default zoom behavior, i.e. zoom changes are handled
@@ -67,7 +67,7 @@ class WebContentsZoomController
 
   // Sets the zoom mode, which defines zoom behavior (see enum ZoomMode).
   void SetZoomMode(ZoomMode zoom_mode);
-  
+
   void ResetZoomModeOnNavigationIfNeeded(const GURL& url);
 
   ZoomMode zoom_mode() const { return zoom_mode_; }

@@ -67,7 +67,7 @@ void WebContentsZoomController::SetZoomLevel(double level) {
 
   content::HostZoomMap* zoom_map =
       content::HostZoomMap::GetForWebContents(web_contents());
-  if (zoom_mode_ == ZOOM_MODE_ISOLATED || 
+  if (zoom_mode_ == ZOOM_MODE_ISOLATED ||
       zoom_map->UsesTemporaryZoomLevel(render_process_id, render_view_id)) {
     zoom_map->SetTemporaryZoomLevel(
       render_process_id, render_view_id, level);
@@ -164,7 +164,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
         // When we don't call any HostZoomMap set functions, we send the event
         // manually.
         for (Observer& observer : observers_)
-          observer.OnZoomLevelChanged(web_contents(), original_zoom_level, 
+          observer.OnZoomLevelChanged(web_contents(), original_zoom_level,
             false);
       }
       break;
@@ -181,7 +181,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
         // When we don't call any HostZoomMap set functions, we send the event
         // manually.
         for (Observer& observer : observers_)
-          observer.OnZoomLevelChanged(web_contents(), original_zoom_level, 
+          observer.OnZoomLevelChanged(web_contents(), original_zoom_level,
             false);
       }
       break;
@@ -211,7 +211,7 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
   double new_zoom_level = zoom_map->GetZoomLevelForHostAndScheme(
       url.scheme(), net::GetHostOrSpecFromURL(url));
   for (Observer& observer : observers_)
-    observer.OnZoomLevelChanged(web_contents(), new_zoom_level, 
+    observer.OnZoomLevelChanged(web_contents(), new_zoom_level,
       false);
   zoom_map->ClearTemporaryZoomLevel(render_process_id, render_view_id);
   zoom_mode_ = ZOOM_MODE_DEFAULT;

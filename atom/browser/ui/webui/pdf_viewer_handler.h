@@ -43,7 +43,7 @@ class PdfViewerHandler : public content::WebUIMessageHandler,
   void SetZoom(const base::ListValue* args);
   void GetStrings(const base::ListValue* args);
   void Reload(const base::ListValue* args);
-  void OnZoomLevelChanged(content::WebContents* web_contents, double level, 
+  void OnZoomLevelChanged(content::WebContents* web_contents, double level,
       bool is_temporary);
 
   std::unique_ptr<base::Value> initialize_callback_id_;

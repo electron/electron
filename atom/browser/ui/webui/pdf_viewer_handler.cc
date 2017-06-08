@@ -119,7 +119,7 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
   } else {
     initialize_callback_id_ = callback_id->CreateDeepCopy();
   }
-  
+
   auto zoom_controller = WebContentsZoomController::FromWebContents(
     web_ui()->GetWebContents());
   zoom_controller->SetZoomMode(WebContentsZoomController::ZOOM_MODE_MANUAL);
@@ -211,7 +211,7 @@ void PdfViewerHandler::Reload(const base::ListValue* args) {
 void PdfViewerHandler::OnZoomLevelChanged(content::WebContents* web_contents,
     double level, bool is_temporary) {
   if (web_ui()->GetWebContents() == web_contents) {
-    CallJavascriptFunction("cr.webUIListenerCallback", 
+    CallJavascriptFunction("cr.webUIListenerCallback",
       base::StringValue("onZoomLevelChanged"),
       base::Value(content::ZoomLevelToZoomFactor(level)));
   }
