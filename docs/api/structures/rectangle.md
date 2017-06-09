@@ -4,3 +4,5 @@
 * `y` Number - The y coordinate of the origin of the rectangle
 * `width` Number
 * `height` Number
+
+Note numeric values must be integers.
