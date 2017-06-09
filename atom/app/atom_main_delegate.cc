@@ -125,11 +125,16 @@ void AtomMainDelegate::PreSandboxStartup() {
   // Only append arguments for browser process.
   if (!IsBrowserProcess(command_line))
     return;
-
-  if (command_line->HasSwitch(switches::kEnableSandbox)) {
-    // Disable setuid sandbox since it is not longer required on linux(namespace
-    // sandbox is available on most distros).
-    command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
+  
+  if (!command_line->HasSwitch(switches::kEnableMixedSandbox)) {
+    if (command_line->HasSwitch(switches::kEnableSandbox)) {
+      // Disable setuid sandbox since it is not longer required on linux(namespace
+      // sandbox is available on most distros).
+      command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
+    } else {
+      // Disable renderer sandbox for most of node's functions.
+      command_line->AppendSwitch(::switches::kNoSandbox);
+    }
   }
 
   // Allow file:// URIs to read other file:// URIs by default.

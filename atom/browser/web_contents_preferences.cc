@@ -108,14 +108,11 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   command_line->AppendSwitchASCII(switches::kWebviewTag,
                                   webview_tag ? "true" : "false");
 
-  if (IsSandboxed(web_contents)) {
-    // pass `--enable-sandbox` to the renderer so it won't have any node.js
-    // integration.
+  // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
+  // pass `--enable-sandbox` to the renderer so it won't have any node.js
+  // integration.
+  if (IsSandboxed(web_contents))		
     command_line->AppendSwitch(switches::kEnableSandbox);
-  } else {
-    // Disable renderer sandbox for most of node's functions.
-    command_line->AppendSwitch(::switches::kNoSandbox);
-  }
 
   if (web_preferences.GetBoolean("nativeWindowOpen", &b) && b)
     command_line->AppendSwitch(switches::kNativeWindowOpen);
