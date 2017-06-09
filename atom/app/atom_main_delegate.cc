@@ -128,7 +128,7 @@ void AtomMainDelegate::PreSandboxStartup() {
 
   if (!command_line->HasSwitch(switches::kEnableMixedSandbox)) {
     if (command_line->HasSwitch(switches::kEnableSandbox)) {
-      // Disable setuid sandbox since it is not longer required on 
+      // Disable setuid sandbox since it is not longer required on
       // linux(namespace sandbox is available on most distros).
       command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
     } else {
