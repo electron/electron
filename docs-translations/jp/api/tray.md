@@ -20,7 +20,6 @@ app.on('ready', function () {
   appIcon.setToolTip('This is my application.')
   appIcon.setContextMenu(contextMenu)
 })
-
 ```
 
 __プラットフォームの制限:__
