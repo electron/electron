@@ -117,6 +117,8 @@ class App : public AtomBrowserClient::Delegate,
       bool* prevent_default,
       const std::string& type,
       const base::DictionaryValue& user_info) override;
+
+  void OnNewWindowForTab() override;
 #endif
 
   // content::ContentBrowserClient:

@@ -300,6 +300,10 @@ void Window::OnTouchBarItemResult(const std::string& item_id,
   Emit("-touch-bar-interaction", item_id, details);
 }
 
+void Window::OnNewWindowForTab() {
+  Emit("new-window-for-tab");
+}
+
 #if defined(OS_WIN)
 void Window::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {

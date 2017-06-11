@@ -183,6 +183,11 @@ class Browser : public WindowListObserver {
   // Tell the application to open a url.
   void OpenURL(const std::string& url);
 
+#if defined(OS_MACOSX)
+  // Tell the application to create a new window for a tab.
+  void NewWindowForTab();
+#endif  // defined(OS_MACOSX)
+
   // Tell the application that application is activated with visible/invisible
   // windows.
   void Activate(bool has_visible_windows);
