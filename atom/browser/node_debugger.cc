@@ -9,6 +9,8 @@
 #include "libplatform/libplatform.h"
 #include "native_mate/dictionary.h"
 
+#include "atom/common/node_includes.h"
+
 namespace atom {
 
 NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {
