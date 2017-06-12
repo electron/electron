@@ -7,7 +7,15 @@
 
 #include <memory>
 
-#include "atom/common/node_includes.h"
+#include "base/macros.h"
+
+namespace node {
+class Environment;
+}
+
+namespace v8 {
+class Platform;
+}
 
 namespace atom {
 
