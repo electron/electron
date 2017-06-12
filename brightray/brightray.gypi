@@ -209,7 +209,7 @@
         'abstract': 1,
         'msvs_settings': {
           'VCCLCompilerTool': {
-            'RuntimeLibrary': '0',  # /MT (nondebug static)
+            'RuntimeLibrary': '2',  # /MD (nondebug DLL)
             # 1, optimizeMinSpace, Minimize Size (/O1)
             'Optimization': '1',
             # 2, favorSize - Favor small code (/Os)
