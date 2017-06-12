@@ -1097,25 +1097,50 @@ describe('<webview> tag', function () {
     })
   })
 
-  it('inherits the parent window visibility state and receives visibilitychange events', function (done) {
-    w = new BrowserWindow({
-      show: false
+  describe('document.visibilityState/hidden', function () {
+    afterEach(function () {
+      ipcMain.removeAllListeners('pong')
     })
 
-    ipcMain.once('pong', function (event, visibilityState, hidden) {
-      assert.equal(visibilityState, 'hidden')
-      assert.equal(hidden, true)
-
-      ipcMain.once('pong', function (event, visibilityState, hidden) {
-        assert.equal(visibilityState, 'visible')
-        assert.equal(hidden, false)
-        done()
+    it('updates when the window is shown after the ready-to-show event', function (done) {
+      w = new BrowserWindow({
+        show: false
       })
 
-      w.webContents.emit('-window-visibility-change', 'visible')
+      w.once('ready-to-show', function () {
+        w.show()
+      })
+
+      ipcMain.on('pong', function (event, visibilityState, hidden) {
+        if (!hidden) {
+          assert.equal(visibilityState, 'visible')
+          done()
+        }
+      })
+
+      w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
     })
 
-    w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
+    it('inherits the parent window visibility state and receives visibilitychange events', function (done) {
+      w = new BrowserWindow({
+        show: false
+      })
+
+      ipcMain.once('pong', function (event, visibilityState, hidden) {
+        assert.equal(visibilityState, 'hidden')
+        assert.equal(hidden, true)
+
+        ipcMain.once('pong', function (event, visibilityState, hidden) {
+          assert.equal(visibilityState, 'visible')
+          assert.equal(hidden, false)
+          done()
+        })
+
+        w.webContents.emit('-window-visibility-change', 'visible')
+      })
+
+      w.loadURL('file://' + fixtures + '/pages/webview-visibilitychange.html')
+    })
   })
 
   describe('will-attach-webview event', () => {
