@@ -14,6 +14,7 @@
 #include "content/public/common/result_codes.h"
 #include "gin/public/debug.h"
 #include "sandbox/win/src/nt_internals.h"
+#include "base/command_line.h"
 
 #pragma intrinsic(_AddressOfReturnAddress)
 #pragma intrinsic(_ReturnAddress)
@@ -35,10 +36,28 @@ namespace crash_reporter {
 
 namespace {
 
-// Minidump with stacks, PEB, TEB, and unloaded module list.
-const MINIDUMP_TYPE kSmallDumpType = static_cast<MINIDUMP_TYPE>(
-    MiniDumpWithProcessThreadData |  // Get PEB and TEB.
-    MiniDumpWithUnloadedModules);  // Get unloaded modules when available.
+
+auto getDumpType()
+{
+	MINIDUMP_TYPE kSmallDumpType(static_cast<MINIDUMP_TYPE>(
+		MiniDumpWithProcessThreadData |  // Get PEB and TEB.
+		MiniDumpWithUnloadedModules));
+
+	const char kMinidumpTag[] = "full-memory-crash-report";
+
+	base::CommandLine& cmd_line = *base::CommandLine::ForCurrentProcess();
+
+	if (cmd_line.HasSwitch(kMinidumpTag))
+	{
+		base::string16 is_full = cmd_line.GetSwitchValueNative(kMinidumpTag);
+		if (is_full == L"1")
+		{
+			kSmallDumpType = static_cast<MINIDUMP_TYPE>(MiniDumpWithFullMemory | kSmallDumpType); 
+		}
+	}
+	return kSmallDumpType;
+}
+
 
 const wchar_t kWaitEventFormat[] = L"$1CrashServiceWaitEvent";
 const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1 Crash Service";
@@ -177,10 +196,9 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
       MinidumpCallback,
       this,
       google_breakpad::ExceptionHandler::HANDLER_ALL,
-      kSmallDumpType,
+	  getDumpType(),
       pipe_name.c_str(),
-      GetCustomInfo(product_name, version, company_name, upload_to_server)));
-
+	  GetCustomInfo(product_name, version, company_name, upload_to_server)));
   if (!breakpad_->IsOutOfProcess())
     LOG(ERROR) << "Cannot initialize out-of-process crash handler";
 
