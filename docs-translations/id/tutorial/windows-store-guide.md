@@ -1,6 +1,6 @@
 # Panduan Windows Store
 
-Dengan Windows 8, eksekusi win32 yg lama mendapatkan saudara yang baru: *The
+Dengan Windows 10, eksekusi win32 yg lama mendapatkan saudara yang baru: *The
 Universal Windows Platform*. Format `.appx` yang baru tidak hanya memungkinkan
 sejumlah API yang baru dan hebat seperti *Cortana* atau *Push Notifications*,
 tetapi juga melalui *Windows Store*, ini akan menyederhanakan instalasi dan update.
