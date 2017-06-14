@@ -1973,12 +1973,12 @@ describe('BrowserWindow module', function () {
 
     it('should keep window hidden if already in hidden state', function (done) {
       w.webContents.once('did-finish-load', function () {
-        w.setFullScreen(false)
-        setTimeout(() => {
+        w.once('leave-full-screen', () => {
           assert.equal(w.isVisible(), false)
           assert.equal(w.isFullScreen(), false)
           done()
-        }, 1000)
+        })
+        w.setFullScreen(false)
       })
       w.loadURL('about:blank')
     })
