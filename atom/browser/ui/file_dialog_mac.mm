@@ -65,8 +65,11 @@ void SetupDialog(NSSavePanel* dialog,
     if (base::DirectoryExists(settings.default_path)) {
       default_dir = base::SysUTF8ToNSString(settings.default_path.value());
     } else {
-      default_dir =
-          base::SysUTF8ToNSString(settings.default_path.DirName().value());
+      if (settings.default_path.IsAbsolute()) {
+        default_dir =
+            base::SysUTF8ToNSString(settings.default_path.DirName().value());
+      }
+
       default_filename =
           base::SysUTF8ToNSString(settings.default_path.BaseName().value());
     }

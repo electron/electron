@@ -105,7 +105,9 @@ class FileDialog {
       }
     }
 
-    SetDefaultFolder(settings.default_path);
+    if (settings.default_path.IsAbsolute()) {
+      SetDefaultFolder(settings.default_path);
+    }
   }
 
   bool Show(atom::NativeWindow* parent_window) {

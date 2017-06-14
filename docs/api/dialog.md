@@ -87,7 +87,8 @@ shown.
 * `browserWindow` BrowserWindow (optional)
 * `options` Object
   * `title` String (optional)
-  * `defaultPath` String (optional)
+  * `defaultPath` String (optional) - Absolute directory path, absolute file
+    path, or file name to use by default.
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
