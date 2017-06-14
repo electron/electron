@@ -512,7 +512,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // else a non-responsive window shell could be rendered.
   // (this situation may arise when app starts with fullscreen: true)
   // Note: the following must be after "window_->SetFullscreen(fullscreen);"
-  if (leaving_fullscreen && !IsVisible()) 
+  if (leaving_fullscreen && !IsVisible())
     FlipWindowStyle(GetAcceleratedWidget(), true, WS_VISIBLE);
 #else
   if (IsVisible())
