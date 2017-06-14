@@ -1,6 +1,6 @@
 # Windows商店指南
 
-在 Windows 8 中, 一些不错的旧 win32 程序迎来了一个新朋友: 通用Windows平台(UWP)。 新的 `.appx` 格式不仅启用了许多新的强大的 API，如 Cortana 或推送通知，而且通过Windows 应用商店，也同时简化了安装和更新。
+在 Windows 10 中, 一些不错的旧 win32 程序迎来了一个新朋友: 通用Windows平台(UWP)。 新的 `.appx` 格式不仅启用了许多新的强大的 API，如 Cortana 或推送通知，而且通过Windows 应用商店，也同时简化了安装和更新。
 
 Microsoft 开发了一个工具，将 Electron 应用程序[编译为 `.appx` 软件包][electron-windows-store]，使开发人员能够使用新应用程序模型中的一些好东西。 本指南解释了如何使用它 - 以及 Electron AppX 包的功能和限制。
 
