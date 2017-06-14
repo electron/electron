@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "atom/browser/web_contents_zoom_controller.h"
 #include "base/macros.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/web_ui_message_handler.h"
@@ -21,7 +22,8 @@ struct StreamInfo;
 
 namespace atom {
 
-class PdfViewerHandler : public content::WebUIMessageHandler {
+class PdfViewerHandler : public content::WebUIMessageHandler,
+                         public WebContentsZoomController::Observer {
  public:
   explicit PdfViewerHandler(const std::string& original_url);
   ~PdfViewerHandler() override;
@@ -41,11 +43,9 @@ class PdfViewerHandler : public content::WebUIMessageHandler {
   void SetZoom(const base::ListValue* args);
   void GetStrings(const base::ListValue* args);
   void Reload(const base::ListValue* args);
-  void OnZoomLevelChanged(const content::HostZoomMap::ZoomLevelChange& change);
+  void OnZoomLevelChanged(content::WebContents* web_contents, double level,
+      bool is_temporary);
 
-  // Keeps track of events related to zooming.
-  std::unique_ptr<content::HostZoomMap::Subscription>
-      host_zoom_map_subscription_;
   std::unique_ptr<base::Value> initialize_callback_id_;
   content::StreamInfo* stream_;
   std::string original_url_;
