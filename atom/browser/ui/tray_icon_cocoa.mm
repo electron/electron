@@ -54,9 +54,16 @@ const CGFloat kVerticalTitleMargin = 2;
                             statusItemWithLength:NSVariableStatusItemLength];
     statusItem_.reset([item retain]);
     [statusItem_ setView:self];
-
     // Finalize setup by sizing our views
     [self updateDimensions];
+
+    // Add NSTrackingArea for listening to mouseEnter and mouseExit events
+    int opts = (NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways);
+    NSTrackingArea* trackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds]
+                                               options:opts
+                                                 owner:self
+                                              userInfo:nil];
+    [self addTrackingArea:trackingArea];
   }
   return self;
 }
@@ -286,6 +293,14 @@ const CGFloat kVerticalTitleMargin = 2;
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender {
   trayIcon_->NotifyDragEntered();
   return NSDragOperationCopy;
+}
+
+- (void)mouseExited:(NSEvent*)event {
+    trayIcon_->NotifyMouseExited();
+}
+
+- (void)mouseEntered:(NSEvent*)event {
+    trayIcon_->NotifyMouseEntered();
 }
 
 - (void)draggingExited:(id <NSDraggingInfo>)sender {

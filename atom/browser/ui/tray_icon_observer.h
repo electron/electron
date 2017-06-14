@@ -28,6 +28,8 @@ class TrayIconObserver {
   virtual void OnDragEntered() {}
   virtual void OnDragExited() {}
   virtual void OnDragEnded() {}
+  virtual void OnMouseEntered() {}
+  virtual void OnMouseExited() {}
 
  protected:
   virtual ~TrayIconObserver() {}

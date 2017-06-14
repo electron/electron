@@ -83,6 +83,8 @@ class TrayIcon {
   void NotifyDragEntered();
   void NotifyDragExited();
   void NotifyDragEnded();
+  void NotifyMouseEntered();
+  void NotifyMouseExited();
 
  protected:
   TrayIcon();

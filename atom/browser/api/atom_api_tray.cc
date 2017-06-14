@@ -122,6 +122,14 @@ void Tray::OnDropText(const std::string& text) {
   Emit("drop-text", text);
 }
 
+void Tray::OnMouseEntered() {
+  Emit("mouse-enter");
+}
+
+void Tray::OnMouseExited() {
+  Emit("mouse-exited");
+}
+
 void Tray::OnDragEntered() {
   Emit("drag-enter");
 }

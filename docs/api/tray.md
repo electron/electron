@@ -144,6 +144,14 @@ Emitted when a drag operation exits the tray icon.
 
 Emitted when a drag operation ends on the tray or ends at another location.
 
+#### Event: 'mouse-enter' _macOS_
+
+Emitted when the mouse enters the tray icon.
+
+#### Event: 'mouse-exit' _macOS_
+
+Emitted when the mouse exits the tray icon.
+
 ### Instance Methods
 
 The `Tray` class has the following methods:
