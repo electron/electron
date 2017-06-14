@@ -674,9 +674,9 @@ allowing multiple instances of your app to run, this will ensure that only a
 single instance of your app is running, and other instances signal this
 instance and exit.
 
-`callback` will be called with `callback(argv, workingDirectory)` when a second
-instance has been executed. `argv` is an Array of the second instance's command
-line arguments, and `workingDirectory` is its current working directory. Usually
+`callback` will be called by the first instance with `callback(argv, workingDirectory)` 
+when a second instance has been executed. `argv` is an Array of the second instance's 
+command line arguments, and `workingDirectory` is its current working directory. Usually
 applications respond to this by making their primary window focused and
 non-minimized.
 
@@ -701,7 +701,7 @@ starts:
 const {app} = require('electron')
 let myWindow = null
 
-const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
+const isNotFirstInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
   // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore()
@@ -709,8 +709,8 @@ const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
   }
 })
 
-if (shouldQuit) {
-  app.quit()
+if (isNotFirstInstance) {
+  app.quit();
 }
 
 // Create myWindow, load the rest of the app, etc...
