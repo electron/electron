@@ -611,6 +611,10 @@ Returns `String` - The title of the current web page.
 
 Returns `Boolean` - Whether the web page is destroyed.
 
+#### `contents.focus()`
+
+Focuses the web page.
+
 #### `contents.isFocused()`
 
 Returns `Boolean` - Whether the web page is focused.
