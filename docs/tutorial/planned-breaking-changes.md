@@ -25,6 +25,16 @@ let optionsB = {webPreferences: {enableBlinkFeatures: ''}}
 let windowB = new BrowserWindow(optionsB)
 ```
 
+
+```js
+// Deprecated
+let optionsA = {titleBarStyle: 'hidden-inset'}
+let windowA = new BrowserWindow(optionsA)
+// Replace with
+let optionsB = {titleBarStyle: 'hiddenInset'}
+let windowB = new BrowserWindow(optionsB)
+```
+
 ## `clipboard`
 
 ```js
