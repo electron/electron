@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import sys
 import stat
+if sys.platform == "win32":
+  import _winreg
 
 from lib.config import BASE_URL, PLATFORM, get_target_arch, get_zip_name
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
@@ -60,6 +62,7 @@ TARGET_BINARIES = {
     'snapshot_blob.bin',
   ],
 }
+TARGET_BINARIES_EXT = []
 TARGET_DIRECTORIES = {
   'darwin': [
     '{0}.app'.format(PRODUCT_NAME),
@@ -85,6 +88,9 @@ def main():
   copy_chrome_binary('chromedriver')
   copy_chrome_binary('mksnapshot')
   copy_license()
+  if PLATFORM == 'win32':
+    copy_vcruntime_binaries()
+    copy_ucrt_binaries()
 
   args = parse_args()
 
@@ -127,6 +133,47 @@ def copy_chrome_binary(binary):
   # Copy file and keep the executable bit.
   shutil.copyfile(src, dest)
   os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
+
+
+def copy_vcruntime_binaries():
+  with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                       r"SOFTWARE\Microsoft\VisualStudio\14.0\Setup\VC", 0,
+                       _winreg.KEY_READ | _winreg.KEY_WOW64_32KEY) as key:
+    crt_dir = _winreg.QueryValueEx(key, "ProductDir")[0]
+
+  arch = get_target_arch()
+  if arch == "ia32":
+    arch = "x86"
+
+  crt_dir += r"redist\{0}\Microsoft.VC140.CRT\\".format(arch)
+
+  dlls = ["msvcp140.dll", "vcruntime140.dll"]
+
+  # Note: copyfile is used to remove the read-only flag
+  for dll in dlls:
+    shutil.copyfile(crt_dir + dll, os.path.join(DIST_DIR, dll))
+    TARGET_BINARIES_EXT.append(dll)
+
+
+def copy_ucrt_binaries():
+  with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                       r"SOFTWARE\Microsoft\Windows Kits\Installed Roots"
+                       ) as key:
+    ucrt_dir = _winreg.QueryValueEx(key, "KitsRoot10")[0]
+
+  arch = get_target_arch()
+  if arch == "ia32":
+    arch = "x86"
+
+  ucrt_dir += r"Redist\ucrt\DLLs\{0}".format(arch)
+
+  dlls = glob.glob(os.path.join(ucrt_dir, '*.dll'))
+  if len(dlls) == 0:
+    raise Exception('UCRT files not found')
+
+  for dll in dlls:
+    shutil.copy2(dll, DIST_DIR)
+    TARGET_BINARIES_EXT.append(os.path.basename(dll))
 
 
 def copy_license():
@@ -192,8 +239,8 @@ def create_dist_zip():
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'LICENSES.chromium.html',
-                                          'version']
+    files = TARGET_BINARIES[PLATFORM] + TARGET_BINARIES_EXT + ['LICENSE',
+            'LICENSES.chromium.html', 'version']
     dirs = TARGET_DIRECTORIES[PLATFORM]
     make_zip(zip_file, files, dirs)
 
