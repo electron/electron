@@ -73,9 +73,9 @@ void SetupDialog(NSSavePanel* dialog,
     }
   }
 
-  if (settings.filters.empty())
+  if (settings.filters.empty()) {
     [dialog setAllowsOtherFileTypes:YES];
-  else {
+  } else {
     // Set setAllowedFileTypes before setNameFieldStringValue as it might
     // override the extension set using setNameFieldStringValue
     SetAllowedFileTypes(dialog, settings.filters);
