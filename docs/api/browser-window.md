@@ -753,7 +753,7 @@ height areas you have within the overall content view.
 * `path` String - The absolute path to the file to preview with QuickLook. This
   is important as Quick Look uses the file name and file extension on the path
   to determine the content type of the file to open.
-* `displayName` String (Optional) - The name of the file to display on the
+* `displayName` String (optional) - The name of the file to display on the
   Quick Look modal view. This is purely visual and does not affect the content
   type of the file. Defaults to `path`.
 
