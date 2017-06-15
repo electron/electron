@@ -9,7 +9,7 @@
     "electron-typescript-definitions": "^1.2.7",
     "request": "^2.68.0",
     "standard": "^8.4.0",
-    "standard-markdown": "^2.1.1"
+    "standard-markdown": "^4.0.0"
   },
   "standard": {
     "ignore": [

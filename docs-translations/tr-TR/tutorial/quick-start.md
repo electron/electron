@@ -141,7 +141,6 @@ app.on('activate', () => {
 // Bu sayfada, uygulamanızın spesifik main process kodlarını dahil edebilirsiniz.
 // Aynı zamanda bu kodları ayrı dosyalar halinde oluştura bilir
 // ve buraya require yoluyla ekleye bilirsiniz.
-
 ```
 
 Son olarak `index.html` yani göstermek istediğiniz web sayfası:

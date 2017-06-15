@@ -124,7 +124,7 @@ app.on('ready', () => {
 const {protocol} = require('electron')
 
 protocol.registerBufferProtocol('atom', (request, callback) => {
-  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
+  callback({mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>')})
 }, (error) => {
   if (error) console.error('Failed to register protocol')
 })
