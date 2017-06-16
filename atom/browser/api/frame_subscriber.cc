@@ -45,7 +45,7 @@ bool FrameSubscriber::ShouldCaptureFrame(
 
   gfx::Size view_size = rect.size();
   gfx::Size bitmap_size = view_size;
-  const gfx::NativeView native_view = view_->GetNativeView();
+  gfx::NativeView native_view = view_->GetNativeView();
   const float scale =
       display::Screen::GetScreen()->GetDisplayNearestView(native_view)
       .device_scale_factor();

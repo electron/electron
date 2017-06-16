@@ -69,7 +69,7 @@ template <typename T, typename... Ts>
 struct ParamTuple<T, Ts...> {
   bool Parse(const base::ListValue& list,
              const base::ListValue::const_iterator& it) {
-    return it != list.end() && GetValue(**it, &head) &&
+    return it != list.end() && GetValue(*it, &head) &&
            tail.Parse(list, it + 1);
   }
 
