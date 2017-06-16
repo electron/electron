@@ -29,10 +29,10 @@
 #include "ui/compositor/layer_type.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/events/event_constants.h"
-#include "ui/events/latency_info.h"
 #include "ui/gfx/geometry/dip_util.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/skbitmap_operations.h"
+#include "ui/latency/latency_info.h"
 
 namespace atom {
 
