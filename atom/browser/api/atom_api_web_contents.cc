@@ -1538,7 +1538,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
   const float scale =
-      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      display::Screen::GetScreen()->GetDisplayNearestView(native_view)
       .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
