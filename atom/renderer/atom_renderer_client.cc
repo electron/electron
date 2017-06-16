@@ -31,7 +31,7 @@ namespace atom {
 namespace {
 
 bool IsDevToolsExtension(content::RenderFrame* render_frame) {
-  return static_cast<GURL>(render_frame->GetWebFrame()->document().url())
+  return static_cast<GURL>(render_frame->GetWebFrame()->GetDocument().Url())
       .SchemeIs("chrome-extension");
 }
 
@@ -174,9 +174,9 @@ void AtomRendererClient::WillDestroyWorkerContextOnWorkerThread(
 v8::Local<v8::Context> AtomRendererClient::GetContext(
     blink::WebFrame* frame, v8::Isolate* isolate) {
   if (isolated_world())
-    return frame->worldScriptContext(isolate, World::ISOLATED_WORLD);
+    return frame->WorldScriptContext(isolate, World::ISOLATED_WORLD);
   else
-    return frame->mainWorldScriptContext();
+    return frame->MainWorldScriptContext();
 }
 
 void AtomRendererClient::SetupMainWorldOverrides(

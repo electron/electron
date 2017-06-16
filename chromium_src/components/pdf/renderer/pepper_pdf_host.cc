@@ -75,7 +75,7 @@ int32_t PepperPDFHost::OnHostMsgSaveAs(
   GURL url = instance->GetPluginURL();
   content::Referrer referrer;
   referrer.url = url;
-  referrer.policy = blink::WebReferrerPolicyDefault;
+  referrer.policy = blink::kWebReferrerPolicyDefault;
   referrer = content::Referrer::SanitizeForRequest(url, referrer);
   render_frame->Send(
       new PDFHostMsg_PDFSaveURLAs(render_frame->GetRoutingID(), url, referrer));
