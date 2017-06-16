@@ -587,16 +587,18 @@ void WebContents::HandleKeyboardEvent(
   }
 }
 
-bool WebContents::PreHandleKeyboardEvent(
+content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event,
-    bool* is_keyboard_shortcut) {
+    const content::NativeWebKeyboardEvent& event) {
   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown ||
       event.GetType() == blink::WebInputEvent::Type::kKeyUp) {
-    return Emit("before-input-event", event);
-  } else {
-    return false;
+    bool prevent_default = Emit("before-input-event", event);
+    if (prevent_default) {
+      return content::KeyboardEventProcessingResult::HANDLED;
+    }
   }
+
+  return content::KeyboardEventProcessingResult::NOT_HANDLED;
 }
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
