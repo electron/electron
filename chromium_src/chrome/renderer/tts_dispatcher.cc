@@ -52,35 +52,35 @@ bool TtsDispatcher::OnControlMessageReceived(const IPC::Message& message) {
   return false;
 }
 
-void TtsDispatcher::updateVoiceList() {
+void TtsDispatcher::UpdateVoiceList() {
   RenderThread::Get()->Send(new TtsHostMsg_InitializeVoiceList());
 }
 
-void TtsDispatcher::speak(const WebSpeechSynthesisUtterance& web_utterance) {
+void TtsDispatcher::Speak(const WebSpeechSynthesisUtterance& web_utterance) {
   int id = next_utterance_id_++;
 
   utterance_id_map_[id] = web_utterance;
 
   TtsUtteranceRequest utterance;
   utterance.id = id;
-  utterance.text = web_utterance.text().utf8();
-  utterance.lang = web_utterance.lang().utf8();
-  utterance.voice = web_utterance.voice().utf8();
-  utterance.volume = web_utterance.volume();
-  utterance.rate = web_utterance.rate();
-  utterance.pitch = web_utterance.pitch();
+  utterance.text = web_utterance.GetText().Utf8();
+  utterance.lang = web_utterance.Lang().Utf8();
+  utterance.voice = web_utterance.Voice().Utf8();
+  utterance.volume = web_utterance.Volume();
+  utterance.rate = web_utterance.Rate();
+  utterance.pitch = web_utterance.Pitch();
   RenderThread::Get()->Send(new TtsHostMsg_Speak(utterance));
 }
 
-void TtsDispatcher::pause() {
+void TtsDispatcher::Pause() {
   RenderThread::Get()->Send(new TtsHostMsg_Pause());
 }
 
-void TtsDispatcher::resume() {
+void TtsDispatcher::Resume() {
   RenderThread::Get()->Send(new TtsHostMsg_Resume());
 }
 
-void TtsDispatcher::cancel() {
+void TtsDispatcher::Cancel() {
   RenderThread::Get()->Send(new TtsHostMsg_Cancel());
 }
 
@@ -96,13 +96,13 @@ void TtsDispatcher::OnSetVoiceList(const std::vector<TtsVoice>& voices) {
   WebVector<WebSpeechSynthesisVoice> out_voices(voices.size());
   for (size_t i = 0; i < voices.size(); ++i) {
     out_voices[i] = WebSpeechSynthesisVoice();
-    out_voices[i].setVoiceURI(WebString::fromUTF8(voices[i].voice_uri));
-    out_voices[i].setName(WebString::fromUTF8(voices[i].name));
-    out_voices[i].setLanguage(WebString::fromUTF8(voices[i].lang));
-    out_voices[i].setIsLocalService(voices[i].local_service);
-    out_voices[i].setIsDefault(voices[i].is_default);
+    out_voices[i].SetVoiceURI(WebString::FromUTF8(voices[i].voice_uri));
+    out_voices[i].SetName(WebString::FromUTF8(voices[i].name));
+    out_voices[i].SetLanguage(WebString::FromUTF8(voices[i].lang));
+    out_voices[i].SetIsLocalService(voices[i].local_service);
+    out_voices[i].SetIsDefault(voices[i].is_default);
   }
-  synthesizer_client_->setVoiceList(out_voices);
+  synthesizer_client_->SetVoiceList(out_voices);
 }
 
 void TtsDispatcher::OnDidStartSpeaking(int utterance_id) {
@@ -110,45 +110,45 @@ void TtsDispatcher::OnDidStartSpeaking(int utterance_id) {
     return;
 
   WebSpeechSynthesisUtterance utterance = FindUtterance(utterance_id);
-  if (utterance.isNull())
+  if (utterance.IsNull())
     return;
 
-  synthesizer_client_->didStartSpeaking(utterance);
+  synthesizer_client_->DidStartSpeaking(utterance);
 }
 
 void TtsDispatcher::OnDidFinishSpeaking(int utterance_id) {
   WebSpeechSynthesisUtterance utterance = FindUtterance(utterance_id);
-  if (utterance.isNull())
+  if (utterance.IsNull())
     return;
 
-  synthesizer_client_->didFinishSpeaking(utterance);
+  synthesizer_client_->DidFinishSpeaking(utterance);
   utterance_id_map_.erase(utterance_id);
 }
 
 void TtsDispatcher::OnDidPauseSpeaking(int utterance_id) {
   WebSpeechSynthesisUtterance utterance = FindUtterance(utterance_id);
-  if (utterance.isNull())
+  if (utterance.IsNull())
     return;
 
-  synthesizer_client_->didPauseSpeaking(utterance);
+  synthesizer_client_->DidPauseSpeaking(utterance);
 }
 
 void TtsDispatcher::OnDidResumeSpeaking(int utterance_id) {
   WebSpeechSynthesisUtterance utterance = FindUtterance(utterance_id);
-  if (utterance.isNull())
+  if (utterance.IsNull())
     return;
 
-  synthesizer_client_->didResumeSpeaking(utterance);
+  synthesizer_client_->DidResumeSpeaking(utterance);
 }
 
 void TtsDispatcher::OnWordBoundary(int utterance_id, int char_index) {
   CHECK(char_index >= 0);
 
   WebSpeechSynthesisUtterance utterance = FindUtterance(utterance_id);
-  if (utterance.isNull())
+  if (utterance.IsNull())
     return;
 
-  synthesizer_client_->wordBoundaryEventOccurred(
+  synthesizer_client_->WordBoundaryEventOccurred(
       utterance, static_cast<unsigned>(char_index));
 }
 
@@ -156,10 +156,10 @@ void TtsDispatcher::OnSentenceBoundary(int utterance_id, int char_index) {
   CHECK(char_index >= 0);
 
   WebSpeechSynthesisUtterance utterance = FindUtterance(utterance_id);
-  if (utterance.isNull())
+  if (utterance.IsNull())
     return;
 
-  synthesizer_client_->sentenceBoundaryEventOccurred(
+  synthesizer_client_->SentenceBoundaryEventOccurred(
       utterance, static_cast<unsigned>(char_index));
 }
 
@@ -169,31 +169,31 @@ void TtsDispatcher::OnMarkerEvent(int utterance_id, int char_index) {
 
 void TtsDispatcher::OnWasInterrupted(int utterance_id) {
   WebSpeechSynthesisUtterance utterance = FindUtterance(utterance_id);
-  if (utterance.isNull())
+  if (utterance.IsNull())
     return;
 
   // The web speech API doesn't support "interrupted".
-  synthesizer_client_->didFinishSpeaking(utterance);
+  synthesizer_client_->DidFinishSpeaking(utterance);
   utterance_id_map_.erase(utterance_id);
 }
 
 void TtsDispatcher::OnWasCancelled(int utterance_id) {
   WebSpeechSynthesisUtterance utterance = FindUtterance(utterance_id);
-  if (utterance.isNull())
+  if (utterance.IsNull())
     return;
 
   // The web speech API doesn't support "cancelled".
-  synthesizer_client_->didFinishSpeaking(utterance);
+  synthesizer_client_->DidFinishSpeaking(utterance);
   utterance_id_map_.erase(utterance_id);
 }
 
 void TtsDispatcher::OnSpeakingErrorOccurred(int utterance_id,
                                             const std::string& error_message) {
   WebSpeechSynthesisUtterance utterance = FindUtterance(utterance_id);
-  if (utterance.isNull())
+  if (utterance.IsNull())
     return;
 
   // The web speech API doesn't support an error message.
-  synthesizer_client_->speakingErrorOccurred(utterance);
+  synthesizer_client_->SpeakingErrorOccurred(utterance);
   utterance_id_map_.erase(utterance_id);
 }

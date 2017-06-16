@@ -20,11 +20,11 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   if (event.skip_in_browser ||
-      event.type() == content::NativeWebKeyboardEvent::Char)
+      event.GetType() == content::NativeWebKeyboardEvent::kChar)
     return;
 
   // Escape exits tabbed fullscreen mode.
-  if (event.windowsKeyCode == ui::VKEY_ESCAPE && is_html_fullscreen())
+  if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
   if (!ignore_menu_shortcuts_) {

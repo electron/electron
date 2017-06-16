@@ -52,13 +52,13 @@ class AutofillAgent : public content::RenderFrameObserver,
   bool OnMessageReceived(const IPC::Message& message) override;
 
   // blink::WebAutofillClient:
-  void textFieldDidEndEditing(const blink::WebInputElement&) override;
-  void textFieldDidChange(const blink::WebFormControlElement&) override;
-  void textFieldDidChangeImpl(const blink::WebFormControlElement&);
-  void textFieldDidReceiveKeyDown(const blink::WebInputElement&,
+  void TextFieldDidEndEditing(const blink::WebInputElement&) override;
+  void TextFieldDidChange(const blink::WebFormControlElement&) override;
+  void TextFieldDidChangeImpl(const blink::WebFormControlElement&);
+  void TextFieldDidReceiveKeyDown(const blink::WebInputElement&,
                                   const blink::WebKeyboardEvent&) override;
-  void openTextDataListChooser(const blink::WebInputElement&) override;
-  void dataListOptionsChanged(const blink::WebInputElement&) override;
+  void OpenTextDataListChooser(const blink::WebInputElement&) override;
+  void DataListOptionsChanged(const blink::WebInputElement&) override;
 
   bool IsUserGesture() const;
   void HidePopup();
