@@ -1553,7 +1553,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  content::WebCursor::CursorInfo info;
+  content::CursorInfo info;
   cursor.GetCursorInfo(&info);
 
   if (cursor.IsCustom()) {
