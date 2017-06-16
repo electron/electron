@@ -29,7 +29,7 @@
 namespace atom {
 
 // Returns the cursor's type as a string.
-std::string CursorTypeToString(const content::WebCursor::CursorInfo& info);
+std::string CursorTypeToString(const content::CursorInfo& info);
 
 }  // namespace atom
 
