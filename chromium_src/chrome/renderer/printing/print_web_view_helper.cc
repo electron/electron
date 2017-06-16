@@ -96,7 +96,7 @@ PrintMsg_Print_Params GetCssPrintParams(
       dpi, kPixelsPerInch);
 
   if (frame) {
-    frame->pageSizeAndMarginsInPixels(page_index,
+    frame->PageSizeAndMarginsInPixels(page_index,
                                       page_size_in_pixels,
                                       margin_top_in_pixels,
                                       margin_right_in_pixels,
@@ -104,9 +104,9 @@ PrintMsg_Print_Params GetCssPrintParams(
                                       margin_left_in_pixels);
   }
 
-  double new_content_width = page_size_in_pixels.width() -
+  double new_content_width = page_size_in_pixels.Width() -
                           margin_left_in_pixels - margin_right_in_pixels;
-  double new_content_height = page_size_in_pixels.height() -
+  double new_content_height = page_size_in_pixels.Height() -
                            margin_top_in_pixels - margin_bottom_in_pixels;
 
   // Invalid page size and/or margins. We just use the default setting.
@@ -117,8 +117,8 @@ PrintMsg_Print_Params GetCssPrintParams(
   }
 
   page_css_params.page_size =
-      gfx::Size(ConvertUnit(page_size_in_pixels.width(), kPixelsPerInch, dpi),
-                ConvertUnit(page_size_in_pixels.height(), kPixelsPerInch, dpi));
+      gfx::Size(ConvertUnit(page_size_in_pixels.Width(), kPixelsPerInch, dpi),
+                ConvertUnit(page_size_in_pixels.Height(), kPixelsPerInch, dpi));
   page_css_params.content_size =
       gfx::Size(ConvertUnit(new_content_width, kPixelsPerInch, dpi),
               ConvertUnit(new_content_height, kPixelsPerInch, dpi));
@@ -214,53 +214,53 @@ void ComputeWebKitPrintParamsInDesiredDpi(
     const PrintMsg_Print_Params& print_params,
     blink::WebPrintParams* webkit_print_params) {
   int dpi = GetDPI(&print_params);
-  webkit_print_params->printerDPI = dpi;
-  webkit_print_params->printScalingOption = print_params.print_scaling_option;
+  webkit_print_params->printer_dpi = dpi;
+  webkit_print_params->print_scaling_option = print_params.print_scaling_option;
 
-  webkit_print_params->printContentArea.width =
+  webkit_print_params->print_content_area.width =
       ConvertUnit(print_params.content_size.width(), dpi,
                   print_params.desired_dpi);
-  webkit_print_params->printContentArea.height =
+  webkit_print_params->print_content_area.height =
       ConvertUnit(print_params.content_size.height(), dpi,
                   print_params.desired_dpi);
 
-  webkit_print_params->printableArea.x =
+  webkit_print_params->printable_area.x =
       ConvertUnit(print_params.printable_area.x(), dpi,
                   print_params.desired_dpi);
-  webkit_print_params->printableArea.y =
+  webkit_print_params->printable_area.y =
       ConvertUnit(print_params.printable_area.y(), dpi,
                   print_params.desired_dpi);
-  webkit_print_params->printableArea.width =
+  webkit_print_params->printable_area.width =
       ConvertUnit(print_params.printable_area.width(), dpi,
                   print_params.desired_dpi);
-  webkit_print_params->printableArea.height =
+  webkit_print_params->printable_area.height =
       ConvertUnit(print_params.printable_area.height(),
                   dpi, print_params.desired_dpi);
 
-  webkit_print_params->paperSize.width =
+  webkit_print_params->paper_size.width =
       ConvertUnit(print_params.page_size.width(), dpi,
                   print_params.desired_dpi);
-  webkit_print_params->paperSize.height =
+  webkit_print_params->paper_size.height =
       ConvertUnit(print_params.page_size.height(), dpi,
                   print_params.desired_dpi);
 }
 
 blink::WebPlugin* GetPlugin(const blink::WebFrame* frame) {
-  return frame->document().isPluginDocument() ?
-         frame->document().to<blink::WebPluginDocument>().plugin() : NULL;
+  return frame->GetDocument().IsPluginDocument() ?
+         frame->GetDocument().To<blink::WebPluginDocument>().Plugin() : NULL;
 }
 
 bool PrintingNodeOrPdfFrame(const blink::WebFrame* frame,
                             const blink::WebNode& node) {
-  if (!node.isNull())
+  if (!node.IsNull())
     return true;
   blink::WebPlugin* plugin = GetPlugin(frame);
-  return plugin && plugin->supportsPaginatedPrint();
+  return plugin && plugin->SupportsPaginatedPrint();
 }
 
 MarginType GetMarginsForPdf(blink::WebFrame* frame,
                             const blink::WebNode& node) {
-  if (frame->isPrintScalingDisabledForPlugin(node))
+  if (frame->IsPrintScalingDisabledForPlugin(node))
     return NO_MARGINS;
   else
     return PRINTABLE_AREA_MARGINS;
@@ -324,7 +324,7 @@ FrameReference::~FrameReference() {
 
 void FrameReference::Reset(blink::WebLocalFrame* frame) {
   if (frame) {
-    view_ = frame->view();
+    view_ = frame->View();
     frame_ = frame;
   } else {
     view_ = NULL;
@@ -335,8 +335,8 @@ void FrameReference::Reset(blink::WebLocalFrame* frame) {
 blink::WebLocalFrame* FrameReference::GetFrame() {
   if (view_ == NULL || frame_ == NULL)
     return NULL;
-  for (blink::WebFrame* frame = view_->mainFrame(); frame != NULL;
-       frame = frame->traverseNext()) {
+  for (blink::WebFrame* frame = view_->MainFrame(); frame != NULL;
+       frame = frame->TraverseNext()) {
     if (frame == frame_)
       return frame_;
   }
@@ -357,7 +357,7 @@ float PrintWebViewHelper::RenderPageContent(blink::WebFrame* frame,
   SkAutoCanvasRestore auto_restore(canvas, true);
   canvas->translate((content_area.x() - canvas_area.x()) / scale_factor,
                     (content_area.y() - canvas_area.y()) / scale_factor);
-  return frame->printPage(page_number, canvas);
+  return frame->PrintPage(page_number, canvas);
 }
 
 // Class that calls the Begin and End print functions on the frame and changes
@@ -395,16 +395,16 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
 
   bool IsLoadingSelection() {
     // It's not selection if not |owns_web_view_|.
-    return owns_web_view_ && frame() && frame()->isLoading();
+    return owns_web_view_ && frame() && frame()->IsLoading();
   }
 
  protected:
   // blink::WebViewClient override:
-  void didStopLoading() override;
-  bool allowsBrokenNullLayerTreeView() const override;
+  void DidStopLoading() override;
+  bool AllowsBrokenNullLayerTreeView() const override;
 
   // blink::WebFrameClient:
-  blink::WebLocalFrame* createChildFrame(
+  blink::WebLocalFrame* CreateChildFrame(
       blink::WebLocalFrame* parent,
       blink::WebTreeScopeType scope,
       const blink::WebString& name,
@@ -453,13 +453,13 @@ PrepareFrameAndViewForPrint::PrepareFrameAndViewForPrint(
       !PrintingNodeOrPdfFrame(frame, node_to_print_)) {
     bool fit_to_page = ignore_css_margins &&
                        print_params.print_scaling_option ==
-                            blink::WebPrintScalingOptionFitToPrintableArea;
+                            blink::kWebPrintScalingOptionFitToPrintableArea;
     ComputeWebKitPrintParamsInDesiredDpi(params, &web_print_params_);
-    frame->printBegin(web_print_params_, node_to_print_);
+    frame->PrintBegin(web_print_params_, node_to_print_);
     print_params = CalculatePrintParamsForCss(frame, 0, print_params,
                                               ignore_css_margins, fit_to_page,
                                               NULL);
-    frame->printEnd();
+    frame->PrintEnd();
   }
   ComputeWebKitPrintParamsInDesiredDpi(print_params, &web_print_params_);
 }
@@ -475,8 +475,8 @@ void PrepareFrameAndViewForPrint::ResizeForPrinting() {
   // minimum (default) scaling.
   // This is important for sites that try to fill the page.
   // The 1.25 value is |printingMinimumShrinkFactor|.
-  gfx::Size print_layout_size(web_print_params_.printContentArea.width,
-                              web_print_params_.printContentArea.height);
+  gfx::Size print_layout_size(web_print_params_.print_content_area.width,
+                              web_print_params_.print_content_area.height);
   print_layout_size.set_height(
       static_cast<int>(static_cast<double>(print_layout_size.height()) * 1.25));
 
@@ -485,22 +485,22 @@ void PrepareFrameAndViewForPrint::ResizeForPrinting() {
 
   // Backup size and offset if it's a local frame.
   blink::WebView* web_view = frame_.view();
-  if (blink::WebFrame* web_frame = web_view->mainFrame()) {
-    if (web_frame->isWebLocalFrame())
-      prev_scroll_offset_ = web_frame->getScrollOffset();
+  if (blink::WebFrame* web_frame = web_view->MainFrame()) {
+    if (web_frame->IsWebLocalFrame())
+      prev_scroll_offset_ = web_frame->GetScrollOffset();
   }
-  prev_view_size_ = web_view->size();
+  prev_view_size_ = web_view->Size();
 
-  web_view->resize(print_layout_size);
+  web_view->Resize(print_layout_size);
 }
 
 
 void PrepareFrameAndViewForPrint::StartPrinting() {
   ResizeForPrinting();
   blink::WebView* web_view = frame_.view();
-  web_view->settings()->setShouldPrintBackgrounds(should_print_backgrounds_);
+  web_view->GetSettings()->SetShouldPrintBackgrounds(should_print_backgrounds_);
   expected_pages_count_ =
-      frame()->printBegin(web_print_params_, node_to_print_);
+      frame()->PrintBegin(web_print_params_, node_to_print_);
   is_printing_started_ = true;
 }
 
@@ -521,7 +521,7 @@ void PrepareFrameAndViewForPrint::CopySelection(
   ResizeForPrinting();
   std::string url_str = "data:text/html;charset=utf-8,";
   url_str.append(
-      net::EscapeQueryParamValue(frame()->selectionAsMarkup().utf8(), false));
+      net::EscapeQueryParamValue(frame()->SelectionAsMarkup().Utf8(), false));
   RestoreSize();
   // Create a new WebView with the same settings as the current display one.
   // Except that we disable javascript (don't want any active content running
@@ -530,44 +530,44 @@ void PrepareFrameAndViewForPrint::CopySelection(
   prefs.javascript_enabled = false;
 
   blink::WebView* web_view =
-      blink::WebView::create(this, blink::WebPageVisibilityStateVisible);
+      blink::WebView::Create(this, blink::kWebPageVisibilityStateVisible);
   owns_web_view_ = true;
   content::RenderView::ApplyWebPreferences(prefs, web_view);
-  blink::WebLocalFrame* main_frame = blink::WebLocalFrame::create(
-      blink::WebTreeScopeType::Document, this, nullptr, nullptr);
-  web_view->setMainFrame(main_frame);
-  blink::WebFrameWidget::create(this, web_view, main_frame);
-  frame_.Reset(web_view->mainFrame()->toWebLocalFrame());
-  node_to_print_.reset();
+  blink::WebLocalFrame* main_frame = blink::WebLocalFrame::Create(
+      blink::WebTreeScopeType::kDocument, this, nullptr, nullptr);
+  web_view->SetMainFrame(main_frame);
+  blink::WebFrameWidget::Create(this, web_view, main_frame);
+  frame_.Reset(web_view->MainFrame()->ToWebLocalFrame());
+  node_to_print_.Reset();
 
-  // When loading is done this will call didStopLoading() and that will do the
+  // When loading is done this will call DidStopLoading() and that will do the
   // actual printing.
-  frame()->loadRequest(blink::WebURLRequest(GURL(url_str)));
+  frame()->LoadRequest(blink::WebURLRequest(GURL(url_str)));
 }
 
-bool PrepareFrameAndViewForPrint::allowsBrokenNullLayerTreeView() const {
+bool PrepareFrameAndViewForPrint::AllowsBrokenNullLayerTreeView() const {
   return true;
 }
 
-void PrepareFrameAndViewForPrint::didStopLoading() {
+void PrepareFrameAndViewForPrint::DidStopLoading() {
   DCHECK(!on_ready_.is_null());
   // Don't call callback here, because it can delete |this| and WebView that is
-  // called didStopLoading.
+  // called DidStopLoading.
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::Bind(&PrepareFrameAndViewForPrint::CallOnReady,
                             weak_ptr_factory_.GetWeakPtr()));
 }
 
-blink::WebLocalFrame* PrepareFrameAndViewForPrint::createChildFrame(
+blink::WebLocalFrame* PrepareFrameAndViewForPrint::CreateChildFrame(
     blink::WebLocalFrame* parent,
     blink::WebTreeScopeType scope,
     const blink::WebString& name,
     const blink::WebString& unique_name,
     blink::WebSandboxFlags sandbox_flags,
     const blink::WebFrameOwnerProperties& frame_owner_properties) {
-  blink::WebLocalFrame* frame = blink::WebLocalFrame::create(
+  blink::WebLocalFrame* frame = blink::WebLocalFrame::Create(
       scope, this, nullptr, nullptr);
-  parent->appendChild(frame);
+  parent->AppendChild(frame);
   return frame;
 }
 
@@ -579,30 +579,30 @@ void PrepareFrameAndViewForPrint::RestoreSize() {
   if (!frame())
     return;
 
-  blink::WebView* web_view = frame_.GetFrame()->view();
-  web_view->resize(prev_view_size_);
-  if (blink::WebFrame* web_frame = web_view->mainFrame()) {
-    if (web_frame->isWebLocalFrame())
-      web_frame->setScrollOffset(prev_scroll_offset_);
+  blink::WebView* web_view = frame_.GetFrame()->View();
+  web_view->Resize(prev_view_size_);
+  if (blink::WebFrame* web_frame = web_view->MainFrame()) {
+    if (web_frame->IsWebLocalFrame())
+      web_frame->SetScrollOffset(prev_scroll_offset_);
   }
 }
 
 void PrepareFrameAndViewForPrint::FinishPrinting() {
   blink::WebLocalFrame* frame = frame_.GetFrame();
   if (frame) {
-    blink::WebView* web_view = frame->view();
+    blink::WebView* web_view = frame->View();
     if (is_printing_started_) {
       is_printing_started_ = false;
-      frame->printEnd();
+      frame->PrintEnd();
       if (!owns_web_view_) {
-        web_view->settings()->setShouldPrintBackgrounds(false);
+        web_view->GetSettings()->SetShouldPrintBackgrounds(false);
         RestoreSize();
       }
     }
     if (owns_web_view_) {
-      DCHECK(!frame->isLoading());
+      DCHECK(!frame->IsLoading());
       owns_web_view_ = false;
-      web_view->close();
+      web_view->Close();
     }
   }
   frame_.Reset(NULL);
@@ -825,7 +825,7 @@ bool PrintWebViewHelper::FinalizePrintReadyDocument() {
 }
 
 void PrintWebViewHelper::PrintNode(const blink::WebNode& node) {
-  if (node.isNull() || !node.document().frame()) {
+  if (node.IsNull() || !node.GetDocument().GetFrame()) {
     // This can occur when the context menu refers to an invalid WebNode.
     // See http://crbug.com/100890#c17 for a repro case.
     return;
@@ -840,7 +840,7 @@ void PrintWebViewHelper::PrintNode(const blink::WebNode& node) {
 
   print_node_in_progress_ = true;
   blink::WebNode duplicate_node(node);
-  Print(duplicate_node.document().frame(), duplicate_node);
+  Print(duplicate_node.GetDocument().GetFrame(), duplicate_node);
 
   print_node_in_progress_ = false;
 }
@@ -988,7 +988,7 @@ void PrintWebViewHelper::ComputePageLayoutInPointsForCss(
   PrintMsg_Print_Params params = CalculatePrintParamsForCss(
       frame, page_index, page_params, ignore_css_margins,
       page_params.print_scaling_option ==
-          blink::WebPrintScalingOptionFitToPrintableArea,
+          blink::kWebPrintScalingOptionFitToPrintableArea,
       scale_factor);
   CalculatePageLayoutFromPrintParams(params, page_layout_in_points);
 }
@@ -1015,10 +1015,10 @@ bool PrintWebViewHelper::InitPrintSettings(bool fit_to_paper_size,
   settings.pages.clear();
 
   settings.params.print_scaling_option =
-      blink::WebPrintScalingOptionSourceSize;
+      blink::kWebPrintScalingOptionSourceSize;
   if (fit_to_paper_size) {
     settings.params.print_scaling_option =
-        blink::WebPrintScalingOptionFitToPrintableArea;
+        blink::kWebPrintScalingOptionFitToPrintableArea;
   }
 
   SetPrintPagesParams(settings);
@@ -1092,7 +1092,7 @@ bool PrintWebViewHelper::UpdatePrintSettings(
     settings.params.print_to_pdf = true;
     UpdateFrameMarginsCssInfo(*job_settings);
     settings.params.print_scaling_option =
-      blink::WebPrintScalingOptionSourceSize;
+      blink::kWebPrintScalingOptionSourceSize;
   }
 
   SetPrintPagesParams(settings);
@@ -1114,7 +1114,7 @@ bool PrintWebViewHelper::GetPrintSettingsFromUser(blink::WebLocalFrame* frame,
   PrintMsg_PrintPages_Params print_settings;
 
   params.cookie = print_pages_params_->params.document_cookie;
-  params.has_selection = frame->hasSelection();
+  params.has_selection = frame->HasSelection();
   params.expected_pages_count = expected_pages_count;
   MarginType margin_type = DEFAULT_MARGINS;
   if (PrintingNodeOrPdfFrame(frame, node))
@@ -1225,16 +1225,16 @@ void PrintWebViewHelper::PrintPreviewContext::InitWithFrame(
   DCHECK(!IsRendering());
   state_ = INITIALIZED;
   source_frame_.Reset(web_frame);
-  source_node_.reset();
+  source_node_.Reset();
 }
 
 void PrintWebViewHelper::PrintPreviewContext::InitWithNode(
     const blink::WebNode& web_node) {
-  DCHECK(!web_node.isNull());
-  DCHECK(web_node.document().frame());
+  DCHECK(!web_node.IsNull());
+  DCHECK(web_node.GetDocument().GetFrame());
   DCHECK(!IsRendering());
   state_ = INITIALIZED;
-  source_frame_.Reset(web_node.document().frame());
+  source_frame_.Reset(web_node.GetDocument().GetFrame());
   source_node_ = web_node;
 }
 
@@ -1367,7 +1367,7 @@ bool PrintWebViewHelper::PrintPreviewContext::IsModifiable() {
 }
 
 bool PrintWebViewHelper::PrintPreviewContext::HasSelection() {
-  return IsModifiable() && source_frame()->hasSelection();
+  return IsModifiable() && source_frame()->HasSelection();
 }
 
 bool PrintWebViewHelper::PrintPreviewContext::IsLastPageOfPrintReadyMetafile()

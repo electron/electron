@@ -224,7 +224,7 @@ class OffScreenRenderWidgetHostView
   void OnProxyViewPaint(const gfx::Rect& damage_rect);
 
   bool IsPopupWidget() const {
-    return popup_type_ != blink::WebPopupTypeNone;
+    return popup_type_ != blink::kWebPopupTypeNone;
   }
 
   void HoldResize();
