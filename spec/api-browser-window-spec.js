@@ -1,11 +1,13 @@
 'use strict'
 
 const assert = require('assert')
+const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const qs = require('querystring')
 const http = require('http')
+const net = require('net')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
@@ -1256,6 +1258,56 @@ describe('BrowserWindow module', function () {
           assert.equal(arg, 'hi child window')
           done()
         })
+      })
+    })
+
+    describe('mixed sandbox option', function () {
+      // TOOD (juturu): This test needs to be fixed
+      let sandboxServer = null
+      const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-mixed-sandbox' : '/tmp/electron-app-mixed-sandbox'
+
+      beforeEach(function (done) {
+        fs.unlink(socketPath, () => {
+          sandboxServer = net.createServer()
+          sandboxServer.listen(socketPath)
+          done()
+        })
+      })
+
+      afterEach(function (done) {
+        sandboxServer.close(() => {
+          if (process.platform === 'win32') {
+            done()
+          } else {
+            fs.unlink(socketPath, () => {
+              done()
+            })
+          }
+        })
+      })
+
+      it('enable-mixed-sandbox', (done) => {
+        this.timeout(120000)
+
+        let state = 'none'
+        sandboxServer.once('error', (error) => {
+          done(error)
+        })
+        sandboxServer.on('connection', (client) => {
+          client.once('data', function (data) {
+            console.log('jhreddy -' + data)
+            if (String(data) === 'false' && state === 'none') {
+              state = 'first-launch'
+            } else if (String(data) === 'true' && state === 'first-launch') {
+              done()
+            } else {
+              done(`Unexpected state: ${state}`)
+            }
+          })
+        })
+
+        const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
+        ChildProcess.spawn(remote.process.execPath, [appPath])
       })
     })
 
