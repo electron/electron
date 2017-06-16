@@ -33,7 +33,7 @@ URLRequestBufferJob::URLRequestBufferJob(
 }
 
 void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
-  const base::BinaryValue* binary = nullptr;
+  const base::Value* binary = nullptr;
   if (options->IsType(base::Value::Type::DICTIONARY)) {
     base::DictionaryValue* dict =
         static_cast<base::DictionaryValue*>(options.get());
