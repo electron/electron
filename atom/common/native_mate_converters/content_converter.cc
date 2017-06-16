@@ -215,7 +215,7 @@ Converter<scoped_refptr<ResourceRequestBodyImpl>>::ToV8(
     auto type = element.type();
     if (type == ResourceRequestBodyImpl::Element::TYPE_BYTES) {
       std::unique_ptr<base::Value> bytes(
-          base::BinaryValue::CreateWithCopiedBuffer(
+          base::Value::CreateWithCopiedBuffer(
               element.bytes(), static_cast<size_t>(element.length())));
       post_data_dict->SetString("type", "rawData");
       post_data_dict->Set("bytes", std::move(bytes));
@@ -260,7 +260,7 @@ bool Converter<scoped_refptr<ResourceRequestBodyImpl>>::FromV8(
       return false;
     dict->GetString("type", &type);
     if (type == "rawData") {
-      base::BinaryValue* bytes = nullptr;
+      base::Value* bytes = nullptr;
       dict->GetBinary("bytes", &bytes);
       (*out)->AppendBytes(bytes->GetBuffer(), bytes->GetSize());
     } else if (type == "file") {

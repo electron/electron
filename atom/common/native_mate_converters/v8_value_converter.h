@@ -13,7 +13,6 @@ namespace base {
 class DictionaryValue;
 class ListValue;
 class Value;
-using BinaryValue = Value;
 }
 
 namespace atom {
@@ -44,7 +43,7 @@ class V8ValueConverter {
       const base::DictionaryValue* dictionary) const;
   v8::Local<v8::Value> ToArrayBuffer(
       v8::Isolate* isolate,
-      const base::BinaryValue* value) const;
+      const base::Value* value) const;
 
   base::Value* FromV8ValueImpl(FromV8ValueState* state,
                                v8::Local<v8::Value> value,
