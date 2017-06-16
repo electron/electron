@@ -113,8 +113,6 @@ class OffScreenRenderWidgetHostView
 #endif  // defined(OS_MACOSX)
 
   // content::RenderWidgetHostViewBase:
-  void OnSwapCompositorFrame(uint32_t, cc::CompositorFrame)
-    override;
   void ClearCompositorFrame(void) override;
   void InitAsPopup(content::RenderWidgetHostView *rwhv, const gfx::Rect& rect)
     override;
