@@ -209,7 +209,7 @@ void PdfViewerHandler::OnZoomLevelChanged(content::WebContents* web_contents,
     double level, bool is_temporary) {
   if (web_ui()->GetWebContents() == web_contents) {
     CallJavascriptFunction("cr.webUIListenerCallback",
-      base::StringValue("onZoomLevelChanged"),
+      base::Value("onZoomLevelChanged"),
       base::Value(content::ZoomLevelToZoomFactor(level)));
   }
 }
