@@ -20,12 +20,10 @@ majority of Electron users.
 
 ### CRT
 
-It's a Microsoft Visual Studio thing.
-
-> The C Run-time Library (CRT) is the part of the C++ Standard Library that 
+The C Run-time Library (CRT) is the part of the C++ Standard Library that 
 incorporates the ISO C99 standard library. The Visual C++ libraries that 
 implement the CRT support native code development, and both mixed native and 
-managed code, and pure managed code for .NET development. 
+managed code, and pure managed code for .NET development.
 
 ### DMG
 
