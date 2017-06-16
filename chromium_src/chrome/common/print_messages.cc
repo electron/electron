@@ -22,7 +22,7 @@ PrintMsg_Print_Params::PrintMsg_Print_Params()
       preview_ui_id(-1),
       preview_request_id(0),
       is_first_request(false),
-      print_scaling_option(blink::WebPrintScalingOptionSourceSize),
+      print_scaling_option(blink::kWebPrintScalingOptionSourceSize),
       print_to_pdf(false),
       display_header_footer(false),
       title(),
@@ -48,7 +48,7 @@ void PrintMsg_Print_Params::Reset() {
   preview_ui_id = -1;
   preview_request_id = 0;
   is_first_request = false;
-  print_scaling_option = blink::WebPrintScalingOptionSourceSize;
+  print_scaling_option = blink::kWebPrintScalingOptionSourceSize;
   print_to_pdf = false;
   display_header_footer = false;
   title = base::string16();

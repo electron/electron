@@ -43,23 +43,23 @@ const int kFrameRetryLimit = 2;
 
 ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   ui::EventType type = ui::EventType::ET_UNKNOWN;
-  switch (event.type()) {
-    case blink::WebInputEvent::MouseDown:
+  switch (event.GetType()) {
+    case blink::WebInputEvent::kMouseDown:
       type = ui::EventType::ET_MOUSE_PRESSED;
       break;
-    case blink::WebInputEvent::MouseUp:
+    case blink::WebInputEvent::kMouseUp:
       type = ui::EventType::ET_MOUSE_RELEASED;
       break;
-    case blink::WebInputEvent::MouseMove:
+    case blink::WebInputEvent::kMouseMove:
       type = ui::EventType::ET_MOUSE_MOVED;
       break;
-    case blink::WebInputEvent::MouseEnter:
+    case blink::WebInputEvent::kMouseEnter:
       type = ui::EventType::ET_MOUSE_ENTERED;
       break;
-    case blink::WebInputEvent::MouseLeave:
+    case blink::WebInputEvent::kMouseLeave:
       type = ui::EventType::ET_MOUSE_EXITED;
       break;
-    case blink::WebInputEvent::MouseWheel:
+    case blink::WebInputEvent::kMouseWheel:
       type = ui::EventType::ET_MOUSEWHEEL;
       break;
     default:
@@ -69,19 +69,19 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
 
   int button_flags = 0;
   switch (event.button) {
-    case blink::WebMouseEvent::Button::X1:
+    case blink::WebMouseEvent::Button::kBack:
       button_flags |= ui::EventFlags::EF_BACK_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::X2:
+    case blink::WebMouseEvent::Button::kForward:
       button_flags |= ui::EventFlags::EF_FORWARD_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::Left:
+    case blink::WebMouseEvent::Button::kLeft:
       button_flags |= ui::EventFlags::EF_LEFT_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::Middle:
+    case blink::WebMouseEvent::Button::kMiddle:
       button_flags |= ui::EventFlags::EF_MIDDLE_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::Right:
+    case blink::WebMouseEvent::Button::kRight:
       button_flags |= ui::EventFlags::EF_RIGHT_MOUSE_BUTTON;
       break;
     default:
@@ -94,7 +94,7 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
     gfx::Point(std::floor(event.x), std::floor(event.y)),
     ui::EventTimeForNow(),
     button_flags, button_flags);
-  ui_event.SetClickCount(event.clickCount);
+  ui_event.SetClickCount(event.click_count);
 
   return ui_event;
 }
@@ -102,7 +102,7 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
 ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
     blink::WebMouseWheelEvent event) {
   return ui::MouseWheelEvent(UiMouseEventFromWebMouseEvent(event),
-    std::floor(event.deltaX), std::floor(event.deltaY));
+    std::floor(event.delta_x), std::floor(event.delta_y));
 }
 
 #if !defined(OS_MACOSX)

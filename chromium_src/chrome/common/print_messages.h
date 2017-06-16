@@ -79,7 +79,7 @@ IPC_ENUM_TRAITS_MIN_MAX_VALUE(printing::DuplexMode,
                               printing::UNKNOWN_DUPLEX_MODE,
                               printing::SHORT_EDGE)
 IPC_ENUM_TRAITS_MAX_VALUE(blink::WebPrintScalingOption,
-                          blink::WebPrintScalingOptionLast)
+                          blink::kWebPrintScalingOptionLast)
 
 // Parameters for a render request.
 IPC_STRUCT_TRAITS_BEGIN(PrintMsg_Print_Params)

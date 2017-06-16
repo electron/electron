@@ -94,7 +94,7 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
                                     gfx::Size* page_size,
                                     gfx::Rect* content_rect) {
   double scale_factor = 1.0f;
-  double webkit_shrink_factor = frame->getPrintPageShrink(page_number);
+  double webkit_shrink_factor = frame->GetPrintPageShrink(page_number);
   PageSizeMargins page_layout_in_points;
   gfx::Rect content_area;
 

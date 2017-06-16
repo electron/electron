@@ -109,7 +109,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   dict.Set("mediaType", params.media_type);
   dict.Set("mediaFlags", MediaFlagsToV8(isolate, params.media_flags));
   bool has_image_contents =
-    (params.media_type == blink::WebContextMenuData::MediaTypeImage) &&
+    (params.media_type == blink::WebContextMenuData::kMediaTypeImage) &&
     params.has_image_contents;
   dict.Set("hasImageContents", has_image_contents);
   dict.Set("isEditable", params.is_editable);
