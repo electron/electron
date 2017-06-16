@@ -20,7 +20,7 @@ Beim Mitwirken an Electron wird vorausgesetzt, dass sich an diesen Kodex gehalte
 
 Binaries von Electron können mit
 [`npm`](https://docs.npmjs.com/)
-installiert weden:
+installiert werden:
 
 ```sh
 # Als Dependency für die Entwicklung installieren
