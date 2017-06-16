@@ -26,8 +26,7 @@ void SetPlatformAccelerator(ui::Accelerator* accelerator) {
                                   &characterIgnoringModifiers);
 
   if (character != characterIgnoringModifiers) {
-    // 48 === '0', 57 === '9'
-    if (characterIgnoringModifiers >= 48 && characterIgnoringModifiers <= 57) {
+    if (isdigit(characterIgnoringModifiers)) {
       // The character is a number so lets not mutate it with the modifiers
       character = characterIgnoringModifiers;
     } else {
