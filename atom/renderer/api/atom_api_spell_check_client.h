@@ -11,6 +11,7 @@
 #include "base/callback.h"
 #include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
 #include "native_mate/scoped_persistent.h"
+#include "third_party/WebKit/public/platform/WebVector.h"
 #include "third_party/WebKit/public/web/WebSpellCheckClient.h"
 
 namespace blink {
@@ -38,7 +39,7 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
       blink::WebVector<blink::WebString>* optionalSuggestions) override;
   void RequestCheckingOfText(
       const blink::WebString& textToCheck,
-      blink::WebTextCheckingCompletion* completionCallback) override;
+      blink::WebTextCheckingResult completionCallback) override;
   void ShowSpellingUI(bool show) override;
   bool IsShowingSpellingUI() override;
   void UpdateSpellingUIWithMisspelledWord(
