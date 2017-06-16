@@ -48,8 +48,6 @@ void RenderParamsFromPrintSettings(const PrintSettings& settings,
   params->margin_left = settings.page_setup_device_units().content_area().x();
   params->dpi = settings.dpi();
   params->scale_factor = settings.scale_factor();
-  // Currently hardcoded at 72dpi. See PrintSettings' constructor.
-  params->desired_dpi = settings.desired_dpi();
   // Always use an invalid cookie.
   params->document_cookie = 0;
   params->selection_only = settings.selection_only();
