@@ -110,12 +110,12 @@ class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
   void EmitIPCEvent(blink::WebFrame* frame,
                     const base::string16& channel,
                     const base::ListValue& args) override {
-    if (!frame || frame->isWebRemoteFrame())
+    if (!frame || frame->IsWebRemoteFrame())
       return;
 
-    auto isolate = blink::mainThreadIsolate();
+    auto isolate = blink::MainThreadIsolate();
     v8::HandleScope handle_scope(isolate);
-    auto context = frame->mainWorldScriptContext();
+    auto context = frame->MainWorldScriptContext();
     v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> argv[] = {
       mate::ConvertToV8(isolate, channel),
