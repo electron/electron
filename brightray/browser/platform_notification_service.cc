@@ -109,10 +109,9 @@ void PlatformNotificationService::ClosePersistentNotification(
     const std::string& notification_id) {
 }
 
-bool PlatformNotificationService::GetDisplayedNotifications(
+void PlatformNotificationService::GetDisplayedNotifications(
     content::BrowserContext* browser_context,
-    std::set<std::string>* displayed_notifications) {
-  return false;
+    const DisplayedNotificationsCallback& callback) {
 }
 
 }  // namespace brightray
