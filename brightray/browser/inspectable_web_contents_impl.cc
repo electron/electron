@@ -219,7 +219,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       gfx::Rect display;
       if (web_contents->GetNativeView()) {
         display = display::Screen::GetScreen()->
-            GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
+            GetDisplayNearestView(web_contents->GetNativeView()).bounds();
       } else {
         display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
       }
