@@ -8,8 +8,7 @@
 :memo: Verfügbare Sprachen: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/README.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/README.md) | [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/README.md) | [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW/project/README.md) | [Spanish](https://github.com/electron/electron/tree/master/docs-translations/es/project/README.md) | [Turkish](https://github.com/electron/electron/tree/master/docs-translations/tr-TR/project/README.md) | [German](https://github.com/electron/electron/tree/master/docs-translations/de-DE/project/README.md)
 
 Electron ermöglicht die Entwicklung plattformunabhängiger Desktopanwendungen mit JavaScript, HTML und CSS. Electron basiert auf [Node.js](https://nodejs.org/) und 
-[Chromium](http://www.chromium.org) und wird vom [Editor Atom]
-(https://github.com/atom/atom) und vielen anderen [Apps](https://electron.atom.io/apps) verwendet.
+[Chromium](http://www.chromium.org) und wird vom [Editor Atom](https://github.com/atom/atom) und vielen anderen [Apps](https://electron.atom.io/apps) verwendet.
 
 Folge [@ElectronJS](https://twitter.com/electronjs) auf Twitter, um stets auf dem neuesten Stand zu sein und Informationen zu Electron sofort zu erhalten.
 
