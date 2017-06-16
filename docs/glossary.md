@@ -67,7 +67,7 @@ building native modules.
 
 See also [Using Native Node Modules].
 
-## NSIS
+### NSIS
 
 Nullsoft Scriptable Install System is a script-driven Installer
 authoring tool for Microsoft Windows. It is released under a combination of
