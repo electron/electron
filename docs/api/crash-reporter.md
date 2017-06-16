@@ -45,7 +45,7 @@ The `crashReporter` module has the following methods:
   * `ignoreSystemCrashHandler` Boolean (optional) - Default is `false`.
   * `extra` Object (optional) - An object you can define that will be sent along with the
     report. Only string properties are sent correctly. Nested objects are not
-    supported.
+    supported. The property name and the value must be less than 63 characters.
 
 You are required to call this method before using any other `crashReporter` APIs
 and in each process (main/renderer) from which you want to collect crash reports.
@@ -117,8 +117,8 @@ called before `start` is called.
 
 ### `crashReporter.setExtraParameter(key, value)` _macOS_
 
-* `key` String - Parameter key.
-* `value` String - Parameter value. Specifying `null` or `undefined` will
+* `key` String - Max length 63 - Parameter key.
+* `value` String - Max length 63 - Parameter value. Specifying `null` or `undefined` will
   remove the key from the extra parameters.
 
 Set an extra parameter to set be sent with the crash report. The values
