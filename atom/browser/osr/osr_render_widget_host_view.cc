@@ -90,8 +90,8 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   }
 
   ui::MouseEvent ui_event(type,
-    gfx::Point(std::floor(event.x), std::floor(event.y)),
-    gfx::Point(std::floor(event.x), std::floor(event.y)),
+    gfx::Point(std::floor(event.PositionInWidget().x), std::floor(event.PositionInWidget().y)),
+    gfx::Point(std::floor(event.PositionInWidget().x), std::floor(event.PositionInWidget().y)),
     ui::EventTimeForNow(),
     button_flags, button_flags);
   ui_event.SetClickCount(event.click_count);
@@ -1111,12 +1111,11 @@ void OffScreenRenderWidgetHostView::ProcessMouseEvent(
     const ui::LatencyInfo& latency) {
   for (auto proxy_view : proxy_views_) {
     gfx::Rect bounds = proxy_view->GetBounds();
-    if (bounds.Contains(event.x, event.y)) {
+    if (bounds.Contains(event.PositionInWidget().x, event.PositionInWidget().y)) {
       blink::WebMouseEvent proxy_event(event);
-      proxy_event.x -= bounds.x();
-      proxy_event.y -= bounds.y();
-      proxy_event.windowX = proxy_event.x;
-      proxy_event.windowY = proxy_event.y;
+      proxy_event.SetPositionInWidget(
+          proxy_event.PositionInWidget().x - bounds.x(),
+          proxy_event.PositionInWidget().y - bounds.y());
 
       ui::MouseEvent ui_event = UiMouseEventFromWebMouseEvent(proxy_event);
       proxy_view->OnEvent(&ui_event);
@@ -1125,13 +1124,12 @@ void OffScreenRenderWidgetHostView::ProcessMouseEvent(
   }
 
   if (!IsPopupWidget()) {
-    if (popup_host_view_ &&
-        popup_host_view_->popup_position_.Contains(event.x, event.y)) {
+    if (popup_host_view_ && popup_host_view_->popup_position_.Contains(
+          event.PositionInWidget().x, event.PositionInWidget().y)) {
       blink::WebMouseEvent popup_event(event);
-      popup_event.x -= popup_host_view_->popup_position_.x();
-      popup_event.y -= popup_host_view_->popup_position_.y();
-      popup_event.windowX = popup_event.x;
-      popup_event.windowY = popup_event.y;
+      popup_event.SetPositionInWidget(
+          popup_event.PositionInWidget().x - popup_host_view_->popup_position_.x(),
+          popup_event.PositionInWidget().y - popup_host_view_->popup_position_.y());
 
       popup_host_view_->ProcessMouseEvent(popup_event, latency);
       return;
@@ -1148,12 +1146,11 @@ void OffScreenRenderWidgetHostView::ProcessMouseWheelEvent(
     const ui::LatencyInfo& latency) {
   for (auto proxy_view : proxy_views_) {
     gfx::Rect bounds = proxy_view->GetBounds();
-    if (bounds.Contains(event.x, event.y)) {
+    if (bounds.Contains(event.PositionInWidget().x, event.PositionInWidget().y)) {
       blink::WebMouseWheelEvent proxy_event(event);
-      proxy_event.x -= bounds.x();
-      proxy_event.y -= bounds.y();
-      proxy_event.windowX = proxy_event.x;
-      proxy_event.windowY = proxy_event.y;
+      proxy_event.SetPositionInWidget(
+          proxy_event.PositionInWidget().x - bounds.x(),
+          proxy_event.PositionInWidget().y - bounds.y());
 
       ui::MouseWheelEvent ui_event =
         UiMouseWheelEventFromWebMouseEvent(proxy_event);
@@ -1163,12 +1160,12 @@ void OffScreenRenderWidgetHostView::ProcessMouseWheelEvent(
   }
   if (!IsPopupWidget()) {
     if (popup_host_view_) {
-      if (popup_host_view_->popup_position_.Contains(event.x, event.y)) {
+      if (popup_host_view_->popup_position_.Contains(
+            event.PositionInWidget().x, event.PositionInWidget().y)) {
         blink::WebMouseWheelEvent popup_event(event);
-        popup_event.x -= popup_host_view_->popup_position_.x();
-        popup_event.y -= popup_host_view_->popup_position_.y();
-        popup_event.windowX = popup_event.x;
-        popup_event.windowY = popup_event.y;
+        popup_event.SetPositionInWidget(
+            popup_event.PositionInWidget().x - popup_host_view_->popup_position_.x(),
+            popup_event.PositionInWidget().y - popup_host_view_->popup_position_.y());
         popup_host_view_->ProcessMouseWheelEvent(popup_event, latency);
         return;
       } else {
