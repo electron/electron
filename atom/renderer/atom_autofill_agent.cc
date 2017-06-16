@@ -27,10 +27,10 @@ const size_t kMaxListSize = 512;
 void GetDataListSuggestions(const blink::WebInputElement& element,
     std::vector<base::string16>* values,
     std::vector<base::string16>* labels) {
-  for (const auto& option : element.filteredDataListOptions()) {
-    values->push_back(option.value().utf16());
-    if (option.value() != option.label())
-      labels->push_back(option.label().utf16());
+  for (const auto& option : element.FilteredDataListOptions()) {
+    values->push_back(option.Value().Utf16());
+    if (option.Value() != option.Label())
+      labels->push_back(option.Label().Utf16());
     else
       labels->push_back(base::string16());
   }
@@ -56,7 +56,7 @@ AutofillAgent::AutofillAgent(
     focused_node_was_last_clicked_(false),
     was_focused_before_now_(false),
     weak_ptr_factory_(this) {
-  render_frame()->GetWebFrame()->setAutofillClient(this);
+  render_frame()->GetWebFrame()->SetAutofillClient(this);
 }
 
 void AutofillAgent::OnDestruct() {
@@ -73,34 +73,34 @@ void AutofillAgent::FocusedNodeChanged(const blink::WebNode&) {
   HidePopup();
 }
 
-void AutofillAgent::textFieldDidEndEditing(
+void AutofillAgent::TextFieldDidEndEditing(
     const blink::WebInputElement&) {
   HidePopup();
 }
 
-void AutofillAgent::textFieldDidChange(
+void AutofillAgent::TextFieldDidChange(
     const blink::WebFormControlElement& element) {
   if (!IsUserGesture() && !render_frame()->IsPasting())
     return;
 
   weak_ptr_factory_.InvalidateWeakPtrs();
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::Bind(&AutofillAgent::textFieldDidChangeImpl,
+      FROM_HERE, base::Bind(&AutofillAgent::TextFieldDidChangeImpl,
                             weak_ptr_factory_.GetWeakPtr(), element));
 }
 
-void AutofillAgent::textFieldDidChangeImpl(
+void AutofillAgent::TextFieldDidChangeImpl(
     const blink::WebFormControlElement& element) {
   ShowSuggestionsOptions options;
   options.requires_caret_at_end = true;
   ShowSuggestions(element, options);
 }
 
-void AutofillAgent::textFieldDidReceiveKeyDown(
+void AutofillAgent::TextFieldDidReceiveKeyDown(
     const blink::WebInputElement& element,
     const blink::WebKeyboardEvent& event) {
-  if (event.windowsKeyCode == ui::VKEY_DOWN ||
-      event.windowsKeyCode == ui::VKEY_UP) {
+  if (event.windows_key_code == ui::VKEY_DOWN ||
+      event.windows_key_code == ui::VKEY_UP) {
     ShowSuggestionsOptions options;
     options.autofill_on_empty_values = true;
     options.requires_caret_at_end = true;
@@ -108,16 +108,16 @@ void AutofillAgent::textFieldDidReceiveKeyDown(
   }
 }
 
-void AutofillAgent::openTextDataListChooser(
+void AutofillAgent::OpenTextDataListChooser(
     const blink::WebInputElement& element) {
   ShowSuggestionsOptions options;
   options.autofill_on_empty_values = true;
   ShowSuggestions(element, options);
 }
 
-void AutofillAgent::dataListOptionsChanged(
+void AutofillAgent::DataListOptionsChanged(
     const blink::WebInputElement& element) {
-  if (!element.focused())
+  if (!element.Focused())
     return;
 
   ShowSuggestionsOptions options;
@@ -133,20 +133,20 @@ AutofillAgent::ShowSuggestionsOptions::ShowSuggestionsOptions()
 void AutofillAgent::ShowSuggestions(
     const blink::WebFormControlElement& element,
     const ShowSuggestionsOptions& options) {
-  if (!element.isEnabled() || element.isReadOnly())
+  if (!element.IsEnabled() || element.IsReadOnly())
     return;
-  const blink::WebInputElement* input_element = toWebInputElement(&element);
+  const blink::WebInputElement* input_element = ToWebInputElement(&element);
   if (input_element) {
-    if (!input_element->isTextField())
+    if (!input_element->IsTextField())
       return;
   }
 
-  blink::WebString value = element.editingValue();
+  blink::WebString value = element.EditingValue();
   if (value.length() > kMaxDataLength ||
-      (!options.autofill_on_empty_values && value.isEmpty()) ||
+      (!options.autofill_on_empty_values && value.IsEmpty()) ||
       (options.requires_caret_at_end &&
-       (element.selectionStart() != element.selectionEnd() ||
-        element.selectionEnd() != static_cast<int>(value.length())))) {
+       (element.SelectionStart() != element.SelectionEnd() ||
+        element.SelectionEnd() != static_cast<int>(value.length())))) {
     HidePopup();
     return;
   }
@@ -169,7 +169,7 @@ AutofillAgent::Helper::Helper(AutofillAgent* agent)
 }
 
 void AutofillAgent::Helper::OnMouseDown(const blink::WebNode& node) {
-  agent_->focused_node_was_last_clicked_ = !node.isNull() && node.focused();
+  agent_->focused_node_was_last_clicked_ = !node.IsNull() && node.Focused();
 }
 
 void AutofillAgent::Helper::FocusChangeComplete() {
@@ -188,7 +188,7 @@ bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
 }
 
 bool AutofillAgent::IsUserGesture() const {
-  return blink::WebUserGestureIndicator::isProcessingUserGesture();
+  return blink::WebUserGestureIndicator::IsProcessingUserGesture();
 }
 
 void AutofillAgent::HidePopup() {
@@ -206,22 +206,22 @@ void AutofillAgent::ShowPopup(
 }
 
 void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
-  auto element = render_frame()->GetWebFrame()->document().focusedElement();
-  if (element.isFormControlElement()) {
-    toWebInputElement(&element)->setSuggestedValue(
-      blink::WebString::fromUTF16(suggestion));
+  auto element = render_frame()->GetWebFrame()->GetDocument().FocusedElement();
+  if (element.IsFormControlElement()) {
+    ToWebInputElement(&element)->SetSuggestedValue(
+      blink::WebString::FromUTF16(suggestion));
   }
 }
 
 void AutofillAgent::DoFocusChangeComplete() {
-  auto element = render_frame()->GetWebFrame()->document().focusedElement();
-  if (element.isNull() || !element.isFormControlElement())
+  auto element = render_frame()->GetWebFrame()->GetDocument().FocusedElement();
+  if (element.IsNull() || !element.IsFormControlElement())
     return;
 
   if (focused_node_was_last_clicked_ && was_focused_before_now_) {
     ShowSuggestionsOptions options;
     options.autofill_on_empty_values = true;
-    auto input_element = toWebInputElement(&element);
+    auto input_element = ToWebInputElement(&element);
     if (input_element)
       ShowSuggestions(*input_element, options);
   }

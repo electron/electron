@@ -590,8 +590,8 @@ bool WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event,
     bool* is_keyboard_shortcut) {
-  if (event.type() == blink::WebInputEvent::Type::RawKeyDown ||
-      event.type() == blink::WebInputEvent::Type::KeyUp) {
+  if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown ||
+      event.GetType() == blink::WebInputEvent::Type::kKeyUp) {
     return Emit("before-input-event", event);
   } else {
     return false;
@@ -818,7 +818,7 @@ void WebContents::DidFinishNavigation(
   bool is_main_frame = navigation_handle->IsInMainFrame();
   if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
     auto url = navigation_handle->GetURL();
-    bool is_in_page = navigation_handle->IsSamePage();
+    bool is_in_page = navigation_handle->IsSameDocument();
     if (is_main_frame && !is_in_page) {
       Emit("did-navigate", url);
     } else if (is_in_page) {
@@ -998,7 +998,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   GURL http_referrer;
   if (options.Get("httpReferrer", &http_referrer))
     params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
-                                        blink::WebReferrerPolicyDefault);
+                                        blink::kWebReferrerPolicyDefault);
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
@@ -1422,22 +1422,22 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     return;
 
   int type = mate::GetWebInputEventType(isolate, input_event);
-  if (blink::WebInputEvent::isMouseEventType(type)) {
+  if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
       view->ProcessMouseEvent(mouse_event, ui::LatencyInfo());
       return;
     }
-  } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
+  } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
     content::NativeWebKeyboardEvent keyboard_event(
-        blink::WebKeyboardEvent::RawKeyDown,
-        blink::WebInputEvent::NoModifiers,
+        blink::WebKeyboardEvent::kRawKeyDown,
+        blink::WebInputEvent::kNoModifiers,
         ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
       view->ProcessKeyboardEvent(keyboard_event);
       return;
     }
-  } else if (type == blink::WebInputEvent::MouseWheel) {
+  } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       view->ProcessMouseWheelEvent(mouse_wheel_event, ui::LatencyInfo());
