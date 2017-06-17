@@ -15,6 +15,7 @@
 #include "atom/browser/ui/autofill_popup.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
@@ -116,7 +117,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
-  void HasServiceWorker(const base::Callback<void(bool)>&);
+  void HasServiceWorker(
+      const base::Callback<void(content::ServiceWorkerCapability)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
