@@ -129,7 +129,7 @@ $ npm run clean-build
 
 ### Error While Loading Shared Libraries: libtinfo.so.5
 
-Prebulit `clang` will try to link to `libtinfo.so.5`. Depending on the host
+Prebuilt `clang` will try to link to `libtinfo.so.5`. Depending on the host
 architecture, symlink to appropriate `libncurses`:
 
 ```bash
