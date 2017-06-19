@@ -4,12 +4,11 @@ const path = require('path')
 
 const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-mixed-sandbox' : '/tmp/electron-app-mixed-sandbox'
 
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', () => {
   app.exit(1)
 })
 
 app.once('ready', () => {
-  
   let lastArg = process.argv[process.argv.length - 1]
   const client = net.connect(socketPath)
   client.once('connect', () => {
@@ -20,14 +19,14 @@ app.once('ready', () => {
       let window = new BrowserWindow({
         show: false,
         webPreferences: {
-         preload: path.join(app.getAppPath(), 'electron-app-mixed-sandbox-preload.js'),
-         sandbox: false
+          preload: path.join(app.getAppPath(), 'electron-app-mixed-sandbox-preload.js'),
+          sandbox: false
         }
       })
-      
+
       window.loadURL('data:,window')
     } else {
-      client.end(String(false))  
+      client.end(String(false))
     }
   })
   client.once('end', () => {
