@@ -5,7 +5,7 @@
 :+1::tada: Ten eerste, bedankt om de tijd te nemen om bij te dragen! :tada::+1:
 
 Dit project volgt de  [gedragscode](CODE_OF_CONDUCT.md) van bijdragers.
-Door deel te nemen, wordt je verwacht je aan deze code te houden. Onaanvaardbaar gedrag moet gerapporteerd worden bij atom@github.com.
+Door deel te nemen, wordt je verwacht je aan deze code te houden. Onaanvaardbaar gedrag moet gerapporteerd worden bij electron@github.com.
 
 Dit is een set van richtlijnen om bij te dragen aan Electron.
 Dit zijn slechts richtijnen, geen regels, gebruik je gezond verstand voe je vrij om wijzigingen aan dit document voor te stellen in een pull request.
