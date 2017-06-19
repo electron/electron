@@ -60,6 +60,8 @@ It is important to note that this option alone won't enable the OS-enforced sand
 `--enable-sandbox` command-line argument must be passed to electron, which will
 force `sandbox: true` for all `BrowserWindow` instances.
 
+To enable OS-enforced sandbox on `BrowserWindow` or `webview` process with `sandbox:true` without causing
+entire app to be in sandbox, `--enable-mixed-sandbox` command-line argument must be passed to electron.
 
 ```js
 let win
