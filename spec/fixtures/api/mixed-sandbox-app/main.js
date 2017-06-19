@@ -1,10 +1,10 @@
-const { app, BrowserWindow, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const net = require('net')
 const path = require('path')
 
 const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-mixed-sandbox' : '/tmp/electron-app-mixed-sandbox'
 
-process.on('uncaughtException', () => {
+process.on('uncaughtException', (error) => {
   app.exit(1)
 })
 
@@ -14,9 +14,11 @@ app.once('ready', () => {
   const client = net.connect(socketPath)
   client.once('connect', () => {
     if (lastArg === '--enable-mixed-sandbox') {
-      dialog.showErrorBox('connected', app.getAppPath())
+      ipcMain.on('processArgs', (event, args) => {
+        client.end(String(args.indexOf('--no-sandbox') >= 0))
+      })
       let window = new BrowserWindow({
-        show: true,
+        show: false,
         webPreferences: {
          preload: path.join(app.getAppPath(), 'electron-app-mixed-sandbox-preload.js'),
          sandbox: false
@@ -24,20 +26,6 @@ app.once('ready', () => {
       })
       
       window.loadURL('data:,window')
-      let argv = 'test'
-      window.webContents.once('did-finish-load', () => {
-        dialog.showErrorBox('finished-load', 'finished')
-        window.webContents.executeJavaScript('window.argv', false, (result) => {
-          dialog.showErrorBox('hello', result)
-          client.end(String(result))
-        })
-      })
-      // window.webContents.openDevTools()
-      // window.webContents.executeJavaScript('window.argv', true).then((result) => {
-      //   dialog.showErrorBox('hello', result)
-      //   client.end(String(argv))
-      // })
-      
     } else {
       client.end(String(false))  
     }

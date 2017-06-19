@@ -1295,13 +1295,12 @@ describe('BrowserWindow module', function () {
         })
         sandboxServer.on('connection', (client) => {
           client.once('data', function (data) {
-            console.log('jhreddy -' + data)
             if (String(data) === 'false' && state === 'none') {
               state = 'first-launch'
             } else if (String(data) === 'true' && state === 'first-launch') {
               done()
             } else {
-              done(`Unexpected state: ${state}`)
+              done(`Unexpected state: ${data}`)
             }
           })
         })
