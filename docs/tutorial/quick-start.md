@@ -183,7 +183,7 @@ $ ./node_modules/.bin/electron .
 
 #### Windows
 
-```bash
+```
 $ .\node_modules\.bin\electron .
 ```
 
@@ -206,7 +206,7 @@ $ ./electron/electron your-app/
 
 #### Windows
 
-```bash
+```
 $ .\electron\electron.exe your-app\
 ```
 
