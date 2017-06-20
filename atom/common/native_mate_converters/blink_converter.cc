@@ -247,12 +247,22 @@ bool Converter<blink::WebMouseEvent>::FromV8(
     return false;
   if (!ConvertFromV8(isolate, val, static_cast<blink::WebInputEvent*>(out)))
     return false;
-  if (!dict.Get("x", &out->x) || !dict.Get("y", &out->y))
+
+  float x = 0.f;
+  float y = 0.f;
+  if (!dict.Get("x", &x) || !dict.Get("y", &y))
     return false;
+  out->SetPositionInWidget(x, y);
+
   if (!dict.Get("button", &out->button))
     out->button = blink::WebMouseEvent::Button::kLeft;
-  dict.Get("globalX", &out->globalX);
-  dict.Get("globalY", &out->globalY);
+
+  float global_x = 0.f;
+  float global_y = 0.f;
+  dict.Get("globalX", &global_x);
+  dict.Get("globalY", &global_y);
+  out->SetPositionInScreen(global_x, global_y);
+
   dict.Get("movementX", &out->movement_x);
   dict.Get("movementY", &out->movement_y);
   dict.Get("clickCount", &out->click_count);
