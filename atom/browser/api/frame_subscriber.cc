@@ -14,6 +14,18 @@
 
 namespace atom {
 
+namespace {
+
+void CopyPixelsToBuffer(const SkBitmap& bitmap,
+                        const v8::Local<v8::Object>& buffer) {
+  size_t rgb_arr_size = bitmap.width() * bitmap.height() *
+      bitmap.bytesPerPixel();
+
+  memcpy(node::Buffer::Data(buffer), bitmap.getPixels(), rgb_arr_size);
+}
+  
+}  // namespace
+
 namespace api {
 
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
@@ -84,9 +96,7 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
   if (buffer.IsEmpty())
     return;
 
-  bitmap.copyPixelsTo(
-    reinterpret_cast<uint8_t*>(node::Buffer::Data(buffer.ToLocalChecked())),
-    rgb_arr_size);
+  CopyPixelsToBuffer(bitmap, buffer.ToLocalChecked());
 
   v8::Local<v8::Value> damage =
       mate::Converter<gfx::Rect>::ToV8(isolate_, damage_rect);
