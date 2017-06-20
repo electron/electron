@@ -981,6 +981,10 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
          true);
     return;
   }
+ 
+  if (guest_delegate_ && !guest_delegate_->Attached()) {
+    return;
+  }
 
   content::NavigationController::LoadURLParams params(url);
 

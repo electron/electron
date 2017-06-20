@@ -47,6 +47,9 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // and normal sizes.
   void SetSize(const SetSizeParams& params);
 
+  // Return true if BrowserPlugin is attached
+  bool Attached() { return attached_; }
+
  protected:
   // content::WebContentsObserver:
   void DidFinishNavigation(
@@ -54,6 +57,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
+  void DidDetach() final;
   content::WebContents* GetOwnerWebContents() const final;
   void GuestSizeChanged(const gfx::Size& new_size) final;
   void SetGuestHost(content::GuestHost* guest_host) final;
