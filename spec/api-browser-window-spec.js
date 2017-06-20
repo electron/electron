@@ -2000,6 +2000,25 @@ describe('BrowserWindow module', function () {
       })
     })
 
+    describe('fullscreen state with resizable set', function () {
+      // Only implemented on macOS.
+      if (process.platform !== 'darwin') return
+
+      it('resizable flag should be set to true and restored', function (done) {
+        w.destroy()
+        w = new BrowserWindow({ resizable: false })
+        w.once('enter-full-screen', () => {
+          assert.equal(w.isResizable(), true)
+          w.setFullScreen(false)
+        })
+        w.once('leave-full-screen', () => {
+          assert.equal(w.isResizable(), false)
+          done()
+        })
+        w.setFullScreen(true)
+      })
+    })
+
     describe('fullscreen state', function () {
       // Only implemented on macOS.
       if (process.platform !== 'darwin') return
