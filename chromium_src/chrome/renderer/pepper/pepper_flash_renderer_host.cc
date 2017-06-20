@@ -97,8 +97,8 @@ enum FlashNavigateUsage {
   FLASH_NAVIGATE_USAGE_ENUM_COUNT
 };
 
-static base::LazyInstance<std::map<std::string, FlashNavigateUsage> >
-    g_rejected_headers = LAZY_INSTANCE_INITIALIZER;
+static base::LazyInstance<std::map<std::string, FlashNavigateUsage> >::
+    DestructorAtExit g_rejected_headers = LAZY_INSTANCE_INITIALIZER;
 
 bool IsSimpleHeader(const std::string& lower_case_header_name,
                     const std::string& header_value) {
