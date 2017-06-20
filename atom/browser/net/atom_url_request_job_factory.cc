@@ -117,17 +117,13 @@ bool AtomURLRequestJobFactory::IsHandledProtocol(
       net::URLRequest::IsHandledProtocol(scheme);
 }
 
-bool AtomURLRequestJobFactory::IsHandledURL(const GURL& url) const {
-  if (!url.is_valid()) {
+bool AtomURLRequestJobFactory::IsSafeRedirectTarget(
+    const GURL& location) const {
+  if (!location.is_valid()) {
     // We handle error cases.
     return true;
   }
-  return IsHandledProtocol(url.scheme());
-}
-
-bool AtomURLRequestJobFactory::IsSafeRedirectTarget(
-    const GURL& location) const {
-  return IsHandledURL(location);
+  return IsHandledProtocol(location.scheme());
 }
 
 }  // namespace atom
