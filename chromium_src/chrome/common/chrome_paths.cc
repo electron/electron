@@ -68,7 +68,7 @@ const base::FilePath::CharType kComponentUpdatedFlashHint[] =
     FILE_PATH_LITERAL("latest-component-updated-flash");
 #endif  // defined(OS_LINUX)
 
-static base::LazyInstance<base::FilePath>
+static base::LazyInstance<base::FilePath>::DestructorAtExit
     g_invalid_specified_user_data_dir = LAZY_INSTANCE_INITIALIZER;
 
 // Gets the path for internal plugins.
