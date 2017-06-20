@@ -11,13 +11,13 @@ namespace atom {
 void BridgeTaskRunner::MessageLoopIsReady() {
   auto message_loop = base::MessageLoop::current();
   CHECK(message_loop);
-  for (const TaskPair& task : tasks_) {
+  for (TaskPair& task : tasks_) {
     message_loop->task_runner()->PostDelayedTask(
-        std::get<0>(task), std::get<1>(task), std::get<2>(task));
+        std::get<0>(task), std::move(std::get<1>(task)), std::get<2>(task));
   }
-  for (const TaskPair& task : non_nestable_tasks_) {
+  for (TaskPair& task : non_nestable_tasks_) {
     message_loop->task_runner()->PostNonNestableDelayedTask(
-        std::get<0>(task), std::get<1>(task), std::get<2>(task));
+        std::get<0>(task), std::move(std::get<1>(task)), std::get<2>(task));
   }
 }
 
@@ -27,7 +27,7 @@ bool BridgeTaskRunner::PostDelayedTask(
     base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();
   if (!message_loop) {
-    tasks_.push_back(std::make_tuple(from_here, task, delay));
+    tasks_.push_back(std::make_tuple(from_here, std::move(task), delay));
     return true;
   }
 
@@ -49,7 +49,8 @@ bool BridgeTaskRunner::PostNonNestableDelayedTask(
     base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();
   if (!message_loop) {
-    non_nestable_tasks_.push_back(std::make_tuple(from_here, task, delay));
+    non_nestable_tasks_.push_back(std::make_tuple(
+        from_here, std::move(task), delay));
     return true;
   }
 
