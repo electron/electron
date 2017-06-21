@@ -27,22 +27,10 @@ class AutofillAgent : public content::RenderFrameObserver,
 
   void DidChangeScrollOffset() override;
   void FocusedNodeChanged(const blink::WebNode&) override;
+  void DidCompleteFocusChangeInFrame() override;
+  void DidReceiveLeftMouseDownOrGestureTapInNode(const blink::WebNode&) override;
 
  private:
-  class Helper : public content::RenderViewObserver {
-   public:
-    explicit Helper(AutofillAgent* agent);
-
-    // content::RenderViewObserver implementation.
-    void OnDestruct() override {}
-    void OnMouseDown(const blink::WebNode&) override;
-    void FocusChangeComplete() override;
-
-   private:
-    AutofillAgent* agent_;
-  };
-  friend class Helper;
-
   struct ShowSuggestionsOptions {
     ShowSuggestionsOptions();
     bool autofill_on_empty_values;
@@ -70,8 +58,6 @@ class AutofillAgent : public content::RenderFrameObserver,
   void OnAcceptSuggestion(base::string16 suggestion);
 
   void DoFocusChangeComplete();
-
-  std::unique_ptr<Helper> helper_;
 
   // True when the last click was on the focused node.
   bool focused_node_was_last_clicked_;
