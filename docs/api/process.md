@@ -70,7 +70,7 @@ A `Boolean` that controls whether or not deprecations printed to `stderr` includ
 ### `process.traceProcessWarnings`
 A `Boolean` that controls whether or not process warnings printed to `stderr` include
  their stack trace.  Setting this to `true` will print stack traces for process warnings
-  (including deprecations).  This property is instead of the `trace-warnings` command
+  (including deprecations).  This property is instead of the `--trace-warnings` command
   line flag.
 
 ### `process.type`
