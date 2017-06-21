@@ -825,7 +825,7 @@ Returns `Object`:
 
 **Note:** This API has no effect on [MAS builds][mas-builds].
 
-### `app.setLoginItemSettings(settings[, path, args])` _macOS_ _Windows_
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
   * `openAtLogin` Boolean (optional) - `true` to open the app at login, `false` to remove
@@ -835,11 +835,11 @@ Returns `Object`:
     `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
     is opened to know the current value. This setting is only supported on
     macOS.
-* `path` String (optional) _Windows_ - The executable to launch at login.
-  Defaults to `process.execPath`.
-* `args` String[] (optional) _Windows_ - The command-line arguments to pass to
-  the executable. Defaults to an empty array. Take care to wrap paths in
-  quotes.
+  * `path` String (optional) _Windows_ - The executable to launch at login.
+    Defaults to `process.execPath`.
+  * `args` String[] (optional) _Windows_ - The command-line arguments to pass to
+    the executable. Defaults to an empty array. Take care to wrap paths in
+    quotes.
 
 Set the app's login item settings.
 
