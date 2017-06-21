@@ -52,7 +52,6 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
 AutofillAgent::AutofillAgent(
     content::RenderFrame* frame)
   : content::RenderFrameObserver(frame),
-    helper_(new Helper(this)),
     focused_node_was_last_clicked_(false),
     was_focused_before_now_(false),
     weak_ptr_factory_(this) {
@@ -163,17 +162,12 @@ void AutofillAgent::ShowSuggestions(
   ShowPopup(element, data_list_values, data_list_labels);
 }
 
-AutofillAgent::Helper::Helper(AutofillAgent* agent)
-  : content::RenderViewObserver(agent->render_frame()->GetRenderView()),
-    agent_(agent) {
+void AutofillAgent::DidReceiveLeftMouseDownOrGestureTapInNode(const blink::WebNode& node) {
+  focused_node_was_last_clicked_ = !node.IsNull() && node.Focused();
 }
 
-void AutofillAgent::Helper::OnMouseDown(const blink::WebNode& node) {
-  agent_->focused_node_was_last_clicked_ = !node.IsNull() && node.Focused();
-}
-
-void AutofillAgent::Helper::FocusChangeComplete() {
-  agent_->DoFocusChangeComplete();
+void AutofillAgent::DidCompleteFocusChangeInFrame() {
+  DoFocusChangeComplete();
 }
 
 bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
