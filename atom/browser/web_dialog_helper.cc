@@ -195,6 +195,10 @@ void WebDialogHelper::RunFileChooser(
 
     AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
         window_->web_contents()->GetBrowserContext());
+    if (!browser_context) {
+      browser_context = static_cast<atom::AtomBrowserContext*>(
+          render_frame_host->GetProcess()->GetBrowserContext());
+    }
     settings.default_path = browser_context->prefs()->GetFilePath(
         prefs::kSelectFileLastDirectory).Append(params.default_file_name);
     settings.properties = flags;
