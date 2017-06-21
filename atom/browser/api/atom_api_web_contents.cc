@@ -1234,14 +1234,25 @@ void WebContents::InspectServiceWorker() {
 }
 
 void WebContents::HasServiceWorker(
-    const base::Callback<void(content::ServiceWorkerCapability)>& callback) {
+    const base::Callback<void(bool)>& callback) {
   auto context = GetServiceWorkerContext(web_contents());
   if (!context)
     return;
 
+  struct WrappedCallback {
+    base::Callback<void(bool)> callback_;
+    WrappedCallback(const base::Callback<void(bool)>& callback) : callback_(callback) {}
+    void Run(content::ServiceWorkerCapability capability) {
+      callback_.Run(capability != content::ServiceWorkerCapability::NO_SERVICE_WORKER);
+      delete this;
+    }
+  };
+  
+  auto wrapped_callback = new WrappedCallback(callback);
+
   context->CheckHasServiceWorker(web_contents()->GetLastCommittedURL(),
                                  GURL::EmptyGURL(),
-                                 callback);
+                                 base::Bind(&WrappedCallback::Run, base::Unretained(wrapped_callback)));
 }
 
 void WebContents::UnregisterServiceWorker(
