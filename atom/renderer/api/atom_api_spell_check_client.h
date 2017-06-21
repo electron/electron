@@ -13,16 +13,19 @@
 #include "native_mate/scoped_persistent.h"
 #include "third_party/WebKit/public/platform/WebVector.h"
 #include "third_party/WebKit/public/web/WebSpellCheckClient.h"
+#include "third_party/WebKit/public/web/WebTextCheckClient.h"
 
 namespace blink {
 struct WebTextCheckingResult;
+class WebTextCheckingCompletion;
 }
 
 namespace atom {
 
 namespace api {
 
-class SpellCheckClient : public blink::WebSpellCheckClient {
+class SpellCheckClient : public blink::WebSpellCheckClient,
+                         public blink::WebTextCheckClient {
  public:
   SpellCheckClient(const std::string& language,
                    bool auto_spell_correct_turned_on,
@@ -31,7 +34,7 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
   virtual ~SpellCheckClient();
 
  private:
-  // blink::WebSpellCheckClient:
+  // blink::WebTextCheckClient:
   void CheckSpelling(
       const blink::WebString& text,
       int& misspelledOffset,
@@ -39,7 +42,9 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
       blink::WebVector<blink::WebString>* optionalSuggestions) override;
   void RequestCheckingOfText(
       const blink::WebString& textToCheck,
-      blink::WebTextCheckingResult completionCallback) override;
+      blink::WebTextCheckingCompletion* completionCallback) override;
+
+  // blink::WebSpellCheckClient:
   void ShowSpellingUI(bool show) override;
   bool IsShowingSpellingUI() override;
   void UpdateSpellingUIWithMisspelledWord(
