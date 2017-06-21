@@ -982,6 +982,10 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     return;
   }
 
+  if (guest_delegate_ && !guest_delegate_->Attached()) {
+    return;
+  }
+
   content::NavigationController::LoadURLParams params(url);
 
   GURL http_referrer;
