@@ -400,7 +400,8 @@ void NativeWindowViews::ShowInactive() {
 
 void NativeWindowViews::Hide() {
   if (is_modal() && NativeWindow::parent())
-    static_cast<NativeWindowViews*>(NativeWindow::parent())->SetEnabled(true);
+    static_cast<NativeWindowViews*>(NativeWindow::parent())
+        ->SetEnabled(true, true);
 
   window_->Hide();
 
@@ -1036,8 +1037,12 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
 }
 #endif
 
-void NativeWindowViews::SetEnabled(bool enable) {
+void NativeWindowViews::SetEnabled(bool enable, bool force) {
   // Handle multiple calls of SetEnabled correctly.
+  if (force) {
+    disable_count_ = enable ? 1 : 0;
+  }
+
   if (enable) {
     --disable_count_;
     if (disable_count_ != 0)
@@ -1100,7 +1105,7 @@ void NativeWindowViews::DeleteDelegate() {
     NativeWindowViews* parent =
         static_cast<NativeWindowViews*>(NativeWindow::parent());
     // Enable parent window after current window gets closed.
-    parent->SetEnabled(true);
+    parent->SetEnabled(true, true);
     // Focus on parent window.
     parent->Focus(true);
   }
