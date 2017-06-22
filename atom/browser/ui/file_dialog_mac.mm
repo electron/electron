@@ -93,6 +93,7 @@ void SetupDialog(NSSavePanel* dialog,
 
 void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
   [dialog setCanChooseFiles:(properties & FILE_DIALOG_OPEN_FILE)];
+  [dialog setTreatsFilePackagesAsDirectories:YES];
   if (properties & FILE_DIALOG_OPEN_DIRECTORY)
     [dialog setCanChooseDirectories:YES];
   if (properties & FILE_DIALOG_CREATE_DIRECTORY)
