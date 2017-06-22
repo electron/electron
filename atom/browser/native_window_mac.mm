@@ -899,9 +899,7 @@ NativeWindowMac::NativeWindowMac(
   if (transparent() || !has_frame()) {
     if (base::mac::IsAtLeastOS10_10()) {
       // Don't show title bar.
-      if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
-        [window_ setTitlebarAppearsTransparent:YES];
-      }
+      [window_ setTitlebarAppearsTransparent:YES];
       [window_ setTitleVisibility:NSWindowTitleHidden];
     }
     // Remove non-transparent corners, see http://git.io/vfonD.
