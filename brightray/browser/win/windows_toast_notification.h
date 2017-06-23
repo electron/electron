@@ -13,6 +13,7 @@
 #include <windows.ui.notifications.h>
 #include <wrl/implements.h>
 #include <string>
+#include <vector>
 
 #include "brightray/browser/notification.h"
 
@@ -57,7 +58,8 @@ class WindowsToastNotification : public Notification {
             const SkBitmap& icon,
             bool silent,
             bool has_reply,
-            const base::string16& reply_placeholder) override;
+            const base::string16& reply_placeholder,
+            const std::vector<NotificationAction> actions) override;
   void Dismiss() override;
 
  private:

@@ -4,6 +4,7 @@
 
 #include <windows.h>
 #include <string>
+#include <vector>
 
 #include "third_party/skia/include/core/SkBitmap.h"
 
@@ -13,7 +14,8 @@ void Win32Notification::Show(
     const base::string16& title, const base::string16& msg,
     const std::string& tag, const GURL& icon_url,
     const SkBitmap& icon, bool silent,
-    bool has_reply, const base::string16& reply_placeholder) {
+    bool has_reply, const base::string16& reply_placeholder,
+    const std::vector<NotificationAction> actions) {
     auto presenter = static_cast<NotificationPresenterWin7*>(this->presenter());
     if (!presenter) return;
 

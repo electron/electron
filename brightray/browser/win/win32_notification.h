@@ -13,7 +13,8 @@ class Win32Notification : public brightray::Notification {
     void Show(const base::string16& title, const base::string16& msg,
               const std::string& tag, const GURL& icon_url,
               const SkBitmap& icon, bool silent,
-              bool has_reply, const base::string16& reply_placeholder) override;
+              bool has_reply, const base::string16& reply_placeholder,
+              const std::vector<NotificationAction> actions) override;
     void Dismiss() override;
 
     const DesktopNotificationController::Notification& GetRef() const {

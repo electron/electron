@@ -9,6 +9,7 @@
 #include "brightray/browser/win/windows_toast_notification.h"
 
 #include <shlobj.h>
+#include <vector>
 
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
@@ -91,7 +92,10 @@ void WindowsToastNotification::Show(const base::string16& title,
                                     const SkBitmap& icon,
                                     bool silent,
                                     bool has_reply,
-                                    const base::string16& reply_placeholder) {
+                                    const base::string16& reply_placeholder,
+                                    const std::vector<
+                                      NotificationAction
+                                    > actions) {
   auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
   std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
 

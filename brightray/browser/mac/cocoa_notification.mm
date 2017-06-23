@@ -6,6 +6,7 @@
 
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
 #include "brightray/browser/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -30,7 +31,8 @@ void CocoaNotification::Show(const base::string16& title,
                              const SkBitmap& icon,
                              bool silent,
                              bool has_reply,
-                             const base::string16& reply_placeholder) {
+                             const base::string16& reply_placeholder,
+                             const std::vector<NotificationAction> actions) {
   notification_.reset([[NSUserNotification alloc] init]);
   [notification_ setTitle:base::SysUTF16ToNSString(title)];
   [notification_ setInformativeText:base::SysUTF16ToNSString(body)];
@@ -46,6 +48,18 @@ void CocoaNotification::Show(const base::string16& title,
     [notification_ setSoundName:nil];
   } else {
     [notification_ setSoundName:NSUserNotificationDefaultSoundName];
+  }
+
+  [notification_ setHasActionButton:false];
+
+  for (size_t i = 0; i < actions.size(); i++) {
+    NotificationAction action = actions[i];
+
+    if (action.type == base::UTF8ToUTF16("button")) {
+      [notification_ setHasActionButton:true];
+      [notification_ setActionButtonTitle:base::SysUTF16ToNSString(action.label)];
+      actionIndex_ = i;
+    }
   }
 
   if (has_reply) {
@@ -72,6 +86,11 @@ void CocoaNotification::NotificationDisplayed() {
 void CocoaNotification::NotificationReplied(const std::string& reply) {
   if (delegate())
     delegate()->NotificationReplied(reply);
+}
+
+void CocoaNotification::NotificationButtonClicked() {
+  if (delegate())
+    delegate()->NotificationAction(actionIndex_);
 }
 
 }  // namespace brightray

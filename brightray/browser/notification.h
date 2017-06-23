@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_NOTIFICATION_H_
 
 #include <string>
+#include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "base/strings/string16.h"
@@ -17,6 +18,11 @@ namespace brightray {
 
 class NotificationDelegate;
 class NotificationPresenter;
+
+struct NotificationAction {
+  base::string16 type;
+  base::string16 label;
+};
 
 class Notification {
  public:
@@ -30,7 +36,8 @@ class Notification {
                     const SkBitmap& icon,
                     bool silent,
                     bool has_reply,
-                    const base::string16& reply_placeholder) = 0;
+                    const base::string16& reply_placeholder,
+                    const std::vector<NotificationAction> actions) = 0;
   // Closes the notification, this instance will be destroyed after the
   // notification gets closed.
   virtual void Dismiss() = 0;

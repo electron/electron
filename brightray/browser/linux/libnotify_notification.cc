@@ -4,6 +4,8 @@
 
 #include "brightray/browser/linux/libnotify_notification.h"
 
+#include <vector>
+
 #include "base/files/file_enumerator.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -90,7 +92,9 @@ void LibnotifyNotification::Show(const base::string16& title,
                                  const SkBitmap& icon,
                                  bool silent,
                                  bool has_reply,
-                                 const base::string16& reply_placeholder) {
+                                 const base::string16& reply_placeholder,
+                                 const std::vector<NotificationAction> actions
+                                ) {
   notification_ = libnotify_loader_.notify_notification_new(
       base::UTF16ToUTF8(title).c_str(),
       base::UTF16ToUTF8(body).c_str(),

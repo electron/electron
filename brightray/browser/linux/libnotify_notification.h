@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_
 
 #include <string>
+#include <vector>
 
 #include "brightray/browser/linux/libnotify_loader.h"
 #include "brightray/browser/notification.h"
@@ -29,7 +30,8 @@ class LibnotifyNotification : public Notification {
             const SkBitmap& icon,
             bool silent,
             bool has_reply,
-            const base::string16& reply_placeholder) override;
+            const base::string16& reply_placeholder,
+            const std::vector<NotificationAction> actions) override;
   void Dismiss() override;
 
  private:

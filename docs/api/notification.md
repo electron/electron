@@ -36,6 +36,7 @@ Returns `Boolean` - Whether or not desktop notifications are supported on the cu
   * `icon` [NativeImage](native-image.md) - (optional) An icon to use in the notification
   * `hasReply` Boolean - (optional) Whether or not to add an inline reply option to the notification.  _macOS_
   * `replyPlaceholder` String - (optional) The placeholder to write in the inline reply input field. _macOS_
+  * `actions` [NotificationAction[]](structures/notification-action.md) - Actions to add to the notification.  Please read the available actions and limitations in the `NotificationAction` documentation _macOS_
 
 
 ### Instance Events
@@ -82,6 +83,13 @@ Returns:
 * `reply` String - The string the user entered into the inline reply field
 
 Emitted when the user clicks the "Reply" button on a notification with `hasReply: true`.
+
+#### Event: 'action' _macOS_
+
+Returns:
+
+* `event` Event
+* `index` Number - The index of the action that was activated
 
 ### Instance Methods
 
