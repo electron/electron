@@ -29,14 +29,14 @@ struct Converter<brightray::NotificationAction> {
     if (!dict.Get("type", &(out->type))) {
       return false;
     }
-    dict.Get("label", &(out->label));
+    dict.Get("text", &(out->text));
     return true;
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     brightray::NotificationAction val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-    dict.Set("label", val.label);
+    dict.Set("text", val.text);
     dict.Set("type", val.type);
     return dict.GetHandle();
   }

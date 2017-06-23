@@ -1,13 +1,13 @@
 # NotificationAction Object
 
 * `type` String - The type of action, can be `button`.
-* `label` String - The label for the given action.
+* `text` String - (optional) The label for the given action.
 
 ## Platform / Action Support
 
-| Action Type | Platform Support | Limitations |
-|-------------|------------------|-------------|
-| `button`    | macOS            | Maximum of one button, if multiple are provided only the last is used.  This action is also incomptible with `hasReply` and will be ignored if `hasReply` is `true`. |
+| Action Type | Platform Support | Usage of `text` | Default `text` | Limitations |
+|-------------|------------------|------------------|-------------|
+| `button`    | macOS            | Used as the label for the button | "Show" | Maximum of one button, if multiple are provided only the last is used.  This action is also incomptible with `hasReply` and will be ignored if `hasReply` is `true`. |
 
 ### Button support on macOS
 

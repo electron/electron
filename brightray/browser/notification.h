@@ -21,7 +21,7 @@ class NotificationPresenter;
 
 struct NotificationAction {
   base::string16 type;
-  base::string16 label;
+  base::string16 text;
 };
 
 class Notification {

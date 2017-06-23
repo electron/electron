@@ -57,7 +57,7 @@ void CocoaNotification::Show(const base::string16& title,
 
     if (action.type == base::UTF8ToUTF16("button")) {
       [notification_ setHasActionButton:true];
-      [notification_ setActionButtonTitle:base::SysUTF16ToNSString(action.label)];
+      [notification_ setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
       actionIndex_ = i;
     }
   }
