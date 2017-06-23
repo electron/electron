@@ -23,7 +23,7 @@ It creates a new `Notification` with native properties as set by the `options`.
 
 The `Notification` class has the following static methods:
 
-#### `BrowserWindow.isSupported()`
+#### `Notification.isSupported()`
 
 Returns `Boolean` - Whether or not desktop notifications are supported on the current system
 
