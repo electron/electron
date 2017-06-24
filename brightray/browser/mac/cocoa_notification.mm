@@ -6,6 +6,7 @@
 
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
 #include "brightray/browser/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -23,33 +24,38 @@ CocoaNotification::~CocoaNotification() {
         removeDeliveredNotification:notification_];
 }
 
-void CocoaNotification::Show(const base::string16& title,
-                             const base::string16& body,
-                             const std::string& tag,
-                             const GURL& icon_url,
-                             const SkBitmap& icon,
-                             bool silent,
-                             bool has_reply,
-                             const base::string16& reply_placeholder) {
+void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
-  [notification_ setTitle:base::SysUTF16ToNSString(title)];
-  [notification_ setInformativeText:base::SysUTF16ToNSString(body)];
+  [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
+  [notification_ setInformativeText:base::SysUTF16ToNSString(options.msg)];
 
   if ([notification_ respondsToSelector:@selector(setContentImage:)] &&
-      !icon.drawsNothing()) {
+      !options.icon.drawsNothing()) {
     NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
-        icon, base::mac::GetGenericRGBColorSpace());
+        options.icon, base::mac::GetGenericRGBColorSpace());
     [notification_ setContentImage:image];
   }
 
-  if (silent) {
+  if (options.silent) {
     [notification_ setSoundName:nil];
   } else {
     [notification_ setSoundName:NSUserNotificationDefaultSoundName];
   }
 
-  if (has_reply) {
-    [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(reply_placeholder)];
+  [notification_ setHasActionButton:false];
+
+  for (size_t i = 0; i < options.actions.size(); i++) {
+    NotificationAction action = options.actions[i];
+
+    if (action.type == base::UTF8ToUTF16("button")) {
+      [notification_ setHasActionButton:true];
+      [notification_ setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
+      actionIndex_ = i;
+    }
+  }
+
+  if (options.has_reply) {
+    [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(options.reply_placeholder)];
     [notification_ setHasReplyButton:true];
   }
 
@@ -72,6 +78,11 @@ void CocoaNotification::NotificationDisplayed() {
 void CocoaNotification::NotificationReplied(const std::string& reply) {
   if (delegate())
     delegate()->NotificationReplied(reply);
+}
+
+void CocoaNotification::NotificationButtonClicked() {
+  if (delegate())
+    delegate()->NotificationAction(actionIndex_);
 }
 
 }  // namespace brightray

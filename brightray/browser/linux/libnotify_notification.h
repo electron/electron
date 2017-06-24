@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_LINUX_LIBNOTIFY_NOTIFICATION_H_
 
 #include <string>
+#include <vector>
 
 #include "brightray/browser/linux/libnotify_loader.h"
 #include "brightray/browser/notification.h"
@@ -22,14 +23,7 @@ class LibnotifyNotification : public Notification {
   static bool Initialize();
 
   // Notification:
-  void Show(const base::string16& title,
-            const base::string16& msg,
-            const std::string& tag,
-            const GURL& icon_url,
-            const SkBitmap& icon,
-            bool silent,
-            bool has_reply,
-            const base::string16& reply_placeholder) override;
+  void Show(const NotificationOptions& options) override;
   void Dismiss() override;
 
  private:

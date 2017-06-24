@@ -9,6 +9,7 @@
 #include "brightray/browser/win/windows_toast_notification.h"
 
 #include <shlobj.h>
+#include <vector>
 
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
@@ -84,20 +85,15 @@ WindowsToastNotification::~WindowsToastNotification() {
   }
 }
 
-void WindowsToastNotification::Show(const base::string16& title,
-                                    const base::string16& msg,
-                                    const std::string& tag,
-                                    const GURL& icon_url,
-                                    const SkBitmap& icon,
-                                    bool silent,
-                                    bool has_reply,
-                                    const base::string16& reply_placeholder) {
+void WindowsToastNotification::Show(const NotificationOptions& options) {
   auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
-  std::wstring icon_path = presenter_win->SaveIconToFilesystem(icon, icon_url);
+  std::wstring icon_path = presenter_win->SaveIconToFilesystem(
+    options.icon,
+    options.icon_url);
 
   ComPtr<IXmlDocument> toast_xml;
-  if (FAILED(GetToastXml(toast_manager_.Get(), title, msg, icon_path, silent,
-                         &toast_xml))) {
+  if (FAILED(GetToastXml(toast_manager_.Get(), options.title, options.msg,
+                         icon_path, options.silent, &toast_xml))) {
     NotificationFailed();
     return;
   }

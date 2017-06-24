@@ -14,7 +14,34 @@
 #include "brightray/browser/browser_client.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "native_mate/object_template_builder.h"
 #include "url/gurl.h"
+
+namespace mate {
+template<>
+struct Converter<brightray::NotificationAction> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                      brightray::NotificationAction* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+
+    if (!dict.Get("type", &(out->type))) {
+      return false;
+    }
+    dict.Get("text", &(out->text));
+    return true;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                    brightray::NotificationAction val) {
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    dict.Set("text", val.text);
+    dict.Set("type", val.type);
+    return dict.GetHandle();
+  }
+};
+}  // namespace mate
 
 namespace atom {
 
@@ -38,6 +65,7 @@ Notification::Notification(v8::Isolate* isolate,
     opts.Get("silent", &silent_);
     opts.Get("replyPlaceholder", &reply_placeholder_);
     opts.Get("hasReply", &has_reply_);
+    opts.Get("actions", &actions_);
   }
 }
 
@@ -97,6 +125,19 @@ void Notification::SetHasReply(bool new_has_reply) {
   has_reply_ = new_has_reply;
 }
 
+void Notification::SetActions(
+  const std::vector<brightray::NotificationAction> actions) {
+  actions_ = actions;
+}
+
+std::vector<brightray::NotificationAction> Notification::GetActions() {
+  return actions_;
+}
+
+void Notification::NotificationAction(int index) {
+  Emit("action", index);
+}
+
 void Notification::NotificationClick() {
   Emit("click");
 }
@@ -121,8 +162,16 @@ void Notification::Show() {
   if (presenter_) {
     notification_ = presenter_->CreateNotification(this);
     if (notification_) {
-      notification_->Show(title_, body_, "", GURL(), icon_.AsBitmap(), silent_,
-                          has_reply_, reply_placeholder_);
+      brightray::NotificationOptions options;
+      options.title = title_;
+      options.msg = body_;
+      options.icon_url = GURL();
+      options.icon = icon_.AsBitmap();
+      options.silent = silent_;
+      options.has_reply = has_reply_;
+      options.reply_placeholder = reply_placeholder_;
+      options.actions = actions_;
+      notification_->Show(options);
     }
   }
 }
@@ -144,7 +193,9 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
                    &Notification::SetReplyPlaceholder)
       .SetProperty("hasReply", &Notification::GetHasReply,
-                   &Notification::SetHasReply);
+                   &Notification::SetHasReply)
+      .SetProperty("actions", &Notification::GetActions,
+                   &Notification::SetActions);
 }
 
 }  // namespace api

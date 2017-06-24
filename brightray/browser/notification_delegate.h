@@ -21,6 +21,7 @@ class NotificationDelegate : public content::DesktopNotificationDelegate {
 
   // Notification was replied to
   virtual void NotificationReplied(const std::string& reply) {}
+  virtual void NotificationAction(int index) {}
 };
 
 }  // namespace brightray

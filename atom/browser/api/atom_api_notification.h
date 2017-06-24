@@ -31,6 +31,7 @@ class Notification : public mate::TrackableObject<Notification>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // NotificationDelegate:
+  void NotificationAction(int index) override;
   void NotificationClick() override;
   void NotificationReplied(const std::string& reply) override;
   void NotificationDisplayed() override;
@@ -51,6 +52,7 @@ class Notification : public mate::TrackableObject<Notification>,
   bool GetSilent();
   base::string16 GetReplyPlaceholder();
   bool GetHasReply();
+  std::vector<brightray::NotificationAction> GetActions();
 
   // Prop Setters
   void SetTitle(const base::string16& new_title);
@@ -58,6 +60,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void SetSilent(bool new_silent);
   void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetHasReply(bool new_has_reply);
+  void SetActions(const std::vector<brightray::NotificationAction> actions);
 
  private:
   base::string16 title_;
@@ -68,6 +71,7 @@ class Notification : public mate::TrackableObject<Notification>,
   bool silent_ = false;
   base::string16 reply_placeholder_;
   bool has_reply_ = false;
+  std::vector<brightray::NotificationAction> actions_;
 
   brightray::NotificationPresenter* presenter_;
 
