@@ -162,8 +162,16 @@ void Notification::Show() {
   if (presenter_) {
     notification_ = presenter_->CreateNotification(this);
     if (notification_) {
-      notification_->Show(title_, body_, "", GURL(), icon_.AsBitmap(), silent_,
-                          has_reply_, reply_placeholder_, actions_);
+      brightray::NotificationOptions options;
+      options.title = title_;
+      options.msg = body_;
+      options.icon_url = GURL();
+      options.icon = icon_.AsBitmap();
+      options.silent = silent_;
+      options.has_reply = has_reply_;
+      options.reply_placeholder = reply_placeholder_;
+      options.actions = actions_;
+      notification_->Show(options);
     }
   }
 }

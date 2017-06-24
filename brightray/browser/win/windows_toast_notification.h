@@ -51,15 +51,7 @@ class WindowsToastNotification : public Notification {
 
  protected:
   // Notification:
-  void Show(const base::string16& title,
-            const base::string16& msg,
-            const std::string& tag,
-            const GURL& icon_url,
-            const SkBitmap& icon,
-            bool silent,
-            bool has_reply,
-            const base::string16& reply_placeholder,
-            const std::vector<NotificationAction> actions) override;
+  void Show(const NotificationOptions& options) override;
   void Dismiss() override;
 
  private:

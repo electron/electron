@@ -85,19 +85,10 @@ LibnotifyNotification::~LibnotifyNotification() {
   }
 }
 
-void LibnotifyNotification::Show(const base::string16& title,
-                                 const base::string16& body,
-                                 const std::string& tag,
-                                 const GURL& icon_url,
-                                 const SkBitmap& icon,
-                                 bool silent,
-                                 bool has_reply,
-                                 const base::string16& reply_placeholder,
-                                 const std::vector<NotificationAction> actions
-                                ) {
+void LibnotifyNotification::Show(const NotificationOptions& options) {
   notification_ = libnotify_loader_.notify_notification_new(
-      base::UTF16ToUTF8(title).c_str(),
-      base::UTF16ToUTF8(body).c_str(),
+      base::UTF16ToUTF8(options.title).c_str(),
+      base::UTF16ToUTF8(options.msg).c_str(),
       nullptr);
 
   g_signal_connect(
@@ -111,8 +102,8 @@ void LibnotifyNotification::Show(const base::string16& title,
         nullptr);
   }
 
-  if (!icon.drawsNothing()) {
-    GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(icon);
+  if (!options.icon.drawsNothing()) {
+    GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(options.icon);
     libnotify_loader_.notify_notification_set_image_from_pixbuf(
         notification_, pixbuf);
     libnotify_loader_.notify_notification_set_timeout(
@@ -120,8 +111,8 @@ void LibnotifyNotification::Show(const base::string16& title,
     g_object_unref(pixbuf);
   }
 
-  if (!tag.empty()) {
-    GQuark id = g_quark_from_string(tag.c_str());
+  if (!options.tag.empty()) {
+    GQuark id = g_quark_from_string(options.tag.c_str());
     g_object_set(G_OBJECT(notification_), "id", id, NULL);
   }
 

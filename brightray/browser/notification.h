@@ -10,9 +10,8 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/strings/string16.h"
-
-class GURL;
-class SkBitmap;
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "url/gurl.h"
 
 namespace brightray {
 
@@ -24,20 +23,24 @@ struct NotificationAction {
   base::string16 text;
 };
 
+struct NotificationOptions {
+  base::string16 title;
+  base::string16 msg;
+  std::string tag;
+  GURL icon_url;
+  SkBitmap icon;
+  bool silent;
+  bool has_reply;
+  base::string16 reply_placeholder;
+  std::vector<NotificationAction> actions;
+};
+
 class Notification {
  public:
   virtual ~Notification();
 
   // Shows the notification.
-  virtual void Show(const base::string16& title,
-                    const base::string16& msg,
-                    const std::string& tag,
-                    const GURL& icon_url,
-                    const SkBitmap& icon,
-                    bool silent,
-                    bool has_reply,
-                    const base::string16& reply_placeholder,
-                    const std::vector<NotificationAction> actions) = 0;
+  virtual void Show(const NotificationOptions& options) = 0;
   // Closes the notification, this instance will be destroyed after the
   // notification gets closed.
   virtual void Dismiss() = 0;

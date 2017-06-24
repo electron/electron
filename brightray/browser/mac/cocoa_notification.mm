@@ -24,27 +24,19 @@ CocoaNotification::~CocoaNotification() {
         removeDeliveredNotification:notification_];
 }
 
-void CocoaNotification::Show(const base::string16& title,
-                             const base::string16& body,
-                             const std::string& tag,
-                             const GURL& icon_url,
-                             const SkBitmap& icon,
-                             bool silent,
-                             bool has_reply,
-                             const base::string16& reply_placeholder,
-                             const std::vector<NotificationAction> actions) {
+void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
-  [notification_ setTitle:base::SysUTF16ToNSString(title)];
-  [notification_ setInformativeText:base::SysUTF16ToNSString(body)];
+  [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
+  [notification_ setInformativeText:base::SysUTF16ToNSString(options.msg)];
 
   if ([notification_ respondsToSelector:@selector(setContentImage:)] &&
-      !icon.drawsNothing()) {
+      !options.icon.drawsNothing()) {
     NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
-        icon, base::mac::GetGenericRGBColorSpace());
+        options.icon, base::mac::GetGenericRGBColorSpace());
     [notification_ setContentImage:image];
   }
 
-  if (silent) {
+  if (options.silent) {
     [notification_ setSoundName:nil];
   } else {
     [notification_ setSoundName:NSUserNotificationDefaultSoundName];
@@ -52,8 +44,8 @@ void CocoaNotification::Show(const base::string16& title,
 
   [notification_ setHasActionButton:false];
 
-  for (size_t i = 0; i < actions.size(); i++) {
-    NotificationAction action = actions[i];
+  for (size_t i = 0; i < options.actions.size(); i++) {
+    NotificationAction action = options.actions[i];
 
     if (action.type == base::UTF8ToUTF16("button")) {
       [notification_ setHasActionButton:true];
@@ -62,8 +54,8 @@ void CocoaNotification::Show(const base::string16& title,
     }
   }
 
-  if (has_reply) {
-    [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(reply_placeholder)];
+  if (options.has_reply) {
+    [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(options.reply_placeholder)];
     [notification_ setHasReplyButton:true];
   }
 
