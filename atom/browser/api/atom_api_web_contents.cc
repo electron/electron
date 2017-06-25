@@ -581,10 +581,11 @@ bool WebContents::PreHandleKeyboardEvent(
     const content::NativeWebKeyboardEvent& event,
     bool* is_keyboard_shortcut) {
   if (event.type() == blink::WebInputEvent::Type::RawKeyDown ||
-      event.type() == blink::WebInputEvent::Type::KeyUp)
+      event.type() == blink::WebInputEvent::Type::KeyUp) {
     return Emit("before-input-event", event);
-  else
+  } else {
     return false;
+  }
 }
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
@@ -1240,6 +1241,10 @@ void WebContents::UnregisterServiceWorker(
                                    callback);
 }
 
+void WebContents::SetIgnoreMenuShortcuts(bool ignore) {
+  set_ignore_menu_shortcuts(ignore);
+}
+
 void WebContents::SetAudioMuted(bool muted) {
   web_contents()->SetAudioMuted(muted);
 }
@@ -1763,12 +1768,12 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
       .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
-      .SetMethod("enableDeviceEmulation",
-                 &WebContents::EnableDeviceEmulation)
-      .SetMethod("disableDeviceEmulation",
-                 &WebContents::DisableDeviceEmulation)
+      .SetMethod("enableDeviceEmulation", &WebContents::EnableDeviceEmulation)
+      .SetMethod("disableDeviceEmulation", &WebContents::DisableDeviceEmulation)
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
       .SetMethod("inspectElement", &WebContents::InspectElement)
+      .SetMethod("setIgnoreMenuShortcuts",
+                 &WebContents::SetIgnoreMenuShortcuts)
       .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
       .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
       .SetMethod("undo", &WebContents::Undo)
@@ -1789,8 +1794,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
-      .SetMethod("beginFrameSubscription",
-                 &WebContents::BeginFrameSubscription)
+      .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("setSize", &WebContents::SetSize)

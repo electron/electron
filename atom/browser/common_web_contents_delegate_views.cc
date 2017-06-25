@@ -23,7 +23,7 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
     ExitFullscreenModeForTab(source);
 
   // Let the NativeWindow handle other parts.
-  if (owner_window())
+  if (!ignore_menu_shortcuts_ && owner_window())
     owner_window()->HandleKeyboardEvent(source, event);
 }
 
