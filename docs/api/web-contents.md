@@ -755,6 +755,9 @@ zoom percent divided by 100, so 300% = 3.0.
 Sends a request to get current zoom factor, the `callback` will be called with
 `callback(zoomFactor)`.
 
+Returns `Promise` - A promise that resolves with the `zoomFactor` or rejects if 
+the call throws error.
+
 #### `contents.setZoomLevel(level)`
 
 * `level` Number - Zoom level
@@ -770,6 +773,9 @@ limits of 300% and 50% of original size, respectively.
 
 Sends a request to get current zoom level, the `callback` will be called with
 `callback(zoomLevel)`.
+
+Returns `Promise` - A promise that resolves with the `zoomLevel` or rejects if 
+the call throws error.
 
 #### `contents.setZoomLevelLimits(minimumLevel, maximumLevel)`
 

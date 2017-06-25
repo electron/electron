@@ -367,6 +367,36 @@ describe('webContents module', function () {
       protocol.unregisterProtocol(zoomScheme, (error) => done(error))
     })
 
+    it('getZoomFactor() supports both callback and promise', (done) => {
+      w.loadURL('about:blank')
+      var counter = 0;
+      var callback = (zoomFactor) => {
+        assert.equal(zoomFactor, 1.0)
+        counter++;
+        if(counter == 2) {
+          done()
+        }
+      }
+      w.webContents.on('did-finish-load', () => {
+        w.webContents.getZoomFactor(callback).then(callback)
+      })
+    })
+
+    it('getZoomLevel() supports both callback and promise', (done) => {
+      w.loadURL('about:blank')
+      var counter = 0;
+      var callback = (zoomLevel) => {
+        assert.equal(zoomLevel, 0.0)
+        counter++;
+        if(counter == 2) {
+          done()
+        }
+      }
+      w.webContents.on('did-finish-load', () => {
+        w.webContents.getZoomLevel(callback).then(callback)
+      })
+    })
+
     it('can set the correct zoom level', (done) => {
       w.loadURL('about:blank')
       w.webContents.on('did-finish-load', () => {
