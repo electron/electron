@@ -1261,8 +1261,6 @@ describe('BrowserWindow module', function () {
     })
 
     describe('mixed sandbox option', function () {
-      this.timeout(120000)
-
       let appProcess
 
       afterEach(function () {
