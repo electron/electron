@@ -186,6 +186,8 @@ void Window::OnWindowClosed() {
 
   RemoveFromParentChildWindows();
 
+  ResetBrowserView();
+
   // Destroy the native class when window is closed.
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, GetDestroyClosure());
@@ -842,14 +844,29 @@ v8::Local<v8::Value> Window::GetBrowserView() const {
 }
 
 void Window::SetBrowserView(v8::Local<v8::Value> value) {
+  ResetBrowserView();
+
   mate::Handle<BrowserView> browser_view;
   if (value->IsNull()) {
     window_->SetBrowserView(nullptr);
-    browser_view_.Reset();
   } else if (mate::ConvertFromV8(isolate(), value, &browser_view)) {
     window_->SetBrowserView(browser_view->view());
+    browser_view->web_contents()->SetOwnerWindow(window_.get());
     browser_view_.Reset(isolate(), value);
   }
+}
+
+void Window::ResetBrowserView() {
+  if (browser_view_.IsEmpty()) {
+    return;
+  }
+
+  mate::Handle<BrowserView> browser_view;
+  if (mate::ConvertFromV8(isolate(), GetBrowserView(), &browser_view)) {
+    browser_view->web_contents()->SetOwnerWindow(nullptr);
+  }
+
+  browser_view_.Reset();
 }
 
 bool Window::IsModal() const {

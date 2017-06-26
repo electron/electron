@@ -186,6 +186,7 @@ class Window : public mate::TrackableObject<Window>,
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
   v8::Local<v8::Value> GetBrowserView() const;
   void SetBrowserView(v8::Local<v8::Value> value);
+  void ResetBrowserView();
   bool IsModal() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
 

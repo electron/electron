@@ -6,7 +6,7 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {BrowserView, BrowserWindow} = remote
 
-describe('View module', function () {
+describe('BrowserView module', function () {
   var w = null
   var view = null
 
@@ -87,6 +87,17 @@ describe('View module', function () {
       w.setBrowserView(view)
       w.setBrowserView(view)
       w.setBrowserView(view)
+    })
+  })
+
+  describe('BrowserView.webContents.getOwnerBrowserWindow()', function () {
+    it('points to owning window', function () {
+      view = new BrowserView()
+      assert.ok(!view.webContents.getOwnerBrowserWindow())
+      w.setBrowserView(view)
+      assert.equal(view.webContents.getOwnerBrowserWindow(), w)
+      w.setBrowserView(null)
+      assert.ok(!view.webContents.getOwnerBrowserWindow())
     })
   })
 })

@@ -18,10 +18,6 @@ class Rect;
 
 namespace atom {
 
-namespace api {
-class WebContents;
-}
-
 enum AutoResizeFlags {
   kAutoResizeWidth = 0x1,
   kAutoResizeHeight = 0x2,

@@ -36,6 +36,7 @@ class BrowserView : public mate::TrackableObject<BrowserView> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  WebContents* web_contents() const { return api_web_contents_; }
   NativeBrowserView* view() const { return view_.get(); }
 
   int32_t ID() const;
