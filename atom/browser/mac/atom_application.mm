@@ -4,6 +4,7 @@
 
 #import "atom/browser/mac/atom_application.h"
 
+#include "atom/browser/mac/dict_util.h"
 #include "atom/browser/browser.h"
 #include "base/auto_reset.h"
 #include "base/strings/sys_string_conversions.h"
@@ -35,11 +36,48 @@
       [[NSUserActivity alloc] initWithActivityType:type]);
   [currentActivity_ setUserInfo:userInfo];
   [currentActivity_ setWebpageURL:webpageURL];
+  [currentActivity_ setDelegate: self];
   [currentActivity_ becomeCurrent];
 }
 
 - (NSUserActivity*)getCurrentActivity {
   return currentActivity_.get();
+}
+
+- (void)invalidateCurrentActivity {
+  if (currentActivity_.get() != NULL) {
+    [currentActivity_.get() invalidate];
+    currentActivity_.reset();
+  }
+}
+
+- (void)updateCurrentActivity:(NSString *)type
+                 withUserInfo:(NSDictionary*)userInfo {
+  if (currentActivity_.get() != NULL) {
+    [currentActivity_.get() addUserInfoEntriesFromDictionary:userInfo];
+  }
+}
+
+- (void)updateUserActivityState:(NSUserActivity *)userActivity {
+  std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+  std::unique_ptr<base::DictionaryValue> user_info =
+    atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+
+  atom::Browser* browser = atom::Browser::Get();
+  browser->UpdateUserActivityState(activity_type, *user_info);
+  
+  [super updateUserActivityState:userActivity];
+}
+
+- (void)userActivityWasContinued:(NSUserActivity *)userActivity {
+  std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+  std::unique_ptr<base::DictionaryValue> user_info =
+    atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+
+  atom::Browser* browser = atom::Browser::Get();
+
+  browser->UserActivityWasContinued(activity_type, *user_info);
+  [userActivity setNeedsSave:YES];
 }
 
 - (void)awakeFromNib {

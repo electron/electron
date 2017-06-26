@@ -6,7 +6,8 @@
 #import "base/mac/scoped_nsobject.h"
 
 @interface AtomApplication : NSApplication<CrAppProtocol,
-                                           CrAppControlProtocol> {
+                                           CrAppControlProtocol,
+                                           NSUserActivityDelegate> {
  @private
   BOOL handlingSendEvent_;
   base::scoped_nsobject<NSUserActivity> currentActivity_;
@@ -24,5 +25,8 @@
 - (void)setCurrentActivity:(NSString*)type
               withUserInfo:(NSDictionary*)userInfo
             withWebpageURL:(NSURL*)webpageURL;
+- (void)invalidateCurrentActivity;
+- (void)updateCurrentActivity:(NSString *)type
+                 withUserInfo:(NSDictionary*)userInfo;
 
 @end

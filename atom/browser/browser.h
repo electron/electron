@@ -119,9 +119,31 @@ class Browser : public WindowListObserver {
   // Returns the type name of the current user activity.
   std::string GetCurrentActivityType();
 
+  // Invalidates the current user activity.
+  void InvalidateCurrentActivity();
+
+  // Updates the current user activity
+  void UpdateCurrentActivity(const std::string& type,
+                             const base::DictionaryValue& user_info);
+
+  // Indicates that an user activity is about to be resumed.
+  bool WillContinueUserActivity(const std::string& type);
+
+  // Indicates a failure to resume a Handoff activity.
+  void DidFailToContinueUserActivity(const std::string& type,
+                                     const std::string& error);
+
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
                             const base::DictionaryValue& user_info);
+
+  // Indicates that an activity was continued on another device.
+  void UserActivityWasContinued(const std::string& type,
+                                const base::DictionaryValue& user_info);
+
+  // Gives an oportunity to update the Handoff payload.
+  void UpdateUserActivityState(const std::string& type,
+                               const base::DictionaryValue& user_info);
 
   // Bounce the dock icon.
   enum BounceType {

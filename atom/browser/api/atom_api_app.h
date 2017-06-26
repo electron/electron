@@ -113,11 +113,22 @@ class App : public AtomBrowserClient::Delegate,
                const base::DictionaryValue& request_details) override;
   void OnAccessibilitySupportChanged() override;
 #if defined(OS_MACOSX)
+  void OnWillContinueUserActivity(
+      bool* prevent_default,
+      const std::string& type) override;
+  void OnDidFailToContinueUserActivity(
+      const std::string& type,
+      const std::string& error) override;
   void OnContinueUserActivity(
       bool* prevent_default,
       const std::string& type,
       const base::DictionaryValue& user_info) override;
-
+  void OnUserActivityWasContinued(
+      const std::string& type,
+      const base::DictionaryValue& user_info) override;
+  void OnUpdateUserActivityState(
+      const std::string& type,
+      const base::DictionaryValue& user_info) override;
   void OnNewWindowForTab() override;
 #endif
 
