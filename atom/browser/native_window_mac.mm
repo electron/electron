@@ -950,7 +950,7 @@ NativeWindowMac::NativeWindowMac(
 
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
 
-  options.Get(options::kAlwaysShowTitleTextInFullscreen, &always_show_title_text_in_full_screen_);
+  options.Get(options::kFullscreenWindowTitle, &always_show_title_text_in_full_screen_);
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
