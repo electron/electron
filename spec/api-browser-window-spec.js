@@ -7,7 +7,6 @@ const path = require('path')
 const os = require('os')
 const qs = require('querystring')
 const http = require('http')
-const net = require('net')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
@@ -1274,7 +1273,7 @@ describe('BrowserWindow module', function () {
 
       it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
-        ©appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'], {stdio: ['ignore', 'ipc', 'ignore']})
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'], {stdio: ['ignore', 'ipc', 'ignore']})
         appProcess.once('message', (argv) => {
           assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
           assert.equal(argv.sandbox.includes('--no-sandbox'), false)
