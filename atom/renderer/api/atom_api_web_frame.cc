@@ -101,6 +101,7 @@ double WebFrame::GetZoomFactor() const {
 
 void WebFrame::SetVisualZoomLevelLimits(double min_level, double max_level) {
   web_frame_->view()->setDefaultPageScaleLimits(min_level, max_level);
+  web_frame_->view()->setIgnoreViewportTagScaleLimits(true);
 }
 
 void WebFrame::SetLayoutZoomLevelLimits(double min_level, double max_level) {
