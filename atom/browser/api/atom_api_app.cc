@@ -1042,7 +1042,12 @@ void App::EnableMixedSandbox(mate::Arguments* args) {
     using CharType = base::CommandLine::CharType;
     auto argv = command_line->argv();
     StringVector modified_command_line;
-    const CharType* kNoSandboxArg = L"--no-sandbox";
+    #if defined(OS_WIN)
+      const CharType* kNoSandboxArg = L"--no-sandbox";
+    #else
+      const CharType* kNoSandboxArg = "--no-sandbox";
+    #endif
+
     for (const StringType& arg : argv) {
     if (arg.compare(kNoSandboxArg) != 0)
       modified_command_line.push_back(arg);
