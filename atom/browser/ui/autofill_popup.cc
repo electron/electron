@@ -6,8 +6,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(ENABLE_OSR)
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "atom/browser/osr/osr_view_proxy.h"
+#endif
 #include "atom/browser/ui/autofill_popup.h"
 #include "atom/common/api/api_messages.h"
 #include "ui/display/display.h"
@@ -132,12 +134,14 @@ void AutofillPopup::CreateView(
   view_ = new AutofillPopupView(this, parent_widget);
   view_->Show();
 
+#if defined(ENABLE_OSR)
   if (offscreen) {
     auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
         frame_host_->GetView());
     view_->view_proxy_.reset(new OffscreenViewProxy(view_));
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
   }
+#endif
 }
 
 void AutofillPopup::Hide() {
