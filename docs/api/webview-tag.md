@@ -52,6 +52,42 @@ and displays a "loading..." message during the load time:
 </script>
 ```
 
+You can enable two-way communication between guest page and renderer or main
+process by attaching `ipcRenderer` to `window` object of guest page in preload
+script, like that:
+```javascript
+//preload script
+const {ipcRenderer} = require('electron')
+window.ipc = ipcRenderer
+```
+After that it's possible to send message to main or renderer process from inside
+of guest page, like that:
+```javascript
+//inside guest page
+window.ipc.sendToHost('my channel', 'hello, renderer');
+window.ipc.send('my channel', 'hello, main');
+```
+This will work even if `nodeintegration` is disabled on `webview` tag
+
+**SECURITY WARNING**
+This will technically allow to send arbitrary messages, which can do an awful
+lot of things, especially if they send Electron internal message.
+If you're using electron to wrap site that belongs to your company or site,
+that's under your control or other trusted site - it's probably ok, but still
+carries a risk to break things.
+Don't expose `ipcRenderer` object when embedding external sites **ever**.
+
+To improve security and safety it's better to define wrapping function, which
+sends only predefined events and validate it's inputs. 
+Like that (validation ommited):
+```javascript
+//preload script
+const {ipcRenderer} = require('electron');
+window.myEventToMain = function(payload) {
+  ipcRenderer.send('my-predefined-event', payload);
+}
+```
+
 ## CSS Styling Notes
 
 Please note that the `webview` tag's style uses `display:flex;` internally to
