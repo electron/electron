@@ -2555,9 +2555,8 @@ describe('BrowserWindow module', function () {
   })
 
   describe('offscreen rendering', function () {
-    beforeEach(function () {
-      if (w != null) w.destroy()
-      w = new BrowserWindow({
+    const createWindow = function() {
+      return new BrowserWindow({
         width: 100,
         height: 100,
         show: false,
@@ -2566,6 +2565,20 @@ describe('BrowserWindow module', function () {
           offscreen: true
         }
       })
+    }
+
+    before(function() {
+      const w = createWindow()
+      this.osrIsAvailable = ('isOffscreen' in w.webContents)
+    })
+
+    beforeEach(function () {
+      if (!this.osrIsAvailable) {
+        this.skip()
+      }
+
+      if (w != null) w.destroy()
+      w = createWindow()
     })
 
     it('creates offscreen window with correct size', function (done) {
