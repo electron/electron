@@ -31,6 +31,12 @@ An Apple Disk Image is a packaging format used by macOS. DMG files are
 commonly used for distributing application "installers". [electron-builder]
 supports `dmg` as a build target.
 
+### IME
+
+Input Method Editor. A program that allows users to enter characters and 
+symbols not found on their keyboard. For example, this allows users of Latin 
+keyboards to input Chinese, Japanese, Korean and Indic characters.
+
 ### IPC
 
 IPC stands for Inter-Process Communication. Electron uses IPC to send
