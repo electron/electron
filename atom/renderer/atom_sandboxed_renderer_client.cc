@@ -80,6 +80,10 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate, v8::Local<v8::String> key,
   return exports;
 }
 
+base::CommandLine::StringVector GetArgv() {
+  return base::CommandLine::ForCurrentProcess()->argv();
+}
+
 void InitializeBindings(v8::Local<v8::Object> binding,
                         v8::Local<v8::Context> context) {
   auto isolate = context->GetIsolate();
@@ -87,6 +91,7 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   b.SetMethod("get", GetBinding);
   b.SetMethod("crash", AtomBindings::Crash);
   b.SetMethod("hang", AtomBindings::Hang);
+  b.SetMethod("getArgv", GetArgv);
   b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
   b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
 }

@@ -1286,7 +1286,7 @@ describe('BrowserWindow module', function () {
         })
       })
 
-      it('enable-mixed-sandbox', (done) => {
+      it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
         this.timeout(120000)
 
         let state = 'none'
