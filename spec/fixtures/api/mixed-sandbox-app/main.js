@@ -1,39 +1,46 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
-const net = require('net')
+const {app, BrowserWindow, ipcMain} = require('electron')
 const path = require('path')
-
-const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-mixed-sandbox' : '/tmp/electron-app-mixed-sandbox'
 
 process.on('uncaughtException', () => {
   app.exit(1)
 })
 
-app.once('ready', () => {
-  let lastArg = process.argv[process.argv.length - 1]
-  const client = net.connect(socketPath)
-  client.once('connect', () => {
-    if (lastArg === '--enable-mixed-sandbox') {
-      ipcMain.on('processArgs', (event, args) => {
-        client.end(String(args.indexOf('--no-sandbox') >= 0))
-      })
-      let window = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          preload: path.join(app.getAppPath(), 'electron-app-mixed-sandbox-preload.js'),
-          sandbox: false
-        }
-      })
+let sandboxWindow
+let noSandboxWindow
 
-      window.loadURL('data:,window')
-    } else {
-      client.end(String(false))
+app.once('ready', () => {
+  sandboxWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      preload: path.join(app.getAppPath(), 'electron-app-mixed-sandbox-preload.js'),
+      sandbox: true
     }
   })
-  client.once('end', () => {
-    app.exit(0)
-  })
+  sandboxWindow.loadURL('about:blank')
 
-  if (lastArg !== '--enable-mixed-sandbox') {
-    app.relaunch({ args: process.argv.slice(1).concat('--enable-mixed-sandbox') })
+  noSandboxWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      preload: path.join(app.getAppPath(), 'electron-app-mixed-sandbox-preload.js'),
+      sandbox: false
+    }
+  })
+  noSandboxWindow.loadURL('about:blank')
+
+  const argv = {
+    sandbox: null,
+    noSandbox: null
   }
+
+  ipcMain.on('argv', (event, value) => {
+    if (event.sender === sandboxWindow.webContents) {
+      argv.sandbox = value
+    } else if (event.sender === noSandboxWindow.webContents) {
+      argv.noSandbox = value
+    }
+
+    if (argv.sandbox != null && argv.noSandbox != null) {
+      process.send(argv)
+    }
+  })
 })

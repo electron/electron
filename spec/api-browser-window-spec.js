@@ -1262,51 +1262,28 @@ describe('BrowserWindow module', function () {
     })
 
     describe('mixed sandbox option', function () {
-      // TOOD (juturu): This test needs to be fixed
-      let sandboxServer = null
-      const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-mixed-sandbox' : '/tmp/electron-app-mixed-sandbox'
+      this.timeout(120000)
 
-      beforeEach(function (done) {
-        fs.unlink(socketPath, () => {
-          sandboxServer = net.createServer()
-          sandboxServer.listen(socketPath)
-          done()
-        })
-      })
+      let appProcess
 
-      afterEach(function (done) {
-        sandboxServer.close(() => {
-          if (process.platform === 'win32') {
-            done()
-          } else {
-            fs.unlink(socketPath, () => {
-              done()
-            })
-          }
-        })
+      afterEach(function () {
+        if (appProcess != null) {
+          appProcess.kill()
+        }
       })
 
       it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
-        this.timeout(120000)
-
-        let state = 'none'
-        sandboxServer.once('error', (error) => {
-          done(error)
-        })
-        sandboxServer.on('connection', (client) => {
-          client.once('data', function (data) {
-            if (String(data) === 'false' && state === 'none') {
-              state = 'first-launch'
-            } else if (String(data) === 'true' && state === 'first-launch') {
-              done()
-            } else {
-              done(`Unexpected state: ${data}`)
-            }
-          })
-        })
-
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
-        ChildProcess.spawn(remote.process.execPath, [appPath])
+        ©appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'], {stdio: ['ignore', 'ipc', 'ignore']})
+        appProcess.once('message', (argv) => {
+          assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
+          assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+
+          assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
+          assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+
+          done()
+        })
       })
     })
 
