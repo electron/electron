@@ -701,7 +701,7 @@ starts:
 const {app} = require('electron')
 let myWindow = null
 
-const isNotFirstInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
+const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
   // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore()
@@ -709,8 +709,8 @@ const isNotFirstInstance = app.makeSingleInstance((commandLine, workingDirectory
   }
 })
 
-if (isNotFirstInstance) {
-  app.quit();
+if (isSecondInstance) {
+  app.quit()
 }
 
 // Create myWindow, load the rest of the app, etc...
