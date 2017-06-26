@@ -7,6 +7,7 @@
 #include <Quartz/Quartz.h>
 #include <string>
 
+#include "atom/browser/browser.h"
 #include "atom/browser/native_browser_view_mac.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "atom/browser/window_list.h"
@@ -415,6 +416,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)windowDidEndSheet:(NSNotification *)notification {
   shell_->NotifyWindowSheetEnd();
+}
+
+- (IBAction)newWindowForTab:(id)sender {
+  shell_->NotifyNewWindowForTab();
+  atom::Browser::Get()->NewWindowForTab();
 }
 
 @end

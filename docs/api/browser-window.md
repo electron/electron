@@ -239,7 +239,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `maximize()` directly. Default is `false`.
   * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
     window as a native tab on macOS 10.12+. Windows with the same tabbing
-    identifier will be grouped together.
+    identifier will be grouped together. This also adds a native new tab button
+    to your window's tab bar and allows your `app` and window to receive the
+    `new-window-for-tab` event.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
@@ -546,6 +548,10 @@ Emitted when the window opens a sheet.
 #### Event: 'sheet-end' _macOS_
 
 Emitted when the window has closed a sheet.
+
+#### Event: 'new-window-for-tab' _macOS_
+
+Emitted when the native new tab button is clicked.
 
 ### Static Methods
 

@@ -61,6 +61,9 @@ class BrowserObserver {
       bool* prevent_default,
       const std::string& type,
       const base::DictionaryValue& user_info) {}
+
+  // User clicked the native macOS new tab button. (macOS only)
+  virtual void OnNewWindowForTab() {}
 #endif
 
  protected:

@@ -81,4 +81,8 @@ continueUserActivity:(NSUserActivity*)userActivity
   return browser->ContinueUserActivity(activity_type, *user_info) ? YES : NO;
 }
 
+- (IBAction)newWindowForTab:(id)sender {
+  atom::Browser::Get()->NewWindowForTab();
+}
+
 @end

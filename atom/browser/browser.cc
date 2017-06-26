@@ -213,4 +213,11 @@ void Browser::OnWindowAllClosed() {
   }
 }
 
+#if defined(OS_MACOSX)
+void Browser::NewWindowForTab() {
+  for (BrowserObserver& observer : observers_)
+    observer.OnNewWindowForTab();
+}
+#endif
+
 }  // namespace atom

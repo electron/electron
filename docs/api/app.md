@@ -149,6 +149,16 @@ ID as the activity's source app and that supports the activity's type.
 Supported activity types are specified in the app's `Info.plist` under the
 `NSUserActivityTypes` key.
 
+### Event: 'new-window-for-tab' _macOS_
+
+Returns:
+
+* `event` Event
+
+Emitted when the user clicks the native macOS new tab button. The new
+tab button is only visible if the current `BrowserWindow` has a
+`tabbingIdentifier`
+
 ### Event: 'browser-window-blur'
 
 Returns:

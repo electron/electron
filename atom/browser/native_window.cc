@@ -597,6 +597,11 @@ void NativeWindow::NotifyTouchBarItemInteraction(
     observer.OnTouchBarItemResult(item_id, details);
 }
 
+void NativeWindow::NotifyNewWindowForTab() {
+  for (NativeWindowObserver &observer : observers_)
+    observer.OnNewWindowForTab();
+}
+
 #if defined(OS_WIN)
 void NativeWindow::NotifyWindowMessage(
     UINT message, WPARAM w_param, LPARAM l_param) {

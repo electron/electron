@@ -78,6 +78,7 @@ class NativeWindowObserver {
   virtual void OnWindowLeaveHtmlFullScreen() {}
   virtual void OnTouchBarItemResult(const std::string& item_id,
                                     const base::DictionaryValue& details) {}
+  virtual void OnNewWindowForTab() {}
 
   // Called when window message received
   #if defined(OS_WIN)
