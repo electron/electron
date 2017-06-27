@@ -2050,6 +2050,17 @@ describe('BrowserWindow module', function () {
         w.setClosable(true)
         assert.equal(w.isClosable(), true)
       })
+
+      it('can be affected by child window', function () {
+        let c = new BrowserWindow({show: false, parent: w, modal: true})
+        assert.equal(w.isClosable(), true)
+        c.show()
+        assert.equal(w.isClosable(), false)
+
+        c.destroy()
+        c = new BrowserWindow({show: true, parent: w, modal: false})
+        assert.equal(w.isClosable(), true)
+      })
     })
 
     describe('hasShadow state', function () {
