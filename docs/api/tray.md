@@ -144,6 +144,28 @@ Emitted when a drag operation exits the tray icon.
 
 Emitted when a drag operation ends on the tray or ends at another location.
 
+#### Event: 'mouse-enter' _macOS_
+
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
+* `position` [Point](structures/point.md) - The position of the event
+
+Emitted when the mouse enters the tray icon.
+
+#### Event: 'mouse-leave' _macOS_
+
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
+* `position` [Point](structures/point.md) - The position of the event
+
+Emitted when the mouse exits the tray icon.
+
 ### Instance Methods
 
 The `Tray` class has the following methods:

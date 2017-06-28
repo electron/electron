@@ -122,6 +122,14 @@ void Tray::OnDropText(const std::string& text) {
   Emit("drop-text", text);
 }
 
+void Tray::OnMouseEntered(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-enter", modifiers, location);
+}
+
+void Tray::OnMouseExited(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-leave", modifiers, location);
+}
+
 void Tray::OnDragEntered() {
   Emit("drag-enter");
 }
