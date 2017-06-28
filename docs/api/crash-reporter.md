@@ -122,7 +122,7 @@ called before `start` is called.
   Specifying `null` or `undefined` will remove the key from the extra
   parameters.
 
-Set an extra parameter to set be sent with the crash report. The values
+Set an extra parameter to be sent with the crash report. The values
 specified here will be sent in addition to any values set via the `extra` option
 when `start` was called. This API is only available on macOS, if you need to
 add/update extra parameters on Linux and Windows after your first call to
