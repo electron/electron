@@ -358,7 +358,7 @@ bool AutofillPopupView::HandleKeyPressEvent(
     const content::NativeWebKeyboardEvent& event) {
   if (!popup_)
     return false;
-  switch (event.windowsKeyCode) {
+  switch (event.windows_key_code) {
     case ui::VKEY_UP:
       SelectPreviousLine();
       return true;
