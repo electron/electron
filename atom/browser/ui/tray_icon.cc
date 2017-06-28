@@ -79,14 +79,14 @@ void TrayIcon::NotifyDropText(const std::string& text) {
     observer.OnDropText(text);
 }
 
-void TrayIcon::NotifyMouseEntered() {
+void TrayIcon::NotifyMouseEntered(const gfx::Point& location, int modifiers) {
   for (TrayIconObserver& observer : observers_)
-    observer.OnMouseEntered();
+    observer.OnMouseEntered(location, modifiers);
 }
 
-void TrayIcon::NotifyMouseExited() {
+void TrayIcon::NotifyMouseExited(const gfx::Point& location, int modifiers) {
   for (TrayIconObserver& observer : observers_)
-    observer.OnMouseExited();
+    observer.OnMouseExited(location, modifiers);
 }
 
 void TrayIcon::NotifyDragEntered() {

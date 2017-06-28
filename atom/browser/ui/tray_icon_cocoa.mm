@@ -296,11 +296,15 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (void)mouseExited:(NSEvent*)event {
-    trayIcon_->NotifyMouseExited();
+  trayIcon_->NotifyMouseExited(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
 }
 
 - (void)mouseEntered:(NSEvent*)event {
-    trayIcon_->NotifyMouseEntered();
+  trayIcon_->NotifyMouseEntered(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
 }
 
 - (void)draggingExited:(id <NSDraggingInfo>)sender {
