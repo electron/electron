@@ -995,8 +995,9 @@ describe('chromium feature', function () {
 
     it('opens when loading a pdf resource as top level navigation', function (done) {
       createBrowserWindow({plugins: true})
-      ipcMain.once('pdf-loaded', function (event, success) {
-        success ? done() : done(new Error(`Unexpected loading state: ${success}`))
+      ipcMain.once('pdf-loaded', function (event, state) {
+        assert.equal(state, 'success')
+        done()
       })
       w.webContents.on('page-title-updated', function () {
         const parsedURL = url.parse(w.webContents.getURL(), true)
