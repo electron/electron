@@ -62,6 +62,8 @@ The main process handles it by listening for `channel` with `ipcMain` module.
 * `channel` String
 * `...args` any[]
 
+Returns `any` - The value sent back by the [`ipcMain`](ipc-main.md) handler.
+
 Send a message to the main process synchronously via `channel`, you can also
 send arbitrary arguments. Arguments will be serialized in JSON internally and
 hence no functions or prototype chain will be included.
