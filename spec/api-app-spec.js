@@ -568,26 +568,54 @@ describe('app module', function () {
   })
 
   describe('mixed sandbox option', function () {
-    let appProcess
+    let appProcess = null
+    let server = null
+    const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'
 
-    afterEach(function () {
+    beforeEach(function (done) {
+      fs.unlink(socketPath, () => {
+        server = net.createServer()
+        server.listen(socketPath)
+        done()
+      })
+    })
+
+    afterEach(function (done) {
       if (appProcess != null) {
         appProcess.kill()
       }
+
+      server.close(() => {
+        if (process.platform === 'win32') {
+          done()
+        } else {
+          fs.unlink(socketPath, () => {
+            done()
+          })
+        }
+      })
     })
 
     describe('when app.enableMixedSandbox() is called', () => {
       it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
-        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath], {stdio: ['ignore', 'ipc', 'ignore']})
-        appProcess.once('message', (argv) => {
-          assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
-          assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath])
 
-          assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
-          assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+        server.once('error', (error) => {
+          done(error)
+        })
 
-          done()
+        server.on('connection', (client) => {
+          client.once('data', function (data) {
+            const argv = JSON.parse(data)
+            assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
+            assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+
+            assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
+            assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+
+            done()
+          })
         })
       })
     })
@@ -595,15 +623,23 @@ describe('app module', function () {
     describe('when the app is launched with --enable-mixed-sandbox', () => {
       it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
-        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'], {stdio: ['ignore', 'ipc', 'ignore']})
-        appProcess.once('message', (argv) => {
-          assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
-          assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'])
 
-          assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
-          assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+        server.once('error', (error) => {
+          done(error)
+        })
 
-          done()
+        server.on('connection', (client) => {
+          client.once('data', function (data) {
+            const argv = JSON.parse(data)
+            assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
+            assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+
+            assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
+            assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+
+            done()
+          })
         })
       })
     })

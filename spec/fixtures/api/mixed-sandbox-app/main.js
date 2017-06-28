@@ -1,4 +1,5 @@
 const {app, BrowserWindow, ipcMain} = require('electron')
+const net = require('net')
 const path = require('path')
 
 process.on('uncaughtException', () => {
@@ -44,7 +45,14 @@ app.once('ready', () => {
     }
 
     if (argv.sandbox != null && argv.noSandbox != null) {
-      process.send(argv)
+      const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'
+      const client = net.connect(socketPath)
+      client.once('connect', () => {
+        client.end(JSON.stringify(argv))
+      })
+      client.once('end', () => {
+        app.exit(0)
+      })
     }
   })
 })
