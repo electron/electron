@@ -164,7 +164,15 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("total", mem_info.total);
-  dict.Set("free", mem_info.free);
+
+  // See Chromium's "base/process/process_metrics.h" for an explanation.
+  int free =
+#if defined(OS_WIN)
+      mem_info.avail_phys;
+#else
+      mem_info.free;
+#endif
+  dict.Set("free", free);
 
   // NB: These return bogus values on macOS
 #if !defined(OS_MACOSX)
