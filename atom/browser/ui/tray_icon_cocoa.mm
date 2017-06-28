@@ -58,11 +58,11 @@ const CGFloat kVerticalTitleMargin = 2;
     [self updateDimensions];
 
     // Add NSTrackingArea for listening to mouseEnter and mouseExit events
-    int opts = (NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways);
-    NSTrackingArea* trackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds]
-                                               options:opts
-                                                 owner:self
-                                              userInfo:nil];
+    NSTrackingArea* trackingArea = [[NSTrackingArea alloc]
+        initWithRect:[self bounds]
+             options:NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways
+               owner:self
+            userInfo:nil];
     [self addTrackingArea:trackingArea];
   }
   return self;
