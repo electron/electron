@@ -8,6 +8,7 @@
 #import <Foundation/Foundation.h>
 
 #include <string>
+#include <vector>
 
 #include "base/mac/scoped_nsobject.h"
 #include "brightray/browser/notification.h"
@@ -21,23 +22,18 @@ class CocoaNotification : public Notification {
   ~CocoaNotification();
 
   // Notification:
-  void Show(const base::string16& title,
-            const base::string16& msg,
-            const std::string& tag,
-            const GURL& icon_url,
-            const SkBitmap& icon,
-            bool silent,
-            const bool has_reply,
-            const base::string16& reply_placeholder) override;
+  void Show(const NotificationOptions& options) override;
   void Dismiss() override;
 
   void NotificationDisplayed();
   void NotificationReplied(const std::string& reply);
+  void NotificationButtonClicked();
 
   NSUserNotification* notification() const { return notification_; }
 
  private:
   base::scoped_nsobject<NSUserNotification> notification_;
+  int action_index_;
 
   DISALLOW_COPY_AND_ASSIGN(CocoaNotification);
 };

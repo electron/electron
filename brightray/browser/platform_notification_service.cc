@@ -29,12 +29,19 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
                               bool allowed) {
   if (!notification)
     return;
-  if (allowed)
-    notification->Show(data.title, data.body, data.tag, data.icon, icon,
-                       audio_muted ? true : data.silent, false,
-                       base::UTF8ToUTF16(""));
-  else
+  if (allowed) {
+    brightray::NotificationOptions options;
+    options.title = data.title;
+    options.msg = data.body;
+    options.tag = data.tag;
+    options.icon_url = data.icon;
+    options.icon = icon;
+    options.silent = audio_muted ? true : data.silent;
+    options.has_reply = false;
+    notification->Show(options);
+  } else {
     notification->Destroy();
+  }
 }
 
 }  // namespace
