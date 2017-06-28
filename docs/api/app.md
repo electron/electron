@@ -684,8 +684,8 @@ allowing multiple instances of your app to run, this will ensure that only a
 single instance of your app is running, and other instances signal this
 instance and exit.
 
-`callback` will be called by the first instance with `callback(argv, workingDirectory)` 
-when a second instance has been executed. `argv` is an Array of the second instance's 
+`callback` will be called by the first instance with `callback(argv, workingDirectory)`
+when a second instance has been executed. `argv` is an Array of the second instance's
 command line arguments, and `workingDirectory` is its current working directory. Usually
 applications respond to this by making their primary window focused and
 non-minimized.
@@ -913,7 +913,7 @@ correctly.
 
 **Note:** This will not affect `process.argv`.
 
-### `app.enableMixedSandbox()` _Experimental_
+### `app.enableMixedSandbox()` _Experimental_ _macOS_ _Windows_
 
 Enables mixed sandbox mode on the app.
 

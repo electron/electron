@@ -568,6 +568,9 @@ describe('app module', function () {
   })
 
   describe('mixed sandbox option', function () {
+    // FIXME Get these specs running on Linux
+    if (process.platform === 'linux') return
+
     let appProcess = null
     let server = null
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'

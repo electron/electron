@@ -52,7 +52,7 @@ app.on('ready', () => {
 ```
 
 In the above code the `BrowserWindow` that was created has node.js disabled and can communicate
-only via IPC. The use of this option stops electron from creating a node.js runtime in the renderer. Also, 
+only via IPC. The use of this option stops electron from creating a node.js runtime in the renderer. Also,
 within this new window `window.open` follows the native behaviour (by default electron creates a `BrowserWindow`
 and returns a proxy to this via `window.open`).
 
@@ -62,6 +62,7 @@ force `sandbox: true` for all `BrowserWindow` instances.
 
 To enable OS-enforced sandbox on `BrowserWindow` or `webview` process with `sandbox:true` without causing
 entire app to be in sandbox, `--enable-mixed-sandbox` command-line argument must be passed to electron.
+This option is currently only supported on macOS and Windows.
 
 ```js
 let win
