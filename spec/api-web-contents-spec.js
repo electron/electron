@@ -582,10 +582,10 @@ describe('webContents module', function () {
     })
   })
 
-  describe('setIgnoreMenuShortcuts()', function () {
+  describe('setIgnoreMenuShortcuts(ignore)', function () {
     it('does not throw', function () {
-      assert.equal(w.webContents.setIgnoreMenuShortcuts(true))
-      assert.equal(w.webContents.setIgnoreMenuShortcuts(false))
+      assert.equal(w.webContents.setIgnoreMenuShortcuts(true), undefined)
+      assert.equal(w.webContents.setIgnoreMenuShortcuts(false), undefined)
     })
   })
 
