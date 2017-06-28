@@ -582,6 +582,13 @@ describe('webContents module', function () {
     })
   })
 
+  describe('setIgnoreMenuShortcuts(ignore)', function () {
+    it('does not throw', function () {
+      assert.equal(w.webContents.setIgnoreMenuShortcuts(true), undefined)
+      assert.equal(w.webContents.setIgnoreMenuShortcuts(false), undefined)
+    })
+  })
+
   describe('destroy()', () => {
     let server
 

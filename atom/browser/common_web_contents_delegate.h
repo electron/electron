@@ -53,6 +53,10 @@ class CommonWebContentsDelegate
 
   NativeWindow* owner_window() const { return owner_window_.get(); }
 
+  void set_ignore_menu_shortcuts(bool ignore) {
+    ignore_menu_shortcuts_ = ignore;
+  }
+
   bool is_html_fullscreen() const { return html_fullscreen_; }
 
  protected:
@@ -136,6 +140,8 @@ class CommonWebContentsDelegate
 
   // The window that this WebContents belongs to.
   base::WeakPtr<NativeWindow> owner_window_;
+
+  bool ignore_menu_shortcuts_;
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_;

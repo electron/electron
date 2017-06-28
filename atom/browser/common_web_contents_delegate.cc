@@ -149,7 +149,8 @@ bool IsDevToolsFileSystemAdded(
 }  // namespace
 
 CommonWebContentsDelegate::CommonWebContentsDelegate()
-    : html_fullscreen_(false),
+    : ignore_menu_shortcuts_(false),
+      html_fullscreen_(false),
       native_fullscreen_(false),
       devtools_file_system_indexer_(new DevToolsFileSystemIndexer) {
 }
