@@ -74,6 +74,7 @@ extern const char kWebviewTag[];
 namespace switches {
 
 extern const char kEnableSandbox[];
+extern const char kEnableMixedSandbox[];
 extern const char kEnablePlugins[];
 extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];

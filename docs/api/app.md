@@ -913,6 +913,12 @@ correctly.
 
 **Note:** This will not affect `process.argv`.
 
+### `app.enableMixedSandbox()` _Experimental_
+
+Enables mixed sandbox mode on the app.
+
+This method can only be called before app is ready.
+
 ### `app.dock.bounce([type])` _macOS_
 
 * `type` String (optional) - Can be `critical` or `informational`. The default is

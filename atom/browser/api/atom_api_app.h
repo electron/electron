@@ -180,6 +180,7 @@ class App : public AtomBrowserClient::Delegate,
 
   std::vector<mate::Dictionary> GetAppMetrics(v8::Isolate* isolate);
   v8::Local<v8::Value> GetGPUFeatureStatus(v8::Isolate* isolate);
+  void EnableMixedSandbox(mate::Arguments* args);
 
 #if defined(OS_WIN)
   // Get the current Jump List settings.

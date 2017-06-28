@@ -1033,6 +1033,33 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
                            status ? *status : base::DictionaryValue());
 }
 
+void App::EnableMixedSandbox(mate::Arguments* args) {
+  if (Browser::Get()->is_ready()) {
+    args->ThrowError("app.enableMixedSandbox() can only be called "
+                     "before app is ready");
+    return;
+  }
+
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(::switches::kNoSandbox)) {
+#if defined(OS_WIN)
+    const base::CommandLine::CharType* noSandboxArg = L"--no-sandbox";
+#else
+    const base::CommandLine::CharType* noSandboxArg = "--no-sandbox";
+#endif
+
+    // Remove the --no-sandbox switch
+    base::CommandLine::StringVector modified_command_line;
+    for (auto& arg : command_line->argv()) {
+      if (arg.compare(noSandboxArg) != 0) {
+        modified_command_line.push_back(arg);
+      }
+    }
+    command_line->InitFromArgv(modified_command_line);
+  }
+  command_line->AppendSwitch(switches::kEnableMixedSandbox);
+}
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -1107,6 +1134,7 @@ void App::BuildPrototype(
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
+      .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox)
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
       .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
 }

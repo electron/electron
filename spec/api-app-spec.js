@@ -566,4 +566,82 @@ describe('app module', function () {
       assert.equal(typeof features.gpu_compositing, 'string')
     })
   })
+
+  describe('mixed sandbox option', function () {
+    let appProcess = null
+    let server = null
+    const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'
+
+    beforeEach(function (done) {
+      fs.unlink(socketPath, () => {
+        server = net.createServer()
+        server.listen(socketPath)
+        done()
+      })
+    })
+
+    afterEach(function (done) {
+      if (appProcess != null) {
+        appProcess.kill()
+      }
+
+      server.close(() => {
+        if (process.platform === 'win32') {
+          done()
+        } else {
+          fs.unlink(socketPath, () => {
+            done()
+          })
+        }
+      })
+    })
+
+    describe('when app.enableMixedSandbox() is called', () => {
+      it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
+        const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath])
+
+        server.once('error', (error) => {
+          done(error)
+        })
+
+        server.on('connection', (client) => {
+          client.once('data', function (data) {
+            const argv = JSON.parse(data)
+            assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
+            assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+
+            assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
+            assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+
+            done()
+          })
+        })
+      })
+    })
+
+    describe('when the app is launched with --enable-mixed-sandbox', () => {
+      it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
+        const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'])
+
+        server.once('error', (error) => {
+          done(error)
+        })
+
+        server.on('connection', (client) => {
+          client.once('data', function (data) {
+            const argv = JSON.parse(data)
+            assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
+            assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+
+            assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
+            assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+
+            done()
+          })
+        })
+      })
+    })
+  })
 })
