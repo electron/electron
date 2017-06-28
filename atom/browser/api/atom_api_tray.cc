@@ -127,7 +127,7 @@ void Tray::OnMouseEntered() {
 }
 
 void Tray::OnMouseExited() {
-  Emit("mouse-exited");
+  Emit("mouse-leave");
 }
 
 void Tray::OnDragEntered() {

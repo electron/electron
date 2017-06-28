@@ -148,7 +148,7 @@ Emitted when a drag operation ends on the tray or ends at another location.
 
 Emitted when the mouse enters the tray icon.
 
-#### Event: 'mouse-exit' _macOS_
+#### Event: 'mouse-leave' _macOS_
 
 Emitted when the mouse exits the tray icon.
 
