@@ -126,7 +126,7 @@ void Notification::SetHasReply(bool new_has_reply) {
 }
 
 void Notification::SetActions(
-  const std::vector<brightray::NotificationAction> actions) {
+  const std::vector<brightray::NotificationAction>& actions) {
   actions_ = actions;
 }
 

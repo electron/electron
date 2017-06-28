@@ -44,14 +44,14 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
   [notification_ setHasActionButton:false];
 
-  for (size_t i = 0; i < options.actions.size(); i++) {
-    NotificationAction action = options.actions[i];
-
-    if (action.type == base::UTF8ToUTF16("button")) {
+  int i = 0;
+  for (const auto& action : options.actions) {
+    if (action.type == base::ASCIIToUTF16("button")) {
       [notification_ setHasActionButton:true];
       [notification_ setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
-      actionIndex_ = i;
+      action_index_ = i;
     }
+    i++;
   }
 
   if (options.has_reply) {
@@ -82,7 +82,7 @@ void CocoaNotification::NotificationReplied(const std::string& reply) {
 
 void CocoaNotification::NotificationButtonClicked() {
   if (delegate())
-    delegate()->NotificationAction(actionIndex_);
+    delegate()->NotificationAction(action_index_);
 }
 
 }  // namespace brightray

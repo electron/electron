@@ -33,7 +33,7 @@ class CocoaNotification : public Notification {
 
  private:
   base::scoped_nsobject<NSUserNotification> notification_;
-  int actionIndex_;
+  int action_index_;
 
   DISALLOW_COPY_AND_ASSIGN(CocoaNotification);
 };

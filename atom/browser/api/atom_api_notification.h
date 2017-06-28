@@ -60,7 +60,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void SetSilent(bool new_silent);
   void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetHasReply(bool new_has_reply);
-  void SetActions(const std::vector<brightray::NotificationAction> actions);
+  void SetActions(const std::vector<brightray::NotificationAction>& actions);
 
  private:
   base::string16 title_;
