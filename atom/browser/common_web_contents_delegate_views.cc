@@ -19,7 +19,7 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   // Escape exits tabbed fullscreen mode.
-  if (event.windowsKeyCode == ui::VKEY_ESCAPE && is_html_fullscreen())
+  if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
   // Let the NativeWindow handle other parts.
