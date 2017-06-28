@@ -5,6 +5,10 @@ process.on('uncaughtException', () => {
   app.exit(1)
 })
 
+if (!process.argv.includes('--enable-mixed-sandbox')) {
+  app.enableMixedSandbox()
+}
+
 let sandboxWindow
 let noSandboxWindow
 

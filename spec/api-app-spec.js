@@ -566,4 +566,46 @@ describe('app module', function () {
       assert.equal(typeof features.gpu_compositing, 'string')
     })
   })
+
+  describe('mixed sandbox option', function () {
+    let appProcess
+
+    afterEach(function () {
+      if (appProcess != null) {
+        appProcess.kill()
+      }
+    })
+
+    describe('when app.enableMixedSandbox() is called', () => {
+      it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
+        const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath], {stdio: ['ignore', 'ipc', 'ignore']})
+        appProcess.once('message', (argv) => {
+          assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
+          assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+
+          assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
+          assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+
+          done()
+        })
+      })
+    })
+
+    describe('when the app is launched with --enable-mixed-sandbox', () => {
+      it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
+        const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'], {stdio: ['ignore', 'ipc', 'ignore']})
+        appProcess.once('message', (argv) => {
+          assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
+          assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+
+          assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
+          assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+
+          done()
+        })
+      })
+    })
+  })
 })

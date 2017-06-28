@@ -1034,23 +1034,21 @@ void App::EnableMixedSandbox(mate::Arguments* args) {
                      "before app is ready");
     return;
   }
+
   auto command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(::switches::kNoSandbox)) {
-    // Remove the --no-sandbox switch
-    using StringType = base::CommandLine::StringType;
-    using StringVector = base::CommandLine::StringVector;
-    using CharType = base::CommandLine::CharType;
-    auto argv = command_line->argv();
-    StringVector modified_command_line;
-    #if defined(OS_WIN)
-      const CharType* kNoSandboxArg = L"--no-sandbox";
-    #else
-      const CharType* kNoSandboxArg = "--no-sandbox";
-    #endif
+#if defined(OS_WIN)
+    const base::CommandLine::CharType* noSandboxArg = L"--no-sandbox";
+#else
+    const base::CommandLine::CharType* noSandboxArg = "--no-sandbox";
+#endif
 
-    for (const StringType& arg : argv) {
-    if (arg.compare(kNoSandboxArg) != 0)
-      modified_command_line.push_back(arg);
+    // Remove the --no-sandbox switch
+    base::CommandLine::StringVector modified_command_line;
+    for (auto& arg : command_line->argv()) {
+      if (arg.compare(noSandboxArg) != 0) {
+        modified_command_line.push_back(arg);
+      }
     }
     command_line->InitFromArgv(modified_command_line);
   }

@@ -1260,30 +1260,6 @@ describe('BrowserWindow module', function () {
       })
     })
 
-    describe('mixed sandbox option', function () {
-      let appProcess
-
-      afterEach(function () {
-        if (appProcess != null) {
-          appProcess.kill()
-        }
-      })
-
-      it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
-        const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
-        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'], {stdio: ['ignore', 'ipc', 'ignore']})
-        appProcess.once('message', (argv) => {
-          assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
-          assert.equal(argv.sandbox.includes('--no-sandbox'), false)
-
-          assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
-          assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
-
-          done()
-        })
-      })
-    })
-
     describe('nativeWindowOpen option', () => {
       beforeEach(() => {
         w.destroy()
