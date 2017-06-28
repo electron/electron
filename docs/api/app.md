@@ -903,9 +903,9 @@ correctly.
 
 **Note:** This will not affect `process.argv`.
 
-### `app.enableMixedSandbox()`
+### `app.enableMixedSandbox()` _Experimental_
 
-Enables mixed sandbox mode on the app. 
+Enables mixed sandbox mode on the app.
 
 This method can only be called before app is ready.
 
