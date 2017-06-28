@@ -17,7 +17,7 @@ app.once('ready', () => {
   sandboxWindow = new BrowserWindow({
     show: false,
     webPreferences: {
-      preload: path.join(app.getAppPath(), 'electron-app-mixed-sandbox-preload.js'),
+      preload: path.join(__dirname, 'electron-app-mixed-sandbox-preload.js'),
       sandbox: true
     }
   })
@@ -26,7 +26,7 @@ app.once('ready', () => {
   noSandboxWindow = new BrowserWindow({
     show: false,
     webPreferences: {
-      preload: path.join(app.getAppPath(), 'electron-app-mixed-sandbox-preload.js'),
+      preload: path.join(__dirname, 'electron-app-mixed-sandbox-preload.js'),
       sandbox: false
     }
   })
@@ -37,22 +37,29 @@ app.once('ready', () => {
     noSandbox: null
   }
 
+  let connected = false
+
+  function finish () {
+    if (connected && argv.sandbox != null && argv.noSandbox != null) {
+      client.once('end', () => {
+        app.exit(0)
+      })
+      client.end(JSON.stringify(argv))
+    }
+  }
+
+  const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'
+  const client = net.connect(socketPath, () => {
+    connected = true
+    finish()
+  })
+
   ipcMain.on('argv', (event, value) => {
     if (event.sender === sandboxWindow.webContents) {
       argv.sandbox = value
     } else if (event.sender === noSandboxWindow.webContents) {
       argv.noSandbox = value
     }
-
-    if (argv.sandbox != null && argv.noSandbox != null) {
-      const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'
-      const client = net.connect(socketPath)
-      client.once('connect', () => {
-        client.end(JSON.stringify(argv))
-      })
-      client.once('end', () => {
-        app.exit(0)
-      })
-    }
+    finish()
   })
 })
