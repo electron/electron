@@ -1,4 +1,4 @@
-// Type definitions for Electron 1.7.3
+// Type definitions for Electron 1.7.4
 // Project: http://electron.atom.io/
 // Definitions by: The Electron Team <https://github.com/electron/electron>
 // Definitions: https://github.com/electron/electron-typescript-definitions
@@ -334,6 +334,14 @@ declare namespace Electron {
                                   authInfo: AuthInfo,
                                   callback: (username: string, password: string) => void) => void): this;
     /**
+     * Emitted when the user clicks the native macOS new tab button. The new tab button
+     * is only visible if the current BrowserWindow has a tabbingIdentifier
+     */
+    on(event: 'new-window-for-tab', listener: (event: Event) => void): this;
+    once(event: 'new-window-for-tab', listener: (event: Event) => void): this;
+    addListener(event: 'new-window-for-tab', listener: (event: Event) => void): this;
+    removeListener(event: 'new-window-for-tab', listener: (event: Event) => void): this;
+    /**
      * Emitted when the user wants to open a file with the application. The open-file
      * event is usually emitted when the application is already open and the OS wants
      * to reuse the application to open the file. open-file is also emitted when a file
@@ -473,6 +481,11 @@ declare namespace Electron {
      */
     disableHardwareAcceleration(): void;
     /**
+     * Enables mixed sandbox mode on the app. This method can only be called before app
+     * is ready.
+     */
+    enableMixedSandbox(): void;
+    /**
      * Exits immediately with exitCode.  exitCode defaults to 0. All windows will be
      * closed immediately without asking user and the before-quit and will-quit events
      * will not be emitted.
@@ -552,20 +565,21 @@ declare namespace Electron {
      * This method makes your application a Single Instance Application - instead of
      * allowing multiple instances of your app to run, this will ensure that only a
      * single instance of your app is running, and other instances signal this instance
-     * and exit. callback will be called with callback(argv, workingDirectory) when a
-     * second instance has been executed. argv is an Array of the second instance's
-     * command line arguments, and workingDirectory is its current working directory.
-     * Usually applications respond to this by making their primary window focused and
-     * non-minimized. The callback is guaranteed to be executed after the ready event
-     * of app gets emitted. This method returns false if your process is the primary
-     * instance of the application and your app should continue loading. And returns
-     * true if your process has sent its parameters to another instance, and you should
-     * immediately quit. On macOS the system enforces single instance automatically
-     * when users try to open a second instance of your app in Finder, and the
-     * open-file and open-url events will be emitted for that. However when users start
-     * your app in command line the system's single instance mechanism will be bypassed
-     * and you have to use this method to ensure single instance. An example of
-     * activating the window of primary instance when a second instance starts:
+     * and exit. callback will be called by the first instance with callback(argv,
+     * workingDirectory) when a second instance has been executed. argv is an Array of
+     * the second instance's command line arguments, and workingDirectory is its
+     * current working directory. Usually applications respond to this by making their
+     * primary window focused and non-minimized. The callback is guaranteed to be
+     * executed after the ready event of app gets emitted. This method returns false if
+     * your process is the primary instance of the application and your app should
+     * continue loading. And returns true if your process has sent its parameters to
+     * another instance, and you should immediately quit. On macOS the system enforces
+     * single instance automatically when users try to open a second instance of your
+     * app in Finder, and the open-file and open-url events will be emitted for that.
+     * However when users start your app in command line the system's single instance
+     * mechanism will be bypassed and you have to use this method to ensure single
+     * instance. An example of activating the window of primary instance when a second
+     * instance starts:
      */
     makeSingleInstance(callback: (argv: string[], workingDirectory: string) => void): boolean;
     /**
@@ -653,7 +667,7 @@ declare namespace Electron {
      * and pass arguments that specify your application name. For example: Note: This
      * API has no effect on MAS builds.
      */
-    setLoginItemSettings(settings: Settings, path?: string, args?: string[]): void;
+    setLoginItemSettings(settings: Settings): void;
     /**
      * Overrides the current application's name.
      */
@@ -905,6 +919,13 @@ declare namespace Electron {
     once(event: 'moved', listener: Function): this;
     addListener(event: 'moved', listener: Function): this;
     removeListener(event: 'moved', listener: Function): this;
+    /**
+     * Emitted when the native new tab button is clicked.
+     */
+    on(event: 'new-window-for-tab', listener: Function): this;
+    once(event: 'new-window-for-tab', listener: Function): this;
+    addListener(event: 'new-window-for-tab', listener: Function): this;
+    removeListener(event: 'new-window-for-tab', listener: Function): this;
     /**
      * Emitted when the document changed its title, calling event.preventDefault() will
      * prevent the native window's title from changing.
@@ -1996,11 +2017,11 @@ declare namespace Electron {
      */
     getUploadToServer(): boolean;
     /**
-     * Set an extra parameter to set be sent with the crash report. The values
-     * specified here will be sent in addition to any values set via the extra option
-     * when start was called. This API is only available on macOS, if you need to
-     * add/update extra parameters on Linux and Windows after your first call to start
-     * you can call start again with the updated extra options.
+     * Set an extra parameter to be sent with the crash report. The values specified
+     * here will be sent in addition to any values set via the extra option when start
+     * was called. This API is only available on macOS, if you need to add/update extra
+     * parameters on Linux and Windows after your first call to start you can call
+     * start again with the updated extra options.
      */
     setExtraParameter(key: string, value: string): void;
     /**
@@ -2611,7 +2632,7 @@ declare namespace Electron {
      * event.returnValue. Note: Sending a synchronous message will block the whole
      * renderer process, unless you know what you are doing you should never use it.
      */
-    sendSync(channel: string, ...args: any[]): void;
+    sendSync(channel: string, ...args: any[]): any;
     /**
      * Like ipcRenderer.send but the event will be sent to the <webview> element in the
      * host page instead of the main process.
@@ -2690,6 +2711,7 @@ declare namespace Electron {
 
     /**
      * The maximum amount of memory that has ever been pinned to actual physical RAM.
+     * On macOS its value will always be 0.
      */
     peakWorkingSetSize: number;
     /**
@@ -2874,6 +2896,26 @@ declare namespace Electron {
 
     // Docs: http://electron.atom.io/docs/api/notification
 
+    on(event: 'action', listener: (event: Event,
+                                   /**
+                                    * The index of the action that was activated
+                                    */
+                                   index: number) => void): this;
+    once(event: 'action', listener: (event: Event,
+                                   /**
+                                    * The index of the action that was activated
+                                    */
+                                   index: number) => void): this;
+    addListener(event: 'action', listener: (event: Event,
+                                   /**
+                                    * The index of the action that was activated
+                                    */
+                                   index: number) => void): this;
+    removeListener(event: 'action', listener: (event: Event,
+                                   /**
+                                    * The index of the action that was activated
+                                    */
+                                   index: number) => void): this;
     /**
      * Emitted when the notification is clicked by the user.
      */
@@ -2932,6 +2974,20 @@ declare namespace Electron {
      * the OS will display it.
      */
     show(): void;
+  }
+
+  interface NotificationAction {
+
+    // Docs: http://electron.atom.io/docs/api/structures/notification-action
+
+    /**
+     * The label for the given action.
+     */
+    text?: string;
+    /**
+     * The type of action, can be button.
+     */
+    type: ('button');
   }
 
   interface Point {
@@ -3130,14 +3186,20 @@ declare namespace Electron {
 
     // Docs: http://electron.atom.io/docs/api/structures/rectangle
 
+    /**
+     * The height of the rectangle (must be an integer)
+     */
     height: number;
+    /**
+     * The width of the rectangle (must be an integer)
+     */
     width: number;
     /**
-     * The x coordinate of the origin of the rectangle
+     * The x coordinate of the origin of the rectangle (must be an integer)
      */
     x: number;
     /**
-     * The y coordinate of the origin of the rectangle
+     * The y coordinate of the origin of the rectangle (must be an integer)
      */
     y: number;
   }
@@ -3914,6 +3976,52 @@ declare namespace Electron {
                                        */
                                       text: string) => void): this;
     /**
+     * Emitted when the mouse enters the tray icon.
+     */
+    on(event: 'mouse-enter', listener: (event: Event,
+                                        /**
+                                         * The position of the event
+                                         */
+                                        position: Point) => void): this;
+    once(event: 'mouse-enter', listener: (event: Event,
+                                        /**
+                                         * The position of the event
+                                         */
+                                        position: Point) => void): this;
+    addListener(event: 'mouse-enter', listener: (event: Event,
+                                        /**
+                                         * The position of the event
+                                         */
+                                        position: Point) => void): this;
+    removeListener(event: 'mouse-enter', listener: (event: Event,
+                                        /**
+                                         * The position of the event
+                                         */
+                                        position: Point) => void): this;
+    /**
+     * Emitted when the mouse exits the tray icon.
+     */
+    on(event: 'mouse-leave', listener: (event: Event,
+                                        /**
+                                         * The position of the event
+                                         */
+                                        position: Point) => void): this;
+    once(event: 'mouse-leave', listener: (event: Event,
+                                        /**
+                                         * The position of the event
+                                         */
+                                        position: Point) => void): this;
+    addListener(event: 'mouse-leave', listener: (event: Event,
+                                        /**
+                                         * The position of the event
+                                         */
+                                        position: Point) => void): this;
+    removeListener(event: 'mouse-leave', listener: (event: Event,
+                                        /**
+                                         * The position of the event
+                                         */
+                                        position: Point) => void): this;
+    /**
      * Emitted when the tray icon is right clicked.
      */
     on(event: 'right-click', listener: (event: Event,
@@ -4091,8 +4199,8 @@ declare namespace Electron {
     static getFocusedWebContents(): WebContents;
     /**
      * Emitted before dispatching the keydown and keyup events in the page. Calling
-     * event.preventDefault will prevent the page keydown/keyup events from being
-     * dispatched.
+     * event.preventDefault will prevent the page keydown/keyup events and the menu
+     * shortcuts. To only prevent the menu shortcuts, use setIgnoreMenuShortcuts:
      */
     on(event: 'before-input-event', listener: (event: Event,
                                                /**
@@ -4814,13 +4922,13 @@ declare namespace Electron {
      * called with callback(image). The image is an instance of NativeImage that stores
      * data of the snapshot. Omitting rect will capture the whole visible page.
      */
-    capturePage(callback: (image: NativeImage) => void): void;
+    capturePage(rect: Rectangle, callback: (image: NativeImage) => void): void;
     /**
      * Captures a snapshot of the page within rect. Upon completion callback will be
      * called with callback(image). The image is an instance of NativeImage that stores
      * data of the snapshot. Omitting rect will capture the whole visible page.
      */
-    capturePage(rect: Rectangle, callback: (image: NativeImage) => void): void;
+    capturePage(callback: (image: NativeImage) => void): void;
     /**
      * Clears the navigation history.
      */
@@ -4877,6 +4985,10 @@ declare namespace Electron {
      * request can be obtained by subscribing to found-in-page event.
      */
     findInPage(text: string, options?: FindInPageOptions): void;
+    /**
+     * Focuses the web page.
+     */
+    focus(): void;
     getFrameRate(): number;
     getOSProcessId(): number;
     /**
@@ -5040,6 +5152,10 @@ declare namespace Electron {
      * Only values between 1 and 60 are accepted.
      */
     setFrameRate(fps: number): void;
+    /**
+     * Ignore application menu shortcuts while this web contents is focused.
+     */
+    setIgnoreMenuShortcuts(ignore: boolean): void;
     /**
      * Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
      */
@@ -6034,7 +6150,9 @@ declare namespace Electron {
     zoomToPageWidth?: boolean;
     /**
      * Tab group name, allows opening the window as a native tab on macOS 10.12+.
-     * Windows with the same tabbing identifier will be grouped together.
+     * Windows with the same tabbing identifier will be grouped together. This also
+     * adds a native new tab button to your window's tab bar and allows your app and
+     * window to receive the new-window-for-tab event.
      */
     tabbingIdentifier?: string;
     /**
@@ -6067,16 +6185,16 @@ declare namespace Electron {
     /**
      * Should follow window.location.origin’s representation scheme://host:port.
      */
-    origin: string;
+    origin?: string;
     /**
      * The types of storages to clear, can contain: appcache, cookies, filesystem,
      * indexdb, localstorage, shadercache, websql, serviceworkers
      */
-    storages: string[];
+    storages?: string[];
     /**
      * The types of quotas to clear, can contain: temporary, persistent, syncable.
      */
-    quotas: string[];
+    quotas?: string[];
   }
 
   interface CommandLine {
@@ -6216,7 +6334,8 @@ declare namespace Electron {
     ignoreSystemCrashHandler?: boolean;
     /**
      * An object you can define that will be sent along with the report. Only string
-     * properties are sent correctly. Nested objects are not supported.
+     * properties are sent correctly. Nested objects are not supported and the property
+     * names and values must be less than 64 characters long.
      */
     extra?: Extra;
   }
@@ -6827,6 +6946,11 @@ declare namespace Electron {
      * The placeholder to write in the inline reply input field.
      */
     replyPlaceholder?: string;
+    /**
+     * Actions to add to the notification. Please read the available actions and
+     * limitations in the NotificationAction documentation
+     */
+    actions: NotificationAction[];
   }
 
   interface OnBeforeRedirectDetails {
@@ -7085,11 +7209,11 @@ declare namespace Electron {
     /**
      * Don't ask user for print settings. Default is false.
      */
-    silent: boolean;
+    silent?: boolean;
     /**
      * Also prints the background color and image of the web page. Default is false.
      */
-    printBackground: boolean;
+    printBackground?: boolean;
     /**
      * Set the printer device name to use. Default is ''.
      */
@@ -7292,6 +7416,9 @@ declare namespace Electron {
 
   interface SaveDialogOptions {
     title?: string;
+    /**
+     * Absolute directory path, absolute file path, or file name to use by default.
+     */
     defaultPath?: string;
     /**
      * Custom label for the confirmation button, when left empty the default label will
@@ -7326,6 +7453,15 @@ declare namespace Electron {
      * opened to know the current value. This setting is only supported on macOS.
      */
     openAsHidden?: boolean;
+    /**
+     * The executable to launch at login. Defaults to process.execPath.
+     */
+    path?: string;
+    /**
+     * The command-line arguments to pass to the executable. Defaults to an empty
+     * array. Take care to wrap paths in quotes.
+     */
+    args?: string[];
   }
 
   interface SizeOptions {
@@ -7570,13 +7706,13 @@ declare namespace Electron {
 
   interface Versions {
     /**
-     * A String representing Electron's version string.
-     */
-    electron?: string;
-    /**
      * A String representing Chrome's version string.
      */
     chrome?: string;
+    /**
+     * A String representing Electron's version string.
+     */
+    electron?: string;
   }
 
   interface WillNavigateEvent extends Event {
@@ -7967,9 +8103,35 @@ declare namespace NodeJS {
      */
     noAsar?: boolean;
     /**
+     * A Boolean that controls whether or not deprecation warnings are printed to
+     * stderr. Setting this to true will silence deprecation warnings.  This property
+     * is used instead of the --no-deprecation command line flag.
+     */
+    noDeprecation?: boolean;
+    /**
      * A String representing the path to the resources directory.
      */
     resourcesPath?: string;
+    /**
+     * A Boolean that controls whether or not deprecation warnings will be thrown as
+     * exceptions.  Setting this to true will throw errors for deprecations.  This
+     * property is used instead of the --throw-deprecation command line flag.
+     */
+    throwDeprecation?: boolean;
+    /**
+     * A Boolean that controls whether or not deprecations printed to stderr include
+     * their stack trace.  Setting this to true will print  stack traces for
+     * deprecations. This property is instead of the --trace-deprecation command line
+     * flag.
+     */
+    traceDeprecation?: boolean;
+    /**
+     * A Boolean that controls whether or not process warnings printed to stderr
+     * include their stack trace.  Setting this to true will print stack traces for
+     * process warnings (including deprecations).  This property is instead of the
+     * --trace-warnings command line flag.
+     */
+    traceProcessWarnings?: boolean;
     /**
      * A String representing the current process's type, can be "browser" (i.e. main
      * process) or "renderer".
