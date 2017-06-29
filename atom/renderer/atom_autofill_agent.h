@@ -28,7 +28,8 @@ class AutofillAgent : public content::RenderFrameObserver,
   void DidChangeScrollOffset() override;
   void FocusedNodeChanged(const blink::WebNode&) override;
   void DidCompleteFocusChangeInFrame() override;
-  void DidReceiveLeftMouseDownOrGestureTapInNode(const blink::WebNode&) override;
+  void DidReceiveLeftMouseDownOrGestureTapInNode(
+      const blink::WebNode&) override;
 
  private:
   struct ShowSuggestionsOptions {
