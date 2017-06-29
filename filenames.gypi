@@ -240,16 +240,6 @@
       'atom/browser/native_window_mac.h',
       'atom/browser/native_window_mac.mm',
       'atom/browser/native_window_observer.h',
-      'atom/browser/osr/osr_web_contents_view_mac.mm',
-      'atom/browser/osr/osr_web_contents_view.cc',
-      'atom/browser/osr/osr_web_contents_view.h',
-      'atom/browser/osr/osr_output_device.cc',
-      'atom/browser/osr/osr_output_device.h',
-      'atom/browser/osr/osr_render_widget_host_view.cc',
-      'atom/browser/osr/osr_render_widget_host_view.h',
-      'atom/browser/osr/osr_render_widget_host_view_mac.mm',
-      'atom/browser/osr/osr_view_proxy.cc',
-      'atom/browser/osr/osr_view_proxy.h',
       'atom/browser/net/about_protocol_handler.cc',
       'atom/browser/net/about_protocol_handler.h',
       'atom/browser/net/asar/asar_protocol_handler.cc',
@@ -706,6 +696,20 @@
           '<(libchromiumcontent_src_dir)/ui/resources/cursors/zoom_out.cur',
         ],
       }],  # OS=="win"
+      ['enable_osr==1', {
+        'lib_sources': [
+          'atom/browser/osr/osr_web_contents_view_mac.mm',
+          'atom/browser/osr/osr_web_contents_view.cc',
+          'atom/browser/osr/osr_web_contents_view.h',
+          'atom/browser/osr/osr_output_device.cc',
+          'atom/browser/osr/osr_output_device.h',
+          'atom/browser/osr/osr_render_widget_host_view.cc',
+          'atom/browser/osr/osr_render_widget_host_view.h',
+          'atom/browser/osr/osr_render_widget_host_view_mac.mm',
+          'atom/browser/osr/osr_view_proxy.cc',
+          'atom/browser/osr/osr_view_proxy.h',
+        ],
+      }],  # enable_osr==1
     ],
   },
 }

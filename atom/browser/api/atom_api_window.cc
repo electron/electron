@@ -92,12 +92,14 @@ Window::Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
     if (options.Get("transparent", &transparent))
       web_preferences.Set("transparent", transparent);
 
+#if defined(ENABLE_OSR)
     // Offscreen windows are always created frameless.
     bool offscreen;
     if (web_preferences.Get("offscreen", &offscreen) && offscreen) {
       auto window_options = const_cast<mate::Dictionary&>(options);
       window_options.Set(options::kFrame, false);
     }
+#endif
 
     // Creates the WebContents used by BrowserWindow.
     web_contents = WebContents::Create(isolate, web_preferences);

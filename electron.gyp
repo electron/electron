@@ -8,6 +8,7 @@
     'js2c_input_dir': '<(SHARED_INTERMEDIATE_DIR)/js2c',
   },
   'includes': [
+    'features.gypi',
     'filenames.gypi',
     'vendor/native_mate/native_mate_files.gypi',
   ],
@@ -22,6 +23,11 @@
           '<(source_root)/external_binaries',
         ],
       }],
+      ['enable_osr==1', {
+        'defines': [
+          'ENABLE_OSR',
+        ],
+      }],  # enable_osr==1
     ],
   },
   'targets': [

@@ -22,7 +22,9 @@ AutofillPopupView::AutofillPopupView(
     views::Widget* parent_widget)
     : popup_(popup),
       parent_widget_(parent_widget),
+#if defined(ENABLE_OSR)
       view_proxy_(nullptr),
+#endif
       weak_ptr_factory_(this) {
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
@@ -39,9 +41,11 @@ AutofillPopupView::~AutofillPopupView() {
 
   RemoveObserver();
 
+#if defined(ENABLE_OSR)
   if (view_proxy_.get()) {
     view_proxy_->ResetView();
   }
+#endif
 
   if (GetWidget()) {
     GetWidget()->Close();
@@ -220,12 +224,14 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   gfx::Canvas* draw_canvas = canvas;
   SkBitmap bitmap;
 
+#if defined(ENABLE_OSR)
   if (view_proxy_.get()) {
     bitmap.allocN32Pixels(popup_->popup_bounds_in_view_.width(),
                           popup_->popup_bounds_in_view_.height(),
                           true);
     draw_canvas = new gfx::Canvas(new SkCanvas(bitmap), 1.0);
   }
+#endif
 
   draw_canvas->DrawColor(GetNativeTheme()->GetSystemColor(
       ui::NativeTheme::kColorId_ResultsTableNormalBackground));
@@ -237,10 +243,12 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     DrawAutofillEntry(draw_canvas, i, line_rect);
   }
 
+#if defined(ENABLE_OSR)
   if (view_proxy_.get()) {
     view_proxy_->SetBounds(popup_->popup_bounds_in_view_);
     view_proxy_->SetBitmap(bitmap);
   }
+#endif
 }
 
 void AutofillPopupView::GetAccessibleNodeData(ui::AXNodeData* node_data) {

@@ -7,7 +7,9 @@
 
 #include "atom/browser/ui/autofill_popup.h"
 
+#if defined(ENABLE_OSR)
 #include "atom/browser/osr/osr_view_proxy.h"
+#endif
 #include "base/optional.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_widget_host.h"
@@ -138,7 +140,9 @@ class AutofillPopupView : public views::WidgetDelegateView,
   // The index of the currently selected line
   base::Optional<int> selected_line_;
 
+#if defined(ENABLE_OSR)
   std::unique_ptr<OffscreenViewProxy> view_proxy_;
+#endif
 
   // The registered keypress callback, responsible for switching lines on
   // key presses
