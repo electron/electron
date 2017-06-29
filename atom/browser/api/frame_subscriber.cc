@@ -23,7 +23,7 @@ void CopyPixelsToBuffer(const SkBitmap& bitmap,
 
   memcpy(node::Buffer::Data(buffer), bitmap.getPixels(), rgb_arr_size);
 }
-  
+
 }  // namespace
 
 namespace api {
