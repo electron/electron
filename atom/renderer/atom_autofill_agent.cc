@@ -162,7 +162,8 @@ void AutofillAgent::ShowSuggestions(
   ShowPopup(element, data_list_values, data_list_labels);
 }
 
-void AutofillAgent::DidReceiveLeftMouseDownOrGestureTapInNode(const blink::WebNode& node) {
+void AutofillAgent::DidReceiveLeftMouseDownOrGestureTapInNode(
+    const blink::WebNode& node) {
   focused_node_was_last_clicked_ = !node.IsNull() && node.Focused();
 }
 
