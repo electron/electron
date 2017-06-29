@@ -1271,8 +1271,8 @@ void NativeWindowViews::HandleKeyboardEvent(
   if (event.GetType() == blink::WebInputEvent::kRawKeyDown && IsAltKey(event)) {
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
-  } else if (event.GetType() == blink::WebInputEvent::kKeyUp && IsAltKey(event) &&
-             menu_bar_alt_pressed_) {
+  } else if (event.GetType() == blink::WebInputEvent::kKeyUp &&
+             IsAltKey(event) && menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
     SetMenuBarVisibility(!menu_bar_visible_);
