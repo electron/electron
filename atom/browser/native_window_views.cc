@@ -374,7 +374,8 @@ bool NativeWindowViews::IsFocused() {
 }
 
 void NativeWindowViews::Show() {
-  if (is_modal() && NativeWindow::parent())
+  if (is_modal() && NativeWindow::parent() &&
+      !window_->native_widget_private()->IsVisible())
     static_cast<NativeWindowViews*>(NativeWindow::parent())->SetEnabled(false);
 
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
