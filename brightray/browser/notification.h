@@ -25,6 +25,7 @@ struct NotificationAction {
 
 struct NotificationOptions {
   base::string16 title;
+  base::string16 subtitle;
   base::string16 msg;
   std::string tag;
   GURL icon_url;

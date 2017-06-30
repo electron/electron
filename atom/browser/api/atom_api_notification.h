@@ -48,6 +48,7 @@ class Notification : public mate::TrackableObject<Notification>,
 
   // Prop Getters
   base::string16 GetTitle();
+  base::string16 GetSubtitle();
   base::string16 GetBody();
   bool GetSilent();
   base::string16 GetReplyPlaceholder();
@@ -56,6 +57,7 @@ class Notification : public mate::TrackableObject<Notification>,
 
   // Prop Setters
   void SetTitle(const base::string16& new_title);
+  void SetSubtitle(const base::string16& new_subtitle);
   void SetBody(const base::string16& new_body);
   void SetSilent(bool new_silent);
   void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
@@ -64,6 +66,7 @@ class Notification : public mate::TrackableObject<Notification>,
 
  private:
   base::string16 title_;
+  base::string16 subtitle_;
   base::string16 body_;
   gfx::Image icon_;
   base::string16 icon_path_;

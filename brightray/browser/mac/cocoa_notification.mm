@@ -27,6 +27,7 @@ CocoaNotification::~CocoaNotification() {
 void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
   [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
+  [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];
   [notification_ setInformativeText:base::SysUTF16ToNSString(options.msg)];
 
   if ([notification_ respondsToSelector:@selector(setContentImage:)] &&

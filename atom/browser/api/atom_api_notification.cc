@@ -57,6 +57,7 @@ Notification::Notification(v8::Isolate* isolate,
   mate::Dictionary opts;
   if (args->GetNext(&opts)) {
     opts.Get("title", &title_);
+    opts.Get("subtitle", &subtitle_);
     opts.Get("body", &body_);
     has_icon_ = opts.Get("icon", &icon_);
     if (has_icon_) {
@@ -88,6 +89,10 @@ base::string16 Notification::GetTitle() {
   return title_;
 }
 
+base::string16 Notification::GetSubtitle() {
+  return subtitle_;
+}
+
 base::string16 Notification::GetBody() {
   return body_;
 }
@@ -107,6 +112,10 @@ bool Notification::GetHasReply() {
 // Setters
 void Notification::SetTitle(const base::string16& new_title) {
   title_ = new_title;
+}
+
+void Notification::SetSubtitle(const base::string16& new_subtitle) {
+  subtitle_ = new_subtitle;
 }
 
 void Notification::SetBody(const base::string16& new_body) {
@@ -164,6 +173,7 @@ void Notification::Show() {
     if (notification_) {
       brightray::NotificationOptions options;
       options.title = title_;
+      options.subtitle = subtitle_;
       options.msg = body_;
       options.icon_url = GURL();
       options.icon = icon_.AsBitmap();
@@ -188,6 +198,8 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .MakeDestroyable()
       .SetMethod("show", &Notification::Show)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
+      .SetProperty("subtitle", &Notification::GetSubtitle,
+                   &Notification::SetSubtitle)
       .SetProperty("body", &Notification::GetBody, &Notification::SetBody)
       .SetProperty("silent", &Notification::GetSilent, &Notification::SetSilent)
       .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
