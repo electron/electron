@@ -19,6 +19,12 @@ This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDU
 By participating, you are expected to uphold this code. Please report unacceptable
 behavior to electron@github.com.
 
+## Package size
+Please note that apps packaged by electron may be large (50 ~ 127MB).
+
+## Generating distributable package
+Check [electron-packager project](https://github.com/electron-userland/electron-packager).
+
 ## Downloads
 
 To install prebuilt Electron binaries, use
