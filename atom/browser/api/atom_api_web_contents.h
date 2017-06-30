@@ -216,6 +216,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow();
 
+  // Grants the child process the capability to access URLs with the origin of
+  // the specified URL.
+  void GrantOriginAccess(const GURL& url);
+
   // Properties.
   int32_t ID() const;
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
