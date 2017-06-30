@@ -47,15 +47,17 @@ class Notification : public mate::TrackableObject<Notification>,
   void Show();
 
   // Prop Getters
-  base::string16 GetTitle();
-  base::string16 GetBody();
-  bool GetSilent();
-  base::string16 GetReplyPlaceholder();
-  bool GetHasReply();
-  std::vector<brightray::NotificationAction> GetActions();
+  base::string16 GetTitle() const;
+  base::string16 GetSubtitle() const;
+  base::string16 GetBody() const;
+  bool GetSilent() const;
+  base::string16 GetReplyPlaceholder() const;
+  bool GetHasReply() const;
+  std::vector<brightray::NotificationAction> GetActions() const;
 
   // Prop Setters
   void SetTitle(const base::string16& new_title);
+  void SetSubtitle(const base::string16& new_subtitle);
   void SetBody(const base::string16& new_body);
   void SetSilent(bool new_silent);
   void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
@@ -64,6 +66,7 @@ class Notification : public mate::TrackableObject<Notification>,
 
  private:
   base::string16 title_;
+  base::string16 subtitle_;
   base::string16 body_;
   gfx::Image icon_;
   base::string16 icon_path_;
