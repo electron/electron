@@ -23,7 +23,7 @@ behavior to electron@github.com.
 Please note that apps packaged by electron may be large (50 ~ 127MB).
 
 ## Generating distributable package
-Check [electron-packager project](https://github.com/electron-userland/electron-packager).
+Check [electron-packager](https://github.com/electron-userland/electron-packager) project.
 
 ## Downloads
 
