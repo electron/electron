@@ -85,28 +85,32 @@ mate::WrappableBase* Notification::New(mate::Arguments* args) {
 }
 
 // Getters
-base::string16 Notification::GetTitle() {
+base::string16 Notification::GetTitle() const {
   return title_;
 }
 
-base::string16 Notification::GetSubtitle() {
+base::string16 Notification::GetSubtitle() const {
   return subtitle_;
 }
 
-base::string16 Notification::GetBody() {
+base::string16 Notification::GetBody() const {
   return body_;
 }
 
-bool Notification::GetSilent() {
+bool Notification::GetSilent() const {
   return silent_;
 }
 
-base::string16 Notification::GetReplyPlaceholder() {
+base::string16 Notification::GetReplyPlaceholder() const {
   return reply_placeholder_;
 }
 
-bool Notification::GetHasReply() {
+bool Notification::GetHasReply() const {
   return has_reply_;
+}
+
+std::vector<brightray::NotificationAction> Notification::GetActions() const {
+  return actions_;
 }
 
 // Setters
@@ -137,10 +141,6 @@ void Notification::SetHasReply(bool new_has_reply) {
 void Notification::SetActions(
   const std::vector<brightray::NotificationAction>& actions) {
   actions_ = actions;
-}
-
-std::vector<brightray::NotificationAction> Notification::GetActions() {
-  return actions_;
 }
 
 void Notification::NotificationAction(int index) {
