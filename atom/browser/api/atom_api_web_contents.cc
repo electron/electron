@@ -56,6 +56,7 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
+#include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -1253,7 +1254,7 @@ void WebContents::HasServiceWorker(
       delete this;
     }
   };
-  
+
   auto wrapped_callback = new WrappedCallback(callback);
 
   context->CheckHasServiceWorker(
@@ -1789,6 +1790,12 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, debugger_);
 }
 
+void WebContents::GrantOriginAccess(const GURL& url) {
+  content::ChildProcessSecurityPolicy::GetInstance()->GrantOrigin(
+      web_contents()->GetMainFrame()->GetProcess()->GetID(),
+      url::Origin(url));
+}
+
 // static
 void WebContents::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
@@ -1883,6 +1890,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
+      .SetMethod("_grantOriginAccess", &WebContents::GrantOriginAccess)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
