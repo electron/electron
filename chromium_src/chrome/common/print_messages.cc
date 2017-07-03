@@ -15,7 +15,6 @@ PrintMsg_Print_Params::PrintMsg_Print_Params()
       margin_left(0),
       dpi(0),
       scale_factor(1.0f),
-      desired_dpi(0),
       document_cookie(0),
       selection_only(false),
       supports_alpha_blend(false),
@@ -41,7 +40,6 @@ void PrintMsg_Print_Params::Reset() {
   margin_left = 0;
   dpi = 0;
   scale_factor = 1.0f;
-  desired_dpi = 0;
   document_cookie = 0;
   selection_only = false;
   supports_alpha_blend = false;
