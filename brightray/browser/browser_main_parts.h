@@ -10,6 +10,7 @@
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "content/public/browser/browser_main_parts.h"
+#include "ui/views/layout/layout_provider.h"
 
 #if defined(TOOLKIT_VIEWS)
 namespace brightray {
@@ -53,6 +54,8 @@ class BrowserMainParts : public content::BrowserMainParts {
 #if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;
 #endif
+
+  std::unique_ptr<views::LayoutProvider> layout_provider_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserMainParts);
 };
