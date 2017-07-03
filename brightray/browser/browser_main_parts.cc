@@ -247,6 +247,10 @@ int BrowserMainParts::PreCreateThreads() {
   views::LinuxUI::instance()->UpdateDeviceScaleFactor();
 #endif
 #endif
+
+  if (!views::LayoutProvider::Get())
+    layout_provider_.reset(new views::LayoutProvider());
+
   return 0;
 }
 
