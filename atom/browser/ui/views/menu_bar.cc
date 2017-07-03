@@ -153,8 +153,9 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
     return;
   }
 
-  MenuDelegate menu_delegate(this);
-  menu_delegate.RunMenu(menu_model_->GetSubmenuModelAt(id), source);
+  // Deleted in MenuDelegate::OnMenuClosed
+  MenuDelegate* menu_delegate = new MenuDelegate(this);
+  menu_delegate->RunMenu(menu_model_->GetSubmenuModelAt(id), source);
 }
 
 void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
