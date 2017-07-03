@@ -41,7 +41,6 @@ struct PrintMsg_Print_Params {
   int margin_left;
   double dpi;
   double scale_factor;
-  int desired_dpi;
   bool rasterize_pdf;
   int document_cookie;
   bool selection_only;
@@ -104,9 +103,6 @@ IPC_STRUCT_TRAITS_BEGIN(PrintMsg_Print_Params)
 
   // Specifies the scale factor in percent
   IPC_STRUCT_TRAITS_MEMBER(scale_factor)
-
-  // Desired apparent dpi on paper.
-  IPC_STRUCT_TRAITS_MEMBER(desired_dpi)
 
   // Cookie for the document to ensure correctness.
   IPC_STRUCT_TRAITS_MEMBER(document_cookie)

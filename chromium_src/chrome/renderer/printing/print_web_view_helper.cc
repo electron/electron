@@ -66,9 +66,8 @@ int GetDPI(const PrintMsg_Print_Params* print_params) {
 bool PrintMsg_Print_Params_IsValid(const PrintMsg_Print_Params& params) {
   return !params.content_size.IsEmpty() && !params.page_size.IsEmpty() &&
          !params.printable_area.IsEmpty() && params.document_cookie &&
-         params.desired_dpi && params.dpi && params.margin_top >= 0 &&
-         params.margin_left >= 0 && params.dpi > kMinDpi &&
-         params.document_cookie != 0;
+         params.dpi && params.margin_top >= 0 && params.margin_left >= 0 &&
+         params.dpi > kMinDpi && params.document_cookie != 0;
 }
 
 PrintMsg_Print_Params GetCssPrintParams(
@@ -218,31 +217,23 @@ void ComputeWebKitPrintParamsInDesiredDpi(
   webkit_print_params->print_scaling_option = print_params.print_scaling_option;
 
   webkit_print_params->print_content_area.width =
-      ConvertUnit(print_params.content_size.width(), dpi,
-                  print_params.desired_dpi);
+      ConvertUnit(print_params.content_size.width(), dpi, kPointsPerInch);
   webkit_print_params->print_content_area.height =
-      ConvertUnit(print_params.content_size.height(), dpi,
-                  print_params.desired_dpi);
+      ConvertUnit(print_params.content_size.height(), dpi, kPointsPerInch);
 
   webkit_print_params->printable_area.x =
-      ConvertUnit(print_params.printable_area.x(), dpi,
-                  print_params.desired_dpi);
+      ConvertUnit(print_params.printable_area.x(), dpi, kPointsPerInch);
   webkit_print_params->printable_area.y =
-      ConvertUnit(print_params.printable_area.y(), dpi,
-                  print_params.desired_dpi);
+      ConvertUnit(print_params.printable_area.y(), dpi, kPointsPerInch);
   webkit_print_params->printable_area.width =
-      ConvertUnit(print_params.printable_area.width(), dpi,
-                  print_params.desired_dpi);
+      ConvertUnit(print_params.printable_area.width(), dpi, kPointsPerInch);
   webkit_print_params->printable_area.height =
-      ConvertUnit(print_params.printable_area.height(),
-                  dpi, print_params.desired_dpi);
+      ConvertUnit(print_params.printable_area.height(), dpi, kPointsPerInch);
 
   webkit_print_params->paper_size.width =
-      ConvertUnit(print_params.page_size.width(), dpi,
-                  print_params.desired_dpi);
+      ConvertUnit(print_params.page_size.width(), dpi, kPointsPerInch);
   webkit_print_params->paper_size.height =
-      ConvertUnit(print_params.page_size.height(), dpi,
-                  print_params.desired_dpi);
+      ConvertUnit(print_params.page_size.height(), dpi, kPointsPerInch);
 }
 
 blink::WebPlugin* GetPlugin(const blink::WebFrame* frame) {
