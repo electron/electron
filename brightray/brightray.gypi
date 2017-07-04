@@ -92,8 +92,6 @@
       'Common_Base': {
         'abstract': 1,
         'defines': [
-          # We are using Release version libchromiumcontent:
-          'NDEBUG',
           # Needed by gin:
           'V8_USE_EXTERNAL_STARTUP_DATA',
           # From skia_for_chromium_defines.gypi:
@@ -189,6 +187,7 @@
           # Use this instead of "NDEBUG" to determine whether we are in
           # Debug build, because "NDEBUG" is already used by Chromium.
           'DEBUG',
+          '_DEBUG',
           # Require when using libchromiumcontent.
           'COMPONENT_BUILD',
           'GURL_DLL',
@@ -198,15 +197,32 @@
         ],
         'msvs_settings': {
           'VCCLCompilerTool': {
-            'RuntimeLibrary': '2',  # /MD (nondebug DLL)
+            'RuntimeLibrary': '3',  # /MDd (debug DLL)
             'Optimization': '0',  # 0 = /Od
             # See http://msdn.microsoft.com/en-us/library/8wtf2dfz(VS.71).aspx
             'BasicRuntimeChecks': '3',  # 3 = all checks enabled, 0 = off
           },
+          'VCLinkerTool': {
+            'OptimizeReferences': 2, # /OPT:REF 
+            'EnableCOMDATFolding': 2, # /OPT:ICF
+          },
         },
+        'conditions': [
+          ['OS=="linux"', {
+            'defines': [
+              '_GLIBCXX_DEBUG',
+            ],
+            'cflags': [
+              '-g',
+            ],
+          }],  # OS=="linux"
+        ],
       },  # Debug_Base
       'Release_Base': {
         'abstract': 1,
+        'defines': [
+          'NDEBUG',
+        ],
         'msvs_settings': {
           'VCCLCompilerTool': {
             'RuntimeLibrary': '2',  # /MD (nondebug DLL)
