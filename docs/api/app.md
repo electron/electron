@@ -919,6 +919,9 @@ Enables mixed sandbox mode on the app.
 
 This method can only be called before app is ready.
 
+**Note:** The devtools will no longer open after mixed sandbox mode has been
+enabled (i.e `openDevTools` becomes a no-op).
+
 ### `app.dock.bounce([type])` _macOS_
 
 * `type` String (optional) - Can be `critical` or `informational`. The default is
