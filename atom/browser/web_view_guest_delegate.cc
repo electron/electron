@@ -110,7 +110,12 @@ void WebViewGuestDelegate::DidFinishNavigation(
   }
 }
 
+void WebViewGuestDelegate::DidDetach() {
+  attached_ = false;
+}
+
 void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {
+  attached_ = true;
   api_web_contents_->Emit("did-attach");
   embedder_zoom_controller_ =
       WebContentsZoomController::FromWebContents(embedder_web_contents_);
