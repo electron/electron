@@ -14,6 +14,18 @@
 
 namespace atom {
 
+namespace {
+
+void CopyPixelsToBuffer(const SkBitmap& bitmap,
+                        const v8::Local<v8::Object>& buffer) {
+  size_t rgb_arr_size = bitmap.width() * bitmap.height() *
+      bitmap.bytesPerPixel();
+
+  memcpy(node::Buffer::Data(buffer), bitmap.getPixels(), rgb_arr_size);
+}
+
+}  // namespace
+
 namespace api {
 
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
@@ -45,9 +57,9 @@ bool FrameSubscriber::ShouldCaptureFrame(
 
   gfx::Size view_size = rect.size();
   gfx::Size bitmap_size = view_size;
-  const gfx::NativeView native_view = view_->GetNativeView();
+  gfx::NativeView native_view = view_->GetNativeView();
   const float scale =
-      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      display::Screen::GetScreen()->GetDisplayNearestView(native_view)
       .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
@@ -84,9 +96,7 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
   if (buffer.IsEmpty())
     return;
 
-  bitmap.copyPixelsTo(
-    reinterpret_cast<uint8_t*>(node::Buffer::Data(buffer.ToLocalChecked())),
-    rgb_arr_size);
+  CopyPixelsToBuffer(bitmap, buffer.ToLocalChecked());
 
   v8::Local<v8::Value> damage =
       mate::Converter<gfx::Rect>::ToV8(isolate_, damage_rect);

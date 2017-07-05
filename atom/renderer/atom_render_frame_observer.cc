@@ -51,17 +51,17 @@ void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
 
   // This maps to the name shown in the context combo box in the Console tab
   // of the dev tools.
-  frame->setIsolatedWorldHumanReadableName(
+  frame->SetIsolatedWorldHumanReadableName(
       World::ISOLATED_WORLD,
-      blink::WebString::fromUTF8("Electron Isolated Context"));
+      blink::WebString::FromUTF8("Electron Isolated Context"));
 
   // Setup document's origin policy in isolated world
-  frame->setIsolatedWorldSecurityOrigin(
-    World::ISOLATED_WORLD, frame->document().getSecurityOrigin());
+  frame->SetIsolatedWorldSecurityOrigin(
+    World::ISOLATED_WORLD, frame->GetDocument().GetSecurityOrigin());
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");
-  frame->executeScriptInIsolatedWorld(World::ISOLATED_WORLD, &source, 1);
+  frame->ExecuteScriptInIsolatedWorld(World::ISOLATED_WORLD, &source, 1);
 }
 
 bool AtomRenderFrameObserver::IsMainWorld(int world_id) {

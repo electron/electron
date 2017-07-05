@@ -23,10 +23,10 @@
 #include "cc/output/compositor_frame.h"
 #include "cc/scheduler/begin_frame_source.h"
 #include "content/browser/frame_host/render_widget_host_view_guest.h"
+#include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
-#include "content/browser/renderer_host/resize_lock.h"
 #include "content/browser/web_contents/web_contents_view.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/WebKit/public/platform/WebVector.h"
@@ -113,8 +113,6 @@ class OffScreenRenderWidgetHostView
 #endif  // defined(OS_MACOSX)
 
   // content::RenderWidgetHostViewBase:
-  void OnSwapCompositorFrame(uint32_t, cc::CompositorFrame)
-    override;
   void ClearCompositorFrame(void) override;
   void InitAsPopup(content::RenderWidgetHostView *rwhv, const gfx::Rect& rect)
     override;
@@ -224,7 +222,7 @@ class OffScreenRenderWidgetHostView
   void OnProxyViewPaint(const gfx::Rect& damage_rect);
 
   bool IsPopupWidget() const {
-    return popup_type_ != blink::WebPopupTypeNone;
+    return popup_type_ != blink::kWebPopupTypeNone;
   }
 
   void HoldResize();

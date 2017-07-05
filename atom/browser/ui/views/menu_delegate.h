@@ -40,6 +40,8 @@ class MenuDelegate : public views::MenuDelegate {
   void SelectionChanged(views::MenuItemView* menu) override;
   void WillShowMenu(views::MenuItemView* menu) override;
   void WillHideMenu(views::MenuItemView* menu) override;
+  void OnMenuClosed(views::MenuItemView* menu,
+                    views::MenuRunner::RunResult result) override;
   views::MenuItemView* GetSiblingMenu(
       views::MenuItemView* menu,
       const gfx::Point& screen_point,

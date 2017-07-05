@@ -157,7 +157,7 @@ void PrintWebViewHelper::PrintPageInternal(
 #endif
 
   float webkit_page_shrink_factor =
-      frame->getPrintPageShrink(params.page_number);
+      frame->GetPrintPageShrink(params.page_number);
   float scale_factor = css_scale_factor * webkit_page_shrink_factor;
 
   cc::PaintCanvas* canvas =

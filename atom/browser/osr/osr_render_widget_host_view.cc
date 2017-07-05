@@ -5,6 +5,8 @@
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "base/callback_helpers.h"
@@ -15,10 +17,10 @@
 #include "cc/output/copy_output_request.h"
 #include "cc/scheduler/delay_based_time_source.h"
 #include "components/display_compositor/gl_helper.h"
+#include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_frame_subscriber.h"
-#include "content/browser/renderer_host/resize_lock.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
@@ -29,10 +31,10 @@
 #include "ui/compositor/layer_type.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/events/event_constants.h"
-#include "ui/events/latency_info.h"
 #include "ui/gfx/geometry/dip_util.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/skbitmap_operations.h"
+#include "ui/latency/latency_info.h"
 
 namespace atom {
 
@@ -43,23 +45,23 @@ const int kFrameRetryLimit = 2;
 
 ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   ui::EventType type = ui::EventType::ET_UNKNOWN;
-  switch (event.type()) {
-    case blink::WebInputEvent::MouseDown:
+  switch (event.GetType()) {
+    case blink::WebInputEvent::kMouseDown:
       type = ui::EventType::ET_MOUSE_PRESSED;
       break;
-    case blink::WebInputEvent::MouseUp:
+    case blink::WebInputEvent::kMouseUp:
       type = ui::EventType::ET_MOUSE_RELEASED;
       break;
-    case blink::WebInputEvent::MouseMove:
+    case blink::WebInputEvent::kMouseMove:
       type = ui::EventType::ET_MOUSE_MOVED;
       break;
-    case blink::WebInputEvent::MouseEnter:
+    case blink::WebInputEvent::kMouseEnter:
       type = ui::EventType::ET_MOUSE_ENTERED;
       break;
-    case blink::WebInputEvent::MouseLeave:
+    case blink::WebInputEvent::kMouseLeave:
       type = ui::EventType::ET_MOUSE_EXITED;
       break;
-    case blink::WebInputEvent::MouseWheel:
+    case blink::WebInputEvent::kMouseWheel:
       type = ui::EventType::ET_MOUSEWHEEL;
       break;
     default:
@@ -69,19 +71,19 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
 
   int button_flags = 0;
   switch (event.button) {
-    case blink::WebMouseEvent::Button::X1:
+    case blink::WebMouseEvent::Button::kBack:
       button_flags |= ui::EventFlags::EF_BACK_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::X2:
+    case blink::WebMouseEvent::Button::kForward:
       button_flags |= ui::EventFlags::EF_FORWARD_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::Left:
+    case blink::WebMouseEvent::Button::kLeft:
       button_flags |= ui::EventFlags::EF_LEFT_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::Middle:
+    case blink::WebMouseEvent::Button::kMiddle:
       button_flags |= ui::EventFlags::EF_MIDDLE_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::Right:
+    case blink::WebMouseEvent::Button::kRight:
       button_flags |= ui::EventFlags::EF_RIGHT_MOUSE_BUTTON;
       break;
     default:
@@ -90,11 +92,12 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   }
 
   ui::MouseEvent ui_event(type,
-    gfx::Point(std::floor(event.x), std::floor(event.y)),
-    gfx::Point(std::floor(event.x), std::floor(event.y)),
-    ui::EventTimeForNow(),
-    button_flags, button_flags);
-  ui_event.SetClickCount(event.clickCount);
+                          gfx::Point(std::floor(event.PositionInWidget().x),
+                                     std::floor(event.PositionInWidget().y)),
+                          gfx::Point(std::floor(event.PositionInWidget().x),
+                                     std::floor(event.PositionInWidget().y)),
+                          ui::EventTimeForNow(), button_flags, button_flags);
+  ui_event.SetClickCount(event.click_count);
 
   return ui_event;
 }
@@ -102,7 +105,7 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
 ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
     blink::WebMouseWheelEvent event) {
   return ui::MouseWheelEvent(UiMouseEventFromWebMouseEvent(event),
-    std::floor(event.deltaX), std::floor(event.deltaY));
+    std::floor(event.delta_x), std::floor(event.delta_y));
 }
 
 #if !defined(OS_MACOSX)
@@ -1111,12 +1114,12 @@ void OffScreenRenderWidgetHostView::ProcessMouseEvent(
     const ui::LatencyInfo& latency) {
   for (auto proxy_view : proxy_views_) {
     gfx::Rect bounds = proxy_view->GetBounds();
-    if (bounds.Contains(event.x, event.y)) {
+    if (bounds.Contains(event.PositionInWidget().x,
+                        event.PositionInWidget().y)) {
       blink::WebMouseEvent proxy_event(event);
-      proxy_event.x -= bounds.x();
-      proxy_event.y -= bounds.y();
-      proxy_event.windowX = proxy_event.x;
-      proxy_event.windowY = proxy_event.y;
+      proxy_event.SetPositionInWidget(
+          proxy_event.PositionInWidget().x - bounds.x(),
+          proxy_event.PositionInWidget().y - bounds.y());
 
       ui::MouseEvent ui_event = UiMouseEventFromWebMouseEvent(proxy_event);
       proxy_view->OnEvent(&ui_event);
@@ -1125,13 +1128,14 @@ void OffScreenRenderWidgetHostView::ProcessMouseEvent(
   }
 
   if (!IsPopupWidget()) {
-    if (popup_host_view_ &&
-        popup_host_view_->popup_position_.Contains(event.x, event.y)) {
+    if (popup_host_view_ && popup_host_view_->popup_position_.Contains(
+          event.PositionInWidget().x, event.PositionInWidget().y)) {
       blink::WebMouseEvent popup_event(event);
-      popup_event.x -= popup_host_view_->popup_position_.x();
-      popup_event.y -= popup_host_view_->popup_position_.y();
-      popup_event.windowX = popup_event.x;
-      popup_event.windowY = popup_event.y;
+      popup_event.SetPositionInWidget(
+          popup_event.PositionInWidget().x -
+              popup_host_view_->popup_position_.x(),
+          popup_event.PositionInWidget().y -
+              popup_host_view_->popup_position_.y());
 
       popup_host_view_->ProcessMouseEvent(popup_event, latency);
       return;
@@ -1148,12 +1152,12 @@ void OffScreenRenderWidgetHostView::ProcessMouseWheelEvent(
     const ui::LatencyInfo& latency) {
   for (auto proxy_view : proxy_views_) {
     gfx::Rect bounds = proxy_view->GetBounds();
-    if (bounds.Contains(event.x, event.y)) {
+    if (bounds.Contains(event.PositionInWidget().x,
+                        event.PositionInWidget().y)) {
       blink::WebMouseWheelEvent proxy_event(event);
-      proxy_event.x -= bounds.x();
-      proxy_event.y -= bounds.y();
-      proxy_event.windowX = proxy_event.x;
-      proxy_event.windowY = proxy_event.y;
+      proxy_event.SetPositionInWidget(
+          proxy_event.PositionInWidget().x - bounds.x(),
+          proxy_event.PositionInWidget().y - bounds.y());
 
       ui::MouseWheelEvent ui_event =
         UiMouseWheelEventFromWebMouseEvent(proxy_event);
@@ -1163,12 +1167,14 @@ void OffScreenRenderWidgetHostView::ProcessMouseWheelEvent(
   }
   if (!IsPopupWidget()) {
     if (popup_host_view_) {
-      if (popup_host_view_->popup_position_.Contains(event.x, event.y)) {
+      if (popup_host_view_->popup_position_.Contains(
+            event.PositionInWidget().x, event.PositionInWidget().y)) {
         blink::WebMouseWheelEvent popup_event(event);
-        popup_event.x -= popup_host_view_->popup_position_.x();
-        popup_event.y -= popup_host_view_->popup_position_.y();
-        popup_event.windowX = popup_event.x;
-        popup_event.windowY = popup_event.y;
+        popup_event.SetPositionInWidget(
+            popup_event.PositionInWidget().x -
+                popup_host_view_->popup_position_.x(),
+            popup_event.PositionInWidget().y -
+                popup_host_view_->popup_position_.y());
         popup_host_view_->ProcessMouseWheelEvent(popup_event, latency);
         return;
       } else {

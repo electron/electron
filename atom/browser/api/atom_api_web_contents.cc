@@ -56,6 +56,7 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
+#include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -81,6 +82,7 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/latency/latency_info.h"
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -586,16 +588,18 @@ void WebContents::HandleKeyboardEvent(
   }
 }
 
-bool WebContents::PreHandleKeyboardEvent(
+content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
-    const content::NativeWebKeyboardEvent& event,
-    bool* is_keyboard_shortcut) {
-  if (event.type() == blink::WebInputEvent::Type::RawKeyDown ||
-      event.type() == blink::WebInputEvent::Type::KeyUp) {
-    return Emit("before-input-event", event);
-  } else {
-    return false;
+    const content::NativeWebKeyboardEvent& event) {
+  if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown ||
+      event.GetType() == blink::WebInputEvent::Type::kKeyUp) {
+    bool prevent_default = Emit("before-input-event", event);
+    if (prevent_default) {
+      return content::KeyboardEventProcessingResult::HANDLED;
+    }
   }
+
+  return content::KeyboardEventProcessingResult::NOT_HANDLED;
 }
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
@@ -818,7 +822,7 @@ void WebContents::DidFinishNavigation(
   bool is_main_frame = navigation_handle->IsInMainFrame();
   if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
     auto url = navigation_handle->GetURL();
-    bool is_in_page = navigation_handle->IsSamePage();
+    bool is_in_page = navigation_handle->IsSameDocument();
     if (is_main_frame && !is_in_page) {
       Emit("did-navigate", url);
     } else if (is_in_page) {
@@ -998,7 +1002,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   GURL http_referrer;
   if (options.Get("httpReferrer", &http_referrer))
     params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
-                                        blink::WebReferrerPolicyDefault);
+                                        blink::kWebReferrerPolicyDefault);
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
@@ -1236,9 +1240,22 @@ void WebContents::HasServiceWorker(
   if (!context)
     return;
 
-  context->CheckHasServiceWorker(web_contents()->GetLastCommittedURL(),
-                                 GURL::EmptyGURL(),
-                                 callback);
+  struct WrappedCallback {
+    base::Callback<void(bool)> callback_;
+    explicit WrappedCallback(const base::Callback<void(bool)>& callback)
+        : callback_(callback) {}
+    void Run(content::ServiceWorkerCapability capability) {
+      callback_.Run(capability !=
+                    content::ServiceWorkerCapability::NO_SERVICE_WORKER);
+      delete this;
+    }
+  };
+
+  auto wrapped_callback = new WrappedCallback(callback);
+
+  context->CheckHasServiceWorker(
+      web_contents()->GetLastCommittedURL(), GURL::EmptyGURL(),
+      base::Bind(&WrappedCallback::Run, base::Unretained(wrapped_callback)));
 }
 
 void WebContents::UnregisterServiceWorker(
@@ -1422,22 +1439,22 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     return;
 
   int type = mate::GetWebInputEventType(isolate, input_event);
-  if (blink::WebInputEvent::isMouseEventType(type)) {
+  if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
       view->ProcessMouseEvent(mouse_event, ui::LatencyInfo());
       return;
     }
-  } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
+  } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
     content::NativeWebKeyboardEvent keyboard_event(
-        blink::WebKeyboardEvent::RawKeyDown,
-        blink::WebInputEvent::NoModifiers,
+        blink::WebKeyboardEvent::kRawKeyDown,
+        blink::WebInputEvent::kNoModifiers,
         ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
       view->ProcessKeyboardEvent(keyboard_event);
       return;
     }
-  } else if (type == blink::WebInputEvent::MouseWheel) {
+  } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       view->ProcessMouseWheelEvent(mouse_wheel_event, ui::LatencyInfo());
@@ -1537,7 +1554,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
   const float scale =
-      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      display::Screen::GetScreen()->GetDisplayNearestView(native_view)
       .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
@@ -1549,7 +1566,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
-  content::WebCursor::CursorInfo info;
+  content::CursorInfo info;
   cursor.GetCursorInfo(&info);
 
   if (cursor.IsCustom()) {
@@ -1769,6 +1786,12 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, debugger_);
 }
 
+void WebContents::GrantOriginAccess(const GURL& url) {
+  content::ChildProcessSecurityPolicy::GetInstance()->GrantOrigin(
+      web_contents()->GetMainFrame()->GetProcess()->GetID(),
+      url::Origin(url));
+}
+
 // static
 void WebContents::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
@@ -1863,6 +1886,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
+      .SetMethod("_grantOriginAccess", &WebContents::GrantOriginAccess)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
