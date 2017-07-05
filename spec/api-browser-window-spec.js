@@ -1965,7 +1965,7 @@ describe('BrowserWindow module', function () {
     })
   })
 
-  describe('dev tool extensions', function () {
+  describe('extensions and dev tools extensions', function () {
     let showPanelTimeoutId
 
     const showLastDevToolsPanel = () => {
@@ -2097,6 +2097,70 @@ describe('BrowserWindow module', function () {
       BrowserWindow.removeDevToolsExtension(extensionName)
       app.emit('will-quit')
       assert.equal(fs.existsSync(serializedPath), false)
+    })
+
+    describe('BrowserWindow.addExtension', function () {
+      beforeEach(function () {
+        BrowserWindow.removeExtension('foo')
+        assert.equal(BrowserWindow.getExtensions().hasOwnProperty('foo'), false)
+
+        var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
+        BrowserWindow.addExtension(extensionPath)
+        assert.equal(BrowserWindow.getExtensions().hasOwnProperty('foo'), true)
+
+        showLastDevToolsPanel()
+
+        w.loadURL('about:blank')
+      })
+
+      it('throws errors for missing manifest.json files', function () {
+        assert.throws(function () {
+          BrowserWindow.addExtension(path.join(__dirname, 'does-not-exist'))
+        }, /ENOENT: no such file or directory/)
+      })
+
+      it('throws errors for invalid manifest.json files', function () {
+        assert.throws(function () {
+          BrowserWindow.addExtension(path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest'))
+        }, /Unexpected token }/)
+      })
+
+      describe('when the devtools is docked', function () {
+        it('creates the extension', function (done) {
+          w.webContents.openDevTools({mode: 'bottom'})
+
+          ipcMain.once('answer', function (event, message) {
+            assert.equal(message.runtimeId, 'foo')
+            assert.equal(message.tabId, w.webContents.id)
+            assert.equal(message.i18nString, 'foo - bar (baz)')
+            assert.deepEqual(message.storageItems, {
+              local: {
+                set: {hello: 'world', world: 'hello'},
+                remove: {world: 'hello'},
+                clear: {}
+              },
+              sync: {
+                set: {foo: 'bar', bar: 'foo'},
+                remove: {foo: 'bar'},
+                clear: {}
+              }
+            })
+            done()
+          })
+        })
+      })
+
+      describe('when the devtools is undocked', function () {
+        it('creates the extension', function (done) {
+          w.webContents.openDevTools({mode: 'undocked'})
+
+          ipcMain.once('answer', function (event, message, extensionId) {
+            assert.equal(message.runtimeId, 'foo')
+            assert.equal(message.tabId, w.webContents.id)
+            done()
+          })
+        })
+      })
     })
   })
 
