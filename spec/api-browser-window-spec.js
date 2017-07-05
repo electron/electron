@@ -1995,7 +1995,7 @@ describe('BrowserWindow module', function () {
       clearTimeout(showPanelTimeoutId)
     })
 
-    describe.only('BrowserWindow.addDevToolsExtension', function () {
+    describe('BrowserWindow.addDevToolsExtension', function () {
       beforeEach(function () {
         BrowserWindow.removeDevToolsExtension('foo')
         assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), false)
