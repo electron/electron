@@ -379,7 +379,7 @@ remove the reference to the window and avoid using it any more.
 
 #### Event: 'session-end' _Windows_
 
-Emitted when window session is going to end due to force shutdown or machine restart 
+Emitted when window session is going to end due to force shutdown or machine restart
 or session log off.
 
 #### Event: 'unresponsive'
@@ -535,6 +535,34 @@ Returns `BrowserWindow` - The window that owns the given `webContents`.
 * `id` Integer
 
 Returns `BrowserWindow` - The window with the given `id`.
+
+#### `BrowserWindow.addExtension(path)`
+
+* `path` String
+
+Adds Chrome extension located at `path`, and returns extension's name.
+
+The method will also not return if the extension's manifest is missing or incomplete.
+
+**Note:** This API cannot be called before the `ready` event of the `app` module
+is emitted.
+
+#### `BrowserWindow.removeExtension(name)`
+
+* `name` String
+
+Remove a Chrome extension by name.
+
+**Note:** This API cannot be called before the `ready` event of the `app` module
+is emitted.
+
+#### `BrowserWindow.getExtensions()`
+
+Returns `Object` - The keys are the extension names and each value is
+an Object containing `name` and `version` properties.
+
+**Note:** This API cannot be called before the `ready` event of the `app` module
+is emitted.
 
 #### `BrowserWindow.addDevToolsExtension(path)`
 
