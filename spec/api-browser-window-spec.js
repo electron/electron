@@ -2678,7 +2678,7 @@ const assertBoundsEqual = (actual, expect) => {
 
 const assertWithinDelta = (actual, expect, delta, label) => {
   const result = Math.abs(actual - expect)
-  assert.ok(result <= delta, `${label} value of ${expect} was not within ${delta} of ${actual}`)
+  assert.ok(result <= delta, `${label} value of ${actual} was not within ${delta} of ${expect}`)
 }
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
