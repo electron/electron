@@ -1995,7 +1995,7 @@ describe('BrowserWindow module', function () {
       clearTimeout(showPanelTimeoutId)
     })
 
-    describe('BrowserWindow.addDevToolsExtension', function () {
+    describe.only('BrowserWindow.addDevToolsExtension', function () {
       beforeEach(function () {
         BrowserWindow.removeDevToolsExtension('foo')
         assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), false)
@@ -2123,43 +2123,6 @@ describe('BrowserWindow module', function () {
         assert.throws(function () {
           BrowserWindow.addExtension(path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest'))
         }, /Unexpected token }/)
-      })
-
-      describe('when the devtools is docked', function () {
-        it('creates the extension', function (done) {
-          w.webContents.openDevTools({mode: 'bottom'})
-
-          ipcMain.once('answer', function (event, message) {
-            assert.equal(message.runtimeId, 'foo')
-            assert.equal(message.tabId, w.webContents.id)
-            assert.equal(message.i18nString, 'foo - bar (baz)')
-            assert.deepEqual(message.storageItems, {
-              local: {
-                set: {hello: 'world', world: 'hello'},
-                remove: {world: 'hello'},
-                clear: {}
-              },
-              sync: {
-                set: {foo: 'bar', bar: 'foo'},
-                remove: {foo: 'bar'},
-                clear: {}
-              }
-            })
-            done()
-          })
-        })
-      })
-
-      describe('when the devtools is undocked', function () {
-        it('creates the extension', function (done) {
-          w.webContents.openDevTools({mode: 'undocked'})
-
-          ipcMain.once('answer', function (event, message, extensionId) {
-            assert.equal(message.runtimeId, 'foo')
-            assert.equal(message.tabId, w.webContents.id)
-            done()
-          })
-        })
       })
     })
   })
