@@ -215,6 +215,15 @@ more details.
 See the [Enabling User-Selected File Access documentation][user-selected] for
 more details.
 
+## Known issues
+
+#### `shell.openItem(filePath)` #9005
+
+This will fail when the app is signed for distribution in the Mac App Store.
+
+##### Workaround
+`shell.openExternal('file://' + filePath)` will open the file in the default application (as long as the extension is associated with an app).
+
 ## Cryptographic Algorithms Used by Electron
 
 Depending on the country and region you are located, Mac App Store may require
