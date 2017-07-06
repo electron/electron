@@ -1,0 +1,36 @@
+{
+  "name": "electron",
+  "version": "1.7.4",
+  "description": "Install prebuilt electron binaries for the command-line using npm",
+  "repository": "https://github.com/electron-userland/electron-prebuilt",
+  "scripts": {
+    "cache-clean": "rm -rf ~/.electron && rm -rf dist",
+    "postinstall": "node install.js",
+    "pretest": "npm run cache-clean && npm run postinstall",
+    "test": "tape test/*.js && standard"
+  },
+  "bin": {
+    "electron": "cli.js"
+  },
+  "main": "index.js",
+  "types": "electron.d.ts",
+  "dependencies": {
+    "@types/node": "^7.0.18",
+    "electron-download": "^3.0.1",
+    "extract-zip": "^1.0.3"
+  },
+  "devDependencies": {
+    "home-path": "^0.1.1",
+    "path-exists": "^2.0.0",
+    "standard": "^5.4.1",
+    "tape": "^3.0.1"
+  },
+  "author": "Mathias Buus",
+  "license": "MIT",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": [
+    "electron"
+  ]
+}
