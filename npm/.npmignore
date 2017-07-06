@@ -1,9 +1,0 @@
-dist/
-path.txt
-.npmignore
-.travis.yml
-appveyor.yml
-CONTRIBUTING.md
-issue_template.md
-test/
-npm-debug.log

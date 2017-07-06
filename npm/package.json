@@ -1,8 +1,4 @@
 {
-  "name": "electron",
-  "version": "1.7.4",
-  "description": "Install prebuilt electron binaries for the command-line using npm",
-  "repository": "https://github.com/electron-userland/electron-prebuilt",
   "scripts": {
     "cache-clean": "rm -rf ~/.electron && rm -rf dist",
     "postinstall": "node install.js",
@@ -30,7 +26,5 @@
   "directories": {
     "test": "test"
   },
-  "keywords": [
-    "electron"
-  ]
+  "keywords": ["electron"]
 }
