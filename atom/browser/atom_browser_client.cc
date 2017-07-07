@@ -38,6 +38,7 @@
 #include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -241,8 +242,9 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int process_id) {
-  std::string process_type = command_line->GetSwitchValueASCII("type");
-  if (process_type != "renderer")
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  if (process_type != ::switches::kRendererProcess)
     return;
 
   // Copy following switches to child process.
