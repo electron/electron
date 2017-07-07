@@ -88,6 +88,10 @@ free software licenses, and is a widely-used alternative to commercial
 proprietary products like InstallShield. [electron-builder] supports NSIS
 as a build target.
 
+## OSR
+
+Off-screen rendering.
+
 ### process
 
 A process is an instance of a computer program that is being executed. Electron
