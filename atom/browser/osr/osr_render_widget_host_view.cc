@@ -339,6 +339,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       popup_position_(gfx::Rect()),
       hold_resize_(false),
       pending_resize_(false),
+      renderer_compositor_frame_sink_(nullptr),
+      background_color_(SkColor()),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
@@ -557,14 +559,18 @@ gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() const {
 }
 
 void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
-  if (transparent_)
-    color = SkColorSetARGB(SK_AlphaTRANSPARENT, 0, 0, 0);
+  // The renderer will feed its color back to us with the first CompositorFrame.
+  // We short-cut here to show a sensible color before that happens.
+  UpdateBackgroundColorFromRenderer(color);
 
-  content::RenderWidgetHostViewBase::SetBackgroundColor(color);
+  if (render_widget_host_) {
+    render_widget_host_->SetBackgroundOpaque(SkColorGetA(color) ==
+                                             SK_AlphaOPAQUE);
+  }
+}
 
-  const bool opaque = !transparent_ && GetBackgroundOpaque();
-  if (render_widget_host_)
-    render_widget_host_->SetBackgroundOpaque(opaque);
+SkColor OffScreenRenderWidgetHostView::background_color() const {
+  return background_color_;
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() const {
@@ -581,11 +587,20 @@ bool OffScreenRenderWidgetHostView::LockMouse() {
 void OffScreenRenderWidgetHostView::UnlockMouse() {
 }
 
-void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
-  uint32_t output_surface_id,
-  cc::CompositorFrame frame) {
+void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
+    cc::mojom::MojoCompositorFrameSinkClient* renderer_compositor_frame_sink) {
+  renderer_compositor_frame_sink_ = renderer_compositor_frame_sink;
+  if (GetDelegatedFrameHost()) {
+    GetDelegatedFrameHost()->DidCreateNewRendererCompositorFrameSink(
+        renderer_compositor_frame_sink_);
+  }
+}
+
+void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
+    const cc::LocalSurfaceId& local_surface_id,
+    cc::CompositorFrame frame) {
   TRACE_EVENT0("electron",
-    "OffScreenRenderWidgetHostView::OnSwapCompositorFrame");
+    "OffScreenRenderWidgetHostView::SubmitCompositorFrame");
 
   if (frame.metadata.root_scroll_offset != last_scroll_offset_) {
     last_scroll_offset_ = frame.metadata.root_scroll_offset;
@@ -599,11 +614,11 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
 
       // The compositor will draw directly to the SoftwareOutputDevice which
       // then calls OnPaint.
-      // We would normally call BrowserCompositorMac::SwapCompositorFrame on
+      // We would normally call BrowserCompositorMac::SubmitCompositorFrame on
       // macOS, however it contains compositor resize logic that we don't want.
-      // Consequently we instead call the SwapDelegatedFrame method directly.
-      GetDelegatedFrameHost()->SwapDelegatedFrame(output_surface_id,
-                                                  std::move(frame));
+      // Consequently we instead call the SubmitCompositorFrame method directly.
+      GetDelegatedFrameHost()->SubmitCompositorFrame(local_surface_id,
+                                                     std::move(frame));
     } else {
       if (!copy_frame_generator_.get()) {
         copy_frame_generator_.reset(
@@ -618,11 +633,11 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
           gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
       damage_rect.Intersect(gfx::Rect(frame_size));
 
-      // We would normally call BrowserCompositorMac::SwapCompositorFrame on
+      // We would normally call BrowserCompositorMac::SubmitCompositorFrame on
       // macOS, however it contains compositor resize logic that we don't want.
-      // Consequently we instead call the SwapDelegatedFrame method directly.
-      GetDelegatedFrameHost()->SwapDelegatedFrame(output_surface_id,
-                                                  std::move(frame));
+      // Consequently we instead call the SubmitCompositorFrame method directly.
+      GetDelegatedFrameHost()->SubmitCompositorFrame(local_surface_id,
+                                                     std::move(frame));
 
       // Request a copy of the last compositor frame which will eventually call
       // OnPaint asynchronously.
@@ -688,8 +703,14 @@ void OffScreenRenderWidgetHostView::Destroy() {
       popup_bitmap_.reset();
       if (child_host_view_)
         child_host_view_->CancelWidget();
-      for (auto guest_host_view : guest_host_views_)
-        guest_host_view->CancelWidget();
+      if (!guest_host_views_.empty()) {
+        // Guest RWHVs will be destroyed when the associated RWHVGuest is
+        // destroyed. This parent RWHV may be destroyed first, so disassociate
+        // the guest RWHVs here without destroying them.
+        for (auto guest_host_view : guest_host_views_)
+          guest_host_view->parent_host_view_ = nullptr;
+        guest_host_views_.clear();
+      }
       for (auto proxy_view : proxy_views_)
         proxy_view->RemoveObserver();
       Hide();
@@ -1316,6 +1337,17 @@ cc::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
                                 render_widget_host_->GetProcess()->GetID()),
                             base::checked_cast<uint32_t>(
                                 render_widget_host_->GetRoutingID()));
+}
+
+void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
+    SkColor color) {
+  if (color == background_color())
+    return;
+  background_color_ = color;
+
+  bool opaque = SkColorGetA(color) == SK_AlphaOPAQUE;
+  GetRootLayer()->SetFillsBoundsOpaquely(opaque);
+  GetRootLayer()->SetColor(color);
 }
 
 }  // namespace atom
