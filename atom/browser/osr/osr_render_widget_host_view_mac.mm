@@ -38,15 +38,6 @@ class MacHelper :
     return color;
   }
 
-  void BrowserCompositorMacSendReclaimCompositorResources(
-      int output_surface_id,
-      bool is_swap_ack,
-      const cc::ReturnedResourceArray& resources) override {
-    view_->render_widget_host()->Send(new ViewMsg_ReclaimCompositorResources(
-        view_->render_widget_host()->GetRoutingID(), output_surface_id,
-        is_swap_ack, resources));
-  }
-
   void BrowserCompositorMacSendBeginFrame(
       const cc::BeginFrameArgs& args) override {
     view_->render_widget_host()->Send(
