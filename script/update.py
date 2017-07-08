@@ -80,6 +80,9 @@ def run_gyp(target_arch, component):
     '-Dhost_arch={0}'.format(get_host_arch()),
     '-Dlibrary=static_library',
     '-Dmas_build={0}'.format(mas_build),
+
+    # TODO(alexeykuzmin): Enable OSR.
+    '-Denable_osr=0',
   ]
 
   # Add the defines passed from command line.
