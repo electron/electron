@@ -99,6 +99,7 @@ class OffScreenRenderWidgetHostView
   gfx::Size GetVisibleViewportSize() const override;
   void SetInsets(const gfx::Insets&) override;
   void SetBackgroundColor(SkColor color) override;
+  SkColor background_color() const override;
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
   void SetNeedsBeginFrames(bool needs_begin_frames) override;
@@ -113,6 +114,12 @@ class OffScreenRenderWidgetHostView
 #endif  // defined(OS_MACOSX)
 
   // content::RenderWidgetHostViewBase:
+  void DidCreateNewRendererCompositorFrameSink(
+      cc::mojom::MojoCompositorFrameSinkClient* renderer_compositor_frame_sink)
+      override;
+  void SubmitCompositorFrame(const cc::LocalSurfaceId& local_surface_id,
+                             cc::CompositorFrame frame) override;
+
   void ClearCompositorFrame(void) override;
   void InitAsPopup(content::RenderWidgetHostView *rwhv, const gfx::Rect& rect)
     override;
@@ -269,6 +276,10 @@ class OffScreenRenderWidgetHostView
 
   cc::FrameSinkId AllocateFrameSinkId(bool is_guest_view_hack);
 
+  // Applies background color without notifying the RenderWidget about
+  // opaqueness changes.
+  void UpdateBackgroundColorFromRenderer(SkColor color);
+
   // Weak ptrs.
   content::RenderWidgetHostImpl* render_widget_host_;
 
@@ -325,6 +336,10 @@ class OffScreenRenderWidgetHostView
   // Selected text on the renderer.
   std::string selected_text_;
 #endif
+
+  cc::mojom::MojoCompositorFrameSinkClient* renderer_compositor_frame_sink_;
+
+  SkColor background_color_;
 
   base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_;
 
