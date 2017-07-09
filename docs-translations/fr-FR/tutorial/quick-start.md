@@ -21,7 +21,7 @@ pages Web.
 
 Puisque Electron utilise Chromium pour afficher des pages Web, Chromium
 Multi-process architecture est également utilisé. Chaque page Web d'Electron
-fonctionne avec son propre processus, qui est appelé __le processus de rendu.__.
+fonctionne avec son propre processus, qui est appelé __le processus de rendu__.
 
 Dans les navigateurs normaux, les pages Web sont habituellement exécutées
 dans un environnement aux ressources indépendantes. Les utilisateurs d'électrons
@@ -33,17 +33,17 @@ un système d'exploitation de niveau inférieur d'interactions.
 Le processus principal crée des pages Web en créant des instances `BrowserWindow`.
 Chaque instance `BrowserWindow` exécute la page Web dans son propre processus
 de rendu. Lorsqu'une occurrence `BrowserWindow` est détruite, le processus
-de rendu correspondant est également terminée.
+de rendu correspondant est également terminé.
 
 Le processus principal gère toutes les pages Web et leur processus rendu correspondant.
 Chaque processus de rendu est isolé et ne se soucie que de la page Web en cours
 d'exécution.
 
 Dans les pages Web, l'appel des API relatives aux GUI natives n'est pas autorisé
-car la gestion des ressources natives GUI dans les pages Web sont très dangereuse,
+car la gestion des ressources natives GUI dans les pages Web est très dangereuse,
 il est facile de perdre des ressources. Si vous souhaitez effectuer des opérations
 GUI dans une page Web, le Processus de la page Web doit communiquer avec le
-processus principal pour lui demander d'effectur ces opérations.
+processus principal pour lui demander d'effectuer ces opérations.
 
 Dans Electron, nous avons plusieurs façons de communiquer entre le processus principal et
 le processeurs. Comme [`ipcRenderer`] (../ api / ipc-renderer.md) et [`IpcMain`]
@@ -106,7 +106,7 @@ function createWindow () {
 
   // Émis lorsque la fenêtre est fermée.
   win.on('closed', () => {
-    // Déréférencer l'objet fenêtre, habituellement vous stocker des fenêtres
+    // Déréférencer l'objet fenêtre, habituellement vous stockez des fenêtres
     // dans un tableau si votre application prend en charge plusieurs fenêtres,
     // c'est l'heure où vous devez supprimer l'élément correspondant.
     win = null
