@@ -831,31 +831,25 @@ bool OffScreenRenderWidgetHostView::DelegatedFrameCanCreateResizeLock() const {
   return !render_widget_host_->auto_resize_enabled();
 }
 
-std::unique_ptr<content::ResizeLock>
-  OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock(
-      bool defer_compositor_lock) {
-  return std::unique_ptr<content::ResizeLock>(new AtomResizeLock(
-    this,
-    DelegatedFrameHostDesiredSizeInDIP(),
-    defer_compositor_lock));
-}
-
-void OffScreenRenderWidgetHostView::DelegatedFrameHostResizeLockWasReleased() {
-  return render_widget_host_->WasResized();
+std::unique_ptr<content::CompositorResizeLock>
+OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock() {
+  HoldResize();
+  const gfx::Size& desired_size = GetRootLayer()->bounds().size();
+  return base::MakeUnique<content::CompositorResizeLock>(this, desired_size);
 }
 
 void
-OffScreenRenderWidgetHostView::DelegatedFrameHostSendReclaimCompositorResources(
-    int output_surface_id,
-    bool is_swap_ack,
-    const cc::ReturnedResourceArray& resources) {
-  render_widget_host_->Send(new ViewMsg_ReclaimCompositorResources(
-      render_widget_host_->GetRoutingID(), output_surface_id, is_swap_ack,
-      resources));
+OffScreenRenderWidgetHostView::OnBeginFrame(const cc::BeginFrameArgs& args) {
 }
 
-void OffScreenRenderWidgetHostView::SetBeginFrameSource(
-    cc::BeginFrameSource* source) {
+std::unique_ptr<ui::CompositorLock>
+OffScreenRenderWidgetHostView::GetCompositorLock(
+    ui::CompositorLockClient* client) {
+  return GetCompositor()->GetCompositorLock(client);
+}
+
+void OffScreenRenderWidgetHostView::CompositorResizeLockEnded() {
+  ReleaseResize();
 }
 
 #endif  // !defined(OS_MACOSX)

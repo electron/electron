@@ -68,6 +68,7 @@ class OffScreenRenderWidgetHostView
       public ui::CompositorDelegate,
 #if !defined(OS_MACOSX)
       public content::DelegatedFrameHostClient,
+      public content::CompositorResizeLockClient,
 #endif
       public NativeWindowObserver,
       public OffscreenViewProxyObserver {
@@ -172,15 +173,14 @@ class OffScreenRenderWidgetHostView
   bool DelegatedFrameHostIsVisible(void) const override;
   SkColor DelegatedFrameHostGetGutterColor(SkColor) const override;
   gfx::Size DelegatedFrameHostDesiredSizeInDIP(void) const override;
-  bool DelegatedFrameCanCreateResizeLock(void) const override;
-  std::unique_ptr<content::ResizeLock> DelegatedFrameHostCreateResizeLock(
-    bool defer_compositor_lock) override;
-  void DelegatedFrameHostResizeLockWasReleased(void) override;
-  void DelegatedFrameHostSendReclaimCompositorResources(
-      int output_surface_id,
-      bool is_swap_ack,
-      const cc::ReturnedResourceArray& resources) override;
-  void SetBeginFrameSource(cc::BeginFrameSource* source) override;
+  bool DelegatedFrameCanCreateResizeLock() const override;
+  std::unique_ptr<content::CompositorResizeLock>
+  DelegatedFrameHostCreateResizeLock() override;
+  void OnBeginFrame(const cc::BeginFrameArgs& args) override;
+  // CompositorResizeLockClient implementation.
+  std::unique_ptr<ui::CompositorLock> GetCompositorLock(
+      ui::CompositorLockClient* client) override;
+  void CompositorResizeLockEnded() override;
 #endif  // !defined(OS_MACOSX)
 
   bool TransformPointToLocalCoordSpace(
