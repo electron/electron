@@ -40,7 +40,7 @@ Chaque processus de rendu est isolé et ne se soucie que de la page Web en cours
 d'exécution.
 
 Dans les pages Web, l'appel des API relatives aux GUI natives n'est pas autorisé
-car la gestion des ressources natives GUI dans les pages Web sont très dangereuses,
+car la gestion des ressources natives GUI dans les pages Web est très dangereuse,
 il est facile de perdre des ressources. Si vous souhaitez effectuer des opérations
 GUI dans une page Web, le Processus de la page Web doit communiquer avec le
 processus principal pour lui demander d'effectuer ces opérations.
