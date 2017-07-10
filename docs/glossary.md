@@ -155,7 +155,7 @@ embedded content.
 [autoUpdater]: api/auto-updater.md
 [electron-builder]: https://github.com/electron-userland/electron-builder
 [libchromiumcontent]: #libchromiumcontent
-[Mac App Store Submission Guide]: tutorials/mac-app-store-submission-guide.md
+[Mac App Store Submission Guide]: tutorial/mac-app-store-submission-guide.md
 [main]: #main-process
 [renderer]: #renderer-process
 [Using Native Node Modules]: tutorial/using-native-node-modules.md
