@@ -1097,7 +1097,6 @@ describe('BrowserWindow module', function () {
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'foo', 'bar')
         ipcMain.once('answer', (event, args, webPreferences) => {
-          assert.equal(args.includes('--enable-sandbox'), true)
           assert.equal(webPreferences.foo, 'bar')
           done()
         })
@@ -1363,6 +1362,43 @@ describe('BrowserWindow module', function () {
           w.reload()
         })
         w.loadURL('file://' + path.join(fixtures, 'api', 'native-window-open-native-addon.html'))
+      })
+
+      it('should inherit the nativeWindowOpen setting in opened windows', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nativeWindowOpen: true
+          }
+        })
+
+        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
+        ipcMain.once('answer', (event, args) => {
+          assert.equal(args.includes('--native-window-open'), true)
+          done()
+        })
+        w.loadURL(`file://${path.join(fixtures, 'api', 'new-window.html')}`)
+      })
+
+      it('should open windows with the options configured via new-window event listeners', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nativeWindowOpen: true
+          }
+        })
+
+        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'foo', 'bar')
+        ipcMain.once('answer', (event, args, webPreferences) => {
+          assert.equal(webPreferences.foo, 'bar')
+          done()
+        })
+        w.loadURL(`file://${path.join(fixtures, 'api', 'new-window.html')}`)
       })
     })
   })
