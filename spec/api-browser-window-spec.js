@@ -1066,6 +1066,26 @@ describe('BrowserWindow module', function () {
         })
       })
 
+      it('should open windows with the options configured via new-window event listeners', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true
+          }
+        })
+
+        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'sandbox', true)
+        ipcMain.once('answer', (event, args) => {
+          assert.ok(args.includes('--enable-sandbox'))
+          assert.ok(args.includes(`--preload=${path.join(fixtures, 'api', 'new-window-preload.js')}`))
+          done()
+        })
+        w.loadURL(`file://${path.join(fixtures, 'api', 'new-window.html')}`)
+      })
+
       it('should set ipc event sender correctly', function (done) {
         w.destroy()
         w = new BrowserWindow({
