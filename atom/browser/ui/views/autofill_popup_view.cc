@@ -5,6 +5,7 @@
 #include "atom/browser/ui/views/autofill_popup_view.h"
 #include "base/bind.h"
 #include "base/i18n/rtl.h"
+#include "cc/paint/skia_paint_canvas.h"
 #include "content/public/browser/render_view_host.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/canvas.h"
@@ -229,7 +230,8 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     bitmap.allocN32Pixels(popup_->popup_bounds_in_view_.width(),
                           popup_->popup_bounds_in_view_.height(),
                           true);
-    draw_canvas = new gfx::Canvas(new SkCanvas(bitmap), 1.0);
+    cc::SkiaPaintCanvas paint_canvas(new SkCanvas(bitmap));
+    draw_canvas = new gfx::Canvas(&paint_canvas, 1.0);
   }
 #endif
 
