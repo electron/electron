@@ -1066,6 +1066,24 @@ describe('BrowserWindow module', function () {
         })
       })
 
+      it('should inherit the sandbox setting in opened windows', function (done) {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true
+          }
+        })
+
+        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
+        ipcMain.once('answer', (event, args) => {
+          assert.equal(args.includes('--enable-sandbox'), true)
+          done()
+        })
+        w.loadURL(`file://${path.join(fixtures, 'api', 'new-window.html')}`)
+      })
+
       it('should open windows with the options configured via new-window event listeners', function (done) {
         w.destroy()
         w = new BrowserWindow({
@@ -1077,10 +1095,10 @@ describe('BrowserWindow module', function () {
 
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js')
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preloadPath)
-        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'sandbox', true)
-        ipcMain.once('answer', (event, args) => {
-          assert.ok(args.includes('--enable-sandbox'))
-          assert.ok(args.includes(`--preload=${path.join(fixtures, 'api', 'new-window-preload.js')}`))
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'foo', 'bar')
+        ipcMain.once('answer', (event, args, webPreferences) => {
+          assert.equal(args.includes('--enable-sandbox'), true)
+          assert.equal(webPreferences.foo, 'bar')
           done()
         })
         w.loadURL(`file://${path.join(fixtures, 'api', 'new-window.html')}`)
