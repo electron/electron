@@ -267,8 +267,6 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
 ipcMain.on('set-web-preferences-on-next-new-window', (event, id, key, value) => {
   webContents.fromId(id).once('new-window', (event, url, frameName, disposition, options) => {
     options.webPreferences[key] = value
-
-    console.log('her?', options.webPreferences)
   })
 })
 
