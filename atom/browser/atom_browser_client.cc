@@ -79,9 +79,10 @@ AtomBrowserClient::~AtomBrowserClient() {
 
 content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
-  // If the process is a pending process, we should use the old one.
+  // If the process is a pending process, we should use the web contents
+  // for the frame host passed into OverrideSiteInstanceForNavigation.
   if (base::ContainsKey(pending_processes_, process_id))
-    process_id = pending_processes_[process_id];
+    return pending_processes_[process_id];
 
   // Certain render process will be created with no associated render view,
   // for example: ServiceWorker.
@@ -231,12 +232,12 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Noop, base::RetainedRef(site_instance)));
 
-  // Remember the original renderer process of the pending renderer process.
-  auto current_process = current_instance->GetProcess();
+  // Remember the original web contents for the pending renderer process.
   auto pending_process = (*new_instance)->GetProcess();
-  pending_processes_[pending_process->GetID()] = current_process->GetID();
+  pending_processes_[pending_process->GetID()] =
+      content::WebContents::FromRenderFrameHost(render_frame_host);;
   // Clear the entry in map when process ends.
-  current_process->AddObserver(this);
+  pending_process->AddObserver(this);
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
@@ -277,11 +278,9 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   }
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
-  if (!web_contents)
-    return;
-
-  WebContentsPreferences::AppendExtraCommandLineSwitches(
-      web_contents, command_line);
+  if (web_contents)
+    WebContentsPreferences::AppendExtraCommandLineSwitches(
+        web_contents, command_line);
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(
@@ -421,12 +420,7 @@ void AtomBrowserClient::WebNotificationAllowed(
 void AtomBrowserClient::RenderProcessHostDestroyed(
     content::RenderProcessHost* host) {
   int process_id = host->GetID();
-  for (const auto& entry : pending_processes_) {
-    if (entry.first == process_id || entry.second == process_id) {
-      pending_processes_.erase(entry.first);
-      break;
-    }
-  }
+  pending_processes_.erase(process_id);
   RemoveProcessPreferences(process_id);
 }
 
