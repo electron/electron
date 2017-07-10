@@ -1400,6 +1400,31 @@ describe('BrowserWindow module', function () {
         })
         w.loadURL(`file://${path.join(fixtures, 'api', 'new-window.html')}`)
       })
+
+      it('retains the original web preferences when window.location is changed to a new origin', async function () {
+        await serveFileFromProtocol('foo', path.join(fixtures, 'api', 'window-open-location-change.html'))
+        await serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
+
+        w.destroy()
+        w = new BrowserWindow({
+          show: true,
+          webPreferences: {
+            nodeIntegration: false,
+            nativeWindowOpen: true
+          }
+        })
+
+        return new Promise((resolve, reject) => {
+          ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', path.join(fixtures, 'api', 'window-open-preload.js'))
+          ipcMain.once('answer', (event, args, typeofProcess) => {
+            assert.equal(args.includes('--node-integration=false'), true)
+            assert.equal(args.includes('--native-window-open'), true)
+            assert.equal(typeofProcess, 'undefined')
+            resolve()
+          })
+          w.loadURL(`file://${path.join(fixtures, 'api', 'window-open-location-open.html')}`)
+        })
+      })
     })
   })
 
@@ -2779,4 +2804,21 @@ const isScaleFactorRounding = () => {
   if (Math.round(scaleFactor) !== scaleFactor) return true
   // Return true if scale factor is odd number above 2
   return scaleFactor > 2 && scaleFactor % 2 === 1
+}
+
+function serveFileFromProtocol (protocolName, filePath) {
+  return new Promise((resolve, reject) => {
+    protocol.registerBufferProtocol(protocolName, (request, callback) => {
+      callback({
+        mimeType: 'text/html',
+        data: fs.readFileSync(filePath)
+      })
+    }, (error) => {
+      if (error != null) {
+        reject(error)
+      } else {
+        resolve()
+      }
+    })
+  })
 }
