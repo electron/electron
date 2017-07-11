@@ -102,14 +102,18 @@ Window::Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
 #endif
 
   if (options.Get("webContents", &web_contents)) {
-    // Set webPreferences from options if using existing webContents
+    // Set webPreferences from options if using an existing webContents.
+    // These preferences will be used when the webContent launches new
+    // render processes.
     auto* existing_preferences =
         WebContentsPreferences::FromWebContents(web_contents->web_contents());
     base::DictionaryValue web_preferences_dict;
-    mate::ConvertFromV8(isolate, web_preferences.GetHandle(),
-                        &web_preferences_dict);
-    existing_preferences->web_preferences()->Clear();
-    existing_preferences->Merge(web_preferences_dict);
+    if (mate::ConvertFromV8(isolate, web_preferences.GetHandle(),
+                        &web_preferences_dict)) {
+      existing_preferences->web_preferences()->Clear();
+      existing_preferences->Merge(web_preferences_dict);
+    }
+
   } else {
     // Creates the WebContents used by BrowserWindow.
     web_contents = WebContents::Create(isolate, web_preferences);
