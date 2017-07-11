@@ -6,6 +6,7 @@ const {ipcRenderer, remote} = require('electron')
 const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} = remote
 const {closeWindow} = require('./window-helpers')
 
+const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
 describe('<webview> tag', function () {
@@ -976,6 +977,11 @@ describe('<webview> tag', function () {
     }
 
     it('emits when using navigator.getUserMedia api', function (done) {
+      if (isCI) {
+        done()
+        return
+      }
+
       webview.addEventListener('ipc-message', function (e) {
         assert.equal(e.channel, 'message')
         assert.deepEqual(e.args, ['PermissionDeniedError'])
