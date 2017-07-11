@@ -108,66 +108,6 @@ ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
     std::floor(event.delta_x), std::floor(event.delta_y));
 }
 
-#if !defined(OS_MACOSX)
-
-const int kResizeLockTimeoutMs = 67;
-
-class AtomResizeLock : public content::ResizeLock {
- public:
-  AtomResizeLock(OffScreenRenderWidgetHostView* host,
-                const gfx::Size new_size,
-                bool defer_compositor_lock)
-      : ResizeLock(new_size, defer_compositor_lock),
-        host_(host),
-        cancelled_(false),
-        weak_ptr_factory_(this) {
-    DCHECK(host_);
-    host_->HoldResize();
-
-    content::BrowserThread::PostDelayedTask(content::BrowserThread::UI,
-      FROM_HERE, base::Bind(&AtomResizeLock::CancelLock,
-        weak_ptr_factory_.GetWeakPtr()),
-        base::TimeDelta::FromMilliseconds(kResizeLockTimeoutMs));
-  }
-
-  ~AtomResizeLock() override {
-    CancelLock();
-  }
-
-  bool GrabDeferredLock() override {
-    return ResizeLock::GrabDeferredLock();
-  }
-
-  void UnlockCompositor() override {
-    ResizeLock::UnlockCompositor();
-    compositor_lock_ = NULL;
-  }
-
- protected:
-  void LockCompositor() override {
-    ResizeLock::LockCompositor();
-    compositor_lock_ = host_->GetCompositor()->GetCompositorLock();
-  }
-
-  void CancelLock() {
-    if (cancelled_)
-      return;
-    cancelled_ = true;
-    UnlockCompositor();
-    host_->ReleaseResize();
-  }
-
- private:
-  OffScreenRenderWidgetHostView* host_;
-  scoped_refptr<ui::CompositorLock> compositor_lock_;
-  bool cancelled_;
-  base::WeakPtrFactory<AtomResizeLock> weak_ptr_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN(AtomResizeLock);
-};
-
-#endif  // !defined(OS_MACOSX)
-
 }  // namespace
 
 class AtomCopyFrameGenerator {
