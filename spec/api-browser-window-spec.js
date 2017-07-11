@@ -1005,6 +1005,7 @@ describe('BrowserWindow module', function () {
             preload: preload
           }
         })
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
         let htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open')
         const pageUrl = 'file://' + htmlPath
         w.loadURL(pageUrl)
@@ -1035,6 +1036,7 @@ describe('BrowserWindow module', function () {
             preload: preload
           }
         })
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
         let htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open-external')
         const pageUrl = 'file://' + htmlPath
         let popupWindow
