@@ -27,9 +27,9 @@ void NodeDebugger::Start() {
   node::DebugOptions options;
   for (auto& arg : base::CommandLine::ForCurrentProcess()->argv()) {
 #if defined(OS_WIN)
-    options.ParseOption(base::UTF16ToUTF8(arg));
+    options.ParseOption("Electron", base::UTF16ToUTF8(arg));
 #else
-    options.ParseOption(arg);
+    options.ParseOption("Electron", arg);
 #endif
   }
 
