@@ -56,10 +56,10 @@
               'sysroot%': '<(source_root)/vendor/debian_jessie_arm64-sysroot',
             }],
             ['target_arch=="ia32"', {
-              'sysroot%': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_jessie_i386-sysroot',
             }],
             ['target_arch=="x64"', {
-              'sysroot%': '<(source_root)/vendor/debian_wheezy_amd64-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_jessie_amd64-sysroot',
             }],
           ],
         },
