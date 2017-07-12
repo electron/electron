@@ -154,7 +154,7 @@ content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
 content::ContentRendererClient*
     AtomMainDelegate::CreateContentRendererClient() {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-        switches::kEnableSandbox) || 
+        switches::kEnableSandbox) ||
       !base::CommandLine::ForCurrentProcess()->HasSwitch(
         ::switches::kNoSandbox)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);

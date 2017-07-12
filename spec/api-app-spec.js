@@ -567,7 +567,7 @@ describe('app module', function () {
     })
   })
 
-  describe.only('mixed sandbox option', function () {
+  describe('mixed sandbox option', function () {
     // FIXME Get these specs running on Linux
     if (process.platform === 'linux') return
 
