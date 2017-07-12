@@ -144,7 +144,7 @@ describe('node feature', function () {
         child.stderr.on('data', function (data) {
           output += data
 
-          if (output.trim().startsWith('Debugger listening on port')) {
+          if (output.trim().startsWith('Debugger listening on ws://')) {
             done()
           }
         })
