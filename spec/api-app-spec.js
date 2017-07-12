@@ -567,7 +567,7 @@ describe('app module', function () {
     })
   })
 
-  describe('mixed sandbox option', function () {
+  describe.only('mixed sandbox option', function () {
     // FIXME Get these specs running on Linux
     if (process.platform === 'linux') return
 
@@ -640,6 +640,9 @@ describe('app module', function () {
 
             assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
             assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+
+            assert.equal(argv.noSandboxDevtools, true)
+            assert.equal(argv.sandboxDevtools, true)
 
             done()
           })
