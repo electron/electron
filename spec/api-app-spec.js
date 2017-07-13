@@ -647,4 +647,12 @@ describe('app module', function () {
       })
     })
   })
+
+  describe('disableDomainBlockingFor3DAPIs() API', function () {
+    it('throws when called after app is ready', function () {
+      assert.throws(function () {
+        app.disableDomainBlockingFor3DAPIs()
+      }, /before app is ready/)
+    })
+  })
 })
