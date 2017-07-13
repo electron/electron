@@ -293,7 +293,6 @@
                   '<(libchromiumcontent_dir)/javascript.lib',
                   '<(libchromiumcontent_dir)/pdfwindow.lib',
                   '<(libchromiumcontent_dir)/fx_agg.lib',
-                  '<(libchromiumcontent_dir)/fx_freetype.lib',
                   '<(libchromiumcontent_dir)/fx_lcms2.lib',
                   '<(libchromiumcontent_dir)/fx_libopenjpeg.lib',
                   '<(libchromiumcontent_dir)/fx_zlib.lib',
