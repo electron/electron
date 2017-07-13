@@ -21,10 +21,7 @@
     "standard": "^5.4.1",
     "tape": "^3.0.1"
   },
-  "author": "Mathias Buus",
-  "license": "MIT",
   "directories": {
     "test": "test"
-  },
-  "keywords": ["electron"]
+  }
 }
