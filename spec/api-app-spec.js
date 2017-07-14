@@ -641,6 +641,9 @@ describe('app module', function () {
             assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
             assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
 
+            assert.equal(argv.noSandboxDevtools, true)
+            assert.equal(argv.sandboxDevtools, true)
+
             done()
           })
         })

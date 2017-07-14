@@ -34,13 +34,16 @@ app.once('ready', () => {
 
   const argv = {
     sandbox: null,
-    noSandbox: null
+    noSandbox: null,
+    sandboxDevtools: null,
+    noSandboxDevtools: null
   }
 
   let connected = false
 
   function finish () {
-    if (connected && argv.sandbox != null && argv.noSandbox != null) {
+    if (connected && argv.sandbox != null && argv.noSandbox != null &&
+        argv.noSandboxDevtools != null && argv.sandboxDevtools != null) {
       client.once('end', () => {
         app.exit(0)
       })
@@ -53,6 +56,18 @@ app.once('ready', () => {
     connected = true
     finish()
   })
+
+  noSandboxWindow.webContents.once('devtools-opened', () => {
+    argv.noSandboxDevtools = true
+    finish()
+  })
+  noSandboxWindow.webContents.openDevTools()
+
+  sandboxWindow.webContents.once('devtools-opened', () => {
+    argv.sandboxDevtools = true
+    finish()
+  })
+  sandboxWindow.webContents.openDevTools()
 
   ipcMain.on('argv', (event, value) => {
     if (event.sender === sandboxWindow.webContents) {
