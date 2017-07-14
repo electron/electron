@@ -8,13 +8,13 @@ Com isso em mente, estar ciente de que a exibição de conteúdo arbitrário de 
 
 ## Chromium Security Issues e Upgrades
 
-Enquanto Electron se esforça para suportar novas versões do Chromium, logo que possível, os desenvolvedores devem estar cientes de que a atualização é um empreendimento importante - envolvendo dezenas de mãos ou mesmo centenas de arquivos. Dados os recursos e contribuições disponíveis hoje, Electron muitas vezes não vai estar na mais recente versão do Chromium, ficando para trás, quer por dias ou semanas.
+Enquanto Electron se esforça para suportar novas versões do Chromium, logo que possível, os desenvolvedores devem estar cientes que a atualização é um empreendimento importante - envolvendo dezenas de mãos ou mesmo centenas de arquivos. Dados os recursos e contribuições disponíveis hoje, Electron muitas vezes não vai estar na mais recente versão do Chromium, ficando para trás, quer por dias ou semanas.
 
-Nós sentimos que nosso sistema atual de atualizar o componente do Chromium estabelece um equilíbrio adequado entre os recursos que temos disponíveis e as necessidades da maioria das aplicações contruídas em cima do framework. Nós definitivamente estamos interessados em saber mais sobre casos de uso específicos de pessoas que constroem coisas em cima do Electron. Pull requests e contribuições para apoiar este esforço são sempre muito bem-vindas.
+Nós sentimos que nosso sistema atual de atualizar o componente do Chromium estabelece um equilíbrio adequado entre os recursos que temos disponíveis e as necessidades da maioria das aplicações construídas em cima do framework. Nós definitivamente estamos interessados em saber mais sobre casos de uso específicos de pessoas que constroem coisas em cima do Electron. Pull requests e contribuições para apoiar este esforço são sempre muito bem-vindas.
 
-## Igonorando o Conselho Acima
+## Ignorando o Conselho Acima
 
-Um probema de segurança existe sempre que você receba um código a partir de um destino remoto e o executa locamente. Como exemplo, considere um site remoto que está sendo exibido dentro de uma janela do navegador. Se um atacante de alguma forma consegue mudar esse conteúdo (seja por atacar a fonte diretamente, ou por estar entre seu aplicativo e o destino real), eles serão capazes de executar código nativo na máquina do usuário.
+Um problema de segurança existe sempre que você receba um código a partir de um destino remoto e o executa localmente. Como exemplo, considere um site remoto que está sendo exibido dentro de uma janela do navegador. Se um atacante de alguma forma consegue mudar esse conteúdo (seja por atacar a fonte diretamente, ou por estar entre seu aplicativo e o destino real), eles serão capazes de executar código nativo na máquina do usuário.
 
 > :warning: Sobre nenhuma circunstância você deve carregar e executar código remoto com integração com Node. Em vez disso, use somente arquivos locais (embalados juntamente com a sua aplicação) para executar código Node. Para exibir o conteúdo remoto, use a tag `webview` e certifique-se de desativar o `nodeIntegration`.
 

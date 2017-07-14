@@ -7,7 +7,7 @@ alterações em seu código.
 ## Gerando um arquivo `asar`
 
 Um arquivo [asar][asar] é um formato parecido com tar ou zip bem simples que concatena arquivos
-em um único arquivo. O Electron pode ler arquivos arbitrários a partir dele sem descompacatar
+em um único arquivo. O Electron pode ler arquivos arbitrários a partir dele sem descompactar
 o arquivo inteiro.
 
 Passos para empacotar a sua aplicação em um arquivo `asar`:
@@ -133,7 +133,7 @@ APIs que requer descompactação extras são:
 
 ### Falsas informações de status do módulo `fs.stat`
 
-O objeto `Stats` retornado por` fs.stat` e outras funções relacionadas não são informações confiáveis, 
+O objeto `Stats` retornado por` fs.stat` e outras funções relacionadas não são informações confiáveis,
 você não deve confiar no objeto `Stats` exceto para obter o
 tamanho do arquivo e verificação de tipo de arquivo.
 

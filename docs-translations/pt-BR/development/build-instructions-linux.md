@@ -1,6 +1,6 @@
 # Instruções de Build (Linux)
 
-Siga as orientações abaixo pra fazer o build do Electron no Linux.
+Siga as orientações abaixo para fazer o build do Electron no Linux.
 
 ## Pré-requisitos
 
