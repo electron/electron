@@ -340,7 +340,6 @@ bool ScopedDisableResize::disable_resize_ = false;
   // titlebar is expected to be empty, but after entering fullscreen mode we
   // have to set one, because title bar is visible here.
   NSWindow* window = shell_->GetNativeWindow();
-
   if ((shell_->transparent() || !shell_->has_frame()) &&
       base::mac::IsAtLeastOS10_10() &&
       // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under

@@ -49,8 +49,7 @@ const char kUseContentSize[] = "useContentSize";
 const char kZoomToPageWidth[] = "zoomToPageWidth";
 
 // Whether always show title text in full screen is enabled.
-const char kFullscreenWindowTitle[] =
-"fullscreenWindowTitle";
+const char kFullscreenWindowTitle[] = "fullscreenWindowTitle";
 
 // The requested title bar style for the window
 const char kTitleBarStyle[] = "titleBarStyle";
