@@ -120,8 +120,13 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 
   std::vector<base::FilePath::StringType> extensions;
 
+  int valid_type_count = 0;
+  std::string description;
+
   for (const auto& accept_type : accept_types) {
     std::string ascii_type = base::UTF16ToASCII(accept_type);
+    auto old_extension_size = extensions.size();
+
     if (ascii_type[0] == '.') {
       // If the type starts with a period it is assumed to be a file extension,
       // like `.txt`, // so we just have to add it to the list.
@@ -130,9 +135,19 @@ file_dialog::Filters GetFileTypesFromAcceptType(
       // Skip the first character.
       extensions.push_back(extension.substr(1));
     } else {
-      // For MIME Type, `audio/*, vidio/*, image/*
+      if (ascii_type == "image/*")
+        description = "Image Files";
+      else if (ascii_type == "audio/*")
+        description = "Audio Files";
+      else if (ascii_type == "video/*")
+        description = "Video Files";
+
+      // For MIME Type, `audio/*, video/*, image/*
       net::GetExtensionsForMimeType(ascii_type, &extensions);
     }
+
+    if (extensions.size() > old_extension_size)
+      valid_type_count++;
   }
 
   // If no valid exntesion is added, return empty filters.
@@ -140,6 +155,13 @@ file_dialog::Filters GetFileTypesFromAcceptType(
     return filters;
 
   filters.push_back(file_dialog::Filter());
+
+  if (valid_type_count > 1 ||
+      (valid_type_count == 1 && description.empty() && extensions.size() > 1))
+    description = "Custom Files";
+
+  filters[0].first = description;
+
   for (const auto& extension : extensions) {
 #if defined(OS_WIN)
     filters[0].second.push_back(base::UTF16ToASCII(extension));
