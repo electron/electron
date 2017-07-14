@@ -615,6 +615,22 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('BrowserWindow.alwaysOnTop() resets level on minimize', function () {
+    if (process.platform !== 'darwin') {
+      return
+    }
+
+    it('resets the windows level on minimize', function () {
+      assert.equal(w.isAlwaysOnTop(), false)
+      w.setAlwaysOnTop(true, 'screen-saver')
+      assert.equal(w.isAlwaysOnTop(), true)
+      w.minimize()
+      assert.equal(w.isAlwaysOnTop(), false)
+      w.restore()
+      assert.equal(w.isAlwaysOnTop(), true)
+    })
+  })
+
   describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
     if (process.platform !== 'darwin') {
       it('is not available on non-macOS platforms', () => {
