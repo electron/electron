@@ -133,8 +133,7 @@ class NativeWindowMac : public NativeWindow,
 
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
 
-  bool always_show_title_text_in_full_screen() const
-  { return always_show_title_text_in_full_screen_; }
+  bool fullscreen_window_title() const { return fullscreen_window_title_; }
 
  protected:
   // Return a vector of non-draggable regions that fill a window of size
@@ -180,7 +179,7 @@ class NativeWindowMac : public NativeWindow,
 
   bool zoom_to_page_width_;
 
-  bool always_show_title_text_in_full_screen_;
+  bool fullscreen_window_title_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
 
