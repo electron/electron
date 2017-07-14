@@ -217,12 +217,14 @@ more details.
 
 ## Known issues
 
-#### `shell.openItem(filePath)` #9005
+### `shell.openItem(filePath)` 
 
 This will fail when the app is signed for distribution in the Mac App Store.
+Subscribe to [#9005](https://github.com/electron/electron/issues/9005) for updates.
 
-##### Workaround
-`shell.openExternal('file://' + filePath)` will open the file in the default application (as long as the extension is associated with an app).
+#### Workaround
+
+`shell.openExternal('file://' + filePath)` will open the file in the default application as long as the extension is associated with an installed app.
 
 ## Cryptographic Algorithms Used by Electron
 
