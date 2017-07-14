@@ -620,7 +620,7 @@ describe('BrowserWindow module', function () {
     })
   })
 
-  describe.only('BrowserWindow.alwaysOnTop() resets level on minimize', function () {
+  describe('BrowserWindow.alwaysOnTop() resets level on minimize', function () {
     if (process.platform !== 'darwin') {
       return
     }

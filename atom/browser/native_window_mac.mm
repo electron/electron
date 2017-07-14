@@ -86,6 +86,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   if ((self = [super init])) {
     shell_ = shell;
     is_zooming_ = false;
+    level_ = [shell_->GetNativeWindow() level];
   }
   return self;
 }
@@ -217,8 +218,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
-  NSWindow* window = shell_->GetNativeWindow();
-  [window setLevel:level_];
+  [shell_->GetNativeWindow() setLevel:level_];
   shell_->NotifyWindowRestore();
 }
 
