@@ -147,6 +147,12 @@ file_dialog::Filters GetFileTypesFromAcceptType(
     filters[0].second.push_back(extension);
 #endif
   }
+
+  // Allow all files when extension is specified.
+  filters.push_back(file_dialog::Filter());
+  filters.back().first = "All Files";
+  filters.back().second.push_back("*");
+
   return filters;
 }
 
