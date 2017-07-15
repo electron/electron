@@ -86,10 +86,11 @@ void OnPdfResourceIntercepted(
   // The URL passes the original pdf resource url, that will be requested
   // by the webui page.
   // chrome://pdf-viewer/index.html?src=https://somepage/123.pdf
-  GURL escaped_url(net::EscapeUrlEncodedData(original_url.spec(), true));
   content::NavigationController::LoadURLParams params(
-      GURL(base::StringPrintf("%sindex.html?%s=%s", kPdfViewerUIOrigin,
-                              kPdfPluginSrc, escaped_url.spec().c_str())));
+      GURL(base::StringPrintf("%sindex.html?%s=%s",
+                              kPdfViewerUIOrigin,
+                              kPdfPluginSrc,
+                              net::EscapeUrlEncodedData(original_url.spec(), false).c_str())));
   web_contents->GetController().LoadURLWithParams(params);
 }
 
