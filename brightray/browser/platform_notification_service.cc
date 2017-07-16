@@ -49,7 +49,8 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
 PlatformNotificationService::PlatformNotificationService(
     BrowserClient* browser_client)
     : browser_client_(browser_client),
-      render_process_id_(-1) {
+      render_process_id_(-1),
+      display_(true) {
 }
 
 PlatformNotificationService::~PlatformNotificationService() {}
@@ -80,7 +81,7 @@ void PlatformNotificationService::DisplayNotification(
     std::unique_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   auto presenter = browser_client_->GetNotificationPresenter();
-  if (!presenter)
+  if (!presenter || !display_)
     return;
   std::unique_ptr<NotificationDelegateAdapter> adapter(
       new NotificationDelegateAdapter(std::move(delegate)));
@@ -113,6 +114,10 @@ bool PlatformNotificationService::GetDisplayedNotifications(
     content::BrowserContext* browser_context,
     std::set<std::string>* displayed_notifications) {
   return false;
+}
+
+void PlatformNotificationService::SetDisplayNotifications(bool display) {
+    display_ = display;
 }
 
 }  // namespace brightray
