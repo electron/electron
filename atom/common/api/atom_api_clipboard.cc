@@ -165,14 +165,49 @@ gfx::Image Clipboard::ReadImage(mate::Arguments* args) {
   return gfx::Image::CreateFrom1xBitmap(bitmap);
 }
 
+// TODO(ferreus): Replace with sk_tools_utils::copy_to when it's available
+bool copy_to(SkBitmap* dst, SkColorType dstColorType, const SkBitmap& src) {
+  SkPixmap srcPM;
+  if (!src.peekPixels(&srcPM)) {
+    return false;
+  }
+  SkBitmap tmpDst;
+  SkImageInfo dstInfo = srcPM.info().makeColorType(dstColorType);
+  if (!tmpDst.setInfo(dstInfo)) {
+    return false;
+  }
+  // allocate colortable if srcConfig == kIndex8_Config
+  sk_sp<SkColorTable> ctable = nullptr;
+  if (dstColorType == kIndex_8_SkColorType) {
+    if (src.colorType() != kIndex_8_SkColorType) {
+      return false;
+    }
+    ctable = sk_ref_sp(srcPM.ctable());
+  }
+  if (!tmpDst.tryAllocPixels(ctable.get())) {
+    return false;
+  }
+  SkPixmap dstPM;
+  if (!tmpDst.peekPixels(&dstPM)) {
+    return false;
+  }
+  if (!srcPM.readPixels(dstPM)) {
+    return false;
+  }
+  dst->swap(tmpDst);
+  return true;
+}
+
 void Clipboard::WriteImage(const gfx::Image& image, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
-  SkBitmap bmp;
-  if (image.AsBitmap().deepCopyTo(&bmp)) {
-    writer.WriteImage(bmp);
-  } else {
-    writer.WriteImage(image.AsBitmap());
+
+  SkBitmap dst;
+  SkBitmap src = image.AsBitmap();
+  src.lockPixels();
+  if (copy_to(&dst, src.colorType(), src)) {
+    writer.WriteImage(dst);
   }
+  src.unlockPixels();
 }
 
 #if !defined(OS_MACOSX)
