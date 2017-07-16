@@ -1,7 +1,7 @@
 # Integração com o ambiente desktop
 
 Diferentes sistemas operacionais possuem diferentes formas de integrar
-aplicacões desktop em seus ambientes. Por exemplo, no Windows, as aplicações podem
+aplicações desktop em seus ambientes. Por exemplo, no Windows, as aplicações podem
 inserir atalhos no JumpList da barra de tarefas, no Mac, aplicações podem implementar um
 menu customizado na dock.
 

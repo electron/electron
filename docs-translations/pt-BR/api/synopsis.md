@@ -20,7 +20,7 @@ app.on('ready', () => {
 })
 ```
 
-O processo renderizador não é diferente de uma página web comum, exceto pela possiblidade de usar módulos node:
+O processo renderizador não é diferente de uma página web comum, exceto pela possibilidade de usar módulos node:
 
 ```html
 <!DOCTYPE html>

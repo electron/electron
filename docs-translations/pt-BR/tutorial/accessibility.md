@@ -28,6 +28,6 @@ Em Devtron há uma nova guia de acessibilidade que permitirá auditar uma págin
 
 ![devtron screenshot](https://cloud.githubusercontent.com/assets/1305617/17156618/9f9bcd72-533f-11e6-880d-389115f40a2a.png)
 
-Ambas as ferramentas estão usando a biblioteca [Accessibility Developer Tools](https://github.com/GoogleChrome/accessibility-developer-tools) construída pela Google for Chrome. Você pode aprender mais sobre as regras de auditoria da biblioteca de acessibilidade no [wiki do repositório](https://github.com/GoogleChrome/accessibility-developer-tools/wiki/Audit-Rules).
+Ambas as ferramentas estão usando a biblioteca [Accessibility Developer Tools](https://github.com/GoogleChrome/accessibility-developer-tools) construída pela Google para o Chrome. Você pode aprender mais sobre as regras de auditoria da biblioteca de acessibilidade no [wiki do repositório](https://github.com/GoogleChrome/accessibility-developer-tools/wiki/Audit-Rules).
 
 Se você souber de outras ferramentas de acessibilidade para o Electron, adicione-as à [documentação de acessibilidade](https://electron.atom.io/docs/tutorial/accessibility) através de um pull request.

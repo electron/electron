@@ -227,15 +227,15 @@ Acha uma janela de acordo com o seu ID.
 
 * `path` String
 
-Adiciona a extenção DevTools localizada no endereço `path`, e retorna o nome da extenção.
+Adiciona a extensão DevTools localizada no endereço `path`, e retorna o nome da extensão.
 
-A extenção será lembrada, então você só precisa chamar esta API uma vez, esta API não é para uso de programação.
+A extensão será lembrada, então você só precisa chamar esta API uma vez, esta API não é para uso de programação.
 
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
-Remove a extenção DevTools cujo nome é `name`.
+Remove a extensão DevTools cujo nome é `name`.
 
 ## Propriedades de Instância
 
