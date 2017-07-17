@@ -28,6 +28,7 @@ WebViewGuestDelegate::WebViewGuestDelegate()
       guest_host_(nullptr),
       auto_size_enabled_(false),
       is_full_page_plugin_(false),
+      attached_(false),
       api_web_contents_(nullptr) {}
 
 WebViewGuestDelegate::~WebViewGuestDelegate() {

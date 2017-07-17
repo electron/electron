@@ -48,7 +48,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   void SetSize(const SetSizeParams& params);
 
   // Return true if attached.
-  bool Attached() const { return attached_; }
+  bool IsAttached() const { return attached_; }
 
  protected:
   // content::WebContentsObserver:

@@ -993,7 +993,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     return;
   }
 
-  if (guest_delegate_ && !guest_delegate_->Attached()) {
+  if (guest_delegate_ && !guest_delegate_->IsAttached()) {
     return;
   }
 
