@@ -982,6 +982,15 @@ describe('chromium feature', function () {
       protocol: 'file',
       slashes: true
     })
+    const pdfSourceWithParams = url.format({
+      pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
+      query: {
+        a: 1,
+        b: 2
+      },
+      protocol: 'file',
+      slashes: true
+    })
 
     function createBrowserWindow ({plugins}) {
       w = new BrowserWindow({
@@ -1007,6 +1016,24 @@ describe('chromium feature', function () {
         assert.equal(w.webContents.getTitle(), 'cat.pdf')
       })
       w.webContents.loadURL(pdfSource)
+    })
+
+    it('opens a pdf link given params, the query string should be escaped', function (done) {
+      createBrowserWindow({plugins: true})
+      ipcMain.once('pdf-loaded', function (event, state) {
+        assert.equal(state, 'success')
+        done()
+      })
+      w.webContents.on('page-title-updated', function () {
+        const parsedURL = url.parse(w.webContents.getURL(), true)
+        assert.equal(parsedURL.protocol, 'chrome:')
+        assert.equal(parsedURL.hostname, 'pdf-viewer')
+        assert.equal(parsedURL.query.src, pdfSourceWithParams)
+        assert.equal(parsedURL.query.b, undefined)
+        assert.equal(parsedURL.search, `?src=${pdfSource}%3Fa%3D1%26b%3D2`)
+        assert.equal(w.webContents.getTitle(), 'cat.pdf')
+      })
+      w.webContents.loadURL(pdfSourceWithParams)
     })
 
     it('should download a pdf when plugins are disabled', function (done) {
