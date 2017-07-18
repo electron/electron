@@ -46,6 +46,8 @@ The `dialog` module has the following methods:
     * `noResolveAliases` - Disable the automatic alias (symlink) path
       resolution.  Selected aliases will now return the alias path instead of
       their target path. _macOS_
+    * `treatPackageAsDirectory` - Treats file package(for example Electron.app)
+      as a directory instead of file
   * `message` String (optional) _macOS_ - Message to display above input
     boxes.
 * `callback` Function (optional)
