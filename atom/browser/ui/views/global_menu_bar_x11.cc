@@ -168,11 +168,11 @@ void SetMenuItemID(DbusmenuMenuitem* item, int id) {
 std::string GetMenuModelStatus(AtomMenuModel* model) {
   std::string ret;
   for (int i = 0; i < model->GetItemCount(); ++i) {
-    int status = model->GetTypeAt(i) | (model->IsVisibleAt(i) << 30)
-                                     | (model->IsEnabledAt(i) << 29)
-                                     | (model->IsItemCheckedAt(i) << 28);
+    int status = model->GetTypeAt(i) | (model->IsVisibleAt(i) << 3)
+                                     | (model->IsEnabledAt(i) << 4)
+                                     | (model->IsItemCheckedAt(i) << 5);
     ret += base::StringPrintf(
-        "%s-%d\n", base::UTF16ToUTF8(model->GetLabelAt(i)).c_str(), status);
+        "%s-%X\n", base::UTF16ToUTF8(model->GetLabelAt(i)).c_str(), status);
   }
   return ret;
 }
