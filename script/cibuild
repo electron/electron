@@ -53,9 +53,6 @@ def main():
     execute(['sudo', 'apt-get', 'install'] + deps)
 
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
-
-
-  if PLATFORM == 'linux':
     os.environ['DISPLAY'] = ':99.0'
 
   # CI's npm is not reliable.
