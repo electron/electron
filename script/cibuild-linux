@@ -36,11 +36,7 @@ docker run \
   --env ELECTRON_S3_BUCKET="$BUILD_ELECTRON_ELECTRON_S3_BUCKET" \
   --env ELECTRON_S3_ACCESS_KEY="$BUILD_ELECTRON_ELECTRON_S3_ACCESS_KEY" \
   --env ELECTRON_S3_SECRET_KEY="$BUILD_ELECTRON_ELECTRON_S3_SECRET_KEY" \
-  --env DISPLAY="unix:99:0" \
   --user "$UID" \
   --volume "$PWD":/workspace/electron \
-  --volume /tmp/.X11-unix:/tmp/.X11-unix  \
-  --volume /dev/shm:/dev/shm \
   --workdir /workspace/electron \
-  --privileged \
   electron-linux script/cibuild
