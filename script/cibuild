@@ -32,9 +32,6 @@ LINUX_DEPS_ARM = [
 def main():
   os.environ['CI'] = '1'
 
-  if os.environ.has_key('JANKY_SHA1'):
-    setup_nodenv()
-
   # Ignore the CXX and CC env in CI.
   try:
     del os.environ['CC']
@@ -71,7 +68,7 @@ def main():
   os.environ['PATH'] = os.path.pathsep.join([node_bin_dir,
                                              os.environ.get('PATH', '')])
 
-  is_release = os.environ.has_key('ELECTRON_RELEASE')
+  is_release = os.environ.get('ELECTRON_RELEASE', '') == '1'
   args = ['--target_arch=' + target_arch]
   if not is_release:
     args += ['--dev']
@@ -109,16 +106,6 @@ def log_versions():
   sys.stderr.flush()
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
   subprocess.call([npm, '--version'])
-
-
-def setup_nodenv():
-  if os.path.isdir('/usr/local/share/nodenv'):
-    nodenv_root = os.path.join(os.environ['HOME'], '.nodenv')
-    os.environ['NODENV_ROOT'] = nodenv_root
-    os.environ['PATH'] = nodenv_root + '/bin:' + nodenv_root + '/shims:' + os.environ['PATH']
-    os.environ['NODENV_VERSION'] = 'v4.5.0'
-    subprocess.check_call(['/usr/local/share/nodenv/bin/nodenv', 'install', os.environ['NODENV_VERSION']])
-    subprocess.check_call(['/usr/local/share/nodenv/bin/nodenv', 'rehash'])
 
 
 if __name__ == '__main__':
