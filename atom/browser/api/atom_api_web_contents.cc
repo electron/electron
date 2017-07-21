@@ -1298,13 +1298,21 @@ bool WebContents::IsAudioMuted() {
 
 void WebContents::Print(mate::Arguments* args) {
   PrintSettings settings = { false, false, base::string16() };
-  if (args->Length() == 1 && !args->GetNext(&settings)) {
+  if (args->Length() >= 1 && !args->GetNext(&settings)) {
     args->ThrowError();
     return;
   }
-
-  printing::PrintViewManagerBasic::FromWebContents(web_contents())->
-      PrintNow(web_contents()->GetMainFrame(),
+  auto print_view_manager_basic_ptr =
+      printing::PrintViewManagerBasic::FromWebContents(web_contents());
+  if (args->Length() == 2) {
+    base::Callback<void(bool)> callback;
+    if (!args->GetNext(&callback)) {
+      args->ThrowError();
+      return;
+    }
+    print_view_manager_basic_ptr->SetCallback(callback);
+  }
+  print_view_manager_basic_ptr->PrintNow(web_contents()->GetMainFrame(),
                settings.silent,
                settings.print_background,
                settings.device_name);
