@@ -7,11 +7,6 @@ esac
 
 set +x
 
-export ELECTRON_GITHUB_TOKEN="$BUILD_ELECTRON_ELECTRON_GITHUB_TOKEN"
-export ELECTRON_S3_BUCKET="$BUILD_ELECTRON_ELECTRON_S3_BUCKET"
-export ELECTRON_S3_ACCESS_KEY="$BUILD_ELECTRON_ELECTRON_S3_ACCESS_KEY"
-export ELECTRON_S3_SECRET_KEY="$BUILD_ELECTRON_ELECTRON_S3_SECRET_KEY"
-
 if [[ -z "${ELECTRON_RELEASE}" ]]; then
   echo "Generating Linux $TARGET_ARCH debug build"
 else
@@ -20,4 +15,26 @@ fi
 
 set -x
 
-script/cibuild
+set -e
+set -o pipefail
+
+git submodule sync --recursive
+git submodule update --init --recursive
+
+docker build \
+  --force-rm \
+  --tag libchromiumcontent-linux \
+  ./vendor/libchromiumcontent
+
+docker run \
+  --rm \
+  --env TARGET_ARCH="$TARGET_ARCH" \
+  --env ELECTRON_RELEASE="$ELECTRON_RELEASE" \
+  --env ELECTRON_GITHUB_TOKEN="$BUILD_ELECTRON_ELECTRON_GITHUB_TOKEN" \
+  --env ELECTRON_S3_BUCKET="$BUILD_ELECTRON_ELECTRON_S3_BUCKET" \
+  --env ELECTRON_S3_ACCESS_KEY="$BUILD_ELECTRON_ELECTRON_S3_ACCESS_KEY" \
+  --env ELECTRON_S3_SECRET_KEY="$BUILD_ELECTRON_ELECTRON_S3_SECRET_KEY" \
+  --user "$UID" \
+  --volume "$PWD":/workspace/electron \
+  --workdir /workspace/electron \
+  libchromiumcontent-linux script/cibuild
