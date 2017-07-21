@@ -1822,6 +1822,9 @@ describe('BrowserWindow module', function () {
     // This test is too slow, only test it on CI.
     if (!isCI) return
 
+    // FIXME These specs crash on Linux when run in a docker container
+    if (isCI && process.platform === 'linux') return
+
     it('subscribes to frame updates', function (done) {
       let called = false
       w.loadURL('file://' + fixtures + '/api/frame-subscriber.html')
