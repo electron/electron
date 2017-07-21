@@ -54,8 +54,9 @@ def main():
 
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
-    os.environ['DISPLAY'] = ':99.0'
 
+  if PLATFORM == 'linux':
+    os.environ['DISPLAY'] = ':99.0'
 
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
