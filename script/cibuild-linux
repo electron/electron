@@ -26,6 +26,11 @@ docker build \
   --tag libchromiumcontent-linux \
   ./vendor/libchromiumcontent
 
+docker build \
+  --force-rm \
+  --tag electron-linux \
+  .
+
 docker run \
   --rm \
   --env TARGET_ARCH="$TARGET_ARCH" \
@@ -41,4 +46,4 @@ docker run \
   --volume /dev/shm:/dev/shm \
   --workdir /workspace/electron \
   --privileged \
-  libchromiumcontent-linux script/cibuild
+  electron-linux script/cibuild
