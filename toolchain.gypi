@@ -50,7 +50,7 @@
             ['target_arch=="arm"', {
               # sysroot needs to be an absolute path otherwise it generates
               # incorrect results when passed to pkg-config
-              'sysroot%': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_jessie_arm-sysroot',
             }],
             ['target_arch=="arm64"', {
               'sysroot%': '<(source_root)/vendor/debian_jessie_arm64-sysroot',
