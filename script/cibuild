@@ -52,7 +52,7 @@ def main():
       deps += LINUX_DEPS_ARM
     execute(['sudo', 'apt-get', 'install'] + deps)
 
-  if PLATFORM == 'linux':
+  if PLATFORM == 'linux' and target_arch == 'x64':
     os.environ['DISPLAY'] = ':99.0'
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
