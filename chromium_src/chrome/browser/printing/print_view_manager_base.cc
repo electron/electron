@@ -377,9 +377,12 @@ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
 }
 
 void PrintViewManagerBase::PrintingDone(bool success) {
-  if (!print_job_.get())
-    return;
-  Send(new PrintMsg_PrintingDone(routing_id(), success));
+  if (print_job_.get()) {
+    Send(new PrintMsg_PrintingDone(routing_id(), success));
+  }
+  if (!callback.is_null()) {
+    callback.Run(success && print_job_);
+  }
 }
 
 void PrintViewManagerBase::TerminatePrintJob(bool cancel) {
