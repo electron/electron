@@ -85,10 +85,7 @@ def main(args):
 def InstallDefaultSysrootForArch(target_arch):
   if target_arch not in VALID_ARCHS:
     raise Error('Unknown architecture: %s' % target_arch)
-  if target_arch in ['amd64', 'arm64', 'i386']:
-    InstallSysroot('Jessie', target_arch)
-  else:
-    InstallSysroot('Wheezy', target_arch)
+  InstallSysroot('Jessie', target_arch)
 
 
 def InstallSysroot(target_platform, target_arch):
