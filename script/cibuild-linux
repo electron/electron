@@ -5,16 +5,13 @@ case ${MESSAGE} in
   Bump* ) export ELECTRON_RELEASE=1 ;;
 esac
 
-set +x
-
 if [[ -z "${ELECTRON_RELEASE}" ]]; then
   echo "Generating Linux $TARGET_ARCH debug build"
 else
   echo "Generating Linux $TARGET_ARCH release build"
 fi
 
-set -x
-
+set +x
 set -e
 set -o pipefail
 
