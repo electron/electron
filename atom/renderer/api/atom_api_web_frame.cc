@@ -142,6 +142,7 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
   spell_check_client_.reset(new SpellCheckClient(
       language, auto_spell_correct_turned_on, args->isolate(), provider));
   web_frame_->View()->SetSpellCheckClient(spell_check_client_.get());
+  web_frame_->SetTextCheckClient(spell_check_client_.get());
 }
 
 void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
