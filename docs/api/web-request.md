@@ -39,9 +39,32 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback
 
 The following methods are available on instances of `WebRequest`:
 
-#### `webRequest.onBeforeRequest([filter, ]listener)`
+#### `webRequest.onBeforeRequest(listener)`
 
-* `filter` Object
+* `listener` Function
+  * `details` Object
+    * `id` Integer
+    * `url` String
+    * `method` String
+    * `resourceType` String
+    * `timestamp` Double
+    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `callback` Function
+    * `response` Object
+      * `cancel` Boolean (optional)
+      * `redirectURL` String (optional) - The original request is prevented from
+        being sent or completed and is instead redirected to the given URL.
+
+The `listener` will be called with `listener(details, callback)` when a request
+is about to occur.
+
+The `uploadData` is an array of `UploadData` objects.
+
+The `callback` has to be called with an `response` object.
+
+#### `webRequest.onBeforeRequest(filter, listener)`
+
+* `filter` Object (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the 
         requests that do not match the URL patterns.
 * `listener` Function
