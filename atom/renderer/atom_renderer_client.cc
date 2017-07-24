@@ -132,7 +132,12 @@ void AtomRendererClient::WillReleaseScriptContext(
     node_bindings_->set_uv_env(nullptr);
 
   // Destroy the node environment.
-  node::FreeEnvironment(env);
+  // This is disabled because pending async tasks may still use the environment
+  // and would cause crashes later. Node does not seem to clear all async tasks
+  // when the environment is destroyed.
+  // node::FreeEnvironment(env);
+
+  // AtomBindings is tracking node environments.
   atom_bindings_->EnvironmentDestroyed(env);
 }
 
