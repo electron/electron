@@ -38,6 +38,14 @@ view.webContents.loadURL('https://electron.atom.io')
 * `options` Object (optional)
   * `webPreferences` Object (optional) - See [BrowserWindow](browser-window.md).
 
+### Static Methods
+
+#### `BrowserView.fromId(id)`
+
+* `id` Integer
+
+Returns `BrowserView` - The view with the given `id`.
+
 ### Instance Properties
 
 Objects created with `new BrowserView` have the following properties:
