@@ -5,7 +5,7 @@ notifications:
 
 language: node_js
 dist: precise
-sudo: false
+sudo: required
 node_js:
   - "4"
 os:
