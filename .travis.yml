@@ -7,6 +7,8 @@ before_install:
   - export BOTO_CONFIG=/dev/null
   
 language: node_js
+dist: precise
+sudo: false
 node_js:
   - "4"
 os:
