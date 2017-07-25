@@ -26,6 +26,7 @@ _リンクになっていないリストは未翻訳のものです。_
 * [Pepper Flashプラグインを使用する](tutorial/using-pepper-flash-plugin.md)
 * [Widevine CDMプラグインを使用する](tutorial/using-widevine-cdm-plugin.md)
 * [継続的インテグレーションシステムによるテスト(Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
+* [キーボードショートカット](tutorial/keyboard-shortcuts.md)
 
 
 # チュートリアル
