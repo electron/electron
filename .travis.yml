@@ -5,10 +5,8 @@ notifications:
 
 before_install:
   - export BOTO_CONFIG=/dev/null
-  
+
 language: node_js
-dist: precise
-sudo: required
 node_js:
   - "4"
 os:
