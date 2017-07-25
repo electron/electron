@@ -38,5 +38,6 @@
 /vendor/download/
 /vendor/llvm-build/
 /vendor/llvm/
+/vendor/node/deps/node-inspect/.npmrc
 /vendor/npm/
 /vendor/python_26/
