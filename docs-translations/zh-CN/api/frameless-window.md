@@ -8,20 +8,34 @@
 为了创建一个无边框窗口，你需要设置[BrowserWindow](browser-window.md)的`frame`为`false`:
 
 
-
 ```javascript
-const BrowserWindow = require('electron').BrowserWindow
-var win = new BrowserWindow({ width: 800, height: 600, frame: false })
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({width: 800, height: 600, frame: false})
+win.show()
 ```
 
 ### macOS上的替代方案
 
-在macOS 10.10 Yosemite或者更新的版本中，有一个替代方案去生成一个无边框窗口。
+在 macOS 10.9 Mavericks 或者更新的版本中，有一个替代方案去生成一个无边框窗口。
 不同于设置`frame`为`false`会隐藏标题栏以及失去对窗口的控制，你可能想隐藏标题栏使你的页面内容显示在整个窗口上
 ，同时又想保持对窗口的控制("traffic lights")。你可以通过指定`titleBarStyle`这一新选项达到目标:
 
+#### `hidden` 隐藏
+
+隐藏窗口顶部的标题栏，但在顶部左侧仍然有控制窗口大小的按钮(“traffic lights”) 。
+
 ```javascript
-var win = new BrowserWindow({ 'titleBarStyle': 'hidden' })
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({titleBarStyle: 'hidden'})
+win.show()
+```
+#### `hidden-inset` 嵌入式隐藏
+隐藏窗口顶部的标题栏，控制窗口大小的按钮(“traffic lights”)会嵌入窗口边缘。
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({titleBarStyle: 'hidden-inset'})
+win.show()
 ```
 
 ## 透明窗口
@@ -29,7 +43,9 @@ var win = new BrowserWindow({ 'titleBarStyle': 'hidden' })
 通过设置`transparent` 选项为 `true`，你能使无边框窗口透明:
 
 ```javascript
-var win = new BrowserWindow({ transparent: true, frame: false })
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({transparent: true, frame: false})
+win.show()
 ```
 
 ### 限制
@@ -44,11 +60,25 @@ var win = new BrowserWindow({ transparent: true, frame: false })
   NVidia drivers](https://code.google.com/p/chromium/issues/detail?id=369209)造成的
 * 在Mac上，透明窗口的阴影不会显示出来.
 
+## 点击穿透窗口
+创建一个点击穿透的窗口，例如，创建一个忽略所有鼠标事件的窗口,您可以调用
+[win.setIgnoreMouseEvents(ignore)][ignore-mouse-events]
+API:
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow()
+win.setIgnoreMouseEvents(true)
+```
+
 ## 可拖动区域
 
 默认情况下，无边框窗口是不可拖动的。应用在CSS中设置`-webkit-app-region: drag`
 告诉Electron哪个区域是可拖动的(比如系统标准的标题栏)，应用也可以设置`-webkit-app-region: no-drag`
 在可拖动区域中排除不可拖动的区域。需要注意的是，目前只支持矩形区域。
+
+注: 当开发者工具打开的时候 `-webkit-app-region: drag` 存在问题，详情请看 [GitHub issue](https://github.com/electron/electron/issues/3647).
+
 
 为了让整个窗口可拖动，你可以在`body`的样式中添加`-webkit-app-region: drag`:
 
