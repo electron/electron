@@ -641,10 +641,21 @@ describe('app module', function () {
             assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
             assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
 
+            assert.equal(argv.noSandboxDevtools, true)
+            assert.equal(argv.sandboxDevtools, true)
+
             done()
           })
         })
       })
+    })
+  })
+
+  describe('disableDomainBlockingFor3DAPIs() API', function () {
+    it('throws when called after app is ready', function () {
+      assert.throws(function () {
+        app.disableDomainBlockingFor3DAPIs()
+      }, /before app is ready/)
     })
   })
 })

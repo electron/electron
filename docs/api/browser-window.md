@@ -225,6 +225,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       display unless hovered over in the top left of the window. These custom
       buttons prevent issues with mouse events that occur with the standard
       window toolbar buttons. **Note:** This option is currently experimental.
+  * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
+    tile bar in full screen mode on macOS for all `titleBarStyle` options.
+    Default is `false`.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
@@ -336,7 +339,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       'Electron Isolated Context' entry in the combo box at the top of the
       Console tab. **Note:** This option is currently experimental and may
       change or be removed in future Electron releases.
-    * `nativeWindowOpen` Boolean (optional) - Whether to use native `window.open()`. Defaults to `false`.
+    * `nativeWindowOpen` Boolean (optional) - Whether to use native
+      `window.open()`. Defaults to `false`.  **Note:** This option is currently
+      experimental.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to the value of the `nodeIntegration` option. **Note:** The
       `preload` script configured for the `<webview>` will have node integration

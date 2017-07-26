@@ -172,6 +172,7 @@ bool ScopedDisableResize::disable_resize_ = false;
  @private
   atom::NativeWindowMac* shell_;
   bool is_zooming_;
+  int level_;
 }
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
 @end
@@ -182,6 +183,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   if ((self = [super init])) {
     shell_ = shell;
     is_zooming_ = false;
+    level_ = [shell_->GetNativeWindow() level];
   }
   return self;
 }
@@ -301,11 +303,19 @@ bool ScopedDisableResize::disable_resize_ = false;
   shell_->NotifyWindowMoved();
 }
 
+- (void)windowWillMiniaturize:(NSNotification*)notification {
+  NSWindow* window = shell_->GetNativeWindow();
+  // store the current status window level to be restored in windowDidDeminiaturize
+  level_ = [window level];
+  [window setLevel:NSNormalWindowLevel];
+}
+
 - (void)windowDidMiniaturize:(NSNotification*)notification {
   shell_->NotifyWindowMinimize();
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
+  [shell_->GetNativeWindow() setLevel:level_];
   shell_->NotifyWindowRestore();
 }
 
@@ -345,7 +355,9 @@ bool ScopedDisableResize::disable_resize_ = false;
       base::mac::IsAtLeastOS10_10() &&
       // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
       // fullscreen mode.
-      shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
+      // Show title if fullscreen_window_title flag is set
+      (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
+       shell_->fullscreen_window_title())) {
     [window setTitleVisibility:NSWindowTitleVisible];
   }
 
@@ -369,7 +381,8 @@ bool ScopedDisableResize::disable_resize_ = false;
   NSWindow* window = shell_->GetNativeWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
       base::mac::IsAtLeastOS10_10() &&
-      shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET) {
+      (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
+       shell_->fullscreen_window_title())) {
     [window setTitleVisibility:NSWindowTitleHidden];
   }
 
@@ -804,6 +817,7 @@ NativeWindowMac::NativeWindowMac(
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),
+      fullscreen_window_title_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL) {
   int width = 800, height = 600;
@@ -948,6 +962,8 @@ NativeWindowMac::NativeWindowMac(
     SetSize(gfx::Size(width, height));
 
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
+
+  options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;

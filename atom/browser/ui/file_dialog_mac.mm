@@ -103,6 +103,8 @@ void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
     [dialog setShowsHiddenFiles:YES];
   if (properties & FILE_DIALOG_NO_RESOLVE_ALIASES)
     [dialog setResolvesAliases:NO];
+  if (properties & FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY)
+    [dialog setTreatsFilePackagesAsDirectories:YES];
 }
 
 // Run modal dialog with parent window and return user's choice.

@@ -134,7 +134,7 @@ that mode, the CLI will install and run your application in blank Windows Contai
 to determine what modifications your application is exactly doing to the operating
 system.
 
-Before running the CLI for the, you will have to setup the "Windows Desktop App
+Before running the CLI for the first time, you will have to setup the "Windows Desktop App
 Converter". This will take a few minutes, but don't worry - you only have to do
 this once. Download and Desktop App Converter from [here][app-converter].
 You will receive two files: `DesktopAppConverter.zip` and `BaseImage-14316.wim`.

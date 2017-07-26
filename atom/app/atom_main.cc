@@ -34,7 +34,7 @@
 
 namespace {
 
-const char* kRunAsNode = "ELECTRON_RUN_AS_NODE";
+const auto kRunAsNode = "ELECTRON_RUN_AS_NODE";
 
 bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
@@ -55,6 +55,30 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
   bool run_as_node = IsEnvSet(kRunAsNode);
+
+#ifdef _DEBUG
+  // Don't display assert dialog boxes in CI test runs
+  static const auto kCI = "ELECTRON_CI";
+  bool is_ci = IsEnvSet(kCI);
+  if (!is_ci) {
+    for (int i = 0; i < argc; ++i) {
+      if (!_wcsicmp(wargv[i], L"--ci")) {
+        is_ci = true;
+        _putenv_s(kCI, "1");  // set flag for child processes
+        break;
+      }
+    }
+  }
+  if (is_ci) {
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+
+    _set_error_mode(_OUT_TO_STDERR);
+  }
+#endif
 
   // Make sure the output is printed to console.
   if (run_as_node || !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE"))

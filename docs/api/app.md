@@ -772,6 +772,14 @@ Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
 
+### `app.disableDomainBlockingFor3DAPIs()`
+
+By default, Chromium disables 3D APIs (e.g. WebGL) until restart on a per
+domain basis if the GPU processes crashes too frequently. This function
+disables that behaviour.
+
+This method can only be called before app is ready.
+
 ### `app.getAppMemoryInfo()` _Deprecated_
 
 Returns [`ProcessMetric[]`](structures/process-metric.md):  Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
@@ -918,9 +926,6 @@ correctly.
 Enables mixed sandbox mode on the app.
 
 This method can only be called before app is ready.
-
-**Note:** The devtools will no longer open after mixed sandbox mode has been
-enabled (i.e `openDevTools` becomes a no-op).
 
 ### `app.dock.bounce([type])` _macOS_
 

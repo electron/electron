@@ -19,7 +19,7 @@ Les binaires précompilés `ia32` (`i686`) et `x64` (`amd64`) d'Electron sont co
 Ubuntu 12.04, le binaire `arm` est compilé à partir d'une version ARM v7 hard-float ABI et
 NEON pour Debian Wheezy.
 
-Pour que les binaires pré-compilés puissent s'exécuter sur une certaine distribution, il faut que cette distribution inclut les librairies dont Electron a besoin. C'est à dire que seulement Ubuntu 12.04 est guaranti de fonctionner, même si les plateformes suivantes sont aussi verifiées et capables d'exécuter les binaires pré-compilés d'Electron:
+Pour que les binaires pré-compilés puissent s'exécuter sur une certaine distribution, il faut que cette distribution inclut les librairies dont Electron a besoin. C'est à dire que seulement Ubuntu 12.04 est garanti de fonctionner, même si les plateformes suivantes sont aussi verifiées et capables d'exécuter les binaires pré-compilés d'Electron:
 
 * Ubuntu 12.04 et suivantes
 * Fedora 21

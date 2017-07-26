@@ -31,7 +31,7 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit()
 })
 
-// Epecifica o caminho do flash.
+// Especifica o caminho do flash.
 // No Windows, deve ser /path/to/pepflashplayer.dll
 // No macOS, /path/to/PepperFlashPlayer.plugin
 // No Linux, /path/to/libpepflashplayer.so

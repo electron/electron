@@ -264,6 +264,12 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })
 
+ipcMain.on('set-web-preferences-on-next-new-window', (event, id, key, value) => {
+  webContents.fromId(id).once('new-window', (event, url, frameName, disposition, options) => {
+    options.webPreferences[key] = value
+  })
+})
+
 ipcMain.on('prevent-next-will-attach-webview', (event) => {
   event.sender.once('will-attach-webview', event => event.preventDefault())
 })

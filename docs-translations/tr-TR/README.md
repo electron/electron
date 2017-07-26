@@ -58,7 +58,7 @@ Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
 * [webContents](https://github.com/electron/electron/tree/master/docs/api/web-contents.md)
 * [Tray](https://github.com/electron/electron/tree/master/docs/api/tray.md)
 
-### Renderer Process Modülelri (Web Page):
+### Renderer Process Modülleri (Web Page):
 
 * [desktopCapturer](https://github.com/electron/electron/tree/master/docs/api/desktop-capturer.md)
 * [ipcRenderer](https://github.com/electron/electron/tree/master/docs/api/ipc-renderer.md)

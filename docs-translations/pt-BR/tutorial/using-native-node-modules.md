@@ -17,7 +17,7 @@ página [releases](https://github.com/electron/electron/releases) ou usando
 por exemplo).
 
 Considere usar [NAN](https://github.com/nodejs/nan/) para seus próprios
-módulos, caso isso facilite o suporte da múltiplas versões do Node. Isso é
+módulos, caso isso facilite o suporte das múltiplas versões do Node. Isso é
 também de grande ajuda para fazer a portabilidade dos módulos antigos para as
 versões mais novas do Node, assim podendo trabalhar com o Electron.
 

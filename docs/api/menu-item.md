@@ -93,17 +93,17 @@ The following properties are available on instances of `MenuItem`:
 
 #### `menuItem.enabled`
 
-A Boolean indicating whether the item is enabled, this property can be
+A `Boolean` indicating whether the item is enabled, this property can be
 dynamically changed.
 
 #### `menuItem.visible`
 
-A Boolean indicating whether the item is visible, this property can be
+A `Boolean` indicating whether the item is visible, this property can be
 dynamically changed.
 
 #### `menuItem.checked`
 
-A Boolean indicating whether the item is checked, this property can be
+A `Boolean` indicating whether the item is checked, this property can be
 dynamically changed.
 
 A `checkbox` menu item will toggle the `checked` property on and off when
@@ -116,8 +116,8 @@ You can add a `click` function for additional behavior.
 
 #### `menuItem.label`
 
-A String representing the menu items visible label
+A `String` representing the menu items visible label
 
 #### `menuItem.click`
 
-A Function that is fired when the MenuItem receives a click event
+A `Function` that is fired when the MenuItem receives a click event

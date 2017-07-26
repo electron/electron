@@ -130,8 +130,8 @@ class AtomBrowserClient : public brightray::BrowserClient,
   bool RendererUsesNativeWindowOpen(int process_id);
   bool RendererDisablesPopups(int process_id);
 
-  // pending_render_process => current_render_process.
-  std::map<int, int> pending_processes_;
+  // pending_render_process => web contents.
+  std::map<int, content::WebContents*> pending_processes_;
 
   std::map<int, ProcessPreferences> process_preferences_;
   std::map<int, base::ProcessId> render_process_host_pids_;
