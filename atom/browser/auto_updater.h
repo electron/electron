@@ -22,8 +22,8 @@ class Delegate {
   // An error happened.
   virtual void OnError(const std::string& error) {}
 
-  virtual void OnError(const std::string& error,
-    const int code, const std::string& domain) {}
+  virtual void OnError(const std::string& error, const int code,
+                       const std::string& domain) {}
 
   // Checking to see if there is an update
   virtual void OnCheckingForUpdate() {}
