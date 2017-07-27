@@ -104,8 +104,7 @@ void AutoUpdater::CheckForUpdates() {
           delegate->OnUpdateNotAvailable();
         }
       } error:^(NSError *error) {
-        NSMutableString *failureString =
-          [[NSString stringWithFormat:@"%@:%@:%@", error.code, error.domain, error.localizedDescription] mutableCopy];
+        NSMutableString *failureString = [NSMutableString stringWithString:error.localizedDescription];
         if (error.localizedFailureReason) {
           [failureString appendString:@": "];
           [failureString appendString:error.localizedFailureReason];
