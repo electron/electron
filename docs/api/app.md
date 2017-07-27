@@ -799,13 +799,10 @@ Returns `String` - The type of the currently running activity.
 
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `userInfo` Object - App-specific state to store for use by another device.
-* `webpageURL` String (optional) - The webpage to load in a browser if no suitable app is
-  installed on the resuming device. The scheme must be `http` or `https`.
 
-Invalidates de current Handoff user activity.
+Invalidates the current Handoff user activity.
 
-### `app.updateCurrentActivity(type, userInfo[, webpageURL])` _macOS_
+### `app.updateCurrentActivity(type, userInfo)` _macOS_
 
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
