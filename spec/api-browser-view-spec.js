@@ -100,4 +100,14 @@ describe('BrowserView module', function () {
       assert.ok(!view.webContents.getOwnerBrowserWindow())
     })
   })
+
+  describe('BrowserView.fromId()', function () {
+    it('returns the view with given id', function () {
+      view = new BrowserView()
+      w.setBrowserView(view)
+      assert.notEqual(view.id, null)
+      let view2 = BrowserView.fromId(view.id)
+      assert.equal(view2.webContents.id, view.webContents.id)
+    })
+  })
 })

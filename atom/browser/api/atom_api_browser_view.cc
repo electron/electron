@@ -152,7 +152,8 @@ void Initialize(v8::Local<v8::Object> exports,
 
   mate::Dictionary browser_view(
       isolate, BrowserView::GetConstructor(isolate)->GetFunction());
-
+  browser_view.SetMethod("fromId",
+                          &mate::TrackableObject<BrowserView>::FromWeakMapID);
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserView", browser_view);
 }
