@@ -147,7 +147,7 @@ standalone, or can be embedded into any C++ application.
 
 ### webview
 
-`webview` tags are used to embed 'guest' content (such as external web pages) in
+`webview` elements are used to embed 'guest' content (such as external web pages) in
 your Electron app. They are similar to `iframe`s, but differ in that each
 webview runs in a separate process. It doesn't have the same
 permissions as your web page and all interactions between your app and

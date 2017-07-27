@@ -54,7 +54,7 @@ If you want to use Chrome's built-in `window.open()` implementation, set
 Native `window.open()` allows synchronous access to opened windows so it is
 convenient choice if you need to open a dialog or a preferences window.
 
-This option can also be set on `<webview>` tags as well:
+This option can also be set on `<webview>` elements as well:
 
 ```html
 <webview webpreferences="nativeWindowOpen=yes"></webview>
