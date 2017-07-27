@@ -815,7 +815,6 @@ NativeWindowMac::NativeWindowMac(
     : NativeWindow(web_contents, options, parent),
       browser_view_(nullptr),
       is_kiosk_(false),
-      was_fullscreen_(false),
       zoom_to_page_width_(false),
       fullscreen_window_title_(false),
       attention_request_id_(0),
@@ -1141,7 +1140,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
 }
 
 bool NativeWindowMac::IsFullscreen() const {
-  return [window_ styleMask] & NSFullScreenWindowMask;
+  return [window_ styleMask] & NSFullScreenWindowMask || is_kiosk_;
 }
 
 void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
@@ -1362,14 +1361,22 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableForceQuit +
         NSApplicationPresentationDisableSessionTermination +
         NSApplicationPresentationDisableHideApplication;
+
     [NSApp setPresentationOptions:options];
+
+    NSMutableDictionary *fullScreenOptions = [NSMutableDictionary dictionary];
+    [fullScreenOptions
+        setObject:[NSNumber numberWithBool:YES]
+        forKey:NSFullScreenModeAllScreens];
+
+    [[window_ contentView] enterFullScreenMode:[NSScreen mainScreen] withOptions:fullScreenOptions];
     is_kiosk_ = true;
-    was_fullscreen_ = IsFullscreen();
-    if (!was_fullscreen_) SetFullScreen(true);
+    this->NotifyWindowEnterFullScreen();
   } else if (!kiosk && is_kiosk_) {
-    is_kiosk_ = false;
-    if (!was_fullscreen_) SetFullScreen(false);
     [NSApp setPresentationOptions:kiosk_options_];
+    [[window_ contentView] exitFullScreenModeWithOptions:nil];
+    is_kiosk_ = false;
+    this->NotifyWindowLeaveFullScreen();
   }
 }
 

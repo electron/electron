@@ -175,8 +175,6 @@ class NativeWindowMac : public NativeWindow,
 
   bool is_kiosk_;
 
-  bool was_fullscreen_;
-
   bool zoom_to_page_width_;
 
   bool fullscreen_window_title_;
