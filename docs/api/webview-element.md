@@ -4,12 +4,12 @@
 
 Process: [Renderer](../tutorial/quick-start.md#renderer-process)
 
-Use the `webview` element to embed 'guest' content (such as web pages) in your
-Electron app. The guest content is contained within the `webview` container.
+Use the `<webview>` element to embed 'guest' content (such as web pages) in your
+Electron app. The guest content is contained within the `<webview>` container.
 An embedded page within your app controls how the guest content is laid out and
 rendered.
 
-Unlike an `iframe`, the `webview` runs in a separate process than your
+Unlike an `<iframe>`, the `<webview>` runs in a separate process than your
 app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content. **Note:** Most methods called on the
@@ -17,18 +17,18 @@ webview from the host page require a synchronous call to the main process.
 
 ## Example
 
-To embed a web page in your app, add the `webview` element to your app's embedder
+To embed a web page in your app, add the `<webview>` element to your app's embedder
 page (this is the app page that will display the guest content). In its simplest
-form, the `webview` element includes the `src` of the web page and css styles that
-control the appearance of the `webview` container:
+form, the `<webview>` element includes the `src` of the web page and css styles that
+control the appearance of the `<webview>` container:
 
 ```html
 <webview id="foo" src="https://www.github.com/" style="display:inline-flex; width:640px; height:480px"></webview>
 ```
 
 If you want to control the guest content in any way, you can write JavaScript
-that listens for `webview` events and responds to those events using the
-`webview` methods. Here's sample code with two event listeners: one that listens
+that listens for `<webview>` events and responds to those events using the
+`<webview>` methods. Here's sample code with two event listeners: one that listens
 for the web page to start loading, the other for the web page to stop loading,
 and displays a "loading..." message during the load time:
 
@@ -54,16 +54,16 @@ and displays a "loading..." message during the load time:
 
 ## CSS Styling Notes
 
-Please note that the `webview` element's style uses `display:flex;` internally to
-ensure the child `object` element fills the full height and width of its `webview`
+Please note that the `<webview>` element's style uses `display:flex;` internally to
+ensure the child `object` element fills the full height and width of its `<webview>`
 container when used with traditional and flexbox layouts (since v0.36.11). Please
 do not overwrite the default `display:flex;` CSS property, unless specifying
 `display:inline-flex;` for inline layout.
 
-`webview` has issues being hidden using the `hidden` attribute or using
+`<webview>` has issues being hidden using the `hidden` attribute or using
 `display: none;`. It can cause unusual rendering behaviour within its child
-`browserplugin` object and the web page is reloaded when the `webview` is
-un-hidden. The recommended approach is to hide the `webview` using
+`browserplugin` object and the web page is reloaded when the `<webview>` is
+un-hidden. The recommended approach is to hide the `<webview>` using
 `visibility: hidden`.
 
 ```html
@@ -81,7 +81,7 @@ un-hidden. The recommended approach is to hide the `webview` using
 
 ## Element Attributes
 
-The `webview` element has the following attributes:
+The `<webview>` element has the following attributes:
 
 ### `src`
 
@@ -103,10 +103,10 @@ The `src` attribute can also accept data URLs, such as
 <webview src="https://www.github.com/" autosize minwidth="576" minheight="432"></webview>
 ```
 
-When this attribute is present the `webview` container will automatically resize
+When this attribute is present the `<webview>` container will automatically resize
 within the bounds specified by the attributes `minwidth`, `minheight`,
-`maxwidth`, and `maxheight`. These constraints do not impact the `webview`
-unless `autosize` is enabled. When `autosize` is enabled, the `webview`
+`maxwidth`, and `maxheight`. These constraints do not impact the `<webview>`
+unless `autosize` is enabled. When `autosize` is enabled, the `<webview>`
 container size cannot be less than the minimum values or greater than the
 maximum.
 
@@ -116,7 +116,7 @@ maximum.
 <webview src="http://www.google.com/" nodeintegration></webview>
 ```
 
-When this attribute is present the guest page in `webview` will have node
+When this attribute is present the guest page in `<webview>` will have node
 integration and can use node APIs like `require` and `process` to access low
 level system resources. Node integration is disabled by default in the guest
 page.
@@ -127,7 +127,7 @@ page.
 <webview src="https://www.github.com/" plugins></webview>
 ```
 
-When this attribute is present the guest page in `webview` will be able to use
+When this attribute is present the guest page in `<webview>` will be able to use
 browser plugins. Plugins are disabled by default.
 
 ### `preload`
@@ -255,8 +255,8 @@ webContents when a new url is loaded.
 <webview src="https://www.github.com/" disableguestresize></webview>
 ```
 
-When this attribute is present the `webview` contents will be prevented from
-resizing when the `webview` element itself is resized.
+When this attribute is present the `<webview>` contents will be prevented from
+resizing when the `<webview>` element itself is resized.
 
 This can be used in combination with
 [`webContents.setSize`](web-contents.md#contentssetsizeoptions) to manually
@@ -289,7 +289,7 @@ win.on('resize', () => {
 
 ## Methods
 
-The `webview` element has the following methods:
+The `<webview>` element has the following methods:
 
 **Note:** The webview element must be loaded before using the methods.
 
@@ -532,7 +532,7 @@ obtained by subscribing to [`found-in-page`](webview-element.md#event-found-in-p
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
 
-Stops any `findInPage` request for the `webview` with the provided `action`.
+Stops any `findInPage` request for the `<webview>` with the provided `action`.
 
 ### `<webview>.print([options])`
 
@@ -542,7 +542,7 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
     the web page. Default is `false`.
   * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
 
-Prints `webview`'s web page. Same as `webContents.print([options])`.
+Prints `<webview>`'s web page. Same as `webContents.print([options])`.
 
 ### `<webview>.printToPDF(options, callback)`
 
@@ -559,7 +559,7 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
   * `error` Error
   * `data` Buffer
 
-Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options, callback)`.
+Prints `<webview>`'s web page as PDF, Same as `webContents.printToPDF(options, callback)`.
 
 ### `<webview>.capturePage([rect, ]callback)`
 
@@ -567,7 +567,7 @@ Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options, cal
 * `callback` Function
   * `image` [NativeImage](native-image.md)
 
-Captures a snapshot of the `webview`'s page. Same as `webContents.capturePage([rect, ]callback)`.
+Captures a snapshot of the `<webview>`'s page. Same as `webContents.capturePage([rect, ]callback)`.
 
 ### `<webview>.send(channel[, arg1][, arg2][, ...])`
 
@@ -612,11 +612,11 @@ Shows pop-up dictionary that searches the selected word on the page.
 ### `<webview>.getWebContents()`
 
 Returns [`WebContents`](web-contents.md) - The web contents associated with
-this `webview`.
+this `<webview>`.
 
 ## DOM events
 
-The following DOM events are available to the `webview` element:
+The following DOM events are available to the `<webview>` element:
 
 ### Event: 'load-commit'
 
@@ -837,7 +837,7 @@ are clicked or when the DOM `hashchange` event is triggered.
 
 Fired when the guest page attempts to close itself.
 
-The following example code navigates the `webview` to `about:blank` when the
+The following example code navigates the `<webview>` to `about:blank` when the
 guest attempts to close itself.
 
 ```javascript

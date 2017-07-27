@@ -20,9 +20,9 @@ majority of Electron users.
 
 ### CRT
 
-The C Run-time Library (CRT) is the part of the C++ Standard Library that 
-incorporates the ISO C99 standard library. The Visual C++ libraries that 
-implement the CRT support native code development, and both mixed native and 
+The C Run-time Library (CRT) is the part of the C++ Standard Library that
+incorporates the ISO C99 standard library. The Visual C++ libraries that
+implement the CRT support native code development, and both mixed native and
 managed code, and pure managed code for .NET development.
 
 ### DMG
@@ -33,8 +33,8 @@ supports `dmg` as a build target.
 
 ### IME
 
-Input Method Editor. A program that allows users to enter characters and 
-symbols not found on their keyboard. For example, this allows users of Latin 
+Input Method Editor. A program that allows users to enter characters and
+symbols not found on their keyboard. For example, this allows users of Latin
 keyboards to input Chinese, Japanese, Korean and Indic characters.
 
 ### IPC
@@ -147,8 +147,8 @@ standalone, or can be embedded into any C++ application.
 
 ### webview
 
-`webview` elements are used to embed 'guest' content (such as external web pages) in
-your Electron app. They are similar to `iframe`s, but differ in that each
+`<webview>` elements are used to embed 'guest' content (such as external web pages) in
+your Electron app. They are similar to `<iframe>`s, but differ in that each
 webview runs in a separate process. It doesn't have the same
 permissions as your web page and all interactions between your app and
 embedded content will be asynchronous. This keeps your app safe from the

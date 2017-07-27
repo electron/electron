@@ -52,7 +52,7 @@ machine.
 > :warning: Under no circumstances should you load and execute remote code with
 Node integration enabled. Instead, use only local files (packaged together with
 your application) to execute Node code. To display remote content, use the
-`webview` element and make sure to disable the `nodeIntegration`.
+`<webview>` element and make sure to disable the `nodeIntegration`.
 
 #### Checklist
 
