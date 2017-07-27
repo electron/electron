@@ -527,7 +527,7 @@ obtained by subscribing to [`found-in-page`](webview-element.md#event-found-in-p
 ### `<webview>.stopFindInPage(action)`
 
 * `action` String - Specifies the action to take place when ending
-  [`<webview>.findInPage`](webview-element.md#webviewelementfindinpage) request.
+  [`<webview>.findInPage`](webview-element.md#webviewfindinpagetext-options) request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
@@ -751,7 +751,7 @@ Returns:
   * `finalUpdate` Boolean
 
 Fired when a result is available for
-[`webview.findInPage`](webview-element.md#webviewelementfindinpage) request.
+[`webview.findInPage`](webview-element.md#webviewfindinpagetext-options) request.
 
 ```javascript
 const webview = document.querySelector('webview')
