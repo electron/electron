@@ -927,6 +927,28 @@ Enables mixed sandbox mode on the app.
 
 This method can only be called before app is ready.
 
+### `app.isInApplicationsFolder()` _macOS_
+
+Returns `Boolean` - Whether the application is currently running from the
+systems Application folder.  Use in combination with `app.moveToApplicationsFolder()`
+
+### `app.moveToApplicationsFolder()` _macOS_
+
+Returns `Boolean` - Whether the move was successful.  Please note that if
+the move was successful your application will be quit and relaunched
+automatically in it's new location so you should never see a `true` value
+here as the app will have already quit.
+
+This method does not have any dialog or confirmation by default, if you want
+to ask your user if you should make this move then you should use the `dialog`
+API's.
+
+**NOTE:** This method throws errors if anything other than the user causes the
+move to fail.  For instance if the user cancels the authorization dialog this
+method returns false.  If we fail to perform the copy then this method will
+throw an error.  The message in the error should be informative and tell
+you exactly what went wrong
+
 ### `app.dock.bounce([type])` _macOS_
 
 * `type` String (optional) - Can be `critical` or `informational`. The default is

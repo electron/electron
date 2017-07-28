@@ -183,6 +183,11 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Value> GetGPUFeatureStatus(v8::Isolate* isolate);
   void EnableMixedSandbox(mate::Arguments* args);
 
+#if defined(OS_MACOSX)
+  bool MoveToApplicationsFolder(mate::Arguments* args);
+  bool IsInApplicationsFolder();
+#endif
+
 #if defined(OS_WIN)
   // Get the current Jump List settings.
   v8::Local<v8::Value> GetJumpListSettings();

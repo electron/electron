@@ -114,6 +114,12 @@ describe('app module', function () {
     })
   })
 
+  describe('app.isInApplicationsFolder()', function () {
+    it('should be false during tests', function () {
+      assert.equal(app.isInApplicationsFolder(), false)
+    })
+  })
+
   describe('app.exit(exitCode)', function () {
     var appProcess = null
 
