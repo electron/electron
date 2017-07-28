@@ -17,6 +17,7 @@ const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 describe('BrowserWindow module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
+  var ws = null
   var server, postData
 
   before(function (done) {
@@ -2643,7 +2644,7 @@ describe('BrowserWindow module', function () {
     })
   })
 
-  describe('contextIsolation option', () => {
+  describe('contextIsolation option with and without sandbox option', () => {
     const expectedContextData = {
       preloadContext: {
         preloadProperty: 'number',
@@ -2674,6 +2675,19 @@ describe('BrowserWindow module', function () {
           preload: path.join(fixtures, 'api', 'isolated-preload.js')
         }
       })
+      if (ws != null) ws.destroy()
+      ws = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+        }
+      })
+    })
+
+    afterEach(() => {
+      if (ws != null) ws.destroy()
     })
 
     it('separates the page context from the Electron/preload context', (done) => {
@@ -2701,6 +2715,25 @@ describe('BrowserWindow module', function () {
         done()
       })
       w.loadURL('file://' + fixtures + '/pages/window-open.html')
+    })
+
+    it('separates the page context from the Electron/preload context with sandbox on', (done) => {
+      ipcMain.once('isolated-sandbox-world', (event, data) => {
+        assert.deepEqual(data, expectedContextData)
+        done()
+      })
+      w.loadURL('file://' + fixtures + '/api/isolated.html')
+    })
+
+    it('recreates the contexts on reload with sandbox on', (done) => {
+      w.webContents.once('did-finish-load', () => {
+        ipcMain.once('isolated-sandbox-world', (event, data) => {
+          assert.deepEqual(data, expectedContextData)
+          done()
+        })
+        w.webContents.reload()
+      })
+      w.loadURL('file://' + fixtures + '/api/isolated.html')
     })
   })
 

@@ -20,10 +20,6 @@ class AtomRendererClient : public RendererClientBase {
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
-  // Get the context that the Electron API is running in.
-  v8::Local<v8::Context> GetContext(
-      blink::WebFrame* frame, v8::Isolate* isolate);
-
   // atom::RendererClientBase:
   void DidCreateScriptContext(
       v8::Handle<v8::Context> context,
@@ -32,7 +28,6 @@ class AtomRendererClient : public RendererClientBase {
       v8::Handle<v8::Context> context,
       content::RenderFrame* render_frame) override;
   void SetupMainWorldOverrides(v8::Handle<v8::Context> context) override;
-  bool isolated_world() override { return isolated_world_; }
 
  private:
   enum NodeIntegration {
@@ -64,7 +59,6 @@ class AtomRendererClient : public RendererClientBase {
 
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<AtomBindings> atom_bindings_;
-  bool isolated_world_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };
