@@ -935,12 +935,11 @@ systems Application folder.  Use in combination with `app.moveToApplicationsFold
 ### `app.moveToApplicationsFolder()` _macOS_
 
 Returns `Boolean` - Whether the move was successful.  Please note that if
-the move was successful your application will be quit and relaunched
-automatically in it's new location.
+the move is successful your application will quit and relaunch.
 
-This method does not have any dialog or confirmation by default, if you want
-to ask your user if you should make this move then you should use the `dialog`
-API's.
+No confirmation dialog will be presented by default, if you wish to allow
+the user to confirm the operation you may do so using the
+[`dialog`](dialog.md) API.
 
 **NOTE:** This method throws errors if anything other than the user causes the
 move to fail.  For instance if the user cancels the authorization dialog this

@@ -67,6 +67,7 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
         // Give the running app focus and terminate myself
         [[NSTask launchedTaskWithLaunchPath:@"/usr/bin/open" arguments:[NSArray arrayWithObject:destinationPath]] waitUntilExit];
         atom::Browser::Get()->Quit();
+        return true;
       } else {
         if (!Trash([applicationsDirectory stringByAppendingPathComponent:bundleName])) {
           args->ThrowError("Failed to delete existing application");
