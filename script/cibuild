@@ -18,14 +18,20 @@ LINUX_DEPS = [
   'libnotify-dev',
   'libnss3-dev',
   'libxtst-dev',
+]
+
+LINUX_DEPS_NO_ARM = [
   'gcc-multilib',
   'g++-multilib',
 ]
 
 LINUX_DEPS_ARM = [
-  'libc6-dev-armhf-cross',
-  'linux-libc-dev-armhf-cross',
-  'g++-arm-linux-gnueabihf',
+   'binutils-aarch64-linux-gnu',
+   'libc6-dev-armhf-cross',
+   'linux-libc-dev-armhf-cross',
+   'g++-arm-linux-gnueabihf',
+   'g++-4.8-multilib-arm-linux-gnueabihf',
+   'gcc-4.8-multilib-arm-linux-gnueabihf',
 ]
 
 
@@ -53,6 +59,8 @@ def main():
     deps = LINUX_DEPS
     if target_arch == 'arm':
       deps += LINUX_DEPS_ARM
+    else:
+      deps += LINUX_DEPS_NO_ARM
     execute(['sudo', 'apt-get', 'install'] + deps)
 
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
