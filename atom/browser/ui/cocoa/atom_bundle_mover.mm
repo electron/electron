@@ -11,6 +11,8 @@
 #import <sys/param.h>
 #import <sys/mount.h>
 
+#import "atom/browser/browser.h"
+
 namespace atom {
 
 namespace ui {
@@ -64,7 +66,7 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
       if (IsApplicationAtPathRunning(destinationPath)) {
         // Give the running app focus and terminate myself
         [[NSTask launchedTaskWithLaunchPath:@"/usr/bin/open" arguments:[NSArray arrayWithObject:destinationPath]] waitUntilExit];
-        exit(0);
+        atom::Browser::Get()->Quit();
       } else {
         if (!Trash([applicationsDirectory stringByAppendingPathComponent:bundleName])) {
           args->ThrowError("Failed to delete existing application");
@@ -97,7 +99,7 @@ bool AtomBundleMover::Move(mate::Arguments* args) {
     [NSTask launchedTaskWithLaunchPath:@"/bin/sh" arguments:[NSArray arrayWithObjects:@"-c", script, nil]];
   }
 
-  exit(0);
+  atom::Browser::Get()->Quit();
 
   return true;
 }

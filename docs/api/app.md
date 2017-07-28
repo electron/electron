@@ -936,8 +936,7 @@ systems Application folder.  Use in combination with `app.moveToApplicationsFold
 
 Returns `Boolean` - Whether the move was successful.  Please note that if
 the move was successful your application will be quit and relaunched
-automatically in it's new location so you should never see a `true` value
-here as the app will have already quit.
+automatically in it's new location.
 
 This method does not have any dialog or confirmation by default, if you want
 to ask your user if you should make this move then you should use the `dialog`
