@@ -9,7 +9,6 @@
 #include "brightray/browser/win/windows_toast_notification.h"
 
 #include <shlobj.h>
-#include <sstream>
 #include <vector>
 
 #include "base/strings/utf_string_conversions.h"
@@ -297,10 +296,8 @@ bool WindowsToastNotification::AddActions(IXmlDocument* doc,
       if (FAILED(AddAttribute(doc, attributes, L"content", action.text)))
         return false;
 
-      std::ostringstream index;
-      index << i;
       base::string16 launchString = base::UTF8ToUTF16(
-        base::UTF16ToUTF8(action._protocol) + "/button?id=" + index.str());
+        base::UTF16ToUTF8(action._protocol) + "/button?id=" + std::to_string(i));
 
       if (FAILED(AddAttribute(doc, attributes, L"arguments", launchString)))
         return false;
