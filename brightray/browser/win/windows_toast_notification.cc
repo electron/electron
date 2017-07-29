@@ -94,7 +94,8 @@ void WindowsToastNotification::Show(const NotificationOptions& options) {
 
   ComPtr<IXmlDocument> toast_xml;
   if (FAILED(GetToastXml(toast_manager_.Get(), options.title, options.msg,
-                         icon_path, options.silent, options.actions, &toast_xml))) {
+                         icon_path, options.silent, options.actions,
+                         &toast_xml))) {
     NotificationFailed();
     return;
   }
@@ -188,7 +189,10 @@ bool WindowsToastNotification::GetToastXml(
   return true;
 }
 
-bool WindowsToastNotification::AddAttribute(IXmlDocument* doc, ComPtr<IXmlNamedNodeMap> attributes, std::wstring name, std::wstring value) {
+bool WindowsToastNotification::AddAttribute(IXmlDocument* doc,
+                                            ComPtr<IXmlNamedNodeMap> attrs,
+                                            std::wstring name,
+                                            std::wstring value) {
   // Create attribute
   ComPtr<IXmlAttribute> attribute;
   ScopedHString attr_str(name);
@@ -198,7 +202,7 @@ bool WindowsToastNotification::AddAttribute(IXmlDocument* doc, ComPtr<IXmlNamedN
   ComPtr<IXmlNode> attribute_node;
   if (FAILED(attribute.As(&attribute_node)))
     return false;
-  
+
   // Set content attribute to value
   ScopedHString attr_value(value);
   if (!attr_value.success())
@@ -218,7 +222,7 @@ bool WindowsToastNotification::AddAttribute(IXmlDocument* doc, ComPtr<IXmlNamedN
     return false;
 
   ComPtr<IXmlNode> attribute_pnode;
-  if (FAILED(attributes.Get()->SetNamedItem(attribute_node.Get(),
+  if (FAILED(attrs.Get()->SetNamedItem(attribute_node.Get(),
                                                   &attribute_pnode))) {
     return false;
   }
@@ -226,7 +230,9 @@ bool WindowsToastNotification::AddAttribute(IXmlDocument* doc, ComPtr<IXmlNamedN
   return true;
 }
 
-bool WindowsToastNotification::AddActions(IXmlDocument* doc, const std::vector<NotificationAction> actions) {
+bool WindowsToastNotification::AddActions(IXmlDocument* doc,
+                                          const std::vector<NotificationAction>
+                                            actions) {
   int buttons = 0;
   base::string16 buttonType = base::UTF8ToUTF16("button");
   for (auto action : actions) {
@@ -274,13 +280,13 @@ bool WindowsToastNotification::AddActions(IXmlDocument* doc, const std::vector<N
       if (FAILED(doc->CreateElement(action_str, &action_element)))
         return false;
 
-      ComPtr<IXmlNode> action_node_tmp;
-      if (FAILED(action_element.As(&action_node_tmp)))
+      ComPtr<IXmlNode> action_tmp;
+      if (FAILED(action_element.As(&action_tmp)))
         return false;
 
       // Append action node to actions xml
       ComPtr<IXmlNode> action_node;
-      if (FAILED(actions_node->AppendChild(action_node_tmp.Get(), &action_node)))
+      if (FAILED(actions_node->AppendChild(action_tmp.Get(), &action_node)))
         return false;
 
       // Get attributes
@@ -293,14 +299,17 @@ bool WindowsToastNotification::AddActions(IXmlDocument* doc, const std::vector<N
 
       std::ostringstream index;
       index << i;
-      if (FAILED(AddAttribute(doc, attributes, L"arguments", base::UTF8ToUTF16(base::UTF16ToUTF8(action._protocol) + "/button?id=" + index.str()))))
+      base::string16 launchString = base::UTF8ToUTF16(
+        base::UTF16ToUTF8(action._protocol) + "/button?id=" + index.str());
+
+      if (FAILED(AddAttribute(doc, attributes, L"arguments", launchString)))
         return false;
 
       if (FAILED(AddAttribute(doc, attributes, L"activationType", L"protocol")))
         return false;
     }
   }
-  
+
   return true;
 }
 
