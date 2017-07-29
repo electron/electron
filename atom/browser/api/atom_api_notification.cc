@@ -211,7 +211,8 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("show", &Notification::Show)
-      .SetMethod("_setWindowsProtocolHandler", &Notification::SetWindowsProtocolHandler)
+      .SetMethod("_setWindowsProtocolHandler",
+                 &Notification::SetWindowsProtocolHandler)
       .SetMethod("_emitAction", &Notification::NotificationAction)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::GetSubtitle,
