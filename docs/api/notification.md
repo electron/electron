@@ -91,7 +91,7 @@ Returns:
 
 Emitted when the user clicks the "Reply" button on a notification with `hasReply: true`.
 
-#### Event: 'action' _macOS_
+#### Event: 'action' _macOS_ _Windows_
 
 Returns:
 
