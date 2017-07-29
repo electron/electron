@@ -9,6 +9,7 @@
 #include "brightray/browser/win/windows_toast_notification.h"
 
 #include <shlobj.h>
+#include <sstream>
 #include <vector>
 
 #include "base/strings/utf_string_conversions.h"
@@ -93,7 +94,7 @@ void WindowsToastNotification::Show(const NotificationOptions& options) {
 
   ComPtr<IXmlDocument> toast_xml;
   if (FAILED(GetToastXml(toast_manager_.Get(), options.title, options.msg,
-                         icon_path, options.silent, &toast_xml))) {
+                         icon_path, options.silent, options.actions, &toast_xml))) {
     NotificationFailed();
     return;
   }
@@ -144,6 +145,7 @@ bool WindowsToastNotification::GetToastXml(
     const std::wstring& msg,
     const std::wstring& icon_path,
     bool silent,
+    const std::vector<NotificationAction> actions,
     IXmlDocument** toast_xml) {
   ABI::Windows::UI::Notifications::ToastTemplateType template_type;
   if (title.empty() || msg.empty()) {
@@ -180,6 +182,125 @@ bool WindowsToastNotification::GetToastXml(
   if (!icon_path.empty())
     return SetXmlImage(*toast_xml, icon_path);
 
+  if (FAILED(AddActions(*toast_xml, actions)))
+    return false;
+
+  return true;
+}
+
+bool WindowsToastNotification::AddAttribute(IXmlDocument* doc, ComPtr<IXmlNamedNodeMap> attributes, std::wstring name, std::wstring value) {
+  // Create attribute
+  ComPtr<IXmlAttribute> attribute;
+  ScopedHString attr_str(name);
+  if (FAILED(doc->CreateAttribute(attr_str, &attribute)))
+    return false;
+
+  ComPtr<IXmlNode> attribute_node;
+  if (FAILED(attribute.As(&attribute_node)))
+    return false;
+  
+  // Set content attribute to value
+  ScopedHString attr_value(value);
+  if (!attr_value.success())
+    return false;
+
+  ComPtr<IXmlText> attr_text;
+  if (FAILED(doc->CreateTextNode(attr_value, &attr_text)))
+    return false;
+
+  ComPtr<IXmlNode> attr_node;
+  if (FAILED(attr_text.As(&attr_node)))
+    return false;
+
+  ComPtr<IXmlNode> child_node;
+  if (FAILED(
+          attribute_node->AppendChild(attr_node.Get(), &child_node)))
+    return false;
+
+  ComPtr<IXmlNode> attribute_pnode;
+  if (FAILED(attributes.Get()->SetNamedItem(attribute_node.Get(),
+                                                  &attribute_pnode))) {
+    return false;
+  }
+
+  return true;
+}
+
+bool WindowsToastNotification::AddActions(IXmlDocument* doc, const std::vector<NotificationAction> actions) {
+  int buttons = 0;
+  base::string16 buttonType = base::UTF8ToUTF16("button");
+  for (auto action : actions) {
+    if (action.type == buttonType) {
+      buttons++;
+    }
+  }
+  // If there are no buttons, let's stop right here
+  if (buttons == 0)
+    return true;
+
+  // Create the "actions" element container
+  ScopedHString tag(L"toast");
+  if (!tag.success())
+    return false;
+
+  ComPtr<IXmlNodeList> node_list;
+  if (FAILED(doc->GetElementsByTagName(tag, &node_list)))
+    return false;
+
+  ComPtr<IXmlNode> root;
+  if (FAILED(node_list->Item(0, &root)))
+    return false;
+
+  ComPtr<IXmlElement> actions_element;
+  ScopedHString actions_str(L"actions");
+  if (FAILED(doc->CreateElement(actions_str, &actions_element)))
+    return false;
+
+  ComPtr<IXmlNode> actions_node_tmp;
+  if (FAILED(actions_element.As(&actions_node_tmp)))
+    return false;
+
+  // Append actions node to toast xml
+  ComPtr<IXmlNode> actions_node;
+  if (FAILED(root->AppendChild(actions_node_tmp.Get(), &actions_node)))
+    return false;
+
+  for (int i = 0; i < actions.size(); i++) {
+    auto action = actions[i];
+    if (action.type == buttonType) {
+      // Create action element
+      ComPtr<IXmlElement> action_element;
+      ScopedHString action_str(L"action");
+      if (FAILED(doc->CreateElement(action_str, &action_element)))
+        return false;
+
+      ComPtr<IXmlNode> action_node_tmp;
+      if (FAILED(action_element.As(&action_node_tmp)))
+        return false;
+
+      // Append action node to actions xml
+      ComPtr<IXmlNode> action_node;
+      if (FAILED(actions_node->AppendChild(action_node_tmp.Get(), &action_node)))
+        return false;
+
+      // Get attributes
+      ComPtr<IXmlNamedNodeMap> attributes;
+      if (FAILED(action_node->get_Attributes(&attributes)))
+        return false;
+
+      if (FAILED(AddAttribute(doc, attributes, L"content", action.text)))
+        return false;
+
+      std::ostringstream index;
+      index << i;
+      if (FAILED(AddAttribute(doc, attributes, L"arguments", base::UTF8ToUTF16(base::UTF16ToUTF8(action._protocol) + "/button?id=" + index.str()))))
+        return false;
+
+      if (FAILED(AddAttribute(doc, attributes, L"activationType", L"protocol")))
+        return false;
+    }
+  }
+  
   return true;
 }
 

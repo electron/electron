@@ -27,6 +27,12 @@ The `Notification` class has the following static methods:
 
 Returns `Boolean` - Whether or not desktop notifications are supported on the current system
 
+#### `Notification.setWindowsProtocol(protocol)`
+
+Sets the URI protocol to use when setting up actions such as buttons in Notifications.  You
+only need to call this if you are using the `actions` property on Windows.  The protocol
+you provide must not be in use  **even by your own app**.
+
 ### `new Notification([options])` _Experimental_
 
 * `options` Object
