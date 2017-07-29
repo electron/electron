@@ -270,7 +270,7 @@ bool WindowsToastNotification::AddActions(IXmlDocument* doc,
   if (FAILED(root->AppendChild(actions_node_tmp.Get(), &actions_node)))
     return false;
 
-  for (int i = 0; i < actions.size(); i++) {
+  for (size_t i = 0; i < actions.size(); i++) {
     auto action = actions[i];
     if (action.type == buttonType) {
       // Create action element
