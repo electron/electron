@@ -120,9 +120,12 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     // reuse the same site to allow cross-window scripting.  We do
     // not need to check urls / domains as native window open logic
     // handles cross site scripting protection.
-    if (WebContentsPreferences::UsesNativeWindowOpen(web_contents)) {
-      return false;
-    }
+    //
+    // NOTE: We know that nativeWindowOpen is enabled at this point
+    // because we check if it is NOT enabled above this point.  We
+    // will only reach this return if sanbox is disabled but
+    // nativeWindowOpen is enabled.
+    return false;
   }
 
   // Create new a SiteInstance if navigating to a different site.
