@@ -123,7 +123,7 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     //
     // NOTE: We know that nativeWindowOpen is enabled at this point
     // because we check if it is NOT enabled above this point.  We
-    // will only reach this return if sanbox is disabled but
+    // will only reach this return if sandbox is disabled but
     // nativeWindowOpen is enabled.
     return false;
   }
