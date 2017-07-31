@@ -291,6 +291,8 @@ v8::Local<v8::Value> NativeImage::ToBitmap(mate::Arguments* args) {
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   std::vector<unsigned char> output;
   gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
+  if (output.empty())
+    return node::Buffer::New(isolate, 0).ToLocalChecked();
   return node::Buffer::Copy(
       isolate,
       reinterpret_cast<const char*>(&output.front()),
