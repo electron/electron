@@ -203,12 +203,12 @@
             'BasicRuntimeChecks': '3',  # 3 = all checks enabled, 0 = off
           },
           'VCLinkerTool': {
-            'OptimizeReferences': 2, # /OPT:REF 
+            'OptimizeReferences': 2, # /OPT:REF
             'EnableCOMDATFolding': 2, # /OPT:ICF
           },
         },
         'conditions': [
-          ['OS=="linux"', {
+          ['OS=="linux" and target_arch=="x64"', {
             'defines': [
               '_GLIBCXX_DEBUG',
             ],
