@@ -4,8 +4,6 @@ const path = require('path')
 const sinon = require('sinon')
 const admZip = require('adm-zip')
 const temp = require('temp')
-// var pathExists = require('path-exists')
-// var getHomePath = require('home-path')()
 
 let sandbox
 const mockEnv = {
@@ -22,7 +20,6 @@ temp.track()
 tape('set up', (t) => {
   sandbox = sinon.sandbox.create()
   tempDir = temp.mkdirSync('electron-install')
-  console.log(tempDir)
   t.end()
 })
 

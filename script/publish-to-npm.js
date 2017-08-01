@@ -7,7 +7,8 @@ const temp = require('temp'),
       childProcess = require('child_process'),
       GitHubApi = require('github'),
       request = require('request'),
-      rootPackageJson = require('../package.json')
+      rootPackageJson = require('../package.json'),
+      assert = require('assert')
 
 const github = new GitHubApi({
   // debug: true,
@@ -48,9 +49,9 @@ new Promise((resolve, reject) => {
       resolve(dirPath)
     }
   })
-}).then((dirPath) => {
+})
+.then((dirPath) => {
   tempDir = dirPath
-
   // copy files from `/npm` to temp directory
   files.forEach((name) => {
     fs.writeFileSync(
@@ -72,22 +73,21 @@ new Promise((resolve, reject) => {
     owner: 'electron',
     repo: 'electron',
   })
-
-}).then((releases) => {
+})
+.then((releases) => {
   // download electron.d.ts from draft release
   const draftRelease = releases.data.find(
-    // (release) => release.draft && release.tag_name === `v${rootPackageJson.version}`
-    (release) => release.draft && release.tag_name === `test`
-
+    (release) => release.draft && release.tag_name === `v${rootPackageJson.version}`
+    // (release) => release.draft && release.tag_name === `test`
   )
   if (!draftRelease) {
     throw `cannot find release with tag v${rootPackageJson.version}`
   }
   return draftRelease.assets.find((asset) => asset.name === 'electron.d.ts')
-
-}).then((tsdAsset) => {
+})
+.then((tsdAsset) => {
   if (!tsdAsset) {
-    throw 'cannot find electron.d.ts from draft release assets'
+    throw `cannot find electron.d.ts from v${rootPackageJson.version} draft release assets`
   }
   return new Promise((resolve, reject) => {
     request.get({
@@ -107,5 +107,22 @@ new Promise((resolve, reject) => {
     })
   })
 })
-.then(() => childProcess.execSync('npm publish', { cwd: tempDir }))
+.then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
+.then(() => {
+  // test that the package can install electron prebuilt from /dist
+  const distDir = path.join(__dirname, '..', 'dist')
+  const tarballPath = path.join(tempDir, `electron-${rootPackageJson.version}.tgz`)
+  return new Promise((resolve, reject) => {
+    childProcess.execSync(`npm install ${tarballPath} --force --silent`, {
+      env: Object.assign({}, process.env, { electron_config_cache: distDir }),
+      cwd: tempDir,
+    })
+    const checkVersion = childProcess.exec(`${path.join(tempDir, 'node_modules', '.bin', 'electron')} -v`)
+    checkVersion.stdout.on('data', (data) => {
+      assert.strictEqual(data.trim(), `v${rootPackageJson.version}`)
+      resolve(tarballPath)
+    })
+  })
+})
+.then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath}`))
 .catch((err) => console.error(`Error: ${err}`))
