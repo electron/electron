@@ -1,19 +1,18 @@
 require('dotenv-safe').load()
 
-const temp = require('temp'),
-      fs   = require('fs'),
-      util = require('util'),
-      path = require('path'),
-      childProcess = require('child_process'),
-      GitHubApi = require('github'),
-      request = require('request'),
-      rootPackageJson = require('../package.json'),
-      assert = require('assert')
+const temp = require('temp')
+const fs = require('fs')
+const path = require('path')
+const childProcess = require('child_process')
+const GitHubApi = require('github')
+const request = require('request')
+const assert = require('assert')
+const rootPackageJson = require('../package.json')
 
 const github = new GitHubApi({
   // debug: true,
   headers: { 'User-Agent': 'electron-npm-publisher' },
-  followRedirects: false,
+  followRedirects: false
 })
 github.authenticate({
   type: 'token',
@@ -71,7 +70,7 @@ new Promise((resolve, reject) => {
 
   return github.repos.getReleases({
     owner: 'electron',
-    repo: 'electron',
+    repo: 'electron'
   })
 })
 .then((releases) => {
@@ -81,13 +80,13 @@ new Promise((resolve, reject) => {
     // (release) => release.draft && release.tag_name === `test`
   )
   if (!draftRelease) {
-    throw `cannot find release with tag v${rootPackageJson.version}`
+    throw new Error(`cannot find release with tag v${rootPackageJson.version}`)
   }
   return draftRelease.assets.find((asset) => asset.name === 'electron.d.ts')
 })
 .then((tsdAsset) => {
   if (!tsdAsset) {
-    throw `cannot find electron.d.ts from v${rootPackageJson.version} draft release assets`
+    throw new Error(`cannot find electron.d.ts from v${rootPackageJson.version} draft release assets`)
   }
   return new Promise((resolve, reject) => {
     request.get({
@@ -115,7 +114,7 @@ new Promise((resolve, reject) => {
   return new Promise((resolve, reject) => {
     childProcess.execSync(`npm install ${tarballPath} --force --silent`, {
       env: Object.assign({}, process.env, { electron_config_cache: distDir }),
-      cwd: tempDir,
+      cwd: tempDir
     })
     const checkVersion = childProcess.exec(`${path.join(tempDir, 'node_modules', '.bin', 'electron')} -v`)
     checkVersion.stdout.on('data', (data) => {

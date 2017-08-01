@@ -2,7 +2,7 @@ const tape = require('tape')
 const proxyquire = require('proxyquire')
 const path = require('path')
 const sinon = require('sinon')
-const admZip = require('adm-zip')
+const AdmZip = require('adm-zip')
 const temp = require('temp')
 
 let sandbox
@@ -59,7 +59,6 @@ tape('fails for unsupported platforms', (t) => {
 })
 
 tape('extract file', (t) => {
-
   sandbox.restore()
 
   sandbox.stub(process, 'env').value(
@@ -67,7 +66,7 @@ tape('extract file', (t) => {
   )
 
   // add file directly
-  const zip = new admZip()
+  const zip = new AdmZip()
   zip.addFile('test.txt', Buffer.from('electron install test'))
   zip.writeZip(path.join(tempDir, 'test.zip'))
 
