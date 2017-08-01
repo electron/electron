@@ -1,5 +1,3 @@
-require('dotenv-safe').load()
-
 const temp = require('temp')
 const fs = require('fs')
 const path = require('path')
@@ -13,10 +11,6 @@ const github = new GitHubApi({
   // debug: true,
   headers: { 'User-Agent': 'electron-npm-publisher' },
   followRedirects: false
-})
-github.authenticate({
-  type: 'token',
-  token: process.env.GITHUB_TOKEN
 })
 
 let tempDir
@@ -95,8 +89,7 @@ new Promise((resolve, reject) => {
       url: tsdAsset.url,
       headers: {
         'accept': 'application/octet-stream',
-        'user-agent': 'electron-npm-publisher',
-        Authorization: `token ${process.env.GITHUB_TOKEN}`
+        'user-agent': 'electron-npm-publisher'
       }
     }, (err, response, body) => {
       if (err) {
