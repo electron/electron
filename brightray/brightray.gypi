@@ -330,7 +330,7 @@
         ],
       }],
     ],  # target_conditions
-    # Ignored compiler warnings of Chromium.
+    # Ignored compiler warnings of Chromium/Node.js
     'conditions': [
       ['OS=="mac"', {
         'xcode_settings': {
@@ -355,6 +355,7 @@
       ['OS=="win"', {
         'msvs_disabled_warnings': [
           4100, # unreferenced formal parameter
+          4102, # unreferencd label
           4121, # alignment of a member was sensitive to packing
           4127, # conditional expression is constant
           4189, # local variable is initialized but not referenced
@@ -369,6 +370,7 @@
           4512, # assignment operator could not be generated
           4610, # user defined constructor required
           4702, # unreachable code
+          4715, # not all control paths return a value
           4819, # The file contains a character that cannot be represented in the current code page
         ],
       }],
