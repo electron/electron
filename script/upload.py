@@ -72,6 +72,8 @@ def main():
     # Press the publish button.
     publish_release(github, release['id'])
 
+    # TODO: run publish-to-npm script here
+
     # Do not upload other files when passed "-p".
     return
 
