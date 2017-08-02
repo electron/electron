@@ -7,6 +7,7 @@
 
 #include "atom/browser/native_window.h"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -133,6 +134,7 @@ class NativeWindowViews : public NativeWindow,
 
 #if defined(OS_WIN)
   TaskbarHost& taskbar_host() { return taskbar_host_; }
+  void SetForwardMouseMessages(bool forward) override;
 #endif
 
  private:
@@ -169,6 +171,8 @@ class NativeWindowViews : public NativeWindow,
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
+  static LRESULT CALLBACK SubclassProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id, DWORD_PTR ref_data);
+  static LRESULT CALLBACK MouseHookProc(int n_code, WPARAM w_param, LPARAM l_param);
 #endif
 
   // NativeWindow:
@@ -259,6 +263,11 @@ class NativeWindowViews : public NativeWindow,
   // The icons of window and taskbar.
   base::win::ScopedHICON window_icon_;
   base::win::ScopedHICON app_icon_;
+
+  // Handles to legacy windows iterated by the mouse hook
+  static std::map<HWND, NativeWindowViews*> legacy_window_map_;
+  static HHOOK mouse_hook_;
+  bool forwarding_mouse_messages_ = false;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

@@ -201,6 +201,7 @@ class Window : public mate::TrackableObject<Window>,
   bool SetThumbnailClip(const gfx::Rect& region);
   bool SetThumbnailToolTip(const std::string& tooltip);
   void SetAppDetails(const mate::Dictionary& options);
+  void SetForwardMouseMessages(bool forward);
 #endif
 
 #if defined(TOOLKIT_VIEWS)

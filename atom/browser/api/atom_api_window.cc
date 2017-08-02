@@ -787,6 +787,10 @@ void Window::SetAppDetails(const mate::Dictionary& options) {
       relaunch_command, relaunch_display_name,
       window_->GetAcceleratedWidget());
 }
+
+void Window::SetForwardMouseMessages(bool forward) {
+  window_->SetForwardMouseMessages(forward);
+}
 #endif
 
 #if defined(TOOLKIT_VIEWS)
@@ -1060,6 +1064,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setThumbnailClip", &Window::SetThumbnailClip)
       .SetMethod("setThumbnailToolTip", &Window::SetThumbnailToolTip)
       .SetMethod("setAppDetails", &Window::SetAppDetails)
+      .SetMethod("setForwardMouseMessages", &Window::SetForwardMouseMessages)
 #endif
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &Window::SetIcon)
