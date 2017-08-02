@@ -81,6 +81,9 @@ def parse_args():
                       help='Run tests in CI mode',
                       action='store_true',
                       required=False)
+  parser.add_argument('-g',
+                      help='Filter',
+                      required=False)
   parser.add_argument('-v', '--verbose',
                       action='store_true',
                       help='Prints the output of the subprocesses')
