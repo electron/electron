@@ -1064,6 +1064,13 @@ void NativeWindowViews::SetEnabled(bool enable) {
 #endif
 }
 
+#if defined(OS_WIN)
+void NativeWindowViews::SetForwardMouseMessages(bool forward) {
+  forwarding_mouse_messages_ = forward;
+  SetIgnoreMouseEvents(forward);
+}
+#endif
+
 void NativeWindowViews::OnWidgetActivationChanged(
     views::Widget* widget, bool active) {
   if (widget != window_.get())

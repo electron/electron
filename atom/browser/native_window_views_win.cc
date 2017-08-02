@@ -80,6 +80,9 @@ bool IsScreenReaderActive() {
 
 }  // namespace
 
+std::map<HWND, NativeWindowViews*> NativeWindowViews::legacy_window_map_;
+HHOOK NativeWindowViews::mouse_hook_ = NULL;
+
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   std::string command = AppCommandToString(command_id);
   NotifyWindowExecuteWindowsCommand(command);
@@ -151,6 +154,24 @@ bool NativeWindowViews::PreHandleMSG(
       if (w_param) {
         NotifyWindowEndSession();
       }
+      return false;
+    }
+    case WM_PARENTNOTIFY: {
+      if (LOWORD(w_param) == WM_CREATE) {
+        // Because of reasons regarding legacy drivers and stuff, a window that
+        // matches the client area is created and used internally by Chromium.
+        // This window is subclassed in order to fix some issues when forwarding
+        // mouse messages; see comments in |SubclassProc|. If by any chance
+        // Chromium removes the legacy window in the future it may be fine to
+        // move the logic to this very switch statement.
+        HWND legacy_window = reinterpret_cast<HWND>(l_param);
+        SetWindowSubclass(legacy_window, SubclassProc, 1, reinterpret_cast<DWORD_PTR>(this));
+        if (legacy_window_map_.size() == 0) {
+          mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, NULL, 0);
+        }
+        legacy_window_map_.insert({ legacy_window, this });
+      }
+      return false;
     }
     default:
       return false;
@@ -205,6 +226,71 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       }
       break;
   }
+}
+
+LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id, DWORD_PTR ref_data) {
+  NativeWindowViews* window = reinterpret_cast<NativeWindowViews*>(ref_data);
+  switch (msg) {
+    case WM_MOUSELEAVE: {
+      // When input is forwarded to underlying windows, this message is posted.
+      // If not handled, it interferes with Chromium logic, causing for example
+      // mouseleave events to fire. If those events are used to exit forward
+      // mode, excessive flickering on for example hover items in underlying
+      // windows can occur due to rapidly entering and leaving forwarding mode.
+      // By consuming and ignoring the message, we're essentially telling
+      // Chromium that we have not left the window despite somebody else getting
+      // the messages. As to why this is catched for the legacy window and not
+      // the actual browser window is simply that the legacy window somehow
+      // makes use of these events; posting to the main window didn't work.
+      if (window->forwarding_mouse_messages_) {
+        return 0;
+      }
+      break;
+    }
+    case WM_DESTROY: {
+      legacy_window_map_.erase(hwnd);
+      if (legacy_window_map_.size() == 0) {
+        UnhookWindowsHookEx(mouse_hook_);
+        mouse_hook_ = NULL;
+      }
+      break;
+    }
+  }
+
+  return DefSubclassProc(hwnd, msg, w_param, l_param);
+}
+
+LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code, WPARAM w_param, LPARAM l_param) {
+  if (n_code < 0) {
+    return CallNextHookEx(NULL, n_code, w_param, l_param);
+  }
+
+  // Post a WM_MOUSEMOVE message for those windows whose client area contains
+  // the cursor and are set to forward messages since they are in a state where
+  // they would otherwise ignore all mouse input.
+  if (w_param == WM_MOUSEMOVE) {
+    for (auto legacy : legacy_window_map_) {
+      if (!legacy.second->forwarding_mouse_messages_) {
+        continue;
+      }
+
+      // At first I considered enumerating windows to check whether the cursor
+      // was directly above the window, but since nothing bad seems to happen
+      // if we post the message even if some other window occludes it I have
+      // just left it as is.
+      RECT client_rect;
+      GetClientRect(legacy.first, &client_rect);
+      POINT p = ((MSLLHOOKSTRUCT*)l_param)->pt;
+      ScreenToClient(legacy.first, &p);
+      if (PtInRect(&client_rect, p)) {
+        WPARAM w = 0; // No virtual keys pressed for our purposes
+        LPARAM l = MAKELPARAM(p.x, p.y);
+        PostMessage(legacy.first, WM_MOUSEMOVE, w, l);
+      }
+    }
+  }
+
+  return CallNextHookEx(NULL, n_code, w_param, l_param);
 }
 
 }  // namespace atom
