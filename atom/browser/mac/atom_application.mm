@@ -66,6 +66,7 @@
   atom::Browser* browser = atom::Browser::Get();
   browser->UpdateUserActivityState(activity_type, *user_info);
   
+  [userActivity setNeedsSave:YES];
   [super updateUserActivityState:userActivity];
 }
 
