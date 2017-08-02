@@ -200,7 +200,10 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
 void WebFrame::InsertText(const std::string& text) {
   web_frame_->frameWidget()
             ->getActiveWebInputMethodController()
-            ->commitText(blink::WebString::fromUTF8(text), 0);
+            ->commitText(blink::WebString::fromUTF8(text),
+                         blink::WebVector<blink::WebCompositionUnderline>(),
+                         blink::WebRange(),
+                         0);
 }
 
 void WebFrame::InsertCSS(const std::string& css) {
