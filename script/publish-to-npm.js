@@ -92,8 +92,8 @@ new Promise((resolve, reject) => {
         'user-agent': 'electron-npm-publisher'
       }
     }, (err, response, body) => {
-      if (err) {
-        reject(err)
+      if (err || response.statusCode !== 200) {
+        reject(err || new Error('Cannot download electron.d.ts'))
       } else {
         fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), body)
         resolve(release)
@@ -107,7 +107,7 @@ new Promise((resolve, reject) => {
 .then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
 .then(() => {
   // test that the package can install electron prebuilt from github release
-  const tarballPath = path.join(tempDir, `electron-${rootPackageJson.version}.tgz`)
+  const tarballPath = path.join(tempDir, `${rootPackageJson.name}-${rootPackageJson.version}.tgz`)
   return new Promise((resolve, reject) => {
     childProcess.execSync(`npm install ${tarballPath} --force --silent`, {
       env: Object.assign({}, process.env, { electron_config_cache: tempDir }),
@@ -119,4 +119,7 @@ new Promise((resolve, reject) => {
   })
 })
 .then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag}`))
-.catch((err) => console.error(`Error: ${err}`))
+.catch((err) => {
+  console.error(`Error: ${err}`)
+  process.exit(1)
+})
