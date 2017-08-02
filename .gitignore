@@ -14,6 +14,7 @@
 *.vcxproj.filters
 *.vcxproj.user
 *.xcodeproj
+node_modules/
 /.idea/
 /brightray/brightray.opensdf
 /brightray/brightray.sdf
@@ -25,7 +26,6 @@
 /build/
 /dist/
 /external_binaries/
-node_modules
 /out/
 /vendor/.gclient
 /vendor/debian_jessie_amd64-sysroot/

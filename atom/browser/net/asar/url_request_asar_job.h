@@ -89,7 +89,6 @@ class URLRequestAsarJob : public net::URLRequestJob {
   // Callback after fetching file info on a background thread.
   void DidFetchMetaInfo(const FileMetaInfo* meta_info);
 
-
   // Callback after opening file on a background thread.
   void DidOpen(int result);
 

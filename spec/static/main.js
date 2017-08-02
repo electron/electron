@@ -141,6 +141,10 @@ app.on('ready', function () {
     })
     if (chosen === 0) window.destroy()
   })
+  window.webContents.on('crashed', function () {
+    console.error('Renderer process crashed')
+    process.exit(1)
+  })
 
   // For session's download test, listen 'will-download' event in browser, and
   // reply the result to renderer for verifying

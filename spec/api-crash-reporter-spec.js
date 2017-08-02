@@ -12,7 +12,7 @@ const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
 describe('crashReporter module', function () {
-  if (process.mas) {
+  if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) {
     return
   }
 

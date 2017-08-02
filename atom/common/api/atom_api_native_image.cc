@@ -268,11 +268,10 @@ v8::Local<v8::Value> NativeImage::ToPNG(mate::Arguments* args) {
 
   const SkBitmap bitmap =
       image_.AsImageSkia().GetRepresentation(scale_factor).sk_bitmap();
-  std::unique_ptr<std::vector<unsigned char>> encoded(
-      new std::vector<unsigned char>());
-  gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false, encoded.get());
-  const char* data = reinterpret_cast<char*>(encoded->data());
-  size_t size = encoded->size();
+  std::vector<unsigned char> encoded;
+  gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false, &encoded);
+  const char* data = reinterpret_cast<char*>(encoded.data());
+  size_t size = encoded.size();
   return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
 }
 
@@ -292,6 +291,8 @@ v8::Local<v8::Value> NativeImage::ToBitmap(mate::Arguments* args) {
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   std::vector<unsigned char> output;
   gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
+  if (output.empty())
+    return node::Buffer::New(isolate, 0).ToLocalChecked();
   return node::Buffer::Copy(
       isolate,
       reinterpret_cast<const char*>(&output.front()),

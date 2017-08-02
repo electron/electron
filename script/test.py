@@ -81,6 +81,14 @@ def parse_args():
                       help='Run tests in CI mode',
                       action='store_true',
                       required=False)
+  parser.add_argument('-g', '--grep',
+                      help='Only run tests matching <pattern>',
+                      metavar='pattern',
+                      required=False)
+  parser.add_argument('-i', '--invert',
+                      help='Inverts --grep matches',
+                      action='store_true',
+                      required=False)
   parser.add_argument('-v', '--verbose',
                       action='store_true',
                       help='Prints the output of the subprocesses')

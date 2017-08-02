@@ -208,7 +208,7 @@ describe('app module', function () {
     })
   })
 
-  describe('app.importCertificate', function () {
+  xdescribe('app.importCertificate', function () {
     if (process.platform !== 'linux') return
 
     var w = null
@@ -405,7 +405,7 @@ describe('app module', function () {
     })
   })
 
-  describe('select-client-certificate event', function () {
+  xdescribe('select-client-certificate event', function () {
     let w = null
 
     beforeEach(function () {

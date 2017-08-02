@@ -15,6 +15,7 @@
 #include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
 #include "base/task_runner.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "net/base/file_stream.h"
 #include "net/base/filename_util.h"
 #include "net/base/io_buffer.h"
@@ -119,8 +120,11 @@ void URLRequestAsarJob::Start() {
                    weak_ptr_factory_.GetWeakPtr(),
                    base::Owned(meta_info)));
   } else {
-    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                           net::ERR_FILE_NOT_FOUND));
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE,
+        base::Bind(&URLRequestAsarJob::DidOpen,
+                   weak_ptr_factory_.GetWeakPtr(),
+                   net::ERR_FILE_NOT_FOUND));
   }
 }
 

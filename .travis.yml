@@ -3,6 +3,9 @@ git:
 notifications:
   email: false
 
+before_install:
+  - export BOTO_CONFIG=/dev/null
+  
 language: node_js
 node_js:
   - "4"

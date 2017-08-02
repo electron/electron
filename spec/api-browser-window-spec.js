@@ -1144,13 +1144,16 @@ describe('BrowserWindow module', function () {
           w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?window-events'))
         })
 
-        it('works for web contents events', function (done) {
+        it('works for stop events', function (done) {
           waitForEvents(w.webContents, [
             'did-navigate',
             'did-fail-load',
             'did-stop-loading'
           ], done)
           w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?webcontents-stop'))
+        })
+
+        it('works for web contents events', function (done) {
           waitForEvents(w.webContents, [
             'did-finish-load',
             'did-frame-finish-load',
