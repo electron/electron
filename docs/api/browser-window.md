@@ -1356,6 +1356,14 @@ removed in future Electron releases.
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
 
+#### `win.setForwardMouseMessages(forward)` _Windows_
+
+* `forward` Boolean
+
+Forward mouse messages to the window below this one. This is similar to
+`setIgnoreMouseEvents`, but additionally allows users to listen to events
+related to mouse movement such as `mouseleave`.
+
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
