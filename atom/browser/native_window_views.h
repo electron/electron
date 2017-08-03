@@ -171,8 +171,11 @@ class NativeWindowViews : public NativeWindow,
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
-  static LRESULT CALLBACK SubclassProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id, DWORD_PTR ref_data);
-  static LRESULT CALLBACK MouseHookProc(int n_code, WPARAM w_param, LPARAM l_param);
+  static LRESULT CALLBACK SubclassProc(
+      HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id,
+      DWORD_PTR ref_data);
+  static LRESULT CALLBACK MouseHookProc(
+      int n_code, WPARAM w_param, LPARAM l_param);
 #endif
 
   // NativeWindow:

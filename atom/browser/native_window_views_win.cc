@@ -165,7 +165,8 @@ bool NativeWindowViews::PreHandleMSG(
         // Chromium removes the legacy window in the future it may be fine to
         // move the logic to this very switch statement.
         HWND legacy_window = reinterpret_cast<HWND>(l_param);
-        SetWindowSubclass(legacy_window, SubclassProc, 1, reinterpret_cast<DWORD_PTR>(this));
+        SetWindowSubclass(
+            legacy_window, SubclassProc, 1, reinterpret_cast<DWORD_PTR>(this));
         if (legacy_window_map_.size() == 0) {
           mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, NULL, 0);
         }
@@ -228,7 +229,9 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   }
 }
 
-LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id, DWORD_PTR ref_data) {
+LRESULT CALLBACK NativeWindowViews::SubclassProc(
+    HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id,
+    DWORD_PTR ref_data) {
   NativeWindowViews* window = reinterpret_cast<NativeWindowViews*>(ref_data);
   switch (msg) {
     case WM_MOUSELEAVE: {
@@ -260,7 +263,8 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd, UINT msg, WPARAM w_p
   return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
-LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK NativeWindowViews::MouseHookProc(
+    int n_code, WPARAM w_param, LPARAM l_param) {
   if (n_code < 0) {
     return CallNextHookEx(NULL, n_code, w_param, l_param);
   }
@@ -280,10 +284,10 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code, WPARAM w_param, LP
       // just left it as is.
       RECT client_rect;
       GetClientRect(legacy.first, &client_rect);
-      POINT p = ((MSLLHOOKSTRUCT*)l_param)->pt;
+      POINT p = reinterpret_cast<MSLLHOOKSTRUCT*>(l_param)->pt;
       ScreenToClient(legacy.first, &p);
       if (PtInRect(&client_rect, p)) {
-        WPARAM w = 0; // No virtual keys pressed for our purposes
+        WPARAM w = 0;  // No virtual keys pressed for our purposes
         LPARAM l = MAKELPARAM(p.x, p.y);
         PostMessage(legacy.first, WM_MOUSEMOVE, w, l);
       }
