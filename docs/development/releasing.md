@@ -185,3 +185,28 @@ git push origin :release # delete remote branch
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
 [electron-versioning]: /docs/tutorial/electron-versioning.md
+
+## Promoting a release on npm
+
+New releases are published to npm with the `beta` tag. Every release should 
+eventually get promoted to stable unless there's a good reason not to.
+
+Releases are normally given around two weeks in the wild before being promoted.
+Before promoting a release, check to see if there are any bug reports
+against that version, e.g. issues labeled with `version/1.7.x`.
+
+It's also good to ask users in Slack if they're using the beta versions successfully.
+
+To see what's beta and stable at any given time:
+
+```
+$ npm dist-tag ls electron  
+beta: 1.7.5
+latest: 1.6.11
+```
+
+To promote a beta version to stable (aka `latest`):
+
+```
+npm dist-tag add electron@1.2.3 latest
+```
