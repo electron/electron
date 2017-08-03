@@ -55,6 +55,8 @@
 
 namespace brightray {
 
+void OverrideMacAppLogsPath();
+
 namespace {
 
 #if defined(OS_WIN)
@@ -160,7 +162,9 @@ void BrowserMainParts::PreEarlyInitialization() {
   std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
   feature_list->InitializeFromCommandLine("", "");
   base::FeatureList::SetInstance(std::move(feature_list));
-
+#if defined(OS_MACOSX)
+  OverrideMacAppLogsPath();
+#endif
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
