@@ -81,8 +81,7 @@ class App : public AtomBrowserClient::Delegate,
       WindowOpenDisposition disposition,
       const std::vector<std::string>& features,
       const scoped_refptr<content::ResourceRequestBody>& body,
-      int render_process_id,
-      int render_frame_id);
+      content::RenderFrameHost* opener);
 
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
