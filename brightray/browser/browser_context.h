@@ -10,6 +10,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
+#include "brightray/browser/media/media_device_id_salt.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "brightray/browser/permission_manager.h"
 #include "brightray/browser/url_request_context_getter.h"
@@ -24,7 +25,6 @@ class SpecialStoragePolicy;
 
 namespace brightray {
 
-class MediaDeviceIDSalt;
 class PermissionManager;
 
 class BrowserContext : public base::RefCounted<BrowserContext>,
@@ -67,6 +67,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   net::URLRequestContextGetter* CreateMediaRequestContextForStoragePartition(
       const base::FilePath& partition_path,
       bool in_memory) override;
+  std::string GetMediaDeviceIDSalt() override;
 
   URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();
@@ -88,7 +89,6 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
 
   // URLRequestContextGetter::Delegate:
   net::NetworkDelegate* CreateNetworkDelegate() override;
-  MediaDeviceIDSalt* GetMediaDeviceIDSalt() override;
 
   base::FilePath GetPath() const override;
 
