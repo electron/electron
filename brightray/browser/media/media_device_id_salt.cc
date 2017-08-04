@@ -5,8 +5,8 @@
 
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/resource_context.h"
 
 using content::BrowserThread;
 
@@ -24,7 +24,7 @@ MediaDeviceIDSalt::MediaDeviceIDSalt(PrefService* pref_service) {
   media_device_id_salt_.Init(kMediaDeviceIdSalt, pref_service);
   if (media_device_id_salt_.GetValue().empty()) {
     media_device_id_salt_.SetValue(
-        content::ResourceContext::CreateRandomMediaDeviceIDSalt());
+        content::BrowserContext::CreateRandomMediaDeviceIDSalt());
   }
 }
 
@@ -47,7 +47,7 @@ void MediaDeviceIDSalt::RegisterPrefs(PrefRegistrySimple* registry) {
 void MediaDeviceIDSalt::Reset(PrefService* pref_service) {
   pref_service->SetString(
       kMediaDeviceIdSalt,
-      content::ResourceContext::CreateRandomMediaDeviceIDSalt());
+      content::BrowserContext::CreateRandomMediaDeviceIDSalt());
 }
 
 }  // namespace brightray
