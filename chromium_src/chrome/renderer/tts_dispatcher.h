@@ -30,10 +30,9 @@ class TtsDispatcher
       public content::RenderThreadObserver {
  public:
   explicit TtsDispatcher(blink::WebSpeechSynthesizerClient* client);
-
- private:
   virtual ~TtsDispatcher();
 
+ private:
   // RenderProcessObserver override.
   virtual bool OnControlMessageReceived(const IPC::Message& message) override;
 
