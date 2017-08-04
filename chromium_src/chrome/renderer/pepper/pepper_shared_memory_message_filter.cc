@@ -49,8 +49,7 @@ void PepperSharedMemoryMessageFilter::OnHostMsgCreateSharedMemory(
   if (!shm.get())
     return;
 
-  base::SharedMemoryHandle host_shm_handle;
-  shm->ShareToProcess(base::GetCurrentProcessHandle(), &host_shm_handle);
+  base::SharedMemoryHandle host_shm_handle = shm->handle().Duplicate();
   *host_handle_id =
       content::PepperPluginInstance::Get(instance)
           ->GetVarTracker()
