@@ -150,6 +150,7 @@ class App : public AtomBrowserClient::Delegate,
   void SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
+      net::CertificateList client_certs,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
 
   // content::GpuDataManagerObserver:
