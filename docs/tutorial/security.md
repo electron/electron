@@ -52,7 +52,7 @@ machine.
 > :warning: Under no circumstances should you load and execute remote code with
 Node integration enabled. Instead, use only local files (packaged together with
 your application) to execute Node code. To display remote content, use the
-`webview` tag and make sure to disable the `nodeIntegration`.
+`<webview>` element and make sure to disable the `nodeIntegration`.
 
 #### Checklist
 
@@ -77,7 +77,7 @@ This is not bulletproof, but at the least, you should attempt the following:
 * WebViews: Do not use `disablewebsecurity`
 * WebViews: Do not use `allowpopups`
 * WebViews: Do not use `insertCSS` or `executeJavaScript` with remote CSS/JS.
-* WebViews: Verify the options and params of all `<webview>` tags before they
+* WebViews: Verify the options and params of all `<webview>` elements before they
   get attached using the `will-attach-webview` event:
 
 ```js

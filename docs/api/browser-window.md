@@ -342,11 +342,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
       `window.open()`. Defaults to `false`.  **Note:** This option is currently
       experimental.
-    * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
+    * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` element](webview-element.md).
       Defaults to the value of the `nodeIntegration` option. **Note:** The
       `preload` script configured for the `<webview>` will have node integration
       enabled when it is executed so you should ensure remote/untrusted content
-      is not able to create a `<webview>` tag with a possibly malicious `preload`
+      is not able to create a `<webview>` element with a possibly malicious `preload`
       script. You can use the `will-attach-webview` event on [webContents](web-contents.md)
       to strip away the `preload` script and to validate or alter the
       `<webview>`'s initial settings.

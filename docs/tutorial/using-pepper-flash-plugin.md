@@ -58,9 +58,9 @@ You can also try loading the system wide Pepper Flash plugin instead of shipping
 the plugins yourself, its path can be received by calling
 `app.getPath('pepperFlashSystemPlugin')`.
 
-## Enable Flash Plugin in a `<webview>` Tag
+## Enable Flash Plugin in a `<webview>` Element
 
-Add `plugins` attribute to `<webview>` tag.
+Add `plugins` attribute to `<webview>` element.
 
 ```html
 <webview src="http://www.adobe.com/software/flash/about/" plugins></webview>
