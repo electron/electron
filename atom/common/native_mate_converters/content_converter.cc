@@ -262,7 +262,7 @@ bool Converter<scoped_refptr<ResourceRequestBodyImpl>>::FromV8(
     if (type == "rawData") {
       base::Value* bytes = nullptr;
       dict->GetBinary("bytes", &bytes);
-      (*out)->AppendBytes(bytes->GetBuffer(), bytes->GetSize());
+      (*out)->AppendBytes(bytes->GetBlob().data(), bytes->GetBlob().size());
     } else if (type == "file") {
       std::string file;
       int offset = 0, length = -1;
