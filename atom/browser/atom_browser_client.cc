@@ -316,10 +316,12 @@ void AtomBrowserClient::AllowCertificateError(
 void AtomBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
+    net::CertificateList client_certs,
     std::unique_ptr<content::ClientCertificateDelegate> delegate) {
-  if (!cert_request_info->client_certs.empty() && delegate_) {
-    delegate_->SelectClientCertificate(
-        web_contents, cert_request_info, std::move(delegate));
+  if (!client_certs.empty() && delegate_) {
+    delegate_->SelectClientCertificate(web_contents, cert_request_info,
+                                       std::move(client_certs),
+                                       std::move(delegate));
   }
 }
 
