@@ -17,6 +17,7 @@
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
+#include "base/memory/ptr_util.h"
 #include "base/strings/string_split.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
@@ -179,9 +180,10 @@ void RendererClientBase::DidClearWindowObject(
   render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
 }
 
-blink::WebSpeechSynthesizer* RendererClientBase::OverrideSpeechSynthesizer(
+std::unique_ptr<blink::WebSpeechSynthesizer>
+RendererClientBase::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
-  return new TtsDispatcher(client);
+  return base::MakeUnique<TtsDispatcher>(client);
 }
 
 bool RendererClientBase::OverrideCreatePlugin(
