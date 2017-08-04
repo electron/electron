@@ -60,8 +60,8 @@ void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
   }
 
   data_ = new base::RefCountedBytes(
-      reinterpret_cast<const unsigned char*>(binary->GetBuffer()),
-      binary->GetSize());
+      reinterpret_cast<const unsigned char*>(binary->GetBlob().data()),
+      binary->GetBlob().size());
   status_code_ = net::HTTP_OK;
   net::URLRequestSimpleJob::Start();
 }
