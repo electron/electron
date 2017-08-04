@@ -153,6 +153,28 @@ npm start
 
 Verify the window is displaying the current updated version.
 
+## Check the release
+
+Use the [electron-prerelease-check](https://github.com/electron/electron-prerelease-check)
+module to verify that the draft release is ready.
+
+```sh
+npm i -g electron/electron-prerelease-check && electron-prerelease-check
+```
+
+You should see output something like this:
+
+```
+  electron-prelease-check
+    ✓ only one draft exists
+    ✓ draft is a prerelease
+    ✓ draft has release notes
+    ✓ draft has all required assets
+
+
+  4 passing (2s)
+```
+
 ## Set environment variables
 
 You'll need to set the following environment variables to publish a release. Ask another team member for these credentials.
