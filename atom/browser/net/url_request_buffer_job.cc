@@ -41,7 +41,7 @@ void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
     dict->GetString("charset", &charset_);
     dict->GetBinary("data", &binary);
   } else if (options->IsType(base::Value::Type::BINARY)) {
-    options->GetAsBinary(&binary);
+    binary = options.get();
   }
 
   if (mime_type_.empty()) {
