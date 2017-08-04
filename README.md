@@ -19,6 +19,9 @@ This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDU
 By participating, you are expected to uphold this code. Please report unacceptable
 behavior to electron@github.com.
 
+## Package size
+Please note that apps packaged by electron may be large (50 ~ 127MB).
+
 ## Downloads
 
 To install prebuilt Electron binaries, use
@@ -44,6 +47,10 @@ prebuilt binaries, debug symbols, and more.
 Guides and the API reference are located in the
 [docs](https://github.com/electron/electron/tree/master/docs) directory. It also
 contains documents describing how to build and contribute to Electron.
+
+In particular, check the
+[Application Packaging](https://github.com/electron/electron/tree/master/docs/tutorial/application-packaging.md)
+section which explains how to generate a distributable package.
 
 ## Documentation Translations
 
