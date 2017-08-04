@@ -18,17 +18,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/page_zoom.h"
 
-namespace std {
-
-template <>
-struct hash<base::FilePath> {
-  size_t operator()(const base::FilePath& f) const {
-    return hash<base::FilePath::StringType>()(f.value());
-  }
-};
-
-}  // namespace std
-
 namespace brightray {
 
 namespace {
