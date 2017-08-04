@@ -1165,8 +1165,9 @@ bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
   if (!metafile.GetData(shared_buf->memory(), buf_size))
     return false;
 
-  return shared_buf->GiveToProcess(base::GetCurrentProcessHandle(),
-                                   shared_mem_handle);
+  *shared_mem_handle =
+      base::SharedMemory::DuplicateHandle(shared_buf->handle());
+  return true;
 }
 #endif  // defined(OS_POSIX)
 
