@@ -35,7 +35,6 @@ namespace brightray {
 
 class RequireCTDelegate;
 class DevToolsNetworkControllerHandle;
-class MediaDeviceIDSalt;
 class NetLog;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
@@ -58,7 +57,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         RequireCTDelegate* ct_delegate);
     virtual net::SSLConfigService* CreateSSLConfigService();
     virtual std::vector<std::string> GetCookieableSchemes();
-    virtual MediaDeviceIDSalt* GetMediaDeviceIDSalt() { return nullptr; }
   };
 
   URLRequestContextGetter(
@@ -80,9 +78,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   net::HostResolver* host_resolver();
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }
-  MediaDeviceIDSalt* GetMediaDeviceIDSalt() const {
-    return delegate_->GetMediaDeviceIDSalt();
-  }
 
  private:
   Delegate* delegate_;
