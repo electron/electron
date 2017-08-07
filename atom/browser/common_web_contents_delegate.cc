@@ -180,12 +180,12 @@ void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
 void CommonWebContentsDelegate::SetOwnerWindow(
     content::WebContents* web_contents, NativeWindow* owner_window) {
   owner_window_ = owner_window ? owner_window->GetWeakPtr() : nullptr;
-  NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
+  auto relay = base::MakeUnique<NativeWindowRelay>(owner_window_);
   if (owner_window) {
-    web_contents->SetUserData(relay->key, relay);
+    web_contents->SetUserData(relay->key, std::move(relay));
   } else {
     web_contents->RemoveUserData(relay->key);
-    delete relay;
+    relay.reset();
   }
 }
 
