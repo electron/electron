@@ -500,12 +500,14 @@ void WebContents::OnCreateWindow(
     Emit("new-window", target_url, frame_name, disposition, features);
 }
 
-void WebContents::WebContentsCreated(content::WebContents* source_contents,
-                                     int opener_render_process_id,
-                                     int opener_render_frame_id,
-                                     const std::string& frame_name,
-                                     const GURL& target_url,
-                                     content::WebContents* new_contents) {
+void WebContents::WebContentsCreated(
+    content::WebContents* source_contents,
+    int opener_render_process_id,
+    int opener_render_frame_id,
+    const std::string& frame_name,
+    const GURL& target_url,
+    content::WebContents* new_contents,
+    const base::Optional<content::WebContents::CreateParams>& create_params) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto api_web_contents = CreateFrom(isolate(), new_contents, BROWSER_WINDOW);
