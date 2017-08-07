@@ -354,12 +354,45 @@ describe('chromium feature', function () {
       b = window.open(targetURL)
     })
 
+    it('defines a window.location.href getter', function (done) {
+      var b, targetURL
+      if (process.platform === 'win32') {
+        targetURL = 'file:///' + fixtures.replace(/\\/g, '/') + '/pages/base-page.html'
+      } else {
+        targetURL = 'file://' + fixtures + '/pages/base-page.html'
+      }
+      app.once('browser-window-created', (event, window) => {
+        window.webContents.once('did-finish-load', () => {
+          assert.equal(b.location.href, targetURL)
+          b.close()
+          done()
+        })
+      })
+      b = window.open(targetURL)
+    })
+
     it('defines a window.location setter', function (done) {
       let b
       app.once('browser-window-created', (event, {webContents}) => {
         webContents.once('did-finish-load', function () {
           // When it loads, redirect
           b.location = 'file://' + fixtures + '/pages/base-page.html'
+          webContents.once('did-finish-load', function () {
+            // After our second redirect, cleanup and callback
+            b.close()
+            done()
+          })
+        })
+      })
+      // Load a page that definitely won't redirect
+      b = window.open('about:blank')
+    })
+    it('defines a window.location.href setter', function (done) {
+      let b
+      app.once('browser-window-created', (event, {webContents}) => {
+        webContents.once('did-finish-load', function () {
+          // When it loads, redirect
+          b.location.href = 'file://' + fixtures + '/pages/base-page.html'
           webContents.once('did-finish-load', function () {
             // After our second redirect, cleanup and callback
             b.close()
