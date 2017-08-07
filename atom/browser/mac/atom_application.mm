@@ -38,6 +38,7 @@
   [currentActivity_ setWebpageURL:webpageURL];
   [currentActivity_ setDelegate: self];
   [currentActivity_ becomeCurrent];
+  [currentActivity_ setNeedsSave:YES];
 }
 
 - (NSUserActivity*)getCurrentActivity {
@@ -58,26 +59,28 @@
   }
 }
 
-- (void)updateUserActivityState:(NSUserActivity *)userActivity {
-  std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
-  std::unique_ptr<base::DictionaryValue> user_info =
-    atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+- (void)userActivityWillSave:(NSUserActivity *)userActivity {
+  dispatch_sync(dispatch_get_main_queue(), ^{
+    std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+    std::unique_ptr<base::DictionaryValue> user_info =
+      atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
-  atom::Browser* browser = atom::Browser::Get();
-  browser->UpdateUserActivityState(activity_type, *user_info);
-  
+    atom::Browser* browser = atom::Browser::Get();
+    browser->UpdateUserActivityState(activity_type, *user_info);    
+  });
   [userActivity setNeedsSave:YES];
-  [super updateUserActivityState:userActivity];
 }
 
 - (void)userActivityWasContinued:(NSUserActivity *)userActivity {
-  std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
-  std::unique_ptr<base::DictionaryValue> user_info =
+  dispatch_async(dispatch_get_main_queue(), ^{
+    std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+    std::unique_ptr<base::DictionaryValue> user_info =
     atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
-  atom::Browser* browser = atom::Browser::Get();
+    atom::Browser* browser = atom::Browser::Get();
 
-  browser->UserActivityWasContinued(activity_type, *user_info);
+    browser->UserActivityWasContinued(activity_type, *user_info);
+  });
   [userActivity setNeedsSave:YES];
 }
 
