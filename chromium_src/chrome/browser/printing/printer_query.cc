@@ -74,7 +74,7 @@ void PrinterQuery::GetSettings(GetSettingsAskParam ask_user_for_settings,
                                bool is_scripted,
                                bool is_modifiable,
                                const base::Closure& callback) {
-  DCHECK(RunsTasksOnCurrentThread());
+  DCHECK(RunsTasksInCurrentSequence());
   DCHECK(!is_print_dialog_box_shown_ || !is_scripted);
 
   StartWorker(callback);
@@ -98,7 +98,7 @@ void PrinterQuery::GetSettings(
     bool is_modifiable,
     const base::string16& device_name,
     const base::Closure& callback) {
-  DCHECK(RunsTasksOnCurrentThread());
+  DCHECK(RunsTasksInCurrentSequence());
   DCHECK(!is_print_dialog_box_shown_);
   StartWorker(callback);
 
