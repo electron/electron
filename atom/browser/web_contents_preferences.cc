@@ -13,6 +13,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/memory/ptr_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "cc/base/switches.h"
 #include "content/public/browser/render_process_host.h"
@@ -44,7 +45,7 @@ WebContentsPreferences::WebContentsPreferences(
   copied.Delete("session");
 
   mate::ConvertFromV8(isolate, copied.GetHandle(), &web_preferences_);
-  web_contents->SetUserData(UserDataKey(), this);
+  web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
 
   instances_.push_back(this);
 }
