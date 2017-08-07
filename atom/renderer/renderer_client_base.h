@@ -43,7 +43,6 @@ class RendererClientBase : public content::ContentRendererClient {
   std::unique_ptr<blink::WebSpeechSynthesizer> OverrideSpeechSynthesizer(
       blink::WebSpeechSynthesizerClient* client) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
-                            blink::WebLocalFrame* frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
   content::BrowserPluginDelegate* CreateBrowserPluginDelegate(
