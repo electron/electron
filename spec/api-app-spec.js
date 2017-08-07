@@ -208,7 +208,7 @@ describe('app module', function () {
     })
   })
 
-  xdescribe('app.importCertificate', function () {
+  describe('app.importCertificate', function () {
     if (process.platform !== 'linux') return
 
     var w = null
