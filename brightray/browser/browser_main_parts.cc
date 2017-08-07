@@ -11,6 +11,7 @@
 #include "brightray/browser/browser_context.h"
 #include "brightray/browser/devtools_manager_delegate.h"
 #include "brightray/browser/web_ui_controller_factory.h"
+#include "brightray/common/application_info.h"
 #include "brightray/common/main_delegate.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_switches.h"
@@ -96,9 +97,12 @@ void OverrideLinuxAppDataPath() {
 // }
 
 void OverrideLinuxAppLogsPath() {
-  std::string appName = GetExecutableFileProductName();
-  std::string logPath = '/var/log' + appName
-  PathService::Override(DIR_APP_DATA, base::FilePath(logPath));
+  std::string appName = GetApplicationName();
+  std::string logPath = "/var/log"
+
+  std::string appLogPath = logPath + appName
+
+  PathService::Override(DIR_APP_DATA, base::FilePath(appLogPath));
 }
 
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
