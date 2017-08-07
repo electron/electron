@@ -98,11 +98,11 @@ void OverrideLinuxAppDataPath() {
 
 void OverrideLinuxAppLogsPath() {
   std::string appName = GetApplicationName();
-  std::string logPath = "/var/log"
+  std::string logPath = "/var/log";
 
-  std::string appLogPath = logPath + appName
+  std::string appLogPath = logPath + appName;
 
-  PathService::Override(DIR_APP_DATA, base::FilePath(appLogPath));
+  PathService::Override(DIR_APP_LOGS base::FilePath(appLogPath));
 }
 
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
