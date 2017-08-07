@@ -188,7 +188,6 @@ RendererClientBase::OverrideSpeechSynthesizer(
 
 bool RendererClientBase::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
-    blink::WebLocalFrame* frame,
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
