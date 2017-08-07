@@ -1,5 +1,54 @@
-# Upgrading Chrome Checklist
+# Upgrading Chromium Workflow
 
+This document is meant to serve as an overview of what steps are needed
+on each Chromium upgrade in Electron.
+
+## Update libchromiumcontent (a.k.a. libcc)
+
+- Update the `VERSION` file at the root of the `electron/libchromiumcontent`
+  repository.
+- Run `script/update`, it will probably fail applying patches.
+- Fix failing patches. `script/patch.py` might help.
+  - Don't forget to fix patches in the `patches-mas/` folder.
+- Make sure compilation succeeds on at least one supported platform/arch.
+- Open a pull request on `electron/libchromiumcontent` with the changes.
+- Fix compilation on the all supported platforms/arches.
+
+## Fix Electron code
+
+- Set `vendor/libchromiumcontent` revision to a version with the new Chromium.
+  - It will be great if GH builds for this libcc version are already green
+    and its archives are already available. Otherwise everyone would need
+    to build libcc locally in order to try build a new Electron.
+- Set `CLANG_REVISION` in `script/update-clang.sh` to match the version
+  Chromium is using in `tools/clang/scripts/update.py`.
+  If you don't have a Chromium checkout you can find it there:
+  https://chromium.googlesource.com/chromium/src.git/+/{VERSION}/tools/clang/scripts/update.py
+  (Just change the `{VERSION}` in the URL to the Chromium version you need.)
+- Don't forget to (re)run `script/bootstrap.py`.
+- Upgrade Node.js if you are willing to. See the notes below.
+- Fix compilation.
+- Open a pull request on `electron/electron` with the changes.
+  - This should include upgrading the submodules in `vendor/` as needed.
+- Fix failing tests.
+
+## Upgrade Node.js
+
+- Upgrade `vendor/node` to the Node release that corresponds to the v8 version
+  being used in the new Chromium release. See the v8 versions in Node on
+  https://nodejs.org/en/download/releases for more details.
+  - You can find v8 version Chromium is using on [OmahaProxy](http://omahaproxy.appspot.com).
+    If it's not available check `v8/include/v8-version.h`
+    in the Chromium checkout.
+
+## Troubleshooting
+
+**TODO**
+
+
+==OLD STUFF==
+
+# Upgrading Chrome Checklist
 This document is meant to serve as an overview of what steps are needed
 on each Chrome upgrade in Electron.
 
@@ -43,6 +92,9 @@ Chrome/Node API changes.
   - 64-bit Linux
   - ARM Linux
 
+==/OLD STUFF==
+
+
 ## Verify ffmpeg Support
 
 Electron ships with a version of `ffmpeg` that includes proprietary codecs by
@@ -83,6 +135,8 @@ codecs.
 </html>
 ```
 
-## Links
+## Useful Links
 
 - [Chrome Release Schedule](https://www.chromium.org/developers/calendar)
+- [OmahaProxy](http://omahaproxy.appspot.com)
+- [Chromium Issue Tracker](https://bugs.chromium.org/p/chromium)
