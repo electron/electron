@@ -89,6 +89,18 @@ void OverrideLinuxAppDataPath() {
   PathService::Override(DIR_APP_DATA, path);
 }
 
+// void OverrideWinAppLogsPath() {
+//   base::FilePath path;
+//   // should be in c:\program files\myapp\logs ?
+//   PathService::Override(DIR_APP_DATA, path);
+// }
+
+void OverrideLinuxAppLogsPath() {
+  std::string appName = GetExecutableFileProductName();
+  std::string logPath = '/var/log' + appName
+  PathService::Override(DIR_APP_DATA, base::FilePath(logPath));
+}
+
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
   if (!g_in_x11_io_error_handler) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
@@ -165,6 +177,12 @@ void BrowserMainParts::PreEarlyInitialization() {
 #if defined(OS_MACOSX)
   OverrideMacAppLogsPath();
 #endif
+#if defined(OS_LINUX)
+  OverrideLinuxAppLogsPath();
+#endif
+// #if defined(OS_WIN)
+//   OverrideWinAppLogsPath();
+// #endif
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
