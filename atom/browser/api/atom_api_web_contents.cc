@@ -839,10 +839,10 @@ void WebContents::DidFinishNavigation(
   bool is_main_frame = navigation_handle->IsInMainFrame();
   if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
     auto url = navigation_handle->GetURL();
-    bool is_in_page = navigation_handle->IsSameDocument();
-    if (is_main_frame && !is_in_page) {
+    bool is_same_document = navigation_handle->IsSameDocument();
+    if (is_main_frame && !is_same_document) {
       Emit("did-navigate", url);
-    } else if (is_in_page) {
+    } else if (is_same_document) {
       Emit("did-navigate-in-page", url, is_main_frame);
     }
   } else {
@@ -989,7 +989,7 @@ void WebContents::WebContentsDestroyed() {
 void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& details) {
   Emit("navigation-entry-commited", details.entry->GetURL(),
-       details.is_in_page, details.did_replace_entry);
+       details.is_same_document, details.did_replace_entry);
 }
 
 int64_t WebContents::GetID() const {
