@@ -1143,7 +1143,7 @@ Same as `webContents.reload`.
 
 #### `win.setMenu(menu)` _Linux_ _Windows_
 
-* `menu` Menu
+* `menu` Menu | null
 
 Sets the `menu` as the window's menu bar, setting it to `null` will remove the
 menu bar.
