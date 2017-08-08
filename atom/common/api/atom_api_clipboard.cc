@@ -168,6 +168,7 @@ gfx::Image Clipboard::ReadImage(mate::Arguments* args) {
 void Clipboard::WriteImage(const gfx::Image& image, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   SkBitmap bmp;
+  // TODO(ferreus): Replace with sk_tools_utils::copy_to (chrome60)
   if (image.AsBitmap().deepCopyTo(&bmp)) {
     writer.WriteImage(bmp);
   } else {
