@@ -22,6 +22,8 @@ matrix:
       env: TARGET_ARCH=arm
     - os: linux
       env: TARGET_ARCH=ia32
+    - os: linux
+      env: TARGET_ARCH=arm64
   allow_failures:
     - os: osx
 
