@@ -943,9 +943,6 @@ void CopyBitmapTo(
     const SkBitmap& destination,
     const SkBitmap& source,
     const gfx::Rect& pos) {
-  SkAutoLockPixels source_pixels_lock(source);
-  SkAutoLockPixels destination_pixels_lock(destination);
-
   char* src = static_cast<char*>(source.getPixels());
   char* dest = static_cast<char*>(destination.getPixels());
   int pixelsize = source.bytesPerPixel();
