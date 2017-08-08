@@ -140,7 +140,7 @@
     }],
 
     # Setup sysroot environment.
-    ['OS=="linux" and target_arch in ["arm", "ia32", "x64"]', {
+    ['OS=="linux" and target_arch in ["arm", "ia32", "x64", "arm64"]', {
       'target_defaults': {
         'target_conditions': [
           ['_toolset=="target"', {
@@ -256,6 +256,23 @@
                       '-mthumb',
                     ],
                   }],
+                ],
+              }],
+            ],
+          }],  # target_arch=="arm64" and _toolset=="target"
+          ['target_arch=="arm64" and _toolset=="target"', {
+            'conditions': [
+              ['clang==0', {
+                'cflags_cc': [
+                  '-Wno-abi',
+                ],
+              }],
+              ['clang==1 and arm_arch!=""', {
+                'cflags': [
+                  '-target  aarch64-linux-gnu',
+                ],
+                'ldflags': [
+                  '-target  aarch64-linux-gnu',
                 ],
               }],
             ],
