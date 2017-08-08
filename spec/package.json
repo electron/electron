@@ -15,7 +15,9 @@
     "temp": "^0.8.3",
     "walkdir": "0.0.11",
     "ws": "^1.1.1",
-    "yargs": "^6.0.0"
+    "yargs": "^6.0.0",
+    "plist": "^2.1.0",
+    "asar-integrity": "^0.1.0"
   },
   "optionalDependencies": {
     "ffi": "2.2.0",
