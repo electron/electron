@@ -1467,7 +1467,8 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   if (!view)
     return;
 
-  int type = mate::GetWebInputEventType(isolate, input_event);
+  blink::WebInputEvent::Type type = mate::GetWebInputEventType(isolate,
+      input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
