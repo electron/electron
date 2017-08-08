@@ -34,6 +34,14 @@ LINUX_DEPS_ARM = [
    'gcc-4.8-multilib-arm-linux-gnueabihf',
 ]
 
+LINUX_DEPS_ARM64 = [
+   'binutils-aarch64-linux-gnu',
+   'libc6-dev-arm64-cross',
+   'linux-libc-dev-arm64-cross',
+   'g++-4.8-aarch64-linux-gnu',
+   'gcc-4.8-aarch64-linux-gnu',
+   'gcc-aarch64-linux-gnu',
+]
 
 def main():
   os.environ['CI'] = '1'
@@ -56,6 +64,8 @@ def main():
     deps = LINUX_DEPS
     if target_arch == 'arm':
       deps += LINUX_DEPS_ARM
+    elif target_arch == 'arm64':
+      deps += LINUX_DEPS_ARM64
     else:
       deps += LINUX_DEPS_NO_ARM
     execute(['sudo', 'apt-get', 'install'] + deps)
