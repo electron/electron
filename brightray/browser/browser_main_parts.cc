@@ -4,6 +4,8 @@
 
 #include "brightray/browser/browser_main_parts.h"
 
+#include <string>
+
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/strings/string_number_conversions.h"
@@ -90,19 +92,21 @@ void OverrideLinuxAppDataPath() {
   PathService::Override(DIR_APP_DATA, path);
 }
 
-// void OverrideWinAppLogsPath() {
-//   base::FilePath path;
-//   // should be in c:\program files\myapp\logs ?
-//   PathService::Override(DIR_APP_DATA, path);
-// }
+void OverrideWinAppLogsPath() {
+  std::string appName = GetApplicationName();
+  std::string logPath = "%systemdrive%%homepath%\AppData\Roaming\\";
+  std::string appLogPath = logPath + appName + "\logs";
+
+  PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
+}
 
 void OverrideLinuxAppLogsPath() {
   std::string appName = GetApplicationName();
-  std::string logPath = "/var/log";
+  std::string logPath = "/var/log/";
 
   std::string appLogPath = logPath + appName;
 
-  PathService::Override(DIR_APP_LOGS base::FilePath(appLogPath));
+  PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
 }
 
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
@@ -184,9 +188,9 @@ void BrowserMainParts::PreEarlyInitialization() {
 #if defined(OS_LINUX)
   OverrideLinuxAppLogsPath();
 #endif
-// #if defined(OS_WIN)
-//   OverrideWinAppLogsPath();
-// #endif
+#if defined(OS_WIN)
+  OverrideWinAppLogsPath();
+#endif
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
