@@ -89,7 +89,6 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
   auto local_buffer = buffer.ToLocalChecked();
 
   {
-    SkAutoLockPixels lock(bitmap);
     auto source = static_cast<const unsigned char*>(bitmap.getPixels());
     auto target = node::Buffer::Data(local_buffer);
 

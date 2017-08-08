@@ -95,7 +95,6 @@ void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {
   if (rect.IsEmpty())
     return;
 
-  SkAutoLockPixels bitmap_pixels_lock(*bitmap_);
   callback_.Run(rect, *bitmap_);
 }
 
