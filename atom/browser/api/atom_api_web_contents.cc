@@ -1493,7 +1493,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         blink::WebInputEvent::kNoModifiers,
         ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
-      view->ProcessKeyboardEvent(keyboard_event);
+      view->ProcessKeyboardEvent(keyboard_event, ui::LatencyInfo());
       return;
     }
   } else if (type == blink::WebInputEvent::kMouseWheel) {
