@@ -231,11 +231,19 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Noop, base::RetainedRef(site_instance)));
+}
+
+// This is called whenever either we override the site instance
+// or chromium creates a new instance
+void AtomBrowserClient::OnCreateSiteInstanceForNavigation(
+    content::SiteInstance* current_instance,
+    content::RenderFrameHost* render_frame_host) {
 
   // Remember the original web contents for the pending renderer process.
-  auto pending_process = (*new_instance)->GetProcess();
+  auto pending_process = (*current_instance)->GetProcess();
   pending_processes_[pending_process->GetID()] =
-      content::WebContents::FromRenderFrameHost(render_frame_host);;
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+
   // Clear the entry in map when process ends.
   pending_process->AddObserver(this);
 }
