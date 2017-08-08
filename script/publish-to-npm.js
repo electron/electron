@@ -51,7 +51,7 @@ new Promise((resolve, reject) => {
   files.forEach((name) => {
     fs.writeFileSync(
       path.join(tempDir, name),
-      fs.readFileSync(path.join(__dirname, '..', 'npm', name))
+      fs.readFileSync(path.join(__dirname, '..', name === 'README.md' ? '' : 'npm', name))
     )
   })
   // copy from root package.json to temp/package.json
