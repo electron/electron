@@ -137,7 +137,8 @@ struct Converter<blink::WebInputEvent::Modifiers> {
   }
 };
 
-int GetWebInputEventType(v8::Isolate* isolate, v8::Local<v8::Value> val) {
+blink::WebInputEvent::Type GetWebInputEventType(v8::Isolate* isolate,
+    v8::Local<v8::Value> val) {
   blink::WebInputEvent::Type type = blink::WebInputEvent::kUndefined;
   mate::Dictionary dict;
   ConvertFromV8(isolate, val, &dict) && dict.Get("type", &type);
