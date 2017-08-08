@@ -7,10 +7,11 @@
 
 #include "native_mate/converter.h"
 #include "third_party/WebKit/public/platform/WebCache.h"
+#include "third_party/WebKit/public/platform/WebInputEvent.h"
 #include "third_party/WebKit/public/web/WebContextMenuData.h"
 
+
 namespace blink {
-class WebInputEvent;
 class WebMouseEvent;
 class WebMouseWheelEvent;
 class WebKeyboardEvent;
@@ -27,7 +28,8 @@ struct NativeWebKeyboardEvent;
 
 namespace mate {
 
-int GetWebInputEventType(v8::Isolate* isolate, v8::Local<v8::Value> val);
+blink::WebInputEvent::Type GetWebInputEventType(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> val);
 
 template<>
 struct Converter<blink::WebInputEvent> {
