@@ -240,7 +240,7 @@ void AtomBrowserClient::OnCreateSiteInstanceForNavigation(
     content::RenderFrameHost* render_frame_host) {
 
   // Remember the original web contents for the pending renderer process.
-  auto pending_process = (*current_instance)->GetProcess();
+  content::RenderProcessHost* pending_process = current_instance->GetProcess();
   pending_processes_[pending_process->GetID()] =
       content::WebContents::FromRenderFrameHost(render_frame_host);
 
