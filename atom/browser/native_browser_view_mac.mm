@@ -27,6 +27,17 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   return NO;
 }
 
+- (NSView *)hitTest:(NSPoint)aPoint
+{
+    // Pass-through events that don't hit one of the exclusion zones
+    for (NSView *exlusion_zones in [self subviews]) {
+      if ([exlusion_zones hitTest:aPoint])
+        return nil;
+    }
+
+    return self;
+}
+
 - (void)mouseDown:(NSEvent *)event
 {
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent:)]) {
@@ -63,12 +74,31 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 }
 
 // Debugging tips:
-// Uncomment the following four lines to color DragRegionViews bright red
-- (void)drawRect:(NSRect)aRect
-{
-    [[NSColor redColor] set];
-    NSRectFill([self bounds]);
+// Uncomment the following four lines to color DragRegionView bright red
+// - (void)drawRect:(NSRect)aRect
+// {
+//     [[NSColor redColor] set];
+//     NSRectFill([self bounds]);
+// }
+
+@end
+
+@interface ExcludeDragRegionView : NSView
+@end
+
+@implementation ExcludeDragRegionView
+
+- (BOOL)mouseDownCanMoveWindow {
+  return NO;
 }
+
+// Debugging tips:
+// Uncomment the following four lines to color ExcludeDragRegionView bright red
+// - (void)drawRect:(NSRect)aRect
+// {
+//     [[NSColor greenColor] set];
+//     NSRectFill([self bounds]);
+// }
 
 @end
 
@@ -112,9 +142,10 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
 }
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
-    const std::vector<DraggableRegion>& regions) {
+    std::vector<gfx::Rect> system_drag_exclude_areas) {
   NSView* webView = GetInspectableWebContentsView()->GetNativeView();
   NSInteger webViewHeight = NSHeight([webView bounds]);
+  NSInteger webViewWidth = NSWidth([webView bounds]);
 
   // Remove all DraggableRegionViews that are added last time.
   // Note that [webView subviews] returns the view's mutable internal array and
@@ -125,15 +156,30 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
     if ([subview isKindOfClass:[DragRegionView class]])
       [subview removeFromSuperview];
 
-  for (const DraggableRegion& region : regions) {
-    base::scoped_nsobject<NSView> dragRegion(
+  // Create one giant NSView that is draggable.
+  base::scoped_nsobject<NSView> dragRegion(
         [[DragRegionView alloc] initWithFrame:NSZeroRect]);
-    [dragRegion setFrame:NSMakeRect(region.bounds.x(),
-                                    webViewHeight - region.bounds.bottom(),
-                                    region.bounds.width(),
-                                    region.bounds.height())];
-    [webView addSubview:dragRegion];
+    [dragRegion setFrame:NSMakeRect(0,
+                                    0,
+                                    webViewWidth,
+                                    webViewHeight)];
+
+  // Then, on top of that, add "exclusion zones"
+  for (std::vector<gfx::Rect>::const_iterator iter =
+           system_drag_exclude_areas.begin();
+       iter != system_drag_exclude_areas.end();
+       ++iter) {
+    base::scoped_nsobject<NSView> controlRegion(
+        [[ExcludeDragRegionView alloc] initWithFrame:NSZeroRect]);
+    [controlRegion setFrame:NSMakeRect(iter->x(),
+                                       webViewHeight - iter->bottom(),
+                                       iter->width(),
+                                       iter->height())];
+    [dragRegion addSubview:controlRegion];
   }
+
+  // Add the DragRegion to the WebView
+  [webView addSubview:dragRegion];
 }
 
 // static

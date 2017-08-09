@@ -42,7 +42,7 @@ class NativeBrowserView {
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) = 0;
+      std::vector<gfx::Rect> system_drag_exclude_areas) = 0;
 
  protected:
   explicit NativeBrowserView(
