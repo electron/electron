@@ -13,6 +13,7 @@
     "electron-docs-linter": "^2.3.3",
     "electron-typescript-definitions": "^1.2.7",
     "github": "^9.2.0",
+    "heads": "^1.3.0",
     "husky": "^0.14.3",
     "request": "^2.68.0",
     "standard": "^8.4.0",

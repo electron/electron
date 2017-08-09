@@ -3,6 +3,7 @@
 require('colors')
 const assert = require('assert')
 const GitHub = require('github')
+const heads = require('heads')
 const pkg = require('../package.json')
 const pass = '\u2713'.green
 const fail = '\u2717'.red
@@ -15,7 +16,9 @@ github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 github.repos.getReleases({owner: 'electron', repo: 'electron'})
   .then(res => {
     const releases = res.data
-    const drafts = releases.filter(release => release.draft)
+    const drafts = releases
+      .filter(release => release.draft) // comment out for testing
+      // .filter(release => release.tag_name === 'v1.7.5') // uncomment for testing
 
     check(drafts.length === 1, 'one draft exists', true)
     const draft = drafts[0]
@@ -24,15 +27,27 @@ github.repos.getReleases({owner: 'electron', repo: 'electron'})
     check(draft.prerelease, 'draft is a prerelease')
     check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes')
 
-    const requiredAssets = filenames(draft.tag_name).sort()
+    const requiredAssets = assetsForVersion(draft.tag_name).sort()
     const extantAssets = draft.assets.map(asset => asset.name).sort()
 
-    check(requiredAssets.length === extantAssets.length, 'draft has expected number of assets')
     requiredAssets.forEach(asset => {
       check(extantAssets.includes(asset), asset)
     })
 
-    process.exit(failureCount > 0 ? 1 : 0)
+    const s3Urls = s3UrlsForVersion(draft.tag_name)
+    heads(s3Urls)
+      .then(results => {
+        results.forEach((result, i) => {
+          check(result === 200, s3Urls[i])
+        })
+
+        process.exit(failureCount > 0 ? 1 : 0)
+      })
+      .catch(err => {
+        console.error('Error making HEAD requests for S3 assets')
+        console.error(err)
+        process.exit(1)
+      })
   })
 
 function check (condition, statement, exitIfFail = false) {
@@ -45,7 +60,7 @@ function check (condition, statement, exitIfFail = false) {
   }
 }
 
-function filenames (version) {
+function assetsForVersion (version) {
   const patterns = [
     'electron-{{VERSION}}-darwin-x64-dsym.zip',
     'electron-{{VERSION}}-darwin-x64-symbols.zip',
@@ -78,5 +93,20 @@ function filenames (version) {
     'ffmpeg-{{VERSION}}-win32-ia32.zip',
     'ffmpeg-{{VERSION}}-win32-x64.zip'
   ]
-  return patterns.map(pattern => pattern.replace('{{VERSION}}', version))
+  return patterns.map(pattern => pattern.replace(/{{VERSION}}/g, version))
+}
+
+function s3UrlsForVersion (version) {
+  const bucket = 'https://gh-contractor-zcbenz.s3.amazonaws.com/'
+  const patterns = [
+    'atom-shell/dist/{{VERSION}}/iojs-{{VERSION}}-headers.tar.gz',
+    'atom-shell/dist/{{VERSION}}/iojs-{{VERSION}}.tar.gz',
+    'atom-shell/dist/{{VERSION}}/node-{{VERSION}}.tar.gz',
+    'atom-shell/dist/{{VERSION}}/node.lib',
+    'atom-shell/dist/{{VERSION}}/win-x64/iojs.lib',
+    'atom-shell/dist/{{VERSION}}/win-x86/iojs.lib',
+    'atom-shell/dist/{{VERSION}}/x64/node.lib',
+    'atom-shell/dist/index.json'
+  ]
+  return patterns.map(pattern => bucket + pattern.replace(/{{VERSION}}/g, version))
 }
