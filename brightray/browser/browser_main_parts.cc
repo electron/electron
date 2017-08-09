@@ -97,8 +97,8 @@ void OverrideLinuxAppDataPath() {
 
 void OverrideWinAppLogsPath() {
   std::string appName = GetApplicationName();
-  std::string logPath = "%HOMEDRIVE%%HOMEPATH%\AppData\Roaming\\";
-  std::string appLogPath = logPath + appName + "\logs";
+  std::string logPath = "%HOMEDRIVE%%HOMEPATH%\\AppData\\Roaming\\";
+  std::string appLogPath = logPath + appName + "\\logs";
 
   int status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
 
@@ -113,6 +113,7 @@ void OverrideLinuxAppLogsPath() {
   int status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
 
   PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
+  return;
 }
 
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
