@@ -15,6 +15,9 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
     NSViewMaxXMargin | NSViewMinYMargin;
 
 @interface DragRegionView : NSView
+
+@property (assign) NSPoint initialLocation;
+
 @end
 
 @implementation DragRegionView
@@ -26,7 +29,37 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 - (void)mouseDown:(NSEvent *)event
 {
-  [self.window performWindowDragWithEvent:event];
+  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent:)]) {
+    [self.window performWindowDragWithEvent:event];
+    return;
+  }
+
+  self.initialLocation = [event locationInWindow];
+}
+
+- (void)mouseDragged:(NSEvent *)theEvent
+{
+  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent:)]) {
+    return;
+  }
+
+  NSPoint currentLocation;
+  NSPoint newOrigin;
+
+  NSRect screenFrame = [[NSScreen mainScreen] frame];
+  NSRect windowFrame = [self.window frame];
+
+  currentLocation = [NSEvent mouseLocation];
+  newOrigin.x = currentLocation.x - self.initialLocation.x;
+  newOrigin.y = currentLocation.y - self.initialLocation.y;
+
+  // Don't let window get dragged up under the menu bar
+  if( (newOrigin.y+windowFrame.size.height) > (screenFrame.origin.y+screenFrame.size.height) ){
+    newOrigin.y=screenFrame.origin.y + (screenFrame.size.height-windowFrame.size.height);
+  }
+
+  // Move the window to the new location
+  [self.window setFrameOrigin:newOrigin];
 }
 
 // Debugging tips:
