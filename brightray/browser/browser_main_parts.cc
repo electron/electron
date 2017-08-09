@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <string>
+#include <sys/stat.h>
 
 #include "base/command_line.h"
 #include "base/feature_list.h"
@@ -99,7 +100,7 @@ void OverrideWinAppLogsPath() {
   std::string logPath = "%HOMEDRIVE%%HOMEPATH%\AppData\Roaming\\";
   std::string appLogPath = logPath + appName + "\logs";
 
-  int status = mkdir(appLogPath, S_IRWXU | S_IRGRP | S_IROTH);
+  int status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
 
   PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
 }
@@ -107,9 +108,9 @@ void OverrideWinAppLogsPath() {
 void OverrideLinuxAppLogsPath() {
   std::string appName = GetApplicationName();
   char* homePath = getenv("HOME");
-  std::string appLogPath = homePath + "/.config/" + appName;
+  std::string appLogPath = std:string(homePath) + "/.config/" + appName + "/logs";
 
-  int status = mkdir(appLogPath, S_IRWXU | S_IRGRP | S_IROTH);
+  int status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
 
   PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
 }
