@@ -183,7 +183,7 @@ Returns:
 * `userInfo` Object - Contains app-specific state stored by the activity.
 
 Emitted during [Handoff][handoff] after an activity from this device was successfully
-resumed.
+resumed on another one.
 
 ### Event: 'update-activity-state' _macOS_
 
@@ -194,7 +194,7 @@ Returns:
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` Object - Contains app-specific state stored by the activity.
 
-Emitted during [Handoff][handoff] when its user info should be updated before resuming.
+Emitted when [Handoff][handoff] is about to be resumed on another device. If you need to update the state to be transferred, you should call `event.preventDefault()` immediatelly, construct a new `userInfo` dictionary and call `app.updateCurrentActiviy()` in a timely manner. Otherwise the operation will fail and `continue-activity-error` will be called.
 
 ### Event: 'new-window-for-tab' _macOS_
 
@@ -800,7 +800,7 @@ Returns `String` - The type of the currently running activity.
 * `type` String - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 
-Invalidates the current Handoff user activity.
+Invalidates the current [Handoff][handoff] user activity.
 
 ### `app.updateCurrentActivity(type, userInfo)` _macOS_
 
@@ -808,8 +808,8 @@ Invalidates the current Handoff user activity.
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` Object - App-specific state to store for use by another device.
 
-Updates the current `NSUserActivity` if its type matches `type`, merging the entries from
-`userInfo` into its current userInfo dictionary.
+Updates the current activity if its type matches `type`, merging the entries from
+`userInfo` into its current `userInfo` dictionary.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
