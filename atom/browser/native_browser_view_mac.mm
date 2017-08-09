@@ -8,9 +8,36 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/geometry/rect.h"
 
+using base::scoped_nsobject;
+
 // Match view::Views behavior where the view sticks to the top-left origin.
 const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
     NSViewMaxXMargin | NSViewMinYMargin;
+
+@interface DragRegionView : NSView
+@end
+
+@implementation DragRegionView
+
+- (BOOL)mouseDownCanMoveWindow
+{
+  return NO;
+}
+
+- (void)mouseDown:(NSEvent *)event
+{
+  [self.window performWindowDragWithEvent:event];
+}
+
+// Debugging tips:
+// Uncomment the following four lines to color DragRegionViews bright red
+- (void)drawRect:(NSRect)aRect
+{
+    [[NSColor redColor] set];
+    NSRectFill([self bounds]);
+}
+
+@end
 
 namespace atom {
 
@@ -49,6 +76,31 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
   auto* view = GetInspectableWebContentsView()->GetNativeView();
   view.wantsLayer = YES;
   view.layer.backgroundColor = skia::CGColorCreateFromSkColor(color);
+}
+
+void NativeBrowserViewMac::UpdateDraggableRegions(
+    const std::vector<DraggableRegion>& regions) {
+  NSView* webView = GetInspectableWebContentsView()->GetNativeView();
+  NSInteger webViewHeight = NSHeight([webView bounds]);
+
+  // Remove all DraggableRegionViews that are added last time.
+  // Note that [webView subviews] returns the view's mutable internal array and
+  // it should be copied to avoid mutating the original array while enumerating
+  // it.
+  base::scoped_nsobject<NSArray> subviews([[webView subviews] copy]);
+  for (NSView* subview in subviews.get())
+    if ([subview isKindOfClass:[DragRegionView class]])
+      [subview removeFromSuperview];
+
+  for (const DraggableRegion& region : regions) {
+    base::scoped_nsobject<NSView> dragRegion(
+        [[DragRegionView alloc] initWithFrame:NSZeroRect]);
+    [dragRegion setFrame:NSMakeRect(region.bounds.x(),
+                                    webViewHeight - region.bounds.bottom(),
+                                    region.bounds.width(),
+                                    region.bounds.height())];
+    [webView addSubview:dragRegion];
+  }
 }
 
 // static

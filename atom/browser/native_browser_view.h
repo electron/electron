@@ -7,6 +7,8 @@
 
 #include "base/macros.h"
 #include "third_party/skia/include/core/SkColor.h"
+#include "atom/common/draggable_region.h"
+#include <vector>
 
 namespace brightray {
 class InspectableWebContentsView;
@@ -37,6 +39,10 @@ class NativeBrowserView {
   virtual void SetAutoResizeFlags(uint8_t flags) = 0;
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
   virtual void SetBackgroundColor(SkColor color) = 0;
+
+  // Called when the window needs to update its draggable region.
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions) = 0;
 
  protected:
   explicit NativeBrowserView(

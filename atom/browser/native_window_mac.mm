@@ -1753,6 +1753,12 @@ void NativeWindowMac::UpdateDraggableRegionViews(
     [webView setMouseDownCanMoveWindow:YES];
   }
 
+  // Call down to a BrowserView, if it exists, and inform it about the
+  // draggable areas
+  if (browser_view_) {
+    browser_view_->UpdateDraggableRegions(regions);
+  }
+
   // Remove all ControlRegionViews that are added last time.
   // Note that [webView subviews] returns the view's mutable internal array and
   // it should be copied to avoid mutating the original array while enumerating

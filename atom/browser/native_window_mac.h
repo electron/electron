@@ -154,7 +154,7 @@ class NativeWindowMac : public NativeWindow,
   void UninstallView();
 
   // Install the drag view, which will cover the whole window and decides
-  // whehter we can drag.
+  // whether we can drag.
   void UpdateDraggableRegionViews(const std::vector<DraggableRegion>& regions);
 
   void RegisterInputEventObserver(content::RenderViewHost* host);
