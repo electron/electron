@@ -10,6 +10,14 @@
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
 
+static inline void dispatch_sync_main(dispatch_block_t block) {
+    if ([NSThread isMainThread]) {
+        block();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), block);
+    }
+}
+
 @implementation AtomApplication
 
 + (AtomApplication*)sharedApplication {
@@ -68,7 +76,7 @@
 
   __block BOOL shouldWait = NO;
 
-  dispatch_sync(dispatch_get_main_queue(), ^{
+  dispatch_sync_main(^{
     std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
     std::unique_ptr<base::DictionaryValue> user_info =
       atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
