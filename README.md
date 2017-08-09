@@ -15,35 +15,70 @@ editor](https://github.com/atom/atom) and many other [apps](https://electron.ato
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
-This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
+This project adheres to the Contributor Covenant 
+[code of conduct](https://github.com/electron/electron/tree/master/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable
-behavior to electron@github.com.
+behavior to [electron@github.com](mailto:electron@github.com).
 
-## Downloads
+## Installation
 
-To install prebuilt Electron binaries, use
-[`npm`](https://docs.npmjs.com/):
+To install prebuilt Electron binaries, use [`npm`](https://docs.npmjs.com/).
+The preferred method is to install Electron as a development dependency in your
+app:
 
 ```sh
-# Install as a development dependency
-npm install electron --save-dev
-
-# Install the `electron` command globally in your $PATH
-npm install electron -g
+npm install electron --save-dev --save-exact
 ```
 
-See the [releases page](https://github.com/electron/electron/releases) for
-prebuilt binaries, debug symbols, and more.
+The `--save-exact` flag is recommended as Electron does not follow semantic
+versioning. For info on how to manage Electron versions in your apps, see
+[Electron versioning](https://electron.atom.io/docs/tutorial/electron-versioning/).
+
+For more installation options and troubleshooting tips, see
+[installation](https://electron.atom.io/docs/tutorial/installation/).
+
+## Quick Start
+
+Clone and run the 
+[electron/electron-quick-start](https://github.com/electron/electron-quick-start)
+repository to see a minimal Electron app in action:
+
+```
+git clone https://github.com/electron/electron-quick-start
+cd electron-quick-start
+npm install
+npm start
+```
+
+## Resources for Learning Electron
+
+- [electron.atom.io/docs](http://electron.atom.io/docs) - all of Electron's documentation
+- [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - a very basic starter Electron app
+- [electron.atom.io/community/#boilerplates](http://electron.atom.io/community/#boilerplates) - sample starter apps created by the community
+- [electron/simple-samples](https://github.com/electron/simple-samples) - small applications with ideas for taking them further
+- [electron/electron-api-demos](https://github.com/electron/electron-api-demos) - an Electron app that teaches you how to use Electron
+- [hokein/electron-sample-apps](https://github.com/hokein/electron-sample-apps) - small demo apps for the various Electron APIs
+
+## Programmatic usage
+
+Most people use Electron from the command line, but if you require `electron` inside
+your **Node app** (not your Electron app) it will return the file path to the
+binary. Use this to spawn Electron from Node scripts:
+
+```javascript
+const electron = require('electron')
+const proc = require('child_process')
+
+// will print something similar to /Users/maf/.../Electron
+console.log(electron)
+
+// spawn Electron
+const child = proc.spawn(electron)
+```
 
 ### Mirrors
 
 - [China](https://npm.taobao.org/mirrors/electron)
-
-## Documentation
-
-Guides and the API reference are located in the
-[docs](https://github.com/electron/electron/tree/master/docs) directory. It also
-contains documents describing how to build and contribute to Electron.
 
 ## Documentation Translations
 
@@ -59,11 +94,6 @@ contains documents describing how to build and contribute to Electron.
 - [Russian](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
 - [French](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)
 - [Indonesian](https://github.com/electron/electron/tree/master/docs-translations/id)
-
-## Quick Start
-
-Clone and run the [`electron/electron-quick-start`](https://github.com/electron/electron-quick-start)
-repository to see a minimal Electron app in action.
 
 ## Community
 
