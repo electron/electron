@@ -14,17 +14,15 @@ const github = new GitHub()
 github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 github.repos.getReleases({owner: 'electron', repo: 'electron'})
   .then(res => {
-    releases = res.data
-    // console.log(releases)
+    const releases = res.data
     const drafts = releases.filter(release => release.draft)
-    
-    check(drafts.length == 1, 'one draft exists', true)
+
+    check(drafts.length === 1, 'one draft exists', true)
     const draft = drafts[0]
-    
-    check(draft.tag_name == `v${pkg.version}`, `draft release version matches local package.json (v${pkg.version})`)
+
+    check(draft.tag_name === `v${pkg.version}`, `draft release version matches local package.json (v${pkg.version})`)
     check(draft.prerelease, 'draft is a prerelease')
     check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes')
-    
 
     const requiredAssets = filenames(draft.tag_name).sort()
     const extantAssets = draft.assets.map(asset => asset.name).sort()
