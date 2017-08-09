@@ -142,7 +142,7 @@ class Browser : public WindowListObserver {
                                 const base::DictionaryValue& user_info);
 
   // Gives an oportunity to update the Handoff payload.
-  void UpdateUserActivityState(const std::string& type,
+  bool UpdateUserActivityState(const std::string& type,
                                const base::DictionaryValue& user_info);
 
   // Bounce the dock icon.

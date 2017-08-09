@@ -11,6 +11,8 @@
  @private
   BOOL handlingSendEvent_;
   base::scoped_nsobject<NSUserActivity> currentActivity_;
+  NSCondition *handoffLock_;
+  BOOL updateReceived_;
 }
 
 + (AtomApplication*)sharedApplication;

@@ -606,9 +606,10 @@ void App::OnUserActivityWasContinued(
   Emit("activity-was-continued", type, user_info);
 }
 void App::OnUpdateUserActivityState(
+    bool* prevent_default,
     const std::string& type,
     const base::DictionaryValue& user_info) {
-  Emit("update-activity-state", type, user_info);
+  *prevent_default = Emit("update-activity-state", type, user_info);
 }
 void App::OnNewWindowForTab() {
   Emit("new-window-for-tab");

@@ -182,10 +182,12 @@ void Browser::UserActivityWasContinued(const std::string& type,
     observer.OnUserActivityWasContinued(type, user_info);
 }
 
-void Browser::UpdateUserActivityState(const std::string& type,
+bool Browser::UpdateUserActivityState(const std::string& type,
                                       const base::DictionaryValue& user_info) {
+  bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
-    observer.OnUpdateUserActivityState(type, user_info);
+    observer.OnUpdateUserActivityState(&prevent_default, type, user_info);
+  return prevent_default;
 }
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings(

@@ -57,17 +57,36 @@
   if (currentActivity_.get() != NULL) {
     [currentActivity_.get() addUserInfoEntriesFromDictionary:userInfo];
   }
+
+  [handoffLock_ lock];
+  updateReceived_ = YES;
+  [handoffLock_ signal];
+  [handoffLock_ unlock];
 }
 
 - (void)userActivityWillSave:(NSUserActivity *)userActivity {
+
+  __block BOOL shouldWait = NO;
+
   dispatch_sync(dispatch_get_main_queue(), ^{
     std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
     std::unique_ptr<base::DictionaryValue> user_info =
       atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
     atom::Browser* browser = atom::Browser::Get();
-    browser->UpdateUserActivityState(activity_type, *user_info);    
+    shouldWait = browser->UpdateUserActivityState(activity_type, *user_info) ? YES : NO;    
   });
+
+  if (shouldWait) {
+    [handoffLock_ lock];
+    updateReceived_ = NO;
+    while (!updateReceived_) {
+      BOOL isSignaled = [handoffLock_ waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:1]];
+      if (!isSignaled) { break; }
+    }
+    [handoffLock_ unlock];
+  }
+
   [userActivity setNeedsSave:YES];
 }
 
@@ -90,6 +109,8 @@
           andSelector:@selector(handleURLEvent:withReplyEvent:)
         forEventClass:kInternetEventClass
            andEventID:kAEGetURL];
+
+  handoffLock_ = [NSCondition new];
 }
 
 - (void)handleURLEvent:(NSAppleEventDescriptor*)event
