@@ -30,7 +30,7 @@ class RendererClientBase : public content::ContentRendererClient {
 
   // Get the context that the Electron API is running in.
   v8::Local<v8::Context> GetContext(
-	  blink::WebFrame* frame, v8::Isolate* isolate);
+      blink::WebFrame* frame, v8::Isolate* isolate);
 
  protected:
   void AddRenderBindings(v8::Isolate* isolate,

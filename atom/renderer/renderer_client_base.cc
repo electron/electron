@@ -200,11 +200,11 @@ void RendererClientBase::AddSupportedKeySystems(
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(
-	blink::WebFrame* frame, v8::Isolate* isolate) {
-	if (isolated_world())
-		return frame->worldScriptContext(isolate, World::ISOLATED_WORLD);
-	else
-		return frame->mainWorldScriptContext();
+    blink::WebFrame* frame, v8::Isolate* isolate) {
+  if (isolated_world())
+    return frame->worldScriptContext(isolate, World::ISOLATED_WORLD);
+  else
+    return frame->mainWorldScriptContext();
 }
 
 }  // namespace atom
