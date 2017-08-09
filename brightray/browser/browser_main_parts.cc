@@ -4,6 +4,7 @@
 
 #include "brightray/browser/browser_main_parts.h"
 
+#include <stdlib.h>
 #include <string>
 
 #include "base/command_line.h"
@@ -58,6 +59,7 @@
 
 namespace brightray {
 
+// defined in browser_main_parts_mac
 void OverrideMacAppLogsPath();
 
 namespace {
@@ -94,17 +96,20 @@ void OverrideLinuxAppDataPath() {
 
 void OverrideWinAppLogsPath() {
   std::string appName = GetApplicationName();
-  std::string logPath = "%systemdrive%%homepath%\AppData\Roaming\\";
+  std::string logPath = "%HOMEDRIVE%%HOMEPATH%\AppData\Roaming\\";
   std::string appLogPath = logPath + appName + "\logs";
+
+  int status = mkdir(appLogPath, S_IRWXU | S_IRGRP | S_IROTH);
 
   PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
 }
 
 void OverrideLinuxAppLogsPath() {
   std::string appName = GetApplicationName();
-  std::string logPath = "/var/log/";
+  char* homePath = getenv("HOME");
+  std::string appLogPath = homePath + "/.config/" + appName;
 
-  std::string appLogPath = logPath + appName;
+  int status = mkdir(appLogPath, S_IRWXU | S_IRGRP | S_IROTH);
 
   PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
 }
@@ -130,7 +135,7 @@ int BrowserX11IOErrorHandler(Display* d) {
     // Wait for the UI thread (which has a different connection to the X server)
     // to get the error. We can't call shutdown from this thread without
     // tripping an error. Doing it through a function so that we'll be able
-    // to see it in any crash dumps.
+    // to see it in any crash dumps.back
     WaitingForUIThreadToHandleIOError();
     return 0;
   }
