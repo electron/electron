@@ -59,11 +59,8 @@ You can also attempt to download Electron directly from
 [electron/electron/releases](https://github.com/electron/electron/releases) 
 if installing via `npm` is failing.
 
-If installation fails with an `EACCESS` error you may have to run it again with `sudo`:
-
-```sh
-sudo npm install electron
-```
+If installation fails with an `EACCESS` error you may need to 
+[fix your npm permissions](https://docs.npmjs.com/getting-started/fixing-npm-permissions).
 
 If the above error persists, the [unsafe-perm](https://docs.npmjs.com/misc/config#unsafe-perm) flag may need to be set to true:
 
