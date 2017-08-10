@@ -65,8 +65,8 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   newOrigin.y = currentLocation.y - self.initialLocation.y;
 
   // Don't let window get dragged up under the menu bar
-  if( (newOrigin.y+windowFrame.size.height) > (screenFrame.origin.y+screenFrame.size.height) ){
-    newOrigin.y=screenFrame.origin.y + (screenFrame.size.height-windowFrame.size.height);
+  if( (newOrigin.y + windowFrame.size.height) > (screenFrame.origin.y + screenFrame.size.height) ){
+    newOrigin.y = screenFrame.origin.y + (screenFrame.size.height - windowFrame.size.height);
   }
 
   // Move the window to the new location
