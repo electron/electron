@@ -368,5 +368,8 @@ void NativeDesktopMediaList::OnRefreshFinished() {
         base::Bind(&NativeDesktopMediaList::Refresh,
                    weak_factory_.GetWeakPtr()),
         update_period_);
+  } else {
+    // Destroy the capturers.
+    worker_.reset();
   }
 }
