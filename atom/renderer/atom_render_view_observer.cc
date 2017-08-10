@@ -25,6 +25,7 @@
 #include "net/grit/net_resources.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebDraggableRegion.h"
+#include "third_party/WebKit/public/web/WebElement.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
@@ -75,8 +76,7 @@ AtomRenderViewObserver::AtomRenderViewObserver(
     content::RenderView* render_view,
     AtomRendererClient* renderer_client)
     : content::RenderViewObserver(render_view),
-      renderer_client_(renderer_client),
-      document_created_(false) {
+      renderer_client_(renderer_client) {
   // Initialise resource for directory listing.
   net::NetModule::SetResourceProvider(NetResourceProvider);
 }
@@ -113,11 +113,6 @@ void AtomRenderViewObserver::EmitIPCEvent(blink::WebFrame* frame,
   }
 }
 
-void AtomRenderViewObserver::DidCreateDocumentElement(
-    blink::WebLocalFrame* frame) {
-  document_created_ = true;
-}
-
 void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
   blink::WebVector<blink::WebDraggableRegion> webregions =
       frame->GetDocument().DraggableRegions();
@@ -150,15 +145,23 @@ void AtomRenderViewObserver::OnDestruct() {
 void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,
                                               const base::string16& channel,
                                               const base::ListValue& args) {
-  if (!document_created_)
-    return;
-
   if (!render_view()->GetWebView())
     return;
 
   blink::WebFrame* frame = render_view()->GetWebView()->MainFrame();
   if (!frame || frame->IsWebRemoteFrame())
     return;
+
+  // Don't handle browser messages before document element is created.
+  // When we receive a message from the browser, we try to transfer it
+  // to a web page, and when we do that Blink creates an empty
+  // document element if it hasn't been created yet, and it makes our init
+  // script to run while `window.location` is still "about:blank".
+  blink::WebDocument document = frame->GetDocument();
+  blink::WebElement html_element = document.DocumentElement();
+  if (html_element.IsNull()) {
+    return;
+  }
 
   EmitIPCEvent(frame, channel, args);
 

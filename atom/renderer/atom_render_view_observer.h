@@ -31,7 +31,6 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 
  private:
   // content::RenderViewObserver implementation.
-  void DidCreateDocumentElement(blink::WebLocalFrame* frame) override;
   void DraggableRegionsChanged(blink::WebFrame* frame) override;
   bool OnMessageReceived(const IPC::Message& message) override;
   void OnDestruct() override;
@@ -43,9 +42,6 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
   void OnOffscreen();
 
   AtomRendererClient* renderer_client_;
-
-  // Whether the document object has been created.
-  bool document_created_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderViewObserver);
 };
