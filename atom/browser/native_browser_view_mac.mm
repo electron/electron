@@ -144,8 +144,21 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
 void NativeBrowserViewMac::UpdateDraggableRegions(
     std::vector<gfx::Rect> system_drag_exclude_areas) {
   NSView* webView = GetInspectableWebContentsView()->GetNativeView();
+
+  NSInteger superViewHeight = NSHeight([webView.superview bounds]);
   NSInteger webViewHeight = NSHeight([webView bounds]);
   NSInteger webViewWidth = NSWidth([webView bounds]);
+  NSInteger webViewX = NSMinX([webView frame]);
+  NSInteger webViewY = 0;
+
+  // Apple's NSViews have their coordinate system originate at the bottom left,
+  // meaning that we need to be a bit smarter when it comes to calculating our
+  // current top offset
+  if (webViewHeight > superViewHeight) {
+    webViewY = std::abs(webViewHeight - superViewHeight - (std::abs(NSMinY([webView frame]))));
+  } else {
+    webViewY = superViewHeight - NSMaxY([webView frame]);
+  }
 
   // Remove all DraggableRegionViews that are added last time.
   // Note that [webView subviews] returns the view's mutable internal array and
@@ -171,8 +184,8 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
        ++iter) {
     base::scoped_nsobject<NSView> controlRegion(
         [[ExcludeDragRegionView alloc] initWithFrame:NSZeroRect]);
-    [controlRegion setFrame:NSMakeRect(iter->x(),
-                                       webViewHeight - iter->bottom(),
+    [controlRegion setFrame:NSMakeRect(iter->x() - webViewX,
+                                       webViewHeight - iter->bottom() + webViewY,
                                        iter->width(),
                                        iter->height())];
     [dragRegion addSubview:controlRegion];
