@@ -4,24 +4,12 @@
 
 Process: [Main](../glossary.md#main-process)
 
-The `autoUpdater` module provides an interface for the
-[Squirrel](https://github.com/Squirrel) framework.
-
-You can quickly launch a multi-platform release server for distributing your
-application by using one of these projects:
-
-- [nuts][nuts]: *A smart release server for your applications, using GitHub as a backend. Auto-updates with Squirrel (Mac & Windows)*
-- [electron-release-server][electron-release-server]: *A fully featured,
-  self-hosted release server for electron applications, compatible with
-  auto-updater*
-- [squirrel-updates-server][squirrel-updates-server]: *A simple node.js server
-  for Squirrel.Mac and Squirrel.Windows which uses GitHub releases*
-- [squirrel-release-server][squirrel-release-server]: *A simple PHP application for Squirrel.Windows which reads updates from a folder. Supports delta updates.*
+**You can find a detailed guide about how to implement updates into your application [here](../tutorial/updates.md).**
 
 ## Platform notices
 
-Though `autoUpdater` provides a uniform API for different platforms, there are
-still some subtle differences on each platform.
+Although `autoUpdater` provides a uniform API for different platforms, there are
+still some subtle differences on each platform:
 
 ### macOS
 
@@ -134,7 +122,3 @@ from the normal quit event sequence.
 [installer-lib]: https://github.com/electron/windows-installer
 [electron-forge-lib]: https://github.com/electron-userland/electron-forge
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
-[electron-release-server]: https://github.com/ArekSredzki/electron-release-server
-[squirrel-updates-server]: https://github.com/Aluxian/squirrel-updates-server
-[nuts]: https://github.com/GitbookIO/nuts
-[squirrel-release-server]: https://github.com/Arcath/squirrel-release-server
