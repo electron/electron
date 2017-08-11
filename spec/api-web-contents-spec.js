@@ -658,7 +658,7 @@ describe('webContents module', function () {
   describe('did-change-theme-color event', () => {
     it('is triggered with correct theme color', (done) => {
       w.webContents.once('did-change-theme-color', (e, color) => {
-        asset.equal(color, '#ffeedd')
+        assert.equal(color, '#ffeedd')
         done()
       })
       w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'theme-color.html'))
@@ -666,11 +666,10 @@ describe('webContents module', function () {
 
     it('is triggered with empty theme color', (done) => {
       w.webContents.once('did-change-theme-color', (e, color) => {
-        asset.equal(color, '')
+        assert.equal(color, '')
         done()
       })
       w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'base-page.html'))
     })
-
   })
 })
