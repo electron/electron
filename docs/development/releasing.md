@@ -210,3 +210,9 @@ To promote a beta version to stable (aka `latest`):
 ```
 npm dist-tag add electron@1.2.3 latest
 ```
+
+Then edit the release on GitGub:
+
+1. Remove `beta` from the release name: electron v1.7.5 ~~beta~~
+1. Uncheck the `prerelease` checkbox.
+1. Click "Update release" 
