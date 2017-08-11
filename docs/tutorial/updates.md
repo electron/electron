@@ -14,7 +14,7 @@ Depending on your needs, you can choose from one of these:
 
 ## Implementing Updates into Your App
 
-Once you've deployed your update server, continue with importing the required modules in your code. The following code might vary for a different update server, but it works like described when using [Hazel](https://github.com/zeit/hazel).
+Once you've deployed your update server, continue with importing the required modules in your code (the following code might vary for different server software, but it works like described when using [Hazel](https://github.com/zeit/hazel)).
 
 **Important:** Please ensure that the code below will only be executed in production - you can use [electron-is-dev](https://github.com/sindresorhus/electron-is-dev) to check for the environment).
 
