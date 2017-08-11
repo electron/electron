@@ -658,7 +658,7 @@ describe('webContents module', function () {
   describe('did-change-theme-color event', () => {
     it('is triggered with correct theme color', (done) => {
       w.webContents.once('did-change-theme-color', (e, color) => {
-        assert.equal(color, '#ffeedd')
+        assert.equal(color, '#FFEEDD')
         done()
       })
       w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'theme-color.html'))
