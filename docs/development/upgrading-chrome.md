@@ -5,27 +5,42 @@ on each Chromium upgrade in Electron.
 
 ## Update libchromiumcontent (a.k.a. libcc)
 
-- Update the `VERSION` file at the root of the `electron/libchromiumcontent`
-  repository.
+- Clone the repo:
+```
+git clone git@github.com:electron/libchromiumcontent.git
+cd libchromiumcontent
+```
+- Run bootstrap script to init and sync git submodules:
+```
+./script/bootstrap -v
+```
+- Update `VERSION` file to correspond to Chromium version.
 - Run `script/update`, it will probably fail applying patches.
 - Fix failing patches. `script/patch.py` might help.
   - Don't forget to fix patches in the `patches-mas/` folder.
-- Make sure compilation succeeds on at least one supported platform/arch.
-- Open a pull request on `electron/libchromiumcontent` with the changes.
+- Build libcc:
+```
+./script/build
+```
+- Create dist folders which will be used by electron:
+```
+./script/create-dist --no_zip
+cd dist/main
+../../tools/generate_filenames_gypi filenames.gypi src shared_library static_library
+cd -
+```
+- Open a pull request to `electron/libchromiumcontent` with the changes.
 - Fix compilation on the all supported platforms/arches.
 
-## Fix Electron code
+## Update Electron
 
 - Set `vendor/libchromiumcontent` revision to a version with the new Chromium.
   - It will be great if GH builds for this libcc version are already green
     and its archives are already available. Otherwise everyone would need
     to build libcc locally in order to try build a new Electron.
 - Set `CLANG_REVISION` in `script/update-clang.sh` to match the version
-  Chromium is using in `tools/clang/scripts/update.py`.
-  If you don't have a Chromium checkout you can find it there:
-  https://chromium.googlesource.com/chromium/src.git/+/{VERSION}/tools/clang/scripts/update.py
-  (Just change the `{VERSION}` in the URL to the Chromium version you need.)
-- Don't forget to (re)run `script/bootstrap.py`.
+  Chromium is using. You can find it in file `src/tools/clang/scripts/update.py` in updated `electron/libchromiumcontent` repo.
+- Run `script/bootstrap.py`.
 - Upgrade Node.js if you are willing to. See the notes below.
 - Fix compilation.
 - Open a pull request on `electron/electron` with the changes.
@@ -44,55 +59,6 @@ on each Chromium upgrade in Electron.
 ## Troubleshooting
 
 **TODO**
-
-
-==OLD STUFF==
-
-# Upgrading Chrome Checklist
-This document is meant to serve as an overview of what steps are needed
-on each Chrome upgrade in Electron.
-
-These are things to do in addition to updating the Electron code for any
-Chrome/Node API changes.
-
-- Verify the new Chrome version is available from
-  https://github.com/zcbenz/chromium-source-tarball/releases
-- Update the `VERSION` file at the root of the `electron/libchromiumcontent`
-  repository
-- Update the `CLANG_REVISION` in `script/update-clang.sh` to match the version
-  Chrome is using in `libchromiumcontent/src/tools/clang/scripts/update.py`
-- Upgrade `vendor/node` to the Node release that corresponds to the v8 version
-  being used in the new Chrome release. See the v8 versions in Node on
-  https://nodejs.org/en/download/releases for more details
-- Upgrade `vendor/crashpad` for any crash reporter changes needed
-- Upgrade `vendor/depot_tools` for any build tools changes needed
-- Update the `libchromiumcontent` SHA-1 to download in `script/lib/config.py`
-- Open a pull request on `electron/libchromiumcontent` with the changes
-- Open a pull request on `electron/electron` with the changes
-  - This should include upgrading the submodules in `vendor/` as needed
-- Verify debug builds succeed on:
-  - macOS
-  - 32-bit Windows
-  - 64-bit Window
-  - 32-bit Linux
-  - 64-bit Linux
-  - ARM Linux
-- Verify release builds succeed on:
-  - macOS
-  - 32-bit Windows
-  - 64-bit Window
-  - 32-bit Linux
-  - 64-bit Linux
-  - ARM Linux
-- Verify tests pass on:
-  - macOS
-  - 32-bit Windows
-  - 64-bit Window
-  - 32-bit Linux
-  - 64-bit Linux
-  - ARM Linux
-
-==/OLD STUFF==
 
 
 ## Verify ffmpeg Support
