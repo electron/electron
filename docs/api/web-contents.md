@@ -403,6 +403,12 @@ a meta tag:
 <meta name='theme-color' content='#ff0000'>
 ```
 
+Returns:
+
+* `event` Event
+* `color` string
+  * Theme color in format '#rrggbb'. Empty string when theme color is not found.
+
 #### Event: 'update-target-url'
 
 Returns:
