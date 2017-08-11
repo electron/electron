@@ -6,10 +6,13 @@ Process: [Main](../glossary.md#main-process)
 
 **You can find a detailed guide about how to implement updates into your application [here](../tutorial/updates.md).**
 
-## Platform notices
+## Platform Notices
 
-Although `autoUpdater` provides a uniform API for different platforms, there are
-still some subtle differences on each platform:
+Currently, only macOS and Windows are supported. There is no built-in support
+for auto-updater on Linux, so it is recommended to use the
+distribution's package manager to update your app.
+
+In addition, there are some subtle differences on each platform:
 
 ### macOS
 
@@ -37,15 +40,6 @@ The installer generated with Squirrel will create a shortcut icon with an
 `com.squirrel.slack.Slack` and `com.squirrel.code.Code`. You have to use the
 same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
 not be able to pin your app properly in task bar.
-
-Unlike Squirrel.Mac, Windows can host updates on S3 or any other static file host.
-You can read the documents of [Squirrel.Windows][squirrel-windows] to get more details
-about how Squirrel.Windows works.
-
-### Linux
-
-There is no built-in support for auto-updater on Linux, so it is recommended to
-use the distribution's package manager to update your app.
 
 ## Events
 
