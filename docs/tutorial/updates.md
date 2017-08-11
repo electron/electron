@@ -12,7 +12,7 @@ Depending on your needs, you can choose from one of these:
 - [Nuts](https://github.com/GitbookIO/nuts) – Also uses [GitHub Releases](https://help.github.com/articles/creating-releases/), but caches app updates on disk
 - [electron-release-server](https://github.com/ArekSredzki/electron-release-server) – Provides you with a dashboard for handling releases
 
-## Implemeting Updates into Your App
+## Implementing Updates into Your App
 
 Once you've deployed your update server, continue with importing the required modules in your code (please ensure that the code below will only be executed in production - you can use [electron-is-dev](https://github.com/sindresorhus/electron-is-dev) for that):
 
