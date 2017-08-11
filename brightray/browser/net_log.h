@@ -7,7 +7,7 @@
 
 #include "base/files/scoped_file.h"
 #include "net/log/net_log.h"
-#include "net/log/write_to_file_net_log_observer.h"
+#include "net/log/file_net_log_observer.h"
 
 namespace brightray {
 
@@ -20,7 +20,7 @@ class NetLog : public net::NetLog {
 
  private:
   base::ScopedFILE log_file_;
-  net::WriteToFileNetLogObserver write_to_file_observer_;
+  net::FileNetLogObserver write_to_file_observer_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);
 };
