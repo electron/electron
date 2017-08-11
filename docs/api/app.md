@@ -927,6 +927,12 @@ Enables mixed sandbox mode on the app.
 
 This method can only be called before app is ready.
 
+### `app.setDisplayNotifications(display)`
+
+* `display` Boolean
+
+Sets whether to display incoming notifications.
+
 ### `app.dock.bounce([type])` _macOS_
 
 * `type` String (optional) - Can be `critical` or `informational`. The default is

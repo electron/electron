@@ -31,6 +31,7 @@
 #include "base/strings/string_util.h"
 #include "base/sys_info.h"
 #include "brightray/browser/brightray_paths.h"
+#include "brightray/browser/platform_notification_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
@@ -1077,6 +1078,13 @@ mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
 }
 
+void App::SetDisplayNotifications(bool display) {
+  brightray::PlatformNotificationService* platform =
+    static_cast<brightray::PlatformNotificationService*>(
+      AtomBrowserClient::Get()->GetPlatformNotificationService());
+  platform->SetDisplayNotifications(display);
+}
+
 // static
 void App::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
@@ -1150,7 +1158,8 @@ void App::BuildPrototype(
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
       .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox)
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
-      .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
+      .SetMethod("getAppMemoryInfo", &App::GetAppMetrics)
+      .SetMethod("setDisplayNotifications", &App::SetDisplayNotifications);
 }
 
 }  // namespace api

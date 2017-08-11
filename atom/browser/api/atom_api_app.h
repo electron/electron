@@ -151,6 +151,8 @@ class App : public AtomBrowserClient::Delegate,
   void BrowserChildProcessKilled(
       const content::ChildProcessData& data, int exit_code) override;
 
+  void SetDisplayNotifications(bool display);
+
  private:
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type, base::ProcessHandle handle);

@@ -21,6 +21,8 @@ class PlatformNotificationService
   explicit PlatformNotificationService(BrowserClient* browser_client);
   ~PlatformNotificationService() override;
 
+  void SetDisplayNotifications(bool display);
+
  protected:
   // content::PlatformNotificationService:
   blink::mojom::PermissionStatus CheckPermissionOnUIThread(
@@ -55,6 +57,7 @@ class PlatformNotificationService
  private:
   BrowserClient* browser_client_;
   int render_process_id_;
+  bool display_;
 
   DISALLOW_COPY_AND_ASSIGN(PlatformNotificationService);
 };
