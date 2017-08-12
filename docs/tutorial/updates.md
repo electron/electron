@@ -22,17 +22,21 @@ Once you've deployed your update server, continue with importing the required mo
 const { app, autoUpdater } = require('electron')
 ```
 
-Next, put together the URL of the update server:
+Next, put together the URL of the update server and tell [autoUpdater](../api/auto-updater.md) about it:
 
 ```js
 const server = <your-deployment-url>
 const feed = `${server}/update/${process.platform}/${app.getVersion()}`
+
+autoUpdater.setFeedURL(feed)
 ```
 
-As the final step, tell [autoUpdater](../api/auto-updater.md) where to ask for updates:
+As the final step, check for updates (the example below will check every minute):
 
 ```js
-autoUpdater.setFeedURL(feed)
+setInterval(() => {
+  autoUpdater.checkForUpdates()
+}, 60000)
 ```
 
 That's all. Once [built](../tutorial/application-distribution.md), your application will receive an update for each new [GitHub Release](https://help.github.com/articles/creating-releases/) that you create.
