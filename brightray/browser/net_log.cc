@@ -4,8 +4,11 @@
 
 #include "brightray/browser/net_log.h"
 
+#include <utility>
+
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/memory/ptr_util.h"
 #include "base/values.h"
 #include "content/public/common/content_switches.h"
 #include "net/log/net_log_util.h"
@@ -18,12 +21,12 @@ std::unique_ptr<base::DictionaryValue> GetConstants() {
   std::unique_ptr<base::DictionaryValue> constants = net::GetNetConstants();
 
   // Adding client information to constants dictionary.
-  auto* client_info = new base::DictionaryValue();
+  auto client_info = base::MakeUnique<base::DictionaryValue>();
   client_info->SetString(
       "command_line",
       base::CommandLine::ForCurrentProcess()->GetCommandLineString());
 
-  constants->Set("clientInfo", client_info);
+  constants->Set("clientInfo", std::move(client_info));
   return constants;
 }
 
