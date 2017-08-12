@@ -99,8 +99,8 @@ void PrintSettingsToJobSettings(const PrintSettings& settings,
   // range
 
   if (!settings.ranges().empty()) {
-    base::ListValue* page_range_array = new base::ListValue;
-    job_settings->Set(kSettingPageRange, page_range_array);
+    auto page_range_array = base::MakeUnique<base::ListValue>();
+    job_settings->Set(kSettingPageRange, std::move(page_range_array));
     for (size_t i = 0; i < settings.ranges().size(); ++i) {
       std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
       dict->SetInteger(kSettingPageRangeFrom, settings.ranges()[i].from + 1);
