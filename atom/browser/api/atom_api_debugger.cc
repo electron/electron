@@ -10,6 +10,7 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/json/json_writer.h"
+#include "base/memory/ptr_util.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
@@ -143,7 +144,7 @@ void Debugger::SendCommand(mate::Arguments* args) {
   request.SetInteger("id", request_id);
   request.SetString("method", method);
   if (!command_params.empty())
-    request.Set("params", command_params.DeepCopy());
+    request.Set("params", base::WrapUnique(command_params.DeepCopy()));
 
   std::string json_args;
   base::JSONWriter::Write(request, &json_args);
