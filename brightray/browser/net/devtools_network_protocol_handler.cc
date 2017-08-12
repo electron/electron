@@ -5,7 +5,9 @@
 #include "brightray/browser/net/devtools_network_protocol_handler.h"
 
 #include <string>
+#include <utility>
 
+#include "base/memory/ptr_util.h"
 #include "base/strings/stringprintf.h"
 #include "brightray/browser/browser_context.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
@@ -60,17 +62,17 @@ bool ParseCommand(const base::DictionaryValue* command,
 
 std::unique_ptr<base::DictionaryValue>
 CreateSuccessResponse(int id, std::unique_ptr<base::DictionaryValue> result) {
-  std::unique_ptr<base::DictionaryValue> response(new base::DictionaryValue);
+  auto response = base::MakeUnique<base::DictionaryValue>();
   response->SetInteger(kId, id);
-  response->Set(params::kResult, result.release());
+  response->Set(params::kResult, std::move(result));
   return response;
 }
 
 std::unique_ptr<base::DictionaryValue>
 CreateFailureResponse(int id, const std::string& param) {
-  std::unique_ptr<base::DictionaryValue> response(new base::DictionaryValue);
-  auto error_object = new base::DictionaryValue;
-  response->Set(kError, error_object);
+  auto response = base::MakeUnique<base::DictionaryValue>();
+  auto error_object = base::MakeUnique<base::DictionaryValue>();
+  response->Set(kError, std::move(error_object));
   error_object->SetInteger(params::kErrorCode, kErrorInvalidParams);
   error_object->SetString(params::kErrorMessage,
       base::StringPrintf("Missing or Invalid '%s' parameter", param.c_str()));
