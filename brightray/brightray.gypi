@@ -126,11 +126,17 @@
               'USE_NSS',  # deprecated after Chrome 45.
             ],
           }],
+          ['OS in ["linux", "mac"]', {
+            'defines': [
+              'WEBRTC_POSIX',
+            ],
+          }],
           ['OS=="linux"', {
             'defines': [
               '_LARGEFILE_SOURCE',
               '_LARGEFILE64_SOURCE',
               '_FILE_OFFSET_BITS=64',
+              'WEBRTC_LINUX',
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
