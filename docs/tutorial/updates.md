@@ -9,7 +9,7 @@ To get started, you firstly need to deploy an update server (that's where the [a
 Depending on your needs, you can choose from one of these:
 
 - [Hazel](https://github.com/zeit/hazel) – Pulls new releases from [GitHub Releases](https://help.github.com/articles/creating-releases/) and is **perfect for getting started**
-- [Nuts](https://github.com/GitbookIO/nuts) – Also uses [GitHub Releases](https://help.github.com/articles/creating-releases/), but caches app updates on disk
+- [Nuts](https://github.com/GitbookIO/nuts) – Also uses [GitHub Releases](https://help.github.com/articles/creating-releases/), but caches app updates on disk and supports private repositories
 - [electron-release-server](https://github.com/ArekSredzki/electron-release-server) – Provides you with a dashboard for handling releases
 
 ## Implementing Updates into Your App
