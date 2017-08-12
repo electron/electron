@@ -30,7 +30,7 @@ class InspectableWebContents;
 }
 
 namespace content {
-class ResourceRequestBodyImpl;
+class ResourceRequestBody;
 }
 
 namespace mate {
@@ -208,7 +208,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::string& frame_name,
       WindowOpenDisposition disposition,
       const std::vector<std::string>& features,
-      const scoped_refptr<content::ResourceRequestBodyImpl>& body);
+      const scoped_refptr<content::ResourceRequestBody>& body);
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);

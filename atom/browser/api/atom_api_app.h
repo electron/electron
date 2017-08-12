@@ -80,7 +80,7 @@ class App : public AtomBrowserClient::Delegate,
       const std::string& frame_name,
       WindowOpenDisposition disposition,
       const std::vector<std::string>& features,
-      const scoped_refptr<content::ResourceRequestBodyImpl>& body,
+      const scoped_refptr<content::ResourceRequestBody>& body,
       int render_process_id,
       int render_frame_id);
 
