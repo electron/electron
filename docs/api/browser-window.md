@@ -176,6 +176,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `fullscreenable` Boolean (optional) - Whether the window can be put into fullscreen
     mode. On macOS, also whether the maximize/zoom button should toggle full
     screen mode or maximize window. Default is `true`.
+  * `simpleFullscreen` Boolean (optional) - Use pre-Lion fullscreen on macOS. Default is `false`.
   * `skipTaskbar` Boolean (optional) - Whether to show the window in taskbar. Default is
     `false`.
   * `kiosk` Boolean (optional) - The kiosk mode. Default is `false`.
@@ -765,6 +766,16 @@ Sets whether the window should be in fullscreen mode.
 #### `win.isFullScreen()`
 
 Returns `Boolean` - Whether the window is in fullscreen mode.
+
+#### `win.setSimpleFullScreen(flag)` _macOS_
+
+* `flag` Boolean
+
+Sets whether the window should be in simple fullscreen mode.
+
+#### `win.isSimpleFullScreen()` _macOS_
+
+Returns `Boolean` - Whether the window is in simple fullscreen mode.
 
 #### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
