@@ -664,7 +664,7 @@ describe('webContents module', function () {
           assert.equal(color, '#FFEEDD')
           w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'base-page.html'))
         } else if (count === 1) {
-          assert.equal(color, '')
+          assert.equal(color, null)
           done()
         }
       })
