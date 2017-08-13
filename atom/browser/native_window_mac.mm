@@ -720,6 +720,13 @@ enum {
     [super performClose:sender];
 }
 
+- (void)toggleFullScreen:(id)sender {
+  if (shell_->simple_fullscreen())
+    shell_->SetSimpleFullScreen(!shell_->IsSimpleFullScreen());
+  else
+   [super toggleFullScreen:sender];
+}
+
 - (void)performMiniaturize:(id)sender {
   if (shell_->title_bar_style() == atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
     [self miniaturize:self];
@@ -819,7 +826,9 @@ NativeWindowMac::NativeWindowMac(
       zoom_to_page_width_(false),
       fullscreen_window_title_(false),
       attention_request_id_(0),
-      title_bar_style_(NORMAL) {
+      title_bar_style_(NORMAL),
+      simple_fullscreen_(false),
+      is_simple_fullscreen_(false) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
@@ -964,6 +973,8 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
 
   options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
+
+  options.Get(options::kSimpleFullScreen, &simple_fullscreen_);
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
@@ -1349,6 +1360,83 @@ void NativeWindowMac::FlashFrame(bool flash) {
 }
 
 void NativeWindowMac::SetSkipTaskbar(bool skip) {
+}
+
+void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
+  NSWindow* window = GetNativeWindow();
+
+  if (simple_fullscreen && !is_simple_fullscreen_) {
+    is_simple_fullscreen_ = true;
+
+    // Take note of the current window size
+    original_frame_ = [window frame];
+
+    simple_fullscreen_options_ = [NSApp currentSystemPresentationOptions];
+
+    // We can simulate the pre-Lion fullscreen by auto-hiding the dock and menu bar
+    NSApplicationPresentationOptions options =
+        NSApplicationPresentationAutoHideDock +
+        NSApplicationPresentationAutoHideMenuBar;
+    [NSApp setPresentationOptions:options];
+
+    was_maximized_ = IsMaximized();
+    was_minimizable_ = IsMinimizable();
+    was_maximizable_ = IsMaximizable();
+    was_resizable_ = IsResizable();
+    was_movable_ = IsMovable();
+
+    // if (!was_maximized_) Maximize();
+
+    NSRect fullscreenFrame = [window.screen frame];
+
+    if ( !fullscreen_window_title() ) {
+      // Hide the titlebar
+      SetStyleMask(false, NSTitledWindowMask);
+
+      // Resize the window to accomodate the _entire_ screen size
+      fullscreenFrame.size.height -= [[[NSApplication sharedApplication] mainMenu] menuBarHeight];
+    } else {
+      // No need to hide the title, but we should still hide the window buttons
+      [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
+      [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+      [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
+    }
+
+    [window setFrame:fullscreenFrame display: YES animate: YES];
+
+    // Fullscreen windows can't be resized, minimized, etc.
+    if (was_minimizable_) SetMinimizable(false);
+    if (was_maximizable_) SetMaximizable(false);
+    if (was_resizable_) SetResizable(false);
+    if (was_movable_) SetMovable(false);
+  } else if (!simple_fullscreen && is_simple_fullscreen_) {
+    is_simple_fullscreen_ = false;
+
+    if ( !fullscreen_window_title() ) {
+      // Restore the titlebar
+      SetStyleMask(true, NSTitledWindowMask);
+    } else {
+      // Show the window buttons
+      [[window standardWindowButton:NSWindowZoomButton] setHidden:NO];
+      [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:NO];
+      [[window standardWindowButton:NSWindowCloseButton] setHidden:NO];
+    }
+
+    [window setFrame:original_frame_ display: YES animate: YES];
+
+    [NSApp setPresentationOptions:simple_fullscreen_options_];
+    
+    // Restore window manipulation abilities
+    // if (!was_maximized_) Unmaximize();
+    if (was_minimizable_) SetMinimizable(true);
+    if (was_maximizable_) SetMaximizable(true);
+    if (was_resizable_) SetResizable(true);
+    if (was_movable_) SetMovable(true);
+  }
+}
+
+bool NativeWindowMac::IsSimpleFullScreen() {
+  return is_simple_fullscreen_;
 }
 
 void NativeWindowMac::SetKiosk(bool kiosk) {

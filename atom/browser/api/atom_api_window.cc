@@ -603,6 +603,14 @@ void Window::SetSkipTaskbar(bool skip) {
   window_->SetSkipTaskbar(skip);
 }
 
+void Window::SetSimpleFullScreen(bool simple_fullscreen) {
+  window_->SetSimpleFullScreen(simple_fullscreen);
+}
+
+bool Window::IsSimpleFullScreen() {
+  return window_->IsSimpleFullScreen();
+}
+
 void Window::SetKiosk(bool kiosk) {
   window_->SetKiosk(kiosk);
 }
@@ -1018,6 +1026,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getTitle", &Window::GetTitle)
       .SetMethod("flashFrame", &Window::FlashFrame)
       .SetMethod("setSkipTaskbar", &Window::SetSkipTaskbar)
+      .SetMethod("setSimpleFullScreen", &Window::SetSimpleFullScreen)
+      .SetMethod("isSimpleFullScreen", &Window::IsSimpleFullScreen)
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
       .SetMethod("setBackgroundColor", &Window::SetBackgroundColor)

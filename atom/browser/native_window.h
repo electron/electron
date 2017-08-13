@@ -134,6 +134,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetSkipTaskbar(bool skip) = 0;
+  virtual void SetSimpleFullScreen(bool simple_fullscreen) = 0;
+  virtual bool IsSimpleFullScreen() = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
   virtual void SetBackgroundColor(const std::string& color_name) = 0;
