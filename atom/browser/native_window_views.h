@@ -7,7 +7,7 @@
 
 #include "atom/browser/native_window.h"
 
-#include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -102,7 +102,7 @@ class NativeWindowViews : public NativeWindow,
   void SetBackgroundColor(const std::string& color_name) override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
-  void SetIgnoreMouseEvents(bool ignore) override;
+  void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   void SetMenu(AtomMenuModel* menu_model) override;
@@ -134,7 +134,6 @@ class NativeWindowViews : public NativeWindow,
 
 #if defined(OS_WIN)
   TaskbarHost& taskbar_host() { return taskbar_host_; }
-  void SetForwardMouseMessages(bool forward) override;
 #endif
 
  private:
@@ -171,6 +170,7 @@ class NativeWindowViews : public NativeWindow,
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
+  void SetForwardMouseMessages(bool forward);
   static LRESULT CALLBACK SubclassProc(
       HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id,
       DWORD_PTR ref_data);

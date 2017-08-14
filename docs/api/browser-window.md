@@ -1311,9 +1311,14 @@ Returns `Boolean` - Whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
 
-#### `win.setIgnoreMouseEvents(ignore)`
+#### `win.setIgnoreMouseEvents(ignore[, options])`
 
 * `ignore` Boolean
+* `options` Object (optional)
+  * `forward` Boolean (optional) _Windows_ - If true, forwards mouse move
+    messages to Chromium, enabling mouse related events such as `mouseleave`.
+	Only used when `ignore` is true. If `ignore` is false, forwarding is always
+	disabled regardless of this value.
 
 Makes the window ignore all mouse events.
 
@@ -1383,14 +1388,6 @@ removed in future Electron releases.
 
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
-
-#### `win.setForwardMouseMessages(forward)` _Windows_
-
-* `forward` Boolean
-
-Forward mouse messages to the window below this one. This is similar to
-`setIgnoreMouseEvents`, but additionally allows users to listen to events
-related to mouse movement such as `mouseleave`.
 
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API

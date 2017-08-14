@@ -790,7 +790,7 @@ bool NativeWindowViews::HasShadow() {
       != wm::ShadowElevation::NONE;
 }
 
-void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
+void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
   if (ignore)
@@ -798,6 +798,13 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
   else
     ex_style &= ~(WS_EX_TRANSPARENT | WS_EX_LAYERED);
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+
+  // Forwarding is always disabled when not ignoring mouse messages.
+  if (!ignore) {
+    SetForwardMouseMessages(false);
+  } else {
+    SetForwardMouseMessages(forward);
+  }
 #elif defined(USE_X11)
   if (ignore) {
     XRectangle r = {0, 0, 1, 1};

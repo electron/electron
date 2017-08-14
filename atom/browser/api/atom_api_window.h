@@ -166,7 +166,7 @@ class Window : public mate::TrackableObject<Window>,
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
-  void SetIgnoreMouseEvents(bool ignore);
+  void SetIgnoreMouseEvents(bool ignore, mate::Arguments* args);
   void SetContentProtection(bool enable);
   void SetFocusable(bool focusable);
   void SetProgressBar(double progress, mate::Arguments* args);
@@ -201,7 +201,6 @@ class Window : public mate::TrackableObject<Window>,
   bool SetThumbnailClip(const gfx::Rect& region);
   bool SetThumbnailToolTip(const std::string& tooltip);
   void SetAppDetails(const mate::Dictionary& options);
-  void SetForwardMouseMessages(bool forward);
 #endif
 
 #if defined(TOOLKIT_VIEWS)

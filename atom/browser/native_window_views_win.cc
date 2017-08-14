@@ -221,10 +221,8 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 }
 
 void NativeWindowViews::SetForwardMouseMessages(bool forward) {
-  forwarding_mouse_messages_ = forward;
-  SetIgnoreMouseEvents(forward);
-
-  if (forward) {
+  if (forward && !forwarding_mouse_messages_) {
+    forwarding_mouse_messages_ = true;
     forwarding_windows_.insert(this);
     
     // Subclassing is used to fix some issues when forwarding mouse messages;
@@ -235,7 +233,8 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     if (!mouse_hook_) {
       mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, NULL, 0);
     }
-  } else {
+  } else if (!forward && forwarding_mouse_messages_) {
+    forwarding_mouse_messages_ = false;
     forwarding_windows_.erase(this);
 
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);

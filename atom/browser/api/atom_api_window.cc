@@ -651,8 +651,11 @@ bool Window::IsDocumentEdited() {
   return window_->IsDocumentEdited();
 }
 
-void Window::SetIgnoreMouseEvents(bool ignore) {
-  return window_->SetIgnoreMouseEvents(ignore);
+void Window::SetIgnoreMouseEvents(bool ignore, mate::Arguments* args) {
+  mate::Dictionary options;
+  bool forward = false;
+  args->GetNext(&options) && options.Get("forward", &forward);
+  return window_->SetIgnoreMouseEvents(ignore, forward);
 }
 
 void Window::SetContentProtection(bool enable) {
@@ -786,10 +789,6 @@ void Window::SetAppDetails(const mate::Dictionary& options) {
       app_id, app_icon_path, app_icon_index,
       relaunch_command, relaunch_display_name,
       window_->GetAcceleratedWidget());
-}
-
-void Window::SetForwardMouseMessages(bool forward) {
-  window_->SetForwardMouseMessages(forward);
 }
 #endif
 
@@ -1064,7 +1063,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setThumbnailClip", &Window::SetThumbnailClip)
       .SetMethod("setThumbnailToolTip", &Window::SetThumbnailToolTip)
       .SetMethod("setAppDetails", &Window::SetAppDetails)
-      .SetMethod("setForwardMouseMessages", &Window::SetForwardMouseMessages)
 #endif
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &Window::SetIcon)

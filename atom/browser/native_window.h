@@ -143,7 +143,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
   virtual bool IsDocumentEdited();
-  virtual void SetIgnoreMouseEvents(bool ignore) = 0;
+  virtual void SetIgnoreMouseEvents(bool ignore, bool forward) = 0;
   virtual void SetContentProtection(bool enable) = 0;
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(AtomMenuModel* menu);
@@ -152,9 +152,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::NativeView GetNativeView() const = 0;
   virtual gfx::NativeWindow GetNativeWindow() const = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() const = 0;
-#if defined(OS_WIN)
-  virtual void SetForwardMouseMessages(bool forward) = 0;
-#endif
 
   // Taskbar/Dock APIs.
   enum ProgressState {
