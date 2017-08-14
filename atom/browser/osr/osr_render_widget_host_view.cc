@@ -5,6 +5,8 @@
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "base/callback_helpers.h"
@@ -15,10 +17,10 @@
 #include "cc/output/copy_output_request.h"
 #include "cc/scheduler/delay_based_time_source.h"
 #include "components/display_compositor/gl_helper.h"
+#include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_frame_subscriber.h"
-#include "content/browser/renderer_host/resize_lock.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
@@ -29,10 +31,10 @@
 #include "ui/compositor/layer_type.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/events/event_constants.h"
-#include "ui/events/latency_info.h"
 #include "ui/gfx/geometry/dip_util.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/skbitmap_operations.h"
+#include "ui/latency/latency_info.h"
 
 namespace atom {
 
@@ -43,23 +45,23 @@ const int kFrameRetryLimit = 2;
 
 ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   ui::EventType type = ui::EventType::ET_UNKNOWN;
-  switch (event.type()) {
-    case blink::WebInputEvent::MouseDown:
+  switch (event.GetType()) {
+    case blink::WebInputEvent::kMouseDown:
       type = ui::EventType::ET_MOUSE_PRESSED;
       break;
-    case blink::WebInputEvent::MouseUp:
+    case blink::WebInputEvent::kMouseUp:
       type = ui::EventType::ET_MOUSE_RELEASED;
       break;
-    case blink::WebInputEvent::MouseMove:
+    case blink::WebInputEvent::kMouseMove:
       type = ui::EventType::ET_MOUSE_MOVED;
       break;
-    case blink::WebInputEvent::MouseEnter:
+    case blink::WebInputEvent::kMouseEnter:
       type = ui::EventType::ET_MOUSE_ENTERED;
       break;
-    case blink::WebInputEvent::MouseLeave:
+    case blink::WebInputEvent::kMouseLeave:
       type = ui::EventType::ET_MOUSE_EXITED;
       break;
-    case blink::WebInputEvent::MouseWheel:
+    case blink::WebInputEvent::kMouseWheel:
       type = ui::EventType::ET_MOUSEWHEEL;
       break;
     default:
@@ -69,19 +71,19 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
 
   int button_flags = 0;
   switch (event.button) {
-    case blink::WebMouseEvent::Button::X1:
+    case blink::WebMouseEvent::Button::kBack:
       button_flags |= ui::EventFlags::EF_BACK_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::X2:
+    case blink::WebMouseEvent::Button::kForward:
       button_flags |= ui::EventFlags::EF_FORWARD_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::Left:
+    case blink::WebMouseEvent::Button::kLeft:
       button_flags |= ui::EventFlags::EF_LEFT_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::Middle:
+    case blink::WebMouseEvent::Button::kMiddle:
       button_flags |= ui::EventFlags::EF_MIDDLE_MOUSE_BUTTON;
       break;
-    case blink::WebMouseEvent::Button::Right:
+    case blink::WebMouseEvent::Button::kRight:
       button_flags |= ui::EventFlags::EF_RIGHT_MOUSE_BUTTON;
       break;
     default:
@@ -90,11 +92,12 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   }
 
   ui::MouseEvent ui_event(type,
-    gfx::Point(std::floor(event.x), std::floor(event.y)),
-    gfx::Point(std::floor(event.x), std::floor(event.y)),
-    ui::EventTimeForNow(),
-    button_flags, button_flags);
-  ui_event.SetClickCount(event.clickCount);
+                          gfx::Point(std::floor(event.PositionInWidget().x),
+                                     std::floor(event.PositionInWidget().y)),
+                          gfx::Point(std::floor(event.PositionInWidget().x),
+                                     std::floor(event.PositionInWidget().y)),
+                          ui::EventTimeForNow(), button_flags, button_flags);
+  ui_event.SetClickCount(event.click_count);
 
   return ui_event;
 }
@@ -102,68 +105,8 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
 ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
     blink::WebMouseWheelEvent event) {
   return ui::MouseWheelEvent(UiMouseEventFromWebMouseEvent(event),
-    std::floor(event.deltaX), std::floor(event.deltaY));
+    std::floor(event.delta_x), std::floor(event.delta_y));
 }
-
-#if !defined(OS_MACOSX)
-
-const int kResizeLockTimeoutMs = 67;
-
-class AtomResizeLock : public content::ResizeLock {
- public:
-  AtomResizeLock(OffScreenRenderWidgetHostView* host,
-                const gfx::Size new_size,
-                bool defer_compositor_lock)
-      : ResizeLock(new_size, defer_compositor_lock),
-        host_(host),
-        cancelled_(false),
-        weak_ptr_factory_(this) {
-    DCHECK(host_);
-    host_->HoldResize();
-
-    content::BrowserThread::PostDelayedTask(content::BrowserThread::UI,
-      FROM_HERE, base::Bind(&AtomResizeLock::CancelLock,
-        weak_ptr_factory_.GetWeakPtr()),
-        base::TimeDelta::FromMilliseconds(kResizeLockTimeoutMs));
-  }
-
-  ~AtomResizeLock() override {
-    CancelLock();
-  }
-
-  bool GrabDeferredLock() override {
-    return ResizeLock::GrabDeferredLock();
-  }
-
-  void UnlockCompositor() override {
-    ResizeLock::UnlockCompositor();
-    compositor_lock_ = NULL;
-  }
-
- protected:
-  void LockCompositor() override {
-    ResizeLock::LockCompositor();
-    compositor_lock_ = host_->GetCompositor()->GetCompositorLock();
-  }
-
-  void CancelLock() {
-    if (cancelled_)
-      return;
-    cancelled_ = true;
-    UnlockCompositor();
-    host_->ReleaseResize();
-  }
-
- private:
-  OffScreenRenderWidgetHostView* host_;
-  scoped_refptr<ui::CompositorLock> compositor_lock_;
-  bool cancelled_;
-  base::WeakPtrFactory<AtomResizeLock> weak_ptr_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN(AtomResizeLock);
-};
-
-#endif  // !defined(OS_MACOSX)
 
 }  // namespace
 
@@ -336,6 +279,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       popup_position_(gfx::Rect()),
       hold_resize_(false),
       pending_resize_(false),
+      renderer_compositor_frame_sink_(nullptr),
+      background_color_(SkColor()),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
@@ -554,14 +499,18 @@ gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() const {
 }
 
 void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
-  if (transparent_)
-    color = SkColorSetARGB(SK_AlphaTRANSPARENT, 0, 0, 0);
+  // The renderer will feed its color back to us with the first CompositorFrame.
+  // We short-cut here to show a sensible color before that happens.
+  UpdateBackgroundColorFromRenderer(color);
 
-  content::RenderWidgetHostViewBase::SetBackgroundColor(color);
+  if (render_widget_host_) {
+    render_widget_host_->SetBackgroundOpaque(SkColorGetA(color) ==
+                                             SK_AlphaOPAQUE);
+  }
+}
 
-  const bool opaque = !transparent_ && GetBackgroundOpaque();
-  if (render_widget_host_)
-    render_widget_host_->SetBackgroundOpaque(opaque);
+SkColor OffScreenRenderWidgetHostView::background_color() const {
+  return background_color_;
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() const {
@@ -578,11 +527,20 @@ bool OffScreenRenderWidgetHostView::LockMouse() {
 void OffScreenRenderWidgetHostView::UnlockMouse() {
 }
 
-void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
-  uint32_t output_surface_id,
-  cc::CompositorFrame frame) {
+void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
+    cc::mojom::MojoCompositorFrameSinkClient* renderer_compositor_frame_sink) {
+  renderer_compositor_frame_sink_ = renderer_compositor_frame_sink;
+  if (GetDelegatedFrameHost()) {
+    GetDelegatedFrameHost()->DidCreateNewRendererCompositorFrameSink(
+        renderer_compositor_frame_sink_);
+  }
+}
+
+void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
+    const cc::LocalSurfaceId& local_surface_id,
+    cc::CompositorFrame frame) {
   TRACE_EVENT0("electron",
-    "OffScreenRenderWidgetHostView::OnSwapCompositorFrame");
+    "OffScreenRenderWidgetHostView::SubmitCompositorFrame");
 
   if (frame.metadata.root_scroll_offset != last_scroll_offset_) {
     last_scroll_offset_ = frame.metadata.root_scroll_offset;
@@ -596,11 +554,11 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
 
       // The compositor will draw directly to the SoftwareOutputDevice which
       // then calls OnPaint.
-      // We would normally call BrowserCompositorMac::SwapCompositorFrame on
+      // We would normally call BrowserCompositorMac::SubmitCompositorFrame on
       // macOS, however it contains compositor resize logic that we don't want.
-      // Consequently we instead call the SwapDelegatedFrame method directly.
-      GetDelegatedFrameHost()->SwapDelegatedFrame(output_surface_id,
-                                                  std::move(frame));
+      // Consequently we instead call the SubmitCompositorFrame method directly.
+      GetDelegatedFrameHost()->SubmitCompositorFrame(local_surface_id,
+                                                     std::move(frame));
     } else {
       if (!copy_frame_generator_.get()) {
         copy_frame_generator_.reset(
@@ -615,11 +573,11 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
           gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
       damage_rect.Intersect(gfx::Rect(frame_size));
 
-      // We would normally call BrowserCompositorMac::SwapCompositorFrame on
+      // We would normally call BrowserCompositorMac::SubmitCompositorFrame on
       // macOS, however it contains compositor resize logic that we don't want.
-      // Consequently we instead call the SwapDelegatedFrame method directly.
-      GetDelegatedFrameHost()->SwapDelegatedFrame(output_surface_id,
-                                                  std::move(frame));
+      // Consequently we instead call the SubmitCompositorFrame method directly.
+      GetDelegatedFrameHost()->SubmitCompositorFrame(local_surface_id,
+                                                     std::move(frame));
 
       // Request a copy of the last compositor frame which will eventually call
       // OnPaint asynchronously.
@@ -685,8 +643,14 @@ void OffScreenRenderWidgetHostView::Destroy() {
       popup_bitmap_.reset();
       if (child_host_view_)
         child_host_view_->CancelWidget();
-      for (auto guest_host_view : guest_host_views_)
-        guest_host_view->CancelWidget();
+      if (!guest_host_views_.empty()) {
+        // Guest RWHVs will be destroyed when the associated RWHVGuest is
+        // destroyed. This parent RWHV may be destroyed first, so disassociate
+        // the guest RWHVs here without destroying them.
+        for (auto guest_host_view : guest_host_views_)
+          guest_host_view->parent_host_view_ = nullptr;
+        guest_host_views_.clear();
+      }
       for (auto proxy_view : proxy_views_)
         proxy_view->RemoveObserver();
       Hide();
@@ -807,31 +771,25 @@ bool OffScreenRenderWidgetHostView::DelegatedFrameCanCreateResizeLock() const {
   return !render_widget_host_->auto_resize_enabled();
 }
 
-std::unique_ptr<content::ResizeLock>
-  OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock(
-      bool defer_compositor_lock) {
-  return std::unique_ptr<content::ResizeLock>(new AtomResizeLock(
-    this,
-    DelegatedFrameHostDesiredSizeInDIP(),
-    defer_compositor_lock));
-}
-
-void OffScreenRenderWidgetHostView::DelegatedFrameHostResizeLockWasReleased() {
-  return render_widget_host_->WasResized();
+std::unique_ptr<content::CompositorResizeLock>
+OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock() {
+  HoldResize();
+  const gfx::Size& desired_size = GetRootLayer()->bounds().size();
+  return base::MakeUnique<content::CompositorResizeLock>(this, desired_size);
 }
 
 void
-OffScreenRenderWidgetHostView::DelegatedFrameHostSendReclaimCompositorResources(
-    int output_surface_id,
-    bool is_swap_ack,
-    const cc::ReturnedResourceArray& resources) {
-  render_widget_host_->Send(new ViewMsg_ReclaimCompositorResources(
-      render_widget_host_->GetRoutingID(), output_surface_id, is_swap_ack,
-      resources));
+OffScreenRenderWidgetHostView::OnBeginFrame(const cc::BeginFrameArgs& args) {
 }
 
-void OffScreenRenderWidgetHostView::SetBeginFrameSource(
-    cc::BeginFrameSource* source) {
+std::unique_ptr<ui::CompositorLock>
+OffScreenRenderWidgetHostView::GetCompositorLock(
+    ui::CompositorLockClient* client) {
+  return GetCompositor()->GetCompositorLock(client);
+}
+
+void OffScreenRenderWidgetHostView::CompositorResizeLockEnded() {
+  ReleaseResize();
 }
 
 #endif  // !defined(OS_MACOSX)
@@ -1111,12 +1069,12 @@ void OffScreenRenderWidgetHostView::ProcessMouseEvent(
     const ui::LatencyInfo& latency) {
   for (auto proxy_view : proxy_views_) {
     gfx::Rect bounds = proxy_view->GetBounds();
-    if (bounds.Contains(event.x, event.y)) {
+    if (bounds.Contains(event.PositionInWidget().x,
+                        event.PositionInWidget().y)) {
       blink::WebMouseEvent proxy_event(event);
-      proxy_event.x -= bounds.x();
-      proxy_event.y -= bounds.y();
-      proxy_event.windowX = proxy_event.x;
-      proxy_event.windowY = proxy_event.y;
+      proxy_event.SetPositionInWidget(
+          proxy_event.PositionInWidget().x - bounds.x(),
+          proxy_event.PositionInWidget().y - bounds.y());
 
       ui::MouseEvent ui_event = UiMouseEventFromWebMouseEvent(proxy_event);
       proxy_view->OnEvent(&ui_event);
@@ -1125,13 +1083,14 @@ void OffScreenRenderWidgetHostView::ProcessMouseEvent(
   }
 
   if (!IsPopupWidget()) {
-    if (popup_host_view_ &&
-        popup_host_view_->popup_position_.Contains(event.x, event.y)) {
+    if (popup_host_view_ && popup_host_view_->popup_position_.Contains(
+          event.PositionInWidget().x, event.PositionInWidget().y)) {
       blink::WebMouseEvent popup_event(event);
-      popup_event.x -= popup_host_view_->popup_position_.x();
-      popup_event.y -= popup_host_view_->popup_position_.y();
-      popup_event.windowX = popup_event.x;
-      popup_event.windowY = popup_event.y;
+      popup_event.SetPositionInWidget(
+          popup_event.PositionInWidget().x -
+              popup_host_view_->popup_position_.x(),
+          popup_event.PositionInWidget().y -
+              popup_host_view_->popup_position_.y());
 
       popup_host_view_->ProcessMouseEvent(popup_event, latency);
       return;
@@ -1148,12 +1107,12 @@ void OffScreenRenderWidgetHostView::ProcessMouseWheelEvent(
     const ui::LatencyInfo& latency) {
   for (auto proxy_view : proxy_views_) {
     gfx::Rect bounds = proxy_view->GetBounds();
-    if (bounds.Contains(event.x, event.y)) {
+    if (bounds.Contains(event.PositionInWidget().x,
+                        event.PositionInWidget().y)) {
       blink::WebMouseWheelEvent proxy_event(event);
-      proxy_event.x -= bounds.x();
-      proxy_event.y -= bounds.y();
-      proxy_event.windowX = proxy_event.x;
-      proxy_event.windowY = proxy_event.y;
+      proxy_event.SetPositionInWidget(
+          proxy_event.PositionInWidget().x - bounds.x(),
+          proxy_event.PositionInWidget().y - bounds.y());
 
       ui::MouseWheelEvent ui_event =
         UiMouseWheelEventFromWebMouseEvent(proxy_event);
@@ -1163,12 +1122,14 @@ void OffScreenRenderWidgetHostView::ProcessMouseWheelEvent(
   }
   if (!IsPopupWidget()) {
     if (popup_host_view_) {
-      if (popup_host_view_->popup_position_.Contains(event.x, event.y)) {
+      if (popup_host_view_->popup_position_.Contains(
+            event.PositionInWidget().x, event.PositionInWidget().y)) {
         blink::WebMouseWheelEvent popup_event(event);
-        popup_event.x -= popup_host_view_->popup_position_.x();
-        popup_event.y -= popup_host_view_->popup_position_.y();
-        popup_event.windowX = popup_event.x;
-        popup_event.windowY = popup_event.y;
+        popup_event.SetPositionInWidget(
+            popup_event.PositionInWidget().x -
+                popup_host_view_->popup_position_.x(),
+            popup_event.PositionInWidget().y -
+                popup_host_view_->popup_position_.y());
         popup_host_view_->ProcessMouseWheelEvent(popup_event, latency);
         return;
       } else {
@@ -1310,6 +1271,17 @@ cc::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
                                 render_widget_host_->GetProcess()->GetID()),
                             base::checked_cast<uint32_t>(
                                 render_widget_host_->GetRoutingID()));
+}
+
+void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
+    SkColor color) {
+  if (color == background_color())
+    return;
+  background_color_ = color;
+
+  bool opaque = SkColorGetA(color) == SK_AlphaOPAQUE;
+  GetRootLayer()->SetFillsBoundsOpaquely(opaque);
+  GetRootLayer()->SetColor(color);
 }
 
 }  // namespace atom

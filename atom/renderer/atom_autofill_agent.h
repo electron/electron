@@ -27,22 +27,11 @@ class AutofillAgent : public content::RenderFrameObserver,
 
   void DidChangeScrollOffset() override;
   void FocusedNodeChanged(const blink::WebNode&) override;
+  void DidCompleteFocusChangeInFrame() override;
+  void DidReceiveLeftMouseDownOrGestureTapInNode(
+      const blink::WebNode&) override;
 
  private:
-  class Helper : public content::RenderViewObserver {
-   public:
-    explicit Helper(AutofillAgent* agent);
-
-    // content::RenderViewObserver implementation.
-    void OnDestruct() override {}
-    void OnMouseDown(const blink::WebNode&) override;
-    void FocusChangeComplete() override;
-
-   private:
-    AutofillAgent* agent_;
-  };
-  friend class Helper;
-
   struct ShowSuggestionsOptions {
     ShowSuggestionsOptions();
     bool autofill_on_empty_values;
@@ -52,13 +41,13 @@ class AutofillAgent : public content::RenderFrameObserver,
   bool OnMessageReceived(const IPC::Message& message) override;
 
   // blink::WebAutofillClient:
-  void textFieldDidEndEditing(const blink::WebInputElement&) override;
-  void textFieldDidChange(const blink::WebFormControlElement&) override;
-  void textFieldDidChangeImpl(const blink::WebFormControlElement&);
-  void textFieldDidReceiveKeyDown(const blink::WebInputElement&,
+  void TextFieldDidEndEditing(const blink::WebInputElement&) override;
+  void TextFieldDidChange(const blink::WebFormControlElement&) override;
+  void TextFieldDidChangeImpl(const blink::WebFormControlElement&);
+  void TextFieldDidReceiveKeyDown(const blink::WebInputElement&,
                                   const blink::WebKeyboardEvent&) override;
-  void openTextDataListChooser(const blink::WebInputElement&) override;
-  void dataListOptionsChanged(const blink::WebInputElement&) override;
+  void OpenTextDataListChooser(const blink::WebInputElement&) override;
+  void DataListOptionsChanged(const blink::WebInputElement&) override;
 
   bool IsUserGesture() const;
   void HidePopup();
@@ -70,8 +59,6 @@ class AutofillAgent : public content::RenderFrameObserver,
   void OnAcceptSuggestion(base::string16 suggestion);
 
   void DoFocusChangeComplete();
-
-  std::unique_ptr<Helper> helper_;
 
   // True when the last click was on the focused node.
   bool focused_node_was_last_clicked_;

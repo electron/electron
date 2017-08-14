@@ -3,6 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
+#include <utility>
+
 #include "brightray/browser/inspectable_web_contents_impl.h"
 
 #include "base/json/json_reader.h"
@@ -167,8 +169,8 @@ int ResponseWriter::Write(net::IOBuffer* buffer,
                           int num_bytes,
                           const net::CompletionCallback& callback) {
   auto* id = new base::Value(stream_id_);
-  base::StringValue* chunk =
-      new base::StringValue(std::string(buffer->data(), num_bytes));
+  base::Value* chunk =
+      new base::Value(std::string(buffer->data(), num_bytes));
 
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
@@ -192,7 +194,7 @@ InspectableWebContentsView* CreateInspectableContentsView(
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
   std::unique_ptr<base::DictionaryValue> bounds_dict(new base::DictionaryValue);
   RectToDictionary(gfx::Rect(0, 0, 800, 600), bounds_dict.get());
-  registry->RegisterDictionaryPref(kDevToolsBoundsPref, bounds_dict.release());
+  registry->RegisterDictionaryPref(kDevToolsBoundsPref, std::move(bounds_dict));
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
   registry->RegisterDictionaryPref(kDevToolsPreferences);
 }
@@ -219,7 +221,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       gfx::Rect display;
       if (web_contents->GetNativeView()) {
         display = display::Screen::GetScreen()->
-            GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
+            GetDisplayNearestView(web_contents->GetNativeView()).bounds();
       } else {
         display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
       }
@@ -634,7 +636,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessage(
 
   base::Value total_size(static_cast<int>(message.length()));
   for (size_t pos = 0; pos < message.length(); pos += kMaxMessageChunkSize) {
-    base::StringValue message_value(message.substr(pos, kMaxMessageChunkSize));
+    base::Value message_value(message.substr(pos, kMaxMessageChunkSize));
     CallClientFunction("DevToolsAPI.dispatchMessageChunk",
                        &message_value, pos ? nullptr : &total_size, nullptr);
   }
