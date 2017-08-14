@@ -1185,7 +1185,7 @@ describe('BrowserWindow module', function () {
         })
       })
 
-      it('can print to PDF', function (done) {
+      xit('can print to PDF', function (done) {
         w.destroy()
         w = new BrowserWindow({
           show: false,
