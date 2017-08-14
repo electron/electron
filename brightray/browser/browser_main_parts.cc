@@ -5,8 +5,8 @@
 #include "brightray/browser/browser_main_parts.h"
 
 #include <stdlib.h>
-#include <string>
 #include <sys/stat.h>
+#include <string>
 
 #include "base/command_line.h"
 #include "base/feature_list.h"
@@ -107,8 +107,8 @@ void OverrideWinAppLogsPath() {
 
 void OverrideLinuxAppLogsPath() {
   std::string appName = GetApplicationName();
-  char* homePath = getenv("HOME");
-  std::string appLogPath = std:string(homePath) + "/.config/" + appName + "/logs";
+  std::string homePath = std:string(getenv("HOME"));
+  std::string appLogPath = homePath + "/.config/" + appName + "/logs";
 
   int status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
 
