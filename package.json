@@ -49,7 +49,6 @@
     "lint-api-docs-js": "standard-markdown docs && standard-markdown docs-translations",
     "create-api-json": "electron-docs-linter docs --outfile=out/electron-api.json --version=$npm_package_version",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=out/electron-api.json --out=out/electron.d.ts",
-    "preinstall": "node -e 'process.exit(0)'",
     "publish-to-npm": "node ./script/publish-to-npm.js",
     "prepack": "check-for-leaks",
     "prepush": "check-for-leaks",
