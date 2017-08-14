@@ -80,7 +80,7 @@ bool IsScreenReaderActive() {
 
 }  // namespace
 
-std::map<HWND, NativeWindowViews*> NativeWindowViews::legacy_window_map_;
+std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
 HHOOK NativeWindowViews::mouse_hook_ = NULL;
 
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
@@ -160,17 +160,8 @@ bool NativeWindowViews::PreHandleMSG(
       if (LOWORD(w_param) == WM_CREATE) {
         // Because of reasons regarding legacy drivers and stuff, a window that
         // matches the client area is created and used internally by Chromium.
-        // This window is subclassed in order to fix some issues when forwarding
-        // mouse messages; see comments in |SubclassProc|. If by any chance
-        // Chromium removes the legacy window in the future it may be fine to
-        // move the logic to this very switch statement.
-        HWND legacy_window = reinterpret_cast<HWND>(l_param);
-        SetWindowSubclass(
-            legacy_window, SubclassProc, 1, reinterpret_cast<DWORD_PTR>(this));
-        if (legacy_window_map_.size() == 0) {
-          mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, NULL, 0);
-        }
-        legacy_window_map_.insert({ legacy_window, this });
+        // This is used when forwarding mouse messages.
+        legacy_window_ = reinterpret_cast<HWND>(l_param);
       }
       return false;
     }
@@ -229,6 +220,33 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   }
 }
 
+void NativeWindowViews::SetForwardMouseMessages(bool forward) {
+  forwarding_mouse_messages_ = forward;
+  SetIgnoreMouseEvents(forward);
+
+  if (forward) {
+    forwarding_windows_.insert(this);
+    
+    // Subclassing is used to fix some issues when forwarding mouse messages;
+    // see comments in |SubclassProc|.
+    SetWindowSubclass(
+      legacy_window_, SubclassProc, 1, reinterpret_cast<DWORD_PTR>(this));
+
+    if (!mouse_hook_) {
+      mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, NULL, 0);
+    }
+  } else {
+    forwarding_windows_.erase(this);
+
+    RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
+
+    if (forwarding_windows_.size() == 0) {
+      UnhookWindowsHookEx(mouse_hook_);
+      mouse_hook_ = NULL;
+    }
+  }
+}
+
 LRESULT CALLBACK NativeWindowViews::SubclassProc(
     HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id,
     DWORD_PTR ref_data) {
@@ -250,14 +268,6 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(
       }
       break;
     }
-    case WM_DESTROY: {
-      legacy_window_map_.erase(hwnd);
-      if (legacy_window_map_.size() == 0) {
-        UnhookWindowsHookEx(mouse_hook_);
-        mouse_hook_ = NULL;
-      }
-      break;
-    }
   }
 
   return DefSubclassProc(hwnd, msg, w_param, l_param);
@@ -270,26 +280,22 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(
   }
 
   // Post a WM_MOUSEMOVE message for those windows whose client area contains
-  // the cursor and are set to forward messages since they are in a state where
-  // they would otherwise ignore all mouse input.
+  // the cursor since they are in a state where they would otherwise ignore all
+  // mouse input.
   if (w_param == WM_MOUSEMOVE) {
-    for (auto legacy : legacy_window_map_) {
-      if (!legacy.second->forwarding_mouse_messages_) {
-        continue;
-      }
-
+    for (auto window : forwarding_windows_) {
       // At first I considered enumerating windows to check whether the cursor
       // was directly above the window, but since nothing bad seems to happen
       // if we post the message even if some other window occludes it I have
       // just left it as is.
       RECT client_rect;
-      GetClientRect(legacy.first, &client_rect);
+      GetClientRect(window->legacy_window_, &client_rect);
       POINT p = reinterpret_cast<MSLLHOOKSTRUCT*>(l_param)->pt;
-      ScreenToClient(legacy.first, &p);
+      ScreenToClient(window->legacy_window_, &p);
       if (PtInRect(&client_rect, p)) {
         WPARAM w = 0;  // No virtual keys pressed for our purposes
         LPARAM l = MAKELPARAM(p.x, p.y);
-        PostMessage(legacy.first, WM_MOUSEMOVE, w, l);
+        PostMessage(window->legacy_window_, WM_MOUSEMOVE, w, l);
       }
     }
   }

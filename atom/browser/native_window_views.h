@@ -267,10 +267,11 @@ class NativeWindowViews : public NativeWindow,
   base::win::ScopedHICON window_icon_;
   base::win::ScopedHICON app_icon_;
 
-  // Handles to legacy windows iterated by the mouse hook
-  static std::map<HWND, NativeWindowViews*> legacy_window_map_;
+  // The set of windows currently forwarding mouse messages.
+  static std::set<NativeWindowViews*> forwarding_windows_;
   static HHOOK mouse_hook_;
   bool forwarding_mouse_messages_ = false;
+  HWND legacy_window_ = NULL;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
