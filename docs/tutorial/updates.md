@@ -14,7 +14,7 @@ Depending on your needs, you can choose from one of these:
 
 - [Hazel](https://github.com/zeit/hazel) – Pulls new releases from 
 [GitHub Releases](https://help.github.com/articles/creating-releases/) and can 
-be deployed for free on the [Now](https://zeit.co/now) hosting platform.
+be deployed for free on [Now](https://zeit.co/now).
 - [Nuts](https://github.com/GitbookIO/nuts) – Also uses 
 [GitHub Releases](https://help.github.com/articles/creating-releases/), 
 but caches app updates on disk and supports private repositories.
