@@ -77,5 +77,8 @@ Also make sure that errors are
 for logging them to `stderr`:
 
 ```js
-autoUpdater.on('error', console.error)
+autoUpdater.on('error', message => {
+  console.error('There was a problem updating the application')
+  console.error(message)
+})
 ```
