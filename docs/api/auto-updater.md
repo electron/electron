@@ -41,6 +41,8 @@ The installer generated with Squirrel will create a shortcut icon with an
 same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
 not be able to pin your app properly in task bar.
 
+Unlike Squirrel.Mac, Windows can host updates on S3 or any other static file host.
+
 ## Events
 
 The `autoUpdater` object emits the following events:
