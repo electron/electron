@@ -76,7 +76,7 @@ autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
     message: 'A new version has been downloaded. Restart the application to apply the updates.',
     detail: releaseName + '\n\n' + releaseNotes
   }
-  dialog.showMessageBox(dialogOpts, function(response) {
+  dialog.showMessageBox(dialogOpts, (response) => {
     if (response === 0) autoUpdater.quitAndInstall()
   })
 })
