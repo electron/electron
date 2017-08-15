@@ -16,7 +16,8 @@ exports.load = (appUrl) => {
       autoHideMenuBar: true,
       backgroundColor: '#FFFFFF',
       webPreferences: {
-        nodeIntegrationInWorker: true
+        nodeIntegrationInWorker: true,
+        nativeWindowOpen: true
       },
       useContentSize: true
     }
