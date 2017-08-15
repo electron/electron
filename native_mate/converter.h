@@ -41,6 +41,13 @@ struct Converter<void*> {
 };
 
 template<>
+struct Converter<std::nullptr_t> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, std::nullptr_t val) {
+    return v8::Null(isolate);
+  }
+};
+
+template<>
 struct Converter<bool> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     bool val);
