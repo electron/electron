@@ -29,12 +29,12 @@ software, but it works like described when using
 [Hazel](https://github.com/zeit/hazel).
 
 **Important:** Please ensure that the code below will only be executed in 
-your packaged app. You can use 
+your packaged app, and not in development. You can use 
 [electron-is-dev](https://github.com/sindresorhus/electron-is-dev) to check for 
 the environment.
 
 ```js
-const { app, autoUpdater } = require('electron')
+const { app, autoUpdater, dialog } = require('electron')
 ```
 
 Next, construct the URL of the update server and tell 
@@ -55,20 +55,30 @@ setInterval(() => {
 }, 60000)
 ```
 
-That's all. Once [built](../tutorial/application-distribution.md), your 
-application will receive an update for each new 
+Once your application is [packaged](../tutorial/application-distribution.md), 
+it  will receive an update for each new 
 [GitHub Release](https://help.github.com/articles/creating-releases/) that you 
-create.
+publish.
 
-## Further steps
+## Applying updates
 
 Now that you've configured the basic update mechanism for your application, you 
 need to ensure that the user will get notified when there's an update. This
-can be achieved using [events](../api/auto-updater.md#events):
+can be achieved using the autoUpdater API 
+[events](../api/auto-updater.md#events):
 
 ```js
 autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
-  // Show a notification banner to the user that allows triggering the update
+  const dialogOpts = {
+    type: 'info',
+    buttons: ['Restart', 'Later'],
+    title: 'Application Update',
+    message: 'A new version has been downloaded. Restart the application to apply the updates.',
+    detail: releaseName + '\n\n' + releaseNotes
+  }
+  dialog.showMessageBox(dialogOpts, function(response) {
+    if (response === 0) autoUpdater.quitAndInstall()
+  })
 })
 ```
 
