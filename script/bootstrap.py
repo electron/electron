@@ -38,8 +38,9 @@ def main():
   libcc_static_library_path = args.libcc_static_library_path
 
   # Redirect to use local libchromiumcontent build.
-  if args.build_libchromiumcontent:
-    build_libchromiumcontent(args.verbose, args.target_arch, defines)
+  if args.build_release_libcc or args.build_debug_libcc:
+    build_libchromiumcontent(args.verbose, args.target_arch, defines,
+                             args.build_debug_libcc, args.update_libcc)
     dist_dir = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'dist', 'main')
     libcc_source_path = os.path.join(dist_dir, 'src')
     libcc_shared_library_path = os.path.join(dist_dir, 'shared_library')
@@ -88,8 +89,14 @@ def parse_args():
   parser.add_argument('--clang_dir', default='', help='Path to clang binaries')
   parser.add_argument('--disable_clang', action='store_true',
                       help='Use compilers other than clang for building')
-  parser.add_argument('--build_libchromiumcontent', action='store_true',
-                      help='Build local version of libchromiumcontent')
+  build_libcc = parser.add_mutually_exclusive_group()
+  build_libcc.add_argument('--build_release_libcc', action='store_true',
+                           help='Build release version of libchromiumcontent')
+  build_libcc.add_argument('--build_debug_libcc', action='store_true',
+                           help='Build debug version of libchromiumcontent')
+  parser.add_argument('--update_libcc', default=False,
+                      action='store_true', help=('force gclient invocation to '
+                      'update libchromiumcontent'))
   parser.add_argument('--libcc_source_path', required=False,
                       help='The source path of libchromiumcontent. ' \
                            'NOTE: All options of libchromiumcontent are ' \
@@ -162,9 +169,14 @@ def update_win32_python():
       execute_stdout(['git', 'clone', PYTHON_26_URL])
 
 
-def build_libchromiumcontent(verbose, target_arch, defines):
+def build_libchromiumcontent(verbose, target_arch, defines, debug,
+                             force_update):
   args = [sys.executable,
           os.path.join(SOURCE_ROOT, 'script', 'build-libchromiumcontent.py')]
+  if debug:
+    args += ['-d']
+  if force_update:
+    args += ['--force-update']
   if verbose:
     args += ['-v']
   if defines:
