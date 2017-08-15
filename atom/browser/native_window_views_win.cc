@@ -224,7 +224,7 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
   if (forward && !forwarding_mouse_messages_) {
     forwarding_mouse_messages_ = true;
     forwarding_windows_.insert(this);
-    
+
     // Subclassing is used to fix some issues when forwarding mouse messages;
     // see comments in |SubclassProc|.
     SetWindowSubclass(
