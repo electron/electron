@@ -8,8 +8,6 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/geometry/rect.h"
 
-using base::scoped_nsobject;
-
 // Match view::Views behavior where the view sticks to the top-left origin.
 const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
     NSViewMaxXMargin | NSViewMinYMargin;
@@ -54,18 +52,17 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
     return;
   }
 
-  NSPoint currentLocation;
+  NSPoint currentLocation = [NSEvent mouseLocation];
   NSPoint newOrigin;
 
   NSRect screenFrame = [[NSScreen mainScreen] frame];
   NSRect windowFrame = [self.window frame];
 
-  currentLocation = [NSEvent mouseLocation];
   newOrigin.x = currentLocation.x - self.initialLocation.x;
   newOrigin.y = currentLocation.y - self.initialLocation.y;
 
   // Don't let window get dragged up under the menu bar
-  if( (newOrigin.y + windowFrame.size.height) > (screenFrame.origin.y + screenFrame.size.height) ){
+  if ((newOrigin.y + windowFrame.size.height) > (screenFrame.origin.y + screenFrame.size.height)) {
     newOrigin.y = screenFrame.origin.y + (screenFrame.size.height - windowFrame.size.height);
   }
 
@@ -75,11 +72,13 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 // Debugging tips:
 // Uncomment the following four lines to color DragRegionView bright red
+// #ifdef DEBUG_DRAG_REGIONS
 // - (void)drawRect:(NSRect)aRect
 // {
 //     [[NSColor redColor] set];
 //     NSRectFill([self bounds]);
 // }
+// #endif
 
 @end
 
@@ -94,11 +93,13 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 // Debugging tips:
 // Uncomment the following four lines to color ExcludeDragRegionView bright red
+// #ifdef DEBUG_DRAG_REGIONS
 // - (void)drawRect:(NSRect)aRect
 // {
 //     [[NSColor greenColor] set];
 //     NSRectFill([self bounds]);
 // }
+// #endif
 
 @end
 
@@ -142,7 +143,7 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
 }
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
-    std::vector<gfx::Rect> system_drag_exclude_areas) {
+    const std::vector<gfx::Rect>& system_drag_exclude_areas) {
   NSView* webView = GetInspectableWebContentsView()->GetNativeView();
 
   NSInteger superViewHeight = NSHeight([webView.superview bounds]);
@@ -178,8 +179,7 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
                                     webViewHeight)];
 
   // Then, on top of that, add "exclusion zones"
-  for (std::vector<gfx::Rect>::const_iterator iter =
-           system_drag_exclude_areas.begin();
+  for (auto iter = system_drag_exclude_areas.begin();
        iter != system_drag_exclude_areas.end();
        ++iter) {
     base::scoped_nsobject<NSView> controlRegion(

@@ -15,8 +15,4 @@ NativeBrowserView::NativeBrowserView(
 
 NativeBrowserView::~NativeBrowserView() {}
 
-void NativeBrowserView::UpdateDraggableRegions(
-    std::vector<gfx::Rect> system_drag_exclude_areas) {
-}
-
 }  // namespace atom

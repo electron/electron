@@ -1767,8 +1767,6 @@ void NativeWindowMac::UpdateDraggableRegionViews(
   std::vector<gfx::Rect> system_drag_exclude_areas =
       CalculateNonDraggableRegions(regions, webViewWidth, webViewHeight);
 
-  // Call down to a BrowserView, if it exists, and inform it about the
-  // draggable areas
   if (browser_view_) {
     browser_view_->UpdateDraggableRegions(system_drag_exclude_areas);
   }
