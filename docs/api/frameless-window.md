@@ -103,6 +103,27 @@ let win = new BrowserWindow()
 win.setIgnoreMouseEvents(true)
 ```
 
+### Forwarding
+
+Ignoring mouse messages makes the web page oblivious to mouse movement, meaning
+that mouse movement events will not be emitted. On Windows operating systems an
+optional parameter can be used to forward mouse move messages to the web page,
+allowing events such as `mouseleave` to be emitted:
+
+```javascript
+let win = require('electron').remote.getCurrentWindow()
+let el = document.getElementById('clickThroughElement')
+el.addEventListener('mouseenter', () => {
+  win.setIgnoreMouseEvents(true, {forward: true})
+})
+el.addEventListener('mouseleave', () => {
+  win.setIgnoreMouseEvents(false)
+})
+```
+
+This makes the web page click-through when over `el`, and returns to normal
+outside it.
+
 ## Draggable region
 
 By default, the frameless window is non-draggable. Apps need to specify
