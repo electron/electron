@@ -45,6 +45,11 @@ Role kRolesMap[] = {
   { @selector(performZoom:), "zoom" },
   { @selector(terminate:), "quit" },
   { @selector(toggleFullScreen:), "togglefullscreen" },
+  { @selector(toggleTabBar:), "toggletabbar" },
+  { @selector(selectNextTab:), "selectnexttab" },
+  { @selector(selectPreviousTab:), "selectprevioustab" },
+  { @selector(mergeAllWindows:), "mergeallwindows" },
+  { @selector(moveTabToNewWindow:), "movetabtonewwindow" },
 };
 
 }  // namespace
