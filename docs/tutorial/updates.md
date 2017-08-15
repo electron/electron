@@ -63,8 +63,19 @@ create.
 ## Further steps
 
 Now that you've configured the basic update mechanism for your application, you 
-need to ensure that the user will get notified when there's an update 
-(this can be achieved using [events](../api/auto-updater.md#events)).
+need to ensure that the user will get notified when there's an update. This
+can be achieved using [events](../api/auto-updater.md#events):
 
-Also make sure that potential errors are 
-[being handled](../api/auto-updater.md#event-error).
+```js
+autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
+  // Show a notification banner to the user that allows triggering the update
+})
+```
+
+Also make sure that errors are 
+[being handled](../api/auto-updater.md#event-error). Here's an example
+for logging them to `stderr`:
+
+```js
+autoUpdater.on('error', console.error)
+```
