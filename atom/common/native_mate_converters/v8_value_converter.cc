@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "base/logging.h"
+#include "base/memory/ptr_util.h"
 #include "base/values.h"
 #include "native_mate/dictionary.h"
 
@@ -204,7 +205,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
 
     case base::Value::Type::BINARY:
       return ToArrayBuffer(isolate,
-                           static_cast<const base::BinaryValue*>(value));
+                           static_cast<const base::Value*>(value));
 
     default:
       LOG(ERROR) << "Unexpected value type: " << value->GetType();
@@ -253,7 +254,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
 }
 
 v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
-    v8::Isolate* isolate, const base::BinaryValue* value) const {
+    v8::Isolate* isolate, const base::Value* value) const {
   const char* data = value->GetBuffer();
   size_t length = value->GetSize();
 
@@ -308,10 +309,10 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return nullptr;
 
   if (val->IsExternal())
-    return base::Value::CreateNullValue().release();
+    return base::MakeUnique<base::Value>().release();
 
   if (val->IsNull())
-    return base::Value::CreateNullValue().release();
+    return base::MakeUnique<base::Value>().release();
 
   if (val->IsBoolean())
     return new base::Value(val->ToBoolean()->Value());
@@ -324,7 +325,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
 
   if (val->IsString()) {
     v8::String::Utf8Value utf8(val->ToString());
-    return new base::StringValue(std::string(*utf8, utf8.length()));
+    return new base::Value(std::string(*utf8, utf8.length()));
   }
 
   if (val->IsUndefined())
@@ -340,7 +341,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
           toISOString.As<v8::Function>()->Call(val, 0, nullptr);
       if (!result.IsEmpty()) {
         v8::String::Utf8Value utf8(result->ToString());
-        return new base::StringValue(std::string(*utf8, utf8.length()));
+        return new base::Value(std::string(*utf8, utf8.length()));
       }
     }
   }
@@ -349,7 +350,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     if (!reg_exp_allowed_)
       // JSON.stringify converts to an object.
       return FromV8Object(val->ToObject(), state, isolate);
-    return new base::StringValue(*v8::String::Utf8Value(val->ToString()));
+    return new base::Value(*v8::String::Utf8Value(val->ToString()));
   }
 
   // v8::Value doesn't have a ToArray() method for some reason.
@@ -381,7 +382,7 @@ base::Value* V8ValueConverter::FromV8Array(
     v8::Isolate* isolate) const {
   ScopedUniquenessGuard uniqueness_guard(state, val);
   if (!uniqueness_guard.is_valid())
-    return base::Value::CreateNullValue().release();
+    return base::MakeUnique<base::Value>().release();
 
   std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
@@ -410,7 +411,7 @@ base::Value* V8ValueConverter::FromV8Array(
     else
       // JSON.stringify puts null in places where values don't serialize, for
       // example undefined and functions. Emulate that behavior.
-      result->Append(base::Value::CreateNullValue());
+      result->Append(base::MakeUnique<base::Value>());
   }
   return result;
 }
@@ -419,7 +420,7 @@ base::Value* V8ValueConverter::FromNodeBuffer(
     v8::Local<v8::Value> value,
     FromV8ValueState* state,
     v8::Isolate* isolate) const {
-  return base::BinaryValue::CreateWithCopiedBuffer(
+  return base::Value::CreateWithCopiedBuffer(
       node::Buffer::Data(value), node::Buffer::Length(value)).release();
 }
 
@@ -429,7 +430,7 @@ base::Value* V8ValueConverter::FromV8Object(
     v8::Isolate* isolate) const {
   ScopedUniquenessGuard uniqueness_guard(state, val);
   if (!uniqueness_guard.is_valid())
-    return base::Value::CreateNullValue().release();
+    return base::MakeUnique<base::Value>().release();
 
   std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to

@@ -84,15 +84,15 @@ void RendererClientBase::AddRenderBindings(
 }
 
 void RendererClientBase::RenderThreadStarted() {
-  blink::WebCustomElement::addEmbedderCustomElementName("webview");
-  blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
+  blink::WebCustomElement::AddEmbedderCustomElementName("webview");
+  blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
       ParseSchemesCLISwitch(switches::kSecureSchemes);
   for (const std::string& scheme : secure_schemes_list)
-    blink::SchemeRegistry::registerURLSchemeAsSecure(
-        WTF::String::fromUTF8(scheme.data(), scheme.length()));
+    blink::SchemeRegistry::RegisterURLSchemeAsSecure(
+        WTF::String::FromUTF8(scheme.data(), scheme.length()));
 
   preferences_manager_.reset(new PreferencesManager);
 
@@ -128,13 +128,13 @@ void RendererClientBase::RenderFrameCreated(
 
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
-  blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers("file");
+  blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
 
   // This is required for widevine plugin detection provided during runtime.
-  blink::resetPluginCache();
+  blink::ResetPluginCache();
 
   // Allow access to file scheme from pdf viewer.
-  blink::WebSecurityPolicy::addOriginAccessWhitelistEntry(
+  blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
       GURL(kPdfViewerUIOrigin), "file", "", true);
 }
 
@@ -145,20 +145,20 @@ void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
 
   base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
   if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-    web_frame_widget->setBaseBackgroundColor(SK_ColorTRANSPARENT);
+    web_frame_widget->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
   } else {  // normal window.
     // If backgroundColor is specified then use it.
     std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
     // Otherwise use white background.
     SkColor color = name.empty() ? SK_ColorWHITE : ParseHexColor(name);
-    web_frame_widget->setBaseBackgroundColor(color);
+    web_frame_widget->SetBaseBackgroundColor(color);
   }
 }
 
 void RendererClientBase::DidClearWindowObject(
     content::RenderFrame* render_frame) {
   // Make sure every page will get a script context created.
-  render_frame->GetWebFrame()->executeScript(blink::WebScriptSource("void 0"));
+  render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
 }
 
 blink::WebSpeechSynthesizer* RendererClientBase::OverrideSpeechSynthesizer(
@@ -172,8 +172,8 @@ bool RendererClientBase::OverrideCreatePlugin(
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (params.mimeType.utf8() == content::kBrowserPluginMimeType ||
-      params.mimeType.utf8() == kPdfPluginMimeType ||
+  if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
+      params.mime_type.Utf8() == kPdfPluginMimeType ||
       command_line->HasSwitch(switches::kEnablePlugins))
     return false;
 

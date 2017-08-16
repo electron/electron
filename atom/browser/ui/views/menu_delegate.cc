@@ -95,6 +95,11 @@ void MenuDelegate::WillHideMenu(views::MenuItemView* menu) {
   adapter_->WillHideMenu(menu);
 }
 
+void MenuDelegate::OnMenuClosed(views::MenuItemView* menu,
+                                views::MenuRunner::RunResult result) {
+  delete this;
+}
+
 views::MenuItemView* MenuDelegate::GetSiblingMenu(
     views::MenuItemView* menu,
     const gfx::Point& screen_point,

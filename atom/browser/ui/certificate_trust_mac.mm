@@ -10,6 +10,7 @@
 #include "atom/browser/native_window.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/cert/cert_database.h"
+#include "net/cert/x509_util_mac.h"
 
 @interface TrustDelegate : NSObject {
  @private
@@ -85,7 +86,8 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           const std::string& message,
                           const ShowTrustCallback& callback) {
   auto sec_policy = SecPolicyCreateBasicX509();
-  auto cert_chain = cert->CreateOSCertChainForCert();
+  auto cert_chain =
+      net::x509_util::CreateSecCertificateArrayForX509Certificate(cert.get());
   SecTrustRef trust = nullptr;
   SecTrustCreateWithCertificates(cert_chain, sec_policy, &trust);
 
