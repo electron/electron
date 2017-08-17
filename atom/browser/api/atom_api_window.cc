@@ -651,8 +651,11 @@ bool Window::IsDocumentEdited() {
   return window_->IsDocumentEdited();
 }
 
-void Window::SetIgnoreMouseEvents(bool ignore) {
-  return window_->SetIgnoreMouseEvents(ignore);
+void Window::SetIgnoreMouseEvents(bool ignore, mate::Arguments* args) {
+  mate::Dictionary options;
+  bool forward = false;
+  args->GetNext(&options) && options.Get("forward", &forward);
+  return window_->SetIgnoreMouseEvents(ignore, forward);
 }
 
 void Window::SetContentProtection(bool enable) {
