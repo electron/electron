@@ -67,6 +67,7 @@ Notification::Notification(v8::Isolate* isolate,
     opts.Get("replyPlaceholder", &reply_placeholder_);
     opts.Get("hasReply", &has_reply_);
     opts.Get("actions", &actions_);
+    opts.Get("soundName", &sound_name_);
   }
 }
 
@@ -113,6 +114,10 @@ std::vector<brightray::NotificationAction> Notification::GetActions() const {
   return actions_;
 }
 
+base::string16 Notification::GetSoundName() const {
+  return sound_name_;
+}
+
 // Setters
 void Notification::SetTitle(const base::string16& new_title) {
   title_ = new_title;
@@ -141,6 +146,10 @@ void Notification::SetHasReply(bool new_has_reply) {
 void Notification::SetActions(
   const std::vector<brightray::NotificationAction>& actions) {
   actions_ = actions;
+}
+
+void Notification::SetSoundName(const base::string16& new_sound_name) {
+  sound_name_ = new_sound_name;
 }
 
 void Notification::NotificationAction(int index) {
@@ -181,6 +190,7 @@ void Notification::Show() {
       options.has_reply = has_reply_;
       options.reply_placeholder = reply_placeholder_;
       options.actions = actions_;
+      options.sound_name = sound_name_;
       notification_->Show(options);
     }
   }
@@ -207,7 +217,9 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("hasReply", &Notification::GetHasReply,
                    &Notification::SetHasReply)
       .SetProperty("actions", &Notification::GetActions,
-                   &Notification::SetActions);
+                   &Notification::SetActions)
+      .SetProperty("soundName", &Notification::GetSoundName,
+                   &Notification::SetSoundName);
 }
 
 }  // namespace api
