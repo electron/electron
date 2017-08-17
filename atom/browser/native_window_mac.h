@@ -85,7 +85,7 @@ class NativeWindowMac : public NativeWindow,
   std::string GetRepresentedFilename() override;
   void SetDocumentEdited(bool edited) override;
   bool IsDocumentEdited() override;
-  void SetIgnoreMouseEvents(bool ignore) override;
+  void SetIgnoreMouseEvents(bool ignore, bool) override;
   void SetContentProtection(bool enable) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
