@@ -143,7 +143,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
   virtual bool IsDocumentEdited();
-  virtual void SetIgnoreMouseEvents(bool ignore) = 0;
+  virtual void SetIgnoreMouseEvents(bool ignore, bool forward) = 0;
   virtual void SetContentProtection(bool enable) = 0;
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(AtomMenuModel* menu);

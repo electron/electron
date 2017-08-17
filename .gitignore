@@ -41,3 +41,4 @@ node_modules/
 /vendor/node/deps/node-inspect/.npmrc
 /vendor/npm/
 /vendor/python_26/
+.gclient_done

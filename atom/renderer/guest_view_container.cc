@@ -16,8 +16,8 @@ namespace atom {
 namespace {
 
 using GuestViewContainerMap = std::map<int, GuestViewContainer*>;
-static base::LazyInstance<GuestViewContainerMap> g_guest_view_container_map =
-    LAZY_INSTANCE_INITIALIZER;
+static base::LazyInstance<GuestViewContainerMap>::DestructorAtExit
+    g_guest_view_container_map = LAZY_INSTANCE_INITIALIZER;
 
 }  // namespace
 

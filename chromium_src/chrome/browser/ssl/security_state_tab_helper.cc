@@ -107,7 +107,8 @@ void SecurityStateTabHelper::VisibleSecurityStateChanged() {
 void SecurityStateTabHelper::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
   if (time_of_http_warning_on_current_navigation_.is_null() ||
-      !navigation_handle->IsInMainFrame() || navigation_handle->IsSamePage()) {
+      !navigation_handle->IsInMainFrame() ||
+      navigation_handle->IsSameDocument()) {
     return;
   }
   // Record how quickly a user leaves a site after encountering an
@@ -126,7 +127,8 @@ void SecurityStateTabHelper::DidStartNavigation(
 
 void SecurityStateTabHelper::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->IsInMainFrame() && !navigation_handle->IsSamePage()) {
+  if (navigation_handle->IsInMainFrame() &&
+     !navigation_handle->IsSameDocument()) {
     // Only reset the console message flag for main-frame navigations,
     // and not for same-page navigations like reference fragments and pushState.
     logged_http_warning_on_current_navigation_ = false;

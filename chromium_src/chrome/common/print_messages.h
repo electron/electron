@@ -41,7 +41,6 @@ struct PrintMsg_Print_Params {
   int margin_left;
   double dpi;
   double scale_factor;
-  int desired_dpi;
   bool rasterize_pdf;
   int document_cookie;
   bool selection_only;
@@ -79,7 +78,7 @@ IPC_ENUM_TRAITS_MIN_MAX_VALUE(printing::DuplexMode,
                               printing::UNKNOWN_DUPLEX_MODE,
                               printing::SHORT_EDGE)
 IPC_ENUM_TRAITS_MAX_VALUE(blink::WebPrintScalingOption,
-                          blink::WebPrintScalingOptionLast)
+                          blink::kWebPrintScalingOptionLast)
 
 // Parameters for a render request.
 IPC_STRUCT_TRAITS_BEGIN(PrintMsg_Print_Params)
@@ -104,9 +103,6 @@ IPC_STRUCT_TRAITS_BEGIN(PrintMsg_Print_Params)
 
   // Specifies the scale factor in percent
   IPC_STRUCT_TRAITS_MEMBER(scale_factor)
-
-  // Desired apparent dpi on paper.
-  IPC_STRUCT_TRAITS_MEMBER(desired_dpi)
 
   // Cookie for the document to ensure correctness.
   IPC_STRUCT_TRAITS_MEMBER(document_cookie)

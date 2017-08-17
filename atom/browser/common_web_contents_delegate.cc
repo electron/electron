@@ -14,6 +14,7 @@
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/common/atom_constants.h"
 #include "base/files/file_util.h"
+#include "base/memory/ptr_util.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
@@ -300,7 +301,7 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
     if (!file_dialog::ShowSaveDialog(settings, &path)) {
-      base::StringValue url_value(url);
+      base::Value url_value(url);
       web_contents_->CallClientFunction(
           "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
       return;
@@ -384,7 +385,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
   auto pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
   update.Get()->SetWithoutPathExpansion(
-      path.AsUTF8Unsafe(), base::Value::CreateNullValue());
+      path.AsUTF8Unsafe(), base::MakeUnique<base::Value>());
 
   web_contents_->CallClientFunction("DevToolsAPI.fileSystemAdded",
                                     file_system_value.get(),
@@ -404,7 +405,7 @@ void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
   update.Get()->RemoveWithoutPathExpansion(path, nullptr);
 
-  base::StringValue file_system_path_value(path);
+  base::Value file_system_path_value(path);
   web_contents_->CallClientFunction("DevToolsAPI.fileSystemRemoved",
                                     &file_system_path_value,
                                     nullptr, nullptr);
@@ -468,7 +469,7 @@ void CommonWebContentsDelegate::DevToolsSearchInPath(
 void CommonWebContentsDelegate::OnDevToolsSaveToFile(
     const std::string& url) {
   // Notify DevTools.
-  base::StringValue url_value(url);
+  base::Value url_value(url);
   web_contents_->CallClientFunction(
       "DevToolsAPI.savedURL", &url_value, nullptr, nullptr);
 }
@@ -476,7 +477,7 @@ void CommonWebContentsDelegate::OnDevToolsSaveToFile(
 void CommonWebContentsDelegate::OnDevToolsAppendToFile(
     const std::string& url) {
   // Notify DevTools.
-  base::StringValue url_value(url);
+  base::Value url_value(url);
   web_contents_->CallClientFunction(
       "DevToolsAPI.appendedToURL", &url_value, nullptr, nullptr);
 }
@@ -486,7 +487,7 @@ void CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated(
     const std::string& file_system_path,
     int total_work) {
   base::Value request_id_value(request_id);
-  base::StringValue file_system_path_value(file_system_path);
+  base::Value file_system_path_value(file_system_path);
   base::Value total_work_value(total_work);
   web_contents_->CallClientFunction("DevToolsAPI.indexingTotalWorkCalculated",
                                     &request_id_value,
@@ -499,7 +500,7 @@ void CommonWebContentsDelegate::OnDevToolsIndexingWorked(
     const std::string& file_system_path,
     int worked) {
   base::Value request_id_value(request_id);
-  base::StringValue file_system_path_value(file_system_path);
+  base::Value file_system_path_value(file_system_path);
   base::Value worked_value(worked);
   web_contents_->CallClientFunction("DevToolsAPI.indexingWorked",
                                     &request_id_value,
@@ -512,7 +513,7 @@ void CommonWebContentsDelegate::OnDevToolsIndexingDone(
     const std::string& file_system_path) {
   devtools_indexing_jobs_.erase(request_id);
   base::Value request_id_value(request_id);
-  base::StringValue file_system_path_value(file_system_path);
+  base::Value file_system_path_value(file_system_path);
   web_contents_->CallClientFunction("DevToolsAPI.indexingDone",
                                     &request_id_value,
                                     &file_system_path_value,
@@ -528,7 +529,7 @@ void CommonWebContentsDelegate::OnDevToolsSearchCompleted(
     file_paths_value.AppendString(file_path);
   }
   base::Value request_id_value(request_id);
-  base::StringValue file_system_path_value(file_system_path);
+  base::Value file_system_path_value(file_system_path);
   web_contents_->CallClientFunction("DevToolsAPI.searchCompleted",
                                     &request_id_value,
                                     &file_system_path_value,

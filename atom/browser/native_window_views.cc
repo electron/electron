@@ -82,17 +82,17 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
 #endif
 
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
-  return event.windowsKeyCode == ui::VKEY_MENU;
+  return event.windows_key_code == ui::VKEY_MENU;
 }
 
 bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
   typedef content::NativeWebKeyboardEvent::Modifiers Modifiers;
-  int modifiers = event.modifiers();
-  modifiers &= ~Modifiers::NumLockOn;
-  modifiers &= ~Modifiers::CapsLockOn;
-  return (modifiers == Modifiers::AltKey) ||
-         (modifiers == (Modifiers::AltKey | Modifiers::IsLeft)) ||
-         (modifiers == (Modifiers::AltKey | Modifiers::IsRight));
+  int modifiers = event.GetModifiers();
+  modifiers &= ~Modifiers::kNumLockOn;
+  modifiers &= ~Modifiers::kCapsLockOn;
+  return (modifiers == Modifiers::kAltKey) ||
+         (modifiers == (Modifiers::kAltKey | Modifiers::kIsLeft)) ||
+         (modifiers == (Modifiers::kAltKey | Modifiers::kIsRight));
 }
 
 #if defined(USE_X11)
@@ -334,6 +334,11 @@ NativeWindowViews::NativeWindowViews(
 
 NativeWindowViews::~NativeWindowViews() {
   window_->RemoveObserver(this);
+
+#if defined(OS_WIN)
+  // Disable mouse forwarding to relinquish resources, should any be held.
+  SetForwardMouseMessages(false);
+#endif
 }
 
 void NativeWindowViews::Close() {
@@ -790,7 +795,7 @@ bool NativeWindowViews::HasShadow() {
       != wm::ShadowElevation::NONE;
 }
 
-void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
+void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
   if (ignore)
@@ -798,6 +803,13 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
   else
     ex_style &= ~(WS_EX_TRANSPARENT | WS_EX_LAYERED);
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+
+  // Forwarding is always disabled when not ignoring mouse messages.
+  if (!ignore) {
+    SetForwardMouseMessages(false);
+  } else {
+    SetForwardMouseMessages(forward);
+  }
 #elif defined(USE_X11)
   if (ignore) {
     XRectangle r = {0, 0, 1, 1};
@@ -1252,15 +1264,15 @@ void NativeWindowViews::HandleKeyboardEvent(
   // Show accelerator when "Alt" is pressed.
   if (menu_bar_visible_ && IsAltKey(event))
     menu_bar_->SetAcceleratorVisibility(
-        event.type() == blink::WebInputEvent::RawKeyDown);
+        event.GetType() == blink::WebInputEvent::kRawKeyDown);
 
   // Show the submenu when "Alt+Key" is pressed.
-  if (event.type() == blink::WebInputEvent::RawKeyDown && !IsAltKey(event) &&
-      IsAltModifier(event)) {
+  if (event.GetType() == blink::WebInputEvent::kRawKeyDown &&
+      !IsAltKey(event) && IsAltModifier(event)) {
     if (!menu_bar_visible_ &&
-        (menu_bar_->GetAcceleratorIndex(event.windowsKeyCode) != -1))
+        (menu_bar_->GetAcceleratorIndex(event.windows_key_code) != -1))
       SetMenuBarVisibility(true);
-    menu_bar_->ActivateAccelerator(event.windowsKeyCode);
+    menu_bar_->ActivateAccelerator(event.windows_key_code);
     return;
   }
 
@@ -1268,11 +1280,11 @@ void NativeWindowViews::HandleKeyboardEvent(
     return;
 
   // Toggle the menu bar only when a single Alt is released.
-  if (event.type() == blink::WebInputEvent::RawKeyDown && IsAltKey(event)) {
+  if (event.GetType() == blink::WebInputEvent::kRawKeyDown && IsAltKey(event)) {
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
-  } else if (event.type() == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
-             menu_bar_alt_pressed_) {
+  } else if (event.GetType() == blink::WebInputEvent::kKeyUp &&
+             IsAltKey(event) && menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
     SetMenuBarVisibility(!menu_bar_visible_);

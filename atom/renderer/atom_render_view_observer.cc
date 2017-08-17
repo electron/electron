@@ -87,10 +87,10 @@ AtomRenderViewObserver::~AtomRenderViewObserver() {
 void AtomRenderViewObserver::EmitIPCEvent(blink::WebFrame* frame,
                                           const base::string16& channel,
                                           const base::ListValue& args) {
-  if (!frame || frame->isWebRemoteFrame())
+  if (!frame || frame->IsWebRemoteFrame())
     return;
 
-  v8::Isolate* isolate = blink::mainThreadIsolate();
+  v8::Isolate* isolate = blink::MainThreadIsolate();
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
@@ -120,7 +120,7 @@ void AtomRenderViewObserver::DidCreateDocumentElement(
 
 void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
   blink::WebVector<blink::WebDraggableRegion> webregions =
-      frame->document().draggableRegions();
+      frame->GetDocument().DraggableRegions();
   std::vector<DraggableRegion> regions;
   for (auto& webregion : webregions) {
     DraggableRegion region;
@@ -156,22 +156,22 @@ void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,
   if (!render_view()->GetWebView())
     return;
 
-  blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
-  if (!frame || frame->isWebRemoteFrame())
+  blink::WebFrame* frame = render_view()->GetWebView()->MainFrame();
+  if (!frame || frame->IsWebRemoteFrame())
     return;
 
   EmitIPCEvent(frame, channel, args);
 
   // Also send the message to all sub-frames.
   if (send_to_all) {
-    for (blink::WebFrame* child = frame->firstChild(); child;
-         child = child->nextSibling())
+    for (blink::WebFrame* child = frame->FirstChild(); child;
+         child = child->NextSibling())
       EmitIPCEvent(child, channel, args);
   }
 }
 
 void AtomRenderViewObserver::OnOffscreen() {
-  blink::WebView::setUseExternalPopupMenus(false);
+  blink::WebView::SetUseExternalPopupMenus(false);
 }
 
 }  // namespace atom

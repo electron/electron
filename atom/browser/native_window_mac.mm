@@ -1412,7 +1412,7 @@ bool NativeWindowMac::IsDocumentEdited() {
   return [window_ isDocumentEdited];
 }
 
-void NativeWindowMac::SetIgnoreMouseEvents(bool ignore) {
+void NativeWindowMac::SetIgnoreMouseEvents(bool ignore, bool) {
   [window_ setIgnoresMouseEvents:ignore];
 }
 
@@ -1604,10 +1604,10 @@ void NativeWindowMac::SetEscapeTouchBarItem(const mate::PersistentDictionary& it
 }
 
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
-  switch (event.type()) {
-    case blink::WebInputEvent::GestureScrollBegin:
-    case blink::WebInputEvent::GestureScrollUpdate:
-    case blink::WebInputEvent::GestureScrollEnd:
+  switch (event.GetType()) {
+    case blink::WebInputEvent::kGestureScrollBegin:
+    case blink::WebInputEvent::kGestureScrollUpdate:
+    case blink::WebInputEvent::kGestureScrollEnd:
         this->NotifyWindowScrollTouchEdge();
       break;
     default:
