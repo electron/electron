@@ -1412,7 +1412,7 @@ bool NativeWindowMac::IsDocumentEdited() {
   return [window_ isDocumentEdited];
 }
 
-void NativeWindowMac::SetIgnoreMouseEvents(bool ignore) {
+void NativeWindowMac::SetIgnoreMouseEvents(bool ignore, bool) {
   [window_ setIgnoresMouseEvents:ignore];
 }
 
