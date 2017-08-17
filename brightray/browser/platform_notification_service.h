@@ -37,7 +37,6 @@ class PlatformNotificationService
       const GURL& origin,
       const content::PlatformNotificationData& notification_data,
       const content::NotificationResources& notification_resources,
-      std::unique_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) override;
   void DisplayPersistentNotification(
       content::BrowserContext* browser_context,

@@ -7,7 +7,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/notification.h"
-#include "brightray/browser/notification_delegate_adapter.h"
+#include "brightray/browser/notification_delegate.h"
 #include "brightray/browser/notification_presenter.h"
 #include "content/public/common/notification_resources.h"
 #include "content/public/common/platform_notification_data.h"
@@ -77,16 +77,14 @@ void PlatformNotificationService::DisplayNotification(
     const GURL& origin,
     const content::PlatformNotificationData& notification_data,
     const content::NotificationResources& notification_resources,
-    std::unique_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   auto presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
-  std::unique_ptr<NotificationDelegateAdapter> adapter(
-      new NotificationDelegateAdapter(std::move(delegate)));
-  auto notification = presenter->CreateNotification(adapter.get());
+  brightray::NotificationDelegate* delegate =
+      new NotificationDelegate(notification_id);
+  auto notification = presenter->CreateNotification(delegate);
   if (notification) {
-    ignore_result(adapter.release());  // it will release itself automatically.
     *cancel_callback = base::Bind(&RemoveNotification, notification);
     browser_client_->WebNotificationAllowed(
         render_process_id_, base::Bind(&OnWebNotificationAllowed, notification,
