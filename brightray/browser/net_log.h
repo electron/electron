@@ -8,6 +8,7 @@
 #include "base/files/scoped_file.h"
 #include "net/log/net_log.h"
 #include "net/log/file_net_log_observer.h"
+#include "net/url_request/url_request_context.h"
 
 namespace brightray {
 
