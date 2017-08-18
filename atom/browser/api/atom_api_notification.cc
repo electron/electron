@@ -67,7 +67,7 @@ Notification::Notification(v8::Isolate* isolate,
     opts.Get("replyPlaceholder", &reply_placeholder_);
     opts.Get("hasReply", &has_reply_);
     opts.Get("actions", &actions_);
-    opts.Get("soundName", &sound_name_);
+    opts.Get("sound", &sound_);
   }
 }
 
@@ -115,7 +115,7 @@ std::vector<brightray::NotificationAction> Notification::GetActions() const {
 }
 
 base::string16 Notification::GetSoundName() const {
-  return sound_name_;
+  return sound_;
 }
 
 // Setters
@@ -148,8 +148,8 @@ void Notification::SetActions(
   actions_ = actions;
 }
 
-void Notification::SetSoundName(const base::string16& new_sound_name) {
-  sound_name_ = new_sound_name;
+void Notification::SetSoundName(const base::string16& new_sound) {
+  sound_ = new_sound;
 }
 
 void Notification::NotificationAction(int index) {
@@ -190,7 +190,7 @@ void Notification::Show() {
       options.has_reply = has_reply_;
       options.reply_placeholder = reply_placeholder_;
       options.actions = actions_;
-      options.sound_name = sound_name_;
+      options.sound = sound_;
       notification_->Show(options);
     }
   }

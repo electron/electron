@@ -64,7 +64,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetHasReply(bool new_has_reply);
   void SetActions(const std::vector<brightray::NotificationAction>& actions);
-  void SetSoundName(const base::string16& sound_name);
+  void SetSoundName(const base::string16& sound);
 
  private:
   base::string16 title_;
@@ -77,7 +77,7 @@ class Notification : public mate::TrackableObject<Notification>,
   base::string16 reply_placeholder_;
   bool has_reply_ = false;
   std::vector<brightray::NotificationAction> actions_;
-  base::string16 sound_name_;
+  base::string16 sound_;
 
   brightray::NotificationPresenter* presenter_;
 

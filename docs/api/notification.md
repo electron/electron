@@ -37,7 +37,7 @@ Returns `Boolean` - Whether or not desktop notifications are supported on the cu
   * `icon` [NativeImage](native-image.md) - (optional) An icon to use in the notification
   * `hasReply` Boolean - (optional) Whether or not to add an inline reply option to the notification.  _macOS_
   * `replyPlaceholder` String - (optional) The placeholder to write in the inline reply input field. _macOS_
-  * `soundName` String - (optional) The name of the sound file to play when the notification is shown. _macOS_
+  * `sound` String - (optional) The name of the sound file to play when the notification is shown. _macOS_
   * `actions` [NotificationAction[]](structures/notification-action.md) - (optional) Actions to add to the notification.  Please read the available actions and limitations in the `NotificationAction` documentation _macOS_
 
 
