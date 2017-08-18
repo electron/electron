@@ -28,14 +28,18 @@ desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
             maxHeight: 720
           }
         }
-      }, handleStream, handleError)
+      })
+      .then((stream) => handleStream(stream))
+      .catch((e) => handleError(e))
       return
     }
   }
 })
 
 function handleStream (stream) {
-  document.querySelector('video').src = URL.createObjectURL(stream)
+  const video = document.querySelector('video')
+  video.srcObject = stream
+  video.onloadedmetadata = (e) => video.play()
 }
 
 function handleError (e) {
