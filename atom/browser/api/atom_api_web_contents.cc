@@ -243,13 +243,6 @@ struct Converter<atom::api::WebContents::Type> {
   }
 };
 
-template<>
-struct Converter<nullptr_t> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, nullptr_t) {
-    return v8::Null(isolate);
-  }
-};
-
 }  // namespace mate
 
 
@@ -764,9 +757,8 @@ void WebContents::MediaStoppedPlaying(const MediaPlayerInfo& video_type,
 }
 
 void WebContents::DidChangeThemeColor(SkColor theme_color) {
-  auto color = atom::ToRGBHex(theme_color);
-  if (color.length() > 0) {
-    Emit("did-change-theme-color", color);
+  if (theme_color != SK_ColorTRANSPARENT) {
+    Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
   } else {
     Emit("did-change-theme-color", nullptr_t());
   }
