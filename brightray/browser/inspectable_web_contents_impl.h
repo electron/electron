@@ -127,7 +127,8 @@ class InspectableWebContentsImpl :
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
                               content::RenderFrameHost* new_host) override;
   void WebContentsDestroyed() override;
-  void OnWebContentsFocused() override;
+  void OnWebContentsFocused(
+      content::RenderWidgetHost* render_widget_host) override;
   void DidStartNavigationToPendingEntry(
       const GURL& url,
       content::ReloadType reload_type) override;
