@@ -52,8 +52,8 @@ void AtomSpeechRecognitionManagerDelegate::OnAudioLevelsChange(
 
 void AtomSpeechRecognitionManagerDelegate::CheckRecognitionIsAllowed(
     int session_id,
-    base::Callback<void(bool ask_user, bool is_allowed)> callback) {
-  callback.Run(true, true);
+    base::OnceCallback<void(bool ask_user, bool is_allowed)> callback) {
+  std::move(callback).Run(true, true);
 }
 
 content::SpeechRecognitionEventListener*

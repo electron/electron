@@ -38,7 +38,8 @@ class AtomSpeechRecognitionManagerDelegate
   // content::SpeechRecognitionManagerDelegate:
   void CheckRecognitionIsAllowed(
       int session_id,
-      base::Callback<void(bool ask_user, bool is_allowed)> callback) override;
+      base::OnceCallback<void(bool ask_user, bool is_allowed)> callback)
+      override;
   content::SpeechRecognitionEventListener* GetEventListener() override;
   bool FilterProfanities(int render_process_id) override;
 
