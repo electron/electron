@@ -737,7 +737,8 @@ void InspectableWebContentsImpl::EnumerateDirectory(
     delegate->EnumerateDirectory(source, request_id, path);
 }
 
-void InspectableWebContentsImpl::OnWebContentsFocused() {
+void InspectableWebContentsImpl::OnWebContentsFocused(
+    content::RenderWidgetHost* render_widget_host) {
 #if defined(TOOLKIT_VIEWS)
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsFocused();
