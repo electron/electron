@@ -34,9 +34,10 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
             const net::NetLogWithSource& net_log) override;
   int RestartIgnoringLastError(
       const net::CompletionCallback& callback) override;
-  int RestartWithCertificate(net::X509Certificate* client_cert,
-                             net::SSLPrivateKey* client_private_key,
-                             const net::CompletionCallback& callback) override;
+  int RestartWithCertificate(
+      scoped_refptr<net::X509Certificate> client_cert,
+      scoped_refptr<net::SSLPrivateKey> client_private_key,
+      const net::CompletionCallback& callback) override;
   int RestartWithAuth(const net::AuthCredentials& credentials,
                       const net::CompletionCallback& callback) override;
   bool IsReadyToRestartForAuth() override;
