@@ -694,10 +694,17 @@ void App::AllowCertificateError(
 void App::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
-    net::CertificateList client_certs,
+    net::ClientCertIdentityList identities,
     std::unique_ptr<content::ClientCertificateDelegate> delegate) {
   std::shared_ptr<content::ClientCertificateDelegate>
       shared_delegate(delegate.release());
+
+  // Convert the ClientCertIdentityList to a CertificateList
+  // to avoid changes in the API.
+  auto client_certs = net::CertificateList();
+  for (const std::unique_ptr<net::ClientCertIdentity>& identity : identities)
+    client_certs.push_back(identity->certificate());
+
   bool prevent_default =
       Emit("select-client-certificate",
            WebContents::CreateFrom(isolate(), web_contents),
