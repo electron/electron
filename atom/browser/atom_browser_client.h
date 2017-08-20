@@ -12,6 +12,7 @@
 
 #include "brightray/browser/browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "net/ssl/client_cert_identity.h"
 
 namespace content {
 class QuotaPermissionContext;
@@ -77,7 +78,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
-      net::CertificateList client_certs,
+      net::ClientCertIdentityList client_certs,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
   void ResourceDispatcherHostCreated() override;
   bool CanCreateWindow(
