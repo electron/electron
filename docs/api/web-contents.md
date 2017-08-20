@@ -407,7 +407,7 @@ Returns:
 
 * `event` Event
 * `color` string
-  * Theme color in format '#rrggbb'. Empty string when theme color is not found.
+  * Theme color in format '#rrggbb'. `null` when theme color is not found.
 
 #### Event: 'update-target-url'
 
