@@ -84,10 +84,10 @@ AtomRenderViewObserver::AtomRenderViewObserver(
 AtomRenderViewObserver::~AtomRenderViewObserver() {
 }
 
-void AtomRenderViewObserver::EmitIPCEvent(blink::WebFrame* frame,
+void AtomRenderViewObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
                                           const base::string16& channel,
                                           const base::ListValue& args) {
-  if (!frame || frame->IsWebRemoteFrame())
+  if (!frame)
     return;
 
   v8::Isolate* isolate = blink::MainThreadIsolate();
@@ -163,13 +163,15 @@ void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,
     return;
   }
 
-  EmitIPCEvent(frame, channel, args);
+  EmitIPCEvent(frame->ToWebLocalFrame(), channel, args);
 
   // Also send the message to all sub-frames.
   if (send_to_all) {
     for (blink::WebFrame* child = frame->FirstChild(); child;
          child = child->NextSibling())
-      EmitIPCEvent(child, channel, args);
+      if (child->IsWebLocalFrame()) {
+        EmitIPCEvent(child->ToWebLocalFrame(), channel, args);
+      }
   }
 }
 
