@@ -54,7 +54,7 @@ class Notification : public mate::TrackableObject<Notification>,
   base::string16 GetReplyPlaceholder() const;
   bool GetHasReply() const;
   std::vector<brightray::NotificationAction> GetActions() const;
-  base::string16 GetSoundName() const;
+  base::string16 GetSound() const;
 
   // Prop Setters
   void SetTitle(const base::string16& new_title);
@@ -64,7 +64,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetHasReply(bool new_has_reply);
   void SetActions(const std::vector<brightray::NotificationAction>& actions);
-  void SetSoundName(const base::string16& sound);
+  void SetSound(const base::string16& sound);
 
  private:
   base::string16 title_;

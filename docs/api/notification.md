@@ -103,3 +103,18 @@ Immediately shows the notification to the user, please note this means unlike th
 HTML5 Notification implementation, simply instantiating a `new Notification` does
 not immediately show it to the user, you need to call this method before the OS
 will display it.
+
+### Playing Sounds _macOS_
+
+On macOS, you can specify the name of the sound you'd like to play when the
+notification is shown. Any of the default sounds (under System Preferences >
+Sound) can be used, in addition to custom sound files. Be sure that the sound
+file is included with the app bundle (e.g., `YourApp.app/Contents/Resources`),
+or copied into one of the following locations:
+
+* `~/Library/Sounds`
+* `/Library/Sounds`
+* `/Network/Library/Sounds`
+* `/System/Library/Sounds`
+
+See the [`NSSound`](https://developer.apple.com/documentation/appkit/nssound) docs for more information.

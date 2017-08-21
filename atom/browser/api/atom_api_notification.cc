@@ -114,7 +114,7 @@ std::vector<brightray::NotificationAction> Notification::GetActions() const {
   return actions_;
 }
 
-base::string16 Notification::GetSoundName() const {
+base::string16 Notification::GetSound() const {
   return sound_;
 }
 
@@ -148,7 +148,7 @@ void Notification::SetActions(
   actions_ = actions;
 }
 
-void Notification::SetSoundName(const base::string16& new_sound) {
+void Notification::SetSound(const base::string16& new_sound) {
   sound_ = new_sound;
 }
 
@@ -218,8 +218,8 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
                    &Notification::SetHasReply)
       .SetProperty("actions", &Notification::GetActions,
                    &Notification::SetActions)
-      .SetProperty("soundName", &Notification::GetSoundName,
-                   &Notification::SetSoundName);
+      .SetProperty("sound", &Notification::GetSound,
+                   &Notification::SetSound);
 }
 
 }  // namespace api
