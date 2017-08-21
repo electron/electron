@@ -5,10 +5,11 @@
 #ifndef ATOM_BROWSER_NATIVE_BROWSER_VIEW_H_
 #define ATOM_BROWSER_NATIVE_BROWSER_VIEW_H_
 
+#include <vector>
+
+#include "atom/common/draggable_region.h"
 #include "base/macros.h"
 #include "third_party/skia/include/core/SkColor.h"
-#include "atom/common/draggable_region.h"
-#include <vector>
 
 namespace brightray {
 class InspectableWebContentsView;
@@ -42,7 +43,7 @@ class NativeBrowserView {
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
-    const std::vector<gfx::Rect>& system_drag_exclude_areas) {};
+    const std::vector<gfx::Rect>& system_drag_exclude_areas) {}
 
  protected:
   explicit NativeBrowserView(
