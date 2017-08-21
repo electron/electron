@@ -79,7 +79,7 @@ void OnPdfResourceIntercepted(
 
     download_manager->DownloadUrl(
         content::DownloadUrlParameters::CreateForWebContentsMainFrame(
-            web_contents, original_url));
+            web_contents, original_url, NO_TRAFFIC_ANNOTATION_YET));
     return;
   }
 
