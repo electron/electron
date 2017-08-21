@@ -32,7 +32,6 @@ class DictionaryValue;
 }
 
 namespace blink {
-class WebFrame;
 class WebView;
 }
 
@@ -216,7 +215,7 @@ class PrintWebViewHelper
   // |page_number| is zero-based.
   // When method is called, canvas should be setup to draw to |canvas_area|
   // with |scale_factor|.
-  static float RenderPageContent(blink::WebFrame* frame,
+  static float RenderPageContent(blink::WebLocalFrame* frame,
                                  int page_number,
                                  const gfx::Rect& canvas_area,
                                  const gfx::Rect& content_area,
