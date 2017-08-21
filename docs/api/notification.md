@@ -37,6 +37,7 @@ Returns `Boolean` - Whether or not desktop notifications are supported on the cu
   * `icon` [NativeImage](native-image.md) - (optional) An icon to use in the notification
   * `hasReply` Boolean - (optional) Whether or not to add an inline reply option to the notification.  _macOS_
   * `replyPlaceholder` String - (optional) The placeholder to write in the inline reply input field. _macOS_
+  * `sound` String - (optional) The name of the sound file to play when the notification is shown. _macOS_
   * `actions` [NotificationAction[]](structures/notification-action.md) - (optional) Actions to add to the notification.  Please read the available actions and limitations in the `NotificationAction` documentation _macOS_
 
 
@@ -102,3 +103,18 @@ Immediately shows the notification to the user, please note this means unlike th
 HTML5 Notification implementation, simply instantiating a `new Notification` does
 not immediately show it to the user, you need to call this method before the OS
 will display it.
+
+### Playing Sounds
+
+On macOS, you can specify the name of the sound you'd like to play when the
+notification is shown. Any of the default sounds (under System Preferences >
+Sound) can be used, in addition to custom sound files. Be sure that the sound
+file is copied under the app bundle (e.g., `YourApp.app/Contents/Resources`),
+or one of the following locations:
+
+* `~/Library/Sounds`
+* `/Library/Sounds`
+* `/Network/Library/Sounds`
+* `/System/Library/Sounds`
+
+See the [`NSSound`](https://developer.apple.com/documentation/appkit/nssound) docs for more information.

@@ -33,6 +33,7 @@ struct NotificationOptions {
   bool silent;
   bool has_reply;
   base::string16 reply_placeholder;
+  base::string16 sound;
   std::vector<NotificationAction> actions;
 };
 
