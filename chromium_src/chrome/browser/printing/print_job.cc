@@ -21,7 +21,6 @@
 #include "build/build_config.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/printing/print_job_worker.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/notification_service.h"
 #include "printing/printed_document.h"
 #include "printing/printed_page.h"
@@ -78,10 +77,7 @@ void PrintJob::Initialize(PrintJobWorkerOwner* job,
   settings_ = job->settings();
 
   PrintedDocument* new_doc =
-      new PrintedDocument(settings_,
-                          source_,
-                          job->cookie(),
-                          content::BrowserThread::GetBlockingPool());
+      new PrintedDocument(settings_, source_, job->cookie());
   new_doc->set_page_count(page_count);
   UpdatePrintedDocument(new_doc);
 
