@@ -149,7 +149,7 @@ void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,
     return;
 
   blink::WebFrame* frame = render_view()->GetWebView()->MainFrame();
-  if (!frame || frame->IsWebRemoteFrame())
+  if (!frame || !frame->IsWebLocalFrame())
     return;
 
   // Don't handle browser messages before document element is created.
@@ -157,7 +157,7 @@ void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,
   // to a web page, and when we do that Blink creates an empty
   // document element if it hasn't been created yet, and it makes our init
   // script to run while `window.location` is still "about:blank".
-  blink::WebDocument document = frame->GetDocument();
+  blink::WebDocument document = frame->ToWebLocalFrame()->GetDocument();
   blink::WebElement html_element = document.DocumentElement();
   if (html_element.IsNull()) {
     return;
