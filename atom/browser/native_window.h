@@ -182,6 +182,13 @@ class NativeWindow : public base::SupportsUserData,
   virtual void RefreshTouchBarItem(const std::string& item_id);
   virtual void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
 
+  // Native Tab API
+  virtual void SelectPreviousTab();
+  virtual void SelectNextTab();
+  virtual void MergeAllWindows();
+  virtual void MoveTabToNewWindow();
+  virtual void ToggleTabBar();
+
   // Webview APIs.
   virtual void FocusOnWebView();
   virtual void BlurWebView();

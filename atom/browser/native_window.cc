@@ -336,6 +336,21 @@ void NativeWindow::SetParentWindow(NativeWindow* parent) {
 void NativeWindow::SetAutoHideCursor(bool auto_hide) {
 }
 
+void NativeWindow::SelectPreviousTab() {
+}
+
+void NativeWindow::SelectNextTab() {
+}
+
+void NativeWindow::MergeAllWindows() {
+}
+
+void NativeWindow::MoveTabToNewWindow() {
+}
+
+void NativeWindow::ToggleTabBar() {
+}
+
 void NativeWindow::SetVibrancy(const std::string& filename) {
 }
 

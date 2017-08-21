@@ -1357,6 +1357,31 @@ Returns `BrowserWindow[]` - All child windows.
 
 Controls whether to hide cursor when typing.
 
+#### `win.selectPreviousTab()` _macOS_
+
+Selects the previous tab when native tabs are enabled and there are other
+tabs in the window.
+
+#### `win.selectNextTab()` _macOS_
+
+Selects the next tab when native tabs are enabled and there are other
+tabs in the window.
+
+#### `win.mergeAllWindows()` _macOS_
+
+Merges all windows into one window with multiple tabs when native tabs
+are enabled and there is more than one open window.
+
+#### `win.moveTabToNewWindow()` _macOS_
+
+Moves the current tab into a new window if native tabs are enabled and
+there is more than one tab in the current window.
+
+#### `win.toggleTabBar()` _macOS_
+
+Toggles the visibility of the tab bar if native tabs are enabled and
+there is only one tab in the current window.
+
 #### `win.setVibrancy(type)` _macOS_
 
 * `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,
