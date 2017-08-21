@@ -304,11 +304,14 @@ NativeWindowViews::NativeWindowViews(
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
 #endif
 
-  // TODO(zcbenz): This was used to force using native frame on Windows 2003, we
-  // should check whether setting it in InitParams can work.
   if (has_frame()) {
+    // TODO(zcbenz): This was used to force using native frame on Windows 2003,
+    // we should check whether setting it in InitParams can work.
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
+    // thickFrame also works for normal window.
+    if (!thick_frame_)
+      FlipWindowStyle(GetAcceleratedWidget(), false, WS_THICKFRAME);
   }
 
   gfx::Size size = bounds.size();
@@ -577,9 +580,11 @@ gfx::Size NativeWindowViews::GetContentSize() {
 void NativeWindowViews::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   NativeWindow::SetContentSizeConstraints(size_constraints);
+  // Changing size constraints would force adding the WS_THICKFRAME style, so
+  // do nothing if thickFrame is false.
   // widget_delegate() is only available after Init() is called, we make use of
   // this to determine whether native widget has initialized.
-  if (window_ && window_->widget_delegate())
+  if (thick_frame_ && window_ && window_->widget_delegate())
     window_->OnSizeConstraintsChanged();
 #if defined(USE_X11)
   if (resizable_)
@@ -589,7 +594,7 @@ void NativeWindowViews::SetContentSizeConstraints(
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  if (has_frame())
+  if (has_frame() && thick_frame_)
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #elif defined(USE_X11)
   if (resizable != resizable_) {
