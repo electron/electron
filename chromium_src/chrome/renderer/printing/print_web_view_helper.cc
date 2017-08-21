@@ -249,7 +249,7 @@ bool PrintingNodeOrPdfFrame(const blink::WebFrame* frame,
   return plugin && plugin->SupportsPaginatedPrint();
 }
 
-MarginType GetMarginsForPdf(blink::WebFrame* frame,
+MarginType GetMarginsForPdf(blink::WebLocalFrame* frame,
                             const blink::WebNode& node) {
   if (frame->IsPrintScalingDisabledForPlugin(node))
     return NO_MARGINS;
