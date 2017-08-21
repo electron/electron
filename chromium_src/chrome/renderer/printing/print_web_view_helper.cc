@@ -339,7 +339,7 @@ blink::WebView* FrameReference::view() {
 }
 
 // static - Not anonymous so that platform implementations can use it.
-float PrintWebViewHelper::RenderPageContent(blink::WebFrame* frame,
+float PrintWebViewHelper::RenderPageContent(blink::WebLocalFrame* frame,
                                             int page_number,
                                             const gfx::Rect& canvas_area,
                                             const gfx::Rect& content_area,
