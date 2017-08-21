@@ -12,9 +12,10 @@ To get started, you first need to deploy a server that the
 
 Depending on your needs, you can choose from one of these:
 
-- [Hazel](https://github.com/zeit/hazel) – Pulls new releases from 
-[GitHub Releases](https://help.github.com/articles/creating-releases/) and can 
-be deployed for free on [Now](https://zeit.co/now).
+- [Hazel](https://github.com/zeit/hazel) – Simple update server for open-source 
+apps. Pulls from 
+[GitHub Releases](https://help.github.com/articles/creating-releases/) 
+and can be deployed for free on [Now](https://zeit.co/now).
 - [Nuts](https://github.com/GitbookIO/nuts) – Also uses 
 [GitHub Releases](https://help.github.com/articles/creating-releases/), 
 but caches app updates on disk and supports private repositories.
@@ -34,7 +35,7 @@ your packaged app, and not in development. You can use
 the environment.
 
 ```js
-const { app, autoUpdater, dialog } = require('electron')
+const {app, autoUpdater, dialog} = require('electron')
 ```
 
 Next, construct the URL of the update server and tell 
@@ -47,7 +48,7 @@ const feed = `${server}/update/${process.platform}/${app.getVersion()}`
 autoUpdater.setFeedURL(feed)
 ```
 
-As the final step, check for updates (the example below will check every minute):
+As the final step, check for updates. The example below will check every minute:
 
 ```js
 setInterval(() => {
