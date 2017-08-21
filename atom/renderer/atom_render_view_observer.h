@@ -8,6 +8,7 @@
 #include "base/strings/string16.h"
 #include "content/public/renderer/render_view_observer.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 
 namespace base {
 class ListValue;
@@ -25,7 +26,7 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
  protected:
   virtual ~AtomRenderViewObserver();
 
-  virtual void EmitIPCEvent(blink::WebFrame* frame,
+  virtual void EmitIPCEvent(blink::WebLocalFrame* frame,
                             const base::string16& channel,
                             const base::ListValue& args);
 
