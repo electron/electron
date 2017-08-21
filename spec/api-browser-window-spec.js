@@ -1962,7 +1962,7 @@ describe('BrowserWindow module', function () {
         assert.equal(w.isResizable(), true)
       })
 
-      xit('works for a frameless window', () => {
+      it('works for a frameless window', () => {
         w.destroy()
         w = new BrowserWindow({show: false, frame: false})
         assert.equal(w.isResizable(), true)
