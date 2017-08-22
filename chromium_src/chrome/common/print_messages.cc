@@ -26,8 +26,7 @@ PrintMsg_Print_Params::PrintMsg_Print_Params()
       display_header_footer(false),
       title(),
       url(),
-      should_print_backgrounds(false),
-      device_name() {
+      should_print_backgrounds(false) {
 }
 
 PrintMsg_Print_Params::~PrintMsg_Print_Params() {}
@@ -52,7 +51,6 @@ void PrintMsg_Print_Params::Reset() {
   title = base::string16();
   url = base::string16();
   should_print_backgrounds = false;
-  device_name.clear();
 }
 
 PrintMsg_PrintPages_Params::PrintMsg_PrintPages_Params()

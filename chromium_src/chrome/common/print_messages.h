@@ -54,7 +54,6 @@ struct PrintMsg_Print_Params {
   base::string16 title;
   base::string16 url;
   bool should_print_backgrounds;
-  base::string16 device_name;
 };
 
 struct PrintMsg_PrintPages_Params {
