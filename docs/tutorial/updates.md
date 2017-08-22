@@ -22,6 +22,8 @@ but caches app updates on disk and supports private repositories.
 - [electron-release-server](https://github.com/ArekSredzki/electron-release-server) – 
 Provides a dashboard for handling releases
 
+When using [electron-builder][electron-builder-lib], you can also use userland [electron-updater][electron-updater] module. It allows you to avoid update server maintaining (Amazon S3, GitHub or any other static server are supported).
+
 ## Implementing updates in your app
 
 Once you've deployed your update server, continue with importing the required 
@@ -94,3 +96,6 @@ autoUpdater.on('error', message => {
   console.error(message)
 })
 ```
+
+[electron-builder-lib]: https://github.com/electron-userland/electron-builder
+[electron-updater]: https://github.com/electron-userland/electron-builder/wiki/Auto-Update
