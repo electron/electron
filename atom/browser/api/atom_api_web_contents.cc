@@ -1783,6 +1783,16 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
   }
 }
 
+v8::Local<v8::Value> WebContents::GetNativeView() const {
+  gfx::NativeView ptr = web_contents()->GetNativeView();
+  auto buffer = node::Buffer::Copy(
+      isolate(), reinterpret_cast<char*>(&ptr), sizeof(gfx::NativeView));
+  if (buffer.IsEmpty())
+    return v8::Null(isolate());
+  else
+    return buffer.ToLocalChecked();
+}
+
 v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
   if (devtools_web_contents_.IsEmpty())
     return v8::Null(isolate);
@@ -1894,6 +1904,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
+      .SetMethod("getNativeView", &WebContents::GetNativeView)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCIPHandlingPolicy",
