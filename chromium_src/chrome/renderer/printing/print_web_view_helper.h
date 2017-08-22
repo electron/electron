@@ -78,6 +78,7 @@ class PrintWebViewHelper
     FAIL_PRINT_INIT,
     FAIL_PRINT,
     FAIL_PREVIEW,
+    INVALID_SETTINGS,
   };
 
   enum PrintPreviewErrorBuckets {

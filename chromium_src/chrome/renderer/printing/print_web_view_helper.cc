@@ -705,8 +705,12 @@ void PrintWebViewHelper::OnPrintPreview(const base::DictionaryValue& settings) {
   }
 
   if (!UpdatePrintSettings(print_preview_context_.source_frame(),
-                         print_preview_context_.source_node(), settings)) {
-    DidFinishPrinting(FAIL_PREVIEW);
+                           print_preview_context_.source_node(), settings)) {
+    if (print_preview_context_.last_error() != PREVIEW_ERROR_BAD_SETTING) {
+      DidFinishPrinting(INVALID_SETTINGS);
+    } else {
+      DidFinishPrinting(FAIL_PREVIEW);
+    }
     return;
   }
   is_print_ready_metafile_sent_ = false;
@@ -796,7 +800,6 @@ bool PrintWebViewHelper::FinalizePrintReadyDocument() {
   // Ask the browser to create the shared memory for us.
   if (!CopyMetafileDataToSharedMem(*metafile,
                                    &(preview_params.metafile_data_handle))) {
-    LOG(ERROR) << "CopyMetafileDataToSharedMem failed";
     print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
     return false;
   }
@@ -870,7 +873,6 @@ void PrintWebViewHelper::Print(blink::WebLocalFrame* frame,
 
   // Render Pages for printing.
   if (!RenderPagesForPrint(frame_ref.GetFrame(), node)) {
-    LOG(ERROR) << "RenderPagesForPrint failed";
     DidFinishPrinting(FAIL_PRINT);
   }
 }
@@ -892,7 +894,7 @@ void PrintWebViewHelper::DidFinishPrinting(PrintingResult result) {
       break;
 
     case FAIL_PREVIEW:
-      LOG(ERROR) << "PREVIEW FAILED.";
+    case INVALID_SETTINGS:
       if (print_pages_params_) {
         Send(new PrintHostMsg_PrintPreviewFailed(routing_id(),
                  print_pages_params_->params.document_cookie,
