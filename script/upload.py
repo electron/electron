@@ -124,7 +124,7 @@ def run_python_script(script, *args):
 
 
 def get_electron_build_version():
-  if get_target_arch() == 'arm' or os.environ.has_key('CI'):
+  if get_target_arch().startswith('arm') or os.environ.has_key('CI'):
     # In CI we just build as told.
     return ELECTRON_VERSION
   if PLATFORM == 'darwin':
