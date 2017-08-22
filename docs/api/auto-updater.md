@@ -6,6 +6,8 @@ Process: [Main](../glossary.md#main-process)
 
 **You can find a detailed guide about how to implement updates into your application [here](../tutorial/updates.md).**
 
+When using [electron-builder][electron-builder-lib], you can also use userland [electron-updater][electron-updater] module.
+
 ## Platform Notices
 
 Currently, only macOS and Windows are supported. There is no built-in support
@@ -120,3 +122,5 @@ from the normal quit event sequence.
 [installer-lib]: https://github.com/electron/windows-installer
 [electron-forge-lib]: https://github.com/electron-userland/electron-forge
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[electron-builder-lib]: https://github.com/electron-userland/electron-builder
+[electron-updater]: https://github.com/electron-userland/electron-builder/wiki/Auto-Update
