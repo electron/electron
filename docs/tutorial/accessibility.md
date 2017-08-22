@@ -31,3 +31,24 @@ In Devtron, there is a new accessibility tab which will allow you to audit a pag
 Both of these tools are using the [Accessibility Developer Tools](https://github.com/GoogleChrome/accessibility-developer-tools) library built by Google for Chrome. You can learn more about the accessibility audit rules this library uses on that [repository's wiki](https://github.com/GoogleChrome/accessibility-developer-tools/wiki/Audit-Rules).
 
 If you know of other great accessibility tools for Electron, add them to the [accessibility documentation](https://electron.atom.io/docs/tutorial/accessibility) with a pull request.
+
+### Accessibility on Mac
+
+Electron applications keep accessibility disabled by default and there are two ways to enable it:
+1. By turning on VoiceOver in the Accessibility menu in macOS System Preferences
+2. By setting the attribute `AXManualAccessibility` programmatically from the host or 3rd party application.
+
+```objc
+CFStringRef kAXManualAccessibility = CFSTR("AXManualAccessibility");
+
++ (void)enableAccessibility:(BOOL)enable inElectronApplication:(NSRunningApplication *)app
+{
+    AXUIElementRef appRef = AXUIElementCreateApplication(app.processIdentifier);
+    if (appRef == nil)
+        return;
+    
+    CFBooleanRef value = enable ? kCFBooleanTrue : kCFBooleanFalse;
+    AXUIElementSetAttributeValue(appRef, kAXManualAccessibility, value);
+    CFRelease(appRef);
+}
+```
