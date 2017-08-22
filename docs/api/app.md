@@ -43,7 +43,7 @@ check if this event has already fired.
 
 Emitted when all windows have been closed.
 
-If you do not subscribe to this event and all windows are closed, the default
+If you do not listen for this event it will close all windows and you will unable to control the app's behavior, the default
 behavior is to quit the app; however, if you subscribe, you control whether the
 app quits or not. If the user pressed `Cmd + Q`, or the developer called
 `app.quit()`, Electron will first try to close all the windows and then emit the
