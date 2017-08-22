@@ -38,7 +38,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 - (void)mouseDown:(NSEvent *)event
 {
-  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent:)]) {
+  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
     [self.window performWindowDragWithEvent:event];
     return;
   }
@@ -48,7 +48,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 - (void)mouseDragged:(NSEvent *)theEvent
 {
-  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent:)]) {
+  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
     return;
   }
 
