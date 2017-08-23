@@ -5,10 +5,10 @@
 #ifndef ATOM_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_
 #define ATOM_UTILITY_ATOM_CONTENT_UTILITY_CLIENT_H_
 
+#include <memory>
 #include <vector>
 
 #include "base/compiler_specific.h"
-#include "base/memory/scoped_vector.h"
 #include "content/public/utility/content_utility_client.h"
 
 class UtilityMessageHandler;
@@ -24,7 +24,7 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
 
  private:
 #if defined(OS_WIN)
-  typedef ScopedVector<UtilityMessageHandler> Handlers;
+  typedef std::vector<std::unique_ptr<UtilityMessageHandler>> Handlers;
   Handlers handlers_;
 #endif
 
