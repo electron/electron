@@ -17,6 +17,7 @@
 #include "brightray/browser/net_log.h"
 #include "brightray/browser/network_delegate.h"
 #include "brightray/common/switches.h"
+#include "components/network_session_configurator/common/network_switches.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
 #include "content/public/common/content_switches.h"
