@@ -47,6 +47,27 @@ The `latest` and `next` [npm dist tags] are also used:
 - `npm install electron@latest` will install the latest _stable_ version.
 - `npm install electron@next` will install the very latest _unstable_ version.
 
+## Stable Releases
+
+In general, a version is considered stable after its most recent 
+[prerelease](#prereleases) has been out for two weeks and any significant bugs 
+reported against it have been fixed. Note that versions are not promoted on a 
+set schedule, and timing can fluctuate per release.
+
+We recommend using the following command to ensure you're using a stable 
+version of Electron:
+
+```sh
+npm install electron --save-exact --save-dev
+```
+
+If you have an existing Electron app and want to update it to use the latest 
+stable version of `electron`, use the `@latest` identifier:
+
+```sh
+npm install electron@latest --save-exact --save-dev
+```
+
 [Semantic Versioning]: http://semver.org
 [pre-release identifier]: http://semver.org/#spec-item-9
 [npm dist tags]: https://docs.npmjs.com/cli/dist-tag
