@@ -236,12 +236,12 @@ void ComputeWebKitPrintParamsInDesiredDpi(
       ConvertUnit(print_params.page_size.height(), dpi, kPointsPerInch);
 }
 
-blink::WebPlugin* GetPlugin(const blink::WebFrame* frame) {
+blink::WebPlugin* GetPlugin(const blink::WebLocalFrame* frame) {
   return frame->GetDocument().IsPluginDocument() ?
-         frame->GetDocument().To<blink::WebPluginDocument>().Plugin() : NULL;
+         frame->GetDocument().To<blink::WebPluginDocument>().Plugin() : nullptr;
 }
 
-bool PrintingNodeOrPdfFrame(const blink::WebFrame* frame,
+bool PrintingNodeOrPdfFrame(const blink::WebLocalFrame* frame,
                             const blink::WebNode& node) {
   if (!node.IsNull())
     return true;
