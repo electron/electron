@@ -10,8 +10,6 @@
 #include "atom/browser/ui/win/notify_icon.h"
 #include "base/bind.h"
 #include "base/stl_util.h"
-#include "base/threading/non_thread_safe.h"
-#include "base/threading/thread.h"
 #include "base/win/win_util.h"
 #include "base/win/wrapped_window_proc.h"
 #include "ui/events/event_constants.h"
