@@ -201,6 +201,11 @@ BrowserContext::GetBackgroundSyncController() {
   return nullptr;
 }
 
+content::BrowsingDataRemoverDelegate*
+BrowserContext::GetBrowsingDataRemoverDelegate() {
+  return nullptr;
+}
+
 net::URLRequestContextGetter*
 BrowserContext::CreateRequestContextForStoragePartition(
     const base::FilePath& partition_path,
