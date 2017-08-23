@@ -5,14 +5,14 @@ This document describes the process for releasing a new version of Electron.
 ## Create a backport branch
 
 If you're about release a new major or minor version of Electron like `1.8.0`, 
-`1.9.0`, or `2.0.0`, first create a branch of `master` for later backports:
+`1.9.0`, or `2.0.0`, first create a branch from the most recent minor release 
+for later backports:
 
-Assuming you're about to publish `1.8.0`:
+Assuming you're about to publish `1.8.0`, and the highest `1.7` release was
+`1.7.6`:
 
 ```sh
-git checkout master
-git pull
-git checkout -b 1-7-x
+git checkout -b 1-7-x v1.7.6
 git push origin HEAD
 ```
 
