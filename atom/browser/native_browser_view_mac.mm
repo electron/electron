@@ -18,6 +18,10 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 @end
 
+@interface NSWindow ()
+- (void)performWindowDragWithEvent:(NSEvent *)event;
+@end
+
 @implementation DragRegionView
 
 - (BOOL)mouseDownCanMoveWindow
