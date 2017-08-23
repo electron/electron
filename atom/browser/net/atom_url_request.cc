@@ -69,7 +69,8 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
   if (!browser_context || url.empty() || !delegate) {
     return nullptr;
   }
-  auto request_context_getter = browser_context->url_request_context_getter();
+  scoped_refptr<brightray::URLRequestContextGetter> request_context_getter(
+      browser_context->url_request_context_getter());
   DCHECK(request_context_getter);
   if (!request_context_getter) {
     return nullptr;
@@ -439,7 +440,7 @@ bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
 
   // data is only a wrapper for the asynchronous response_read_buffer_.
   // Make a deep copy of payload and transfer ownership to the UI thread.
-  auto buffer_copy = new net::IOBufferWithSize(bytes_read);
+  auto buffer_copy = make_scoped_refptr(new net::IOBufferWithSize(bytes_read));
   memcpy(buffer_copy->data(), response_read_buffer_->data(), bytes_read);
 
   return content::BrowserThread::PostTask(
