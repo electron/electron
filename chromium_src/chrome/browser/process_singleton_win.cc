@@ -196,6 +196,7 @@ ProcessSingleton::ProcessSingleton(
 }
 
 ProcessSingleton::~ProcessSingleton() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (lock_file_ != INVALID_HANDLE_VALUE)
     ::CloseHandle(lock_file_);
 }
