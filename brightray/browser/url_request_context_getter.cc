@@ -128,7 +128,6 @@ URLRequestContextGetter::URLRequestContextGetter(
     const base::FilePath& base_path,
     bool in_memory,
     scoped_refptr<base::SingleThreadTaskRunner> io_task_runner,
-    scoped_refptr<base::SingleThreadTaskRunner> file_task_runner,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors)
     : delegate_(delegate),
@@ -137,7 +136,6 @@ URLRequestContextGetter::URLRequestContextGetter(
       base_path_(base_path),
       in_memory_(in_memory),
       io_task_runner_(io_task_runner),
-      file_task_runner_(file_task_runner),
       protocol_interceptors_(std::move(protocol_interceptors)),
       job_factory_(nullptr) {
   // Must first be created on the UI thread.
@@ -153,7 +151,7 @@ URLRequestContextGetter::URLRequestContextGetter(
   // must synchronously run on the glib message loop. This will be passed to
   // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
   proxy_config_service_ = net::ProxyService::CreateSystemProxyConfigService(
-      io_task_runner_, file_task_runner_);
+      io_task_runner_);
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {
