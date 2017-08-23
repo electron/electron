@@ -343,8 +343,6 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
   dict.Get("viewPosition", &out->view_position);
   dict.Get("deviceScaleFactor", &out->device_scale_factor);
   dict.Get("viewSize", &out->view_size);
-  dict.Get("fitToView", &out->fit_to_view);
-  dict.Get("offset", &out->offset);
   dict.Get("scale", &out->scale);
   return true;
 }

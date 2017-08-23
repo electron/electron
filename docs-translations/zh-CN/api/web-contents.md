@@ -1010,10 +1010,6 @@ app.on('ready', () => {
 * `viewSize` Object - 设置模拟视图的尺寸 (空表示不覆盖)
   * `width` Integer - 设置模拟视图 width
   * `height` Integer - 设置模拟视图 height
-* `fitToView` Boolean - 如果有必要的话，是否把模拟视图按比例缩放来适应可用空间  (默认: `false`)
-* `offset` Object - 可用空间内的模拟视图偏移 (不在适应模式) (默认: `{x: 0, y: 0}`)
-  * `x` Float - 设置相对左上角的x轴偏移值
-  * `y` Float - 设置相对左上角的y轴偏移值
 * `scale` Float - 可用空间内的模拟视图偏移 (不在适应视图模式) (默认: `1`)
 
 使用给定的参数来开启设备模拟。
