@@ -147,4 +147,28 @@ bool NetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
   return false;
 }
 
+// TODO(deepak1556) : Enable after hooking into the reporting service
+// https://crbug.com/704259
+bool NetworkDelegate::OnCanQueueReportingReport(
+    const url::Origin& origin) const {
+  return false;
+}
+
+bool NetworkDelegate::OnCanSendReportingReport(
+    const url::Origin& origin) const {
+  return false;
+}
+
+bool NetworkDelegate::OnCanSetReportingClient(
+    const url::Origin& origin,
+    const GURL& endpoint) const {
+  return false;
+}
+
+bool NetworkDelegate::OnCanUseReportingClient(
+    const url::Origin& origin,
+    const GURL& endpoint) const {
+  return false;
+}
+
 }  // namespace brightray
