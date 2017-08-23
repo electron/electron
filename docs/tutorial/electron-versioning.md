@@ -4,7 +4,7 @@ If you've been using Node and npm for a while, you are probably aware of [Semant
 
 ## Overview of Semantic Versioning
 
-Semantic versions are always made up of three numbers:
+Semantic versions are always made up of (at least) three numbers:
 
 ```
 major.minor.patch
@@ -22,10 +22,13 @@ A simple mnemonic for remembering this scheme is as follows:
 breaking.feature.fix
 ```
 
+Unstable versions may also have a _pre-release identifier_. See 
+[Prereleases](#prereleases).
+
 ## Electron Versioning
 
 Due to its dependency on Node and Chromium, it is not possible for the Electron
-project to adhere to a SemVer policy. **You should therefore always
+project to adhere to a strict SemVer policy. **You should therefore always
 reference a specific version of Electron.**
 
 Electron version numbers are bumped using the following rules:
@@ -52,4 +55,24 @@ Alternatively, you can use the `~` prefix in your SemVer range, like `~1.6.2`.
 This will lock your major and minor version, but allow new patch versions to
 be installed.
 
+## Prereleases
+
+Starting at version 1.8, unstable releases of Electron have a suffix called a
+[pre-release identifier] appended to their version number, 
+e.g. `1.8.0-beta.0`. A version may have many prereleases before it is 
+considered stable, e.g. `1.8.0-beta.0`, `1.8.0-beta.1`, and eventually `1.8.0`.
+
+When major, minor, and patch are equal, a pre-release version has lower 
+precedence than a [normal version], e.g. `1.8.0-beta.0 < 1.8.0`. This is 
+convenient because it allows you to use a range like `^1.8.0` and know 
+that it will never match an unstable pre-release version.
+
+The `latest` and `next` [npm dist tags] are also used:
+
+- `npm install electron@latest` will install the latest _stable_ version.
+- `npm install electron@next` will install the very latest _unstable_ version.
+
 [Semantic Versioning]: http://semver.org
+[pre-release identifier]: http://semver.org/#spec-item-9
+[npm dist tags]: https://docs.npmjs.com/cli/dist-tag
+[normal version]: http://semver.org/#spec-item-2
