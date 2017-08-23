@@ -760,7 +760,7 @@ void WebContents::DidChangeThemeColor(SkColor theme_color) {
   if (theme_color != SK_ColorTRANSPARENT) {
     Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
   } else {
-    Emit("did-change-theme-color", nullptr_t());
+    Emit("did-change-theme-color", nullptr);
   }
 }
 
