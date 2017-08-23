@@ -406,8 +406,7 @@ a meta tag:
 Returns:
 
 * `event` Event
-* `color` string or `null`
-  * Theme color in format '#rrggbb'. `null` when theme color is not set.
+* `color` (String | null) - Theme color is in format of '#rrggbb'. It is `null` when no theme color is set.
 
 #### Event: 'update-target-url'
 
