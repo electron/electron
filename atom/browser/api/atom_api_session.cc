@@ -623,7 +623,8 @@ void Session::SetUserAgent(const std::string& user_agent,
   std::string accept_lang = l10n_util::GetApplicationLocale("");
   args->GetNext(&accept_lang);
 
-  auto getter = browser_context_->GetRequestContext();
+  scoped_refptr<brightray::URLRequestContextGetter> getter(
+      browser_context_->GetRequestContext());
   getter->GetNetworkTaskRunner()->PostTask(
       FROM_HERE,
       base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));
