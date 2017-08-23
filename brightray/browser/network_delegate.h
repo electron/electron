@@ -68,6 +68,12 @@ class NetworkDelegate : public net::NetworkDelegate {
       const net::URLRequest& request,
       const GURL& target_url,
       const GURL& referrer_url) const override;
+  bool OnCanQueueReportingReport(const url::Origin& origin) const override;
+  bool OnCanSendReportingReport(const url::Origin& origin) const override;
+  bool OnCanSetReportingClient(const url::Origin& origin,
+                               const GURL& endpoint) const override;
+  bool OnCanUseReportingClient(const url::Origin& origin,
+                               const GURL& endpoint) const override;
 
  private:
   std::vector<std::string> ignore_connections_limit_domains_;
