@@ -4,17 +4,18 @@ If you've been using Node and npm for a while, you are probably aware of [Semant
 
 Due to its dependency on Node and Chromium, it is not possible for the Electron
 project to adhere to a strict [Semantic Versioning] policy. **You should 
-therefore always reference a specific version of Electron.**
+therefore always reference a specific version of Electron** in your
+`package.json` file.
 
 Electron version numbers are bumped using the following rules:
 
 * **Major** is for breaking changes in Electron's API. If you upgrade from `0.37.0`
   to `1.0.0`, you will have to make changes to your app.
 * **Minor** is for major Chrome and minor Node upgrades, or significant Electron
-  changes. If you upgrade from `1.5.0` to `1.6.0`, your app is supposed to
+  changes. If you upgrade from `1.5.0` to `1.6.0`, your app should
   still work, but you might have to work around small changes.
 * **Patch** is for new features and bug fixes. If you upgrade from `1.6.2` to
-  `1.6.3`, your app will continue to work as-is.
+  `1.6.3`, your app should continue to work as-is.
 
 We recommend that you set a fixed version when installing Electron from npm:
 
@@ -22,9 +23,10 @@ We recommend that you set a fixed version when installing Electron from npm:
 npm install electron --save-exact --save-dev
 ```
 
-The `--save-exact` flag will add `electron` to your `package.json` file without
-using a `^` or `~`, e.g. `1.6.2` instead of `^1.6.2`. This practice ensures that
-all upgrades of Electron are a manual operation made by you, the developer.
+The `--save-exact` flag will add `electron` to your `package.json` file _without
+a range identifier_ like `^` or `~`, e.g. `1.6.2` instead of `^1.6.2`. This 
+practice ensures that all upgrades of Electron are a manual operation made by 
+you, the developer.
 
 Alternatively, you can use the `~` prefix in your SemVer range, like `~1.6.2`.
 This will lock your major and minor version, but allow new patch versions to
