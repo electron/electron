@@ -134,7 +134,6 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
       GetPath(),
       in_memory_,
       BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
-      BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE),
       protocol_handlers,
       std::move(protocol_interceptors));
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
