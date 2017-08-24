@@ -178,7 +178,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // --log-net-log
     if (net_log_) {
-      net_log_->StartLogging(url_request_context_.get());
+      net_log_->StartLogging();
       url_request_context_->set_net_log(net_log_);
     }
 
