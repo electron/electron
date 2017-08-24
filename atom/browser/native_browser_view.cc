@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <vector>
+
 #include "atom/browser/native_browser_view.h"
 
 #include "atom/browser/api/atom_api_web_contents.h"
