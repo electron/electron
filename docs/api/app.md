@@ -890,6 +890,15 @@ technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
 details.
 
+### `app.setAccessibilitySupportEnabled(value)` _macOS_ _Windows_
+
+* `value` Boolean - A value for switching the accessibility support
+
+Manually enables Chrome's accessibility support, allowing to expose accessibility switch to users in application settings. https://www.chromium.org/developers/design-documents/accessibility for more
+details.
+
+**Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
+
 ### `app.setAboutPanelOptions(options)` _macOS_
 
 * `options` Object
