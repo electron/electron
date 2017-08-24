@@ -4,8 +4,9 @@
 
 #include <vector>
 
-#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_browser_view.h"
+
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 
 namespace atom {
