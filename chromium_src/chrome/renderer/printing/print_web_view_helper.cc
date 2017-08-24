@@ -525,10 +525,9 @@ void PrepareFrameAndViewForPrint::CopySelection(
       blink::WebView::Create(this, blink::kWebPageVisibilityStateVisible);
   owns_web_view_ = true;
   content::RenderView::ApplyWebPreferences(prefs, web_view);
-  blink::WebLocalFrame* main_frame = blink::WebLocalFrame::Create(
-      blink::WebTreeScopeType::kDocument, this, nullptr, nullptr);
-  web_view->SetMainFrame(main_frame);
-  blink::WebFrameWidget::Create(this, web_view, main_frame);
+  blink::WebLocalFrame* main_frame = blink::WebLocalFrame::CreateMainFrame(
+      web_view, this, nullptr, nullptr);
+  blink::WebFrameWidget::Create(this, main_frame);
   frame_.Reset(web_view->MainFrame()->ToWebLocalFrame());
   node_to_print_.Reset();
 
@@ -558,9 +557,8 @@ blink::WebLocalFrame* PrepareFrameAndViewForPrint::CreateChildFrame(
     blink::WebSandboxFlags sandbox_flags,
     const blink::WebParsedFeaturePolicy& container_policy,
     const blink::WebFrameOwnerProperties& frame_owner_properties) {
-  blink::WebLocalFrame* frame = blink::WebLocalFrame::Create(
-      scope, this, nullptr, nullptr);
-  parent->AppendChild(frame);
+  blink::WebLocalFrame* frame = parent->CreateLocalChild(
+      scope, this, nullptr);
   return frame;
 }
 
