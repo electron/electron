@@ -20,11 +20,6 @@ git submodule update --init --recursive
 
 docker build \
   --force-rm \
-  --tag libchromiumcontent-linux \
-  ./vendor/libchromiumcontent
-
-docker build \
-  --force-rm \
   --tag electron-linux \
   .
 
