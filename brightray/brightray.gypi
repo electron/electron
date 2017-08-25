@@ -129,6 +129,7 @@
           ['OS in ["linux", "mac"]', {
             'defines': [
               'WEBRTC_POSIX',
+              'UCHAR_TYPE=uint16_t',
             ],
           }],
           ['OS=="linux"', {
@@ -169,6 +170,7 @@
               # The usage of "webrtc/modules/desktop_capture/desktop_capture_options.h"
               # is required to see this macro.
               'WEBRTC_WIN',
+              'UCHAR_TYPE=wchar_t',
             ],
             'conditions': [
               ['target_arch=="x64"', {
