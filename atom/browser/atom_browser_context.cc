@@ -60,10 +60,8 @@ class NoCacheBackend : public net::HttpCache::BackendFactory {
 
 std::string RemoveWhitespace(const std::string& str) {
   std::string trimmed;
-  if (base::RemoveChars(str, " ", &trimmed))
-    return trimmed;
-  else
-    return str;
+  return base::RemoveChars(str, " ", &trimmed) ?
+	  trimmed : str;
 }
 
 }  // namespace
