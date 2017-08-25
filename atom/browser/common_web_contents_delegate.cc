@@ -199,12 +199,12 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
 }
 
 content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
-  return (web_contents) ? web_contents_->GetWebContents() : nullptr;
+  return (web_contents_) ? web_contents_->GetWebContents() : nullptr;
 }
 
 content::WebContents*
 CommonWebContentsDelegate::GetDevToolsWebContents() const {
-	return (web_contents) ? web_contents_->GetDevToolsWebContents() : nullptr;
+	return (web_contents_) ? web_contents_->GetDevToolsWebContents() : nullptr;
 }
 
 content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
