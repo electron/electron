@@ -184,7 +184,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(
     content::RenderViewHost* host, content::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
-  prefs->javascript_can_open_windows_automatically = true;
   prefs->plugins_enabled = true;
   prefs->dom_paste_enabled = true;
   prefs->allow_scripts_to_close_windows = true;
