@@ -110,9 +110,8 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
 void Browser::ClearRecentDocuments() {
   CComPtr<IApplicationDestinations> destinations;
   if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations,
-                                           NULL, CLSCTX_INPROC_SERVER)))
-    return;
-  if (FAILED(destinations->SetAppID(GetAppUserModelID())))
+                                           NULL, CLSCTX_INPROC_SERVER)) ||
+	  FAILED(destinations->SetAppID(GetAppUserModelID())))
     return;
   destinations->RemoveAllDestinations();
 }
