@@ -98,7 +98,7 @@ bool AtomBrowserMainParts::SetExitCode(int code) {
 }
 
 int AtomBrowserMainParts::GetExitCode() {
-  return exit_code_ != nullptr ? *exit_code_ : 0;
+  return exit_code_ ? *exit_code_ : 0;
 }
 
 base::Closure AtomBrowserMainParts::RegisterDestructionCallback(
