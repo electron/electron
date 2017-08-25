@@ -63,7 +63,7 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
       }
     }
     if (url.has_ref()) {
-      src = src + '#' + url.ref();
+      src += '#' + url.ref();
     }
     auto browser_context = web_ui->GetWebContents()->GetBrowserContext();
     return new PdfViewerUI(browser_context, web_ui, src);
