@@ -55,7 +55,6 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     const DialogClosedCallback& callback) {
   bool default_prevented = api_web_contents_->Emit("will-prevent-unload");
   callback.Run(default_prevented, base::string16());
-  return;
 }
 
 void AtomJavaScriptDialogManager::CancelDialogs(
