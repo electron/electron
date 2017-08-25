@@ -159,11 +159,8 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   base::win::RegKey key;
   base::win::RegKey commandKey;
-  if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
-    // Key doesn't even exist, we can confirm that it is not set
-    return true;
-
-  if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
+  if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)) ||
+	  FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
     // Key doesn't even exist, we can confirm that it is not set
     return true;
 
@@ -249,11 +246,8 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
   base::win::RegKey key;
   base::win::RegKey commandKey;
-  if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
-    // Key doesn't exist, we can confirm that it is not set
-    return false;
-
-  if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
+  if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)) ||
+	  FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
     // Key doesn't exist, we can confirm that it is not set
     return false;
 
