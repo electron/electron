@@ -252,11 +252,11 @@ void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,
 
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     content::WebContents* source, const GURL& origin) {
-  if (!owner_window_)
-    return;
-  SetHtmlApiFullscreen(true);
-  owner_window_->NotifyWindowEnterHtmlFullScreen();
-  source->GetRenderViewHost()->GetWidget()->WasResized();
+  if (owner_window_) {
+	SetHtmlApiFullscreen(true);
+	owner_window_->NotifyWindowEnterHtmlFullScreen();
+	source->GetRenderViewHost()->GetWidget()->WasResized();
+  }
 }
 
 void CommonWebContentsDelegate::ExitFullscreenModeForTab(
