@@ -300,7 +300,6 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
       base::Value url_value(url);
       web_contents_->CallClientFunction(
           "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
-      return;
     }
   }
 
