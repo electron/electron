@@ -28,7 +28,12 @@ desktopCapturer.getSources({types: ['window', 'screen']}, (error, sources) => {
             maxHeight: 720
           }
         }
-      }, handleStream, handleError)
+      })
+      .then(function(stream) {
+        handleStream(stream)
+      }).catch(function(e) {
+        handleError(e)
+      })
       return
     }
   }
