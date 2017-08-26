@@ -28,7 +28,7 @@ content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
     const GURL& url) const {
   return (url.host() == kPdfViewerUIHost) ?
-	return const_cast<AtomWebUIControllerFactory*>(this) :
+  	const_cast<AtomWebUIControllerFactory*>(this) :
 	content::WebUI::kNoWebUI;
 }
 
