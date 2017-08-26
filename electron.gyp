@@ -245,6 +245,10 @@
         'USING_V8_SHARED',
         'USING_V8_PLATFORM_SHARED',
         'USING_V8_BASE_SHARED',
+
+        # See Chromium src/third_party/protobuf/BUILD.gn
+        'GOOGLE_PROTOBUF_NO_RTTI',
+        'GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -271,6 +275,7 @@
         '<(libchromiumcontent_src_dir)/third_party/',
         '<(libchromiumcontent_src_dir)/components/cdm',
         '<(libchromiumcontent_src_dir)/third_party/widevine',
+        '<(libchromiumcontent_src_dir)/third_party/protobuf/src',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
