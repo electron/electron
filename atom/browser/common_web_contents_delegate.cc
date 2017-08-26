@@ -204,7 +204,7 @@ content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
 
 content::WebContents*
 CommonWebContentsDelegate::GetDevToolsWebContents() const {
-	return (web_contents_) ? web_contents_->GetDevToolsWebContents() : nullptr;
+  return (web_contents_) ? web_contents_->GetDevToolsWebContents() : nullptr;
 }
 
 content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
