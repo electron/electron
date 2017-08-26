@@ -235,8 +235,8 @@ scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
     const base::DictionaryValue& options) {
   auto browser_context = brightray::BrowserContext::Get(partition, in_memory);
   return (browser_context) ?
-	  static_cast<AtomBrowserContext*>(browser_context.get()) :
-	  new AtomBrowserContext(partition, in_memory, options);
+    static_cast<AtomBrowserContext*>(browser_context.get()) :
+    new AtomBrowserContext(partition, in_memory, options);
 }
 
 }  // namespace atom
