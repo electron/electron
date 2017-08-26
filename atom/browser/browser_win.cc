@@ -111,7 +111,7 @@ void Browser::ClearRecentDocuments() {
   CComPtr<IApplicationDestinations> destinations;
   if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations,
                                            NULL, CLSCTX_INPROC_SERVER)) ||
-	  FAILED(destinations->SetAppID(GetAppUserModelID())))
+      FAILED(destinations->SetAppID(GetAppUserModelID())))
     return;
   destinations->RemoveAllDestinations();
 }
