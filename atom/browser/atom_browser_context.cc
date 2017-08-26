@@ -163,7 +163,8 @@ AtomBrowserContext::CreateHttpCacheBackendFactory(
     const base::FilePath& base_path) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   return (!use_cache_ || command_line->HasSwitch(switches::kDisableHttpCache)) ?
-	  new NoCacheBackend : brightray::BrowserContext::CreateHttpCacheBackendFactory(base_path);
+    new NoCacheBackend : 
+    brightray::BrowserContext::CreateHttpCacheBackendFactory(base_path);
 }
 
 content::DownloadManagerDelegate*
