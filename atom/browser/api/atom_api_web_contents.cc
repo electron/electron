@@ -866,7 +866,7 @@ void WebContents::DidUpdateFaviconURL(
     const std::vector<content::FaviconURL>& urls) {
   std::set<GURL> unique_urls;
   for (const auto& iter : urls) {
-    if (iter.icon_type != content::FaviconURL::FAVICON)
+    if (iter.icon_type != content::FaviconURL::IconType::kFavicon)
       continue;
     const GURL& url = iter.icon_url;
     if (url.is_valid())
