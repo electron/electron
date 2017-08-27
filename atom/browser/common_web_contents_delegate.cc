@@ -261,7 +261,7 @@ void CommonWebContentsDelegate::EnterFullscreenModeForTab(
 
 void CommonWebContentsDelegate::ExitFullscreenModeForTab(
     content::WebContents* source) {
-  if (owner_window_) { 
+  if (owner_window_) {
     SetHtmlApiFullscreen(false);
     owner_window_->NotifyWindowLeaveHtmlFullScreen();
     source->GetRenderViewHost()->GetWidget()->WasResized();
