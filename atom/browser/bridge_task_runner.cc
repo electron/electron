@@ -37,7 +37,8 @@ bool BridgeTaskRunner::PostDelayedTask(
 
 bool BridgeTaskRunner::RunsTasksOnCurrentThread() const {
   auto message_loop = base::MessageLoop::current();
-  return (!message_loop) ? true : message_loop->task_runner()->RunsTasksOnCurrentThread();
+  return (!message_loop) ? 
+    true : message_loop->task_runner()->RunsTasksOnCurrentThread();
 }
 
 bool BridgeTaskRunner::PostNonNestableDelayedTask(
