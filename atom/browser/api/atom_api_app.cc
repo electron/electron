@@ -869,10 +869,10 @@ bool App::IsAccessibilitySupportEnabled() {
   return ax_state->IsAccessibleBrowser();
 }
 
-void App::SetAccessibilitySupportEnabled(bool value) {
+void App::SetAccessibilitySupportEnabled(bool enabled) {
   auto ax_state = content::BrowserAccessibilityState::GetInstance();
   
-  if (value) {
+  if (enabled) {
     ax_state->OnScreenReaderDetected();
   } else {
     ax_state->DisableAccessibility();

@@ -38,7 +38,7 @@ Electron applications keep accessibility disabled by default for performance rea
 
 ### Inside Application
 
-By using [`app.setAccessibilitySupportEnabled(value)`](https://electron.atom.io/docs/api/app.md#appsetaccessibilitysupportenabledvalue-macos-windows), you can expose accessibility switch to users in the application preferences.
+By using [`app.setAccessibilitySupportEnabled(enabled)`](https://electron.atom.io/docs/api/app.md#appsetaccessibilitysupportenabledenabled-macos-windows), you can expose accessibility switch to users in the application preferences.
 
 ### Assistive Technology
 

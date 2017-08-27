@@ -890,9 +890,9 @@ technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
 details.
 
-### `app.setAccessibilitySupportEnabled(value)` _macOS_ _Windows_
+### `app.setAccessibilitySupportEnabled(enabled)` _macOS_ _Windows_
 
-* `value` Boolean - A value for switching the accessibility support
+* `enabled` Boolean - Enable or disable accessibility tree rendering
 
 Manually enables Chrome's accessibility support, allowing to expose accessibility switch to users in application settings. https://www.chromium.org/developers/design-documents/accessibility for more
 details.
