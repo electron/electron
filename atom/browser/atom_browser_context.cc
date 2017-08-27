@@ -238,5 +238,4 @@ scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
     static_cast<AtomBrowserContext*>(browser_context.get()) :
     new AtomBrowserContext(partition, in_memory, options);
 }
-
 }  // namespace atom
