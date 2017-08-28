@@ -97,6 +97,9 @@ void MenuDelegate::WillHideMenu(views::MenuItemView* menu) {
 
 void MenuDelegate::OnMenuClosed(views::MenuItemView* menu,
                                 views::MenuRunner::RunResult result) {
+  // Only switch to new menu when current menu is closed.
+  if (button_to_open_)
+    button_to_open_->Activate(nullptr);
   delete this;
 }
 
@@ -106,18 +109,22 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     views::MenuAnchorPosition* anchor,
     bool* has_mnemonics,
     views::MenuButton**) {
+  // TODO(zcbenz): We should follow Chromium's logics on implementing the
+  // sibling menu switches, this code is almost a hack.
   views::MenuButton* button;
   AtomMenuModel* model;
   if (menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, &button) &&
       button->tag() != id_) {
-    DCHECK(menu_runner_->IsRunning());
-    menu_runner_->Cancel();
-    // After canceling the menu, we need to wait until next tick
-    // so we are out of nested message loop.
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI, FROM_HERE,
-        base::Bind(base::IgnoreResult(&views::MenuButton::Activate),
-                   base::Unretained(button), nullptr));
+    bool switch_in_progress = !!button_to_open_;
+    // Always update target to open.
+    button_to_open_ = button;
+    // Switching menu asyncnously to avoid crash.
+    if (!switch_in_progress) {
+      content::BrowserThread::PostTask(
+          content::BrowserThread::UI, FROM_HERE,
+          base::Bind(&views::MenuRunner::Cancel,
+                     base::Unretained(menu_runner_.get())));
+    }
   }
 
   return nullptr;
