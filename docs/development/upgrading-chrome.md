@@ -6,12 +6,12 @@ on each Chromium upgrade in Electron.
 ## Update libchromiumcontent (a.k.a. libcc)
 
 - Clone the repo:
-```
+```sh
 git clone git@github.com:electron/libchromiumcontent.git
 cd libchromiumcontent
 ```
 - Run bootstrap script to init and sync git submodules:
-```
+```sh
 ./script/bootstrap -v
 ```
 - Update `VERSION` file to correspond to Chromium version.
@@ -19,11 +19,11 @@ cd libchromiumcontent
 - Fix failing patches. `script/patch.py` might help.
   - Don't forget to fix patches in the `patches-mas/` folder.
 - Build libcc:
-```
+```sh
 ./script/build
 ```
 - Create dist folders which will be used by electron:
-```
+```sh
 ./script/create-dist --no_zip
 cd dist/main
 ../../tools/generate_filenames_gypi filenames.gypi src shared_library static_library
