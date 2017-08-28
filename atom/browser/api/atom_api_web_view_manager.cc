@@ -7,10 +7,12 @@
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "content/public/browser/browser_context.h"
 #include "native_mate/dictionary.h"
+// Must be the last in the includes list.
+// See https://github.com/electron/electron/issues/10363
+#include "atom/common/node_includes.h"
 
 using atom::WebContentsPreferences;
 
