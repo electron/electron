@@ -44,10 +44,21 @@ precedence than a [normal version], e.g. `1.8.0-beta.0 < 1.8.0`. This is
 convenient because it allows you to use a range like `^1.8.0` and know 
 that it will never match an unstable pre-release version.
 
-The `latest` and `next` [npm dist tags] are also used:
+## Distribution tags
 
-- `npm install electron@latest` will install the latest _stable_ version.
-- `npm install electron@next` will install the very latest _unstable_ version.
+Electron supports three streams of development versions, each of which is identified by using an [npm dist tag]:
+
+- **`prev`**: denotes the version of Electron that is _one minor_ behind the `latest
+- **`latest`**: denotes the _latest stable_ version
+- **`next`**: denotes the _upcoming (maybe unstable)_ version
+
+A `dist-tag` can be used when installing Electron as a reference to a version instead of using a specific version number:
+
+```
+npm install electron@<dist-tag>
+```
+**Note:** if unspecified, `latest` will be used. 
+
 
 ## Stable Releases
 
@@ -72,5 +83,5 @@ npm install electron@latest --save-exact --save-dev
 
 [Semantic Versioning]: http://semver.org
 [pre-release identifier]: http://semver.org/#spec-item-9
-[npm dist tags]: https://docs.npmjs.com/cli/dist-tag
+[npm dist tag]: https://docs.npmjs.com/cli/dist-tag
 [normal version]: http://semver.org/#spec-item-2
