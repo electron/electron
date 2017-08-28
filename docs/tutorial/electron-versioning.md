@@ -48,7 +48,7 @@ that it will never match an unstable pre-release version.
 
 Electron supports three streams of development versions, each of which is identified by using an [npm dist tag]:
 
-- **`prev`**: denotes the version of Electron that is _one minor_ behind the `latest
+- **`prev`**: denotes the version of Electron that is _one minor_ behind the `latest`
 - **`latest`**: denotes the _latest stable_ version
 - **`next`**: denotes the _upcoming (maybe unstable)_ version
 
