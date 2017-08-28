@@ -892,10 +892,10 @@ details.
 
 ### `app.setAccessibilitySupportEnabled(enabled)` _macOS_ _Windows_
 
-* `enabled` Boolean - Enable or disable accessibility tree rendering
+* `enabled` Boolean - Enable or disable [accessibility tree](https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/the-accessibility-tree) rendering
 
 Manually enables Chrome's accessibility support, allowing to expose accessibility switch to users in application settings. https://www.chromium.org/developers/design-documents/accessibility for more
-details.
+details. Disabled by default.
 
 **Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
 
