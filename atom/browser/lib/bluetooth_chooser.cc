@@ -31,11 +31,10 @@ const int kMaxScanRetries = 5;
 void OnDeviceChosen(
     const content::BluetoothChooser::EventHandler& handler,
     const std::string& device_id) {
-  if (device_id.empty()) {
+  if (device_id.empty())
     handler.Run(content::BluetoothChooser::Event::CANCELLED, device_id);
-  } else {
+  else
     handler.Run(content::BluetoothChooser::Event::SELECTED, device_id);
-  }
 }
 
 }  // namespace
@@ -103,7 +102,7 @@ void BluetoothChooser::RemoveDevice(const std::string& device_id) {
   for (auto it = device_list_.begin(); it != device_list_.end(); ++it) {
     if (it->device_id == device_id) {
       device_list_.erase(it);
-      return;
+      break;
     }
   }
 }
