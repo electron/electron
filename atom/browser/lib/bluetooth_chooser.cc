@@ -95,7 +95,7 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
                                          bool is_gatt_connected,
                                          bool is_paired,
                                          int signal_strength_level) {
-  DeviceInfo info = {device_id, device_name};
+  DeviceInfo info{device_id, device_name};
   device_list_.push_back(info);
 }
 
