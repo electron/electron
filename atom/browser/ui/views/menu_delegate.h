@@ -55,6 +55,9 @@ class MenuDelegate : public views::MenuDelegate {
   std::unique_ptr<views::MenuDelegate> adapter_;
   std::unique_ptr<views::MenuRunner> menu_runner_;
 
+  // The menu button to switch to.
+  views::MenuButton* button_to_open_ = nullptr;
+
   DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };
 

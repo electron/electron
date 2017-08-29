@@ -1,4 +1,10 @@
-FROM libchromiumcontent-linux:latest
+FROM electronbuilds/libchromiumcontent:0.0.4
+
+USER root
+
+# Set up HOME directory
+ENV HOME=/home
+RUN chmod a+rwx /home
 
 # Install node.js
 RUN curl -sL https://deb.nodesource.com/setup_6.x | bash -

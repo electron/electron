@@ -1017,8 +1017,6 @@ describe('BrowserWindow module', function () {
           }
           assert.equal(url, expectedUrl)
           assert.equal(frameName, 'popup!')
-          assert.equal(options.x, 50)
-          assert.equal(options.y, 60)
           assert.equal(options.width, 500)
           assert.equal(options.height, 600)
           ipcMain.once('answer', function (event, html) {
@@ -1044,8 +1042,6 @@ describe('BrowserWindow module', function () {
         w.loadURL(pageUrl)
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
           assert.equal(url, 'http://www.google.com/#q=electron')
-          assert.equal(options.x, 55)
-          assert.equal(options.y, 65)
           assert.equal(options.width, 505)
           assert.equal(options.height, 605)
           ipcMain.once('child-loaded', function (event, openerIsNull, html) {
@@ -1214,10 +1210,10 @@ describe('BrowserWindow module', function () {
             sandbox: true
           }
         })
-        const initialWebContents = webContents.getAllWebContents()
+        const initialWebContents = webContents.getAllWebContents().map((i) => i.id)
         ipcRenderer.send('prevent-next-new-window', w.webContents.id)
         w.webContents.once('new-window', () => {
-          assert.deepEqual(webContents.getAllWebContents(), initialWebContents)
+          assert.deepEqual(webContents.getAllWebContents().map((i) => i.id), initialWebContents)
           done()
         })
         w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
