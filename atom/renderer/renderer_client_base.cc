@@ -69,6 +69,8 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(switches::kStandardSchemes);
   for (const std::string& scheme : standard_schemes_list)
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
+        switches::kContextIsolation);
 }
 
 RendererClientBase::~RendererClientBase() {
@@ -195,6 +197,14 @@ content::BrowserPluginDelegate* RendererClientBase::CreateBrowserPluginDelegate(
 void RendererClientBase::AddSupportedKeySystems(
     std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
   AddChromeKeySystems(key_systems);
+}
+
+v8::Local<v8::Context> RendererClientBase::GetContext(
+    blink::WebFrame* frame, v8::Isolate* isolate) {
+  if (isolated_world())
+    return frame->WorldScriptContext(isolate, World::ISOLATED_WORLD);
+  else
+    return frame->MainWorldScriptContext();
 }
 
 }  // namespace atom

@@ -166,7 +166,11 @@ Currently the `require` function provided in the preload scope exposes the
 following modules:
 
 - `child_process`
-- `electron` (crashReporter, remote and ipcRenderer)
+- `electron`
+  - `crashReporter`
+  - `remote`
+  - `ipcRenderer`
+  - `webFrame`
 - `fs`
 - `os`
 - `timers`

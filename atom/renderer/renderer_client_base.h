@@ -25,7 +25,12 @@ class RendererClientBase : public content::ContentRendererClient {
       v8::Handle<v8::Context> context, content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
   virtual void SetupMainWorldOverrides(v8::Handle<v8::Context> context) = 0;
-  virtual bool isolated_world() = 0;
+
+  bool isolated_world() { return isolated_world_; }
+
+  // Get the context that the Electron API is running in.
+  v8::Local<v8::Context> GetContext(
+      blink::WebFrame* frame, v8::Isolate* isolate);
 
  protected:
   void AddRenderBindings(v8::Isolate* isolate,
@@ -51,6 +56,7 @@ class RendererClientBase : public content::ContentRendererClient {
 
  private:
   std::unique_ptr<PreferencesManager> preferences_manager_;
+  bool isolated_world_;
 };
 
 }  // namespace atom
