@@ -5,6 +5,9 @@
 #ifndef ATOM_BROWSER_NATIVE_BROWSER_VIEW_H_
 #define ATOM_BROWSER_NATIVE_BROWSER_VIEW_H_
 
+#include <vector>
+
+#include "atom/common/draggable_region.h"
 #include "base/macros.h"
 #include "third_party/skia/include/core/SkColor.h"
 
@@ -37,6 +40,10 @@ class NativeBrowserView {
   virtual void SetAutoResizeFlags(uint8_t flags) = 0;
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
   virtual void SetBackgroundColor(SkColor color) = 0;
+
+  // Called when the window needs to update its draggable region.
+  virtual void UpdateDraggableRegions(
+    const std::vector<gfx::Rect>& system_drag_exclude_areas) {}
 
  protected:
   explicit NativeBrowserView(
