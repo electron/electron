@@ -68,7 +68,7 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
       break;
     case DiscoveryState::IDLE:
       if (device_list_.empty()) {
-        auto event = ++num_retries_ > kMaxScanRetries ? 
+        auto event = ++num_retries_ > kMaxScanRetries ?
           Event::CANCELLED :
           Event::RESCAN;
         event_handler_.Run(event, "");
