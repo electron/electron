@@ -40,9 +40,9 @@ only the next time a message is sent to `channel`, after which it is removed.
 Removes the specified `listener` from the listener array for the specified
 `channel`.
 
-### `ipcRenderer.removeAllListeners([channel])`
+### `ipcRenderer.removeAllListeners(channel)`
 
-* `channel` String (optional)
+* `channel` String
 
 Removes all listeners, or those of the specified `channel`.
 
