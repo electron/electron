@@ -16,7 +16,8 @@ def main():
   parser = argparse.ArgumentParser(description='Bump version numbers. Must specify at least one option.')
   parser.add_argument('--version', default=None, dest='new_version', help='new version number')
   parser.add_argument('--bump', action='store', dest='bump', default=None, help='increment [major | minor | patch | beta]')
-  parser.add_argument('--stable', action='store_true', default= False, dest='stable', help='promote to stable')
+  parser.add_argument('--stable', action='store_true', default= False, dest='stable', help='promote to stable (i.e. remove `-beta.x` suffix)')
+  parser.add_argument('--dry-run', action='store_true', default= False, dest='dry_run', help='just to check that version number is correct')
 
   args = parser.parse_args()
 
@@ -43,6 +44,10 @@ def main():
 
   version = '.'.join(versions[:3])
   suffix = '' if versions[3] == '0' else '-beta.' + versions[3]
+
+  if args.dry_run:
+    print 'new version number would be: {0}\n'.format(version + suffix)
+    return 0
 
 
   with scoped_cwd(SOURCE_ROOT):
