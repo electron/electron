@@ -96,8 +96,8 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-  // 在这文件，你可以续写应用剩下主进程代码。
-  // 也可以拆分成几个文件，然后用 require 导入。
+  // 在 macOS 上，当点击 dock 图标并且该应用没有打开的窗口时，
+  // 绝大部分应用会重新创建一个窗口。
   if (win === null) {
     createWindow()
   }
