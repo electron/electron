@@ -226,6 +226,29 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
       callback.release());
 }
 
+void WebFrame::ExecuteJavaScriptInIsolatedWorld(int world_id,
+                                                const base::string16& code,
+                                                mate::Arguments* args) {
+  bool has_user_gesture = false;
+  args->GetNext(&has_user_gesture);
+  ScriptExecutionCallback::CompletionCallback completion_callback;
+  args->GetNext(&completion_callback);
+
+  std::unique_ptr<blink::WebScriptExecutionCallback> callback(
+      new ScriptExecutionCallback(completion_callback));
+  // TODO do same logic as in
+  // https://cs.chromium.org/chromium/src/extensions/renderer/script_injection.cc?type=cs&sq=package:chromium&l=326
+  blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
+      blink::WebLocalFrame::kSynchronous;
+
+  std::vector<blink::WebScriptSource> sources;
+  sources.push_back(blink::WebScriptSource(blink::WebString::FromUTF16(code)));
+
+  web_frame_->RequestExecuteScriptInIsolatedWorld(
+      world_id, &sources.front(), sources.size(), has_user_gesture,
+      scriptExecutionType, callback.release());
+}
+
 // static
 mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new WebFrame(isolate));
@@ -275,6 +298,8 @@ void WebFrame::BuildPrototype(
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
+      .SetMethod("executeJavaScriptInIsolatedWorld",
+                 &WebFrame::ExecuteJavaScriptInIsolatedWorld)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
