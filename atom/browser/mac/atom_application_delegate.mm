@@ -7,8 +7,35 @@
 #import "atom/browser/mac/atom_application.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/mac/dict_util.h"
+#include "base/allocator/allocator_shim.h"
+#include "base/allocator/features.h"
+#include "base/mac/mac_util.h"
+#include "base/mac/scoped_objc_class_swizzler.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
+
+#if BUILDFLAG(USE_EXPERIMENTAL_ALLOCATOR_SHIM)
+// On macOS 10.12, the IME system attempts to allocate a 2^64 size buffer,
+// which would typically cause an OOM crash. To avoid this, the problematic
+// method is swizzled out and the make-OOM-fatal bit is disabled for the
+// duration of the original call. https://crbug.com/654695
+static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
+@interface OOMDisabledIMKInputSession : NSObject
+@end
+@implementation OOMDisabledIMKInputSession
+- (void)_coreAttributesFromRange:(NSRange)range
+                 whichAttributes:(long long)attributes
+               completionHandler:(void (^)(void))block {
+  // The allocator flag is per-process, so other threads may temporarily
+  // not have fatal OOM occur while this method executes, but it is better
+  // than crashing when using IME.
+  base::allocator::SetCallNewHandlerOnMallocFailure(false);
+  g_swizzle_imk_input_session->GetOriginalImplementation()(self, _cmd, range,
+                                                           attributes, block);
+  base::allocator::SetCallNewHandlerOnMallocFailure(true);
+}
+@end
+#endif  // BUILDFLAG(USE_EXPERIMENTAL_ALLOCATOR_SHIM)
 
 @implementation AtomApplicationDelegate
 
@@ -35,6 +62,16 @@
     std::unique_ptr<base::DictionaryValue> empty_info(new base::DictionaryValue);
     atom::Browser::Get()->DidFinishLaunching(*empty_info);
   }
+
+#if BUILDFLAG(USE_EXPERIMENTAL_ALLOCATOR_SHIM)
+  // Disable fatal OOM to hack around an OS bug https://crbug.com/654695.
+  if (base::mac::IsOS10_12()) {
+    g_swizzle_imk_input_session = new base::mac::ScopedObjCClassSwizzler(
+        NSClassFromString(@"IMKInputSession"),
+        [OOMDisabledIMKInputSession class],
+        @selector(_coreAttributesFromRange:whichAttributes:completionHandler:));
+  }
+#endif
 }
 
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
