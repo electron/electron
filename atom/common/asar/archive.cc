@@ -17,7 +17,7 @@
 #include "base/values.h"
 
 #if defined(OS_WIN)
-#include "atom/node/osfhandle.h"
+#include <io.h>
 #endif
 
 namespace asar {
@@ -118,7 +118,7 @@ Archive::Archive(const base::FilePath& path)
     : path_(path),
       file_(path_, base::File::FLAG_OPEN | base::File::FLAG_READ),
 #if defined(OS_WIN)
-      fd_(node::open_osfhandle(
+      fd_(_open_osfhandle(
               reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0)),
 #elif defined(OS_POSIX)
       fd_(file_.GetPlatformFile()),
@@ -131,7 +131,7 @@ Archive::Archive(const base::FilePath& path)
 Archive::~Archive() {
 #if defined(OS_WIN)
   if (fd_ != -1) {
-    node::close(fd_);
+    _close(fd_);
     // Don't close the handle since we already closed the fd.
     file_.TakePlatformFile();
   }
