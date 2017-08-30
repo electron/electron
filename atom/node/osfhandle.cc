@@ -4,8 +4,6 @@
 
 #include "osfhandle.h"
 
-#include <io.h>
-
 #if !defined(DEBUG)
 #define U_I18N_IMPLEMENTATION
 #define U_COMMON_IMPLEMENTATION
@@ -31,14 +29,6 @@
 #include "v8-inspector.h"
 
 namespace node {
-
-int open_osfhandle(intptr_t osfhandle, int flags) {
-  return _open_osfhandle(osfhandle, flags);
-}
-
-int close(int fd) {
-  return _close(fd);
-}
 
 void ReferenceSymbols() {
   // Following symbols are used by electron.exe but got stripped by compiler,
