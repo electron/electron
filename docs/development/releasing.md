@@ -2,11 +2,25 @@
 
 This document describes the process for releasing a new version of Electron.
 
+## Create a backport branch
+
+If you're about release a new major or minor version of Electron like `1.8.0`, 
+`1.9.0`, or `2.0.0`, first create a branch from the most recent minor release 
+for later backports:
+
+Assuming you're about to publish `1.8.0`, and the highest `1.7` release was
+`1.7.6`:
+
+```sh
+git checkout -b 1-7-x v1.7.6
+git push origin HEAD
+```
+
 ## Create a temporary branch
 
 Create a new branch from `master`. Name it `release` or anything you like.
 
-Note: If you are creating a backport release, you'll check out `1-6-x`, `1-7-x`, etc instead of `master`. 
+Note: If you are creating a backport release, you'll check out `1-6-x`, `1-7-x`, etc instead of `master`.
 
 ```sh
 git checkout master
@@ -126,10 +140,11 @@ This release is published to [npm](https://www.npmjs.com/package/electron) under
 
 ## Merge temporary branch
 
-Merge the temporary back into master, without creating a merge commit:
+Merge the temporary branch back into master, without creating a merge commit:
 
 ```sh
-git merge release master --no-commit
+git checkout master
+git merge release --no-commit
 git push origin master
 ```
 
