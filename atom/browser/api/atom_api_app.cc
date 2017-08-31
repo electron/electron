@@ -54,6 +54,10 @@
 #include "base/strings/utf_string_conversions.h"
 #endif
 
+#if defined(OS_MACOSX)
+#include "atom/browser/ui/cocoa/atom_bundle_mover.h"
+#endif
+
 using atom::Browser;
 
 namespace mate {
@@ -1072,6 +1076,16 @@ void App::EnableMixedSandbox(mate::Arguments* args) {
   command_line->AppendSwitch(switches::kEnableMixedSandbox);
 }
 
+#if defined(OS_MACOSX)
+bool App::MoveToApplicationsFolder(mate::Arguments* args) {
+  return ui::cocoa::AtomBundleMover::Move(args);
+}
+
+bool App::IsInApplicationsFolder() {
+  return ui::cocoa::AtomBundleMover::IsCurrentAppInApplicationsFolder();
+}
+#endif
+
 // static
 mate::Handle<App> App::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new App(isolate));
@@ -1150,6 +1164,10 @@ void App::BuildPrototype(
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
       .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox)
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
+      #if defined(OS_MACOSX)
+      .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
+      .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
+      #endif
       .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
 }
 
