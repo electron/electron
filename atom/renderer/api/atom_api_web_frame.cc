@@ -249,6 +249,17 @@ void WebFrame::ExecuteJavaScriptInIsolatedWorld(int world_id,
       scriptExecutionType, callback.release());
 }
 
+v8::Local<v8::Value> WebFrame::RunInIsolatedWorldContext(
+    int world_id,
+    const base::string16& code) {
+  auto context = web_frame_->WorldScriptContext(isolate(), world_id);
+  auto script = v8::Script::Compile(
+      mate::ConvertToV8(context->GetIsolate(), code)->ToString());
+
+  v8::MaybeLocal<v8::Value> return_value = script->Run(context);
+  return return_value.ToLocalChecked();
+}
+
 // static
 mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new WebFrame(isolate));
@@ -298,8 +309,8 @@ void WebFrame::BuildPrototype(
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
-      .SetMethod("executeJavaScriptInIsolatedWorld",
-                 &WebFrame::ExecuteJavaScriptInIsolatedWorld)
+      .SetMethod("executeJavaScriptInIsolatedWorld", &WebFrame::ExecuteJavaScriptInIsolatedWorld)
+      .SetMethod("runInIsolatedWorldContext", &WebFrame::RunInIsolatedWorldContext)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings

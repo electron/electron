@@ -76,6 +76,8 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   void ExecuteJavaScriptInIsolatedWorld(int world_id,
                                         const base::string16& code,
                                         mate::Arguments* args);
+  v8::Local<v8::Value> RunInIsolatedWorldContext(int world_id,
+                                         const base::string16& code);
 
   // Resource related methods
   blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);
