@@ -4,8 +4,13 @@
 
 #include "atom/renderer/atom_render_frame_observer.h"
 
+#include <vector>
+
+#include "atom/common/api/api_messages.h"
 #include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_view.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
+#include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 
@@ -33,6 +38,21 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
     CreateIsolatedWorldContext();
     renderer_client_->SetupMainWorldOverrides(context);
   }
+}
+
+void AtomRenderFrameObserver::DraggableRegionsChanged() {
+  blink::WebVector<blink::WebDraggableRegion> webregions =
+      render_frame_->GetWebFrame()->GetDocument().DraggableRegions();
+  std::vector<DraggableRegion> regions;
+  for (auto& webregion : webregions) {
+    DraggableRegion region;
+    render_frame_->GetRenderView()->ConvertViewportToWindowViaWidget(
+        &webregion.bounds);
+    region.bounds = webregion.bounds;
+    region.draggable = webregion.draggable;
+    regions.push_back(region);
+  }
+  Send(new AtomViewHostMsg_UpdateDraggableRegions(routing_id(), regions));
 }
 
 void AtomRenderFrameObserver::WillReleaseScriptContext(

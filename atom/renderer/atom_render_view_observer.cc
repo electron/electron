@@ -24,7 +24,6 @@
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
-#include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebElement.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
@@ -111,20 +110,6 @@ void AtomRenderViewObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
     args_vector.insert(args_vector.begin(), event.GetHandle());
     mate::EmitEvent(isolate, ipc, channel, args_vector);
   }
-}
-
-void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
-  blink::WebVector<blink::WebDraggableRegion> webregions =
-      frame->GetDocument().DraggableRegions();
-  std::vector<DraggableRegion> regions;
-  for (auto& webregion : webregions) {
-    DraggableRegion region;
-    render_view()->ConvertViewportToWindowViaWidget(&webregion.bounds);
-    region.bounds = webregion.bounds;
-    region.draggable = webregion.draggable;
-    regions.push_back(region);
-  }
-  Send(new AtomViewHostMsg_UpdateDraggableRegions(routing_id(), regions));
 }
 
 bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {

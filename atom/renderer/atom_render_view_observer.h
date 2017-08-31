@@ -7,7 +7,6 @@
 
 #include "base/strings/string16.h"
 #include "content/public/renderer/render_view_observer.h"
-#include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 
 namespace base {
@@ -32,7 +31,6 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 
  private:
   // content::RenderViewObserver implementation.
-  void DraggableRegionsChanged(blink::WebFrame* frame) override;
   bool OnMessageReceived(const IPC::Message& message) override;
   void OnDestruct() override;
 
