@@ -425,14 +425,14 @@ void OnClientCertificateSelected(
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     mate::Arguments* args) {
   if (args->Length() == 2) {
-    delegate->ContinueWithCertificate(nullptr);
+    delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
   }
 
   v8::Local<v8::Value> val;
   args->GetNext(&val);
   if (val->IsNull()) {
-    delegate->ContinueWithCertificate(nullptr);
+    delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
   }
 
@@ -448,8 +448,11 @@ void OnClientCertificateSelected(
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
       data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
-  if (!certs.empty())
-    delegate->ContinueWithCertificate(certs[0].get());
+  if (!certs.empty()) {
+    scoped_refptr<net::X509Certificate> cert(certs[0].get());
+    // FIXME: Pass private key as a second argument.
+    delegate->ContinueWithCertificate(cert, nullptr);
+  }
 }
 
 void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
@@ -720,8 +723,11 @@ void App::SelectClientCertificate(
                       shared_delegate));
 
   // Default to first certificate from the platform store.
-  if (!prevent_default)
-    shared_delegate->ContinueWithCertificate(client_certs[0].get());
+  if (!prevent_default) {
+    scoped_refptr<net::X509Certificate> cert = identities[0]->certificate();
+    // FIXME: Pass private key as a second argument.
+    shared_delegate->ContinueWithCertificate(cert, nullptr);
+  }
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus status) {
