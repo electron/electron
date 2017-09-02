@@ -75,9 +75,14 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   details->SetInteger("id", request->identifier());
   details->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
   auto info = content::ResourceRequestInfo::ForRequest(request);
-  details->SetString("resourceType",
-                     info ? ResourceTypeToString(info->GetResourceType())
-                          : "other");
+  if (info) {
+    int64_t process_id = info->GetChildID();
+    int64_t routing_id = info->GetRouteID();
+    details->SetDouble("webContentsGetId", (process_id << 32) + routing_id);
+    details->SetString("resourceType", ResourceTypeToString(info->GetResourceType()));
+  } else {
+    details->SetString("resourceType", "other");
+  }
 }
 
 void ToDictionary(base::DictionaryValue* details,
