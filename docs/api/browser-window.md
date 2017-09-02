@@ -662,6 +662,25 @@ console.log(installed)
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
+#### `BrowserWindow.addGlobalPreload(preloadPath)`
+
+* `preloadPath` String - An absolute path to the preload script
+
+Adds a script that will be executed on ALL new BrowserWindows just before normal `preload` scripts run.
+
+#### `BrowserWindow.removeGlobalPreload(preloadPath)`
+
+* `preloadPath` String - An absolute path to the preload script
+
+Removes the given script from the list of global preload scripts
+
+#### `BrowserWindow.getGlobalPreloads()`
+
+Returns `String[]` an array of paths to preload scripts that have been registered
+
+Adds a script that will be executed on ALL new BrowserWindows just before normal `preload` scripts run.
+
+
 ### Instance Properties
 
 Objects created with `new BrowserWindow` have the following properties:

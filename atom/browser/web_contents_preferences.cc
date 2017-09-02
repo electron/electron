@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -134,6 +135,14 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       command_line->AppendSwitchPath(switches::kPreloadScript, preload_path);
     else
       LOG(ERROR) << "preload url must be file:// protocol.";
+  }
+
+  for (auto preloadPath : atom::api::Window::GetGlobalPreloads()) {
+    if (base::FilePath(preloadPath).IsAbsolute())
+      command_line->AppendSwitchNative(switches::kGlobalPreloadScript,
+                                       preloadPath);
+    else
+      LOG(ERROR) << "preload script must have absolute path.";
   }
 
   // Run Electron APIs and preload script in isolated world

@@ -1021,6 +1021,41 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    describe('global preload scripts', function () {
+      it('can add and remove multiple global preload script', function () {
+        var preload = path.join(fixtures, 'module', 'set-global.js')
+        var preload2 = path.join(fixtures, 'module', 'set-global-2.js')
+        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [])
+        BrowserWindow.addGlobalPreload(preload)
+        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [preload])
+        BrowserWindow.addGlobalPreload(preload2)
+        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [preload, preload2])
+        BrowserWindow.removeGlobalPreload(preload)
+        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [preload2])
+        BrowserWindow.removeGlobalPreload(preload2)
+        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [])
+      })
+
+      it('loads the script before other scripts in window including normal preloads', function (done) {
+        var preload = path.join(fixtures, 'module', 'set-global.js')
+        var preload2 = path.join(fixtures, 'module', 'set-global-2.js')
+        ipcMain.once('answer', function (event, test) {
+          BrowserWindow.removeGlobalPreload(preload2)
+          assert.equal(test, 'preload2')
+          done()
+        })
+        w.destroy()
+        BrowserWindow.addGlobalPreload(preload2)
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'))
+      })
+    })
+
     describe('"node-integration" option', () => {
       it('disables node integration when specified to false', (done) => {
         const preload = path.join(fixtures, 'module', 'send-later.js')

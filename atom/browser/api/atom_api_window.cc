@@ -3,7 +3,8 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_window.h"
-#include "atom/common/native_mate_converters/value_converter.h"
+
+#include <algorithm>
 
 #include "atom/browser/api/atom_api_browser_view.h"
 #include "atom/browser/api/atom_api_menu.h"
@@ -17,6 +18,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -172,6 +174,19 @@ Window::~Window() {
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
+}
+
+std::vector<base::FilePath::StringType> g_preloads;
+void Window::AddGlobalPreload(const base::FilePath::StringType preloadPath) {
+  g_preloads.push_back(preloadPath);
+}
+void Window::RemoveGlobalPreload(const base::FilePath::StringType preloadPath) {
+  g_preloads.erase(
+    std::remove(g_preloads.begin(), g_preloads.end(), preloadPath),
+    g_preloads.end());
+}
+std::vector<base::FilePath::StringType> Window::GetGlobalPreloads() {
+  return g_preloads;
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
@@ -1152,6 +1167,12 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                            &mate::TrackableObject<Window>::FromWeakMapID);
   browser_window.SetMethod("getAllWindows",
                            &mate::TrackableObject<Window>::GetAll);
+  browser_window.SetMethod("addGlobalPreload",
+                           &Window::AddGlobalPreload);
+  browser_window.SetMethod("removeGlobalPreload",
+                           &Window::RemoveGlobalPreload);
+  browser_window.SetMethod("getGlobalPreloads",
+                           &Window::GetGlobalPreloads);
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", browser_window);
