@@ -79,7 +79,8 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
     int64_t process_id = info->GetChildID();
     int64_t routing_id = info->GetRouteID();
     details->SetDouble("webContentsGetId", (process_id << 32) + routing_id);
-    details->SetString("resourceType", ResourceTypeToString(info->GetResourceType()));
+    details->SetString("resourceType",
+      ResourceTypeToString(info->GetResourceType()));
   } else {
     details->SetString("resourceType", "other");
   }
