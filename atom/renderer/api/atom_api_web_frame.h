@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "atom/renderer/guest_view_container.h"
 #include "native_mate/handle.h"

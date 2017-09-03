@@ -236,7 +236,7 @@ void WebFrame::ExecuteJavaScriptInIsolatedWorld(int world_id,
 
   std::unique_ptr<blink::WebScriptExecutionCallback> callback(
       new ScriptExecutionCallback(completion_callback));
-  // TODO do same logic as in
+  // TODO(alexstrat) do same logic as in
   // https://cs.chromium.org/chromium/src/extensions/renderer/script_injection.cc?type=cs&sq=package:chromium&l=326
   blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
       blink::WebLocalFrame::kSynchronous;
@@ -304,8 +304,10 @@ void WebFrame::BuildPrototype(
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
-      .SetMethod("executeJavaScriptInIsolatedWorld", &WebFrame::ExecuteJavaScriptInIsolatedWorld)
-      .SetMethod("getIsolatedWorldGlobalObject", &WebFrame::GetIsolatedWorldGlobalObject)
+      .SetMethod("executeJavaScriptInIsolatedWorld",
+        &WebFrame::ExecuteJavaScriptInIsolatedWorld)
+      .SetMethod("getIsolatedWorldGlobalObject",
+        &WebFrame::GetIsolatedWorldGlobalObject)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
