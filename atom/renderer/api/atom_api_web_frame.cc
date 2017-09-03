@@ -28,6 +28,31 @@
 
 #include "atom/common/node_includes.h"
 
+namespace mate {
+
+template <>
+struct Converter<blink::WebLocalFrame::ScriptExecutionType> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     blink::WebLocalFrame::ScriptExecutionType* out) {
+    std::string execution_type;
+    if (!ConvertFromV8(isolate, val, &execution_type))
+      return false;
+    if (execution_type == "asynchronous") {
+      *out = blink::WebLocalFrame::kAsynchronous;
+    } else if (execution_type ==
+                   "asynchronousBlockingOnload") {
+      *out = blink::WebLocalFrame::kAsynchronousBlockingOnload;
+    } else if (execution_type == "synchronous") {
+      *out = blink::WebLocalFrame::kSynchronous;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+}  // namespace mate
+
 namespace atom {
 
 namespace api {
@@ -229,20 +254,20 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
 void WebFrame::ExecuteJavaScriptInIsolatedWorld(int world_id,
                                                 const base::string16& code,
                                                 mate::Arguments* args) {
-  bool has_user_gesture = false;
-  args->GetNext(&has_user_gesture);
-  ScriptExecutionCallback::CompletionCallback completion_callback;
-  args->GetNext(&completion_callback);
-
-  std::unique_ptr<blink::WebScriptExecutionCallback> callback(
-      new ScriptExecutionCallback(completion_callback));
-  // TODO(alexstrat) do same logic as in
-  // https://cs.chromium.org/chromium/src/extensions/renderer/script_injection.cc?type=cs&sq=package:chromium&l=326
-  blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
-      blink::WebLocalFrame::kSynchronous;
-
   std::vector<blink::WebScriptSource> sources;
   sources.push_back(blink::WebScriptSource(blink::WebString::FromUTF16(code)));
+
+  bool has_user_gesture = false;
+  args->GetNext(&has_user_gesture);
+
+  blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
+      blink::WebLocalFrame::kSynchronous;
+  args->GetNext(&scriptExecutionType);
+
+  ScriptExecutionCallback::CompletionCallback completion_callback;
+  args->GetNext(&completion_callback);
+  std::unique_ptr<blink::WebScriptExecutionCallback> callback(
+      new ScriptExecutionCallback(completion_callback));
 
   web_frame_->RequestExecuteScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
