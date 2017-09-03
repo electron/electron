@@ -249,12 +249,6 @@ void WebFrame::ExecuteJavaScriptInIsolatedWorld(int world_id,
       scriptExecutionType, callback.release());
 }
 
-v8::Local<v8::Value> WebFrame::GetIsolatedWorldGlobalObject(
-    int world_id) {
-  auto context = web_frame_->WorldScriptContext(isolate(), world_id);
-  return context->Global();
-}
-
 // static
 mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new WebFrame(isolate));
@@ -306,8 +300,6 @@ void WebFrame::BuildPrototype(
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("executeJavaScriptInIsolatedWorld",
         &WebFrame::ExecuteJavaScriptInIsolatedWorld)
-      .SetMethod("getIsolatedWorldGlobalObject",
-        &WebFrame::GetIsolatedWorldGlobalObject)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
