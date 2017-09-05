@@ -54,11 +54,11 @@ Electron supports three streams of development versions, each of which is identi
 
 A `dist-tag` can be used when installing Electron as a reference to a version instead of using a specific version number:
 
-```
+```sh
 npm install electron@<dist-tag>
 ```
-**Note:** if unspecified, `latest` will be used. 
 
+**Note:** if unspecified, `latest` will be used. 
 
 ## Stable Releases
 
