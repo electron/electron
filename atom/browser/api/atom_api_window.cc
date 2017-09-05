@@ -177,10 +177,10 @@ Window::~Window() {
 }
 
 std::vector<base::FilePath::StringType> g_preloads;
-void Window::AddGlobalPreload(const base::FilePath::StringType preloadPath) {
+void Window::AddGlobalPreload(const base::FilePath::StringType& preloadPath) {
   g_preloads.push_back(preloadPath);
 }
-void Window::RemoveGlobalPreload(const base::FilePath::StringType preloadPath) {
+void Window::RemoveGlobalPreload(const base::FilePath::StringType& preloadPath) {
   g_preloads.erase(
     std::remove(g_preloads.begin(), g_preloads.end(), preloadPath),
     g_preloads.end());

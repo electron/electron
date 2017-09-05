@@ -54,8 +54,8 @@ class Window : public mate::TrackableObject<Window>,
 
   int32_t ID() const;
 
-  static void AddGlobalPreload(const base::FilePath::StringType preloadPath);
-  static void RemoveGlobalPreload(const base::FilePath::StringType preloadPath);
+  static void AddGlobalPreload(const base::FilePath::StringType& preloadPath);
+  static void RemoveGlobalPreload(const base::FilePath::StringType& preloadPath);
   static std::vector<base::FilePath::StringType> GetGlobalPreloads();
 
  protected:
