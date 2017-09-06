@@ -14,7 +14,12 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def main():
 
   parser = argparse.ArgumentParser(
-    description='Bump version numbers. Must specify at least one option.'
+    description='Bump version numbers. Must specify at least one of the three options:\n'
+               +'   --bump=patch to increment patch version, or\n'
+               +'   --stable to promote current beta to stable, or\n'
+               +'   --version={version} to set version number directly\n'
+               +'Note that you can use both --bump and --stable simultaneously.',
+               formatter_class=argparse.RawTextHelpFormatter
   )
   parser.add_argument(
     '--version', 
