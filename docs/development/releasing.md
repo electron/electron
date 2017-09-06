@@ -25,7 +25,7 @@ make sure there are no drafts.
 ## Bump the version
 
 Run the `bump-version` script with arguments according to your need:
-- `--bump=patch` to increment patch version, or
+- `--bump=[major|minor|patch|beta]` to increment one of the version numbers, or
 - `--stable` to indicate this is a stable version, or
 - `--version={version}` to set version number directly.
 
