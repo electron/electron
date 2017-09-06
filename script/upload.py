@@ -190,7 +190,7 @@ def create_release_draft(github, tag):
     sys.stderr.write('Quit due to empty release note.\n')
     sys.exit(0)
 
-  data = dict(tag_name=tag, name=name, body=body, draft=True)
+  data = dict(tag_name=tag, name=name, body=body, draft=True target_commitish='1-6-x')
   r = github.repos(ELECTRON_REPO).releases.post(data=data)
   return r
 
