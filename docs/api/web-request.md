@@ -41,7 +41,7 @@ The following methods are available on instances of `WebRequest`:
 
 #### `webRequest.onBeforeRequest([filter, ]listener)`
 
-* `filter` Object
+* `filter` Object - (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the 
         requests that do not match the URL patterns.
 * `listener` Function
@@ -67,7 +67,7 @@ The `callback` has to be called with an `response` object.
 
 #### `webRequest.onBeforeSendHeaders([filter, ]listener)`
 
-* `filter` Object
+* `filter` Object - (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the 
         requests that do not match the URL patterns.
 * `listener` Function
@@ -93,7 +93,7 @@ The `callback` has to be called with an `response` object.
 
 #### `webRequest.onSendHeaders([filter, ]listener)`
 
-* `filter` Object
+* `filter` Object - (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the 
         requests that do not match the URL patterns.
 * `listener` Function
@@ -111,7 +111,7 @@ response are visible by the time this listener is fired.
 
 #### `webRequest.onHeadersReceived([filter, ]listener)`
 
-* `filter` Object
+* `filter` Object - (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the 
         requests that do not match the URL patterns.
 * `listener` Function
@@ -141,7 +141,7 @@ The `callback` has to be called with an `response` object.
 
 #### `webRequest.onResponseStarted([filter, ]listener)`
 
-* `filter` Object
+* `filter` Object - (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the 
         requests that do not match the URL patterns.
 * `listener` Function
@@ -163,7 +163,7 @@ and response headers are available.
 
 #### `webRequest.onBeforeRedirect([filter, ]listener)`
 
-* `filter` Object
+* `filter` Object - (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the 
         requests that do not match the URL patterns.
 * `listener` Function
@@ -185,7 +185,7 @@ redirect is about to occur.
 
 #### `webRequest.onCompleted([filter, ]listener)`
 
-* `filter` Object
+* `filter` Object - (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the 
         requests that do not match the URL patterns.
 * `listener` Function
@@ -205,7 +205,7 @@ completed.
 
 #### `webRequest.onErrorOccurred([filter, ]listener)`
 
-* `filter` Object
+* `filter` Object - (optional)
   * `urls` String[] - Array of URL patterns that will be used to filter out the 
         requests that do not match the URL patterns.
 * `listener` Function
