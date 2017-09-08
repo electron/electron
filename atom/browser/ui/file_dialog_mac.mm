@@ -40,7 +40,6 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   if ([file_type_set count])
     file_types = [file_type_set allObjects];
 
-  [dialog setExtensionHidden:NO];
   [dialog setAllowedFileTypes:file_types];
 }
 
@@ -84,11 +83,14 @@ void SetupDialog(NSSavePanel* dialog,
     SetAllowedFileTypes(dialog, settings.filters);
   }
 
+  // Make sure the extension is always visible. Without this, the extension in
+  // the default filename will not be used in the saved file.
+  [dialog setExtensionHidden:NO];
+
   if (default_dir)
     [dialog setDirectoryURL:[NSURL fileURLWithPath:default_dir]];
   if (default_filename)
     [dialog setNameFieldStringValue:default_filename];
-
 }
 
 void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
