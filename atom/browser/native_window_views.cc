@@ -1357,14 +1357,15 @@ void NativeWindowViews::HandleKeyboardEvent(
 
 void NativeWindowViews::ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
+    atom::api::WebContents* web_contents,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
-  auto wc = atom::api::WebContents::FromWrappedClass(
-    v8::Isolate::GetCurrent(), web_contents());
+  // auto wc = atom::api::WebContents::FromWrappedClass(
+  //   v8::Isolate::GetCurrent(), web_contents());
   autofill_popup_->CreateView(
     frame_host,
-    wc->IsOffScreenOrEmbedderOffscreen(),
+    web_contents->IsOffScreenOrEmbedderOffscreen(),
     widget(),
     bounds);
   autofill_popup_->SetItems(values, labels);

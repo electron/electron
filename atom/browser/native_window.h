@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "atom/browser/native_window_observer.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/cancelable_callback.h"
@@ -231,6 +232,7 @@ class NativeWindow : public base::SupportsUserData,
       const content::NativeWebKeyboardEvent& event) {}
   virtual void ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
+    atom::api::WebContents* web_contents,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {}
