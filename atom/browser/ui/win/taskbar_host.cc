@@ -4,6 +4,7 @@
 
 #include "atom/browser/ui/win/taskbar_host.h"
 
+#include <objbase.h>
 #include <string>
 
 #include "atom/browser/native_window.h"
@@ -203,9 +204,9 @@ bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
 }
 
 bool TaskbarHost::InitializeTaskbar() {
-  if (FAILED(taskbar_.CreateInstance(CLSID_TaskbarList,
-                                     nullptr,
-                                     CLSCTX_INPROC_SERVER)) ||
+  if (FAILED(::CoCreateInstance(CLSID_TaskbarList, nullptr,
+                                CLSCTX_INPROC_SERVER,
+                                IID_PPV_ARGS(&taskbar_))) ||
       FAILED(taskbar_->HrInit())) {
     return false;
   } else {
