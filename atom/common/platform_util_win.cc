@@ -368,7 +368,7 @@ bool MoveItemToTrash(const base::FilePath& path) {
 
   // Processes the queued command DeleteItem. This will trigger
   // the DeleteFileProgressSink to check for Recycle Bin.
-  return SUCCEEDED(pfo->DeleteItem(delete_item.get(), delete_sink.get())) &&
+  return SUCCEEDED(pfo->DeleteItem(delete_item.Get(), delete_sink.Get())) &&
          SUCCEEDED(pfo->PerformOperations());
 }
 
