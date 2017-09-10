@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include <math.h>
+#include <objbase.h>
 #include <sapi.h>
 
 #include "base/memory/singleton.h"
@@ -232,7 +233,8 @@ TtsPlatformImplWin::TtsPlatformImplWin()
     stream_number_(0),
     char_position_(0),
     paused_(false) {
-  speech_synthesizer_.CreateInstance(CLSID_SpVoice);
+  ::CoCreateInstance(CLSID_SpVoice, nullptr, CLSCTX_ALL,
+                     IID_PPV_ARGS(&speech_synthesizer_));
   if (speech_synthesizer_.Get()) {
     ULONGLONG event_mask =
         SPFEI(SPEI_START_INPUT_STREAM) |

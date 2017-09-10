@@ -10,6 +10,7 @@
 #include <comdef.h>
 #include <commdlg.h>
 #include <dwmapi.h>
+#include <objbase.h>
 #include <shellapi.h>
 #include <shlobj.h>
 
@@ -328,7 +329,8 @@ bool MoveItemToTrash(const base::FilePath& path) {
     return false;
 
   base::win::ScopedComPtr<IFileOperation> pfo;
-  if (FAILED(pfo.CreateInstance(CLSID_FileOperation)))
+  if (FAILED(::CoCreateInstance(CLSID_FileOperation, nullptr, CLSCTX_ALL,
+                                IID_PPV_ARGS(&pfo))))
     return false;
 
   // Elevation prompt enabled for UAC protected files.  This overrides the
