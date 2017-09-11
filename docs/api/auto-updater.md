@@ -84,6 +84,28 @@ Emitted when an update has been downloaded.
 
 On Windows only `releaseName` is available.
 
+### Event: 'login'
+
+Returns:
+
+* `authInfo` Object
+  * `isProxy` Boolean
+  * `scheme` String
+  * `host` String
+  * `port` Integer
+  * `realm` String
+* `callback` Function
+  * `username` String
+  * `password` String
+
+Emitted when `autoUpdater` wants to do basic auth (e.g. proxy-auth) 
+
+```javascript
+import { autoUpdater } from 'electron-updater'
+
+autoUpdater.on('login', (authInfo, callback) => callback('username', 'secret'))
+```
+
 ## Methods
 
 The `autoUpdater` object has the following methods:
