@@ -72,6 +72,9 @@
     bool enableAccessibility = ([self voiceOverEnabled] && [value boolValue]);
     [self updateAccessibilityEnabled:enableAccessibility];
   }
+  else if ([attribute isEqualToString:@"AXManualAccessibility"]) {
+    [self updateAccessibilityEnabled:[value boolValue]];
+  }
   return [super accessibilitySetValue:value forAttribute:attribute];
 }
 

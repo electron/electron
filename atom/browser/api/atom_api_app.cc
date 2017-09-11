@@ -873,6 +873,18 @@ bool App::IsAccessibilitySupportEnabled() {
   return ax_state->IsAccessibleBrowser();
 }
 
+void App::SetAccessibilitySupportEnabled(bool enabled) {
+  auto ax_state = content::BrowserAccessibilityState::GetInstance();
+  
+  if (enabled) {
+    ax_state->OnScreenReaderDetected();
+  } else {
+    ax_state->DisableAccessibility();
+  }
+  
+  Browser::Get()->OnAccessibilitySupportChanged();
+}
+
 Browser::LoginItemSettings App::GetLoginItemSettings(mate::Arguments* args) {
   Browser::LoginItemSettings options;
   args->GetNext(&options);
@@ -1155,6 +1167,8 @@ void App::BuildPrototype(
       .SetMethod("relaunch", &App::Relaunch)
       .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
+      .SetMethod("setAccessibilitySupportEnabled",
+                 &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
       .SetMethod("disableDomainBlockingFor3DAPIs",

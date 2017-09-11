@@ -171,6 +171,7 @@ class App : public AtomBrowserClient::Delegate,
   void DisableHardwareAcceleration(mate::Arguments* args);
   void DisableDomainBlockingFor3DAPIs(mate::Arguments* args);
   bool IsAccessibilitySupportEnabled();
+  void SetAccessibilitySupportEnabled(bool enabled);
   Browser::LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(const base::DictionaryValue& options,
