@@ -44,8 +44,8 @@ class GeoURLRequestContextGetter : public net::URLRequestContextGetter {
  private:
   friend class atom::AtomAccessTokenStore;
 
-  GeoURLRequestContextGetter() {}
-  ~GeoURLRequestContextGetter() override {}
+  GeoURLRequestContextGetter() = default;
+  ~GeoURLRequestContextGetter() override = default;
 
   std::unique_ptr<net::URLRequestContext> url_request_context_;
   DISALLOW_COPY_AND_ASSIGN(GeoURLRequestContextGetter);

@@ -21,9 +21,7 @@ namespace {
 bool WebContentsDestroyed(int process_id) {
   auto contents =
       WebContentsPreferences::GetWebContentsFromProcessID(process_id);
-  if (!contents)
-    return true;
-  return contents->IsBeingDestroyed();
+  return (!contents) ? true : contents->IsBeingDestroyed();
 }
 
 void PermissionRequestResponseCallbackWrapper(

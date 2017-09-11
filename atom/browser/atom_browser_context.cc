@@ -60,10 +60,8 @@ class NoCacheBackend : public net::HttpCache::BackendFactory {
 
 std::string RemoveWhitespace(const std::string& str) {
   std::string trimmed;
-  if (base::RemoveChars(str, " ", &trimmed))
-    return trimmed;
-  else
-    return str;
+  return base::RemoveChars(str, " ", &trimmed) ?
+    trimmed : str;
 }
 
 }  // namespace
@@ -166,8 +164,7 @@ AtomBrowserContext::CreateHttpCacheBackendFactory(
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (!use_cache_ || command_line->HasSwitch(switches::kDisableHttpCache))
     return new NoCacheBackend;
-  else
-    return brightray::BrowserContext::CreateHttpCacheBackendFactory(base_path);
+  return brightray::BrowserContext::CreateHttpCacheBackendFactory(base_path);
 }
 
 content::DownloadManagerDelegate*
@@ -237,10 +234,8 @@ scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
     const std::string& partition, bool in_memory,
     const base::DictionaryValue& options) {
   auto browser_context = brightray::BrowserContext::Get(partition, in_memory);
-  if (browser_context)
-    return static_cast<AtomBrowserContext*>(browser_context.get());
-
-  return new AtomBrowserContext(partition, in_memory, options);
+  return (browser_context) ?
+    static_cast<AtomBrowserContext*>(browser_context.get()) :
+    new AtomBrowserContext(partition, in_memory, options);
 }
-
 }  // namespace atom

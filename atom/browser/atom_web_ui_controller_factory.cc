@@ -27,11 +27,9 @@ AtomWebUIControllerFactory::~AtomWebUIControllerFactory() {}
 content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
     const GURL& url) const {
-  if (url.host() == kPdfViewerUIHost) {
-    return const_cast<AtomWebUIControllerFactory*>(this);
-  }
-
-  return content::WebUI::kNoWebUI;
+  return (url.host() == kPdfViewerUIHost) ?
+    const_cast<AtomWebUIControllerFactory*>(this) :
+    content::WebUI::kNoWebUI;
 }
 
 bool AtomWebUIControllerFactory::UseWebUIForURL(

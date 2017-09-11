@@ -199,16 +199,12 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
 }
 
 content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
-  if (!web_contents_)
-    return nullptr;
-  return web_contents_->GetWebContents();
+  return (web_contents_) ? web_contents_->GetWebContents() : nullptr;
 }
 
 content::WebContents*
 CommonWebContentsDelegate::GetDevToolsWebContents() const {
-  if (!web_contents_)
-    return nullptr;
-  return web_contents_->GetDevToolsWebContents();
+  return (web_contents_) ? web_contents_->GetDevToolsWebContents() : nullptr;
 }
 
 content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
@@ -256,20 +252,20 @@ void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,
 
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     content::WebContents* source, const GURL& origin) {
-  if (!owner_window_)
-    return;
-  SetHtmlApiFullscreen(true);
-  owner_window_->NotifyWindowEnterHtmlFullScreen();
-  source->GetRenderViewHost()->GetWidget()->WasResized();
+  if (owner_window_) {
+    SetHtmlApiFullscreen(true);
+    owner_window_->NotifyWindowEnterHtmlFullScreen();
+    source->GetRenderViewHost()->GetWidget()->WasResized();
+  }
 }
 
 void CommonWebContentsDelegate::ExitFullscreenModeForTab(
     content::WebContents* source) {
-  if (!owner_window_)
-    return;
-  SetHtmlApiFullscreen(false);
-  owner_window_->NotifyWindowLeaveHtmlFullScreen();
-  source->GetRenderViewHost()->GetWidget()->WasResized();
+  if (owner_window_) {
+    SetHtmlApiFullscreen(false);
+    owner_window_->NotifyWindowLeaveHtmlFullScreen();
+    source->GetRenderViewHost()->GetWidget()->WasResized();
+  }
 }
 
 bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
@@ -304,7 +300,6 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
       base::Value url_value(url);
       web_contents_->CallClientFunction(
           "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
-      return;
     }
   }
 
