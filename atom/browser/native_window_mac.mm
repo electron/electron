@@ -469,6 +469,11 @@ enum {
 @interface NSWindow (SierraSDK)
 - (void)setTabbingMode:(NSInteger)mode;
 - (void)setTabbingIdentifier:(NSString*)identifier;
+- (IBAction)selectPreviousTab:(id)sender;
+- (IBAction)selectNextTab:(id)sender;
+- (IBAction)mergeAllWindows:(id)sender;
+- (IBAction)moveTabToNewWindow:(id)sender;
+- (IBAction)toggleTabBar:(id)sender;
 @end
 
 #endif  // MAC_OS_X_VERSION_10_12
@@ -1521,6 +1526,36 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
 
 void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
   [window_ setDisableAutoHideCursor:!auto_hide];
+}
+
+void NativeWindowMac::SelectPreviousTab() {
+  if ([window_ respondsToSelector:@selector(selectPreviousTab:)]) {
+    [window_ selectPreviousTab:nil];
+  }
+}
+
+void NativeWindowMac::SelectNextTab() {
+  if ([window_ respondsToSelector:@selector(selectNextTab:)]) {
+    [window_ selectNextTab:nil];
+  }
+}
+
+void NativeWindowMac::MergeAllWindows() {
+  if ([window_ respondsToSelector:@selector(mergeAllWindows:)]) {
+    [window_ mergeAllWindows:nil];
+  }
+}
+
+void NativeWindowMac::MoveTabToNewWindow() {
+  if ([window_ respondsToSelector:@selector(moveTabToNewWindow:)]) {
+    [window_ moveTabToNewWindow:nil];
+  }
+}
+
+void NativeWindowMac::ToggleTabBar() {
+  if ([window_ respondsToSelector:@selector(toggleTabBar:)]) {
+    [window_ toggleTabBar:nil];
+  }
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {

@@ -649,6 +649,66 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('BrowserWindow.selectPreviousTab()', () => {
+    it('does not throw', () => {
+      if (process.platform !== 'darwin') {
+        return
+      }
+
+      assert.doesNotThrow(() => {
+        w.selectPreviousTab()
+      })
+    })
+  })
+
+  describe('BrowserWindow.selectNextTab()', () => {
+    it('does not throw', () => {
+      if (process.platform !== 'darwin') {
+        return
+      }
+
+      assert.doesNotThrow(() => {
+        w.selectNextTab()
+      })
+    })
+  })
+
+  describe('BrowserWindow.mergeAllWindows()', () => {
+    it('does not throw', () => {
+      if (process.platform !== 'darwin') {
+        return
+      }
+
+      assert.doesNotThrow(() => {
+        w.mergeAllWindows()
+      })
+    })
+  })
+
+  describe('BrowserWindow.moveTabToNewWindow()', () => {
+    it('does not throw', () => {
+      if (process.platform !== 'darwin') {
+        return
+      }
+
+      assert.doesNotThrow(() => {
+        w.moveTabToNewWindow()
+      })
+    })
+  })
+
+  describe('BrowserWindow.toggleTabBar()', () => {
+    it('does not throw', () => {
+      if (process.platform !== 'darwin') {
+        return
+      }
+
+      assert.doesNotThrow(() => {
+        w.toggleTabBar()
+      })
+    })
+  })
+
   describe('BrowserWindow.setVibrancy(type)', function () {
     it('allows setting, changing, and removing the vibrancy', function () {
       assert.doesNotThrow(function () {

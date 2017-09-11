@@ -101,6 +101,12 @@ class NativeWindowMac : public NativeWindow,
 
   void SetAutoHideCursor(bool auto_hide) override;
 
+  void SelectPreviousTab() override;
+  void SelectNextTab() override;
+  void MergeAllWindows() override;
+  void MoveTabToNewWindow() override;
+  void ToggleTabBar() override;
+
   void SetVibrancy(const std::string& type) override;
   void SetTouchBar(
       const std::vector<mate::PersistentDictionary>& items) override;
