@@ -403,6 +403,11 @@ a meta tag:
 <meta name='theme-color' content='#ff0000'>
 ```
 
+Returns:
+
+* `event` Event
+* `color` (String | null) - Theme color is in format of '#rrggbb'. It is `null` when no theme color is set.
+
 #### Event: 'update-target-url'
 
 Returns:

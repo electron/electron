@@ -761,7 +761,11 @@ void WebContents::MediaStoppedPlaying(const MediaPlayerInfo& video_type,
 }
 
 void WebContents::DidChangeThemeColor(SkColor theme_color) {
-  Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
+  if (theme_color != SK_ColorTRANSPARENT) {
+    Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
+  } else {
+    Emit("did-change-theme-color", nullptr);
+  }
 }
 
 void WebContents::DocumentLoadedInFrame(

@@ -660,4 +660,21 @@ describe('webContents module', function () {
       gen.next()
     })
   })
+
+  describe('did-change-theme-color event', () => {
+    it('is triggered with correct theme color', (done) => {
+      var count = 0
+      w.webContents.on('did-change-theme-color', (e, color) => {
+        if (count === 0) {
+          count++
+          assert.equal(color, '#FFEEDD')
+          w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'base-page.html'))
+        } else if (count === 1) {
+          assert.equal(color, null)
+          done()
+        }
+      })
+      w.loadURL('file://' + path.join(__dirname, 'fixtures', 'pages', 'theme-color.html'))
+    })
+  })
 })
