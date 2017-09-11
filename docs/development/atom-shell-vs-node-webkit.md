@@ -43,7 +43,7 @@ If you are an experienced NW.js user, you should be familiar with the
 concept of Node context and web context. These concepts were invented because
 of how NW.js was implemented.
 
-By using the [multi-context](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/)
+By using the [multi-context](https://github.com/nodejs/node-v0.x-archive/commit/756b622)
 feature of Node, Electron doesn't introduce a new JavaScript context in web
 pages.
 
