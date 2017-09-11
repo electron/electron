@@ -641,7 +641,12 @@ void DesktopNotificationController::Toast::CancelDismiss() {
 }
 
 void DesktopNotificationController::Toast::ScheduleDismissal() {
-    SetTimer(hwnd_, TimerID_AutoDismiss, 4000, nullptr);
+    ULONG duration;
+    auto result = SystemParametersInfo(SPI_GETMESSAGEDURATION, 0, &duration, 0);
+    if (result == FALSE) {
+        duration = 5;
+    }
+    SetTimer(hwnd_, TimerID_AutoDismiss, duration * 1000, nullptr);
 }
 
 void DesktopNotificationController::Toast::ResetContents() {
