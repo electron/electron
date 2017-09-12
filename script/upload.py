@@ -201,8 +201,11 @@ def create_release_draft(github, tag):
 def release_electron_checksums(github, release):
   checksums = run_python_script('merge-electron-checksums.py',
                                 '-v', ELECTRON_VERSION)
-  upload_io_to_github(github, release, 'SHASUMS256.txt',
-                      StringIO(checksums.decode('utf-8')), 'text/plain')
+  filename = 'SHASUMS256.txt'
+  filepath = os.path.join(SOURCE_ROOT, filename)
+  with open(filepath, 'w') as sha_file:
+      sha_file.write(checksums.decode('utf-8'))
+  upload_io_to_github(release, filename, filepath)
 
 
 def upload_electron(github, release, file_path):
@@ -217,8 +220,7 @@ def upload_electron(github, release, file_path):
       pass
 
   # Upload the file.
-  with open(file_path, 'rb') as f:
-    upload_io_to_github(github, release, filename, f, 'application/zip')
+  upload_io_to_github(release, filename, file_path)
 
   # Upload the checksum file.
   upload_sha256_checksum(release['tag_name'], file_path)
@@ -232,11 +234,11 @@ def upload_electron(github, release, file_path):
     upload_electron(github, release, arm_file_path)
 
 
-def upload_io_to_github(github, release, name, io, content_type):
-  params = {'name': name}
-  headers = {'Content-Type': content_type}
-  github.repos(ELECTRON_REPO).releases(release['id']).assets.post(
-      params=params, headers=headers, data=io, verify=False)
+def upload_io_to_github(release, filename, filepath):
+  print 'Uploading %s to Github' % \
+      (filename)
+  script_path = os.path.join(SOURCE_ROOT, 'script', 'upload-to-github.js')
+  execute(['node', script_path, filepath, filename, str(release['id'])])
 
 
 def upload_sha256_checksum(version, file_path):

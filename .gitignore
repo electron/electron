@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.gclient_done
 .npmrc
 .tags*
 .vs/
@@ -14,7 +15,6 @@
 *.vcxproj.filters
 *.vcxproj.user
 *.xcodeproj
-node_modules/
 /.idea/
 /brightray/brightray.opensdf
 /brightray/brightray.sdf
@@ -41,4 +41,5 @@ node_modules/
 /vendor/node/deps/node-inspect/.npmrc
 /vendor/npm/
 /vendor/python_26/
-.gclient_done
+node_modules/
+SHASUMS256.txt
