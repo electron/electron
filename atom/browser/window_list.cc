@@ -81,6 +81,9 @@ void WindowList::RemoveObserver(WindowListObserver* observer) {
 // static
 void WindowList::CloseAllWindows() {
   WindowVector windows = GetInstance()->windows_;
+#if defined(OS_MACOSX)
+  std::reverse(windows.begin(), windows.end());
+#endif
   for (const auto& window : windows)
     if (!window->IsClosed())
       window->Close();
