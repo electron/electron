@@ -67,7 +67,7 @@ def main():
     run_python_script('upload-index-json.py')
 
     # Create and upload the Electron SHASUMS*.txt
-    release_electron_checksums(github, release)
+    release_electron_checksums(release)
 
     # Press the publish button.
     publish_release(github, release['id'])
@@ -198,7 +198,7 @@ def create_release_draft(github, tag):
   return r
 
 
-def release_electron_checksums(github, release):
+def release_electron_checksums(release):
   checksums = run_python_script('merge-electron-checksums.py',
                                 '-v', ELECTRON_VERSION)
   filename = 'SHASUMS256.txt'
