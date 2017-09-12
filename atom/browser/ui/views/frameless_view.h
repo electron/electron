@@ -39,7 +39,7 @@ class FramelessView : public views::NonClientFrameView {
   void SizeConstraintsChanged() override;
 
   // Overridden from View:
-  gfx::Size GetPreferredSize() const override;
+  gfx::Size CalculatePreferredSize() const override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
   const char* GetClassName() const override;
