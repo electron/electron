@@ -93,7 +93,9 @@
   } else {
     if (visible) {
       [devtools_window_ makeKeyAndOrderFront:nil];
+      [devtools_window_ setIsVisible:YES];
     } else {
+      [devtools_window_ setIsVisible:NO];
       [devtools_window_ setDelegate:nil];
       [devtools_window_ close];
       devtools_window_.reset();
