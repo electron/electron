@@ -771,11 +771,13 @@ Returns `Boolean` - Whether the window is in fullscreen mode.
 
 * `flag` Boolean
 
-Sets whether the window should be in simple fullscreen mode.
+Enters or leaves simple fullscreen mode.
+
+Simple fullscreen mode emulates the native fullscreen behavior found in versions of Mac OS X prior to Lion (10.7).
 
 #### `win.isSimpleFullScreen()` _macOS_
 
-Returns `Boolean` - Whether the window is in simple fullscreen mode.
+Returns `Boolean` - Whether the window is in simple (pre-Lion) fullscreen mode.
 
 #### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
