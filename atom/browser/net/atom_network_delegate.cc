@@ -86,6 +86,8 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
         content::RenderFrameHost::FromID(process_id, frame_id));
     details->SetInteger("webContentsId",
       atom::api::WebContents::GetIDFromWrappedClass(webContents));
+    details->SetString("resourceType",
+      ResourceTypeToString(info->GetResourceType()));
   } else {
     details->SetString("resourceType", "other");
   }
