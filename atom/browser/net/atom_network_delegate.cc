@@ -76,13 +76,16 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   FillRequestDetails(details, request);
   details->SetInteger("id", request->identifier());
   details->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
-  const content::ResourceRequestInfo* info = content::ResourceRequestInfo::ForRequest(request);
+  const content::ResourceRequestInfo* info
+    = content::ResourceRequestInfo::ForRequest(request);
   if (info) {
     int process_id = info->GetChildID();
     int frame_id = info->GetRenderFrameID();
     content::WebContents* webContents
-      = content::WebContents::FromRenderFrameHost(content::RenderFrameHost::FromID(process_id, frame_id));
-    details->SetInteger("webContentsId", atom::api::WebContents::GetIDFromWrappedClass(webContents));
+      = content::WebContents::FromRenderFrameHost(
+        content::RenderFrameHost::FromID(process_id, frame_id));
+    details->SetInteger("webContentsId",
+      atom::api::WebContents::GetIDFromWrappedClass(webContents));
   } else {
     details->SetString("resourceType", "other");
   }
