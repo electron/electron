@@ -98,4 +98,4 @@ autoUpdater.on('error', message => {
 ```
 
 [electron-builder-lib]: https://github.com/electron-userland/electron-builder
-[electron-updater]: https://github.com/electron-userland/electron-builder/wiki/Auto-Update
+[electron-updater]: https://www.electron.build/auto-update
