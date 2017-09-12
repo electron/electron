@@ -21,6 +21,7 @@ class NotificationPresenter;
 struct NotificationAction {
   base::string16 type;
   base::string16 text;
+  base::string16 _protocol;
 };
 
 struct NotificationOptions {

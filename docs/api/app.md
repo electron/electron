@@ -671,6 +671,12 @@ app.setJumpList([
 ])
 ```
 
+### `app.isSingleInstance()`
+
+Returns `Boolean`.  Whether the app has called `makeSingleInstance` or not,
+useful for third party modules to determine if the app is running in Single
+Instance mode or not.
+
 ### `app.makeSingleInstance(callback)`
 
 * `callback` Function

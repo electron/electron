@@ -64,7 +64,13 @@ class WindowsToastNotification : public Notification {
       const std::wstring& msg,
       const std::wstring& icon_path,
       const bool silent,
+      const std::vector<NotificationAction> actions,
       ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
+  bool AddAttribute(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                    ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNamedNodeMap>
+                        attributes, std::wstring name, std::wstring value);
+  bool AddActions(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                  const std::vector<NotificationAction> actions);
   bool SetXmlAudioSilent(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
   bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                   const std::wstring& text);

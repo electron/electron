@@ -26,6 +26,8 @@ class Notification : public mate::TrackableObject<Notification>,
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
   static bool IsSupported();
+  void SetWindowsProtocolHandler(base::string16 protocol);
+  base::string16 GetWindowsProtocolHandler();
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -78,6 +80,8 @@ class Notification : public mate::TrackableObject<Notification>,
   bool has_reply_ = false;
   std::vector<brightray::NotificationAction> actions_;
   base::string16 sound_;
+
+  base::string16 windowsProtocol_ = L"not-used";
 
   brightray::NotificationPresenter* presenter_;
 

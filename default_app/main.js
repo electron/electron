@@ -5,6 +5,10 @@ const Module = require('module')
 const path = require('path')
 const url = require('url')
 
+// We don't set process.defaultApp if the app doesn't launch anything but shows the default HTML
+// file.  This variable is set no matter what we do as long as default_app was run
+process.defaultAppRan = true
+
 // Parse command line options.
 const argv = process.argv.slice(1)
 const option = { file: null, help: null, version: null, abi: null, webdriver: null, modules: [] }

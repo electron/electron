@@ -29,7 +29,9 @@ struct Converter<brightray::NotificationAction> {
     if (!dict.Get("type", &(out->type))) {
       return false;
     }
-    dict.Get("text", &(out->text));
+    if (!dict.Get("text", &(out->text))) {
+      out->text = L"Show";
+    }
     return true;
   }
 
@@ -189,6 +191,10 @@ void Notification::Show() {
       options.silent = silent_;
       options.has_reply = has_reply_;
       options.reply_placeholder = reply_placeholder_;
+      // Update the protocol for each action
+      for (brightray::NotificationAction& action : actions_) {
+        action._protocol = GetWindowsProtocolHandler();
+      }
       options.actions = actions_;
       options.sound = sound_;
       notification_->Show(options);
@@ -200,6 +206,14 @@ bool Notification::IsSupported() {
   return !!brightray::BrowserClient::Get()->GetNotificationPresenter();
 }
 
+void Notification::SetWindowsProtocolHandler(base::string16 protocol) {
+  windowsProtocol_ = protocol;
+}
+
+base::string16 Notification::GetWindowsProtocolHandler() {
+  return windowsProtocol_;
+}
+
 // static
 void Notification::BuildPrototype(v8::Isolate* isolate,
                                   v8::Local<v8::FunctionTemplate> prototype) {
@@ -207,6 +221,9 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("show", &Notification::Show)
+      .SetMethod("_setWindowsProtocolHandler",
+                 &Notification::SetWindowsProtocolHandler)
+      .SetMethod("_emitAction", &Notification::NotificationAction)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::GetSubtitle,
                    &Notification::SetSubtitle)

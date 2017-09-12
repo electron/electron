@@ -1160,7 +1160,7 @@ void App::BuildPrototype(
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
-      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
+      .SetMethod("_makeSingleInstance", &App::MakeSingleInstance)
       .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance)
       .SetMethod("relaunch", &App::Relaunch)
       .SetMethod("isAccessibilitySupportEnabled",
