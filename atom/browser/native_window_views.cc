@@ -4,7 +4,9 @@
 
 #include "atom/browser/native_window_views.h"
 
+#if defined(OS_WIN)
 #include <objbase.h>
+#endif
 #include <string>
 #include <vector>
 
