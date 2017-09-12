@@ -10,8 +10,8 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/native_window_observer.h"
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/cancelable_callback.h"

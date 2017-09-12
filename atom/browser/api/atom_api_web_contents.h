@@ -357,7 +357,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsFocused() override;
   void DevToolsOpened() override;
   void DevToolsClosed() override;
-  
+
   void ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
     const gfx::RectF& bounds,
