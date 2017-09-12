@@ -196,12 +196,10 @@ class NativeWindowMac : public NativeWindow,
   // Simple (pre-Lion) Fullscreen Settings
   bool simple_fullscreen_;
   bool is_simple_fullscreen_;
-  bool was_maximized_;
-  bool was_minimizable_;
   bool was_maximizable_;
-  bool was_resizable_;
   bool was_movable_;
   NSRect original_frame_;
+  NSUInteger simple_fullscreen_mask_;
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;

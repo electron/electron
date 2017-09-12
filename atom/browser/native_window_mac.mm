@@ -1372,6 +1372,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     original_frame_ = [window frame];
 
     simple_fullscreen_options_ = [NSApp currentSystemPresentationOptions];
+    simple_fullscreen_mask_ = [window styleMask];
 
     // We can simulate the pre-Lion fullscreen by auto-hiding the dock and menu bar
     NSApplicationPresentationOptions options =
@@ -1379,13 +1380,8 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
         NSApplicationPresentationAutoHideMenuBar;
     [NSApp setPresentationOptions:options];
 
-    was_maximized_ = IsMaximized();
-    was_minimizable_ = IsMinimizable();
     was_maximizable_ = IsMaximizable();
-    was_resizable_ = IsResizable();
     was_movable_ = IsMovable();
-
-    // if (!was_maximized_) Maximize();
 
     NSRect fullscreenFrame = [window.screen frame];
 
@@ -1404,11 +1400,11 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
 
     [window setFrame:fullscreenFrame display: YES animate: YES];
 
-    // Fullscreen windows can't be resized, minimized, etc.
-    if (was_minimizable_) SetMinimizable(false);
-    if (was_maximizable_) SetMaximizable(false);
-    if (was_resizable_) SetResizable(false);
-    if (was_movable_) SetMovable(false);
+    // Fullscreen windows can't be resized, minimized, maximized, or moved
+    SetMinimizable(false);
+    SetResizable(false);
+    SetMaximizable(false);
+    SetMovable(false);
   } else if (!simple_fullscreen && is_simple_fullscreen_) {
     is_simple_fullscreen_ = false;
 
@@ -1425,13 +1421,14 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     [window setFrame:original_frame_ display: YES animate: YES];
 
     [NSApp setPresentationOptions:simple_fullscreen_options_];
-    
+
+    // Restore original style mask
+    ScopedDisableResize disable_resize;
+    [window_ setStyleMask:simple_fullscreen_mask_];
+
     // Restore window manipulation abilities
-    // if (!was_maximized_) Unmaximize();
-    if (was_minimizable_) SetMinimizable(true);
-    if (was_maximizable_) SetMaximizable(true);
-    if (was_resizable_) SetResizable(true);
-    if (was_movable_) SetMovable(true);
+    SetMaximizable(was_maximizable_);
+    SetMovable(was_movable_);
   }
 }
 
