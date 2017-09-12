@@ -164,7 +164,7 @@ tab button is only visible if the current `BrowserWindow` has a
 Returns:
 
 * `event` Event
-* `window` BrowserWindow
+* `window` [browserWindow](browser-window.md)
 
 Emitted when a [browserWindow](browser-window.md) gets blurred.
 
@@ -173,7 +173,7 @@ Emitted when a [browserWindow](browser-window.md) gets blurred.
 Returns:
 
 * `event` Event
-* `window` BrowserWindow
+* `window` [browserWindow](browser-window.md)
 
 Emitted when a [browserWindow](browser-window.md) gets focused.
 
@@ -182,7 +182,7 @@ Emitted when a [browserWindow](browser-window.md) gets focused.
 Returns:
 
 * `event` Event
-* `window` BrowserWindow
+* `window` [browserWindow](browser-window.md)
 
 Emitted when a new [browserWindow](browser-window.md) is created.
 
@@ -191,7 +191,7 @@ Emitted when a new [browserWindow](browser-window.md) is created.
 Returns:
 
 * `event` Event
-* `webContents` WebContents
+* `webContents` [WebContents](web-contents.md)
 
 Emitted when a new [webContents](web-contents.md) is created.
 
