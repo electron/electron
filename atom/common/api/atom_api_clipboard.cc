@@ -7,6 +7,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/strings/utf_string_conversions.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 
 #include "atom/common/node_includes.h"
@@ -166,7 +167,13 @@ gfx::Image Clipboard::ReadImage(mate::Arguments* args) {
 
 void Clipboard::WriteImage(const gfx::Image& image, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
-  writer.WriteImage(image.AsBitmap());
+  SkBitmap bmp;
+  // TODO(ferreus): Replace with sk_tools_utils::copy_to (chrome60)
+  if (image.AsBitmap().deepCopyTo(&bmp)) {
+    writer.WriteImage(bmp);
+  } else {
+    writer.WriteImage(image.AsBitmap());
+  }
 }
 
 #if !defined(OS_MACOSX)
