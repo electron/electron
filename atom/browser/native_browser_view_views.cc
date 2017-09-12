@@ -24,7 +24,7 @@ void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
 
 void NativeBrowserViewViews::SetBackgroundColor(SkColor color) {
   auto* view = GetInspectableWebContentsView()->GetView();
-  view->set_background(views::Background::CreateSolidBackground(color));
+  view->SetBackground(views::CreateSolidBackground(color));
 }
 
 // static

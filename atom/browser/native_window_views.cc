@@ -794,7 +794,7 @@ bool NativeWindowViews::IsKiosk() {
 void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   // web views' background color.
   SkColor background_color = ParseHexColor(color_name);
-  set_background(views::Background::CreateSolidBackground(background_color));
+  SetBackground(views::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
   // Set the background color of native window.
