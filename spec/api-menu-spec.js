@@ -282,11 +282,9 @@ describe('Menu module', () => {
       return closeWindow(w).then(() => { w = null })
     })
 
-    describe('when called with async: true', () => {
-      it('returns immediately', () => {
-        menu.popup(w, {x: 100, y: 100, async: true})
-        menu.closePopup(w)
-      })
+    it('returns immediately', () => {
+      menu.popup(w, {x: 100, y: 100, async: true})
+      menu.closePopup(w)
     })
   })
 

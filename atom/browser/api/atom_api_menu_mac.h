@@ -22,11 +22,12 @@ class MenuMac : public Menu {
  protected:
   MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
-  void PopupAt(
-      Window* window, int x, int y, int positioning_item, bool async) override;
+  void PopupAt(Window* window, int x, int y, int positioning_item) override;
   void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
-                 int32_t window_id, int x, int y, int positioning_item,
-                 bool async);
+                 int32_t window_id,
+                 int x,
+                 int y,
+                 int positioning_item);
   void ClosePopupAt(int32_t window_id) override;
 
  private:
