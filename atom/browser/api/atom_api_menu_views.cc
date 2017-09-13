@@ -54,12 +54,12 @@ void MenuViews::PopupAt(
       &MenuViews::ClosePopupAt, weak_factory_.GetWeakPtr(), window_id);
   menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
       model(), flags, close_callback));
-  ignore_result(menu_runners_[window_id]->RunMenuAt(
+  menu_runners_[window_id]->RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,
       gfx::Rect(location, gfx::Size()),
       views::MENU_ANCHOR_TOPLEFT,
-      ui::MENU_SOURCE_MOUSE));
+      ui::MENU_SOURCE_MOUSE);
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {
