@@ -144,6 +144,7 @@ void Window::Init(v8::Isolate* isolate,
       options,
       parent.IsEmpty() ? nullptr : parent->window_.get()));
   web_contents->SetOwnerWindow(window_.get());
+  window_->SetIsOffScreenDummy(api_web_contents_->IsOffScreen());
 
 #if defined(TOOLKIT_VIEWS)
   // Sets the window icon.

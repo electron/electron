@@ -41,8 +41,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     buttons.push_back("Cancel");
   }
 
-  atom::ShowMessageBox(api_web_contents_->IsOffScreen() ? nullptr :
-                        NativeWindow::FromWebContents(web_contents),
+  atom::ShowMessageBox(NativeWindow::FromWebContents(web_contents),
                        atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1,
                        0, atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
                        base::UTF16ToUTF8(message_text), "", "", false,

@@ -237,6 +237,12 @@ class NativeWindow : public base::SupportsUserData,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {}
   virtual void HideAutofillPopup(content::RenderFrameHost* frame_host) {}
+  void SetIsOffScreenDummy(bool is_dummy) {
+    is_osr_dummy_ = is_dummy;
+  }
+  bool IsOffScreenDummy() {
+    return is_osr_dummy_;
+  }
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
@@ -367,6 +373,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Is this a modal window.
   bool is_modal_;
+
+  // Is this a dummy window for an offscreen WebContents.
+  bool is_osr_dummy_;
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;

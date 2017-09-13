@@ -146,7 +146,8 @@ int ShowMessageBox(NativeWindow* parent_window,
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
-  if (!parent_window || !parent_window->GetNativeWindow())
+  if (!parent_window || !parent_window->GetNativeWindow() ||
+      parent_window->IsOffScreenDummy())
     return [[alert autorelease] runModal];
 
   int ret_code = -1;
@@ -184,8 +185,10 @@ void ShowMessageBox(NativeWindow* parent_window,
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
-  if (!parent_window || !parent_window->GetNativeWindow()) {
-    [[alert autorelease] runModal];
+  if (!parent_window || !parent_window->GetNativeWindow() ||
+      parent_window->IsOffScreenDummy()) {
+    int ret = [[alert autorelease] runModal];
+    callback.Run(ret, false);
   } else {
     ModalDelegate* delegate = [[ModalDelegate alloc] initWithCallback:callback
                                                              andAlert:alert

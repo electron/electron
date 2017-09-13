@@ -1361,8 +1361,6 @@ void NativeWindowViews::ShowAutofillPopup(
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
-  // auto wc = atom::api::WebContents::FromWrappedClass(
-  //   v8::Isolate::GetCurrent(), web_contents());
   autofill_popup_->CreateView(
     frame_host,
     web_contents->IsOffScreenOrEmbedderOffscreen(),
