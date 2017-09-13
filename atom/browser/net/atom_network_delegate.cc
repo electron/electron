@@ -6,11 +6,13 @@
 
 #include <utility>
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "brightray/browser/net/devtools_network_transaction.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/render_frame_host.h"
 #include "net/url_request/url_request.h"
 
 using brightray::DevToolsNetworkTransaction;
@@ -74,10 +76,19 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   FillRequestDetails(details, request);
   details->SetInteger("id", request->identifier());
   details->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
-  auto info = content::ResourceRequestInfo::ForRequest(request);
-  details->SetString("resourceType",
-                     info ? ResourceTypeToString(info->GetResourceType())
-                          : "other");
+  const auto* info = content::ResourceRequestInfo::ForRequest(request);
+  if (info) {
+    int process_id = info->GetChildID();
+    int frame_id = info->GetRenderFrameID();
+    auto* webContents = content::WebContents::FromRenderFrameHost(
+        content::RenderFrameHost::FromID(process_id, frame_id));
+    details->SetInteger("webContentsId",
+        atom::api::WebContents::GetIDFromWrappedClass(webContents));
+    details->SetString("resourceType",
+        ResourceTypeToString(info->GetResourceType()));
+  } else {
+    details->SetString("resourceType", "other");
+  }
 }
 
 void ToDictionary(base::DictionaryValue* details,
