@@ -1401,6 +1401,22 @@ there is more than one tab in the current window.
 Toggles the visibility of the tab bar if native tabs are enabled and
 there is only one tab in the current window.
 
+#### `win.addTabbedWindow(browserWindow)` _macOS_
+
+* `browserWindow` BrowserWindow
+
+Adds a window as a tab on this window, after the tab for the window instance.
+
+```js
+// in main.js
+
+BrowserWindow.getFocusedWindow().addTabbedWindow(new BrowserWindow({}))
+
+// in renderer.js
+
+remote.getCurrentWindow().addTabbedWindow(new BrowserWindow({}))
+```
+
 #### `win.setVibrancy(type)` _macOS_
 
 * `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,

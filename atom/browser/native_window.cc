@@ -351,6 +351,9 @@ void NativeWindow::MoveTabToNewWindow() {
 void NativeWindow::ToggleTabBar() {
 }
 
+void NativeWindow::AddTabbedWindow(NativeWindow* window) {
+}
+
 void NativeWindow::SetVibrancy(const std::string& filename) {
 }
 

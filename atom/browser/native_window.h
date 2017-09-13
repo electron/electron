@@ -190,6 +190,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void MergeAllWindows();
   virtual void MoveTabToNewWindow();
   virtual void ToggleTabBar();
+  virtual void AddTabbedWindow(NativeWindow* window);
 
   // Webview APIs.
   virtual void FocusOnWebView();

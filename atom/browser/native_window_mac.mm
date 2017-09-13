@@ -474,6 +474,7 @@ enum {
 @interface NSWindow (SierraSDK)
 - (void)setTabbingMode:(NSInteger)mode;
 - (void)setTabbingIdentifier:(NSString*)identifier;
+- (void)addTabbedWindow:(NSWindow*)window ordered:(NSWindowOrderingMode)ordered;
 - (IBAction)selectPreviousTab:(id)sender;
 - (IBAction)selectNextTab:(id)sender;
 - (IBAction)mergeAllWindows:(id)sender;
@@ -1646,6 +1647,12 @@ void NativeWindowMac::MoveTabToNewWindow() {
 void NativeWindowMac::ToggleTabBar() {
   if ([window_ respondsToSelector:@selector(toggleTabBar:)]) {
     [window_ toggleTabBar:nil];
+  }
+}
+
+void NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
+  if ([window_ respondsToSelector:@selector(addTabbedWindow:ordered:)]) {
+    [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];
   }
 }
 
