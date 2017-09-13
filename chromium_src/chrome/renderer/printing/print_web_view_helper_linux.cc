@@ -106,7 +106,7 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebLocalFrame* frame,
     printed_page_params.page_number = printed_pages[i];
     Send(new PrintHostMsg_DidPrintPage(routing_id(), printed_page_params));
     // Send the rest of the pages with an invalid metafile handle.
-    printed_page_params.metafile_data_handle.fd = -1;
+    printed_page_params.metafile_data_handle.Release();
   }
   return true;
 }
