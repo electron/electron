@@ -99,6 +99,10 @@
                   '<(libchromiumcontent_dir)/libyuv.a',
                   '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
+                  # components/network_session_configurator/common/
+                  '<(libchromiumcontent_dir)/libcommon.a',
+                  # services/device/wake_lock/power_save_blocker/
+                  '<(libchromiumcontent_dir)/libpower_save_blocker.a',
                   # Friends of libpdf.a:
                   # On Linux we have to use "--whole-archive" to include
                   # all symbols, otherwise there will be plenty of
@@ -180,6 +184,10 @@
                   '<(libchromiumcontent_dir)/libyuv.a',
                   '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
+                  # components/network_session_configurator/common/
+                  '<(libchromiumcontent_dir)/libcommon.a',
+                  # services/device/wake_lock/power_save_blocker/
+                  '<(libchromiumcontent_dir)/libpower_save_blocker.a',
                   # Friends of libpdf.a:
                   '<(libchromiumcontent_dir)/libpdf.a',
                   '<(libchromiumcontent_dir)/libppapi_cpp_objects.a',
@@ -272,6 +280,10 @@
                   '<(libchromiumcontent_dir)/libyuv.lib',
                   '<(libchromiumcontent_dir)/renderer.lib',
                   '<(libchromiumcontent_dir)/security_state.lib',
+                  # components/network_session_configurator/common/
+                  '<(libchromiumcontent_dir)/common.lib',
+                  # services/device/wake_lock/power_save_blocker/
+                  '<(libchromiumcontent_dir)/power_save_blocker.lib',
                   # Friends of pdf.lib:
                   '<(libchromiumcontent_dir)/pdf.lib',
                   '<(libchromiumcontent_dir)/ppapi_cpp_objects.lib',
