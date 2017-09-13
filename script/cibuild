@@ -55,10 +55,9 @@ def main():
       deps += LINUX_DEPS_ARM
     execute(['sudo', 'apt-get', 'install'] + deps)
 
-    execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
-
-  if PLATFORM == 'linux':
+  if PLATFORM == 'linux' and target_arch == 'x64':
     os.environ['DISPLAY'] = ':99.0'
+    execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
