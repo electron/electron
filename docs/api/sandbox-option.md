@@ -47,7 +47,7 @@ app.on('ready', () => {
       sandbox: true
     }
   })
-  w.loadURL('http://google.com')
+  win.loadURL('http://google.com')
 })
 ```
 
@@ -69,7 +69,7 @@ let win
 app.on('ready', () => {
   // no need to pass `sandbox: true` since `--enable-sandbox` was enabled.
   win = new BrowserWindow()
-  w.loadURL('http://google.com')
+  win.loadURL('http://google.com')
 })
 ```
 
@@ -104,7 +104,7 @@ app.on('ready', () => {
       preload: 'preload.js'
     }
   })
-  w.loadURL('http://google.com')
+  win.loadURL('http://google.com')
 })
 ```
 
