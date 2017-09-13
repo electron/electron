@@ -1,0 +1,41 @@
+
+version: 2
+jobs:
+  electron-linux-arm:
+    docker:
+      - image: electronbuilds/electron:0.0.3
+        environment:
+          TARGET_ARCH: arm
+    steps:
+      - checkout
+      - run: script/cibuild
+
+  electron-linux-ia32:
+    docker:
+      - image: electronbuilds/electron:0.0.3
+        environment:
+          TARGET_ARCH: ia32
+    steps:
+      - checkout
+      - run: script/cibuild
+
+  electron-linux-x64:
+    docker:
+      - image: electronbuilds/electron:0.0.3
+        environment:
+          TARGET_ARCH: x64
+    steps:
+      - checkout
+      - run: script/cibuild
+
+workflows:
+  version: 2
+  build-arm:
+    jobs:
+      - electron-linux-arm
+  build-ia32:
+    jobs:
+      - electron-linux-ia32
+  build-x64:
+    jobs:
+      - electron-linux-x64
