@@ -168,7 +168,7 @@ void MenuBar::UpdateMenuBarColor() {
   GetMenuBarColor(&enabled_color_, &disabled_color_, &highlight_color_,
                   &hover_color_, &background_color_);
 #endif
-  set_background(views::Background::CreateSolidBackground(background_color_));
+  SetBackground(views::CreateSolidBackground(background_color_));
 }
 
 }  // namespace atom
