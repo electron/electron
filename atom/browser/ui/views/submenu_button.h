@@ -27,7 +27,7 @@ class SubmenuButton : public views::MenuButton {
   base::char16 accelerator() const { return accelerator_; }
 
   // views::MenuButton:
-  void OnPaint(gfx::Canvas* canvas) override;
+  void PaintButtonContents(gfx::Canvas* canvas) override;
 
   // views::InkDropHostView:
   std::unique_ptr<views::InkDropRipple> CreateInkDropRipple() const override;
