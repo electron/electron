@@ -52,8 +52,7 @@ MenuBar::MenuBar(NativeWindow* window)
       menu_model_(NULL),
       window_(window) {
   UpdateMenuBarColor();
-  SetLayoutManager(new views::BoxLayout(
-      views::BoxLayout::kHorizontal, 0, 0, 0));
+  SetLayoutManager(new views::BoxLayout(views::BoxLayout::kHorizontal));
 }
 
 MenuBar::~MenuBar() {
