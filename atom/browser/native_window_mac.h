@@ -137,7 +137,7 @@ class NativeWindowMac : public NativeWindow,
 
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
 
-  bool simple_fullscreen() const { return simple_fullscreen_; }
+  bool simple_fullscreen() const { return always_simple_fullscreen_; }
 
  protected:
   // Return a vector of non-draggable regions that fill a window of size
@@ -194,7 +194,7 @@ class NativeWindowMac : public NativeWindow,
   TitleBarStyle title_bar_style_;
 
   // Simple (pre-Lion) Fullscreen Settings
-  bool simple_fullscreen_;
+  bool always_simple_fullscreen_;
   bool is_simple_fullscreen_;
   bool was_maximizable_;
   bool was_movable_;

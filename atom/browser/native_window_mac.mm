@@ -827,7 +827,7 @@ NativeWindowMac::NativeWindowMac(
       fullscreen_window_title_(false),
       attention_request_id_(0),
       title_bar_style_(NORMAL),
-      simple_fullscreen_(false),
+      always_simple_fullscreen_(false),
       is_simple_fullscreen_(false) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
@@ -974,7 +974,7 @@ NativeWindowMac::NativeWindowMac(
 
   options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
 
-  options.Get(options::kSimpleFullScreen, &simple_fullscreen_);
+  options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
