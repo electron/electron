@@ -518,6 +518,7 @@ App::App(v8::Isolate* isolate) {
           base::ProcessMetrics::CreateCurrentProcessMetrics()));
   app_metrics_[pid] = std::move(process_metric);
   Init(isolate);
+  App::self_ = this;
 }
 
 App::~App() {
@@ -526,6 +527,10 @@ App::~App() {
   Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
+}
+
+App* App::Get() {
+  return App::self_;
 }
 
 void App::OnBeforeQuit(bool* prevent_default) {
@@ -573,7 +578,9 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
 #endif
   Emit("ready", launch_info);
+}
 
+void App::PreMainMessageLoopRun() {
   if (process_singleton_) {
     process_singleton_->OnBrowserReady();
   }

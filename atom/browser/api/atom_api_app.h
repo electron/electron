@@ -74,6 +74,8 @@ class App : public AtomBrowserClient::Delegate,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  static App* Get();
+
   // Called when window with disposition needs to be created.
   void OnCreateWindow(
       const GURL& target_url,
@@ -94,10 +96,12 @@ class App : public AtomBrowserClient::Delegate,
   base::FilePath GetAppPath() const;
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessDisconnected(base::ProcessId host_pid);
+  void PreMainMessageLoopRun();
 
  protected:
   explicit App(v8::Isolate* isolate);
   ~App() override;
+  static App* self_ = nullptr;
 
   // BrowserObserver:
   void OnBeforeQuit(bool* prevent_default) override;
