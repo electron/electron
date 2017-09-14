@@ -255,6 +255,41 @@ describe('menu module', function () {
       ])
       menu.delegate.executeCommand({}, menu.items[0].commandId)
     })
+
+    it('should be called with focused window passed by default', function (done) {
+      var menu = Menu.buildFromTemplate([
+        {
+          label: 'text',
+          click: function (item, window) {
+            assert.equal(window, BrowserWindow.getFocusedWindow())
+            done()
+          }
+        }
+      ])
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
+    })
+
+    it('should be called with the menu window if one is passed', function (done) {
+      var window1 = new BrowserWindow({title: 'a'})
+      var window2 = new BrowserWindow({title: 'b'})
+      window1.focus()
+
+      var menu = Menu.buildFromTemplate([
+        {
+          label: 'text',
+          click: function (item, window) {
+            assert.equal(BrowserWindow.getFocusedWindow().getTitle(), 'a')
+            assert.equal(window.getTitle(), 'b')
+            window1.close()
+            window2.close()
+            done()
+          }
+        }
+      ])
+
+      menu._setWindow(window2)
+      menu.delegate.executeCommand({}, menu.items[0].commandId)
+    })
   })
 
   describe('MenuItem with checked property', function () {
