@@ -55,6 +55,7 @@
 
 #include <stddef.h>
 
+#include "atom/browser/browser.h"
 #include "atom/common/atom_command_line.h"
 
 #include "base/base_paths.h"
@@ -881,6 +882,22 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
       base::TimeDelta::FromSeconds(kTimeoutInSeconds));
 }
 
+void ProcessSingleton::StartListeningOnSocket() {
+  BrowserThread::PostTask(
+      BrowserThread::IO,
+      FROM_HERE,
+      base::Bind(&ProcessSingleton::LinuxWatcher::StartListening,
+                 watcher_,
+                 sock_));
+}
+
+void ProcessSingleton::OnBrowserReady() {
+  if (listen_on_ready_) {
+    StartListeningOnSocket();
+    listen_on_ready_ = false;
+  }
+}
+
 ProcessSingleton::NotifyResult
 ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
     const base::CommandLine& command_line,
@@ -1032,12 +1049,13 @@ bool ProcessSingleton::Create() {
     NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
 
   DCHECK(BrowserThread::IsMessageLoopValid(BrowserThread::IO));
-  BrowserThread::PostTask(
-      BrowserThread::IO,
-      FROM_HERE,
-      base::Bind(&ProcessSingleton::LinuxWatcher::StartListening,
-                 watcher_,
-                 sock));
+  sock_ = sock;
+
+  if (atom::Browser::Get()->is_ready()) {
+    StartListeningOnSocket();
+  } else {
+    listen_on_ready_ = true;
+  }
 
   return true;
 }
