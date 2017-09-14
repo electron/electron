@@ -584,6 +584,18 @@ void App::OnAccessibilitySupportChanged() {
 }
 
 #if defined(OS_MACOSX)
+void App::OnWillContinueUserActivity(
+    bool* prevent_default,
+    const std::string& type) {
+  *prevent_default = Emit("will-continue-activity", type);
+}
+
+void App::OnDidFailToContinueUserActivity(
+    const std::string& type,
+    const std::string& error) {
+  Emit("continue-activity-error", type, error);
+}
+
 void App::OnContinueUserActivity(
     bool* prevent_default,
     const std::string& type,
@@ -591,10 +603,22 @@ void App::OnContinueUserActivity(
   *prevent_default = Emit("continue-activity", type, user_info);
 }
 
+void App::OnUserActivityWasContinued(
+    const std::string& type,
+    const base::DictionaryValue& user_info) {
+  Emit("activity-was-continued", type, user_info);
+}
+
+void App::OnUpdateUserActivityState(
+    bool* prevent_default,
+    const std::string& type,
+    const base::DictionaryValue& user_info) {
+  *prevent_default = Emit("update-activity-state", type, user_info);
+}
+
 void App::OnNewWindowForTab() {
   Emit("new-window-for-tab");
 }
-
 #endif
 
 void App::OnLogin(LoginHandler* login_handler,
@@ -1139,6 +1163,10 @@ void App::BuildPrototype(
                  base::Bind(&Browser::SetUserActivity, browser))
       .SetMethod("getCurrentActivityType",
                  base::Bind(&Browser::GetCurrentActivityType, browser))
+      .SetMethod("invalidateCurrentActivity",
+                 base::Bind(&Browser::InvalidateCurrentActivity, browser))
+      .SetMethod("updateCurrentActivity",
+                 base::Bind(&Browser::UpdateCurrentActivity, browser))
       .SetMethod("setAboutPanelOptions",
                  base::Bind(&Browser::SetAboutPanelOptions, browser))
 #endif

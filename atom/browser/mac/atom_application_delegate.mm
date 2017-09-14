@@ -118,6 +118,21 @@ continueUserActivity:(NSUserActivity*)userActivity
   return browser->ContinueUserActivity(activity_type, *user_info) ? YES : NO;
 }
 
+- (BOOL)application:(NSApplication*)application willContinueUserActivityWithType:(NSString*)userActivityType {
+  std::string activity_type(base::SysNSStringToUTF8(userActivityType));
+
+  atom::Browser* browser = atom::Browser::Get();
+  return browser->WillContinueUserActivity(activity_type) ? YES : NO;
+}
+
+- (void)application:(NSApplication*)application didFailToContinueUserActivityWithType:(NSString*)userActivityType error:(NSError*)error {
+  std::string activity_type(base::SysNSStringToUTF8(userActivityType));
+  std::string error_message(base::SysNSStringToUTF8([error localizedDescription]));
+
+  atom::Browser* browser = atom::Browser::Get();
+  browser->DidFailToContinueUserActivity(activity_type, error_message);
+}
+
 - (IBAction)newWindowForTab:(id)sender {
   atom::Browser::Get()->NewWindowForTab();
 }

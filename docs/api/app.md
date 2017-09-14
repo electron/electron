@@ -149,6 +149,53 @@ ID as the activity's source app and that supports the activity's type.
 Supported activity types are specified in the app's `Info.plist` under the
 `NSUserActivityTypes` key.
 
+### Event: 'will-continue-activity' _macOS_
+
+Returns:
+
+* `event` Event
+* `type` String - A string identifying the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+
+Emitted during [Handoff][handoff] before an activity from a different device wants
+to be resumed. You should call `event.preventDefault()` if you want to handle
+this event.
+
+### Event: 'continue-activity-error' _macOS_
+
+Returns:
+
+* `event` Event
+* `type` String - A string identifying the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+* `error` String - A string with the error's localized description.
+
+Emitted during [Handoff][handoff] when an activity from a different device
+fails to be resumed.
+
+### Event: 'activity-was-continued' _macOS_
+
+Returns:
+
+* `event` Event
+* `type` String - A string identifying the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+* `userInfo` Object - Contains app-specific state stored by the activity.
+
+Emitted during [Handoff][handoff] after an activity from this device was successfully
+resumed on another one.
+
+### Event: 'update-activity-state' _macOS_
+
+Returns:
+
+* `event` Event
+* `type` String - A string identifying the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+* `userInfo` Object - Contains app-specific state stored by the activity.
+
+Emitted when [Handoff][handoff] is about to be resumed on another device. If you need to update the state to be transferred, you should call `event.preventDefault()` immediatelly, construct a new `userInfo` dictionary and call `app.updateCurrentActiviy()` in a timely manner. Otherwise the operation will fail and `continue-activity-error` will be called.
+
 ### Event: 'new-window-for-tab' _macOS_
 
 Returns:
@@ -747,6 +794,22 @@ is eligible for [Handoff][handoff] to another device afterward.
 ### `app.getCurrentActivityType()` _macOS_
 
 Returns `String` - The type of the currently running activity.
+
+### `app.invalidateCurrentActivity()` _macOS_
+
+* `type` String - Uniquely identifies the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+
+Invalidates the current [Handoff][handoff] user activity.
+
+### `app.updateCurrentActivity(type, userInfo)` _macOS_
+
+* `type` String - Uniquely identifies the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+* `userInfo` Object - App-specific state to store for use by another device.
+
+Updates the current activity if its type matches `type`, merging the entries from
+`userInfo` into its current `userInfo` dictionary.
 
 ### `app.setAppUserModelId(id)` _Windows_
 
