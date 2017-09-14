@@ -325,6 +325,7 @@ HWND DesktopNotificationController::GetToast(
     const NotificationData* data) const {
     auto it = find_if(instances_.cbegin(), instances_.cend(),
         [data](auto&& inst) {
+            if (!inst.hwnd) return false;
             auto toast = Toast::Get(inst.hwnd);
             return data == toast->GetNotification().get();
         });
