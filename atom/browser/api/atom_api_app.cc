@@ -573,6 +573,10 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
 #endif
   Emit("ready", launch_info);
+
+  if (process_singleton_) {
+    process_singleton_->OnBrowserReady();
+  }
 }
 
 void App::OnAccessibilitySupportChanged() {
