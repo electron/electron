@@ -10,6 +10,8 @@ you want to show Notifications in the main process please check out the
 [Notification](../api/notification.md) module.
 
 ```javascript
+const {Notification} = require('electron')
+
 const myNotification = new Notification({
   title: 'This Is the Title',
   body: 'Lorem Ipsum Dolor Sit Amet'
