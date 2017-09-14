@@ -2369,6 +2369,11 @@ describe('BrowserWindow module', function () {
         })
         c.close()
       })
+
+      it('should not affect the show option', function () {
+        assert.equal(c.isVisible(), false)
+        assert.equal(c.getParentWindow().isVisible(), false)
+      })
     })
 
     describe('win.setParentWindow(parent)', function () {
