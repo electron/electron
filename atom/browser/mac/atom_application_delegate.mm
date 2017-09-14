@@ -14,7 +14,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 
-#if BUILDFLAG(USE_EXPERIMENTAL_ALLOCATOR_SHIM)
+#if BUILDFLAG(USE_ALLOCATOR_SHIM)
 // On macOS 10.12, the IME system attempts to allocate a 2^64 size buffer,
 // which would typically cause an OOM crash. To avoid this, the problematic
 // method is swizzled out and the make-OOM-fatal bit is disabled for the
@@ -35,7 +35,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
   base::allocator::SetCallNewHandlerOnMallocFailure(true);
 }
 @end
-#endif  // BUILDFLAG(USE_EXPERIMENTAL_ALLOCATOR_SHIM)
+#endif  // BUILDFLAG(USE_ALLOCATOR_SHIM)
 
 @implementation AtomApplicationDelegate
 
@@ -63,7 +63,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
     atom::Browser::Get()->DidFinishLaunching(*empty_info);
   }
 
-#if BUILDFLAG(USE_EXPERIMENTAL_ALLOCATOR_SHIM)
+#if BUILDFLAG(USE_ALLOCATOR_SHIM)
   // Disable fatal OOM to hack around an OS bug https://crbug.com/654695.
   if (base::mac::IsOS10_12()) {
     g_swizzle_imk_input_session = new base::mac::ScopedObjCClassSwizzler(
