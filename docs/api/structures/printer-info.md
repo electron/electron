@@ -4,6 +4,7 @@
 * `description` String
 * `status` Number
 * `isDefault` Boolean
+* `options` Object - Additional fields
 
 ## Example
 
