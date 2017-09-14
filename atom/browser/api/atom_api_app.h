@@ -101,7 +101,7 @@ class App : public AtomBrowserClient::Delegate,
  protected:
   explicit App(v8::Isolate* isolate);
   ~App() override;
-  static App* self_ = nullptr;
+  static App* self_;
 
   // BrowserObserver:
   void OnBeforeQuit(bool* prevent_default) override;

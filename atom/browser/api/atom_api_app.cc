@@ -533,6 +533,8 @@ App::~App() {
   content::BrowserChildProcessObserver::Remove(this);
 }
 
+App* App::self_ = nullptr;
+
 App* App::Get() {
   return App::self_;
 }
