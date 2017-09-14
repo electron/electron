@@ -770,6 +770,14 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
 #endif
 }
 
+void NativeWindowViews::SetSimpleFullScreen(bool simple_fullscreen) {
+  SetFullScreen(simple_fullscreen);
+}
+
+bool NativeWindowViews::IsSimpleFullScreen() {
+  return IsFullscreen();
+}
+
 void NativeWindowViews::SetKiosk(bool kiosk) {
   SetFullScreen(kiosk);
 }

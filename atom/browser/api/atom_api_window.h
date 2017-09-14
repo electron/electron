@@ -154,6 +154,8 @@ class Window : public mate::TrackableObject<Window>,
   std::string GetTitle();
   void FlashFrame(bool flash);
   void SetSkipTaskbar(bool skip);
+  void SetSimpleFullScreen(bool simple_fullscreen);
+  bool IsSimpleFullScreen();
   void SetKiosk(bool kiosk);
   bool IsKiosk();
   void SetBackgroundColor(const std::string& color_name);

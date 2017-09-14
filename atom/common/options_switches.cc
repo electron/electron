@@ -36,6 +36,8 @@ const char kSkipTaskbar[] = "skipTaskbar";
 // http://www.opera.com/support/mastering/kiosk/
 const char kKiosk[] = "kiosk";
 
+const char kSimpleFullScreen[] = "simpleFullscreen";
+
 // Make windows stays on the top of all other windows.
 const char kAlwaysOnTop[] = "alwaysOnTop";
 
