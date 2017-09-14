@@ -1085,7 +1085,7 @@ void NativeWindowMac::Show() {
                             completionHandler:^(NSModalResponse) {}];
     return;
   }
-  
+
   // Reattach the window to the parent to actually show it.
   if (parent())
     InternalSetParentWindow(parent(), true);
@@ -1101,7 +1101,7 @@ void NativeWindowMac::ShowInactive() {
   // Reattach the window to the parent to actually show it.
   if (parent())
     InternalSetParentWindow(parent(), true);
-  
+
   [window_ orderFrontRegardless];
 }
 
@@ -1111,7 +1111,7 @@ void NativeWindowMac::Hide() {
     [parent()->GetNativeWindow() endSheet:window_];
     return;
   }
-  
+
   // Deattach the window from the parent before.
   if (parent())
     InternalSetParentWindow(parent(), false);
@@ -1548,26 +1548,6 @@ void NativeWindowMac::SetBrowserView(NativeBrowserView* browser_view) {
   native_view.hidden = NO;
 }
 
-void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent, bool attach) {
-  if (is_modal())
-    return;
-  
-  NativeWindow::SetParentWindow(parent);
-  
-  // Do not remove/add if we are already properly attached.
-  if (attach && parent && [window_ parentWindow] == parent->GetNativeWindow())
-    return;
-  
-  // Remove current parent window.
-  if ([window_ parentWindow])
-    [[window_ parentWindow] removeChildWindow:window_];
-    
-  // Set new parent window.
-  // Note that this method will force the window to become visible.
-  if (parent && attach)
-    [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
-}
-
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
   InternalSetParentWindow(parent, IsVisible());
 }
@@ -1576,7 +1556,7 @@ gfx::NativeView NativeWindowMac::GetNativeView() const {
   return inspectable_web_contents()->GetView()->GetNativeView();
 }
 
-gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
+gfx::NativeWindow NativeWindowMac::GetNativeWindow() const {
   return window_;
 }
 
@@ -1816,6 +1796,26 @@ void NativeWindowMac::UpdateDraggableRegions(
   NativeWindow::UpdateDraggableRegions(regions);
   draggable_regions_ = regions;
   UpdateDraggableRegionViews(regions);
+}
+
+void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent, bool attach) {
+  if (is_modal())
+    return;
+
+  NativeWindow::SetParentWindow(parent);
+
+  // Do not remove/add if we are already properly attached.
+  if (attach && parent && [window_ parentWindow] == parent->GetNativeWindow())
+    return;
+
+  // Remove current parent window.
+  if ([window_ parentWindow])
+    [[window_ parentWindow] removeChildWindow:window_];
+
+  // Set new parent window.
+  // Note that this method will force the window to become visible.
+  if (parent && attach)
+    [parent->GetNativeWindow() addChildWindow:window_ ordered:NSWindowAbove];
 }
 
 void NativeWindowMac::ShowWindowButton(NSWindowButton button) {
