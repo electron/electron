@@ -158,6 +158,7 @@ class NativeWindowMac : public NativeWindow,
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
 
+  void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void ShowWindowButton(NSWindowButton button);
 
   void InstallView();

@@ -1273,8 +1273,12 @@ describe('BrowserWindow module', function () {
         const initialWebContents = webContents.getAllWebContents().map((i) => i.id)
         ipcRenderer.send('prevent-next-new-window', w.webContents.id)
         w.webContents.once('new-window', () => {
-          assert.deepEqual(webContents.getAllWebContents().map((i) => i.id), initialWebContents)
-          done()
+          // We need to give it some time so the windows get properly disposed (at least on OSX).
+          setTimeout(() => {
+            const currentWebContents = webContents.getAllWebContents().map((i) => i.id)
+            assert.deepEqual(currentWebContents, initialWebContents)
+            done()
+          }, 100)
         })
         w.loadURL('file://' + path.join(fixtures, 'pages', 'window-open.html'))
       })
@@ -2364,6 +2368,11 @@ describe('BrowserWindow module', function () {
           done()
         })
         c.close()
+      })
+
+      it('should not affect the show option', function () {
+        assert.equal(c.isVisible(), false)
+        assert.equal(c.getParentWindow().isVisible(), false)
       })
     })
 
