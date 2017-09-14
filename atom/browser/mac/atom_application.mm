@@ -10,13 +10,16 @@
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
 
-static inline void dispatch_sync_main(dispatch_block_t block) {
-    if ([NSThread isMainThread]) {
-        block();
-    } else {
-        dispatch_sync(dispatch_get_main_queue(), block);
-    }
+namespace {
+
+inline void dispatch_sync_main(dispatch_block_t block) {
+  if ([NSThread isMainThread])
+    block();
+  else
+    dispatch_sync(dispatch_get_main_queue(), block);
 }
+
+}  // namespace
 
 @implementation AtomApplication
 
@@ -44,7 +47,7 @@ static inline void dispatch_sync_main(dispatch_block_t block) {
       [[NSUserActivity alloc] initWithActivityType:type]);
   [currentActivity_ setUserInfo:userInfo];
   [currentActivity_ setWebpageURL:webpageURL];
-  [currentActivity_ setDelegate: self];
+  [currentActivity_ setDelegate:self];
   [currentActivity_ becomeCurrent];
   [currentActivity_ setNeedsSave:YES];
 }
@@ -54,16 +57,16 @@ static inline void dispatch_sync_main(dispatch_block_t block) {
 }
 
 - (void)invalidateCurrentActivity {
-  if (currentActivity_.get() != NULL) {
-    [currentActivity_.get() invalidate];
+  if (currentActivity_) {
+    [currentActivity_ invalidate];
     currentActivity_.reset();
   }
 }
 
-- (void)updateCurrentActivity:(NSString *)type
+- (void)updateCurrentActivity:(NSString*)type
                  withUserInfo:(NSDictionary*)userInfo {
-  if (currentActivity_.get() != NULL) {
-    [currentActivity_.get() addUserInfoEntriesFromDictionary:userInfo];
+  if (currentActivity_) {
+    [currentActivity_ addUserInfoEntriesFromDictionary:userInfo];
   }
 
   [handoffLock_ lock];
@@ -73,9 +76,7 @@ static inline void dispatch_sync_main(dispatch_block_t block) {
 }
 
 - (void)userActivityWillSave:(NSUserActivity *)userActivity {
-
   __block BOOL shouldWait = NO;
-
   dispatch_sync_main(^{
     std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
     std::unique_ptr<base::DictionaryValue> user_info =
@@ -90,7 +91,7 @@ static inline void dispatch_sync_main(dispatch_block_t block) {
     updateReceived_ = NO;
     while (!updateReceived_) {
       BOOL isSignaled = [handoffLock_ waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:1]];
-      if (!isSignaled) { break; }
+      if (!isSignaled) break;
     }
     [handoffLock_ unlock];
   }
@@ -105,7 +106,6 @@ static inline void dispatch_sync_main(dispatch_block_t block) {
     atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
     atom::Browser* browser = atom::Browser::Get();
-
     browser->UserActivityWasContinued(activity_type, *user_info);
   });
   [userActivity setNeedsSave:YES];

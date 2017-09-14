@@ -150,18 +150,18 @@ void Browser::InvalidateCurrentActivity() {
 
 void Browser::UpdateCurrentActivity(const std::string& type,
                                     const base::DictionaryValue& user_info) {
-  [[AtomApplication sharedApplication] 
+  [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
                withUserInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
 bool Browser::WillContinueUserActivity(const std::string& type) {
   bool prevent_default = false;
-    for (BrowserObserver& observer : observers_)
-      observer.OnWillContinueUserActivity(&prevent_default, type);
+  for (BrowserObserver& observer : observers_)
+    observer.OnWillContinueUserActivity(&prevent_default, type);
   return prevent_default;
 }
- 
+
 void Browser::DidFailToContinueUserActivity(const std::string& type,
                                             const std::string& error) {
   for (BrowserObserver& observer : observers_)
@@ -175,7 +175,7 @@ bool Browser::ContinueUserActivity(const std::string& type,
     observer.OnContinueUserActivity(&prevent_default, type, user_info);
   return prevent_default;
 }
-  
+
 void Browser::UserActivityWasContinued(const std::string& type,
                                        const base::DictionaryValue& user_info) {
   for (BrowserObserver& observer : observers_)

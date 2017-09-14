@@ -11,7 +11,7 @@
  @private
   BOOL handlingSendEvent_;
   base::scoped_nsobject<NSUserActivity> currentActivity_;
-  NSCondition *handoffLock_;
+  NSCondition* handoffLock_;
   BOOL updateReceived_;
 }
 
@@ -28,7 +28,7 @@
               withUserInfo:(NSDictionary*)userInfo
             withWebpageURL:(NSURL*)webpageURL;
 - (void)invalidateCurrentActivity;
-- (void)updateCurrentActivity:(NSString *)type
+- (void)updateCurrentActivity:(NSString*)type
                  withUserInfo:(NSDictionary*)userInfo;
 
 @end

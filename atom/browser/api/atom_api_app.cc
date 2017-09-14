@@ -589,28 +589,33 @@ void App::OnWillContinueUserActivity(
     const std::string& type) {
   *prevent_default = Emit("will-continue-activity", type);
 }
+
 void App::OnDidFailToContinueUserActivity(
     const std::string& type,
     const std::string& error) {
   Emit("continue-activity-error", type, error);
 }
+
 void App::OnContinueUserActivity(
     bool* prevent_default,
     const std::string& type,
     const base::DictionaryValue& user_info) {
   *prevent_default = Emit("continue-activity", type, user_info);
 }
+
 void App::OnUserActivityWasContinued(
     const std::string& type,
     const base::DictionaryValue& user_info) {
   Emit("activity-was-continued", type, user_info);
 }
+
 void App::OnUpdateUserActivityState(
     bool* prevent_default,
     const std::string& type,
     const base::DictionaryValue& user_info) {
   *prevent_default = Emit("update-activity-state", type, user_info);
 }
+
 void App::OnNewWindowForTab() {
   Emit("new-window-for-tab");
 }
