@@ -589,13 +589,9 @@ describe('webContents module', function () {
     })
   })
 
-  describe('destroy()', () => {
-    // Destroying webContents in its event listener is going to crash when
-    // Electron is built in Debug mode.
-    if (process.platform !== 'darwin') {
-      return
-    }
-
+  // Destroying webContents in its event listener is going to crash when
+  // Electron is built in Debug mode.
+  xdescribe('destroy()', () => {
     let server
 
     before(function (done) {
