@@ -1048,10 +1048,9 @@ bool ProcessSingleton::Create() {
   if (listen(sock, 5) < 0)
     NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
 
-  DCHECK(BrowserThread::IsMessageLoopValid(BrowserThread::IO));
   sock_ = sock;
-
-  if (atom::Browser::Get()->is_ready()) {
+  
+  if (BrowserThread::IsMessageLoopValid(BrowserThread::IO)) {
     StartListeningOnSocket();
   } else {
     listen_on_ready_ = true;

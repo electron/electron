@@ -74,8 +74,6 @@ class App : public AtomBrowserClient::Delegate,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  static App* Get();
-
   // Called when window with disposition needs to be created.
   void OnCreateWindow(
       const GURL& target_url,
@@ -101,7 +99,6 @@ class App : public AtomBrowserClient::Delegate,
  protected:
   explicit App(v8::Isolate* isolate);
   ~App() override;
-  static App* self_;
 
   // BrowserObserver:
   void OnBeforeQuit(bool* prevent_default) override;
@@ -116,6 +113,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnLogin(LoginHandler* login_handler,
                const base::DictionaryValue& request_details) override;
   void OnAccessibilitySupportChanged() override;
+  void OnPreMainMessageLoopRun() override;
 #if defined(OS_MACOSX)
   void OnContinueUserActivity(
       bool* prevent_default,
