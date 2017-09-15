@@ -407,7 +407,12 @@ bool NotificationCallbackWrapper(
     const base::FilePath& cwd) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(cmd, cwd);
+    // We definitely want to call this callback on the UI thread
+    content::BrowserThread::PostTask(
+      content::BrowserThread::UI,
+      FROM_HERE,
+      base::Bind(base::IgnoreResult(callback), cmd, cwd)
+    );
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
@@ -522,7 +527,6 @@ App::App(v8::Isolate* isolate) {
           base::ProcessMetrics::CreateCurrentProcessMetrics()));
   app_metrics_[pid] = std::move(process_metric);
   Init(isolate);
-  App::self_ = this;
 }
 
 App::~App() {
@@ -531,12 +535,6 @@ App::~App() {
   Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
-}
-
-App* App::self_ = nullptr;
-
-App* App::Get() {
-  return App::self_;
 }
 
 void App::OnBeforeQuit(bool* prevent_default) {
@@ -586,7 +584,7 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
   Emit("ready", launch_info);
 }
 
-void App::PreMainMessageLoopRun() {
+void App::OnPreMainMessageLoopRun() {
   if (process_singleton_) {
     process_singleton_->OnBrowserReady();
   }

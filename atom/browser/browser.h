@@ -224,6 +224,8 @@ class Browser : public WindowListObserver {
   void RequestLogin(LoginHandler* login_handler,
                     std::unique_ptr<base::DictionaryValue> request_details);
 
+  void PreMainMessageLoopRun();
+
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);
   }

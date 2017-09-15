@@ -185,7 +185,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->DidFinishLaunching(*empty_info);
 #endif
 
-  atom::api::App::Get()->PreMainMessageLoopRun();
+  Browser::Get()->PreMainMessageLoopRun();
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
