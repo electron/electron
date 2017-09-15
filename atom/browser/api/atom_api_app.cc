@@ -407,8 +407,7 @@ bool NotificationCallbackWrapper(
     content::BrowserThread::PostTask(
       content::BrowserThread::UI,
       FROM_HERE,
-      base::Bind(base::IgnoreResult(callback), cmd, cwd)
-    );
+      base::Bind(base::IgnoreResult(callback), cmd, cwd));
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
