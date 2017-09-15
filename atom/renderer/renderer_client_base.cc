@@ -89,6 +89,22 @@ void RendererClientBase::RenderThreadStarted() {
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
   blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
+  WTF::String extension_scheme("chrome-extension");
+  // Extension resources are HTTP-like and safe to expose to the fetch API. The
+  // rules for the fetch API are consistent with XHR.
+  blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI(
+      extension_scheme);
+  // Extension resources, when loaded as the top-level document, should bypass
+  // Blink's strict first-party origin checks.
+  blink::SchemeRegistry::RegisterURLSchemeAsFirstPartyWhenTopLevel(
+      extension_scheme);
+  // In Chrome we should set extension's origins to match the pages they can
+  // work on, but in Electron currently we just let extensions do anything.
+  blink::SchemeRegistry::RegisterURLSchemeAsSecure(extension_scheme);
+  blink::SchemeRegistry::RegisterURLSchemeAsCORSEnabled(extension_scheme);
+  blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
+      extension_scheme);
+
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
       ParseSchemesCLISwitch(switches::kSecureSchemes);
