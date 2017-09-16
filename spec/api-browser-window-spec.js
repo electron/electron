@@ -1025,7 +1025,7 @@ describe('BrowserWindow module', () => {
       it('can add and remove multiple session preload script', function () {
         var preload = path.join(fixtures, 'module', 'set-global.js')
         var preload2 = path.join(fixtures, 'module', 'set-global-2.js')
-        const mSession = session.defaultSession;
+        const mSession = session.defaultSession
         assert.deepEqual(mSession.getPreloads(), [])
         mSession.addPreload(preload)
         assert.deepEqual(mSession.getPreloads(), [preload])
@@ -1040,7 +1040,7 @@ describe('BrowserWindow module', () => {
       it('loads the script before other scripts in window including normal preloads', function (done) {
         var preload = path.join(fixtures, 'module', 'set-global.js')
         var preload2 = path.join(fixtures, 'module', 'set-global-2.js')
-        const mSession = session.defaultSession;
+        const mSession = session.defaultSession
         ipcMain.once('answer', function (event, test) {
           mSession.removePreload(preload2)
           assert.equal(test, 'preload2')
