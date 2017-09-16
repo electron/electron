@@ -9,7 +9,7 @@ const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
-const {app, ipcMain, BrowserWindow, BrowserView, protocol, webContents} = remote
+const {app, ipcMain, BrowserWindow, BrowserView, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
@@ -1021,31 +1021,33 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('global preload scripts', function () {
-      it('can add and remove multiple global preload script', function () {
+    describe.only('session preload scripts', function () {
+      it('can add and remove multiple session preload script', function () {
         var preload = path.join(fixtures, 'module', 'set-global.js')
         var preload2 = path.join(fixtures, 'module', 'set-global-2.js')
-        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [])
-        BrowserWindow.addGlobalPreload(preload)
-        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [preload])
-        BrowserWindow.addGlobalPreload(preload2)
-        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [preload, preload2])
-        BrowserWindow.removeGlobalPreload(preload)
-        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [preload2])
-        BrowserWindow.removeGlobalPreload(preload2)
-        assert.deepEqual(BrowserWindow.getGlobalPreloads(), [])
+        const mSession = session.defaultSession;
+        assert.deepEqual(mSession.getPreloads(), [])
+        mSession.addPreload(preload)
+        assert.deepEqual(mSession.getPreloads(), [preload])
+        mSession.addPreload(preload2)
+        assert.deepEqual(mSession.getPreloads(), [preload, preload2])
+        mSession.removePreload(preload)
+        assert.deepEqual(mSession.getPreloads(), [preload2])
+        mSession.removePreload(preload2)
+        assert.deepEqual(mSession.getPreloads(), [])
       })
 
       it('loads the script before other scripts in window including normal preloads', function (done) {
         var preload = path.join(fixtures, 'module', 'set-global.js')
         var preload2 = path.join(fixtures, 'module', 'set-global-2.js')
+        const mSession = session.defaultSession;
         ipcMain.once('answer', function (event, test) {
-          BrowserWindow.removeGlobalPreload(preload2)
+          mSession.removePreload(preload2)
           assert.equal(test, 'preload2')
           done()
         })
         w.destroy()
-        BrowserWindow.addGlobalPreload(preload2)
+        mSession.addPreload(preload2)
         w = new BrowserWindow({
           show: false,
           webPreferences: {

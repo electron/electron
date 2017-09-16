@@ -680,6 +680,18 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
 }
 
+void Session::AddPreload(const base::FilePath::StringType& preloadPath) {
+  g_preloads.push_back(preloadPath);
+}
+void Session::RemovePreload(const base::FilePath::StringType& preloadPath) {
+  g_preloads.erase(
+    std::remove(g_preloads.begin(), g_preloads.end(), preloadPath),
+    g_preloads.end());
+}
+std::vector<base::FilePath::StringType> Session::GetPreloads() {
+  return g_preloads;
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = Cookies::Create(isolate, browser_context());
@@ -766,6 +778,9 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("createInterruptedDownload",
                  &Session::CreateInterruptedDownload)
+      .SetMethod("addPreload", &Session::AddPreload)
+      .SetMethod("removePreload", &Session::RemovePreload)
+      .SetMethod("getPreloads", &Session::GetPreloads)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);

@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_manager.h"
@@ -137,7 +139,9 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       LOG(ERROR) << "preload url must be file:// protocol.";
   }
 
-  for (auto preloadPath : atom::api::Window::GetGlobalPreloads()) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  mate::Handle<atom::api::WebContents> api_web_contents = atom::api::WebContents::CreateFrom(isolate, web_contents);
+  for (auto preloadPath : atom::api::Session::CreateFrom(isolate, api_web_contents.get()->GetBrowserContext())->GetPreloads()) {
     if (base::FilePath(preloadPath).IsAbsolute())
       command_line->AppendSwitchNative(switches::kGlobalPreloadScript,
                                        preloadPath);
