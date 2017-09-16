@@ -1021,7 +1021,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe.only('session preload scripts', function () {
+    describe('session preload scripts', function () {
       it('can add and remove multiple session preload script', function () {
         var preload = path.join(fixtures, 'module', 'set-global.js')
         var preload2 = path.join(fixtures, 'module', 'set-global-2.js')
