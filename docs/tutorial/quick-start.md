@@ -175,12 +175,6 @@ electron .
 
 If you've installed it locally, then run:
 
-#### Node v8.2.0 and later
-
-```
-$ npx electron .
-```
-
 #### macOS / Linux
 
 ```bash
@@ -191,6 +185,12 @@ $ ./node_modules/.bin/electron .
 
 ```
 $ .\node_modules\.bin\electron .
+```
+
+#### Node v8.2.0 and later
+
+```
+$ npx electron .
 ```
 
 ### Manually Downloaded Electron Binary
