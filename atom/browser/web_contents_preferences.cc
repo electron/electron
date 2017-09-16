@@ -143,7 +143,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   mate::Handle<atom::api::WebContents> api_web_contents = atom::api::WebContents::CreateFrom(isolate, web_contents);
   for (auto preloadPath : atom::api::Session::CreateFrom(isolate, api_web_contents.get()->GetBrowserContext())->GetPreloads()) {
     if (base::FilePath(preloadPath).IsAbsolute())
-      command_line->AppendSwitchNative(switches::kGlobalPreloadScript,
+      command_line->AppendSwitchNative(switches::kSessionPreloadScript,
                                        preloadPath);
     else
       LOG(ERROR) << "preload script must have absolute path.";
