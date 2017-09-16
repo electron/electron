@@ -368,7 +368,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
                          const std::vector<base::string16>& labels);
 
  private:
-
   uint32_t GetNextRequestId() {
     return ++request_id_;
   }

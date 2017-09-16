@@ -140,8 +140,11 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   }
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  mate::Handle<atom::api::WebContents> api_web_contents = atom::api::WebContents::CreateFrom(isolate, web_contents);
-  for (auto preloadPath : atom::api::Session::CreateFrom(isolate, api_web_contents.get()->GetBrowserContext())->GetPreloads()) {
+  mate::Handle<atom::api::WebContents> api_web_contents =
+    atom::api::WebContents::CreateFrom(isolate, web_contents);
+  auto session = atom::api::Session::CreateFrom(
+    isolate, api_web_contents.get()->GetBrowserContext());
+  for (auto preloadPath : session->GetPreloads()) {
     if (base::FilePath(preloadPath).IsAbsolute())
       command_line->AppendSwitchNative(switches::kSessionPreloadScript,
                                        preloadPath);

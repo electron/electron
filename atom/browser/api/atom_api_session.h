@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_SESSION_H_
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_blob_reader.h"
