@@ -200,7 +200,6 @@ child.once('ready-to-show', () => {
 * `experimentalFeatures` Boolean - 开启 Chromium 的 可测试 特性.
   默认为 `false`.
 * `experimentalCanvasFeatures` Boolean - 开启 Chromium 的 canvas 可测试特性. 默认为 `false`.
-* `directWrite` Boolean - 开启窗口的 DirectWrite font 渲染系统. 默认为 `true`.
 * `blinkFeatures` String - 以 `,` 分隔的特性列表, 如
   `CSSVariables,KeyboardEventKey`. 被支持的所有特性可在 [setFeatureEnabledFromString][blink-feature-string]
   中找到.

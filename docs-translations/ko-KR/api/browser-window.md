@@ -245,8 +245,6 @@ On Windows it is
     기본값은 `false`입니다.
   * `experimentalCanvasFeatures` Boolean - Chrome의 실험적인 캔버스(canvas)
     기능을 활성화합니다. 기본값은 `false`입니다.
-  * `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
-    사용하는지를 지정합니다. 기본값은 `true`입니다.
   * `scrollBounce` Boolean - macOS에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화
     합니다. 기본값은 `false`입니다.
   * `blinkFeatures` String - 활성화 할 `CSSVariables,KeyboardEventKey`같이 `,`로
