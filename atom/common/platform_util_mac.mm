@@ -117,100 +117,23 @@ bool ShowItemInFolder(const base::FilePath& path) {
   return true;
 }
 
-// This function opens a file.  This doesn't use LaunchServices or NSWorkspace
-// because of two bugs:
-//  1. Incorrect app activation with com.apple.quarantine:
-//     http://crbug.com/32921
-//  2. Silent no-op for unassociated file types: http://crbug.com/50263
-// Instead, an AppleEvent is constructed to tell the Finder to open the
-// document.
 bool OpenItem(const base::FilePath& full_path) {
   DCHECK([NSThread isMainThread]);
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   if (!path_string)
     return false;
 
-  // Create the target of this AppleEvent, the Finder.
-  base::mac::ScopedAEDesc<AEAddressDesc> address;
-  const OSType finderCreatorCode = 'MACS';
-  OSErr status = AECreateDesc(typeApplSignature,  // type
-                              &finderCreatorCode,  // data
-                              sizeof(finderCreatorCode),  // dataSize
-                              address.OutPointer());  // result
-  if (status != noErr) {
-    OSSTATUS_LOG(WARNING, status) << "Could not create OpenItem() AE target";
+  NSURL* url = [NSURL fileURLWithPath:path_string];
+  if (!url)
     return false;
-  }
 
-  // Build the AppleEvent data structure that instructs Finder to open files.
-  base::mac::ScopedAEDesc<AppleEvent> theEvent;
-  status = AECreateAppleEvent(kCoreEventClass,  // theAEEventClass
-                              kAEOpenDocuments,  // theAEEventID
-                              address,  // target
-                              kAutoGenerateReturnID,  // returnID
-                              kAnyTransactionID,  // transactionID
-                              theEvent.OutPointer());  // result
-  if (status != noErr) {
-    OSSTATUS_LOG(WARNING, status) << "Could not create OpenItem() AE event";
-    return false;
-  }
-
-  // Create the list of files (only ever one) to open.
-  base::mac::ScopedAEDesc<AEDescList> fileList;
-  status = AECreateList(nullptr,  // factoringPtr
-                        0,  // factoredSize
-                        false,  // isRecord
-                        fileList.OutPointer());  // resultList
-  if (status != noErr) {
-    OSSTATUS_LOG(WARNING, status) << "Could not create OpenItem() AE file list";
-    return false;
-  }
-
-  // Add the single path to the file list.  C-style cast to avoid both a
-  // static_cast and a const_cast to get across the toll-free bridge.
-  CFURLRef pathURLRef = base::mac::NSToCFCast(
-      [NSURL fileURLWithPath:path_string]);
-  FSRef pathRef;
-  if (CFURLGetFSRef(pathURLRef, &pathRef)) {
-    status = AEPutPtr(fileList.OutPointer(),  // theAEDescList
-                      0,  // index
-                      typeFSRef,  // typeCode
-                      &pathRef,  // dataPtr
-                      sizeof(pathRef));  // dataSize
-    if (status != noErr) {
-      OSSTATUS_LOG(WARNING, status)
-          << "Could not add file path to AE list in OpenItem()";
-      return false;
-    }
-  } else {
-    LOG(WARNING) << "Could not get FSRef for path URL in OpenItem()";
-    return false;
-  }
-
-  // Attach the file list to the AppleEvent.
-  status = AEPutParamDesc(theEvent.OutPointer(),  // theAppleEvent
-                          keyDirectObject,  // theAEKeyword
-                          fileList);  // theAEDesc
-  if (status != noErr) {
-    OSSTATUS_LOG(WARNING, status)
-        << "Could not put the AE file list the path in OpenItem()";
-    return false;
-  }
-
-  // Send the actual event.  Do not care about the reply.
-  base::mac::ScopedAEDesc<AppleEvent> reply;
-  status = AESend(theEvent,  // theAppleEvent
-                  reply.OutPointer(),  // reply
-                  kAENoReply + kAEAlwaysInteract,  // sendMode
-                  kAENormalPriority,  // sendPriority
-                  kAEDefaultTimeout,  // timeOutInTicks
-                  nullptr, // idleProc
-                  nullptr);  // filterProc
-  if (status != noErr) {
-    OSSTATUS_LOG(WARNING, status)
-        << "Could not send AE to Finder in OpenItem()";
-  }
-  return status == noErr;
+  const NSWorkspaceLaunchOptions launch_options =
+      NSWorkspaceLaunchAsync | NSWorkspaceLaunchWithErrorPresentation;
+  return [[NSWorkspace sharedWorkspace] openURLs:@[ url ]
+                  withAppBundleIdentifier:nil
+                                  options:launch_options
+           additionalEventParamDescriptor:nil
+                        launchIdentifiers:NULL];
 }
 
 bool OpenExternal(const GURL& url, bool activate) {
