@@ -720,8 +720,7 @@ ProcessSingleton::ProcessSingleton(
     const base::FilePath& user_data_dir,
     const NotificationCallback& notification_callback)
     : notification_callback_(notification_callback),
-      current_pid_(base::GetCurrentProcId()),
-      watcher_(new LinuxWatcher(this)) {
+      current_pid_(base::GetCurrentProcId()) {
   // The user_data_dir may have not been created yet.
   base::CreateDirectoryAndGetError(user_data_dir, nullptr);
 
@@ -883,6 +882,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
 }
 
 void ProcessSingleton::StartListeningOnSocket() {
+  watcher_ = new LinuxWatcher(this);
   BrowserThread::PostTask(
       BrowserThread::IO,
       FROM_HERE,
@@ -1049,7 +1049,7 @@ bool ProcessSingleton::Create() {
     NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
 
   sock_ = sock;
-  
+
   if (BrowserThread::IsMessageLoopValid(BrowserThread::IO)) {
     StartListeningOnSocket();
   } else {
