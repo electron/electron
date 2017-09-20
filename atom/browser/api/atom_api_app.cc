@@ -407,11 +407,7 @@ bool NotificationCallbackWrapper(
     const base::FilePath& cwd) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    // We definitely want to call this callback on the UI thread
-    content::BrowserThread::PostTask(
-      content::BrowserThread::UI,
-      FROM_HERE,
-      base::Bind(base::IgnoreResult(callback), cmd, cwd));
+    callback.Run(cmd, cwd);
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
