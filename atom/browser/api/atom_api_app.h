@@ -94,6 +94,7 @@ class App : public AtomBrowserClient::Delegate,
   base::FilePath GetAppPath() const;
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessDisconnected(base::ProcessId host_pid);
+  void PreMainMessageLoopRun();
 
  protected:
   explicit App(v8::Isolate* isolate);
@@ -112,6 +113,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnLogin(LoginHandler* login_handler,
                const base::DictionaryValue& request_details) override;
   void OnAccessibilitySupportChanged() override;
+  void OnPreMainMessageLoopRun() override;
 #if defined(OS_MACOSX)
   void OnWillContinueUserActivity(
       bool* prevent_default,

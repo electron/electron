@@ -579,6 +579,12 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
   Emit("ready", launch_info);
 }
 
+void App::OnPreMainMessageLoopRun() {
+  if (process_singleton_) {
+    process_singleton_->OnBrowserReady();
+  }
+}
+
 void App::OnAccessibilitySupportChanged() {
   Emit("accessibility-support-changed", IsAccessibilitySupportEnabled());
 }
