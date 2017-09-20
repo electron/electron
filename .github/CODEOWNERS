@@ -1,0 +1,16 @@
+# https://help.github.com/articles/about-codeowners/
+# Order is important. The last matching pattern has the most precedence.
+
+# Everything that falls through the cracks:
+* @electron/reviewers
+
+**browser_view** @electron/browserview
+**notification** @electron/notifications
+**pdf** @electron/printing
+**printing** @electron/printing
+**updater** @electron/updater
+
+default_app/** @electron/docs
+docs/** @electron/docs
+docs-translations/** @electron/i18n
+npm/** @electron/hubbers
