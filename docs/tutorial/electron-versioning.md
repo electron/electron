@@ -1,87 +1,93 @@
 # Electron Versioning
 
+## Overview of Semantic Versioning
+
 If you've been using Node and npm for a while, you are probably aware of [Semantic Versioning], or SemVer for short. It's a convention for specifying version numbers for software that helps communicate intentions to the users of your software.
 
-Due to its dependency on Node and Chromium, it is not possible for the Electron
-project to adhere to a strict [Semantic Versioning] policy. **You should 
-therefore always reference a specific version of Electron** in your
-`package.json` file.
+Semantic versions are always made up of three numbers:
 
-Electron version numbers are bumped using the following rules:
-
-* **Major** is for breaking changes in Electron's API. If you upgrade from `0.37.0`
-  to `1.0.0`, you will have to make changes to your app.
-* **Minor** is for major Chrome and minor Node upgrades, or significant Electron
-  changes. If you upgrade from `1.5.0` to `1.6.0`, your app should
-  still work, but you might have to work around small changes.
-* **Patch** is for new features and bug fixes. If you upgrade from `1.6.2` to
-  `1.6.3`, your app should continue to work as-is.
-
-We recommend that you set a fixed version when installing Electron from npm:
-
-```sh
-npm install electron --save-exact --save-dev
+```
+major.minor.patch
 ```
 
-The `--save-exact` flag will add `electron` to your `package.json` file _without
-a range identifier_ like `^` or `~`, e.g. `1.6.2` instead of `^1.6.2`. This 
-practice ensures that all upgrades of Electron are a manual operation made by 
-you, the developer.
+Semantic version numbers are bumped (incremented) using the following rules:
 
-Alternatively, you can use the `~` prefix in your SemVer range, like `~1.6.2`.
-This will lock your major and minor version, but allow new patch versions to
-be installed.
+* **Major** is for changes that break backwards compatibility.
+* **Minor** is for new features that don't break backwards compatibility.
+* **Patch** is for bug fixes and other minor changes.
 
-## Prereleases
+A simple mnemonic for remembering this scheme is as follows:
 
-Starting at version 1.8, unstable releases of Electron have a suffix called a
-[pre-release identifier] appended to their version number, 
-e.g. `1.8.0-beta.0`. A version may have many prereleases before it is 
-considered stable, e.g. `1.8.0-beta.0`, `1.8.0-beta.1`, and eventually `1.8.0`.
-
-When major, minor, and patch are equal, a pre-release version has lower 
-precedence than a [normal version], e.g. `1.8.0-beta.0 < 1.8.0`. This is 
-convenient because it allows you to use a range like `^1.8.0` and know 
-that it will never match an unstable pre-release version.
-
-## Distribution tags
-
-Electron supports three streams of development versions, each of which is identified by using an [npm dist tag]:
-
-- **`prev`**: denotes the version of Electron that is _one minor_ behind the `latest`
-- **`latest`**: denotes the _latest stable_ version
-- **`next`**: denotes the _upcoming (maybe unstable)_ version
-
-A `dist-tag` can be used when installing Electron as a reference to a version instead of using a specific version number:
-
-```sh
-npm install electron@<dist-tag>
+```
+breaking.feature.fix
 ```
 
-**Note:** if unspecified, `latest` will be used. 
+## Before Version 2
 
-## Stable Releases
+Before version 2 of Electron we didn't follow SemVer, instead the following was used:
 
-In general, a version is considered stable after its most recent 
-[prerelease](#prereleases) has been out for two weeks and any significant bugs 
-reported against it have been fixed. Note that versions are not promoted on a 
-set schedule, and timing can fluctuate per release.
+- **Major**: Breaking changes to Electron's API
+- **Minor**: Major Chrome, minor node or "significant" Electron changes
+- **Patch**: New features and bug fixes
 
-We recommend using the following command to ensure you're using a stable 
-version of Electron:
+This system had a number of drawbacks, such as:
 
-```sh
-npm install electron --save-exact --save-dev
+- New bugs could be introduced into a new patch version because patch versions added features
+- It didn't follow SemVer so it could confuse consumers
+- It wasn't clear what the differences between stable and beta builds were
+- The lack of a formalized stabilization process and release schedule lead to sporadic releases and betas that could last several months 
+
+## Version 2 and Beyond
+
+From version 2, Electron will attempt to adhere to SemVer and follow a release schedule and stabilization process similar to that of Chromium's that addresses some of the issues some Electron apps were experiencing.
+
+*Some of the numbers below may change after a few versions.*
+
+### Version Change Rules
+
+In order to reduce ambiguity in what changes between releases, Electron is going to attempt to align to SemVer as much as possible. Here are the general rules that will be followed:
+
+| Type of change | Version increase
+|---|---
+| Chromium version update | Major
+| Node *major* version update | Major
+| Node *minor* version update | Minor
+| Electron breaking API change | Major
+| Electron non-breaking API change | Minor
+| Electron bug fix | Patch
+| Anything sufficiently "risky"\* | Major
+
+\* The idea here is to attempt to mitigate regressions in minor and patch versions so applications can update as easily as possible. An example of a risky change is changing the way that builds are linked.
+
+Because SemVer is followed, it's recommended that you lock your electron dependency to the minor version using the `~` annotation. This will allow new patch versions (bug fixes) to be updated automatically.
+
+### The Release Schedule
+
+![](../images/tutorial-release-schedule.svg)
+
+Here are some important points to call out:
+
+- A new release is performed approximately weekly
+- Minor versions are branched off of master for stabilization
+- The stabilization period is approximately weekly
+- Important bug fixes are cherry picked to stabilization branches after landing in master
+- Features are not cherry picked, a minor version should only get *more stable* with its patch versions
+- There is little difference in the release schedule between a major and minor release, other than the risk/effort it may take for third parties to adopt
+- Chromium updates will be performed as fast as the team can manage, in an ideal world this would happen every 6 weeks to align with [Chromium's release schedule][Chromium release]
+- Excluding exceptional circumstances, only the previous stable build will get backported bug fixes.
+
+### The Beta Process
+
+Electron relies on its consumers getting involved in stabilization. The short target stabilization period and rapid release cadence was designed to shipping security and bug fixes out fast and to encourage the automation of testing.
+
+You can install the beta by specifying the `beta` dist tag when installing via npm:
+
 ```
-
-If you have an existing Electron app and want to update it to use the latest 
-stable version of `electron`, use the `@latest` identifier:
-
-```sh
-npm install electron@latest --save-exact --save-dev
+npm install electron@beta
 ```
 
 [Semantic Versioning]: http://semver.org
 [pre-release identifier]: http://semver.org/#spec-item-9
 [npm dist tag]: https://docs.npmjs.com/cli/dist-tag
 [normal version]: http://semver.org/#spec-item-2
+[Chromium release]: https://www.chromium.org/developers/calendar
