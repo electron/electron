@@ -26,7 +26,7 @@ bool Send(IPC::Message* message) {
 }
 
 void ReleaseProcessIfNeeded() {
-  content::UtilityThread::Get()->ReleaseProcessIfNeeded();
+  content::UtilityThread::Get()->ReleaseProcess();
 }
 
 void PreCacheFontCharacters(const LOGFONT* logfont,
@@ -67,15 +67,15 @@ void PrintingHandlerWin::OnRenderPDFPagesToMetafile(
   int postscript_level;
   switch (pdf_rendering_settings_.mode) {
     case PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2:
-      postscript_level = 2;
+      postscript_level = chrome_pdf::PrintingMode::kPostScript2;
       break;
     case PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3:
-      postscript_level = 3;
+      postscript_level = chrome_pdf::PrintingMode::kPostScript3;
       break;
     default:
-      postscript_level = 0;  // Not using postscript.
+      postscript_level = chrome_pdf::PrintingMode::kEmf;  // Not using postscript.
   }
-  chrome_pdf::SetPDFPostscriptPrintingLevel(postscript_level);
+  chrome_pdf::SetPDFUsePrintMode(postscript_level);
 
   base::File pdf_file = IPC::PlatformFileForTransitToFile(pdf_transit);
   int page_count = LoadPDF(std::move(pdf_file));
