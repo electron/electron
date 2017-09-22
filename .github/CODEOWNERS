@@ -1,16 +1,20 @@
-# https://help.github.com/articles/about-codeowners/
-# Order is important. The last matching pattern has the most precedence.
+# Order is important. The LAST matching pattern has the MOST precedence.
+# gitignore style patterns are used, not globs.
+# https://help.github.com/articles/about-codeowners
+# https://git-scm.com/docs/gitignore
 
 # Everything that falls through the cracks:
 * @electron/reviewers
 
-**browser_view** @electron/browserview
-**notification** @electron/notifications
-**pdf** @electron/printing
-**printing** @electron/printing
-**updater** @electron/updater
+# filename patterns
+*browser_view* @electron/browserview
+*notification* @electron/notifications
+*pdf* @electron/printing
+*printing* @electron/printing
+*updater* @electron/updater
 
-default_app/** @electron/docs
-docs/** @electron/docs
-docs-translations/** @electron/i18n
-npm/** @electron/hubbers
+# directories
+/default_app/ @electron/docs
+/docs/ @electron/docs
+/docs-translations/ @electron/i18n
+/npm/ @electron/hubbers
