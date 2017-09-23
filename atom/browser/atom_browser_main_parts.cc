@@ -4,6 +4,7 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
+#include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_client.h"
@@ -183,6 +184,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   std::unique_ptr<base::DictionaryValue> empty_info(new base::DictionaryValue);
   Browser::Get()->DidFinishLaunching(*empty_info);
 #endif
+
+  Browser::Get()->PreMainMessageLoopRun();
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {

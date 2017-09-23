@@ -149,6 +149,34 @@ describe('app module', function () {
     })
   })
 
+  describe('app.makeSingleInstance', function () {
+    it('prevents the second launch of app', function (done) {
+      this.timeout(120000)
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
+      // First launch should exit with 0.
+      let secondLaunched = false
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath])
+      let launchOnce = true
+      first.stdout.on('data', (data) => {
+        if (data.toString().trim() === 'launched' && launchOnce) {
+          launchOnce = false
+          // Second launch should exit with 1.
+          const second = ChildProcess.spawn(remote.process.execPath, [appPath])
+          second.once('exit', (code) => {
+            assert.ok(!secondLaunched)
+            assert.equal(code, 1)
+            secondLaunched = true
+          })
+        }
+      })
+      first.once('exit', (code) => {
+        assert.ok(secondLaunched)
+        assert.equal(code, 0)
+        done()
+      })
+    })
+  })
+
   describe('app.relaunch', function () {
     let server = null
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch'
@@ -211,6 +239,7 @@ describe('app module', function () {
   describe('app.importCertificate', function () {
     if (process.platform !== 'linux') return
 
+    this.timeout(120000)
     var w = null
 
     afterEach(function () {
