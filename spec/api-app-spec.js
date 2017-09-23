@@ -239,6 +239,7 @@ describe('app module', function () {
   describe('app.importCertificate', function () {
     if (process.platform !== 'linux') return
 
+    this.timeout(120000)
     var w = null
 
     afterEach(function () {
