@@ -1,6 +1,6 @@
 const {app} = require('electron')
 
-process.send({ status: 'launched' })
+console.log('launched')
 
 process.on('uncaughtException', () => {
   app.exit(2)

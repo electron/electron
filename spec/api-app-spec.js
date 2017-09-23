@@ -156,8 +156,8 @@ describe('app module', function () {
       // First launch should exit with 0.
       let secondLaunched = false
       const first = ChildProcess.spawn(remote.process.execPath, [appPath])
-      first.once('message', (message) => {
-        assert.equal(message, { status: 'launched' })
+      first.stdout.once('data', (data) => {
+        assert.equal(data, 'launched')
         // Second launch should exit with 1.
         const second = ChildProcess.spawn(remote.process.execPath, [appPath])
         second.once('exit', (code) => {
