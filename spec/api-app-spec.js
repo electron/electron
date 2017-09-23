@@ -156,15 +156,18 @@ describe('app module', function () {
       // First launch should exit with 0.
       let secondLaunched = false
       const first = ChildProcess.spawn(remote.process.execPath, [appPath])
-      first.stdout.once('data', (data) => {
-        assert.equal(data, 'launched')
-        // Second launch should exit with 1.
-        const second = ChildProcess.spawn(remote.process.execPath, [appPath])
-        second.once('exit', (code) => {
-          assert.ok(!secondLaunched)
-          assert.equal(code, 1)
-          secondLaunched = true
-        })
+      let launchOnce = true
+      first.stdout.on('data', (data) => {
+        if (data.toString().trim() === 'launched' && launchOnce) {
+          launchOnce = false
+          // Second launch should exit with 1.
+          const second = ChildProcess.spawn(remote.process.execPath, [appPath])
+          second.once('exit', (code) => {
+            assert.ok(!secondLaunched)
+            assert.equal(code, 1)
+            secondLaunched = true
+          })
+        }
       })
       first.once('exit', (code) => {
         assert.ok(secondLaunched)
