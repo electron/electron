@@ -56,8 +56,9 @@ will [trigger the release process](https://github.com/electron/electron/blob/796
 
 To monitor the build progress, see the following pages:
 
-- [208.52.191.140:8080/view/All/builds](http://208.52.191.140:8080/view/All/builds) for Mac and Windows
-- [jenkins.githubapp.com/label/chromium/](https://jenkins.githubapp.com/label/chromium/) for Linux
+- [208.52.191.140:8080/view/All/builds](http://208.52.191.140:8080/view/All/builds) for Mac
+- [https://circleci.com/gh/electron](https://circleci.com/gh/electron) for Linux
+- [https://windows-ci.electronjs.org/project/AppVeyor/electron] for Windows
 
 ## Compile release notes
 
@@ -237,8 +238,8 @@ Then edit the release on GitGub:
 In the case of a corrupted release with broken CI machines, we might have to
 re-upload the binaries for an already published release.
 
-The first step is to go to the 
-[Releases](https://github.com/electron/electron/releases) page and delete the 
+The first step is to go to the
+[Releases](https://github.com/electron/electron/releases) page and delete the
 corrupted binaries with the `SHASUMS256.txt` checksum file.
 
 Then manually create distributions for each platform and upload them:
