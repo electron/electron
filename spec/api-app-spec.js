@@ -434,7 +434,7 @@ describe('app module', function () {
     })
   })
 
-  describe('select-client-certificate event', function () {
+  xdescribe('select-client-certificate event', function () {
     let w = null
 
     beforeEach(function () {
