@@ -137,7 +137,7 @@ int BrowserX11IOErrorHandler(Display* d) {
     // Wait for the UI thread (which has a different connection to the X server)
     // to get the error. We can't call shutdown from this thread without
     // tripping an error. Doing it through a function so that we'll be able
-    // to see it in any crash dumps.back
+    // to see it in any crash dumps.
     WaitingForUIThreadToHandleIOError();
     return 0;
   }
