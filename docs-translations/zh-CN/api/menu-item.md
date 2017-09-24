@@ -71,7 +71,7 @@ Roles 允许菜单项有预定义的行为。最好为每个菜单项指定一�
 * `help` - "Help" 菜单项
 * `services` - "Services" 菜单项
 
-当在 macOS 上指定 `role' 时，`label` 和 `accelerator` 是影响MenuItem的唯一的选项
+当在 macOS 上指定 `role` 时，`label` 和 `accelerator` 是影响MenuItem的唯一的选项
 所有其他选项将被忽略。
 
 ### 实例属性
