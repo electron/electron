@@ -49,6 +49,7 @@ The following methods are available on instances of `WebRequest`:
     * `id` Integer
     * `url` String
     * `method` String
+    * `webContentsId` Integer (optional)
     * `resourceType` String
     * `timestamp` Double
     * `uploadData` [UploadData[]](structures/upload-data.md)
@@ -80,6 +81,7 @@ TCP connection is made to the server, but before any http data is sent.
   * `id` Integer
   * `url` String
   * `method` String
+  * `webContentsId` Integer (optional)
   * `resourceType` String
   * `timestamp` Double
   * `requestHeaders` Object
@@ -101,6 +103,7 @@ The `callback` has to be called with an `response` object.
     * `id` Integer
     * `url` String
     * `method` String
+    * `webContentsId` Integer (optional)
     * `resourceType` String
     * `timestamp` Double
     * `requestHeaders` Object
@@ -120,9 +123,10 @@ The `listener` will be called with `listener(details, callback)` when HTTP
 response headers of a request have been received.
 
 * `details` Object
-  * `id` String
+  * `id` Integer
   * `url` String
   * `method` String
+  * `webContentsId` Integer (optional)
   * `resourceType` String
   * `timestamp` Double
   * `statusLine` String
@@ -149,6 +153,7 @@ The `callback` has to be called with an `response` object.
     * `id` Integer
     * `url` String
     * `method` String
+    * `webContentsId` Integer (optional)
     * `resourceType` String
     * `timestamp` Double
     * `responseHeaders` Object
@@ -168,9 +173,10 @@ and response headers are available.
         requests that do not match the URL patterns.
 * `listener` Function
   * `details` Object
-    * `id` String
+    * `id` Integer
     * `url` String
     * `method` String
+    * `webContentsId` Integer (optional)
     * `resourceType` String
     * `timestamp` Double
     * `redirectURL` String
@@ -193,6 +199,7 @@ redirect is about to occur.
     * `id` Integer
     * `url` String
     * `method` String
+    * `webContentsId` Integer (optional)
     * `resourceType` String
     * `timestamp` Double
     * `responseHeaders` Object
@@ -213,6 +220,7 @@ completed.
     * `id` Integer
     * `url` String
     * `method` String
+    * `webContentsId` Integer (optional)
     * `resourceType` String
     * `timestamp` Double
     * `fromCache` Boolean
