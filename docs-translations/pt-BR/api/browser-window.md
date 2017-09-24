@@ -80,7 +80,6 @@ Ela cria uma nova `BrowserWindow` com propriedades nativas definidas pelo `optio
   * `overlayScrollbars` Boolean - Habilita sobreposição das barras de rolagem. O padrão é `false`.
   * `overlayFullscreenVideo` Boolean - Habilita sobreposição do vídeo em tela cheia. O padrão é `false`.
   * `sharedWorker` Boolean - Habilita suporte a *Shared Worker*. O padrão é `false`.
-  * `directWrite` Boolean - Habilita o sistema de renderização de fontes *DirectWrite* no Windows. O padrão é `true`.
   * `pageVisibility` Boolean - A página é forçada a permanecer visível ou oculta quando definido, em vez de refletir a visibilidade atual da janela. Usuários podem definir como `true` para evitar que os temporizadores do *DOM* sejam suprimidos. O padrão é `false`.
 
 ## Eventos
