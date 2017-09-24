@@ -236,7 +236,7 @@ describe('app module', function () {
     })
   })
 
-  describe('app.importCertificate', function () {
+  xdescribe('app.importCertificate', function () {
     if (process.platform !== 'linux') return
 
     this.timeout(120000)
