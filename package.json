@@ -7,6 +7,7 @@
     "electabul": "~0.0.4",
     "electron-docs-linter": "^2.3.3",
     "electron-typescript-definitions": "1.2.7",
+    "github": "^9.2.0",
     "request": "*",
     "standard": "^8.4.0",
     "standard-markdown": "^2.1.1"
