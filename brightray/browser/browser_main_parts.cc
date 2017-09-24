@@ -60,8 +60,8 @@
 
 namespace brightray {
 
-// defined in browser_main_parts_mac
 void OverrideMacAppLogsPath();
+void OverrideWinAppLogsPath();
 
 namespace {
 
