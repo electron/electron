@@ -107,7 +107,7 @@ void OverrideWinAppLogsPath() {
 
 void OverrideLinuxAppLogsPath() {
   std::string appName = GetApplicationName();
-  std::string homePath = std:string(getenv("HOME"));
+  std::string homePath = std::string(getenv("HOME"));
   std::string appLogPath = homePath + "/.config/" + appName + "/logs";
 
   int status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
