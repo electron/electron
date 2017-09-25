@@ -162,19 +162,18 @@ describe('app module', function () {
       this.timeout(120000)
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
       // First launch should exit with 0.
-      let secondLaunched = false
       const first = ChildProcess.spawn(remote.process.execPath, [appPath])
       first.once('exit', (code) => {
-        assert.ok(secondLaunched)
         assert.equal(code, 0)
-        done()
       })
-      // Second launch should exit with 1.
-      const second = ChildProcess.spawn(remote.process.execPath, [appPath])
-      second.once('exit', (code) => {
-        assert.ok(!secondLaunched)
-        assert.equal(code, 1)
-        secondLaunched = true
+      // Start second app when received output.
+      first.stdout.once('data', () => {
+        // Second launch should exit with 1.
+        const second = ChildProcess.spawn(remote.process.execPath, [appPath])
+        second.once('exit', (code) => {
+          assert.equal(code, 1)
+          done()
+        })
       })
     })
   })

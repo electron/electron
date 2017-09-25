@@ -1,8 +1,6 @@
 const {app} = require('electron')
 
-process.on('uncaughtException', () => {
-  app.exit(2)
-})
+console.log('started')  // ping parent
 
 const shouldExit = app.makeSingleInstance(() => {
   process.nextTick(() => app.exit(0))
