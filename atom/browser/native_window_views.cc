@@ -1121,9 +1121,31 @@ void NativeWindowViews::OnWidgetBoundsChanged(
   if (widget != window_.get())
     return;
 
-  if (widget_size_ != bounds.size()) {
+  // Note: We intentionally use `GetBounds()` instead of `bounds` to properly
+  // handle minimized windows on Windows.
+  const auto new_bounds = GetBounds();
+  if (widget_size_ != new_bounds.size()) {
+    if (browser_view_) {
+      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view_)
+                             ->GetAutoResizeFlags();
+      int width_delta = 0;
+      int height_delta = 0;
+      if (flags & kAutoResizeWidth) {
+        width_delta = new_bounds.width() - widget_size_.width();
+      }
+      if (flags & kAutoResizeHeight) {
+        height_delta = new_bounds.height() - widget_size_.height();
+      }
+
+      auto* view = browser_view_->GetInspectableWebContentsView()->GetView();
+      auto new_view_size = view->size();
+      new_view_size.set_width(new_view_size.width() + width_delta);
+      new_view_size.set_height(new_view_size.height() + height_delta);
+      view->SetSize(new_view_size);
+    }
+
     NotifyWindowResize();
-    widget_size_ = bounds.size();
+    widget_size_ = new_bounds.size();
   }
 }
 
@@ -1342,31 +1364,10 @@ void NativeWindowViews::Layout() {
     menu_bar_->SetBoundsRect(menu_bar_bounds);
   }
 
-  const auto old_web_view_size = web_view_ ? web_view_->size() : gfx::Size();
   if (web_view_) {
     web_view_->SetBoundsRect(
         gfx::Rect(0, menu_bar_bounds.height(), size.width(),
                   size.height() - menu_bar_bounds.height()));
-  }
-  const auto new_web_view_size = web_view_ ? web_view_->size() : gfx::Size();
-
-  if (browser_view_) {
-    const auto flags = static_cast<NativeBrowserViewViews*>(browser_view_)
-                           ->GetAutoResizeFlags();
-    int width_delta = 0;
-    int height_delta = 0;
-    if (flags & kAutoResizeWidth) {
-      width_delta = new_web_view_size.width() - old_web_view_size.width();
-    }
-    if (flags & kAutoResizeHeight) {
-      height_delta = new_web_view_size.height() - old_web_view_size.height();
-    }
-
-    auto* view = browser_view_->GetInspectableWebContentsView()->GetView();
-    auto new_view_size = view->size();
-    new_view_size.set_width(new_view_size.width() + width_delta);
-    new_view_size.set_height(new_view_size.height() + height_delta);
-    view->SetSize(new_view_size);
   }
 }
 
