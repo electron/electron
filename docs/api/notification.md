@@ -34,7 +34,7 @@ Returns `Boolean` - Whether or not desktop notifications are supported on the cu
   * `subtitle` String - (optional) A subtitle for the notification, which will be displayed below the title. _macOS_
   * `body` String - The body text of the notification, which will be displayed below the title or subtitle
   * `silent` Boolean - (optional) Whether or not to emit an OS notification noise when showing the notification
-  * `icon` [NativeImage](native-image.md) - (optional) An icon to use in the notification
+  * `icon` (String | [NativeImage](native-image.md)) - (optional) An icon to use in the notification
   * `hasReply` Boolean - (optional) Whether or not to add an inline reply option to the notification.  _macOS_
   * `replyPlaceholder` String - (optional) The placeholder to write in the inline reply input field. _macOS_
   * `sound` String - (optional) The name of the sound file to play when the notification is shown. _macOS_
