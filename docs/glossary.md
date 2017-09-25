@@ -58,6 +58,9 @@ The full Node API is built in.
 Every app's main process file is specified in the `main` property in
 `package.json`. This is how `electron .` knows what file to execute at startup.
 
+In Chromium, this process is referred to as the "browser process". It is
+renamed in Electron to avoid confusion with renderer processes.
+
 See also: [process](#process), [renderer process](#renderer-process)
 
 ### MAS
