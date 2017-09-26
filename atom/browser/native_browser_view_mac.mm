@@ -47,12 +47,20 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
     return;
   }
 
+  if (([self.window styleMask] & NSFullScreenWindowMask) == NSFullScreenWindowMask) {
+    return;
+  }
+
   self.initialLocation = [event locationInWindow];
 }
 
 - (void)mouseDragged:(NSEvent *)theEvent
 {
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
+    return;
+  }
+
+  if (([self.window styleMask] & NSFullScreenWindowMask) == NSFullScreenWindowMask) {
     return;
   }
 
