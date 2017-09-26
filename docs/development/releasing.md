@@ -4,8 +4,8 @@ This document describes the process for releasing a new version of Electron.
 
 ## Create a backport branch
 
-If you're about release a new major or minor version of Electron like `1.8.0`, 
-`1.9.0`, or `2.0.0`, first create a branch from the most recent minor release 
+If you're about release a new major or minor version of Electron like `1.8.0`,
+`1.9.0`, or `2.0.0`, first create a branch from the most recent minor release
 for later backports:
 
 Assuming you're about to publish `1.8.0`, and the highest `1.7` release was
@@ -136,7 +136,7 @@ This release is published to [npm](https://www.npmjs.com/package/electron) under
 1. Edit the release and add release notes.
 1. Ensure the `prerelease` checkbox is checked. This should happen automatically for Electron versions >=1.7
 1. Click 'Save draft'. **Do not click 'Publish release'!**
-1. Wait for all builds to pass before proceeding. 
+1. Wait for all builds to pass before proceeding.
 
 ## Merge temporary branch
 
@@ -201,9 +201,9 @@ git push origin :release # delete remote branch
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
 [electron-versioning]: /docs/tutorial/electron-versioning.md
 
-## Promoting a release on npm
+## Promote a release on npm
 
-New releases are published to npm with the `beta` tag. Every release should 
+New releases are published to npm with the `beta` tag. Every release should
 eventually get promoted to stable unless there's a good reason not to.
 
 Releases are normally given around two weeks in the wild before being promoted.
@@ -215,7 +215,7 @@ It's also good to ask users in Slack if they're using the beta versions successf
 To see what's beta and stable at any given time:
 
 ```
-$ npm dist-tag ls electron  
+$ npm dist-tag ls electron
 beta: 1.7.5
 latest: 1.6.11
 ```
@@ -230,4 +230,4 @@ Then edit the release on GitGub:
 
 1. Remove `beta` from the release name: electron v1.7.5 ~~beta~~
 1. Uncheck the `prerelease` checkbox.
-1. Click "Update release" 
+1. Click "Update release"
