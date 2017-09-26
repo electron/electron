@@ -642,8 +642,7 @@ void DesktopNotificationController::Toast::CancelDismiss() {
 
 void DesktopNotificationController::Toast::ScheduleDismissal() {
     ULONG duration;
-    auto result = SystemParametersInfo(SPI_GETMESSAGEDURATION, 0, &duration, 0);
-    if (result == FALSE) {
+    if (!SystemParametersInfo(SPI_GETMESSAGEDURATION, 0, &duration, 0)) {
         duration = 5;
     }
     SetTimer(hwnd_, TimerID_AutoDismiss, duration * 1000, nullptr);
@@ -784,9 +783,9 @@ float DesktopNotificationController::Toast::AnimateEaseIn() {
     if (!ease_in_active_)
         return ease_in_pos_;
 
-    constexpr float duration = 500.0f;
-    float elapsed = GetTickCount() - ease_in_start_;
-    float time = std::min(duration, elapsed) / duration;
+    constexpr DWORD duration = 500;
+    auto elapsed = GetTickCount() - ease_in_start_;
+    float time = std::min(duration, elapsed) / static_cast<float>(duration);
 
     // decelerating exponential ease
     const float a = -8.0f;
@@ -799,9 +798,9 @@ float DesktopNotificationController::Toast::AnimateEaseOut() {
     if (!ease_out_active_)
         return ease_out_pos_;
 
-    constexpr float duration = 120.0f;
-    float elapsed = GetTickCount() - ease_out_start_;
-    float time = std::min(duration, elapsed) / duration;
+    constexpr DWORD duration = 120;
+    auto elapsed = GetTickCount() - ease_out_start_;
+    float time = std::min(duration, elapsed) / static_cast<float>(duration);
 
     // accelerating circle ease
     auto pos = 1.0f - std::sqrt(1 - time * time);
@@ -813,9 +812,9 @@ float DesktopNotificationController::Toast::AnimateStackCollapse() {
     if (!IsStackCollapseActive())
         return stack_collapse_pos_;
 
-    constexpr float duration = 500.0f;
-    float elapsed = GetTickCount() - stack_collapse_start_;
-    float time = std::min(duration, elapsed) / duration;
+    constexpr DWORD duration = 500;
+    auto elapsed = GetTickCount() - stack_collapse_start_;
+    float time = std::min(duration, elapsed) / static_cast<float>(duration);
 
     // decelerating exponential ease
     const float a = -8.0f;
