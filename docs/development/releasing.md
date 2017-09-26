@@ -231,3 +231,33 @@ Then edit the release on GitGub:
 1. Remove `beta` from the release name: electron v1.7.5 ~~beta~~
 1. Uncheck the `prerelease` checkbox.
 1. Click "Update release"
+
+## Fix missing binaries of a release manually
+
+In the case of a corrupted release with broken CI machines, we might have to
+re-upload the binaries for a already published release.
+
+The first step is to go to the Releases page and delete the corrupted binaries
+with the `SHASUMS256.txt` checksum file.
+
+Then manually create distributions for each platform and upload them:
+
+```sh
+# Checkout the version to re-upload.
+git checkout vTHE.RELEASE.VERSION
+
+# Do Release build.
+./script/bootstrap.py --target_arch [arm|x64|ia32]
+./script/build.py -c R
+./script/create-dist.py
+
+# Explicitly allow overwritting a published release.
+./script/upload.py --overwrite
+```
+
+After re-uploading all distributions, do publish again to upload the checksum
+file:
+
+```sh
+npm run release
+```
