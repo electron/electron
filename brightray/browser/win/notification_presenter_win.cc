@@ -12,6 +12,7 @@
 #include "base/files/file_util.h"
 #include "base/md5.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/time/time.h"
 #include "base/win/windows_version.h"
 #include "brightray/browser/win/notification_presenter_win7.h"
 #include "brightray/browser/win/windows_toast_notification.h"
@@ -64,7 +65,15 @@ bool NotificationPresenterWin::Init() {
 
 base::string16 NotificationPresenterWin::SaveIconToFilesystem(
     const SkBitmap& icon, const GURL& origin) {
-  std::string filename = base::MD5String(origin.spec()) + ".png";
+  std::string filename;
+
+  if (origin.is_valid()) {
+    filename = base::MD5String(origin.spec()) + ".png";
+  } else {
+    base::TimeTicks now = base::TimeTicks::Now();
+    filename = std::to_string(now.ToInternalValue()) + ".png";
+  }
+
   base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToUTF16(filename));
   if (base::PathExists(path))
     return path.value();
