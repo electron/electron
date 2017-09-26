@@ -235,10 +235,11 @@ Then edit the release on GitGub:
 ## Fix missing binaries of a release manually
 
 In the case of a corrupted release with broken CI machines, we might have to
-re-upload the binaries for a already published release.
+re-upload the binaries for an already published release.
 
-The first step is to go to the Releases page and delete the corrupted binaries
-with the `SHASUMS256.txt` checksum file.
+The first step is to go to the 
+[Releases](https://github.com/electron/electron/releases) page and delete the 
+corrupted binaries with the `SHASUMS256.txt` checksum file.
 
 Then manually create distributions for each platform and upload them:
 
@@ -255,7 +256,7 @@ git checkout vTHE.RELEASE.VERSION
 ./script/upload.py --overwrite
 ```
 
-After re-uploading all distributions, do publish again to upload the checksum
+After re-uploading all distributions, publish again to upload the checksum
 file:
 
 ```sh
