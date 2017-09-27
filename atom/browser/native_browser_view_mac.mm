@@ -68,13 +68,41 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   NSPoint newOrigin;
 
   NSRect screenFrame = [[NSScreen mainScreen] frame];
+  NSSize screenSize = screenFrame.size;
   NSRect windowFrame = [self.window frame];
+  NSSize windowSize = windowFrame.size;
 
   newOrigin.x = currentLocation.x - self.initialLocation.x;
   newOrigin.y = currentLocation.y - self.initialLocation.y;
 
+  BOOL inMenuBar = (newOrigin.y + windowSize.height) > (screenFrame.origin.y + screenSize.height);
+  BOOL screenAboveMainScreen = false;
+
+  if (inMenuBar) {
+    for (NSScreen *screen in [NSScreen screens]) {
+      NSRect currentScreenFrame = [screen frame];
+      BOOL isHigher = currentScreenFrame.origin.y < screenFrame.origin.y;
+
+      // If there's another screen that is generally above the current screen,
+      // we'll check if the screen is roughly on the same vertical axis. If so,
+      // we'll let the move pass and allow the window to go underneath the menu bar.
+      if (isHigher) {
+        NSPoint aboveLeft = NSMakePoint(
+          screenFrame.origin.x + screenFrame.size.height + 10, screenFrame.origin.y);
+        NSPoint aboveRight = NSMakePoint(
+          screenFrame.origin.x + screenFrame.size.height + 10,
+          screenFrame.origin.y + screenFrame.size.width);
+
+        if (NSPointInRect(aboveLeft, screenFrame) || NSPointInRect(aboveRight, screenFrame)) {
+          screenAboveMainScreen = true;
+          break;
+        }
+      }
+    }
+  }
+
   // Don't let window get dragged up under the menu bar
-  if ((newOrigin.y + windowFrame.size.height) > (screenFrame.origin.y + screenFrame.size.height)) {
+  if (inMenuBar && !screenAboveMainScreen) {
     newOrigin.y = screenFrame.origin.y + (screenFrame.size.height - windowFrame.size.height);
   }
 
