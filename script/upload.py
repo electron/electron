@@ -51,13 +51,18 @@ def main():
   github = GitHub(auth_token())
   releases = github.repos(ELECTRON_REPO).releases.get()
   tag_exists = False
-  for release in releases:
-    if not release['draft'] and release['tag_name'] == args.version:
+  for r in releases:
+    if not r['draft'] and r['tag_name'] == args.version:
+      release = r
       tag_exists = True
       break
 
-  release = create_or_get_release_draft(github, releases, args.version,
-                                        tag_exists)
+  assert tag_exists == args.overwrite, \
+         'You have to pass --overwrite to overwrite a published release'
+
+  if not args.overwrite:
+    release = create_or_get_release_draft(github, releases, args.version,
+                                          tag_exists)
 
   if args.publish_release:
     # Upload the Node SHASUMS*.txt.
@@ -112,6 +117,9 @@ def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
   parser.add_argument('-v', '--version', help='Specify the version',
                       default=ELECTRON_VERSION)
+  parser.add_argument('-o', '--overwrite',
+                      help='Overwrite a published release',
+                      action='store_true')
   parser.add_argument('-p', '--publish-release',
                       help='Publish the release',
                       action='store_true')
