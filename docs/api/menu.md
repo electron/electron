@@ -89,6 +89,12 @@ Closes the context menu in the `browserWindow`.
 
 Appends the `menuItem` to the menu.
 
+#### `menu.getMenuItemById(id)`
+
+* `id` String
+
+Returns `MenuItem` the item with the specified `id`
+
 #### `menu.insert(pos, menuItem)`
 
 * `pos` Integer
