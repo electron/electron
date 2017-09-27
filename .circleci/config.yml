@@ -178,7 +178,7 @@ jobs:
           name: Verify FFmpeg
           command: |
              if [ "$ELECTRON_RELEASE" != "1" ]; then
-                echo 'Verifying ffmpeg on debug build'             
+                echo 'Verifying ffmpeg on debug build'
                 script/verify-ffmpeg.py
              else
                 echo 'Skipping verify ffmpeg on release build'
