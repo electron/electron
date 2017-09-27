@@ -10,12 +10,12 @@ jobs:
       - checkout
       - run: sh -e /etc/init.d/xvfb start
       - run:
-        name: Check for release
-        command: |
-          MESSAGE="$(git log --format=%B -n 1 HEAD)"
-          case ${MESSAGE} in
-            Bump* ) export ELECTRON_RELEASE=1 ;;
-          esac
+          name: Check for release
+          command: |
+            MESSAGE="$(git log --format=%B -n 1 HEAD)"
+            case ${MESSAGE} in
+              Bump* ) export ELECTRON_RELEASE=1 ;;
+            esac
       - run:
          name: Bootstrap
          command: |
@@ -34,17 +34,17 @@ jobs:
               script/build.py -c D
            fi
       - run:
-        name: Create distribution
-        command: |
-           if [ "$ELECTRON_RELEASE" == "1" ]; then
-              script/create-dist.py
-           fi
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                script/create-dist.py
+             fi
       - run:
-        name: Upload distribution
-        command: |
-           if [ "$ELECTRON_RELEASE" == "1" ]; then
-              script/upload.py
-           fi
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                script/upload.py
+             fi
 
   electron-linux-ia32:
     docker:
@@ -55,12 +55,12 @@ jobs:
       - checkout
       - run: sh -e /etc/init.d/xvfb start
       - run:
-        name: Check for release
-        command: |
-          MESSAGE="$(git log --format=%B -n 1 HEAD)"
-          case ${MESSAGE} in
-            Bump* ) export ELECTRON_RELEASE=1 ;;
-          esac
+          name: Check for release
+          command: |
+            MESSAGE="$(git log --format=%B -n 1 HEAD)"
+            case ${MESSAGE} in
+              Bump* ) export ELECTRON_RELEASE=1 ;;
+            esac
       - run:
          name: Bootstrap
          command: |
@@ -79,17 +79,17 @@ jobs:
               script/build.py -c D
            fi
       - run:
-        name: Create distribution
-        command: |
-           if [ "$ELECTRON_RELEASE" == "1" ]; then
-              script/create-dist.py
-           fi
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                script/create-dist.py
+             fi
       - run:
-        name: Upload distribution
-        command: |
-           if [ "$ELECTRON_RELEASE" == "1" ]; then
-              script/upload.py
-           fi
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                script/upload.py
+             fi
 
   electron-linux-x64:
     docker:
@@ -100,12 +100,12 @@ jobs:
       - checkout
       - run: sh -e /etc/init.d/xvfb start
       - run:
-        name: Check for release
-        command: |
-          MESSAGE="$(git log --format=%B -n 1 HEAD)"
-          case ${MESSAGE} in
-            Bump* ) export ELECTRON_RELEASE=1 ;;
-          esac
+          name: Check for release
+          command: |
+            MESSAGE="$(git log --format=%B -n 1 HEAD)"
+            case ${MESSAGE} in
+              Bump* ) export ELECTRON_RELEASE=1 ;;
+            esac
       - run:
          name: Bootstrap
          command: |
@@ -124,29 +124,29 @@ jobs:
               script/build.py -c D
            fi
       - run:
-        name: Create distribution
-        command: |
-           if [ "$ELECTRON_RELEASE" == "1" ]; then
-              script/create-dist.py
-           fi
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                script/create-dist.py
+             fi
       - run:
-        name: Upload distribution
-        command: |
-           if [ "$ELECTRON_RELEASE" == "1" ]; then
-              script/upload.py
-           fi
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                script/upload.py
+             fi
       - run:
-        name: Test
-        command: |
-           if [ "$ELECTRON_RELEASE" -ne "1" ]; then
-              script/test.py --ci
-           fi
+          name: Test
+          command: |
+             if [ "$ELECTRON_RELEASE" -ne "1" ]; then
+                script/test.py --ci
+             fi
       - run:
-        name: Verify FFMpeg
-        command: |
-           if [ "$ELECTRON_RELEASE" -ne "1" ]; then
-              script/verify-ffmpeg.py
-           fi
+          name: Verify FFMpeg
+          command: |
+             if [ "$ELECTRON_RELEASE" -ne "1" ]; then
+                script/verify-ffmpeg.py
+             fi
 
 workflows:
   version: 2
