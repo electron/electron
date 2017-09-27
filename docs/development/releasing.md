@@ -247,7 +247,7 @@ Then manually create distributions for each platform and upload them:
 # Checkout the version to re-upload.
 git checkout vTHE.RELEASE.VERSION
 
-# Do Release build.
+# Do release build, specifying one target architecture.
 ./script/bootstrap.py --target_arch [arm|x64|ia32]
 ./script/build.py -c R
 ./script/create-dist.py
