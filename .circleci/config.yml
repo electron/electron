@@ -14,14 +14,16 @@ jobs:
           command: |
             MESSAGE="$(git log --format=%B -n 1 HEAD)"
             case ${MESSAGE} in
-              Bump* ) export ELECTRON_RELEASE=1 ;;
+              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
             esac
       - run:
          name: Bootstrap
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
               script/bootstrap.py --target_arch=$TARGET_ARCH -v
            else
+              echo 'Bootstrapping Electron for debug build'
               script/bootstrap.py --target_arch=$TARGET_ARCH -v --dev
            fi
       - run: npm run lint
@@ -29,21 +31,29 @@ jobs:
          name: Build
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
               script/build.py -c R
            else
+              echo 'Building Electron for debug'
               script/build.py -c D
            fi
       - run:
           name: Create distribution
           command: |
              if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
                 script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
              fi
       - run:
           name: Upload distribution
           command: |
              if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Uploading Electron release distribution'
                 script/upload.py
+             else
+                echo 'Skipping upload distribution because build is not for release'
              fi
 
   electron-linux-ia32:
@@ -59,14 +69,16 @@ jobs:
           command: |
             MESSAGE="$(git log --format=%B -n 1 HEAD)"
             case ${MESSAGE} in
-              Bump* ) export ELECTRON_RELEASE=1 ;;
+              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
             esac
       - run:
          name: Bootstrap
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
               script/bootstrap.py --target_arch=$TARGET_ARCH -v
            else
+              echo 'Bootstrapping Electron for debug build'
               script/bootstrap.py --target_arch=$TARGET_ARCH -v --dev
            fi
       - run: npm run lint
@@ -74,21 +86,29 @@ jobs:
          name: Build
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
               script/build.py -c R
            else
+              echo 'Building Electron for debug'
               script/build.py -c D
            fi
       - run:
           name: Create distribution
           command: |
              if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
                 script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
              fi
       - run:
           name: Upload distribution
           command: |
              if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Uploading Electron release distribution'
                 script/upload.py
+             else
+                echo 'Skipping upload distribution because build is not for release'
              fi
 
   electron-linux-x64:
@@ -104,14 +124,16 @@ jobs:
           command: |
             MESSAGE="$(git log --format=%B -n 1 HEAD)"
             case ${MESSAGE} in
-              Bump* ) export ELECTRON_RELEASE=1 ;;
+              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
             esac
       - run:
          name: Bootstrap
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
               script/bootstrap.py --target_arch=$TARGET_ARCH -v
            else
+              echo 'Bootstrapping Electron for debug build'
               script/bootstrap.py --target_arch=$TARGET_ARCH -v --dev
            fi
       - run: npm run lint
@@ -119,33 +141,47 @@ jobs:
          name: Build
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
               script/build.py -c R
            else
+              echo 'Building Electron for debug'
               script/build.py -c D
            fi
       - run:
           name: Create distribution
           command: |
              if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
                 script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
              fi
       - run:
           name: Upload distribution
           command: |
              if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Uploading Electron release distribution'
                 script/upload.py
+             else
+                echo 'Skipping upload distribution because build is not for release'
              fi
       - run:
           name: Test
           command: |
-             if [ "$ELECTRON_RELEASE" -ne "1" ]; then
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Testing Electron debug build'
                 script/test.py --ci
+             else
+                echo 'Skipping testing on release build'
              fi
       - run:
-          name: Verify FFMpeg
+          name: Verify FFmpeg
           command: |
-             if [ "$ELECTRON_RELEASE" -ne "1" ]; then
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Verifying ffmpeg on debug build'             
                 script/verify-ffmpeg.py
+             else
+                echo 'Skipping verify ffmpeg on release build'
              fi
 
 workflows:
