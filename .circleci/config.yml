@@ -20,9 +20,9 @@ jobs:
          name: Bootstrap
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
-              script/bootstrap --target_arch=$TARGET_ARCH -v
+              script/bootstrap.py --target_arch=$TARGET_ARCH -v
            else
-              script/bootstrap --target_arch=$TARGET_ARCH -v --dev
+              script/bootstrap.py --target_arch=$TARGET_ARCH -v --dev
            fi
       - run: npm run lint
       - run:
@@ -65,9 +65,9 @@ jobs:
          name: Bootstrap
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
-              script/bootstrap --target_arch=$TARGET_ARCH -v
+              script/bootstrap.py --target_arch=$TARGET_ARCH -v
            else
-              script/bootstrap --target_arch=$TARGET_ARCH -v --dev
+              script/bootstrap.py --target_arch=$TARGET_ARCH -v --dev
            fi
       - run: npm run lint
       - run:
@@ -110,9 +110,9 @@ jobs:
          name: Bootstrap
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
-              script/bootstrap --target_arch=$TARGET_ARCH -v
+              script/bootstrap.py --target_arch=$TARGET_ARCH -v
            else
-              script/bootstrap --target_arch=$TARGET_ARCH -v --dev
+              script/bootstrap.py --target_arch=$TARGET_ARCH -v --dev
            fi
       - run: npm run lint
       - run:
