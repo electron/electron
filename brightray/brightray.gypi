@@ -94,6 +94,8 @@
         'defines': [
           # Needed by gin:
           'V8_USE_EXTERNAL_STARTUP_DATA',
+          # Special configuration for node:
+          'V8_PROMISE_INTERNAL_FIELD_COUNT=1',
           # From skia_for_chromium_defines.gypi:
           'SK_SUPPORT_LEGACY_GETTOPDEVICE',
           'SK_SUPPORT_LEGACY_BITMAP_CONFIG',
