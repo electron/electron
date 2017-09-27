@@ -48,4 +48,15 @@ renderer processes. Like [`ipcRenderer`](api/ipc-renderer.md) and
 [remote](api/remote.md) module for RPC style communication. There is also
 an FAQ entry on [how to share data between web pages][share-data].
 
+### The `process` Global
+
+Like Node.js, all Electron processes have a `process` object which is 
+available in both the main and renderer processes. It contains information 
+about the currently running process. It inherits from the Node.js `process` 
+object but includes additional information like the current versions of 
+Chromium, V8, Node.js, etc.
+
+For more info, see the [`process` API documentation](api/process.md).
+
 [share-data]: faq.md#how-to-share-data-between-web-pages
+
