@@ -195,6 +195,29 @@ describe('menu module', function () {
     })
   })
 
+  describe('Menu.getMenuItemById', function () {
+    it('should return the item with the given id', function () {
+      var menu = Menu.buildFromTemplate([
+        {
+          label: 'View',
+          submenu: [
+            {
+              label: 'Enter Fullscreen',
+              accelerator: 'Control+Command+F',
+              id: 'fullScreen'
+            },
+            {
+              label: 'Exit Fullscreen',
+              accelerator: 'Control+Command+F'
+            }
+          ]
+        }
+      ])
+      const fsc = menu.getMenuItemById('fullScreen')
+      assert.equal(menu.items[0].submenu.items[0], fsc)
+    })
+  })
+
   describe('Menu.insert', function () {
     it('should store item in @items by its index', function () {
       var menu = Menu.buildFromTemplate([
