@@ -1,4 +1,5 @@
 <html lang="en">
+
 <head>
   <title>Electron</title>
   <style>
@@ -17,7 +18,7 @@
       flex-direction: column;
     }
 
-    .container > * {
+    .container>* {
       margin: 15px 0 0 0;
     }
 
@@ -57,6 +58,7 @@
     .svg-stroke {
       stroke: #9feaf9;
     }
+
     .svg-fill {
       fill: #9feaf9;
     }
@@ -71,7 +73,8 @@
       text-decoration: none;
     }
 
-    pre, code {
+    pre,
+    code {
       font-family: "Menlo", "Lucida Console", monospace;
       border: 1px solid #e0e5e6;
       background-color: #f6f8f8;
@@ -112,6 +115,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="header">
     <svg class="header-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -140,34 +144,22 @@
   <div class="container">
 
     <p>
-    To run your app with Electron, execute the following command in your
-    Console (or Terminal):
+      To run your app with Electron, execute the following command in your Console (or Terminal):
     </p>
 
     <pre class="command-example"></pre>
 
     <p>
-    The <code>path-to-your-app</code> should be the path to your own Electron
-    app.
+      The <code>path-to-your-app</code> should be the path to your own Electron app.
     </p>
 
-    <p>You can read the <a class="quick-start-link">quick start</a>
-    guide in Electron's <a class="docs-link">docs</a>
-    to learn how to write one.
+    <p>You can read the <a class="quick-start-link">quick start</a> guide in Electron's <a class="docs-link">docs</a> to learn how to write one.
     </p>
-
-    <p>
-    Or you can just drag your app here to run it:
-    </p>
-
-    <div id="holder">
-      Drag your app here to run it
-    </div>
-
   </div>
 
   <script>
     require('./renderer')
   </script>
 </body>
+
 </html>

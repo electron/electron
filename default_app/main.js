@@ -326,7 +326,7 @@ if (option.file && !option.webdriver) {
   process.exit(0)
 } else if (option.default) {
   const indexPath = path.join(__dirname, '/index.html')
-  loadApplicationByUrl(`file://${indexPath}`);
+  loadApplicationByUrl(`file://${indexPath}`)
 } else if (option.interactive) {
   startRepl()
 } else {
