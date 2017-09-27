@@ -8,6 +8,10 @@ jobs:
           TARGET_ARCH: arm
     steps:
       - checkout
+      - run: echo 'MESSAGE="$(git log --format=%B -n 1 HEAD)"' >> $BASH_ENV
+      - run: echo 'case ${MESSAGE} in' >> $BASH_ENV
+      - run: echo '  Bump* ) export ELECTRON_RELEASE=1 ;;' >> $BASH_ENV
+      - run: echo 'esac' >> $BASH_ENV
       - run: script/cibuild
 
   electron-linux-ia32:
@@ -17,6 +21,10 @@ jobs:
           TARGET_ARCH: ia32
     steps:
       - checkout
+      - run: echo 'MESSAGE="$(git log --format=%B -n 1 HEAD)"' >> $BASH_ENV
+      - run: echo 'case ${MESSAGE} in' >> $BASH_ENV
+      - run: echo '  Bump* ) export ELECTRON_RELEASE=1 ;;' >> $BASH_ENV
+      - run: echo 'esac' >> $BASH_ENV
       - run: script/cibuild
 
   electron-linux-x64:
@@ -26,6 +34,10 @@ jobs:
           TARGET_ARCH: x64
     steps:
       - checkout
+      - run: echo 'MESSAGE="$(git log --format=%B -n 1 HEAD)"' >> $BASH_ENV
+      - run: echo 'case ${MESSAGE} in' >> $BASH_ENV
+      - run: echo '  Bump* ) export ELECTRON_RELEASE=1 ;;' >> $BASH_ENV
+      - run: echo 'esac' >> $BASH_ENV
       - run: script/cibuild
 
 workflows:
