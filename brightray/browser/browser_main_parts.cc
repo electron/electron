@@ -61,7 +61,6 @@
 namespace brightray {
 
 void OverrideMacAppLogsPath();
-void OverrideWinAppLogsPath();
 
 namespace {
 
