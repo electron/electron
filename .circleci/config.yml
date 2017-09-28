@@ -237,7 +237,7 @@ jobs:
           command: |
              if [ "$ELECTRON_RELEASE" != "1" ]; then
                 echo 'Testing Electron debug build'
-                mkdir ~/junit
+                mkdir junit
                 script/test.py --ci --rebuild_native_modules
              else
                 echo 'Skipping testing on release build'
@@ -252,9 +252,9 @@ jobs:
                 echo 'Skipping verify ffmpeg on release build'
              fi
       - store_test_results:
-          path: ~/junit
+          path: junit
       - store_artifacts:
-          path: ~/junit
+          path: junit
 
 workflows:
   version: 2
