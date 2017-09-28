@@ -7,7 +7,16 @@ const url = require('url')
 
 // Parse command line options.
 const argv = process.argv.slice(1)
-const option = { file: null, help: null, default: null, version: null, webdriver: null, modules: [] }
+
+const option = {
+  file: null,
+  help: null,
+  default: null,
+  version: null,
+  webdriver: null,
+  modules: []
+}
+
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--version' || argv[i] === '-v') {
     option.version = true
@@ -18,7 +27,8 @@ for (let i = 0; i < argv.length; i++) {
   } else if (argv[i] === '--default' || argv[i] === '-d') {
     option.default = true
     break
-  } else if (argv[i] === '--interactive' || argv[i] === '-i') {
+  } else if (argv[i] === '--interactive' || argv[i] === '-i' ||
+    argv[i] === '-repl' || argv[i] === '-r') {
     option.interactive = true
   } else if (argv[i] === '--test-type=webdriver') {
     option.webdriver = true
@@ -44,11 +54,9 @@ app.on('window-all-closed', () => {
 app.once('ready', () => {
   if (Menu.getApplicationMenu()) return
 
-  const template = [
-    {
+  const template = [{
       label: 'Edit',
-      submenu: [
-        {
+      submenu: [{
           role: 'undo'
         },
         {
@@ -79,8 +87,7 @@ app.once('ready', () => {
     },
     {
       label: 'View',
-      submenu: [
-        {
+      submenu: [{
           role: 'reload'
         },
         {
@@ -111,8 +118,7 @@ app.once('ready', () => {
     },
     {
       role: 'window',
-      submenu: [
-        {
+      submenu: [{
           role: 'minimize'
         },
         {
@@ -122,16 +128,15 @@ app.once('ready', () => {
     },
     {
       role: 'help',
-      submenu: [
-        {
+      submenu: [{
           label: 'Learn More',
-          click () {
+          click() {
             shell.openExternal('https://electron.atom.io')
           }
         },
         {
           label: 'Documentation',
-          click () {
+          click() {
             shell.openExternal(
               `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
             )
@@ -139,13 +144,13 @@ app.once('ready', () => {
         },
         {
           label: 'Community Discussions',
-          click () {
+          click() {
             shell.openExternal('https://discuss.atom.io/c/electron')
           }
         },
         {
           label: 'Search Issues',
-          click () {
+          click() {
             shell.openExternal('https://github.com/electron/electron/issues')
           }
         }
@@ -156,8 +161,7 @@ app.once('ready', () => {
   if (process.platform === 'darwin') {
     template.unshift({
       label: 'Electron',
-      submenu: [
-        {
+      submenu: [{
           role: 'about'
         },
         {
@@ -187,24 +191,19 @@ app.once('ready', () => {
         }
       ]
     })
-    template[1].submenu.push(
-      {
-        type: 'separator'
-      },
-      {
-        label: 'Speech',
-        submenu: [
-          {
-            role: 'startspeaking'
-          },
-          {
-            role: 'stopspeaking'
-          }
-        ]
-      }
-    )
-    template[3].submenu = [
-      {
+    template[1].submenu.push({
+      type: 'separator'
+    }, {
+      label: 'Speech',
+      submenu: [{
+          role: 'startspeaking'
+        },
+        {
+          role: 'stopspeaking'
+        }
+      ]
+    })
+    template[3].submenu = [{
         role: 'close'
       },
       {
@@ -223,11 +222,9 @@ app.once('ready', () => {
   } else {
     template.unshift({
       label: 'File',
-      submenu: [
-        {
-          role: 'quit'
-        }
-      ]
+      submenu: [{
+        role: 'quit'
+      }]
     })
   }
 
@@ -239,7 +236,7 @@ if (option.modules.length > 0) {
   Module._preloadModules(option.modules)
 }
 
-function loadApplicationPackage (packagePath) {
+function loadApplicationPackage(packagePath) {
   // Add a flag indicating app is started from default app.
   process.defaultApp = true
 
@@ -285,17 +282,17 @@ function loadApplicationPackage (packagePath) {
   }
 }
 
-function showErrorMessage (message) {
+function showErrorMessage(message) {
   app.focus()
   dialog.showErrorBox('Error launching app', message)
   process.exit(1)
 }
 
-function loadApplicationByUrl (appUrl) {
+function loadApplicationByUrl(appUrl) {
   require('./default_app').load(appUrl)
 }
 
-function startRepl () {
+function startRepl() {
   if (process.platform === 'win32') {
     console.error('Electron REPL not currently supported on Windows')
     process.exit(1)
