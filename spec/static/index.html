@@ -51,10 +51,15 @@
   var Coverage = require('electabul').Coverage;
 
   var Mocha = require('mocha');
+  var mochaOpts = {};
+  if (process.env.MOCHA_REPORTER) {
+    mochaOpts.reporter = process.env.MOCHA_REPORTER;
+  }
+  var mocha = new Mocha(mochaOpts);
 
-  var mocha = new Mocha();
-
-  mocha.ui('bdd').reporter(isCi ? 'tap' : 'html');
+  if (!process.env.MOCHA_REPORTER) {
+    mocha.ui('bdd').reporter(isCi ? 'tap' : 'html');
+  }
   mocha.timeout(isCi ? 30000 : 10000)
 
   var query = Mocha.utils.parseQuery(window.location.search || '');
