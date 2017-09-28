@@ -54,9 +54,11 @@ app.on('window-all-closed', () => {
 app.once('ready', () => {
   if (Menu.getApplicationMenu()) return
 
-  const template = [{
+  const template = [
+    {
       label: 'Edit',
-      submenu: [{
+      submenu: [
+        {
           role: 'undo'
         },
         {
@@ -87,7 +89,8 @@ app.once('ready', () => {
     },
     {
       label: 'View',
-      submenu: [{
+      submenu: [
+        {
           role: 'reload'
         },
         {
@@ -118,7 +121,8 @@ app.once('ready', () => {
     },
     {
       role: 'window',
-      submenu: [{
+      submenu: [
+        {
           role: 'minimize'
         },
         {
@@ -128,15 +132,16 @@ app.once('ready', () => {
     },
     {
       role: 'help',
-      submenu: [{
+      submenu: [
+        {
           label: 'Learn More',
-          click() {
+          click () {
             shell.openExternal('https://electron.atom.io')
           }
         },
         {
           label: 'Documentation',
-          click() {
+          click () {
             shell.openExternal(
               `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
             )
@@ -144,13 +149,13 @@ app.once('ready', () => {
         },
         {
           label: 'Community Discussions',
-          click() {
+          click () {
             shell.openExternal('https://discuss.atom.io/c/electron')
           }
         },
         {
           label: 'Search Issues',
-          click() {
+          click () {
             shell.openExternal('https://github.com/electron/electron/issues')
           }
         }
@@ -161,7 +166,8 @@ app.once('ready', () => {
   if (process.platform === 'darwin') {
     template.unshift({
       label: 'Electron',
-      submenu: [{
+      submenu: [
+        {
           role: 'about'
         },
         {
@@ -195,7 +201,8 @@ app.once('ready', () => {
       type: 'separator'
     }, {
       label: 'Speech',
-      submenu: [{
+      submenu: [
+        {
           role: 'startspeaking'
         },
         {
@@ -203,7 +210,8 @@ app.once('ready', () => {
         }
       ]
     })
-    template[3].submenu = [{
+    template[3].submenu = [
+      {
         role: 'close'
       },
       {
@@ -236,7 +244,7 @@ if (option.modules.length > 0) {
   Module._preloadModules(option.modules)
 }
 
-function loadApplicationPackage(packagePath) {
+function loadApplicationPackage (packagePath) {
   // Add a flag indicating app is started from default app.
   process.defaultApp = true
 
@@ -282,17 +290,17 @@ function loadApplicationPackage(packagePath) {
   }
 }
 
-function showErrorMessage(message) {
+function showErrorMessage (message) {
   app.focus()
   dialog.showErrorBox('Error launching app', message)
   process.exit(1)
 }
 
-function loadApplicationByUrl(appUrl) {
+function loadApplicationByUrl (appUrl) {
   require('./default_app').load(appUrl)
 }
 
-function startRepl() {
+function startRepl () {
   if (process.platform === 'win32') {
     console.error('Electron REPL not currently supported on Windows')
     process.exit(1)
