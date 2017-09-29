@@ -6,6 +6,16 @@
 
 namespace brightray {
 
+void BrowserMainParts::OverrideAppLogsPath() {
+  base::FilePath path;
+  NSString* bundleName = [[[NSBundle mainBundle] infoDictionary]
+    objectForKey:@"CFBundleName"];
+  NSString* logsPath = [NSString stringWithFormat:@"Library/Logs/%@",bundleName];
+  NSString* libraryPath = [NSHomeDirectory() stringByAppendingPathComponent:logsPath];
+
+  PathService::Override(DIR_APP_LOGS, base::FilePath([libraryPath UTF8String]));
+}
+
 // Replicates NSApplicationMain, but doesn't start a run loop.
 void BrowserMainParts::InitializeMainNib() {
   auto infoDictionary = base::mac::OuterBundle().infoDictionary;
