@@ -11,7 +11,7 @@ document.onclick = (e) => {
 }
 
 document.querySelector('.electron-version').innerText = `Electron v${process.versions.electron}`
-document.querySelector('.chrome-version').innerText = `Chrome v${process.versions.chrome}`
+document.querySelector('.chrome-version').innerText = `Chromium v${process.versions.chrome}`
 document.querySelector('.node-version').innerText = `Node v${process.versions.node}`
 document.querySelector('.v8-version').innerText = `v8 v${process.versions.v8}`
 
