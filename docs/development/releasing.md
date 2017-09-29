@@ -57,8 +57,8 @@ will [trigger the release process](https://github.com/electron/electron/blob/796
 To monitor the build progress, see the following pages:
 
 - [208.52.191.140:8080/view/All/builds](http://208.52.191.140:8080/view/All/builds) for Mac
-- [https://circleci.com/gh/electron](https://circleci.com/gh/electron) for Linux
-- [https://windows-ci.electronjs.org/project/AppVeyor/electron] for Windows
+- [circleci.com/gh/electron](https://circleci.com/gh/electron) for Linux
+- [windows-ci.electronjs.org/project/AppVeyor/electron](https://windows-ci.electronjs.org/project/AppVeyor/electron) for Windows
 
 ## Compile release notes
 
