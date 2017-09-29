@@ -1,5 +1,6 @@
 const {remote, shell} = require('electron')
-const {execPath} = remote.process
+const path = require('path')
+const electronPath = path.relative(process.cwd(), remote.process.execPath)
 
 document.onclick = (e) => {
   e.preventDefault()
@@ -14,4 +15,4 @@ document.querySelector('.chrome-version').innerText = `Chrome v${process.version
 document.querySelector('.node-version').innerText = `Node v${process.versions.node}`
 document.querySelector('.v8-version').innerText = `v8 v${process.versions.v8}`
 
-document.querySelector('.command-example').innerText = `${execPath} path-to-app`
+document.querySelector('.command-example').innerText = `${electronPath} path-to-app`
