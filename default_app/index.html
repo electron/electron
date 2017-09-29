@@ -20,10 +20,6 @@
       flex-direction: column;
     }
 
-    .container>* {
-      margin: 15px 0 0 0;
-    }
-
     .svg-stroke {
       stroke: #9feaf9;
     }
@@ -42,6 +38,8 @@
 
     h4 {
       font-weight: normal;
+      margin: 0;
+      line-height: 3;
     }
 
     .hero-icons {
@@ -64,8 +62,14 @@
       transform-origin: 50% 50%;
     }
 
-    a, a:hover {
-      color: #5667bd;
+    a {
+      color: #86a5b1;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    a:hover {
+      color: #c2f5ff;
       text-decoration: none;
     }
 
@@ -79,6 +83,7 @@
       white-space: pre-wrap;
       line-height: 19px;
       overflow: auto;
+      margin: 0;
       padding: 6px 10px;
       text-align: center;
     }
@@ -102,13 +107,17 @@
       display: block;
       float: left;
       border-right: 1px solid rgba(194, 245, 255, 0.4);
-      padding: 0 15px;
-      font-size: 12px;
+      padding: 0 20px;
+      font-size: 13px;
       opacity: 0.8;
     }
 
     .versions li:last-child {
       border: none;
+    }
+
+    nav {
+      margin: 40px 0;
     }
 
     .linkcol {
@@ -119,16 +128,26 @@
 
     .hero-octicon {
       display: block;
-      width: 75px;
-      height: 62px;
-      margin: 0 auto 12px;
-      padding-top: 16.5px;
+      width: 80px;
+      height: 80px;
+      margin: 0;
+      padding: 0;
       font-size: 42px !important;
-      color: white;
+      color: #9feaf9;
       text-align: center;
-      background-color: rgba(194, 245, 255, 0.3);
+      background-color: rgba(194, 245, 255, 0.1);
       border-radius: 50%;
     }
+
+    .hero-octicon:before {
+      display: block;
+      padding-top: 20px;
+    }
+
+    .octicon-gist:before { padding-left: 10px; }
+    .octicon-gear:before { padding-left: 5px; }
+    .octicon-star:before { padding-left: 6px; }
+    .octicon-gift:before { padding-left: 2px; }
   </style>
 </head>
 
@@ -173,7 +192,7 @@
         </g>
       </g>
     </svg>
-    <p>To run a local app, execute the following command on the command line:</p>
+    <p>To run a local app, execute the following on the command line:</p>
     <pre class="command-example"></pre>
 
     <nav>
