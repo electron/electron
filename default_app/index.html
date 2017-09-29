@@ -79,13 +79,20 @@
     }
 
     pre {
-      background-color: #2b2e3b;
+      background-color: #26282E;
       white-space: pre-wrap;
-      line-height: 19px;
+      line-height: 2.5;
       overflow: auto;
-      margin: 0;
-      padding: 6px 10px;
+      margin: 0 auto;
+      display: inline-block;
+      padding: 6px 15px;
       text-align: center;
+      border-radius: 3px;
+    }
+
+    pre.with-prompt:before {
+      content: "$ ";
+      opacity: 0.7;
     }
 
     code {
@@ -117,7 +124,7 @@
     }
 
     nav {
-      margin: 40px 0;
+      margin: 40px 0 0 0;
     }
 
     .linkcol {
@@ -193,7 +200,7 @@
       </g>
     </svg>
     <p>To run a local app, execute the following on the command line:</p>
-    <pre class="command-example"></pre>
+    <pre class="command-example with-prompt"></pre>
 
     <nav>
       <div class="linkcol">
