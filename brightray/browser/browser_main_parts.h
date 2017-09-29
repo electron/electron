@@ -47,6 +47,7 @@ class BrowserMainParts : public content::BrowserMainParts {
  private:
 #if defined(OS_MACOSX)
   void InitializeMainNib();
+  void OverrideAppLogsPath();
 #endif
 
 #if defined(TOOLKIT_VIEWS)

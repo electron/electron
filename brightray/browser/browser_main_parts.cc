@@ -4,7 +4,10 @@
 
 #include "brightray/browser/browser_main_parts.h"
 
+#if defined(OSX_POSIX)
 #include <stdlib.h>
+#endif
+
 #include <sys/stat.h>
 #include <string>
 
@@ -59,8 +62,6 @@
 #endif
 
 namespace brightray {
-
-void OverrideMacAppLogsPath();
 
 namespace {
 
@@ -163,41 +164,26 @@ BrowserMainParts::BrowserMainParts() {
 BrowserMainParts::~BrowserMainParts() {
 }
 
-void OverrideWinAppLogsPath() {
-  int status;
-  std::string appName = GetApplicationName();
-  std::string logPath = "%HOMEDRIVE%%HOMEPATH%\\AppData\\Roaming\\";
-  std::string appLogPath = logPath + appName + "\\logs";
-
-  status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
-
-  PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
+#if defined(OS_WIN) || defined(OS_LINUX)
+void OverrideAppLogsPath() {
+#if defined(OS_WIN)
+  std::string app_name = GetApplicationName();
+  std::string log_path = "%HOMEDRIVE%%HOMEPATH%\\AppData\\Roaming\\";
+  std::string app_log_path = log_path + app_name + "\\logs";
+#else
+  std::string app_name = GetApplicationName();
+  std::string home_path = std::string(getenv("HOME"));
+  std::string app_log_path = home_path + "/.config/" + app_name + "/logs";
+#endif
+  PathService::Override(DIR_APP_LOGS, base::FilePath(app_log_path));
 }
-
-void OverrideLinuxAppLogsPath() {
-  int status;
-  std::string appName = GetApplicationName();
-  std::string homePath = std::string(getenv("HOME"));
-  std::string appLogPath = homePath + "/.config/" + appName + "/logs";
-
-  status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
-
-  PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
-}
+#endif
 
 void BrowserMainParts::PreEarlyInitialization() {
   std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
   feature_list->InitializeFromCommandLine("", "");
   base::FeatureList::SetInstance(std::move(feature_list));
-#if defined(OS_MACOSX)
-  OverrideMacAppLogsPath();
-#endif
-#if defined(OS_LINUX)
-  OverrideLinuxAppLogsPath();
-#endif
-#if defined(OS_WIN)
-  OverrideWinAppLogsPath();
-#endif
+  OverrideAppLogsPath();
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
