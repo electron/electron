@@ -48,6 +48,7 @@ extern const char kDisableAutoHideCursor[];
 extern const char kStandardWindow[];
 extern const char kBackgroundColor[];
 extern const char kHasShadow[];
+extern const char kOpacity[];
 extern const char kFocusable[];
 extern const char kWebPreferences[];
 extern const char kVibrancyType[];

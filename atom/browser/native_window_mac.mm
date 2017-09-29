@@ -1503,6 +1503,10 @@ bool NativeWindowMac::HasShadow() {
   return [window_ hasShadow];
 }
 
+void NativeWindowMac::SetOpacity(const double opacity) {
+  [window_ setAlphaValue:opacity];
+}
+
 void NativeWindowMac::SetRepresentedFilename(const std::string& filename) {
   [window_ setRepresentedFilename:base::SysUTF8ToNSString(filename)];
 }
