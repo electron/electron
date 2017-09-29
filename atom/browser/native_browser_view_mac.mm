@@ -43,6 +43,12 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 - (void)mouseDown:(NSEvent *)event
 {
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
+    // According to Google, using performWindowDragWithEvent:
+    // does not generate a NSWindowWillMoveNotification. Hence post one.
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:NSWindowWillMoveNotification
+                      object:self];
+
     [self.window performWindowDragWithEvent:event];
     return;
   }
@@ -81,19 +87,23 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   if (inMenuBar) {
     for (NSScreen *screen in [NSScreen screens]) {
       NSRect currentScreenFrame = [screen frame];
-      BOOL isHigher = currentScreenFrame.origin.y < screenFrame.origin.y;
+      BOOL isHigher = currentScreenFrame.origin.y > screenFrame.origin.y;
 
       // If there's another screen that is generally above the current screen,
-      // we'll check if the screen is roughly on the same vertical axis. If so,
-      // we'll let the move pass and allow the window to go underneath the menu bar.
+      // we'll draw a new rectangle that is just above the current screen. If the
+      // "higher" screen intersects with this rectangle, we'll allow drawing above
+      // the menubar.
       if (isHigher) {
-        NSPoint aboveLeft = NSMakePoint(
-          screenFrame.origin.x + screenFrame.size.height + 10, screenFrame.origin.y);
-        NSPoint aboveRight = NSMakePoint(
-          screenFrame.origin.x + screenFrame.size.height + 10,
-          screenFrame.origin.y + screenFrame.size.width);
+        NSRect aboveScreenRect = NSMakeRect(
+          screenFrame.origin.x,
+          screenFrame.origin.y + screenFrame.size.height - 10,
+          screenFrame.size.width,
+          200
+        );
 
-        if (NSPointInRect(aboveLeft, screenFrame) || NSPointInRect(aboveRight, screenFrame)) {
+        BOOL screenAboveIntersects = NSIntersectsRect(currentScreenFrame, aboveScreenRect);
+
+        if (screenAboveIntersects) {
           screenAboveMainScreen = true;
           break;
         }
