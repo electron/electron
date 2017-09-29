@@ -4,7 +4,7 @@
   <title>Electron</title>
   <style>
     body {
-      color: #9feaf9;
+      color: #86a5b1;
       background-color: #2f3241;
       font-family: Roboto, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "Oxygen", "Ubuntu", "Cantarell", "Open Sans", sans-serif;
       margin: 0;
@@ -40,6 +40,10 @@
       text-align: center;
     }
 
+    h4 {
+      font-weight: normal;
+    }
+
     .hero-icons {
       transform-origin: 50% 50%;
     }
@@ -65,29 +69,46 @@
       text-decoration: none;
     }
 
-    pre, code {
+    pre, code, .code {
       font-family: "Menlo", "Lucida Console", monospace;
-      border: 1px solid #e0e5e6;
-      background-color: #f6f8f8;
-      color: #466a72;
-      border-radius: 3px;
+      color: #c2f5ff;
     }
 
     pre {
+      background-color: #2b2e3b;
       white-space: pre-wrap;
-      font-size: 13px;
       line-height: 19px;
       overflow: auto;
       padding: 6px 10px;
+      text-align: center;
     }
 
     code {
-      padding: 1px 4px 1px 4px;
-      font-size: 13px;
+      padding: 1px 4px;
+      font-size: 14px;
+      text-align: center;
     }
 
     .versions {
+      list-style: none;
       margin: 0 auto;
+      padding: 0;
+      float: none;
+      clear: both;
+      overflow: hidden;
+    }
+
+    .versions li {
+      display: block;
+      float: left;
+      border-right: 1px solid rgba(194, 245, 255, 0.4);
+      padding: 0 15px;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .versions li:last-child {
+      border: none;
     }
 
     .linkcol {
@@ -96,23 +117,16 @@
       text-align: center;
     }
 
-    .code-big {
-      padding: 2px 6px 2px 6px;
-      font-size: 16px;
-    }
-
     .hero-octicon {
       display: block;
       width: 75px;
-      border: 1px solid #bac5c7;
       height: 62px;
       margin: 0 auto 12px;
       padding-top: 16.5px;
       font-size: 42px !important;
-      color: #4f6d72;
+      color: white;
       text-align: center;
-      background-color: #fff;
-      border: 1px solid #828282;
+      background-color: rgba(194, 245, 255, 0.3);
       border-radius: 50%;
     }
 
@@ -140,12 +154,12 @@
 <body>
   <div class="container">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/4.4.0/font/octicons.css">
-    <div class="versions">
-      <code class="code-big electron-version"></code>
-      <code class="code-big chrome-version"></code>
-      <code class="code-big node-version"></code>
-      <code class="code-big v8-version"></code>
-    </div>
+    <ul class="versions code">
+      <li class="electron-version"></li>
+      <li class="chrome-version"></li>
+      <li class="node-version"></li>
+      <li class="v8-version"></li>
+    </ul>
     <svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg">
       <g fill="none" fill-rule="evenodd">
         <g class="hero-apps">
@@ -178,14 +192,9 @@
         </g>
       </g>
     </svg>
-    <h2>Running An App</h2>
-    <p>Execute the following command on the command line:</p>
+    <p>To run a local app, execute the following command on the command line:</p>
     <pre class="command-example"></pre>
-    <p>
-      The <code>path-to-your-app</code> should be the path to your own Electron app.
-    </p>
 
-    <h2>Resources</h2>
     <div>
       <div class="linkcol">
         <h4>Blog</h4>
