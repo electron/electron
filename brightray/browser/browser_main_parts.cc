@@ -94,27 +94,6 @@ void OverrideLinuxAppDataPath() {
   PathService::Override(DIR_APP_DATA, path);
 }
 
-void OverrideWinAppLogsPath() {
-  std::string appName = GetApplicationName();
-  std::string logPath = "%HOMEDRIVE%%HOMEPATH%\\AppData\\Roaming\\";
-  std::string appLogPath = logPath + appName + "\\logs";
-
-  int status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
-
-  PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
-}
-
-void OverrideLinuxAppLogsPath() {
-  std::string appName = GetApplicationName();
-  std::string homePath = std::string(getenv("HOME"));
-  std::string appLogPath = homePath + "/.config/" + appName + "/logs";
-
-  int status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
-
-  PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
-  return;
-}
-
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
   if (!g_in_x11_io_error_handler) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
@@ -182,6 +161,28 @@ BrowserMainParts::BrowserMainParts() {
 }
 
 BrowserMainParts::~BrowserMainParts() {
+}
+
+void OverrideWinAppLogsPath() {
+  int status;
+  std::string appName = GetApplicationName();
+  std::string logPath = "%HOMEDRIVE%%HOMEPATH%\\AppData\\Roaming\\";
+  std::string appLogPath = logPath + appName + "\\logs";
+
+  status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
+
+  PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
+}
+
+void OverrideLinuxAppLogsPath() {
+  int status;
+  std::string appName = GetApplicationName();
+  std::string homePath = std::string(getenv("HOME"));
+  std::string appLogPath = homePath + "/.config/" + appName + "/logs";
+
+  status = mkdir(appLogPath.c_str(), S_IRWXU | S_IRGRP | S_IROTH);
+
+  PathService::Override(DIR_APP_LOGS, base::FilePath(appLogPath));
 }
 
 void BrowserMainParts::PreEarlyInitialization() {
