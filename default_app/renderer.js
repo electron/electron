@@ -1,9 +1,14 @@
 const {remote, shell} = require('electron')
 const path = require('path')
+const URL = require('url')
 const electronPath = path.relative(process.cwd(), remote.process.execPath)
 
 Array.from(document.querySelectorAll('a[href]')).forEach(link => {
-  const url = link.getAttribute('href')
+  // safely add `?utm_source=default_app
+  let url = URL.parse(link.getAttribute('href'), true)
+  url.query = Object.assign(url.query, {utm_source: 'default_app'})
+  url = URL.format(url)
+
   link.addEventListener('click', (e) => {
     e.preventDefault()
     shell.openExternal(url)
