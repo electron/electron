@@ -2,13 +2,13 @@ const {remote, shell} = require('electron')
 const path = require('path')
 const electronPath = path.relative(process.cwd(), remote.process.execPath)
 
-document.onclick = (e) => {
-  e.preventDefault()
-  if (e.target.tagName === 'A') {
-    shell.openExternal(e.target.href)
-  }
-  return false
-}
+Array.from(document.querySelectorAll('a[href]')).forEach(link => {
+  const url = link.getAttribute('href')
+  link.addEventListener('click', (e) => {
+    e.preventDefault()
+    shell.openExternal(url)
+  })
+})
 
 document.querySelector('.electron-version').innerText = `Electron v${process.versions.electron}`
 document.querySelector('.chrome-version').innerText = `Chromium v${process.versions.chrome}`
