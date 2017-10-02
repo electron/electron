@@ -804,13 +804,17 @@ describe('BrowserWindow module', function () {
         height: 400,
         opacity: 0.5
       })
+      assert.equal(w.getOpacity(), 0.5)
     })
 
     it('allows setting the opacity', function () {
       assert.doesNotThrow(function () {
         w.setOpacity(0.0)
+        assert.equal(w.getOpacity(), 0.0)
         w.setOpacity(0.5)
+        assert.equal(w.getOpacity(), 0.5)
         w.setOpacity(1.0)
+        assert.equal(w.getOpacity(), 1.0)
       })
     })
   })

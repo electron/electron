@@ -825,6 +825,11 @@ void NativeWindowViews::SetOpacity(const double opacity) {
   }
   ::SetLayeredWindowAttributes(hwnd, 0, opacity * 255, LWA_ALPHA);
 #endif
+  opacity_ = opacity;
+}
+
+double NativeWindowViews::GetOpacity() {
+  return opacity_;
 }
 
 void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {

@@ -635,6 +635,10 @@ void Window::SetOpacity(const double opacity) {
   window_->SetOpacity(opacity);
 }
 
+double Window::GetOpacity() {
+  return window_->GetOpacity();
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -1061,6 +1065,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setHasShadow", &Window::SetHasShadow)
       .SetMethod("hasShadow", &Window::HasShadow)
       .SetMethod("setOpacity", &Window::SetOpacity)
+      .SetMethod("getOpacity", &Window::GetOpacity)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)

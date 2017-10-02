@@ -205,7 +205,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `#FFF` (white).
   * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
     implemented on macOS. Default is `true`.
-  * `opacity` Double (optional) - Set the initial opacity of the window, between 0.0 (fully
+  * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
   * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
@@ -1210,9 +1210,13 @@ On Windows and Linux always returns
 
 #### `win.setOpacity(opacity)` _Windows_ _macOS_
 
-* `opacity` Double - between 0.0 (fully transparent) and 1.0 (fully opaque)
+* `opacity` Number - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
 Sets the opacity of the window. On Linux does nothing.
+
+#### `win.getOpacity()` _Windows_ _macOS_
+
+Returns `Number` - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
 #### `win.setThumbarButtons(buttons)` _Windows_
 

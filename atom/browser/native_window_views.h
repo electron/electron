@@ -105,6 +105,7 @@ class NativeWindowViews : public NativeWindow,
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
   void SetOpacity(const double opacity) override;
+  double GetOpacity() override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
@@ -295,6 +296,7 @@ class NativeWindowViews : public NativeWindow,
   bool fullscreenable_;
   std::string title_;
   gfx::Size widget_size_;
+  double opacity_ = 1.0;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };
