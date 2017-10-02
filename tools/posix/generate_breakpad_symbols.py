@@ -117,7 +117,7 @@ def GetSharedLibraryDependenciesLinux(binary):
   for line in ldd.splitlines():
     m = lib_re.match(line)
     if m:
-      result.append(m.group(1))
+      result.append(os.path.realpath(m.group(1)))
   return result
 
 
