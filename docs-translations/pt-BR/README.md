@@ -36,7 +36,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [Processos](api/process.md)
 * [Aceleradores (Teclas de Atalho)](api/accelerator.md)
 * [Parâmetros CLI suportados (Chrome)](../../docs/api/chrome-command-line-switches.md)
-* [Variáveis de Ambiente](../../docs/api/environment-variables.md)
+* [Variáveis de Ambiente](../../docs-translations/pt-BR/api/environment-variables.md)
 
 ### Elementos DOM Personalizados:
 
