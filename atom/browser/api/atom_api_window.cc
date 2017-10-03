@@ -938,6 +938,10 @@ void Window::ToggleTabBar() {
   window_->ToggleTabBar();
 }
 
+void Window::AddTabbedWindow(NativeWindow* window) {
+  window_->AddTabbedWindow(window);
+}
+
 void Window::SetVibrancy(mate::Arguments* args) {
   std::string type;
 
@@ -1085,6 +1089,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("selectNextTab", &Window::SelectNextTab)
       .SetMethod("moveTabToNewWindow", &Window::MoveTabToNewWindow)
       .SetMethod("toggleTabBar", &Window::ToggleTabBar)
+      .SetMethod("addTabbedWindow", &Window::AddTabbedWindow)
 #endif
       .SetMethod("setVibrancy", &Window::SetVibrancy)
       .SetMethod("_setTouchBarItems", &Window::SetTouchBar)

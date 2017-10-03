@@ -709,6 +709,18 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('BrowserWindow.addTabbedWindow()', function () {
+    it('does not throw', function () {
+      if (process.platform !== 'darwin') {
+        return
+      }
+
+      assert.doesNotThrow(() => {
+        w.addTabbedWindow(new BrowserWindow({}))
+      })
+    })
+  })
+
   describe('BrowserWindow.setVibrancy(type)', function () {
     it('allows setting, changing, and removing the vibrancy', function () {
       assert.doesNotThrow(function () {
