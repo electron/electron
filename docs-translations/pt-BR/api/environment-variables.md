@@ -42,12 +42,11 @@ Para maiores instruções de como conseguir uma chave da API do Google, visite
 
 Por padrão, a mais recente chave da API do Google pode não ser permitida para
 fazer requisições de geolocalização. Para habilitar as requisições, acesse
-
 [essa página](https://console.developers.google.com/apis/api/geolocation/overview).
 
 ### `ELECTRON_NO_ASAR`
 
-Desabilita o suporte ASAR.Essa variável é suportada somente em processos
+Desabilita o suporte ASAR. Essa variável é suportada somente em processos
 filhos bifurcados e gerados a partir de processos que definem
 `ELECTRON_RUN_AS_NODE`.
 
