@@ -14,38 +14,40 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def main():
 
   parser = argparse.ArgumentParser(
-    description='Bump version numbers. Must specify at least one of the three options:\n'
+    description='Bump version numbers. Must specify at least one of the three'
+               +' options:\n'
                +'   --bump=patch to increment patch version, or\n'
                +'   --stable to promote current beta to stable, or\n'
                +'   --version={version} to set version number directly\n'
-               +'Note that you can use both --bump and --stable simultaneously.',
+               +'Note that you can use both --bump and --stable '
+               +'simultaneously.',
                formatter_class=argparse.RawTextHelpFormatter
   )
   parser.add_argument(
-    '--version', 
-    default=None, 
-    dest='new_version', 
+    '--version',
+    default=None,
+    dest='new_version',
     help='new version number'
   )
   parser.add_argument(
-    '--bump', 
-    action='store', 
-    default=None, 
-    dest='bump', 
+    '--bump',
+    action='store',
+    default=None,
+    dest='bump',
     help='increment [major | minor | patch | beta]'
   )
   parser.add_argument(
-    '--stable', 
-    action='store_true', 
-    default= False, 
-    dest='stable', 
+    '--stable',
+    action='store_true',
+    default= False,
+    dest='stable',
     help='promote to stable (i.e. remove `-beta.x` suffix)'
   )
   parser.add_argument(
-    '--dry-run', 
-    action='store_true', 
-    default= False, 
-    dest='dry_run', 
+    '--dry-run',
+    action='store_true',
+    default= False,
+    dest='dry_run',
     help='just to check that version number is correct'
   )
 
@@ -56,10 +58,10 @@ def main():
     return 1
 
   increments = ['major', 'minor', 'patch', 'beta']
-  
+
   curr_version = get_electron_version()
   versions = parse_version(re.sub('-beta', '', curr_version))
-  
+
   if args.bump in increments:
     versions = increase_version(versions, increments.index(args.bump))
     if versions[3] == '0':
