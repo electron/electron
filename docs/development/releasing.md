@@ -38,10 +38,17 @@ make sure there are no drafts.
 
 ## Bump the version
 
-Run the `bump-version` script, passing `major`, `minor`, or `patch` as an argument:
+Run the `bump-version` script with arguments according to your need:
+- `--bump=[major|minor|patch|beta]` to increment one of the version numbers, or
+- `--stable` to indicate this is a stable version, or
+- `--version={version}` to set version number directly.
+
+**Note**: you can use both `--bump` and `--stable` simultaneously.
+
+There is also a `dry-run` flag you can use to make sure the version number generated is correct before committing.
 
 ```sh
-npm run bump-version -- patch
+npm run bump-version -- --bump=patch --stable
 git push origin HEAD
 ```
 
