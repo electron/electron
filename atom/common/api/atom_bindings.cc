@@ -188,7 +188,14 @@ v8::Local<v8::Value> AtomBindings::GetCPUUsage(v8::Isolate* isolate) {
   int processor_count = base::SysInfo::NumberOfProcessors();
   dict.Set("percentCPUUsage",
            metrics_->GetPlatformIndependentCPUUsage() / processor_count);
+
+  // NB: This will throw NOTIMPLEMENTED() on Windows
+  // For backwards compatibility, we'll return 0
+#if !defined(OS_WIN)
   dict.Set("idleWakeupsPerSecond", metrics_->GetIdleWakeupsPerSecond());
+#else
+  dict.Set("idleWakeupsPerSecond", 0);
+#endif
 
   return dict.GetHandle();
 }
