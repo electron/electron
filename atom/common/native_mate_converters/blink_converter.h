@@ -6,7 +6,7 @@
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "native_mate/converter.h"
-#include "third_party/WebKit/public/web/WebCache.h"
+#include "third_party/WebKit/public/platform/WebCache.h"
 #include "third_party/WebKit/public/web/WebContextMenuData.h"
 
 namespace blink {
@@ -45,6 +45,8 @@ template<>
 struct Converter<content::NativeWebKeyboardEvent> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      content::NativeWebKeyboardEvent* out);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const content::NativeWebKeyboardEvent& in);
 };
 
 template<>

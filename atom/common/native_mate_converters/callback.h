@@ -11,6 +11,8 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "base/message_loop/message_loop.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/function_template.h"
 #include "native_mate/scoped_persistent.h"
 
@@ -53,8 +55,9 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args = { ConvertToV8(isolate, raw)... };
-    v8::Local<v8::Value> ret(holder->Call(holder, args.size(), &args.front()));
+    std::vector<v8::Local<v8::Value>> args { ConvertToV8(isolate, raw)... };
+    v8::Local<v8::Value> ret(holder->Call(
+        holder, args.size(), args.empty() ? nullptr : &args.front()));
     return handle_scope.Escape(ret);
   }
 };
@@ -73,8 +76,9 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args = { ConvertToV8(isolate, raw)... };
-    holder->Call(holder, args.size(), &args.front());
+    std::vector<v8::Local<v8::Value>> args { ConvertToV8(isolate, raw)... };
+    holder->Call(
+        holder, args.size(), args.empty() ? nullptr : &args.front());
   }
 };
 
@@ -93,10 +97,10 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args = { ConvertToV8(isolate, raw)... };
+    std::vector<v8::Local<v8::Value>> args { ConvertToV8(isolate, raw)... };
     v8::Local<v8::Value> result;
-    auto maybe_result =
-        holder->Call(context, holder, args.size(), &args.front());
+    auto maybe_result = holder->Call(
+        context, holder, args.size(), args.empty() ? nullptr : &args.front());
     if (maybe_result.ToLocal(&result))
       Converter<ReturnType>::FromV8(isolate, result, &ret);
     return ret;

@@ -2,6 +2,8 @@
 
 > 시스템이 저전력 (슬립) 모드로 진입하는 것을 막습니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 예시:
 
 ```javascript

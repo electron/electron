@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 #define ATOM_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 
+#include "atom/browser/web_contents_zoom_controller.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 
@@ -31,7 +32,8 @@ struct SetSizeParams {
 };
 
 class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
-                             public content::WebContentsObserver {
+                             public content::WebContentsObserver,
+                             public WebContentsZoomController::Observer {
  public:
   WebViewGuestDelegate();
   ~WebViewGuestDelegate() override;
@@ -45,6 +47,9 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // and normal sizes.
   void SetSize(const SetSizeParams& params);
 
+  // Return true if attached.
+  bool IsAttached() const { return attached_; }
+
  protected:
   // content::WebContentsObserver:
   void DidFinishNavigation(
@@ -52,6 +57,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
+  void DidDetach() final;
   content::WebContents* GetOwnerWebContents() const final;
   void GuestSizeChanged(const gfx::Size& new_size) final;
   void SetGuestHost(content::GuestHost* guest_host) final;
@@ -59,6 +65,16 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
                   int element_instance_id,
                   bool is_full_page_plugin,
                   const base::Closure& completion_callback) final;
+  bool CanBeEmbeddedInsideCrossProcessFrames() override;
+  content::RenderWidgetHost* GetOwnerRenderWidgetHost() override;
+  content::SiteInstance* GetOwnerSiteInstance() override;
+  content::WebContents* CreateNewGuestWindow(
+     const content::WebContents::CreateParams& create_params) override;
+
+  // WebContentsZoomController::Observer:
+  void OnZoomLevelChanged(content::WebContents* web_contents,
+                          double level,
+                          bool is_temporary) override;
 
  private:
   // This method is invoked when the contents auto-resized to give the container
@@ -74,6 +90,10 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   // The WebContents that attaches this guest view.
   content::WebContents* embedder_web_contents_;
+
+  // The zoom controller of the embedder that is used
+  // to subscribe for zoom changes.
+  WebContentsZoomController* embedder_zoom_controller_;
 
   // The size of the container element.
   gfx::Size element_size_;
@@ -99,6 +119,9 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   // Whether the guest view is inside a plugin document.
   bool is_full_page_plugin_;
+
+  // Whether attached.
+  bool attached_;
 
   api::WebContents* api_web_contents_;
 

@@ -8,17 +8,20 @@
 #include "atom/browser/unresponsive_suppressor.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "ui/display/screen.h"
-#include "ui/views/controls/menu/menu_runner.h"
+
+using views::MenuRunner;
 
 namespace atom {
 
 namespace api {
 
 MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : Menu(isolate, wrapper) {
+    : Menu(isolate, wrapper),
+      weak_factory_(this) {
 }
 
-void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
+void MenuViews::PopupAt(
+    Window* window, int x, int y, int positioning_item, bool async) {
   NativeWindow* native_window = static_cast<NativeWindow*>(window->window());
   if (!native_window)
     return;
@@ -38,19 +41,29 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
     location = gfx::Point(origin.x() + x, origin.y() + y);
   }
 
+  int flags = MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS;
+  if (async)
+    flags |= MenuRunner::ASYNC;
+
   // Don't emit unresponsive event when showing menu.
   atom::UnresponsiveSuppressor suppressor;
 
   // Show the menu.
-  views::MenuRunner menu_runner(
-      model(),
-      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
-  ignore_result(menu_runner.RunMenuAt(
+  int32_t window_id = window->ID();
+  auto close_callback = base::Bind(
+      &MenuViews::ClosePopupAt, weak_factory_.GetWeakPtr(), window_id);
+  menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
+      model(), flags, close_callback));
+  ignore_result(menu_runners_[window_id]->RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,
       gfx::Rect(location, gfx::Size()),
       views::MENU_ANCHOR_TOPLEFT,
       ui::MENU_SOURCE_MOUSE));
+}
+
+void MenuViews::ClosePopupAt(int32_t window_id) {
+  menu_runners_.erase(window_id);
 }
 
 // static

@@ -5,7 +5,7 @@
 :+1::tada: Primeiramente, obrigado por utilizar seu tempo contribuindo! :tada::+1:
 
 Esse projeto segue um [código de conduta](CODE_OF_CONDUCT.md).
-Ao participar, é esperado que o código seja seguido. Favor reportar comportamentos inaceitáveis para atom@github.com.
+Ao participar, é esperado que o código seja seguido. Favor reportar comportamentos inaceitáveis para electron@github.com.
 
 O texto a seguir é um conjunto de diretrizes para a contribuir com o Electron.
 Estas são apenas diretrizes e não regras, use o seu bom senso e sinta-se livre para propor alterações nesse documento em um pull request.

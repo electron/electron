@@ -7,6 +7,7 @@
 
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
+#include "base/single_thread_task_runner.h"
 #include "v8/include/v8.h"
 #include "vendor/node/deps/uv/include/uv.h"
 
@@ -22,7 +23,13 @@ namespace atom {
 
 class NodeBindings {
  public:
-  static NodeBindings* Create(bool is_browser);
+  enum BrowserEnvironment {
+    BROWSER,
+    RENDERER,
+    WORKER,
+  };
+
+  static NodeBindings* Create(BrowserEnvironment browser_env);
 
   virtual ~NodeBindings();
 
@@ -45,8 +52,10 @@ class NodeBindings {
   void set_uv_env(node::Environment* env) { uv_env_ = env; }
   node::Environment* uv_env() const { return uv_env_; }
 
+  uv_loop_t* uv_loop() const { return uv_loop_; }
+
  protected:
-  explicit NodeBindings(bool is_browser);
+  explicit NodeBindings(BrowserEnvironment browser_env);
 
   // Called to poll events in new thread.
   virtual void PollEvents() = 0;
@@ -60,13 +69,13 @@ class NodeBindings {
   // Interrupt the PollEvents.
   void WakeupEmbedThread();
 
-  // Are we running in browser.
-  bool is_browser_;
+  // Which environment we are running.
+  BrowserEnvironment browser_env_;
 
-  // Main thread's MessageLoop.
-  base::MessageLoop* message_loop_;
+  // Current thread's MessageLoop.
+  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
 
-  // Main thread's libuv loop.
+  // Current thread's libuv loop.
   uv_loop_t* uv_loop_;
 
  private:

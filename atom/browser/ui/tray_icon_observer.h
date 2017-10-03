@@ -10,6 +10,7 @@
 
 namespace gfx {
 class Rect;
+class Point;
 }
 
 namespace atom {
@@ -28,6 +29,8 @@ class TrayIconObserver {
   virtual void OnDragEntered() {}
   virtual void OnDragExited() {}
   virtual void OnDragEnded() {}
+  virtual void OnMouseEntered(const gfx::Point& location, int modifiers) {}
+  virtual void OnMouseExited(const gfx::Point& location, int modifiers) {}
 
  protected:
   virtual ~TrayIconObserver() {}

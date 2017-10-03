@@ -38,30 +38,6 @@ class MacHelper :
     return color;
   }
 
-  void BrowserCompositorMacSendCompositorSwapAck(
-      int output_surface_id,
-      const cc::CompositorFrameAck& ack) override {
-    view_->render_widget_host()->Send(new ViewMsg_SwapCompositorFrameAck(
-        view_->render_widget_host()->GetRoutingID(), output_surface_id, ack));
-  }
-
-  void BrowserCompositorMacSendReclaimCompositorResources(
-      int output_surface_id,
-      const cc::CompositorFrameAck& ack) override {
-    view_->render_widget_host()->Send(new ViewMsg_ReclaimCompositorResources(
-        view_->render_widget_host()->GetRoutingID(), output_surface_id, ack));
-  }
-
-  void BrowserCompositorMacOnLostCompositorResources() override {
-    view_->render_widget_host()->ScheduleComposite();
-  }
-
-  void BrowserCompositorMacUpdateVSyncParameters(
-      const base::TimeTicks& timebase,
-      const base::TimeDelta& interval) override {
-    view_->render_widget_host()->UpdateVSyncParameters(timebase, interval);
-  }
-
   void BrowserCompositorMacSendBeginFrame(
       const cc::BeginFrameArgs& args) override {
     view_->render_widget_host()->Send(
@@ -136,10 +112,12 @@ void OffScreenRenderWidgetHostView::SelectionChanged(
   RenderWidgetHostViewBase::SelectionChanged(text, offset, range);
 }
 
-void OffScreenRenderWidgetHostView::CreatePlatformWidget() {
+void OffScreenRenderWidgetHostView::CreatePlatformWidget(
+    bool is_guest_view_hack) {
   mac_helper_ = new MacHelper(this);
   browser_compositor_.reset(new content::BrowserCompositorMac(
-      mac_helper_, mac_helper_, render_widget_host_->is_hidden(), true));
+      mac_helper_, mac_helper_, render_widget_host_->is_hidden(), true,
+      AllocateFrameSinkId(is_guest_view_hack)));
 }
 
 void OffScreenRenderWidgetHostView::DestroyPlatformWidget() {
@@ -160,4 +138,4 @@ OffScreenRenderWidgetHostView::GetDelegatedFrameHost() const {
   return browser_compositor_->GetDelegatedFrameHost();
 }
 
-}   // namespace
+} // namespace atom

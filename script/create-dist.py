@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import glob
 import os
 import re
@@ -7,10 +8,10 @@ import shutil
 import subprocess
 import sys
 import stat
+if sys.platform == "win32":
+  import _winreg
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       get_target_arch, get_chromedriver_version, \
-                       get_zip_name
+from lib.config import BASE_URL, PLATFORM, get_target_arch, get_zip_name
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
                      execute, electron_gyp
 
@@ -20,8 +21,8 @@ ELECTRON_VERSION = get_electron_version()
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
-CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
-                            'download', 'libchromiumcontent', 'static_library')
+CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'download',
+                            'libchromiumcontent', 'static_library')
 
 PROJECT_NAME = electron_gyp()['project_name%']
 PRODUCT_NAME = electron_gyp()['product_name%']
@@ -32,6 +33,7 @@ TARGET_BINARIES = {
   'win32': [
     '{0}.exe'.format(PROJECT_NAME),  # 'electron.exe'
     'content_shell.pak',
+    'pdf_viewer_resources.pak',
     'd3dcompiler_47.dll',
     'icudtl.dat',
     'libEGL.dll',
@@ -42,13 +44,13 @@ TARGET_BINARIES = {
     'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
     'views_resources_200_percent.pak',
-    'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
   ],
   'linux': [
     PROJECT_NAME,  # 'electron'
     'content_shell.pak',
+    'pdf_viewer_resources.pak',
     'icudtl.dat',
     'libffmpeg.so',
     'libnode.so',
@@ -60,6 +62,7 @@ TARGET_BINARIES = {
     'snapshot_blob.bin',
   ],
 }
+TARGET_BINARIES_EXT = []
 TARGET_DIRECTORIES = {
   'darwin': [
     '{0}.app'.format(PRODUCT_NAME),
@@ -85,16 +88,22 @@ def main():
   copy_chrome_binary('chromedriver')
   copy_chrome_binary('mksnapshot')
   copy_license()
+  if PLATFORM == 'win32':
+    copy_vcruntime_binaries()
+    copy_ucrt_binaries()
 
-  if PLATFORM != 'win32':
-    copy_api_json_schema()
+  args = parse_args()
+
+  if PLATFORM != 'win32' and not args.no_api_docs:
+    create_api_json_schema()
+    create_typescript_definitions()
 
   if PLATFORM == 'linux':
     strip_binaries()
 
   create_version()
   create_dist_zip()
-  create_chrome_binary_zip('chromedriver', get_chromedriver_version())
+  create_chrome_binary_zip('chromedriver', ELECTRON_VERSION)
   create_chrome_binary_zip('mksnapshot', ELECTRON_VERSION)
   create_ffmpeg_zip()
   create_symbols_zip()
@@ -126,13 +135,69 @@ def copy_chrome_binary(binary):
   os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
 
 
+def copy_vcruntime_binaries():
+  with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                       r"SOFTWARE\Microsoft\VisualStudio\14.0\Setup\VC", 0,
+                       _winreg.KEY_READ | _winreg.KEY_WOW64_32KEY) as key:
+    crt_dir = _winreg.QueryValueEx(key, "ProductDir")[0]
+
+  arch = get_target_arch()
+  if arch == "ia32":
+    arch = "x86"
+
+  crt_dir += r"redist\{0}\Microsoft.VC140.CRT\\".format(arch)
+
+  dlls = ["msvcp140.dll", "vcruntime140.dll"]
+
+  # Note: copyfile is used to remove the read-only flag
+  for dll in dlls:
+    shutil.copyfile(crt_dir + dll, os.path.join(DIST_DIR, dll))
+    TARGET_BINARIES_EXT.append(dll)
+
+
+def copy_ucrt_binaries():
+  with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                       r"SOFTWARE\Microsoft\Windows Kits\Installed Roots"
+                       ) as key:
+    ucrt_dir = _winreg.QueryValueEx(key, "KitsRoot10")[0]
+
+  arch = get_target_arch()
+  if arch == "ia32":
+    arch = "x86"
+
+  ucrt_dir += r"Redist\ucrt\DLLs\{0}".format(arch)
+
+  dlls = glob.glob(os.path.join(ucrt_dir, '*.dll'))
+  if len(dlls) == 0:
+    raise Exception('UCRT files not found')
+
+  for dll in dlls:
+    shutil.copy2(dll, DIST_DIR)
+    TARGET_BINARIES_EXT.append(os.path.basename(dll))
+
+
 def copy_license():
   shutil.copy2(os.path.join(CHROMIUM_DIR, '..', 'LICENSES.chromium.html'),
                DIST_DIR)
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
-def copy_api_json_schema():
-  shutil.copy2(os.path.join(SOURCE_ROOT, 'out', 'electron-api.json'), DIST_DIR)
+def create_api_json_schema():
+  node_bin_dir = os.path.join(SOURCE_ROOT, 'node_modules', '.bin')
+  env = os.environ.copy()
+  env['PATH'] = os.path.pathsep.join([node_bin_dir, env['PATH']])
+  outfile = os.path.relpath(os.path.join(DIST_DIR, 'electron-api.json'))
+  execute(['electron-docs-linter', 'docs', '--outfile={0}'.format(outfile),
+           '--version={}'.format(ELECTRON_VERSION.replace('v', ''))],
+          env=env)
+
+def create_typescript_definitions():
+  node_bin_dir = os.path.join(SOURCE_ROOT, 'node_modules', '.bin')
+  env = os.environ.copy()
+  env['PATH'] = os.path.pathsep.join([node_bin_dir, env['PATH']])
+  infile = os.path.relpath(os.path.join(DIST_DIR, 'electron-api.json'))
+  outfile = os.path.relpath(os.path.join(DIST_DIR, 'electron.d.ts'))
+  execute(['electron-typescript-definitions', '--in={0}'.format(infile),
+           '--out={0}'.format(outfile)], env=env)
 
 def strip_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:
@@ -143,6 +208,8 @@ def strip_binaries():
 def strip_binary(binary_path):
     if get_target_arch() == 'arm':
       strip = 'arm-linux-gnueabihf-strip'
+    elif get_target_arch() == 'arm64':
+      strip = 'aarch64-linux-gnu-strip'
     else:
       strip = 'strip'
     execute([strip, binary_path])
@@ -174,8 +241,8 @@ def create_dist_zip():
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'LICENSES.chromium.html',
-                                          'version']
+    files = TARGET_BINARIES[PLATFORM] + TARGET_BINARIES_EXT + ['LICENSE',
+            'LICENSES.chromium.html', 'version']
     dirs = TARGET_DIRECTORIES[PLATFORM]
     make_zip(zip_file, files, dirs)
 
@@ -233,6 +300,14 @@ def create_symbols_zip():
     with scoped_cwd(DIST_DIR):
       pdbs = glob.glob('*.pdb')
       make_zip(os.path.join(DIST_DIR, pdb_name), pdbs + licenses, [])
+
+
+def parse_args():
+  parser = argparse.ArgumentParser(description='Create Electron Distribution')
+  parser.add_argument('--no_api_docs',
+                      action='store_true',
+                      help='Skip generating the Electron API Documentation!')
+  return parser.parse_args()
 
 
 if __name__ == '__main__':

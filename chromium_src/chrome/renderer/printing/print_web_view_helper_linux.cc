@@ -22,7 +22,7 @@
 
 namespace printing {
 
-using blink::WebFrame;
+using blink::WebLocalFrame;
 
 bool PrintWebViewHelper::RenderPreviewPage(
     int page_number,
@@ -56,7 +56,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
   return PreviewPageRendered(page_number, draft_metafile.get());
 }
 
-bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
+bool PrintWebViewHelper::PrintPagesNative(blink::WebLocalFrame* frame,
                                           int page_count) {
   PdfMetafileSkia metafile(PDF_SKIA_DOCUMENT_TYPE);
   if (!metafile.Init())
@@ -113,7 +113,7 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
 
 void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
-    WebFrame* frame,
+    WebLocalFrame* frame,
     PdfMetafileSkia* metafile) {
   PageSizeMargins page_layout_in_points;
   double scale_factor = 1.0f;
@@ -126,12 +126,12 @@ void PrintWebViewHelper::PrintPageInternal(
                                           &content_area);
   gfx::Rect canvas_area = content_area;
 
-  SkCanvas* canvas = metafile->GetVectorCanvasForNewPage(
-      page_size, canvas_area, scale_factor);
+  cc::PaintCanvas* canvas =
+      metafile->GetVectorCanvasForNewPage(page_size, canvas_area, scale_factor);
   if (!canvas)
     return;
 
-  MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
+  MetafileSkiaWrapper::SetMetafileOnCanvas(canvas, metafile);
 
   RenderPageContent(frame, params.page_number, canvas_area, content_area,
                     scale_factor, canvas);

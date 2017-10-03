@@ -5,6 +5,9 @@
 #ifndef ATOM_COMMON_PLATFORM_UTIL_H_
 #define ATOM_COMMON_PLATFORM_UTIL_H_
 
+#include <string>
+
+#include "base/callback_forward.h"
 #include "build/build_config.h"
 
 #if defined(OS_WIN)
@@ -18,6 +21,8 @@ class FilePath;
 }
 
 namespace platform_util {
+
+typedef base::Callback<void(const std::string&)> OpenExternalCallback;
 
 // Show the given file in a file manager. If possible, select the file.
 // Must be called from the UI thread.
@@ -36,6 +41,16 @@ bool OpenExternal(
     const GURL& url,
 #endif
     bool activate);
+
+// The asynchronous version of OpenExternal.
+void OpenExternal(
+#if defined(OS_WIN)
+    const base::string16& url,
+#else
+    const GURL& url,
+#endif
+    bool activate,
+    const OpenExternalCallback& callback);
 
 // Move a file to trash.
 bool MoveItemToTrash(const base::FilePath& full_path);

@@ -4,14 +4,15 @@
 
 #include "atom/browser/api/atom_api_desktop_capturer.h"
 
+using base::PlatformThreadRef;
+
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/media/desktop_media_list.h"
 #include "native_mate/dictionary.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
-#include "third_party/webrtc/modules/desktop_capture/screen_capturer.h"
-#include "third_party/webrtc/modules/desktop_capture/window_capturer.h"
+#include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 
 #include "atom/common/node_includes.h"
 
@@ -61,10 +62,12 @@ void DesktopCapturer::StartHandling(bool capture_window,
   options.set_disable_effects(false);
 #endif
 
-  std::unique_ptr<webrtc::ScreenCapturer> screen_capturer(
-      capture_screen ? webrtc::ScreenCapturer::Create(options) : nullptr);
-  std::unique_ptr<webrtc::WindowCapturer> window_capturer(
-      capture_window ? webrtc::WindowCapturer::Create(options) : nullptr);
+  std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
+      capture_screen ? webrtc::DesktopCapturer::CreateScreenCapturer(options)
+                     : nullptr);
+  std::unique_ptr<webrtc::DesktopCapturer> window_capturer(
+      capture_window ? webrtc::DesktopCapturer::CreateWindowCapturer(options)
+                     : nullptr);
   media_list_.reset(new NativeDesktopMediaList(
       std::move(screen_capturer), std::move(window_capturer)));
 

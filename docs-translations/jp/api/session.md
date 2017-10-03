@@ -187,7 +187,7 @@ cookieの有効期限をUNIX時間で何秒かを示します。セッションc
 
 `pacScript` と `proxyRules`が一緒に渡されたら、`proxyRules`オプションは無視され、`pacScript`設定が適用されます。
 
- `proxyRules`はつふぃのルールに従います。
+ `proxyRules`は次のルールに従います。
 
 ```
 proxyRules = schemeProxies[";"<schemeProxies>]

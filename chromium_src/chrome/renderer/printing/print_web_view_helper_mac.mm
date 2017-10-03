@@ -14,15 +14,14 @@
 #include "printing/page_size_margins.h"
 #include "third_party/WebKit/public/platform/WebCanvas.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/skia/include/core/SkCanvas.h"
 
 namespace printing {
 
-using blink::WebFrame;
+using blink::WebLocalFrame;
 
 void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
-    WebFrame* frame) {
+    WebLocalFrame* frame) {
   PdfMetafileSkia metafile(PDF_SKIA_DOCUMENT_TYPE);
   CHECK(metafile.Init());
 
@@ -89,13 +88,13 @@ bool PrintWebViewHelper::RenderPreviewPage(
 
 void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
                                     int page_number,
-                                    WebFrame* frame,
+                                    WebLocalFrame* frame,
                                     bool is_preview,
                                     PdfMetafileSkia* metafile,
                                     gfx::Size* page_size,
                                     gfx::Rect* content_rect) {
   double scale_factor = 1.0f;
-  double webkit_shrink_factor = frame->getPrintPageShrink(page_number);
+  double webkit_shrink_factor = frame->GetPrintPageShrink(page_number);
   PageSizeMargins page_layout_in_points;
   gfx::Rect content_area;
 
@@ -112,13 +111,13 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
   gfx::Rect canvas_area = content_area;
 
   {
-    SkCanvas* canvas = metafile->GetVectorCanvasForNewPage(
+    cc::PaintCanvas* canvas = metafile->GetVectorCanvasForNewPage(
         *page_size, canvas_area, scale_factor);
     if (!canvas)
       return;
 
-    MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
-    skia::SetIsPreviewMetafile(*canvas, is_preview);
+    MetafileSkiaWrapper::SetMetafileOnCanvas(canvas, metafile);
+    cc::SetIsPreviewMetafile(canvas, is_preview);
     RenderPageContent(frame, page_number, canvas_area, content_area,
                       scale_factor, static_cast<blink::WebCanvas*>(canvas));
   }

@@ -32,7 +32,7 @@
 using media::KeySystemProperties;
 using media::SupportedCodecs;
 
-#if defined(ENABLE_PEPPER_CDMS)
+#if BUILDFLAG(ENABLE_PEPPER_CDMS)
 static const char kExternalClearKeyPepperType[] =
     "application/x-ppapi-clearkey-cdm";
 
@@ -66,11 +66,11 @@ class ExternalClearKeyProperties : public KeySystemProperties {
         return true;
 
       case media::EmeInitDataType::CENC:
-#if defined(USE_PROPRIETARY_CODECS)
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
         return true;
 #else
         return false;
-#endif  // defined(USE_PROPRIETARY_CODECS)
+#endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
 
       case media::EmeInitDataType::UNKNOWN:
         return false;
@@ -80,7 +80,7 @@ class ExternalClearKeyProperties : public KeySystemProperties {
   }
 
   SupportedCodecs GetSupportedCodecs() const override {
-#if defined(USE_PROPRIETARY_CODECS)
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
     return media::EME_CODEC_MP4_ALL | media::EME_CODEC_WEBM_ALL;
 #else
     return media::EME_CODEC_WEBM_ALL;
@@ -224,21 +224,21 @@ static void AddPepperBasedWidevine(
   // as those may offer a higher level of protection.
   supported_codecs |= media::EME_CODEC_WEBM_OPUS;
   supported_codecs |= media::EME_CODEC_WEBM_VORBIS;
-#if defined(USE_PROPRIETARY_CODECS)
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
   supported_codecs |= media::EME_CODEC_MP4_AAC;
-#endif  // defined(USE_PROPRIETARY_CODECS)
+#endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
 
   for (size_t i = 0; i < codecs.size(); ++i) {
     if (codecs[i] == kCdmSupportedCodecVp8)
       supported_codecs |= media::EME_CODEC_WEBM_VP8;
-    if (codecs[i] == kCdmSupportedCodecVp9)
+    if (codecs[i] == kCdmSupportedCodecVp9) {
       supported_codecs |= media::EME_CODEC_WEBM_VP9;
-#if defined(USE_PROPRIETARY_CODECS)
+      supported_codecs |= media::EME_CODEC_COMMON_VP9;
+    }
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
     if (codecs[i] == kCdmSupportedCodecAvc1)
       supported_codecs |= media::EME_CODEC_MP4_AVC1;
-    if (codecs[i] == kCdmSupportedCodecVp9)
-      supported_codecs |= media::EME_CODEC_MP4_VP9;
-#endif  // defined(USE_PROPRIETARY_CODECS)
+#endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
   }
 
   using Robustness = cdm::WidevineKeySystemProperties::Robustness;
@@ -264,15 +264,15 @@ static void AddPepperBasedWidevine(
 #endif  // defined(OS_CHROMEOS)
 }
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
-#endif  // defined(ENABLE_PEPPER_CDMS)
+#endif  // BUILDFLAG(ENABLE_PEPPER_CDMS)
 
 void AddChromeKeySystems(
     std::vector<std::unique_ptr<KeySystemProperties>>* key_systems_properties) {
-#if defined(ENABLE_PEPPER_CDMS)
+#if BUILDFLAG(ENABLE_PEPPER_CDMS)
   AddExternalClearKey(key_systems_properties);
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
   AddPepperBasedWidevine(key_systems_properties);
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
-#endif  // defined(ENABLE_PEPPER_CDMS)
+#endif  // BUILDFLAG(ENABLE_PEPPER_CDMS)
 }

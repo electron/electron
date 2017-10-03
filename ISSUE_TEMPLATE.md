@@ -1,2 +1,0 @@
-* Electron version:
-* Operating system:

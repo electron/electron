@@ -120,6 +120,9 @@ void Screen::BuildPrototype(
       .SetMethod("getPrimaryDisplay", &Screen::GetPrimaryDisplay)
       .SetMethod("getAllDisplays", &Screen::GetAllDisplays)
       .SetMethod("getDisplayNearestPoint", &Screen::GetDisplayNearestPoint)
+#if defined(OS_MACOSX)
+      .SetMethod("getMenuBarHeight", &Screen::getMenuBarHeight)
+#endif
       .SetMethod("getDisplayMatching", &Screen::GetDisplayMatching);
 }
 

@@ -16,7 +16,7 @@ Electron 的工作方式更像 Node.js 运行时。 Electron 的 APIs 更加底�
 
 __2. 构建系统__
 
-为了避免构建整个 Chromium 带来的复杂度，Electron 通过 [`libchromiumcontent`](https://github.com/brightray/libchromiumcontent) 来访问 Chromium 的 Content API。`libchromiumcontent` 是一个独立的、引入了 Chromium Content 模块及其所有依赖的共享库。用户不需要一个强劲的机器来构建 Electron。
+为了避免构建整个 Chromium 带来的复杂度，Electron 通过 [`libchromiumcontent`](https://github.com/electron/libchromiumcontent) 来访问 Chromium 的 Content API。`libchromiumcontent` 是一个独立的、引入了 Chromium Content 模块及其所有依赖的共享库。用户不需要一个强劲的机器来构建 Electron。
 
 __3. Node 集成__
 

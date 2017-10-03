@@ -1,7 +1,8 @@
 const assert = require('assert')
 
 const {ipcRenderer, remote} = require('electron')
-const {Menu, MenuItem} = remote
+const {BrowserWindow, Menu, MenuItem} = remote
+const {closeWindow} = require('./window-helpers')
 
 describe('menu module', function () {
   describe('Menu.buildFromTemplate', function () {
@@ -194,6 +195,29 @@ describe('menu module', function () {
     })
   })
 
+  describe('Menu.getMenuItemById', function () {
+    it('should return the item with the given id', function () {
+      var menu = Menu.buildFromTemplate([
+        {
+          label: 'View',
+          submenu: [
+            {
+              label: 'Enter Fullscreen',
+              accelerator: 'Control+Command+F',
+              id: 'fullScreen'
+            },
+            {
+              label: 'Exit Fullscreen',
+              accelerator: 'Control+Command+F'
+            }
+          ]
+        }
+      ])
+      const fsc = menu.getMenuItemById('fullScreen')
+      assert.equal(menu.items[0].submenu.items[0], fsc)
+    })
+  })
+
   describe('Menu.insert', function () {
     it('should store item in @items by its index', function () {
       var menu = Menu.buildFromTemplate([
@@ -216,6 +240,30 @@ describe('menu module', function () {
     })
   })
 
+  describe('Menu.popup', function () {
+    let w = null
+
+    afterEach(function () {
+      return closeWindow(w).then(function () { w = null })
+    })
+
+    describe('when called with async: true', function () {
+      it('returns immediately', function () {
+        w = new BrowserWindow({show: false, width: 200, height: 200})
+        const menu = Menu.buildFromTemplate([
+          {
+            label: '1'
+          }, {
+            label: '2'
+          }, {
+            label: '3'
+          }
+        ])
+        menu.popup(w, {x: 100, y: 100, async: true})
+        menu.closePopup(w)
+      })
+    })
+  })
   describe('MenuItem.click', function () {
     it('should be called with the item object passed', function (done) {
       var menu = Menu.buildFromTemplate([
@@ -429,26 +477,77 @@ describe('menu module', function () {
       assert.equal(item.getDefaultRoleAccelerator(), process.platform === 'win32' ? 'Control+Y' : 'Shift+CommandOrControl+Z')
     })
   })
-})
 
-describe('MenuItem with custom properties in constructor', function () {
-  it('preserves the custom properties', function () {
-    var template = [{
-      label: 'menu 1',
-      customProp: 'foo',
-      submenu: []
-    }]
+  describe('MenuItem editMenu', function () {
+    it('includes a default submenu layout when submenu is empty', function () {
+      var item = new MenuItem({role: 'editMenu'})
+      assert.equal(item.label, 'Edit')
+      assert.equal(item.submenu.items[0].role, 'undo')
+      assert.equal(item.submenu.items[1].role, 'redo')
+      assert.equal(item.submenu.items[2].type, 'separator')
+      assert.equal(item.submenu.items[3].role, 'cut')
+      assert.equal(item.submenu.items[4].role, 'copy')
+      assert.equal(item.submenu.items[5].role, 'paste')
 
-    var menu = Menu.buildFromTemplate(template)
-    menu.items[0].submenu.append(new MenuItem({
-      label: 'item 1',
-      customProp: 'bar',
-      overrideProperty: 'oops not allowed'
-    }))
+      if (process.platform === 'darwin') {
+        assert.equal(item.submenu.items[6].role, 'pasteandmatchstyle')
+        assert.equal(item.submenu.items[7].role, 'delete')
+        assert.equal(item.submenu.items[8].role, 'selectall')
+      }
 
-    assert.equal(menu.items[0].customProp, 'foo')
-    assert.equal(menu.items[0].submenu.items[0].label, 'item 1')
-    assert.equal(menu.items[0].submenu.items[0].customProp, 'bar')
-    assert.equal(typeof menu.items[0].submenu.items[0].overrideProperty, 'function')
+      if (process.platform === 'win32') {
+        assert.equal(item.submenu.items[6].role, 'delete')
+        assert.equal(item.submenu.items[7].type, 'separator')
+        assert.equal(item.submenu.items[8].role, 'selectall')
+      }
+    })
+
+    it('overrides default layout when submenu is specified', function () {
+      var item = new MenuItem({role: 'editMenu', submenu: [{role: 'close'}]})
+      assert.equal(item.label, 'Edit')
+      assert.equal(item.submenu.items[0].role, 'close')
+    })
+  })
+
+  describe('MenuItem windowMenu', function () {
+    it('includes a default submenu layout when submenu is empty', function () {
+      var item = new MenuItem({role: 'windowMenu'})
+      assert.equal(item.label, 'Window')
+      assert.equal(item.submenu.items[0].role, 'minimize')
+      assert.equal(item.submenu.items[1].role, 'close')
+
+      if (process.platform === 'darwin') {
+        assert.equal(item.submenu.items[2].type, 'separator')
+        assert.equal(item.submenu.items[3].role, 'front')
+      }
+    })
+
+    it('overrides default layout when submenu is specified', function () {
+      var item = new MenuItem({role: 'windowMenu', submenu: [{role: 'copy'}]})
+      assert.equal(item.label, 'Window')
+      assert.equal(item.submenu.items[0].role, 'copy')
+    })
+  })
+
+  describe('MenuItem with custom properties in constructor', function () {
+    it('preserves the custom properties', function () {
+      var template = [{
+        label: 'menu 1',
+        customProp: 'foo',
+        submenu: []
+      }]
+
+      var menu = Menu.buildFromTemplate(template)
+      menu.items[0].submenu.append(new MenuItem({
+        label: 'item 1',
+        customProp: 'bar',
+        overrideProperty: 'oops not allowed'
+      }))
+
+      assert.equal(menu.items[0].customProp, 'foo')
+      assert.equal(menu.items[0].submenu.items[0].label, 'item 1')
+      assert.equal(menu.items[0].submenu.items[0].customProp, 'bar')
+      assert.equal(typeof menu.items[0].submenu.items[0].overrideProperty, 'function')
+    })
   })
 })

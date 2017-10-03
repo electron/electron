@@ -6,7 +6,7 @@
 
 This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable
-behavior to atom@github.com.
+behavior to electron@github.com.
 
 The following is a set of guidelines for contributing to Electron.
 These are just guidelines, not rules, use your best judgment and feel free to
@@ -14,6 +14,7 @@ propose changes to this document in a pull request.
 
 ## Submitting Issues
 
+### Creating Issues
 * You can create an issue [here](https://github.com/electron/electron/issues/new),
 but before doing that please read the notes below and include as many details as
 possible with your report. If you can, please include:
@@ -26,6 +27,15 @@ possible with your report. If you can, please include:
   * Error output that appears in your terminal, dev tools or as an alert
   * Perform a [cursory search](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+)
   to see if a similar issue has already been submitted
+
+### Issue Maintenance and Closure
+* If an issue is inactive for 45 days (no activity of any kind), it will be
+marked for closure with `stale`.
+* If after this label is applied, no further activity occurs in the next 7 days,
+the issue will be closed.
+  * If an issue has been closed and you still feel it's relevant, feel free to
+  ping a maintainer or add a comment!
+
 
 ## Submitting Pull Requests
 

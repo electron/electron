@@ -32,9 +32,11 @@ class CrashReporterLinux : public CrashReporter {
                     const std::string& company_name,
                     const std::string& submit_url,
                     const base::FilePath& crashes_dir,
-                    bool auto_submit,
+                    bool upload_to_server,
                     bool skip_system_crash_handler) override;
+  void SetUploadToServer(bool upload_to_server) override;
   void SetUploadParameters() override;
+  bool GetUploadToServer() override;
 
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterLinux>;
@@ -49,11 +51,12 @@ class CrashReporterLinux : public CrashReporter {
                         const bool succeeded);
 
   std::unique_ptr<google_breakpad::ExceptionHandler> breakpad_;
-  CrashKeyStorage crash_keys_;
+  std::unique_ptr<CrashKeyStorage> crash_keys_;
 
   uint64_t process_start_time_;
   pid_t pid_;
   std::string upload_url_;
+  bool upload_to_server_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterLinux);
 };

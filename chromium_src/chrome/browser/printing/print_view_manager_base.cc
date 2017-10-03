@@ -8,6 +8,8 @@
 
 #include "base/bind.h"
 #include "base/memory/ref_counted_memory.h"
+#include "base/memory/ptr_util.h"
+#include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
 #include "components/prefs/pref_service.h"
@@ -24,6 +26,7 @@
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/notification_source.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "printing/pdf_metafile_skia.h"
@@ -63,9 +66,13 @@ PrintViewManagerBase::~PrintViewManagerBase() {
 }
 
 #if !defined(DISABLE_BASIC_PRINTING)
-bool PrintViewManagerBase::PrintNow(bool silent, bool print_background) {
-  return PrintNowInternal(new PrintMsg_PrintPages(
-      routing_id(), silent, print_background));
+bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
+                                    bool silent, bool print_background,
+                                    const base::string16& device_name) {
+  int32_t id = rfh->GetRoutingID();
+  return PrintNowInternal(
+      rfh,
+      base::MakeUnique<PrintMsg_PrintPages>(id, silent, print_background, device_name));
 }
 #endif  // !DISABLE_BASIC_PRINTING
 
@@ -153,14 +160,20 @@ void PrintViewManagerBase::OnDidPrintPage(
 
   ShouldQuitFromInnerMessageLoop();
 #else
+  print_job_->AppendPrintedPage(params.page_number);
   if (metafile_must_be_valid) {
+    bool print_text_with_gdi =
+        document->settings().print_text_with_gdi() &&
+        !document->settings().printer_is_xps();
+
     scoped_refptr<base::RefCountedBytes> bytes = new base::RefCountedBytes(
         reinterpret_cast<const unsigned char*>(shared_buf.memory()),
         params.data_size);
 
     document->DebugDumpData(bytes.get(), FILE_PATH_LITERAL(".pdf"));
     print_job_->StartPdfToEmfConversion(
-        bytes, params.page_size, params.content_area);
+        bytes, params.page_size, params.content_area,
+        print_text_with_gdi);
   }
 #endif  // !OS_WIN
 }
@@ -183,7 +196,9 @@ void PrintViewManagerBase::OnShowInvalidPrinterSettingsError() {
   LOG(ERROR) << "Invalid printer settings";
 }
 
-bool PrintViewManagerBase::OnMessageReceived(const IPC::Message& message) {
+bool PrintViewManagerBase::OnMessageReceived(
+    const IPC::Message& message,
+    content::RenderFrameHost* render_frame_host) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(PrintViewManagerBase, message)
     IPC_MESSAGE_HANDLER(PrintHostMsg_DidGetPrintedPagesCount,
@@ -362,9 +377,12 @@ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
 }
 
 void PrintViewManagerBase::PrintingDone(bool success) {
-  if (!print_job_.get())
-    return;
-  Send(new PrintMsg_PrintingDone(routing_id(), success));
+  if (print_job_.get()) {
+    Send(new PrintMsg_PrintingDone(routing_id(), success));
+  }
+  if (!callback.is_null()) {
+    callback.Run(success && print_job_);
+  }
 }
 
 void PrintViewManagerBase::TerminatePrintJob(bool cancel) {
@@ -424,7 +442,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
   {
     base::MessageLoop::ScopedNestableTaskAllower allow(
         base::MessageLoop::current());
-    base::MessageLoop::current()->Run();
+    base::RunLoop().Run();
   }
 
   bool success = true;
@@ -466,13 +484,13 @@ bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
   return true;
 }
 
-bool PrintViewManagerBase::PrintNowInternal(IPC::Message* message) {
-  // Don't print / print preview interstitials.
-  if (web_contents()->ShowingInterstitialPage()) {
-    delete message;
+bool PrintViewManagerBase::PrintNowInternal(
+    content::RenderFrameHost* rfh,
+    std::unique_ptr<IPC::Message> message) {
+  // Don't print / print preview interstitials or crashed tabs.
+  if (web_contents()->ShowingInterstitialPage() || web_contents()->IsCrashed())
     return false;
-  }
-  return Send(message);
+  return rfh->Send(message.release());
 }
 
 void PrintViewManagerBase::ReleasePrinterQuery() {

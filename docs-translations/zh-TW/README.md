@@ -25,7 +25,7 @@
 客製的 DOM 元素:
 
 * [`File`物件](api/file-object.md)
-* [`<webview>`物件](api/web-view-tag.md)
+* [`<webview>`物件](api/webview-tag.md)
 * [`window.open`函數](api/window-open.md)
 
 主行程可用的模組:

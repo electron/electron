@@ -3,7 +3,7 @@ Le numéro de version devrait faire partie de l'URL de la page.
 Si ce n'est pas le cas, vous utilisez probablement la documentation d'une
 branche de développement qui peut contenir des changements API qui ne sont pas
 compatibles avec votre version d'Electron. Si c'est le cas, vous pouvez changer
-de version sur la liste [versions disponibles](http://electron.atom.io/docs/),
+de version sur la liste [versions disponibles](https://electron.atom.io/docs/),
 ou, si vous utilisez l'interface de GitHub, ouvrez la liste déroulante "Switch
 branches/tags" afin de sélectionner le tag de votre version.
 
@@ -43,7 +43,7 @@ dans la FAQ :
 ### Eléments DOM Personnalisés:
 
 * [Objet `File`](api/file-object.md)
-* [Tag `<webview>`](api/web-view-tag.md)
+* [Tag `<webview>`](api/webview-tag.md)
 * [Fonction `window.open`](api/window-open.md)
 
 ### Modules pour le Processus Principal :

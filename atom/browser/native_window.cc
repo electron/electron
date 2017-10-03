@@ -20,6 +20,7 @@
 #include "base/json/json_writer.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "components/prefs/pref_service.h"
@@ -103,8 +104,7 @@ NativeWindow::~NativeWindow() {
 // static
 NativeWindow* NativeWindow::FromWebContents(
     content::WebContents* web_contents) {
-  WindowList& window_list = *WindowList::GetInstance();
-  for (NativeWindow* window : window_list) {
+  for (const auto& window : WindowList::GetWindows()) {
     if (window->web_contents() == web_contents)
       return window;
   }
@@ -251,7 +251,7 @@ void NativeWindow::SetSizeConstraints(
   SetContentSizeConstraints(content_constraints);
 }
 
-extensions::SizeConstraints NativeWindow::GetSizeConstraints() {
+extensions::SizeConstraints NativeWindow::GetSizeConstraints() const {
   extensions::SizeConstraints content_constraints = GetContentSizeConstraints();
   extensions::SizeConstraints window_constraints;
   if (content_constraints.HasMaximumSize()) {
@@ -272,7 +272,7 @@ void NativeWindow::SetContentSizeConstraints(
   size_constraints_ = size_constraints;
 }
 
-extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() {
+extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() const {
   return size_constraints_;
 }
 
@@ -282,7 +282,7 @@ void NativeWindow::SetMinimumSize(const gfx::Size& size) {
   SetSizeConstraints(size_constraints);
 }
 
-gfx::Size NativeWindow::GetMinimumSize() {
+gfx::Size NativeWindow::GetMinimumSize() const {
   return GetSizeConstraints().GetMinimumSize();
 }
 
@@ -292,7 +292,7 @@ void NativeWindow::SetMaximumSize(const gfx::Size& size) {
   SetSizeConstraints(size_constraints);
 }
 
-gfx::Size NativeWindow::GetMaximumSize() {
+gfx::Size NativeWindow::GetMaximumSize() const {
   return GetSizeConstraints().GetMaximumSize();
 }
 
@@ -331,6 +331,38 @@ void NativeWindow::SetMenu(AtomMenuModel* menu) {
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
+}
+
+void NativeWindow::SetAutoHideCursor(bool auto_hide) {
+}
+
+void NativeWindow::SelectPreviousTab() {
+}
+
+void NativeWindow::SelectNextTab() {
+}
+
+void NativeWindow::MergeAllWindows() {
+}
+
+void NativeWindow::MoveTabToNewWindow() {
+}
+
+void NativeWindow::ToggleTabBar() {
+}
+
+void NativeWindow::SetVibrancy(const std::string& filename) {
+}
+
+void NativeWindow::SetTouchBar(
+    const std::vector<mate::PersistentDictionary>& items) {
+}
+
+void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {
+}
+
+void NativeWindow::SetEscapeTouchBarItem(
+    const mate::PersistentDictionary& item) {
 }
 
 void NativeWindow::FocusOnWebView() {
@@ -378,11 +410,13 @@ void NativeWindow::PreviewFile(const std::string& path,
                                const std::string& display_name) {
 }
 
+void NativeWindow::CloseFilePreview() {
+}
+
 void NativeWindow::RequestToClosePage() {
   bool prevent_default = false;
-  FOR_EACH_OBSERVER(NativeWindowObserver,
-                    observers_,
-                    WillCloseWindow(&prevent_default));
+  for (NativeWindowObserver& observer : observers_)
+    observer.WillCloseWindow(&prevent_default);
   if (prevent_default) {
     WindowList::WindowCloseCancelled(this);
     return;
@@ -413,8 +447,8 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   inspectable_web_contents_ = nullptr;
   Observe(nullptr);
 
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    WillDestroyNativeObject());
+  for (NativeWindowObserver& observer : observers_)
+    observer.WillDestroyNativeObject();
 
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
@@ -440,7 +474,8 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnRendererResponsive();
 }
 
 void NativeWindow::NotifyWindowClosed() {
@@ -450,104 +485,143 @@ void NativeWindow::NotifyWindowClosed() {
   WindowList::RemoveWindow(this);
 
   is_closed_ = true;
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowClosed();
+}
+
+void NativeWindow::NotifyWindowEndSession() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowEndSession();
 }
 
 void NativeWindow::NotifyWindowBlur() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowBlur());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowBlur();
 }
 
 void NativeWindow::NotifyWindowFocus() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowFocus());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowFocus();
 }
 
 void NativeWindow::NotifyWindowShow() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowShow());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowShow();
 }
 
 void NativeWindow::NotifyWindowHide() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowHide());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowHide();
 }
 
 void NativeWindow::NotifyWindowMaximize() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMaximize());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowMaximize();
 }
 
 void NativeWindow::NotifyWindowUnmaximize() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowUnmaximize());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowUnmaximize();
 }
 
 void NativeWindow::NotifyWindowMinimize() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMinimize());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowMinimize();
 }
 
 void NativeWindow::NotifyWindowRestore() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowRestore());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowRestore();
 }
 
 void NativeWindow::NotifyWindowResize() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowResize());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowResize();
 }
 
 void NativeWindow::NotifyWindowMove() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMove());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowMove();
 }
 
 void NativeWindow::NotifyWindowMoved() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMoved());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowMoved();
 }
 
 void NativeWindow::NotifyWindowEnterFullScreen() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowEnterFullScreen());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowEnterFullScreen();
 }
 
 void NativeWindow::NotifyWindowScrollTouchBegin() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowScrollTouchBegin());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowScrollTouchBegin();
 }
 
 void NativeWindow::NotifyWindowScrollTouchEnd() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowScrollTouchEnd());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowScrollTouchEnd();
 }
 
 void NativeWindow::NotifyWindowScrollTouchEdge() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowScrollTouchEdge());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowScrollTouchEdge();
 }
 
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowSwipe(direction));
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSwipe(direction);
+}
+
+void NativeWindow::NotifyWindowSheetBegin() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetBegin();
+}
+
+void NativeWindow::NotifyWindowSheetEnd() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowSheetEnd();
 }
 
 void NativeWindow::NotifyWindowLeaveFullScreen() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowLeaveFullScreen());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowLeaveFullScreen();
 }
 
 void NativeWindow::NotifyWindowEnterHtmlFullScreen() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowEnterHtmlFullScreen());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowEnterHtmlFullScreen();
 }
 
 void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowLeaveHtmlFullScreen());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowLeaveHtmlFullScreen();
 }
 
 void NativeWindow::NotifyWindowExecuteWindowsCommand(
     const std::string& command) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnExecuteWindowsCommand(command));
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnExecuteWindowsCommand(command);
+}
+
+void NativeWindow::NotifyTouchBarItemInteraction(
+    const std::string& item_id,
+    const base::DictionaryValue& details) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnTouchBarItemResult(item_id, details);
+}
+
+void NativeWindow::NotifyNewWindowForTab() {
+  for (NativeWindowObserver &observer : observers_)
+    observer.OnNewWindowForTab();
 }
 
 #if defined(OS_WIN)
 void NativeWindow::NotifyWindowMessage(
     UINT message, WPARAM w_param, LPARAM l_param) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnWindowMessage(message, w_param, l_param));
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowMessage(message, w_param, l_param);
 }
 #endif
 
@@ -595,7 +669,7 @@ void NativeWindow::DidFirstVisuallyNonEmptyPaint() {
   view->SetSize(GetContentSize());
 
   // Emit the ReadyToShow event in next tick in case of pending drawing work.
-  base::MessageLoop::current()->PostTask(
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
       base::Bind(&NativeWindow::NotifyReadyToShow, GetWeakPtr()));
 }
@@ -626,7 +700,7 @@ void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
   window_unresposive_closure_.Reset(
       base::Bind(&NativeWindow::NotifyWindowUnresponsive,
                  weak_factory_.GetWeakPtr()));
-  base::MessageLoop::current()->PostDelayedTask(
+  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
       FROM_HERE,
       window_unresposive_closure_.callback(),
       base::TimeDelta::FromMilliseconds(ms));
@@ -635,14 +709,15 @@ void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
 void NativeWindow::NotifyWindowUnresponsive() {
   window_unresposive_closure_.Cancel();
 
-  if (!is_closed_ && !IsUnresponsiveEventSuppressed() && IsEnabled())
-    FOR_EACH_OBSERVER(NativeWindowObserver,
-                      observers_,
-                      OnRendererUnresponsive());
+  if (!is_closed_ && !IsUnresponsiveEventSuppressed() && IsEnabled()) {
+    for (NativeWindowObserver& observer : observers_)
+      observer.OnRendererUnresponsive();
+  }
 }
 
 void NativeWindow::NotifyReadyToShow() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnReadyToShow());
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnReadyToShow();
 }
 
 }  // namespace atom

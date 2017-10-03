@@ -16,56 +16,10 @@
 
 就像 `--debug` 一样，但是会在第一行暂停脚本运行。
 
-## 使用 node-inspector 来调试
+## 外部调试器
 
-__备注：__ Electron 目前对 node-inspector 支持的不是特别好，
-如果你通过 node-inspector 的 console 来检查 `process` 对象，主进程就会崩溃。
+你将需要使用一个支持 V8 调试器的调试协议，
+下面的指南将会帮助你开始：
 
-### 1. 确认你已经安装了 [node-gyp 所需工具](https://github.com/nodejs/node-gyp#installation)
-
-### 2. 安装 [node-inspector][node-inspector]
-
-```bash
-$ npm install node-inspector
-```
-
-### 3. 安装 `node-pre-gyp` 的一个修订版
-
-```bash
-$ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electron-runtime-in-find
-``` 
-
-### 4. 为 Electron 重新编译 `node-inspector` `v8` 模块（将 target 参数修改为你的 Electron 的版本号）
-
-```bash
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
-```
-
-[How to install native modules][how-to-install-native-modules].
-
-### 5. 打开 Electron 的调试模式
-
-你也可以用调试参数来运行 Electron ：
-
-```bash
-$ electron --debug=5858 your/app
-```
-
-或者，在第一行暂停你的脚本：
-
-```bash
-$ electron --debug-brk=5858 your/app
-```
-
-### 6. 使用 Electron 开启 [node-inspector][node-inspector] 服务
-
-```bash
-$ ELECTRON_RUN_AS_NODE=true path/to/electron.exe node_modules/node-inspector/bin/inspector.js
-```
-
-### 7. 加载调试器界面
-
-在 Chrome 中打开 http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858
-
-[node-inspector]: https://github.com/node-inspector/node-inspector
+- [使用 VSCode 进行主进程调试](debugging-main-process-vscode.md)
+- [使用 node-inspector 进行主进程调试](debugging-main-process-node-inspector.md)

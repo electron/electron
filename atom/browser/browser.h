@@ -98,9 +98,11 @@ class Browser : public WindowListObserver {
     bool restore_state = false;
     bool opened_at_login = false;
     bool opened_as_hidden = false;
+    base::string16 path;
+    std::vector<base::string16> args;
   };
   void SetLoginItemSettings(LoginItemSettings settings);
-  LoginItemSettings GetLoginItemSettings();
+  LoginItemSettings GetLoginItemSettings(const LoginItemSettings& options);
 
 #if defined(OS_MACOSX)
   // Hide the application.
@@ -117,9 +119,31 @@ class Browser : public WindowListObserver {
   // Returns the type name of the current user activity.
   std::string GetCurrentActivityType();
 
+  // Invalidates the current user activity.
+  void InvalidateCurrentActivity();
+
+  // Updates the current user activity
+  void UpdateCurrentActivity(const std::string& type,
+                             const base::DictionaryValue& user_info);
+
+  // Indicates that an user activity is about to be resumed.
+  bool WillContinueUserActivity(const std::string& type);
+
+  // Indicates a failure to resume a Handoff activity.
+  void DidFailToContinueUserActivity(const std::string& type,
+                                     const std::string& error);
+
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
                             const base::DictionaryValue& user_info);
+
+  // Indicates that an activity was continued on another device.
+  void UserActivityWasContinued(const std::string& type,
+                                const base::DictionaryValue& user_info);
+
+  // Gives an oportunity to update the Handoff payload.
+  bool UpdateUserActivityState(const std::string& type,
+                               const base::DictionaryValue& user_info);
 
   // Bounce the dock icon.
   enum BounceType {
@@ -181,6 +205,11 @@ class Browser : public WindowListObserver {
   // Tell the application to open a url.
   void OpenURL(const std::string& url);
 
+#if defined(OS_MACOSX)
+  // Tell the application to create a new window for a tab.
+  void NewWindowForTab();
+#endif  // defined(OS_MACOSX)
+
   // Tell the application that application is activated with visible/invisible
   // windows.
   void Activate(bool has_visible_windows);
@@ -194,6 +223,8 @@ class Browser : public WindowListObserver {
   // Request basic auth login.
   void RequestLogin(LoginHandler* login_handler,
                     std::unique_ptr<base::DictionaryValue> request_details);
+
+  void PreMainMessageLoopRun();
 
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);

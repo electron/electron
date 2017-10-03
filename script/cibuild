@@ -18,22 +18,33 @@ LINUX_DEPS = [
   'libnotify-dev',
   'libnss3-dev',
   'libxtst-dev',
+]
+
+LINUX_DEPS_NO_ARM = [
   'gcc-multilib',
   'g++-multilib',
 ]
 
 LINUX_DEPS_ARM = [
-  'libc6-dev-armhf-cross',
-  'linux-libc-dev-armhf-cross',
-  'g++-arm-linux-gnueabihf',
+   'binutils-aarch64-linux-gnu',
+   'libc6-dev-armhf-cross',
+   'linux-libc-dev-armhf-cross',
+   'g++-arm-linux-gnueabihf',
+   'g++-4.8-multilib-arm-linux-gnueabihf',
+   'gcc-4.8-multilib-arm-linux-gnueabihf',
 ]
 
+LINUX_DEPS_ARM64 = [
+   'binutils-aarch64-linux-gnu',
+   'libc6-dev-arm64-cross',
+   'linux-libc-dev-arm64-cross',
+   'g++-4.8-aarch64-linux-gnu',
+   'gcc-4.8-aarch64-linux-gnu',
+   'gcc-aarch64-linux-gnu',
+]
 
 def main():
   os.environ['CI'] = '1'
-
-  if os.environ.has_key('JANKY_SHA1'):
-    setup_nodenv()
 
   # Ignore the CXX and CC env in CI.
   try:
@@ -53,12 +64,15 @@ def main():
     deps = LINUX_DEPS
     if target_arch == 'arm':
       deps += LINUX_DEPS_ARM
+    elif target_arch == 'arm64':
+      deps += LINUX_DEPS_ARM64
+    else:
+      deps += LINUX_DEPS_NO_ARM
     execute(['sudo', 'apt-get', 'install'] + deps)
 
-    execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
-
-  if PLATFORM == 'linux':
+  if PLATFORM == 'linux' and target_arch == 'x64':
     os.environ['DISPLAY'] = ':99.0'
+    execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
@@ -71,7 +85,7 @@ def main():
   os.environ['PATH'] = os.path.pathsep.join([node_bin_dir,
                                              os.environ.get('PATH', '')])
 
-  is_release = os.environ.has_key('ELECTRON_RELEASE')
+  is_release = os.environ.get('ELECTRON_RELEASE', '') == '1'
   args = ['--target_arch=' + target_arch]
   if not is_release:
     args += ['--dev']
@@ -81,16 +95,16 @@ def main():
     sys.stderr.write('\nRunning `npm run lint`\n')
     sys.stderr.flush()
     execute([npm, 'run', 'lint'])
+
   if is_release:
     run_script('build.py', ['-c', 'R'])
     run_script('create-dist.py')
     run_script('upload.py')
   else:
-    if PLATFORM == 'win32':
-      os.environ['OUTPUT_TO_FILE'] = 'output.log'
     run_script('build.py', ['-c', 'D'])
     if PLATFORM == 'win32' or target_arch == 'x64':
-      run_script('test.py', ['--ci'])
+      run_script('test.py', ['--ci', '--rebuild_native_modules'])
+      run_script('verify-ffmpeg.py')
 
 
 def run_script(script, args=[]):
@@ -109,16 +123,6 @@ def log_versions():
   sys.stderr.flush()
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
   subprocess.call([npm, '--version'])
-
-
-def setup_nodenv():
-  if os.path.isdir('/usr/local/share/nodenv'):
-    nodenv_root = os.path.join(os.environ['HOME'], '.nodenv')
-    os.environ['NODENV_ROOT'] = nodenv_root
-    os.environ['PATH'] = nodenv_root + '/bin:' + nodenv_root + '/shims:' + os.environ['PATH']
-    os.environ['NODENV_VERSION'] = 'v4.5.0'
-    subprocess.check_call(['/usr/local/share/nodenv/bin/nodenv', 'install', os.environ['NODENV_VERSION']])
-    subprocess.check_call(['/usr/local/share/nodenv/bin/nodenv', 'rehash'])
 
 
 if __name__ == '__main__':

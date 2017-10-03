@@ -1,6 +1,8 @@
 # protocol
 
-> 커스텀 프로토콜을 등록하거나 이미 존재하능 프로토콜의 요청의 동작을 변경합니다.
+> 커스텀 프로토콜을 등록하거나 이미 존재하는 프로토콜의 요청의 동작을 변경합니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 다음 예시는 `file://` 프로토콜과 비슷한 일을 하는 커스텀 프로토콜을 설정합니다:
 
@@ -128,7 +130,7 @@ app.on('ready', () => {
 const {protocol} = require('electron')
 
 protocol.registerBufferProtocol('atom', (request, callback) => {
-  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
+  callback({mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>')})
 }, (error) => {
   if (error) console.error('Failed to register protocol')
 })

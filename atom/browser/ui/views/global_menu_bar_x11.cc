@@ -9,8 +9,10 @@
 // This conflicts with mate::Converter,
 #undef True
 #undef False
-// and V8.
+// and V8,
 #undef None
+// and url_request_status.h,
+#undef Status
 
 #include <dlfcn.h>
 #include <glib-object.h>
@@ -163,6 +165,18 @@ void SetMenuItemID(DbusmenuMenuitem* item, int id) {
   g_object_set_data(G_OBJECT(item), "menu-id", GINT_TO_POINTER(id + 1));
 }
 
+std::string GetMenuModelStatus(AtomMenuModel* model) {
+  std::string ret;
+  for (int i = 0; i < model->GetItemCount(); ++i) {
+    int status = model->GetTypeAt(i) | (model->IsVisibleAt(i) << 3)
+                                     | (model->IsEnabledAt(i) << 4)
+                                     | (model->IsItemCheckedAt(i) << 5);
+    ret += base::StringPrintf(
+        "%s-%X\n", base::UTF16ToUTF8(model->GetLabelAt(i)).c_str(), status);
+  }
+  return ret;
+}
+
 }  // namespace
 
 GlobalMenuBarX11::GlobalMenuBarX11(NativeWindowViews* window)
@@ -306,6 +320,16 @@ void GlobalMenuBarX11::OnSubMenuShow(DbusmenuMenuitem* item) {
   AtomMenuModel* model = ModelForMenuItem(item);
   if (!model || !GetMenuItemID(item, &id))
     return;
+
+  // Do not update menu if the submenu has not been changed.
+  std::string status = GetMenuModelStatus(model);
+  char* old = static_cast<char*>(g_object_get_data(G_OBJECT(item), "status"));
+  if (old && status == old)
+    return;
+
+  // Save the new status.
+  g_object_set_data_full(G_OBJECT(item), "status", g_strdup(status.c_str()),
+                         g_free);
 
   // Clear children.
   GList *children = menuitem_take_children(item);

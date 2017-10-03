@@ -11,13 +11,21 @@
 #include "base/callback.h"
 #include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
 #include "native_mate/scoped_persistent.h"
+#include "third_party/WebKit/public/platform/WebVector.h"
 #include "third_party/WebKit/public/web/WebSpellCheckClient.h"
+#include "third_party/WebKit/public/web/WebTextCheckClient.h"
+
+namespace blink {
+struct WebTextCheckingResult;
+class WebTextCheckingCompletion;
+}
 
 namespace atom {
 
 namespace api {
 
-class SpellCheckClient : public blink::WebSpellCheckClient {
+class SpellCheckClient : public blink::WebSpellCheckClient,
+                         public blink::WebTextCheckClient {
  public:
   SpellCheckClient(const std::string& language,
                    bool auto_spell_correct_turned_on,
@@ -26,24 +34,20 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
   virtual ~SpellCheckClient();
 
  private:
-  // blink::WebSpellCheckClient:
-  void spellCheck(
+  // blink::WebTextCheckClient:
+  void CheckSpelling(
       const blink::WebString& text,
       int& misspelledOffset,
       int& misspelledLength,
       blink::WebVector<blink::WebString>* optionalSuggestions) override;
-  void checkTextOfParagraph(
-      const blink::WebString&,
-      blink::WebTextCheckingTypeMask mask,
-      blink::WebVector<blink::WebTextCheckingResult>* results) override;
-  void requestCheckingOfText(
+  void RequestCheckingOfText(
       const blink::WebString& textToCheck,
-      const blink::WebVector<uint32_t>& markersInText,
-      const blink::WebVector<unsigned>& markerOffsets,
       blink::WebTextCheckingCompletion* completionCallback) override;
-  void showSpellingUI(bool show) override;
-  bool isShowingSpellingUI() override;
-  void updateSpellingUIWithMisspelledWord(
+
+  // blink::WebSpellCheckClient:
+  void ShowSpellingUI(bool show) override;
+  bool IsShowingSpellingUI() override;
+  void UpdateSpellingUIWithMisspelledWord(
       const blink::WebString& word) override;
 
   // Check the spelling of text.

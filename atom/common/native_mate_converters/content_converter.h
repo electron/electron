@@ -15,6 +15,7 @@
 
 namespace content {
 struct ContextMenuParams;
+class ResourceRequestBodyImpl;
 class WebContents;
 }
 
@@ -45,6 +46,15 @@ template<>
 struct Converter<content::PermissionType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const content::PermissionType& val);
+};
+
+template<>
+struct Converter<scoped_refptr<content::ResourceRequestBodyImpl>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const scoped_refptr<content::ResourceRequestBodyImpl>& val);
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     scoped_refptr<content::ResourceRequestBodyImpl>* out);
 };
 
 template<>

@@ -24,7 +24,7 @@ Electron은 Node.js 런타임과 비슷하게 작동합니다. Electron의 API�
 __2. 빌드 시스템__
 
 Electron은 Chromium의 모든것을 빌드하는 복잡성을 피하기 위해
-[libchromiumcontent](https://github.com/brightray/libchromiumcontent)를 사용하여
+[libchromiumcontent](https://github.com/electron/libchromiumcontent)를 사용하여
 Chromium의 Content API에 접근합니다. libchromiumcontent은 단일 공유 라이브러리이고
 Chromium Content 모듈과 의존성 라이브러리들을 포함합니다. 유저는 Electron을 빌드 하기
 위해 높은 사양의 빌드용 컴퓨터를 구비할 필요가 없습니다.

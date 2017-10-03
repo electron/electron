@@ -4,8 +4,6 @@
 
 #include "atom/common/native_mate_converters/callback.h"
 
-#include "content/public/browser/browser_thread.h"
-
 using content::BrowserThread;
 
 namespace mate {

@@ -2,6 +2,8 @@
 
 > 메인 프로세스 모듈을 렌더러 프로세스에서 사용합니다.
 
+프로세스: [렌더러](../tutorial/quick-start.md#renderer-process)
+
 `remote` 모듈은 메인 프로세스와 렌더러 프로세스(웹 페이지) 사이의 inter-process
 (IPC) 통신을 간단하게 추상화 한 모듈입니다.
 

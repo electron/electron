@@ -5,8 +5,7 @@
     window.opener.postMessage(JSON.stringify({
       origin: e.origin,
       data: e.data,
-      sourceEqualsOpener: e.source === window.opener,
-      sourceId: e.source.guestId
+      sourceEqualsOpener: e.source === window.opener
     }), '*');
   });
 </script>

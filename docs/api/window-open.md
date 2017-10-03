@@ -20,7 +20,8 @@ string.
 * `frameName` String (optional)
 * `features` String (optional)
 
-Returns `BrowserWindowProxy` - Creates a new window and returns an instance of `BrowserWindowProxy` class.
+Returns [`BrowserWindowProxy`](browser-window-proxy.md) - Creates a new window
+and returns an instance of `BrowserWindowProxy` class.
 
 The `features` string follows the format of standard browser, but each feature
 has to be a field of `BrowserWindow`'s options.
@@ -29,6 +30,10 @@ has to be a field of `BrowserWindow`'s options.
 
 * Node integration will always be disabled in the opened `window` if it is
   disabled on the parent window.
+* Context isolation will always be enabled in the opened `window` if it is
+  enabled on the parent window.
+* JavaScript will always be disabled in the opened `window` if it is disabled on
+  the parent window.
 * Non-standard features (that are not handled by Chromium or Electron) given in
   `features` will be passed to any registered `webContent`'s `new-window` event
   handler in the `additionalFeatures` argument.
@@ -41,54 +46,49 @@ has to be a field of `BrowserWindow`'s options.
 Sends a message to the parent window with the specified origin or `*` for no
 origin preference.
 
-## Class: BrowserWindowProxy
+### Using Chrome's `window.open()` implementation
 
-> Manipulate the child browser window
+If you want to use Chrome's built-in `window.open()` implementation, set
+`nativeWindowOpen` to `true` in the `webPreferences` options object.
 
-The `BrowserWindowProxy` object is returned from `window.open` and provides
-limited functionality with the child window.
+Native `window.open()` allows synchronous access to opened windows so it is
+convenient choice if you need to open a dialog or a preferences window.
 
-### Instance Methods
+This option can also be set on `<webview>` tags as well:
 
-The `BrowserWindowProxy` object has the following instance methods:
+```html
+<webview webpreferences="nativeWindowOpen=yes"></webview>
+```
 
-#### `win.blur()`
+The creation of the `BrowserWindow` is customizable via `WebContents`'s
+`new-window` event.
 
-Removes focus from the child window.
+```javascript
+// main process
+const mainWindow = new BrowserWindow({
+  width: 800,
+  height: 600,
+  webPreferences: {
+    nativeWindowOpen: true
+  }
+})
+mainWindow.webContents.on('new-window', (event, url, frameName, disposition, options, additionalFeatures) => {
+  if (frameName === 'modal') {
+    // open window as modal
+    event.preventDefault()
+    Object.assign(options, {
+      modal: true,
+      parent: mainWindow,
+      width: 100,
+      height: 100
+    })
+    event.newGuest = new BrowserWindow(options)
+  }
+})
+```
 
-#### `win.close()`
-
-Forcefully closes the child window without calling its unload event.
-
-#### `win.eval(code)`
-
-* `code` String
-
-Evaluates the code in the child window.
-
-#### `win.focus()`
-
-Focuses the child window (brings the window to front).
-
-#### `win.print()`
-
-Invokes the print dialog on the child window.
-
-#### `win.postMessage(message, targetOrigin)`
-
-* `message` String
-* `targetOrigin` String
-
-Sends a message to the child window with the specified origin or `*` for no
-origin preference.
-
-In addition to these methods, the child window implements `window.opener` object
-with no properties and a single method.
-
-### Instance Properties
-
-The `BrowserWindowProxy` object has the following instance properties:
-
-#### `win.closed`
-
-A Boolean that is set to true after the child window gets closed.
+```javascript
+// renderer process (mainWindow)
+let modal = window.open('', 'modal')
+modal.document.write('<h1>Hello</h1>')
+```

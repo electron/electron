@@ -2,7 +2,7 @@ Por favor, certifique-se de que está utilizando a documentação que correspond
 O número da versão deve ser uma parte da URL da página. Se não for, você provavelmente está utilizando
 a documentação de um branch de desenvolvimento que pode conter mudanças na API que não são compatíveis
 com a sua versão do Electron. Se este for o caso, você pode mudar para uma versão diferente da
-documentação na lista de [versões disponíveis](http://electron.atom.io/docs/) em atom.io,
+documentação na lista de [versões disponíveis](https://electron.atom.io/docs/) em atom.io,
 ou se você estiver usando a interface do GitHub, abra o *dropdown* "Switch branches/tags" e
 selecione a *tag* que corresponde à sua versão.
 
@@ -41,7 +41,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 ### Elementos DOM Personalizados:
 
 * [Objeto `File`](api/file-object.md)
-* [Tag `<webview>`](../../docs/api/web-view-tag.md)
+* [Tag `<webview>`](../../docs/api/webview-tag.md)
 * [Função `window.open`](api/window-open.md)
 
 ### Módulos para o Processo Principal:
@@ -56,7 +56,7 @@ Existem muitas perguntas comuns que são feitas, verifique antes de criar uma is
 * [Menu](../../docs/api/menu.md)
 * [MenuItem](../../docs/api/menu-item.md)
 * [powerMonitor](api/power-monitor.md)
-* [powerSaveBlocker](../../docs/api/power-save-blocker.md)
+* [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](../../docs/api/protocol.md)
 * [session](../../docs/api/session.md)
 * [webContents](../../docs/api/web-contents.md)

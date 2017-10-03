@@ -99,6 +99,15 @@ describe('asar package', function () {
         })
       })
 
+      it('reads from a empty file with encoding', function (done) {
+        var p = path.join(fixtures, 'asar', 'empty.asar', 'file1')
+        fs.readFile(p, 'utf8', function (err, content) {
+          assert.equal(err, null)
+          assert.equal(content, '')
+          done()
+        })
+      })
+
       it('reads a linked file', function (done) {
         var p = path.join(fixtures, 'asar', 'a.asar', 'link1')
         fs.readFile(p, function (err, content) {
@@ -792,6 +801,11 @@ describe('asar package', function () {
 
   describe('asar protocol', function () {
     var url = require('url')
+    var w = null
+
+    afterEach(function () {
+      return closeWindow(w).then(function () { w = null })
+    })
 
     it('can request a file in package', function (done) {
       var p = path.resolve(fixtures, 'asar', 'a.asar', 'file1')
@@ -839,10 +853,9 @@ describe('asar package', function () {
     it('sets __dirname correctly', function (done) {
       after(function () {
         ipcMain.removeAllListeners('dirname')
-        return closeWindow(w).then(function () { w = null })
       })
 
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         width: 400,
         height: 400
@@ -863,10 +876,9 @@ describe('asar package', function () {
     it('loads script tag in html', function (done) {
       after(function () {
         ipcMain.removeAllListeners('ping')
-        return closeWindow(w).then(function () { w = null })
       })
 
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         width: 400,
         height: 400
@@ -885,14 +897,13 @@ describe('asar package', function () {
     })
 
     it('loads video tag in html', function (done) {
-      this.timeout(20000)
+      this.timeout(60000)
 
       after(function () {
         ipcMain.removeAllListeners('asar-video')
-        return closeWindow(w).then(function () { w = null })
       })
 
-      var w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         width: 400,
         height: 400

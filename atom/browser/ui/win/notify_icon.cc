@@ -147,10 +147,10 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   if (pos.IsOrigin())
     rect.set_origin(display::Screen::GetScreen()->GetCursorScreenPoint());
 
-  views::MenuRunner menu_runner(
+  menu_runner_.reset(new views::MenuRunner(
       menu_model != nullptr ? menu_model : menu_model_,
-      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
-  ignore_result(menu_runner.RunMenuAt(
+      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS));
+  ignore_result(menu_runner_->RunMenuAt(
       NULL, NULL, rect, views::MENU_ANCHOR_TOPLEFT, ui::MENU_SOURCE_MOUSE));
 }
 

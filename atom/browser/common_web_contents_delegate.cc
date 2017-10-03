@@ -9,19 +9,21 @@
 #include <vector>
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_javascript_dialog_manager.h"
-#include "atom/browser/atom_security_state_model_client.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/common/atom_constants.h"
 #include "base/files/file_util.h"
+#include "base/memory/ptr_util.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
+#include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "chrome/browser/ui/browser_dialogs.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
+#include "components/security_state/content/content_utils.h"
+#include "components/security_state/core/security_state.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
@@ -32,7 +34,6 @@
 #include "storage/browser/fileapi/isolated_context.h"
 
 using content::BrowserThread;
-using security_state::SecurityStateModel;
 
 namespace atom {
 
@@ -93,8 +94,10 @@ FileSystem CreateFileSystemStruct(
   return FileSystem(file_system_name, root_url, file_system_path);
 }
 
-base::DictionaryValue* CreateFileSystemValue(const FileSystem& file_system) {
-  auto* file_system_value = new base::DictionaryValue();
+std::unique_ptr<base::DictionaryValue> CreateFileSystemValue(
+    const FileSystem& file_system) {
+  std::unique_ptr<base::DictionaryValue> file_system_value(
+      new base::DictionaryValue());
   file_system_value->SetString("fileSystemName", file_system.file_system_name);
   file_system_value->SetString("rootURL", file_system.root_url);
   file_system_value->SetString("fileSystemPath", file_system.file_system_path);
@@ -144,28 +147,11 @@ bool IsDevToolsFileSystemAdded(
   return file_system_paths.find(file_system_path) != file_system_paths.end();
 }
 
-content::SecurityStyle SecurityLevelToSecurityStyle(
-    SecurityStateModel::SecurityLevel security_level) {
-  switch (security_level) {
-    case SecurityStateModel::NONE:
-      return content::SECURITY_STYLE_UNAUTHENTICATED;
-    case SecurityStateModel::SECURITY_WARNING:
-    case SecurityStateModel::SECURITY_POLICY_WARNING:
-      return content::SECURITY_STYLE_WARNING;
-    case SecurityStateModel::EV_SECURE:
-    case SecurityStateModel::SECURE:
-      return content::SECURITY_STYLE_AUTHENTICATED;
-    case SecurityStateModel::SECURITY_ERROR:
-      return content::SECURITY_STYLE_AUTHENTICATION_BROKEN;
-  }
-
-  return content::SECURITY_STYLE_UNKNOWN;
-}
-
 }  // namespace
 
 CommonWebContentsDelegate::CommonWebContentsDelegate()
-    : html_fullscreen_(false),
+    : ignore_menu_shortcuts_(false),
+      html_fullscreen_(false),
       native_fullscreen_(false),
       devtools_file_system_indexer_(new DevToolsFileSystemIndexer) {
 }
@@ -193,13 +179,23 @@ void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
 
 void CommonWebContentsDelegate::SetOwnerWindow(
     content::WebContents* web_contents, NativeWindow* owner_window) {
-  owner_window_ = owner_window->GetWeakPtr();
+  owner_window_ = owner_window ? owner_window->GetWeakPtr() : nullptr;
   NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
-  web_contents->SetUserData(relay->key, relay);
+  if (owner_window) {
+    web_contents->SetUserData(relay->key, relay);
+  } else {
+    web_contents->RemoveUserData(relay->key);
+    delete relay;
+  }
 }
 
-void CommonWebContentsDelegate::DestroyWebContents() {
-  web_contents_.reset();
+void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
+  if (async) {
+    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
+                                                    web_contents_.release());
+  } else {
+    web_contents_.reset();
+  }
 }
 
 content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
@@ -233,15 +229,6 @@ content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
 
 bool CommonWebContentsDelegate::CanOverscrollContent() const {
   return false;
-}
-
-content::JavaScriptDialogManager*
-CommonWebContentsDelegate::GetJavaScriptDialogManager(
-    content::WebContents* source) {
-  if (!dialog_manager_)
-    dialog_manager_.reset(new AtomJavaScriptDialogManager);
-
-  return dialog_manager_.get();
 }
 
 content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
@@ -290,88 +277,16 @@ bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
   return html_fullscreen_;
 }
 
-content::SecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
+blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
     content::WebContents* web_contents,
-    content::SecurityStyleExplanations* explanations) {
-  auto model_client =
-      AtomSecurityStateModelClient::FromWebContents(web_contents);
-
-  const SecurityStateModel::SecurityInfo& security_info =
-      model_client->GetSecurityInfo();
-
-  const content::SecurityStyle security_style =
-      SecurityLevelToSecurityStyle(security_info.security_level);
-
-  explanations->ran_insecure_content_style =
-      SecurityLevelToSecurityStyle(
-          SecurityStateModel::kRanInsecureContentLevel);
-  explanations->displayed_insecure_content_style =
-      SecurityLevelToSecurityStyle(
-          SecurityStateModel::kDisplayedInsecureContentLevel);
-
-  explanations->scheme_is_cryptographic = security_info.scheme_is_cryptographic;
-  if (!security_info.scheme_is_cryptographic)
-    return security_style;
-
-  if (security_info.sha1_deprecation_status ==
-      SecurityStateModel::DEPRECATED_SHA1_MAJOR) {
-    explanations->broken_explanations.push_back(
-        content::SecurityStyleExplanation(
-            kSHA1Certificate,
-            kSHA1MajorDescription,
-            security_info.cert_id));
-  } else if (security_info.sha1_deprecation_status ==
-                SecurityStateModel::DEPRECATED_SHA1_MINOR) {
-    explanations->unauthenticated_explanations.push_back(
-        content::SecurityStyleExplanation(
-            kSHA1Certificate,
-            kSHA1MinorDescription,
-            security_info.cert_id));
-  }
-
-  explanations->ran_insecure_content =
-      security_info.mixed_content_status ==
-          SecurityStateModel::RAN_MIXED_CONTENT ||
-      security_info.mixed_content_status ==
-          SecurityStateModel::RAN_AND_DISPLAYED_MIXED_CONTENT;
-  explanations->displayed_insecure_content =
-      security_info.mixed_content_status ==
-          SecurityStateModel::DISPLAYED_MIXED_CONTENT ||
-      security_info.mixed_content_status ==
-          SecurityStateModel::RAN_AND_DISPLAYED_MIXED_CONTENT;
-
-  if (net::IsCertStatusError(security_info.cert_status)) {
-    std::string error_string = net::ErrorToString(
-        net::MapCertStatusToNetError(security_info.cert_status));
-
-    content::SecurityStyleExplanation explanation(
-        kCertificateError,
-        "There are issues with the site's certificate chain " + error_string,
-        security_info.cert_id);
-
-    if (net::IsCertStatusMinorError(security_info.cert_status))
-      explanations->unauthenticated_explanations.push_back(explanation);
-    else
-      explanations->broken_explanations.push_back(explanation);
-  } else {
-    if (security_info.sha1_deprecation_status ==
-        SecurityStateModel::NO_DEPRECATED_SHA1) {
-      explanations->secure_explanations.push_back(
-          content::SecurityStyleExplanation(
-              kValidCertificate,
-              kValidCertificateDescription,
-              security_info.cert_id));
-    }
-  }
-
-  if (security_info.is_secure_protocol_and_ciphersuite) {
-    explanations->secure_explanations.push_back(
-        content::SecurityStyleExplanation(
-            kSecureProtocol,
-            kSecureProtocolDescription));
-  }
-
-  return security_style;
+    content::SecurityStyleExplanations* security_style_explanations) {
+  SecurityStateTabHelper* helper =
+      SecurityStateTabHelper::FromWebContents(web_contents);
+  DCHECK(helper);
+  security_state::SecurityInfo security_info;
+  helper->GetSecurityInfo(&security_info);
+  return security_state::GetSecurityStyle(security_info,
+                                          security_style_explanations);
 }
 
 void CommonWebContentsDelegate::DevToolsSaveToFile(
@@ -381,11 +296,12 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
   if (it != saved_files_.end() && !save_as) {
     path = it->second;
   } else {
-    file_dialog::Filters filters;
-    base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
-    if (!file_dialog::ShowSaveDialog(owner_window(), url, "", default_path,
-                                     filters, &path)) {
-      base::StringValue url_value(url);
+    file_dialog::DialogSettings settings;
+    settings.parent_window = owner_window();
+    settings.title = url;
+    settings.default_path = base::FilePath::FromUTF8Unsafe(url);
+    if (!file_dialog::ShowSaveDialog(settings, &path)) {
+      base::Value url_value(url);
       web_contents_->CallClientFunction(
           "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
       return;
@@ -424,7 +340,7 @@ void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
   }
 
   std::vector<FileSystem> file_systems;
-  for (auto file_system_path : file_system_paths) {
+  for (const auto& file_system_path : file_system_paths) {
     base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
     std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
                                                     path);
@@ -445,12 +361,11 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     const base::FilePath& file_system_path) {
   base::FilePath path = file_system_path;
   if (path.empty()) {
-    file_dialog::Filters filters;
-    base::FilePath default_path;
     std::vector<base::FilePath> paths;
-    int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
-    if (!file_dialog::ShowOpenDialog(owner_window(), "", "", default_path,
-                                     filters, flag, &paths))
+    file_dialog::DialogSettings settings;
+    settings.parent_window = owner_window();
+    settings.properties = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
+    if (!file_dialog::ShowOpenDialog(settings, &paths))
       return;
 
     path = paths[0];
@@ -470,7 +385,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
   auto pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
   update.Get()->SetWithoutPathExpansion(
-      path.AsUTF8Unsafe(), base::Value::CreateNullValue());
+      path.AsUTF8Unsafe(), base::MakeUnique<base::Value>());
 
   web_contents_->CallClientFunction("DevToolsAPI.fileSystemAdded",
                                     file_system_value.get(),
@@ -490,7 +405,7 @@ void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
   update.Get()->RemoveWithoutPathExpansion(path, nullptr);
 
-  base::StringValue file_system_path_value(path);
+  base::Value file_system_path_value(path);
   web_contents_->CallClientFunction("DevToolsAPI.fileSystemRemoved",
                                     &file_system_path_value,
                                     nullptr, nullptr);
@@ -554,7 +469,7 @@ void CommonWebContentsDelegate::DevToolsSearchInPath(
 void CommonWebContentsDelegate::OnDevToolsSaveToFile(
     const std::string& url) {
   // Notify DevTools.
-  base::StringValue url_value(url);
+  base::Value url_value(url);
   web_contents_->CallClientFunction(
       "DevToolsAPI.savedURL", &url_value, nullptr, nullptr);
 }
@@ -562,7 +477,7 @@ void CommonWebContentsDelegate::OnDevToolsSaveToFile(
 void CommonWebContentsDelegate::OnDevToolsAppendToFile(
     const std::string& url) {
   // Notify DevTools.
-  base::StringValue url_value(url);
+  base::Value url_value(url);
   web_contents_->CallClientFunction(
       "DevToolsAPI.appendedToURL", &url_value, nullptr, nullptr);
 }
@@ -571,9 +486,9 @@ void CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated(
     int request_id,
     const std::string& file_system_path,
     int total_work) {
-  base::FundamentalValue request_id_value(request_id);
-  base::StringValue file_system_path_value(file_system_path);
-  base::FundamentalValue total_work_value(total_work);
+  base::Value request_id_value(request_id);
+  base::Value file_system_path_value(file_system_path);
+  base::Value total_work_value(total_work);
   web_contents_->CallClientFunction("DevToolsAPI.indexingTotalWorkCalculated",
                                     &request_id_value,
                                     &file_system_path_value,
@@ -584,9 +499,9 @@ void CommonWebContentsDelegate::OnDevToolsIndexingWorked(
     int request_id,
     const std::string& file_system_path,
     int worked) {
-  base::FundamentalValue request_id_value(request_id);
-  base::StringValue file_system_path_value(file_system_path);
-  base::FundamentalValue worked_value(worked);
+  base::Value request_id_value(request_id);
+  base::Value file_system_path_value(file_system_path);
+  base::Value worked_value(worked);
   web_contents_->CallClientFunction("DevToolsAPI.indexingWorked",
                                     &request_id_value,
                                     &file_system_path_value,
@@ -597,8 +512,8 @@ void CommonWebContentsDelegate::OnDevToolsIndexingDone(
     int request_id,
     const std::string& file_system_path) {
   devtools_indexing_jobs_.erase(request_id);
-  base::FundamentalValue request_id_value(request_id);
-  base::StringValue file_system_path_value(file_system_path);
+  base::Value request_id_value(request_id);
+  base::Value file_system_path_value(file_system_path);
   web_contents_->CallClientFunction("DevToolsAPI.indexingDone",
                                     &request_id_value,
                                     &file_system_path_value,
@@ -613,8 +528,8 @@ void CommonWebContentsDelegate::OnDevToolsSearchCompleted(
   for (const auto& file_path : file_paths) {
     file_paths_value.AppendString(file_path);
   }
-  base::FundamentalValue request_id_value(request_id);
-  base::StringValue file_system_path_value(file_system_path);
+  base::Value request_id_value(request_id);
+  base::Value file_system_path_value(file_system_path);
   web_contents_->CallClientFunction("DevToolsAPI.searchCompleted",
                                     &request_id_value,
                                     &file_system_path_value,

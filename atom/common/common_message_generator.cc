@@ -31,4 +31,3 @@ namespace IPC {
 namespace IPC {
 #include "atom/common/common_message_generator.h"
 }  // namespace IPC
-

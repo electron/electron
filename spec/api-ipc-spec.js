@@ -85,6 +85,13 @@ describe('ipc module', function () {
       assert.equal(foo.baz(), 123)
     })
 
+    it('includes the length of functions specified as arguments', function () {
+      var a = remote.require(path.join(fixtures, 'module', 'function-with-args.js'))
+      assert.equal(a(function (a, b, c, d, f) {}), 5)
+      assert.equal(a((a) => {}), 1)
+      assert.equal(a((...args) => {}), 0)
+    })
+
     it('handles circular references in arrays and objects', function () {
       var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
 
@@ -147,12 +154,35 @@ describe('ipc module', function () {
     })
   })
 
+  describe('remote modules', function () {
+    it('includes browser process modules as properties', function () {
+      assert.equal(typeof remote.app.getPath, 'function')
+      assert.equal(typeof remote.webContents.getFocusedWebContents, 'function')
+      assert.equal(typeof remote.clipboard.readText, 'function')
+      assert.equal(typeof remote.shell.openExternal, 'function')
+    })
+
+    it('returns toString() of original function via toString()', function () {
+      const {readText} = remote.clipboard
+      assert(readText.toString().startsWith('function'))
+
+      var {functionWithToStringProperty} = remote.require(path.join(fixtures, 'module', 'to-string-non-function.js'))
+      assert.equal(functionWithToStringProperty.toString, 'hello')
+    })
+  })
+
   describe('remote object in renderer', function () {
     it('can change its properties', function () {
       var property = remote.require(path.join(fixtures, 'module', 'property.js'))
       assert.equal(property.property, 1127)
+
+      property.property = null
+      assert.equal(property.property, null)
+      property.property = undefined
+      assert.equal(property.property, undefined)
       property.property = 1007
       assert.equal(property.property, 1007)
+
       assert.equal(property.getFunctionProperty(), 'foo-browser')
       property.func.property = 'bar'
       assert.equal(property.getFunctionProperty(), 'bar-browser')
@@ -161,6 +191,26 @@ describe('ipc module', function () {
       var property2 = remote.require(path.join(fixtures, 'module', 'property.js'))
       assert.equal(property2.property, 1007)
       property.property = 1127
+    })
+
+    it('rethrows errors getting/setting properties', function () {
+      const foo = remote.require(path.join(fixtures, 'module', 'error-properties.js'))
+
+      assert.throws(function () {
+        foo.bar
+      }, /getting error/)
+
+      assert.throws(function () {
+        foo.bar = 'test'
+      }, /setting error/)
+    })
+
+    it('can set a remote property with a remote object', function () {
+      const foo = remote.require(path.join(fixtures, 'module', 'remote-object-set.js'))
+
+      assert.doesNotThrow(function () {
+        foo.bar = remote.getCurrentWindow()
+      })
     })
 
     it('can construct an object from its member', function () {
@@ -434,8 +484,6 @@ describe('ipc module', function () {
     })
 
     it('does not crash when reply is not sent and browser is destroyed', function (done) {
-      this.timeout(10000)
-
       w = new BrowserWindow({
         show: false
       })
@@ -495,6 +543,67 @@ describe('ipc module', function () {
       assert.equal(w.listenerCount('test'), 1)
       w.removeListener('test', listener)
       assert.equal(w.listenerCount('test'), 0)
+    })
+
+    it('detaches listeners subscribed to destroyed renderers, and shows a warning', (done) => {
+      w = new BrowserWindow({
+        show: false
+      })
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.once('did-finish-load', () => {
+          const expectedMessage = [
+            'Attempting to call a function in a renderer window that has been closed or released.',
+            'Function provided here: remote-event-handler.html:11:33',
+            'Remote event names: remote-handler, other-remote-handler'
+          ].join('\n')
+          const results = ipcRenderer.sendSync('try-emit-web-contents-event', w.webContents.id, 'remote-handler')
+          assert.deepEqual(results, {
+            warningMessage: expectedMessage,
+            listenerCountBefore: 2,
+            listenerCountAfter: 1
+          })
+          done()
+        })
+        w.webContents.reload()
+      })
+      w.loadURL('file://' + path.join(fixtures, 'api', 'remote-event-handler.html'))
+    })
+  })
+
+  it('throws an error when removing all the listeners', () => {
+    ipcMain.on('test-event', () => {})
+    assert.equal(ipcMain.listenerCount('test-event'), 1)
+
+    ipcRenderer.on('test-event', () => {})
+    assert.equal(ipcRenderer.listenerCount('test-event'), 1)
+
+    assert.throws(() => {
+      ipcMain.removeAllListeners()
+    }, /Removing all listeners from ipcMain will make Electron internals stop working/)
+
+    assert.throws(() => {
+      ipcRenderer.removeAllListeners()
+    }, /Removing all listeners from ipcRenderer will make Electron internals stop working/)
+
+    ipcMain.removeAllListeners('test-event')
+    assert.equal(ipcMain.listenerCount('test-event'), 0)
+
+    ipcRenderer.removeAllListeners('test-event')
+    assert.equal(ipcRenderer.listenerCount('test-event'), 0)
+  })
+
+  describe('remote objects registry', function () {
+    it('does not dereference until the render view is deleted (regression)', function (done) {
+      w = new BrowserWindow({
+        show: false
+      })
+
+      ipcMain.once('error-message', (event, message) => {
+        assert(message.startsWith('Cannot call function \'getURL\' on missing remote object'), message)
+        done()
+      })
+
+      w.loadURL('file://' + path.join(fixtures, 'api', 'render-view-deleted.html'))
     })
   })
 })

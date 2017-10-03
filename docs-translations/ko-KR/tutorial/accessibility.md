@@ -14,7 +14,7 @@ HTML 입니다. 그러나 검사를 위한 URL 이 없기 때문에 Electron 앱
 이 새 기능들은 Electron 앱에 검사 도구를 제공합니다. Spectron 으로 테스트 하기
 위한 검사를 추가 하거나 Devtron 으로 개발자 도구의 것을 사용할 수 있습니다.
 자세한 정보는 도구의 요약이나
-[접근성 문서](http://electron.atom.io/docs/tutorial/accessibility) 를 읽어보세요.
+[접근성 문서](https://electron.atom.io/docs/tutorial/accessibility) 를 읽어보세요.
 
 ### Spectron
 
@@ -47,5 +47,5 @@ Devtron 에서 앱의 페이지를 검사할 수 있는 접근성 탭이 생겼�
 통해 더 알아볼 수 있습니다.
 
 Electron 을 위한 다른 훌륭한 접근성 도구를 알고계시다면,
-[접근성 문서](http://electron.atom.io/docs/tutorial/accessibility) 에 풀
+[접근성 문서](https://electron.atom.io/docs/tutorial/accessibility) 에 풀
 요청과 함께 추가해 주세요.

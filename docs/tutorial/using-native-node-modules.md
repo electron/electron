@@ -23,7 +23,7 @@ export npm_config_target=1.2.3
 export npm_config_arch=x64
 export npm_config_target_arch=x64
 # Download headers for Electron.
-export npm_config_disturl=https://atom.io/download/atom-shell
+export npm_config_disturl=https://atom.io/download/electron
 # Tell node-pre-gyp that we are building for Electron.
 export npm_config_runtime=electron
 # Tell node-pre-gyp to build module from source code.
@@ -59,7 +59,7 @@ use `node-gyp` directly to build for Electron:
 
 ```bash
 cd /path-to-module/
-HOME=~/.electron-gyp node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://atom.io/download/atom-shell
+HOME=~/.electron-gyp node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://atom.io/download/electron
 ```
 
 The `HOME=~/.electron-gyp` changes where to find development headers. The
@@ -75,6 +75,16 @@ following things:
 * The architecture of module has to match Electron's architecture (ia32 or x64).
 * After you upgraded Electron, you usually need to rebuild the modules.
 * When in doubt, run `electron-rebuild` first.
+
+## Modules that rely on `prebuild`
+
+[`prebuild`](https://github.com/mafintosh/prebuild) provides a way to easily
+publish native Node modules with prebuilt binaries for multiple versions of Node
+and Electron.
+
+If modules provide binaries for the usage in Electron, make sure to omit
+`--build-from-source` and the `npm_config_build_from_source` environment
+variable in order to take full advantage of the prebuilt binaries.
 
 ## Modules that rely on `node-pre-gyp`
 

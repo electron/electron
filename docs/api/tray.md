@@ -1,6 +1,10 @@
-# Tray
+## Class: Tray
 
 > Add icons and context menus to the system's notification area.
+
+Process: [Main](../glossary.md#main-process)
+
+`Tray` is an [EventEmitter][event-emitter].
 
 ```javascript
 const {app, Menu, Tray} = require('electron')
@@ -31,31 +35,32 @@ __Platform limitations:__
   you have to call `setContextMenu` again. For example:
 
 ```javascript
-const {Menu, Tray} = require('electron')
-const appIcon = new Tray('/path/to/my/icon')
-const contextMenu = Menu.buildFromTemplate([
-  {label: 'Item1', type: 'radio'},
-  {label: 'Item2', type: 'radio'}
-])
+const {app, Menu, Tray} = require('electron')
 
-// Make a change to the context menu
-contextMenu.items[2].checked = false
+let appIcon = null
+app.on('ready', () => {
+  appIcon = new Tray('/path/to/my/icon')
+  const contextMenu = Menu.buildFromTemplate([
+    {label: 'Item1', type: 'radio'},
+    {label: 'Item2', type: 'radio'}
+  ])
 
-// Call this again for Linux because we modified the context menu
-appIcon.setContextMenu(contextMenu)
+  // Make a change to the context menu
+  contextMenu.items[1].checked = false
+
+  // Call this again for Linux because we modified the context menu
+  appIcon.setContextMenu(contextMenu)
+})
 ```
 * On Windows it is recommended to use `ICO` icons to get best visual effects.
 
 If you want to keep exact same behaviors on all platforms, you should not
 rely on the `click` event and always attach a context menu to the tray icon.
 
-## Class: Tray
-
-`Tray` is an [EventEmitter][event-emitter].
 
 ### `new Tray(image)`
 
-* `image` [NativeImage](native-image.md)
+* `image` ([NativeImage](native-image.md) | String)
 
 Creates a new tray icon associated with the `image`.
 
@@ -139,6 +144,28 @@ Emitted when a drag operation exits the tray icon.
 
 Emitted when a drag operation ends on the tray or ends at another location.
 
+#### Event: 'mouse-enter' _macOS_
+
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
+* `position` [Point](structures/point.md) - The position of the event
+
+Emitted when the mouse enters the tray icon.
+
+#### Event: 'mouse-leave' _macOS_
+
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
+* `position` [Point](structures/point.md) - The position of the event
+
+Emitted when the mouse exits the tray icon.
+
 ### Instance Methods
 
 The `Tray` class has the following methods:
@@ -149,7 +176,7 @@ Destroys the tray icon immediately.
 
 #### `tray.setImage(image)`
 
-* `image` [NativeImage](native-image.md)
+* `image` ([NativeImage](native-image.md) | String)
 
 Sets the `image` associated with this tray icon.
 
@@ -205,18 +232,16 @@ win.on('hide', () => {
 #### `tray.displayBalloon(options)` _Windows_
 
 * `options` Object
-  * `icon` [NativeImage](native-image.md)
-  * `title` String
-  * `content` String
+  * `icon` ([NativeImage](native-image.md) | String) - (optional)
+  * `title` String - (optional)
+  * `content` String - (optional)
 
 Displays a tray balloon.
 
 #### `tray.popUpContextMenu([menu, position])` _macOS_ _Windows_
 
 * `menu` Menu (optional)
-* `position` Object (optional) - The pop up position.
-  * `x` Integer
-  * `y` Integer
+* `position` [Point](structures/point.md) (optional) - The pop up position.
 
 Pops up the context menu of the tray icon. When `menu` is passed, the `menu` will
 be shown instead of the tray icon's context menu.

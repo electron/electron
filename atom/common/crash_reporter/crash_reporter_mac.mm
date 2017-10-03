@@ -13,7 +13,6 @@
 #include "base/strings/string_piece.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "vendor/crashpad/client/crash_report_database.h"
 #include "vendor/crashpad/client/crashpad_client.h"
 #include "vendor/crashpad/client/crashpad_info.h"
 #include "vendor/crashpad/client/settings.h"
@@ -31,7 +30,7 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
                                     const std::string& company_name,
                                     const std::string& submit_url,
                                     const base::FilePath& crashes_dir,
-                                    bool auto_submit,
+                                    bool upload_to_server,
                                     bool skip_system_crash_handler) {
   // check whether crashpad has been initialized.
   // Only need to initialize once.
@@ -44,14 +43,18 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
       base::FilePath handler_path =
           framework_bundle_path.Append("Resources").Append("crashpad_handler");
 
+      std::vector<std::string> args = {
+        "--no-rate-limit",
+        "--no-upload-gzip",  // not all servers accept gzip
+      };
+
       crashpad::CrashpadClient crashpad_client;
-      if (crashpad_client.StartHandler(handler_path, crashes_dir,
-                                       submit_url,
-                                       StringMap(),
-                                       std::vector<std::string>(),
-                                       true)) {
-        crashpad_client.UseHandler();
-      }
+      crashpad_client.StartHandler(handler_path, crashes_dir, crashes_dir,
+                                   submit_url,
+                                   StringMap(),
+                                   args,
+                                   true,
+                                   false);
     }  // @autoreleasepool
   }
 
@@ -73,11 +76,23 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
     SetCrashKeyValue(upload_parameter.first, upload_parameter.second);
   }
   if (is_browser_) {
-    std::unique_ptr<crashpad::CrashReportDatabase> database =
+    database_ =
         crashpad::CrashReportDatabase::Initialize(crashes_dir);
-    if (database) {
-      database->GetSettings()->SetUploadsEnabled(auto_submit);
-    }
+    SetUploadToServer(upload_to_server);
+  }
+}
+
+bool CrashReporterMac::GetUploadToServer() {
+  bool enabled = true;
+  if (database_) {
+    database_->GetSettings()->GetUploadsEnabled(&enabled);
+  }
+  return enabled;
+}
+
+void CrashReporterMac::SetUploadToServer(const bool upload_to_server) {
+  if (database_) {
+    database_->GetSettings()->SetUploadsEnabled(upload_to_server);
   }
 }
 
@@ -88,6 +103,21 @@ void CrashReporterMac::SetUploadParameters() {
 void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
                                         const base::StringPiece& value) {
   simple_string_dictionary_->SetKeyValue(key.data(), value.data());
+}
+
+void CrashReporterMac::SetExtraParameter(const std::string& key,
+                                         const std::string& value) {
+  if (simple_string_dictionary_)
+    SetCrashKeyValue(key, value);
+  else
+    upload_parameters_[key] = value;
+}
+
+void CrashReporterMac::RemoveExtraParameter(const std::string& key) {
+  if (simple_string_dictionary_)
+    simple_string_dictionary_->RemoveKey(key.data());
+  else
+    upload_parameters_.erase(key);
 }
 
 std::vector<CrashReporter::UploadReportResult>

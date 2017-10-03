@@ -36,7 +36,7 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
     return true;
   }
 
-  if (ContainsKey(protocol_handler_map_, scheme))
+  if (base::ContainsKey(protocol_handler_map_, scheme))
     return false;
   protocol_handler_map_[scheme] = protocol_handler.release();
   return true;
@@ -45,20 +45,21 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
 bool AtomURLRequestJobFactory::InterceptProtocol(
     const std::string& scheme,
     std::unique_ptr<ProtocolHandler> protocol_handler) {
-  if (!ContainsKey(protocol_handler_map_, scheme) ||
-      ContainsKey(original_protocols_, scheme))
+  if (!base::ContainsKey(protocol_handler_map_, scheme) ||
+      base::ContainsKey(original_protocols_, scheme))
     return false;
   ProtocolHandler* original_protocol_handler = protocol_handler_map_[scheme];
   protocol_handler_map_[scheme] = protocol_handler.release();
-  original_protocols_.set(scheme, base::WrapUnique(original_protocol_handler));
+  original_protocols_[scheme].reset(original_protocol_handler);
   return true;
 }
 
 bool AtomURLRequestJobFactory::UninterceptProtocol(const std::string& scheme) {
-  if (!original_protocols_.contains(scheme))
+  auto it = original_protocols_.find(scheme);
+  if (it == original_protocols_.end())
     return false;
-  protocol_handler_map_[scheme] =
-      original_protocols_.take_and_erase(scheme).release();
+  protocol_handler_map_[scheme] = it->second.release();
+  original_protocols_.erase(it);
   return true;
 }
 
@@ -74,11 +75,13 @@ ProtocolHandler* AtomURLRequestJobFactory::GetProtocolHandler(
 
 bool AtomURLRequestJobFactory::HasProtocolHandler(
     const std::string& scheme) const {
-  return ContainsKey(protocol_handler_map_, scheme);
+  return base::ContainsKey(protocol_handler_map_, scheme);
 }
 
 void AtomURLRequestJobFactory::Clear() {
-  STLDeleteValues(&protocol_handler_map_);
+  for (auto& it : protocol_handler_map_)
+    delete it.second;
+  protocol_handler_map_.clear();
 }
 
 net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
@@ -114,17 +117,13 @@ bool AtomURLRequestJobFactory::IsHandledProtocol(
       net::URLRequest::IsHandledProtocol(scheme);
 }
 
-bool AtomURLRequestJobFactory::IsHandledURL(const GURL& url) const {
-  if (!url.is_valid()) {
+bool AtomURLRequestJobFactory::IsSafeRedirectTarget(
+    const GURL& location) const {
+  if (!location.is_valid()) {
     // We handle error cases.
     return true;
   }
-  return IsHandledProtocol(url.scheme());
-}
-
-bool AtomURLRequestJobFactory::IsSafeRedirectTarget(
-    const GURL& location) const {
-  return IsHandledURL(location);
+  return IsHandledProtocol(location.scheme());
 }
 
 }  // namespace atom

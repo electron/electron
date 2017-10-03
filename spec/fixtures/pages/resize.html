@@ -1,0 +1,9 @@
+<html>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = require('electron')
+
+  window.addEventListener('resize', () => {
+    ipcRenderer.send('webview-guest-resize', window.innerWidth, window.innerHeight)
+  }, false);
+</script>
+</html>

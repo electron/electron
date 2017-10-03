@@ -4,7 +4,45 @@
 
 > WebDriver 是一款开源的支持多浏览器的自动化测试工具。它提供了操作网页、用户输入、JavaScript 执行等能力。ChromeDriver 是一个实现了 WebDriver 与 Chromium 联接协议的独立服务。它也是由开发了 Chromium 和 WebDriver 的团队开发的。
 
-为了能够使 `chromedriver` 和 Electron 一起正常工作，我们需要告诉它 Electron 在哪，并且让它相信 Electron 就是 Chrome 浏览器。
+## 通过 Spectron 配置
+
+[Spectron][spectron] 是 Electron 官方支持的 ChromeDriver 测试框架。
+它是建立在 [WebdriverIO](http://webdriver.io/) 的顶层，并且
+帮助你在测试中访问 Electron API 和绑定 ChromeDriver。
+
+```bash
+$ npm install --save-dev spectron
+```
+
+```javascript
+// 一个简单的测试验证一个带标题的可见的窗口
+var Application = require('spectron').Application
+var assert = require('assert')
+
+var app = new Application({
+  path: '/Applications/MyApp.app/Contents/MacOS/MyApp'
+})
+
+app.start().then(function () {
+  // 检查浏览器窗口是否可见
+  return app.browserWindow.isVisible()
+}).then(function (isVisible) {
+  // 验证浏览器窗口是否可见
+  assert.equal(isVisible, true)
+}).then(function () {
+  // 获得浏览器窗口的标题
+  return app.client.getTitle()
+}).then(function (title) {
+  // 验证浏览器窗口的标题
+  assert.equal(title, 'My App')
+}).catch(function (error) {
+  // 记录任何错误
+  console.error('Test failed', error.message)
+}).then(function () {
+  // 停止应用程序
+  return app.stop()
+})
+```
 
 ## 通过 WebDriverJs 配置
 
@@ -85,7 +123,7 @@ $ npm install webdriverio
 
 ```javascript
 const webdriverio = require('webdriverio')
-var options = {
+const options = {
   host: 'localhost', // 使用localhost作为ChromeDriver服务器
   port: 9515,        // "9515"是ChromeDriver使用的端口
   desiredCapabilities: {
@@ -97,7 +135,7 @@ var options = {
   }
 }
 
-var client = webdriverio.remote(options)
+let client = webdriverio.remote(options)
 
 client
     .init()
@@ -117,3 +155,4 @@ client
 当然，你也可以在运行 Electron 时传入参数指定你 app 的所在文件夹。这步可以免去你拷贝－粘贴你的 app 到 Electron 的资源目录。
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
+[spectron]: https://electron.atom.io/spectron

@@ -1,0 +1,273 @@
+
+version: 2
+jobs:
+  electron-linux-arm:
+    docker:
+      - image: electronbuilds/electron:0.0.3
+        environment:
+          TARGET_ARCH: arm
+    resource_class: xlarge
+    steps:
+      - checkout
+      - run:
+          name: Setup for headless testing
+          command: sh -e /etc/init.d/xvfb start
+      - run:
+          name: Check for release
+          command: |
+            MESSAGE="$(git log --format=%B -n 1 HEAD)"
+            case ${MESSAGE} in
+              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
+            esac
+      - run:
+         name: Bootstrap
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH
+           else
+              echo 'Bootstrapping Electron for debug build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH --dev
+           fi
+      - run: npm run lint
+      - run:
+         name: Build
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
+              script/build.py -c R
+           else
+              echo 'Building Electron for debug'
+              script/build.py -c D
+           fi
+      - run:
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
+                script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
+             fi
+      - run:
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Uploading Electron release distribution'
+                script/upload.py
+             else
+                echo 'Skipping upload distribution because build is not for release'
+             fi
+  electron-linux-arm64:
+    docker:
+      - image: electronbuilds/electron:0.0.3
+        environment:
+          TARGET_ARCH: arm64
+    resource_class: xlarge          
+    steps:
+      - checkout
+      - run:
+          name: Setup for headless testing
+          command: sh -e /etc/init.d/xvfb start
+      - run:
+          name: Check for release
+          command: |
+            MESSAGE="$(git log --format=%B -n 1 HEAD)"
+            case ${MESSAGE} in
+              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
+            esac
+      - run:
+         name: Bootstrap
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH
+           else
+              echo 'Bootstrapping Electron for debug build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH --dev
+           fi
+      - run: npm run lint
+      - run:
+         name: Build
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
+              script/build.py -c R
+           else
+              echo 'Building Electron for debug'
+              script/build.py -c D
+           fi
+      - run:
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
+                script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
+             fi
+      - run:
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Uploading Electron release distribution'
+                script/upload.py
+             else
+                echo 'Skipping upload distribution because build is not for release'
+             fi
+  electron-linux-ia32:
+    docker:
+      - image: electronbuilds/electron:0.0.3
+        environment:
+          TARGET_ARCH: ia32
+    resource_class: xlarge
+    steps:
+      - checkout
+      - run:
+          name: Setup for headless testing
+          command: sh -e /etc/init.d/xvfb start
+      - run:
+          name: Check for release
+          command: |
+            MESSAGE="$(git log --format=%B -n 1 HEAD)"
+            case ${MESSAGE} in
+              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
+            esac
+      - run:
+         name: Bootstrap
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH
+           else
+              echo 'Bootstrapping Electron for debug build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH --dev
+           fi
+      - run: npm run lint
+      - run:
+         name: Build
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
+              script/build.py -c R
+           else
+              echo 'Building Electron for debug'
+              script/build.py -c D
+           fi
+      - run:
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
+                script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
+             fi
+      - run:
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Uploading Electron release distribution'
+                script/upload.py
+             else
+                echo 'Skipping upload distribution because build is not for release'
+             fi
+
+  electron-linux-x64:
+    docker:
+      - image: electronbuilds/electron:0.0.3
+        environment:
+          TARGET_ARCH: x64
+    resource_class: xlarge
+    steps:
+      - checkout
+      - run:
+          name: Setup for headless testing
+          command: sh -e /etc/init.d/xvfb start
+      - run:
+          name: Check for release
+          command: |
+            MESSAGE="$(git log --format=%B -n 1 HEAD)"
+            case ${MESSAGE} in
+              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
+            esac
+      - run:
+         name: Bootstrap
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH
+           else
+              echo 'Bootstrapping Electron for debug build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH --dev
+           fi
+      - run: npm run lint
+      - run:
+         name: Build
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
+              script/build.py -c R
+           else
+              echo 'Building Electron for debug'
+              script/build.py -c D
+           fi
+      - run:
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
+                script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
+             fi
+      - run:
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Uploading Electron release distribution'
+                script/upload.py
+             else
+                echo 'Skipping upload distribution because build is not for release'
+             fi
+      - run:
+          name: Test
+          environment:
+            MOCHA_FILE: junit/test-results.xml
+            MOCHA_REPORTER: mocha-junit-reporter
+          command: |
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Testing Electron debug build'
+                mkdir junit
+                script/test.py --ci --rebuild_native_modules
+             else
+                echo 'Skipping testing on release build'
+             fi
+      - run:
+          name: Verify FFmpeg
+          command: |
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Verifying ffmpeg on debug build'
+                script/verify-ffmpeg.py
+             else
+                echo 'Skipping verify ffmpeg on release build'
+             fi
+      - store_test_results:
+          path: junit
+      - store_artifacts:
+          path: junit
+
+workflows:
+  version: 2
+  build-arm:
+    jobs:
+      - electron-linux-arm
+  build-arm64:
+    jobs:
+      - electron-linux-arm64
+  build-ia32:
+    jobs:
+      - electron-linux-ia32
+  build-x64:
+    jobs:
+      - electron-linux-x64

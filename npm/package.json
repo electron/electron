@@ -1,0 +1,26 @@
+{
+  "scripts": {
+    "cache-clean": "rm -rf ~/.electron && rm -rf dist",
+    "postinstall": "node install.js",
+    "pretest": "npm run cache-clean",
+    "test": "standard"
+  },
+  "bin": {
+    "electron": "cli.js"
+  },
+  "main": "index.js",
+  "types": "electron.d.ts",
+  "dependencies": {
+    "@types/node": "^8.0.24",
+    "electron-download": "^3.0.1",
+    "extract-zip": "^1.0.3"
+  },
+  "devDependencies": {
+    "home-path": "^0.1.1",
+    "path-exists": "^2.0.0",
+    "standard": "^5.4.1"
+  },
+  "directories": {
+    "test": "test"
+  }
+}

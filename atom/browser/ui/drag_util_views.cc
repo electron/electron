@@ -4,15 +4,16 @@
 
 #include "atom/browser/ui/drag_util.h"
 
+#include "ui/aura/client/drag_drop_client.h"
 #include "ui/aura/window.h"
 #include "ui/base/dragdrop/drag_drop_types.h"
-#include "ui/base/dragdrop/drag_utils.h"
 #include "ui/base/dragdrop/file_info.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
+#include "ui/views/button_drag_utils.h"
 #include "ui/views/widget/widget.h"
-#include "ui/wm/public/drag_drop_client.h"
+#include "url/gurl.h"
 
 namespace atom {
 
@@ -22,7 +23,9 @@ void DragFileItems(const std::vector<base::FilePath>& files,
   // Set up our OLE machinery
   ui::OSExchangeData data;
 
-  drag_utils::CreateDragImageForFile(files[0], icon.AsImageSkia(), &data);
+  button_drag_utils::SetDragImage(GURL(), files[0].LossyDisplayName(),
+      icon.AsImageSkia(), nullptr,
+      *views::Widget::GetTopLevelWidgetForNativeView(view), &data);
 
   std::vector<ui::FileInfo> file_infos;
   for (const base::FilePath& file : files) {

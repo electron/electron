@@ -8,55 +8,9 @@ applications can put a custom menu in the dock menu.
 This guide explains how to integrate your application into those desktop
 environments with Electron APIs.
 
-## Notifications (Windows, Linux, macOS)
+## Notifications
 
-All three operating systems provide means for applications to send notifications
-to the user. Electron conveniently allows developers to send notifications with
-the [HTML5 Notification API](https://notifications.spec.whatwg.org/), using
-the currently running operating system's native notification APIs to display it.
-
-**Note:** Since this is an HTML5 API it is only available in the renderer process.
-
-```javascript
-let myNotification = new Notification('Title', {
-  body: 'Lorem Ipsum Dolor Sit Amet'
-})
-
-myNotification.onclick = () => {
-  console.log('Notification clicked')
-}
-```
-
-While code and user experience across operating systems are similar, there
-are fine differences.
-
-### Windows
-
-* On Windows 10, notifications "just work".
-* On Windows 8.1 and Windows 8, a shortcut to your app, with a [Application User
-Model ID][app-user-model-id], must be installed to the Start screen. Note,
-however, that it does not need to be pinned to the Start screen.
-* On Windows 7, notifications are not supported. You can however send
-"balloon notifications" using the [Tray API][tray-balloon].
-
-Furthermore, the maximum length for the notification body is 250 characters,
-with the Windows team recommending that notifications should be kept to 200
-characters.
-
-### Linux
-
-Notifications are sent using `libnotify`, it can show notifications on any
-desktop environment that follows [Desktop Notifications
-Specification][notification-spec], including Cinnamon, Enlightenment, Unity,
-GNOME, KDE.
-
-### macOS
-
-Notifications are straight-forward on macOS, you should however be aware of
-[Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html).
-
-Note that notifications are limited to 256 bytes in size - and will be truncated
-if you exceed that limit.
+See [Notifications](notifications.md)
 
 ## Recent documents (Windows & macOS)
 
@@ -65,7 +19,7 @@ the application via JumpList or dock menu, respectively.
 
 __JumpList:__
 
-![JumpList Recent Files](http://i.msdn.microsoft.com/dynimg/IC420538.png)
+![JumpList Recent Files](https://cloud.githubusercontent.com/assets/2289/23446924/11a27b98-fdfc-11e6-8485-cc3b1e86b80a.png)
 
 __Application dock menu:__
 

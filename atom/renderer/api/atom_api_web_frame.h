@@ -11,7 +11,7 @@
 #include "atom/renderer/guest_view_container.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
-#include "third_party/WebKit/public/web/WebCache.h"
+#include "third_party/WebKit/public/platform/WebCache.h"
 
 namespace blink {
 class WebLocalFrame;
@@ -45,7 +45,8 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   double SetZoomFactor(double factor);
   double GetZoomFactor() const;
 
-  void SetZoomLevelLimits(double min_level, double max_level);
+  void SetVisualZoomLevelLimits(double min_level, double max_level);
+  void SetLayoutZoomLevelLimits(double min_level, double max_level);
 
   v8::Local<v8::Value> RegisterEmbedderCustomElement(
       const base::string16& name, v8::Local<v8::Object> options);
@@ -68,6 +69,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
 
   // Editing.
   void InsertText(const std::string& text);
+  void InsertCSS(const std::string& css);
 
   // Excecuting scripts.
   void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);

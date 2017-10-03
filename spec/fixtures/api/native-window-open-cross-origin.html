@@ -1,0 +1,19 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = require('electron')
+  const popup = window.open('http://host')
+  const intervalID = setInterval(function () {
+    try {
+      if (popup.location.toString() !== 'about:blank') {
+        clearInterval(intervalID)
+        ipcRenderer.send('answer', `Did not throw error accessing location: ${popup.location}`)
+      }
+    } catch (error) {
+      clearInterval(intervalID)
+      ipcRenderer.send('answer', error.message)
+    }
+  }, 10)
+</script>
+</body>
+</html>

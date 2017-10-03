@@ -1,16 +1,16 @@
 Lütfen kullandığınız dokümanın Electron versiyonunuzla aynı olduğundan emin olun.
 Versiyon numarası okuduğunuz dokümanın URL'sindekiyle aynı olmalı. Eğer aynı değilse, muhtemelen geliştirme aşamasındaki API değişikliklerini içerebilecek dokümantasyonudur.
-Eğer öyleyse, atom.io üzerinden [mevcut sürümler](http://electron.atom.io/docs/)e göz atabilirsiniz ya da eğer GitHub arayüzünü kullanıyorsanız "Switch branches/tags" açılır menüsünden versiyonunuza uygun olanı seçebilirsiniz.
+Eğer öyleyse, atom.io üzerinden [mevcut sürümler](https://electron.atom.io/docs/)e göz atabilirsiniz ya da eğer GitHub arayüzünü kullanıyorsanız "Switch branches/tags" açılır menüsünden versiyonunuza uygun olanı seçebilirsiniz.
 
 ## SSS(Sıkça Sorulan Sorular)
 
 Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
-* [Electron SSS](https://github.com/electron/electron/tree/master/docs/faq/electron-faq.md)
+* [Electron SSS](https://github.com/electron/electron/blob/master/docs/faq.md)
 
 ## Klavuzlar
 
-* [Desteklenen Platformlar ](https://github.com/electron/electron/tree/master/docs/tutorial/supported-platforms.md)
-* [Uygulama Dağıtımı](https://github.com/electron/electron/tree/master/docs/tutorial/application-distribution.md)
+* [Desteklenen Platformlar ](tutorial/supported-platforms.md)
+* [Uygulama Dağıtımı](tutorial/application-distribution.md)
 * [Mac Uygulama Mağazası Başvuru Klavuzu](https://github.com/electron/electron/tree/master/docs/tutorial/mac-app-store-submission-guide.md)
 * [Uygulama Paketleme](https://github.com/electron/electron/tree/master/docs/tutorial/application-packaging.md)
 * [Native Node Modüllerini Kullanma](https://github.com/electron/electron/tree/master/docs/tutorial/using-native-node-modules.md)
@@ -23,7 +23,7 @@ Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
 
 ## Eğitimler
 
-* [Quick Start](https://github.com/electron/electron/tree/master/docs/tutorial/quick-start.md)
+* [Hızlı Başlangıç](tutorial/quick-start.md)
 * [Desktop Environment Integration](https://github.com/electron/electron/tree/master/docs/tutorial/desktop-environment-integration.md)
 * [Online/Offline Event Detection](https://github.com/electron/electron/tree/master/docs/tutorial/online-offline-events.md)
 
@@ -37,7 +37,7 @@ Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
 ### Özel DOM Elementleri:
 
 * [`File` Nesnesi](api/file-object.md)
-* [`<webview>` Etiketi](https://github.com/electron/electron/tree/master/docs/api/web-view-tag.md)
+* [`<webview>` Etiketi](https://github.com/electron/electron/tree/master/docs/api/webview-tag.md)
 * [`window.open` Fonksiyonu](https://github.com/electron/electron/tree/master/docs/api/window-open.md)
 
 ### Ana Süreç(Main Process) Modülleri:
@@ -58,7 +58,7 @@ Bir problem(issue) bildirmeden önce sıkça sorulan sorulara göz atın:
 * [webContents](https://github.com/electron/electron/tree/master/docs/api/web-contents.md)
 * [Tray](https://github.com/electron/electron/tree/master/docs/api/tray.md)
 
-### Renderer Process Modülelri (Web Page):
+### Renderer Process Modülleri (Web Page):
 
 * [desktopCapturer](https://github.com/electron/electron/tree/master/docs/api/desktop-capturer.md)
 * [ipcRenderer](https://github.com/electron/electron/tree/master/docs/api/ipc-renderer.md)

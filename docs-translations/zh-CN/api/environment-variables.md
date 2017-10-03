@@ -46,7 +46,7 @@ Windows 控制台:
 
 ## `ELECTRON_FORCE_WINDOW_MENU_BAR` _Linux_
 
-不可再 Linux 上使用全局菜单栏.
+不可在 Linux 上使用全局菜单栏.
 
 ## `ELECTRON_HIDE_INTERNAL_MODULES`
 

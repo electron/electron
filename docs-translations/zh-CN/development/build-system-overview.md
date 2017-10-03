@@ -8,8 +8,8 @@ Electron 使用 [gyp](https://gyp.gsrc.io/) 来生成项目 ，使用 [ninja](ht
 
 * `atom.gyp` 定义了 Electron 它自己是怎样被构建的.
 * `common.gypi` 调整 node 的构建配置，来让它结合 Chromium 一起构建.
-* `vendor/brightray/brightray.gyp` 定义了 `brightray` 是如何被构建的，并且包含了默认配置来连接到 Chromium.
-* `vendor/brightray/brightray.gypi` 包含了常用的创建配置.
+* `brightray/brightray.gyp` 定义了 `brightray` 是如何被构建的，并且包含了默认配置来连接到 Chromium.
+* `brightray/brightray.gypi` 包含了常用的创建配置.
 
 ## 创建组件
 

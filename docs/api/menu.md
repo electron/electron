@@ -1,6 +1,114 @@
-# Menu
+## Class: Menu
+
 
 > Create native application menus and context menus.
+
+Process: [Main](../glossary.md#main-process)
+
+### `new Menu()`
+
+Creates a new menu.
+
+### Static Methods
+
+The `menu` class has the following static methods:
+
+#### `Menu.setApplicationMenu(menu)`
+
+* `menu` Menu
+
+Sets `menu` as the application menu on macOS. On Windows and Linux, the
+`menu` will be set as each window's top menu.
+
+Passing `null` will remove the menu bar on Windows and Linux but has no
+effect on macOS.
+
+**Note:** This API has to be called after the `ready` event of `app` module.
+
+#### `Menu.getApplicationMenu()`
+
+Returns `Menu` - The application menu, if set, or `null`, if not set.
+
+**Note:** The returned `Menu` instance doesn't support dynamic addition or
+removal of menu items. [Instance properties](#instance-properties) can still
+be dynamically modified.
+
+#### `Menu.sendActionToFirstResponder(action)` _macOS_
+
+* `action` String
+
+Sends the `action` to the first responder of application. This is used for
+emulating default macOS menu behaviors. Usually you would just use the
+[`role`](menu-item.md#roles) property of a [`MenuItem`](menu-item.md).
+
+See the [macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
+for more information on macOS' native actions.
+
+#### `Menu.buildFromTemplate(template)`
+
+* `template` MenuItemConstructorOptions[]
+
+Returns `Menu`
+
+Generally, the `template` is just an array of `options` for constructing a
+[MenuItem](menu-item.md). The usage can be referenced above.
+
+You can also attach other fields to the element of the `template` and they
+will become properties of the constructed menu items.
+
+### Instance Methods
+
+The `menu` object has the following instance methods:
+
+#### `menu.popup([browserWindow, options])`
+
+* `browserWindow` BrowserWindow (optional) - Default is the focused window.
+* `options` Object (optional)
+  * `x` Number (optional) - Default is the current mouse cursor position.
+    Must be declared if `y` is declared.
+  * `y` Number (optional) - Default is the current mouse cursor position.
+    Must be declared if `x` is declared.
+  * `async` Boolean (optional) - Set to `true` to have this method return
+    immediately called, `false` to return after the menu has been selected
+    or closed. Defaults to `false`.
+  * `positioningItem` Number (optional) _macOS_ - The index of the menu item to
+    be positioned under the mouse cursor at the specified coordinates. Default
+    is -1.
+
+Pops up this menu as a context menu in the `browserWindow`.
+
+#### `menu.closePopup([browserWindow])`
+
+* `browserWindow` BrowserWindow (optional) - Default is the focused window.
+
+Closes the context menu in the `browserWindow`.
+
+#### `menu.append(menuItem)`
+
+* `menuItem` MenuItem
+
+Appends the `menuItem` to the menu.
+
+#### `menu.getMenuItemById(id)`
+
+* `id` String
+
+Returns `MenuItem` the item with the specified `id`
+
+#### `menu.insert(pos, menuItem)`
+
+* `pos` Integer
+* `menuItem` MenuItem
+
+Inserts the `menuItem` to the `pos` position of the menu.
+
+### Instance Properties
+
+`menu` objects also have the following properties:
+
+#### `menu.items`
+
+A `MenuItem[]` array containing the menu's items.
 
 Each `Menu` consists of multiple [`MenuItem`](menu-item.md)s and each `MenuItem`
 can have a submenu.
@@ -22,81 +130,36 @@ const template = [
   {
     label: 'Edit',
     submenu: [
-      {
-        role: 'undo'
-      },
-      {
-        role: 'redo'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'cut'
-      },
-      {
-        role: 'copy'
-      },
-      {
-        role: 'paste'
-      },
-      {
-        role: 'pasteandmatchstyle'
-      },
-      {
-        role: 'delete'
-      },
-      {
-        role: 'selectall'
-      }
+      {role: 'undo'},
+      {role: 'redo'},
+      {type: 'separator'},
+      {role: 'cut'},
+      {role: 'copy'},
+      {role: 'paste'},
+      {role: 'pasteandmatchstyle'},
+      {role: 'delete'},
+      {role: 'selectall'}
     ]
   },
   {
     label: 'View',
     submenu: [
-      {
-        label: 'Reload',
-        accelerator: 'CmdOrCtrl+R',
-        click (item, focusedWindow) {
-          if (focusedWindow) focusedWindow.reload()
-        }
-      },
-      {
-        label: 'Toggle Developer Tools',
-        accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-        click (item, focusedWindow) {
-          if (focusedWindow) focusedWindow.webContents.toggleDevTools()
-        }
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'resetzoom'
-      },
-      {
-        role: 'zoomin'
-      },
-      {
-        role: 'zoomout'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'togglefullscreen'
-      }
+      {role: 'reload'},
+      {role: 'forcereload'},
+      {role: 'toggledevtools'},
+      {type: 'separator'},
+      {role: 'resetzoom'},
+      {role: 'zoomin'},
+      {role: 'zoomout'},
+      {type: 'separator'},
+      {role: 'togglefullscreen'}
     ]
   },
   {
     role: 'window',
     submenu: [
-      {
-        role: 'minimize'
-      },
-      {
-        role: 'close'
-      }
+      {role: 'minimize'},
+      {role: 'close'}
     ]
   },
   {
@@ -104,7 +167,7 @@ const template = [
     submenu: [
       {
         label: 'Learn More',
-        click () { require('electron').shell.openExternal('http://electron.atom.io') }
+        click () { require('electron').shell.openExternal('https://electron.atom.io') }
       }
     ]
   }
@@ -114,76 +177,37 @@ if (process.platform === 'darwin') {
   template.unshift({
     label: app.getName(),
     submenu: [
-      {
-        role: 'about'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'services',
-        submenu: []
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'hide'
-      },
-      {
-        role: 'hideothers'
-      },
-      {
-        role: 'unhide'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'quit'
-      }
+      {role: 'about'},
+      {type: 'separator'},
+      {role: 'services', submenu: []},
+      {type: 'separator'},
+      {role: 'hide'},
+      {role: 'hideothers'},
+      {role: 'unhide'},
+      {type: 'separator'},
+      {role: 'quit'}
     ]
   })
-  // Edit menu.
+
+  // Edit menu
   template[1].submenu.push(
-    {
-      type: 'separator'
-    },
+    {type: 'separator'},
     {
       label: 'Speech',
       submenu: [
-        {
-          role: 'startspeaking'
-        },
-        {
-          role: 'stopspeaking'
-        }
+        {role: 'startspeaking'},
+        {role: 'stopspeaking'}
       ]
     }
   )
-  // Window menu.
+
+  // Window menu
   template[3].submenu = [
-    {
-      label: 'Close',
-      accelerator: 'CmdOrCtrl+W',
-      role: 'close'
-    },
-    {
-      label: 'Minimize',
-      accelerator: 'CmdOrCtrl+M',
-      role: 'minimize'
-    },
-    {
-      label: 'Zoom',
-      role: 'zoom'
-    },
-    {
-      type: 'separator'
-    },
-    {
-      label: 'Bring All to Front',
-      role: 'front'
-    }
+    {role: 'close'},
+    {role: 'minimize'},
+    {role: 'zoom'},
+    {type: 'separator'},
+    {role: 'front'}
   ]
 }
 
@@ -215,85 +239,6 @@ window.addEventListener('contextmenu', (e) => {
 </script>
 ```
 
-## Class: Menu
-
-### `new Menu()`
-
-Creates a new menu.
-
-### Static Methods
-
-The `menu` class has the following static methods:
-
-#### `Menu.setApplicationMenu(menu)`
-
-* `menu` Menu
-
-Sets `menu` as the application menu on macOS. On Windows and Linux, the `menu`
-will be set as each window's top menu.
-
-**Note:** This API has to be called after the `ready` event of `app` module.
-
-#### `Menu.getApplicationMenu()`
-
-Returns the application menu (an instance of `Menu`), if set, or `null`, if not set.
-
-#### `Menu.sendActionToFirstResponder(action)` _macOS_
-
-* `action` String
-
-Sends the `action` to the first responder of application. This is used for
-emulating default Cocoa menu behaviors, usually you would just use the
-`role` property of `MenuItem`.
-
-See the [macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
-for more information on macOS' native actions.
-
-#### `Menu.buildFromTemplate(template)`
-
-* `template` MenuItem[]
-
-Generally, the `template` is just an array of `options` for constructing a
-[MenuItem](menu-item.md). The usage can be referenced above.
-
-You can also attach other fields to the element of the `template` and they
-will become properties of the constructed menu items.
-
-### Instance Methods
-
-The `menu` object has the following instance methods:
-
-#### `menu.popup([browserWindow, x, y, positioningItem])`
-
-* `browserWindow` BrowserWindow (optional) - Default is `BrowserWindow.getFocusedWindow()`.
-* `x` Number (optional) - Default is the current mouse cursor position.
-* `y` Number (**required** if `x` is used) - Default is the current mouse cursor position.
-* `positioningItem` Number (optional) _macOS_ - The index of the menu item to
-  be positioned under the mouse cursor at the specified coordinates. Default is
-  -1.
-
-Pops up this menu as a context menu in the `browserWindow`.
-
-#### `menu.append(menuItem)`
-
-* `menuItem` MenuItem
-
-Appends the `menuItem` to the menu.
-
-#### `menu.insert(pos, menuItem)`
-
-* `pos` Integer
-* `menuItem` MenuItem
-
-Inserts the `menuItem` to the `pos` position of the menu.
-
-### Instance Properties
-
-`menu` objects also have the following properties:
-
-#### `menu.items`
-
-A MenuItem[] array containing the menu's items.
 
 ## Notes on macOS Application Menu
 
@@ -304,7 +249,7 @@ Linux. Here are some notes on making your app's menu more native-like.
 
 On macOS there are many system-defined standard menus, like the `Services` and
 `Windows` menus. To make your menu a standard menu, you should set your menu's
-`role` to one of following and Electron will recognize them and make them
+`role` to one of the following and Electron will recognize them and make them
 become standard menus:
 
 * `window`

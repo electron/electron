@@ -1,4 +1,5 @@
 const assert = require('assert')
+const http = require('http')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
 const BrowserWindow = require('electron').remote.BrowserWindow
@@ -70,6 +71,15 @@ describe('debugger module', function () {
   })
 
   describe('debugger.sendCommand', function () {
+    let server
+
+    afterEach(function () {
+      if (server != null) {
+        server.close()
+        server = null
+      }
+    })
+
     it('retuns response', function (done) {
       w.webContents.loadURL('about:blank')
       try {
@@ -102,7 +112,7 @@ describe('debugger module', function () {
       }
       w.webContents.debugger.on('message', function (e, method, params) {
         if (method === 'Console.messageAdded') {
-          assert.equal(params.message.type, 'log')
+          assert.equal(params.message.level, 'log')
           assert.equal(params.message.url, url)
           assert.equal(params.message.text, 'a')
           w.webContents.debugger.detach()
@@ -123,6 +133,34 @@ describe('debugger module', function () {
         assert.equal(err.message, "'Test' wasn't found")
         w.webContents.debugger.detach()
         done()
+      })
+    })
+
+    it('handles invalid unicode characters in message', function (done) {
+      try {
+        w.webContents.debugger.attach()
+      } catch (err) {
+        done('unexpected error : ' + err)
+      }
+
+      w.webContents.debugger.on('message', (event, method, params) => {
+        if (method === 'Network.loadingFinished') {
+          w.webContents.debugger.sendCommand('Network.getResponseBody', {
+            requestId: params.requestId
+          }, () => {
+            done()
+          })
+        }
+      })
+
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.end('\uFFFF')
+      })
+
+      server.listen(0, '127.0.0.1', () => {
+        w.webContents.debugger.sendCommand('Network.enable')
+        w.loadURL(`http://127.0.0.1:${server.address().port}`)
       })
     })
   })

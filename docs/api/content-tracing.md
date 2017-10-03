@@ -3,26 +3,34 @@
 > Collect tracing data from Chromium's content module for finding performance
 bottlenecks and slow operations.
 
+Process: [Main](../glossary.md#main-process)
+
 This module does not include a web interface so you need to open
 `chrome://tracing/` in a Chrome browser and load the generated file to view the
 result.
 
+**Note:** You should not use this module until the `ready` event of the app
+module is emitted.
+
+
 ```javascript
-const {contentTracing} = require('electron')
+const {app, contentTracing} = require('electron')
 
-const options = {
-  categoryFilter: '*',
-  traceOptions: 'record-until-full,enable-sampling'
-}
+app.on('ready', () => {
+  const options = {
+    categoryFilter: '*',
+    traceOptions: 'record-until-full,enable-sampling'
+  }
 
-contentTracing.startRecording(options, () => {
-  console.log('Tracing started')
+  contentTracing.startRecording(options, () => {
+    console.log('Tracing started')
 
-  setTimeout(() => {
-    contentTracing.stopRecording('', (path) => {
-      console.log('Tracing data recorded to ' + path)
-    })
-  }, 5000)
+    setTimeout(() => {
+      contentTracing.stopRecording('', (path) => {
+        console.log('Tracing data recorded to ' + path)
+      })
+    }, 5000)
+  })
 })
 ```
 
@@ -74,7 +82,7 @@ list. Possible options are:
 * `enable-sampling`
 * `enable-systrace`
 
-The first 3 options are trace recoding modes and hence mutually exclusive.
+The first 3 options are trace recording modes and hence mutually exclusive.
 If more than one trace recording modes appear in the `traceOptions` string,
 the last one takes precedence. If none of the trace recording modes are
 specified, recording mode is `record-until-full`.
@@ -155,17 +163,3 @@ request the `callback` will be called with a file that contains the traced data.
 Get the maximum usage across processes of trace buffer as a percentage of the
 full state. When the TraceBufferUsage value is determined the `callback` is
 called.
-
-### `contentTracing.setWatchEvent(categoryName, eventName, callback)`
-
-* `categoryName` String
-* `eventName` String
-* `callback` Function
-
-`callback` will be called every time the given event occurs on any
-process.
-
-### `contentTracing.cancelWatchEvent()`
-
-Cancel the watch event. This may lead to a race condition with the watch event
-callback if tracing is enabled.

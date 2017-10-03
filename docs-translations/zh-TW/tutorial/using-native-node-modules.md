@@ -31,7 +31,7 @@ npm install --save-dev electron-rebuild
 你也可以使用 `npm` 安裝模組，步驟與 Node 模組的安裝相同，除了你需要設定一些環境變數：
 
 ```bash
-export npm_config_disturl=https://atom.io/download/atom-shell
+export npm_config_disturl=https://atom.io/download/electron
 export npm_config_target=0.33.1
 export npm_config_arch=x64
 export npm_config_runtime=electron
@@ -44,7 +44,7 @@ HOME=~/.electron-gyp npm install module-name
 
 ```bash
 $ cd /path-to-module/
-$ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=https://atom.io/download/atom-shell
+$ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=https://atom.io/download/electron
 ```
 
 `HOME=~/.electron-gyp` 改變了尋找開發標頭的地方，`--target=0.29.1` 是 Eletron 的版本， `--dist-url=...` 指定了下載標頭到哪， `--arch=x64` 指出模組要建置在 64 位元系統。

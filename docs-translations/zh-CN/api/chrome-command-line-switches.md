@@ -1,13 +1,15 @@
 # 支持的 Chrome 命令行开关
 
-这页列出了Chrome浏览器和Electron支持的命令行开关. 你也可以在[app][app]模块的[ready][ready]事件发出之前使用[app.commandLine.appendSwitch][append-switch] 来添加它们到你应用的main脚本里面:
+> Electron 支持的命令行开关。
+
+你可以在 [app][app] 模块的 [ready][ready] 事件发出之前使用 [app.commandLine.appendSwitch][append-switch] 来添加它们到你应用的 main 脚本里面：
 
 ```javascript
-const app = require('electron').app
+const {app} = require('electron')
 app.commandLine.appendSwitch('remote-debugging-port', '8315')
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
 
-app.on('ready', function () {
+app.on('ready', () => {
   // Your code here
 })
 ```
@@ -30,7 +32,7 @@ app.on('ready', function () {
 
 ## --js-flags=`flags`
 
-指定引擎过渡到 JS 引擎. 
+指定引擎过渡到 JS 引擎.
 
 在启动Electron时，如果你想在主进程中激活 `flags` ，它将被转换.
 
@@ -100,14 +102,6 @@ app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com
 
 使网络日志事件能够被读写到 `path`.
 
-## --ssl-version-fallback-min=`version`
-
-设置最简化的 SSL/TLS 版本号 ("tls1", "tls1.1" or "tls1.2")，TLS 可接受回退.
-
-## --cipher-suite-blacklist=`cipher_suites`
-
-指定逗号分隔的 SSL 密码套件 列表实效.
-
 ## --disable-renderer-backgrounding
 
 防止 Chromium 降低隐藏的渲染进程优先级.
@@ -138,3 +132,5 @@ app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com
 [append-switch]: app.md#appcommandlineappendswitchswitch-value
 [ready]: app.md#event-ready
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
+[debugging-main-process]: ../tutorial/debugging-main-process.md
+[node-cli]: https://nodejs.org/api/cli.html

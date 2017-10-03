@@ -150,7 +150,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
                                     const std::string& company_name,
                                     const std::string& submit_url,
                                     const base::FilePath& crashes_dir,
-                                    bool auto_submit,
+                                    bool upload_to_server,
                                     bool skip_system_crash_handler) {
   skip_system_crash_handler_ = skip_system_crash_handler;
 
@@ -179,7 +179,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
       google_breakpad::ExceptionHandler::HANDLER_ALL,
       kSmallDumpType,
       pipe_name.c_str(),
-      GetCustomInfo(product_name, version, company_name)));
+      GetCustomInfo(product_name, version, company_name, upload_to_server)));
 
   if (!breakpad_->IsOutOfProcess())
     LOG(ERROR) << "Cannot initialize out-of-process crash handler";
@@ -238,14 +238,19 @@ bool CrashReporterWin::MinidumpCallback(const wchar_t* dump_path,
 google_breakpad::CustomClientInfo* CrashReporterWin::GetCustomInfo(
     const std::string& product_name,
     const std::string& version,
-    const std::string& company_name) {
+    const std::string& company_name,
+    bool upload_to_server) {
   custom_info_entries_.clear();
-  custom_info_entries_.reserve(2 + upload_parameters_.size());
+  custom_info_entries_.reserve(3 + upload_parameters_.size());
 
   custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
       L"prod", L"Electron"));
   custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
       L"ver", base::UTF8ToWide(version).c_str()));
+  if (!upload_to_server) {
+    custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
+        L"skip_upload", L"1"));
+  }
 
   for (StringMap::const_iterator iter = upload_parameters_.begin();
        iter != upload_parameters_.end(); ++iter) {

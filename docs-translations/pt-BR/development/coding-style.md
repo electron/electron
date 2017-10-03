@@ -13,14 +13,14 @@ O código C++ usa  várias abstrações e tipos do Chromium, por isso é recomen
 
 ## CoffeeScript
 
-Para CoffeeScript, seguimos o [Guia de Estilo] (https://github.com/styleguide/javascript) do GitHub com as seguintes regras:
+Para CoffeeScript, seguimos o [Guia de Estilo](https://github.com/styleguide/javascript) do GitHub com as seguintes regras:
 
 * Os arquivos **NÃO DEVEM** terminar com uma nova linha, porque queremos corresponder aos padrões de estilo Google.
 
 * Os nomes dos arquivos devem ser concatenados com `-` em vez de `_`, por exemplo, `file-name.coffee` em vez de `file_name.coffee`, porque no [github/atom](https://github.com/github/atom) os nomes dos módulos são geralmente da forma `module-name`. Esta regra só se aplica aos arquivos com extensão `.coffee`.
-* 
+
 ## Nomes de APIs
 
-Ao criar uma nova API, devemos preferencialmente utilizar métodos getters e setters em vez do
+Ao criar uma API, devemos preferencialmente utilizar métodos getters e setters em vez do
 estilo de uma função única do jQuery. Por exemplo, `.getText()` e `.setText(text)` são preferenciais a `.text([text])`. Existe uma
 [discussão](https://github.com/electron/electron/issues/46) sobre este assunto.

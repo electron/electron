@@ -7,10 +7,12 @@
 
 #include "atom/browser/native_window.h"
 
+#include <set>
 #include <string>
 #include <vector>
 
 #include "atom/browser/ui/accelerator_util.h"
+#include "atom/browser/ui/autofill_popup.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -86,24 +88,30 @@ class NativeWindowViews : public NativeWindow,
   bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
-  void SetAlwaysOnTop(bool top, const std::string& level) override;
+  void SetAlwaysOnTop(bool top, const std::string& level,
+                      int relativeLevel, std::string* error) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
+  void Invalidate() override;
   void SetTitle(const std::string& title) override;
   std::string GetTitle() override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
+  void SetSimpleFullScreen(bool simple_fullscreen) override;
+  bool IsSimpleFullScreen() override;
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
   void SetBackgroundColor(const std::string& color_name) override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
-  void SetIgnoreMouseEvents(bool ignore) override;
+  void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   void SetMenu(AtomMenuModel* menu_model) override;
+  void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
-  gfx::NativeWindow GetNativeWindow() override;
+  gfx::NativeView GetNativeView() const override;
+  gfx::NativeWindow GetNativeWindow() const override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
   void SetProgressBar(double progress, const ProgressState state) override;
@@ -114,7 +122,7 @@ class NativeWindowViews : public NativeWindow,
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
 
-  gfx::AcceleratedWidget GetAcceleratedWidget() override;
+  gfx::AcceleratedWidget GetAcceleratedWidget() const override;
 
 #if defined(OS_WIN)
   void SetIcon(HICON small_icon, HICON app_icon);
@@ -164,18 +172,31 @@ class NativeWindowViews : public NativeWindow,
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
+  void SetForwardMouseMessages(bool forward);
+  static LRESULT CALLBACK SubclassProc(
+      HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id,
+      DWORD_PTR ref_data);
+  static LRESULT CALLBACK MouseHookProc(
+      int n_code, WPARAM w_param, LPARAM l_param);
 #endif
 
   // NativeWindow:
-  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) override;
-  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) override;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
+  void ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) override;
+  void HideAutofillPopup(content::RenderFrameHost* frame_host) override;
 
   // views::View:
-  gfx::Size GetMinimumSize() override;
-  gfx::Size GetMaximumSize() override;
+  void Layout() override;
+  gfx::Size GetMinimumSize() const override;
+  gfx::Size GetMaximumSize() const override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Register accelerators supported by the menu model.
@@ -186,6 +207,10 @@ class NativeWindowViews : public NativeWindow,
 
   std::unique_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
+
+  NativeBrowserView* browser_view_;
+
+  std::unique_ptr<AutofillPopup> autofill_popup_;
 
   std::unique_ptr<MenuBar> menu_bar_;
   bool menu_bar_autohide_;
@@ -216,6 +241,7 @@ class NativeWindowViews : public NativeWindow,
   // size of the window while in the normal state (not maximized, minimized or
   // fullscreen), so we restore it correctly.
   gfx::Rect last_normal_bounds_;
+  gfx::Rect last_normal_bounds_before_move_;
 
   // last_normal_bounds_ may or may not require update on WM_MOVE. When a
   // window is maximized, it is moved (WM_MOVE) to maximum size first and then
@@ -242,6 +268,12 @@ class NativeWindowViews : public NativeWindow,
   // The icons of window and taskbar.
   base::win::ScopedHICON window_icon_;
   base::win::ScopedHICON app_icon_;
+
+  // The set of windows currently forwarding mouse messages.
+  static std::set<NativeWindowViews*> forwarding_windows_;
+  static HHOOK mouse_hook_;
+  bool forwarding_mouse_messages_ = false;
+  HWND legacy_window_ = NULL;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

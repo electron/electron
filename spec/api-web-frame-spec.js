@@ -6,6 +6,12 @@ const {BrowserWindow, protocol, ipcMain} = remote
 
 describe('webFrame module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
+  var w = null
+
+  afterEach(function () {
+    return closeWindow(w).then(function () { w = null })
+  })
+
   describe('webFrame.registerURLSchemeAsPrivileged', function () {
     it('supports fetch api by default', function (done) {
       webFrame.registerURLSchemeAsPrivileged('file')
@@ -95,14 +101,11 @@ describe('webFrame module', function () {
       runNumber++
 
       const url = standardScheme + '://fake-host'
-      var w = new BrowserWindow({show: false})
+      w = new BrowserWindow({show: false})
       after(function (done) {
         protocol.unregisterProtocol(corsScheme, function () {
           protocol.unregisterProtocol(standardScheme, function () {
-            closeWindow(w).then(function () {
-              w = null
-              done()
-            })
+            done()
           })
         })
       })
@@ -125,5 +128,13 @@ describe('webFrame module', function () {
         w.loadURL(url)
       })
     }
+  })
+
+  it('supports setting the visual and layout zoom level limits', function () {
+    assert.doesNotThrow(function () {
+      webFrame.setZoomLevelLimits(1, 100)
+      webFrame.setVisualZoomLevelLimits(1, 50)
+      webFrame.setLayoutZoomLevelLimits(0, 25)
+    })
   })
 })

@@ -150,16 +150,3 @@ Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 �
 
 추적 버퍼 % 전체 상태의 프로세스간 최대치를 가져옵니다. TraceBufferUsage 값이
 결정되면 `callback`이 한 번 호출됩니다.
-
-### `contentTracing.setWatchEvent(categoryName, eventName, callback)`
-
-* `categoryName` String
-* `eventName` String
-* `callback` Function
-
-`callback`은 지정된 이벤트가 어떤 작업을 발생시킬 때마다 호출됩니다.
-
-### `contentTracing.cancelWatchEvent()`
-
-Watch 이벤트를 중단합니다. 만약 추적이 활성화되어 있다면 이 메서드는 watch 이벤트
-콜백과 race가 일어날 것입니다.

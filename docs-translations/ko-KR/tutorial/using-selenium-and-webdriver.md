@@ -167,4 +167,4 @@ client
 디렉터리로 복사하는 불필요한 과정을 생략할 수 있습니다.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
-[spectron]: http://electron.atom.io/spectron
+[spectron]: https://electron.atom.io/spectron

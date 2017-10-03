@@ -4,33 +4,56 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
+#include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_web_ui_controller_factory.h"
 #include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
+#include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "device/geolocation/geolocation_delegate.h"
+#include "device/geolocation/geolocation_provider.h"
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
-#include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
+#include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
 
 namespace atom {
 
+namespace {
+
+// A provider of Geolocation services to override AccessTokenStore.
+class AtomGeolocationDelegate : public device::GeolocationDelegate {
+ public:
+  AtomGeolocationDelegate() = default;
+
+  scoped_refptr<device::AccessTokenStore> CreateAccessTokenStore() final {
+    return new AtomAccessTokenStore();
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AtomGeolocationDelegate);
+};
+
 template<typename T>
 void Erase(T* container, typename T::iterator iter) {
   container->erase(iter);
 }
+
+}  // namespace
 
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
@@ -39,8 +62,8 @@ AtomBrowserMainParts::AtomBrowserMainParts()
     : fake_browser_process_(new BrowserProcess),
       exit_code_(nullptr),
       browser_(new Browser),
-      node_bindings_(NodeBindings::Create(true)),
-      atom_bindings_(new AtomBindings),
+      node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
+      atom_bindings_(new AtomBindings(uv_default_loop())),
       gc_timer_(true, true) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
@@ -50,6 +73,7 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
+  asar::ClearArchives();
   // Leak the JavascriptEnvironment on exit.
   // This is to work around the bug that V8 would be waiting for background
   // tasks to finish on exit, while somehow it waits forever in Electron, more
@@ -106,16 +130,14 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   node_bindings_->Initialize();
 
-  // Support the "--debug" switch.
-  node_debugger_.reset(new NodeDebugger(js_env_->isolate()));
-
   // Create the global environment.
   node::Environment* env =
       node_bindings_->CreateEnvironment(js_env_->context());
+  node_env_.reset(new NodeEnvironment(env));
 
-  // Make sure node can get correct environment when debugging.
-  if (node_debugger_->IsRunning())
-    env->AssignToContext(v8::Debug::GetDebugContext());
+  // Enable support for v8 inspector
+  node_debugger_.reset(new NodeDebugger(env));
+  node_debugger_->Start();
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
@@ -145,12 +167,15 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
       base::Bind(&v8::Isolate::LowMemoryNotification,
                  base::Unretained(js_env_->isolate())));
 
+  content::WebUIControllerFactory::RegisterFactory(
+      AtomWebUIControllerFactory::GetInstance());
+
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();
   bridge_task_runner_ = nullptr;
 
 #if defined(USE_X11)
-  libgtk2ui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
+  libgtkui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
 #endif
 
 #if !defined(OS_MACOSX)
@@ -159,6 +184,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   std::unique_ptr<base::DictionaryValue> empty_info(new base::DictionaryValue);
   Browser::Get()->DidFinishLaunching(*empty_info);
 #endif
+
+  Browser::Get()->PreMainMessageLoopRun();
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
@@ -171,6 +198,8 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 #if defined(OS_POSIX)
   HandleShutdownSignals();
 #endif
+  device::GeolocationProvider::SetGeolocationDelegate(
+      new AtomGeolocationDelegate());
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {

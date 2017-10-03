@@ -1,6 +1,6 @@
 # Estrutura de Diretórios do Código-Fonte
 
-O código-fonte do Electron é separado em algumas partes, seguindo principalmente as convenções de separação do chromium. 
+O código-fonte do Electron é separado em algumas partes, seguindo principalmente as convenções de separação do chromium.
 
 Você pode se familiarizar com a [arquitetura de multiprocessamento ](http://dev.chromium.org/developers/design-documents/multi-process-architecture) do Chromium para entender melhor o código-fonte.
 
@@ -11,13 +11,13 @@ Você pode se familiarizar com a [arquitetura de multiprocessamento ](http://dev
 Electron
 ├──atom - Código fonte do Electron.
 |  ├── app - Código de inicialização.
-|  ├── browser - A interface incluíndo a janela principal, UI, e todas as coisas do processo principal. Ele se comunica com o renderizador para gerenciar as páginas web.
+|  ├── browser - A interface incluindo a janela principal, UI, e todas as coisas do processo principal. Ele se comunica com o renderizador para gerenciar as páginas web.
 |  |   ├── lib -  Código Javascript para inicializar o processo principal.
 |  |   ├── ui - Implementação da UI para plataformas distintas.
 |  |   |   ├── cocoa - Código-fonte específico do cocoa .
 |  |   |   ├── gtk - Código-font específico do GTK+.
 |  |   |   └── win - Código-fonte específico do Windows GUI.
-|  |   ├── default_app - A página padrão é mostrada quando 
+|  |   ├── default_app - A página padrão é mostrada quando
 |  |   |   Electron inicializa sem fornecer um app.
 |  |   ├── api - Implementação do processo principal das APIs
 |  |   |   └── lib - Código Javascript, parte da implementação da API.
@@ -26,9 +26,9 @@ Electron
 |  |   └── resources - Icones, arquivos dependentes da plataforma, etc.
 |  ├── renderer - Código que é executado no processo de renderização.
 |  |   ├── lib -  Parte do código Javascript  de inicialização do renderizador.
-|  |   └── api - Implementação das APIs para o processo de renderizaçãp.
+|  |   └── api - Implementação das APIs para o processo de renderização.
 |  |       └── lib - Código Javascript, parte da implementação da API.
-|  └── common - Código que utiliza ambos os processos, o principal e o de rendezição,
+|  └── common - Código que utiliza ambos os processos, o principal e o de renderização,
 |      ele inclui algumas funções utilitárias e códigos para integrar com ciclo de mensagens do node no ciclo de mensagens do Chromium.
 |      ├── lib - Código Javascript comum para a inicialização.
 |      └── api - A implementação de APIs comuns e fundamentação dos

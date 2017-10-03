@@ -4,15 +4,16 @@
 
 #include "chrome/browser/browser_process.h"
 
+#include "chrome/browser/icon_manager.h"
 #include "chrome/browser/printing/print_job_manager.h"
 #include "ui/base/l10n/l10n_util.h"
 
 BrowserProcess* g_browser_process = NULL;
 
-BrowserProcess::BrowserProcess() {
+BrowserProcess::BrowserProcess()
+    : print_job_manager_(new printing::PrintJobManager),
+      icon_manager_(new IconManager) {
   g_browser_process = this;
-
-  print_job_manager_.reset(new printing::PrintJobManager);
 }
 
 BrowserProcess::~BrowserProcess() {
@@ -21,6 +22,12 @@ BrowserProcess::~BrowserProcess() {
 
 std::string BrowserProcess::GetApplicationLocale() {
   return l10n_util::GetApplicationLocale("");
+}
+
+IconManager* BrowserProcess::GetIconManager() {
+  if (!icon_manager_.get())
+    icon_manager_.reset(new IconManager);
+  return icon_manager_.get();
 }
 
 printing::PrintJobManager* BrowserProcess::print_job_manager() {

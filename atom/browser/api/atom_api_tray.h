@@ -59,6 +59,8 @@ class Tray : public mate::TrackableObject<Tray>,
   void OnDragEntered() override;
   void OnDragExited() override;
   void OnDragEnded() override;
+  void OnMouseEntered(const gfx::Point& location, int modifiers) override;
+  void OnMouseExited(const gfx::Point& location, int modifiers) override;
 
   void SetImage(v8::Isolate* isolate, mate::Handle<NativeImage> image);
   void SetPressedImage(v8::Isolate* isolate, mate::Handle<NativeImage> image);

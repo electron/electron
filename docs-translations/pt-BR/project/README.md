@@ -1,4 +1,4 @@
-[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
+[![Electron Logo](https://electron.atom.io/images/electron-logo.svg)](https://electron.atom.io/)
 
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kvxe4byi7jcxbe26/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/electron)
@@ -7,7 +7,7 @@
 
 :memo: Available Translations: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/README.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/README.md) | [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/README.md)
 
-O framework Electron permite escrever aplicações desktop multi-plataforma usando JavaScript, HTML e CSS. Baseia-se em [Node.js](https://nodejs.org/) e [Chromium](http://www.chromium.org) e é usado pelo [editor Atom](https://github.com/atom/atom) e muitas outras [aplicações](http://electron.atom.io/apps).
+O framework Electron permite escrever aplicações desktop multi-plataforma usando JavaScript, HTML e CSS. Baseia-se em [Node.js](https://nodejs.org/) e [Chromium](http://www.chromium.org) e é usado pelo [editor Atom](https://github.com/atom/atom) e muitas outras [aplicações](https://electron.atom.io/apps).
 
 Siga [@ElectronJS](https://twitter.com/electronjs) no Twitter para anúncios importantes.
 
@@ -61,7 +61,7 @@ Você pode fazer perguntas e interagir com a comunidade nos seguintes locais:
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](http://www.meetup.com/electron-kr/) *(Korean)*
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(Japanese)*
-- [`electron-tr`](http://www.meetup.com/Electron-JS-Istanbul/) *(Turkish)*
+- [`electron-tr`](http://electron-tr.herokuapp.com) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
 
 Confira [awesome-electron](https://github.com/sindresorhus/awesome-electron) para uma lista mantida pela comunidade de exemplos de aplicativos úteis, ferramentas e recursos.

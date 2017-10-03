@@ -10,8 +10,8 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 
@@ -78,9 +78,9 @@ DownloadItem::~DownloadItem() {
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
   if (download_item_->IsDone()) {
     Emit("done", item->GetState());
-
     // Destroy the item once item is downloaded.
-    base::MessageLoop::current()->PostTask(FROM_HERE, GetDestroyClosure());
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE, GetDestroyClosure());
   } else {
     Emit("updated", item->GetState());
   }
@@ -110,7 +110,6 @@ bool DownloadItem::CanResume() const {
 
 void DownloadItem::Cancel() {
   download_item_->Cancel(true);
-  download_item_->Remove();
 }
 
 int64_t DownloadItem::GetReceivedBytes() const {
@@ -146,6 +145,10 @@ const GURL& DownloadItem::GetURL() const {
   return download_item_->GetURL();
 }
 
+const std::vector<GURL>& DownloadItem::GetURLChain() const {
+  return download_item_->GetUrlChain();
+}
+
 content::DownloadItem::DownloadState DownloadItem::GetState() const {
   return download_item_->GetState();
 }
@@ -160,6 +163,18 @@ void DownloadItem::SetSavePath(const base::FilePath& path) {
 
 base::FilePath DownloadItem::GetSavePath() const {
   return save_path_;
+}
+
+std::string DownloadItem::GetLastModifiedTime() const {
+  return download_item_->GetLastModifiedTime();
+}
+
+std::string DownloadItem::GetETag() const {
+  return download_item_->GetETag();
+}
+
+double DownloadItem::GetStartTime() const {
+  return download_item_->GetStartTime().ToDoubleT();
 }
 
 // static
@@ -180,10 +195,14 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getFilename", &DownloadItem::GetFilename)
       .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition)
       .SetMethod("getURL", &DownloadItem::GetURL)
+      .SetMethod("getURLChain", &DownloadItem::GetURLChain)
       .SetMethod("getState", &DownloadItem::GetState)
       .SetMethod("isDone", &DownloadItem::IsDone)
       .SetMethod("setSavePath", &DownloadItem::SetSavePath)
-      .SetMethod("getSavePath", &DownloadItem::GetSavePath);
+      .SetMethod("getSavePath", &DownloadItem::GetSavePath)
+      .SetMethod("getLastModifiedTime", &DownloadItem::GetLastModifiedTime)
+      .SetMethod("getETag", &DownloadItem::GetETag)
+      .SetMethod("getStartTime", &DownloadItem::GetStartTime);
 }
 
 // static

@@ -28,17 +28,17 @@ std::map<int, id> g_id_map;
 
 }  // namespace
 
-void SystemPreferences::PostNotification(const std::string& name, 
+void SystemPreferences::PostNotification(const std::string& name,
     const base::DictionaryValue& user_info) {
   DoPostNotification(name, user_info, false);
 }
 
-void SystemPreferences::PostLocalNotification(const std::string& name, 
+void SystemPreferences::PostLocalNotification(const std::string& name,
     const base::DictionaryValue& user_info) {
   DoPostNotification(name, user_info, true);
 }
 
-void SystemPreferences::DoPostNotification(const std::string& name, 
+void SystemPreferences::DoPostNotification(const std::string& name,
     const base::DictionaryValue& user_info, bool is_local) {
   NSNotificationCenter* center = is_local ?
     [NSNotificationCenter defaultCenter] :
@@ -128,13 +128,104 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
     return mate::ConvertToV8(isolate(),
       net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
-    return mate::ConvertToV8(isolate(),
-      *NSArrayToListValue([defaults arrayForKey:key]));
+    std::unique_ptr<base::ListValue> list =
+        NSArrayToListValue([defaults arrayForKey:key]);
+    if (list == nullptr)
+      list.reset(new base::ListValue());
+    return mate::ConvertToV8(isolate(), *list);
   } else if (type == "dictionary") {
-    return mate::ConvertToV8(isolate(),
-      *NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]));
+    std::unique_ptr<base::DictionaryValue> dictionary =
+        NSDictionaryToDictionaryValue([defaults dictionaryForKey:key]);
+    if (dictionary == nullptr)
+      dictionary.reset(new base::DictionaryValue());
+    return mate::ConvertToV8(isolate(), *dictionary);
   } else {
     return v8::Undefined(isolate());
+  }
+}
+
+void SystemPreferences::SetUserDefault(const std::string& name,
+                                       const std::string& type,
+                                       mate::Arguments* args) {
+  const auto throwConversionError = [&] {
+    args->ThrowError("Unable to convert value to: " + type);
+  };
+
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  NSString* key = base::SysUTF8ToNSString(name);
+  if (type == "string") {
+    std::string value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setObject:base::SysUTF8ToNSString(value) forKey:key];
+  } else if (type == "boolean") {
+    bool value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setBool:value forKey:key];
+  } else if (type == "float") {
+    float value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setFloat:value forKey:key];
+  } else if (type == "integer") {
+    int value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setInteger:value forKey:key];
+  } else if (type == "double") {
+    double value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    [defaults setDouble:value forKey:key];
+  } else if (type == "url") {
+    GURL value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    if (NSURL* url = net::NSURLWithGURL(value)) {
+      [defaults setURL:url forKey:key];
+    }
+  } else if (type == "array") {
+    base::ListValue value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    if (NSArray* array = ListValueToNSArray(value)) {
+      [defaults setObject:array forKey:key];
+    }
+  } else if (type == "dictionary") {
+    base::DictionaryValue value;
+    if (!args->GetNext(&value)) {
+      throwConversionError();
+      return;
+    }
+
+    if (NSDictionary* dict = DictionaryValueToNSDictionary(value)) {
+      [defaults setObject:dict forKey:key];
+    }
+  } else {
+    args->ThrowError("Invalid type: " + type);
+    return;
   }
 }
 

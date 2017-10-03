@@ -2,6 +2,8 @@
 
 > Create tray, dock, and application icons using PNG or JPG files.
 
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
+
 In Electron, for the APIs that take images, you can pass either file paths or
 `NativeImage` instances. An empty image will be used when `null` is passed.
 
@@ -16,7 +18,7 @@ let win = new BrowserWindow({icon: '/Users/somebody/images/window.png'})
 console.log(appIcon, win)
 ```
 
-Or read the image from the clipboard which returns a `nativeImage`:
+Or read the image from the clipboard which returns a `NativeImage`:
 
 ```javascript
 const {clipboard, Tray} = require('electron')
@@ -135,19 +137,23 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 console.log(image)
 ```
 
-### `nativeImage.createFromBuffer(buffer[, scaleFactor])`
+### `nativeImage.createFromBuffer(buffer[, options])`
 
 * `buffer` [Buffer][buffer]
-* `scaleFactor` Double (optional)
+* `options` Object (optional)
+  * `width` Integer (optional) - Required for bitmap buffers.
+  * `height` Integer (optional) - Required for bitmap buffers.
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `NativeImage`
 
-Creates a new `NativeImage` instance from `buffer`. The default `scaleFactor` is
-1.0.
+Creates a new `NativeImage` instance from `buffer`.
 
 ### `nativeImage.createFromDataURL(dataURL)`
 
 * `dataURL` String
+
+Returns `NativeImage`
 
 Creates a new `NativeImage` instance from `dataURL`.
 
@@ -155,11 +161,16 @@ Creates a new `NativeImage` instance from `dataURL`.
 
 > Natively wrap images such as tray, dock, and application icons.
 
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
+
 ### Instance Methods
 
 The following methods are available on instances of the `NativeImage` class:
 
-#### `image.toPNG()`
+#### `image.toPNG([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded data.
 
@@ -169,16 +180,25 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded da
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
-#### `image.toBitmap()`
+#### `image.toBitmap([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
 
-#### `image.toDataURL()`
+#### `image.toDataURL([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `String` - The data URL of the image.
 
-#### `image.getBitmap()`
+#### `image.getBitmap([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Double (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's raw bitmap pixel data.
 
@@ -201,10 +221,7 @@ Returns `Boolean` -  Whether the image is empty.
 
 #### `image.getSize()`
 
-Returns `Object`:
-
-* `width` Integer
-* `height` Integer
+Returns [`Size`](structures/size.md)
 
 #### `image.setTemplateImage(option)`
 
@@ -218,19 +235,15 @@ Returns `Boolean` - Whether the image is a template image.
 
 #### `image.crop(rect)`
 
-* `rect` Object - The area of the image to crop
-  * `x` Integer
-  * `y` Integer
-  * `width` Integer
-  * `height` Integer
+* `rect` [Rectangle](structures/rectangle.md) - The area of the image to crop
 
 Returns `NativeImage` - The cropped image.
 
 #### `image.resize(options)`
 
 * `options` Object
-  * `width` Integer (optional)
-  * `height` Integer (optional)
+  * `width` Integer (optional) - Defaults to the image's width.
+  * `height` Integer (optional) - Defaults to the image's height
   * `quality` String (optional) - The desired quality of the resize image.
     Possible values are `good`, `better` or `best`. The default is `best`.
     These values express a desired quality/speed tradeoff. They are translated
@@ -246,5 +259,21 @@ will be preserved in the resized image.
 #### `image.getAspectRatio()`
 
 Returns `Float` - The image's aspect ratio.
+
+#### `image.addRepresentation(options)`
+
+* `options` Object
+  * `scaleFactor` Double - The scale factor to add the image representation for.
+  * `width` Integer (optional) - Defaults to 0. Required if a bitmap buffer
+    is specified as `buffer`.
+  * `height` Integer (optional) - Defaults to 0. Required if a bitmap buffer
+    is specified as `buffer`.
+  * `buffer` Buffer (optional) - The buffer containing the raw image data.
+  * `dataURL` String (optional) - The data URL containing either a base 64
+    encoded PNG or JPEG image.
+
+Add an image representation for a specific scale factor. This can be used
+to explicitly add different scale factor representations to an image. This
+can be called on empty images.
 
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer

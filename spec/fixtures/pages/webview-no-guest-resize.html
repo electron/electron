@@ -1,0 +1,20 @@
+<html>
+<style>
+* {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+</style>
+<body>
+<webview id="webview" nodeintegration disableguestresize src="resize.html"/>
+</body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = require('electron')
+
+  const webview = document.getElementById('webview')
+  webview.addEventListener('resize', event => {
+    ipcRenderer.send('webview-element-resize', event.newWidth, event.newHeight)
+  }, false)
+</script>
+</html>

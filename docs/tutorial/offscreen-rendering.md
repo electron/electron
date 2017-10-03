@@ -12,6 +12,8 @@ when there is nothing happening on a webpage, no frames are generated. The
 maximum frame rate is 60, because above that there is no benefit, just
 performance loss.
 
+**Note:** An offscreen window is always created as a [Frameless Window](../api/frameless-window.md).
+
 ## Two modes of rendering
 
 ### GPU accelerated

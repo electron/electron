@@ -51,7 +51,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 ### 커스텀 DOM 요소:
 
 * [`File` 객체](api/file-object.md)
-* [`<webview>` 태그](api/web-view-tag.md)
+* [`<webview>` 태그](api/webview-tag.md)
 * [`window.open` 함수](api/window-open.md)
 
 ### 메인 프로세스에서 사용할 수 있는 모듈:
@@ -65,6 +65,7 @@ Electron에 대해 자주 묻는 질문이 있습니다. 이슈를 생성하기 
 * [ipcMain](api/ipc-main.md)
 * [Menu](api/menu.md)
 * [MenuItem](api/menu-item.md)
+* [net](api/net.md)
 * [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)

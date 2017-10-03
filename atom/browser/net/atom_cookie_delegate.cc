@@ -23,14 +23,17 @@ void AtomCookieDelegate::RemoveObserver(Observer* observer) {
 }
 
 void AtomCookieDelegate::NotifyObservers(
-  const net::CanonicalCookie& cookie, bool removed, ChangeCause cause) {
-  FOR_EACH_OBSERVER(Observer,
-                    observers_,
-                    OnCookieChanged(cookie, removed, cause));
+    const net::CanonicalCookie& cookie,
+    bool removed,
+    net::CookieStore::ChangeCause cause) {
+  for (Observer& observer : observers_)
+    observer.OnCookieChanged(cookie, removed, cause);
 }
 
 void AtomCookieDelegate::OnCookieChanged(
-    const net::CanonicalCookie& cookie, bool removed, ChangeCause cause) {
+    const net::CanonicalCookie& cookie,
+    bool removed,
+    net::CookieStore::ChangeCause cause) {
   content::BrowserThread::PostTask(
       content::BrowserThread::UI,
       FROM_HERE,

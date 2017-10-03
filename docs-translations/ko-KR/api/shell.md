@@ -2,6 +2,8 @@
 
 > 파일과 URL을 각 기본 애플리케이션을 통해 관리합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process), [렌더러](../tutorial/quick-start.md#renderer-process)
+
 `shell` 모듈은 데스크톱 환경 통합에 관련한 유틸리티를 제공하는 모듈입니다.
 
 다음 예시는 설정된 URL을 유저의 기본 브라우저로 엽니다:

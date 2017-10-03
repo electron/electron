@@ -50,13 +50,16 @@
             ['target_arch=="arm"', {
               # sysroot needs to be an absolute path otherwise it generates
               # incorrect results when passed to pkg-config
-              'sysroot%': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_jessie_arm-sysroot',
+            }],
+            ['target_arch=="arm64"', {
+              'sysroot%': '<(source_root)/vendor/debian_jessie_arm64-sysroot',
             }],
             ['target_arch=="ia32"', {
-              'sysroot%': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_jessie_i386-sysroot',
             }],
             ['target_arch=="x64"', {
-              'sysroot%': '<(source_root)/vendor/debian_wheezy_amd64-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_jessie_amd64-sysroot',
             }],
           ],
         },
@@ -137,7 +140,7 @@
     }],
 
     # Setup sysroot environment.
-    ['OS=="linux" and target_arch in ["arm", "ia32", "x64"]', {
+    ['OS=="linux" and target_arch in ["arm", "ia32", "x64", "arm64"]', {
       'target_defaults': {
         'target_conditions': [
           ['_toolset=="target"', {
@@ -253,6 +256,23 @@
                       '-mthumb',
                     ],
                   }],
+                ],
+              }],
+            ],
+          }],  # target_arch=="arm64" and _toolset=="target"
+          ['target_arch=="arm64" and _toolset=="target"', {
+            'conditions': [
+              ['clang==0', {
+                'cflags_cc': [
+                  '-Wno-abi',
+                ],
+              }],
+              ['clang==1 and arm_arch!=""', {
+                'cflags': [
+                  '-target  aarch64-linux-gnu',
+                ],
+                'ldflags': [
+                  '-target  aarch64-linux-gnu',
                 ],
               }],
             ],

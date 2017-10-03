@@ -2,6 +2,8 @@
 
 > Render and control web pages.
 
+Process: [Main](../glossary.md#main-process)
+
 `webContents` is an
 [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 It is responsible for rendering and controlling a web page and is a property of
@@ -47,6 +49,8 @@ Returns `WebContents` - A WebContents instance with the given ID.
 
 > Render and control the contents of a BrowserWindow instance.
 
+Process: [Main](../glossary.md#main-process)
+
 ### Instance Events
 
 #### Event: 'did-finish-load'
@@ -67,8 +71,6 @@ Returns:
 This event is like `did-finish-load` but emitted when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
 The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
-Note that redirect responses will emit `errorCode` -3; you may want to ignore
-that error explicitly.
 
 #### Event: 'did-frame-finish-load'
 
@@ -155,9 +157,20 @@ requested by `window.open` or an external link like `<a target='_blank'>`.
 
 By default a new `BrowserWindow` will be created for the `url`.
 
-Calling `event.preventDefault()` will prevent creating new windows. In such case, the
-`event.newGuest` may be set with a reference to a `BrowserWindow` instance to make it
-used by the Electron's runtime.
+Calling `event.preventDefault()` will prevent Electron from automatically creating a
+new `BrowserWindow`. If you call `event.preventDefault()` and manually create a new
+`BrowserWindow` then you must set `event.newGuest` to reference the new `BrowserWindow`
+instance, failing to do so may result in unexpected behavior. For example:
+
+```javascript
+myBrowserWindow.webContents.on('new-window', (event, url) => {
+  event.preventDefault()
+  const win = new BrowserWindow({show: false})
+  win.once('ready-to-show', () => win.show())
+  win.loadURL(url)
+  event.newGuest = win
+})
+```
 
 #### Event: 'will-navigate'
 
@@ -205,6 +218,36 @@ When in-page navigation happens, the page URL changes but does not cause
 navigation outside of the page. Examples of this occurring are when anchor links
 are clicked or when the DOM `hashchange` event is triggered.
 
+#### Event: 'will-prevent-unload'
+
+Returns:
+
+* `event` Event
+
+Emitted when a `beforeunload` event handler is attempting to cancel a page unload.
+
+Calling `event.preventDefault()` will ignore the `beforeunload` event handler
+and allow the page to be unloaded.
+
+```javascript
+const {BrowserWindow, dialog} = require('electron')
+const win = new BrowserWindow({width: 800, height: 600})
+win.webContents.on('will-prevent-unload', (event) => {
+  const choice = dialog.showMessageBox(win, {
+    type: 'question',
+    buttons: ['Leave', 'Stay'],
+    title: 'Do you want to leave this site?',
+    message: 'Changes you made may not be saved.',
+    defaultId: 0,
+    cancelId: 1
+  })
+  const leave = (choice === 0)
+  if (leave) {
+    event.preventDefault()
+  }
+})
+```
+
 #### Event: 'crashed'
 
 Returns:
@@ -228,6 +271,40 @@ Emitted when a plugin process has crashed.
 
 Emitted when `webContents` is destroyed.
 
+#### Event: 'before-input-event'
+
+Returns:
+
+* `event` Event
+* `input` Object - Input properties
+  * `type` String - Either `keyUp` or `keyDown`
+  * `key` String - Equivalent to [KeyboardEvent.key][keyboardevent]
+  * `code` String - Equivalent to [KeyboardEvent.code][keyboardevent]
+  * `isAutoRepeat` Boolean - Equivalent to [KeyboardEvent.repeat][keyboardevent]
+  * `shift` Boolean - Equivalent to [KeyboardEvent.shiftKey][keyboardevent]
+  * `control` Boolean - Equivalent to [KeyboardEvent.controlKey][keyboardevent]
+  * `alt` Boolean - Equivalent to [KeyboardEvent.altKey][keyboardevent]
+  * `meta` Boolean - Equivalent to [KeyboardEvent.metaKey][keyboardevent]
+
+Emitted before dispatching the `keydown` and `keyup` events in the page.
+Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
+and the menu shortcuts.
+
+To only prevent the menu shortcuts, use
+[`setIgnoreMenuShortcuts`](#contentssetignoremenushortcuts):
+
+```javascript
+const {BrowserWindow} = require('electron')
+
+let win = new BrowserWindow({width: 800, height: 600})
+
+win.webContents.on('before-input-event', (event, input) => {
+  // For example, only enable application menu keyboard shortcuts when
+  // Ctrl/Cmd are down.
+  win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
+})
+```
+
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
@@ -245,7 +322,7 @@ Emitted when DevTools is focused / opened.
 Returns:
 
 * `event` Event
-* `url` URL
+* `url` String
 * `error` String - The error code
 * `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
@@ -304,6 +381,7 @@ Returns:
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
   * `selectionArea` Object - Coordinates of first match region.
+  * `finalUpdate` Boolean
 
 Emitted when a result is available for
 [`webContents.findInPage`] request.
@@ -325,6 +403,11 @@ a meta tag:
 <meta name='theme-color' content='#ff0000'>
 ```
 
+Returns:
+
+* `event` Event
+* `color` (String | null) - Theme color is in format of '#rrggbb'. It is `null` when no theme color is set.
+
 #### Event: 'update-target-url'
 
 Returns:
@@ -342,12 +425,8 @@ Returns:
 * `type` String
 * `image` NativeImage (optional)
 * `scale` Float (optional) - scaling factor for the custom cursor
-* `size` Object (optional) - the size of the `image`
-  * `width` Integer
-  * `height` Integer
-* `hotspot` Object (optional) - coordinates of the custom cursor's hotspot
-  * `x` Integer - x coordinate
-  * `y` Integer - y coordinate
+* `size` [Size](structures/size.md) (optional) - the size of the `image`
+* `hotspot` [Point](structures/point.md) (optional) - coordinates of the custom cursor's hotspot
 
 Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
@@ -477,15 +556,42 @@ win.webContents.on('paint', (event, dirty, image) => {
 win.loadURL('http://github.com')
 ```
 
+#### Event: 'devtools-reload-page'
+
+Emitted when the devtools window instructs the webContents to reload
+
+#### Event: 'will-attach-webview'
+
+Returns:
+
+* `event` Event
+* `webPreferences` Object - The web preferences that will be used by the guest
+  page. This object can be modified to adjust the preferences for the guest
+  page.
+* `params` Object - The other `<webview>` parameters such as the `src` URL.
+  This object can be modified to adjust the parameters of the guest page.
+
+Emitted when a `<webview>`'s web contents is being attached to this web
+contents. Calling `event.preventDefault()` will destroy the guest page.
+
+This event can be used to configure `webPreferences` for the `webContents`
+of a `<webview>` before it's loaded, and provides the ability to set settings
+that can't be set via `<webview>` attributes.
+
+**Note:** The specified `preload` script option will be appear as `preloadURL`
+(not `preload`) in the `webPreferences` object emitted with this event.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
 
-* `url` URL
+* `url` String
 * `options` Object (optional)
-  * `httpReferrer` String - A HTTP Referrer url.
-  * `userAgent` String - A user agent originating the request.
-  * `extraHeaders` String - Extra headers separated by "\n"
+  * `httpReferrer` String (optional) - A HTTP Referrer url.
+  * `userAgent` String (optional) - A user agent originating the request.
+  * `extraHeaders` String (optional) - Extra headers separated by "\n"
+  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadFileSystem[]](structures/upload-file-system.md) | [UploadBlob[]](structures/upload-blob.md)) - (optional)
+  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Loads the `url` in the window. The `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`. If the load should bypass http cache then
@@ -524,6 +630,10 @@ Returns `String` - The title of the current web page.
 #### `contents.isDestroyed()`
 
 Returns `Boolean` - Whether the web page is destroyed.
+
+#### `contents.focus()`
+
+Focuses the web page.
 
 #### `contents.isFocused()`
 
@@ -616,15 +726,35 @@ Injects CSS into the current web page.
 #### `contents.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
-* `userGesture` Boolean (optional)
+* `userGesture` Boolean (optional) - Default is `false`.
 * `callback` Function (optional) - Called after script has been executed.
   * `result` Any
+
+Returns `Promise` - A promise that resolves with the result of the executed code
+or is rejected if the result of the code is a rejected promise.
 
 Evaluates `code` in page.
 
 In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
+
+If the result of the executed code is a promise the callback result will be the
+resolved value of the promise.  We recommend that you use the returned Promise
+to handle code that results in a Promise.
+
+```js
+contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
+  .then((result) => {
+    console.log(result) // Will be the JSON object from the fetch call
+  })
+```
+
+#### `contents.setIgnoreMenuShortcuts(ignore)` _Experimental_
+
+* `ignore` Boolean
+
+Ignore application menu shortcuts while this web contents is focused.
 
 #### `contents.setAudioMuted(muted)`
 
@@ -672,7 +802,22 @@ Sends a request to get current zoom level, the `callback` will be called with
 * `minimumLevel` Number
 * `maximumLevel` Number
 
-Sets the maximum and minimum zoom level.
+**Deprecated:** Call `setVisualZoomLevelLimits` instead to set the visual zoom
+level limits. This method will be removed in Electron 2.0.
+
+#### `contents.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+Sets the maximum and minimum pinch-to-zoom level.
+
+#### `contents.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
 #### `contents.undo()`
 
@@ -739,14 +884,14 @@ Inserts `text` to the focused element.
 
 * `text` String - Content to be searched, must not be empty.
 * `options` Object (optional)
-  * `forward` Boolean - Whether to search forward or backward, defaults to `true`.
-  * `findNext` Boolean - Whether the operation is first request or a follow up,
+  * `forward` Boolean - (optional) Whether to search forward or backward, defaults to `true`.
+  * `findNext` Boolean - (optional) Whether the operation is first request or a follow up,
     defaults to `false`.
-  * `matchCase` Boolean - Whether search should be case-sensitive,
+  * `matchCase` Boolean - (optional) Whether search should be case-sensitive,
     defaults to `false`.
-  * `wordStart` Boolean - Whether to look only at the start of words.
+  * `wordStart` Boolean - (optional) Whether to look only at the start of words.
     defaults to `false`.
-  * `medialCapitalAsWordStart` Boolean - When combined with `wordStart`,
+  * `medialCapitalAsWordStart` Boolean - (optional) When combined with `wordStart`,
     accepts a match in the middle of a word if the match begins with an
     uppercase letter followed by a lowercase or non-letter.
     Accepts several other intra-word matches, defaults to `false`.
@@ -804,32 +949,42 @@ Unregisters any ServiceWorker if present and returns a boolean as
 response to `callback` when the JS promise is fulfilled or false
 when the JS promise is rejected.
 
-#### `contents.print([options])`
+#### `contents.getPrinters()`
+
+Get the system printer list.
+
+Returns [`PrinterInfo[]`](structures/printer-info.md)
+
+#### `contents.print([options], [callback])`
 
 * `options` Object (optional)
-  * `silent` Boolean - Don't ask user for print settings. Default is `false`.
-  * `printBackground` Boolean - Also prints the background color and image of
+  * `silent` Boolean (optional) - Don't ask user for print settings. Default is `false`.
+  * `printBackground` Boolean (optional) - Also prints the background color and image of
     the web page. Default is `false`.
+  * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
+* `callback` Function (optional)
+  * success` Boolean - Indicates success of the print call.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
-up system's default printer and default settings for printing.
+the system's default printer if `deviceName` is empty and the default settings
+for printing.
 
 Calling `window.print()` in web page is equivalent to calling
-`webContents.print({silent: false, printBackground: false})`.
+`webContents.print({silent: false, printBackground: false, deviceName: ''})`.
 
 Use `page-break-before: always; ` CSS style to force to print to a new page.
 
 #### `contents.printToPDF(options, callback)`
 
 * `options` Object
-  * `marginsType` Integer - Specifies the type of margins to use. Uses 0 for
+  * `marginsType` Integer - (optional) Specifies the type of margins to use. Uses 0 for
     default margin, 1 for no margin, and 2 for minimum margin.
-  * `pageSize` String - Specify page size of the generated PDF. Can be `A3`,
+  * `pageSize` String - (optional) Specify page size of the generated PDF. Can be `A3`,
     `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
     and `width` in microns.
-  * `printBackground` Boolean - Whether to print CSS backgrounds.
-  * `printSelectionOnly` Boolean - Whether to print selection only.
-  * `landscape` Boolean - `true` for landscape, `false` for portrait.
+  * `printBackground` Boolean - (optional) Whether to print CSS backgrounds.
+  * `printSelectionOnly` Boolean - (optional) Whether to print selection only.
+  * `landscape` Boolean - (optional) `true` for landscape, `false` for portrait.
 * `callback` Function
   * `error` Error
   * `data` Buffer
@@ -839,6 +994,8 @@ settings.
 
 The `callback` will be called with `callback(error, data)` on completion. The
 `data` is a `Buffer` that contains the generated PDF data.
+
+The `landscape` will be ignored if `@page` CSS at-rule is used in the web page.
 
 By default, an empty `options` will be regarded as:
 
@@ -934,6 +1091,7 @@ Opens the developer tools for the service worker context.
 #### `contents.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String
+* `...args` any[]
 
 Send an asynchronous message to renderer process via `channel`, you can also
 send arbitrary arguments. Arguments will be serialized in JSON internally and
@@ -978,24 +1136,16 @@ app.on('ready', () => {
       (default: `desktop`)
     * `desktop` - Desktop screen type
     * `mobile` - Mobile screen type
-  * `screenSize` Object - Set the emulated screen size (screenPosition == mobile)
-    * `width` Integer - Set the emulated screen width
-    * `height` Integer - Set the emulated screen height
-  * `viewPosition` Object - Position the view on the screen
+  * `screenSize` [Size](structures/size.md) - Set the emulated screen size (screenPosition == mobile)
+  * `viewPosition` [Point](structures/point.md) - Position the view on the screen
       (screenPosition == mobile) (default: `{x: 0, y: 0}`)
-    * `x` Integer - Set the x axis offset from top left corner
-    * `y` Integer - Set the y axis offset from top left corner
   * `deviceScaleFactor` Integer - Set the device scale factor (if zero defaults to
       original device scale factor) (default: `0`)
-  * `viewSize` Object - Set the emulated view size (empty means no override)
-    * `width` Integer - Set the emulated view width
-    * `height` Integer - Set the emulated view height
+  * `viewSize` [Size](structures/size.md) - Set the emulated view size (empty means no override)
   * `fitToView` Boolean - Whether emulated view should be scaled down if
       necessary to fit into available space (default: `false`)
-  * `offset` Object - Offset of the emulated view inside available space (not in
-      fit to view mode) (default: `{x: 0, y: 0}`)
-    * `x` Float - Set the x axis offset from top left corner
-    * `y` Float - Set the y axis offset from top left corner
+  * `offset` [Point](structures/point.md) - Offset of the emulated view inside available space
+      (not in fit to view mode) (default: `{x: 0, y: 0}`)
   * `scale` Float - Scale of emulated view inside available space (not in fit to
       view mode) (default: `1`)
 
@@ -1017,6 +1167,8 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
     `numLock`, `left`, `right`.
 
 Sends an input `event` to the page.
+**Note:** The `BrowserWindow` containing the contents needs to be focused for
+`sendInputEvent()` to work.
 
 For keyboard events, the `event` object also have following properties:
 
@@ -1075,8 +1227,9 @@ End subscribing for frame presentation events.
 #### `contents.startDrag(item)`
 
 * `item` Object
-  * `file` String
-  * `icon` [NativeImage](native-image.md)
+  * `file` String or `files` Array - The path(s) to the file(s) being dragged.
+  * `icon` [NativeImage](native-image.md) - The image must be non-empty on
+    macOS.
 
 Sets the `item` as dragging item for current drag-drop operation, `file` is the
 absolute path of the file to be dragged, and `icon` is the image showing under
@@ -1092,7 +1245,7 @@ the cursor when dragging.
 * `callback` Function - `(error) => {}`.
   * `error` Error
 
-Returns true if the process of saving page has been initiated successfully.
+Returns `Boolean` - true if the process of saving page has been initiated successfully.
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -1110,6 +1263,17 @@ win.webContents.on('did-finish-load', () => {
 #### `contents.showDefinitionForSelection()` _macOS_
 
 Shows pop-up dictionary that searches the selected word on the page.
+
+#### `contents.setSize(options)`
+
+Set the size of the page. This is only supported for `<webview>` guest contents.
+
+* `options` Object
+  * `normal` Object (optional) - Normal size of the page. This can be used in
+    combination with the [`disableguestresize`](web-view-tag.md#disableguestresize)
+    attribute to manually resize the webview guest contents.
+    * `width` Integer
+    * `height` Integer
 
 #### `contents.isOffscreen()`
 
@@ -1140,22 +1304,53 @@ Returns `Integer` - If *offscreen rendering* is enabled returns the current fram
 
 #### `contents.invalidate()`
 
+Schedules a full repaint of the window this web contents is in.
+
 If *offscreen rendering* is enabled invalidates the frame and generates a new
 one through the `'paint'` event.
+
+#### `contents.getWebRTCIPHandlingPolicy()`
+
+Returns `String` - Returns the WebRTC IP Handling Policy.
+
+#### `contents.setWebRTCIPHandlingPolicy(policy)`
+
+* `policy` String - Specify the WebRTC IP Handling Policy.
+  * `default` - Exposes user's public and local IPs.  This is the default
+  behavior.  When this policy is used, WebRTC has the right to enumerate all
+  interfaces and bind them to discover public interfaces.
+  * `default_public_interface_only` - Exposes user's public IP, but does not
+  expose user's local IP.  When this policy is used, WebRTC should only use the
+  default route used by http. This doesn't expose any local addresses.
+  * `default_public_and_private_interfaces` - Exposes user's public and local
+  IPs.  When this policy is used, WebRTC should only use the default route used
+  by http. This also exposes the associated default private address. Default
+  route is the route chosen by the OS on a multi-homed endpoint.
+  * `disable_non_proxied_udp` - Does not expose public or local IPs.  When this
+  policy is used, WebRTC should only use TCP to contact peers or servers unless
+  the proxy server supports UDP.
+
+Setting the WebRTC IP handling policy allows you to control which IPs are
+exposed via WebRTC.  See [BrowserLeaks](https://browserleaks.com/webrtc) for
+more details.
+
+#### `contents.getOSProcessId()`
+
+Returns `Integer` - The `pid` of the associated renderer process.
 
 ### Instance Properties
 
 #### `contents.id`
 
-A Integer representing the unique ID of this WebContents.
+A `Integer` representing the unique ID of this WebContents.
 
 #### `contents.session`
 
-A Session object ([session](session.md)) used by this webContents.
+A [`Session`](session.md) used by this webContents.
 
 #### `contents.hostWebContents`
 
-A `WebContents` that might own this `WebContents`.
+A [`WebContents`](web-contents.md) instance that might own this `WebContents`.
 
 #### `contents.devToolsWebContents`
 
@@ -1166,86 +1361,6 @@ when the DevTools has been closed.
 
 #### `contents.debugger`
 
-A Debugger instance for this webContents.
+A [Debugger](debugger.md) instance for this webContents.
 
-## Class: Debugger
-
-> An alternate transport for Chrome's remote debugging protocol.
-
-Chrome Developer Tools has a [special binding][rdp] available at JavaScript
-runtime that allows interacting with pages and instrumenting them.
-
-```javascript
-const {BrowserWindow} = require('electron')
-let win = new BrowserWindow()
-
-try {
-  win.webContents.debugger.attach('1.1')
-} catch (err) {
-  console.log('Debugger attach failed : ', err)
-}
-
-win.webContents.debugger.on('detach', (event, reason) => {
-  console.log('Debugger detached due to : ', reason)
-})
-
-win.webContents.debugger.on('message', (event, method, params) => {
-  if (method === 'Network.requestWillBeSent') {
-    if (params.request.url === 'https://www.github.com') {
-      win.webContents.debugger.detach()
-    }
-  }
-})
-
-win.webContents.debugger.sendCommand('Network.enable')
-```
-
-### Instance Methods
-
-#### `debugger.attach([protocolVersion])`
-
-* `protocolVersion` String (optional) - Requested debugging protocol version.
-
-Attaches the debugger to the `webContents`.
-
-#### `debugger.isAttached()`
-
-Returns `Boolean` - Whether a debugger is attached to the `webContents`.
-
-#### `debugger.detach()`
-
-Detaches the debugger from the `webContents`.
-
-#### `debugger.sendCommand(method[, commandParams, callback])`
-
-* `method` String - Method name, should be one of the methods defined by the
-   remote debugging protocol.
-* `commandParams` Object (optional) - JSON object with request parameters.
-* `callback` Function (optional) - Response
-  * `error` Object - Error message indicating the failure of the command.
-  * `result` Any - Response defined by the 'returns' attribute of
-     the command description in the remote debugging protocol.
-
-Send given command to the debugging target.
-
-### Instance Events
-
-#### Event: 'detach'
-
-* `event` Event
-* `reason` String - Reason for detaching debugger.
-
-Emitted when debugging session is terminated. This happens either when
-`webContents` is closed or devtools is invoked for the attached `webContents`.
-
-#### Event: 'message'
-
-* `event` Event
-* `method` String - Method name.
-* `params` Object - Event parameters defined by the 'parameters'
-   attribute in the remote debugging protocol.
-
-Emitted whenever debugging target issues instrumentation event.
-
-[rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol
-[`webContents.findInPage`]: web-contents.md#contentsfindinpagetext-options
+[keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent

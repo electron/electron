@@ -2,6 +2,8 @@
 
 > Register a custom protocol and intercept existing protocol requests.
 
+Process: [Main](../glossary.md#main-process)
+
 An example of implementing a protocol that has the same effect as the
 `file://` protocol:
 
@@ -26,9 +28,12 @@ of the `app` module gets emitted.
 
 The `protocol` module has the following methods:
 
-### `protocol.registerStandardSchemes(schemes)`
+### `protocol.registerStandardSchemes(schemes[, options])`
 
 * `schemes` String[] - Custom schemes to be registered as standard schemes.
+* `options` Object (optional)
+  * `secure` Boolean (optional) - `true` to register the scheme as secure.
+    Default `false`.
 
 A standard scheme adheres to what RFC 3986 calls [generic URI
 syntax](https://tools.ietf.org/html/rfc3986#section-3). For example `http` and
@@ -116,7 +121,7 @@ treated as a standard scheme.
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
   * `callback` Function
-    * `buffer` Buffer (optional)
+    * `buffer` (Buffer | [MimeTypedBuffer](structures/mime-typed-buffer.md)) (optional)
 * `completion` Function (optional)
   * `error` Error
 
@@ -132,7 +137,7 @@ Example:
 const {protocol} = require('electron')
 
 protocol.registerBufferProtocol('atom', (request, callback) => {
-  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
+  callback({mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>')})
 }, (error) => {
   if (error) console.error('Failed to register protocol')
 })

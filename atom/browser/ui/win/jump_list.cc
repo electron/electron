@@ -31,7 +31,7 @@ bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
                                    item.icon_index)))
     return false;
 
-  CComQIPtr<IPropertyStore> property_store = link;
+  CComQIPtr<IPropertyStore> property_store(link);
   if (!base::win::SetStringValueForPropertyStore(property_store, PKEY_Title,
                                                  item.title.c_str()))
     return false;
@@ -44,7 +44,7 @@ bool AppendSeparator(IObjectCollection* collection) {
 
   CComPtr<IShellLink> shell_link;
   if (SUCCEEDED(shell_link.CoCreateInstance(CLSID_ShellLink))) {
-    CComQIPtr<IPropertyStore> property_store = shell_link;
+    CComQIPtr<IPropertyStore> property_store(shell_link);
     if (base::win::SetBooleanValueForPropertyStore(
         property_store, PKEY_AppUserModel_IsDestListSeparator, true))
       return SUCCEEDED(collection->AddObject(shell_link));
@@ -254,7 +254,7 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
     result = JumpListResult::GENERIC_ERROR;
   }
 
-  CComQIPtr<IObjectArray> items = collection;
+  CComQIPtr<IObjectArray> items(collection);
 
   if (category.type == JumpListCategory::Type::TASKS) {
     if (FAILED(destinations_->AddUserTasks(items))) {

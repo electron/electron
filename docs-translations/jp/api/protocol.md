@@ -76,7 +76,7 @@ app.on('ready', function () {
 
 ```javascript
 protocol.registerBufferProtocol('atom', function (request, callback) {
-  callback({mimeType: 'text/html', data: new Buffer('<h5>Response</h5>')})
+  callback({mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>')})
 }, function (error) {
   if (error) console.error('Failed to register protocol')
 })

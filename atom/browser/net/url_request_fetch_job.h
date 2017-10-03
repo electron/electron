@@ -8,7 +8,9 @@
 #include <string>
 
 #include "atom/browser/net/js_asker.h"
-#include "browser/url_request_context_getter.h"
+#include "brightray/browser/url_request_context_getter.h"
+#include "content/browser/streams/stream.h"
+#include "content/browser/streams/stream_read_observer.h"
 #include "net/url_request/url_fetcher_delegate.h"
 
 namespace atom {

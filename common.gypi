@@ -1,7 +1,7 @@
 {
   'includes': [
     'toolchain.gypi',
-    'vendor/brightray/brightray.gypi',
+    'brightray/brightray.gypi',
   ],
   'variables': {
     # Tell crashpad to build as external project.
@@ -16,7 +16,7 @@
     'openssl_no_asm': 1,
     'use_openssl_def': 0,
     'OPENSSL_PRODUCT': 'libopenssl.a',
-    'node_release_urlbase': 'https://atom.io/download/atom-shell',
+    'node_release_urlbase': 'https://atom.io/download/electron',
     'node_byteorder': '<!(node <(DEPTH)/tools/get-endianness.js)',
     'node_target_type': 'shared_library',
     'node_install_npm': 'false',
@@ -43,7 +43,7 @@
     'V8_BASE': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
-    'v8_inspector': 'false',
+    'v8_enable_inspector': '1',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
@@ -119,6 +119,7 @@
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
               '-Wno-shift-negative-value',
+              '-Wno-format',
               '-Wno-varargs', # https://git.io/v6Olj
               # Required when building as shared library.
               '-fPIC',
@@ -128,6 +129,9 @@
       }],
       ['_target_name=="node"', {
         'include_dirs': [
+          '<(libchromiumcontent_src_dir)',
+          '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
+          '<(libchromiumcontent_src_dir)/third_party/icu/source/i18n',
           '<(libchromiumcontent_src_dir)/v8',
           '<(libchromiumcontent_src_dir)/v8/include',
         ],
@@ -147,54 +151,12 @@
             'include_dirs': [
               '<(DEPTH)/atom/node',
             ],
-            # Node is using networking API but linking with this itself.
-            'libraries': [ '-lwinmm.lib' ],
-            # Fix the linking error with icu.
-            'conditions': [
-              ['libchromiumcontent_component==0', {
-                'variables': {
-                  'conditions': [
-                    ['target_arch=="ia32"', {
-                      'reference_symbols': [
-                        '_u_errorName_56',
-                        '_ubidi_setPara_56',
-                        '_ucsdet_getName_56',
-                        '_uidna_openUTS46_56',
-                        '_ulocdata_close_56',
-                        '_unorm_normalize_56',
-                        '_uregex_matches_56',
-                        '_uscript_getCode_56',
-                        '_uspoof_open_56',
-                        '_usearch_setPattern_56',
-                        '?createInstance@Transliterator@icu_56@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
-                        '??0MeasureFormat@icu_56@@QAE@ABVLocale@1@W4UMeasureFormatWidth@@AAW4UErrorCode@@@Z',
-                      ],
-                    }, {
-                      'reference_symbols': [
-                        'u_errorName_56',
-                        'ubidi_setPara_56',
-                        'ucsdet_getName_56',
-                        'uidna_openUTS46_56',
-                        'ulocdata_close_56',
-                        'unorm_normalize_56',
-                        'uregex_matches_56',
-                        'uspoof_open_56',
-                        'usearch_setPattern_56',
-                        '?createInstance@Transliterator@icu_56@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z',
-                        '??0MeasureFormat@icu_56@@QEAA@AEBVLocale@1@W4UMeasureFormatWidth@@AEAW4UErrorCode@@@Z',
-                      ],
-                    }],
-                  ],
-                },
-                'msvs_settings': {
-                  'VCLinkerTool': {
-                    # There is nothing like "whole-archive" on Windows, so we
-                    # have to manually force some objets files to be included
-                    # by referencing them.
-                    'ForceSymbolReferences': [ '<@(reference_symbols)' ],  # '/INCLUDE'
-                  },
-                },
-              }],
+            'libraries': [
+              # Node is using networking API but linking with this itself.
+              '-lwinmm.lib',
+              # Needed by V8.
+              '-ldbghelp.lib',
+              '-lshlwapi.lib',
             ],
           }],
           ['OS=="linux" and libchromiumcontent_component==0', {
@@ -235,6 +197,7 @@
             'xcode_settings': {
               'WARNING_CFLAGS': [
                 '-Wno-unused-private-field',
+                '-Wno-address-of-packed-member',
               ],
             },
           }],  # OS=="mac"
@@ -270,12 +233,14 @@
     'msvs_disabled_warnings': [
       4005,  # (node.h) macro redefinition
       4091,  # (node_extern.h) '__declspec(dllimport)' : ignored on left of 'node::Environment' when no variable is declared
+      4099,  # (pdf_render_settings.h) type name first seen using 'class' now seen using 'struct'
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
       4267,  # conversion from 'size_t' to 'int', possible loss of data
       4302,  # (atldlgs.h) 'type cast': truncation from 'LPCTSTR' to 'WORD'
       4458,  # (atldlgs.h) declaration of 'dwCommonButtons' hides class member
       4503,  # decorated name length exceeded, name was truncated
+      4714,  # (atomicstring.h) function marked as __forceinline not inlined
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page
       4838,  # (atlgdi.h) conversion from 'int' to 'UINT' requires a narrowing conversion

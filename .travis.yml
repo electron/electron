@@ -3,6 +3,9 @@ git:
 notifications:
   email: false
 
+before_install:
+  - export BOTO_CONFIG=/dev/null
+
 language: node_js
 node_js:
   - "4"
@@ -19,6 +22,8 @@ matrix:
       env: TARGET_ARCH=arm
     - os: linux
       env: TARGET_ARCH=ia32
+    - os: linux
+      env: TARGET_ARCH=arm64
   allow_failures:
     - os: osx
 

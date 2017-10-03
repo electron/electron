@@ -11,13 +11,19 @@
 
 namespace atom {
 
+namespace api {
+class WebContents;
+}
+
 class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
  public:
+  explicit AtomJavaScriptDialogManager(api::WebContents* api_web_contents);
+
   // content::JavaScriptDialogManager implementations.
   void RunJavaScriptDialog(
       content::WebContents* web_contents,
       const GURL& origin_url,
-      content::JavaScriptMessageType javascript_message_type,
+      content::JavaScriptDialogType dialog_type,
       const base::string16& message_text,
       const base::string16& default_prompt_text,
       const DialogClosedCallback& callback,
@@ -26,9 +32,14 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
       content::WebContents* web_contents,
       bool is_reload,
       const DialogClosedCallback& callback) override;
-  void CancelActiveAndPendingDialogs(
-      content::WebContents* web_contents) override {}
-  void ResetDialogState(content::WebContents* web_contents) override {};
+  void CancelDialogs(content::WebContents* web_contents,
+                     bool reset_state) override;
+
+ private:
+  static void OnMessageBoxCallback(const DialogClosedCallback& callback,
+                                   int code,
+                                   bool checkbox_checked);
+  api::WebContents* api_web_contents_;
 };
 
 }  // namespace atom

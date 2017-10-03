@@ -3,16 +3,17 @@ const http = require('http')
 const https = require('https')
 const path = require('path')
 const fs = require('fs')
+const send = require('send')
+const auth = require('basic-auth')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote} = require('electron')
-const {ipcMain, session, BrowserWindow} = remote
+const {ipcMain, session, BrowserWindow, net} = remote
 
 describe('session module', function () {
-  this.timeout(10000)
-
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null
+  var webview = null
   var url = 'http://127.0.0.1'
 
   beforeEach(function () {
@@ -24,6 +25,13 @@ describe('session module', function () {
   })
 
   afterEach(function () {
+    if (webview != null) {
+      if (!document.body.contains(webview)) {
+        document.body.appendChild(webview)
+      }
+      webview.remove()
+    }
+
     return closeWindow(w).then(function () { w = null })
   })
 
@@ -211,6 +219,21 @@ describe('session module', function () {
         if (error) return done(error)
       })
     })
+
+    describe('ses.cookies.flushStore(callback)', function () {
+      it('flushes the cookies to disk and invokes the callback when done', function (done) {
+        session.defaultSession.cookies.set({
+          url: url,
+          name: 'foo',
+          value: 'bar'
+        }, (error) => {
+          if (error) return done(error)
+          session.defaultSession.cookies.flushStore(() => {
+            done()
+          })
+        })
+      })
+    })
   })
 
   describe('ses.clearStorageData(options)', function () {
@@ -218,7 +241,7 @@ describe('session module', function () {
     it('clears localstorage data', function (done) {
       ipcMain.on('count', function (event, count) {
         ipcMain.removeAllListeners('count')
-        assert(!count)
+        assert.equal(count, 0)
         done()
       })
       w.loadURL('file://' + path.join(fixtures, 'api', 'localstorage.html'))
@@ -236,18 +259,13 @@ describe('session module', function () {
   })
 
   describe('will-download event', function () {
-    var w = null
-
     beforeEach(function () {
+      if (w != null) w.destroy()
       w = new BrowserWindow({
         show: false,
         width: 400,
         height: 400
       })
-    })
-
-    afterEach(function () {
-      return closeWindow(w).then(function () { w = null })
     })
 
     it('can cancel default download behavior', function (done) {
@@ -295,7 +313,9 @@ describe('session module', function () {
       res.end(mockPDF)
       downloadServer.close()
     })
-    var assertDownload = function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port, savePath) {
+    var assertDownload = function (event, state, url, mimeType,
+                                   receivedBytes, totalBytes, disposition,
+                                   filename, port, savePath) {
       assert.equal(state, 'completed')
       assert.equal(filename, 'mock.pdf')
       assert.equal(savePath, path.join(__dirname, 'fixtures', 'mock.pdf'))
@@ -308,13 +328,17 @@ describe('session module', function () {
       fs.unlinkSync(downloadFilePath)
     }
 
-    it('can download using BrowserWindow.loadURL', function (done) {
+    it('can download using WebContents.downloadURL', function (done) {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', false, false)
-        w.loadURL(url + ':' + port)
-        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, savePath) {
-          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port, savePath)
+        w.webContents.downloadURL(url + ':' + port)
+        ipcRenderer.once('download-done', function (event, state, url,
+                                                    mimeType, receivedBytes,
+                                                    totalBytes, disposition,
+                                                    filename, savePath) {
+          assertDownload(event, state, url, mimeType, receivedBytes,
+                         totalBytes, disposition, filename, port, savePath)
           done()
         })
       })
@@ -324,13 +348,17 @@ describe('session module', function () {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', false, false)
-        var webview = new WebView()
+        webview = new WebView()
         webview.src = 'file://' + fixtures + '/api/blank.html'
         webview.addEventListener('did-finish-load', function () {
           webview.downloadURL(url + ':' + port + '/')
         })
-        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, savePath) {
-          assertDownload(event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename, port, savePath)
+        ipcRenderer.once('download-done', function (event, state, url,
+                                                    mimeType, receivedBytes,
+                                                    totalBytes, disposition,
+                                                    filename, savePath) {
+          assertDownload(event, state, url, mimeType, receivedBytes,
+                         totalBytes, disposition, filename, port, savePath)
           document.body.removeChild(webview)
           done()
         })
@@ -342,8 +370,11 @@ describe('session module', function () {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', true, false)
-        w.loadURL(url + ':' + port + '/')
-        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
+        w.webContents.downloadURL(url + ':' + port + '/')
+        ipcRenderer.once('download-done', function (event, state, url,
+                                                    mimeType, receivedBytes,
+                                                    totalBytes, disposition,
+                                                    filename) {
           assert.equal(state, 'cancelled')
           assert.equal(filename, 'mock.pdf')
           assert.equal(mimeType, 'application/pdf')
@@ -362,8 +393,11 @@ describe('session module', function () {
       downloadServer.listen(0, '127.0.0.1', function () {
         var port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', true, false)
-        w.loadURL(url + ':' + port + '/?testFilename')
-        ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
+        w.webContents.downloadURL(url + ':' + port + '/?testFilename')
+        ipcRenderer.once('download-done', function (event, state, url,
+                                                    mimeType, receivedBytes,
+                                                    totalBytes, disposition,
+                                                    filename) {
           assert.equal(state, 'cancelled')
           assert.equal(filename, 'download.pdf')
           assert.equal(mimeType, 'application/pdf')
@@ -537,9 +571,10 @@ describe('session module', function () {
       server.close()
     })
 
-    it('accepts the request when the callback is called with true', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
-        callback(true)
+    it('accepts the request when the callback is called with 0', function (done) {
+      session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult}, callback) {
+        assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
+        callback(0)
       })
 
       w.webContents.once('did-finish-load', function () {
@@ -549,11 +584,49 @@ describe('session module', function () {
       w.loadURL(`https://127.0.0.1:${server.address().port}`)
     })
 
-    it('rejects the request when the callback is called with false', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+    describe('deprecated function signature', function () {
+      it('supports accepting the request', function (done) {
+        session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+          assert.equal(hostname, '127.0.0.1')
+          callback(true)
+        })
+
+        w.webContents.once('did-finish-load', function () {
+          assert.equal(w.webContents.getTitle(), 'hello')
+          done()
+        })
+        w.loadURL(`https://127.0.0.1:${server.address().port}`)
+      })
+
+      it('supports rejecting the request', function (done) {
+        session.defaultSession.setCertificateVerifyProc(function (hostname, certificate, callback) {
+          assert.equal(hostname, '127.0.0.1')
+          callback(false)
+        })
+
+        var url = `https://127.0.0.1:${server.address().port}`
+        w.webContents.once('did-finish-load', function () {
+          assert.equal(w.webContents.getTitle(), url)
+          done()
+        })
+        w.loadURL(url)
+      })
+    })
+
+    it('rejects the request when the callback is called with -2', function (done) {
+      session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult}, callback) {
         assert.equal(hostname, '127.0.0.1')
         assert.equal(certificate.issuerName, 'Intermediate CA')
-        callback(false)
+        assert.equal(certificate.subjectName, 'localhost')
+        assert.equal(certificate.issuer.commonName, 'Intermediate CA')
+        assert.equal(certificate.subject.commonName, 'localhost')
+        assert.equal(certificate.issuerCert.issuer.commonName, 'Root CA')
+        assert.equal(certificate.issuerCert.subject.commonName, 'Intermediate CA')
+        assert.equal(certificate.issuerCert.issuerCert.issuer.commonName, 'Root CA')
+        assert.equal(certificate.issuerCert.issuerCert.subject.commonName, 'Root CA')
+        assert.equal(certificate.issuerCert.issuerCert.issuerCert, undefined)
+        assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
+        callback(-2)
       })
 
       var url = `https://127.0.0.1:${server.address().port}`
@@ -562,6 +635,161 @@ describe('session module', function () {
         done()
       })
       w.loadURL(url)
+    })
+  })
+
+  describe('ses.createInterruptedDownload(options)', function () {
+    it('can create an interrupted download item', function (done) {
+      ipcRenderer.sendSync('set-download-option', true, false)
+      const filePath = path.join(__dirname, 'fixtures', 'mock.pdf')
+      const options = {
+        path: filePath,
+        urlChain: ['http://127.0.0.1/'],
+        mimeType: 'application/pdf',
+        offset: 0,
+        length: 5242880
+      }
+      w.webContents.session.createInterruptedDownload(options)
+      ipcRenderer.once('download-created', function (event, state, urlChain,
+                                                     mimeType, receivedBytes,
+                                                     totalBytes, filename,
+                                                     savePath) {
+        assert.equal(state, 'interrupted')
+        assert.deepEqual(urlChain, ['http://127.0.0.1/'])
+        assert.equal(mimeType, 'application/pdf')
+        assert.equal(receivedBytes, 0)
+        assert.equal(totalBytes, 5242880)
+        assert.equal(savePath, filePath)
+        done()
+      })
+    })
+
+    it('can be resumed', function (done) {
+      const fixtures = path.join(__dirname, 'fixtures')
+      const downloadFilePath = path.join(fixtures, 'logo.png')
+      const rangeServer = http.createServer(function (req, res) {
+        let options = {
+          root: fixtures
+        }
+        send(req, req.url, options)
+        .on('error', function (error) {
+          done(error)
+        }).pipe(res)
+      })
+      ipcRenderer.sendSync('set-download-option', true, false, downloadFilePath)
+      rangeServer.listen(0, '127.0.0.1', function () {
+        const port = rangeServer.address().port
+        const downloadUrl = `http://127.0.0.1:${port}/assets/logo.png`
+        const callback = function (event, state, url, mimeType,
+                                   receivedBytes, totalBytes, disposition,
+                                   filename, savePath, urlChain,
+                                   lastModifiedTime, eTag) {
+          if (state === 'cancelled') {
+            const options = {
+              path: savePath,
+              urlChain: urlChain,
+              mimeType: mimeType,
+              offset: receivedBytes,
+              length: totalBytes,
+              lastModified: lastModifiedTime,
+              eTag: eTag
+            }
+            ipcRenderer.sendSync('set-download-option', false, false, downloadFilePath)
+            w.webContents.session.createInterruptedDownload(options)
+          } else {
+            assert.equal(state, 'completed')
+            assert.equal(filename, 'logo.png')
+            assert.equal(savePath, downloadFilePath)
+            assert.equal(url, downloadUrl)
+            assert.equal(mimeType, 'image/png')
+            assert.equal(receivedBytes, 14022)
+            assert.equal(totalBytes, 14022)
+            assert(fs.existsSync(downloadFilePath))
+            fs.unlinkSync(downloadFilePath)
+            rangeServer.close()
+            ipcRenderer.removeListener('download-done', callback)
+            done()
+          }
+        }
+        ipcRenderer.on('download-done', callback)
+        w.webContents.downloadURL(downloadUrl)
+      })
+    })
+  })
+
+  describe('ses.clearAuthCache(options[, callback])', function () {
+    it('can clear http auth info from cache', function (done) {
+      const ses = session.fromPartition('auth-cache')
+      const server = http.createServer(function (req, res) {
+        var credentials = auth(req)
+        if (!credentials || credentials.name !== 'test' || credentials.pass !== 'test') {
+          res.statusCode = 401
+          res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"')
+          res.end()
+        } else {
+          res.end('authenticated')
+        }
+      })
+      server.listen(0, '127.0.0.1', function () {
+        const port = server.address().port
+        function issueLoginRequest (attempt = 1) {
+          if (attempt > 2) {
+            server.close()
+            return done()
+          }
+          const request = net.request({
+            url: `http://127.0.0.1:${port}`,
+            session: ses
+          })
+          request.on('login', function (info, callback) {
+            attempt++
+            assert.equal(info.scheme, 'basic')
+            assert.equal(info.realm, 'Restricted')
+            callback('test', 'test')
+          })
+          request.on('response', function (response) {
+            let data = ''
+            response.pause()
+            response.on('data', function (chunk) {
+              data += chunk
+            })
+            response.on('end', function () {
+              assert.equal(data, 'authenticated')
+              ses.clearAuthCache({type: 'password'}, function () {
+                issueLoginRequest(attempt)
+              })
+            })
+            response.on('error', function (error) {
+              done(error)
+            })
+            response.resume()
+          })
+          // Internal api to bypass cache for testing.
+          request.urlRequest._setLoadFlags(1 << 1)
+          request.end()
+        }
+        issueLoginRequest()
+      })
+    })
+  })
+
+  describe('ses.setPermissionRequestHandler(handler)', () => {
+    it('cancels any pending requests when cleared', (done) => {
+      const ses = session.fromPartition('permissionTest')
+      ses.setPermissionRequestHandler(() => {
+        ses.setPermissionRequestHandler(null)
+      })
+
+      webview = new WebView()
+      webview.addEventListener('ipc-message', function (e) {
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['SecurityError'])
+        done()
+      })
+      webview.src = 'file://' + fixtures + '/pages/permissions/midi-sysex.html'
+      webview.partition = 'permissionTest'
+      webview.setAttribute('nodeintegration', 'on')
+      document.body.appendChild(webview)
     })
   })
 })

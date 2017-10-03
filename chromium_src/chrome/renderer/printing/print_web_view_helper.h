@@ -13,10 +13,11 @@
 #include "base/memory/shared_memory.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
-#include "content/public/renderer/render_view_observer.h"
-#include "content/public/renderer/render_view_observer_tracker.h"
+#include "content/public/renderer/render_frame_observer.h"
+#include "content/public/renderer/render_frame_observer_tracker.h"
 #include "printing/pdf_metafile_skia.h"
 #include "third_party/WebKit/public/platform/WebCanvas.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebNode.h"
 #include "third_party/WebKit/public/web/WebPrintParams.h"
 #include "ui/gfx/geometry/size.h"
@@ -63,10 +64,10 @@ class FrameReference {
 // We plan on making print asynchronous and that will require copying the DOM
 // of the document and creating a new WebView with the contents.
 class PrintWebViewHelper
-    : public content::RenderViewObserver,
-      public content::RenderViewObserverTracker<PrintWebViewHelper> {
+    : public content::RenderFrameObserver,
+      public content::RenderFrameObserverTracker<PrintWebViewHelper> {
  public:
-  explicit PrintWebViewHelper(content::RenderView* render_view);
+  explicit PrintWebViewHelper(content::RenderFrame* render_frame);
   virtual ~PrintWebViewHelper();
 
   void PrintNode(const blink::WebNode& node);
@@ -77,6 +78,7 @@ class PrintWebViewHelper
     FAIL_PRINT_INIT,
     FAIL_PRINT,
     FAIL_PREVIEW,
+    INVALID_SETTINGS,
   };
 
   enum PrintPreviewErrorBuckets {
@@ -91,14 +93,16 @@ class PrintWebViewHelper
     PREVIEW_ERROR_LAST_ENUM  // Always last.
   };
 
-  // RenderViewObserver implementation.
+  // RenderFrameObserver implementation.
   bool OnMessageReceived(const IPC::Message& message) override;
-  void PrintPage(blink::WebLocalFrame* frame, bool user_initiated) override;
   void OnDestruct() override;
+  void ScriptedPrint(bool user_initiated) override;
 
   // Message handlers ---------------------------------------------------------
 #if !defined(DISABLE_BASIC_PRINTING)
-  void OnPrintPages(bool silent, bool print_background);
+  void OnPrintPages(bool silent,
+                    bool print_background,
+                    const base::string16& device_name);
   void OnPrintingDone(bool success);
 #endif  // !DISABLE_BASIC_PRINTING
   void OnPrintPreview(const base::DictionaryValue& settings);
@@ -137,7 +141,8 @@ class PrintWebViewHelper
   void Print(blink::WebLocalFrame* frame,
              const blink::WebNode& node,
              bool silent = false,
-             bool print_background = false);
+             bool print_background = false,
+             const base::string16& device_name = base::string16());
 
   // Notification when printing is done - signal tear-down/free resources.
   void DidFinishPrinting(PrintingResult result);
@@ -146,12 +151,14 @@ class PrintWebViewHelper
 
   // Initialize print page settings with default settings.
   // Used only for native printing workflow.
-  bool InitPrintSettings(bool fit_to_paper_size);
+  bool InitPrintSettings(bool fit_to_paper_size,
+                         const base::string16& device_name = base::string16());
 
   // Calculate number of pages in source document.
   bool CalculateNumberOfPages(blink::WebLocalFrame* frame,
                               const blink::WebNode& node,
-                              int* number_of_pages);
+                              int* number_of_pages,
+                              const base::string16& device_name = base::string16());
 
   // Update the current print settings with new |passed_job_settings|.
   // |passed_job_settings| dictionary contains print job details such as printer
@@ -163,7 +170,7 @@ class PrintWebViewHelper
 
   // Get final print settings from the user.
   // Return false if the user cancels or on error.
-  bool GetPrintSettingsFromUser(blink::WebFrame* frame,
+  bool GetPrintSettingsFromUser(blink::WebLocalFrame* frame,
                                 const blink::WebNode& node,
                                 int expected_pages_count);
 
@@ -171,23 +178,23 @@ class PrintWebViewHelper
 
   void OnFramePreparedForPrintPages();
   void PrintPages();
-  bool PrintPagesNative(blink::WebFrame* frame, int page_count);
+  bool PrintPagesNative(blink::WebLocalFrame* frame, int page_count);
   void FinishFramePrinting();
 
   // Prints the page listed in |params|.
 #if defined(OS_LINUX) || defined(OS_ANDROID)
   void PrintPageInternal(const PrintMsg_PrintPage_Params& params,
-                         blink::WebFrame* frame,
+                         blink::WebLocalFrame* frame,
                          PdfMetafileSkia* metafile);
 #elif defined(OS_WIN)
   void PrintPageInternal(const PrintMsg_PrintPage_Params& params,
-                         blink::WebFrame* frame,
+                         blink::WebLocalFrame* frame,
                          PdfMetafileSkia* metafile,
                          gfx::Size* page_size_in_dpi,
                          gfx::Rect* content_area_in_dpi);
 #else
   void PrintPageInternal(const PrintMsg_PrintPage_Params& params,
-                         blink::WebFrame* frame);
+                         blink::WebLocalFrame* frame);
 #endif
 
   // Render the frame for printing.
@@ -198,7 +205,7 @@ class PrintWebViewHelper
 #if defined(OS_MACOSX)
   void RenderPage(const PrintMsg_Print_Params& params,
                   int page_number,
-                  blink::WebFrame* frame,
+                  blink::WebLocalFrame* frame,
                   bool is_preview,
                   PdfMetafileSkia* metafile,
                   gfx::Size* page_size,
@@ -223,14 +230,12 @@ class PrintWebViewHelper
 
   // Helper method to get page layout in points and fit to page if needed.
   static void ComputePageLayoutInPointsForCss(
-      blink::WebFrame* frame,
+      blink::WebLocalFrame* frame,
       int page_index,
       const PrintMsg_Print_Params& default_params,
       bool ignore_css_margins,
       double* scale_factor,
       PageSizeMargins* page_layout_in_points);
-
-  bool GetPrintFrame(blink::WebLocalFrame** frame);
 
   // Script Initiated Printing ------------------------------------------------
 
@@ -373,6 +378,7 @@ class PrintWebViewHelper
   bool print_node_in_progress_;
   bool is_loading_;
   bool is_scripted_preview_delayed_;
+  int ipc_nesting_level_;
 
   PrintPreviewContext print_preview_context_;
 

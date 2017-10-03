@@ -2,6 +2,8 @@
 
 > Perform copy and paste operations on the system clipboard.
 
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
+
 The following example shows how to write a string to the clipboard:
 
 ```javascript
@@ -54,7 +56,7 @@ Writes `markup` to the clipboard.
 
 * `type` String (optional)
 
-Returns `NativeImage` - The content in the clipboard as a [NativeImage](native-image.md).
+Returns [`NativeImage`](native-image.md) - The image content in the clipboard.
 
 ### `clipboard.writeImage(image[, type])`
 
@@ -101,7 +103,7 @@ clipboard.
 
 ```js
 clipboard.write({
-  text: 'http://electron.atom.io',
+  text: 'https://electron.atom.io',
   bookmark: 'Electron Homepage'
 })
 ```
@@ -131,33 +133,46 @@ Clears the clipboard content.
 
 Returns `String[]` - An array of supported formats for the clipboard `type`.
 
-### `clipboard.has(data[, type])` _Experimental_
+### `clipboard.has(format[, type])` _Experimental_
 
-* `data` String
+* `format` String
 * `type` String (optional)
 
-Returns `Boolean` - Whether the clipboard supports the format of specified `data`.
+Returns `Boolean` - Whether the clipboard supports the specified `format`.
 
 ```javascript
 const {clipboard} = require('electron')
 console.log(clipboard.has('<p>selection</p>'))
 ```
 
-### `clipboard.read(data[, type])` _Experimental_
+### `clipboard.read(format)` _Experimental_
 
-* `data` String
+* `format` String
+
+Returns `String` - Reads `format` type from the clipboard.
+
+### `clipboard.readBuffer(format)` _Experimental_
+
+* `format` String
+
+Returns `Buffer` - Reads `format` type from the clipboard.
+
+### `clipboard.writeBuffer(format, buffer[, type])` _Experimental_
+
+* `format` String
+* `buffer` Buffer
 * `type` String (optional)
 
-Returns `String` - Reads `data` from the clipboard.
+Writes the `buffer` into the clipboard as `format`.
 
 ### `clipboard.write(data[, type])`
 
 * `data` Object
-  * `text` String
-  * `html` String
-  * `image` [NativeImage](native-image.md)
-  * `rtf` String
-  * `bookmark` String - The title of the url at `text`.
+  * `text` String (optional)
+  * `html` String (optional)
+  * `image` [NativeImage](native-image.md) (optional)
+  * `rtf` String (optional)
+  * `bookmark` String (optional) - The title of the url at `text`.
 * `type` String (optional)
 
 ```javascript

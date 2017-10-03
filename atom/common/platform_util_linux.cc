@@ -6,7 +6,10 @@
 
 #include <stdio.h>
 
+#include "base/cancelable_callback.h"
+#include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/nix/xdg_util.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "url/gurl.h"
@@ -88,12 +91,29 @@ bool OpenExternal(const GURL& url, bool activate) {
     return XDGOpen(url.spec(), false);
 }
 
+void OpenExternal(const GURL& url, bool activate,
+                  const OpenExternalCallback& callback) {
+  // TODO(gabriel): Implement async open if callback is specified
+  callback.Run(OpenExternal(url, activate) ? "" : "Failed to open");
+}
+
 bool MoveItemToTrash(const base::FilePath& full_path) {
   std::string trash;
   if (getenv(ELECTRON_TRASH) != NULL) {
     trash = getenv(ELECTRON_TRASH);
   } else {
-    trash = ELECTRON_DEFAULT_TRASH;
+    // Determine desktop environment and set accordingly.
+    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    base::nix::DesktopEnvironment desktop_env(
+        base::nix::GetDesktopEnvironment(env.get()));
+    if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
+        desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
+      trash = "kioclient5";
+    } else if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE3) {
+      trash = "kioclient";
+    } else {
+      trash = ELECTRON_DEFAULT_TRASH;
+    }
   }
 
   std::vector<std::string> argv;
@@ -105,6 +125,10 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
     argv.push_back("trash:/");
   } else if (trash.compare("trash-cli") == 0) {
     argv.push_back("trash-put");
+    argv.push_back(full_path.value());
+  } else if (trash.compare("gio") == 0) {
+    argv.push_back("gio");
+    argv.push_back("trash");
     argv.push_back(full_path.value());
   } else {
     argv.push_back(ELECTRON_DEFAULT_TRASH);

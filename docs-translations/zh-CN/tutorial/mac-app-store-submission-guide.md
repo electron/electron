@@ -14,6 +14,12 @@ Program][developer-program]，这需要额外花费。
 
 为了提交应用到商店，首先需要从 Apple 获得一个证书。可以遵循 [现有向导][nwjs-guide]。
 
+### 获得 Team ID
+
+在软件签名之前，你需要知道开发者账户的 Team ID。
+查看 Team ID，登录 [Apple Developer Center](https://developer.apple.com/account/) 并点击侧边栏的 Membership。
+你可以在团队名称下面的 Membership Information 部分查看到 Team ID。
+
 ### 软件签名
 
 获得证书之后，你可以使用 [应用部署](application-distribution.md) 打包你的应用，之后进行提交。
@@ -102,9 +108,32 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 
 如果你是 macOS 下的应用沙箱使用新手，应当仔细阅读 Apple 的 [Enabling App Sandbox][enable-app-sandbox] 了解一些基础，然后在授权文件 (entitlements files) 内添加你的应用需要的许可。
 
-### 上传你的应用并检查提交
+除了手动签名你的应用，你也可以选择使用
+[electron-osx-sign][electron-osx-sign] 模块来做这项工作。
 
-在签名应用之后，你可以使用 Application Loader 上传软件到 iTunes Connect 进行处理。请确保在上传之前你已经 [创建应用记录][create-record]，再 [提交进行审核][submit-for-review]。
+#### 原生模块签名
+
+应用程序中的原生模块也需要签署。如果使用
+electron-osx-sign，确保已生成二进制文件的路径包含在
+参数列表：
+
+```bash
+electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/nativemodule/build/release/nativemodule
+```
+
+还要注意，原生模块可能产生的中间文件
+不包括在内（因为它们也需要签署）。如果你使用
+[electron-packager][electron-packager] 8.1.0 之前的版本，在构建步骤中添加
+ `--ignore=.+\.o$` 以忽略这些文件。8.1.0及
+以后的版本默认情况下会忽略这些文件。
+
+### 上传你的应用
+
+在签名应用之后，你可以使用 Application Loader 上传软件到 iTunes Connect 进行处理。请确保在上传之前你已经 [创建应用记录][create-record]。
+
+### 检查并提交你的应用
+
+最后, 你可以 [检查并提交你的应用][submit-for-review]。
 
 ## MAS 构建限制
 
@@ -118,8 +147,52 @@ productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RES
 * 一些视频采集功能无效。
 * 某些辅助功能无法访问。
 * 应用无法检测 DNS 变化。
+* 在登录时启动应用程序的 API 被禁用。详见
+https://github.com/electron/electron/issues/7312#issuecomment-249479237
 
 也由于应用沙箱的使用方法，应用可以访问的资源被严格限制了；阅读更多信息 [App Sandboxing][app-sandboxing]。
+
+### 附加授权
+
+根据应用使用的 Electron API，你可能需要添加附加授权
+在 `parent.plist` 文件，在 Mac App Store 发布应用程序的时候能够使用这些API。
+
+#### 网络访问
+
+启用传出的网络连接，允许你的应用程序连接到服务器：
+
+```xml
+<key>com.apple.security.network.client</key>
+<true/>
+```
+
+启用传入的网络连接，让你的应用程序打开网络 socket 监听：
+
+
+```xml
+<key>com.apple.security.network.server</key>
+<true/>
+```
+
+详情查看 [Enabling Network Access documentation][network-access]
+
+#### dialog.showOpenDialog
+
+```xml
+<key>com.apple.security.files.user-selected.read-only</key>
+<true/>
+```
+
+详情查看 [Enabling User-Selected File Access documentation][user-selected]
+
+#### dialog.showSaveDialog
+
+```xml
+<key>com.apple.security.files.user-selected.read-write</key>
+<true/>
+```
+
+详情查看 [Enabling User-Selected File Access documentation][user-selected]
 
 ## Electron 使用的加密算法
 
@@ -160,7 +233,11 @@ ERN)][ern-tutorial]。
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
 [enable-app-sandbox]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
+[electron-osx-sign]: https://github.com/electron-userland/electron-osx-sign
+[electron-packager]: https://github.com/electron-userland/electron-packager
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
-[issue-3871]: https://github.com/electron/electron/issues/3871
 [ern-tutorial]: https://carouselapps.com/2015/12/15/legally-submit-app-apples-app-store-uses-encryption-obtain-ern/
+[temporary-exception]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html
+[user-selected]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6
+[network-access]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW9

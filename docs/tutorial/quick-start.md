@@ -81,6 +81,8 @@ example being:
 
 ```javascript
 const {app, BrowserWindow} = require('electron')
+const path = require('path')
+const url = require('url')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -91,7 +93,11 @@ function createWindow () {
   win = new BrowserWindow({width: 800, height: 600})
 
   // and load the index.html of the app.
-  win.loadURL(`file://${__dirname}/index.html`)
+  win.loadURL(url.format({
+    pathname: path.join(__dirname, 'index.html'),
+    protocol: 'file:',
+    slashes: true
+  }))
 
   // Open the DevTools.
   win.webContents.openDevTools()
@@ -177,7 +183,7 @@ $ ./node_modules/.bin/electron .
 
 #### Windows
 
-```bash
+```
 $ .\node_modules\.bin\electron .
 ```
 
@@ -186,10 +192,10 @@ $ .\node_modules\.bin\electron .
 If you downloaded Electron manually, you can also use the included
 binary to execute your app directly.
 
-#### Windows
+#### macOS
 
 ```bash
-$ .\electron\electron.exe your-app\
+$ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
 #### Linux
@@ -198,10 +204,10 @@ $ .\electron\electron.exe your-app\
 $ ./electron/electron your-app/
 ```
 
-#### macOS
+#### Windows
 
-```bash
-$ ./Electron.app/Contents/MacOS/Electron your-app/
+```
+$ .\electron\electron.exe your-app\
 ```
 
 `Electron.app` here is part of the Electron's release package, you can download
@@ -225,12 +231,14 @@ repository.
 $ git clone https://github.com/electron/electron-quick-start
 # Go into the repository
 $ cd electron-quick-start
-# Install dependencies and run the app
-$ npm install && npm start
+# Install dependencies
+$ npm install
+# Run the app
+$ npm start
 ```
 
 For more example apps, see the
-[list of boilerplates](http://electron.atom.io/community/#boilerplates)
+[list of boilerplates](https://electron.atom.io/community/#boilerplates)
 created by the awesome electron community.
 
 [share-data]: ../faq.md#how-to-share-data-between-web-pages

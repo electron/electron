@@ -66,9 +66,8 @@ Ela cria uma nova `BrowserWindow` com propriedades nativas definidas pelo `optio
   * `partition` String - Define a sessão utilizada pela página. Se `partition` começa com `persist:`, a página irá utilizar uma sessão persistente disponível para todas as páginas do aplicativo com a mesma `partition`. Se não houver o prefixo `persist:`, a página irá utilizar uma sessão em memória. Ao utilizar a mesma `partition`, várias páginas podem compartilhar a mesma sessão. Se a `partition` for indefinida, então a sessão padrão do aplicativo será utilizada.
   * `zoomFactor` Number - O fator de *zoom* da página, `3.0` representa `300%`. O padrão é `1.0`.
   * `javascript` Boolean - Habilita suporte à JavaScript. O padrão é `true`.
-  * `webSecurity` Boolean - Quando definido como `false`, irá desabilitar a política de mesma origem (Geralmente usando sites de teste por pessoas), e definir    `allowDisplayingInsecureContent` e `allowRunningInsecureContent` como
+  * `webSecurity` Boolean - Quando definido como `false`, irá desabilitar a política de mesma origem (Geralmente usando sites de teste por pessoas), e definir  `allowRunningInsecureContent` como
     `true` se estas duas opções não tiverem sido definidas pelo usuário. O padrão é `true`.
-  * `allowDisplayingInsecureContent` Boolean - Permite que uma página https exiba conteúdo como imagens de URLs http. O padrão é `false`.
   * `allowRunningInsecureContent` Boolean - Permite que uma página https rode JavaScript, CSS ou plugins de URLs http. O padrão é `false`.
   * `images` Boolean - Habilita suporte a imagens. O padrão é `true`.
   * `java` Boolean - Habilita suporte a Java. O padrão é `false`.
@@ -81,7 +80,6 @@ Ela cria uma nova `BrowserWindow` com propriedades nativas definidas pelo `optio
   * `overlayScrollbars` Boolean - Habilita sobreposição das barras de rolagem. O padrão é `false`.
   * `overlayFullscreenVideo` Boolean - Habilita sobreposição do vídeo em tela cheia. O padrão é `false`.
   * `sharedWorker` Boolean - Habilita suporte a *Shared Worker*. O padrão é `false`.
-  * `directWrite` Boolean - Habilita o sistema de renderização de fontes *DirectWrite* no Windows. O padrão é `true`.
   * `pageVisibility` Boolean - A página é forçada a permanecer visível ou oculta quando definido, em vez de refletir a visibilidade atual da janela. Usuários podem definir como `true` para evitar que os temporizadores do *DOM* sejam suprimidos. O padrão é `false`.
 
 ## Eventos
@@ -228,15 +226,15 @@ Acha uma janela de acordo com o seu ID.
 
 * `path` String
 
-Adiciona a extenção DevTools localizada no endereço `path`, e retorna o nome da extenção.
+Adiciona a extensão DevTools localizada no endereço `path`, e retorna o nome da extensão.
 
-A extenção será lembrada, então você só precisa chamar esta API uma vez, esta API não é para uso de programação.
+A extensão será lembrada, então você só precisa chamar esta API uma vez, esta API não é para uso de programação.
 
 ### `BrowserWindow.removeDevToolsExtension(name)`
 
 * `name` String
 
-Remove a extenção DevTools cujo nome é `name`.
+Remove a extensão DevTools cujo nome é `name`.
 
 ## Propriedades de Instância
 

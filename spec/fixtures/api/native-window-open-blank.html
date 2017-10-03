@@ -1,0 +1,11 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = window.top != null ? window.top.require('electron') : require('electron')
+  const popup = window.open()
+  popup.document.write('<h1>Hello</h1>')
+  const content = popup.document.querySelector('h1').innerText
+  ipcRenderer.send('answer', content)
+</script>
+</body>
+</html>

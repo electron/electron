@@ -46,17 +46,32 @@ std::vector<std::string> GetStandardSchemes() {
   return g_standard_schemes;
 }
 
-void RegisterStandardSchemes(const std::vector<std::string>& schemes) {
+void RegisterStandardSchemes(const std::vector<std::string>& schemes,
+                             mate::Arguments* args) {
   g_standard_schemes = schemes;
 
+  mate::Dictionary opts;
+  bool secure = false;
+  args->GetNext(&opts) && opts.Get("secure", &secure);
+
+  // Dynamically register the schemes.
   auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
   for (const std::string& scheme : schemes) {
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    if (secure) {
+      url::AddSecureScheme(scheme.c_str());
+    }
     policy->RegisterWebSafeScheme(scheme);
   }
 
+  // Add the schemes to command line switches, so child processes can also
+  // register them.
   base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
       atom::switches::kStandardSchemes, base::JoinString(schemes, ","));
+  if (secure) {
+    base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      atom::switches::kSecureSchemes, base::JoinString(schemes, ","));
+  }
 }
 
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -220,7 +235,7 @@ void RegisterStandardSchemes(
     return;
   }
 
-  atom::api::RegisterStandardSchemes(schemes);
+  atom::api::RegisterStandardSchemes(schemes, args);
 }
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,

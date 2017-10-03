@@ -2,6 +2,8 @@
 
 > 웹 페이지를 렌더링하고 제어합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 `webContents`는 [EventEmitter](http://nodejs.org/api/events.html#events_class_eventemitter)를
 상속받았습니다. 웹 페이지의 렌더링과 관리를 책임지며
 [`BrowserWindow`](browser-window.md)의 속성입니다. 다음은 `webContents` 객체에
@@ -46,6 +48,8 @@ Returns `WebContents` - ID 에 해당하는 WebContens 인스턴스.
 ## Class: WebContents
 
 > BrowserWindow 인스턴스의 콘텐츠를 표시하고 제어합니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 ### Instance Events
 
@@ -611,11 +615,25 @@ CSS 코드를 현재 웹 페이지에 삽입합니다.
 * `callback` Function (optional) - 스크립트의 실행이 완료되면 호출됩니다.
   * `result` Any
 
-페이지에서 자바스크립트 코드를 실행합니다.
+Returns `Promise` - 프로미스는 실행된 코드의 결과와 함께 해결되거나 코드의
+결과가 거절된 프로미스라면 거절된다.
 
-기본적으로 `requestFullScreen`와 같은 몇몇 HTML API들은 사용자의 조작에 의해서만
-호출될 수 있습니다. `userGesture`를 `true`로 설정하면 이러한 제약을 무시할 수
-있습니다.
+페이지의 `code` 를 실행합니다.
+
+브라우저 창에서 `requestFullScreen` 같은 일부 HTML API 들은 사용자 조작에
+의해서만 호출될 수 있습니다. `userGesture` 를 `true` 로 설정하면 이러한 제약을
+없앨 수 있습니다.
+
+실행된 코드의 결과가 프로미스라면 콜백 결과는 프로미스의 결과 값입니다.
+프로미스의 반환된 결과 코드를 처리하기위해 반환된 프로미스를 사용하는 것이
+좋습니다.
+
+```js
+contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
+  .then((result) => {
+    console.log(result) // fetch 호출의 결과인 JSON 객체가 올 것 입니다
+  })
+```
 
 #### `contents.setAudioMuted(muted)`
 
@@ -1158,6 +1176,8 @@ win.webContents.on('did-finish-load', () => {
 ## Class: Debugger
 
 > Chrome의 원격 디버깅 프로토콜에 대한 대체 접근자입니다.
+
+프로세스: [메인](../tutorial/quick-start.md#main-process)
 
 ```javascript
 const {BrowserWindow} = require('electron')

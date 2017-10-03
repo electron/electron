@@ -2,6 +2,8 @@
 
 > Customize the rendering of the current web page.
 
+Process: [Renderer](../glossary.md#renderer-process)
+
 An example of zooming current page to 200%.
 
 ```javascript
@@ -42,13 +44,30 @@ Returns `Number` - The current zoom level.
 * `minimumLevel` Number
 * `maximumLevel` Number
 
-Sets the maximum and minimum zoom level.
+**Deprecated:** Call `setVisualZoomLevelLimits` instead to set the visual zoom
+level limits. This method will be removed in Electron 2.0.
+
+### `webFrame.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+Sets the maximum and minimum pinch-to-zoom level.
+
+### `webFrame.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
 ### `webFrame.setSpellCheckProvider(language, autoCorrectWord, provider)`
 
 * `language` String
 * `autoCorrectWord` Boolean
 * `provider` Object
+  * `spellCheck` Function - Returns `Boolean`
+    * `text` String
 
 Sets a provider for spell checking in input fields and text areas.
 
@@ -110,10 +129,15 @@ webFrame.registerURLSchemeAsPrivileged('foo', { bypassCSP: false })
 
 Inserts `text` to the focused element.
 
-### `webFrame.executeJavaScript(code[, userGesture])`
+### `webFrame.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
 * `userGesture` Boolean (optional) - Default is `false`.
+* `callback` Function (optional) - Called after script has been executed.
+  * `result` Any
+
+Returns `Promise` - A promise that resolves with the result of the executed code
+or is rejected if the result of the code is a rejected promise.
 
 Evaluates `code` in page.
 
@@ -146,10 +170,7 @@ This will generate:
   images: {
     count: 22,
     size: 2549,
-    liveSize: 2542,
-    decodedSize: 478,
-    purgedSize: 0,
-    purgeableSize: 0
+    liveSize: 2542
   },
   cssStyleSheets: { /* same with "images" */ },
   xslStyleSheets: { /* same with "images" */ },

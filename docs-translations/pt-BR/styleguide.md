@@ -27,7 +27,7 @@ Estas são as formas que escrevemos a documentação do Electron.
 
 ## Lendo a documentação do Electron
 
-Aqui estão algumas dicas de como entender a sintaxe da documentacão do Electron.
+Aqui estão algumas dicas de como entender a sintaxe da documentação do Electron.
 
 ### Métodos
 

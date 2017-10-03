@@ -51,38 +51,44 @@
   var Coverage = require('electabul').Coverage;
 
   var Mocha = require('mocha');
-
-  var mocha = new Mocha();
-
-  if (isCi) {
-    mocha.grep = function () {
-      try {
-        throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
-      } catch (error) {
-        console.error(error.stack || error)
-      }
-      ipcRenderer.send('process.exit', 1)
-    }
+  var mochaOpts = {};
+  if (process.env.MOCHA_REPORTER) {
+    mochaOpts.reporter = process.env.MOCHA_REPORTER;
   }
+  var mocha = new Mocha(mochaOpts);
 
-  mocha.ui('bdd').reporter(isCi ? 'tap' : 'html');
+  if (!process.env.MOCHA_REPORTER) {
+    mocha.ui('bdd').reporter(isCi ? 'tap' : 'html');
+  }
+  mocha.timeout(isCi ? 30000 : 10000)
 
   var query = Mocha.utils.parseQuery(window.location.search || '');
   if (query.grep) mocha.grep(query.grep);
   if (query.invert) mocha.invert();
 
   // Read all test files.
-  var walker = require('walkdir').walk(require('path').dirname(__dirname), {
+  var walker = require('walkdir').walk(path.dirname(__dirname), {
     no_recurse: true
   });
 
   walker.on('file', function(file) {
-    if (/-spec\.js$/.test(file))
+    if (/-spec\.js$/.test(file) && !file.includes('api-crash-reporter-spec.js'))
       mocha.addFile(file);
   });
 
   walker.on('end', function() {
+    mocha.addFile(path.resolve(__dirname, '..', 'api-crash-reporter-spec.js'))
     var runner = mocha.run(function() {
+      if (isCi && runner.hasOnly) {
+        try {
+          throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
+        } catch (error) {
+          console.error(error.stack || error)
+        }
+        ipcRenderer.send('process.exit', 1)
+        return
+      }
+
       Mocha.utils.highlightTags('code');
 
       var coverage = new Coverage({

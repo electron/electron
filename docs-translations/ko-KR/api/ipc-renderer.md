@@ -2,6 +2,8 @@
 
 > 렌더러 프로세스에서 메인 프로세스로 비동기 통신을 합니다.
 
+프로세스: [렌더러](../tutorial/quick-start.md#renderer-process)
+
 `ipcRenderer` 모듈은 [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter)
 클래스의 인스턴스입니다. 렌더러 프로세스에서 메인 프로세스로 동기/비동기
 메시지를 주고 받는 방법을 제공합니다. 또한 메인 프로세스로부터 받은 메시지에
@@ -9,7 +11,7 @@
 
 [ipcMain](ipc-main.md)에서 코드 예시를 확인할 수 있습니다.
 
-## 메시지 리스닝
+## Methods
 
 `ipcRenderer`는 다음과 같은 이벤트 리스닝 메서드를 가지고 있습니다:
 

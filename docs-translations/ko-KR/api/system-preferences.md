@@ -2,6 +2,8 @@
 
 > 시스템 설정을 가져옵니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 ```javascript
 const {systemPreferences} = require('electron')
 console.log(systemPreferences.isDarkMode())

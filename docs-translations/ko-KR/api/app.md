@@ -2,6 +2,8 @@
 
 > 애플리케이션의 이벤트 생명주기를 제어합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 밑의 예시는 마지막 윈도우가 종료되었을 때, 애플리케이션을 종료시키는 예시입니다:
 
 ```javascript
@@ -185,14 +187,7 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `url` URL
 * `error` String - 에러 코드
-* `certificate` Object
-  * `data` String - PEM 인코딩된 데이터
-  * `issuerName` String - 인증서 발급자의 공통 이름
-  * `subjectName` String - 대상의 공통 이름
-  * `serialNumber` String - 문자열로 표현된 hex 값
-  * `validStart` Integer - 초 단위의 인증서가 유효하기 시작한 날짜
-  * `validExpiry` Integer - 초 단위의 인증서가 만료되는 날짜
-  * `fingerprint` String - 인증서의 지문
+* `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
   * `isTrusted` Boolean - 인증서를 신뢰할지 여부
 

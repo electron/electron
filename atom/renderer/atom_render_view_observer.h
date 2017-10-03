@@ -40,6 +40,10 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
                         const base::string16& channel,
                         const base::ListValue& args);
 
+  void OnOffscreen();
+
+  AtomRendererClient* renderer_client_;
+
   // Whether the document object has been created.
   bool document_created_;
 

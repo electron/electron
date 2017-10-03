@@ -115,15 +115,3 @@ EnableRecordingリクエストを受信するとすぐに、子プロセス上�
 * `callback` Function
 
 プロセスのトレースバッファのプロセス間で最大使用量をフルの状態の何%かで取得します。TraceBufferUsage値が設定されていると、 `callback`がコールされます。
-
-### `contentTracing.setWatchEvent(categoryName, eventName, callback)`
-
-* `categoryName` String
-* `eventName` String
-* `callback` Function
-
-プロセス上でイベント発生すると、その度に`callback`がコールされます。
-
-### `contentTracing.cancelWatchEvent()`
-
-イベントウオッチをキャンセルします。トレースが有効になっていると、監視イベントのコールバックとの競合状態になる可能性があります。

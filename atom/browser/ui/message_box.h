@@ -32,13 +32,14 @@ enum MessageBoxOptions {
   MESSAGE_BOX_NO_LINK = 1 << 0,
 };
 
-typedef base::Callback<void(int code)> MessageBoxCallback;
+typedef base::Callback<void(int code, bool checkbox_checked)>
+    MessageBoxCallback;
 
 int ShowMessageBox(NativeWindow* parent_window,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
-                   int cancel_id,
                    int default_id,
+                   int cancel_id,
                    int options,
                    const std::string& title,
                    const std::string& message,
@@ -54,6 +55,8 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
+                    const std::string& checkbox_label,
+                    bool checkbox_checked,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback);
 

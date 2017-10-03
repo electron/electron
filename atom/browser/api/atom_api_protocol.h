@@ -29,7 +29,8 @@ namespace atom {
 namespace api {
 
 std::vector<std::string> GetStandardSchemes();
-void RegisterStandardSchemes(const std::vector<std::string>& schemes);
+void RegisterStandardSchemes(const std::vector<std::string>& schemes,
+                             mate::Arguments* args);
 
 class Protocol : public mate::TrackableObject<Protocol> {
  public:

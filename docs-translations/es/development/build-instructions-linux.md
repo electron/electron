@@ -3,11 +3,11 @@
 Siga las siguientes pautas para la construcción de Electron en Linux.
 #Requisitos previos
 
-   *  Python 2.7.x. Algunas distribuciones como CentOS siguen utilizando Python 2.6.x por lo que puede que tenga que comprobar su versión de Python con  `Python -V`.
+   *  Python 2.7.x. Algunas distribuciones como CentOS 6.x siguen utilizando Python 2.6.x por lo que puede que tenga que comprobar su versión de Python con  `Python -V`.
    *  Node.js v0.12.x. Hay varias formas de instalar Node. Puede descargar el código fuente de Node.js y compilar desde las fuentes. Si lo hace, permite la instalación de Node en el directorio personal como usuario estándar. O intentar de  repositorios como NodeSource.
    *  Clang 3.4 o mayor.
    *  Cabeceras de desarrollo de GTK + y libnotify.
-   
+
 En Ubuntu, instalar las siguientes bibliotecas:
 
 `$ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
@@ -15,11 +15,19 @@ En Ubuntu, instalar las siguientes bibliotecas:
                        libasound2-dev libcap-dev libcups2-dev libxtst-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib`
 
+En RHEL / CentOS, instale las siguientes bibliotecas:
+
+`$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel \
+                    libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                    cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                    GConf2-devel nss-devel`
+
 En Fedora, instale las siguientes bibliotecas:
 
-`$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
-                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
-                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel`
+`$ sudo dnf install clang dbus-devel gtk2-devel libnotify-devel \
+                    libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
+                    cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
+                    GConf2-devel nss-devel`
 
 Otras distribuciones pueden ofrecer paquetes similares para la instalación, a través de gestores de paquetes como el pacman. O  puede compilarlo a partir del código fuente.
 

@@ -15,13 +15,14 @@
 #include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
 #include "base/task_runner.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "net/base/file_stream.h"
 #include "net/base/filename_util.h"
 #include "net/base/io_buffer.h"
 #include "net/base/load_flags.h"
 #include "net/base/mime_util.h"
 #include "net/base/net_errors.h"
-#include "net/filter/filter.h"
+#include "net/filter/gzip_source_stream.h"
 #include "net/http/http_util.h"
 #include "net/url_request/url_request_status.h"
 
@@ -119,8 +120,11 @@ void URLRequestAsarJob::Start() {
                    weak_ptr_factory_.GetWeakPtr(),
                    base::Owned(meta_info)));
   } else {
-    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                           net::ERR_FILE_NOT_FOUND));
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE,
+        base::Bind(&URLRequestAsarJob::DidOpen,
+                   weak_ptr_factory_.GetWeakPtr(),
+                   net::ERR_FILE_NOT_FOUND));
   }
 }
 
@@ -179,10 +183,14 @@ bool URLRequestAsarJob::IsRedirectResponse(GURL* location,
 #endif
 }
 
-std::unique_ptr<net::Filter> URLRequestAsarJob::SetupFilter() const {
+std::unique_ptr<net::SourceStream> URLRequestAsarJob::SetUpSourceStream() {
+  std::unique_ptr<net::SourceStream> source =
+      net::URLRequestJob::SetUpSourceStream();
   // Bug 9936 - .svgz files needs to be decompressed.
   return base::LowerCaseEqualsASCII(file_path_.Extension(), ".svgz")
-      ? net::Filter::GZipFactory() : nullptr;
+      ? net::GzipSourceStream::Create(std::move(source),
+                                      net::SourceStream::TYPE_GZIP)
+      : std::move(source);
 }
 
 bool URLRequestAsarJob::GetMimeType(std::string* mime_type) const {

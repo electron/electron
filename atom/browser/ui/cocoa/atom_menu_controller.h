@@ -8,6 +8,7 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "base/callback.h"
 #include "base/mac/scoped_nsobject.h"
 #include "base/strings/string16.h"
 
@@ -27,6 +28,7 @@ class AtomMenuModel;
   base::scoped_nsobject<NSMenu> menu_;
   BOOL isMenuOpen_;
   BOOL useDefaultAccelerator_;
+  base::Callback<void()> closeCallback;
 }
 
 @property(nonatomic, assign) atom::AtomMenuModel* model;
@@ -34,6 +36,8 @@ class AtomMenuModel;
 // Builds a NSMenu from the pre-built model (must not be nil). Changes made
 // to the contents of the model after calling this will not be noticed.
 - (id)initWithModel:(atom::AtomMenuModel*)model useDefaultAccelerator:(BOOL)use;
+
+- (void)setCloseCallback:(const base::Callback<void()>&)callback;
 
 // Populate current NSMenu with |model|.
 - (void)populateWithModel:(atom::AtomMenuModel*)model;

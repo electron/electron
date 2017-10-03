@@ -6,16 +6,16 @@
 
 #include <vector>
 
-#include "atom_natives.h"  // NOLINT: This file is generated with coffee2c.
-
 #include "atom/common/asar/archive.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
+
+#include "atom/common/node_includes.h"
+#include "atom_natives.h"  // NOLINT: This file is generated with js2c.
 
 namespace {
 
@@ -130,26 +130,27 @@ class Archive : public mate::Wrappable<Archive> {
 void InitAsarSupport(v8::Isolate* isolate,
                      v8::Local<v8::Value> process,
                      v8::Local<v8::Value> require) {
-  // Evaluate asar_init.coffee.
+  // Evaluate asar_init.js.
   const char* asar_init_native = reinterpret_cast<const char*>(
-      static_cast<const unsigned char*>(node::asar_init_native));
+      static_cast<const unsigned char*>(node::asar_init_data));
   v8::Local<v8::Script> asar_init = v8::Script::Compile(v8::String::NewFromUtf8(
       isolate,
       asar_init_native,
       v8::String::kNormalString,
-      sizeof(node::asar_init_native) -1));
+      sizeof(node::asar_init_data) -1));
   v8::Local<v8::Value> result = asar_init->Run();
 
   // Initialize asar support.
-  base::Callback<void(v8::Local<v8::Value>,
-                      v8::Local<v8::Value>,
-                      std::string)> init;
-  if (mate::ConvertFromV8(isolate, result, &init)) {
+  if (result->IsFunction()) {
     const char* asar_native = reinterpret_cast<const char*>(
-        static_cast<const unsigned char*>(node::asar_native));
-    init.Run(process,
-             require,
-             std::string(asar_native, sizeof(node::asar_native) - 1));
+        static_cast<const unsigned char*>(node::asar_data));
+    base::StringPiece asar_data(asar_native, sizeof(node::asar_data) - 1);
+    v8::Local<v8::Value> args[] = {
+        process,
+        require,
+        mate::ConvertToV8(isolate, asar_data),
+    };
+    result.As<v8::Function>()->Call(result, 3, args);
   }
 }
 

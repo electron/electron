@@ -10,15 +10,13 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/atom_version.h"
 #include "brightray/common/application_info.h"
-#include "chrome/browser/ui/libgtk2ui/unity_service.h"
+#include "chrome/browser/ui/libgtkui/unity_service.h"
 
 namespace atom {
 
 void Browser::Focus() {
   // Focus on the first visible window.
-  WindowList* list = WindowList::GetInstance();
-  for (WindowList::iterator iter = list->begin(); iter != list->end(); ++iter) {
-    NativeWindow* window = *iter;
+  for (const auto& window : WindowList::GetWindows()) {
     if (window->IsVisible()) {
       window->Focus(true);
       break;
@@ -63,7 +61,8 @@ bool Browser::SetBadgeCount(int count) {
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 }
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+Browser::LoginItemSettings Browser::GetLoginItemSettings(
+    const LoginItemSettings& options) {
   return LoginItemSettings();
 }
 

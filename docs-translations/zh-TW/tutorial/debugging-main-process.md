@@ -35,8 +35,8 @@ $ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electro
 ### 4. 除心編譯 `node-inspector` `v8` 模組給 Electron (變更 target 為你的 Electron 編號)
 
 ```bash
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/electron reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/electron reinstall
 ```
 
 參閱 [如何安裝原生模組](how-to-install-native-modules).

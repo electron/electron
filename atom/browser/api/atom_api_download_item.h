@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_DOWNLOAD_ITEM_H_
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/trackable_object.h"
 #include "base/files/file_path.h"
@@ -38,10 +39,14 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   std::string GetFilename() const;
   std::string GetContentDisposition() const;
   const GURL& GetURL() const;
+  const std::vector<GURL>& GetURLChain() const;
   content::DownloadItem::DownloadState GetState() const;
   bool IsDone() const;
   void SetSavePath(const base::FilePath& path);
   base::FilePath GetSavePath() const;
+  std::string GetLastModifiedTime() const;
+  std::string GetETag() const;
+  double GetStartTime() const;
 
  protected:
   DownloadItem(v8::Isolate* isolate, content::DownloadItem* download_item);

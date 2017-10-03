@@ -39,7 +39,7 @@
 - (void)alertDidEnd:(NSAlert*)alert
          returnCode:(NSInteger)returnCode
         contextInfo:(void*)contextInfo {
-  callback_.Run(returnCode);
+  callback_.Run(returnCode, alert.suppressionButton.state == NSOnState);
   [alert_ release];
   [self release];
 
@@ -57,9 +57,12 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
                        MessageBoxType type,
                        const std::vector<std::string>& buttons,
                        int default_id,
+                       int cancel_id,
                        const std::string& title,
                        const std::string& message,
                        const std::string& detail,
+                       const std::string& checkbox_label,
+                       bool checkbox_checked,
                        const gfx::ImageSkia& icon) {
   // Ignore the title; it's the window title on other platforms and ignorable.
   NSAlert* alert = [[NSAlert alloc] init];
@@ -68,10 +71,14 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
 
   switch (type) {
     case MESSAGE_BOX_TYPE_INFORMATION:
-      [alert setAlertStyle:NSInformationalAlertStyle];
+      alert.alertStyle = NSInformationalAlertStyle;
       break;
     case MESSAGE_BOX_TYPE_WARNING:
-      [alert setAlertStyle:NSWarningAlertStyle];
+    case MESSAGE_BOX_TYPE_ERROR:
+      // NSWarningAlertStyle shows the app icon while NSCriticalAlertStyle
+      // shows a warning icon with an app icon badge. Since there is no
+      // error variant, lets just use NSCriticalAlertStyle.
+      alert.alertStyle = NSCriticalAlertStyle;
       break;
     default:
       break;
@@ -87,12 +94,25 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   }
 
   NSArray* ns_buttons = [alert buttons];
-  if (default_id >= 0 && default_id < static_cast<int>([ns_buttons count])) {
+  int button_count = static_cast<int>([ns_buttons count]);
+
+  // Bind cancel id button to escape key if there is more than one button
+  if (button_count > 1 && cancel_id >= 0 && cancel_id < button_count) {
+    [[ns_buttons objectAtIndex:cancel_id] setKeyEquivalent:@"\e"];
+  }
+
+  if (default_id >= 0 && default_id < button_count) {
     // Focus the button at default_id if the user opted to do so.
     // The first button added gets set as the default selected.
     // So remove that default, and make the requested button the default.
     [[ns_buttons objectAtIndex:0] setKeyEquivalent:@""];
     [[ns_buttons objectAtIndex:default_id] setKeyEquivalent:@"\r"];
+  }
+
+  if (!checkbox_label.empty()) {
+    alert.showsSuppressionButton = YES;
+    alert.suppressionButton.title = base::SysUTF8ToNSString(checkbox_label);
+    alert.suppressionButton.state = checkbox_checked ? NSOnState : NSOffState;
   }
 
   if (!icon.isNull()) {
@@ -104,7 +124,7 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   return alert;
 }
 
-void SetReturnCode(int* ret_code, int result) {
+void SetReturnCode(int* ret_code, int result, bool checkbox_checked) {
   *ret_code = result;
 }
 
@@ -120,9 +140,9 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
-  NSAlert* alert = CreateNSAlert(
-      parent_window, type, buttons, default_id, title, message,
-      detail, icon);
+  NSAlert* alert = CreateNSAlert(parent_window, type, buttons, default_id,
+                                 cancel_id, title, message, detail, "", false,
+                                 icon);
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
@@ -154,11 +174,13 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
+                    const std::string& checkbox_label,
+                    bool checkbox_checked,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  NSAlert* alert = CreateNSAlert(
-      parent_window, type, buttons, default_id, title, message,
-      detail, icon);
+  NSAlert* alert =
+      CreateNSAlert(parent_window, type, buttons, default_id, cancel_id, title,
+                    message, detail, checkbox_label, checkbox_checked, icon);
   ModalDelegate* delegate = [[ModalDelegate alloc] initWithCallback:callback
                                                            andAlert:alert
                                                        callEndModal:false];
@@ -174,7 +196,7 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
   NSAlert* alert = [[NSAlert alloc] init];
   [alert setMessageText:base::SysUTF16ToNSString(title)];
   [alert setInformativeText:base::SysUTF16ToNSString(content)];
-  [alert setAlertStyle:NSWarningAlertStyle];
+  [alert setAlertStyle:NSCriticalAlertStyle];
   [alert runModal];
   [alert release];
 }

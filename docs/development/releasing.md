@@ -2,13 +2,25 @@
 
 This document describes the process for releasing a new version of Electron.
 
-## Compile release notes
+## Create a backport branch
 
-The current process is to maintain a local file, keeping track of notable changes as pull requests are merged. For examples of how to format the notes, see previous releases on [the releases page].
+If you're about release a new major or minor version of Electron like `1.8.0`,
+`1.9.0`, or `2.0.0`, first create a branch from the most recent minor release
+for later backports:
+
+Assuming you're about to publish `1.8.0`, and the highest `1.7` release was
+`1.7.6`:
+
+```sh
+git checkout -b 1-7-x v1.7.6
+git push origin HEAD
+```
 
 ## Create a temporary branch
 
-Create a new branch from `master` named `release`.
+Create a new branch from `master`. Name it `release` or anything you like.
+
+Note: If you are creating a backport release, you'll check out `1-6-x`, `1-7-x`, etc instead of `master`.
 
 ```sh
 git checkout master
@@ -17,6 +29,12 @@ git checkout -b release
 ```
 
 This branch is created as a precaution to prevent any merged PRs from sneaking into a release between the time the temporary release branch is created and the CI builds are complete.
+
+## Check for extant drafts
+
+The upload script [looks for an existing draft release](https://github.com/electron/electron/blob/7961a97d7ddbed657c6c867cc8426e02c236c077/script/upload.py#L173-L181). To prevent your new release
+from clobbering an existing draft, check [the releases page] and
+make sure there are no drafts.
 
 ## Bump the version
 
@@ -31,19 +49,103 @@ This will bump the version number in several files. See [this bump commit] for a
 
 Most releases will be `patch` level. Upgrades to Chrome or other major changes should use `minor`. For more info, see [electron-versioning].
 
+## Wait for builds :hourglass_flowing_sand:
+
+The presence of the word [`Bump`](https://github.com/electron/electron/blob/7961a97d7ddbed657c6c867cc8426e02c236c077/script/cibuild-linux#L3-L6) in the commit message created by the `bump-version` script
+will [trigger the release process](https://github.com/electron/electron/blob/7961a97d7ddbed657c6c867cc8426e02c236c077/script/cibuild#L82-L96).
+
+To monitor the build progress, see the following pages:
+
+- [208.52.191.140:8080/view/All/builds](http://208.52.191.140:8080/view/All/builds) for Mac
+- [circleci.com/gh/electron](https://circleci.com/gh/electron) for Linux
+- [windows-ci.electronjs.org/project/AppVeyor/electron](https://windows-ci.electronjs.org/project/AppVeyor/electron) for Windows
+
+## Compile release notes
+
+Writing release notes is a good way to keep yourself busy while the builds are running.
+For prior art, see existing releases on [the releases page].
+
+Tips:
+
+- Each listed item should reference a PR on electron/electron, not an issue, nor a PR from another repo like libcc.
+- No need to use link markup when referencing PRs. Strings like `#123` will automatically be converted to links on github.com.
+- To see the version of Chromium, V8, and Node in every version of Electron, visit [atom.io/download/electron/index.json](https://atom.io/download/electron/index.json).
+
+### Patch releases
+
+For a `patch` release, use the following format:
+
+```
+## Bug Fixes
+
+* Fixed a cross-platform thing. #123
+
+### Linux
+
+* Fixed a Linux thing. #123
+
+### macOS
+
+* Fixed a macOS thing. #123
+
+### Windows
+
+* Fixed a Windows thing. #1234
+
+## API Changes
+
+* Changed a thing. #123
+
+### Linux
+
+* Changed a Linux thing. #123
+
+### macOS
+
+* Changed a macOS thing. #123
+
+### Windows
+
+* Changed a Windows thing. #123
+```
+
+### Minor releases
+
+For a `minor` release (which is normally a Chromium update, and possibly also a Node update), e.g. `1.8.0`, use this format:
+
+```
+**Note:** This is a beta release. This is the first release running on upgraded versions of Chrome/Node.js/V8 and most likely will have have some instability and/or regressions.
+
+Please file new issues for any bugs you find in it.
+
+This release is published to [npm](https://www.npmjs.com/package/electron) under the `beta` tag and can be installed via `npm install electron@beta`.
+
+## Upgrades
+
+- Upgraded from Chrome `oldVersion` to `newVersion`. #123
+- Upgraded from Node `oldVersion` to `newVersion`. #123
+- Upgraded from v8 `oldVersion` to `newVersion`. #9116
+
+## Other Changes
+
+- Some other change. #123
+```
+
 ## Edit the release draft
 
 1. Visit [the releases page] and you'll see a new draft release with placeholder release notes.
 1. Edit the release and add release notes.
+1. Ensure the `prerelease` checkbox is checked. This should happen automatically for Electron versions >=1.7
 1. Click 'Save draft'. **Do not click 'Publish release'!**
-1. Wait for all the builds to pass. :hourglass_flowing_sand:
+1. Wait for all builds to pass before proceeding.
 
 ## Merge temporary branch
 
-Merge the temporary back into master, without creating a merge commit:
+Merge the temporary branch back into master, without creating a merge commit:
 
 ```sh
-git merge release master --no-commit
+git checkout master
+git merge release --no-commit
 git push origin master
 ```
 
@@ -99,3 +201,65 @@ git push origin :release # delete remote branch
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
 [electron-versioning]: /docs/tutorial/electron-versioning.md
+
+## Promote a release on npm
+
+New releases are published to npm with the `beta` tag. Every release should
+eventually get promoted to stable unless there's a good reason not to.
+
+Releases are normally given around two weeks in the wild before being promoted.
+Before promoting a release, check to see if there are any bug reports
+against that version, e.g. issues labeled with `version/1.7.x`.
+
+It's also good to ask users in Slack if they're using the beta versions successfully.
+
+To see what's beta and stable at any given time:
+
+```
+$ npm dist-tag ls electron
+beta: 1.7.5
+latest: 1.6.11
+```
+
+To promote a beta version to stable (aka `latest`):
+
+```
+npm dist-tag add electron@1.2.3 latest
+```
+
+Then edit the release on GitGub:
+
+1. Remove `beta` from the release name: electron v1.7.5 ~~beta~~
+1. Uncheck the `prerelease` checkbox.
+1. Click "Update release"
+
+## Fix missing binaries of a release manually
+
+In the case of a corrupted release with broken CI machines, we might have to
+re-upload the binaries for an already published release.
+
+The first step is to go to the
+[Releases](https://github.com/electron/electron/releases) page and delete the
+corrupted binaries with the `SHASUMS256.txt` checksum file.
+
+Then manually create distributions for each platform and upload them:
+
+```sh
+# Checkout the version to re-upload.
+git checkout vTHE.RELEASE.VERSION
+
+# Do release build, specifying one target architecture.
+./script/bootstrap.py --target_arch [arm|x64|ia32]
+./script/build.py -c R
+./script/create-dist.py
+
+# Explicitly allow overwritting a published release.
+./script/upload.py --overwrite
+```
+
+After re-uploading all distributions, publish again to upload the checksum
+file:
+
+```sh
+npm run release
+```

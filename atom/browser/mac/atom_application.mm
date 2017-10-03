@@ -4,10 +4,22 @@
 
 #import "atom/browser/mac/atom_application.h"
 
+#include "atom/browser/mac/dict_util.h"
 #include "atom/browser/browser.h"
 #include "base/auto_reset.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
+
+namespace {
+
+inline void dispatch_sync_main(dispatch_block_t block) {
+  if ([NSThread isMainThread])
+    block();
+  else
+    dispatch_sync(dispatch_get_main_queue(), block);
+}
+
+}  // namespace
 
 @implementation AtomApplication
 
@@ -35,11 +47,68 @@
       [[NSUserActivity alloc] initWithActivityType:type]);
   [currentActivity_ setUserInfo:userInfo];
   [currentActivity_ setWebpageURL:webpageURL];
+  [currentActivity_ setDelegate:self];
   [currentActivity_ becomeCurrent];
+  [currentActivity_ setNeedsSave:YES];
 }
 
 - (NSUserActivity*)getCurrentActivity {
   return currentActivity_.get();
+}
+
+- (void)invalidateCurrentActivity {
+  if (currentActivity_) {
+    [currentActivity_ invalidate];
+    currentActivity_.reset();
+  }
+}
+
+- (void)updateCurrentActivity:(NSString*)type
+                 withUserInfo:(NSDictionary*)userInfo {
+  if (currentActivity_) {
+    [currentActivity_ addUserInfoEntriesFromDictionary:userInfo];
+  }
+
+  [handoffLock_ lock];
+  updateReceived_ = YES;
+  [handoffLock_ signal];
+  [handoffLock_ unlock];
+}
+
+- (void)userActivityWillSave:(NSUserActivity *)userActivity {
+  __block BOOL shouldWait = NO;
+  dispatch_sync_main(^{
+    std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+    std::unique_ptr<base::DictionaryValue> user_info =
+      atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+
+    atom::Browser* browser = atom::Browser::Get();
+    shouldWait = browser->UpdateUserActivityState(activity_type, *user_info) ? YES : NO;    
+  });
+
+  if (shouldWait) {
+    [handoffLock_ lock];
+    updateReceived_ = NO;
+    while (!updateReceived_) {
+      BOOL isSignaled = [handoffLock_ waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:1]];
+      if (!isSignaled) break;
+    }
+    [handoffLock_ unlock];
+  }
+
+  [userActivity setNeedsSave:YES];
+}
+
+- (void)userActivityWasContinued:(NSUserActivity *)userActivity {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+    std::unique_ptr<base::DictionaryValue> user_info =
+    atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+
+    atom::Browser* browser = atom::Browser::Get();
+    browser->UserActivityWasContinued(activity_type, *user_info);
+  });
+  [userActivity setNeedsSave:YES];
 }
 
 - (void)awakeFromNib {
@@ -48,6 +117,8 @@
           andSelector:@selector(handleURLEvent:withReplyEvent:)
         forEventClass:kInternetEventClass
            andEventID:kAEGetURL];
+
+  handoffLock_ = [NSCondition new];
 }
 
 - (void)handleURLEvent:(NSAppleEventDescriptor*)event
@@ -71,6 +142,9 @@
   if ([attribute isEqualToString:@"AXEnhancedUserInterface"]) {
     bool enableAccessibility = ([self voiceOverEnabled] && [value boolValue]);
     [self updateAccessibilityEnabled:enableAccessibility];
+  }
+  else if ([attribute isEqualToString:@"AXManualAccessibility"]) {
+    [self updateAccessibilityEnabled:[value boolValue]];
   }
   return [super accessibilitySetValue:value forAttribute:attribute];
 }

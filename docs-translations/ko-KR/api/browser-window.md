@@ -2,6 +2,8 @@
 
 > 브라우저 윈도우를 생성하고 제어합니다.
 
+프로세스: [메인](../tutorial/quick-start.md#main-process)
+
 ```javascript
 // 메인 프로세스에서
 const {BrowserWindow} = require('electron')
@@ -227,12 +229,9 @@ On Windows it is
   * `javascript` Boolean - 자바스크립트를 활성화합니다. 기본값은 `false`입니다.
   * `webSecurity` Boolean - `false`로 지정하면 same-origin 정책을 비활성화
     합니다. (이 속성은 보통 사람들에 의해 웹 사이트를 테스트할 때 사용합니다)
-    그리고 `allowDisplayingInsecureContent`와 `allowRunningInsecureContent` 두
+    그리고`allowRunningInsecureContent` 두
     속성을 사용자가 `true`로 지정되지 않은 경우 `true`로 지정합니다. 기본값은
     `true`입니다.
-  * `allowDisplayingInsecureContent` Boolean - https 페이지에서 http URL에서
-    로드한 이미지 같은 리소스를 표시할 수 있도록 허용합니다. 기본값은 `false`
-    입니다.
   * `allowRunningInsecureContent` Boolean - https 페이지에서 http URL에서 로드한
     JavaScript와 CSS 또는 플러그인을 실행시킬 수 있도록 허용합니다. 기본값은
     `false`입니다.
@@ -246,15 +245,13 @@ On Windows it is
     기본값은 `false`입니다.
   * `experimentalCanvasFeatures` Boolean - Chrome의 실험적인 캔버스(canvas)
     기능을 활성화합니다. 기본값은 `false`입니다.
-  * `directWrite` Boolean - Windows에서 폰트 렌더링을 위해 DirectWrite를
-    사용하는지를 지정합니다. 기본값은 `true`입니다.
   * `scrollBounce` Boolean - macOS에서 스크롤 튕기기 효과 (탄성 밴딩)를 활성화
     합니다. 기본값은 `false`입니다.
   * `blinkFeatures` String - 활성화 할 `CSSVariables,KeyboardEventKey`같이 `,`로
-    구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+    구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.json5][blink-feature-string]
     파일에서 찾을 수 있습니다.
   * `disableBlinkFeatures` String - 비활성화 할 `CSSVariables,KeyboardEventKey`같이
-    `,`로 구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.in][blink-feature-string]
+    `,`로 구분된 기능 문자열들의 리스트입니다. [RuntimeEnabledFeatures.json5][blink-feature-string]
     파일에서 찾을 수 있습니다.
   * `defaultFontFamily` Object - font-family의 기본 폰트를 지정합니다.
     * `standard` String - 기본값 `Times New Roman`.
@@ -1175,6 +1172,6 @@ Returns `BrowserWindow` - 부모 윈도우.
 
 Returns `BrowserWindow[]` - 모든 자식 윈도우.
 
-[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.json5?l=62
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look

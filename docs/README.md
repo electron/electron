@@ -16,6 +16,7 @@ an issue:
 
 ## Guides
 
+* [Glossary of Terms](glossary.md)
 * [Supported Platforms](tutorial/supported-platforms.md)
 * [Security](tutorial/security.md)
 * [Electron Versioning](tutorial/electron-versioning.md)
@@ -31,6 +32,8 @@ an issue:
 * [Using Widevine CDM Plugin](tutorial/using-widevine-cdm-plugin.md)
 * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
 * [Offscreen Rendering](tutorial/offscreen-rendering.md)
+* [Keyboard Shortcuts](tutorial/keyboard-shortcuts.md)
+* [Updating Applications](tutorial/updates.md)
 
 ## Tutorials
 
@@ -38,6 +41,7 @@ an issue:
 * [Desktop Environment Integration](tutorial/desktop-environment-integration.md)
 * [Online/Offline Event Detection](tutorial/online-offline-events.md)
 * [REPL](tutorial/repl.md)
+* [Native Notifications](tutorial/notifications.md)
 
 ## API References
 
@@ -49,13 +53,14 @@ an issue:
 ### Custom DOM Elements:
 
 * [`File` Object](api/file-object.md)
-* [`<webview>` Tag](api/web-view-tag.md)
+* [`<webview>` Tag](api/webview-tag.md)
 * [`window.open` Function](api/window-open.md)
 
 ### Modules for the Main Process:
 
 * [app](api/app.md)
 * [autoUpdater](api/auto-updater.md)
+* [BrowserView](api/browser-view.md)
 * [BrowserWindow](api/browser-window.md)
 * [contentTracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
@@ -63,6 +68,7 @@ an issue:
 * [ipcMain](api/ipc-main.md)
 * [Menu](api/menu.md)
 * [MenuItem](api/menu-item.md)
+* [net](api/net.md)
 * [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
@@ -96,7 +102,10 @@ an issue:
 * [Build Instructions (macOS)](development/build-instructions-osx.md)
 * [Build Instructions (Windows)](development/build-instructions-windows.md)
 * [Build Instructions (Linux)](development/build-instructions-linux.md)
-* [Debug Instructions (macOS)](development/debug-instructions-macos.md)
+* [Debug Instructions (macOS)](development/debugging-instructions-macos.md)
 * [Debug Instructions (Windows)](development/debug-instructions-windows.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
 * [Documentation Styleguide](styleguide.md)
+* [Upgrading Chrome](development/upgrading-chrome.md)
+* [Chromium Development](development/chromium-development.md)
+* [V8 Development](development/v8-development.md)

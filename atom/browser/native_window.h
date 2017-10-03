@@ -18,9 +18,12 @@
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
 #include "content/public/browser/readback_types.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
+#include "native_mate/persistent_dictionary.h"
+#include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -45,6 +48,8 @@ class Dictionary;
 }
 
 namespace atom {
+
+class NativeBrowserView;
 
 struct DraggableRegion;
 
@@ -95,14 +100,14 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Rect GetContentBounds();
   virtual void SetSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
-  virtual extensions::SizeConstraints GetSizeConstraints();
+  virtual extensions::SizeConstraints GetSizeConstraints() const;
   virtual void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
-  virtual extensions::SizeConstraints GetContentSizeConstraints();
+  virtual extensions::SizeConstraints GetContentSizeConstraints() const;
   virtual void SetMinimumSize(const gfx::Size& size);
-  virtual gfx::Size GetMinimumSize();
+  virtual gfx::Size GetMinimumSize() const;
   virtual void SetMaximumSize(const gfx::Size& size);
-  virtual gfx::Size GetMaximumSize();
+  virtual gfx::Size GetMaximumSize() const;
   virtual void SetSheetOffset(const double offsetX, const double offsetY);
   virtual double GetSheetOffsetX();
   virtual double GetSheetOffsetY();
@@ -119,13 +124,18 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() = 0;
   virtual void SetAlwaysOnTop(bool top,
-                              const std::string& level = "floating") = 0;
+                              const std::string& level = "floating",
+                              int relativeLevel = 0,
+                              std::string* error = nullptr) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
+  virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetSkipTaskbar(bool skip) = 0;
+  virtual void SetSimpleFullScreen(bool simple_fullscreen) = 0;
+  virtual bool IsSimpleFullScreen() = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
   virtual void SetBackgroundColor(const std::string& color_name) = 0;
@@ -135,13 +145,15 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
   virtual bool IsDocumentEdited();
-  virtual void SetIgnoreMouseEvents(bool ignore) = 0;
+  virtual void SetIgnoreMouseEvents(bool ignore, bool forward) = 0;
   virtual void SetContentProtection(bool enable) = 0;
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(AtomMenuModel* menu);
   virtual void SetParentWindow(NativeWindow* parent);
-  virtual gfx::NativeWindow GetNativeWindow() = 0;
-  virtual gfx::AcceleratedWidget GetAcceleratedWidget() = 0;
+  virtual void SetBrowserView(NativeBrowserView* browser_view) = 0;
+  virtual gfx::NativeView GetNativeView() const = 0;
+  virtual gfx::NativeWindow GetNativeWindow() const = 0;
+  virtual gfx::AcceleratedWidget GetAcceleratedWidget() const = 0;
 
   // Taskbar/Dock APIs.
   enum ProgressState {
@@ -161,6 +173,24 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
+  virtual void SetAutoHideCursor(bool auto_hide);
+
+  // Vibrancy API
+  virtual void SetVibrancy(const std::string& type);
+
+  // Touchbar API
+  virtual void SetTouchBar(
+      const std::vector<mate::PersistentDictionary>& items);
+  virtual void RefreshTouchBarItem(const std::string& item_id);
+  virtual void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
+
+  // Native Tab API
+  virtual void SelectPreviousTab();
+  virtual void SelectNextTab();
+  virtual void MergeAllWindows();
+  virtual void MoveTabToNewWindow();
+  virtual void ToggleTabBar();
+
   // Webview APIs.
   virtual void FocusOnWebView();
   virtual void BlurWebView();
@@ -176,8 +206,11 @@ class NativeWindow : public base::SupportsUserData,
   double GetAspectRatio();
   gfx::Size GetAspectRatioExtraSize();
   virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
+
+  // File preview APIs.
   virtual void PreviewFile(const std::string& path,
                            const std::string& display_name);
+  virtual void CloseFilePreview();
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -193,10 +226,17 @@ class NativeWindow : public base::SupportsUserData,
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
+  virtual void ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {}
+  virtual void HideAutofillPopup(content::RenderFrameHost* frame_host) {}
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
   void NotifyWindowClosed();
+  void NotifyWindowEndSession();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();
@@ -212,11 +252,16 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowScrollTouchEnd();
   void NotifyWindowScrollTouchEdge();
   void NotifyWindowSwipe(const std::string& direction);
+  void NotifyWindowSheetBegin();
+  void NotifyWindowSheetEnd();
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
+  void NotifyTouchBarItemInteraction(const std::string& item_id,
+                                     const base::DictionaryValue& details);
+  void NotifyNewWindowForTab();
 
   #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
@@ -254,8 +299,10 @@ class NativeWindow : public base::SupportsUserData,
       const std::vector<DraggableRegion>& regions);
 
   // Converts between content bounds and window bounds.
-  virtual gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) = 0;
-  virtual gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) = 0;
+  virtual gfx::Rect ContentBoundsToWindowBounds(
+      const gfx::Rect& bounds) const = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(
+      const gfx::Rect& bounds) const = 0;
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(

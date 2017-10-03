@@ -64,8 +64,9 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   // On macOS, we can't query the default, but the handlers list seems to put
   // Apple's defaults first, so we'll use the first option that isn't our bundle
   CFStringRef other = nil;
-  for (CFIndex i = 0; i < CFArrayGetCount(bundleList); i++) {
-    other = (CFStringRef)CFArrayGetValueAtIndex(bundleList, i);
+  for (CFIndex i = 0; i < CFArrayGetCount(bundleList); ++i) {
+    other = base::mac::CFCast<CFStringRef>(CFArrayGetValueAtIndex(bundleList,
+                                                                  i));
     if (![identifier isEqualToString: (__bridge NSString *)other]) {
       break;
     }
@@ -143,16 +144,54 @@ std::string Browser::GetCurrentActivityType() {
   return base::SysNSStringToUTF8(userActivity.activityType);
 }
 
-bool Browser::ContinueUserActivity(const std::string& type,
-                                   const base::DictionaryValue& user_info) {
+void Browser::InvalidateCurrentActivity() {
+  [[AtomApplication sharedApplication] invalidateCurrentActivity];
+}
+
+void Browser::UpdateCurrentActivity(const std::string& type,
+                                    const base::DictionaryValue& user_info) {
+  [[AtomApplication sharedApplication]
+      updateCurrentActivity:base::SysUTF8ToNSString(type)
+               withUserInfo:DictionaryValueToNSDictionary(user_info)];
+}
+
+bool Browser::WillContinueUserActivity(const std::string& type) {
   bool prevent_default = false;
-  FOR_EACH_OBSERVER(BrowserObserver,
-                    observers_,
-                    OnContinueUserActivity(&prevent_default, type, user_info));
+  for (BrowserObserver& observer : observers_)
+    observer.OnWillContinueUserActivity(&prevent_default, type);
   return prevent_default;
 }
 
-Browser::LoginItemSettings Browser::GetLoginItemSettings() {
+void Browser::DidFailToContinueUserActivity(const std::string& type,
+                                            const std::string& error) {
+  for (BrowserObserver& observer : observers_)
+    observer.OnDidFailToContinueUserActivity(type, error);
+}
+
+bool Browser::ContinueUserActivity(const std::string& type,
+                                   const base::DictionaryValue& user_info) {
+  bool prevent_default = false;
+  for (BrowserObserver& observer : observers_)
+    observer.OnContinueUserActivity(&prevent_default, type, user_info);
+  return prevent_default;
+}
+
+void Browser::UserActivityWasContinued(const std::string& type,
+                                       const base::DictionaryValue& user_info) {
+  for (BrowserObserver& observer : observers_)
+    observer.OnUserActivityWasContinued(type, user_info);
+}
+
+bool Browser::UpdateUserActivityState(const std::string& type,
+                                      const base::DictionaryValue& user_info) {
+  bool prevent_default = false;
+  for (BrowserObserver& observer : observers_)
+    observer.OnUpdateUserActivityState(&prevent_default, type, user_info);
+  return prevent_default;
+}
+
+Browser::LoginItemSettings Browser::GetLoginItemSettings(
+    const LoginItemSettings& options) {
   LoginItemSettings settings;
   settings.open_at_login = base::mac::CheckLoginItemStatus(
       &settings.open_as_hidden);
@@ -179,7 +218,7 @@ std::string Browser::GetExecutableFileProductName() const {
 
 int Browser::DockBounce(BounceType type) {
   return [[AtomApplication sharedApplication]
-      requestUserAttention:(NSRequestUserAttentionType)type];
+      requestUserAttention:static_cast<NSRequestUserAttentionType>(type)];
 }
 
 void Browser::DockCancelBounce(int request_id) {
@@ -203,9 +242,8 @@ std::string Browser::DockGetBadgeText() {
 }
 
 void Browser::DockHide() {
-  WindowList* list = WindowList::GetInstance();
-  for (WindowList::iterator it = list->begin(); it != list->end(); ++it)
-    [(*it)->GetNativeWindow() setCanHide:NO];
+  for (const auto& window : WindowList::GetWindows())
+    [window->GetNativeWindow() setCanHide:NO];
 
   ProcessSerialNumber psn = { 0, kCurrentProcess };
   TransformProcessType(&psn, kProcessTransformToUIElementApplication);
@@ -255,6 +293,16 @@ void Browser::DockSetIcon(const gfx::Image& image) {
 
 void Browser::ShowAboutPanel() {
   NSDictionary* options = DictionaryValueToNSDictionary(about_panel_options_);
+
+  // Credits must be a NSAttributedString instead of NSString
+  id credits = options[@"Credits"];
+  if (credits != nil) {
+    NSMutableDictionary* mutable_options = [options mutableCopy];
+    mutable_options[@"Credits"] = [[[NSAttributedString alloc]
+        initWithString:(NSString*)credits] autorelease];
+    options = [NSDictionary dictionaryWithDictionary:mutable_options];
+  }
+
   [[AtomApplication sharedApplication]
       orderFrontStandardAboutPanelWithOptions:options];
 }

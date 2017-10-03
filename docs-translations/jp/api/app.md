@@ -134,7 +134,7 @@ Windowsでは、ファイルパスを取得するために、 `process.argv` を
  `url` の  `certificate` 検証に失敗したときに発生します。証明書を信頼するために`event.preventDefault()` と `callback(true)`をコールして既定の動作を止める必要があります。
 
 ```javascript
-session.on('certificate-error', function (event, webContents, url, error, certificate, callback) {
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
   if (url === 'https://github.com') {
     // Verification logic.
     event.preventDefault()

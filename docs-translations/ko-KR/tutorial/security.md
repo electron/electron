@@ -61,7 +61,6 @@ Electron이 새로운 버전의 Chromium을 가능한 한 빠르게 지원하려
   를 정의하고, 한정적인 규칙을 사용하세요 (i.e. `script-src 'self'`)
 * 문자열을 코드로 실행할 수 있는
   [`eval`을 덮어쓰고 비활성화](https://github.com/nylas/N1/blob/0abc5d5defcdb057120d726b271933425b75b415/static/index.js#L6-L8)하세요.
-* `allowDisplayingInsecureContent`를 `true`로 설정하지 마세요.
 * `allowRunningInsecureContent`를 `true`로 설정하지 마세요.
 * 무엇을 하고 있는지 확실히 알고 있지않는 이상 `experimentalFeatures` 또는
   `experimentalCanvasFeatures`를 활성화하지 마세요.

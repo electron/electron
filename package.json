@@ -1,17 +1,24 @@
 {
   "name": "electron",
-  "version": "1.4.4",
+  "version": "1.8.1",
+  "repository": "https://github.com/electron/electron",
+  "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "asar": "^0.11.0",
     "browserify": "^13.1.0",
+    "check-for-leaks": "^1.0.2",
+    "colors": "^1.1.2",
+    "dotenv-safe": "^4.0.4",
     "electabul": "~0.0.4",
-    "electron-docs-linter": "^1.10.0",
-    "request": "*",
+    "electron-docs-linter": "^2.3.3",
+    "electron-typescript-definitions": "^1.2.7",
+    "github": "^9.2.0",
+    "heads": "^1.3.0",
+    "husky": "^0.14.3",
+    "request": "^2.68.0",
     "standard": "^8.4.0",
-    "standard-markdown": "^2.1.1"
-  },
-  "optionalDependencies": {
-    "runas": "^3.0.0"
+    "standard-markdown": "^4.0.0",
+    "temp": "^0.8.3"
   },
   "standard": {
     "ignore": [
@@ -29,19 +36,32 @@
     "browserify": "browserify",
     "bump-version": "./script/bump-version.py",
     "build": "python ./script/build.py -c D",
+    "rebuild-test-modules": "python ./script/rebuild-test-modules.py",
     "clean": "python ./script/clean.py",
-    "coverage": "npm run instrument-code-coverage && npm test -- --use-instrumented-asar",
+    "clean-build": "python ./script/clean.py --build",
+    "coverage": "npm run instrument-code-coverage && npm test -- --use_instrumented_asar",
     "instrument-code-coverage": "electabul instrument --input-path ./lib --output-path ./out/coverage/electron.asar",
-    "lint": "npm run lint-js && npm run lint-cpp && npm run lint-py && npm run lint-api-docs-js && npm run lint-api-docs",
+    "lint": "npm run lint-js && npm run lint-cpp && npm run lint-py && npm run lint-docs",
     "lint-js": "standard && cd spec && standard",
     "lint-cpp": "python ./script/cpplint.py",
     "lint-py": "python ./script/pylint.py",
+    "lint-docs": "npm run lint-api-docs-js && npm run create-typescript-definitions",
     "lint-api-docs-js": "standard-markdown docs && standard-markdown docs-translations",
-    "lint-api-docs": "electron-docs-linter docs/api --version=$npm_package_version --outfile=out/electron-api.json",
+    "create-api-json": "electron-docs-linter docs --outfile=out/electron-api.json --version=$npm_package_version",
+    "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=out/electron-api.json --out=out/electron.d.ts",
     "preinstall": "node -e 'process.exit(0)'",
+    "publish-to-npm": "node ./script/publish-to-npm.js",
+    "prepack": "check-for-leaks",
+    "prepush": "check-for-leaks",
+    "prerelease": "node ./script/prerelease",
     "release": "./script/upload.py -p",
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
     "test": "python ./script/test.py"
-  }
+  },
+  "license": "MIT",
+  "author": "Electron Community",
+  "keywords": [
+    "electron"
+  ]
 }

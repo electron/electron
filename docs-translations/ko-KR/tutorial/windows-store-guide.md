@@ -1,6 +1,6 @@
 # Windows 스토어 가이드
 
-Windows 8부터, 오래되고 좋은 win32 실행 파일이 새로운 형제를 얻었습니다: Universial
+Windows 10부터, 오래되고 좋은 win32 실행 파일이 새로운 형제를 얻었습니다: Universial
 Windows Platform. 새로운 `.appx` 포맷은 Cortana와 푸시 알림과 같은 다수의 강력한
 API뿐만 아니라, Windows Store를 통해 설치와 업데이트를 단순화합니다.
 
@@ -67,8 +67,7 @@ npm install -g electron-windows-store
 │   └── atom.asar
 ├── snapshot_blob.bin
 ├── squirrel.exe
-├── ui_resources_200_percent.pak
-└── xinput1_3.dll
+└── ui_resources_200_percent.pak
 ```
 
 ## `electron-windows-store` 실행하기

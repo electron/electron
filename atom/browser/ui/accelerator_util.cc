@@ -88,13 +88,14 @@ void GenerateAcceleratorTable(AcceleratorTable* table,
 
 bool TriggerAcceleratorTableCommand(AcceleratorTable* table,
                                     const ui::Accelerator& accelerator) {
-  if (ContainsKey(*table, accelerator)) {
+  if (base::ContainsKey(*table, accelerator)) {
     const accelerator_util::MenuItem& item = (*table)[accelerator];
-    item.model->ActivatedAt(item.position);
-    return true;
-  } else {
-    return false;
+    if (item.model->IsEnabledAt(item.position)) {
+      item.model->ActivatedAt(item.position);
+      return true;
+    }
   }
+  return false;
 }
 
 }  // namespace accelerator_util

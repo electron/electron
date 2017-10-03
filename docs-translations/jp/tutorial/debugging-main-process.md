@@ -35,8 +35,8 @@ $ npm install git+https://git@github.com/enlight/node-pre-gyp.git#detect-electro
 ### 4. Electron用の `node-inspector` `v8` モジュールをリコンパイルする(対象のElectronのバージョン番号を変更する)
 
 ```bash
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/atom-shell reinstall
-$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/atom-shell reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-debug/ --dist-url=https://atom.io/download/electron reinstall
+$ node_modules/.bin/node-pre-gyp --target=0.36.2 --runtime=electron --fallback-to-build --directory node_modules/v8-profiler/ --dist-url=https://atom.io/download/electron reinstall
 ```
 
 [How to install native modules](how-to-install-native-modules)を見る。

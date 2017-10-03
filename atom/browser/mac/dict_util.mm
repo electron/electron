@@ -5,10 +5,23 @@
 #include "atom/browser/mac/dict_util.h"
 
 #include "base/json/json_writer.h"
+#include "base/memory/ptr_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 
 namespace atom {
+
+NSArray* ListValueToNSArray(const base::ListValue& value) {
+  std::string json;
+  if (!base::JSONWriter::Write(value, &json))
+    return nil;
+  NSData* jsonData = [NSData dataWithBytes:json.c_str() length:json.length()];
+  id obj =
+      [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
+  if (![obj isKindOfClass:[NSArray class]])
+    return nil;
+  return obj;
+}
 
 std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
   if (!arr)
@@ -33,14 +46,14 @@ std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
       if (sub_arr)
         result->Append(std::move(sub_arr));
       else
-        result->Append(base::Value::CreateNullValue());
+        result->Append(base::MakeUnique<base::Value>());
     } else if ([value isKindOfClass:[NSDictionary class]]) {
       std::unique_ptr<base::DictionaryValue> sub_dict =
           NSDictionaryToDictionaryValue(value);
       if (sub_dict)
         result->Append(std::move(sub_dict));
       else
-        result->Append(base::Value::CreateNullValue());
+        result->Append(base::MakeUnique<base::Value>());
     } else {
       result->AppendString(base::SysNSStringToUTF8([value description]));
     }
@@ -92,7 +105,7 @@ std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
         result->SetWithoutPathExpansion(str_key, std::move(sub_arr));
       else
         result->SetWithoutPathExpansion(str_key,
-                                        base::Value::CreateNullValue());
+                                        base::MakeUnique<base::Value>());
     } else if ([value isKindOfClass:[NSDictionary class]]) {
       std::unique_ptr<base::DictionaryValue> sub_dict =
           NSDictionaryToDictionaryValue(value);
@@ -100,7 +113,7 @@ std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
         result->SetWithoutPathExpansion(str_key, std::move(sub_dict));
       else
         result->SetWithoutPathExpansion(str_key,
-                                        base::Value::CreateNullValue());
+                                        base::MakeUnique<base::Value>());
     } else {
       result->SetStringWithoutPathExpansion(
           str_key,

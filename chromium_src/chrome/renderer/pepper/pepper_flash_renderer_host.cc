@@ -8,7 +8,8 @@
 #include <vector>
 
 #include "base/lazy_instance.h"
-#include "base/metrics/histogram.h"
+#include "base/macros.h"
+#include "base/metrics/histogram_macros.h"
 #include "base/strings/string_util.h"
 #include "content/public/renderer/pepper_plugin_instance.h"
 #include "content/public/renderer/render_thread.h"
@@ -96,8 +97,8 @@ enum FlashNavigateUsage {
   FLASH_NAVIGATE_USAGE_ENUM_COUNT
 };
 
-static base::LazyInstance<std::map<std::string, FlashNavigateUsage> >
-    g_rejected_headers = LAZY_INSTANCE_INITIALIZER;
+static base::LazyInstance<std::map<std::string, FlashNavigateUsage> >::
+    DestructorAtExit g_rejected_headers = LAZY_INSTANCE_INITIALIZER;
 
 bool IsSimpleHeader(const std::string& lower_case_header_name,
                     const std::string& header_value) {

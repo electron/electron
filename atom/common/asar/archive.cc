@@ -17,7 +17,7 @@
 #include "base/values.h"
 
 #if defined(OS_WIN)
-#include "atom/node/osfhandle.h"
+#include <io.h>
 #endif
 
 namespace asar {
@@ -118,7 +118,7 @@ Archive::Archive(const base::FilePath& path)
     : path_(path),
       file_(path_, base::File::FLAG_OPEN | base::File::FLAG_READ),
 #if defined(OS_WIN)
-      fd_(node::open_osfhandle(
+      fd_(_open_osfhandle(
               reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0)),
 #elif defined(OS_POSIX)
       fd_(file_.GetPlatformFile()),
@@ -131,7 +131,7 @@ Archive::Archive(const base::FilePath& path)
 Archive::~Archive() {
 #if defined(OS_WIN)
   if (fd_ != -1) {
-    node::close(fd_);
+    _close(fd_);
     // Don't close the handle since we already closed the fd.
     file_.TakePlatformFile();
   }
@@ -181,7 +181,7 @@ bool Archive::Init() {
   std::string error;
   base::JSONReader reader;
   std::unique_ptr<base::Value> value(reader.ReadToValue(header));
-  if (!value || !value->IsType(base::Value::TYPE_DICTIONARY)) {
+  if (!value || !value->IsType(base::Value::Type::DICTIONARY)) {
     LOG(ERROR) << "Failed to parse header: " << error;
     return false;
   }
@@ -269,8 +269,9 @@ bool Archive::Realpath(const base::FilePath& path, base::FilePath* realpath) {
 }
 
 bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
-  if (external_files_.contains(path)) {
-    *out = external_files_.get(path)->path();
+  auto it = external_files_.find(path.value());
+  if (it != external_files_.end()) {
+    *out = it->second->path();
     return true;
   }
 
@@ -296,7 +297,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
 #endif
 
   *out = temp_file->path();
-  external_files_.set(path, std::move(temp_file));
+  external_files_[path.value()] = std::move(temp_file);
   return true;
 }
 
