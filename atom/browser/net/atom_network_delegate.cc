@@ -82,8 +82,12 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
     int frame_id = info->GetRenderFrameID();
     auto* webContents = content::WebContents::FromRenderFrameHost(
         content::RenderFrameHost::FromID(process_id, frame_id));
-    details->SetInteger("webContentsId",
-        atom::api::WebContents::GetIDFromWrappedClass(webContents));
+    int webContentsId = atom::api::WebContents::GetIDFromWrappedClass(
+        webContents);
+
+    // webContentsId must be greater than zero
+    if (webContentsId)
+      details->SetInteger("webContentsId", webContentsId);
     details->SetString("resourceType",
         ResourceTypeToString(info->GetResourceType()));
   } else {
