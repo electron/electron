@@ -41,40 +41,15 @@ const char kXdgSettings[] = "xdg-settings";
 const char kXdgSettingsDefaultBrowser[] = "default-web-browser";
 const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
 
-// TODO(codebytere): handle/replace GetChromeVersionOfScript
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          mate::Arguments* args) {
-  #if defined(OS_CHROMEOS)
-    return true;
-  #else
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
-
-    std::vector<std::string> argv;
-    argv.push_back(kXdgSettings);
-    argv.push_back("set");
-    if (protocol.empty()) {
-     argv.push_back(kXdgSettingsDefaultBrowser);
-    } else {
-     argv.push_back(kXdgSettingsDefaultSchemeHandler);
-     argv.push_back(protocol);
-    }
-    argv.push_back(libgtkui::GetDesktopName(env.get()));
-
-    int exit_code;
-    bool ran_ok = LaunchXdgUtility(argv, &exit_code);
-    if (ran_ok && exit_code == EXIT_XDG_SETTINGS_SYNTAX_ERROR) {
-     if (GetChromeVersionOfScript(kXdgSettings, &argv[0])) {
-       ran_ok = LaunchXdgUtility(argv, &exit_code);
-     }
-    }
-
-    return ran_ok && exit_code == EXIT_SUCCESS;
-  #endif
+  return SetDefaultWebClient(protocol);
 }
 
 // TODO(codebytere): handle/replace GetChromeVersionOfScript
-bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      mate::Arguments* args) {
+// https://portland.freedesktop.org/doc/xdg-settings.html
+// https://cs.chromium.org/chromium/src/chrome/browser/shell_integration_linux.cc?sq=package:chromium&l=78
+bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
   #if defined(OS_CHROMEOS)
     return UNKNOWN_DEFAULT;
   #else
@@ -91,28 +66,19 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
       argv.push_back(kXdgSettingsDefaultSchemeHandler);
       argv.push_back(protocol);
     }
-    argv.push_back(shell_integration_linux::GetDesktopName(env.get()));
+    argv.push_back(libgtkui::GetDesktopName(env.get()));
 
     std::string reply;
     int success_code;
     bool ran_ok = base::GetAppOutputWithExitCode(base::CommandLine(argv),
     &reply, &success_code);
-    if (ran_ok && success_code == EXIT_XDG_SETTINGS_SYNTAX_ERROR) {
-      if (GetChromeVersionOfScript(kXdgSettings, &argv[0])) {
-        ran_ok = base::GetAppOutputWithExitCode(base::CommandLine(argv), &reply,
-                                                &success_code);
-      }
-    }
 
-    if (!ran_ok || success_code != EXIT_SUCCESS) {
-      // xdg-settings failed: we can't determine or set the default browser.
-      return UNKNOWN_DEFAULT;
-    }
+    if (!ran_ok || success_code != EXIT_SUCCESS) return false;
 
     // Allow any reply that starts with "yes".
     return base::StartsWith(reply, "yes", base::CompareCase::SENSITIVE)
-               ? IS_DEFAULT
-               : NOT_DEFAULT;
+               ? true
+               : false;
   #endif
 }
 
@@ -150,6 +116,47 @@ std::string Browser::GetExecutableFileProductName() const {
 
 bool Browser::IsUnityRunning() {
   return unity::IsRunning();
+}
+
+/* Helper Functions */
+
+bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
+  *exit_code = EXIT_FAILURE;
+  int devnull = open("/dev/null", O_RDONLY);
+  if (devnull < 0)
+    return false;
+
+  base::LaunchOptions options;
+  options.fds_to_remap.push_back(std::make_pair(devnull, STDIN_FILENO));
+  base::Process process = base::LaunchProcess(argv, options);
+  close(devnull);
+  if (!process.IsValid())
+    return false;
+  return process.WaitForExit(exit_code);
+}
+
+bool SetDefaultWebClient(const std::string& protocol) {
+#if defined(OS_CHROMEOS)
+  return true;
+#else
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+
+  std::vector<std::string> argv;
+  argv.push_back(kXdgSettings);
+  argv.push_back("set");
+  if (protocol.empty()) {
+    argv.push_back(kXdgSettingsDefaultBrowser);
+  } else {
+    argv.push_back(kXdgSettingsDefaultSchemeHandler);
+    argv.push_back(protocol);
+  }
+  argv.push_back(libgtkui::GetDesktopName(env.get()));
+
+  int exit_code;
+  bool ran_ok = LaunchXdgUtility(argv, &exit_code);
+
+  return ran_ok && exit_code == EXIT_SUCCESS;
+#endif
 }
 
 }  // namespace atom
