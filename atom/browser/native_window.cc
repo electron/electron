@@ -159,6 +159,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kHasShadow, &has_shadow)) {
     SetHasShadow(has_shadow);
   }
+  double opacity;
+  if (options.Get(options::kOpacity, &opacity)) {
+    SetOpacity(opacity);
+  }
   bool top;
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);

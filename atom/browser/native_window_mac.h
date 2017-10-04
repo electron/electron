@@ -83,6 +83,8 @@ class NativeWindowMac : public NativeWindow,
   void SetBackgroundColor(const std::string& color_name) override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
+  void SetOpacity(const double opacity) override;
+  double GetOpacity() override;
   void SetRepresentedFilename(const std::string& filename) override;
   std::string GetRepresentedFilename() override;
   void SetDocumentEdited(bool edited) override;

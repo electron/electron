@@ -161,6 +161,8 @@ class Window : public mate::TrackableObject<Window>,
   void SetBackgroundColor(const std::string& color_name);
   void SetHasShadow(bool has_shadow);
   bool HasShadow();
+  void SetOpacity(const double opacity);
+  double GetOpacity();
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();

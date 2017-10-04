@@ -807,6 +807,30 @@ describe('BrowserWindow module', function () {
     })
   })
 
+  describe('BrowserWindow.setOpacity(opacity)', function () {
+    it('make window with initial opacity', function () {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        opacity: 0.5
+      })
+      assert.equal(w.getOpacity(), 0.5)
+    })
+
+    it('allows setting the opacity', function () {
+      assert.doesNotThrow(function () {
+        w.setOpacity(0.0)
+        assert.equal(w.getOpacity(), 0.0)
+        w.setOpacity(0.5)
+        assert.equal(w.getOpacity(), 0.5)
+        w.setOpacity(1.0)
+        assert.equal(w.getOpacity(), 1.0)
+      })
+    })
+  })
+
   describe('"useContentSize" option', function () {
     it('make window created with content size when used', function () {
       w.destroy()

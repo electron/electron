@@ -86,6 +86,9 @@ const char kBackgroundColor[] = "backgroundColor";
 // Whether the window should have a shadow.
 const char kHasShadow[] = "hasShadow";
 
+// Browser window opacity
+const char kOpacity[] = "opacity";
+
 // Whether the window can be activated.
 const char kFocusable[] = "focusable";
 
