@@ -709,15 +709,16 @@ describe('BrowserWindow module', function () {
     })
   })
 
-  describe('BrowserWindow.addTabbedWindow()', function () {
+  describe('BrowserWindow.addTabbedWindow()', function (done) {
     it('does not throw', function () {
       if (process.platform !== 'darwin') {
         return
       }
-
+      const tabbedWindow = new BrowserWindow({})
       assert.doesNotThrow(() => {
-        w.addTabbedWindow(new BrowserWindow({}))
+        w.addTabbedWindow(tabbedWindow)
       })
+      closeWindow(tabbedWindow).then(done)
     })
   })
 
