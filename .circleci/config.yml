@@ -170,9 +170,13 @@ jobs:
              fi
       - run:
           name: Test
+          environment:
+            MOCHA_FILE: junit/test-results.xml
+            MOCHA_REPORTER: mocha-junit-reporter
           command: |
              if [ "$ELECTRON_RELEASE" != "1" ]; then
                 echo 'Testing Electron debug build'
+                mkdir junit
                 script/test.py --ci --rebuild_native_modules
              else
                 echo 'Skipping testing on release build'
@@ -186,6 +190,10 @@ jobs:
              else
                 echo 'Skipping verify ffmpeg on release build'
              fi
+      - store_test_results:
+          path: junit
+      - store_artifacts:
+          path: junit
 
 workflows:
   version: 2
