@@ -39,13 +39,12 @@ This system had a number of drawbacks, such as:
 
 ## Version 2 and Beyond
 
-From version 2, Electron will attempt to adhere to SemVer and follow a release schedule and stabilization process similar to that of Chromium's that addresses some of the issues some Electron apps were experiencing.
-
-*Some of the numbers below may change after a few versions.*
+From version 2.0.0, Electron will attempt to adhere to SemVer and follow a 
+release schedule and stabilization process similar to that of Chromium.
 
 ### Version Change Rules
 
-In order to reduce ambiguity in what changes between releases, Electron is going to attempt to align to SemVer as much as possible. Here are the general rules that will be followed:
+Here are the general rules that apply when releasing new versions:
 
 | Type of change | Version increase
 |---|---
@@ -57,30 +56,58 @@ In order to reduce ambiguity in what changes between releases, Electron is going
 | Electron bug fix | Patch
 | Anything sufficiently "risky"\* | Major
 
-\* The idea here is to attempt to mitigate regressions in minor and patch versions so applications can update as easily as possible. An example of a risky change is changing the way that builds are linked.
+When you install an npm module with the `--save` or `--save-dev` flags, it
+will be prefixed with a caret `^` in package.json:
 
-Because SemVer is followed, it's recommended that you lock your electron dependency to the minor version using the `~` annotation. This will allow new patch versions (bug fixes) to be updated automatically.
+```json
+{
+  "devDependencies": {
+    "electron": "^2.0.0"
+  }
+}
+```
+
+The [caret semver range](https://docs.npmjs.com/misc/semver#caret-ranges-123-025-004) 
+allows minor- and patch-level changes to be installed, i.e. non-breaking 
+features and bug fixes.
+
+Alternatively, a more conservative approach is to use the 
+[tilde semver range](https://docs.npmjs.com/misc/semver#tilde-ranges-123-12-1)
+`~`, which will only allow patch-level upgrades, i.e. bug fixes.
+
 
 ### The Release Schedule
 
-![](../images/tutorial-release-schedule.svg)
+**Note: The schedule outlined here is _aspirational_. We are not yet cutting
+releases at a weekly cadence, but we hope to get there eventually.**
+
+<img style="width:100%;margin:20px 0;" src="../images/tutorial-release-schedule.svg">
 
 Here are some important points to call out:
 
-- A new release is performed approximately weekly
-- Minor versions are branched off of master for stabilization
-- The stabilization period is approximately weekly
-- Important bug fixes are cherry picked to stabilization branches after landing in master
-- Features are not cherry picked, a minor version should only get *more stable* with its patch versions
-- There is little difference in the release schedule between a major and minor release, other than the risk/effort it may take for third parties to adopt
-- Chromium updates will be performed as fast as the team can manage, in an ideal world this would happen every 6 weeks to align with [Chromium's release schedule][Chromium release]
-- Excluding exceptional circumstances, only the previous stable build will get backported bug fixes.
+- A new release is performed approximately weekly.
+- Minor versions are branched off of master for stabilization.
+- The stabilization period is approximately weekly.
+- Important bug fixes are cherry-picked to stabilization branches after landing 
+  in master.
+- Features are not cherry picked; a minor version should only get *more stable* 
+  with its patch versions.
+- There is little difference in the release schedule between a major and minor 
+  release, other than the risk/effort it may take for third parties to adopt
+- Chromium updates will be performed as fast as the team can manage. In an ideal 
+  world this would happen every 6 weeks to align with 
+  [Chromium's release schedule][Chromium release].
+- Excluding exceptional circumstances, only the previous stable build will 
+  get backported bug fixes.
 
 ### The Beta Process
 
-Electron relies on its consumers getting involved in stabilization. The short target stabilization period and rapid release cadence was designed to shipping security and bug fixes out fast and to encourage the automation of testing.
+Electron relies on its consumers getting involved in stabilization. The short 
+target stabilization period and rapid release cadence was designed for shipping 
+security and bug fixes out fast and to encourage the automation of testing.
 
-You can install the beta by specifying the `beta` dist tag when installing via npm:
+You can install the beta by specifying the `beta` dist tag when installing via 
+npm:
 
 ```
 npm install electron@beta
