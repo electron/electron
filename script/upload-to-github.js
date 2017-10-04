@@ -13,9 +13,22 @@ let githubOpts = {
   filePath: filePath,
   name: fileName
 }
-github.repos.uploadAsset(githubOpts).then(() => {
-  process.exit()
-}).catch((err) => {
-  console.log(`Error uploading ${fileName} to GitHub:`, err)
-  process.exitCode = 1
-})
+
+let retry = true
+
+function uploadToGitHub () {
+  github.repos.uploadAsset(githubOpts).then(() => {
+    process.exit()
+  }).catch((err) => {
+    if (retry) {
+      console.log(`Error uploading ${fileName} to GitHub, will retry.  Error was:`, err)
+      retry = false
+      uploadToGitHub()
+    } else {
+      console.log(`Error retrying uploading ${fileName} to GitHub:`, err)
+      process.exitCode = 1
+    }
+  })
+}
+
+uploadToGitHub()
