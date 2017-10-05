@@ -50,11 +50,11 @@ Here are the general rules that apply when releasing new versions:
 |---|---
 | Chromium version update | Major
 | Node *major* version update | Major
-| Node *minor* version update | Minor
 | Electron breaking API change | Major
+| Any other changes deemed "risky" | Major
+| Node *minor* version update | Minor
 | Electron non-breaking API change | Minor
 | Electron bug fix | Patch
-| Anything sufficiently "risky"\* | Major
 
 When you install an npm module with the `--save` or `--save-dev` flags, it
 will be prefixed with a caret `^` in package.json:
