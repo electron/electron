@@ -34,9 +34,11 @@ gfx::Rect TrayIcon::GetBounds() {
   return gfx::Rect();
 }
 
-void TrayIcon::NotifyClicked(const gfx::Rect& bounds, int modifiers) {
+void TrayIcon::NotifyClicked(const gfx::Rect& bounds,
+                             const gfx::Point& location,
+                             int modifiers) {
   for (TrayIconObserver& observer : observers_)
-    observer.OnClicked(bounds, modifiers);
+    observer.OnClicked(bounds, location, modifiers);
 }
 
 void TrayIcon::NotifyDoubleClicked(const gfx::Rect& bounds, int modifiers) {
@@ -87,6 +89,11 @@ void TrayIcon::NotifyMouseEntered(const gfx::Point& location, int modifiers) {
 void TrayIcon::NotifyMouseExited(const gfx::Point& location, int modifiers) {
   for (TrayIconObserver& observer : observers_)
     observer.OnMouseExited(location, modifiers);
+}
+
+void TrayIcon::NotifyMouseMoved(const gfx::Point& location, int modifiers) {
+  for (TrayIconObserver& observer : observers_)
+    observer.OnMouseMoved(location, modifiers);
 }
 
 void TrayIcon::NotifyDragEntered() {

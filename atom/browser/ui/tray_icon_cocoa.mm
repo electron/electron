@@ -57,10 +57,10 @@ const CGFloat kVerticalTitleMargin = 2;
     // Finalize setup by sizing our views
     [self updateDimensions];
 
-    // Add NSTrackingArea for listening to mouseEnter and mouseExit events
+    // Add NSTrackingArea for listening to mouseEnter, mouseExit, and mouseMove events
     auto trackingArea = [[[NSTrackingArea alloc]
         initWithRect:[self bounds]
-             options:NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways
+             options:NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved | NSTrackingActiveAlways
                owner:self
             userInfo:nil] autorelease];
     [self addTrackingArea:trackingArea];
@@ -249,6 +249,7 @@ const CGFloat kVerticalTitleMargin = 2;
   if (event.clickCount == 1)
     trayIcon_->NotifyClicked(
         gfx::ScreenRectFromNSRect(event.window.frame),
+        gfx::ScreenPointFromNSPoint([event locationInWindow]),
         ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // Double click event.
@@ -303,6 +304,12 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (void)mouseEntered:(NSEvent*)event {
   trayIcon_->NotifyMouseEntered(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
+}
+
+- (void)mouseMoved:(NSEvent*)event {
+  trayIcon_->NotifyMouseMoved(
       gfx::ScreenPointFromNSPoint([event locationInWindow]),
       ui::EventFlagsFromModifiers([event modifierFlags]));
 }
