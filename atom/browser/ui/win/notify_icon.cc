@@ -55,7 +55,9 @@ void NotifyIcon::HandleClickEvent(int modifiers,
     if (double_button_click)  // double left click
       NotifyDoubleClicked(bounds, modifiers);
     else  // single left click
-      NotifyClicked(bounds, modifiers);
+      NotifyClicked(bounds,
+                    display::Screen::GetScreen()->GetCursorScreenPoint(),
+                    modifiers);
     return;
   } else if (!double_button_click) {  // single right click
     if (menu_model_)
