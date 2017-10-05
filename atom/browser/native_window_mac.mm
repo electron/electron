@@ -465,7 +465,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-#if !defined(MAC_OS_X_VERSION_10_12)
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1012 // MAC_OS_X_VERSION_10_12
 
 enum {
   NSWindowTabbingModeDisallowed = 2
