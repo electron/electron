@@ -249,7 +249,7 @@ const CGFloat kVerticalTitleMargin = 2;
   if (event.clickCount == 1)
     trayIcon_->NotifyClicked(
         gfx::ScreenRectFromNSRect(event.window.frame),
-		gfx::ScreenPointFromNSPoint([event locationInWindow]),
+        gfx::ScreenPointFromNSPoint([event locationInWindow]),
         ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // Double click event.

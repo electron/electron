@@ -34,7 +34,9 @@ gfx::Rect TrayIcon::GetBounds() {
   return gfx::Rect();
 }
 
-void TrayIcon::NotifyClicked(const gfx::Rect& bounds, const gfx::Point& location, int modifiers) {
+void TrayIcon::NotifyClicked(const gfx::Rect& bounds,
+                             const gfx::Point& location,
+                             int modifiers) {
   for (TrayIconObserver& observer : observers_)
     observer.OnClicked(bounds, location, modifiers);
 }

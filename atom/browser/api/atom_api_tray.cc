@@ -86,7 +86,9 @@ mate::WrappableBase* Tray::New(mate::Handle<NativeImage> image,
   return new Tray(args->isolate(), args->GetThis(), image);
 }
 
-void Tray::OnClicked(const gfx::Rect& bounds, const gfx::Point& location, int modifiers) {
+void Tray::OnClicked(const gfx::Rect& bounds,
+                     const gfx::Point& location,
+                     int modifiers) {
   EmitWithFlags("click", modifiers, bounds, location);
 }
 

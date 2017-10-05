@@ -47,7 +47,9 @@ class Tray : public mate::TrackableObject<Tray>,
   ~Tray() override;
 
   // TrayIconObserver:
-  void OnClicked(const gfx::Rect& bounds, const gfx::Point& location, int modifiers) override;
+  void OnClicked(const gfx::Rect& bounds,
+                 const gfx::Point& location,
+                 int modifiers) override;
   void OnDoubleClicked(const gfx::Rect& bounds, int modifiers) override;
   void OnRightClicked(const gfx::Rect& bounds, int modifiers) override;
   void OnBalloonShow() override;

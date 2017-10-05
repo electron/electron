@@ -17,7 +17,9 @@ namespace atom {
 
 class TrayIconObserver {
  public:
-  virtual void OnClicked(const gfx::Rect& bounds, const gfx::Point& location, int modifiers) {}
+  virtual void OnClicked(const gfx::Rect& bounds,
+                         const gfx::Point& location,
+                         int modifiers) {}
   virtual void OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {}
   virtual void OnBalloonShow() {}
   virtual void OnBalloonClicked() {}
