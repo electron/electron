@@ -5,10 +5,14 @@
 #include "atom/browser/browser.h"
 
 #include <stdlib.h>
+#include <fcntl.h>
 
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/atom_version.h"
+#include "base/environment.h"
+#include "base/command_line.h"
+#include "base/process/launch.h"
 #include "brightray/common/application_info.h"
 
 #if defined(USE_X11)
@@ -17,6 +21,8 @@
 #endif
 
 namespace atom {
+
+bool SetDefaultWebClient(const std::string& protocol);
 
 void Browser::Focus() {
   // Focus on the first visible window.
@@ -49,7 +55,8 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 // TODO(codebytere): handle/replace GetChromeVersionOfScript
 // https://portland.freedesktop.org/doc/xdg-settings.html
 // https://cs.chromium.org/chromium/src/chrome/browser/shell_integration_linux.cc?sq=package:chromium&l=78
-bool Browser::IsDefaultProtocolClient(const std::string& protocol) {
+bool Browser::IsDefaultProtocolClient(const std::string& protocol,
+                                        mate::Arguments* args) {
   #if defined(OS_CHROMEOS)
     return UNKNOWN_DEFAULT;
   #else
@@ -127,7 +134,8 @@ bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
     return false;
 
   base::LaunchOptions options;
-  options.fds_to_remap.push_back(std::make_pair(devnull, STDIN_FILENO));
+  base::FileHandleMappingVector remap = *(options.fds_to_remap);
+  remap.push_back(std::make_pair(devnull, STDIN_FILENO));
   base::Process process = base::LaunchProcess(argv, options);
   close(devnull);
   if (!process.IsValid())
