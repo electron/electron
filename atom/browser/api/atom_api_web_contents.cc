@@ -49,6 +49,7 @@
 #include "base/values.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "chrome/browser/certificate_viewer.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
@@ -71,6 +72,7 @@
 #include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/site_instance.h"
+#include "content/public/browser/ssl_status.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
@@ -1408,6 +1410,18 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
   web_contents()->StopFinding(action);
 }
 
+void WebContents::ShowCertificate() {
+#if !defined(OS_LINUX)
+  scoped_refptr<net::X509Certificate> certificate =
+      web_contents()->GetController().GetVisibleEntry()->GetSSL().certificate;
+  if (!certificate)
+    return;
+  ShowCertificateViewer(web_contents(),
+                        web_contents()->GetTopLevelNativeWindow(),
+                        certificate.get());
+#endif
+}
+
 void WebContents::ShowDefinitionForSelection() {
 #if defined(OS_MACOSX)
   const auto view = web_contents()->GetRenderWidgetHostView();
@@ -1907,6 +1921,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
+      .SetMethod("showCertificate", &WebContents::ShowCertificate)
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
