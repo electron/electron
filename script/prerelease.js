@@ -24,7 +24,6 @@ github.repos.getReleases({owner: 'electron', repo: 'electron'})
     const draft = drafts[0]
 
     check(draft.tag_name === `v${pkg.version}`, `draft release version matches local package.json (v${pkg.version})`)
-    check(draft.prerelease, 'draft is a prerelease')
     check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes')
 
     const requiredAssets = assetsForVersion(draft.tag_name).sort()
