@@ -1183,6 +1183,21 @@ describe('<webview> tag', function () {
     })
   })
 
+  describe('did-attach-webview event', () => {
+    it('is emitted when a webview has been attached', (done) => {
+      w = new BrowserWindow({
+        show: false
+      })
+      w.webContents.on('did-attach-webview', (event, webContents) => {
+        ipcMain.once('webview-dom-ready', (event, id) => {
+          assert.equal(webContents.id, id)
+          done()
+        })
+      })
+      w.loadURL('file://' + fixtures + '/pages/webview-did-attach-event.html')
+    })
+  })
+
   it('loads devtools extensions registered on the parent window', function (done) {
     w = new BrowserWindow({
       show: false
