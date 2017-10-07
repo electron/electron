@@ -11,7 +11,7 @@ app.on('window-all-closed', () => {
 exports.load = (appUrl) => {
   app.on('ready', () => {
     const options = {
-      width: 800,
+      width: 900,
       height: 600,
       autoHideMenuBar: true,
       backgroundColor: '#FFFFFF',
