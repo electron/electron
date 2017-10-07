@@ -40,14 +40,11 @@ bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
   base::Process process = base::LaunchProcess(argv, options);
   close(devnull);
 
-  if (!process.IsValid())return false;
+  if (!process.IsValid()) return false;
   return process.WaitForExit(exit_code);
 }
 
 bool SetDefaultWebClient(const std::string& protocol) {
-#if defined(OS_CHROMEOS)
-  return true;
-#else
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   std::vector<std::string> argv;
@@ -62,7 +59,6 @@ bool SetDefaultWebClient(const std::string& protocol) {
   int exit_code;
   bool ran_ok = LaunchXdgUtility(argv, &exit_code);
   return ran_ok && exit_code == EXIT_SUCCESS;
-#endif
 }
 
 void Browser::Focus() {
@@ -90,35 +86,30 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                        mate::Arguments* args) {
-  #if defined(OS_CHROMEOS)
-    return UNKNOWN_DEFAULT;
-  #else
-    base::ThreadRestrictions::AssertIOAllowed();
+                                      mate::Arguments* args) {
+  base::ThreadRestrictions::AssertIOAllowed();
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
 
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
+  if (protocol.empty()) return false;
 
-    std::vector<std::string> argv;
-    argv.push_back(kXdgSettings);
-    argv.push_back("check");
-    if (!protocol.empty()) {
-      argv.push_back(kXdgSettingsDefaultSchemeHandler);
-      argv.push_back(protocol);
-    }
-    argv.push_back(libgtkui::GetDesktopName(env.get()));
+  std::vector<std::string> argv;
+  argv.push_back(kXdgSettings);
+  argv.push_back("check");
+  argv.push_back(kXdgSettingsDefaultSchemeHandler);
+  argv.push_back(protocol);
+  argv.push_back(libgtkui::GetDesktopName(env.get()));
 
-    std::string reply;
-    int success_code;
-    bool ran_ok = base::GetAppOutputWithExitCode(base::CommandLine(argv),
-    &reply, &success_code);
+  std::string reply;
+  int success_code;
+  bool ran_ok = base::GetAppOutputWithExitCode(base::CommandLine(argv),
+  &reply, &success_code);
 
-    if (!ran_ok || success_code != EXIT_SUCCESS) return false;
+  if (!ran_ok || success_code != EXIT_SUCCESS) return false;
 
-    // Allow any reply that starts with "yes".
-    return base::StartsWith(reply, "yes", base::CompareCase::SENSITIVE)
-               ? true
-               : false;
-  #endif
+  // Allow any reply that starts with "yes".
+  return base::StartsWith(reply, "yes", base::CompareCase::SENSITIVE)
+             ? true
+             : false;
 }
 
 // Todo implement
