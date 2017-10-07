@@ -82,6 +82,9 @@ class CommonWebContentsDelegate
   blink::WebSecurityStyle GetSecurityStyle(
       content::WebContents* web_contents,
       content::SecurityStyleExplanations* explanations) override;
+  void ShowCertificateViewerInDevTools(
+      content::WebContents* web_contents,
+      scoped_refptr<net::X509Certificate> certificate) override;
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
