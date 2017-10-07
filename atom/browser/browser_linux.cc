@@ -23,7 +23,6 @@
 namespace atom {
 
 const char kXdgSettings[] = "xdg-settings";
-const char kXdgSettingsDefaultBrowser[] = "default-web-browser";
 const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
 
 bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
