@@ -86,7 +86,6 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       mate::Arguments* args) {
-  base::ThreadRestrictions::AssertIOAllowed();
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   if (protocol.empty()) return false;
