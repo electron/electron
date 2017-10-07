@@ -335,8 +335,10 @@ if (option.file && !option.webdriver) {
 } else if (option.interactive) {
   startRepl()
 } else {
-  const welcomeMessage = `Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
+  const welcomeMessage = `
+  Deprecation Warning: To render the default app, the -d or --default flags will soon need to be used.
 
+  Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
   Usage: electron [options] [path]
 
   A path to an Electron app may be specified. It must be one of the following:
@@ -351,6 +353,9 @@ if (option.file && !option.webdriver) {
     -i, --interactive     Open a REPL to the main process.
     -r, --require         Module to preload (option can be repeated)
     -v, --version         Print the version.`
+
   console.log(welcomeMessage)
+  const indexPath = path.join(__dirname, '/index.html')
+  loadApplicationByUrl(`file://${indexPath}`)
   process.exit(0)
 }
