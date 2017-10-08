@@ -149,7 +149,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ReplaceMisspelling(const base::string16& word);
   uint32_t FindInPage(mate::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
+#if defined(ENABLE_CERTIFICATE_VIEWER)
   void ShowCertificate();
+#endif
   void ShowDefinitionForSelection();
   void CopyImageAt(int x, int y);
 

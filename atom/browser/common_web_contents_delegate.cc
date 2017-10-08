@@ -15,7 +15,9 @@
 #include "atom/common/atom_constants.h"
 #include "base/files/file_util.h"
 #include "base/memory/ptr_util.h"
+#if defined(ENABLE_CERTIFICATE_VIEWER)
 #include "chrome/browser/certificate_viewer.h"
+#endif
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
@@ -278,6 +280,7 @@ bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
   return html_fullscreen_;
 }
 
+#if defined(ENABLE_CERTIFICATE_VIEWER)
 void CommonWebContentsDelegate::ShowCertificateViewerInDevTools(
     content::WebContents* web_contents,
     scoped_refptr<net::X509Certificate> certificate) {
@@ -287,6 +290,7 @@ void CommonWebContentsDelegate::ShowCertificateViewerInDevTools(
                           certificate.get());
 #endif
 }
+#endif
 
 blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
     content::WebContents* web_contents,

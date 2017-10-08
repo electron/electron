@@ -28,6 +28,11 @@
           'ENABLE_OSR',
         ],
       }],  # enable_osr==1
+      ['enable_certificate_viewer==1', {
+        'defines': [
+          'ENABLE_CERTIFICATE_VIEWER',
+        ],
+      }],  # enable_certificate_viewer==1
     ],
   },
   'targets': [

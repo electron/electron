@@ -505,10 +505,6 @@
       'atom/utility/atom_content_utility_client.h',
       'chromium_src/chrome/browser/browser_process.cc',
       'chromium_src/chrome/browser/browser_process.h',
-      'chromium_src/chrome/browser/certificate_viewer.h',
-      'chromium_src/chrome/browser/ui/cocoa/certificate_viewer_mac_views.mm',
-      'chromium_src/chrome/browser/ui/cocoa/certificate_viewer_mac.mm',
-      'chromium_src/chrome/browser/ui/cocoa/certificate_viewer_mac.h',
       'chromium_src/chrome/browser/chrome_process_finder_win.cc',
       'chromium_src/chrome/browser/chrome_process_finder_win.h',
       'chromium_src/chrome/browser/icon_loader_mac.mm',
@@ -640,8 +636,6 @@
       'chromium_src/extensions/common/url_pattern.h',
       'chromium_src/library_loaders/libspeechd_loader.cc',
       'chromium_src/library_loaders/libspeechd.h',
-      'chromium_src/net/cert/x509_util_ios_and_mac.cc',
-      'chromium_src/net/cert/x509_util_ios_and_mac.h',
       '<@(native_mate_files)',
       '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
       '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.cc',
@@ -718,6 +712,16 @@
           'atom/browser/osr/osr_view_proxy.h',
         ],
       }],  # enable_osr==1
+      ['enable_certificate_viewer==1', {
+        'lib_sources': [
+          'chromium_src/chrome/browser/certificate_viewer.h',
+          'chromium_src/chrome/browser/ui/cocoa/certificate_viewer_mac_views.mm',
+          'chromium_src/chrome/browser/ui/cocoa/certificate_viewer_mac.mm',
+          'chromium_src/chrome/browser/ui/cocoa/certificate_viewer_mac.h',
+          'chromium_src/net/cert/x509_util_ios_and_mac.cc',
+          'chromium_src/net/cert/x509_util_ios_and_mac.h',
+        ],
+      }],  # enable_certificate_viewer==1
     ],
   },
 }
