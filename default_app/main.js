@@ -336,8 +336,6 @@ if (option.file && !option.webdriver) {
   startRepl()
 } else {
   const welcomeMessage = `
-  Deprecation Warning: To render the default app, the -d or --default flags will soon need to be used.
-
   Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
   Usage: electron [options] [path]
 
@@ -357,5 +355,4 @@ if (option.file && !option.webdriver) {
   console.log(welcomeMessage)
   const indexPath = path.join(__dirname, '/index.html')
   loadApplicationByUrl(`file://${indexPath}`)
-  process.exit(0)
 }
