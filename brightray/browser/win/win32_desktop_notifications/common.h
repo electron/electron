@@ -21,8 +21,8 @@ struct NotificationData {
 };
 
 template<typename T>
-inline T ScaleForDpi(T value, unsigned dpi) {
-    return value * dpi / 96;
+constexpr T ScaleForDpi(T value, unsigned dpi, unsigned source_dpi = 96) {
+    return value * dpi / source_dpi;
 }
 
 struct ScreenMetrics {
