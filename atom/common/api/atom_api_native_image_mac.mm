@@ -17,7 +17,6 @@ mate::Handle<NativeImage> NativeImage::CreateFromNamedImage(
   @autoreleasepool {
     NSImage* image = [NSImage imageNamed:base::SysUTF8ToNSString(name)];
     if (!image.valid) {
-      args->ThrowError("Cannot create image from name: " + name);
       return CreateEmpty(args->isolate());
     }
 

@@ -544,7 +544,6 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
 #if !defined(OS_MACOSX)
 mate::Handle<NativeImage> NativeImage::CreateFromNamedImage(
   mate::Arguments* args, const std::string& name) {
-  args->ThrowError("Cannot create NativeImage from a name on non-darwin platforms");
   return CreateEmpty(args->isolate());
 }
 #endif
