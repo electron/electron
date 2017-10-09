@@ -157,6 +157,16 @@ Returns `NativeImage`
 
 Creates a new `NativeImage` instance from `dataURL`.
 
+### `nativeImage.createFromNamedImage(imageName)` _macOS_
+
+* `imageName` String
+
+Returns `NativeImage`
+
+Creates a new `NativeImage` instance from the NSImage that maps to the
+given image name.  See [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename?language=objc)
+for a list of possible values.
+
 ## Class: NativeImage
 
 > Natively wrap images such as tray, dock, and application icons.
