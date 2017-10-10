@@ -143,6 +143,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item forTouchBar:(NSTouchBar*)touchBar {
+  if (![touchBar respondsToSelector:@selector(escapeKeyReplacementItemIdentifier)]) return;
   std::string type;
   std::string item_id;
   NSTouchBarItemIdentifier identifier = nil;
