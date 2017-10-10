@@ -179,11 +179,24 @@ void OverrideAppLogsPath() {
 }
 #endif
 
+void OverrideSharedDataPath() {
+#if defined(OS_WIN)
+  // todo(codebytere): confirm what the path is supposed to be
+  std::wstring shared_data_path = L"path_to_be_confirmed";
+#elif defined(OS_MACOSX)
+  std::string shared_data_path = "/Library/Application Support/";
+#else
+  std::string shared_data_path = "/var/lib/";
+#endif
+  PathService::Override(DIR_SHARED_DATA, base::FilePath(shared_data_path));
+}
+
 void BrowserMainParts::PreEarlyInitialization() {
   std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
   feature_list->InitializeFromCommandLine("", "");
   base::FeatureList::SetInstance(std::move(feature_list));
   OverrideAppLogsPath();
+  OverrideSharedDataPath();
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
