@@ -240,6 +240,8 @@
       4302,  # (atldlgs.h) 'type cast': truncation from 'LPCTSTR' to 'WORD'
       4458,  # (atldlgs.h) declaration of 'dwCommonButtons' hides class member
       4503,  # decorated name length exceeded, name was truncated
+      4530,  # C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+      4577,  # 'noexcept' used with no exception handling mode specified
       4714,  # (atomicstring.h) function marked as __forceinline not inlined
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page
