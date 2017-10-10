@@ -17,6 +17,7 @@ class CocoaNotification;
 class NotificationPresenterMac : public NotificationPresenter {
  public:
   CocoaNotification* GetNotification(NSUserNotification* notif);
+  void RemoveAllNotifications() override;
 
   NotificationPresenterMac();
   ~NotificationPresenterMac();

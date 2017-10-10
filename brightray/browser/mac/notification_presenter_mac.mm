@@ -25,6 +25,13 @@ CocoaNotification* NotificationPresenterMac::GetNotification(
   return nullptr;
 }
 
+void NotificationPresenterMac::RemoveAllNotifications() {
+  NotificationPresenter::RemoveAllNotifications();
+
+  // Remove notifications created by previous processes too
+  [NSUserNotificationCenter.defaultUserNotificationCenter removeAllDeliveredNotifications];
+}
+
 NotificationPresenterMac::NotificationPresenterMac()
     : notification_center_delegate_(
           [[NotificationCenterDelegate alloc] initWithPresenter:this]) {
