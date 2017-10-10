@@ -100,6 +100,23 @@ describe('systemPreferences module', function () {
     })
   })
 
+  describe('systemPreferences.setUserDefault(key, type, value)', () => {
+    if (process.platform !== 'darwin') {
+      return
+    }
+
+    it('removes keys', () => {
+      const KEY = 'SystemPreferencesTest'
+      systemPreferences.setUserDefault(KEY, 'string', 'foo')
+      systemPreferences.removeUserDefault(KEY)
+      assert.equal(systemPreferences.getUserDefault(KEY, 'string'), '')
+    })
+
+    it('does not throw for missing keys', () => {
+      systemPreferences.removeUserDefault('some-missing-key')
+    })
+  })
+
   describe('systemPreferences.isInvertedColorScheme()', function () {
     it('returns a boolean', function () {
       assert.equal(typeof systemPreferences.isInvertedColorScheme(), 'boolean')
