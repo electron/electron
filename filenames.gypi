@@ -712,6 +712,16 @@
           'atom/browser/osr/osr_view_proxy.h',
         ],
       }],  # enable_osr==1
+      ['enable_certificate_viewer==1', {
+        'lib_sources': [
+          'chromium_src/chrome/browser/certificate_viewer.h',
+          'chromium_src/chrome/browser/ui/cocoa/certificate_viewer_mac_views.mm',
+          'chromium_src/chrome/browser/ui/cocoa/certificate_viewer_mac.mm',
+          'chromium_src/chrome/browser/ui/cocoa/certificate_viewer_mac.h',
+          'chromium_src/net/cert/x509_util_ios_and_mac.cc',
+          'chromium_src/net/cert/x509_util_ios_and_mac.h',
+        ],
+      }],  # enable_certificate_viewer==1
     ],
   },
 }
