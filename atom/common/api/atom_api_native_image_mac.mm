@@ -37,22 +37,22 @@ mate::Handle<NativeImage> NativeImage::CreateFromNamedImage(
       return CreateEmpty(args->isolate());
     }
 
-    NSData* pngData = bufferFromNSImage(image);
+    NSData* png_data = bufferFromNSImage(image);
 
     if (args->GetNext(&hsl_shift) && hsl_shift.size() == 3) {
-      gfx::Image gfxImage = gfx::Image::CreateFrom1xPNGBytes(
-        reinterpret_cast<const unsigned char*>((char *) [pngData bytes]), [pngData length]);
+      gfx::Image gfx_image = gfx::Image::CreateFrom1xPNGBytes(
+        reinterpret_cast<const unsigned char*>((char *) [png_data bytes]), [png_data length]);
       color_utils::HSL shift = {
         safeShift(hsl_shift[0], -1),
         safeShift(hsl_shift[1], 0.5),
         safeShift(hsl_shift[2], 0.5)
       };
-      pngData = bufferFromNSImage(gfx::Image(
+      png_data = bufferFromNSImage(gfx::Image(
         gfx::ImageSkiaOperations::CreateHSLShiftedImage(
-          gfxImage.AsImageSkia(), shift)).CopyNSImage());
+          gfx_image.AsImageSkia(), shift)).CopyNSImage());
     }
 
-    return CreateFromPNG(args->isolate(), (char *) [pngData bytes], [pngData length]);
+    return CreateFromPNG(args->isolate(), (char *) [png_data bytes], [png_data length]);
   }
 }
 

@@ -616,7 +616,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
   dict.SetMethod("createFromDataURL",
                  &atom::api::NativeImage::CreateFromDataURL);
-  dict.SetMethod("createFromNamedImage"
+  dict.SetMethod("createFromNamedImage",
                  &atom::api::NativeImage::CreateFromNamedImage);
 }
 
