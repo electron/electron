@@ -29,7 +29,7 @@ download({
   arch: process.env.npm_config_arch,
   strictSSL: process.env.npm_config_strict_ssl === 'true',
   force: process.env.force_no_cache === 'true',
-  quiet: process.env.npm_config_loglevel === 'silent'
+  quiet: process.env.npm_config_loglevel === 'silent' || process.env.CI
 }, extractFile)
 
 // unzips and makes path.txt point at the correct executable
