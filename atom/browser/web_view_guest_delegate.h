@@ -89,7 +89,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   gfx::Size GetDefaultSize() const;
 
   // The WebContents that attaches this guest view.
-  content::WebContents* embedder_web_contents_;
+  content::WebContents* embedder_web_contents_ = nullptr;
 
   // The zoom controller of the embedder that is used
   // to subscribe for zoom changes.
