@@ -541,6 +541,13 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
   return CreateEmpty(isolate);
 }
 
+#if !defined(OS_MACOSX)
+mate::Handle<NativeImage> NativeImage::CreateFromNamedImage(
+  mate::Arguments* args, const std::string& name) {
+  return CreateEmpty(args->isolate());
+}
+#endif
+
 // static
 void NativeImage::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
@@ -609,6 +616,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
   dict.SetMethod("createFromDataURL",
                  &atom::api::NativeImage::CreateFromDataURL);
+  dict.SetMethod("createFromNamedImage",
+                 &atom::api::NativeImage::CreateFromNamedImage);
 }
 
 }  // namespace

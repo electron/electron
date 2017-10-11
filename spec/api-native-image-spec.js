@@ -190,6 +190,34 @@ describe('nativeImage module', () => {
     })
   })
 
+  describe('createFromNamedImage(name)', () => {
+    it('returns empty for invalid options', () => {
+      const image = nativeImage.createFromNamedImage('totally_not_real')
+      assert(image.isEmpty())
+    })
+
+    it('returns empty on non-darwin platforms', () => {
+      if (process.platform === 'darwin') return
+
+      const image = nativeImage.createFromNamedImage('NSActionTemplate')
+      assert(image.isEmpty())
+    })
+
+    it('returns a valid image on darwin', () => {
+      if (process.platform !== 'darwin') return
+
+      const image = nativeImage.createFromNamedImage('NSActionTemplate')
+      assert(!image.isEmpty())
+    })
+
+    it('returns allows an HSL shift for a valid image on darwin', () => {
+      if (process.platform !== 'darwin') return
+
+      const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8])
+      assert(!image.isEmpty())
+    })
+  })
+
   describe('resize(options)', () => {
     it('returns a resized image', () => {
       const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
