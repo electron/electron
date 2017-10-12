@@ -17,23 +17,23 @@ Bu proje katılımcı sözleşmesine bağlıdır. Katılarak,
 bu kodun sürdürülebilir olduğunu üstlenmeniz beklenmekte.
 Lütfen uygun olmayan davranışları electron@github.com'a rapor edin.
 
-## Downloads
+## İndirme Bağlantıları
 
 Electron prebuilt mimarisini yüklemek için,
 [`npm`](https://docs.npmjs.com/):
 
 ```sh
-# Development dependency olarak yükleyin
+# Geliştirme bağımlılığı olarak yükleyin
 npm install electron --save-dev
 
 # `electron` komutunu global olarak $PATH'a yükleyin
 npm install electron -g
 ```
 
-Prebuilt mimarileri, debug sembolleri, ve fazlası için
-[releases page](https://github.com/electron/electron/releases) sayfasını ziyaret edin.
+Prebuilt mimarileri, debug sembolleri ve fazlası için
+[releases](https://github.com/electron/electron/releases) sayfasını ziyaret edin.
 
-### Mirrors
+### Alternatif Bağlantılar
 
 - [China](https://npm.taobao.org/mirrors/electron)
 
