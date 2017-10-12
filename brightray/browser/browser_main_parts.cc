@@ -180,15 +180,15 @@ void OverrideAppLogsPath() {
 #endif
 
 void OverrideSharedDataPath() {
+  ::base::FilePath::StringType shared_data_path;
 #if defined(OS_WIN)
-  // todo(codebytere): confirm what the path is supposed to be
-  std::wstring shared_data_path = L"path_to_be_confirmed";
+  shared_data_path = L"%ProgramData%";
 #elif defined(OS_MACOSX)
-  std::string shared_data_path = "/Library/Application Support/";
+  shared_data_path = "/Library/Application Support/";
 #else
-  std::string shared_data_path = "/var/lib/";
+  shared_data_path = "/var/lib/";
 #endif
-  PathService::Override(DIR_SHARED_DATA, base::FilePath(shared_data_path));
+  PathService::Override(DIR_SHARED_APP_DATA, base::FilePath(shared_data_path));
 }
 
 void BrowserMainParts::PreEarlyInitialization() {

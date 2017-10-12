@@ -23,7 +23,7 @@ enum {
   DIR_USER_DATA = PATH_START,  // Directory where user data can be written.
   DIR_USER_CACHE,  // Directory where user cache can be written.
   DIR_APP_LOGS,  // Directory where app logs live
-  DIR_SHARED_DATA  // Directory for shared app data
+  DIR_SHARED_APP_DATA,  // Directory for shared app data
 
 #if defined(OS_LINUX)
   DIR_APP_DATA,  // Application Data directory under the user profile.

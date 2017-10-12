@@ -376,7 +376,7 @@ int GetPathConstant(const std::string& name) {
   else if (name == "userCache")
     return brightray::DIR_USER_CACHE;
   else if (name == "shared")
-    return brightray::DIR_SHARED_DATA;
+    return brightray::DIR_SHARED_APP_DATA;
   else if (name == "logs")
     return brightray::DIR_APP_LOGS;
   else if (name == "home")
