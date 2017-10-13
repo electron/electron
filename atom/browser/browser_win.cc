@@ -39,8 +39,7 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
     // To unlock SetForegroundWindow we need to imitate pressing the Alt key
     // This circumvents the ForegroundLockTimeout in Windows 10
     bool bPressed = false;
-    if((GetAsyncKeyState(VK_MENU) & 0x8000) == 0)
-    {
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) == 0) {
         bPressed = true;
         keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | 0, 0);
     }
@@ -48,8 +47,7 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
     SetForegroundWindow(hwnd);
     SetFocus(hwnd);
 
-    if(bPressed)
-    {
+    if (bPressed) {
         keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
     }
 

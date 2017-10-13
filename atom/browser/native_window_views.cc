@@ -371,8 +371,7 @@ void NativeWindowViews::Focus(bool focus) {
     HWND hwnd = GetAcceleratedWidget();
 
     bool bPressed = false;
-    if ((GetAsyncKeyState(VK_MENU) & 0x8000) == 0)
-    {
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) == 0) {
       bPressed = true;
       keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | 0, 0);
     }
@@ -380,8 +379,7 @@ void NativeWindowViews::Focus(bool focus) {
     SetForegroundWindow(hwnd);
     SetFocus(hwnd);
 
-    if (bPressed)
-    {
+    if (bPressed) {
       keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
     }
 #elif defined(USE_X11)
