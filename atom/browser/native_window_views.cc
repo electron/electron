@@ -366,7 +366,24 @@ void NativeWindowViews::Focus(bool focus) {
 
   if (focus) {
 #if defined(OS_WIN)
-    window_->Activate();
+    // To unlock SetForegroundWindow we need to imitate pressing the Alt key
+    // This circumvents the ForegroundLockTimeout in Windows 10
+    HWND hwnd = GetAcceleratedWidget();
+
+    bool bPressed = false;
+    if ((GetAsyncKeyState(VK_MENU) & 0x8000) == 0)
+    {
+      bPressed = true;
+      keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | 0, 0);
+    }
+
+    SetForegroundWindow(hwnd);
+    SetFocus(hwnd);
+
+    if (bPressed)
+    {
+      keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+    }
 #elif defined(USE_X11)
     // The "Activate" implementation of Chromium is not reliable on Linux.
     ::Window window = GetAcceleratedWidget();
