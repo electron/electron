@@ -240,7 +240,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   return frame;
 }
 
-- (void)windowDidBecomeMain:(NSNotification*)notification {
+- (void)windowDidBecomeKey:(NSNotification*)notification {
   content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)
     return;
@@ -254,7 +254,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   shell_->NotifyWindowFocus();
 }
 
-- (void)windowDidResignMain:(NSNotification*)notification {
+- (void)windowDidResignKey:(NSNotification*)notification {
   content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)
     return;
