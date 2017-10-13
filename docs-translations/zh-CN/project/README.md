@@ -12,7 +12,7 @@ Electron框架，让您可使用JavaScript, HTML 及 CSS 编写桌面程序。
 请关注Twitter [@ElectronJS](https://twitter.com/electronjs) 以获得重要通告。
 
 这个项目将坚持贡献者盟约 [code of conduct](CODE_OF_CONDUCT.md).
-我们希望贡献者能遵守贡献者盟约，如果发现有任何不能接受的行为，请报告至electron@github.com(PS:请用英语)
+我们希望贡献者能遵守贡献者盟约，如果发现有任何不能接受的行为，请报告至electron@github.com(PS:请用英文)
 
 ## 下载
 
