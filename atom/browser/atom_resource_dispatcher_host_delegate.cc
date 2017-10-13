@@ -15,6 +15,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/stream_info.h"
+#include "content/public/browser/render_frame_host.h"
 #include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
 #include "net/url_request/url_request.h"
@@ -65,34 +66,33 @@ void HandleExternalProtocolInUI(
 }
 
 void OnPdfResourceIntercepted(
-    const GURL& original_url,
-    const content::ResourceRequestInfo::WebContentsGetter&
-        web_contents_getter) {
-  content::WebContents* web_contents = web_contents_getter.Run();
-  if (!web_contents)
-    return;
+	const GURL& original_url,
+	int frame_tree_node_id,
+	const content::ResourceRequestInfo::WebContentsGetter&
+	web_contents_getter) {
+	content::WebContents* web_contents = web_contents_getter.Run();
+	if (!web_contents)
+		return;
 
-  if (!WebContentsPreferences::IsPluginsEnabled(web_contents)) {
-    auto browser_context = web_contents->GetBrowserContext();
-    auto download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context);
+	if (!WebContentsPreferences::IsPluginsEnabled(web_contents)) {
+		auto browser_context = web_contents->GetBrowserContext();
+		auto download_manager =
+			content::BrowserContext::GetDownloadManager(browser_context);
 
-    download_manager->DownloadUrl(
-        content::DownloadUrlParameters::CreateForWebContentsMainFrame(
-            web_contents, original_url));
-    return;
-  }
+		download_manager->DownloadUrl(
+			content::DownloadUrlParameters::CreateForWebContentsMainFrame(
+				web_contents, original_url));
+		return;
+	}
 
-  // The URL passes the original pdf resource url, that will be requested
-  // by the webui page.
-  // chrome://pdf-viewer/index.html?src=https://somepage/123.pdf
-  content::NavigationController::LoadURLParams params(
-      GURL(base::StringPrintf(
-          "%sindex.html?%s=%s",
-          kPdfViewerUIOrigin,
-          kPdfPluginSrc,
-          net::EscapeUrlEncodedData(original_url.spec(), false).c_str())));
-  web_contents->GetController().LoadURLWithParams(params);
+	// The URL passes the original pdf resource url, that will be requested
+	// by the webui page.
+	// chrome://pdf-viewer/index.html?src=https://somepage/123.pdf
+	content::NavigationController::LoadURLParams params(GURL(base::StringPrintf(
+		"%sindex.html?%s=%s", kPdfViewerUIOrigin, kPdfPluginSrc,
+		net::EscapeUrlEncodedData(original_url.spec(), false).c_str())));
+	params.frame_tree_node_id = frame_tree_node_id;
+	web_contents->GetController().LoadURLWithParams(params);
 }
 
 }  // namespace
@@ -134,22 +134,31 @@ AtomResourceDispatcherHostDelegate::CreateClientCertStore(
 }
 
 bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
-    net::URLRequest* request,
-    const base::FilePath& plugin_path,
-    const std::string& mime_type,
-    GURL* origin,
-    std::string* payload) {
-  const content::ResourceRequestInfo* info =
-      content::ResourceRequestInfo::ForRequest(request);
-  if (mime_type == "application/pdf" && info->IsMainFrame()) {
-    *origin = GURL(kPdfViewerUIOrigin);
-    content::BrowserThread::PostTask(
-        BrowserThread::UI, FROM_HERE,
-        base::Bind(&OnPdfResourceIntercepted, request->url(),
-                   info->GetWebContentsGetterForRequest()));
-    return true;
-  }
-  return false;
+	net::URLRequest* request,
+	const base::FilePath& plugin_path,
+	const std::string& mime_type,
+	GURL* origin,
+	std::string* payload) {
+	const content::ResourceRequestInfo* info =
+		content::ResourceRequestInfo::ForRequest(request);
+
+	int render_process_host_id;
+	int render_frame_id;
+	info->GetAssociatedRenderFrame(&render_process_host_id, &render_frame_id);
+	content::RenderFrameHost* rfh =
+		content::RenderFrameHost::FromID(render_process_host_id, render_frame_id);
+
+	int frame_tree_node_id = rfh->GetFrameTreeNodeId();
+
+	if (mime_type == "application/pdf") {
+		*origin = GURL(kPdfViewerUIOrigin);
+		content::BrowserThread::PostTask(
+			BrowserThread::UI, FROM_HERE,
+			base::Bind(&OnPdfResourceIntercepted, request->url(),
+				frame_tree_node_id, info->GetWebContentsGetterForRequest()));
+		return true;
+	}
+	return false;
 }
 
 }  // namespace atom
