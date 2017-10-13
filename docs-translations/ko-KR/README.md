@@ -1,8 +1,7 @@
 반드시 사용하는 Electron 버전과 문서 버전을 일치시켜야 합니다. 버전 숫자는 문서
 페이지 URL에 포함되어 있습니다. 만약 그렇지 않다면, 아마 개발 브랜치의 문서일
 것이며 당신의 Electron 버전과 호환되지 않는 API 변경을 포함할 것 입니다.
-이전 버전 문서는 깃허브에서 [태그로 열어]
-(https://github.com/electron/electron/tree/v1.4.0) 볼 수 있습니다.
+이전 버전 문서는 깃허브에서 [태그로 열어](https://github.com/electron/electron/tree/v1.4.0) 볼 수 있습니다.
 "branches/tags 변경" 드롭다운을 열고 해당 버전의 태그를 선택하세요.
 
 **역자주:** 한국어 번역 문서는 `atom.io`에 반영되어 있지 않습니다. 한국어 번역
