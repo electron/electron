@@ -11,6 +11,7 @@
 #include <shobjidl.h>
 
 #include "atom/browser/ui/win/jump_list.h"
+#include "atom/browser/ui/win/window_util.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/base_paths.h"
@@ -36,21 +37,7 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
 
   GetWindowThreadProcessId(hwnd, &process_id);
   if (process_id == target_process_id) {
-    // To unlock SetForegroundWindow we need to imitate pressing the Alt key
-    // This circumvents the ForegroundLockTimeout in Windows 10
-    bool bPressed = false;
-    if ((GetAsyncKeyState(VK_MENU) & 0x8000) == 0) {
-        bPressed = true;
-        keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | 0, 0);
-    }
-
-    SetForegroundWindow(hwnd);
-    SetFocus(hwnd);
-
-    if (bPressed) {
-        keybd_event(VK_MENU, 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
-    }
-
+    window_util::ForceFocusWindow(hwnd);
     return FALSE;
   }
 
