@@ -36,7 +36,7 @@ Open the given file in the desktop's default manner.
 
 ### `shell.openExternal(url[, options, callback])`
 
-* `url` String
+* `url` String - max 2081 characters on windows, or the function returns false
 * `options` Object (optional) _macOS_
   * `activate` Boolean - `true` to bring the opened application to the
     foreground. The default is `true`.
