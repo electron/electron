@@ -67,7 +67,8 @@ void HandleExternalProtocolInUI(
 
 void OnPdfResourceIntercepted(
 	const GURL& original_url,
-	int frame_tree_node_id,
+    int render_process_host_id,
+    int render_frame_id,
 	const content::ResourceRequestInfo::WebContentsGetter&
 	web_contents_getter) {
 	content::WebContents* web_contents = web_contents_getter.Run();
@@ -91,7 +92,15 @@ void OnPdfResourceIntercepted(
 	content::NavigationController::LoadURLParams params(GURL(base::StringPrintf(
 		"%sindex.html?%s=%s", kPdfViewerUIOrigin, kPdfPluginSrc,
 		net::EscapeUrlEncodedData(original_url.spec(), false).c_str())));
-	params.frame_tree_node_id = frame_tree_node_id;
+	
+	content::RenderFrameHost* frame_host =
+		content::RenderFrameHost::FromID(render_process_host_id, render_frame_id);
+	if (!frame_host)
+	{
+		return;
+	}
+	
+	params.frame_tree_node_id = frame_host->GetFrameTreeNodeId();
 	web_contents->GetController().LoadURLWithParams(params);
 }
 
@@ -144,18 +153,17 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
 
 	int render_process_host_id;
 	int render_frame_id;
-	info->GetAssociatedRenderFrame(&render_process_host_id, &render_frame_id);
-	content::RenderFrameHost* rfh =
-		content::RenderFrameHost::FromID(render_process_host_id, render_frame_id);
-
-	int frame_tree_node_id = rfh->GetFrameTreeNodeId();
-
+	if (!info->GetAssociatedRenderFrame(&render_process_host_id, &render_frame_id))
+	{
+		return false;
+	}
+	
 	if (mime_type == "application/pdf") {
 		*origin = GURL(kPdfViewerUIOrigin);
 		content::BrowserThread::PostTask(
 			BrowserThread::UI, FROM_HERE,
 			base::Bind(&OnPdfResourceIntercepted, request->url(),
-				frame_tree_node_id, info->GetWebContentsGetterForRequest()));
+				render_process_host_id, render_frame_id, info->GetWebContentsGetterForRequest()));
 		return true;
 	}
 	return false;
