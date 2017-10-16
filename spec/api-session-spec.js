@@ -572,8 +572,9 @@ describe('session module', function () {
     })
 
     it('accepts the request when the callback is called with 0', function (done) {
-      session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult}, callback) {
+      session.defaultSession.setCertificateVerifyProc(function ({hostname, certificate, verificationResult, errorCode}, callback) {
         assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
+        assert([-202, -200].includes(errorCode), errorCode)
         callback(0)
       })
 

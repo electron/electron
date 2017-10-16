@@ -212,6 +212,7 @@ struct Converter<atom::VerifyRequestParams> {
     dict.Set("hostname", val.hostname);
     dict.Set("certificate", val.certificate);
     dict.Set("verificationResult", val.default_result);
+    dict.Set("errorCode", val.error_code);
     return dict.GetHandle();
   }
 };

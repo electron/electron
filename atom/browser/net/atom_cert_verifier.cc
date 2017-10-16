@@ -92,6 +92,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
     std::unique_ptr<VerifyRequestParams> request(new VerifyRequestParams());
     request->hostname = params_.hostname();
     request->default_result = net::ErrorToString(error);
+    request->error_code = error;
     request->certificate = params_.certificate();
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
