@@ -6,6 +6,7 @@ const assert = require('assert')
 const fs = require('fs')
 const { execSync } = require('child_process')
 const GitHub = require('github')
+const { GitProcess } = require('dugite')
 const nugget = require('nugget')
 const pkg = require('../package.json')
 const pkgVersion = `v${pkg.version}`
@@ -21,6 +22,7 @@ assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in en
 
 const github = new GitHub()
 github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
+const gitDir = path.resolve(__dirname, '..')
 
 async function getDraftRelease (version) {
   let releaseInfo = await github.repos.getReleases({owner: 'electron', repo: 'electron'})
@@ -233,6 +235,9 @@ async function makeRelease (releaseToValidate) {
     await createReleaseShasums(draftRelease)
     await validateReleaseAssets(draftRelease)
     await publishRelease()
+    await cleanupReleaseBranch()
+    console.log(`${pass} SUCCESS!!! Release has been published. Please run ` +
+      `"npm run publish-to-npm" to publish release to npm.`)
   }
 }
 
@@ -361,6 +366,27 @@ async function validateChecksums (validationArgs) {
     })
   console.log(`${pass} All files from ${validationArgs.fileSource} match ` +
     `shasums defined in ${validationArgs.shaSumFile}.`)
+}
+
+async function cleanupReleaseBranch () {
+  console.log(`Cleaning up release branch.`)
+  let errorMessage = `Could not delete local release branch.`
+  let successMessage = `Successfully deleted local release branch.`
+  await callGit(['branch', '-D', 'release'], errorMessage, successMessage)
+  errorMessage = `Could not delete remote release branch.`
+  successMessage = `Successfully deleted remote release branch.`
+  return await callGit(['push', 'origin', ':release'], errorMessage, successMessage)
+}
+
+async function callGit (args, errorMessage, successMessage) {
+  let gitResult = await GitProcess.exec(args, gitDir)
+  if (gitResult.exitCode === 0) {
+    console.log(`${pass} ${successMessage}`)
+    return true
+  } else {
+    console.log(`${fail} ${errorMessage} ${gitResult.stderr}`)
+    process.exit(1)
+  }
 }
 
 makeRelease(args.validateRelease)
