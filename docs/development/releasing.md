@@ -3,7 +3,7 @@
 This document describes the process for releasing a new version of Electron.
 
 ## Find out what version change is needed
-Is this a major, minor, patch, or beta version change? Read the [Version Change Rules](docs/tutorial/electron-versioning.md#version-change-rules) to find out.
+Is this a major, minor, patch, or beta version change? Read the [Version Change Rules](../tutorial/electron-versioning.md#version-change-rules) to find out.
 
 ## Create a temporary branch
 
