@@ -18,7 +18,8 @@ CocoaNotification* NotificationPresenterMac::GetNotification(
     NSUserNotification* ns_notification) {
   for (Notification* notification : notifications()) {
     auto native_notification = static_cast<CocoaNotification*>(notification);
-    if ([native_notification->notification() isEqual:ns_notification])
+    if ([native_notification->notification().identifier
+          isEqual:ns_notification.identifier])
       return native_notification;
   }
   return nullptr;
