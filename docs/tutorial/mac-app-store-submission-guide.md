@@ -110,6 +110,8 @@ codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP H
 codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper EH.app/"
 codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper NP.app/Contents/MacOS/$APP Helper NP"
 codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$FRAMEWORKS_PATH/$APP Helper NP.app/"
+codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH/Contents/Library/LoginItems/$APP Login Helper.app/Contents/MacOS/$APP Login Helper"
+codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH/Contents/Library/LoginItems/$APP Login Helper.app/"
 codesign -s "$APP_KEY" -f --entitlements "$CHILD_PLIST" "$APP_PATH/Contents/MacOS/$APP"
 codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH"
 
@@ -162,8 +164,6 @@ and the following behaviors have been changed:
 * Video capture may not work for some machines.
 * Certain accessibility features may not work.
 * Apps will not be aware of DNS changes.
-* APIs for launching apps at login are disabled. See
-https://github.com/electron/electron/issues/7312#issuecomment-249479237
 
 Also, due to the usage of app sandboxing, the resources which can be accessed by
 the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for
