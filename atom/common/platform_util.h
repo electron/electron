@@ -57,6 +57,11 @@ bool MoveItemToTrash(const base::FilePath& full_path);
 
 void Beep();
 
+#if defined(OS_MACOSX)
+bool GetLoginItemEnabled();
+void SetLoginItemEnabled(bool enabled);
+#endif
+
 }  // namespace platform_util
 
 #endif  // ATOM_COMMON_PLATFORM_UTIL_H_
