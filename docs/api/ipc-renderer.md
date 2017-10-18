@@ -74,9 +74,9 @@ and replies by setting `event.returnValue`.
 **Note:** Sending a synchronous message will block the whole renderer process,
 unless you know what you are doing you should never use it.
 
-### `ipcRenderer.sendTo(windowid, channel, [, arg1][, arg2][, ...])`
+### `ipcRenderer.sendTo(windowId, channel, [, arg1][, arg2][, ...])`
 
-* `windowid` Number
+* `windowId` Number
 * `channel` String
 * `...args` any[]
 
