@@ -187,6 +187,12 @@ $ ./node_modules/.bin/electron .
 $ .\node_modules\.bin\electron .
 ```
 
+#### Node v8.2.0 and later
+
+```
+$ npx electron .
+```
+
 ### Manually Downloaded Electron Binary
 
 If you downloaded Electron manually, you can also use the included
