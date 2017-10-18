@@ -1,7 +1,13 @@
 # Online/Offline Event Detection
 
 Online and offline event detection can be implemented in the renderer process
-using standard HTML5 APIs, as shown in the following example.
+using standard HTML5 NavigatorOnLine API.
+The navigator.onLine attribute returns `false` if the user agent will not contact the network when the user follows links or when a script requests a remote page (or knows that such an attempt would fail) i.e. definitely offline (disconnected from the network) and must return `true` otherwise.
+Since all other conditions return `true`, one has to be mindful of getting false positives, as we cannot assume `true` value necessarily means that Electron can access the internet. Such as in cases where the computer is running a virtualization software that has virtual ethernet adapters that are always “connected.”
+Therefore, if you really want to determine the internet access status of Electron,
+you should develop additional means for checking.
+
+Example:
 
 _main.js_
 
@@ -78,13 +84,3 @@ _online-status.html_
 </body>
 </html>
 ```
-
-**NOTE:** If Electron is not able to connect to a local area network (LAN) or
-a router, it is considered offline; all other conditions return `true`.
-So while you can assume that Electron is offline when `navigator.onLine`
-returns a `false` value, you cannot assume that a `true` value necessarily
-means that Electron can access the internet. You could be getting false
-positives, such as in cases where the computer is running a virtualization
-software that has virtual ethernet adapters that are always "connected."
-Therefore, if you really want to determine the internet access status of Electron,
-you should develop additional means for checking.
