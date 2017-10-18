@@ -32,7 +32,7 @@ class NotificationDelegate {
   virtual void NotificationDisplayed();
 
  private:
-  const std::string& notification_id_;
+  const std::string notification_id_;
 
   DISALLOW_COPY_AND_ASSIGN(NotificationDelegate);
 };
