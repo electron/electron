@@ -16,7 +16,7 @@ const versionType = args._[0]
 // via conventional-recommended-bump
 
 assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
-if (!versionType) {
+if (!versionType && !args.notesOnly) {
   console.log(`Usage: prepare-release versionType [major | minor | patch | beta]` +
      ` (--stable) (--notesOnly)`)
   process.exit(1)
@@ -129,7 +129,11 @@ async function createRelease (branchToTarget, isBeta) {
   githubOpts.draft = true
   githubOpts.name = `electron ${newVersion}`
   if (isBeta) {
-    githubOpts.name = `${githubOpts.name} beta`
+    githubOpts.body = `Note: This is a beta release.  Please file new issues ` +
+      `for any bugs you find in it.\n \n This release is published to npm ` +
+      `under the beta tag and can be installed via npm install electron@beta, ` +
+      `or npm i electron@${newVersion.substr(1)}.`
+    githubOpts.name = `${githubOpts.name}`
     githubOpts.prerelease = true
   }
   githubOpts.tag_name = newVersion
