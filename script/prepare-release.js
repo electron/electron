@@ -165,7 +165,7 @@ async function prepareRelease (isBeta, notesOnly) {
     console.log(`Draft release notes are: ${releaseNotes}`)
   } else {
     await createReleaseBranch()
-    await createRelease(currentBranch, !args.stable)
+    await createRelease(currentBranch, isBeta)
     await pushRelease()
   }
 }

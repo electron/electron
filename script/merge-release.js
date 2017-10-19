@@ -38,7 +38,7 @@ async function commitMerge () {
   console.log(`Committing the merge for v${pkg.version}`)
   let errorMessage = `Error committing merge:`
   let successMessage = `Successfully committed the merge for v${pkg.version}`
-  let gitArgs = ['commit', '-m' `v${pkg.version}`]
+  let gitArgs = ['commit', '-m', `v${pkg.version}`]
   return await callGit(gitArgs, errorMessage, successMessage)
 }
 

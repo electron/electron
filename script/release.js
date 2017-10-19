@@ -20,44 +20,60 @@ let failureCount = 0
 
 assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
 
-const github = new GitHub()
+const github = new GitHub({
+  followRedirects: false
+})
 github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 const gitDir = path.resolve(__dirname, '..')
 
-async function getDraftRelease (version) {
+async function getDraftRelease (version, skipValidation) {
   let releaseInfo = await github.repos.getReleases({owner: 'electron', repo: 'electron'})
   let drafts
+  let versionToCheck
   if (version) {
     drafts = releaseInfo.data
       .filter(release => release.tag_name === version)
+    versionToCheck = version
   } else {
     drafts = releaseInfo.data
       .filter(release => release.draft)
+    versionToCheck = pkgVersion
   }
-  check(drafts.length === 1, 'one draft exists', true)
+
   const draft = drafts[0]
-  check(draft.tag_name === `v${pkg.version}`, `draft release version matches local package.json (v${pkg.version})`)
-  check(draft.prerelease, 'draft is a prerelease')
-  check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes')
+  if (!skipValidation) {
+    failureCount = 0
+    check(drafts.length === 1, 'one draft exists', true)
+    check(draft.tag_name === versionToCheck, `draft release version matches local package.json (${versionToCheck})`)
+    if (versionToCheck.indexOf('beta')) {
+      check(draft.prerelease, 'draft is a prerelease')
+    }
+    check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes')
+    check((failureCount === 0), `Draft release looks good to go.`, true)
+  }
   return draft
 }
 
-async function validateReleaseAssets (draft) {
-  const requiredAssets = assetsForVersion(draft.tag_name).sort()
-  const extantAssets = draft.assets.map(asset => asset.name).sort()
-  const downloadUrls = draft.assets.map(asset => asset.browser_download_url).sort()
+async function validateReleaseAssets (release) {
+  const requiredAssets = assetsForVersion(release.tag_name).sort()
+  const extantAssets = release.assets.map(asset => asset.name).sort()
+  const downloadUrls = release.assets.map(asset => asset.browser_download_url).sort()
 
+  failureCount = 0
   requiredAssets.forEach(asset => {
     check(extantAssets.includes(asset), asset)
   })
   check((failureCount === 0), `All required GitHub assets exist for release`, true)
 
-  await verifyShasums(downloadUrls)
-    .catch(err => {
-      console.log(`${fail} error verifyingShasums`, err)
-    })
-  console.log(`Should be done verifying GitHub shasums`)
-  const s3Urls = s3UrlsForVersion(draft.tag_name)
+  if (release.draft) {
+    await verifyAssets(release)
+  } else {
+    await verifyShasums(downloadUrls)
+      .catch(err => {
+        console.log(`${fail} error verifyingShasums`, err)
+      })
+  }
+  const s3Urls = s3UrlsForVersion(release.tag_name)
   await verifyShasums(s3Urls, true)
 }
 
@@ -73,66 +89,66 @@ function check (condition, statement, exitIfFail = false) {
 
 function assetsForVersion (version) {
   const patterns = [
-    'electron-{{VERSION}}-darwin-x64-dsym.zip',
-    'electron-{{VERSION}}-darwin-x64-symbols.zip',
-    'electron-{{VERSION}}-darwin-x64.zip',
-    'electron-{{VERSION}}-linux-arm-symbols.zip',
-    'electron-{{VERSION}}-linux-arm.zip',
-    'electron-{{VERSION}}-linux-arm64-symbols.zip',
-    'electron-{{VERSION}}-linux-arm64.zip',
-    'electron-{{VERSION}}-linux-armv7l-symbols.zip',
-    'electron-{{VERSION}}-linux-armv7l.zip',
-    'electron-{{VERSION}}-linux-ia32-symbols.zip',
-    'electron-{{VERSION}}-linux-ia32.zip',
-    'electron-{{VERSION}}-linux-x64-symbols.zip',
-    'electron-{{VERSION}}-linux-x64.zip',
-    'electron-{{VERSION}}-mas-x64-dsym.zip',
-    'electron-{{VERSION}}-mas-x64-symbols.zip',
-    'electron-{{VERSION}}-mas-x64.zip',
-    'electron-{{VERSION}}-win32-ia32-pdb.zip',
-    'electron-{{VERSION}}-win32-ia32-symbols.zip',
-    'electron-{{VERSION}}-win32-ia32.zip',
-    'electron-{{VERSION}}-win32-x64-pdb.zip',
-    'electron-{{VERSION}}-win32-x64-symbols.zip',
-    'electron-{{VERSION}}-win32-x64.zip',
-    'electron-api.json',
-    'electron.d.ts',
-    'ffmpeg-{{VERSION}}-darwin-x64.zip',
-    'ffmpeg-{{VERSION}}-linux-arm.zip',
-    'ffmpeg-{{VERSION}}-linux-arm64.zip',
-    'ffmpeg-{{VERSION}}-linux-armv7l.zip',
-    'ffmpeg-{{VERSION}}-linux-ia32.zip',
-    'ffmpeg-{{VERSION}}-linux-x64.zip',
-    'ffmpeg-{{VERSION}}-mas-x64.zip',
-    'ffmpeg-{{VERSION}}-win32-ia32.zip',
-    'ffmpeg-{{VERSION}}-win32-x64.zip',
-    'SHASUMS256.txt'
+    `electron-${version}-darwin-x64-dsym.zip`,
+    `electron-${version}-darwin-x64-symbols.zip`,
+    `electron-${version}-darwin-x64.zip`,
+    `electron-${version}-linux-arm-symbols.zip`,
+    `electron-${version}-linux-arm.zip`,
+    `electron-${version}-linux-arm64-symbols.zip`,
+    `electron-${version}-linux-arm64.zip`,
+    `electron-${version}-linux-armv7l-symbols.zip`,
+    `electron-${version}-linux-armv7l.zip`,
+    `electron-${version}-linux-ia32-symbols.zip`,
+    `electron-${version}-linux-ia32.zip`,
+    `electron-${version}-linux-x64-symbols.zip`,
+    `electron-${version}-linux-x64.zip`,
+    `electron-${version}-mas-x64-dsym.zip`,
+    `electron-${version}-mas-x64-symbols.zip`,
+    `electron-${version}-mas-x64.zip`,
+    `electron-${version}-win32-ia32-pdb.zip`,
+    `electron-${version}-win32-ia32-symbols.zip`,
+    `electron-${version}-win32-ia32.zip`,
+    `electron-${version}-win32-x64-pdb.zip`,
+    `electron-${version}-win32-x64-symbols.zip`,
+    `electron-${version}-win32-x64.zip`,
+    `electron-api.json`,
+    `electron.d.ts`,
+    `ffmpeg-${version}-darwin-x64.zip`,
+    `ffmpeg-${version}-linux-arm.zip`,
+    `ffmpeg-${version}-linux-arm64.zip`,
+    `ffmpeg-${version}-linux-armv7l.zip`,
+    `ffmpeg-${version}-linux-ia32.zip`,
+    `ffmpeg-${version}-linux-x64.zip`,
+    `ffmpeg-${version}-mas-x64.zip`,
+    `ffmpeg-${version}-win32-ia32.zip`,
+    `ffmpeg-${version}-win32-x64.zip`,
+    `SHASUMS256.txt`
   ]
-  return patterns.map(pattern => pattern.replace(/{{VERSION}}/g, version))
+  return patterns
 }
 
 function s3UrlsForVersion (version) {
-  const bucket = 'https://gh-contractor-zcbenz.s3.amazonaws.com/'
+  const bucket = `https://gh-contractor-zcbenz.s3.amazonaws.com/`
   const patterns = [
-    'atom-shell/dist/{{VERSION}}/iojs-{{VERSION}}-headers.tar.gz',
-    'atom-shell/dist/{{VERSION}}/iojs-{{VERSION}}.tar.gz',
-    'atom-shell/dist/{{VERSION}}/node-{{VERSION}}.tar.gz',
-    'atom-shell/dist/{{VERSION}}/node.lib',
-    'atom-shell/dist/{{VERSION}}/win-x64/iojs.lib',
-    'atom-shell/dist/{{VERSION}}/win-x86/iojs.lib',
-    'atom-shell/dist/{{VERSION}}/x64/node.lib',
-    'atom-shell/dist/{{VERSION}}/SHASUMS.txt',
-    'atom-shell/dist/{{VERSION}}/SHASUMS256.txt',
-    'atom-shell/dist/index.json'
+    `${bucket}atom-shell/dist/${version}/iojs-${version}-headers.tar.gz`,
+    `${bucket}atom-shell/dist/${version}/iojs-${version}.tar.gz`,
+    `${bucket}atom-shell/dist/${version}/node-${version}.tar.gz`,
+    `${bucket}atom-shell/dist/${version}/node.lib`,
+    `${bucket}atom-shell/dist/${version}/win-x64/iojs.lib`,
+    `${bucket}atom-shell/dist/${version}/win-x86/iojs.lib`,
+    `${bucket}atom-shell/dist/${version}/x64/node.lib`,
+    `${bucket}atom-shell/dist/${version}/SHASUMS.txt`,
+    `${bucket}atom-shell/dist/${version}/SHASUMS256.txt`,
+    `${bucket}atom-shell/dist/index.json`
   ]
-  return patterns.map(pattern => bucket + pattern.replace(/{{VERSION}}/g, version))
+  return patterns
 }
 
 function checkVersion () {
-  console.log('Verifying that app version matches package version.')
+  console.log(`Verifying that app version matches package version ${pkgVersion}.`)
   let startScript = path.join(__dirname, 'start.py')
-  let appVersion = runScript(startScript, ['--version'])
-  check((appVersion === pkgVersion), `App version ${appVersion} matches ` +
+  let appVersion = runScript(startScript, ['--version']).trim()
+  check((pkgVersion.indexOf(appVersion) === 0), `App version ${appVersion} matches ` +
     `package version ${pkgVersion}.`, true)
 }
 
@@ -167,38 +183,54 @@ function uploadIndexJson () {
 }
 
 async function createReleaseShasums (release) {
-  console.log(`Creating uploading the release SHASUMS.`)
+  let fileName = 'SHASUMS256.txt'
+  let existingAssets = release.assets.filter(asset => asset.name === fileName)
+  if (existingAssets.length > 0) {
+    console.log(`${fileName} already exists on GitHub; deleting before creating new file.`)
+    await github.repos.deleteAsset({
+      owner: 'electron',
+      repo: 'electron',
+      id: existingAssets[0].id
+    }).catch(err => {
+      console.log(`${fail} Error deleting ${fileName} on GitHub:`, err)
+    })
+  }
+  console.log(`Creating and uploading the release ${fileName}.`)
   let scriptPath = path.join(__dirname, 'merge-electron-checksums.py')
   let checksums = runScript(scriptPath, ['-v', pkgVersion])
-  let filePath = await saveShaSumFile(checksums)
-  await uploadShasumFile(filePath, release)
+  console.log(`${pass} Generated release SHASUMS.`)
+  let filePath = await saveShaSumFile(checksums, fileName)
+  console.log(`${pass} Created ${fileName} file.`)
+  await uploadShasumFile(filePath, fileName, release)
+  console.log(`${pass} Successfully uploaded ${fileName} to GitHub.`)
 }
 
-async function uploadShasumFile (filePath, release) {
+async function uploadShasumFile (filePath, fileName, release) {
   let githubOpts = {
     owner: 'electron',
     repo: 'electron',
     id: release.id,
-    filePath
+    filePath,
+    name: fileName
   }
   return await github.repos.uploadAsset(githubOpts)
     .catch(err => {
-      console.log(`{$fail} Error uploading ${filePath} to GitHub:`, err)
+      console.log(`${fail} Error uploading ${filePath} to GitHub:`, err)
       process.exit(1)
     })
 }
 
-function saveShaSumFile (checksums) {
+function saveShaSumFile (checksums, fileName) {
   return new Promise((resolve, reject) => {
-    temp.open('SHASUMS256.txt', (err, info) => {
+    temp.open(fileName, (err, info) => {
       if (err) {
-        console.log(`${fail} Could not create SHASUMS256.txt file`)
+        console.log(`${fail} Could not create ${fileName} file`)
         process.exit(1)
       } else {
         fs.writeFileSync(info.fd, checksums)
         fs.close(info.fd, (err) => {
           if (err) {
-            console.log(`${fail} Could close SHASUMS256.txt file`)
+            console.log(`${fail} Could close ${fileName} file`)
             process.exit(1)
           }
           resolve(info.path)
@@ -213,11 +245,12 @@ async function publishRelease (release) {
     owner: 'electron',
     repo: 'electron',
     id: release.id,
+    tag_name: release.tag_name,
     draft: false
   }
   return await github.repos.editRelease(githubOpts)
     .catch(err => {
-      console.log(`{$fail} Error publishing release:`, err)
+      console.log(`${fail} Error publishing release:`, err)
       process.exit(1)
     })
 }
@@ -233,8 +266,10 @@ async function makeRelease (releaseToValidate) {
     uploadNodeShasums()
     uploadIndexJson()
     await createReleaseShasums(draftRelease)
+    // Fetch latest version of release before verifying
+    draftRelease = await getDraftRelease(pkgVersion, true)
     await validateReleaseAssets(draftRelease)
-    await publishRelease()
+    await publishRelease(draftRelease)
     await cleanupReleaseBranch()
     console.log(`${pass} SUCCESS!!! Release has been published. Please run ` +
       `"npm run publish-to-npm" to publish release to npm.`)
@@ -253,13 +288,48 @@ async function makeTempDir () {
   })
 }
 
-function downloadFiles (urls, directory, quiet) {
+async function verifyAssets (release) {
+  let downloadDir = await makeTempDir()
+  let githubOpts = {
+    owner: 'electron',
+    repo: 'electron',
+    headers: {
+      Accept: 'application/octet-stream'
+    }
+  }
+  console.log(`Downloading files from GitHub to verify shasums`)
+  let shaSumFile = 'SHASUMS256.txt'
+  let filesToCheck = await Promise.all(release.assets.map(async (asset) => {
+    githubOpts.id = asset.id
+    let assetDetails = await github.repos.getAsset(githubOpts)
+    await downloadFiles(assetDetails.meta.location, downloadDir, false, asset.name)
+    return asset.name
+  })).catch(err => {
+    console.log(`${fail} Error downloading files from GitHub`, err)
+    process.exit(1)
+  })
+  filesToCheck = filesToCheck.filter(fileName => fileName !== shaSumFile)
+  let checkerOpts
+  await validateChecksums({
+    algorithm: 'sha256',
+    filesToCheck,
+    fileDirectory: downloadDir,
+    shaSumFile,
+    checkerOpts,
+    fileSource: 'GitHub'
+  })
+}
+
+function downloadFiles (urls, directory, quiet, targetName) {
   return new Promise((resolve, reject) => {
     let nuggetOpts = {
       dir: directory
     }
     if (quiet) {
       nuggetOpts.quiet = quiet
+    }
+    if (targetName) {
+      nuggetOpts.target = targetName
     }
     nugget(urls, nuggetOpts, (err) => {
       if (err) {
