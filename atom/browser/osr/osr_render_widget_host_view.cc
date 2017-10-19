@@ -301,8 +301,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       factory->GetContextFactoryPrivate();
   compositor_.reset(
       new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
-                         content::GetContextFactory(), context_factory_private,
-                         base::ThreadTaskRunnerHandle::Get()));
+        content::GetContextFactory(), context_factory_private,
+        base::ThreadTaskRunnerHandle::Get(), false));
   compositor_->SetAcceleratedWidget(native_window_->GetAcceleratedWidget());
   compositor_->SetRootLayer(root_layer_.get());
 #endif
