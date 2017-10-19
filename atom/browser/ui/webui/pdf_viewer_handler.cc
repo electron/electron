@@ -58,7 +58,9 @@ void PopulateStreamInfo(base::DictionaryValue* stream_info,
 PdfViewerHandler::PdfViewerHandler(const std::string& src)
     : stream_(nullptr), original_url_(src) {}
 
-PdfViewerHandler::~PdfViewerHandler() {}
+PdfViewerHandler::~PdfViewerHandler() {
+  RemoveObserver();
+}
 
 void PdfViewerHandler::SetPdfResourceStream(content::StreamInfo* stream) {
   stream_ = stream;
@@ -90,15 +92,11 @@ void PdfViewerHandler::RegisterMessages() {
 }
 
 void PdfViewerHandler::OnJavascriptAllowed() {
-  auto zoom_controller = WebContentsZoomController::FromWebContents(
-    web_ui()->GetWebContents());
-  zoom_controller->AddObserver(this);
+  AddObserver();
 }
 
 void PdfViewerHandler::OnJavascriptDisallowed() {
-  auto zoom_controller = WebContentsZoomController::FromWebContents(
-    web_ui()->GetWebContents());
-  zoom_controller->RemoveObserver(this);
+  RemoveObserver();
 }
 
 void PdfViewerHandler::Initialize(const base::ListValue* args) {
@@ -212,6 +210,18 @@ void PdfViewerHandler::OnZoomLevelChanged(content::WebContents* web_contents,
       base::Value("onZoomLevelChanged"),
       base::Value(content::ZoomLevelToZoomFactor(level)));
   }
+}
+
+void PdfViewerHandler::AddObserver() {
+  auto zoom_controller =
+      WebContentsZoomController::FromWebContents(web_ui()->GetWebContents());
+  zoom_controller->AddObserver(this);
+}
+
+void PdfViewerHandler::RemoveObserver() {
+  auto zoom_controller =
+      WebContentsZoomController::FromWebContents(web_ui()->GetWebContents());
+  zoom_controller->RemoveObserver(this);
 }
 
 }  // namespace atom
