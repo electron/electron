@@ -38,12 +38,8 @@ class MacHelper :
     return color;
   }
 
-  void BrowserCompositorMacSendBeginFrame(
-      const cc::BeginFrameArgs& args) override {
-    view_->render_widget_host()->Send(
-      new ViewMsg_BeginFrame(view_->render_widget_host()->GetRoutingID(),
-                             args));
-  }
+  void BrowserCompositorMacOnBeginFrame() override {}
+
   // ui::AcceleratedWidgetMacNSView:
   NSView* AcceleratedWidgetGetNSView() const override {
     return [view_->window()->GetNativeWindow() contentView];

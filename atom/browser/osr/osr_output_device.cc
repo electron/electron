@@ -84,12 +84,16 @@ void OffScreenOutputDevice::SetActive(bool active, bool paint) {
     return;
   active_ = active;
 
-  if (active_ && paint)
+  if (!active_ && !pending_damage_rect_.IsEmpty() && paint)
     OnPaint(gfx::Rect(viewport_pixel_size_));
 }
 
 void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {
   gfx::Rect rect = damage_rect;
+  if (!pending_damage_rect_.IsEmpty()) {
+    rect.Union(pending_damage_rect_);
+    pending_damage_rect_.SetRect(0, 0, 0, 0);
+  }
 
   rect.Intersect(gfx::Rect(viewport_pixel_size_));
   if (rect.IsEmpty())
