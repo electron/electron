@@ -28,8 +28,8 @@ function uploadToGitHub () {
     if (retry < 4) {
       console.log(`Error uploading ${fileName} to GitHub, will retry.  Error was:`, err)
       retry++
-      github.repos.getAssets(githubOpts).then(assets => {
-        let existingAssets = assets.data.filter(asset => asset.name === fileName)
+      github.repos.getRelease(githubOpts).then(release => {
+        let existingAssets = release.data.assets.filter(asset => asset.name === fileName)
         if (existingAssets.length > 0) {
           console.log(`${fileName} already exists; will delete before retrying upload.`)
           github.repos.deleteAsset({
