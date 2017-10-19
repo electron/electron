@@ -35,6 +35,7 @@ class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
 
   std::unique_ptr<SkCanvas> canvas_;
   std::unique_ptr<SkBitmap> bitmap_;
+  gfx::Rect pending_damage_rect_;
 
   DISALLOW_COPY_AND_ASSIGN(OffScreenOutputDevice);
 };
