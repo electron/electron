@@ -991,11 +991,8 @@ describe('chromium feature', function () {
       protocol: 'file',
       slashes: true
     })
-	
-		
-	
 
-    function createBrowserWindow ({plugins,preload}) {
+    function createBrowserWindow ({plugins, preload}) {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1004,34 +1001,31 @@ describe('chromium feature', function () {
         }
       })
     }
-	
-	
-	
-	function testPDFIsLoadedInSubFrame(page,preloadFile,done) {
-		const pagePath = url.format({
-		  pathname: path.join(fixtures, 'pages',page ).replace(/\\/g, '/'),
-		  protocol: 'file',
-		  slashes: true
-		})
-		  
-		createBrowserWindow({plugins: true,preload:preloadFile})
-		  ipcMain.once('pdf-loaded', function (event, state) {
-		    assert.equal(state, 'success')
-			done()
-		  })
-		  w.webContents.on('page-title-updated', function () {
-			const parsedURL = url.parse(w.webContents.getURL(), true)
-			assert.equal(parsedURL.protocol, 'chrome:')
-			assert.equal(parsedURL.hostname, 'pdf-viewer')
-			assert.equal(parsedURL.query.src, pagePath)
-			assert.equal(w.webContents.getTitle(), 'cat.pdf')
-		  })
-		  w.webContents.loadURL(pagePath)
-	}
-		
-	
+
+    function testPDFIsLoadedInSubFrame (page, preloadFile, done) {
+      const pagePath = url.format({
+        pathname: path.join(fixtures, 'pages', page).replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      })
+
+      createBrowserWindow({plugins: true, preload: preloadFile})
+      ipcMain.once('pdf-loaded', function (event, state) {
+        assert.equal(state, 'success')
+        done()
+      })
+      w.webContents.on('page-title-updated', function () {
+        const parsedURL = url.parse(w.webContents.getURL(), true)
+        assert.equal(parsedURL.protocol, 'chrome:')
+        assert.equal(parsedURL.hostname, 'pdf-viewer')
+        assert.equal(parsedURL.query.src, pagePath)
+        assert.equal(w.webContents.getTitle(), 'cat.pdf')
+      })
+      w.webContents.loadURL(pagePath)
+    }
+
     it('opens when loading a pdf resource as top level navigation', function (done) {
-      createBrowserWindow({plugins: true,preload:'preload-pdf-loaded.js'})
+      createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
       ipcMain.once('pdf-loaded', function (event, state) {
         assert.equal(state, 'success')
         done()
@@ -1047,7 +1041,7 @@ describe('chromium feature', function () {
     })
 
     it('opens a pdf link given params, the query string should be escaped', function (done) {
-      createBrowserWindow({plugins: true,preload:'preload-pdf-loaded.js'})
+      createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
       ipcMain.once('pdf-loaded', function (event, state) {
         assert.equal(state, 'success')
         done()
@@ -1065,7 +1059,7 @@ describe('chromium feature', function () {
     })
 
     it('should download a pdf when plugins are disabled', function (done) {
-      createBrowserWindow({plugins: false,preload:'preload-pdf-loaded.js'})
+      createBrowserWindow({plugins: false, preload: 'preload-pdf-loaded.js'})
       ipcRenderer.sendSync('set-download-option', false, false)
       ipcRenderer.once('download-done', function (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) {
         assert.equal(state, 'completed')
@@ -1078,7 +1072,7 @@ describe('chromium feature', function () {
     })
 
     it('should not open when pdf is requested as sub resource', function (done) {
-      createBrowserWindow({plugins: true,preload:'preload-pdf-loaded.js'})
+      createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
       webFrame.registerURLSchemeAsPrivileged('file', {
         secure: false,
         bypassCSP: false,
@@ -1093,16 +1087,14 @@ describe('chromium feature', function () {
         done(e)
       })
     })
-	
-	it('opens when loading a pdf resource in a iframe', function (done) {
-      testPDFIsLoadedInSubFrame('pdf-in-iframe.html','preload-pdf-loaded-in-subframe.js',done)
+
+    it('opens when loading a pdf resource in a iframe', function (done) {
+      testPDFIsLoadedInSubFrame('pdf-in-iframe.html', 'preload-pdf-loaded-in-subframe.js', done)
     })
-	
-	it('opens when loading a pdf resource in a nested iframe', function (done) {
-      testPDFIsLoadedInSubFrame('pdf-in-nested-iframe.html','preload-pdf-loaded-in-nested-subframe.js',done)
+
+    it('opens when loading a pdf resource in a nested iframe', function (done) {
+      testPDFIsLoadedInSubFrame('pdf-in-nested-iframe.html', 'preload-pdf-loaded-in-nested-subframe.js', done)
     })
-	
-	
   })
 
   describe('window.alert(message, title)', function () {
