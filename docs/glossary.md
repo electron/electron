@@ -91,9 +91,11 @@ free software licenses, and is a widely-used alternative to commercial
 proprietary products like InstallShield. [electron-builder] supports NSIS
 as a build target.
 
-## OSR
+### OSR
 
-Off-screen rendering.
+OSR (Off-screen rendering) can be used for loading heavy page in 
+background and then displaying it after (it will be much faster). 
+It allows you to render page without showing it on screen.
 
 ### process
 
