@@ -465,7 +465,7 @@ describe('app module', () => {
     })
   })
 
-  xdescribe('select-client-certificate event', () => {
+  describe('select-client-certificate event', () => {
     let w = null
 
     beforeEach(() => {
