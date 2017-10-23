@@ -45,6 +45,7 @@
 #include "content/public/common/content_switches.h"
 #include "media/audio/audio_manager.h"
 #include "native_mate/object_template_builder.h"
+#include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
@@ -420,9 +421,16 @@ bool NotificationCallbackWrapper(
   return !Browser::Get()->is_shutting_down();
 }
 
+void GotPrivateKey(std::shared_ptr<content::ClientCertificateDelegate> delegate,
+                   scoped_refptr<net::X509Certificate> cert,
+                   scoped_refptr<net::SSLPrivateKey> private_key) {
+  delegate->ContinueWithCertificate(cert, private_key);
+}
+
 void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
+    std::shared_ptr<net::ClientCertIdentityList> identities,
     mate::Arguments* args) {
   if (args->Length() == 2) {
     delegate->ContinueWithCertificate(nullptr, nullptr);
@@ -450,8 +458,14 @@ void OnClientCertificateSelected(
       data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
-    // FIXME: Pass private key as a second argument.
-    delegate->ContinueWithCertificate(cert, nullptr);
+    for (size_t i = 0; i < identities->size(); ++i) {
+      if (cert->Equals((*identities)[i]->certificate())) {
+        net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
+            std::move((*identities)[i]),
+            base::Bind(&GotPrivateKey, delegate, std::move(cert)));
+        break;
+      }
+    }
   }
 }
 
@@ -713,20 +727,23 @@ void App::SelectClientCertificate(
   for (const std::unique_ptr<net::ClientCertIdentity>& identity : identities)
     client_certs.push_back(identity->certificate());
 
+  auto shared_identities =
+      std::make_shared<net::ClientCertIdentityList>(std::move(identities));
+
   bool prevent_default =
       Emit("select-client-certificate",
            WebContents::CreateFrom(isolate(), web_contents),
-           cert_request_info->host_and_port.ToString(),
-           std::move(client_certs),
-           base::Bind(&OnClientCertificateSelected,
-                      isolate(),
-                      shared_delegate));
+           cert_request_info->host_and_port.ToString(), std::move(client_certs),
+           base::Bind(&OnClientCertificateSelected, isolate(), shared_delegate,
+                      shared_identities));
 
   // Default to first certificate from the platform store.
   if (!prevent_default) {
-    scoped_refptr<net::X509Certificate> cert = identities[0]->certificate();
-    // FIXME: Pass private key as a second argument.
-    shared_delegate->ContinueWithCertificate(cert, nullptr);
+    scoped_refptr<net::X509Certificate> cert =
+        (*shared_identities)[0]->certificate();
+    net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
+        std::move((*shared_identities)[0]),
+        base::Bind(&GotPrivateKey, shared_delegate, std::move(cert)));
   }
 }
 
