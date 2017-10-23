@@ -5,7 +5,7 @@ This document describes the process for releasing a new version of Electron.
 ## Determine which branch to release from
 
 - **If releasing beta,** create a new branch from `master`.
-- **If releasing a stable version,** create a new branch from the beta branch you're stablizing.
+- **If releasing a stable version,** create a new branch from the beta branch you're stabilizing.
 
 ## Find out what version change is needed
 Run `npm run prepare-release -- --notesOnly` to view auto generated release
@@ -168,7 +168,7 @@ required files have been created for the release.
 
 ## Merge temporary branch
 Once the release builds have finished, merge the `release` branch back into
-master using the `merge-release` script.
+the source release branch using the `merge-release` script.
 If the branch cannot be successfully merged back this script will automatically
 rebase the `release` branch and push the changes which will trigger the release
 builds again, which means you will need to wait for the release builds to run
