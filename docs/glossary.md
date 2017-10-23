@@ -93,9 +93,9 @@ as a build target.
 
 ### OSR
 
-OSR (Off-screen rendering) can be used for, e.g., loading heavy page in 
-background and then displaying it after (it will be much more faster). 
-It allows you to render page without show on screen.
+OSR (Off-screen rendering) can be used for loading heavy page in 
+background and then displaying it after (it will be much faster). 
+It allows you to render page without showing it on screen.
 
 ### process
 
