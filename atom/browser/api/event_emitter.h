@@ -80,9 +80,10 @@ class EventEmitter : public Wrappable<T> {
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
     v8::Local<v8::Object> wrapper = GetWrapper();
-    if (wrapper.IsEmpty())
+    if (wrapper.IsEmpty()) {
       return false;
-     v8::Local<v8::Object> event = internal::CreateJSEvent(
+    }
+    v8::Local<v8::Object> event = internal::CreateJSEvent(
         isolate(), wrapper, sender, message);
     return EmitWithEvent(name, event, args...);
   }
