@@ -74,7 +74,7 @@ Returns:
 
 Emitted when the notification is closed by manual intervention from the user.
 
-This event is not guarunteed to be emitted in all cases where the notification
+This event is not guaranteed to be emitted in all cases where the notification
 is closed.
 
 #### Event: 'reply' _macOS_
