@@ -173,7 +173,7 @@ required[, optional]
 如果参数或方法对某些平台是唯一的，那么这些平台将使用数据类型后面的空格分隔的斜体列表来表示。 值可以是 `macOS`，`Windows` 或 `Linux`
 
 ```markdown
-* `animate` Boolean (optional) _macOS_ _Windows_ - Animate the thing.
+* `animate` Boolean (optional) _macOS_ _Windows_ - 进行动画处理的事情.
 ```
 
 `Array` 类型的参数, 必须在指定数组下面的描述中描述可能包含的元素.
