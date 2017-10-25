@@ -4,7 +4,7 @@ const {ipcRenderer, remote} = require('electron')
 const {BrowserWindow, Menu, MenuItem} = remote
 const {closeWindow} = require('./window-helpers')
 
-describe('menu module', function () {
+describe.only('menu module', function () {
   describe('Menu.buildFromTemplate', function () {
     it('should be able to attach extra fields', function () {
       const menu = Menu.buildFromTemplate([
@@ -229,6 +229,7 @@ describe('menu module', function () {
           label: '3'
         }
       ])
+
       const item = new MenuItem({ label: 'inserted' })
 
       menu.insert(1, item)
@@ -236,6 +237,27 @@ describe('menu module', function () {
       assert.equal(menu.items[1].label, 'inserted')
       assert.equal(menu.items[2].label, '2')
       assert.equal(menu.items[3].label, '3')
+    })
+  })
+
+  describe('Menu.append', function () {
+    it('should add the item to the end of the menu', function () {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: '1'
+        }, {
+          label: '2'
+        }, {
+          label: '3'
+        }
+      ])
+      const item = new MenuItem({ label: 'inserted' })
+
+      menu.append(item)
+      assert.equal(menu.items[0].label, '1')
+      assert.equal(menu.items[1].label, '2')
+      assert.equal(menu.items[2].label, '3')
+      assert.equal(menu.items[3].label, 'inserted')
     })
   })
 
@@ -267,6 +289,19 @@ describe('menu module', function () {
       })
     })
   })
+
+  describe('Menu.setApplicationMenu', function () {
+    const menu = Menu.buildFromTemplate([
+      {
+        label: '1'
+      }, {
+        label: '2'
+      }
+    ])
+    Menu.setApplicationMenu(menu)
+    assert.notEqual(Menu.getApplicationMenu(), null)
+  })
+
   describe('MenuItem.click', function () {
     it('should be called with the item object passed', function (done) {
       const menu = Menu.buildFromTemplate([
