@@ -4,7 +4,7 @@ const {ipcRenderer, remote} = require('electron')
 const {BrowserWindow, Menu, MenuItem} = remote
 const {closeWindow} = require('./window-helpers')
 
-describe.only('menu module', function () {
+describe('menu module', function () {
   describe('Menu.buildFromTemplate', function () {
     it('should be able to attach extra fields', function () {
       const menu = Menu.buildFromTemplate([
