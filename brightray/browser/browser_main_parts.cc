@@ -168,9 +168,8 @@ BrowserMainParts::~BrowserMainParts() {
 void OverrideAppLogsPath() {
 #if defined(OS_WIN)
   std::wstring app_name = base::UTF8ToWide(GetApplicationName());
-  std::wstring drive = _wgetenv(L"HOMEDRIVE"));
-  std::wstring path = _wgetenv(L"HOMEPATH"));
-  std::wstring log_path = drive + "\\" + path + L"\\AppData\\Roaming\\";
+  std::wstring home = _wgetenv(L"HOMEDRIVE") + "\\" +_wgetenv(L"HOMEPATH");
+  std::wstring log_path = home + L"\\AppData\\Roaming\\";
   std::wstring app_log_path = log_path + app_name + L"\\logs";
 #else
   std::string app_name = GetApplicationName();
