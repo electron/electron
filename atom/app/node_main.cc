@@ -12,6 +12,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/task_scheduler/task_scheduler.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
@@ -40,6 +41,10 @@ int NodeMain(int argc, char *argv[]) {
 
     gin::V8Initializer::LoadV8Snapshot();
     gin::V8Initializer::LoadV8Natives();
+
+    // V8 requires a task scheduler apparently
+    base::TaskScheduler::CreateAndStartWithDefaultParams("Electron");
+
     JavascriptEnvironment gin_env;
 
     int exec_argc;
@@ -87,6 +92,13 @@ int NodeMain(int argc, char *argv[]) {
 
     node::FreeEnvironment(env);
   }
+
+  // According to "src/gin/shell/gin_main.cc":
+  //
+  // gin::IsolateHolder waits for tasks running in TaskScheduler in its
+  // destructor and thus must be destroyed before TaskScheduler starts skipping
+  // CONTINUE_ON_SHUTDOWN tasks.
+  base::TaskScheduler::GetInstance()->Shutdown();
 
   v8::V8::Dispose();
 
