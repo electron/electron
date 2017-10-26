@@ -167,8 +167,7 @@ BrowserMainParts::~BrowserMainParts() {
 #if defined(OS_WIN) || defined(OS_LINUX)
 void OverrideAppLogsPath() {
   base::FilePath path;
-  bool success = PathService::Get(brightray::DIR_APP_DATA, &path);
-  if (success) {
+  if (PathService::Get(brightray::DIR_APP_DATA, &path)) {
     path = path.Append(base::UTF8ToWide(GetApplicationName()));
 #if defined(OS_WIN)
     path = path.Append(L"logs");
