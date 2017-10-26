@@ -140,6 +140,12 @@
           '<(libchromiumcontent_src_dir)/v8',
           '<(libchromiumcontent_src_dir)/v8/include',
         ],
+        'defines': [
+          # Export V8 symbols from node.dll / libnode.so
+          'BUILDING_V8_SHARED',
+          'BUILDING_V8_PLATFORM_SHARED',
+          'BUILDING_V8_BASE_SHARED',
+        ],
         'conditions': [
           ['OS=="mac" and libchromiumcontent_component==0', {
             # -all_load is the "whole-archive" on macOS.

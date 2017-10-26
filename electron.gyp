@@ -241,7 +241,8 @@
         'GLIB_DISABLE_DEPRECATION_WARNINGS',
         # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
-        'V8_SHARED',
+
+        # Import V8 symbols from shared library (node.dll / libnode.so)
         'USING_V8_SHARED',
         'USING_V8_PLATFORM_SHARED',
         'USING_V8_BASE_SHARED',

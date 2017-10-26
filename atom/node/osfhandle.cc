@@ -59,6 +59,10 @@ void ReferenceSymbols() {
   icu::DateIntervalFormat::createInstance(UnicodeString(),
                                           icu::Locale::getRoot(), status);
   reinterpret_cast<icu::Transliterator*>(nullptr)->clone();
+  UParseError parse_error;
+  icu::Transliterator::createFromRules(UnicodeString(), UnicodeString(),
+                                       UTRANS_FORWARD, parse_error,
+                                       status);
 }
 
 }  // namespace node
