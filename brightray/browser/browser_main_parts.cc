@@ -168,13 +168,9 @@ BrowserMainParts::~BrowserMainParts() {
 void OverrideAppLogsPath() {
   base::FilePath path;
   if (PathService::Get(brightray::DIR_APP_DATA, &path)) {
-    path = path.Append(base::UTF8ToWide(GetApplicationName()));
-#if defined(OS_WIN)
-    path = path.Append(L"logs");
-#else
-    path = path.Append("logs");
-#endif
-    PathService::Override(DIR_APP_LOGS, base::FilePath(path));
+    path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+    PathService::Override(DIR_APP_LOGS, path);
   }
 }
 #endif
