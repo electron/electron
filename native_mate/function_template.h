@@ -21,6 +21,9 @@ namespace internal {
 
 struct Destroyable {
   static void Destroy(Arguments* args) {
+    if (IsDestroyed(args))
+      return;
+
     v8::Local<v8::Object> holder = args->GetHolder();
     delete static_cast<WrappableBase*>(
         holder->GetAlignedPointerFromInternalField(0));
