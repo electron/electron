@@ -10,7 +10,7 @@ const {BrowserWindow, webContents, ipcMain, session} = remote
 
 const isCi = remote.getGlobal('isCi')
 
-describe.only('webContents module', () => {
+describe('webContents module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w
 
