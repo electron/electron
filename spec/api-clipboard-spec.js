@@ -8,7 +8,7 @@ describe('clipboard module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
 
   describe('clipboard.readImage()', () => {
-    it('returns NativeImage intance', () => {
+    it('returns NativeImage instance', () => {
       const p = path.join(fixtures, 'assets', 'logo.png')
       const i = nativeImage.createFromPath(p)
       clipboard.writeImage(p)
