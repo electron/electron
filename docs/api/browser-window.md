@@ -1443,6 +1443,10 @@ removed in future Electron releases.
 
 * `browserView` [BrowserView](browser-view.md)
 
+#### `win.getBrowserView()` _Experimental_
+
+Returns `BrowserView` - an attached BrowserView. Returns `null` if none is attached.
+
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
 
