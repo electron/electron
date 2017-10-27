@@ -169,10 +169,10 @@ void Notification::NotificationDisplayed() {
 }
 
 void Notification::NotificationDestroyed() {
-  Emit("close");
 }
 
 void Notification::NotificationClosed() {
+  Emit("close");
 }
 
 // Showing notifications
