@@ -104,6 +104,13 @@ HTML5 Notification implementation, simply instantiating a `new Notification` doe
 not immediately show it to the user, you need to call this method before the OS
 will display it.
 
+If the notification has been shown before, this method will dismiss the previously
+shown notification and create a new one with identical properties.
+
+#### `notification.close()`
+
+Dismisses the notification.
+
 ### Playing Sounds
 
 On macOS, you can specify the name of the sound you'd like to play when the
