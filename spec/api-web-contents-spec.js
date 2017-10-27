@@ -10,7 +10,7 @@ const {BrowserWindow, webContents, ipcMain, session} = remote
 
 const isCi = remote.getGlobal('isCi')
 
-describe('webContents module', () => {
+describe.only('webContents module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w
 
@@ -199,7 +199,7 @@ describe('webContents module', () => {
 
   describe('sendInputEvent(event)', () => {
     beforeEach((done) => {
-      w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'base-page.html')}`)
+      w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'key-events.html')}`)
       w.webContents.once('did-finish-load', () => done())
     })
 
@@ -315,7 +315,7 @@ describe('webContents module', () => {
           done()
         })
         w.show()
-        w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'base-page.html')}`)
+        w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'focus-web-contents.html')}`)
       })
     })
   })
