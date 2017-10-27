@@ -1073,8 +1073,17 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     cpu_dict.Set("percentCPUUsage",
         process_metric.second->metrics->GetPlatformIndependentCPUUsage()
         / processor_count);
+
+#if !defined(OS_WIN)
     cpu_dict.Set("idleWakeupsPerSecond",
         process_metric.second->metrics->GetIdleWakeupsPerSecond());
+#else
+    // Chrome's underlying process_metrics.cc will throw a non-fatal warning
+    // that this method isn't implemented on Windows, so set it to 0 instead
+    // of calling it
+    cpu_dict.Set("idleWakeupsPerSecond", 0);
+#endif
+
     pid_dict.Set("cpu", cpu_dict);
     pid_dict.Set("pid", process_metric.second->pid);
     pid_dict.Set("type",
