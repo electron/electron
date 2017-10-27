@@ -966,7 +966,7 @@ describe('<webview> tag', function () {
     }
 
     it('emits when using navigator.getUserMedia api', (done) => {
-      if (isCI) return done
+      if (isCI) return done()
 
       webview.addEventListener('ipc-message', (e) => {
         assert.equal(e.channel, 'message')

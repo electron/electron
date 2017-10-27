@@ -57,9 +57,7 @@ describe('webRequest module', () => {
     })
 
     it('can filter URLs', (done) => {
-      const filter = {
-        urls: [defaultURL + 'filter/*']
-      }
+      const filter = { urls: [defaultURL + 'filter/*'] }
       ses.webRequest.onBeforeRequest(filter, (details, callback) => {
         callback({cancel: true})
       })
@@ -68,7 +66,7 @@ describe('webRequest module', () => {
         success: (data) => {
           assert.equal(data, '/nofilter/test')
           $.ajax({
-            url: `${defaultURL}nofilter/test`,
+            url: `${defaultURL}filter/test`,
             success: () => done('unexpected success'),
             error: () => done()
           })
