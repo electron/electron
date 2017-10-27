@@ -4,6 +4,8 @@
 
 #include "brightray/browser/notification_presenter.h"
 
+#include <vector>
+
 #include "brightray/browser/notification.h"
 
 namespace brightray {
@@ -21,6 +23,14 @@ base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
   Notification* notification = CreateNotificationObject(delegate);
   notifications_.insert(notification);
   return notification->GetWeakPtr();
+}
+
+void NotificationPresenter::RemoveAllNotifications() {
+  // Copy notifications to avoid iterator invalidation
+  std::vector<Notification*> notifications_to_remove(
+      notifications_.begin(), notifications_.end());
+  for (Notification* notification : notifications_to_remove)
+    RemoveNotification(notification);
 }
 
 void NotificationPresenter::RemoveNotification(Notification* notification) {

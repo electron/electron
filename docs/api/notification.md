@@ -27,6 +27,10 @@ The `Notification` class has the following static methods:
 
 Returns `Boolean` - Whether or not desktop notifications are supported on the current system
 
+#### `Notification.closeAll()`
+
+Closes all previously shown notifications.
+
 ### `new Notification([options])` _Experimental_
 
 * `options` Object
@@ -103,6 +107,10 @@ Immediately shows the notification to the user, please note this means unlike th
 HTML5 Notification implementation, simply instantiating a `new Notification` does
 not immediately show it to the user, you need to call this method before the OS
 will display it.
+
+#### `notification.close()`
+
+Closes the notification.
 
 ### Playing Sounds
 

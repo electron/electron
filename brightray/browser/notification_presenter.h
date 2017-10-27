@@ -22,6 +22,7 @@ class NotificationPresenter {
 
   base::WeakPtr<Notification> CreateNotification(
       NotificationDelegate* delegate);
+  virtual void RemoveAllNotifications();
 
   std::set<Notification*> notifications() const { return notifications_; }
 

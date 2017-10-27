@@ -26,6 +26,7 @@ class Notification : public mate::TrackableObject<Notification>,
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
   static bool IsSupported();
+  static void CloseAll();
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -45,6 +46,7 @@ class Notification : public mate::TrackableObject<Notification>,
   ~Notification() override;
 
   void Show();
+  void Close();
 
   // Prop Getters
   base::string16 GetTitle() const;

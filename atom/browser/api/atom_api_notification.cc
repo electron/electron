@@ -196,8 +196,21 @@ void Notification::Show() {
   }
 }
 
+void Notification::Close() {
+  if (notification_) {
+    notification_->Destroy();
+  }
+}
+
 bool Notification::IsSupported() {
   return !!brightray::BrowserClient::Get()->GetNotificationPresenter();
+}
+
+void Notification::CloseAll() {
+  auto presenter = brightray::BrowserClient::Get()->GetNotificationPresenter();
+  if (presenter) {
+    presenter->RemoveAllNotifications();
+  }
 }
 
 // static
@@ -207,6 +220,7 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("show", &Notification::Show)
+      .SetMethod("close", &Notification::Close)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::GetSubtitle,
                    &Notification::SetSubtitle)
@@ -242,6 +256,7 @@ void Initialize(v8::Local<v8::Object> exports,
            Notification::GetConstructor(isolate)->GetFunction());
 
   dict.SetMethod("isSupported", &Notification::IsSupported);
+  dict.SetMethod("closeAll", &Notification::CloseAll);
 }
 
 }  // namespace
