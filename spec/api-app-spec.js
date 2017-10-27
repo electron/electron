@@ -38,7 +38,7 @@ describe('electron module', () => {
   })
 })
 
-describe.only('app module', () => {
+describe('app module', () => {
   let server, secureUrl
   const certPath = path.join(__dirname, 'fixtures', 'certificates')
 
