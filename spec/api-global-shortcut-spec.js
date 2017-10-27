@@ -1,9 +1,9 @@
-const {globalShortcut, remote} = require('electron')
+const {globalShortcut} = require('electron').remote
+
 const assert = require('assert')
+const isCI = require('electron').remote.getGlobal('isCi')
 
-const isCI = remote.getGlobal('isCi')
-
-describe('globalShortcut module', () => {
+describe.only('globalShortcut module', () => {
   if (isCI && process.platform === 'win32') return
 
   beforeEach(() => {
