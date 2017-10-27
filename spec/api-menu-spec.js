@@ -4,9 +4,9 @@ const {ipcRenderer, remote} = require('electron')
 const {BrowserWindow, Menu, MenuItem} = remote
 const {closeWindow} = require('./window-helpers')
 
-describe('menu module', function () {
-  describe('Menu.buildFromTemplate', function () {
-    it('should be able to attach extra fields', function () {
+describe('Menu module', () => {
+  describe('Menu.buildFromTemplate', () => {
+    it('should be able to attach extra fields', () => {
       const menu = Menu.buildFromTemplate([
         {
           label: 'text',
@@ -16,7 +16,7 @@ describe('menu module', function () {
       assert.equal(menu.items[0].extra, 'field')
     })
 
-    it('does not modify the specified template', function () {
+    it('does not modify the specified template', () => {
       const template = ipcRenderer.sendSync('eval', "var template = [{label: 'text', submenu: [{label: 'sub'}]}];\nrequire('electron').Menu.buildFromTemplate(template);\ntemplate;")
       assert.deepStrictEqual(template, [
         {
@@ -30,8 +30,8 @@ describe('menu module', function () {
       ])
     })
 
-    it('does not throw exceptions for undefined/null values', function () {
-      assert.doesNotThrow(function () {
+    it('does not throw exceptions for undefined/null values', () => {
+      assert.doesNotThrow(() => {
         Menu.buildFromTemplate([
           {
             label: 'text',
@@ -45,8 +45,8 @@ describe('menu module', function () {
       })
     })
 
-    describe('Menu.buildFromTemplate should reorder based on item position specifiers', function () {
-      it('should position before existing item', function () {
+    describe('Menu.buildFromTemplate should reorder based on item position specifiers', () => {
+      it('should position before existing item', () => {
         const menu = Menu.buildFromTemplate([
           {
             label: '2',
@@ -65,7 +65,7 @@ describe('menu module', function () {
         assert.equal(menu.items[2].label, '3')
       })
 
-      it('should position after existing item', function () {
+      it('should position after existing item', () => {
         const menu = Menu.buildFromTemplate([
           {
             label: '1',
@@ -84,7 +84,7 @@ describe('menu module', function () {
         assert.equal(menu.items[2].label, '3')
       })
 
-      it('should position at endof existing separator groups', function () {
+      it('should position at endof existing separator groups', () => {
         const menu = Menu.buildFromTemplate([
           {
             type: 'separator',
@@ -128,7 +128,7 @@ describe('menu module', function () {
         assert.equal(menu.items[7].label, 'c')
       })
 
-      it('should create separator group if endof does not reference existing separator group', function () {
+      it('should create separator group if endof does not reference existing separator group', () => {
         const menu = Menu.buildFromTemplate([
           {
             label: 'a',
@@ -166,7 +166,7 @@ describe('menu module', function () {
         assert.equal(menu.items[7].label, '3')
       })
 
-      it('should continue inserting items at next index when no specifier is present', function () {
+      it('should continue inserting items at next index when no specifier is present', () => {
         const menu = Menu.buildFromTemplate([
           {
             label: '4',
@@ -195,8 +195,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('Menu.getMenuItemById', function () {
-    it('should return the item with the given id', function () {
+  describe('Menu.getMenuItemById', () => {
+    it('should return the item with the given id', () => {
       const menu = Menu.buildFromTemplate([
         {
           label: 'View',
@@ -218,8 +218,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('Menu.insert', function () {
-    it('should store item in @items by its index', function () {
+  describe('Menu.insert', () => {
+    it('should store item in @items by its index', () => {
       const menu = Menu.buildFromTemplate([
         {
           label: '1'
@@ -240,8 +240,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('Menu.append', function () {
-    it('should add the item to the end of the menu', function () {
+  describe('Menu.append', () => {
+    it('should add the item to the end of the menu', () => {
       const menu = Menu.buildFromTemplate([
         {
           label: '1'
@@ -261,7 +261,7 @@ describe('menu module', function () {
     })
   })
 
-  describe('Menu.popup', function () {
+  describe('Menu.popup', () => {
     let w = null
     let menu
 
@@ -279,18 +279,18 @@ describe('menu module', function () {
     })
 
     afterEach(() => {
-      return closeWindow(w).then(function () { w = null })
+      return closeWindow(w).then(() => { w = null })
     })
 
-    describe('when called with async: true', function () {
-      it('returns immediately', function () {
+    describe('when called with async: true', () => {
+      it('returns immediately', () => {
         menu.popup(w, {x: 100, y: 100, async: true})
         menu.closePopup(w)
       })
     })
   })
 
-  describe('Menu.setApplicationMenu', function () {
+  describe('Menu.setApplicationMenu', () => {
     const menu = Menu.buildFromTemplate([
       {
         label: '1'
@@ -302,7 +302,7 @@ describe('menu module', function () {
     assert.notEqual(Menu.getApplicationMenu(), null)
   })
 
-  describe('MenuItem.click', function () {
+  describe('MenuItem.click', () => {
     it('should be called with the item object passed', function (done) {
       const menu = Menu.buildFromTemplate([
         {
@@ -318,8 +318,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('MenuItem with checked property', function () {
-    it('clicking an checkbox item should flip the checked property', function () {
+  describe('MenuItem with checked property', () => {
+    it('clicking an checkbox item should flip the checked property', () => {
       const menu = Menu.buildFromTemplate([
         {
           label: 'text',
@@ -331,7 +331,7 @@ describe('menu module', function () {
       assert.equal(menu.items[0].checked, true)
     })
 
-    it('clicking an radio item should always make checked property true', function () {
+    it('clicking an radio item should always make checked property true', () => {
       const menu = Menu.buildFromTemplate([
         {
           label: 'text',
@@ -344,7 +344,7 @@ describe('menu module', function () {
       assert.equal(menu.items[0].checked, true)
     })
 
-    it('at least have one item checked in each group', function () {
+    it('at least have one item checked in each group', () => {
       const template = []
       for (let i = 0; i <= 10; i++) {
         template.push({
@@ -365,7 +365,7 @@ describe('menu module', function () {
       assert.equal(menu.items[12].checked, true)
     })
 
-    it('should assign groupId automatically', function () {
+    it('should assign groupId automatically', () => {
       const template = []
       for (let i = 0; i <= 10; i++) {
         template.push({
@@ -390,7 +390,7 @@ describe('menu module', function () {
       }
     })
 
-    it("setting 'checked' should flip other items' 'checked' property", function () {
+    it("setting 'checked' should flip other items' 'checked' property", () => {
       const template = []
       for (let i = 0; i <= 10; i++) {
         template.push({
@@ -435,8 +435,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('MenuItem command id', function () {
-    it('cannot be overwritten', function () {
+  describe('MenuItem command id', () => {
+    it('cannot be overwritten', () => {
       const item = new MenuItem({label: 'item'})
 
       const commandId = item.commandId
@@ -446,8 +446,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('MenuItem with invalid type', function () {
-    it('throws an exception', function () {
+  describe('MenuItem with invalid type', () => {
+    it('throws an exception', () => {
       assert.throws(() => {
         Menu.buildFromTemplate([
           {
@@ -459,8 +459,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('MenuItem with submenu type and missing submenu', function () {
-    it('throws an exception', function () {
+  describe('MenuItem with submenu type and missing submenu', () => {
+    it('throws an exception', () => {
       assert.throws(() => {
         Menu.buildFromTemplate([
           {
@@ -472,8 +472,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('MenuItem role', function () {
-    it('includes a default label and accelerator', function () {
+  describe('MenuItem role', () => {
+    it('includes a default label and accelerator', () => {
       let item = new MenuItem({role: 'close'})
       assert.equal(item.label, process.platform === 'darwin' ? 'Close Window' : 'Close')
       assert.equal(item.accelerator, undefined)
@@ -506,8 +506,8 @@ describe('menu module', function () {
     })
   })
 
-  describe('MenuItem editMenu', function () {
-    it('includes a default submenu layout when submenu is empty', function () {
+  describe('MenuItem editMenu', () => {
+    it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({role: 'editMenu'})
       assert.equal(item.label, 'Edit')
       assert.equal(item.submenu.items[0].role, 'undo')
@@ -530,15 +530,15 @@ describe('menu module', function () {
       }
     })
 
-    it('overrides default layout when submenu is specified', function () {
+    it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({role: 'editMenu', submenu: [{role: 'close'}]})
       assert.equal(item.label, 'Edit')
       assert.equal(item.submenu.items[0].role, 'close')
     })
   })
 
-  describe('MenuItem windowMenu', function () {
-    it('includes a default submenu layout when submenu is empty', function () {
+  describe('MenuItem windowMenu', () => {
+    it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({role: 'windowMenu'})
       assert.equal(item.label, 'Window')
       assert.equal(item.submenu.items[0].role, 'minimize')
@@ -550,15 +550,15 @@ describe('menu module', function () {
       }
     })
 
-    it('overrides default layout when submenu is specified', function () {
+    it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({role: 'windowMenu', submenu: [{role: 'copy'}]})
       assert.equal(item.label, 'Window')
       assert.equal(item.submenu.items[0].role, 'copy')
     })
   })
 
-  describe('MenuItem with custom properties in constructor', function () {
-    it('preserves the custom properties', function () {
+  describe('MenuItem with custom properties in constructor', () => {
+    it('preserves the custom properties', () => {
       const template = [{
         label: 'menu 1',
         customProp: 'foo',
