@@ -4,7 +4,7 @@ const path = require('path')
 const {closeWindow} = require('./window-helpers')
 const BrowserWindow = require('electron').remote.BrowserWindow
 
-describe.only('debugger module', () => {
+describe('debugger module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w = null
 

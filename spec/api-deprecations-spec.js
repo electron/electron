@@ -1,27 +1,26 @@
 const assert = require('assert')
-const deprecations = require('electron').deprecations
+const {deprecations, deprecate} = require('electron')
 
-describe('deprecations', function () {
-  beforeEach(function () {
+describe('deprecations', () => {
+  beforeEach(() => {
     deprecations.setHandler(null)
     process.throwDeprecation = true
   })
 
-  it('allows a deprecation handler function to be specified', function () {
-    var messages = []
+  it('allows a deprecation handler function to be specified', () => {
+    const messages = []
 
-    deprecations.setHandler(function (message) {
+    deprecations.setHandler((message) => {
       messages.push(message)
     })
 
-    require('electron').deprecate.log('this is deprecated')
-
+    deprecate.log('this is deprecated')
     assert.deepEqual(messages, ['this is deprecated'])
   })
 
-  it('throws an exception if no deprecation handler is specified', function () {
-    assert.throws(function () {
-      require('electron').deprecate.log('this is deprecated')
+  it('throws an exception if no deprecation handler is specified', () => {
+    assert.throws(() => {
+      deprecate.log('this is deprecated')
     }, /this is deprecated/)
   })
 })
