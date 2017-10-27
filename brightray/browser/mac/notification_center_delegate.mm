@@ -33,7 +33,7 @@
       notification->NotificationReplied([notif.response.string UTF8String]);
     } else if (notif.activationType == NSUserNotificationActivationTypeActionButtonClicked) {
       notification->NotificationButtonClicked();
-    } else {
+    } else if (notif.activationType == NSUserNotificationActivationTypeContentsClicked) {
       notification->NotificationClicked(); 
     }
   }
