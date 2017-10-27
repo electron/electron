@@ -11,46 +11,42 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
-describe('crashReporter module', function () {
-  if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) {
-    return
-  }
+describe('crashReporter module', () => {
+  if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
 
-  var originalTempDirectory = null
-  var tempDirectory = null
+  let originalTempDirectory = null
+  let tempDirectory = null
 
-  before(function () {
+  before(() => {
     tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
     originalTempDirectory = app.getPath('temp')
     app.setPath('temp', tempDirectory)
   })
 
-  after(function () {
+  after(() => {
     app.setPath('temp', originalTempDirectory)
   })
 
-  var fixtures = path.resolve(__dirname, 'fixtures')
+  const fixtures = path.resolve(__dirname, 'fixtures')
   const generateSpecs = (description, browserWindowOpts) => {
-    describe(description, function () {
-      var w = null
-      var stopServer = null
+    describe(description, () => {
+      let w = null
+      let stopServer = null
 
-      beforeEach(function () {
+      beforeEach(() => {
         stopServer = null
         w = new BrowserWindow(Object.assign({
           show: false
         }, browserWindowOpts))
       })
 
-      afterEach(function () {
-        return closeWindow(w).then(function () { w = null })
-      })
+      afterEach(() => closeWindow(w).then(() => { w = null }))
 
-      afterEach(function () {
+      afterEach(() => {
         stopCrashService()
       })
 
-      afterEach(function (done) {
+      afterEach((done) => {
         if (stopServer != null) {
           stopServer(done)
         } else {
@@ -123,12 +119,8 @@ describe('crashReporter module', function () {
           crashReporter.setUploadToServer(false)
         }
         const testDone = (uploaded) => {
-          if (uploaded) {
-            return done(new Error('Uploaded crash report'))
-          }
-          if (process.platform === 'darwin') {
-            crashReporter.setUploadToServer(true)
-          }
+          if (uploaded) return done(new Error('Uploaded crash report'))
+          if (process.platform === 'darwin') crashReporter.setUploadToServer(true)
           assert(fs.existsSync(dumpFile))
           done()
         }
@@ -136,13 +128,10 @@ describe('crashReporter module', function () {
         let pollInterval
         const pollDumpFile = () => {
           fs.readdir(crashesDir, (err, files) => {
-            if (err) {
-              return
-            }
+            if (err) return
             const dumps = files.filter((file) => /\.dmp$/.test(file) && !existingDumpFiles.has(file))
-            if (!dumps.length) {
-              return
-            }
+            if (!dumps.length) return
+
             assert.equal(1, dumps.length)
             dumpFile = path.join(crashesDir, dumps[0])
             clearInterval(pollInterval)
@@ -210,22 +199,18 @@ describe('crashReporter module', function () {
     }
   })
 
-  describe('.start(options)', function () {
-    it('requires that the companyName and submitURL options be specified', function () {
-      assert.throws(function () {
-        crashReporter.start({
-          companyName: 'Missing submitURL'
-        })
+  describe('.start(options)', () => {
+    it('requires that the companyName and submitURL options be specified', () => {
+      assert.throws(() => {
+        crashReporter.start({companyName: 'Missing submitURL'})
       }, /submitURL is a required option to crashReporter\.start/)
-      assert.throws(function () {
-        crashReporter.start({
-          submitURL: 'Missing companyName'
-        })
+      assert.throws(() => {
+        crashReporter.start({submitURL: 'Missing companyName'})
       }, /companyName is a required option to crashReporter\.start/)
     })
 
-    it('can be called multiple times', function () {
-      assert.doesNotThrow(function () {
+    it('can be called multiple times', () => {
+      assert.doesNotThrow(() => {
         crashReporter.start({
           companyName: 'Umbrella Corporation',
           submitURL: 'http://127.0.0.1/crashes'
@@ -239,12 +224,12 @@ describe('crashReporter module', function () {
     })
   })
 
-  describe('.get/setUploadToServer', function () {
-    it('throws an error when called from the renderer process', function () {
+  describe('.get/setUploadToServer', () => {
+    it('throws an error when called from the renderer process', () => {
       assert.throws(() => require('electron').crashReporter.getUploadToServer())
     })
 
-    it('can be read/set from the main process', function () {
+    it('can be read/set from the main process', () => {
       if (process.platform === 'darwin') {
         crashReporter.start({
           companyName: 'Umbrella Corporation',
@@ -279,9 +264,9 @@ const waitForCrashReport = () => {
 }
 
 const startServer = ({callback, processType, done}) => {
-  var called = false
-  var server = http.createServer((req, res) => {
-    var form = new multiparty.Form()
+  let called = false
+  let server = http.createServer((req, res) => {
+    const form = new multiparty.Form()
     form.parse(req, (error, fields) => {
       if (error) throw error
       if (called) return
@@ -335,7 +320,7 @@ const startServer = ({callback, processType, done}) => {
     for (const connection of activeConnections) {
       connection.destroy()
     }
-    server.close(function () {
+    server.close(() => {
       done()
     })
   }

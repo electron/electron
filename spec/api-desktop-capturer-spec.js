@@ -1,33 +1,31 @@
 const assert = require('assert')
-const desktopCapturer = require('electron').desktopCapturer
+const {desktopCapturer, remote} = require('electron')
 
-const isCI = require('electron').remote.getGlobal('isCi')
+const isCI = remote.getGlobal('isCi')
 
-describe('desktopCapturer', function () {
-  if (isCI && process.platform === 'win32') {
-    return
-  }
+describe('desktopCapturer', () => {
+  if (isCI && process.platform === 'win32') return
 
-  it('should return a non-empty array of sources', function (done) {
+  it('should return a non-empty array of sources', (done) => {
     desktopCapturer.getSources({
       types: ['window', 'screen']
-    }, function (error, sources) {
+    }, (error, sources) => {
       assert.equal(error, null)
       assert.notEqual(sources.length, 0)
       done()
     })
   })
 
-  it('throws an error for invalid options', function (done) {
-    desktopCapturer.getSources(['window', 'screen'], function (error) {
+  it('throws an error for invalid options', (done) => {
+    desktopCapturer.getSources(['window', 'screen'], (error) => {
       assert.equal(error.message, 'Invalid options')
       done()
     })
   })
 
-  it('does not throw an error when called more than once (regression)', function (done) {
-    var callCount = 0
-    var callback = function (error, sources) {
+  it('does not throw an error when called more than once (regression)', (done) => {
+    let callCount = 0
+    const callback = (error, sources) => {
       callCount++
       assert.equal(error, null)
       assert.notEqual(sources.length, 0)
@@ -38,9 +36,9 @@ describe('desktopCapturer', function () {
     desktopCapturer.getSources({types: ['window', 'screen']}, callback)
   })
 
-  it('responds to subsequest calls of different options', function (done) {
-    var callCount = 0
-    var callback = function (error, sources) {
+  it('responds to subsequest calls of different options', (done) => {
+    let callCount = 0
+    const callback = (error, sources) => {
       callCount++
       assert.equal(error, null)
       if (callCount === 2) done()
