@@ -90,6 +90,21 @@ describe('BrowserView module', () => {
     })
   })
 
+  describe('BrowserWindow.getBrowserView()', () => {
+    it('returns the set view', () => {
+      view = new BrowserView()
+      w.setBrowserView(view)
+      assert.notEqual(view.id, null)
+      let view2 = w.getBrowserView()
+      assert.equal(view2.webContents.id, view.webContents.id)
+    })
+
+    it('returns null if none is set', () => {
+      let view = w.getBrowserView()
+      assert.equal(null, view)
+    })
+  })
+
   describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
     it('points to owning window', () => {
       view = new BrowserView()
