@@ -50,7 +50,7 @@ describe('chromium feature', () => {
     it('calls its callbacks', (done) => {
       navigator.webkitGetUserMedia({
         audio: true,
-        video: false,
+        video: false
       }, () => done(),
          () => done())
     })
@@ -443,7 +443,7 @@ describe('chromium feature', () => {
     before((done) => {
       protocol.registerFileProtocol(scheme, (request, callback) => {
         callback(`${fixtures}/pages/window-opener-location.html`)
-      }, (error) =>   done(error))
+      }, (error) => done(error))
     })
 
     after(() => {
@@ -766,7 +766,7 @@ describe('chromium feature', () => {
 
   describe('storage', () => {
     it('requesting persitent quota works', (done) => {
-      navigator.webkitPersistentStorage.requestQuota(1024 * 1024,  (grantedBytes) => {
+      navigator.webkitPersistentStorage.requestQuota(1024 * 1024, (grantedBytes) => {
         assert.equal(grantedBytes, 1048576)
         done()
       })
