@@ -64,7 +64,7 @@ class TrackableObject : public TrackableObjectBase,
   void MarkDestroyed() {
     v8::Local<v8::Object> wrapper = Wrappable<T>::GetWrapper();
     if (!wrapper.IsEmpty()) {
-      Wrappable<T>::GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
+      wrapper->SetAlignedPointerInInternalField(0, nullptr);
     }
   }
 
