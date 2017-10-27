@@ -62,16 +62,21 @@ void AutoUpdater::OnError(const std::string& message,
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
-  auto errorObject = error->ToObject(
-    isolate()->GetCurrentContext()).ToLocalChecked();
 
   // add two new params for better error handling
-  errorObject->Set(mate::StringToV8(isolate(), "code"),
-                   v8::Integer::New(isolate(), code));
-  errorObject->Set(mate::StringToV8(isolate(), "domain"),
-                   mate::StringToV8(isolate(), domain));
+  auto context = isolate()->GetCurrentContext();
+  ignore_result(v8::Object::Cast(*error)->DefineOwnProperty(
+        context,
+        mate::StringToV8(isolate(), "code"),
+        v8::Integer::New(isolate(), code),
+        v8::PropertyAttribute::ReadOnly));
+  ignore_result(v8::Object::Cast(*error)->DefineOwnProperty(
+        context,
+        mate::StringToV8(isolate(), "domain"),
+        mate::StringToV8(isolate(), domain),
+        v8::PropertyAttribute::ReadOnly));
 
-  mate::EmitEvent(isolate(), GetWrapper(), "error", errorObject, message);
+  mate::EmitEvent(isolate(), GetWrapper(), "error", error, message);
 }
 
 void AutoUpdater::OnCheckingForUpdate() {
