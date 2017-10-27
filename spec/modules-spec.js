@@ -18,10 +18,10 @@ describe('modules support', () => {
         require('runas')
       })
 
-      it('can be required in node binary', function (done) {
+      it('can be required in node binary', (done) => {
         const runas = path.join(fixtures, 'module', 'runas.js')
         const child = require('child_process').fork(runas)
-        child.on('message', function (msg) {
+        child.on('message', (msg) => {
           assert.equal(msg, 'ok')
           done()
         })
@@ -44,8 +44,8 @@ describe('modules support', () => {
     describe('q', () => {
       const Q = require('q')
       describe('Q.when', () => {
-        it('emits the fullfil callback', function (done) {
-          Q(true).then(function (val) {
+        it('emits the fullfil callback', (done) => {
+          Q(true).then((val) => {
             assert.equal(val, true)
             done()
           })
@@ -92,7 +92,7 @@ describe('modules support', () => {
         ])
 
         modulePath = process.resourcesPath + '-foo'
-        let nodeModulePaths = Module._nodeModulePaths(modulePath)
+        const nodeModulePaths = Module._nodeModulePaths(modulePath)
         assert(nodeModulePaths.includes(path.join(modulePath, 'node_modules')))
         assert(nodeModulePaths.includes(path.join(modulePath, '..', 'node_modules')))
 
