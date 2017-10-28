@@ -1,6 +1,5 @@
 const assert = require('assert')
 const {autoUpdater} = require('electron').remote
-const squirrelUpdater = require('')
 const {ipcRenderer} = require('electron')
 
 // Skip autoUpdater tests in MAS build.
