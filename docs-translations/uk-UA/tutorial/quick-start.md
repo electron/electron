@@ -39,9 +39,9 @@ GUI, створюючи веб-сторінки
 "Попросити" головний процес зробити ці дії.
 
 У Electron є декілька способів спілкування між процесам. Наприклад, модулі
-[`ipcRenderer`](../api/ipc-renderer.md) и [`ipcMain`](../api/ipc-main.md) використовується
-для відправки повідомлень, а [remote](../api/remote.md) - для комунікації в RPC стилі.
-В FAQ також є пункт про те що, [як розділити інформацію між сторінками][share-data]
+[`ipcRenderer`](https://electron.atom.io/docs/api/ipc-renderer/) и [`ipcMain`](https://electron.atom.io/docs/api/ipc-main/) використовується
+для відправки повідомлень, а [remote](https://electron.atom.io/docs/api/remote/) - для комунікації в RPC стилі.
+
 
 ## Перший додаток на Electron
 
@@ -220,4 +220,3 @@ $ cd electron-quick-start
 $ npm install && npm start
 ```
 
-[share-data]: ../faq/electron-faq.md#how-to-share-data-between-web-pages
