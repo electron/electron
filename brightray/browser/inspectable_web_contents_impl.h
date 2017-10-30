@@ -113,6 +113,8 @@ class InspectableWebContentsImpl :
                      const std::string& value) override;
   void RemovePreference(const std::string& name) override;
   void ClearPreferences() override;
+  void RegisterExtensionsAPI(const std::string& origin,
+                             const std::string& script) override;
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);
@@ -129,9 +131,10 @@ class InspectableWebContentsImpl :
   void WebContentsDestroyed() override;
   void OnWebContentsFocused(
       content::RenderWidgetHost* render_widget_host) override;
-  void DidStartNavigationToPendingEntry(
-      const GURL& url,
-      content::ReloadType reload_type) override;
+  void ReadyToCommitNavigation(
+      content::NavigationHandle* navigation_handle) override;
+  void DidFinishNavigation(
+      content::NavigationHandle* navigation_handle) override;
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
@@ -191,6 +194,9 @@ class InspectableWebContentsImpl :
   std::unique_ptr<content::WebContents> web_contents_;
   std::unique_ptr<content::WebContents> devtools_web_contents_;
   std::unique_ptr<InspectableWebContentsView> view_;
+
+  using ExtensionsAPIs = std::map<std::string, std::string>;
+  ExtensionsAPIs extensions_api_;
 
   base::WeakPtrFactory<InspectableWebContentsImpl> weak_factory_;
 
