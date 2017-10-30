@@ -200,6 +200,8 @@ DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(
   d->RegisterHandler("setPreference", &Delegate::SetPreference, delegate);
   d->RegisterHandler("removePreference", &Delegate::RemovePreference, delegate);
   d->RegisterHandler("clearPreferences", &Delegate::ClearPreferences, delegate);
+  d->RegisterHandler("registerExtensionsAPI", &Delegate::RegisterExtensionsAPI,
+                     delegate);
   return d;
 }
 
