@@ -11,7 +11,7 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
-describe.only('crashReporter module', () => {
+describe('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
 
   let originalTempDirectory = null
@@ -197,11 +197,10 @@ describe.only('crashReporter module', () => {
     }
   })
 
-  // complete
   describe('getProductName', () => {
     it('returns the product name if one is specified', () => {
       const name = crashReporter.getProductName()
-      if(process.platform === 'win32') {
+      if (process.platform === 'win32') {
         assert.equal(name, 'Zombies')
       } else {
         assert.equal(name, 'Electron Test')
@@ -240,7 +239,6 @@ describe.only('crashReporter module', () => {
     })
   })
 
-  // complete
   describe('getCrashesDirectory', () => {
     it('correctly returns the directory', () => {
       const crashesDir = crashReporter.getCrashesDirectory()
@@ -254,7 +252,6 @@ describe.only('crashReporter module', () => {
     })
   })
 
-  // complete
   describe('getUploadedReports', () => {
     it('returns an array of reports', () => {
       const reports = crashReporter.getUploadedReports()
@@ -262,7 +259,6 @@ describe.only('crashReporter module', () => {
     })
   })
 
-  // complete
   describe('getLastCrashReport', () => {
     it('correctly returns the most recent report', () => {
       const reports = crashReporter.getUploadedReports()
@@ -271,7 +267,6 @@ describe.only('crashReporter module', () => {
     })
   })
 
-  // complete
   describe('getUploadToServer()', () => {
     it('throws an error when called from the renderer process', () => {
       assert.throws(() => require('electron').crashReporter.getUploadToServer())
@@ -298,7 +293,6 @@ describe.only('crashReporter module', () => {
     })
   })
 
-  // complete
   describe('setUploadToServer(uploadToServer)', () => {
     it('throws an error when called from the renderer process', () => {
       assert.throws(() => require('electron').crashReporter.setUploadToServer('arg'))
@@ -327,8 +321,32 @@ describe.only('crashReporter module', () => {
     })
   })
 
-  describe('setExtraParameter', () => {
-    //
+  describe('Parameters', () => {
+    it('returns all of the current parameters', () => {
+      const parameters = crashReporter.getParameters()
+      assert(typeof parameters === Object)
+    })
+    it('adds a parameter', () => {
+      // only run on MacOS
+      if (process.platform !== 'darwin') return
+
+      crashReporter.addParameter('hello', 'world')
+      const updatedParams = crashReporter.getParameters()
+
+      assert(updatedParams.includes('hello'))
+    })
+    it('removes a parameter', () => {
+      // only run on MacOS
+      if (process.platform !== 'darwin') return
+
+      crashReporter.addParameter('hello', 'world')
+      const originalParams = crashReporter.getParameters()
+      assert(originalParams.includes('hello'))
+
+      crashReporter.removeExtraParameter('hello')
+      const updatedParams = crashReporter.getParameters()
+      assert(!updatedParams.includes('hello'))
+    })
   })
 })
 
