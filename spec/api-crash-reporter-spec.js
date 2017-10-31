@@ -35,9 +35,7 @@ describe('crashReporter module', () => {
 
       beforeEach(() => {
         stopServer = null
-        w = new BrowserWindow(Object.assign({
-          show: false
-        }, browserWindowOpts))
+        w = new BrowserWindow(Object.assign({ show: false }, browserWindowOpts))
       })
 
       afterEach(() => closeWindow(w).then(() => { w = null }))
@@ -199,7 +197,22 @@ describe('crashReporter module', () => {
     }
   })
 
-  describe('.start(options)', () => {
+  // complete
+  describe('getProductName', () => {
+    it('returns the product name if one is specified', () => {
+      const name = crashReporter.getProductName()
+      assert.equal(name, 'Zombies')
+    })
+  })
+
+  describe('getTempDirectory', () => {
+    it('returns temp directory for app if one is specified', () => {
+      const tempDir = crashReporter.getTempDirectory()
+      assert.equal(tempDir, app.getPath('temp'))
+    })
+  })
+
+  describe('start(options)', () => {
     it('requires that the companyName and submitURL options be specified', () => {
       assert.throws(() => {
         crashReporter.start({companyName: 'Missing submitURL'})
@@ -208,7 +221,6 @@ describe('crashReporter module', () => {
         crashReporter.start({submitURL: 'Missing companyName'})
       }, /companyName is a required option to crashReporter\.start/)
     })
-
     it('can be called multiple times', () => {
       assert.doesNotThrow(() => {
         crashReporter.start({
@@ -223,13 +235,37 @@ describe('crashReporter module', () => {
       })
     })
   })
+  // complete
+  describe('getCrashesDirectory', () => {
+    it('correctly returns the directory', () => {
+      const crashesDir = crashReporter.getCrashesDirectory()
+      const dir = `${app.getPath('temp')}Zombies Crashes`
+      assert.equal(crashesDir, dir)
+    })
+  })
 
-  describe('.get/setUploadToServer', () => {
+  describe('getUploadedReports', () => {
+    it('returns an array of reports', () => {
+      const reports = crashReporter.getUploadedReports()
+      assert(typeof reports === 'object')
+    })
+  })
+
+  describe('getLastCrashReport', () => {
+    it('correctly returns the most recent report', () => {
+      // TODO(codebytere): figure this out
+      const reports = crashReporter.getUploadedReports()
+      const lastReport = reports[0]
+      assert(lastReport != null)
+    })
+  })
+
+  // complete
+  describe('getUploadToServer()', () => {
     it('throws an error when called from the renderer process', () => {
       assert.throws(() => require('electron').crashReporter.getUploadToServer())
     })
-
-    it('can be read/set from the main process', () => {
+    it('returns true when uploadToServer is true', () => {
       if (process.platform === 'darwin') {
         crashReporter.start({
           companyName: 'Umbrella Corporation',
@@ -237,12 +273,51 @@ describe('crashReporter module', () => {
           uploadToServer: true
         })
         assert.equal(crashReporter.getUploadToServer(), true)
+      }
+    })
+    it('returns false when uploadToServer is false', () => {
+      if (process.platform === 'darwin') {
+        crashReporter.start({
+          companyName: 'Umbrella Corporation',
+          submitURL: 'http://127.0.0.1/crashes',
+          uploadToServer: false
+        })
+        assert.equal(crashReporter.getUploadToServer(), false)
+      }
+    })
+  })
+
+  // complete
+  describe('setUploadToServer(uploadToServer)', () => {
+    it('throws an error when called from the renderer process', () => {
+      assert.throws(() => require('electron').crashReporter.setUploadToServer('arg'))
+    })
+    it('sets uploadToServer false when called with false', () => {
+      if (process.platform === 'darwin') {
+        crashReporter.start({
+          companyName: 'Umbrella Corporation',
+          submitURL: 'http://127.0.0.1/crashes',
+          uploadToServer: true
+        })
         crashReporter.setUploadToServer(false)
         assert.equal(crashReporter.getUploadToServer(), false)
-      } else {
+      }
+    })
+    it('sets uploadToServer true when called with true', () => {
+      if (process.platform === 'darwin') {
+        crashReporter.start({
+          companyName: 'Umbrella Corporation',
+          submitURL: 'http://127.0.0.1/crashes',
+          uploadToServer: false
+        })
+        crashReporter.setUploadToServer(true)
         assert.equal(crashReporter.getUploadToServer(), true)
       }
     })
+  })
+
+  describe('setExtraParameter', () => {
+    //
   })
 })
 
