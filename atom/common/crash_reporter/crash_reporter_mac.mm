@@ -107,10 +107,11 @@ void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
 
 void CrashReporterMac::SetExtraParameter(const std::string& key,
                                          const std::string& value) {
-  if (simple_string_dictionary_)
+  if (simple_string_dictionary_) {
     SetCrashKeyValue(key, value);
-  else
+  } else {
     upload_parameters_[key] = value;
+  }
 }
 
 void CrashReporterMac::RemoveExtraParameter(const std::string& key) {

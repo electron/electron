@@ -321,31 +321,49 @@ describe('crashReporter module', () => {
     })
   })
 
-  describe('Parameters', () => {
+  describe.only('Parameters', () => {
     it('returns all of the current parameters', () => {
+      crashReporter.start({
+        companyName: 'Umbrella Corporation',
+        submitURL: 'http://127.0.0.1/crashes'
+      })
+
       const parameters = crashReporter.getParameters()
-      assert(typeof parameters === Object)
+      assert(typeof parameters === 'object')
     })
     it('adds a parameter', () => {
       // only run on MacOS
       if (process.platform !== 'darwin') return
 
-      crashReporter.addParameter('hello', 'world')
+      crashReporter.start({
+        companyName: 'Umbrella Corporation',
+        submitURL: 'http://127.0.0.1/crashes'
+      })
+
+      crashReporter.setExtraParameter('hello', 'world')
       const updatedParams = crashReporter.getParameters()
 
-      assert(updatedParams.includes('hello'))
+      console.log(updatedParams)
+
+      assert('hello' in updatedParams)
     })
     it('removes a parameter', () => {
       // only run on MacOS
       if (process.platform !== 'darwin') return
 
-      crashReporter.addParameter('hello', 'world')
+      crashReporter.start({
+        companyName: 'Umbrella Corporation',
+        submitURL: 'http://127.0.0.1/crashes'
+      })
+
+      crashReporter.setExtraParameter('hello', 'world')
       const originalParams = crashReporter.getParameters()
-      assert(originalParams.includes('hello'))
+      console.log(originalParams)
+      assert('hello' in originalParams)
 
       crashReporter.removeExtraParameter('hello')
       const updatedParams = crashReporter.getParameters()
-      assert(!updatedParams.includes('hello'))
+      assert(!('hello' in originalParams))
     })
   })
 })

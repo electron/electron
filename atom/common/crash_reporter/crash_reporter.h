@@ -40,7 +40,7 @@ class CrashReporter {
   virtual void SetExtraParameter(const std::string& key,
                                  const std::string& value);
   virtual void RemoveExtraParameter(const std::string& key);
-  virtual CrashReporter::StringMap GetParameters();
+  virtual std::map<std::string, std::string> GetParameters();
 
  protected:
   CrashReporter();
