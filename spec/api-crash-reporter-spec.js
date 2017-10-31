@@ -11,7 +11,7 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
-describe('crashReporter module', () => {
+describe.only('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
 
   let originalTempDirectory = null
@@ -201,7 +201,11 @@ describe('crashReporter module', () => {
   describe('getProductName', () => {
     it('returns the product name if one is specified', () => {
       const name = crashReporter.getProductName()
-      assert.equal(name, 'Zombies')
+      if(process.platform === 'win32') {
+        assert.equal(name, 'Zombies')
+      } else {
+        assert.equal(name, 'Electron Test')
+      }
     })
   })
 
@@ -235,15 +239,22 @@ describe('crashReporter module', () => {
       })
     })
   })
+
   // complete
   describe('getCrashesDirectory', () => {
     it('correctly returns the directory', () => {
       const crashesDir = crashReporter.getCrashesDirectory()
-      const dir = `${app.getPath('temp')}Zombies Crashes`
+      let dir
+      if (process.platform === 'win32') {
+        dir = `${app.getPath('temp')}/Zombies Crashes`
+      } else {
+        dir = `${app.getPath('temp')}/Electron Test Crashes`
+      }
       assert.equal(crashesDir, dir)
     })
   })
 
+  // complete
   describe('getUploadedReports', () => {
     it('returns an array of reports', () => {
       const reports = crashReporter.getUploadedReports()
@@ -251,9 +262,9 @@ describe('crashReporter module', () => {
     })
   })
 
+  // complete
   describe('getLastCrashReport', () => {
     it('correctly returns the most recent report', () => {
-      // TODO(codebytere): figure this out
       const reports = crashReporter.getUploadedReports()
       const lastReport = reports[0]
       assert(lastReport != null)
