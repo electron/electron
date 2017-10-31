@@ -39,6 +39,9 @@ void RemoveExtraParameter(const std::string& key) {
   CrashReporter::GetInstance()->RemoveExtraParameter(key);
 }
 
+crash_reporter::CrashReporter::StringMap GetParameters() {
+  return CrashReporter::GetInstance()->GetParameters();
+}
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
@@ -46,7 +49,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   auto reporter = base::Unretained(CrashReporter::GetInstance());
   dict.SetMethod("start", base::Bind(&CrashReporter::Start, reporter));
   dict.SetMethod("setExtraParameter", &SetExtraParameter);
-  dict.SetMethod("removeExtraParameter", &SetExtraParameter);
+  dict.SetMethod("removeExtraParameter", &RemoveExtraParameter);
+  dict.SetMethod("getParameters", &GetParameters);
   dict.SetMethod("getUploadedReports",
                  base::Bind(&CrashReporter::GetUploadedReports, reporter));
   dict.SetMethod("setUploadToServer",
