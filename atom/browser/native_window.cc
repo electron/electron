@@ -118,7 +118,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
     SetPosition(gfx::Point(x, y));
 
-#if DEFINED(OS_WIN)
+#if defined(OS_WIN)
     // Dirty, dirty workaround for
     // https://github.com/electron/electron/issues/10862
     // Somehow, we need to call `SetBounds` twice to get
