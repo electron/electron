@@ -73,6 +73,13 @@ $ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
                        g++-arm-linux-gnueabihf
 ```
 
+Similarly for `arm64`, install the following:
+
+```bash
+$ sudo apt-get install libc6-dev-arm64-cross linux-libc-dev-arm64-cross \
+                       g++-aarch64-linux-gnu
+```
+
 And to cross-compile for `arm` or `ia32` targets, you should pass the
 `--target_arch` parameter to the `bootstrap.py` script:
 
