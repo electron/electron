@@ -11,7 +11,7 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
-describe('crashReporter module', () => {
+describe.only('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
 
   let originalTempDirectory = null
@@ -71,7 +71,6 @@ describe('crashReporter module', () => {
           done: done
         })
       })
-
       it('should send minidump when node processes crash', function (done) {
         if (process.env.APPVEYOR === 'True') return done()
         if (process.env.TRAVIS === 'true') return done()
@@ -104,7 +103,6 @@ describe('crashReporter module', () => {
           done: done
         })
       })
-
       it('should not send minidump if uploadToServer is false', function (done) {
         this.timeout(120000)
 
@@ -166,7 +164,6 @@ describe('crashReporter module', () => {
           done: testDone.bind(null, true)
         })
       })
-
       it('should send minidump with updated extra parameters', function (done) {
         if (process.env.APPVEYOR === 'True') return done()
         if (process.env.TRAVIS === 'true') return done()
@@ -178,12 +175,12 @@ describe('crashReporter module', () => {
             const crashUrl = url.format({
               protocol: 'file',
               pathname: path.join(fixtures, 'api', 'crash-restart.html'),
-              search: '?port=' + port
+              search: `?port=${port}`
             })
             w.loadURL(crashUrl)
           },
           processType: 'renderer',
-          done: done
+          done: done()
         })
       })
     })
@@ -271,7 +268,7 @@ describe('crashReporter module', () => {
     it('throws an error when called from the renderer process', () => {
       assert.throws(() => require('electron').crashReporter.getUploadToServer())
     })
-    it('returns true when uploadToServer is true', () => {
+    it('returns true when uploadToServer is set to true', () => {
       if (process.platform === 'darwin') {
         crashReporter.start({
           companyName: 'Umbrella Corporation',
@@ -281,13 +278,14 @@ describe('crashReporter module', () => {
         assert.equal(crashReporter.getUploadToServer(), true)
       }
     })
-    it('returns false when uploadToServer is false', () => {
+    it('returns false when uploadToServer is set to false', () => {
       if (process.platform === 'darwin') {
         crashReporter.start({
           companyName: 'Umbrella Corporation',
           submitURL: 'http://127.0.0.1/crashes',
-          uploadToServer: false
+          uploadToServer: true
         })
+        crashReporter.setUploadToServer(false)
         assert.equal(crashReporter.getUploadToServer(), false)
       }
     })
@@ -321,7 +319,7 @@ describe('crashReporter module', () => {
     })
   })
 
-  describe.only('Parameters', () => {
+  describe('Parameters', () => {
     it('returns all of the current parameters', () => {
       crashReporter.start({
         companyName: 'Umbrella Corporation',
@@ -343,8 +341,6 @@ describe('crashReporter module', () => {
       crashReporter.setExtraParameter('hello', 'world')
       const updatedParams = crashReporter.getParameters()
 
-      console.log(updatedParams)
-
       assert('hello' in updatedParams)
     })
     it('removes a parameter', () => {
@@ -358,12 +354,11 @@ describe('crashReporter module', () => {
 
       crashReporter.setExtraParameter('hello', 'world')
       const originalParams = crashReporter.getParameters()
-      console.log(originalParams)
       assert('hello' in originalParams)
 
       crashReporter.removeExtraParameter('hello')
       const updatedParams = crashReporter.getParameters()
-      assert(!('hello' in originalParams))
+      assert(!('hello' in updatedParams))
     })
   })
 })

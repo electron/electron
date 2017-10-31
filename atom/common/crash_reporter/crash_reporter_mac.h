@@ -5,6 +5,7 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_MAC_H_
 #define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_MAC_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -37,6 +38,7 @@ class CrashReporterMac : public CrashReporter {
   void SetExtraParameter(const std::string& key,
                          const std::string& value) override;
   void RemoveExtraParameter(const std::string& key) override;
+  std::map<std::string, std::string> GetParameters() override;
 
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterMac>;
