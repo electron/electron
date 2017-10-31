@@ -31,12 +31,12 @@ struct Converter<CrashReporter::UploadReportResult> {
 
 namespace {
 
-void SetExtraParameter(const std::string& key, mate::Arguments* args) {
-  std::string value;
-  if (args->GetNext(&value))
-    CrashReporter::GetInstance()->SetExtraParameter(key, value);
-  else
-    CrashReporter::GetInstance()->RemoveExtraParameter(key);
+void SetExtraParameter(const std::string& key, const std::string& value) {
+  CrashReporter::GetInstance()->SetExtraParameter(key, value);
+}
+
+void RemoveExtraParameter(const std::string& key) {
+  CrashReporter::GetInstance()->RemoveExtraParameter(key);
 }
 
 
@@ -46,6 +46,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   auto reporter = base::Unretained(CrashReporter::GetInstance());
   dict.SetMethod("start", base::Bind(&CrashReporter::Start, reporter));
   dict.SetMethod("setExtraParameter", &SetExtraParameter);
+  dict.SetMethod("removeExtraParameter", &SetExtraParameter);
   dict.SetMethod("getUploadedReports",
                  base::Bind(&CrashReporter::GetUploadedReports, reporter));
   dict.SetMethod("setUploadToServer",
