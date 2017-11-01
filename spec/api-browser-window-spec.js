@@ -1365,7 +1365,7 @@ describe('BrowserWindow module', () => {
           assert.equal(content, 'Hello')
           done()
         })
-        w.loadURL( `file://${path.join(fixtures, 'api', 'native-window-open-iframe.html')}`)
+        w.loadURL(`file://${path.join(fixtures, 'api', 'native-window-open-iframe.html')}`)
       })
       it('loads native addons correctly after reload', (done) => {
         if (!nativeModulesEnabled) return done()
@@ -1676,7 +1676,7 @@ describe('BrowserWindow module', () => {
   })
 
   describe('new-window event', () => {
-    if (isCI && process.platform === 'darwin')  return
+    if (isCI && process.platform === 'darwin') return
 
     it('emits when window.open is called', (done) => {
       w.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
@@ -1733,7 +1733,7 @@ describe('BrowserWindow module', () => {
   })
 
   describe('minimize event', () => {
-    if (isCI)  return
+    if (isCI) return
 
     it('emits when window is minimized', (done) => {
       w.once('minimize', () => { done() })
