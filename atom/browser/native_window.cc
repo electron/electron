@@ -119,7 +119,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     SetPosition(gfx::Point(x, y));
 
 #if defined(OS_WIN)
-    // Dirty, dirty workaround for
+    // FIXME(felixrieseberg): Dirty, dirty workaround for
     // https://github.com/electron/electron/issues/10862
     // Somehow, we need to call `SetBounds` twice to get
     // usable results. The root cause is still unknown.
