@@ -66,7 +66,6 @@
       'browser/network_delegate.cc',
       'browser/network_delegate.h',
       'browser/notification_delegate.h',
-      'browser/notification_delegate.cc',
       'browser/notification_presenter.cc',
       'browser/notification_presenter.h',
       'browser/notification.cc',
