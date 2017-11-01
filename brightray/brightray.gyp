@@ -169,6 +169,14 @@
                 ],
               },
             }],
+            # On ARM64 libchromiumcontent always links to system libfreetype
+            ['target_arch=="arm64"', {
+              'link_settings': {
+                'libraries': [
+                  '-lfreetype',
+                ],
+              },
+            }],
           ],
         }],  # OS=="linux"
         ['OS=="mac"', {
