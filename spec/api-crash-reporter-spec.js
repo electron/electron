@@ -255,11 +255,11 @@ describe('crashReporter module', () => {
 
   describe('getLastCrashReport', () => {
     it('correctly returns the most recent report', () => {
-      if (process.env.TRAVIS === 'True') return
-
-      const reports = crashReporter.getUploadedReports()
-      const lastReport = reports[0]
-      assert(lastReport != null)
+      if (process.env.TRAVIS === 'False') {
+        const reports = crashReporter.getUploadedReports()
+        const lastReport = reports[0]
+        assert(lastReport != null)
+      }
     })
   })
 
