@@ -7,18 +7,12 @@
 
 #include <string>
 
-#include "base/macros.h"
-
-
 namespace brightray {
 
 class NotificationDelegate {
  public:
-  explicit NotificationDelegate(const std::string& notification_id);
-  virtual ~NotificationDelegate() {}
-
   // The native Notification object is destroyed.
-  virtual void NotificationDestroyed();
+  virtual void NotificationDestroyed() {}
 
   // Failed to send the notification.
   virtual void NotificationFailed() {}
@@ -27,14 +21,13 @@ class NotificationDelegate {
   virtual void NotificationReplied(const std::string& reply) {}
   virtual void NotificationAction(int index) {}
 
-  virtual void NotificationClick();
-  virtual void NotificationClosed();
-  virtual void NotificationDisplayed();
+  virtual void NotificationClick() {}
+  virtual void NotificationClosed() {}
+  virtual void NotificationDisplayed() {}
 
- private:
-  const std::string notification_id_;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationDelegate);
+ protected:
+  NotificationDelegate() = default;
+  ~NotificationDelegate() = default;
 };
 
 }  // namespace brightray
