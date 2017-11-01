@@ -9,6 +9,7 @@
 #include "brightray/browser/notification.h"
 #include "brightray/browser/notification_delegate.h"
 #include "brightray/browser/notification_presenter.h"
+#include "content/public/browser/notification_event_dispatcher.h"
 #include "content/public/common/notification_resources.h"
 #include "content/public/common/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -43,6 +44,34 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
     notification->Destroy();
   }
 }
+
+class NotificationDelegateImpl : public brightray::NotificationDelegate {
+ public:
+  explicit NotificationDelegateImpl(const std::string& notification_id)
+      : notification_id_(notification_id) {}
+
+  void NotificationDestroyed() override { delete this; }
+
+  void NotificationClick() override {
+    content::NotificationEventDispatcher::GetInstance()
+        ->DispatchNonPersistentClickEvent(notification_id_);
+  }
+
+  void NotificationClosed() override {
+    content::NotificationEventDispatcher::GetInstance()
+        ->DispatchNonPersistentCloseEvent(notification_id_);
+  }
+
+  void NotificationDisplayed() override {
+    content::NotificationEventDispatcher::GetInstance()
+        ->DispatchNonPersistentShowEvent(notification_id_);
+  }
+
+ private:
+  std::string notification_id_;
+
+  DISALLOW_COPY_AND_ASSIGN(NotificationDelegateImpl);
+};
 
 }  // namespace
 
@@ -81,8 +110,8 @@ void PlatformNotificationService::DisplayNotification(
   auto presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
-  brightray::NotificationDelegate* delegate =
-      new NotificationDelegate(notification_id);
+  NotificationDelegateImpl* delegate =
+      new NotificationDelegateImpl(notification_id);
   auto notification = presenter->CreateNotification(delegate);
   if (notification) {
     *cancel_callback = base::Bind(&RemoveNotification, notification);

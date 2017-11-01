@@ -51,8 +51,7 @@ namespace api {
 
 Notification::Notification(v8::Isolate* isolate,
                            v8::Local<v8::Object> wrapper,
-                           mate::Arguments* args)
-  : NotificationDelegate(std::string()) {  // FIXME(alexeykuzmin)
+                           mate::Arguments* args) {
   InitWith(isolate, wrapper);
 
   presenter_ = brightray::BrowserClient::Get()->GetNotificationPresenter();
