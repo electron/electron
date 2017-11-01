@@ -11,7 +11,7 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
-describe('crashReporter module', () => {
+describe.only('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
 
   let originalTempDirectory = null
@@ -197,10 +197,10 @@ describe('crashReporter module', () => {
   describe('getProductName', () => {
     it('returns the product name if one is specified', () => {
       const name = crashReporter.getProductName()
-      if (process.platform === 'win32') {
-        assert.equal(name, 'Zombies')
-      } else {
+      if (process.platform === 'darwin') {
         assert.equal(name, 'Electron Test')
+      } else {
+        assert.equal(name, 'Zombies')
       }
     })
   })

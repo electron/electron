@@ -80,16 +80,20 @@ void CrashReporter::InitBreakpad(const std::string& product_name,
                                  const std::string& submit_url,
                                  const base::FilePath& crashes_dir,
                                  bool auto_submit,
-                                 bool skip_system_crash_handler) {}
+                                 bool skip_system_crash_handler) {
+}
 
-void CrashReporter::SetUploadParameters() {}
+void CrashReporter::SetUploadParameters() {
+}
 
 void CrashReporter::SetExtraParameter(const std::string& key,
-                                      const std::string& value) {}
+                                      const std::string& value) {
+}
 
-void CrashReporter::RemoveExtraParameter(const std::string& key) {}
+void CrashReporter::RemoveExtraParameter(const std::string& key) {
+}
 
-std::map<std::string, std::string> CrashReporter::GetParameters() {
+std::map<std::string, std::string> CrashReporter::GetParameters() const {
   return upload_parameters_;
 }
 

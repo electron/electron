@@ -39,7 +39,7 @@ void RemoveExtraParameter(const std::string& key) {
   CrashReporter::GetInstance()->RemoveExtraParameter(key);
 }
 
-std::map<std::string, std::string> GetParameters() {
+std::map<std::string, std::string> GetParameters() const {
   return CrashReporter::GetInstance()->GetParameters();
 }
 
