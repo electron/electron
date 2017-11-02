@@ -38,8 +38,10 @@ NetLog::NetLog() {
 }
 
 NetLog::~NetLog() {
-  file_net_log_observer_->StopObserving(nullptr, base::Closure());
-  file_net_log_observer_.reset();
+  if (file_net_log_observer_) {
+    file_net_log_observer_->StopObserving(nullptr, base::Closure());
+    file_net_log_observer_.reset();
+  }
 }
 
 void NetLog::StartLogging() {
