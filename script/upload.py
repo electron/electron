@@ -114,6 +114,12 @@ def parse_args():
   parser.add_argument('-p', '--publish-release',
                       help='Publish the release',
                       action='store_true')
+  parser.add_argument('-s', '--upload_to_s3',
+                      help='Upload assets to s3 bucket',
+                      dest='upload_to_s3',
+                      action='store_true',
+                      default=False,
+                      required=False)
   return parser.parse_args()
 
 
@@ -263,15 +269,6 @@ def auth_token():
   assert token, message
   return token
 
-def parse_args():
-  parser = argparse.ArgumentParser(description='Upload Electron Assets')
-  parser.add_argument('-s', '--upload_to_s3',
-                      help='Upload assets to s3 bucket',
-                      dest='upload_to_s3',
-                      action='store_true',
-                      default=False,
-                      required=False)
-  return parser.parse_args()
 
 if __name__ == '__main__':
   import sys
