@@ -92,6 +92,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   // Show save dialog if save path was not set already on item
   file_dialog::DialogSettings settings;
   settings.parent_window = window;
+  settings.force_detached = window->IsOffScreenDummy();
   settings.title = item->GetURL().spec();
   settings.default_path = default_path;
   if (path.empty() && file_dialog::ShowSaveDialog(settings, &path)) {

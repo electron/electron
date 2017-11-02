@@ -182,8 +182,9 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 
 namespace atom {
 
-WebDialogHelper::WebDialogHelper(NativeWindow* window)
+WebDialogHelper::WebDialogHelper(NativeWindow* window, bool offscreen)
     : window_(window),
+      offscreen_(offscreen),
       weak_factory_(this) {
 }
 
@@ -197,6 +198,7 @@ void WebDialogHelper::RunFileChooser(
   std::vector<content::FileChooserFileInfo> result;
 
   file_dialog::DialogSettings settings;
+  settings.force_detached = offscreen_;
   settings.filters = GetFileTypesFromAcceptType(params.accept_types);
   settings.parent_window = window_;
   settings.title = base::UTF16ToUTF8(params.title);

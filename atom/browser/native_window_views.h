@@ -190,7 +190,6 @@ class NativeWindowViews : public NativeWindow,
       const content::NativeWebKeyboardEvent& event) override;
   void ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
-    atom::api::WebContents* web_contents,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) override;

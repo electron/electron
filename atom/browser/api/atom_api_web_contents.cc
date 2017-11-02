@@ -933,26 +933,15 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
   auto relay = NativeWindowRelay::FromWebContents(web_contents());
   if (!relay)
     return false;
-  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
-    IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
-  IPC_END_MESSAGE_MAP()
   IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(NativeWindow, message, frame_host)
+    IPC_MESSAGE_FORWARD(AtomAutofillFrameHostMsg_ShowPopup,
+      relay->window.get(), NativeWindow::ShowAutofillPopup)
     IPC_MESSAGE_FORWARD(AtomAutofillFrameHostMsg_HidePopup,
       relay->window.get(), NativeWindow::HideAutofillPopup)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
   return handled;
-}
-
-void WebContents::ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {
-  auto relay = NativeWindowRelay::FromWebContents(web_contents());
-  if (relay)
-    relay->window->ShowAutofillPopup(frame_host, this, bounds, values, labels);
 }
 
 // There are three ways of destroying a webContents:
@@ -1632,10 +1621,6 @@ bool WebContents::IsOffScreen() const {
 #else
   return false;
 #endif
-}
-
-bool WebContents::IsOffScreenOrEmbedderOffscreen() const {
-  return IsOffScreen() || (IsGuest() && embedder_ && embedder_->IsOffScreen());
 }
 
 void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {

@@ -10,6 +10,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_browser_view_views.h"
 #include "atom/browser/ui/views/menu_bar.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
@@ -1357,13 +1358,19 @@ void NativeWindowViews::HandleKeyboardEvent(
 
 void NativeWindowViews::ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
-    atom::api::WebContents* web_contents,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {
+    const std::vector<base::string16>& labels) {  
+  WebContentsPreferences* web_preferences =
+    WebContentsPreferences::FromWebContents(web_contents());
+  
+  bool isOffsceen = web_preferences->IsOffScreen(web_contents());
+  bool isEmbedderOffscreen = web_preferences->IsGuest(web_contents()) && 
+    web_preferences->IsOffScreen(web_preferences->Embedder(web_contents()));
+  
   autofill_popup_->CreateView(
     frame_host,
-    web_contents->IsOffScreenOrEmbedderOffscreen(),
+    isOffsceen || isEmbedderOffscreen,
     widget(),
     bounds);
   autofill_popup_->SetItems(values, labels);

@@ -110,13 +110,13 @@ void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
 }
 
 // Run modal dialog with parent window and return user's choice.
-int RunModalDialog(NSSavePanel* dialog, atom::NativeWindow* parent_window) {
+int RunModalDialog(NSSavePanel* dialog, const DialogSettings& settings) {
   __block int chosen = NSFileHandlingPanelCancelButton;
-  if (!parent_window || !parent_window->GetNativeWindow() ||
-      parent_window->IsOffScreenDummy()) {
+  if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
+      settings.force_detached) {
     chosen = [dialog runModal];
   } else {
-    NSWindow* window = parent_window->GetNativeWindow();
+    NSWindow* window = settings.parent_window->GetNativeWindow();
 
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger c) {
@@ -146,7 +146,7 @@ bool ShowOpenDialog(const DialogSettings& settings,
   SetupDialog(dialog, settings);
   SetupDialogForProperties(dialog, settings.properties);
 
-  int chosen = RunModalDialog(dialog, settings.parent_window);
+  int chosen = RunModalDialog(dialog, settings);
   if (chosen == NSFileHandlingPanelCancelButton)
     return false;
 
@@ -166,7 +166,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   __block OpenDialogCallback callback = c;
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
-      settings.parent_window->IsOffScreenDummy()) {
+      settings.force_detached) {
     int chosen = [dialog runModal];
     if (chosen == NSFileHandlingPanelCancelButton) {
       callback.Run(false, std::vector<base::FilePath>());
@@ -197,7 +197,7 @@ bool ShowSaveDialog(const DialogSettings& settings,
 
   SetupDialog(dialog, settings);
 
-  int chosen = RunModalDialog(dialog, settings.parent_window);
+  int chosen = RunModalDialog(dialog, settings);
   if (chosen == NSFileHandlingPanelCancelButton || ![[dialog URL] isFileURL])
     return false;
 
@@ -215,7 +215,7 @@ void ShowSaveDialog(const DialogSettings& settings,
   __block SaveDialogCallback callback = c;
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
-      settings.parent_window->IsOffScreenDummy()) {
+      settings.force_detached) {
     int chosen = [dialog runModal];
     if (chosen == NSFileHandlingPanelCancelButton) {
       callback.Run(false, base::FilePath());
