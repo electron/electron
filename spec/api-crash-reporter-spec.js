@@ -349,7 +349,7 @@ describe('crashReporter module', () => {
         submitURL: 'http://127.0.0.1/crashes'
       })
 
-      crashReporter.setExtraParameter('hello', 'world')
+      crashReporter.addExtraParameter('hello', 'world')
       assert('hello' in crashReporter.getParameters())
 
       crashReporter.removeExtraParameter('hello')
