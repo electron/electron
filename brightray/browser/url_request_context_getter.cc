@@ -295,10 +295,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_cert_transparency_verifier(std::move(ct_verifier));
     storage_->set_ct_policy_enforcer(base::MakeUnique<net::CTPolicyEnforcer>());
 
-    net::HttpNetworkSession::Context network_session_context;
-    net::URLRequestContextBuilder::SetHttpNetworkSessionComponents(
-        url_request_context_.get(), &network_session_context);
-
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.ignore_certificate_errors = false;
 
@@ -320,11 +316,13 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // Give |storage_| ownership at the end in case it's |mapped_host_resolver|.
     storage_->set_host_resolver(std::move(host_resolver));
-    network_session_context.host_resolver =
-        url_request_context_->host_resolver();
 
+    net::HttpNetworkSession::Context network_session_context;
+    net::URLRequestContextBuilder::SetHttpNetworkSessionComponents(
+        url_request_context_.get(), &network_session_context);
     http_network_session_.reset(new net::HttpNetworkSession(
         network_session_params, network_session_context));
+
     std::unique_ptr<net::HttpCache::BackendFactory> backend;
     if (in_memory_) {
       backend = net::HttpCache::DefaultBackend::InMemory(0);
