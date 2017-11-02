@@ -1360,14 +1360,14 @@ void NativeWindowViews::ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {  
+    const std::vector<base::string16>& labels) {
   WebContentsPreferences* web_preferences =
     WebContentsPreferences::FromWebContents(web_contents());
-  
+
   bool isOffsceen = web_preferences->IsOffScreen(web_contents());
-  bool isEmbedderOffscreen = web_preferences->IsGuest(web_contents()) && 
+  bool isEmbedderOffscreen = web_preferences->IsGuest(web_contents()) &&
     web_preferences->IsOffScreen(web_preferences->Embedder(web_contents()));
-    
+
   autofill_popup_->CreateView(
     frame_host,
     isOffsceen || isEmbedderOffscreen,
@@ -1396,7 +1396,7 @@ void NativeWindowViews::Layout() {
         gfx::Rect(0, menu_bar_bounds.height(), size.width(),
                   size.height() - menu_bar_bounds.height()));
   }
-  
+
   if (autofill_popup_.get())
     autofill_popup_->UpdatePopupBounds(menu_bar_visible_ ? 0 : kMenuBarHeight);
 }

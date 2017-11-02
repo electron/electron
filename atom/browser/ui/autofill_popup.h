@@ -11,8 +11,8 @@
 #include "content/public/browser/render_frame_host.h"
 #include "ui/gfx/font_list.h"
 #include "ui/native_theme/native_theme.h"
-#include "ui/views/widget/widget.h"
 #include "ui/views/view.h"
+#include "ui/views/widget/widget.h"
 
 namespace atom {
 

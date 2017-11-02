@@ -281,7 +281,7 @@ content::WebContents* WebContentsPreferences::Embedder(
       }
     }
   }
-  
+
   return nullptr;
 }
 

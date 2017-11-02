@@ -170,7 +170,7 @@ void AutofillPopup::UpdatePopupBounds(int height_compensation) {
   int desired_height = GetDesiredPopupHeight();
   bool is_rtl = false;
 
-  gfx::Point origin(element_bounds_.origin().x(), 
+  gfx::Point origin(element_bounds_.origin().x(),
     element_bounds_.origin().y() - height_compensation);
   gfx::Rect bounds(origin, element_bounds_.size());
 

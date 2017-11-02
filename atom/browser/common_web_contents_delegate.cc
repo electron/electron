@@ -242,7 +242,7 @@ void CommonWebContentsDelegate::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
     const content::FileChooserParams& params) {
   if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(owner_window(), 
+    web_dialog_helper_.reset(new WebDialogHelper(owner_window(),
       owner_window()->IsOffScreenDummy()));
   web_dialog_helper_->RunFileChooser(render_frame_host, params);
 }
