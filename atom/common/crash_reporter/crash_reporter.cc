@@ -86,7 +86,7 @@ void CrashReporter::InitBreakpad(const std::string& product_name,
 void CrashReporter::SetUploadParameters() {
 }
 
-void CrashReporter::SetExtraParameter(const std::string& key,
+void CrashReporter::AddExtraParameter(const std::string& key,
                                       const std::string& value) {
 }
 

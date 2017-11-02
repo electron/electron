@@ -11,7 +11,7 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
-describe('crashReporter module', () => {
+describe.only('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
 
   let originalTempDirectory = null
@@ -328,7 +328,8 @@ describe('crashReporter module', () => {
       const parameters = crashReporter.getParameters()
       assert(typeof parameters === 'object')
     })
-    it('adds a parameter', () => {
+    // TODO(2.0) deprecate
+    it('adds a parameter with setExtraParameter', () => {
       // only run on MacOS
       if (process.platform !== 'darwin') return
 
@@ -338,11 +339,22 @@ describe('crashReporter module', () => {
       })
 
       crashReporter.setExtraParameter('hello', 'world')
-      const updatedParams = crashReporter.getParameters()
-
-      assert('hello' in updatedParams)
+      assert('hello' in crashReporter.getParameters())
     })
-    it('removes a parameter', () => {
+    it('adds a parameter with addExtraParameter', () => {
+      // only run on MacOS
+      if (process.platform !== 'darwin') return
+
+      crashReporter.start({
+        companyName: 'Umbrella Corporation',
+        submitURL: 'http://127.0.0.1/crashes'
+      })
+
+      crashReporter.addExtraParameter('hello', 'world')
+      assert('hello' in crashReporter.getParameters())
+    })
+    // TODO(2.0) deprecate
+    it('removes a parameter with setExtraParameter', () => {
       // only run on MacOS
       if (process.platform !== 'darwin') return
 
@@ -352,12 +364,25 @@ describe('crashReporter module', () => {
       })
 
       crashReporter.setExtraParameter('hello', 'world')
-      const originalParams = crashReporter.getParameters()
-      assert('hello' in originalParams)
+      assert('hello' in crashReporter.getParameters())
+
+      crashReporter.setExtraParameter('hello')
+      assert(!('hello' in crashReporter.getParameters()))
+    })
+    it('removes a parameter with removeExtraParameter', () => {
+      // only run on MacOS
+      if (process.platform !== 'darwin') return
+
+      crashReporter.start({
+        companyName: 'Umbrella Corporation',
+        submitURL: 'http://127.0.0.1/crashes'
+      })
+
+      crashReporter.setExtraParameter('hello', 'world')
+      assert('hello' in crashReporter.getParameters())
 
       crashReporter.removeExtraParameter('hello')
-      const updatedParams = crashReporter.getParameters()
-      assert(!('hello' in updatedParams))
+      assert(!('hello' in crashReporter.getParameters()))
     })
   })
 })

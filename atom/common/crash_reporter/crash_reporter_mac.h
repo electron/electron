@@ -35,7 +35,7 @@ class CrashReporterMac : public CrashReporter {
   void SetUploadParameters() override;
   void SetUploadToServer(bool upload_to_server) override;
   bool GetUploadToServer() override;
-  void SetExtraParameter(const std::string& key,
+  void AddExtraParameter(const std::string& key,
                          const std::string& value) override;
   void RemoveExtraParameter(const std::string& key) override;
   std::map<std::string, std::string> GetParameters() const override;

@@ -105,7 +105,7 @@ void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
   simple_string_dictionary_->SetKeyValue(key.data(), value.data());
 }
 
-void CrashReporterMac::SetExtraParameter(const std::string& key,
+void CrashReporterMac::AddExtraParameter(const std::string& key,
                                          const std::string& value) {
   if (simple_string_dictionary_) {
     SetCrashKeyValue(key, value);
