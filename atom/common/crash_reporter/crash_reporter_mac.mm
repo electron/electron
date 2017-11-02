@@ -105,12 +105,13 @@ void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
   simple_string_dictionary_->SetKeyValue(key.data(), value.data());
 }
 
-void CrashReporterMac::SetExtraParameter(const std::string& key,
+void CrashReporterMac::AddExtraParameter(const std::string& key,
                                          const std::string& value) {
-  if (simple_string_dictionary_)
+  if (simple_string_dictionary_) {
     SetCrashKeyValue(key, value);
-  else
+  } else {
     upload_parameters_[key] = value;
+  }
 }
 
 void CrashReporterMac::RemoveExtraParameter(const std::string& key) {
@@ -118,6 +119,20 @@ void CrashReporterMac::RemoveExtraParameter(const std::string& key) {
     simple_string_dictionary_->RemoveKey(key.data());
   else
     upload_parameters_.erase(key);
+}
+
+std::map<std::string, std::string> CrashReporterMac::GetParameters() const {
+  if (simple_string_dictionary_) {
+    std::map<std::string, std::string> ret;
+    crashpad::SimpleStringDictionary::Iterator iter(*simple_string_dictionary_);
+    for(;;) {
+      const auto entry = iter.Next();
+      if (!entry) break;
+      ret[entry->key] = entry->value;
+    }
+    return ret;
+  }
+  return upload_parameters_;
 }
 
 std::vector<CrashReporter::UploadReportResult>
