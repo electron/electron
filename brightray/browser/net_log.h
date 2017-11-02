@@ -7,6 +7,10 @@
 
 #include "net/log/net_log.h"
 
+namespace net {
+class FileNetLogObserver;
+}
+
 namespace brightray {
 
 class NetLog : public net::NetLog {
@@ -17,6 +21,9 @@ class NetLog : public net::NetLog {
   void StartLogging();
 
  private:
+  // This observer handles writing NetLogs.
+  std::unique_ptr<net::FileNetLogObserver> file_net_log_observer_;
+
   DISALLOW_COPY_AND_ASSIGN(NetLog);
 };
 

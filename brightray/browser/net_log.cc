@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/callback.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/memory/ptr_util.h"
@@ -37,6 +38,8 @@ NetLog::NetLog() {
 }
 
 NetLog::~NetLog() {
+  file_net_log_observer_->StopObserving(nullptr, base::Closure());
+  file_net_log_observer_.reset();
 }
 
 void NetLog::StartLogging() {
@@ -50,7 +53,7 @@ void NetLog::StartLogging() {
   net::NetLogCaptureMode capture_mode =
       net::NetLogCaptureMode::IncludeCookiesAndCredentials();
 
-  std::unique_ptr<net::FileNetLogObserver> file_net_log_observer_ =
+  file_net_log_observer_ =
       net::FileNetLogObserver::CreateUnbounded(log_path, std::move(constants));
   file_net_log_observer_->StartObserving(this, capture_mode);
 }
