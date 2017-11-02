@@ -31,7 +31,7 @@ struct Converter<CrashReporter::UploadReportResult> {
 
 namespace {
 
-// TODO(2.0) Deprecate
+// TODO(2.0) Remove
 void SetExtraParameter(const std::string& key, mate::Arguments* args) {
   std::string value;
   if (args->GetNext(&value))

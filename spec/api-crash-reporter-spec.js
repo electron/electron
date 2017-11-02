@@ -11,7 +11,7 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
-describe.only('crashReporter module', () => {
+describe('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
 
   let originalTempDirectory = null
@@ -328,7 +328,7 @@ describe.only('crashReporter module', () => {
       const parameters = crashReporter.getParameters()
       assert(typeof parameters === 'object')
     })
-    // TODO(2.0) deprecate
+    // TODO(2.0) Remove
     it('adds a parameter with setExtraParameter', () => {
       // only run on MacOS
       if (process.platform !== 'darwin') return
@@ -353,7 +353,7 @@ describe.only('crashReporter module', () => {
       crashReporter.addExtraParameter('hello', 'world')
       assert('hello' in crashReporter.getParameters())
     })
-    // TODO(2.0) deprecate
+    // TODO(2.0) Remove
     it('removes a parameter with setExtraParameter', () => {
       // only run on MacOS
       if (process.platform !== 'darwin') return
