@@ -116,7 +116,7 @@ called before `start` is called.
 
 **Note:** This API can only be called from the main process.
 
-### `crashReporter.addExtraParameter(key, value)` _macOS_
+### `crashReporter.setExtraParameter(key, value)` _macOS_
 
 * `key` String - Parameter key, must be less than 64 characters long.
 * `value` String - Parameter value, must be less than 64 characters long.
