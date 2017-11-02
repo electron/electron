@@ -328,20 +328,7 @@ describe('crashReporter module', () => {
       const parameters = crashReporter.getParameters()
       assert(typeof parameters === 'object')
     })
-    // TODO(2.0) Remove
-    it('adds a parameter with setExtraParameter', () => {
-      // only run on MacOS
-      if (process.platform !== 'darwin') return
-
-      crashReporter.start({
-        companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes'
-      })
-
-      crashReporter.setExtraParameter('hello', 'world')
-      assert('hello' in crashReporter.getParameters())
-    })
-    it('adds a parameter with addExtraParameter', () => {
+    it('adds a parameter to current parameters', () => {
       // only run on MacOS
       if (process.platform !== 'darwin') return
 
@@ -353,23 +340,7 @@ describe('crashReporter module', () => {
       crashReporter.addExtraParameter('hello', 'world')
       assert('hello' in crashReporter.getParameters())
     })
-    // TODO(2.0) Remove
-    it('removes a parameter with setExtraParameter', () => {
-      // only run on MacOS
-      if (process.platform !== 'darwin') return
-
-      crashReporter.start({
-        companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes'
-      })
-
-      crashReporter.setExtraParameter('hello', 'world')
-      assert('hello' in crashReporter.getParameters())
-
-      crashReporter.setExtraParameter('hello')
-      assert(!('hello' in crashReporter.getParameters()))
-    })
-    it('removes a parameter with removeExtraParameter', () => {
+    it('removes a parameter from current parameters', () => {
       // only run on MacOS
       if (process.platform !== 'darwin') return
 
