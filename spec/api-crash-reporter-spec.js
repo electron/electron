@@ -180,7 +180,7 @@ describe('crashReporter module', () => {
             w.loadURL(crashUrl)
           },
           processType: 'renderer',
-          done: done()
+          done: done
         })
       })
     })
