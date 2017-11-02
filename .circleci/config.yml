@@ -21,7 +21,7 @@ jobs:
             esac
             if [ -n "${RUN_RELEASE_BUILD}" ]; then
               echo 'release build triggered from api'
-              echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
+              echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
             fi
       - run:
          name: Bootstrap
@@ -56,9 +56,12 @@ jobs:
       - run:
           name: Upload distribution
           command: |
-             if [ "$ELECTRON_RELEASE" == "1" ]; then
-                echo 'Uploading Electron release distribution'
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
                 script/upload.py
+             elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
+                echo 'Uploading Electron release distribution to s3'
+                script/upload.py --upload_to_s3
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
