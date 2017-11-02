@@ -64,26 +64,34 @@ def main():
                                             tag_exists)
 
   # Upload Electron with GitHub Releases API.
-  upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME), args.upload_to_s3)
-  upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME), args.upload_to_s3)
+  upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME),
+                  args.upload_to_s3)
+  upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME),
+                  args.upload_to_s3)
   if PLATFORM == 'darwin':
-    upload_electron(github, release, os.path.join(DIST_DIR, args.upload_to_s3,
-                    'electron-api.json'))
-    upload_electron(github, release, os.path.join(DIST_DIR, 'electron.d.ts'), args.upload_to_s3)
-    upload_electron(github, release, os.path.join(DIST_DIR, DSYM_NAME), args.upload_to_s3)
+    upload_electron(github, release, os.path.join(DIST_DIR,
+                    'electron-api.json'), args.upload_to_s3)
+    upload_electron(github, release, os.path.join(DIST_DIR, 'electron.d.ts'),
+                    args.upload_to_s3)
+    upload_electron(github, release, os.path.join(DIST_DIR, DSYM_NAME),
+                    args.upload_to_s3)
   elif PLATFORM == 'win32':
-    upload_electron(github, release, os.path.join(DIST_DIR, PDB_NAME), args.upload_to_s3)
+    upload_electron(github, release, os.path.join(DIST_DIR, PDB_NAME),
+                    args.upload_to_s3)
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
-  upload_electron(github, release, os.path.join(DIST_DIR, ffmpeg), args.upload_to_s3)
+  upload_electron(github, release, os.path.join(DIST_DIR, ffmpeg),
+                  args.upload_to_s3)
 
   # Upload chromedriver and mksnapshot for minor version update.
   if parse_version(args.version)[2] == '0':
     chromedriver = get_zip_name('chromedriver', ELECTRON_VERSION)
-    upload_electron(github, release, os.path.join(DIST_DIR, chromedriver), args.upload_to_s3)
+    upload_electron(github, release, os.path.join(DIST_DIR, chromedriver),
+                    args.upload_to_s3)
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
-    upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot), args.upload_to_s3)
+    upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot),
+                    args.upload_to_s3)
 
   # TODO: make s3 compatible
 
@@ -222,7 +230,7 @@ def upload_electron(github, release, file_path, upload_to_s3):
     arm_filename = filename.replace('armv7l', 'arm')
     arm_file_path = os.path.join(os.path.dirname(file_path), arm_filename)
     shutil.copy2(file_path, arm_file_path)
-    upload_electron(github, release, arm_file_path)
+    upload_electron(github, release, arm_file_path, upload_to_s3)
 
 
 def upload_io_to_github(release, filename, filepath):

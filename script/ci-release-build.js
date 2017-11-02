@@ -21,7 +21,6 @@ const ciJob = args._[0]
 assert(ciJobs.includes(ciJob), `Unknown ci job name: ${ciJob}.`)
 assert(process.env.CIRCLE_TOKEN, 'CIRCLE_TOKEN not found in environment')
 
-
 const circleBuildURL = `https://circleci.com/api/v1.1/project/github/electron/electron/tree/${targetBranch}?circle-token=${process.env.CIRCLE_TOKEN}`
 
 console.log(`Triggering CircleCI to run build job: ${ciJob} against branch: ${targetBranch} with release flag.`)
@@ -40,7 +39,7 @@ request({
     }
   })
 }, (err, res, body) => {
-  if (!err && res.statusCode == 200) {
+  if (!err && body) {
     const build = JSON.parse(body)
     console.log(`check ${build.build_url} for status`)
   } else {
