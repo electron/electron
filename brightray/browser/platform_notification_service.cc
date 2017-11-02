@@ -45,7 +45,7 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
   }
 }
 
-class NotificationDelegateImpl : public brightray::NotificationDelegate {
+class NotificationDelegateImpl final : public brightray::NotificationDelegate {
  public:
   explicit NotificationDelegateImpl(const std::string& notification_id)
       : notification_id_(notification_id) {}
