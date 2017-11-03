@@ -28,3 +28,6 @@
 [submodule "vendor/libchromiumcontent"]
 	path = vendor/libchromiumcontent
 	url = https://github.com/electron/libchromiumcontent
+[submodule "vendor/googletest"]
+	path = vendor/googletest
+	url = git@github.com:google/googletest.git

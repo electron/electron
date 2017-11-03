@@ -219,6 +219,25 @@
           ],
         }],  # OS=="linux"
       ],
+    },
+    {
+      'target_name': 'electron-xtest',
+      'type': 'executable',
+      'dependencies': [
+        '<(project_name)_lib'
+      ],
+      'sources': [
+        'test/test-runner.cpp'
+      ],
+      'include_dirs': [
+        'vendor/googletest/googletest/include',
+        'vendor/googletest/googlemock/include',
+        '.'
+      ],
+      'libraries': [
+        'googlemock/gtest/libgtest.a',
+        'googlemock/libgmock.a'
+      ],      
     },  # target <(project_name)
     {
       'target_name': '<(project_name)_lib',

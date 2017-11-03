@@ -1,0 +1,112 @@
+#!/usr/bin/env node
+
+process.on('unhandledRejection', err => {
+    throw err
+})
+
+const fs = require('fs')
+const { spawn } = require('child_process')
+
+class Task {
+    constructor(fn) {
+        this.fn = fn
+    }
+    async run() {
+        const bash = spawn('bash', [], {stdio: 'pipe'})
+
+        bash.on('error', err => {
+            throw err
+        })
+        bash.stdout.pipe(process.stdout)
+        bash.stderr.pipe(process.stderr)
+        
+        bash.stdin.write('set -e\n')
+        
+        function shell([string]) {
+            console.log(`> ${string}`)
+            bash.stdin.write(string)
+            bash.stdin.write('\n')
+        }
+    
+        const done = new Promise((pass, fail) => {
+            bash.on('exit', (code, sig) => {
+                if (code || sig) {
+                    fail(`Process exited ${code||sig}`)
+                } else {
+                    pass()
+                }
+            })
+        })
+    
+        await this.fn(shell)
+    
+        bash.stdin.end()
+    
+        await done
+    }
+}
+
+function task(fn) {
+    return new Task(fn)
+}
+
+function stamp(filename, fn) {
+    return function (...args) {
+        return new Promise((pass, fail) => {
+            fs.exists(filename, async (exists) => {
+                if (exists) {
+                    console.log('Skipping: STAMP exists')
+                    return pass()
+                } else {
+                    await fn(...args)
+                    fs.writeFile(filename, Date.now(), (err) => {
+                        if (err) return fail(err)
+                        else return pass()
+                    })
+                }
+            })
+        })
+    }
+}
+
+// ------------------
+
+// I created a little build tool
+// I'm sorry ¯＼(º_o)/¯
+
+const libgtest_prep = task(stamp('.googletest-prep', async (shell) => {
+    await shell`mkdir -p out/R`
+    await shell`cd out/R`
+    await shell`cmake ../../vendor/googletest/`
+}))
+
+const libgtest = task(stamp('.googletest-make', async (shell) => {
+    await libgtest_prep.run()
+
+    await shell`cd out/R`
+    await shell`make`
+}))
+
+const testExecGyp = task(async shell => {
+    await libgtest.run()
+
+    await shell`python vendor/gyp/gyp_main.py -f ninja --depth . electron.gyp -Icommon.gypi -Dlibchromiumcontent_component=0 -Dtarget_arch=x64 -Dhost_arch=x64 -Dlibrary=static_library -Dmas_build=0 -R electron-xtest`
+})
+
+const testExec = task(async shell => {
+    await testExecGyp.run()
+
+    await shell`./vendor/depot_tools/ninja -C out/R`
+    await shell`install_name_tool -change  /usr/local/lib/libnode.dylib $(pwd)/out/R/libnode.dylib out/R/electron-xtest.app/Contents/MacOS/electron-xtest`
+    await shell`install_name_tool -change  @rpath/libffmpeg.dylib $(pwd)/vendor/download/libchromiumcontent/ffmpeg/libffmpeg.dylib out/R/electron-xtest.app/Contents/MacOS/electron-xtest`
+})
+
+const test = task(async shell => {
+    await testExec.run()
+
+    await shell`./out/R/electron-xtest.app/Contents/MacOS/electron-xtest`
+})
+
+// ------------------
+
+test.run()
