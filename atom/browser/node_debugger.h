@@ -11,10 +11,7 @@
 
 namespace node {
 class Environment;
-}
-
-namespace v8 {
-class Platform;
+class NodePlatform;
 }
 
 namespace atom {
@@ -29,7 +26,7 @@ class NodeDebugger {
 
  private:
   node::Environment* env_;
-  std::unique_ptr<v8::Platform> platform_;
+  std::unique_ptr<node::NodePlatform> platform_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeDebugger);
 };
