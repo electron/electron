@@ -245,8 +245,8 @@ win.on('hide', () => {
 
 * `options` Object
   * `icon` ([NativeImage](native-image.md) | String) - (optional)
-  * `title` String - (optional)
-  * `content` String - (optional)
+  * `title` String
+  * `content` String
 
 Displays a tray balloon.
 
