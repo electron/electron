@@ -180,6 +180,13 @@ void FillRequestDetails(base::DictionaryValue* details,
   GetUploadData(list.get(), request);
   if (!list->empty())
     details->Set("uploadData", std::move(list));
+  std::unique_ptr<base::DictionaryValue> headers_value(
+      new base::DictionaryValue);
+  for (net::HttpRequestHeaders::Iterator it(request->extra_request_headers());
+       it.GetNext();) {
+    headers_value->SetString(it.name(), it.value());
+  }
+  details->Set("headers", std::move(headers_value));
 }
 
 void GetUploadData(base::ListValue* upload_data_list,
