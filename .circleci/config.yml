@@ -120,8 +120,8 @@ jobs:
       - run:
           name: Upload distribution
           command: |
-             if [ "$ELECTRON_RELEASE" == "1" ]; then
-                echo 'Uploading Electron release distribution'
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
                 script/upload.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
@@ -184,8 +184,8 @@ jobs:
       - run:
           name: Upload distribution
           command: |
-             if [ "$ELECTRON_RELEASE" == "1" ]; then
-                echo 'Uploading Electron release distribution'
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
                 script/upload.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
@@ -249,8 +249,8 @@ jobs:
       - run:
           name: Upload distribution
           command: |
-             if [ "$ELECTRON_RELEASE" == "1" ]; then
-                echo 'Uploading Electron release distribution'
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
                 script/upload.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
