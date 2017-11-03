@@ -36,7 +36,10 @@ void NodeDebugger::Start() {
   if (options.inspector_enabled()) {
     // Use custom platform since the gin platform does not work correctly
     // with node's inspector agent
-    platform_.reset(v8::platform::CreateDefaultPlatform());
+    platform_.reset(new node::NodePlatform(
+        /* thread_pool_size */ 0,
+        env_->event_loop(),
+        /* tracing_controller */ nullptr));
 
     // Set process._debugWaitConnect if --inspect-brk was specified to stop
     // the debugger on the first line
