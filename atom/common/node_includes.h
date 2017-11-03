@@ -31,5 +31,6 @@
 #include "vendor/node/src/node_buffer.h"
 #include "vendor/node/src/node_debug_options.h"
 #include "vendor/node/src/node_internals.h"
+#include "vendor/node/src/node_platform.h"
 
 #endif  // ATOM_COMMON_NODE_INCLUDES_H_
