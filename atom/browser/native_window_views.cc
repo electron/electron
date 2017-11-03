@@ -1358,15 +1358,16 @@ void NativeWindowViews::HandleKeyboardEvent(
 
 void NativeWindowViews::ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
+    content::WebContents* web_contents,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
   WebContentsPreferences* web_preferences =
-    WebContentsPreferences::FromWebContents(web_contents());
+    WebContentsPreferences::FromWebContents(web_contents);
 
-  bool isOffsceen = web_preferences->IsOffScreen(web_contents());
-  bool isEmbedderOffscreen = web_preferences->IsGuest(web_contents()) &&
-    web_preferences->IsOffScreen(web_preferences->Embedder(web_contents()));
+  bool isOffsceen = web_preferences->IsOffScreen(web_contents);
+  bool isEmbedderOffscreen = web_preferences->IsGuest(web_contents) &&
+    web_preferences->IsOffScreen(web_preferences->Embedder(web_contents));
 
   autofill_popup_->CreateView(
     frame_host,

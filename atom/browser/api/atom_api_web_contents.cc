@@ -770,7 +770,7 @@ void WebContents::DidChangeThemeColor(SkColor theme_color) {
   if (theme_color != SK_ColorTRANSPARENT) {
     Emit("did-change-theme-color", atom::ToRGBHex(theme_color));
   } else {
-    Emit("did-change-theme-color", nullptr);
+    Emit("did-change-theme-color", atom::ToRGBHex(SK_ColorTRANSPARENT));
   }
 }
 
@@ -933,15 +933,27 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
   auto relay = NativeWindowRelay::FromWebContents(web_contents());
   if (!relay)
     return false;
+  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
+    IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
+  IPC_END_MESSAGE_MAP()
   IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(NativeWindow, message, frame_host)
-    IPC_MESSAGE_FORWARD(AtomAutofillFrameHostMsg_ShowPopup,
-      relay->window.get(), NativeWindow::ShowAutofillPopup)
     IPC_MESSAGE_FORWARD(AtomAutofillFrameHostMsg_HidePopup,
       relay->window.get(), NativeWindow::HideAutofillPopup)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
   return handled;
+}
+
+void WebContents::ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {
+  auto relay = NativeWindowRelay::FromWebContents(web_contents());
+  if (relay)
+    relay->window->ShowAutofillPopup(
+      frame_host, web_contents(), bounds, values, labels);
 }
 
 // There are three ways of destroying a webContents:
