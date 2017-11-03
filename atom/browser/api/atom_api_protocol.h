@@ -78,6 +78,10 @@ class Protocol : public mate::TrackableObject<Protocol> {
     net::URLRequestJob* MaybeCreateJob(
         net::URLRequest* request,
         net::NetworkDelegate* network_delegate) const override {
+      if (!request->initiator().has_value()) {
+        // Don't intercept this request as it was created by `net.request`.
+        return nullptr;
+      }
       RequestJob* request_job = new RequestJob(request, network_delegate);
       request_job->SetHandlerInfo(isolate_, request_context_.get(), handler_);
       return request_job;
