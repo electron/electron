@@ -93,9 +93,7 @@ def main():
     upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot),
                     args.upload_to_s3)
 
-  # TODO: make s3 compatible
-
-  if PLATFORM == 'win32' and not tag_exists:
+  if PLATFORM == 'win32' and not tag_exists and not args.upload_to_s3:
     # Upload PDBs to Windows symbol server.
     run_python_script('upload-windows-pdb.py')
 
