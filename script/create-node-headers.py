@@ -25,6 +25,7 @@ HEADERS_DIRS = [
   'deps/uv',
   'deps/npm',
   'deps/mdb_v8',
+  'deps/v8/include'
 ]
 HEADERS_FILES = [
   'common.gypi',
