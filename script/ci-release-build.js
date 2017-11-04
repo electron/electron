@@ -30,7 +30,7 @@ const CIcall = (buildUrl, targetBranch, job) => {
       const build = JSON.parse(body)
       console.log(`Check ${build.build_url} for status. (${job})`)
     } else {
-      console.log('Error: ', err || JSON.parse(res.body), job)
+      console.log('Error: ', `(status ${res.statusCode})`, err || JSON.parse(res.body), job)
     }
   })
 }
@@ -39,7 +39,7 @@ if (args._.length < 1) {
   console.log(`Trigger Circle CI to build release builds of electron.
   Usage: ci-release-build.js [--job=CI_JOB_NAME] TARGET_BRANCH
   `)
-  process.exit(1)
+  process.exit(0)
 }
 
 assert(process.env.CIRCLE_TOKEN, 'CIRCLE_TOKEN not found in environment')
