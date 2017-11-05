@@ -258,7 +258,9 @@ void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
       HeadersCompleted();
       return;
     }
-    ReadRawDataComplete(0);
+    if (request_->status().is_io_pending()) {
+      ReadRawDataComplete(0);
+    }
   } else {
     NotifyStartError(fetcher_->GetStatus());
   }
