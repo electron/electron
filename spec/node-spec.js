@@ -130,24 +130,6 @@ describe('node feature', () => {
           done()
         })
       })
-
-      it('supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
-        child = ChildProcess.spawn(process.execPath, ['--inspect-brk', path.join(__dirname, 'fixtures', 'module', 'run-as-node.js')], {
-          env: {
-            ELECTRON_RUN_AS_NODE: true
-          }
-        })
-
-        let output = ''
-        child.stderr.on('data', (data) => {
-          output += data
-          if (output.trim().startsWith('Debugger listening on ws://')) done()
-        })
-
-        child.stdout.on('data', (data) => {
-          done(new Error(`Unexpected output: ${data.toString()}`))
-        })
-      })
     })
   })
 
@@ -210,6 +192,50 @@ describe('node feature', () => {
           done()
         }
         interval = remote.getGlobal('setInterval')(clear, 10)
+      })
+    })
+  })
+
+  describe('inspector', () => {
+    let child
+
+    afterEach(() => {
+      if (child != null) child.kill()
+    })
+
+    it('supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
+      child = ChildProcess.spawn(process.execPath, ['--inspect-brk', path.join(__dirname, 'fixtures', 'module', 'run-as-node.js')], {
+        env: {
+          ELECTRON_RUN_AS_NODE: true
+        }
+      })
+
+      let output = ''
+      child.stderr.on('data', (data) => {
+        output += data
+        if (output.trim().startsWith('Debugger listening on ws://')) done()
+      })
+
+      child.stdout.on('data', (data) => {
+        done(new Error(`Unexpected output: ${data.toString()}`))
+      })
+    })
+
+    it('supports js binding', (done) => {
+      child = ChildProcess.spawn(process.execPath, ['--inspect', path.join(__dirname, 'fixtures', 'module', 'inspector-binding.js')], {
+        env: {
+          ELECTRON_RUN_AS_NODE: true
+        },
+        stdio: ['ipc']
+      })
+
+      child.on('message', ({cmd, debuggerEnabled, secondSessionOpened, success}) => {
+        if (cmd === 'assert') {
+          assert.equal(debuggerEnabled, true)
+          assert.equal(secondSessionOpened, false)
+          assert.equal(success, true)
+          done()
+        }
       })
     })
   })
