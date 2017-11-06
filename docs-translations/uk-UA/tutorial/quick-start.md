@@ -39,7 +39,7 @@ GUI, створюючи веб-сторінки
 "Попросити" головний процес зробити ці дії.
 
 У Electron є декілька способів спілкування між процесам. Наприклад, модулі
-[`ipcRenderer`](https://electron.atom.io/docs/api/ipc-renderer/) и [`ipcMain`](https://electron.atom.io/docs/api/ipc-main/) використовується
+[`ipcRenderer`]../../../docs/api/ipc-renderer.md) и [`ipcMain`](../../../docs/api/ipc-main.md) використовується
 для відправки повідомлень, а [remote](https://electron.atom.io/docs/api/remote/) - для комунікації в RPC стилі.
 
 
