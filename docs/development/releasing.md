@@ -11,7 +11,7 @@ This document describes the process for releasing a new version of Electron.
 Run `npm run prepare-release -- --notesOnly` to view auto generated release
 notes.  The notes generated should help you determine if this is a major, minor,
 patch, or beta version change. Read the
-[Version Change Rules](../tutorial/electron-versioning.md#version-change-rules) for more information.
+[Version Change Rules](../versioning.md#semver) for more information.
 
 ## Run the prepare-release script
 The prepare release script will do the following:
@@ -206,7 +206,7 @@ release to npm.
 
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
-[electron-versioning]: /docs/tutorial/electron-versioning.md
+[versioning]: /docs/versioning.md
 
 ## Fix missing binaries of a release manually
 

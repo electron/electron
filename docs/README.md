@@ -19,7 +19,7 @@ an issue:
 * [Glossary of Terms](glossary.md)
 * [Supported Platforms](tutorial/supported-platforms.md)
 * [Security](tutorial/security.md)
-* [Electron Versioning](tutorial/electron-versioning.md)
+* [Versioning](versioning.md)
 * [Application Distribution](tutorial/application-distribution.md)
 * [Mac App Store Submission Guide](tutorial/mac-app-store-submission-guide.md)
 * [Windows Store Guide](tutorial/windows-store-guide.md)
