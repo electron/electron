@@ -121,7 +121,7 @@ async function createRelease (branchToTarget, isBeta) {
   let drafts = releases.data.filter(release => release.draft)
   if (drafts.length > 0) {
     console.log(`${fail} Aborting because draft release for
-      ${drafts[0].release.tag_name} already exists.`)
+      ${drafts[0].tag_name} already exists.`)
     process.exit(1)
   }
   console.log(`${pass} A draft release does not exist; creating one.`)
