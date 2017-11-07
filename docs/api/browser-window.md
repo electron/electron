@@ -322,7 +322,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `defaultEncoding` String (optional) - Defaults to `ISO-8859-1`.
     * `backgroundThrottling` Boolean (optional) - Whether to throttle animations and timers
       when the page becomes background. This also affects the
-      [Page Visibility API][#page-visibility]. Defaults to `true`.
+      [Page Visibility API](#page-visibility). Defaults to `true`.
     * `offscreen` Boolean (optional) - Whether to enable offscreen rendering for the browser
       window. Defaults to `false`. See the
       [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
