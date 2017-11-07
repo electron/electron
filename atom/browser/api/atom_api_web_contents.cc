@@ -480,7 +480,7 @@ bool WebContents::DidAddMessageToConsole(content::WebContents* source,
                                          const base::string16& message,
                                          int32_t line_no,
                                          const base::string16& source_id) {
-  if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) {
+  if (type_ == OFF_SCREEN) {
     return false;
   } else {
     Emit("console-message", level, message, line_no, source_id);
