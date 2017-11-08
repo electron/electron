@@ -15,7 +15,7 @@
 
 @class NSTouchBar, NSTouchBarItem;
 @class NSScrubber, NSScrubberItemView, NSScrubberArrangedView, NSScrubberTextItemView, NSScrubberImageItemView, NSScrubberSelectionStyle;
-@protocol NSTouchBarDelegate, NSScrubberDelegate, NSScrubberDataSource;
+@protocol NSTouchBarDelegate, NSScrubberDelegate, NSScrubberDataSource, NSScrubberFlowLayoutDelegate, NSScrubberFlowLayout;
 
 typedef float NSTouchBarItemPriority;
 static const NSTouchBarItemPriority NSTouchBarItemPriorityHigh = 1000;
@@ -149,6 +149,9 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 
 @end
 
+@interface NSScrubberFlowLayout: NSObject
+@end
+
 @interface NSScrubberSelectionStyle : NSObject<NSCoding>
 
 @property(class, strong, readonly) NSScrubberSelectionStyle* outlineOverlayStyle;
@@ -226,6 +229,12 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 - (NSInteger)numberOfItemsForScrubber:(NSScrubber*)scrubber;
 - (__kindof NSScrubberItemView*)scrubber:(NSScrubber*)scrubber
                        viewForItemAtIndex:(NSInteger)index;
+
+@end
+
+@protocol NSScrubberFlowLayoutDelegate<NSObject>
+
+- (NSSize)scrubber:(NSScrubber *)scrubber layout:(NSScrubberFlowLayout *)layout sizeForItemAtIndex:(NSInteger)itemIndex;
 
 @end
 
