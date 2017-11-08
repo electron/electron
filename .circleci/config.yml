@@ -280,10 +280,17 @@ jobs:
              else
                 echo 'Skipping verify ffmpeg on release build'
              fi
+      - run:
+          name: Generate Typescript Definitions
+          command: npm run create-typescript-definitions
       - store_test_results:
           path: junit
       - store_artifacts:
           path: junit
+      - store_artifacts:
+          path: out/electron.d.ts
+      - store_artifacts:
+          path: out/electron-api.json
 
 workflows:
   version: 2
