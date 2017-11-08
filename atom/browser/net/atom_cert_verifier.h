@@ -19,6 +19,7 @@ class CertVerifierRequest;
 struct VerifyRequestParams {
   std::string hostname;
   std::string default_result;
+  int error_code;
   scoped_refptr<net::X509Certificate> certificate;
 };
 

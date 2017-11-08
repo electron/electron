@@ -114,7 +114,7 @@ new Promise((resolve, reject) => {
       cwd: tempDir
     })
     const checkVersion = childProcess.execSync(`${path.join(tempDir, 'node_modules', '.bin', 'electron')} -v`)
-    assert.strictEqual(checkVersion.toString().trim(), `v${rootPackageJson.version}`)
+    assert.ok((`v${rootPackageJson.version}`.indexOf(checkVersion.toString().trim()) === 0), `Version is correct`)
     resolve(tarballPath)
   })
 })

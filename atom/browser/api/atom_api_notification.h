@@ -45,6 +45,7 @@ class Notification : public mate::TrackableObject<Notification>,
   ~Notification() override;
 
   void Show();
+  void Close();
 
   // Prop Getters
   base::string16 GetTitle() const;

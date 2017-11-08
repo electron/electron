@@ -38,6 +38,10 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 def main():
+  if not os.path.isfile(cpplint_path()):
+    print("[INFO] Skipping cpplint, dependencies has not been bootstrapped")
+    return
+
   os.chdir(SOURCE_ROOT)
   atom_files = list_files('atom',
                           ['app', 'browser', 'common', 'renderer', 'utility'],
@@ -60,8 +64,12 @@ def list_files(parent, directories, filters):
 
 
 def call_cpplint(files):
-  cpplint = os.path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'cpplint.py')
+  cpplint = cpplint_path()
   execute([sys.executable, cpplint] + files)
+
+
+def cpplint_path():
+  return os.path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'cpplint.py')
 
 
 if __name__ == '__main__':

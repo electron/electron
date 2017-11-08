@@ -581,6 +581,16 @@ that can't be set via `<webview>` attributes.
 **Note:** The specified `preload` script option will be appear as `preloadURL`
 (not `preload`) in the `webPreferences` object emitted with this event.
 
+#### Event: 'did-attach-webview'
+
+Returns:
+
+* `event` Event
+* `webContents` WebContents - The guest web contents that is used by the
+  `<webview>`.
+
+Emitted when a `<webview>` has been attached to this web contents.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`

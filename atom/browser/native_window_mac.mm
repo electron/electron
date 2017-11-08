@@ -4,6 +4,7 @@
 
 #include "atom/browser/native_window_mac.h"
 
+#include <AvailabilityMacros.h>
 #include <Quartz/Quartz.h>
 #include <string>
 
@@ -465,7 +466,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-#if !defined(MAC_OS_X_VERSION_10_12)
+#if !defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
 
 enum {
   NSWindowTabbingModeDisallowed = 2
@@ -482,7 +483,7 @@ enum {
 - (IBAction)toggleTabBar:(id)sender;
 @end
 
-#endif  // MAC_OS_X_VERSION_10_12
+#endif
 
 @interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate, NSTouchBarDelegate> {
  @private

@@ -253,7 +253,8 @@ the original network configuration.
   * `request` Object
     * `hostname` String
     * `certificate` [Certificate](structures/certificate.md)
-    * `error` String - Verification result from chromium.
+    * `verificationResult` String - Verification result from chromium.
+    * `errorCode` Integer - Error code.
   * `callback` Function
     * `verificationResult` Integer - Value can be one of certificate error codes
     from [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).

@@ -90,6 +90,7 @@ def main():
     update_package_json(version, suffix)
     tag_version(version, suffix)
 
+  print 'Bumped to version: {0}'.format(version + suffix)
 
 def increase_version(versions, index):
   for i in range(index + 1, 4):
