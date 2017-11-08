@@ -965,7 +965,6 @@ describe('chromium feature', () => {
       })
     }
 
-
     function testPDFIsLoadedInSubFrame (page, preloadFile, done) {
       const pagePath = url.format({
         pathname: path.join(fixtures, 'pages', page).replace(/\\/g, '/'),
@@ -991,7 +990,7 @@ describe('chromium feature', () => {
     it('opens when loading a pdf resource as top level navigation', function (done) {
       createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
       ipcMain.once('pdf-loaded', function (event, state) {
-       assert.equal(state, 'success')
+        assert.equal(state, 'success')
         done()
       })
       w.webContents.on('page-title-updated', () => {
@@ -1004,11 +1003,10 @@ describe('chromium feature', () => {
       w.webContents.loadURL(pdfSource)
     })
 
-
     it('opens a pdf link given params, the query string should be escaped', function (done) {
       createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
       ipcMain.once('pdf-loaded', function (event, state) {
-      assert.equal(state, 'success')
+        assert.equal(state, 'success')
         done()
       })
       w.webContents.on('page-title-updated', () => {
@@ -1022,7 +1020,6 @@ describe('chromium feature', () => {
       })
       w.webContents.loadURL(pdfSourceWithParams)
     })
-
 
     it('should download a pdf when plugins are disabled', function (done) {
       createBrowserWindow({plugins: false, preload: 'preload-pdf-loaded.js'})
