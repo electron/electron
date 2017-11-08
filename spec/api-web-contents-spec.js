@@ -667,4 +667,14 @@ describe('webContents module', () => {
       w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'theme-color.html')}`)
     })
   })
+
+  describe('console-message event', () => {
+    it('is triggered with correct log message', (done) => {
+      w.webContents.on('console-message', (e, level, message) => {
+        assert.equal(message, 'a')
+        done()
+      })
+      w.loadURL(`file://${fixtures}/pages/a.html`)
+    })
+  })
 })
