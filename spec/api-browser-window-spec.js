@@ -1528,9 +1528,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // FIXME(alexeykuzmin): Temporary disabled to unblock master.
-  // https://github.com/electron/electron/issues/10988
-  xdescribe('document.visibilityState/hidden', () => {
+  describe('document.visibilityState/hidden', () => {
     beforeEach(() => { w.destroy() })
 
     function onVisibilityChange (callback) {
