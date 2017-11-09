@@ -230,17 +230,4 @@ a module or a class.
 
 ## Documentation Translations
 
-Translations of the Electron docs are located within the `docs-translations`
-directory.
-
-To add another set (or partial set):
-
-* Create a subdirectory named by language abbreviation.
-* Translate the files.
-* Update the `README.md` within your language directory to link to the files
-  you have translated.
-* Add a link to your translation directory on the main Electron
-  [README](https://github.com/electron/electron#documentation-translations).
-
-Note that the files under `docs-translations` must only include the translated
-ones, the original English files should not be copied there.
+See [electron/electron-i18n](https://github.com/electron/electron-i18n#readme)
