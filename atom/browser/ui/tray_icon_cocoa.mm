@@ -1,6 +1,7 @@
 // Copyright (c) 2014 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
+#import "atom/browser/mac/NSString+ANSI.h"
 
 #include "atom/browser/ui/tray_icon_cocoa.h"
 
@@ -121,8 +122,12 @@ const CGFloat kVerticalTitleMargin = 2;
     // Draw title.
     NSRect titleDrawRect = NSMakeRect(
         [self iconWidth], -kVerticalTitleMargin, [self titleWidth], thickness);
-    [title_ drawInRect:titleDrawRect
-        withAttributes:[self titleAttributesWithHighlight:highlightContent]];
+
+    NSAttributedString *titleu = [self attributedTitleWithParams:title_];
+
+    [titleu drawInRect:titleDrawRect];
+    //[title_ drawInRect:titleDrawRect
+    //    withAttributes:[self titleAttributesWithHighlight:highlightContent]];
   }
 }
 
@@ -204,13 +209,25 @@ const CGFloat kVerticalTitleMargin = 2;
   [self setNeedsDisplay:YES];
 }
 
+//- (void)setTitle:(NSAttributedString*)title {
 - (void)setTitle:(NSString*)title {
   if (title.length > 0) {
+   // title = [self attributedTitleWithParams:title];
+
     title_.reset([title copy]);
   } else {
     title_.reset();
   }
   [self updateDimensions];
+}
+
+
+- (NSAttributedString*) attributedTitleWithParams:(NSString *)fullTitle {
+    NSDictionary* attributes = @{NSBaselineOffsetAttributeName : @1};
+    NSMutableAttributedString * attributedTitle = [fullTitle attributedStringParsingANSICodes];
+    [attributedTitle addAttributes:attributes range:NSMakeRange(0, attributedTitle.length)];
+
+    return attributedTitle;
 }
 
 - (void)setMenuController:(AtomMenuController*)menu {
