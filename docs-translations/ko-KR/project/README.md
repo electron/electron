@@ -71,7 +71,7 @@ npm install electron --save-dev
 - Freenode 채팅의 `#atom-shell` 채널
 - Slack의 [`Atom`](http://atom-slack.herokuapp.com/) 채널
 - [`electron-br`](https://electron-br.slack.com) *(브라질)* 커뮤니티
-- [`electron-kr`](http://www.meetup.com/electron-kr/) *(한국)* 커뮤니티
+- [`electron-kr`](https://electron-kr.github.io/electron-kr) *(한국)* 커뮤니티
 - [`electron-jp`](https://electron-jp-slackin.herokuapp.com/) *(일본)* 커뮤니티
 - [`electron-tr`](http://electron-tr.herokuapp.com) *(터키)* 커뮤니티
 - [`electron-id`](https://electron-id.slack.com) *(인도네시아)* 커뮤니티
