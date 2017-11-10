@@ -26,8 +26,8 @@ git clone https://github.com/electron/electron-i18n
 vmd electron-i18n/content/zh-CN
 ```
 
-[crowdin.com/projects/electron]: https://crowdin.com/projects/electron
-[Crowdin]: https://crowdin.com/projects/electron
+[crowdin.com/project/electron]: https://crowdin.com/project/electron
+[Crowdin]: https://crowdin.com/project/electron
 [electron/electron-i18n]: https://github.com/electron/electron-i18n#readme
 [electron/electron-i18n/tree/master/content]: https://github.com/electron/electron-i18n/tree/master/content
 [vmd]: http://ghub.io/vmd
