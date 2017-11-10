@@ -11,7 +11,7 @@
 #include "atom/renderer/guest_view_container.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
-#include "third_party/WebKit/public/web/WebCache.h"
+#include "third_party/WebKit/public/platform/WebCache.h"
 
 namespace blink {
 class WebLocalFrame;

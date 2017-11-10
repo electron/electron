@@ -14,6 +14,9 @@ class DesktopMediaListObserver {
   virtual void OnSourceMoved(int old_index, int new_index) = 0;
   virtual void OnSourceNameChanged(int index) = 0;
   virtual void OnSourceThumbnailChanged(int index) = 0;
+
+  // Return false to stop refreshing. The associated |DesktopMediaList| should
+  // no longer be used.
   virtual bool OnRefreshFinished() = 0;
 
  protected:

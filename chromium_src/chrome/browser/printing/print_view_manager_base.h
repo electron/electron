@@ -5,6 +5,9 @@
 #ifndef CHROME_BROWSER_PRINTING_PRINT_VIEW_MANAGER_BASE_H_
 #define CHROME_BROWSER_PRINTING_PRINT_VIEW_MANAGER_BASE_H_
 
+#include <memory>
+
+#include "base/callback.h"
 #include "base/memory/ref_counted.h"
 #include "components/prefs/pref_member.h"
 #include "base/strings/string16.h"
@@ -39,23 +42,31 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // Prints the current document immediately. Since the rendering is
   // asynchronous, the actual printing will not be completed on the return of
   // this function. Returns false if printing is impossible at the moment.
-  virtual bool PrintNow(bool silent, bool print_background);
+  virtual bool PrintNow(content::RenderFrameHost* rfh,
+                        bool silent, bool print_background,
+                        const base::string16& device_name);
 #endif  // !DISABLE_BASIC_PRINTING
 
   // PrintedPagesSource implementation.
   virtual base::string16 RenderSourceName() override;
 
+  void SetCallback(const base::Callback<void(bool)>& cb) {
+    callback = cb;
+  };
+
  protected:
   explicit PrintViewManagerBase(content::WebContents* web_contents);
 
   // Helper method for Print*Now().
-  bool PrintNowInternal(IPC::Message* message);
+  bool PrintNowInternal(content::RenderFrameHost* rfh,
+                        std::unique_ptr<IPC::Message> message);
 
   // Terminates or cancels the print job if one was pending.
-  virtual void RenderProcessGone(base::TerminationStatus status) override;
+  void RenderProcessGone(base::TerminationStatus status) override;
 
   // content::WebContentsObserver implementation.
-  virtual bool OnMessageReceived(const IPC::Message& message) override;
+  bool OnMessageReceived(const IPC::Message& message,
+                         content::RenderFrameHost* render_frame_host) override;
 
   // IPC Message handlers.
   virtual void OnPrintingFailed(int cookie);
@@ -154,6 +165,8 @@ class PrintViewManagerBase : public content::NotificationObserver,
   bool printing_enabled_;
 
   scoped_refptr<printing::PrintQueriesQueue> queue_;
+
+  base::Callback<void(bool)> callback;
 
   DISALLOW_COPY_AND_ASSIGN(PrintViewManagerBase);
 };

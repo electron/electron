@@ -76,6 +76,7 @@ The `Tray` module emits the following events:
   * `ctrlKey` Boolean
   * `metaKey` Boolean
 * `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon
+* `position` [Point](structures/point.md) - The position of the event
 
 Emitted when the tray icon is clicked.
 
@@ -144,6 +145,39 @@ Emitted when a drag operation exits the tray icon.
 
 Emitted when a drag operation ends on the tray or ends at another location.
 
+#### Event: 'mouse-enter' _macOS_
+
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
+* `position` [Point](structures/point.md) - The position of the event
+
+Emitted when the mouse enters the tray icon.
+
+#### Event: 'mouse-leave' _macOS_
+
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
+* `position` [Point](structures/point.md) - The position of the event
+
+Emitted when the mouse exits the tray icon.
+
+#### Event: 'mouse-move' _macOS_
+
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
+* `position` [Point](structures/point.md) - The position of the event
+
+Emitted when the mouse moves in the tray icon.
+
 ### Instance Methods
 
 The `Tray` class has the following methods:
@@ -211,17 +245,15 @@ win.on('hide', () => {
 
 * `options` Object
   * `icon` ([NativeImage](native-image.md) | String) - (optional)
-  * `title` String - (optional)
-  * `content` String - (optional)
+  * `title` String
+  * `content` String
 
 Displays a tray balloon.
 
 #### `tray.popUpContextMenu([menu, position])` _macOS_ _Windows_
 
 * `menu` Menu (optional)
-* `position` Object (optional) - The pop up position.
-  * `x` Integer
-  * `y` Integer
+* `position` [Point](structures/point.md) (optional) - The pop up position.
 
 Pops up the context menu of the tray icon. When `menu` is passed, the `menu` will
 be shown instead of the tray icon's context menu.

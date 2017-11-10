@@ -112,9 +112,9 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificati
 * `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`,
   `url`, `array`, `dictionary`
 
-Get the value of `key` in system preferences.
+Returns `any` - The value of `key` in `NSUserDefaults`.
 
-This API uses `NSUserDefaults` on macOS. Some popular `key` and `type`s are:
+Some popular `key` and `type`s are:
 
 * `AppleInterfaceStyle`:  `string`
 * `AppleAquaColorVariant`:  `integer`
@@ -130,18 +130,25 @@ This API uses `NSUserDefaults` on macOS. Some popular `key` and `type`s are:
 * `type` String - See [`getUserDefault`][#systempreferencesgetuserdefaultkey-type-macos]
 * `value` String
 
-Set the value of `key` in system preferences.
+Set the value of `key` in `NSUserDefaults`.
 
 Note that `type` should match actual type of `value`. An exception is thrown
 if they don't.
 
-This API uses `NSUserDefaults` on macOS. Some popular `key` and `type`s are:
+Some popular `key` and `type`s are:
 
 * `ApplePressAndHoldEnabled`:  `boolean`
 
+### `systemPreferences.removeUserDefault(key)` _macOS_
+
+* `key` String
+
+Removes the `key` in `NSUserDefaults`. This can be used to restore the default
+or global value of a `key` previously set with `setUserDefault`.
+
 ### `systemPreferences.isAeroGlassEnabled()` _Windows_
 
-This method returns `true` if [DWM composition][dwm-composition] (Aero Glass) is
+Returns `Boolean` - `true` if [DWM composition][dwm-composition] (Aero Glass) is
 enabled, and `false` otherwise.
 
 An example of using it to determine if you should create a transparent window or

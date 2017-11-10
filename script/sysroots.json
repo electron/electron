@@ -1,0 +1,56 @@
+{
+    "jessie_amd64": {
+        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
+        "Sha1Sum": "8b2167b36f3cd85ebbec5c2a39a1842ef613f6a2",
+        "SysrootDir": "debian_jessie_amd64-sysroot",
+        "Tarball": "debian_jessie_amd64_sysroot.tgz"
+    },
+    "jessie_arm": {
+        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
+        "Sha1Sum": "3fa13635be0c6d8ed461715ad51cdb3809a19422",
+        "SysrootDir": "debian_jessie_arm-sysroot",
+        "Tarball": "debian_jessie_arm_sysroot.tgz"
+    },
+    "jessie_arm64": {
+        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
+        "Sha1Sum": "bcf92ed2a033b4b2d1032df3b53eac4910c78fde",
+        "SysrootDir": "debian_jessie_arm64-sysroot",
+        "Tarball": "debian_jessie_arm64_sysroot.tgz"
+    },
+    "jessie_i386": {
+        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
+        "Sha1Sum": "4e83ed9a1b457a1ca59512c3d4823e87e950deb4",
+        "SysrootDir": "debian_jessie_i386-sysroot",
+        "Tarball": "debian_jessie_i386_sysroot.tgz"
+    },
+    "jessie_mips": {
+        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
+        "Sha1Sum": "0f550cd150f077a6e749a629e2fda0f0a4348eae",
+        "SysrootDir": "debian_jessie_mips-sysroot",
+        "Tarball": "debian_jessie_mips_sysroot.tgz"
+    },
+    "wheezy_amd64": {
+        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
+        "Sha1Sum": "fe372c4394ece7fd1d853a205de8c13b46e2f45a",
+        "SysrootDir": "debian_wheezy_amd64-sysroot",
+        "Tarball": "debian_wheezy_amd64_sysroot.tgz"
+    },
+    "wheezy_arm": {
+        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
+        "Sha1Sum": "73323fae0b5597398a38f0d7e64f48309da112fa",
+        "SysrootDir": "debian_wheezy_arm-sysroot",
+        "Tarball": "debian_wheezy_arm_sysroot.tgz"
+    },
+    "wheezy_i386": {
+        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
+        "Sha1Sum": "7e96584297a5c9916b3bed4b88abe332fc79a247",
+        "SysrootDir": "debian_wheezy_i386-sysroot",
+        "Tarball": "debian_wheezy_i386_sysroot.tgz"
+    },
+    "wheezy_mips": {
+        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
+        "Sha1Sum": "b2f173905a41ec9f23c329fe529508b4bdc76230",
+        "SysrootDir": "debian_wheezy_mips-sysroot",
+        "Tarball": "debian_wheezy_mips_sysroot.tgz"
+    }
+}

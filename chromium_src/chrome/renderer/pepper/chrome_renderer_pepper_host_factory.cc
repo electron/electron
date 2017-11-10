@@ -5,10 +5,12 @@
 #include "chrome/renderer/pepper/chrome_renderer_pepper_host_factory.h"
 
 #include "base/logging.h"
+#include "base/memory/ptr_util.h"
 #include "chrome/renderer/pepper/pepper_flash_font_file_host.h"
 #include "chrome/renderer/pepper/pepper_flash_fullscreen_host.h"
 #include "chrome/renderer/pepper/pepper_flash_menu_host.h"
 #include "chrome/renderer/pepper/pepper_flash_renderer_host.h"
+#include "components/pdf/renderer/pepper_pdf_host.h"
 #include "content/public/renderer/renderer_ppapi_host.h"
 #include "ppapi/host/ppapi_host.h"
 #include "ppapi/host/resource_host.h"
@@ -75,6 +77,15 @@ std::unique_ptr<ResourceHost> ChromeRendererPepperHostFactory::CreateResourceHos
               host_, instance, resource, description, charset));
         }
         break;
+      }
+    }
+  }
+
+  if (host_->GetPpapiHost()->permissions().HasPermission(
+          ppapi::PERMISSION_PRIVATE)) {
+    switch (message.type()) {
+      case PpapiHostMsg_PDF_Create::ID: {
+        return base::MakeUnique<pdf::PepperPDFHost>(host_, instance, resource);
       }
     }
   }

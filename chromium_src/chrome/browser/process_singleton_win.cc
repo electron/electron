@@ -258,6 +258,9 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
   return result;
 }
 
+void ProcessSingleton::StartListeningOnSocket() {}
+void ProcessSingleton::OnBrowserReady() {}
+
 // Look for a Chrome instance that uses the same profile directory. If there
 // isn't one, create a message window with its title set to the profile
 // directory path.

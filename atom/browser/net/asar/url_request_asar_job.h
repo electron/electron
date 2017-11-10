@@ -56,7 +56,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
   void Kill() override;
   int ReadRawData(net::IOBuffer* buf, int buf_size) override;
   bool IsRedirectResponse(GURL* location, int* http_status_code) override;
-  std::unique_ptr<net::Filter> SetupFilter() const override;
+  std::unique_ptr<net::SourceStream> SetUpSourceStream() override;
   bool GetMimeType(std::string* mime_type) const override;
   void SetExtraRequestHeaders(const net::HttpRequestHeaders& headers) override;
   int GetResponseCode() const override;
@@ -88,7 +88,6 @@ class URLRequestAsarJob : public net::URLRequestJob {
 
   // Callback after fetching file info on a background thread.
   void DidFetchMetaInfo(const FileMetaInfo* meta_info);
-
 
   // Callback after opening file on a background thread.
   void DidOpen(int result);

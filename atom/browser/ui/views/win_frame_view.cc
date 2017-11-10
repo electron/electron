@@ -23,7 +23,6 @@ WinFrameView::WinFrameView() {
 WinFrameView::~WinFrameView() {
 }
 
-
 gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
   return views::GetWindowBoundsForClientBounds(

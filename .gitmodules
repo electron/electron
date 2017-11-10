@@ -1,6 +1,3 @@
-[submodule "vendor/brightray"]
-	path = vendor/brightray
-	url = https://github.com/electron/brightray.git
 [submodule "vendor/node"]
 	path = vendor/node
 	url = https://github.com/electron/node.git
@@ -22,3 +19,12 @@
 [submodule "vendor/boto"]
 	path = vendor/boto
 	url = https://github.com/boto/boto.git
+[submodule "vendor/pdf_viewer"]
+	path = vendor/pdf_viewer
+	url = https://github.com/electron/pdf-viewer.git
+[submodule "vendor/gyp"]
+	path = vendor/gyp
+	url = https://github.com/electron/gyp
+[submodule "vendor/libchromiumcontent"]
+	path = vendor/libchromiumcontent
+	url = https://github.com/electron/libchromiumcontent

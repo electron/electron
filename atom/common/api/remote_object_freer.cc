@@ -19,11 +19,11 @@ namespace atom {
 namespace {
 
 content::RenderView* GetCurrentRenderView() {
-  WebLocalFrame* frame = WebLocalFrame::frameForCurrentContext();
+  WebLocalFrame* frame = WebLocalFrame::FrameForCurrentContext();
   if (!frame)
     return nullptr;
 
-  WebView* view = frame->view();
+  WebView* view = frame->View();
   if (!view)
     return nullptr;  // can happen during closing.
 

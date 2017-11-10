@@ -1,0 +1,12 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = require('electron')
+  const popup = window.open('native-window-open-child.html')
+  popup.onload = () => {
+    const content = popup.document.querySelector('h1').innerText
+    ipcRenderer.send('answer', content)
+  }
+</script>
+</body>
+</html>

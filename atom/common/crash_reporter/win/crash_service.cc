@@ -391,7 +391,7 @@ void CrashService::OnClientDumpRequest(void* context,
     LOG(ERROR) << "could not write custom info file";
   }
 
-  if (!self->sender_)
+  if (!self->sender_ || map.find(L"skip_upload") != map.end())
     return;
 
   // Send the crash dump using a worker thread. This operation has retry

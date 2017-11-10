@@ -32,3 +32,4 @@ For further guidance on setting up editor integration, see these pages:
 
   * [Atom](https://atom.io/packages/clang-format)
   * [Vim & Emacs](http://clang.llvm.org/docs/ClangFormat.html#vim-integration)
+  * [Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format)

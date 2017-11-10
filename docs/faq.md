@@ -1,5 +1,20 @@
 # Electron FAQ
 
+## Why am I having trouble installing Electron?
+
+When running `npm install electron`, some users occasionally encounter 
+installation errors.
+
+In almost all cases, these errors are the result of network problems and not 
+actual issues with the `electron` npm package. Errors like `ELIFECYCLE`, 
+`EAI_AGAIN`, `ECONNRESET`, and `ETIMEDOUT` are all indications of such 
+network problems.  The best resolution is to try switching networks, or 
+just wait a bit and try installing again.
+
+You can also attempt to download Electron directly from 
+[electron/electron/releases](https://github.com/electron/electron/releases) 
+if installing via `npm` is failing.
+
 ## When will Electron upgrade to latest Chrome?
 
 The Chrome version of Electron is usually bumped within one or two weeks after
@@ -148,7 +163,7 @@ npm uninstall electron
 npm uninstall -g electron
 ```
 
-However if your are using the built-in module but still getting this error, it
+However if you are using the built-in module but still getting this error, it
 is very likely you are using the module in the wrong process. For example
 `electron.app` can only be used in the main process, while `electron.webFrame`
 is only available in renderer processes.

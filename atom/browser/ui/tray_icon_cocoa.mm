@@ -54,9 +54,16 @@ const CGFloat kVerticalTitleMargin = 2;
                             statusItemWithLength:NSVariableStatusItemLength];
     statusItem_.reset([item retain]);
     [statusItem_ setView:self];
-
     // Finalize setup by sizing our views
     [self updateDimensions];
+
+    // Add NSTrackingArea for listening to mouseEnter, mouseExit, and mouseMove events
+    auto trackingArea = [[[NSTrackingArea alloc]
+        initWithRect:[self bounds]
+             options:NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved | NSTrackingActiveAlways
+               owner:self
+            userInfo:nil] autorelease];
+    [self addTrackingArea:trackingArea];
   }
   return self;
 }
@@ -242,6 +249,7 @@ const CGFloat kVerticalTitleMargin = 2;
   if (event.clickCount == 1)
     trayIcon_->NotifyClicked(
         gfx::ScreenRectFromNSRect(event.window.frame),
+        gfx::ScreenPointFromNSPoint([event locationInWindow]),
         ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // Double click event.
@@ -286,6 +294,24 @@ const CGFloat kVerticalTitleMargin = 2;
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender {
   trayIcon_->NotifyDragEntered();
   return NSDragOperationCopy;
+}
+
+- (void)mouseExited:(NSEvent*)event {
+  trayIcon_->NotifyMouseExited(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
+}
+
+- (void)mouseEntered:(NSEvent*)event {
+  trayIcon_->NotifyMouseEntered(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
+}
+
+- (void)mouseMoved:(NSEvent*)event {
+  trayIcon_->NotifyMouseMoved(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
 }
 
 - (void)draggingExited:(id <NSDraggingInfo>)sender {
@@ -405,7 +431,7 @@ gfx::Rect TrayIconCocoa::GetBounds() {
   return bounds;
 }
 
-void TrayIconCocoa::MenuClosed() {
+void TrayIconCocoa::MenuWillClose() {
   [status_item_view_ setNeedsDisplay:YES];
 }
 

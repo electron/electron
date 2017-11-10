@@ -14,8 +14,8 @@ extern "C" {
 
 namespace atom {
 
-NodeBindingsWin::NodeBindingsWin(bool is_browser)
-    : NodeBindings(is_browser) {
+NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env)
+    : NodeBindings(browser_env) {
 }
 
 NodeBindingsWin::~NodeBindingsWin() {
@@ -45,8 +45,8 @@ void NodeBindingsWin::PollEvents() {
 }
 
 // static
-NodeBindings* NodeBindings::Create(bool is_browser) {
-  return new NodeBindingsWin(is_browser);
+NodeBindings* NodeBindings::Create(BrowserEnvironment browser_env) {
+  return new NodeBindingsWin(browser_env);
 }
 
 }  // namespace atom

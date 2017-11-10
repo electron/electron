@@ -169,4 +169,4 @@ your app's folder. This eliminates the need to copy-paste your app into
 Electron's resource directory.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
-[spectron]: http://electron.atom.io/spectron
+[spectron]: https://electron.atom.io/spectron

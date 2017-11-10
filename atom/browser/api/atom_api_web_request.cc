@@ -20,13 +20,14 @@ using content::BrowserThread;
 namespace mate {
 
 template<>
-struct Converter<extensions::URLPattern> {
+struct Converter<URLPattern> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     extensions::URLPattern* out) {
+                     URLPattern* out) {
     std::string pattern;
     if (!ConvertFromV8(isolate, val, &pattern))
       return false;
-    return out->Parse(pattern) == extensions::URLPattern::PARSE_SUCCESS;
+    *out = URLPattern(URLPattern::SCHEME_ALL);
+    return out->Parse(pattern) == URLPattern::PARSE_SUCCESS;
   }
 };
 

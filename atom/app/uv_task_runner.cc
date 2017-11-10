@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <utility>
+
 #include "atom/app/uv_task_runner.h"
 
 #include "base/stl_util.h"
@@ -19,13 +21,13 @@ UvTaskRunner::~UvTaskRunner() {
 }
 
 bool UvTaskRunner::PostDelayedTask(const tracked_objects::Location& from_here,
-                                   const base::Closure& task,
+                                   base::OnceClosure task,
                                    base::TimeDelta delay) {
   auto* timer = new uv_timer_t;
   timer->data = this;
   uv_timer_init(loop_, timer);
   uv_timer_start(timer, UvTaskRunner::OnTimeout, delay.InMilliseconds(), 0);
-  tasks_[timer] = task;
+  tasks_[timer] = std::move(task);
   return true;
 }
 
@@ -35,9 +37,9 @@ bool UvTaskRunner::RunsTasksOnCurrentThread() const {
 
 bool UvTaskRunner::PostNonNestableDelayedTask(
     const tracked_objects::Location& from_here,
-    const base::Closure& task,
+    base::OnceClosure task,
     base::TimeDelta delay) {
-  return PostDelayedTask(from_here, task, delay);
+  return PostDelayedTask(from_here, std::move(task), delay);
 }
 
 // static
@@ -46,7 +48,7 @@ void UvTaskRunner::OnTimeout(uv_timer_t* timer) {
   if (!ContainsKey(self->tasks_, timer))
     return;
 
-  self->tasks_[timer].Run();
+  std::move(self->tasks_[timer]).Run();
   self->tasks_.erase(timer);
   uv_timer_stop(timer);
   uv_close(reinterpret_cast<uv_handle_t*>(timer), UvTaskRunner::OnClose);

@@ -26,7 +26,7 @@ The `session` module has the following methods:
 ### `session.fromPartition(partition[, options])`
 
 * `partition` String
-* `options` Object
+* `options` Object (optional)
   * `cache` Boolean - Whether to enable cache.
 
 Returns `Session` - A session instance from `partition` string. When there is an existing
@@ -98,7 +98,7 @@ The following methods are available on instances of `Session`:
 * `callback` Function
   * `size` Integer - Cache size used in bytes.
 
-Returns the session's current cache size.
+Callback is invoked with the session's current cache size.
 
 #### `ses.clearCache(callback)`
 
@@ -109,12 +109,12 @@ Clears the session’s HTTP cache.
 #### `ses.clearStorageData([options, callback])`
 
 * `options` Object (optional)
-  * `origin` String - Should follow `window.location.origin`’s representation
+  * `origin` String - (optional) Should follow `window.location.origin`’s representation
     `scheme://host:port`.
-  * `storages` String[] - The types of storages to clear, can contain:
+  * `storages` String[] - (optional) The types of storages to clear, can contain:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
     `shadercache`, `websql`, `serviceworkers`
-  * `quotas` String[] - The types of quotas to clear, can contain:
+  * `quotas` String[] - (optional) The types of quotas to clear, can contain:
     `temporary`, `persistent`, `syncable`.
 * `callback` Function (optional) - Called when operation is done.
 
@@ -204,7 +204,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
 
 * `url` URL
 * `callback` Function
-  * `proxy` Object
+  * `proxy` String
 
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
@@ -250,15 +250,23 @@ the original network configuration.
 #### `ses.setCertificateVerifyProc(proc)`
 
 * `proc` Function
-  * `hostname` String
-  * `certificate` [Certificate](structures/certificate.md)
+  * `request` Object
+    * `hostname` String
+    * `certificate` [Certificate](structures/certificate.md)
+    * `verificationResult` String - Verification result from chromium.
+    * `errorCode` Integer - Error code.
   * `callback` Function
-    * `isTrusted` Boolean - Determines if the certificate should be trusted
+    * `verificationResult` Integer - Value can be one of certificate error codes
+    from [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+    Apart from the certificate error codes, the following special codes can be used.
+      * `0` - Indicates success and disables Certificate Transperancy verification.
+      * `-2` - Indicates failure.
+      * `-3` - Uses the verification result from chromium.
 
 Sets the certificate verify proc for `session`, the `proc` will be called with
-`proc(hostname, certificate, callback)` whenever a server certificate
-verification is requested. Calling `callback(true)` accepts the certificate,
-calling `callback(false)` rejects it.
+`proc(request, callback)` whenever a server certificate
+verification is requested. Calling `callback(0)` accepts the certificate,
+calling `callback(-2)` rejects it.
 
 Calling `setCertificateVerifyProc(null)` will revert back to default certificate
 verify proc.
@@ -267,15 +275,20 @@ verify proc.
 const {BrowserWindow} = require('electron')
 let win = new BrowserWindow()
 
-win.webContents.session.setCertificateVerifyProc((hostname, cert, callback) => {
-  callback(hostname === 'github.com')
+win.webContents.session.setCertificateVerifyProc((request, callback) => {
+  const {hostname} = request
+  if (hostname === 'github.com') {
+    callback(0)
+  } else {
+    callback(-2)
+  }
 })
 ```
 
 #### `ses.setPermissionRequestHandler(handler)`
 
 * `handler` Function
-  * `webContents` Object - [WebContents](web-contents.md) requesting the permission.
+  * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.
   * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
     'pointerLock', 'fullscreen', 'openExternal'.
   * `callback` Function
@@ -376,15 +389,15 @@ The following properties are available on instances of `Session`:
 
 #### `ses.cookies`
 
-A Cookies object for this session.
+A [Cookies](cookies.md) object for this session.
 
 #### `ses.webRequest`
 
-A WebRequest object for this session.
+A [WebRequest](web-request.md) object for this session.
 
 #### `ses.protocol`
 
-A Protocol object (an instance of [protocol](protocol.md) module) for this session.
+A [Protocol](protocol.md) object for this session.
 
 ```javascript
 const {app, session} = require('electron')

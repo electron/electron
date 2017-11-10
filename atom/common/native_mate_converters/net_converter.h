@@ -33,6 +33,10 @@ template<>
 struct Converter<scoped_refptr<net::X509Certificate>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
       const scoped_refptr<net::X509Certificate>& val);
+
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     scoped_refptr<net::X509Certificate>* out);
 };
 
 template<>

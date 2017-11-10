@@ -24,4 +24,11 @@ const char kSecureProtocolDescription[] =
     "The connection to this site is using a strong protocol version "
     "and cipher suite.";
 
+const char kPdfPluginMimeType[] = "application/x-google-chrome-pdf";
+const char kPdfPluginPath[] = "chrome://pdf-viewer/";
+const char kPdfPluginSrc[] = "src";
+
+const char kPdfViewerUIOrigin[] = "chrome://pdf-viewer/";
+const char kPdfViewerUIHost[] = "pdf-viewer";
+
 }  // namespace atom

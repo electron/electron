@@ -53,11 +53,12 @@ class Cookies : public mate::TrackableObject<Cookies>,
   void Remove(const GURL& url, const std::string& name,
               const base::Closure& callback);
   void Set(const base::DictionaryValue& details, const SetCallback& callback);
+  void FlushStore(const base::Closure& callback);
 
   // AtomCookieDelegate::Observer:
   void OnCookieChanged(const net::CanonicalCookie& cookie,
                        bool removed,
-                       AtomCookieDelegate::ChangeCause cause) override;
+                       net::CookieStore::ChangeCause cause) override;
 
  private:
   net::URLRequestContextGetter* request_context_getter_;

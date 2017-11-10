@@ -24,6 +24,7 @@ FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
       view_(view),
       callback_(callback),
       only_dirty_(only_dirty),
+      source_id_for_copy_request_(base::UnguessableToken::Create()),
       weak_factory_(this) {
 }
 
@@ -32,8 +33,7 @@ bool FrameSubscriber::ShouldCaptureFrame(
     base::TimeTicks present_time,
     scoped_refptr<media::VideoFrame>* storage,
     DeliverFrameCallback* callback) {
-  const auto host = view_ ? view_->GetRenderWidgetHost() : nullptr;
-  if (!view_ || !host)
+  if (!view_)
     return false;
 
   if (dirty_rect.IsEmpty())
@@ -45,16 +45,16 @@ bool FrameSubscriber::ShouldCaptureFrame(
 
   gfx::Size view_size = rect.size();
   gfx::Size bitmap_size = view_size;
-  const gfx::NativeView native_view = view_->GetNativeView();
+  gfx::NativeView native_view = view_->GetNativeView();
   const float scale =
-      display::Screen::GetScreen()->GetDisplayNearestWindow(native_view)
+      display::Screen::GetScreen()->GetDisplayNearestView(native_view)
       .device_scale_factor();
   if (scale > 1.0f)
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   rect = gfx::Rect(rect.origin(), bitmap_size);
 
-  host->CopyFromBackingStore(
+  view_->CopyFromSurface(
       rect,
       rect.size(),
       base::Bind(&FrameSubscriber::OnFrameDelivered,
@@ -62,6 +62,10 @@ bool FrameSubscriber::ShouldCaptureFrame(
       kBGRA_8888_SkColorType);
 
   return false;
+}
+
+const base::UnguessableToken& FrameSubscriber::GetSourceIdForCopyRequest() {
+  return source_id_for_copy_request_;
 }
 
 void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
@@ -74,20 +78,32 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
   v8::Locker locker(isolate_);
   v8::HandleScope handle_scope(isolate_);
 
-  size_t rgb_arr_size = bitmap.width() * bitmap.height() *
-    bitmap.bytesPerPixel();
-  v8::MaybeLocal<v8::Object> buffer = node::Buffer::New(isolate_, rgb_arr_size);
+  size_t rgb_row_size = bitmap.width() * bitmap.bytesPerPixel();
+
+  v8::MaybeLocal<v8::Object> buffer =
+      node::Buffer::New(isolate_, rgb_row_size * bitmap.height());
+
   if (buffer.IsEmpty())
     return;
 
-  bitmap.copyPixelsTo(
-    reinterpret_cast<uint8_t*>(node::Buffer::Data(buffer.ToLocalChecked())),
-    rgb_arr_size);
+  auto local_buffer = buffer.ToLocalChecked();
+
+  {
+    SkAutoLockPixels lock(bitmap);
+    auto source = static_cast<const unsigned char*>(bitmap.getPixels());
+    auto target = node::Buffer::Data(local_buffer);
+
+    for (int y = 0; y < bitmap.height(); ++y) {
+      memcpy(target, source, rgb_row_size);
+      source += bitmap.rowBytes();
+      target += rgb_row_size;
+    }
+  }
 
   v8::Local<v8::Value> damage =
       mate::Converter<gfx::Rect>::ToV8(isolate_, damage_rect);
 
-  callback_.Run(buffer.ToLocalChecked(), damage);
+  callback_.Run(local_buffer, damage);
 }
 
 }  // namespace api

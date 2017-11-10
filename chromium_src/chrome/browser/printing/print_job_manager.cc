@@ -35,7 +35,7 @@ scoped_refptr<PrinterQuery> PrintQueriesQueue::PopPrinterQuery(
   for (PrinterQueries::iterator itr = queued_queries_.begin();
        itr != queued_queries_.end(); ++itr) {
     if ((*itr)->cookie() == document_cookie && !(*itr)->is_callback_pending()) {
-      scoped_refptr<printing::PrinterQuery> current_query(*itr);
+      scoped_refptr<PrinterQuery> current_query(*itr);
       queued_queries_.erase(itr);
       DCHECK(current_query->is_valid());
       return current_query;
@@ -46,10 +46,9 @@ scoped_refptr<PrinterQuery> PrintQueriesQueue::PopPrinterQuery(
 
 scoped_refptr<PrinterQuery> PrintQueriesQueue::CreatePrinterQuery(
     int render_process_id,
-    int render_view_id) {
-  scoped_refptr<PrinterQuery> job =
-      new printing::PrinterQuery(render_process_id, render_view_id);
-  return job;
+    int render_frame_id) {
+  return make_scoped_refptr(
+      new PrinterQuery(render_process_id, render_frame_id));
 }
 
 void PrintQueriesQueue::Shutdown() {
@@ -76,14 +75,14 @@ PrintJobManager::~PrintJobManager() {
 }
 
 scoped_refptr<PrintQueriesQueue> PrintJobManager::queue() {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (!queue_.get())
     queue_ = new PrintQueriesQueue();
   return queue_;
 }
 
 void PrintJobManager::Shutdown() {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   DCHECK(!is_shutdown_);
   is_shutdown_ = true;
   registrar_.RemoveAll();
@@ -94,7 +93,7 @@ void PrintJobManager::Shutdown() {
 }
 
 void PrintJobManager::StopJobs(bool wait_for_finish) {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   // Copy the array since it can be modified in transit.
   PrintJobs to_stop;
   to_stop.swap(current_jobs_);
@@ -111,18 +110,11 @@ void PrintJobManager::StopJobs(bool wait_for_finish) {
 void PrintJobManager::Observe(int type,
                               const content::NotificationSource& source,
                               const content::NotificationDetails& details) {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
-  switch (type) {
-    case chrome::NOTIFICATION_PRINT_JOB_EVENT: {
-      OnPrintJobEvent(content::Source<PrintJob>(source).ptr(),
-                      *content::Details<JobEventDetails>(details).ptr());
-      break;
-    }
-    default: {
-      NOTREACHED();
-      break;
-    }
-  }
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK_EQ(chrome::NOTIFICATION_PRINT_JOB_EVENT, type);
+
+  OnPrintJobEvent(content::Source<PrintJob>(source).ptr(),
+                  *content::Details<JobEventDetails>(details).ptr());
 }
 
 void PrintJobManager::OnPrintJobEvent(

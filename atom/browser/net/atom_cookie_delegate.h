@@ -19,7 +19,7 @@ class AtomCookieDelegate : public net::CookieMonsterDelegate {
    public:
     virtual void OnCookieChanged(const net::CanonicalCookie& cookie,
                                  bool removed,
-                                 ChangeCause cause) {}
+                                 net::CookieStore::ChangeCause cause) {}
    protected:
     virtual ~Observer() {}
   };
@@ -30,7 +30,7 @@ class AtomCookieDelegate : public net::CookieMonsterDelegate {
   // net::CookieMonsterDelegate:
   void OnCookieChanged(const net::CanonicalCookie& cookie,
                        bool removed,
-                       ChangeCause cause) override;
+                       net::CookieStore::ChangeCause cause) override;
 
 
  private:
@@ -38,7 +38,7 @@ class AtomCookieDelegate : public net::CookieMonsterDelegate {
 
   void NotifyObservers(const net::CanonicalCookie& cookie,
                        bool removed,
-                       ChangeCause cause);
+                       net::CookieStore::ChangeCause cause);
 
   DISALLOW_COPY_AND_ASSIGN(AtomCookieDelegate);
 };

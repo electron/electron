@@ -31,9 +31,7 @@ class SubmenuButton : public views::MenuButton {
 
   // views::InkDropHostView:
   std::unique_ptr<views::InkDropRipple> CreateInkDropRipple() const override;
-  std::unique_ptr<views::InkDropHighlight> CreateInkDropHighlight()
-      const override;
-  bool ShouldShowInkDropForFocus() const override;
+  std::unique_ptr<views::InkDrop> CreateInkDrop() override;
 
  private:
   bool GetUnderlinePosition(const base::string16& text,

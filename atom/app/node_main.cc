@@ -51,10 +51,9 @@ int NodeMain(int argc, char *argv[]) {
         &isolate_data, gin_env.context(), argc, argv,
         exec_argc, exec_argv);
 
-    // Start our custom debugger implementation.
-    NodeDebugger node_debugger(gin_env.isolate());
-    if (node_debugger.IsRunning())
-      env->AssignToContext(v8::Debug::GetDebugContext(gin_env.isolate()));
+    // Enable support for v8 inspector.
+    NodeDebugger node_debugger(env);
+    node_debugger.Start();
 
     mate::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)

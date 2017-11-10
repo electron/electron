@@ -14,7 +14,6 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
@@ -88,10 +87,10 @@ AtomRenderViewObserver::~AtomRenderViewObserver() {
 void AtomRenderViewObserver::EmitIPCEvent(blink::WebFrame* frame,
                                           const base::string16& channel,
                                           const base::ListValue& args) {
-  if (!frame || frame->isWebRemoteFrame())
+  if (!frame || frame->IsWebRemoteFrame())
     return;
 
-  v8::Isolate* isolate = blink::mainThreadIsolate();
+  v8::Isolate* isolate = blink::MainThreadIsolate();
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
@@ -117,22 +116,11 @@ void AtomRenderViewObserver::EmitIPCEvent(blink::WebFrame* frame,
 void AtomRenderViewObserver::DidCreateDocumentElement(
     blink::WebLocalFrame* frame) {
   document_created_ = true;
-
-  // Read --zoom-factor from command line.
-  std::string zoom_factor_str = base::CommandLine::ForCurrentProcess()->
-      GetSwitchValueASCII(switches::kZoomFactor);
-  if (zoom_factor_str.empty())
-    return;
-  double zoom_factor;
-  if (!base::StringToDouble(zoom_factor_str, &zoom_factor))
-    return;
-  double zoom_level = blink::WebView::zoomFactorToZoomLevel(zoom_factor);
-  frame->view()->setZoomLevel(zoom_level);
 }
 
 void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
   blink::WebVector<blink::WebDraggableRegion> webregions =
-      frame->document().draggableRegions();
+      frame->GetDocument().DraggableRegions();
   std::vector<DraggableRegion> regions;
   for (auto& webregion : webregions) {
     DraggableRegion region;
@@ -148,6 +136,7 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
     IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
+    IPC_MESSAGE_HANDLER(AtomViewMsg_Offscreen, OnOffscreen)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -167,18 +156,22 @@ void AtomRenderViewObserver::OnBrowserMessage(bool send_to_all,
   if (!render_view()->GetWebView())
     return;
 
-  blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
-  if (!frame || frame->isWebRemoteFrame())
+  blink::WebFrame* frame = render_view()->GetWebView()->MainFrame();
+  if (!frame || frame->IsWebRemoteFrame())
     return;
 
   EmitIPCEvent(frame, channel, args);
 
   // Also send the message to all sub-frames.
   if (send_to_all) {
-    for (blink::WebFrame* child = frame->firstChild(); child;
-         child = child->nextSibling())
+    for (blink::WebFrame* child = frame->FirstChild(); child;
+         child = child->NextSibling())
       EmitIPCEvent(child, channel, args);
   }
+}
+
+void AtomRenderViewObserver::OnOffscreen() {
+  blink::WebView::SetUseExternalPopupMenus(false);
 }
 
 }  // namespace atom

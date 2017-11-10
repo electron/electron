@@ -2,20 +2,15 @@
 process.throwDeprecation = true
 
 const electron = require('electron')
-const app = electron.app
-const crashReporter = electron.crashReporter
-const ipcMain = electron.ipcMain
-const dialog = electron.dialog
-const BrowserWindow = electron.BrowserWindow
-const protocol = electron.protocol
-const webContents = electron.webContents
-const v8 = require('v8')
+const {app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents} = electron
 
-const Coverage = require('electabul').Coverage
+const {Coverage} = require('electabul')
+
 const fs = require('fs')
 const path = require('path')
 const url = require('url')
 const util = require('util')
+const v8 = require('v8')
 
 var argv = require('yargs')
   .boolean('ci')
@@ -24,7 +19,10 @@ var argv = require('yargs')
   .argv
 
 var window = null
-process.port = 0 // will be used by crash-reporter spec.
+
+ // will be used by crash-reporter spec.
+process.port = 0
+process.crashServicePid = 0
 
 v8.setFlagsFromString('--expose_gc')
 app.commandLine.appendSwitch('js-flags', '--expose_gc')
@@ -91,12 +89,21 @@ if (global.isCi) {
   })
 }
 
+global.nativeModulesEnabled = process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1
+
 // Register app as standard scheme.
 global.standardScheme = 'app'
-protocol.registerStandardSchemes([global.standardScheme], { secure: true })
+global.zoomScheme = 'zoom'
+protocol.registerStandardSchemes([global.standardScheme, global.zoomScheme], { secure: true })
 
 app.on('window-all-closed', function () {
   app.quit()
+})
+
+app.on('web-contents-created', (event, contents) => {
+  contents.on('crashed', (event, killed) => {
+    console.log(`webContents ${contents.id} crashed: ${contents.getURL()} (killed=${killed})`)
+  })
 })
 
 app.on('ready', function () {
@@ -133,6 +140,10 @@ app.on('ready', function () {
       detail: 'The window is not responding. Would you like to force close it or just keep waiting?'
     })
     if (chosen === 0) window.destroy()
+  })
+  window.webContents.on('crashed', function () {
+    console.error('Renderer process crashed')
+    process.exit(1)
   })
 
   // For session's download test, listen 'will-download' event in browser, and
@@ -192,16 +203,23 @@ app.on('ready', function () {
   })
 
   ipcMain.on('executeJavaScript', function (event, code, hasCallback) {
+    let promise
+
     if (hasCallback) {
-      window.webContents.executeJavaScript(code, (result) => {
+      promise = window.webContents.executeJavaScript(code, (result) => {
         window.webContents.send('executeJavaScript-response', result)
-      }).then((result) => {
-        window.webContents.send('executeJavaScript-promise-response', result)
-      }).catch((err) => {
-        window.webContents.send('executeJavaScript-promise-error', err)
       })
     } else {
-      window.webContents.executeJavaScript(code)
+      promise = window.webContents.executeJavaScript(code)
+    }
+
+    promise.then((result) => {
+      window.webContents.send('executeJavaScript-promise-response', result)
+    }).catch((error) => {
+      window.webContents.send('executeJavaScript-promise-error', error)
+    })
+
+    if (!hasCallback) {
       event.returnValue = 'success'
     }
   })
@@ -250,6 +268,35 @@ ipcMain.on('prevent-next-new-window', (event, id) => {
   webContents.fromId(id).once('new-window', event => event.preventDefault())
 })
 
+ipcMain.on('set-web-preferences-on-next-new-window', (event, id, key, value) => {
+  webContents.fromId(id).once('new-window', (event, url, frameName, disposition, options) => {
+    options.webPreferences[key] = value
+  })
+})
+
+ipcMain.on('prevent-next-will-attach-webview', (event) => {
+  event.sender.once('will-attach-webview', event => event.preventDefault())
+})
+
+ipcMain.on('prevent-next-will-prevent-unload', (event, id) => {
+  webContents.fromId(id).once('will-prevent-unload', event => event.preventDefault())
+})
+
+ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
+  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
+    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`
+    webPreferences.nodeIntegration = false
+  })
+})
+
+ipcMain.on('disable-preload-on-next-will-attach-webview', (event, id) => {
+  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
+    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'webview-stripped-preload.html')}`
+    delete webPreferences.preload
+    delete webPreferences.preloadURL
+  })
+})
+
 ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
   const consoleWarn = console.warn
   let warningMessage = null
@@ -290,6 +337,32 @@ ipcMain.on('handle-unhandled-rejection', (event, message) => {
   fs.readFile(__filename, () => {
     Promise.reject(new Error(message))
   })
+})
+
+ipcMain.on('crash-service-pid', (event, pid) => {
+  process.crashServicePid = pid
+  event.returnValue = null
+})
+
+ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
+  let contents = null
+  let destroy = () => {}
+  if (options.id) {
+    const w = BrowserWindow.fromId(options.id)
+    contents = w.webContents
+    destroy = () => w.close()
+  } else {
+    contents = webContents.create()
+    destroy = () => contents.destroy()
+  }
+
+  contents.once(options.name, () => destroy())
+
+  contents.once('destroyed', () => {
+    event.sender.send(options.responseEvent)
+  })
+
+  contents.loadURL(options.url)
 })
 
 // Suspend listeners until the next event and then restore them

@@ -11,9 +11,9 @@ Electron a completely separate product from NW.js:
 
 __1. Entry of Application__
 
-In NW.js the main entry point of an application is a web page. You specify a
-main page URL in the `package.json` and it is opened in a browser window as
-the application's main window.
+In NW.js the main entry point of an application is a web page or a JS script. You specify a
+html or js file in the `package.json` and it is opened in a browser window as
+the application's main window (in case of an html entrypoint) or the script is executed.
 
 In Electron, the entry point is a JavaScript script. Instead of
 providing a URL directly, you manually create a browser window and load
@@ -25,7 +25,7 @@ so you can use it for browser testing in place of [PhantomJS](http://phantomjs.o
 
 __2. Build System__
 
-In order to avoid the complexity of building all of Chromium, Electron uses [`libchromiumcontent`](https://github.com/brightray/libchromiumcontent) to access
+In order to avoid the complexity of building all of Chromium, Electron uses [`libchromiumcontent`](https://github.com/electron/libchromiumcontent) to access
 Chromium's Content API. `libchromiumcontent` is a single shared library that
 includes the Chromium Content module and all of its dependencies. Users don't
 need a powerful machine to build Electron.
@@ -43,7 +43,7 @@ If you are an experienced NW.js user, you should be familiar with the
 concept of Node context and web context. These concepts were invented because
 of how NW.js was implemented.
 
-By using the [multi-context](http://strongloop.com/strongblog/whats-new-node-js-v0-12-multiple-context-execution/)
+By using the [multi-context](https://github.com/nodejs/node-v0.x-archive/commit/756b622)
 feature of Node, Electron doesn't introduce a new JavaScript context in web
 pages.
 

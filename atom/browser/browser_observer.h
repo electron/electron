@@ -55,12 +55,34 @@ class BrowserObserver {
   // The browser's accessibility suppport has changed.
   virtual void OnAccessibilitySupportChanged() {}
 
+  // The app message loop is ready
+  virtual void OnPreMainMessageLoopRun() {}
+
 #if defined(OS_MACOSX)
+  // The browser wants to report that an user activity will resume. (macOS only)
+  virtual void OnWillContinueUserActivity(
+      bool* prevent_default,
+      const std::string& type) {}
+  // The browser wants to report an user activity resuming error. (macOS only)
+  virtual void OnDidFailToContinueUserActivity(
+      const std::string& type,
+      const std::string& error) {}
   // The browser wants to resume a user activity via handoff. (macOS only)
   virtual void OnContinueUserActivity(
       bool* prevent_default,
       const std::string& type,
       const base::DictionaryValue& user_info) {}
+  // The browser wants to notify that an user activity was resumed. (macOS only)
+  virtual void OnUserActivityWasContinued(
+      const std::string& type,
+      const base::DictionaryValue& user_info) {}
+  // The browser wants to update an user activity payload. (macOS only)
+  virtual void OnUpdateUserActivityState(
+      bool* prevent_default,
+      const std::string& type,
+      const base::DictionaryValue& user_info) {}
+  // User clicked the native macOS new tab button. (macOS only)
+  virtual void OnNewWindowForTab() {}
 #endif
 
  protected:

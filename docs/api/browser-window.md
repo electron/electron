@@ -35,9 +35,9 @@ without visual flash, there are two solutions for different situations.
 
 ### Using `ready-to-show` event
 
-While loading the page, the `ready-to-show` event will be emitted when renderer
-process has done drawing for the first time, showing window after this event
-will have no visual flash:
+While loading the page, the `ready-to-show` event will be emitted when the renderer
+process has rendered the page for the first time if the window has not been shown yet. Showing
+the window after this event will have no visual flash:
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -47,7 +47,7 @@ win.once('ready-to-show', () => {
 })
 ```
 
-This is event is usually emitted after the `did-finish-load` event, but for
+This event is usually emitted after the `did-finish-load` event, but for
 pages with many remote resources, it may be emitted before the `did-finish-load`
 event.
 
@@ -96,6 +96,25 @@ child.once('ready-to-show', () => {
   child.show()
 })
 ```
+
+### Page visibility
+
+The [Page Visibility API][page-visibility-api] works as follows:
+
+* On all platforms, the visibility state tracks whether the window is
+  hidden/minimized or not.
+* Additionally, on macOS, the visibility state also tracks the window
+  occlusion state. If the window is occluded (i.e. fully covered) by another
+  window, the visibility state will be `hidden`. On other platforms, the
+  visibility state will be `hidden` only when the window is minimized or
+  explicitly hidden with `win.hide()`.
+* If a `BrowserWindow` is created with `show: false`, the initial visibility
+  state will be `visible` despite the window actually being hidden.
+* If `backgroundThrottling` is disabled, the visibility state will remain
+  `visible` even if the window is minimized, occluded, or hidden.
+
+It is recommended that you pause expensive operations when the visibility
+state is `hidden` in order to minimize power consumption.
 
 ### Platform notices
 
@@ -157,6 +176,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `fullscreenable` Boolean (optional) - Whether the window can be put into fullscreen
     mode. On macOS, also whether the maximize/zoom button should toggle full
     screen mode or maximize window. Default is `true`.
+  * `simpleFullscreen` Boolean (optional) - Use pre-Lion fullscreen on macOS. Default is `false`.
   * `skipTaskbar` Boolean (optional) - Whether to show the window in taskbar. Default is
     `false`.
   * `kiosk` Boolean (optional) - The kiosk mode. Default is `false`.
@@ -180,25 +200,37 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     key is pressed. Default is `false`.
   * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
     than screen. Default is `false`.
-  * `backgroundColor` String (optional) - Window's background color as Hexadecimal value,
+  * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
     like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported). Default is
     `#FFF` (white).
   * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
     implemented on macOS. Default is `true`.
+  * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
+    transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
   * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
   * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md).
     Default is `false`.
   * `type` String (optional) - The type of window, default is normal window. See more about
     this below.
-  * `titleBarStyle` String (optional) - The style of window title bar. Default is `default`. Possible values are:
+  * `titleBarStyle` String (optional) - The style of window title bar.
+    Default is `default`. Possible values are:
     * `default` - Results in the standard gray opaque Mac title
       bar.
     * `hidden` - Results in a hidden title bar and a full size content window, yet
       the title bar still has the standard window controls ("traffic lights") in
       the top left.
-    * `hidden-inset` - Results in a hidden title bar with an alternative look
+    * `hidden-inset` - Deprecated, use `hiddenInset` instead.
+    * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
+    * `customButtonsOnHover` Boolean (optional) - Draw custom close, minimize,
+      and full screen buttons on macOS frameless windows. These buttons will not
+      display unless hovered over in the top left of the window. These custom
+      buttons prevent issues with mouse events that occur with the standard
+      window toolbar buttons. **Note:** This option is currently experimental.
+  * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
+    tile bar in full screen mode on macOS for all `titleBarStyle` options.
+    Default is `false`.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
@@ -211,10 +243,18 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     width of the web page when zoomed, `false` will cause it to zoom to the
     width of the screen. This will also affect the behavior when calling
     `maximize()` directly. Default is `false`.
+  * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
+    window as a native tab on macOS 10.12+. Windows with the same tabbing
+    identifier will be grouped together. This also adds a native new tab button
+    to your window's tab bar and allows your `app` and window to receive the
+    `new-window-for-tab` event.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
       is `true`.
+    * `nodeIntegrationInWorker` Boolean (optional) - Whether node integration is
+      enabled in web workers. Default is `false`. More about this can be found
+      in [Multithreading](../tutorial/multithreading.md).
     * `preload` String (optional) - Specifies a script that will be loaded before other
       scripts run in the page. This script will always have access to node APIs
       no matter whether node integration is turned on or off. The value should
@@ -222,6 +262,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](process.md#event-loaded).
+    * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
+      associated with the window, making it compatible with the Chromium
+      OS-level sandbox and disabling the Node.js engine. This is not the same as
+      the `nodeIntegration` option and the APIs available to the preload script
+      are more limited. Read more about the option [here](sandbox-option.md).
+      **Note:** This option is currently experimental and may change or be
+      removed in future Electron releases.
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
       page. Instead of passing the Session object directly, you can also choose to
       use the `partition` option instead, which accepts a partition string. When
@@ -238,10 +285,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
     * `webSecurity` Boolean (optional) - When `false`, it will disable the
       same-origin policy (usually using testing websites by people), and set
-      `allowDisplayingInsecureContent` and `allowRunningInsecureContent` to
-      `true` if these two options are not set by user. Default is `true`.
-    * `allowDisplayingInsecureContent` Boolean (optional) - Allow an https page to display
-      content like images from http URLs. Default is `false`.
+      `allowRunningInsecureContent` to `true` if this options has not been set
+      by user. Default is `true`.
     * `allowRunningInsecureContent` Boolean (optional) - Allow an https page to run
       JavaScript, CSS or plugins from http URLs. Default is `false`.
     * `images` Boolean (optional) - Enables image support. Default is `true`.
@@ -258,12 +303,12 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       macOS. Default is `false`.
     * `blinkFeatures` String (optional) - A list of feature strings separated by `,`, like
       `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
-      strings can be found in the [RuntimeEnabledFeatures.in][blink-feature-string]
+      strings can be found in the [RuntimeEnabledFeatures.json5][blink-feature-string]
       file.
     * `disableBlinkFeatures` String (optional) - A list of feature strings separated by `,`,
       like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
       feature strings can be found in the
-      [RuntimeEnabledFeatures.in][blink-feature-string] file.
+      [RuntimeEnabledFeatures.json5][blink-feature-string] file.
     * `defaultFontFamily` Object (optional) - Sets the default font for the font-family.
       * `standard` String (optional) - Defaults to `Times New Roman`.
       * `serif` String (optional) - Defaults to `Times New Roman`.
@@ -276,12 +321,12 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `minimumFontSize` Integer (optional) - Defaults to `0`.
     * `defaultEncoding` String (optional) - Defaults to `ISO-8859-1`.
     * `backgroundThrottling` Boolean (optional) - Whether to throttle animations and timers
-      when the page becomes background. Defaults to `true`.
+      when the page becomes background. This also affects the
+      [Page Visibility API](#page-visibility). Defaults to `true`.
     * `offscreen` Boolean (optional) - Whether to enable offscreen rendering for the browser
       window. Defaults to `false`. See the
       [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
       more details.
-    * `sandbox` Boolean (optional) - Whether to enable Chromium OS-level sandbox.
     * `contextIsolation` Boolean (optional) - Whether to run Electron APIs and
       the specified `preload` script in a separate JavaScript context. Defaults
       to `false`. The context that the `preload` script runs in will still
@@ -297,6 +342,17 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       'Electron Isolated Context' entry in the combo box at the top of the
       Console tab. **Note:** This option is currently experimental and may
       change or be removed in future Electron releases.
+    * `nativeWindowOpen` Boolean (optional) - Whether to use native
+      `window.open()`. Defaults to `false`.  **Note:** This option is currently
+      experimental.
+    * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
+      Defaults to the value of the `nodeIntegration` option. **Note:** The
+      `preload` script configured for the `<webview>` will have node integration
+      enabled when it is executed so you should ensure remote/untrusted content
+      is not able to create a `<webview>` tag with a possibly malicious `preload`
+      script. You can use the `will-attach-webview` event on [webContents](web-contents.md)
+      to strip away the `preload` script and to validate or alter the
+      `<webview>`'s initial settings.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -357,14 +413,20 @@ window.onbeforeunload = (e) => {
   // a non-void value will silently cancel the close.
   // It is recommended to use the dialog API to let the user confirm closing the
   // application.
-  e.returnValue = false
+  e.returnValue = false // equivalent to `return false` but not recommended
 }
 ```
+_**Note**: There is a subtle difference between the behaviors of `window.onbeforeunload = handler` and `window.addEventListener('beforeunload', handler)`. It is recommended to always set the `event.returnValue` explicitly, instead of just returning a value, as the former works more consistently within Electron._
 
 #### Event: 'closed'
 
 Emitted when the window is closed. After you have received this event you should
 remove the reference to the window and avoid using it any more.
+
+#### Event: 'session-end' _Windows_
+
+Emitted when window session is going to end due to force shutdown or machine restart
+or session log off.
 
 #### Event: 'unresponsive'
 
@@ -392,7 +454,7 @@ Emitted when the window is hidden.
 
 #### Event: 'ready-to-show'
 
-Emitted when the web page has been rendered and window can be displayed without
+Emitted when the web page has been rendered (while not being shown) and window can be displayed without
 a visual flash.
 
 #### Event: 'maximize'
@@ -488,6 +550,18 @@ Returns:
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
+#### Event: 'sheet-begin' _macOS_
+
+Emitted when the window opens a sheet.
+
+#### Event: 'sheet-end' _macOS_
+
+Emitted when the window has closed a sheet.
+
+#### Event: 'new-window-for-tab' _macOS_
+
+Emitted when the native new tab button is clicked.
+
 ### Static Methods
 
 The `BrowserWindow` class has the following static methods:
@@ -511,6 +585,34 @@ Returns `BrowserWindow` - The window that owns the given `webContents`.
 * `id` Integer
 
 Returns `BrowserWindow` - The window with the given `id`.
+
+#### `BrowserWindow.addExtension(path)`
+
+* `path` String
+
+Adds Chrome extension located at `path`, and returns extension's name.
+
+The method will also not return if the extension's manifest is missing or incomplete.
+
+**Note:** This API cannot be called before the `ready` event of the `app` module
+is emitted.
+
+#### `BrowserWindow.removeExtension(name)`
+
+* `name` String
+
+Remove a Chrome extension by name.
+
+**Note:** This API cannot be called before the `ready` event of the `app` module
+is emitted.
+
+#### `BrowserWindow.getExtensions()`
+
+Returns `Object` - The keys are the extension names and each value is
+an Object containing `name` and `version` properties.
+
+**Note:** This API cannot be called before the `ready` event of the `app` module
+is emitted.
 
 #### `BrowserWindow.addDevToolsExtension(path)`
 
@@ -634,7 +736,8 @@ Returns `Boolean` - Whether current window is a modal window.
 
 #### `win.maximize()`
 
-Maximizes the window.
+Maximizes the window. This will also show (but not focus) the window if it
+isn't being displayed already.
 
 #### `win.unmaximize()`
 
@@ -667,14 +770,24 @@ Sets whether the window should be in fullscreen mode.
 
 Returns `Boolean` - Whether the window is in fullscreen mode.
 
+#### `win.setSimpleFullScreen(flag)` _macOS_
+
+* `flag` Boolean
+
+Enters or leaves simple fullscreen mode.
+
+Simple fullscreen mode emulates the native fullscreen behavior found in versions of Mac OS X prior to Lion (10.7).
+
+#### `win.isSimpleFullScreen()` _macOS_
+
+Returns `Boolean` - Whether the window is in simple (pre-Lion) fullscreen mode.
+
 #### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
-* `extraSize` Object (optional) - The extra size not to be included while
+* `extraSize` [Size](structures/size.md) - The extra size not to be included while
 maintaining the aspect ratio.
-  * `width` Integer
-  * `height` Integer
 
 This will make a window maintain an aspect ratio. The extra size allows a
 developer to have space, specified in pixels, not included within the aspect
@@ -695,7 +808,7 @@ height areas you have within the overall content view.
 * `path` String - The absolute path to the file to preview with QuickLook. This
   is important as Quick Look uses the file name and file extension on the path
   to determine the content type of the file to open.
-* `displayName` String (Optional) - The name of the file to display on the
+* `displayName` String (optional) - The name of the file to display on the
   Quick Look modal view. This is purely visual and does not affect the content
   type of the file. Defaults to `path`.
 
@@ -855,7 +968,7 @@ On Linux always returns `true`.
   [macOS docs][window-levels] for more details.
 * `relativeLevel` Integer (optional) _macOS_ - The number of layers higher to set
   this window relative to the given `level`. The default is `0`. Note that Apple
-  discourages setting levels higher than 1 above `screen-saver`. 
+  discourages setting levels higher than 1 above `screen-saver`.
 
 Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
@@ -1005,7 +1118,8 @@ Same as `webContents.capturePage([rect, ]callback)`.
   * `httpReferrer` String (optional) - A HTTP Referrer url.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
-  * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[] - (optional)
+  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadFileSystem[]](structures/upload-file-system.md) | [UploadBlob[]](structures/upload-blob.md)) - (optional)
+  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Same as `webContents.loadURL(url[, options])`.
 
@@ -1045,7 +1159,7 @@ Same as `webContents.reload`.
 
 #### `win.setMenu(menu)` _Linux_ _Windows_
 
-* `menu` Menu
+* `menu` Menu | null
 
 Sets the `menu` as the window's menu bar, setting it to `null` will remove the
 menu bar.
@@ -1093,6 +1207,16 @@ Returns `Boolean` - Whether the window has a shadow.
 
 On Windows and Linux always returns
 `true`.
+
+#### `win.setOpacity(opacity)` _Windows_ _macOS_
+
+* `opacity` Number - between 0.0 (fully transparent) and 1.0 (fully opaque)
+
+Sets the opacity of the window. On Linux does nothing.
+
+#### `win.getOpacity()` _Windows_ _macOS_
+
+Returns `Number` - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
 #### `win.setThumbarButtons(buttons)` _Windows_
 
@@ -1213,9 +1337,14 @@ Returns `Boolean` - Whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
 
-#### `win.setIgnoreMouseEvents(ignore)`
+#### `win.setIgnoreMouseEvents(ignore[, options])`
 
 * `ignore` Boolean
+* `options` Object (optional)
+  * `forward` Boolean (optional) _Windows_ - If true, forwards mouse move
+    messages to Chromium, enabling mouse related events such as `mouseleave`.
+	Only used when `ignore` is true. If `ignore` is false, forwarding is always
+	disabled regardless of this value.
 
 Makes the window ignore all mouse events.
 
@@ -1259,6 +1388,37 @@ Returns `BrowserWindow[]` - All child windows.
 
 Controls whether to hide cursor when typing.
 
+#### `win.selectPreviousTab()` _macOS_
+
+Selects the previous tab when native tabs are enabled and there are other
+tabs in the window.
+
+#### `win.selectNextTab()` _macOS_
+
+Selects the next tab when native tabs are enabled and there are other
+tabs in the window.
+
+#### `win.mergeAllWindows()` _macOS_
+
+Merges all windows into one window with multiple tabs when native tabs
+are enabled and there is more than one open window.
+
+#### `win.moveTabToNewWindow()` _macOS_
+
+Moves the current tab into a new window if native tabs are enabled and
+there is more than one tab in the current window.
+
+#### `win.toggleTabBar()` _macOS_
+
+Toggles the visibility of the tab bar if native tabs are enabled and
+there is only one tab in the current window.
+
+#### `win.addTabbedWindow(browserWindow)` _macOS_
+
+* `browserWindow` BrowserWindow
+
+Adds a window as a tab on this window, after the tab for the window instance.
+
 #### `win.setVibrancy(type)` _macOS_
 
 * `type` String - Can be `appearance-based`, `light`, `dark`, `titlebar`,
@@ -1268,7 +1428,30 @@ Controls whether to hide cursor when typing.
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
-[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/RuntimeEnabledFeatures.in
+#### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
+
+* `touchBar` TouchBar
+
+Sets the touchBar layout for the current window. Specifying `null` or
+`undefined` clears the touch bar. This method only has an effect if the
+machine has a touch bar and is running on macOS 10.12.1+.
+
+**Note:** The TouchBar API is currently experimental and may change or be
+removed in future Electron releases.
+
+#### `win.setBrowserView(browserView)` _Experimental_
+
+* `browserView` [BrowserView](browser-view.md)
+
+#### `win.getBrowserView()` _Experimental_
+
+Returns `BrowserView | null` - an attached BrowserView. Returns `null` if none is attached.
+
+**Note:** The BrowserView API is currently experimental and may change or be
+removed in future Electron releases.
+
+[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/runtime_enabled_features.json5?l=70
+[page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels

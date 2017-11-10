@@ -14,8 +14,8 @@
 
 namespace atom {
 
-NodeBindingsMac::NodeBindingsMac(bool is_browser)
-    : NodeBindings(is_browser) {
+NodeBindingsMac::NodeBindingsMac(BrowserEnvironment browser_env)
+    : NodeBindings(browser_env) {
 }
 
 NodeBindingsMac::~NodeBindingsMac() {
@@ -60,8 +60,8 @@ void NodeBindingsMac::PollEvents() {
 }
 
 // static
-NodeBindings* NodeBindings::Create(bool is_browser) {
-  return new NodeBindingsMac(is_browser);
+NodeBindings* NodeBindings::Create(BrowserEnvironment browser_env) {
+  return new NodeBindingsMac(browser_env);
 }
 
 }  // namespace atom

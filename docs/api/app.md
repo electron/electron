@@ -125,8 +125,10 @@ Returns:
 * `event` Event
 * `hasVisibleWindows` Boolean
 
-Emitted when the application is activated, which usually happens when the user
-clicks on the application's dock icon.
+Emitted when the application is activated. Various actions can trigger
+this event, such as launching the application for the first time, attempting
+to re-launch the application when it's already running, or clicking on the
+application's dock or taskbar icon.
 
 ### Event: 'continue-activity' _macOS_
 
@@ -147,12 +149,69 @@ ID as the activity's source app and that supports the activity's type.
 Supported activity types are specified in the app's `Info.plist` under the
 `NSUserActivityTypes` key.
 
+### Event: 'will-continue-activity' _macOS_
+
+Returns:
+
+* `event` Event
+* `type` String - A string identifying the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+
+Emitted during [Handoff][handoff] before an activity from a different device wants
+to be resumed. You should call `event.preventDefault()` if you want to handle
+this event.
+
+### Event: 'continue-activity-error' _macOS_
+
+Returns:
+
+* `event` Event
+* `type` String - A string identifying the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+* `error` String - A string with the error's localized description.
+
+Emitted during [Handoff][handoff] when an activity from a different device
+fails to be resumed.
+
+### Event: 'activity-was-continued' _macOS_
+
+Returns:
+
+* `event` Event
+* `type` String - A string identifying the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+* `userInfo` Object - Contains app-specific state stored by the activity.
+
+Emitted during [Handoff][handoff] after an activity from this device was successfully
+resumed on another one.
+
+### Event: 'update-activity-state' _macOS_
+
+Returns:
+
+* `event` Event
+* `type` String - A string identifying the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+* `userInfo` Object - Contains app-specific state stored by the activity.
+
+Emitted when [Handoff][handoff] is about to be resumed on another device. If you need to update the state to be transferred, you should call `event.preventDefault()` immediatelly, construct a new `userInfo` dictionary and call `app.updateCurrentActiviy()` in a timely manner. Otherwise the operation will fail and `continue-activity-error` will be called.
+
+### Event: 'new-window-for-tab' _macOS_
+
+Returns:
+
+* `event` Event
+
+Emitted when the user clicks the native macOS new tab button. The new
+tab button is only visible if the current `BrowserWindow` has a
+`tabbingIdentifier`
+
 ### Event: 'browser-window-blur'
 
 Returns:
 
 * `event` Event
-* `window` BrowserWindow
+* `window` [BrowserWindow](browser-window.md)
 
 Emitted when a [browserWindow](browser-window.md) gets blurred.
 
@@ -161,7 +220,7 @@ Emitted when a [browserWindow](browser-window.md) gets blurred.
 Returns:
 
 * `event` Event
-* `window` BrowserWindow
+* `window` [BrowserWindow](browser-window.md)
 
 Emitted when a [browserWindow](browser-window.md) gets focused.
 
@@ -170,7 +229,7 @@ Emitted when a [browserWindow](browser-window.md) gets focused.
 Returns:
 
 * `event` Event
-* `window` BrowserWindow
+* `window` [BrowserWindow](browser-window.md)
 
 Emitted when a new [browserWindow](browser-window.md) is created.
 
@@ -179,7 +238,7 @@ Emitted when a new [browserWindow](browser-window.md) is created.
 Returns:
 
 * `event` Event
-* `webContents` WebContents
+* `webContents` [WebContents](web-contents.md)
 
 Emitted when a new [webContents](web-contents.md) is created.
 
@@ -399,7 +458,30 @@ You can request the following paths by the name:
 * `music` Directory for a user's music.
 * `pictures` Directory for a user's pictures.
 * `videos` Directory for a user's videos.
+* `logs` Directory for your app's log folder.
 * `pepperFlashSystemPlugin`  Full path to the system version of the Pepper Flash plugin.
+
+### `app.getFileIcon(path[, options], callback)`
+
+* `path` String
+* `options` Object (optional)
+  * `size` String
+    * `small` - 16x16
+    * `normal` - 32x32
+    * `large` - 48x48 on _Linux_, 32x32 on _Windows_, unsupported on _macOS_.
+* `callback` Function
+  * `error` Error
+  * `icon` [NativeImage](native-image.md)
+
+Fetches a path's associated icon.
+
+On _Windows_, there a 2 kinds of icons:
+
+- Icons associated with certain file extensions, like `.mp3`, `.png`, etc.
+- Icons inside the file itself, like `.exe`, `.dll`, `.ico`.
+
+On _Linux_ and _macOS_, icons depend on the application associated with file
+mime type.
 
 ### `app.setPath(name, path)`
 
@@ -461,7 +543,7 @@ bar, and on macOS you can visit it from dock menu.
 
 Clears the recent documents list.
 
-### `app.setAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
+### `app.setAsDefaultProtocolClient(protocol[, path, args])`
 
 * `protocol` String - The name of your protocol, without `://`. If you want your
   app to handle `electron://` links, call this method with `electron` as the
@@ -643,14 +725,16 @@ app.setJumpList([
   * `argv` String[] - An array of the second instance's command line arguments
   * `workingDirectory` String - The second instance's working directory
 
+Returns `Boolean`.
+
 This method makes your application a Single Instance Application - instead of
 allowing multiple instances of your app to run, this will ensure that only a
 single instance of your app is running, and other instances signal this
 instance and exit.
 
-`callback` will be called with `callback(argv, workingDirectory)` when a second
-instance has been executed. `argv` is an Array of the second instance's command
-line arguments, and `workingDirectory` is its current working directory. Usually
+`callback` will be called by the first instance with `callback(argv, workingDirectory)`
+when a second instance has been executed. `argv` is an Array of the second instance's
+command line arguments, and `workingDirectory` is its current working directory. Usually
 applications respond to this by making their primary window focused and
 non-minimized.
 
@@ -675,7 +759,7 @@ starts:
 const {app} = require('electron')
 let myWindow = null
 
-const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
+const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
   // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore()
@@ -683,7 +767,7 @@ const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
   }
 })
 
-if (shouldQuit) {
+if (isSecondInstance) {
   app.quit()
 }
 
@@ -712,6 +796,22 @@ is eligible for [Handoff][handoff] to another device afterward.
 
 Returns `String` - The type of the currently running activity.
 
+### `app.invalidateCurrentActivity()` _macOS_
+
+* `type` String - Uniquely identifies the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+
+Invalidates the current [Handoff][handoff] user activity.
+
+### `app.updateCurrentActivity(type, userInfo)` _macOS_
+
+* `type` String - Uniquely identifies the activity. Maps to
+  [`NSUserActivity.activityType`][activity-type].
+* `userInfo` Object - App-specific state to store for use by another device.
+
+Updates the current activity if its type matches `type`, merging the entries from
+`userInfo` into its current `userInfo` dictionary.
+
 ### `app.setAppUserModelId(id)` _Windows_
 
 * `id` String
@@ -735,6 +835,27 @@ indicates success while any other value indicates failure according to chromium 
 Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
+
+### `app.disableDomainBlockingFor3DAPIs()`
+
+By default, Chromium disables 3D APIs (e.g. WebGL) until restart on a per
+domain basis if the GPU processes crashes too frequently. This function
+disables that behaviour.
+
+This method can only be called before app is ready.
+
+### `app.getAppMemoryInfo()` _Deprecated_
+
+Returns [`ProcessMetric[]`](structures/process-metric.md):  Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
+**Note:** This method is deprecated, use `app.getAppMetrics()` instead.
+
+### `app.getAppMetrics()`
+
+Returns [`ProcessMetric[]`](structures/process-metric.md):  Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
+
+### `app.getGPUFeatureStatus()`
+
+Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Feature Status from `chrome://gpu/`.
 
 ### `app.setBadgeCount(count)` _Linux_ _macOS_
 
@@ -786,7 +907,7 @@ Returns `Object`:
 
 **Note:** This API has no effect on [MAS builds][mas-builds].
 
-### `app.setLoginItemSettings(settings[, path, args])` _macOS_ _Windows_
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
   * `openAtLogin` Boolean (optional) - `true` to open the app at login, `false` to remove
@@ -804,7 +925,7 @@ Returns `Object`:
 
 Set the app's login item settings.
 
-To work with Electron's `autoUpdater` on Windows, which uses [Squirrel](Squirrel-Windows),
+To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel-Windows],
 you'll want to set the launch path to Update.exe, and pass arguments that specify your
 application name. For example:
 
@@ -832,6 +953,15 @@ Returns `Boolean` - `true` if Chrome's accessibility support is enabled,
 technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
 details.
+
+### `app.setAccessibilitySupportEnabled(enabled)` _macOS_ _Windows_
+
+* `enabled` Boolean - Enable or disable [accessibility tree](https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/the-accessibility-tree) rendering
+
+Manually enables Chrome's accessibility support, allowing to expose accessibility switch to users in application settings. https://www.chromium.org/developers/design-documents/accessibility for more
+details. Disabled by default.
+
+**Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
 
 ### `app.setAboutPanelOptions(options)` _macOS_
 
@@ -863,6 +993,32 @@ Append an argument to Chromium's command line. The argument will be quoted
 correctly.
 
 **Note:** This will not affect `process.argv`.
+
+### `app.enableMixedSandbox()` _Experimental_ _macOS_ _Windows_
+
+Enables mixed sandbox mode on the app.
+
+This method can only be called before app is ready.
+
+### `app.isInApplicationsFolder()` _macOS_
+
+Returns `Boolean` - Whether the application is currently running from the
+systems Application folder.  Use in combination with `app.moveToApplicationsFolder()`
+
+### `app.moveToApplicationsFolder()` _macOS_
+
+Returns `Boolean` - Whether the move was successful.  Please note that if
+the move is successful your application will quit and relaunch.
+
+No confirmation dialog will be presented by default, if you wish to allow
+the user to confirm the operation you may do so using the
+[`dialog`](dialog.md) API.
+
+**NOTE:** This method throws errors if anything other than the user causes the
+move to fail.  For instance if the user cancels the authorization dialog this
+method returns false.  If we fail to perform the copy then this method will
+throw an error.  The message in the error should be informative and tell
+you exactly what went wrong
 
 ### `app.dock.bounce([type])` _macOS_
 

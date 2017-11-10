@@ -12,19 +12,28 @@ The ASAR format was created primarily to improve performance on Windows... TODO
 
 ### Brightray
 
-[Brightray][brightray] is a static library that makes [libchromiumcontent]
-easier to use in applications. It was created specifically for Electron, but can
-be used to enable Chromium's renderer in native apps that are not based on
-Electron.
+Brightray [was](https://github.com/electron-archive/brightray) a static library 
+that made [libchromiumcontent] easier to use in applications. It is now 
+deprecated and has been merged into Electron's codebase.
 
-Brightray is a low-level dependency of Electron that does not concern the
-majority of Electron users.
+### CRT
+
+The C Run-time Library (CRT) is the part of the C++ Standard Library that 
+incorporates the ISO C99 standard library. The Visual C++ libraries that 
+implement the CRT support native code development, and both mixed native and 
+managed code, and pure managed code for .NET development.
 
 ### DMG
 
 An Apple Disk Image is a packaging format used by macOS. DMG files are
 commonly used for distributing application "installers". [electron-builder]
 supports `dmg` as a build target.
+
+### IME
+
+Input Method Editor. A program that allows users to enter characters and 
+symbols not found on their keyboard. For example, this allows users of Latin 
+keyboards to input Chinese, Japanese, Korean and Indic characters.
 
 ### IPC
 
@@ -33,8 +42,10 @@ serialized JSON messages between the [main] and [renderer] processes.
 
 ### libchromiumcontent
 
-A single, shared library that includes the Chromium Content module and all its
-dependencies (e.g., Blink, [V8], etc.).
+A shared library that includes the [Chromium Content module] and all its
+dependencies (e.g., Blink, [V8], etc.). Also referred to as "libcc".
+
+- [github.com/electron/libchromiumcontent](https://github.com/electron/libchromiumcontent)
 
 ### main process
 
@@ -46,6 +57,9 @@ The full Node API is built in.
 
 Every app's main process file is specified in the `main` property in
 `package.json`. This is how `electron .` knows what file to execute at startup.
+
+In Chromium, this process is referred to as the "browser process". It is
+renamed in Electron to avoid confusion with renderer processes.
 
 See also: [process](#process), [renderer process](#renderer-process)
 
@@ -69,13 +83,19 @@ building native modules.
 
 See also [Using Native Node Modules].
 
-## NSIS
+### NSIS
 
 Nullsoft Scriptable Install System is a script-driven Installer
 authoring tool for Microsoft Windows. It is released under a combination of
 free software licenses, and is a widely-used alternative to commercial
 proprietary products like InstallShield. [electron-builder] supports NSIS
 as a build target.
+
+### OSR
+
+OSR (Off-screen rendering) can be used for loading heavy page in 
+background and then displaying it after (it will be much faster). 
+It allows you to render page without showing it on screen.
 
 ### process
 
@@ -127,8 +147,17 @@ available in "core".
 ### V8
 
 V8 is Google's open source JavaScript engine. It is written in C++ and is
-used in Google Chrome, the open source browser from Google. V8 can run
-standalone, or can be embedded into any C++ application.
+used in Google Chrome. V8 can run standalone, or can be embedded into any C++ application.
+
+Electron builds V8 as part of Chromium and then points Node to that V8 when 
+building it.
+
+V8's version numbers always correspond to those of Google Chrome. Chrome 59 
+includes V8 5.9, Chrome 58 includes V8 5.8, etc.
+
+- [developers.google.com/v8](https://developers.google.com/v8)
+- [nodejs.org/api/v8.html](https://nodejs.org/api/v8.html)
+- [docs/development/v8-development.md](development/v8-development.md)
 
 ### webview
 
@@ -142,12 +171,12 @@ embedded content.
 [addons]: https://nodejs.org/api/addons.html
 [asar]: https://github.com/electron/asar
 [autoUpdater]: api/auto-updater.md
-[brightray]: https://github.com/electron/brightray
+[Chromium Content module]: https://www.chromium.org/developers/content-module
 [electron-builder]: https://github.com/electron-userland/electron-builder
 [libchromiumcontent]: #libchromiumcontent
-[Mac App Store Submission Guide]: tutorials/mac-app-store-submission-guide.md
+[Mac App Store Submission Guide]: tutorial/mac-app-store-submission-guide.md
 [main]: #main-process
 [renderer]: #renderer-process
-[Using Native Node Modules]: tutorial/using-native-node-modules.md
 [userland]: #userland
+[Using Native Node Modules]: tutorial/using-native-node-modules.md
 [V8]: #v8

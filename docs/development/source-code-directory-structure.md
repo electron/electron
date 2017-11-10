@@ -72,7 +72,7 @@ when running `git status`:
 ```sh
 $ git status
 
-	modified:   vendor/brightray (new commits)
+	modified:   vendor/libchromiumcontent (new commits)
 	modified:   vendor/node (new commits)
 ```
 

@@ -18,8 +18,8 @@ to enable step-through debugging with breakpoints inside Electron's source code.
   tail calls, and other compiler optimizations.
 
 * **Xcode**: In addition to Xcode, also install the Xcode command line tools.
-  They include LLDB, the default debugger in Xcode on Mac OS X. It supports 
-  debugging C, Objective-C and C++ on the desktop and iOS devices and simulator. 
+  They include LLDB, the default debugger in Xcode on Mac OS X. It supports
+  debugging C, Objective-C and C++ on the desktop and iOS devices and simulator.
 
 ## Attaching to and Debugging Electron
 
@@ -40,7 +40,7 @@ that isn't behaving correctly - so you'd like to break on that command's C++
 counterpart inside the Electron source.
 
 Relevant code files can be found in `./atom/` as well as in Brightray, found in
-`./vendor/brightray/browser` and `./vendor/brightray/common`. If you're hardcore,
+`./brightray/browser` and `./brightray/common`. If you're hardcore,
 you can also debug Chromium directly, which is obviously found in `chromium_src`.
 
 Let's assume that you want to debug `app.setName()`, which is defined in `browser.cc`
@@ -77,7 +77,7 @@ Process 25244 stopped
 ```
 
 To show the arguments and local variables for the current frame, run `frame variable` (or `fr v`),
-which will show you that the app is currently setting the name to "Electron". 
+which will show you that the app is currently setting the name to "Electron".
 
 ```bash
 (lldb) frame variable
@@ -88,7 +88,7 @@ which will show you that the app is currently setting the name to "Electron".
 ```
 
 To do a source level single step in the currently selected thread, execute `step` (or `s`).
-This would take you into into `name_override_.empty()`. To proceed and do a step over,
+This would take you into `name_override_.empty()`. To proceed and do a step over,
 run `next` (or `n`).
 
 ```bash

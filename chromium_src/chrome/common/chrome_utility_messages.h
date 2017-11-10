@@ -83,12 +83,6 @@ IPC_MESSAGE_CONTROL3(ChromeUtilityMsg_PatchFileCourgette,
                      base::FilePath /* output_file */)
 
 
-// Requests the utility process to respond with a
-// ChromeUtilityHostMsg_ProcessStarted message once it has started.  This may
-// be used if the host process needs a handle to the running utility process.
-IPC_MESSAGE_CONTROL0(ChromeUtilityMsg_StartupPing)
-
-
 #if defined(OS_WIN)
 // Invokes ui::base::win::OpenFileViaShell from the utility process.
 IPC_MESSAGE_CONTROL1(ChromeUtilityMsg_OpenFileViaShell,

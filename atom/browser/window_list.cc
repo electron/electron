@@ -27,14 +27,24 @@ WindowList* WindowList::GetInstance() {
 }
 
 // static
+WindowList::WindowVector WindowList::GetWindows() {
+  return GetInstance()->windows_;
+}
+
+// static
+bool WindowList::IsEmpty() {
+  return GetInstance()->windows_.empty();
+}
+
+// static
 void WindowList::AddWindow(NativeWindow* window) {
   DCHECK(window);
   // Push |window| on the appropriate list instance.
   WindowVector& windows = GetInstance()->windows_;
   windows.push_back(window);
 
-  FOR_EACH_OBSERVER(WindowListObserver, observers_.Get(),
-                    OnWindowAdded(window));
+  for (WindowListObserver& observer : observers_.Get())
+    observer.OnWindowAdded(window);
 }
 
 // static
@@ -43,18 +53,19 @@ void WindowList::RemoveWindow(NativeWindow* window) {
   windows.erase(std::remove(windows.begin(), windows.end(), window),
                 windows.end());
 
-  FOR_EACH_OBSERVER(WindowListObserver, observers_.Get(),
-                    OnWindowRemoved(window));
+  for (WindowListObserver& observer : observers_.Get())
+    observer.OnWindowRemoved(window);
 
-  if (windows.size() == 0)
-    FOR_EACH_OBSERVER(WindowListObserver, observers_.Get(),
-                      OnWindowAllClosed());
+  if (windows.empty()) {
+    for (WindowListObserver& observer : observers_.Get())
+      observer.OnWindowAllClosed();
+  }
 }
 
 // static
 void WindowList::WindowCloseCancelled(NativeWindow* window) {
-  FOR_EACH_OBSERVER(WindowListObserver, observers_.Get(),
-                    OnWindowCloseCancelled(window));
+  for (WindowListObserver& observer : observers_.Get())
+    observer.OnWindowCloseCancelled(window);
 }
 
 // static
@@ -70,9 +81,19 @@ void WindowList::RemoveObserver(WindowListObserver* observer) {
 // static
 void WindowList::CloseAllWindows() {
   WindowVector windows = GetInstance()->windows_;
+#if defined(OS_MACOSX)
+  std::reverse(windows.begin(), windows.end());
+#endif
   for (const auto& window : windows)
     if (!window->IsClosed())
       window->Close();
+}
+
+// static
+void WindowList::DestroyAllWindows() {
+  WindowVector windows = GetInstance()->windows_;
+  for (const auto& window : windows)
+    window->CloseContents(nullptr);  // e.g. Destroy()
 }
 
 WindowList::WindowList() {

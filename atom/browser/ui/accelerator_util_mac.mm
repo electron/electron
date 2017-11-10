@@ -26,7 +26,12 @@ void SetPlatformAccelerator(ui::Accelerator* accelerator) {
                                   &characterIgnoringModifiers);
 
   if (character != characterIgnoringModifiers) {
-    modifiers ^= NSShiftKeyMask;
+    if (isdigit(characterIgnoringModifiers)) {
+      // The character is a number so lets not mutate it with the modifiers
+      character = characterIgnoringModifiers;
+    } else {
+      modifiers ^= NSShiftKeyMask;
+    }
   }
 
   if (character == NSDeleteFunctionKey) {

@@ -109,7 +109,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   dict.Set("mediaType", params.media_type);
   dict.Set("mediaFlags", MediaFlagsToV8(isolate, params.media_flags));
   bool has_image_contents =
-    (params.media_type == blink::WebContextMenuData::MediaTypeImage) &&
+    (params.media_type == blink::WebContextMenuData::kMediaTypeImage) &&
     params.has_image_contents;
   dict.Set("hasImageContents", has_image_contents);
   dict.Set("isEditable", params.is_editable);
@@ -168,11 +168,13 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       break;
   }
 
-  if (val == (content::PermissionType)(PermissionType::POINTER_LOCK))
+  if (val == static_cast<content::PermissionType>(PermissionType::POINTER_LOCK))
     return StringToV8(isolate, "pointerLock");
-  else if (val == (content::PermissionType)(PermissionType::FULLSCREEN))
+  else if (val ==
+           static_cast<content::PermissionType>(PermissionType::FULLSCREEN))
     return StringToV8(isolate, "fullscreen");
-  else if (val == (content::PermissionType)(PermissionType::OPEN_EXTERNAL))
+  else if (val ==
+           static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL))
     return StringToV8(isolate, "openExternal");
 
   return StringToV8(isolate, "unknown");
@@ -213,7 +215,7 @@ Converter<scoped_refptr<ResourceRequestBodyImpl>>::ToV8(
     auto type = element.type();
     if (type == ResourceRequestBodyImpl::Element::TYPE_BYTES) {
       std::unique_ptr<base::Value> bytes(
-          base::BinaryValue::CreateWithCopiedBuffer(
+          base::Value::CreateWithCopiedBuffer(
               element.bytes(), static_cast<size_t>(element.length())));
       post_data_dict->SetString("type", "rawData");
       post_data_dict->Set("bytes", std::move(bytes));
@@ -258,7 +260,7 @@ bool Converter<scoped_refptr<ResourceRequestBodyImpl>>::FromV8(
       return false;
     dict->GetString("type", &type);
     if (type == "rawData") {
-      base::BinaryValue* bytes = nullptr;
+      base::Value* bytes = nullptr;
       dict->GetBinary("bytes", &bytes);
       (*out)->AppendBytes(bytes->GetBuffer(), bytes->GetSize());
     } else if (type == "file") {

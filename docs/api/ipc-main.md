@@ -16,8 +16,8 @@ It is also possible to send messages from the main process to the renderer
 process, see [webContents.send][web-contents-send] for more information.
 
 * When sending a message, the event name is the `channel`.
-* To reply a synchronous message, you need to set `event.returnValue`.
-* To send an asynchronous back to the sender, you can use
+* To reply to a synchronous message, you need to set `event.returnValue`.
+* To send an asynchronous message back to the sender, you can use
   `event.sender.send(...)`.
 
 An example of sending and handling messages between the render and main
@@ -78,9 +78,9 @@ Removes the specified `listener` from the listener array for the specified
 
 ### `ipcMain.removeAllListeners([channel])`
 
-* `channel` String (optional)
+* `channel` String
 
-Removes all listeners, or those of the specified `channel`.
+Removes listeners of the specified `channel`.
 
 ## Event object
 

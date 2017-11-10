@@ -1,12 +1,10 @@
 const {globalShortcut} = require('electron').remote
-const assert = require('assert')
 
+const assert = require('assert')
 const isCI = require('electron').remote.getGlobal('isCi')
 
 describe('globalShortcut module', () => {
-  if (isCI && process.platform === 'win32') {
-    return
-  }
+  if (isCI && process.platform === 'win32') return
 
   beforeEach(() => {
     globalShortcut.unregisterAll()

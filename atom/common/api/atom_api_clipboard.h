@@ -24,8 +24,7 @@ class Clipboard {
   static bool Has(const std::string& format_string, mate::Arguments* args);
   static void Clear(mate::Arguments* args);
 
-  static std::string Read(const std::string& format_string,
-                          mate::Arguments* args);
+  static std::string Read(const std::string& format_string);
   static void Write(const mate::Dictionary& data, mate::Arguments* args);
 
   static base::string16 ReadText(mate::Arguments* args);
@@ -47,6 +46,12 @@ class Clipboard {
 
   static base::string16 ReadFindText();
   static void WriteFindText(const base::string16& text);
+
+  static v8::Local<v8::Value> ReadBuffer(const std::string& format_string,
+                                         mate::Arguments* args);
+  static void WriteBuffer(const std::string& format_string,
+                          const v8::Local<v8::Value> buffer,
+                          mate::Arguments* args);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Clipboard);

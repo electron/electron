@@ -102,6 +102,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #if defined(OS_WIN)
   // Ignore invalid parameter errors.
   _set_invalid_parameter_handler(InvalidParameterHandler);
+  // Disable the ActiveVerifier, which is used by Chrome to track possible
+  // bugs, but no use in Electron.
+  base::win::DisableHandleVerifier();
 #endif
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
@@ -123,13 +126,15 @@ void AtomMainDelegate::PreSandboxStartup() {
   if (!IsBrowserProcess(command_line))
     return;
 
-  if (command_line->HasSwitch(switches::kEnableSandbox)) {
-    // Disable setuid sandbox since it is not longer required on linux(namespace
-    // sandbox is available on most distros).
-    command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
-  } else {
-    // Disable renderer sandbox for most of node's functions.
-    command_line->AppendSwitch(::switches::kNoSandbox);
+  if (!command_line->HasSwitch(switches::kEnableMixedSandbox)) {
+    if (command_line->HasSwitch(switches::kEnableSandbox)) {
+      // Disable setuid sandbox since it is not longer required on
+      // linux(namespace sandbox is available on most distros).
+      command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
+    } else {
+      // Disable renderer sandbox for most of node's functions.
+      command_line->AppendSwitch(::switches::kNoSandbox);
+    }
   }
 
   // Allow file:// URIs to read other file:// URIs by default.
@@ -149,7 +154,9 @@ content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
 content::ContentRendererClient*
     AtomMainDelegate::CreateContentRendererClient() {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-        switches::kEnableSandbox)) {
+        switches::kEnableSandbox) ||
+      !base::CommandLine::ForCurrentProcess()->HasSwitch(
+        ::switches::kNoSandbox)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
   } else {
     renderer_client_.reset(new AtomRendererClient);

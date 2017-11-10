@@ -103,7 +103,7 @@ clipboard.
 
 ```js
 clipboard.write({
-  text: 'http://electron.atom.io',
+  text: 'https://electron.atom.io',
   bookmark: 'Electron Homepage'
 })
 ```
@@ -133,24 +133,37 @@ Clears the clipboard content.
 
 Returns `String[]` - An array of supported formats for the clipboard `type`.
 
-### `clipboard.has(data[, type])` _Experimental_
+### `clipboard.has(format[, type])` _Experimental_
 
-* `data` String
+* `format` String
 * `type` String (optional)
 
-Returns `Boolean` - Whether the clipboard supports the format of specified `data`.
+Returns `Boolean` - Whether the clipboard supports the specified `format`.
 
 ```javascript
 const {clipboard} = require('electron')
 console.log(clipboard.has('<p>selection</p>'))
 ```
 
-### `clipboard.read(data[, type])` _Experimental_
+### `clipboard.read(format)` _Experimental_
 
-* `data` String
+* `format` String
+
+Returns `String` - Reads `format` type from the clipboard.
+
+### `clipboard.readBuffer(format)` _Experimental_
+
+* `format` String
+
+Returns `Buffer` - Reads `format` type from the clipboard.
+
+### `clipboard.writeBuffer(format, buffer[, type])` _Experimental_
+
+* `format` String
+* `buffer` Buffer
 * `type` String (optional)
 
-Returns `String` - Reads `data` from the clipboard.
+Writes the `buffer` into the clipboard as `format`.
 
 ### `clipboard.write(data[, type])`
 

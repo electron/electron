@@ -11,27 +11,28 @@ namespace atom {
 void BridgeTaskRunner::MessageLoopIsReady() {
   auto message_loop = base::MessageLoop::current();
   CHECK(message_loop);
-  for (const TaskPair& task : tasks_) {
+  for (TaskPair& task : tasks_) {
     message_loop->task_runner()->PostDelayedTask(
-        base::get<0>(task), base::get<1>(task), base::get<2>(task));
+        std::get<0>(task), std::move(std::get<1>(task)), std::get<2>(task));
   }
-  for (const TaskPair& task : non_nestable_tasks_) {
+  for (TaskPair& task : non_nestable_tasks_) {
     message_loop->task_runner()->PostNonNestableDelayedTask(
-        base::get<0>(task), base::get<1>(task), base::get<2>(task));
+        std::get<0>(task), std::move(std::get<1>(task)), std::get<2>(task));
   }
 }
 
 bool BridgeTaskRunner::PostDelayedTask(
     const tracked_objects::Location& from_here,
-    const base::Closure& task,
+    base::OnceClosure task,
     base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();
   if (!message_loop) {
-    tasks_.push_back(std::make_tuple(from_here, task, delay));
+    tasks_.push_back(std::make_tuple(from_here, std::move(task), delay));
     return true;
   }
 
-  return message_loop->task_runner()->PostDelayedTask(from_here, task, delay);
+  return message_loop->task_runner()->PostDelayedTask(
+      from_here, std::move(task), delay);
 }
 
 bool BridgeTaskRunner::RunsTasksOnCurrentThread() const {
@@ -44,16 +45,17 @@ bool BridgeTaskRunner::RunsTasksOnCurrentThread() const {
 
 bool BridgeTaskRunner::PostNonNestableDelayedTask(
     const tracked_objects::Location& from_here,
-    const base::Closure& task,
+    base::OnceClosure task,
     base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();
   if (!message_loop) {
-    non_nestable_tasks_.push_back(std::make_tuple(from_here, task, delay));
+    non_nestable_tasks_.push_back(std::make_tuple(
+        from_here, std::move(task), delay));
     return true;
   }
 
   return message_loop->task_runner()->PostNonNestableDelayedTask(
-      from_here, task, delay);
+      from_here, std::move(task), delay);
 }
 
 }  // namespace atom

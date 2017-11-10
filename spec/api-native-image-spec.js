@@ -5,17 +5,117 @@ const {nativeImage} = require('electron')
 const path = require('path')
 
 describe('nativeImage module', () => {
+  const ImageFormat = {
+    PNG: 'png',
+    JPEG: 'jpeg'
+  }
+
+  const images = [
+    {
+      filename: 'logo.png',
+      format: ImageFormat.PNG,
+      hasAlphaChannel: true,
+      hasDataUrl: false,
+      width: 538,
+      height: 190
+    },
+    {
+      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=',
+      filename: '1x1.png',
+      format: ImageFormat.PNG,
+      hasAlphaChannel: true,
+      hasDataUrl: true,
+      height: 1,
+      width: 1
+    },
+    {
+      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFUlEQVQYlWP8////fwYGBgYmBigAAD34BABBrq9BAAAAAElFTkSuQmCC',
+      filename: '2x2.jpg',
+      format: ImageFormat.JPEG,
+      hasAlphaChannel: false,
+      hasDataUrl: true,
+      height: 2,
+      width: 2
+    },
+    {
+      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAADElEQVQYlWNgIAoAAAAnAAGZWEMnAAAAAElFTkSuQmCC',
+      filename: '3x3.png',
+      format: ImageFormat.PNG,
+      hasAlphaChannel: true,
+      hasDataUrl: true,
+      height: 3,
+      width: 3
+    }
+  ]
+
+  /**
+   * @param {?string} filename
+   * @returns {?string} Full path.
+   */
+  const getImagePathFromFilename = (filename) => {
+    return (filename === null) ? null
+        : path.join(__dirname, 'fixtures', 'assets', filename)
+  }
+
+  /**
+   * @param {!Object} image
+   * @param {Object} filters
+   * @returns {boolean}
+   */
+  const imageMatchesTheFilters = (image, filters = null) => {
+    if (filters === null) {
+      return true
+    }
+
+    return Object.entries(filters)
+        .every(([key, value]) => image[key] === value)
+  }
+
+  /**
+   * @param {!Object} filters
+   * @returns {!Array} A matching images list.
+   */
+  const getImages = (filters) => {
+    const matchingImages = images
+        .filter(i => imageMatchesTheFilters(i, filters))
+
+    // Add `.path` property to every image.
+    matchingImages
+        .forEach(i => { i.path = getImagePathFromFilename(i.filename) })
+
+    return matchingImages
+  }
+
+  /**
+   * @param {!Object} filters
+   * @returns {Object} A matching image if any.
+   */
+  const getImage = (filters) => {
+    const matchingImages = getImages(filters)
+
+    let matchingImage = null
+    if (matchingImages.length > 0) {
+      matchingImage = matchingImages[0]
+    }
+
+    return matchingImage
+  }
+
   describe('createEmpty()', () => {
     it('returns an empty image', () => {
       const empty = nativeImage.createEmpty()
       assert.equal(empty.isEmpty(), true)
       assert.equal(empty.getAspectRatio(), 1)
       assert.equal(empty.toDataURL(), 'data:image/png;base64,')
+      assert.equal(empty.toDataURL({scaleFactor: 2.0}), 'data:image/png;base64,')
       assert.deepEqual(empty.getSize(), {width: 0, height: 0})
       assert.deepEqual(empty.getBitmap(), [])
+      assert.deepEqual(empty.getBitmap({scaleFactor: 2.0}), [])
       assert.deepEqual(empty.toBitmap(), [])
+      assert.deepEqual(empty.toBitmap({scaleFactor: 2.0}), [])
       assert.deepEqual(empty.toJPEG(100), [])
       assert.deepEqual(empty.toPNG(), [])
+      assert.deepEqual(empty.toPNG({scaleFactor: 2.0}), [])
 
       if (process.platform === 'darwin') {
         assert.deepEqual(empty.getNativeHandle(), [])
@@ -67,15 +167,103 @@ describe('nativeImage module', () => {
   })
 
   describe('createFromDataURL(dataURL)', () => {
-    it('returns an empty image when the dataURL is empty', () => {
+    it('returns an empty image from the empty string', () => {
       assert(nativeImage.createFromDataURL('').isEmpty())
     })
 
-    it('returns an image created from the given buffer', () => {
-      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
-      const imageB = nativeImage.createFromDataURL(imageA.toDataURL())
-      assert.deepEqual(imageB.getSize(), {width: 538, height: 190})
-      assert(imageA.toBitmap().equals(imageB.toBitmap()))
+    it('returns an image created from the given string', () => {
+      const imagesData = getImages({hasDataUrl: true})
+      for (const imageData of imagesData) {
+        const imageFromPath = nativeImage.createFromPath(imageData.path)
+        const imageFromDataUrl = nativeImage.createFromDataURL(imageData.dataUrl)
+
+        assert(!imageFromDataUrl.isEmpty())
+        assert.deepEqual(imageFromDataUrl.getSize(), imageFromPath.getSize())
+        assert(imageFromPath.toBitmap().equals(imageFromDataUrl.toBitmap()))
+      }
+    })
+  })
+
+  describe('toDataURL()', () => {
+    it('returns a PNG data URL', () => {
+      const imagesData = getImages({hasDataUrl: true})
+      for (const imageData of imagesData) {
+        const imageFromPath = nativeImage.createFromPath(imageData.path)
+
+        assert.equal(imageFromPath.toDataURL(), imageData.dataUrl)
+        assert.equal(imageFromPath.toDataURL({scaleFactor: 2.0}), imageData.dataUrl)
+      }
+    })
+
+    it('returns a data URL at 1x scale factor by default', () => {
+      const imageData = getImage({filename: 'logo.png'})
+      const image = nativeImage.createFromPath(imageData.path)
+
+      const imageOne = nativeImage.createFromBuffer(image.toPNG(), {
+        width: image.getSize().width,
+        height: image.getSize().height,
+        scaleFactor: 2.0
+      })
+      assert.deepEqual(imageOne.getSize(),
+          {width: imageData.width / 2, height: imageData.height / 2})
+
+      const imageTwo = nativeImage.createFromDataURL(imageOne.toDataURL())
+      assert.deepEqual(imageTwo.getSize(),
+          {width: imageData.width, height: imageData.height})
+
+      assert(imageOne.toBitmap().equals(imageTwo.toBitmap()))
+    })
+
+    it('supports a scale factor', () => {
+      const imageData = getImage({filename: 'logo.png'})
+      const image = nativeImage.createFromPath(imageData.path)
+      const expectedSize = {width: imageData.width, height: imageData.height}
+
+      const imageFromDataUrlOne = nativeImage.createFromDataURL(
+          image.toDataURL({scaleFactor: 1.0}))
+      assert.deepEqual(imageFromDataUrlOne.getSize(), expectedSize)
+
+      const imageFromDataUrlTwo = nativeImage.createFromDataURL(
+          image.toDataURL({scaleFactor: 2.0}))
+      assert.deepEqual(imageFromDataUrlTwo.getSize(), expectedSize)
+    })
+  })
+
+  describe('toPNG()', () => {
+    it('returns a buffer at 1x scale factor by default', () => {
+      const imageData = getImage({filename: 'logo.png'})
+      const imageA = nativeImage.createFromPath(imageData.path)
+
+      const imageB = nativeImage.createFromBuffer(imageA.toPNG(), {
+        width: imageA.getSize().width,
+        height: imageA.getSize().height,
+        scaleFactor: 2.0
+      })
+      assert.deepEqual(imageB.getSize(),
+          {width: imageData.width / 2, height: imageData.height / 2})
+
+      const imageC = nativeImage.createFromBuffer(imageB.toPNG())
+      assert.deepEqual(imageC.getSize(),
+          {width: imageData.width, height: imageData.height})
+
+      assert(imageB.toBitmap().equals(imageC.toBitmap()))
+    })
+
+    it('supports a scale factor', () => {
+      const imageData = getImage({filename: 'logo.png'})
+      const image = nativeImage.createFromPath(imageData.path)
+
+      const imageFromBufferOne = nativeImage.createFromBuffer(
+          image.toPNG({scaleFactor: 1.0}))
+      assert.deepEqual(
+          imageFromBufferOne.getSize(),
+          {width: imageData.width, height: imageData.height})
+
+      const imageFromBufferTwo = nativeImage.createFromBuffer(
+          image.toPNG({scaleFactor: 2.0}), {scaleFactor: 2.0})
+      assert.deepEqual(
+          imageFromBufferTwo.getSize(),
+          {width: imageData.width / 2, height: imageData.height / 2})
     })
   })
 
@@ -129,6 +317,34 @@ describe('nativeImage module', () => {
       const image = nativeImage.createFromPath(imagePath)
       assert(!image.isEmpty())
       assert.deepEqual(image.getSize(), {width: 256, height: 256})
+    })
+  })
+
+  describe('createFromNamedImage(name)', () => {
+    it('returns empty for invalid options', () => {
+      const image = nativeImage.createFromNamedImage('totally_not_real')
+      assert(image.isEmpty())
+    })
+
+    it('returns empty on non-darwin platforms', () => {
+      if (process.platform === 'darwin') return
+
+      const image = nativeImage.createFromNamedImage('NSActionTemplate')
+      assert(image.isEmpty())
+    })
+
+    it('returns a valid image on darwin', () => {
+      if (process.platform !== 'darwin') return
+
+      const image = nativeImage.createFromNamedImage('NSActionTemplate')
+      assert(!image.isEmpty())
+    })
+
+    it('returns allows an HSL shift for a valid image on darwin', () => {
+      if (process.platform !== 'darwin') return
+
+      const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8])
+      assert(!image.isEmpty())
     })
   })
 
@@ -186,9 +402,109 @@ describe('nativeImage module', () => {
   })
 
   describe('getAspectRatio()', () => {
-    it('returns the aspect ratio of the image', () => {
+    it('returns an aspect ratio of an empty image', () => {
       assert.equal(nativeImage.createEmpty().getAspectRatio(), 1.0)
-      assert.equal(nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png')).getAspectRatio(), 2.8315789699554443)
+    })
+
+    it('returns an aspect ratio of an image', () => {
+      const imageData = getImage({filename: 'logo.png'})
+      // imageData.width / imageData.height = 2.831578947368421
+      const expectedAspectRatio = 2.8315789699554443
+
+      const image = nativeImage.createFromPath(imageData.path)
+      assert.equal(image.getAspectRatio(), expectedAspectRatio)
+    })
+  })
+
+  describe('addRepresentation()', () => {
+    it('supports adding a buffer representation for a scale factor', () => {
+      const image = nativeImage.createEmpty()
+
+      const imageDataOne = getImage({width: 1, height: 1})
+      image.addRepresentation({
+        scaleFactor: 1.0,
+        buffer: nativeImage.createFromPath(imageDataOne.path).toPNG()
+      })
+
+      const imageDataTwo = getImage({width: 2, height: 2})
+      image.addRepresentation({
+        scaleFactor: 2.0,
+        buffer: nativeImage.createFromPath(imageDataTwo.path).toPNG()
+      })
+
+      const imageDataThree = getImage({width: 3, height: 3})
+      image.addRepresentation({
+        scaleFactor: 3.0,
+        buffer: nativeImage.createFromPath(imageDataThree.path).toPNG()
+      })
+
+      image.addRepresentation({
+        scaleFactor: 4.0,
+        buffer: 'invalid'
+      })
+
+      assert.equal(image.isEmpty(), false)
+      assert.deepEqual(image.getSize(), {width: 1, height: 1})
+
+      assert.equal(image.toDataURL({scaleFactor: 1.0}), imageDataOne.dataUrl)
+      assert.equal(image.toDataURL({scaleFactor: 2.0}), imageDataTwo.dataUrl)
+      assert.equal(image.toDataURL({scaleFactor: 3.0}), imageDataThree.dataUrl)
+      assert.equal(image.toDataURL({scaleFactor: 4.0}), imageDataThree.dataUrl)
+    })
+
+    it('supports adding a data URL representation for a scale factor', () => {
+      const image = nativeImage.createEmpty()
+
+      const imageDataOne = getImage({width: 1, height: 1})
+      image.addRepresentation({
+        scaleFactor: 1.0,
+        dataURL: imageDataOne.dataUrl
+      })
+
+      const imageDataTwo = getImage({width: 2, height: 2})
+      image.addRepresentation({
+        scaleFactor: 2.0,
+        dataURL: imageDataTwo.dataUrl
+      })
+
+      const imageDataThree = getImage({width: 3, height: 3})
+      image.addRepresentation({
+        scaleFactor: 3.0,
+        dataURL: imageDataThree.dataUrl
+      })
+
+      image.addRepresentation({
+        scaleFactor: 4.0,
+        dataURL: 'invalid'
+      })
+
+      assert.equal(image.isEmpty(), false)
+      assert.deepEqual(image.getSize(), {width: 1, height: 1})
+
+      assert.equal(image.toDataURL({scaleFactor: 1.0}), imageDataOne.dataUrl)
+      assert.equal(image.toDataURL({scaleFactor: 2.0}), imageDataTwo.dataUrl)
+      assert.equal(image.toDataURL({scaleFactor: 3.0}), imageDataThree.dataUrl)
+      assert.equal(image.toDataURL({scaleFactor: 4.0}), imageDataThree.dataUrl)
+    })
+
+    it('supports adding a representation to an existing image', () => {
+      const imageDataOne = getImage({width: 1, height: 1})
+      const image = nativeImage.createFromPath(imageDataOne.path)
+
+      const imageDataTwo = getImage({width: 2, height: 2})
+      image.addRepresentation({
+        scaleFactor: 2.0,
+        dataURL: imageDataTwo.dataUrl
+      })
+
+      const imageDataThree = getImage({width: 3, height: 3})
+      image.addRepresentation({
+        scaleFactor: 2.0,
+        dataURL: imageDataThree.dataUrl
+      })
+
+      assert.equal(image.toDataURL({scaleFactor: 1.0}), imageDataOne.dataUrl)
+      assert.equal(image.toDataURL({scaleFactor: 2.0}), imageDataTwo.dataUrl)
     })
   })
 })

@@ -90,10 +90,11 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   base::FilePath path;
   GetItemSavePath(item, &path);
   // Show save dialog if save path was not set already on item
-  if (path.empty() && file_dialog::ShowSaveDialog(window, item->GetURL().spec(),
-                                                  "", default_path,
-                                                  file_dialog::Filters(),
-                                                  &path)) {
+  file_dialog::DialogSettings settings;
+  settings.parent_window = window;
+  settings.title = item->GetURL().spec();
+  settings.default_path = default_path;
+  if (path.empty() && file_dialog::ShowSaveDialog(settings, &path)) {
     // Remember the last selected download directory.
     AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
         download_manager_->GetBrowserContext());
@@ -114,7 +115,10 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   // If user cancels the file save dialog, run the callback with empty FilePath.
   callback.Run(path,
                content::DownloadItem::TARGET_DISPOSITION_PROMPT,
-               content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path);
+               content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
+               path.empty() ?
+                   content::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED :
+                   content::DOWNLOAD_INTERRUPT_REASON_NONE);
 }
 
 void AtomDownloadManagerDelegate::Shutdown() {
@@ -131,7 +135,8 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
     callback.Run(download->GetForcedFilePath(),
                  content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
                  content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                 download->GetForcedFilePath());
+                 download->GetForcedFilePath(),
+                 content::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
 
@@ -142,7 +147,7 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
     callback.Run(save_path,
                  content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
                  content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                 save_path);
+                 save_path, content::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
 

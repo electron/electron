@@ -20,7 +20,8 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                    v8::MicrotasksScope::kRunMicrotasks);
   // Use node::MakeCallback to call the callback, and it will also run pending
   // tasks in Node.js.
-  return node::MakeCallback(isolate, obj, method, args->size(), &args->front());
+  return node::MakeCallback(isolate, obj, method, args->size(), &args->front(),
+                            {0, 0}).ToLocalChecked();
 }
 
 }  // namespace internal

@@ -7,6 +7,7 @@
 
 #include "base/callback.h"
 #include "content/public/renderer/browser_plugin_delegate.h"
+#include "content/public/renderer/render_frame.h"
 
 namespace gfx {
 class Size;

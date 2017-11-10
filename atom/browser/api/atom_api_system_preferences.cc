@@ -67,6 +67,7 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::UnsubscribeLocalNotification)
       .SetMethod("getUserDefault", &SystemPreferences::GetUserDefault)
       .SetMethod("setUserDefault", &SystemPreferences::SetUserDefault)
+      .SetMethod("removeUserDefault", &SystemPreferences::RemoveUserDefault)
       .SetMethod("isSwipeTrackingFromScrollEventsEnabled",
                  &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
 #endif

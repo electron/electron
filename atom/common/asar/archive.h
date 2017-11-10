@@ -6,9 +6,9 @@
 #define ATOM_COMMON_ASAR_ARCHIVE_H_
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
-#include "base/containers/scoped_ptr_hash_map.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
 
@@ -75,8 +75,8 @@ class Archive {
   std::unique_ptr<base::DictionaryValue> header_;
 
   // Cached external temporary files.
-  base::ScopedPtrHashMap<base::FilePath, std::unique_ptr<ScopedTemporaryFile>>
-      external_files_;
+  std::unordered_map<base::FilePath::StringType,
+                     std::unique_ptr<ScopedTemporaryFile>> external_files_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };

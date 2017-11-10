@@ -86,8 +86,10 @@ mate::WrappableBase* Tray::New(mate::Handle<NativeImage> image,
   return new Tray(args->isolate(), args->GetThis(), image);
 }
 
-void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {
-  EmitWithFlags("click", modifiers, bounds);
+void Tray::OnClicked(const gfx::Rect& bounds,
+                     const gfx::Point& location,
+                     int modifiers) {
+  EmitWithFlags("click", modifiers, bounds, location);
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
@@ -120,6 +122,18 @@ void Tray::OnDropFiles(const std::vector<std::string>& files) {
 
 void Tray::OnDropText(const std::string& text) {
   Emit("drop-text", text);
+}
+
+void Tray::OnMouseEntered(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-enter", modifiers, location);
+}
+
+void Tray::OnMouseExited(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-leave", modifiers, location);
+}
+
+void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
+  EmitWithFlags("mouse-move", modifiers, location);
 }
 
 void Tray::OnDragEntered() {

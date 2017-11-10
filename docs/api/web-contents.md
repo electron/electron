@@ -157,9 +157,20 @@ requested by `window.open` or an external link like `<a target='_blank'>`.
 
 By default a new `BrowserWindow` will be created for the `url`.
 
-Calling `event.preventDefault()` will prevent creating new windows. In such case, the
-`event.newGuest` may be set with a reference to a `BrowserWindow` instance to make it
-used by the Electron's runtime.
+Calling `event.preventDefault()` will prevent Electron from automatically creating a
+new `BrowserWindow`. If you call `event.preventDefault()` and manually create a new
+`BrowserWindow` then you must set `event.newGuest` to reference the new `BrowserWindow`
+instance, failing to do so may result in unexpected behavior. For example:
+
+```javascript
+myBrowserWindow.webContents.on('new-window', (event, url) => {
+  event.preventDefault()
+  const win = new BrowserWindow({show: false})
+  win.once('ready-to-show', () => win.show())
+  win.loadURL(url)
+  event.newGuest = win
+})
+```
 
 #### Event: 'will-navigate'
 
@@ -207,6 +218,36 @@ When in-page navigation happens, the page URL changes but does not cause
 navigation outside of the page. Examples of this occurring are when anchor links
 are clicked or when the DOM `hashchange` event is triggered.
 
+#### Event: 'will-prevent-unload'
+
+Returns:
+
+* `event` Event
+
+Emitted when a `beforeunload` event handler is attempting to cancel a page unload.
+
+Calling `event.preventDefault()` will ignore the `beforeunload` event handler
+and allow the page to be unloaded.
+
+```javascript
+const {BrowserWindow, dialog} = require('electron')
+const win = new BrowserWindow({width: 800, height: 600})
+win.webContents.on('will-prevent-unload', (event) => {
+  const choice = dialog.showMessageBox(win, {
+    type: 'question',
+    buttons: ['Leave', 'Stay'],
+    title: 'Do you want to leave this site?',
+    message: 'Changes you made may not be saved.',
+    defaultId: 0,
+    cancelId: 1
+  })
+  const leave = (choice === 0)
+  if (leave) {
+    event.preventDefault()
+  }
+})
+```
+
 #### Event: 'crashed'
 
 Returns:
@@ -247,7 +288,22 @@ Returns:
 
 Emitted before dispatching the `keydown` and `keyup` events in the page.
 Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
-from being dispatched.
+and the menu shortcuts.
+
+To only prevent the menu shortcuts, use
+[`setIgnoreMenuShortcuts`](#contentssetignoremenushortcuts):
+
+```javascript
+const {BrowserWindow} = require('electron')
+
+let win = new BrowserWindow({width: 800, height: 600})
+
+win.webContents.on('before-input-event', (event, input) => {
+  // For example, only enable application menu keyboard shortcuts when
+  // Ctrl/Cmd are down.
+  win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
+})
+```
 
 #### Event: 'devtools-opened'
 
@@ -325,6 +381,7 @@ Returns:
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
   * `selectionArea` Object - Coordinates of first match region.
+  * `finalUpdate` Boolean
 
 Emitted when a result is available for
 [`webContents.findInPage`] request.
@@ -346,6 +403,11 @@ a meta tag:
 <meta name='theme-color' content='#ff0000'>
 ```
 
+Returns:
+
+* `event` Event
+* `color` (String | null) - Theme color is in format of '#rrggbb'. It is `null` when no theme color is set.
+
 #### Event: 'update-target-url'
 
 Returns:
@@ -363,12 +425,8 @@ Returns:
 * `type` String
 * `image` NativeImage (optional)
 * `scale` Float (optional) - scaling factor for the custom cursor
-* `size` Object (optional) - the size of the `image`
-  * `width` Integer
-  * `height` Integer
-* `hotspot` Object (optional) - coordinates of the custom cursor's hotspot
-  * `x` Integer - x coordinate
-  * `y` Integer - y coordinate
+* `size` [Size](structures/size.md) (optional) - the size of the `image`
+* `hotspot` [Point](structures/point.md) (optional) - coordinates of the custom cursor's hotspot
 
 Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
@@ -502,6 +560,37 @@ win.loadURL('http://github.com')
 
 Emitted when the devtools window instructs the webContents to reload
 
+#### Event: 'will-attach-webview'
+
+Returns:
+
+* `event` Event
+* `webPreferences` Object - The web preferences that will be used by the guest
+  page. This object can be modified to adjust the preferences for the guest
+  page.
+* `params` Object - The other `<webview>` parameters such as the `src` URL.
+  This object can be modified to adjust the parameters of the guest page.
+
+Emitted when a `<webview>`'s web contents is being attached to this web
+contents. Calling `event.preventDefault()` will destroy the guest page.
+
+This event can be used to configure `webPreferences` for the `webContents`
+of a `<webview>` before it's loaded, and provides the ability to set settings
+that can't be set via `<webview>` attributes.
+
+**Note:** The specified `preload` script option will be appear as `preloadURL`
+(not `preload`) in the `webPreferences` object emitted with this event.
+
+#### Event: 'did-attach-webview'
+
+Returns:
+
+* `event` Event
+* `webContents` WebContents - The guest web contents that is used by the
+  `<webview>`.
+
+Emitted when a `<webview>` has been attached to this web contents.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
@@ -511,7 +600,8 @@ Emitted when the devtools window instructs the webContents to reload
   * `httpReferrer` String (optional) - A HTTP Referrer url.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
-  * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md) | [UploadFileSystem](structures/upload-file-system.md) | [UploadBlob](structures/upload-blob.md))[] - (optional)
+  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadFileSystem[]](structures/upload-file-system.md) | [UploadBlob[]](structures/upload-blob.md)) - (optional)
+  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Loads the `url` in the window. The `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`. If the load should bypass http cache then
@@ -550,6 +640,10 @@ Returns `String` - The title of the current web page.
 #### `contents.isDestroyed()`
 
 Returns `Boolean` - Whether the web page is destroyed.
+
+#### `contents.focus()`
+
+Focuses the web page.
 
 #### `contents.isFocused()`
 
@@ -642,7 +736,7 @@ Injects CSS into the current web page.
 #### `contents.executeJavaScript(code[, userGesture, callback])`
 
 * `code` String
-* `userGesture` Boolean (optional)
+* `userGesture` Boolean (optional) - Default is `false`.
 * `callback` Function (optional) - Called after script has been executed.
   * `result` Any
 
@@ -665,6 +759,12 @@ contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1"
     console.log(result) // Will be the JSON object from the fetch call
   })
 ```
+
+#### `contents.setIgnoreMenuShortcuts(ignore)` _Experimental_
+
+* `ignore` Boolean
+
+Ignore application menu shortcuts while this web contents is focused.
 
 #### `contents.setAudioMuted(muted)`
 
@@ -806,10 +906,10 @@ Inserts `text` to the focused element.
     uppercase letter followed by a lowercase or non-letter.
     Accepts several other intra-word matches, defaults to `false`.
 
-Starts a request to find all matches for the `text` in the web page and returns
-an `Integer` representing the request id used for the request. The result of
-the request can be obtained by subscribing to
-[`found-in-page`](web-contents.md#event-found-in-page) event.
+Returns `Integer` - The request id used for the request.
+
+Starts a request to find all matches for the `text` in the web page. The result of the request
+can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-in-page) event.
 
 #### `contents.stopFindInPage(action)`
 
@@ -859,18 +959,28 @@ Unregisters any ServiceWorker if present and returns a boolean as
 response to `callback` when the JS promise is fulfilled or false
 when the JS promise is rejected.
 
-#### `contents.print([options])`
+#### `contents.getPrinters()`
+
+Get the system printer list.
+
+Returns [`PrinterInfo[]`](structures/printer-info.md)
+
+#### `contents.print([options], [callback])`
 
 * `options` Object (optional)
-  * `silent` Boolean - Don't ask user for print settings. Default is `false`.
-  * `printBackground` Boolean - Also prints the background color and image of
+  * `silent` Boolean (optional) - Don't ask user for print settings. Default is `false`.
+  * `printBackground` Boolean (optional) - Also prints the background color and image of
     the web page. Default is `false`.
+  * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
+* `callback` Function (optional)
+  * success` Boolean - Indicates success of the print call.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
-up system's default printer and default settings for printing.
+the system's default printer if `deviceName` is empty and the default settings
+for printing.
 
 Calling `window.print()` in web page is equivalent to calling
-`webContents.print({silent: false, printBackground: false})`.
+`webContents.print({silent: false, printBackground: false, deviceName: ''})`.
 
 Use `page-break-before: always; ` CSS style to force to print to a new page.
 
@@ -1036,24 +1146,16 @@ app.on('ready', () => {
       (default: `desktop`)
     * `desktop` - Desktop screen type
     * `mobile` - Mobile screen type
-  * `screenSize` Object - Set the emulated screen size (screenPosition == mobile)
-    * `width` Integer - Set the emulated screen width
-    * `height` Integer - Set the emulated screen height
-  * `viewPosition` Object - Position the view on the screen
+  * `screenSize` [Size](structures/size.md) - Set the emulated screen size (screenPosition == mobile)
+  * `viewPosition` [Point](structures/point.md) - Position the view on the screen
       (screenPosition == mobile) (default: `{x: 0, y: 0}`)
-    * `x` Integer - Set the x axis offset from top left corner
-    * `y` Integer - Set the y axis offset from top left corner
   * `deviceScaleFactor` Integer - Set the device scale factor (if zero defaults to
       original device scale factor) (default: `0`)
-  * `viewSize` Object - Set the emulated view size (empty means no override)
-    * `width` Integer - Set the emulated view width
-    * `height` Integer - Set the emulated view height
+  * `viewSize` [Size](structures/size.md) - Set the emulated view size (empty means no override)
   * `fitToView` Boolean - Whether emulated view should be scaled down if
       necessary to fit into available space (default: `false`)
-  * `offset` Object - Offset of the emulated view inside available space (not in
-      fit to view mode) (default: `{x: 0, y: 0}`)
-    * `x` Float - Set the x axis offset from top left corner
-    * `y` Float - Set the y axis offset from top left corner
+  * `offset` [Point](structures/point.md) - Offset of the emulated view inside available space
+      (not in fit to view mode) (default: `{x: 0, y: 0}`)
   * `scale` Float - Scale of emulated view inside available space (not in fit to
       view mode) (default: `1`)
 
@@ -1075,6 +1177,8 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
     `numLock`, `left`, `right`.
 
 Sends an input `event` to the page.
+**Note:** The `BrowserWindow` containing the contents needs to be focused for
+`sendInputEvent()` to work.
 
 For keyboard events, the `event` object also have following properties:
 
@@ -1133,7 +1237,7 @@ End subscribing for frame presentation events.
 #### `contents.startDrag(item)`
 
 * `item` Object
-  * `file` String - The path to the file being dragged.
+  * `file` String or `files` Array - The path(s) to the file(s) being dragged.
   * `icon` [NativeImage](native-image.md) - The image must be non-empty on
     macOS.
 
@@ -1151,7 +1255,7 @@ the cursor when dragging.
 * `callback` Function - `(error) => {}`.
   * `error` Error
 
-Returns true if the process of saving page has been initiated successfully.
+Returns `Boolean` - true if the process of saving page has been initiated successfully.
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -1210,18 +1314,49 @@ Returns `Integer` - If *offscreen rendering* is enabled returns the current fram
 
 #### `contents.invalidate()`
 
+Schedules a full repaint of the window this web contents is in.
+
 If *offscreen rendering* is enabled invalidates the frame and generates a new
 one through the `'paint'` event.
+
+#### `contents.getWebRTCIPHandlingPolicy()`
+
+Returns `String` - Returns the WebRTC IP Handling Policy.
+
+#### `contents.setWebRTCIPHandlingPolicy(policy)`
+
+* `policy` String - Specify the WebRTC IP Handling Policy.
+  * `default` - Exposes user's public and local IPs.  This is the default
+  behavior.  When this policy is used, WebRTC has the right to enumerate all
+  interfaces and bind them to discover public interfaces.
+  * `default_public_interface_only` - Exposes user's public IP, but does not
+  expose user's local IP.  When this policy is used, WebRTC should only use the
+  default route used by http. This doesn't expose any local addresses.
+  * `default_public_and_private_interfaces` - Exposes user's public and local
+  IPs.  When this policy is used, WebRTC should only use the default route used
+  by http. This also exposes the associated default private address. Default
+  route is the route chosen by the OS on a multi-homed endpoint.
+  * `disable_non_proxied_udp` - Does not expose public or local IPs.  When this
+  policy is used, WebRTC should only use TCP to contact peers or servers unless
+  the proxy server supports UDP.
+
+Setting the WebRTC IP handling policy allows you to control which IPs are
+exposed via WebRTC.  See [BrowserLeaks](https://browserleaks.com/webrtc) for
+more details.
+
+#### `contents.getOSProcessId()`
+
+Returns `Integer` - The `pid` of the associated renderer process.
 
 ### Instance Properties
 
 #### `contents.id`
 
-A Integer representing the unique ID of this WebContents.
+A `Integer` representing the unique ID of this WebContents.
 
 #### `contents.session`
 
-A Session object ([session](session.md)) used by this webContents.
+A [`Session`](session.md) used by this webContents.
 
 #### `contents.hostWebContents`
 

@@ -86,6 +86,17 @@ void CrashReporter::InitBreakpad(const std::string& product_name,
 void CrashReporter::SetUploadParameters() {
 }
 
+void CrashReporter::AddExtraParameter(const std::string& key,
+                                      const std::string& value) {
+}
+
+void CrashReporter::RemoveExtraParameter(const std::string& key) {
+}
+
+std::map<std::string, std::string> CrashReporter::GetParameters() const {
+  return upload_parameters_;
+}
+
 #if defined(OS_MACOSX) && defined(MAS_BUILD)
 // static
 CrashReporter* CrashReporter::GetInstance() {

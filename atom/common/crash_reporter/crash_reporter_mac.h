@@ -5,6 +5,7 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_MAC_H_
 #define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_MAC_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -34,6 +35,10 @@ class CrashReporterMac : public CrashReporter {
   void SetUploadParameters() override;
   void SetUploadToServer(bool upload_to_server) override;
   bool GetUploadToServer() override;
+  void AddExtraParameter(const std::string& key,
+                         const std::string& value) override;
+  void RemoveExtraParameter(const std::string& key) override;
+  std::map<std::string, std::string> GetParameters() const override;
 
  private:
   friend struct base::DefaultSingletonTraits<CrashReporterMac>;

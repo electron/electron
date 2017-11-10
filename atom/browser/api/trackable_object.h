@@ -30,14 +30,14 @@ class TrackableObjectBase {
   // Wrap TrackableObject into a class that SupportsUserData.
   void AttachAsUserData(base::SupportsUserData* wrapped);
 
+  // Get the weak_map_id from SupportsUserData.
+  static int32_t GetIDFromWrappedClass(base::SupportsUserData* wrapped);
+
  protected:
   virtual ~TrackableObjectBase();
 
   // Returns a closure that can destroy the native class.
   base::Closure GetDestroyClosure();
-
-  // Get the weak_map_id from SupportsUserData.
-  static int32_t GetIDFromWrappedClass(base::SupportsUserData* wrapped);
 
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
@@ -62,7 +62,10 @@ class TrackableObject : public TrackableObjectBase,
  public:
   // Mark the JS object as destroyed.
   void MarkDestroyed() {
-    Wrappable<T>::GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
+    v8::Local<v8::Object> wrapper = Wrappable<T>::GetWrapper();
+    if (!wrapper.IsEmpty()) {
+      wrapper->SetAlignedPointerInInternalField(0, nullptr);
+    }
   }
 
   bool IsDestroyed() {

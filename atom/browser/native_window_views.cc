@@ -7,8 +7,9 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/native_browser_view_views.h"
 #include "atom/browser/ui/views/menu_bar.h"
-#include "atom/browser/ui/views/menu_layout.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
@@ -41,13 +42,14 @@
 #include "atom/browser/ui/x/window_state_watcher.h"
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/ui/libgtk2ui/unity_service.h"
+#include "chrome/browser/ui/libgtkui/unity_service.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
+#include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
@@ -80,17 +82,17 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
 #endif
 
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
-  return event.windowsKeyCode == ui::VKEY_MENU;
+  return event.windows_key_code == ui::VKEY_MENU;
 }
 
 bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
   typedef content::NativeWebKeyboardEvent::Modifiers Modifiers;
-  int modifiers = event.modifiers;
-  modifiers &= ~Modifiers::NumLockOn;
-  modifiers &= ~Modifiers::CapsLockOn;
-  return (modifiers == Modifiers::AltKey) ||
-         (modifiers == (Modifiers::AltKey | Modifiers::IsLeft)) ||
-         (modifiers == (Modifiers::AltKey | Modifiers::IsRight));
+  int modifiers = event.GetModifiers();
+  modifiers &= ~Modifiers::kNumLockOn;
+  modifiers &= ~Modifiers::kCapsLockOn;
+  return (modifiers == Modifiers::kAltKey) ||
+         (modifiers == (Modifiers::kAltKey | Modifiers::kIsLeft)) ||
+         (modifiers == (Modifiers::kAltKey | Modifiers::kIsRight));
 }
 
 #if defined(USE_X11)
@@ -134,6 +136,7 @@ NativeWindowViews::NativeWindowViews(
     : NativeWindow(web_contents, options, parent),
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
+      browser_view_(nullptr),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
@@ -204,8 +207,7 @@ NativeWindowViews::NativeWindowViews(
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget =
-      new views::DesktopNativeWidgetAura(window_.get());
+  params.native_widget = new AtomDesktopNativeWidgetAura(window_.get());
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
       this,
       window_.get(),
@@ -274,9 +276,6 @@ NativeWindowViews::NativeWindowViews(
     SetWindowType(GetAcceleratedWidget(), window_type);
 #endif
 
-  // Add web view.
-  SetLayoutManager(new MenuLayout(this, kMenuBarHeight));
-
   AddChildView(web_view_);
 
 #if defined(OS_WIN)
@@ -305,11 +304,16 @@ NativeWindowViews::NativeWindowViews(
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
 #endif
 
-  // TODO(zcbenz): This was used to force using native frame on Windows 2003, we
-  // should check whether setting it in InitParams can work.
   if (has_frame()) {
+    // TODO(zcbenz): This was used to force using native frame on Windows 2003,
+    // we should check whether setting it in InitParams can work.
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
+#if defined(OS_WIN)
+    // thickFrame also works for normal window.
+    if (!thick_frame_)
+      FlipWindowStyle(GetAcceleratedWidget(), false, WS_THICKFRAME);
+#endif
   }
 
   gfx::Size size = bounds.size();
@@ -320,6 +324,8 @@ NativeWindowViews::NativeWindowViews(
 
   window_->CenterWindow(size);
   Layout();
+
+  autofill_popup_.reset(new AutofillPopup(GetNativeView()));
 
 #if defined(OS_WIN)
   // Save initial window state.
@@ -333,6 +339,11 @@ NativeWindowViews::NativeWindowViews(
 
 NativeWindowViews::~NativeWindowViews() {
   window_->RemoveObserver(this);
+
+#if defined(OS_WIN)
+  // Disable mouse forwarding to relinquish resources, should any be held.
+  SetForwardMouseMessages(false);
+#endif
 }
 
 void NativeWindowViews::Close() {
@@ -373,7 +384,8 @@ bool NativeWindowViews::IsFocused() {
 }
 
 void NativeWindowViews::Show() {
-  if (is_modal() && NativeWindow::parent())
+  if (is_modal() && NativeWindow::parent() &&
+      !window_->native_widget_private()->IsVisible())
     static_cast<NativeWindowViews*>(NativeWindow::parent())->SetEnabled(false);
 
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
@@ -479,6 +491,8 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
 
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
+  bool leaving_fullscreen = IsFullscreen() && !fullscreen;
+
   if (fullscreen) {
     last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
     NotifyWindowEnterFullScreen();
@@ -504,6 +518,13 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // We set the new value after notifying, so we can handle the size event
   // correctly.
   window_->SetFullscreen(fullscreen);
+
+  // If restoring from fullscreen and the window isn't visible, force visible,
+  // else a non-responsive window shell could be rendered.
+  // (this situation may arise when app starts with fullscreen: true)
+  // Note: the following must be after "window_->SetFullscreen(fullscreen);"
+  if (leaving_fullscreen && !IsVisible())
+    FlipWindowStyle(GetAcceleratedWidget(), true, WS_VISIBLE);
 #else
   if (IsVisible())
     window_->SetFullscreen(fullscreen);
@@ -561,6 +582,12 @@ gfx::Size NativeWindowViews::GetContentSize() {
 void NativeWindowViews::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   NativeWindow::SetContentSizeConstraints(size_constraints);
+#if defined(OS_WIN)
+  // Changing size constraints would force adding the WS_THICKFRAME style, so
+  // do nothing if thickFrame is false.
+  if (!thick_frame_)
+    return;
+#endif
   // widget_delegate() is only available after Init() is called, we make use of
   // this to determine whether native widget has initialized.
   if (window_ && window_->widget_delegate())
@@ -573,7 +600,7 @@ void NativeWindowViews::SetContentSizeConstraints(
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  if (has_frame())
+  if (has_frame() && thick_frame_)
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #elif defined(USE_X11)
   if (resizable != resizable_) {
@@ -695,6 +722,10 @@ void NativeWindowViews::Center() {
   window_->CenterWindow(GetSize());
 }
 
+void NativeWindowViews::Invalidate() {
+  window_->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
+}
+
 void NativeWindowViews::SetTitle(const std::string& title) {
   title_ = title;
   window_->UpdateWindowTitle();
@@ -739,6 +770,14 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
 #endif
 }
 
+void NativeWindowViews::SetSimpleFullScreen(bool simple_fullscreen) {
+  SetFullScreen(simple_fullscreen);
+}
+
+bool NativeWindowViews::IsSimpleFullScreen() {
+  return IsFullscreen();
+}
+
 void NativeWindowViews::SetKiosk(bool kiosk) {
   SetFullScreen(kiosk);
 }
@@ -765,23 +804,51 @@ void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
-  wm::SetShadowType(
+  wm::SetShadowElevation(
       GetNativeWindow(),
-      has_shadow ? wm::SHADOW_TYPE_RECTANGULAR : wm::SHADOW_TYPE_NONE);
+      has_shadow ? wm::ShadowElevation::MEDIUM : wm::ShadowElevation::NONE);
 }
 
 bool NativeWindowViews::HasShadow() {
-  return wm::GetShadowType(GetNativeWindow()) != wm::SHADOW_TYPE_NONE;
+  return GetNativeWindow()->GetProperty(wm::kShadowElevationKey)
+      != wm::ShadowElevation::NONE;
 }
 
-void NativeWindowViews::SetIgnoreMouseEvents(bool ignore) {
+void NativeWindowViews::SetOpacity(const double opacity) {
+#if defined(OS_WIN)
+  HWND hwnd = GetAcceleratedWidget();
+  if (!layered_) {
+    LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
+    ex_style |= WS_EX_LAYERED;
+    ::SetWindowLong(hwnd, GWL_EXSTYLE, ex_style);
+    layered_ = true;
+  }
+  ::SetLayeredWindowAttributes(hwnd, 0, opacity * 255, LWA_ALPHA);
+#endif
+  opacity_ = opacity;
+}
+
+double NativeWindowViews::GetOpacity() {
+  return opacity_;
+}
+
+void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
   if (ignore)
     ex_style |= (WS_EX_TRANSPARENT | WS_EX_LAYERED);
   else
     ex_style &= ~(WS_EX_TRANSPARENT | WS_EX_LAYERED);
+  if (layered_)
+    ex_style |= WS_EX_LAYERED;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+
+  // Forwarding is always disabled when not ignoring mouse messages.
+  if (!ignore) {
+    SetForwardMouseMessages(false);
+  } else {
+    SetForwardMouseMessages(forward);
+  }
 #elif defined(USE_X11)
   if (ignore) {
     XRectangle r = {0, 0, 1, 1};
@@ -877,6 +944,24 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   Layout();
 }
 
+void NativeWindowViews::SetBrowserView(NativeBrowserView* browser_view) {
+  if (browser_view_) {
+    web_view_->RemoveChildView(
+        browser_view_->GetInspectableWebContentsView()->GetView());
+    browser_view_ = nullptr;
+  }
+
+  if (!browser_view) {
+    return;
+  }
+
+  // Add as child of the main web view to avoid (0, 0) origin from overlapping
+  // with menu bar.
+  browser_view_ = browser_view;
+  web_view_->AddChildView(
+      browser_view->GetInspectableWebContentsView()->GetView());
+}
+
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
@@ -903,7 +988,11 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
 #endif
 }
 
-gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
+gfx::NativeView NativeWindowViews::GetNativeView() const {
+  return window_->GetNativeView();
+}
+
+gfx::NativeWindow NativeWindowViews::GetNativeWindow() const {
   return window_->GetNativeWindow();
 }
 
@@ -974,7 +1063,7 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   return false;
 }
 
-gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
+gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
@@ -1052,9 +1141,31 @@ void NativeWindowViews::OnWidgetBoundsChanged(
   if (widget != window_.get())
     return;
 
-  if (widget_size_ != bounds.size()) {
+  // Note: We intentionally use `GetBounds()` instead of `bounds` to properly
+  // handle minimized windows on Windows.
+  const auto new_bounds = GetBounds();
+  if (widget_size_ != new_bounds.size()) {
+    if (browser_view_) {
+      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view_)
+                             ->GetAutoResizeFlags();
+      int width_delta = 0;
+      int height_delta = 0;
+      if (flags & kAutoResizeWidth) {
+        width_delta = new_bounds.width() - widget_size_.width();
+      }
+      if (flags & kAutoResizeHeight) {
+        height_delta = new_bounds.height() - widget_size_.height();
+      }
+
+      auto* view = browser_view_->GetInspectableWebContentsView()->GetView();
+      auto new_view_size = view->size();
+      new_view_size.set_width(new_view_size.width() + width_delta);
+      new_view_size.set_height(new_view_size.height() + height_delta);
+      view->SetSize(new_view_size);
+    }
+
     NotifyWindowResize();
-    widget_size_ = bounds.size();
+    widget_size_ = new_bounds.size();
   }
 }
 
@@ -1155,7 +1266,7 @@ void NativeWindowViews::OnWidgetMove() {
 }
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
-    const gfx::Rect& bounds) {
+    const gfx::Rect& bounds) const {
   if (!has_frame())
     return bounds;
 
@@ -1176,7 +1287,7 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 }
 
 gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
-    const gfx::Rect& bounds) {
+    const gfx::Rect& bounds) const {
   if (!has_frame())
     return bounds;
 
@@ -1214,15 +1325,15 @@ void NativeWindowViews::HandleKeyboardEvent(
   // Show accelerator when "Alt" is pressed.
   if (menu_bar_visible_ && IsAltKey(event))
     menu_bar_->SetAcceleratorVisibility(
-        event.type == blink::WebInputEvent::RawKeyDown);
+        event.GetType() == blink::WebInputEvent::kRawKeyDown);
 
   // Show the submenu when "Alt+Key" is pressed.
-  if (event.type == blink::WebInputEvent::RawKeyDown && !IsAltKey(event) &&
-      IsAltModifier(event)) {
+  if (event.GetType() == blink::WebInputEvent::kRawKeyDown &&
+      !IsAltKey(event) && IsAltModifier(event)) {
     if (!menu_bar_visible_ &&
-        (menu_bar_->GetAcceleratorIndex(event.windowsKeyCode) != -1))
+        (menu_bar_->GetAcceleratorIndex(event.windows_key_code) != -1))
       SetMenuBarVisibility(true);
-    menu_bar_->ActivateAccelerator(event.windowsKeyCode);
+    menu_bar_->ActivateAccelerator(event.windows_key_code);
     return;
   }
 
@@ -1230,11 +1341,11 @@ void NativeWindowViews::HandleKeyboardEvent(
     return;
 
   // Toggle the menu bar only when a single Alt is released.
-  if (event.type == blink::WebInputEvent::RawKeyDown && IsAltKey(event)) {
+  if (event.GetType() == blink::WebInputEvent::kRawKeyDown && IsAltKey(event)) {
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
-  } else if (event.type == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
-             menu_bar_alt_pressed_) {
+  } else if (event.GetType() == blink::WebInputEvent::kKeyUp &&
+             IsAltKey(event) && menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
     SetMenuBarVisibility(!menu_bar_visible_);
@@ -1244,11 +1355,47 @@ void NativeWindowViews::HandleKeyboardEvent(
   }
 }
 
-gfx::Size NativeWindowViews::GetMinimumSize() {
+void NativeWindowViews::ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {
+  auto wc = atom::api::WebContents::FromWrappedClass(
+    v8::Isolate::GetCurrent(), web_contents());
+  autofill_popup_->CreateView(
+    frame_host,
+    wc->IsOffScreenOrEmbedderOffscreen(),
+    widget(),
+    bounds);
+  autofill_popup_->SetItems(values, labels);
+}
+
+void NativeWindowViews::HideAutofillPopup(
+    content::RenderFrameHost* frame_host) {
+  autofill_popup_->Hide();
+}
+
+void NativeWindowViews::Layout() {
+  const auto size = GetContentsBounds().size();
+  const auto menu_bar_bounds =
+      menu_bar_visible_ ? gfx::Rect(0, 0, size.width(), kMenuBarHeight)
+                        : gfx::Rect();
+  if (menu_bar_) {
+    menu_bar_->SetBoundsRect(menu_bar_bounds);
+  }
+
+  if (web_view_) {
+    web_view_->SetBoundsRect(
+        gfx::Rect(0, menu_bar_bounds.height(), size.width(),
+                  size.height() - menu_bar_bounds.height()));
+  }
+}
+
+gfx::Size NativeWindowViews::GetMinimumSize() const {
   return NativeWindow::GetMinimumSize();
 }
 
-gfx::Size NativeWindowViews::GetMaximumSize() {
+gfx::Size NativeWindowViews::GetMaximumSize() const {
   return NativeWindow::GetMaximumSize();
 }
 

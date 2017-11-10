@@ -66,9 +66,6 @@ class AtomPermissionManager : public content::PermissionManager {
       content::PermissionType permission,
       const GURL& requesting_origin,
       const GURL& embedding_origin) override;
-  void RegisterPermissionUsage(content::PermissionType permission,
-                               const GURL& requesting_origin,
-                               const GURL& embedding_origin) override;
   int SubscribePermissionStatusChange(
       content::PermissionType permission,
       const GURL& requesting_origin,
@@ -79,7 +76,7 @@ class AtomPermissionManager : public content::PermissionManager {
 
  private:
   class PendingRequest;
-  using PendingRequestsMap = IDMap<PendingRequest, IDMapOwnPointer>;
+  using PendingRequestsMap = IDMap<std::unique_ptr<PendingRequest>>;
 
   RequestHandler request_handler_;
 

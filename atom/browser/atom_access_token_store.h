@@ -9,10 +9,8 @@
 
 namespace atom {
 
-class AtomBrowserContext;
-
 namespace internal {
-class TokenLoadingJob;
+class GeoURLRequestContextGetter;
 }
 
 class AtomAccessTokenStore : public device::AccessTokenStore {
@@ -27,9 +25,7 @@ class AtomAccessTokenStore : public device::AccessTokenStore {
                        const base::string16& access_token) override;
 
  private:
-  void RunTokenLoadingJob(scoped_refptr<internal::TokenLoadingJob> job);
-
-  scoped_refptr<AtomBrowserContext> browser_context_;
+  scoped_refptr<internal::GeoURLRequestContextGetter> request_context_getter_;
   DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);
 };
 

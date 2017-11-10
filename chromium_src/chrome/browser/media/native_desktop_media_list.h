@@ -12,8 +12,7 @@
 #include "ui/gfx/image/image_skia.h"
 
 namespace webrtc {
-class ScreenCapturer;
-class WindowCapturer;
+class DesktopCapturer;
 }
 
 // Implementation of DesktopMediaList that shows native screens and
@@ -24,8 +23,8 @@ class NativeDesktopMediaList : public DesktopMediaList {
   // types of sources the model should be populated with (e.g. it will only
   // contain windows, if |screen_capturer| is NULL).
   NativeDesktopMediaList(
-      std::unique_ptr<webrtc::ScreenCapturer> screen_capturer,
-      std::unique_ptr<webrtc::WindowCapturer> window_capturer);
+      std::unique_ptr<webrtc::DesktopCapturer> screen_capturer,
+      std::unique_ptr<webrtc::DesktopCapturer> window_capturer);
   ~NativeDesktopMediaList() override;
 
   // DesktopMediaList interface.
@@ -65,8 +64,8 @@ class NativeDesktopMediaList : public DesktopMediaList {
   void OnRefreshFinished();
 
   // Capturers specified in SetCapturers() and passed to the |worker_| later.
-  std::unique_ptr<webrtc::ScreenCapturer> screen_capturer_;
-  std::unique_ptr<webrtc::WindowCapturer> window_capturer_;
+  std::unique_ptr<webrtc::DesktopCapturer> screen_capturer_;
+  std::unique_ptr<webrtc::DesktopCapturer> window_capturer_;
 
   // Time interval between mode updates.
   base::TimeDelta update_period_;

@@ -5,6 +5,8 @@
 #ifndef CHROME_BROWSER_PRINTING_PRINT_JOB_WORKER_OWNER_H__
 #define CHROME_BROWSER_PRINTING_PRINT_JOB_WORKER_OWNER_H__
 
+#include <memory>
+
 #include "base/memory/ref_counted.h"
 #include "printing/printing_context.h"
 
@@ -34,7 +36,8 @@ class PrintJobWorkerOwner
                                PrintingContext::Result result) = 0;
 
   // Detach the PrintJobWorker associated to this object.
-  virtual PrintJobWorker* DetachWorker(PrintJobWorkerOwner* new_owner) = 0;
+  virtual std::unique_ptr<PrintJobWorker> DetachWorker(
+      PrintJobWorkerOwner* new_owner) = 0;
 
   // Access the current settings.
   virtual const PrintSettings& settings() const = 0;

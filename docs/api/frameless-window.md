@@ -26,7 +26,7 @@ a chromeless window. Instead of setting `frame` to `false` which disables
 both the titlebar and window controls, you may want to have the title bar
 hidden and your content extend to the full window size, yet still preserve
 the window controls ("traffic lights") for standard window actions.
-You can do so by specifying the new `titleBarStyle` option:
+You can do so by specifying the `titleBarStyle` option:
 
 #### `hidden`
 
@@ -38,13 +38,26 @@ let win = new BrowserWindow({titleBarStyle: 'hidden'})
 win.show()
 ```
 
-#### `hidden-inset`
+#### `hiddenInset`
 
 Results in a hidden title bar with an alternative look where the traffic light buttons are slightly more inset from the window edge.
 
 ```javascript
 const {BrowserWindow} = require('electron')
-let win = new BrowserWindow({titleBarStyle: 'hidden-inset'})
+let win = new BrowserWindow({titleBarStyle: 'hiddenInset'})
+win.show()
+```
+
+#### `customButtonsOnHover`
+
+Uses custom drawn close, miniaturize, and fullscreen buttons that display
+when hovering in the top left of the window. These custom buttons prevent issues
+with mouse events that occur with the standard window toolbar buttons. This
+option is only applicable for frameless windows.
+
+```javascript
+const {BrowserWindow} = require('electron')
+let win = new BrowserWindow({titleBarStyle: 'customButtonsOnHover', frame: false})
 win.show()
 ```
 
@@ -90,6 +103,27 @@ let win = new BrowserWindow()
 win.setIgnoreMouseEvents(true)
 ```
 
+### Forwarding
+
+Ignoring mouse messages makes the web page oblivious to mouse movement, meaning
+that mouse movement events will not be emitted. On Windows operating systems an
+optional parameter can be used to forward mouse move messages to the web page,
+allowing events such as `mouseleave` to be emitted:
+
+```javascript
+let win = require('electron').remote.getCurrentWindow()
+let el = document.getElementById('clickThroughElement')
+el.addEventListener('mouseenter', () => {
+  win.setIgnoreMouseEvents(true, {forward: true})
+})
+el.addEventListener('mouseleave', () => {
+  win.setIgnoreMouseEvents(false)
+})
+```
+
+This makes the web page click-through when over `el`, and returns to normal
+outside it.
+
 ## Draggable region
 
 By default, the frameless window is non-draggable. Apps need to specify
@@ -97,6 +131,8 @@ By default, the frameless window is non-draggable. Apps need to specify
 (like the OS's standard titlebar), and apps can also use
 `-webkit-app-region: no-drag` to exclude the non-draggable area from the
  draggable region. Note that only rectangular shapes are currently supported.
+
+Note: `-webkit-app-region: drag` is known to have problems while the developer tools are open. See this [GitHub issue](https://github.com/electron/electron/issues/3647) for more information including a workaround.
 
 To make the whole window draggable, you can add `-webkit-app-region: drag` as
 `body`'s style:

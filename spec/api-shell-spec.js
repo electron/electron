@@ -4,7 +4,7 @@ const path = require('path')
 const os = require('os')
 const {shell} = require('electron')
 
-describe('shell module', function () {
+describe('shell module', () => {
   if (process.platform !== 'win32') return
 
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -18,37 +18,37 @@ describe('shell module', function () {
     iconIndex: 1
   }
 
-  describe('shell.readShortcutLink(shortcutPath)', function () {
-    it('throws when failed', function () {
-      assert.throws(function () {
+  describe('shell.readShortcutLink(shortcutPath)', () => {
+    it('throws when failed', () => {
+      assert.throws(() => {
         shell.readShortcutLink('not-exist')
       }, /Failed to read shortcut link/)
     })
 
-    it('reads all properties of a shortcut', function () {
+    it('reads all properties of a shortcut', () => {
       const shortcut = shell.readShortcutLink(path.join(fixtures, 'assets', 'shortcut.lnk'))
       assert.deepEqual(shortcut, shortcutOptions)
     })
   })
 
-  describe('shell.writeShortcutLink(shortcutPath[, operation], options)', function () {
+  describe('shell.writeShortcutLink(shortcutPath[, operation], options)', () => {
     const tmpShortcut = path.join(os.tmpdir(), `${Date.now()}.lnk`)
 
-    afterEach(function () {
+    afterEach(() => {
       fs.unlinkSync(tmpShortcut)
     })
 
-    it('writes the shortcut', function () {
+    it('writes the shortcut', () => {
       assert.equal(shell.writeShortcutLink(tmpShortcut, {target: 'C:\\'}), true)
       assert.equal(fs.existsSync(tmpShortcut), true)
     })
 
-    it('correctly sets the fields', function () {
+    it('correctly sets the fields', () => {
       assert.equal(shell.writeShortcutLink(tmpShortcut, shortcutOptions), true)
       assert.deepEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)
     })
 
-    it('updates the shortcut', function () {
+    it('updates the shortcut', () => {
       assert.equal(shell.writeShortcutLink(tmpShortcut, 'update', shortcutOptions), false)
       assert.equal(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions), true)
       assert.deepEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)
@@ -57,7 +57,7 @@ describe('shell module', function () {
       assert.deepEqual(shell.readShortcutLink(tmpShortcut), Object.assign(shortcutOptions, change))
     })
 
-    it('replaces the shortcut', function () {
+    it('replaces the shortcut', () => {
       assert.equal(shell.writeShortcutLink(tmpShortcut, 'replace', shortcutOptions), false)
       assert.equal(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions), true)
       assert.deepEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)

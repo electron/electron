@@ -99,6 +99,15 @@ describe('asar package', function () {
         })
       })
 
+      it('reads from a empty file with encoding', function (done) {
+        var p = path.join(fixtures, 'asar', 'empty.asar', 'file1')
+        fs.readFile(p, 'utf8', function (err, content) {
+          assert.equal(err, null)
+          assert.equal(content, '')
+          done()
+        })
+      })
+
       it('reads a linked file', function (done) {
         var p = path.join(fixtures, 'asar', 'a.asar', 'link1')
         fs.readFile(p, function (err, content) {

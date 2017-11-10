@@ -9,6 +9,7 @@
 #include "base/values.h"
 #include "content/public/common/common_param_traits.h"
 #include "ipc/ipc_message_macros.h"
+#include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/ipc/gfx_param_traits.h"
 
 // The message starter should be declared in ipc/ipc_message_start.h. Since
@@ -35,9 +36,29 @@ IPC_MESSAGE_ROUTED3(AtomViewMsg_Message,
                     base::string16 /* channel */,
                     base::ListValue /* arguments */)
 
+IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
+
+IPC_MESSAGE_ROUTED3(AtomAutofillFrameHostMsg_ShowPopup,
+                    gfx::RectF /* bounds */,
+                    std::vector<base::string16> /* values */,
+                    std::vector<base::string16> /* labels */)
+
+IPC_MESSAGE_ROUTED0(AtomAutofillFrameHostMsg_HidePopup)
+
+IPC_MESSAGE_ROUTED1(AtomAutofillFrameMsg_AcceptSuggestion,
+                    base::string16 /* suggestion */)
+
 // Sent by the renderer when the draggable regions are updated.
 IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
                     std::vector<atom::DraggableRegion> /* regions */)
 
 // Update renderer process preferences.
 IPC_MESSAGE_CONTROL1(AtomMsg_UpdatePreferences, base::ListValue)
+
+// Sent by renderer to set the temporary zoom level.
+IPC_SYNC_MESSAGE_ROUTED1_1(AtomViewHostMsg_SetTemporaryZoomLevel,
+                           double /* zoom level */,
+                           double /* result */)
+
+// Sent by renderer to get the zoom level.
+IPC_SYNC_MESSAGE_ROUTED0_1(AtomViewHostMsg_GetZoomLevel, double /* result */)

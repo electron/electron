@@ -66,8 +66,9 @@ void WebContentsPermissionHelper::RequestPermission(
 
 void WebContentsPermissionHelper::RequestFullscreenPermission(
     const base::Callback<void(bool)>& callback) {
-  RequestPermission((content::PermissionType)(PermissionType::FULLSCREEN),
-                    callback);
+  RequestPermission(
+      static_cast<content::PermissionType>(PermissionType::FULLSCREEN),
+      callback);
 }
 
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
@@ -86,17 +87,17 @@ void WebContentsPermissionHelper::RequestWebNotificationPermission(
 
 void WebContentsPermissionHelper::RequestPointerLockPermission(
     bool user_gesture) {
-  RequestPermission((content::PermissionType)(PermissionType::POINTER_LOCK),
-                    base::Bind(&OnPointerLockResponse, web_contents_),
-                    user_gesture);
+  RequestPermission(
+      static_cast<content::PermissionType>(PermissionType::POINTER_LOCK),
+      base::Bind(&OnPointerLockResponse, web_contents_), user_gesture);
 }
 
 void WebContentsPermissionHelper::RequestOpenExternalPermission(
     const base::Callback<void(bool)>& callback,
     bool user_gesture) {
-  RequestPermission((content::PermissionType)(PermissionType::OPEN_EXTERNAL),
-                    callback,
-                    user_gesture);
+  RequestPermission(
+      static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL),
+      callback, user_gesture);
 }
 
 }  // namespace atom

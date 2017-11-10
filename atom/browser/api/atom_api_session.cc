@@ -204,6 +204,19 @@ struct Converter<net::ProxyConfig> {
   }
 };
 
+template<>
+struct Converter<atom::VerifyRequestParams> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   atom::VerifyRequestParams val) {
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    dict.Set("hostname", val.hostname);
+    dict.Set("certificate", val.certificate);
+    dict.Set("verificationResult", val.default_result);
+    dict.Set("errorCode", val.error_code);
+    return dict.GetHandle();
+  }
+};
+
 }  // namespace mate
 
 namespace atom {
@@ -221,7 +234,7 @@ class ResolveProxyHelper {
  public:
   ResolveProxyHelper(AtomBrowserContext* browser_context,
                      const GURL& url,
-                     Session::ResolveProxyCallback callback)
+                     const Session::ResolveProxyCallback& callback)
       : callback_(callback),
         original_thread_(base::ThreadTaskRunnerHandle::Get()) {
     scoped_refptr<net::URLRequestContextGetter> context_getter =
@@ -255,7 +268,7 @@ class ResolveProxyHelper {
     // Start the request.
     int result = proxy_service->ResolveProxy(
         url, "GET", &proxy_info_, completion_callback, &pac_req_, nullptr,
-        net::BoundNetLog());
+        net::NetLogWithSource());
 
     // Completed synchronously.
     if (result != net::ERR_IO_PENDING)
@@ -271,6 +284,9 @@ class ResolveProxyHelper {
 };
 
 // Runs the callback in UI thread.
+void RunCallbackInUI(const base::Callback<void()>& callback) {
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, callback);
+}
 template<typename ...T>
 void RunCallbackInUI(const base::Callback<void(T...)>& callback, T... result) {
   BrowserThread::PostTask(
@@ -371,7 +387,7 @@ void ClearAuthCacheInIO(
             options.origin, options.realm, options.auth_scheme,
             net::AuthCredentials(options.username, options.password));
       } else {
-        auth_cache->Clear();
+        auth_cache->ClearEntriesAddedWithin(base::TimeDelta::Max());
       }
     } else if (options.type == "clientCertificate") {
       auto client_auth_cache = network_session->ssl_client_auth_cache();
@@ -417,7 +433,9 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       last_modified, offset, length, std::string(),
       content::DownloadItem::INTERRUPTED,
       content::DownloadDangerType::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-      content::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false);
+      content::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false,
+      base::Time(), false,
+      std::vector<content::DownloadItem::ReceivedSlice>());
 }
 
 }  // namespace
@@ -735,7 +753,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
-      .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
+      .SetMethod("_setCertificateVerifyProc", &Session::SetCertVerifyProc)
       .SetMethod("setPermissionRequestHandler",
                  &Session::SetPermissionRequestHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)

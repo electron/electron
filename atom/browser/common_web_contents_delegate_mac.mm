@@ -20,21 +20,23 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   if (event.skip_in_browser ||
-      event.type == content::NativeWebKeyboardEvent::Char)
+      event.GetType() == content::NativeWebKeyboardEvent::kChar)
     return;
 
   // Escape exits tabbed fullscreen mode.
-  if (event.windowsKeyCode == ui::VKEY_ESCAPE && is_html_fullscreen())
+  if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
-  // Send the event to the menu before sending it to the window
-  if (event.os_event.type == NSKeyDown &&
-      [[NSApp mainMenu] performKeyEquivalent:event.os_event])
-    return;
+  if (!ignore_menu_shortcuts_) {
+    // Send the event to the menu before sending it to the window
+    if (event.os_event.type == NSKeyDown &&
+        [[NSApp mainMenu] performKeyEquivalent:event.os_event])
+      return;
 
-  if (event.os_event.window &&
-      [event.os_event.window isKindOfClass:[EventDispatchingWindow class]])
-    [event.os_event.window redispatchKeyEvent:event.os_event];
+    if (event.os_event.window &&
+        [event.os_event.window isKindOfClass:[EventDispatchingWindow class]])
+      [event.os_event.window redispatchKeyEvent:event.os_event];
+  }
 }
 
 }  // namespace atom

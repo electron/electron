@@ -14,7 +14,6 @@
 #include "printing/page_size_margins.h"
 #include "printing/pdf_metafile_skia.h"
 #include "printing/units.h"
-#include "skia/ext/platform_device.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 
 
@@ -158,15 +157,15 @@ void PrintWebViewHelper::PrintPageInternal(
 #endif
 
   float webkit_page_shrink_factor =
-      frame->getPrintPageShrink(params.page_number);
+      frame->GetPrintPageShrink(params.page_number);
   float scale_factor = css_scale_factor * webkit_page_shrink_factor;
 
-  SkCanvas* canvas = metafile->GetVectorCanvasForNewPage(
-      page_size, canvas_area, scale_factor);
+  cc::PaintCanvas* canvas =
+      metafile->GetVectorCanvasForNewPage(page_size, canvas_area, scale_factor);
   if (!canvas)
     return;
 
-  MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
+  MetafileSkiaWrapper::SetMetafileOnCanvas(canvas, metafile);
 
 #if 0
   if (params.params.display_header_footer) {

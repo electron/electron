@@ -40,18 +40,19 @@ The `crashReporter` module has the following methods:
   * `companyName` String (optional)
   * `submitURL` String - URL that crash reports will be sent to as POST.
   * `productName` String (optional) - Defaults to `app.getName()`.
-  * `uploadToServer` Boolean (optional) _macOS_ - Whether crash reports should be sent to the server
+  * `uploadToServer` Boolean (optional) - Whether crash reports should be sent to the server
     Default is `true`.
   * `ignoreSystemCrashHandler` Boolean (optional) - Default is `false`.
   * `extra` Object (optional) - An object you can define that will be sent along with the
-    report. Only string properties are sent correctly, Nested objects are not
-    supported.
+    report. Only string properties are sent correctly. Nested objects are not
+    supported and the property names and values must be less than 64 characters long.
+  * `crashesDirectory` String (optional) - Directory to store the crashreports temporarily (only used when the crash reporter is started via `process.crashReporter.start`)
 
 You are required to call this method before using any other `crashReporter` APIs
 and in each process (main/renderer) from which you want to collect crash reports.
 You can pass different options to `crashReporter.start` when calling from different processes.
 
-**Note** Child processes created via the `child_process` module will not have access to the Electron modules. 
+**Note** Child processes created via the `child_process` module will not have access to the Electron modules.
 Therefore, to collect crash reports from them, use `process.crashReporter.start` instead. Pass the same options as above
 along with an additional one called `crashesDirectory` that should point to a directory to store the crash
 reports temporarily. You can test this out by calling `process.crash()` to crash the child process.
@@ -59,6 +60,10 @@ reports temporarily. You can test this out by calling `process.crash()` to crash
 **Note:** To collect crash reports from child process in Windows, you need to add this extra code as well.
 This will start the process that will monitor and send the crash reports. Replace `submitURL`, `productName`
 and `crashesDirectory` with appropriate values.
+
+**Note:** If you need send additional/updated `extra` parameters after your
+first call `start` you can call `setExtraParameter` on macOS or call `start`
+again with the new/updated `extra` parameters on Linux and Windows.
 
 ```js
  const args = [
@@ -95,14 +100,14 @@ Returns [`CrashReport[]`](structures/crash-report.md):
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
-### `crashReporter.getUploadToServer()` _macOS_
+### `crashReporter.getUploadToServer()` _Linux_ _macOS_
 
 Returns `Boolean` - Whether reports should be submitted to the server.  Set through
 the `start` method or `setUploadToServer`.
 
 **Note:** This API can only be called from the main process.
 
-### `crashReporter.setUploadToServer(uploadToServer)` _macOS_
+### `crashReporter.setUploadToServer(uploadToServer)` _Linux_ _macOS_
 
 * `uploadToServer` Boolean _macOS_ - Whether reports should be submitted to the server
 
@@ -110,6 +115,24 @@ This would normally be controlled by user preferences. This has no effect if
 called before `start` is called.
 
 **Note:** This API can only be called from the main process.
+
+### `crashReporter.addExtraParameter(key, value)` _macOS_
+
+* `key` String - Parameter key, must be less than 64 characters long.
+* `value` String - Parameter value, must be less than 64 characters long.
+
+Set an extra parameter to be sent with the crash report. The values
+specified here will be sent in addition to any values set via the `extra` option when `start` was called. This API is only available on macOS, if you need to add/update extra parameters on Linux and Windows after your first call to `start` you can call `start` again with the updated `extra` options.
+
+### `crashReporter.removeExtraParameter(key)` _macOS_
+
+* `key` String - Parameter key, must be less than 64 characters long.
+
+Remove a extra parameter from the current set of parameters so that it will not be sent with the crash report.
+
+### `crashReporter.getParameters()`
+
+See all of the current parameters being passed to the crash reporter.
 
 ## Crash Report Payload
 

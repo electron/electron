@@ -15,19 +15,17 @@ Example of getting a real path from a dragged-onto-the-app file:
 </div>
 
 <script>
-  const holder = document.getElementById('holder')
-  holder.ondragover = () => {
-    return false;
-  }
-  holder.ondragleave = holder.ondragend = () => {
-    return false;
-  }
-  holder.ondrop = (e) => {
-    e.preventDefault()
+  document.addEventListener('drop', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
     for (let f of e.dataTransfer.files) {
       console.log('File(s) you dragged here: ', f.path)
     }
-    return false;
-  }
+  });
+  document.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  });
 </script>
 ```

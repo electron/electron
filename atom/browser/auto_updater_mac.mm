@@ -27,7 +27,7 @@ namespace {
 bool g_update_available = false;
 std::string update_url_ = "";
 
-}
+} // namespace
 
 std::string AutoUpdater::GetFeedURL() {
   return update_url_;
@@ -104,7 +104,7 @@ void AutoUpdater::CheckForUpdates() {
           delegate->OnUpdateNotAvailable();
         }
       } error:^(NSError *error) {
-        NSMutableString* failureString =
+        NSMutableString *failureString =
           [NSMutableString stringWithString:error.localizedDescription];
         if (error.localizedFailureReason) {
           [failureString appendString:@": "];
@@ -116,7 +116,8 @@ void AutoUpdater::CheckForUpdates() {
           [failureString appendString:@" "];
           [failureString appendString:error.localizedRecoverySuggestion];
         }
-        delegate->OnError(base::SysNSStringToUTF8(failureString));
+        delegate->OnError(base::SysNSStringToUTF8(failureString), error.code,
+                          base::SysNSStringToUTF8(error.domain));
       }];
 }
 
@@ -125,7 +126,8 @@ void AutoUpdater::QuitAndInstall() {
   if (g_update_available) {
     [[g_updater relaunchToInstallUpdate] subscribeError:^(NSError* error) {
       if (delegate)
-        delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
+        delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription),
+                          error.code, base::SysNSStringToUTF8(error.domain));
     }];
   } else {
     if (delegate)

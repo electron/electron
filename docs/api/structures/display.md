@@ -6,13 +6,9 @@
 * `scaleFactor` Number - Output device's pixel scale factor.
 * `touchSupport` String - Can be `available`, `unavailable`, `unknown`.
 * `bounds` [Rectangle](rectangle.md)
-* `size` Object
-  * `height` Number
-  * `width` Number
+* `size` [Size](size.md)
 * `workArea` [Rectangle](rectangle.md)
-* `workAreaSize` Object
-  * `height` Number
-  * `width` Number
+* `workAreaSize` [Size](size.md)
 
 The `Display` object represents a physical display connected to the system. A
 fake `Display` may exist on a headless system, or a `Display` may correspond to

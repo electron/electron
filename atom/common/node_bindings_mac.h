@@ -12,7 +12,7 @@ namespace atom {
 
 class NodeBindingsMac : public NodeBindings {
  public:
-  explicit NodeBindingsMac(bool is_browser);
+  explicit NodeBindingsMac(BrowserEnvironment browser_env);
   virtual ~NodeBindingsMac();
 
   void RunMessageLoop() override;

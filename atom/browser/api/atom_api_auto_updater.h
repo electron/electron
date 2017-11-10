@@ -32,6 +32,8 @@ class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
 
   // Delegate implementations.
   void OnError(const std::string& error) override;
+  void OnError(const std::string& message, const int code,
+               const std::string& domain);
   void OnCheckingForUpdate() override;
   void OnUpdateAvailable() override;
   void OnUpdateNotAvailable() override;

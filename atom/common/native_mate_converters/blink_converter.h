@@ -6,7 +6,7 @@
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "native_mate/converter.h"
-#include "third_party/WebKit/public/web/WebCache.h"
+#include "third_party/WebKit/public/platform/WebCache.h"
 #include "third_party/WebKit/public/web/WebContextMenuData.h"
 
 namespace blink {

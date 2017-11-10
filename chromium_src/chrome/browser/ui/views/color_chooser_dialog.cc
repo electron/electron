@@ -36,7 +36,7 @@ ColorChooserDialog::ColorChooserDialog(views::ColorChooserListener* listener,
   HWND owning_hwnd = views::HWNDForNativeWindow(owning_window);
   ExecuteOpenParams execute_params(initial_color, BeginRun(owning_hwnd),
                                    owning_hwnd);
-  execute_params.run_state.dialog_thread->message_loop()->PostTask(FROM_HERE,
+  execute_params.run_state.dialog_thread->task_runner()->PostTask(FROM_HERE,
       base::Bind(&ColorChooserDialog::ExecuteOpen, this, execute_params));
 }
 

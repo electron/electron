@@ -33,14 +33,14 @@ URLRequestBufferJob::URLRequestBufferJob(
 }
 
 void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
-  const base::BinaryValue* binary = nullptr;
-  if (options->IsType(base::Value::TYPE_DICTIONARY)) {
+  const base::Value* binary = nullptr;
+  if (options->IsType(base::Value::Type::DICTIONARY)) {
     base::DictionaryValue* dict =
         static_cast<base::DictionaryValue*>(options.get());
     dict->GetString("mimeType", &mime_type_);
     dict->GetString("charset", &charset_);
     dict->GetBinary("data", &binary);
-  } else if (options->IsType(base::Value::TYPE_BINARY)) {
+  } else if (options->IsType(base::Value::Type::BINARY)) {
     options->GetAsBinary(&binary);
   }
 
@@ -67,7 +67,7 @@ void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
 }
 
 void URLRequestBufferJob::GetResponseInfo(net::HttpResponseInfo* info) {
-  std::string status("HTTP/1.1 ");
+  std::string status("HTTP/1.1 200 OK");
   status.append(base::IntToString(status_code_));
   status.append(" ");
   status.append(net::GetHttpReasonPhrase(status_code_));

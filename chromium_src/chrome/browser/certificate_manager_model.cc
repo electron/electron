@@ -14,7 +14,6 @@
 #include "content/public/browser/resource_context.h"
 #include "crypto/nss_util.h"
 #include "crypto/nss_util_internal.h"
-#include "net/base/crypto_module.h"
 #include "net/base/net_errors.h"
 #include "net/cert/nss_cert_database.h"
 #include "net/cert/x509_certificate.h"
@@ -92,12 +91,12 @@ CertificateManagerModel::CertificateManagerModel(
 CertificateManagerModel::~CertificateManagerModel() {
 }
 
-int CertificateManagerModel::ImportFromPKCS12(net::CryptoModule* module,
+int CertificateManagerModel::ImportFromPKCS12(PK11SlotInfo* slot_info,
                                               const std::string& data,
                                               const base::string16& password,
                                               bool is_extractable,
                                               net::CertificateList* imported_certs) {
-  return cert_db_->ImportFromPKCS12(module, data, password,
+  return cert_db_->ImportFromPKCS12(slot_info, data, password,
                                     is_extractable, imported_certs);
 }
 

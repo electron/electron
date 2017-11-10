@@ -4,24 +4,15 @@
 
 Process: [Main](../glossary.md#main-process)
 
-The `autoUpdater` module provides an interface for the
-[Squirrel](https://github.com/Squirrel) framework.
+**You can find a detailed guide about how to implement updates into your application [here](../tutorial/updates.md).**
 
-You can quickly launch a multi-platform release server for distributing your
-application by using one of these projects:
+## Platform Notices
 
-- [nuts][nuts]: *A smart release server for your applications, using GitHub as a backend. Auto-updates with Squirrel (Mac & Windows)*
-- [electron-release-server][electron-release-server]: *A fully featured,
-  self-hosted release server for electron applications, compatible with
-  auto-updater*
-- [squirrel-updates-server][squirrel-updates-server]: *A simple node.js server
-  for Squirrel.Mac and Squirrel.Windows which uses GitHub releases*
-- [squirrel-release-server][squirrel-release-server]: *A simple PHP application for Squirrel.Windows which reads updates from a folder. Supports delta updates.*
+Currently, only macOS and Windows are supported. There is no built-in support
+for auto-updater on Linux, so it is recommended to use the
+distribution's package manager to update your app.
 
-## Platform notices
-
-Though `autoUpdater` provides a uniform API for different platforms, there are
-still some subtle differences on each platform.
+In addition, there are some subtle differences on each platform:
 
 ### macOS
 
@@ -39,9 +30,9 @@ This is a requirement of `Squirrel.Mac`.
 
 On Windows, you have to install your app into a user's machine before you can
 use the `autoUpdater`, so it is recommended that you use the
-[electron-winstaller][installer-lib], [electron-builder][electron-builder-lib] or the [grunt-electron-installer][installer] package to generate a Windows installer.
+[electron-winstaller][installer-lib], [electron-forge][electron-forge-lib] or the [grunt-electron-installer][installer] package to generate a Windows installer.
 
-When using [electron-winstaller][installer-lib] or [electron-builder][electron-builder-lib] make sure you do not try to update your app [the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events) (Also see [this issue for more info](https://github.com/electron/electron/issues/7155)). It's also recommended to use [electron-squirrel-startup](https://github.com/mongodb-js/electron-squirrel-startup) to get desktop shortcuts for your app.
+When using [electron-winstaller][installer-lib] or [electron-forge][electron-forge-lib] make sure you do not try to update your app [the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events) (Also see [this issue for more info](https://github.com/electron/electron/issues/7155)). It's also recommended to use [electron-squirrel-startup](https://github.com/mongodb-js/electron-squirrel-startup) to get desktop shortcuts for your app.
 
 The installer generated with Squirrel will create a shortcut icon with an
 [Application User Model ID][app-user-model-id] in the format of
@@ -50,13 +41,9 @@ The installer generated with Squirrel will create a shortcut icon with an
 same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
 not be able to pin your app properly in task bar.
 
-The server-side setup is also different from macOS. You can read the documents of
-[Squirrel.Windows][squirrel-windows] to get more details.
-
-### Linux
-
-There is no built-in support for auto-updater on Linux, so it is recommended to
-use the distribution's package manager to update your app.
+Unlike Squirrel.Mac, Windows can host updates on S3 or any other static file host.
+You can read the documents of [Squirrel.Windows][squirrel-windows] to get more details
+about how Squirrel.Windows works.
 
 ## Events
 
@@ -131,9 +118,5 @@ from the normal quit event sequence.
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
 [installer]: https://github.com/electron/grunt-electron-installer
 [installer-lib]: https://github.com/electron/windows-installer
-[electron-builder-lib]: https://github.com/electron-userland/electron-builder
+[electron-forge-lib]: https://github.com/electron-userland/electron-forge
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
-[electron-release-server]: https://github.com/ArekSredzki/electron-release-server
-[squirrel-updates-server]: https://github.com/Aluxian/squirrel-updates-server
-[nuts]: https://github.com/GitbookIO/nuts
-[squirrel-release-server]: https://github.com/Arcath/squirrel-release-server

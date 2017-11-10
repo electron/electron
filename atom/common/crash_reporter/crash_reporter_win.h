@@ -56,7 +56,8 @@ class CrashReporterWin : public CrashReporter {
   google_breakpad::CustomClientInfo* GetCustomInfo(
       const std::string& product_name,
       const std::string& version,
-      const std::string& company_name);
+      const std::string& company_name,
+      bool upload_to_server);
 
   // Custom information to be passed to crash handler.
   std::vector<google_breakpad::CustomInfoEntry> custom_info_entries_;

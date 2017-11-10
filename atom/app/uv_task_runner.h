@@ -21,12 +21,12 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
 
   // base::SingleThreadTaskRunner:
   bool PostDelayedTask(const tracked_objects::Location& from_here,
-                       const base::Closure& task,
+                       base::OnceClosure task,
                        base::TimeDelta delay) override;
   bool RunsTasksOnCurrentThread() const override;
   bool PostNonNestableDelayedTask(
       const tracked_objects::Location& from_here,
-      const base::Closure& task,
+      base::OnceClosure task,
       base::TimeDelta delay) override;
 
  private:
@@ -35,7 +35,7 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
 
   uv_loop_t* loop_;
 
-  std::map<uv_timer_t*, base::Closure> tasks_;
+  std::map<uv_timer_t*, base::OnceClosure> tasks_;
 
   DISALLOW_COPY_AND_ASSIGN(UvTaskRunner);
 };
