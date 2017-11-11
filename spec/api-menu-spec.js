@@ -291,15 +291,22 @@ describe('Menu module', () => {
   })
 
   describe('Menu.setApplicationMenu', () => {
-    const menu = Menu.buildFromTemplate([
-      {
-        label: '1'
-      }, {
-        label: '2'
-      }
-    ])
-    Menu.setApplicationMenu(menu)
-    assert.notEqual(Menu.getApplicationMenu(), null)
+    it('sets a menu', () => {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: '1'
+        }, {
+          label: '2'
+        }
+      ])
+      Menu.setApplicationMenu(menu)
+      assert.notEqual(Menu.getApplicationMenu(), null)
+    })
+
+    it('unsets a menu with null', () => {
+      Menu.setApplicationMenu(null)
+      assert.equal(Menu.getApplicationMenu(), null)
+    })
   })
 
   describe('MenuItem.click', () => {
