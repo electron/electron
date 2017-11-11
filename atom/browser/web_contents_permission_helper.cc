@@ -58,7 +58,7 @@ void WebContentsPermissionHelper::RequestPermission(
     bool user_gesture) {
   RequestPermissionWithDetails(permission, callback, user_gesture, nullptr);
 }
-    
+
 void WebContentsPermissionHelper::RequestPermissionWithDetails(
     content::PermissionType permission,
     const base::Callback<void(bool)>& callback,
