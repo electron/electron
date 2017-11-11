@@ -33,7 +33,8 @@ class WebContentsPermissionHelper
   void RequestPointerLockPermission(bool user_gesture);
   void RequestOpenExternalPermission(
       const base::Callback<void(bool)>& callback,
-      bool user_gesture);
+      bool user_gesture,
+      const GURL& url);
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
@@ -43,6 +44,11 @@ class WebContentsPermissionHelper
       content::PermissionType permission,
       const base::Callback<void(bool)>& callback,
       bool user_gesture = false);
+  void RequestPermissionWithDetails(
+    content::PermissionType permission,
+    const base::Callback<void(bool)>& callback,
+    bool user_gesture,
+    const base::DictionaryValue* details);
 
   content::WebContents* web_contents_;
 
