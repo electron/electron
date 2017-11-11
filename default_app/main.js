@@ -34,6 +34,9 @@ for (let i = 0; i < argv.length; i++) {
   } else if (argv[i] === '--require' || argv[i] === '-r') {
     option.modules.push(argv[++i])
     continue
+  } else if (argv[i] === '--abi' || argv[i] === '-a') {
+    option.abi = true
+    continue
   } else if (argv[i][0] === '-') {
     continue
   } else {
@@ -328,6 +331,9 @@ if (option.file && !option.webdriver) {
 } else if (option.version) {
   console.log('v' + process.versions.electron)
   process.exit(0)
+} else if (option.abi) {
+  console.log(process.versions.modules)
+  process.exit(0)
 } else if (option.default) {
   const indexPath = path.join(__dirname, '/index.html')
   loadApplicationByUrl(`file://${indexPath}`)
@@ -348,8 +354,9 @@ if (option.file && !option.webdriver) {
   Options:
     -d, --default         Run the default bundled Electron app.
     -i, --interactive     Open a REPL to the main process.
-    -r, --require         Module to preload (option can be repeated)
-    -v, --version         Print the version.`
+    -r, --require         Module to preload (option can be repeated).
+    -v, --version         Print the version.
+    -a, --abi             Print the Node ABI version.`
 
   console.log(welcomeMessage)
   const indexPath = path.join(__dirname, '/index.html')
