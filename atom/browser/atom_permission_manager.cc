@@ -105,7 +105,7 @@ int AtomPermissionManager::RequestPermission(
       nullptr,
       response_callback);
 }
-    
+
 int AtomPermissionManager::RequestPermissionWithDetails(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
@@ -173,7 +173,8 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
         base::Bind(&AtomPermissionManager::OnPermissionResponse,
                    base::Unretained(this), request_id, i);
     if (details == nullptr) {
-      request_handler_.Run(web_contents, permission, callback, base::DictionaryValue());
+      request_handler_.Run(web_contents, permission, callback,
+                           base::DictionaryValue());
     } else {
       request_handler_.Run(web_contents, permission, callback, *details);
     }
