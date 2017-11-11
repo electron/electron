@@ -1,4 +1,3 @@
-
 //
 //  NSString+ANSI.m
 //  BitBar
@@ -9,6 +8,7 @@
 
 #import "Cocoa/Cocoa.h"
 #import "NSString+ANSI.h"
+#import "NSColor+Hex.h"
 
 @implementation NSMutableDictionary (ANSI)
 
@@ -108,14 +108,16 @@
 @implementation NSString (ANSI)
 
 - (BOOL)containsANSICodes {
-  return [self rangeOfString:@"\033["].location != NSNotFound;
+    NSLog(@"%lu", [self rangeOfString:@"\\033["].location);
+    NSLog(@"%d", [self rangeOfString:@"\\033["].location != NSNotFound);
+    return [self rangeOfString:@"\\033["].location != NSNotFound;
 }
 
 - (NSMutableAttributedString*)attributedStringParsingANSICodes {
   NSMutableAttributedString* result = [[NSMutableAttributedString alloc] init];
 
   NSMutableDictionary* attributes = [NSMutableDictionary.alloc init];
-  NSArray* parts = [self componentsSeparatedByString:@"\033["];
+  NSArray* parts = [self componentsSeparatedByString:@"\\033["];
   [result appendAttributedString:[NSAttributedString.alloc initWithString:parts.firstObject attributes:nil]];
 
   for (NSString* part in [parts subarrayWithRange:NSMakeRange(1, parts.count - 1)]) {
@@ -136,5 +138,7 @@
 
   return result;
 }
+
+
 
 @end

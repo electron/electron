@@ -1,7 +1,6 @@
 // Copyright (c) 2014 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
-#import "atom/browser/mac/NSString+ANSI.h"
 
 #include "atom/browser/ui/tray_icon_cocoa.h"
 
@@ -11,6 +10,7 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/display/screen.h"
+#include "atom/browser/ui/cocoa/NSString+ANSI.h"
 
 namespace {
 
@@ -123,11 +123,22 @@ const CGFloat kVerticalTitleMargin = 2;
     NSRect titleDrawRect = NSMakeRect(
         [self iconWidth], -kVerticalTitleMargin, [self titleWidth], thickness);
 
-    NSAttributedString *titleu = [self attributedTitleWithParams:title_];
+    NSAttributedString* titleParsed = [self attributedTitleWithParams:title_];
 
-    [titleu drawInRect:titleDrawRect];
-    //[title_ drawInRect:titleDrawRect
-    //    withAttributes:[self titleAttributesWithHighlight:highlightContent]];
+NSLog(@"--------------------------");
+NSLog(@"--------------------------");
+NSLog(@"%@", titleParsed);
+NSLog(@"--------------------------");
+NSLog(@"--------------------------");
+    //[titleu drawInRect:titleDrawRect];
+    [titleParsed drawInRect:titleDrawRect];
+
+    //BOOL highlight = false;
+//NSString* test = @"je suis un test";
+
+
+    //[test drawInRect:titleDrawRect
+    //    withAttributes:[self titleAttributesWithHighlight:highlight]];
   }
 }
 
@@ -186,8 +197,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 - (NSDictionary*)titleAttributesWithHighlight:(BOOL)highlight {
   return @{
-      NSFontAttributeName:[NSFont menuBarFontOfSize:0],
-      NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
+      NSFontAttributeName:[NSFont menuBarFontOfSize:0]
   };
 }
 
@@ -212,7 +222,9 @@ const CGFloat kVerticalTitleMargin = 2;
 //- (void)setTitle:(NSAttributedString*)title {
 - (void)setTitle:(NSString*)title {
   if (title.length > 0) {
-   // title = [self attributedTitleWithParams:title];
+  //NSAttributedString* titleParsed = [self attributedTitleWithParams:title];
+  //NSLog(@"%@", title_);
+  //NSLog(@"%@", titleParsed);
 
     title_.reset([title copy]);
   } else {
@@ -223,9 +235,31 @@ const CGFloat kVerticalTitleMargin = 2;
 
 
 - (NSAttributedString*) attributedTitleWithParams:(NSString *)fullTitle {
-    NSDictionary* attributes = @{NSBaselineOffsetAttributeName : @1};
-    NSMutableAttributedString * attributedTitle = [fullTitle attributedStringParsingANSICodes];
+    fullTitle = [fullTitle stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+    NSString * title = fullTitle;
+
+    //NSDictionary* attributes = @{NSFontAttributeName: font, NSBaselineOffsetAttributeName : @1};
+    BOOL highlight = [self shouldHighlight];
+    BOOL highlightContent = highlight | [self isDarkMode];
+    NSDictionary* attributes = [self titleAttributesWithHighlight:highlightContent];
+    BOOL parseANSI = [fullTitle containsANSICodes];
+    NSLog(@"%@", fullTitle);
+    NSLog(@"%d", parseANSI);
+    NSMutableAttributedString * attributedTitle = [NSMutableAttributedString.alloc initWithString:title attributes:attributes];
+    if (parseANSI) {
+        attributedTitle = [title attributedStringParsingANSICodes];
+        NSLog(@"has ANSI code");
+        NSLog(@"%lu", title.length);
+        [attributedTitle addAttributes:attributes range:NSMakeRange(0, attributedTitle.length)];
+        NSLog(@"%lu", attributedTitle.length);
+        return attributedTitle;
+    }
+
+    //NSFontAttributeName:[NSFont menuBarFontOfSize:0],
+    //NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
+
     [attributedTitle addAttributes:attributes range:NSMakeRange(0, attributedTitle.length)];
+    [attributedTitle addAttribute:NSForegroundColorAttributeName value:[self colorWithHighlight: highlight] range:NSMakeRange(0, attributedTitle.length)];
 
     return attributedTitle;
 }
