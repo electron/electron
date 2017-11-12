@@ -148,13 +148,11 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   } else {
     SetSizeConstraints(size_constraints);
   }
-#if defined(USE_X11)
+#if defined(OS_WIN) || defined(USE_X11)
   bool resizable;
   if (options.Get(options::kResizable, &resizable)) {
     SetResizable(resizable);
   }
-#endif
-#if defined(OS_WIN) || defined(USE_X11)
   bool closable;
   if (options.Get(options::kClosable, &closable)) {
     SetClosable(closable);

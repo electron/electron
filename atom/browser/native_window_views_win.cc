@@ -165,9 +165,6 @@ bool NativeWindowViews::PreHandleMSG(
       }
       return false;
     }
-    case WM_WINDOWPOSCHANGING: {
-      return !CanResize();
-    }
     default:
       return false;
   }
