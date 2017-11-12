@@ -165,6 +165,13 @@ bool NativeWindowViews::PreHandleMSG(
       }
       return false;
     }
+    case WM_WINDOWPOSCHANGING: {
+      auto window_pos = reinterpret_cast<LPWINDOWPOS>(l_param);
+      if (window_pos->flags | SWP_FRAMECHANGED)
+        return !CanResize();
+
+      return false;
+    }
     default:
       return false;
   }
