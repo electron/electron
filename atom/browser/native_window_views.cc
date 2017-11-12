@@ -547,9 +547,9 @@ bool NativeWindowViews::IsFullscreen() const {
 }
 
 void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
-#if defined(USE_X11)
-  // On Linux the minimum and maximum size should be updated with window size
-  // when window is not resizable.
+#if defined(OS_WIN) || defined(USE_X11)
+  // On Linux and Windows the minimum and maximum size should be updated with
+  // window size when window is not resizable.
   if (!resizable_) {
     SetMaximumSize(bounds.size());
     SetMinimumSize(bounds.size());
@@ -594,17 +594,14 @@ void NativeWindowViews::SetContentSizeConstraints(
   // this to determine whether native widget has initialized.
   if (window_ && window_->widget_delegate())
     window_->OnSizeConstraintsChanged();
-#if defined(USE_X11)
+#if defined(OS_WIN) || defined(USE_X11)
   if (resizable_)
     old_size_constraints_ = size_constraints;
 #endif
 }
 
 void NativeWindowViews::SetResizable(bool resizable) {
-#if defined(OS_WIN)
-  if (has_frame() && thick_frame_)
-    FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
-#elif defined(USE_X11)
+#if defined(OS_WIN) || defined(USE_X11)
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
@@ -618,6 +615,10 @@ void NativeWindowViews::SetResizable(bool resizable) {
           extensions::SizeConstraints(content_size, content_size));
     }
   }
+#endif
+#if defined(OS_WIN)
+  if (has_frame() && thick_frame_)
+    FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
 
   resizable_ = resizable;
