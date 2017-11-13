@@ -10,7 +10,7 @@
 
     'variables': {
       # The minimum macOS SDK version to use.
-      'mac_sdk_min%': '10.10',
+      'mac_sdk_min%': '10.12',
 
       # Set ARM architecture version.
       'arm_version%': 7,
