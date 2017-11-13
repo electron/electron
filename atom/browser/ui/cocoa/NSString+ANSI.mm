@@ -3,6 +3,7 @@
 //  BitBar
 //
 //  Created by Kent Karlsson on 3/11/16.
+//  Updated by BRAMILLE Sebastien on 13/04/17
 //  Copyright © 2016 Bit Bar. All rights reserved.
 //
 
