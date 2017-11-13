@@ -239,52 +239,6 @@ bool WebContentsPreferences::IsPluginsEnabled(
   return IsPreferenceEnabled("plugins", web_contents);
 }
 
-bool WebContentsPreferences::IsOffScreen(
-    content::WebContents* web_contents) {
-  return IsPreferenceEnabled("offscreen", web_contents);
-}
-
-bool WebContentsPreferences::IsGuest(
-    content::WebContents* web_contents) {
-  WebContentsPreferences* self;
-  if (!web_contents)
-    return false;
-
-  self = FromWebContents(web_contents);
-  if (!self)
-    return false;
-
-  base::DictionaryValue& web_preferences = self->web_preferences_;
-  int guest_instance_id = 0;
-  return web_preferences.GetInteger(
-    options::kGuestInstanceID, &guest_instance_id);
-}
-
-content::WebContents* WebContentsPreferences::Embedder(
-    content::WebContents* web_contents) {
-  WebContentsPreferences* self;
-  if (!web_contents)
-    return nullptr;
-
-  self = FromWebContents(web_contents);
-  if (!self)
-    return nullptr;
-
-  base::DictionaryValue& web_preferences = self->web_preferences_;
-  int g_instance_id = 0;
-  if (web_preferences.GetInteger(options::kGuestInstanceID, &g_instance_id)) {
-    auto manager = WebViewManager::GetWebViewManager(web_contents);
-    if (manager) {
-      auto embedder = manager->GetEmbedder(g_instance_id);
-      if (embedder) {
-        return embedder;
-      }
-    }
-  }
-
-  return nullptr;
-}
-
 bool WebContentsPreferences::DisablePopups(
     content::WebContents* web_contents) {
   return IsPreferenceEnabled("disablePopups", web_contents);

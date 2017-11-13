@@ -11,6 +11,7 @@
 #include "atom/browser/native_browser_view_views.h"
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/web_contents_preferences.h"
+#include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
@@ -1362,13 +1363,25 @@ void NativeWindowViews::ShowAutofillPopup(
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
-  WebContentsPreferences* web_preferences =
-      WebContentsPreferences::FromWebContents(web_contents);
+  const auto* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents)->web_preferences();
 
-  bool is_offsceen = web_preferences->IsOffScreen(web_contents);
-  bool is_embedder_offscreen =
-      web_preferences->IsGuest(web_contents) &&
-      web_preferences->IsOffScreen(web_preferences->Embedder(web_contents));
+  bool is_offsceen = false;
+  web_preferences->GetBoolean("offscreen", &is_offsceen);
+  int guest_instance_id = 0;
+  web_preferences->GetInteger(options::kGuestInstanceID, &guest_instance_id);
+
+  bool is_embedder_offscreen = false;
+  if (guest_instance_id) {
+    auto manager = WebViewManager::GetWebViewManager(web_contents);
+    if (manager) {
+      auto embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder) {
+        is_embedder_offscreen = WebContentsPreferences::IsPreferenceEnabled(
+            "offscreen", embedder);
+      }
+    }
+  }
 
   autofill_popup_->CreateView(
       frame_host,
