@@ -87,12 +87,10 @@ const CGFloat kVerticalTitleMargin = 2;
   //   | icon | title |
   ///  ----------------
 
-  BOOL highlight = [self shouldHighlight];
-  BOOL highlightContent = highlight | [self isDarkMode];
   CGFloat thickness = [[statusItem_ statusBar] thickness];
 
   // Draw the system bar background.
-  [statusItem_ drawStatusBarBackgroundInRect:self.bounds withHighlight:highlight];
+  [statusItem_ drawStatusBarBackgroundInRect:self.bounds withHighlight:[self shouldHighlight]];
 
   // Determine which image to use.
   NSImage* image = image_.get();
@@ -104,7 +102,7 @@ const CGFloat kVerticalTitleMargin = 2;
   if ([image isTemplate] == YES) {
     NSImage* imageWithColor = [[image copy] autorelease];
     [imageWithColor lockFocus];
-    [[self colorWithHighlight: highlightContent] set];
+    [[self colorWithHighlight: [self isHighlighted]] set];
     CGRect imageBounds = CGRectMake(0,0, image.size.width, image.size.height);
     NSRectFillUsingOperation(imageBounds, NSCompositeSourceAtop);
     [imageWithColor unlockFocus];
@@ -134,6 +132,12 @@ const CGFloat kVerticalTitleMargin = 2;
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* mode = [defaults stringForKey:@"AppleInterfaceStyle"];
   return mode && [mode isEqualToString:@"Dark"];
+}
+
+
+- (BOOL)isHighlighted {
+  BOOL highlight = [self shouldHighlight];
+  return highlight | [self isDarkMode];
 }
 
 // The width of the full status item.
@@ -226,9 +230,7 @@ const CGFloat kVerticalTitleMargin = 2;
     fullTitle = [fullTitle stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
     NSString * title = fullTitle;
 
-    BOOL highlight = [self shouldHighlight];
-    BOOL highlightContent = highlight | [self isDarkMode];
-    NSDictionary* attributes = [self titleAttributesWithHighlight:highlightContent];
+    NSDictionary* attributes = [self titleAttributesWithHighlight:[self isHighlighted]];
     NSMutableAttributedString * attributedTitle = [NSMutableAttributedString.alloc initWithString:title attributes:attributes];
     if (ANSI_) {
         attributedTitle = [title attributedStringParsingANSICodes];
@@ -240,7 +242,7 @@ const CGFloat kVerticalTitleMargin = 2;
     //NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
 
     [attributedTitle addAttributes:attributes range:NSMakeRange(0, attributedTitle.length)];
-    [attributedTitle addAttribute:NSForegroundColorAttributeName value:[self colorWithHighlight: highlight] range:NSMakeRange(0, attributedTitle.length)];
+    [attributedTitle addAttribute:NSForegroundColorAttributeName value:[self colorWithHighlight: [self isDarkMode]] range:NSMakeRange(0, attributedTitle.length)];
 
     return attributedTitle;
 }
