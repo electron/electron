@@ -13,11 +13,13 @@
 
 namespace atom {
 
-NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {
+NodeDebugger::NodeDebugger(node::Environment* env)
+    : env_(env), platform_(nullptr) {
 }
 
 NodeDebugger::~NodeDebugger() {
-  FreePlatform(platform_);
+  if (platform_)
+    FreePlatform(platform_);
 }
 
 void NodeDebugger::Start() {
