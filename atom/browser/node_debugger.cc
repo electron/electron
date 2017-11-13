@@ -17,6 +17,7 @@ NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {
 }
 
 NodeDebugger::~NodeDebugger() {
+  FreePlatform(platform_);
 }
 
 void NodeDebugger::Start() {
@@ -37,9 +38,9 @@ void NodeDebugger::Start() {
     // Use custom platform since the gin platform does not work correctly
     // with node's inspector agent. We use the default thread pool size
     // specified by node.cc
-    platform_.reset(new node::NodePlatform(
+    platform_ = node::CreatePlatform(
         /* thread_pool_size */ 4, env_->event_loop(),
-        /* tracing_controller */ nullptr));
+        /* tracing_controller */ nullptr);
 
     // Set process._debugWaitConnect if --inspect-brk was specified to stop
     // the debugger on the first line
@@ -48,7 +49,7 @@ void NodeDebugger::Start() {
       process.Set("_breakFirstLine", true);
     }
 
-    inspector->Start(platform_.get(), nullptr, options);
+    inspector->Start(platform_, nullptr, options);
   }
 }
 
