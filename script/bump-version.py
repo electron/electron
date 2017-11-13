@@ -85,7 +85,7 @@ def main():
   with scoped_cwd(SOURCE_ROOT):
     update_electron_gyp(version, suffix)
     update_win_rc(version, versions)
-    update_version_h(versions)
+    update_version_h(versions, suffix)
     update_info_plist(version)
     update_package_json(version, suffix)
     tag_version(version, suffix)
@@ -138,7 +138,7 @@ def update_win_rc(version, versions):
     f.write(''.join(lines))
 
 
-def update_version_h(versions):
+def update_version_h(versions, suffix):
   version_h = os.path.join('atom', 'common', 'atom_version.h')
   with open(version_h, 'r') as f:
     lines = f.readlines()
@@ -149,6 +149,7 @@ def update_version_h(versions):
       lines[i] = '#define ATOM_MAJOR_VERSION {0}\n'.format(versions[0])
       lines[i + 1] = '#define ATOM_MINOR_VERSION {0}\n'.format(versions[1])
       lines[i + 2] = '#define ATOM_PATCH_VERSION {0}\n'.format(versions[2])
+      lines[i + 3] = '#define ATOM_LABEL_VERSION {0}\n'.format(suffix)
 
       with open(version_h, 'w') as f:
         f.write(''.join(lines))
