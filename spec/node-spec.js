@@ -336,7 +336,7 @@ describe('node feature', () => {
   })
 
   it('includes the electron version in process.versions', () => {
-    assert(/^\d+\.\d+\.\d+(\S)?$/.test(process.versions.electron))
+    assert(/^\d+\.\d+\.\d+(\S*)?$/.test(process.versions.electron))
   })
 
   it('includes the chrome version in process.versions', () => {
