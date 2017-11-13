@@ -27,6 +27,7 @@ const CGFloat kVerticalTitleMargin = 2;
   atom::TrayIcon::HighlightMode highlight_mode_;
   BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
+  BOOL ANSI_;
   base::scoped_nsobject<NSImage> image_;
   base::scoped_nsobject<NSImage> alternateImage_;
   base::scoped_nsobject<NSString> title_;
@@ -125,20 +126,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
     NSAttributedString* titleParsed = [self attributedTitleWithParams:title_];
 
-NSLog(@"--------------------------");
-NSLog(@"--------------------------");
-NSLog(@"%@", titleParsed);
-NSLog(@"--------------------------");
-NSLog(@"--------------------------");
-    //[titleu drawInRect:titleDrawRect];
     [titleParsed drawInRect:titleDrawRect];
-
-    //BOOL highlight = false;
-//NSString* test = @"je suis un test";
-
-
-    //[test drawInRect:titleDrawRect
-    //    withAttributes:[self titleAttributesWithHighlight:highlight]];
   }
 }
 
@@ -183,6 +171,10 @@ NSLog(@"--------------------------");
 - (CGFloat)titleWidth {
   if (!title_)
      return 0;
+
+  if (ANSI_)
+    return [[title_ attributedStringParsingANSICodes] size].width + 8;
+
   base::scoped_nsobject<NSAttributedString> attributes(
       [[NSAttributedString alloc] initWithString:title_
                                       attributes:[self titleAttributes]]);
@@ -219,14 +211,10 @@ NSLog(@"--------------------------");
   [self setNeedsDisplay:YES];
 }
 
-//- (void)setTitle:(NSAttributedString*)title {
 - (void)setTitle:(NSString*)title {
   if (title.length > 0) {
-  //NSAttributedString* titleParsed = [self attributedTitleWithParams:title];
-  //NSLog(@"%@", title_);
-  //NSLog(@"%@", titleParsed);
-
     title_.reset([title copy]);
+    ANSI_ = [title containsANSICodes];
   } else {
     title_.reset();
   }
@@ -238,20 +226,13 @@ NSLog(@"--------------------------");
     fullTitle = [fullTitle stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
     NSString * title = fullTitle;
 
-    //NSDictionary* attributes = @{NSFontAttributeName: font, NSBaselineOffsetAttributeName : @1};
     BOOL highlight = [self shouldHighlight];
     BOOL highlightContent = highlight | [self isDarkMode];
     NSDictionary* attributes = [self titleAttributesWithHighlight:highlightContent];
-    BOOL parseANSI = [fullTitle containsANSICodes];
-    NSLog(@"%@", fullTitle);
-    NSLog(@"%d", parseANSI);
     NSMutableAttributedString * attributedTitle = [NSMutableAttributedString.alloc initWithString:title attributes:attributes];
-    if (parseANSI) {
+    if (ANSI_) {
         attributedTitle = [title attributedStringParsingANSICodes];
-        NSLog(@"has ANSI code");
-        NSLog(@"%lu", title.length);
         [attributedTitle addAttributes:attributes range:NSMakeRange(0, attributedTitle.length)];
-        NSLog(@"%lu", attributedTitle.length);
         return attributedTitle;
     }
 

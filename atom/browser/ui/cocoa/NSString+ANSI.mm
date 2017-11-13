@@ -108,8 +108,6 @@
 @implementation NSString (ANSI)
 
 - (BOOL)containsANSICodes {
-    NSLog(@"%lu", [self rangeOfString:@"\\033["].location);
-    NSLog(@"%d", [self rangeOfString:@"\\033["].location != NSNotFound);
     return [self rangeOfString:@"\\033["].location != NSNotFound;
 }
 
