@@ -42,7 +42,7 @@ npm install electron --save-dev
 ## 참조 문서
 
 [Docs](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/README.md)에
-개발 지침과 API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝트에 기여하는법
+개발 지침과 API 레퍼런스가 있습니다. Electron을 빌드 하는 방법과 프로젝트에 기여하는 법
 또한 문서에 포함되어 있으니 참고하시기 바랍니다.
 
 ## 참조 문서 (번역)

@@ -27,8 +27,7 @@ for (let i = 0; i < argv.length; i++) {
   } else if (argv[i] === '--default' || argv[i] === '-d') {
     option.default = true
     break
-  } else if (argv[i] === '--interactive' || argv[i] === '-i' ||
-    argv[i] === '-repl' || argv[i] === '-r') {
+  } else if (argv[i] === '--interactive' || argv[i] === '-i' || argv[i] === '-repl') {
     option.interactive = true
   } else if (argv[i] === '--test-type=webdriver') {
     option.webdriver = true

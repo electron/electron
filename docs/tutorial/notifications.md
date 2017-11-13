@@ -85,3 +85,6 @@ Notifications are sent using `libnotify` which can show notifications on any
 desktop environment that follows [Desktop Notifications
 Specification][notification-spec], including Cinnamon, Enlightenment, Unity,
 GNOME, KDE.
+
+[notification-spec]: https://developer.gnome.org/notification-spec/
+[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx

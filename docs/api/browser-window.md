@@ -200,7 +200,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     key is pressed. Default is `false`.
   * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
     than screen. Default is `false`.
-  * `backgroundColor` String (optional) - Window's background color as Hexadecimal value,
+  * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
     like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported). Default is
     `#FFF` (white).
   * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
@@ -322,7 +322,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `defaultEncoding` String (optional) - Defaults to `ISO-8859-1`.
     * `backgroundThrottling` Boolean (optional) - Whether to throttle animations and timers
       when the page becomes background. This also affects the
-      [Page Visibility API][#page-visibility]. Defaults to `true`.
+      [Page Visibility API](#page-visibility). Defaults to `true`.
     * `offscreen` Boolean (optional) - Whether to enable offscreen rendering for the browser
       window. Defaults to `false`. See the
       [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
@@ -1442,6 +1442,10 @@ removed in future Electron releases.
 #### `win.setBrowserView(browserView)` _Experimental_
 
 * `browserView` [BrowserView](browser-view.md)
+
+#### `win.getBrowserView()` _Experimental_
+
+Returns `BrowserView | null` - an attached BrowserView. Returns `null` if none is attached.
 
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.

@@ -4,45 +4,45 @@ const {Buffer} = require('buffer')
 
 const {clipboard, nativeImage} = require('electron')
 
-describe('clipboard module', function () {
-  var fixtures = path.resolve(__dirname, 'fixtures')
+describe('clipboard module', () => {
+  const fixtures = path.resolve(__dirname, 'fixtures')
 
-  describe('clipboard.readImage()', function () {
-    it('returns NativeImage intance', function () {
-      var p = path.join(fixtures, 'assets', 'logo.png')
-      var i = nativeImage.createFromPath(p)
+  describe('clipboard.readImage()', () => {
+    it('returns NativeImage instance', () => {
+      const p = path.join(fixtures, 'assets', 'logo.png')
+      const i = nativeImage.createFromPath(p)
       clipboard.writeImage(p)
       assert.equal(clipboard.readImage().toDataURL(), i.toDataURL())
     })
   })
 
-  describe('clipboard.readText()', function () {
-    it('returns unicode string correctly', function () {
-      var text = '千江有水千江月，万里无云万里天'
+  describe('clipboard.readText()', () => {
+    it('returns unicode string correctly', () => {
+      const text = '千江有水千江月，万里无云万里天'
       clipboard.writeText(text)
       assert.equal(clipboard.readText(), text)
     })
   })
 
-  describe('clipboard.readHTML()', function () {
-    it('returns markup correctly', function () {
-      var text = '<string>Hi</string>'
-      var markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><string>Hi</string>' : '<string>Hi</string>'
+  describe('clipboard.readHTML()', () => {
+    it('returns markup correctly', () => {
+      const text = '<string>Hi</string>'
+      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><string>Hi</string>' : '<string>Hi</string>'
       clipboard.writeHTML(text)
       assert.equal(clipboard.readHTML(), markup)
     })
   })
 
-  describe('clipboard.readRTF', function () {
-    it('returns rtf text correctly', function () {
-      var rtf = '{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}'
+  describe('clipboard.readRTF', () => {
+    it('returns rtf text correctly', () => {
+      const rtf = '{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}'
       clipboard.writeRTF(rtf)
       assert.equal(clipboard.readRTF(), rtf)
     })
   })
 
-  describe('clipboard.readBookmark', function () {
-    it('returns title and url', function () {
+  describe('clipboard.readBookmark', () => {
+    it('returns title and url', () => {
       if (process.platform === 'linux') return
 
       clipboard.writeBookmark('a title', 'https://electron.atom.io')
@@ -59,14 +59,14 @@ describe('clipboard module', function () {
     })
   })
 
-  describe('clipboard.write()', function () {
-    it('returns data correctly', function () {
-      var text = 'test'
-      var rtf = '{\\rtf1\\utf8 text}'
-      var p = path.join(fixtures, 'assets', 'logo.png')
-      var i = nativeImage.createFromPath(p)
-      var markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>'
-      var bookmark = {title: 'a title', url: 'test'}
+  describe('clipboard.write()', () => {
+    it('returns data correctly', () => {
+      const text = 'test'
+      const rtf = '{\\rtf1\\utf8 text}'
+      const p = path.join(fixtures, 'assets', 'logo.png')
+      const i = nativeImage.createFromPath(p)
+      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>'
+      const bookmark = {title: 'a title', url: 'test'}
       clipboard.write({
         text: 'test',
         html: '<b>Hi</b>',
@@ -85,8 +85,8 @@ describe('clipboard module', function () {
     })
   })
 
-  describe('clipboard.read/writeFindText(text)', function () {
-    it('reads and write text to the find pasteboard', function () {
+  describe('clipboard.read/writeFindText(text)', () => {
+    it('reads and write text to the find pasteboard', () => {
       if (process.platform !== 'darwin') return
 
       clipboard.writeFindText('find this')
@@ -110,8 +110,8 @@ describe('clipboard module', function () {
     })
   })
 
-  describe('clipboard.readBuffer(format)', function () {
-    it('returns a Buffer of the content for the specified format', function () {
+  describe('clipboard.readBuffer(format)', () => {
+    it('returns a Buffer of the content for the specified format', () => {
       if (process.platform !== 'darwin') return
 
       const buffer = Buffer.from('this is binary', 'utf8')

@@ -53,6 +53,8 @@ class NativeImage : public mate::Wrappable<NativeImage> {
       mate::Arguments* args, v8::Local<v8::Value> buffer);
   static mate::Handle<NativeImage> CreateFromDataURL(
       v8::Isolate* isolate, const GURL& url);
+  static mate::Handle<NativeImage> CreateFromNamedImage(
+      mate::Arguments* args, const std::string& name);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

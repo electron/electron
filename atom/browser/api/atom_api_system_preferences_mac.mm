@@ -229,6 +229,11 @@ void SystemPreferences::SetUserDefault(const std::string& name,
   }
 }
 
+void SystemPreferences::RemoveUserDefault(const std::string& name) {
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  [defaults removeObjectForKey:base::SysUTF8ToNSString(name)];
+}
+
 bool SystemPreferences::IsDarkMode() {
   NSString* mode = [[NSUserDefaults standardUserDefaults]
       stringForKey:@"AppleInterfaceStyle"];

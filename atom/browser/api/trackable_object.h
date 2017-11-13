@@ -62,7 +62,10 @@ class TrackableObject : public TrackableObjectBase,
  public:
   // Mark the JS object as destroyed.
   void MarkDestroyed() {
-    Wrappable<T>::GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
+    v8::Local<v8::Object> wrapper = Wrappable<T>::GetWrapper();
+    if (!wrapper.IsEmpty()) {
+      wrapper->SetAlignedPointerInInternalField(0, nullptr);
+    }
   }
 
   bool IsDestroyed() {

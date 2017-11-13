@@ -166,16 +166,12 @@ BrowserMainParts::~BrowserMainParts() {
 
 #if defined(OS_WIN) || defined(OS_LINUX)
 void OverrideAppLogsPath() {
-#if defined(OS_WIN)
-  std::wstring app_name = base::UTF8ToWide(GetApplicationName());
-  std::wstring log_path = L"%HOMEDRIVE%%HOMEPATH%\\AppData\\Roaming\\";
-  std::wstring app_log_path = log_path + app_name + L"\\logs";
-#else
-  std::string app_name = GetApplicationName();
-  std::string home_path = std::string(getenv("HOME"));
-  std::string app_log_path = home_path + "/.config/" + app_name + "/logs";
-#endif
-  PathService::Override(DIR_APP_LOGS, base::FilePath(app_log_path));
+  base::FilePath path;
+  if (PathService::Get(brightray::DIR_APP_DATA, &path)) {
+    path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+    PathService::Override(DIR_APP_LOGS, path);
+  }
 }
 #endif
 

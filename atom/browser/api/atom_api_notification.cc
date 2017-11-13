@@ -169,14 +169,22 @@ void Notification::NotificationDisplayed() {
 }
 
 void Notification::NotificationDestroyed() {
-  Emit("close");
 }
 
 void Notification::NotificationClosed() {
+  Emit("close");
+}
+
+void Notification::Close() {
+  if (notification_) {
+    notification_->Dismiss();
+    notification_.reset();
+  }
 }
 
 // Showing notifications
 void Notification::Show() {
+  Close();
   if (presenter_) {
     notification_ = presenter_->CreateNotification(this);
     if (notification_) {
@@ -207,6 +215,7 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
       .SetMethod("show", &Notification::Show)
+      .SetMethod("close", &Notification::Close)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::GetSubtitle,
                    &Notification::SetSubtitle)
