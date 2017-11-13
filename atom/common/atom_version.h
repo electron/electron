@@ -12,6 +12,9 @@
 
 #define ATOM_VERSION_IS_RELEASE 1
 
+#ifndef ATOM_PRE_RELEASE_VERSION
+# define ATOM_PRE_RELEASE_VERSION ""
+#endif
 
 #ifndef ATOM_TAG
 # define ATOM_TAG ""

@@ -149,7 +149,11 @@ def update_version_h(versions, suffix):
       lines[i] = '#define ATOM_MAJOR_VERSION {0}\n'.format(versions[0])
       lines[i + 1] = '#define ATOM_MINOR_VERSION {0}\n'.format(versions[1])
       lines[i + 2] = '#define ATOM_PATCH_VERSION {0}\n'.format(versions[2])
-      lines[i + 3] = '#define ATOM_LABEL_VERSION {0}\n'.format(suffix)
+
+      if (suffix):
+        lines[i + 3] = '#define ATOM_PRE_RELEASE_VERSION {0}\n'.format(suffix)
+      else:
+        lines[i + 3] = '// #define ATOM_PRE_RELEASE_VERSION\n'
 
       with open(version_h, 'w') as f:
         f.write(''.join(lines))
