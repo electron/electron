@@ -1363,17 +1363,18 @@ void NativeWindowViews::ShowAutofillPopup(
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
   WebContentsPreferences* web_preferences =
-    WebContentsPreferences::FromWebContents(web_contents);
+      WebContentsPreferences::FromWebContents(web_contents);
 
-  bool isOffsceen = web_preferences->IsOffScreen(web_contents);
-  bool isEmbedderOffscreen = web_preferences->IsGuest(web_contents) &&
-    web_preferences->IsOffScreen(web_preferences->Embedder(web_contents));
+  bool is_offsceen = web_preferences->IsOffScreen(web_contents);
+  bool is_embedder_offscreen =
+      web_preferences->IsGuest(web_contents) &&
+      web_preferences->IsOffScreen(web_preferences->Embedder(web_contents));
 
   autofill_popup_->CreateView(
-    frame_host,
-    isOffsceen || isEmbedderOffscreen,
-    widget(),
-    bounds);
+      frame_host,
+      is_offsceen || is_embedder_offscreen,
+      widget(),
+      bounds);
   autofill_popup_->SetItems(values, labels);
   autofill_popup_->UpdatePopupBounds(menu_bar_visible_ ? 0 : kMenuBarHeight);
 }

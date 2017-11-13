@@ -909,6 +909,17 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
+void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
+                                    const gfx::RectF& bounds,
+                                    const std::vector<base::string16>& values,
+                                    const std::vector<base::string16>& labels) {
+  auto relay = NativeWindowRelay::FromWebContents(web_contents());
+  if (relay) {
+    relay->window->ShowAutofillPopup(
+        frame_host, web_contents(), bounds, values, labels);
+  }
+}
+
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
@@ -943,17 +954,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
   IPC_END_MESSAGE_MAP()
 
   return handled;
-}
-
-void WebContents::ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {
-  auto relay = NativeWindowRelay::FromWebContents(web_contents());
-  if (relay)
-    relay->window->ShowAutofillPopup(
-      frame_host, web_contents(), bounds, values, labels);
 }
 
 // There are three ways of destroying a webContents:

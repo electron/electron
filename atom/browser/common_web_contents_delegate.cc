@@ -242,8 +242,8 @@ void CommonWebContentsDelegate::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
     const content::FileChooserParams& params) {
   if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(owner_window(),
-      owner_window()->IsOffScreenDummy()));
+    web_dialog_helper_.reset(new WebDialogHelper(
+        owner_window(), owner_window()->is_offscreen_dummy()));
   web_dialog_helper_->RunFileChooser(render_frame_host, params);
 }
 
@@ -251,8 +251,8 @@ void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,
                                                    int request_id,
                                                    const base::FilePath& path) {
   if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(owner_window(),
-      owner_window()->IsOffScreenDummy()));
+    web_dialog_helper_.reset(new WebDialogHelper(
+        owner_window(), owner_window()->is_offscreen_dummy()));
   web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
 }
 
@@ -300,7 +300,7 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
   } else {
     file_dialog::DialogSettings settings;
     settings.parent_window = owner_window();
-    settings.force_detached = owner_window()->IsOffScreenDummy();
+    settings.force_detached = owner_window()->is_offscreen_dummy();
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
     if (!file_dialog::ShowSaveDialog(settings, &path)) {
@@ -367,7 +367,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     std::vector<base::FilePath> paths;
     file_dialog::DialogSettings settings;
     settings.parent_window = owner_window();
-    settings.force_detached = owner_window()->IsOffScreenDummy();
+    settings.force_detached = owner_window()->is_offscreen_dummy();
     settings.properties = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
     if (!file_dialog::ShowOpenDialog(settings, &paths))
       return;

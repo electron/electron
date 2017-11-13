@@ -357,11 +357,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsOpened() override;
   void DevToolsClosed() override;
 
-  void ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels);
+  void ShowAutofillPopup(content::RenderFrameHost* frame_host,
+                         const gfx::RectF& bounds,
+                         const std::vector<base::string16>& values,
+                         const std::vector<base::string16>& labels);
 
  private:
   AtomBrowserContext* GetBrowserContext() const;

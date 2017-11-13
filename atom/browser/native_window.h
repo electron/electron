@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "atom/browser/ui/atom_menu_model.h"
@@ -237,12 +236,6 @@ class NativeWindow : public base::SupportsUserData,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {}
   virtual void HideAutofillPopup(content::RenderFrameHost* frame_host) {}
-  void SetIsOffScreenDummy(bool is_dummy) {
-    is_osr_dummy_ = is_dummy;
-  }
-  bool IsOffScreenDummy() {
-    return is_osr_dummy_;
-  }
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
@@ -295,6 +288,9 @@ class NativeWindow : public base::SupportsUserData,
   bool transparent() const { return transparent_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
+
+  void set_is_offscreen_dummy(bool is_dummy) { is_osr_dummy_ = is_dummy; }
+  bool is_offscreen_dummy() const { return is_osr_dummy_; }
 
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }

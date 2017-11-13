@@ -23,7 +23,7 @@ class NativeWindow;
 
 class WebDialogHelper {
  public:
-  explicit WebDialogHelper(NativeWindow* window, bool offscreen);
+  WebDialogHelper(NativeWindow* window, bool offscreen);
   ~WebDialogHelper();
 
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
