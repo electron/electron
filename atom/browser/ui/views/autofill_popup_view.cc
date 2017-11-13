@@ -226,12 +226,13 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   SkBitmap bitmap;
 
 #if defined(ENABLE_OSR)
+  std::unique_ptr<cc::SkiaPaintCanvas> paint_canvas;
   if (view_proxy_.get()) {
     bitmap.allocN32Pixels(popup_->popup_bounds_in_view_.width(),
                           popup_->popup_bounds_in_view_.height(),
                           true);
-    cc::SkiaPaintCanvas paint_canvas(new SkCanvas(bitmap));
-    draw_canvas = new gfx::Canvas(&paint_canvas, 1.0);
+    paint_canvas.reset(new cc::SkiaPaintCanvas(bitmap));
+    draw_canvas = new gfx::Canvas(paint_canvas.get(), 1.0);
   }
 #endif
 

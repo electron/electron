@@ -155,7 +155,6 @@ void AutofillPopup::SetItems(const std::vector<base::string16>& values,
                             const std::vector<base::string16>& labels) {
   values_ = values;
   labels_ = labels;
-  UpdatePopupBounds();
   if (view_) {
     view_->OnSuggestionsChanged();
   }
@@ -166,21 +165,23 @@ void AutofillPopup::AcceptSuggestion(int index) {
     frame_host_->GetRoutingID(), GetValueAt(index)));
 }
 
-void AutofillPopup::UpdatePopupBounds() {
+void AutofillPopup::UpdatePopupBounds(int height_compensation) {
   int desired_width = GetDesiredPopupWidth();
   int desired_height = GetDesiredPopupHeight();
   bool is_rtl = false;
 
+  gfx::Point origin(element_bounds_.origin().x(),
+                    element_bounds_.origin().y() - height_compensation);
+  gfx::Rect bounds(origin, element_bounds_.size());
+
   gfx::Point top_left_corner_of_popup =
-      element_bounds_.origin() +
-      gfx::Vector2d(element_bounds_.width() - desired_width, -desired_height);
+      origin + gfx::Vector2d(bounds.width() - desired_width, -desired_height);
 
   // This is the bottom right point of the popup if the popup is below the
   // element and grows to the right (since the is the lowest and furthest right
   // the popup could go).
   gfx::Point bottom_right_corner_of_popup =
-      element_bounds_.origin() +
-      gfx::Vector2d(desired_width, element_bounds_.height() + desired_height);
+      origin + gfx::Vector2d(desired_width, bounds.height() + desired_height);
 
   display::Display top_left_display =
       GetDisplayNearestPoint(top_left_corner_of_popup, container_view_);
@@ -189,14 +190,19 @@ void AutofillPopup::UpdatePopupBounds() {
 
   std::pair<int, int> popup_x_and_width =
       CalculatePopupXAndWidth(top_left_display, bottom_right_display,
-                              desired_width, element_bounds_, is_rtl);
-  std::pair<int, int> popup_y_and_height = CalculatePopupYAndHeight(
-      top_left_display, bottom_right_display, desired_height, element_bounds_);
+                              desired_width, bounds, is_rtl);
+  std::pair<int, int> popup_y_and_height =
+      CalculatePopupYAndHeight(top_left_display, bottom_right_display,
+                               desired_height, bounds);
 
-  popup_bounds_ = gfx::Rect(popup_x_and_width.first, popup_y_and_height.first,
+  popup_bounds_ = gfx::Rect(
+      popup_x_and_width.first, popup_y_and_height.first,
       popup_x_and_width.second, popup_y_and_height.second);
-  popup_bounds_in_view_ = gfx::Rect(popup_bounds_in_view_.origin(),
+  popup_bounds_in_view_ = gfx::Rect(
+      popup_bounds_in_view_.origin(),
       gfx::Size(popup_x_and_width.second, popup_y_and_height.second));
+  if (view_)
+    view_->DoUpdateBoundsAndRedrawPopup();
 }
 
 int AutofillPopup::GetDesiredPopupHeight() {
