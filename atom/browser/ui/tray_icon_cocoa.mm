@@ -177,7 +177,7 @@ const CGFloat kVerticalTitleMargin = 2;
      return 0;
 
   if (ANSI_)
-    return [[title_ attributedStringParsingANSICodes] size].width + 8;
+    return [[title_ attributedStringParsingANSICodes] size].width + 10;
 
   base::scoped_nsobject<NSAttributedString> attributes(
       [[NSAttributedString alloc] initWithString:title_
