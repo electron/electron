@@ -893,30 +893,27 @@ need to pass the same arguments here for `openAtLogin` to be set correctly.
 Returns `Object`:
 
 * `openAtLogin` Boolean - `true` if the app is set to open at login.
-* `openAsHidden` Boolean - `true` if the app is set to open as hidden at login.
-  This setting is only supported on macOS.
-* `wasOpenedAtLogin` Boolean - `true` if the app was opened at login
-  automatically. This setting is only supported on macOS.
-* `wasOpenedAsHidden` Boolean - `true` if the app was opened as a hidden login
+* `openAsHidden` Boolean _macOS_ - `true` if the app is set to open as hidden at login.
+  This setting is not available on [MAS builds][mas-builds].
+* `wasOpenedAtLogin` Boolean _macOS_ - `true` if the app was opened at login
+  automatically. This setting is not available on [MAS builds][mas-builds].
+* `wasOpenedAsHidden` Boolean _macOS_ - `true` if the app was opened as a hidden login
   item. This indicates that the app should not open any windows at startup.
-  This setting is only supported on macOS.
-* `restoreState` Boolean - `true` if the app was opened as a login item that
+  This setting is not available on [MAS builds][mas-builds].
+* `restoreState` Boolean _macOS_ - `true` if the app was opened as a login item that
   should restore the state from the previous session. This indicates that the
   app should restore the windows that were open the last time the app was
-  closed. This setting is only supported on macOS.
-
-**Note:** This API has no effect on [MAS builds][mas-builds].
+  closed. This setting is not available on [MAS builds][mas-builds].
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
   * `openAtLogin` Boolean (optional) - `true` to open the app at login, `false` to remove
     the app as a login item. Defaults to `false`.
-  * `openAsHidden` Boolean (optional) - `true` to open the app as hidden. Defaults to
+  * `openAsHidden` Boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to
     `false`. The user can edit this setting from the System Preferences so
     `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
-    is opened to know the current value. This setting is only supported on
-    macOS.
+    is opened to know the current value. This setting is not available on [MAS builds][mas-builds].
   * `path` String (optional) _Windows_ - The executable to launch at login.
     Defaults to `process.execPath`.
   * `args` String[] (optional) _Windows_ - The command-line arguments to pass to
@@ -943,8 +940,6 @@ app.setLoginItemSettings({
   ]
 })
 ```
-
-**Note:** This API has no effect on [MAS builds][mas-builds].
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
