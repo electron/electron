@@ -71,6 +71,7 @@ class JsAsker : public RequestJob {
   void Start() override {
     std::unique_ptr<base::DictionaryValue> request_details(
         new base::DictionaryValue);
+    request_start_time_ = base::TimeTicks::Now();
     FillRequestDetails(request_details.get(), RequestJob::request());
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
@@ -86,6 +87,15 @@ class JsAsker : public RequestJob {
 
   int GetResponseCode() const override { return net::HTTP_OK; }
 
+  // NOTE: We have to implement this method or risk a crash in blink for
+  // redirects!
+  void GetLoadTimingInfo(net::LoadTimingInfo* load_timing_info) const override {
+    load_timing_info->send_start = request_start_time_;
+    load_timing_info->send_end = request_start_time_;
+    load_timing_info->request_start = request_start_time_;
+    load_timing_info->receive_headers_end = response_start_time_;
+  }
+
   void GetResponseInfo(net::HttpResponseInfo* info) override {
     info->headers = new net::HttpResponseHeaders("");
   }
@@ -93,6 +103,7 @@ class JsAsker : public RequestJob {
   // Called when the JS handler has sent the response, we need to decide whether
   // to start, or fail the job.
   void OnResponse(bool success, std::unique_ptr<base::Value> value) {
+    response_start_time_ = base::TimeTicks::Now();
     int error = net::ERR_NOT_IMPLEMENTED;
     if (success && value && !internal::IsErrorOptions(value.get(), &error)) {
       StartAsync(std::move(value));
@@ -105,6 +116,8 @@ class JsAsker : public RequestJob {
   v8::Isolate* isolate_;
   net::URLRequestContextGetter* request_context_getter_;
   JavaScriptHandler handler_;
+  base::TimeTicks request_start_time_;
+  base::TimeTicks response_start_time_;
 
   base::WeakPtrFactory<JsAsker> weak_factory_;
 

@@ -111,6 +111,11 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
 using Translater = base::Callback<void(Arguments* args)>;
 v8::Local<v8::Value> CreateFunctionFromTranslater(
     v8::Isolate* isolate, const Translater& translater);
+v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
+                                      v8::Local<v8::Context> context,
+                                      v8::Local<v8::Function> func,
+                                      v8::Local<v8::Value> arg1,
+                                      v8::Local<v8::Value> arg2);
 
 // Calls callback with Arguments.
 template <typename Sig>
