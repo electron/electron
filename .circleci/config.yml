@@ -190,6 +190,7 @@ jobs:
       - image: electronbuilds/electron:0.0.3
         environment:
           TARGET_ARCH: x64
+          DISPLAY: ':99.0'
     resource_class: xlarge
     steps:
       - checkout
@@ -251,8 +252,6 @@ jobs:
              fi
       - run:
           name: Test
-          environment:
-            DISPLAY: ':99.0'
             MOCHA_FILE: junit/test-results.xml
             MOCHA_REPORTER: mocha-junit-reporter
           command: |
