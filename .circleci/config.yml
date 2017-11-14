@@ -252,6 +252,7 @@ jobs:
              fi
       - run:
           name: Test
+          environment:
             MOCHA_FILE: junit/test-results.xml
             MOCHA_REPORTER: mocha-junit-reporter
           command: |
