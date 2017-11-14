@@ -10,9 +10,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Setup for headless testing
-          command: sh -e /etc/init.d/xvfb start
-      - run:
           name: Check for release
           command: |
             MESSAGE="$(git log --format=%B -n 1 HEAD)"
@@ -74,9 +71,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Setup for headless testing
-          command: sh -e /etc/init.d/xvfb start
-      - run:
           name: Check for release
           command: |
             MESSAGE="$(git log --format=%B -n 1 HEAD)"
@@ -137,9 +131,6 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout
-      - run:
-          name: Setup for headless testing
-          command: sh -e /etc/init.d/xvfb start
       - run:
           name: Check for release
           command: |
@@ -261,6 +252,7 @@ jobs:
       - run:
           name: Test
           environment:
+            DISPLAY: ':99.0'
             MOCHA_FILE: junit/test-results.xml
             MOCHA_REPORTER: mocha-junit-reporter
           command: |
