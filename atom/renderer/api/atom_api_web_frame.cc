@@ -274,6 +274,13 @@ void WebFrame::ExecuteJavaScriptInIsolatedWorld(int world_id,
       scriptExecutionType, callback.release());
 }
 
+void WebFrame::SetIsolatedWorldContentSecurityPolicy(int world_id,
+  const std::string& security_policy) {
+  web_frame_->SetIsolatedWorldContentSecurityPolicy(
+    world_id,
+    blink::WebString::FromUTF8(security_policy));
+}
+
 // static
 mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new WebFrame(isolate));
@@ -324,7 +331,9 @@ void WebFrame::BuildPrototype(
       .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("executeJavaScriptInIsolatedWorld",
-        &WebFrame::ExecuteJavaScriptInIsolatedWorld)
+                 &WebFrame::ExecuteJavaScriptInIsolatedWorld)
+      .SetMethod("setIsolatedWorldContentSecurityPolicy",
+                 &WebFrame::SetIsolatedWorldContentSecurityPolicy)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
