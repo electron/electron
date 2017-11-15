@@ -81,6 +81,9 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   void SetIsolatedWorldContentSecurityPolicy(int world_id,
                                              const std::string& security_policy);
 
+  void SetIsolatedWorldHumanReadableName(int world_id,
+                                         const std::string& name);
+
   // Resource related methods
   blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);
   void ClearCache(v8::Isolate* isolate);
