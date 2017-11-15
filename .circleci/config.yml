@@ -10,9 +10,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Setup for headless testing
-          command: sh -e /etc/init.d/xvfb start
-      - run:
           name: Check for release
           command: |
             MESSAGE="$(git log --format=%B -n 1 HEAD)"
@@ -73,9 +70,6 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout
-      - run:
-          name: Setup for headless testing
-          command: sh -e /etc/init.d/xvfb start
       - run:
           name: Check for release
           command: |
@@ -138,9 +132,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Setup for headless testing
-          command: sh -e /etc/init.d/xvfb start
-      - run:
           name: Check for release
           command: |
             MESSAGE="$(git log --format=%B -n 1 HEAD)"
@@ -199,6 +190,7 @@ jobs:
       - image: electronbuilds/electron:0.0.3
         environment:
           TARGET_ARCH: x64
+          DISPLAY: ':99.0'
     resource_class: xlarge
     steps:
       - checkout
