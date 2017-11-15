@@ -259,7 +259,7 @@ the original network configuration.
     * `verificationResult` Integer - Value can be one of certificate error codes
     from [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
     Apart from the certificate error codes, the following special codes can be used.
-      * `0` - Indicates success and disables Certificate Transperancy verification.
+      * `0` - Indicates success and disables Certificate Transparency verification.
       * `-2` - Indicates failure.
       * `-3` - Uses the verification result from chromium.
 
