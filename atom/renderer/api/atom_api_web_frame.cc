@@ -277,8 +277,13 @@ void WebFrame::ExecuteJavaScriptInIsolatedWorld(int world_id,
 void WebFrame::SetIsolatedWorldContentSecurityPolicy(int world_id,
   const std::string& security_policy) {
   web_frame_->SetIsolatedWorldContentSecurityPolicy(
-    world_id,
-    blink::WebString::FromUTF8(security_policy));
+    world_id, blink::WebString::FromUTF8(security_policy));
+}
+
+void WebFrame::SetIsolatedWorldHumanReadableName(int world_id,
+  const std::string& name) {
+    web_frame_->SetIsolatedWorldHumanReadableName(
+      world_id, blink::WebString::FromUTF8(name));
 }
 
 // static
@@ -334,6 +339,8 @@ void WebFrame::BuildPrototype(
                  &WebFrame::ExecuteJavaScriptInIsolatedWorld)
       .SetMethod("setIsolatedWorldContentSecurityPolicy",
                  &WebFrame::SetIsolatedWorldContentSecurityPolicy)
+      .SetMethod("setIsolatedWorldHumanReadableName",
+                 &WebFrame::SetIsolatedWorldHumanReadableName)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
