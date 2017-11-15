@@ -33,7 +33,7 @@ namespace mate {
 template <>
 struct Converter<blink::WebLocalFrame::ScriptExecutionType> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      blink::WebLocalFrame::ScriptExecutionType* out) {
     std::string execution_type;
     if (!ConvertFromV8(isolate, val, &execution_type))
@@ -51,6 +51,7 @@ struct Converter<blink::WebLocalFrame::ScriptExecutionType> {
     return true;
   }
 };
+
 }  // namespace mate
 
 namespace atom {
@@ -251,17 +252,34 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
       callback.release());
 }
 
-void WebFrame::ExecuteJavaScriptInIsolatedWorld(int world_id,
-                                                const base::string16& code,
-                                                mate::Arguments* args) {
+void WebFrame::ExecuteJavaScriptInIsolatedWorld(
+  int world_id,
+  const std::vector<mate::Dictionary>& scripts,
+  mate::Arguments* args) {
   std::vector<blink::WebScriptSource> sources;
-  sources.push_back(blink::WebScriptSource(blink::WebString::FromUTF16(code)));
+
+  for (const auto& script : scripts) {
+    base::string16 code;
+    base::string16 url;
+    int start_line = 1;
+    script.Get("url", &url);
+    script.Get("startLine", &start_line);
+
+    if (!script.Get("code", &code)) {
+      args->ThrowError("Invalid 'code'");
+      return;
+    }
+
+    sources.emplace_back(blink::WebScriptSource(
+            blink::WebString::FromUTF16(code),
+            blink::WebURL(GURL(url)), start_line));
+  }
 
   bool has_user_gesture = false;
   args->GetNext(&has_user_gesture);
 
   blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
-      blink::WebLocalFrame::kSynchronous;
+    blink::WebLocalFrame::kSynchronous;
   args->GetNext(&scriptExecutionType);
 
   ScriptExecutionCallback::CompletionCallback completion_callback;
@@ -272,6 +290,14 @@ void WebFrame::ExecuteJavaScriptInIsolatedWorld(int world_id,
   web_frame_->RequestExecuteScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
       scriptExecutionType, callback.release());
+}
+
+void WebFrame::SetIsolatedWorldSecurityOrigin(int world_id,
+  const std::string& origin_url) {
+    web_frame_->SetIsolatedWorldSecurityOrigin(
+      world_id,
+      blink::WebSecurityOrigin::CreateFromString(
+        blink::WebString::FromUTF8(origin_url)));
 }
 
 void WebFrame::SetIsolatedWorldContentSecurityPolicy(int world_id,
@@ -337,6 +363,8 @@ void WebFrame::BuildPrototype(
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("executeJavaScriptInIsolatedWorld",
                  &WebFrame::ExecuteJavaScriptInIsolatedWorld)
+      .SetMethod("setIsolatedWorldSecurityOrigin",
+                 &WebFrame::SetIsolatedWorldSecurityOrigin)
       .SetMethod("setIsolatedWorldContentSecurityPolicy",
                  &WebFrame::SetIsolatedWorldContentSecurityPolicy)
       .SetMethod("setIsolatedWorldHumanReadableName",

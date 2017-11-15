@@ -145,6 +145,37 @@ In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
+### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])`
+
+* `worldId` Integer
+* `scripts` [WebSource[]](structures/web-source.md)
+* `userGesture` Boolean (optional) - Default is `false`.
+* `callback` Function (optional) - Called after script has been executed.
+  * `result` Any
+
+Work like `executeJavaScript` but evaluates `scripts` in isolated context.
+
+### `webFrame.setIsolatedWorldContentSecurityPolicy(worldId, csp)`
+
+* `worldId` Integer
+* `csp` String
+
+Set the content security policy of the isolated world.
+
+### `webFrame.setIsolatedWorldHumanReadableName(worldId, name)`
+
+* `worldId` Integer
+* `name` String
+
+Set the name of the isolated world. Useful in devtools.
+
+### `webFrame.setIsolatedWorldSecurityOrigin(worldId, securityOrigin)`
+
+* `worldId` Integer
+* `securityOrigin` String
+
+Set the security origin of the isolated world.
+
 ### `webFrame.getResourceUsage()`
 
 Returns `Object`:
