@@ -19,6 +19,7 @@ class WebLocalFrame;
 }
 
 namespace mate {
+class Dictionary;
 class Arguments;
 }
 
@@ -72,15 +73,19 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   void InsertText(const std::string& text);
   void InsertCSS(const std::string& css);
 
-  // Excecuting scripts.
+  // Executing scripts.
   void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);
-  void ExecuteJavaScriptInIsolatedWorld(int world_id,
-                                        const base::string16& code,
-                                        mate::Arguments* args);
+  void ExecuteJavaScriptInIsolatedWorld(
+      int world_id,
+      const std::vector<mate::Dictionary>& scripts,
+      mate::Arguments* args);
 
-  void SetIsolatedWorldContentSecurityPolicy(int world_id,
-                                             const std::string& security_policy);
-
+  // Isolated world related methods
+  void SetIsolatedWorldSecurityOrigin(int world_id,
+                                      const std::string& origin_url);
+  void SetIsolatedWorldContentSecurityPolicy(
+      int world_id,
+      const std::string& security_policy);
   void SetIsolatedWorldHumanReadableName(int world_id,
                                          const std::string& name);
 
