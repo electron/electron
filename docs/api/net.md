@@ -32,7 +32,7 @@ used:
 ```javascript
 const {app} = require('electron')
 app.on('ready', () => {
-  const {net} = require('electron')
+  const {net} = require('electron').remote
   const request = net.request('https://github.com')
   request.on('response', (response) => {
     console.log(`STATUS: ${response.statusCode}`)
