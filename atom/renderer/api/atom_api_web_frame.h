@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "atom/renderer/guest_view_container.h"
 #include "native_mate/handle.h"
@@ -73,6 +74,9 @@ class WebFrame : public mate::Wrappable<WebFrame> {
 
   // Excecuting scripts.
   void ExecuteJavaScript(const base::string16& code, mate::Arguments* args);
+  void ExecuteJavaScriptInIsolatedWorld(int world_id,
+                                        const base::string16& code,
+                                        mate::Arguments* args);
 
   // Resource related methods
   blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);
