@@ -665,9 +665,6 @@
       'atom/app/atom_library_main.h',
       'atom/app/atom_library_main.mm',
     ],
-    'login_helper_sources': [
-      'atom/app/atom_login_helper.mm',
-    ],
     'locales': [
       'am', 'ar', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'en-GB',
       'en-US', 'es-419', 'es', 'et', 'fa', 'fi', 'fil', 'fr', 'gu', 'he',
