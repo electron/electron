@@ -26,7 +26,7 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
   // If the JS function throws an exception (doesn't return a value) the result
   // of MakeCallback will be empty and therefore ToLocal will be false, in this
   // case we need to return "false" as that indicates that the event emitter did
-  // not handle the event 
+  // not handle the event
   v8::Local<v8::Value> localRet;
   if (ret.ToLocal(&localRet)) {
     return localRet;
