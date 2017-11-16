@@ -24,19 +24,14 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                                      args->size(),
                                                      &args->front(), {0, 0});
   // If the JS function throws an exception (doesn't return a value) the result
-  // of MakeCallback will be empty, in this case we need to return "false" as
-  // that indicates that the event emitter did not handle the event
-  if (ret.IsEmpty()) {
-    return v8::Boolean::New(isolate, false);
-  }
-
+  // of MakeCallback will be empty and therefore ToLocal will be false, in this
+  // case we need to return "false" as that indicates that the event emitter did
+  // not handle the event 
   v8::Local<v8::Value> localRet;
   if (ret.ToLocal(&localRet)) {
     return localRet;
   }
-  // Should be unreachable, but the compiler complains if we don't check
-  // the result of ToLocal
-  return v8::Undefined(isolate);
+  return v8::Boolean::New(isolate, false);
 }
 
 }  // namespace internal
