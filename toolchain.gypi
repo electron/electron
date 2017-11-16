@@ -111,7 +111,7 @@
       ],
       'target_defaults': {
         'cflags_cc': [
-          '-std=c++11',
+          '-std=c++14',
         ],
         'xcode_settings': {
           'CC': '<(make_clang_dir)/bin/clang',
@@ -122,7 +122,7 @@
 
           'GCC_C_LANGUAGE_STANDARD': 'c99',  # -std=c99
           'CLANG_CXX_LIBRARY': 'libc++',  # -stdlib=libc++
-          'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',  # -std=c++11
+          'CLANG_CXX_LANGUAGE_STANDARD': 'c++14',  # -std=c++14
         },
         'target_conditions': [
           ['_type in ["executable", "shared_library"]', {
