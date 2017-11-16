@@ -1,7 +1,7 @@
 const assert = require('assert')
 const {CallbacksRegistry} = require('electron')
 
-describe.only('CallbacksRegistry module', () => {
+describe('CallbacksRegistry module', () => {
   let registry = null
 
   beforeEach(() => {
