@@ -2,18 +2,14 @@
 
 > Define keyboard shortcuts.
 
-Accelerators are Strings that can contain multiple modifiers and key codes,
-combined by the `+` character, and are used to define keyboard shortcuts
-throughout your application.
+Accelerators are Strings that can contain multiple modifiers and key codes, combined by the `+` character, and are used to define keyboard shortcuts throughout your application.
 
 Examples:
 
 * `CommandOrControl+A`
 * `CommandOrControl+Shift+Z`
 
-Shortcuts are registered with the [`globalShortcut`](global-shortcut.md) module
-using the [`register`](global-shortcut.md#globalshortcutregisteraccelerator-callback)
-method, i.e.
+Shortcuts are registered with the [`globalShortcut`](global-shortcut.md) module using the [`register`](global-shortcut.md#globalshortcutregisteraccelerator-callback) method, i.e.
 
 ```javascript
 const {app, globalShortcut} = require('electron')
@@ -28,15 +24,11 @@ app.on('ready', () => {
 
 ## Platform notice
 
-On Linux and Windows, the `Command` key does not have any effect so
-use `CommandOrControl` which represents `Command` on macOS and `Control` on
-Linux and Windows to define some accelerators.
+On Linux and Windows, the `Command` key does not have any effect so use `CommandOrControl` which represents `Command` on macOS and `Control` on Linux and Windows to define some accelerators.
 
-Use `Alt` instead of `Option`. The `Option` key only exists on macOS, whereas
-the `Alt` key is available on all platforms.
+Use `Alt` instead of `Option`. The `Option` key only exists on macOS, whereas the `Alt` key is available on all platforms.
 
-The `Super` key is mapped to the `Windows` key on Windows and Linux and
-`Cmd` on macOS.
+The `Super` key is mapped to the `Windows` key on Windows and Linux and `Cmd` on macOS.
 
 ## Available modifiers
 

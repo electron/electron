@@ -4,19 +4,21 @@
 
 ## Local Shortcuts
 
-You can use the [Menu] module to configure keyboard shortcuts that will
-be triggered only when the app is focused. To do so, specify an
-[`accelerator`] property when creating a [MenuItem].
+You can use the [Menu] module to configure keyboard shortcuts that will be triggered only when the app is focused. To do so, specify an [`accelerator`] property when creating a [MenuItem].
 
 ```js
 const {Menu, MenuItem} = require('electron')
 const menu = new Menu()
 
-menu.append(new MenuItem({
-  label: 'Print',
-  accelerator: 'CmdOrCtrl+P',
-  click: () => { console.log('time to print stuff') }
-}))
+menu.append(
+  new MenuItem({
+    label: 'Print',
+    accelerator: 'CmdOrCtrl+P',
+    click: () => {
+      console.log('time to print stuff')
+    }
+  })
+)
 ```
 
 It's easy to configure different key combinations based on the user's operating system.
@@ -29,8 +31,7 @@ It's easy to configure different key combinations based on the user's operating 
 
 ## Global Shortcuts
 
-You can use the [globalShortcut] module to detect keyboard events even when
-the application does not have keyboard focus.
+You can use the [globalShortcut] module to detect keyboard events even when the application does not have keyboard focus.
 
 ```js
 const {app, globalShortcut} = require('electron')
@@ -52,19 +53,29 @@ window.addEventListener('keyup', doSomething, true)
 
 Note the third parameter `true` which means the listener will always receive key presses before other listeners so they can't have `stopPropagation()` called on them.
 
-The [`before-input-event`](web-contents.md#event-before-input-event) event
-is emitted before dispatching `keydown` and `keyup` events in the page. It can
-be used to catch and handle custom shortcuts that are not visible in the menu.
+The [`before-input-event`](web-contents.md#event-before-input-event) event is emitted before dispatching `keydown` and `keyup` events in the page. It can be used to catch and handle custom shortcuts that are not visible in the menu.
 
 If you don't want to do manual shortcut parsing there are libraries that do advanced key detection such as [mousetrap].
 
 ```js
-Mousetrap.bind('4', () => { console.log('4') })
-Mousetrap.bind('?', () => { console.log('show shortcuts!') })
-Mousetrap.bind('esc', () => { console.log('escape') }, 'keyup')
+Mousetrap.bind('4', () => {
+  console.log('4')
+})
+Mousetrap.bind('?', () => {
+  console.log('show shortcuts!')
+})
+Mousetrap.bind(
+  'esc',
+  () => {
+    console.log('escape')
+  },
+  'keyup'
+)
 
 // combinations
-Mousetrap.bind('command+shift+k', () => { console.log('command shift k') })
+Mousetrap.bind('command+shift+k', () => {
+  console.log('command shift k')
+})
 
 // map multiple combinations to the same callback
 Mousetrap.bind(['command+k', 'ctrl+k'], () => {
@@ -75,8 +86,12 @@ Mousetrap.bind(['command+k', 'ctrl+k'], () => {
 })
 
 // gmail style sequences
-Mousetrap.bind('g i', () => { console.log('go to inbox') })
-Mousetrap.bind('* a', () => { console.log('select all') })
+Mousetrap.bind('g i', () => {
+  console.log('go to inbox')
+})
+Mousetrap.bind('* a', () => {
+  console.log('select all')
+})
 
 // konami code!
 Mousetrap.bind('up up down down left right left right b a enter', () => {
@@ -84,9 +99,9 @@ Mousetrap.bind('up up down down left right left right b a enter', () => {
 })
 ```
 
-[Menu]: ../api/menu.md
-[MenuItem]: ../api/menu-item.md
-[globalShortcut]: ../api/global-shortcut.md
+[menu]: ../api/menu.md
+[menuitem]: ../api/menu-item.md
+[globalshortcut]: ../api/global-shortcut.md
 [`accelerator`]: ../api/accelerator.md
-[BrowserWindow]: ../api/browser-window.md
+[browserwindow]: ../api/browser-window.md
 [mousetrap]: https://github.com/ccampbell/mousetrap

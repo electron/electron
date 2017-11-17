@@ -18,8 +18,7 @@ The `systemPreferences` object emits the following events:
 Returns:
 
 * `event` Event
-* `newColor` String - The new RGBA color the user assigned to be their system
-  accent color.
+* `newColor` String - The new RGBA color the user assigned to be their system accent color.
 
 ### Event: 'color-changed' _Windows_
 
@@ -32,8 +31,7 @@ Returns:
 Returns:
 
 * `event` Event
-* `invertedColorScheme` Boolean - `true` if an inverted color scheme, such as
-  a high contrast theme, is being used, `false` otherwise.
+* `invertedColorScheme` Boolean - `true` if an inverted color scheme, such as a high contrast theme, is being used, `false` otherwise.
 
 ## Methods
 
@@ -50,16 +48,14 @@ Returns `Boolean` - Whether the Swipe between pages setting is on.
 * `event` String
 * `userInfo` Object
 
-Posts `event` as native notifications of macOS. The `userInfo` is an Object
-that contains the user information dictionary sent along with the notification.
+Posts `event` as native notifications of macOS. The `userInfo` is an Object that contains the user information dictionary sent along with the notification.
 
 ### `systemPreferences.postLocalNotification(event, userInfo)` _macOS_
 
 * `event` String
 * `userInfo` Object
 
-Posts `event` as native notifications of macOS. The `userInfo` is an Object
-that contains the user information dictionary sent along with the notification.
+Posts `event` as native notifications of macOS. The `userInfo` is an Object that contains the user information dictionary sent along with the notification.
 
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
@@ -68,16 +64,11 @@ that contains the user information dictionary sent along with the notification.
   * `event` String
   * `userInfo` Object
 
-Subscribes to native notifications of macOS, `callback` will be called with
-`callback(event, userInfo)` when the corresponding `event` happens. The
-`userInfo` is an Object that contains the user information dictionary sent
-along with the notification.
+Subscribes to native notifications of macOS, `callback` will be called with `callback(event, userInfo)` when the corresponding `event` happens. The `userInfo` is an Object that contains the user information dictionary sent along with the notification.
 
-The `id` of the subscriber is returned, which can be used to unsubscribe the
-`event`.
+The `id` of the subscriber is returned, which can be used to unsubscribe the `event`.
 
-Under the hood this API subscribes to `NSDistributedNotificationCenter`,
-example values of `event` are:
+Under the hood this API subscribes to `NSDistributedNotificationCenter`, example values of `event` are:
 
 * `AppleInterfaceThemeChangedNotification`
 * `AppleAquaColorVariantChanged`
@@ -97,8 +88,7 @@ Removes the subscriber with `id`.
   * `event` String
   * `userInfo` Object
 
-Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
-This is necessary for events such as `NSUserDefaultsDidChangeNotification`
+Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults. This is necessary for events such as `NSUserDefaultsDidChangeNotification`
 
 ### `systemPreferences.unsubscribeLocalNotification(id)` _macOS_
 
@@ -109,20 +99,19 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificati
 ### `systemPreferences.getUserDefault(key, type)` _macOS_
 
 * `key` String
-* `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`,
-  `url`, `array`, `dictionary`
+* `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`, `url`, `array`, `dictionary`
 
 Returns `any` - The value of `key` in `NSUserDefaults`.
 
 Some popular `key` and `type`s are:
 
-* `AppleInterfaceStyle`:  `string`
-* `AppleAquaColorVariant`:  `integer`
-* `AppleHighlightColor`:  `string`
-* `AppleShowScrollBars`:  `string`
-* `NSNavRecentPlaces`:  `array`
-* `NSPreferredWebServices`:  `dictionary`
-* `NSUserDictionaryReplacementItems`:  `array`
+* `AppleInterfaceStyle`: `string`
+* `AppleAquaColorVariant`: `integer`
+* `AppleHighlightColor`: `string`
+* `AppleShowScrollBars`: `string`
+* `NSNavRecentPlaces`: `array`
+* `NSPreferredWebServices`: `dictionary`
+* `NSUserDictionaryReplacementItems`: `array`
 
 ### `systemPreferences.setUserDefault(key, type, value)` _macOS_
 
@@ -132,27 +121,23 @@ Some popular `key` and `type`s are:
 
 Set the value of `key` in `NSUserDefaults`.
 
-Note that `type` should match actual type of `value`. An exception is thrown
-if they don't.
+Note that `type` should match actual type of `value`. An exception is thrown if they don't.
 
 Some popular `key` and `type`s are:
 
-* `ApplePressAndHoldEnabled`:  `boolean`
+* `ApplePressAndHoldEnabled`: `boolean`
 
 ### `systemPreferences.removeUserDefault(key)` _macOS_
 
 * `key` String
 
-Removes the `key` in `NSUserDefaults`. This can be used to restore the default
-or global value of a `key` previously set with `setUserDefault`.
+Removes the `key` in `NSUserDefaults`. This can be used to restore the default or global value of a `key` previously set with `setUserDefault`.
 
 ### `systemPreferences.isAeroGlassEnabled()` _Windows_
 
-Returns `Boolean` - `true` if [DWM composition][dwm-composition] (Aero Glass) is
-enabled, and `false` otherwise.
+Returns `Boolean` - `true` if [DWM composition][dwm-composition] (Aero Glass) is enabled, and `false` otherwise.
 
-An example of using it to determine if you should create a transparent window or
-not (transparent windows won't work correctly when DWM composition is disabled):
+An example of using it to determine if you should create a transparent window or not (transparent windows won't work correctly when DWM composition is disabled):
 
 ```javascript
 const {BrowserWindow, systemPreferences} = require('electron')
@@ -176,12 +161,11 @@ if (browserOptions.transparent) {
 }
 ```
 
-[dwm-composition]:https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx
+[dwm-composition]: https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx
 
 ### `systemPreferences.getAccentColor()` _Windows_
 
-Returns `String` - The users current system wide accent color preference in RGBA
-hexadecimal form.
+Returns `String` - The users current system wide accent color preference in RGBA hexadecimal form.
 
 ```js
 const color = systemPreferences.getAccentColor() // `"aabbccdd"`
@@ -195,19 +179,14 @@ const alpha = color.substr(6, 2) // "dd"
 
 * `color` String - One of the following values:
   * `3d-dark-shadow` - Dark shadow for three-dimensional display elements.
-  * `3d-face` - Face color for three-dimensional display elements and for dialog
-    box backgrounds.
+  * `3d-face` - Face color for three-dimensional display elements and for dialog box backgrounds.
   * `3d-highlight` - Highlight color for three-dimensional display elements.
   * `3d-light` - Light color for three-dimensional display elements.
   * `3d-shadow` - Shadow color for three-dimensional display elements.
   * `active-border` - Active window border.
-  * `active-caption` - Active window title bar. Specifies the left side color in
-    the color gradient of an active window's title bar if the gradient effect is
-    enabled.
-  * `active-caption-gradient` - Right side color in the color gradient of an
-    active window's title bar.
-  * `app-workspace` - Background color of multiple document interface (MDI)
-    applications.
+  * `active-caption` - Active window title bar. Specifies the left side color in the color gradient of an active window's title bar if the gradient effect is enabled.
+  * `active-caption-gradient` - Right side color in the color gradient of an active window's title bar.
+  * `app-workspace` - Background color of multiple document interface (MDI) applications.
   * `button-text` - Text on push buttons.
   * `caption-text` - Text in caption, size box, and scroll bar arrow box.
   * `desktop` - Desktop background color.
@@ -216,31 +195,24 @@ const alpha = color.substr(6, 2) // "dd"
   * `highlight-text` - Text of item(s) selected in a control.
   * `hotlight` - Color for a hyperlink or hot-tracked item.
   * `inactive-border` - Inactive window border.
-  * `inactive-caption` - Inactive window caption. Specifies the left side color
-    in the color gradient of an inactive window's title bar if the gradient
-    effect is enabled.
-  * `inactive-caption-gradient` - Right side color in the color gradient of an
-    inactive window's title bar.
+  * `inactive-caption` - Inactive window caption. Specifies the left side color in the color gradient of an inactive window's title bar if the gradient effect is enabled.
+  * `inactive-caption-gradient` - Right side color in the color gradient of an inactive window's title bar.
   * `inactive-caption-text` - Color of text in an inactive caption.
   * `info-background` - Background color for tooltip controls.
   * `info-text` - Text color for tooltip controls.
   * `menu` - Menu background.
-  * `menu-highlight` - The color used to highlight menu items when the menu
-    appears as a flat menu.
-  * `menubar` - The background color for the menu bar when menus appear as flat
-    menus.
+  * `menu-highlight` - The color used to highlight menu items when the menu appears as a flat menu.
+  * `menubar` - The background color for the menu bar when menus appear as flat menus.
   * `menu-text` - Text in menus.
   * `scrollbar` - Scroll bar gray area.
   * `window` - Window background.
   * `window-frame` - Window frame.
   * `window-text` - Text in windows.
 
-Returns `String` - The system color setting in RGB hexadecimal form (`#ABCDEF`).
-See the [Windows docs][windows-colors] for more details.
+Returns `String` - The system color setting in RGB hexadecimal form (`#ABCDEF`). See the [Windows docs][windows-colors] for more details.
 
 ### `systemPreferences.isInvertedColorScheme()` _Windows_
 
-Returns `Boolean` - `true` if an inverted color scheme, such as a high contrast
-theme, is active, `false` otherwise.
+Returns `Boolean` - `true` if an inverted color scheme, such as a high contrast theme, is active, `false` otherwise.
 
-[windows-colors]:https://msdn.microsoft.com/en-us/library/windows/desktop/ms724371(v=vs.85).aspx
+[windows-colors]: https://msdn.microsoft.com/en-us/library/windows/desktop/ms724371(v=vs.85).aspx

@@ -4,9 +4,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-`DownloadItem` is an `EventEmitter` that represents a download item in Electron.
-It is used in `will-download` event of `Session` class, and allows users to
-control the download item.
+`DownloadItem` is an `EventEmitter` that represents a download item in Electron. It is used in `will-download` event of `Session` class, and allows users to control the download item.
 
 ```javascript
 // In the main process.
@@ -60,9 +58,7 @@ Returns:
 * `event` Event
 * `state` String
 
-Emitted when the download is in a terminal state. This includes a completed
-download, a cancelled download (via `downloadItem.cancel()`), and interrupted
-download that can't be resumed.
+Emitted when the download is in a terminal state. This includes a completed download, a cancelled download (via `downloadItem.cancel()`), and interrupted download that can't be resumed.
 
 The `state` can be one of following:
 
@@ -78,15 +74,11 @@ The `downloadItem` object has the following methods:
 
 * `path` String - Set the save file path of the download item.
 
-The API is only available in session's `will-download` callback function.
-If user doesn't set the save path via the API, Electron will use the original
-routine to determine the save path(Usually prompts a save dialog).
+The API is only available in session's `will-download` callback function. If user doesn't set the save path via the API, Electron will use the original routine to determine the save path(Usually prompts a save dialog).
 
 #### `downloadItem.getSavePath()`
 
-Returns `String` - The save path of the download item. This will be either the path
-set via `downloadItem.setSavePath(path)` or the path selected from the shown
-save dialog.
+Returns `String` - The save path of the download item. This will be either the path set via `downloadItem.setSavePath(path)` or the path selected from the shown save dialog.
 
 #### `downloadItem.pause()`
 
@@ -100,7 +92,7 @@ Returns `Boolean` - Whether the download is paused.
 
 Resumes the download that has been paused.
 
-**Note:** To enable resumable downloads the server you are downloading from must support range requests and provide both `Last-Modified` and `ETag` header values. Otherwise `resume()` will dismiss previously received bytes and restart the download from the beginning. 
+**Note:** To enable resumable downloads the server you are downloading from must support range requests and provide both `Last-Modified` and `ETag` header values. Otherwise `resume()` will dismiss previously received bytes and restart the download from the beginning.
 
 #### `downloadItem.canResume()`
 
@@ -126,9 +118,7 @@ Returns `Boolean` - Whether the download has user gesture.
 
 Returns `String` - The file name of the download item.
 
-**Note:** The file name is not always the same as the actual one saved in local
-disk. If user changes the file name in a prompted download saving dialog, the
-actual name of saved file will be different.
+**Note:** The file name is not always the same as the actual one saved in local disk. If user changes the file name in a prompted download saving dialog, the actual name of saved file will be different.
 
 #### `downloadItem.getTotalBytes()`
 
@@ -142,15 +132,13 @@ Returns `Integer` - The received bytes of the download item.
 
 #### `downloadItem.getContentDisposition()`
 
-Returns `String` - The Content-Disposition field from the response
-header.
+Returns `String` - The Content-Disposition field from the response header.
 
 #### `downloadItem.getState()`
 
-Returns `String` - The current state.  Can be `progressing`, `completed`, `cancelled` or `interrupted`.
+Returns `String` - The current state. Can be `progressing`, `completed`, `cancelled` or `interrupted`.
 
-**Note:** The following methods are useful specifically to resume a
-`cancelled` item when session is restarted.
+**Note:** The following methods are useful specifically to resume a `cancelled` item when session is restarted.
 
 #### `downloadItem.getURLChain()`
 
@@ -166,5 +154,4 @@ Returns `String` - ETag header value.
 
 #### `downloadItem.getStartTime()`
 
-Returns `Double` - Number of seconds since the UNIX epoch when the download was
-started.
+Returns `Double` - Number of seconds since the UNIX epoch when the download was started.
