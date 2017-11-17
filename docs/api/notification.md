@@ -14,8 +14,7 @@ If you want to show Notifications from a renderer process you should use the [HT
 
 Process: [Main](../glossary.md#main-process)
 
-`Notification` is an
-[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+`Notification` is an [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
 It creates a new `Notification` with native properties as set by the `options`.
 
@@ -35,18 +34,16 @@ Returns `Boolean` - Whether or not desktop notifications are supported on the cu
   * `body` String - The body text of the notification, which will be displayed below the title or subtitle
   * `silent` Boolean - (optional) Whether or not to emit an OS notification noise when showing the notification
   * `icon` (String | [NativeImage](native-image.md)) - (optional) An icon to use in the notification
-  * `hasReply` Boolean - (optional) Whether or not to add an inline reply option to the notification.  _macOS_
+  * `hasReply` Boolean - (optional) Whether or not to add an inline reply option to the notification. _macOS_
   * `replyPlaceholder` String - (optional) The placeholder to write in the inline reply input field. _macOS_
   * `sound` String - (optional) The name of the sound file to play when the notification is shown. _macOS_
-  * `actions` [NotificationAction[]](structures/notification-action.md) - (optional) Actions to add to the notification.  Please read the available actions and limitations in the `NotificationAction` documentation _macOS_
-
+  * `actions` [NotificationAction[]](structures/notification-action.md) - (optional) Actions to add to the notification. Please read the available actions and limitations in the `NotificationAction` documentation _macOS_
 
 ### Instance Events
 
 Objects created with `new Notification` emit the following events:
 
-**Note:** Some events are only available on specific operating systems and are
-labeled as such.
+**Note:** Some events are only available on specific operating systems and are labeled as such.
 
 #### Event: 'show'
 
@@ -54,9 +51,7 @@ Returns:
 
 * `event` Event
 
-Emitted when the notification is shown to the user, note this could be fired
-multiple times as a notification can be shown multiple times through the
-`show()` method.
+Emitted when the notification is shown to the user, note this could be fired multiple times as a notification can be shown multiple times through the `show()` method.
 
 #### Event: 'click'
 
@@ -74,8 +69,7 @@ Returns:
 
 Emitted when the notification is closed by manual intervention from the user.
 
-This event is not guaranteed to be emitted in all cases where the notification
-is closed.
+This event is not guaranteed to be emitted in all cases where the notification is closed.
 
 #### Event: 'reply' _macOS_
 
@@ -99,13 +93,9 @@ Objects created with `new Notification` have the following instance methods:
 
 #### `notification.show()`
 
-Immediately shows the notification to the user, please note this means unlike the
-HTML5 Notification implementation, simply instantiating a `new Notification` does
-not immediately show it to the user, you need to call this method before the OS
-will display it.
+Immediately shows the notification to the user, please note this means unlike the HTML5 Notification implementation, simply instantiating a `new Notification` does not immediately show it to the user, you need to call this method before the OS will display it.
 
-If the notification has been shown before, this method will dismiss the previously
-shown notification and create a new one with identical properties.
+If the notification has been shown before, this method will dismiss the previously shown notification and create a new one with identical properties.
 
 #### `notification.close()`
 
@@ -113,11 +103,7 @@ Dismisses the notification.
 
 ### Playing Sounds
 
-On macOS, you can specify the name of the sound you'd like to play when the
-notification is shown. Any of the default sounds (under System Preferences >
-Sound) can be used, in addition to custom sound files. Be sure that the sound
-file is copied under the app bundle (e.g., `YourApp.app/Contents/Resources`),
-or one of the following locations:
+On macOS, you can specify the name of the sound you'd like to play when the notification is shown. Any of the default sounds (under System Preferences > Sound) can be used, in addition to custom sound files. Be sure that the sound file is copied under the app bundle (e.g., `YourApp.app/Contents/Resources`), or one of the following locations:
 
 * `~/Library/Sounds`
 * `/Library/Sounds`

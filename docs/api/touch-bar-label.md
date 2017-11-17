@@ -16,10 +16,8 @@ The following properties are available on instances of `TouchBarLabel`:
 
 #### `touchBarLabel.label`
 
-A `String` representing the label's current text. Changing this value immediately updates the label in
-the touch bar.
+A `String` representing the label's current text. Changing this value immediately updates the label in the touch bar.
 
 #### `touchBarLabel.textColor`
 
-A `String` hex code representing the label's current text color. Changing this value immediately updates the
-label in the touch bar.
+A `String` hex code representing the label's current text color. Changing this value immediately updates the label in the touch bar.
