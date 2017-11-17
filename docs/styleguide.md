@@ -6,10 +6,8 @@ These are the guidelines for writing Electron documentation.
 
 * Each page must have a single `#`-level title at the top.
 * Chapters in the same page must have `##`-level titles.
-* Sub-chapters need to increase the number of `#` in the title according to
-  their nesting depth.
-* All words in the page's title must be capitalized, except for conjunctions
-  like "of" and "and" .
+* Sub-chapters need to increase the number of `#` in the title according to their nesting depth.
+* All words in the page's title must be capitalized, except for conjunctions like "of" and "and" .
 * Only the first word of a chapter title must be capitalized.
 
 Using `Quick Start` as example:
@@ -47,8 +45,7 @@ For API references, there are exceptions to this rule.
 * Use `bash` instead of `cmd` in code blocks (due to the syntax highlighter).
 * Lines should be wrapped at 80 columns.
 * No nesting lists more than 2 levels (due to the markdown renderer).
-* All `js` and `javascript` code blocks are linted with
-[standard-markdown](http://npm.im/standard-markdown).
+* All `js` and `javascript` code blocks are linted with [standard-markdown](http://npm.im/standard-markdown).
 
 ## Picking words
 
@@ -61,8 +58,7 @@ The following rules only apply to the documentation of APIs.
 
 ### Page title
 
-Each page must use the actual object name returned by `require('electron')`
-as the title, such as `BrowserWindow`, `autoUpdater`, and `session`.
+Each page must use the actual object name returned by `require('electron')` as the title, such as `BrowserWindow`, `autoUpdater`, and `session`.
 
 Under the page tile must be a one-line description starting with `>`.
 
@@ -76,8 +72,7 @@ Using `session` as example:
 
 ### Module methods and events
 
-For modules that are not classes, their methods and events must be listed under
-the `## Methods` and `## Events` chapters.
+For modules that are not classes, their methods and events must be listed under the `## Methods` and `## Events` chapters.
 
 Using `autoUpdater` as an example:
 
@@ -95,8 +90,7 @@ Using `autoUpdater` as an example:
 
 ### Classes
 
-* API classes or classes that are part of modules must be listed under a
-  `## Class: TheClassName` chapter.
+* API classes or classes that are part of modules must be listed under a `## Class: TheClassName` chapter.
 * One page can have multiple classes.
 * Constructors must be listed with `###`-level titles.
 * [Static Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static) must be listed under a `### Static Methods` chapter.
@@ -154,26 +148,19 @@ The methods chapter must be in the following form:
 ...
 ```
 
-The title can be `###` or `####`-levels depending on whether it is a method of
-a module or a class.
+The title can be `###` or `####`-levels depending on whether it is a method of a module or a class.
 
-For modules, the `objectName` is the module's name. For classes, it must be the
-name of the instance of the class, and must not be the same as the module's
-name.
+For modules, the `objectName` is the module's name. For classes, it must be the name of the instance of the class, and must not be the same as the module's name.
 
-For example, the methods of the `Session` class under the `session` module must
-use `ses` as the `objectName`.
+For example, the methods of the `Session` class under the `session` module must use `ses` as the `objectName`.
 
-The optional arguments are notated by square brackets `[]` surrounding the optional argument
-as well as the comma required if this optional argument follows another
-argument:
+The optional arguments are notated by square brackets `[]` surrounding the optional argument as well as the comma required if this optional argument follows another argument:
 
 ```
 required[, optional]
 ```
 
-Below the method is more detailed information on each of the arguments. The type
-of argument is notated by either the common types:
+Below the method is more detailed information on each of the arguments. The type of argument is notated by either the common types:
 
 * [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)
 * [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
@@ -182,19 +169,15 @@ of argument is notated by either the common types:
 * [`Boolean`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean)
 * Or a custom type like Electron's [`WebContent`](api/web-contents.md)
 
-If an argument or a method is unique to certain platforms, those platforms are
-denoted using a space-delimited italicized list following the datatype. Values
-can be `macOS`, `Windows`, or `Linux`.
+If an argument or a method is unique to certain platforms, those platforms are denoted using a space-delimited italicized list following the datatype. Values can be `macOS`, `Windows`, or `Linux`.
 
 ```markdown
 * `animate` Boolean (optional) _macOS_ _Windows_ - Animate the thing.
 ```
 
-`Array` type arguments must specify what elements the array may include in
-the description below.
+`Array` type arguments must specify what elements the array may include in the description below.
 
-The description for `Function` type arguments should make it clear how it may be
-called and list the types of the parameters that will be passed to it.
+The description for `Function` type arguments should make it clear how it may be called and list the types of the parameters that will be passed to it.
 
 ### Events
 
@@ -210,8 +193,7 @@ Returns:
 ...
 ```
 
-The title can be `###` or `####`-levels depending on whether it is an event of
-a module or a class.
+The title can be `###` or `####`-levels depending on whether it is an event of a module or a class.
 
 The arguments of an event follow the same rules as methods.
 
@@ -225,8 +207,7 @@ The properties chapter must be in following form:
 ...
 ```
 
-The title can be `###` or `####`-levels depending on whether it is a property of
-a module or a class.
+The title can be `###` or `####`-levels depending on whether it is a property of a module or a class.
 
 ## Documentation Translations
 

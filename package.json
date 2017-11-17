@@ -17,9 +17,9 @@
     "husky": "^0.14.3",
     "minimist": "^1.2.0",
     "nugget": "^2.0.1",
+    "prettier": "^1.8.2",
     "request": "^2.68.0",
     "standard": "^8.4.0",
-    "standard-markdown": "^4.0.0",
     "sumchecker": "^2.0.2",
     "temp": "^0.8.3"
   },
@@ -32,6 +32,13 @@
     "env": {
       "browser": true
     }
+  },
+  "prettier": {
+    "bracketSpacing": false,
+    "printWidth": 80,
+    "proseWrap": false,
+    "semi": false,
+    "singleQuote": true
   },
   "private": true,
   "scripts": {
@@ -48,8 +55,7 @@
     "lint-js": "standard && cd spec && standard",
     "lint-cpp": "python ./script/cpplint.py",
     "lint-py": "python ./script/pylint.py",
-    "lint-docs": "npm run lint-js-in-markdown && npm run create-typescript-definitions",
-    "lint-js-in-markdown": "standard-markdown docs",
+    "lint-docs": "npm run create-typescript-definitions && prettier --ignore-path .gitignore --write \"**/*.md\"",
     "create-api-json": "electron-docs-linter docs --outfile=out/electron-api.json --version=$npm_package_version",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=out/electron-api.json --out=out/electron.d.ts",
     "merge-release": "node ./script/merge-release.js",
