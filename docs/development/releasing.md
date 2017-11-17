@@ -4,8 +4,9 @@ This document describes the process for releasing a new version of Electron.
 
 ## Determine which branch to release from
 
-- **If releasing beta,** create a new branch from `master`.
-- **If releasing a stable version,** create a new branch from the beta branch you're stabilizing.
+- **If releasing beta,** run the scripts below from `master`.
+- **If releasing a stable version,** run the scripts below from `1-7-x` or
+`1-6-x`, depending on which version you are releasing for.
 
 ## Find out what version change is needed
 Run `npm run prepare-release -- --notesOnly` to view auto generated release
