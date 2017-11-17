@@ -1,21 +1,22 @@
-// Copyright (c) 2016 GitHub, Inc.
+// Copyright (c) 2017 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NET_ATOM_CT_DELEGATE_H_
-#define ATOM_BROWSER_NET_ATOM_CT_DELEGATE_H_
+#ifndef BRIGHTRAY_BROWSER_NET_REQUIRE_CT_DELEGATE_H_
+#define BRIGHTRAY_BROWSER_NET_REQUIRE_CT_DELEGATE_H_
 
 #include <set>
 #include <string>
 
 #include "net/http/transport_security_state.h"
 
-namespace atom {
+namespace brightray {
 
-class AtomCTDelegate : public net::TransportSecurityState::RequireCTDelegate {
+class RequireCTDelegate
+    : public net::TransportSecurityState::RequireCTDelegate {
  public:
-  AtomCTDelegate();
-  ~AtomCTDelegate() override;
+  RequireCTDelegate();
+  ~RequireCTDelegate() override;
 
   void AddCTExcludedHost(const std::string& host);
   void ClearCTExcludedHostsList();
@@ -25,9 +26,9 @@ class AtomCTDelegate : public net::TransportSecurityState::RequireCTDelegate {
 
  private:
   std::set<std::string> ct_excluded_hosts_;
-  DISALLOW_COPY_AND_ASSIGN(AtomCTDelegate);
+  DISALLOW_COPY_AND_ASSIGN(RequireCTDelegate);
 };
 
-}  // namespace atom
+}  // namespace brightray
 
-#endif  // ATOM_BROWSER_NET_ATOM_CT_DELEGATE_H_
+#endif  // BRIGHTRAY_BROWSER_NET_REQUIRE_CT_DELEGATE_H_
