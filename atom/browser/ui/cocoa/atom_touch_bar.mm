@@ -666,4 +666,40 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   return itemView;
 }
 
+- (NSSize)scrubber:(NSScrubber *)scrubber layout:(NSScrubberFlowLayout *)layout sizeForItemAtIndex:(NSInteger)itemIndex
+{
+  NSInteger width = 50;
+  NSInteger height = 30;
+  NSInteger margin = 15;
+  NSSize defaultSize = NSMakeSize(width, height);
+
+  std::string s_id([[scrubber identifier] UTF8String]);
+  if (![self hasItemWithID:s_id]) return defaultSize;
+
+  mate::PersistentDictionary settings = settings_[s_id];
+  std::vector<mate::PersistentDictionary> items;
+  if (!settings.Get("items", &items)) return defaultSize;
+
+  if (itemIndex >= static_cast<NSInteger>(items.size())) return defaultSize;
+
+  mate::PersistentDictionary item = items[itemIndex];
+  std::string title;
+
+  if (item.Get("label", &title)) {
+    NSSize size = NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX);
+    NSRect textRect = [base::SysUTF8ToNSString(title) boundingRectWithSize:size
+                                          options:NSStringDrawingUsesLineFragmentOrigin |   NSStringDrawingUsesFontLeading
+                                          attributes:@{ NSFontAttributeName: [NSFont systemFontOfSize:0]}];
+
+    width = textRect.size.width + margin;
+  } else {
+    gfx::Image image;
+    if (item.Get("icon", &image)) {
+      width = image.AsNSImage().size.width;
+    }
+  }
+
+  return NSMakeSize(width, height);
+}
+
 @end
