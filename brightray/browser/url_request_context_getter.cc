@@ -14,6 +14,7 @@
 #include "base/threading/worker_pool.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "brightray/browser/net/devtools_network_transaction_factory.h"
+#include "brightray/browser/net/require_ct_delegate.h"
 #include "brightray/browser/net_log.h"
 #include "brightray/browser/network_delegate.h"
 #include "brightray/common/switches.h"
@@ -107,7 +108,8 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(
 }
 
 std::unique_ptr<net::CertVerifier>
-URLRequestContextGetter::Delegate::CreateCertVerifier() {
+URLRequestContextGetter::Delegate::CreateCertVerifier(
+    RequireCTDelegate* ct_delegate) {
   return net::CertVerifier::CreateDefault();
 }
 
@@ -170,6 +172,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
   if (!url_request_context_.get()) {
+    ct_delegate_.reset(new RequireCTDelegate);
     auto& command_line = *base::CommandLine::ForCurrentProcess();
     url_request_context_.reset(new net::URLRequestContext);
 
@@ -280,10 +283,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     std::unique_ptr<net::TransportSecurityState> transport_security_state =
         base::WrapUnique(new net::TransportSecurityState);
-    transport_security_state->SetRequireCTDelegate(
-        delegate_->GetRequireCTDelegate());
+    transport_security_state->SetRequireCTDelegate(ct_delegate_.get());
     storage_->set_transport_security_state(std::move(transport_security_state));
-    storage_->set_cert_verifier(delegate_->CreateCertVerifier());
+    storage_->set_cert_verifier(
+        delegate_->CreateCertVerifier(ct_delegate_.get()));
     storage_->set_ssl_config_service(delegate_->CreateSSLConfigService());
     storage_->set_http_auth_handler_factory(std::move(auth_handler_factory));
     std::unique_ptr<net::HttpServerProperties> server_properties(

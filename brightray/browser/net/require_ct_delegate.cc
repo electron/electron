@@ -1,28 +1,28 @@
-// Copyright (c) 2016 GitHub, Inc.
+// Copyright (c) 2017 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/net/atom_ct_delegate.h"
+#include "brightray/browser/net/require_ct_delegate.h"
 
 #include "content/public/browser/browser_thread.h"
 
-namespace atom {
+namespace brightray {
 
-AtomCTDelegate::AtomCTDelegate() {}
+RequireCTDelegate::RequireCTDelegate() {}
 
-AtomCTDelegate::~AtomCTDelegate() {}
+RequireCTDelegate::~RequireCTDelegate() {}
 
-void AtomCTDelegate::AddCTExcludedHost(const std::string& host) {
+void RequireCTDelegate::AddCTExcludedHost(const std::string& host) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   ct_excluded_hosts_.insert(host);
 }
 
-void AtomCTDelegate::ClearCTExcludedHostsList() {
+void RequireCTDelegate::ClearCTExcludedHostsList() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   ct_excluded_hosts_.clear();
 }
 
-AtomCTDelegate::CTRequirementLevel AtomCTDelegate::IsCTRequiredForHost(
+RequireCTDelegate::CTRequirementLevel RequireCTDelegate::IsCTRequiredForHost(
     const std::string& host) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   if (!ct_excluded_hosts_.empty() &&
@@ -31,4 +31,4 @@ AtomCTDelegate::CTRequirementLevel AtomCTDelegate::IsCTRequiredForHost(
   return CTRequirementLevel::DEFAULT;
 }
 
-}  // namespace atom
+}  // namespace brightray

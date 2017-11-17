@@ -60,7 +60,7 @@ The following rules only apply to the documentation of APIs.
 
 Each page must use the actual object name returned by `require('electron')` as the title, such as `BrowserWindow`, `autoUpdater`, and `session`.
 
-Under the page tile must be a one-line description starting with `>`.
+Under the page title must be a one-line description starting with `>`.
 
 Using `session` as example:
 

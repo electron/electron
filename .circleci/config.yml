@@ -12,10 +12,6 @@ jobs:
       - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
             if [ -n "${RUN_RELEASE_BUILD}" ]; then
               echo 'release build triggered from api'
               echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
@@ -73,10 +69,6 @@ jobs:
       - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
             if [ -n "${RUN_RELEASE_BUILD}" ]; then
               echo 'release build triggered from api'
               echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
@@ -134,10 +126,6 @@ jobs:
       - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
             if [ -n "${RUN_RELEASE_BUILD}" ]; then
               echo 'release build triggered from api'
               echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
@@ -200,10 +188,6 @@ jobs:
       - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
             if [ -n "${RUN_RELEASE_BUILD}" ]; then
               echo 'release build triggered from api'
               echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
