@@ -2514,6 +2514,15 @@ describe('BrowserWindow module', () => {
     const code = `(() => "${expected}")()`
     const asyncCode = `(() => new Promise(r => setTimeout(() => r("${expected}"), 500)))()`
     const badAsyncCode = `(() => new Promise((r, e) => setTimeout(() => e("${expectedErrorMsg}"), 500)))()`
+    const errorCodes = {
+      Error: 'Promise.reject(new Error("Wamp-wamp"))',
+      ReferenceError: 'Promise.reject(new ReferenceError("Wamp-wamp"))',
+      EvalError: 'Promise.reject(new EvalError("Wamp-wamp"))',
+      RangeError: 'Promise.reject(new RangeError("Wamp-wamp"))',
+      SyntaxError: 'Promise.reject(new SyntaxError("Wamp-wamp"))',
+      TypeError: 'Promise.reject(new TypeError("Wamp-wamp"))',
+      URIError: 'Promise.reject(new URIError("Wamp-wamp"))'
+    }
 
     it('doesnt throw when no calback is provided', () => {
       const result = ipcRenderer.sendSync('executeJavaScript', code, false)
@@ -2560,6 +2569,17 @@ describe('BrowserWindow module', () => {
         assert.equal(error, expectedErrorMsg)
         done()
       })
+    })
+    it('rejects the returned promise with an error if an Error.prototype is thrown', async () => {
+      for (const errorKey in errorCodes) {
+        await new Promise((resolve) => {
+          ipcRenderer.send('executeJavaScript', errorCodes[errorKey], true)
+          ipcRenderer.once('executeJavaScript-promise-error-name', (event, name) => {
+            assert.equal(name, errorKey)
+            resolve()
+          })
+        })
+      }
     })
     it('works after page load and during subframe load', (done) => {
       w.webContents.once('did-finish-load', () => {
