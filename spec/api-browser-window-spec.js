@@ -2514,15 +2514,15 @@ describe('BrowserWindow module', () => {
     const code = `(() => "${expected}")()`
     const asyncCode = `(() => new Promise(r => setTimeout(() => r("${expected}"), 500)))()`
     const badAsyncCode = `(() => new Promise((r, e) => setTimeout(() => e("${expectedErrorMsg}"), 500)))()`
-    const errorCodes = {
-      Error: 'Promise.reject(new Error("Wamp-wamp"))',
-      ReferenceError: 'Promise.reject(new ReferenceError("Wamp-wamp"))',
-      EvalError: 'Promise.reject(new EvalError("Wamp-wamp"))',
-      RangeError: 'Promise.reject(new RangeError("Wamp-wamp"))',
-      SyntaxError: 'Promise.reject(new SyntaxError("Wamp-wamp"))',
-      TypeError: 'Promise.reject(new TypeError("Wamp-wamp"))',
-      URIError: 'Promise.reject(new URIError("Wamp-wamp"))'
-    }
+    const errorTypes = new Set([
+      Error,
+      ReferenceError,
+      EvalError,
+      RangeError,
+      SyntaxError,
+      TypeError,
+      URIError
+    ])
 
     it('doesnt throw when no calback is provided', () => {
       const result = ipcRenderer.sendSync('executeJavaScript', code, false)
@@ -2571,11 +2571,11 @@ describe('BrowserWindow module', () => {
       })
     })
     it('rejects the returned promise with an error if an Error.prototype is thrown', async () => {
-      for (const errorKey in errorCodes) {
+      for (const error in errorTypes) {
         await new Promise((resolve) => {
-          ipcRenderer.send('executeJavaScript', errorCodes[errorKey], true)
+          ipcRenderer.send('executeJavaScript', `Promise.reject(new ${error.name}("Wamp-wamp")`, true)
           ipcRenderer.once('executeJavaScript-promise-error-name', (event, name) => {
-            assert.equal(name, errorKey)
+            assert.equal(name, error.name)
             resolve()
           })
         })
