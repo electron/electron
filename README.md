@@ -1,4 +1,4 @@
-[![Electron Logo](https://electron.atom.io/images/electron-logo.svg)](https://electron.atom.io/)
+[![Electron Logo](https://electronjs.org/images/electron-logo.svg)](https://electronjs.org)
 
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/bc56v83355fi3369/branch/master?svg=true)](https://ci.appveyor.com/project/electron-bot/electron/branch/master)
@@ -11,7 +11,7 @@ View these docs in other languages at [electron/electron-i18n](https://github.co
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
 [Chromium](http://www.chromium.org) and is used by the [Atom
-editor](https://github.com/atom/atom) and many other [apps](https://electron.atom.io/apps).
+editor](https://github.com/atom/atom) and many other [apps](https://electronjs.org/apps).
 
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
@@ -33,10 +33,10 @@ npm install electron --save-dev --save-exact
 
 The `--save-exact` flag is recommended as Electron does not follow semantic
 versioning. For info on how to manage Electron versions in your apps, see
-[Electron versioning](https://electron.atom.io/docs/tutorial/electron-versioning/).
+[Electron versioning](https://electronjs.org/docs/tutorial/electron-versioning).
 
 For more installation options and troubleshooting tips, see
-[installation](https://electron.atom.io/docs/tutorial/installation/).
+[installation](https://electronjs.org/docs/tutorial/installation).
 
 ## Quick Start
 
@@ -53,9 +53,9 @@ npm start
 
 ## Resources for Learning Electron
 
-- [electron.atom.io/docs](http://electron.atom.io/docs) - all of Electron's documentation
+- [electronjs.org/docs](https://electronjs.org/docs) - all of Electron's documentation
 - [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - a very basic starter Electron app
-- [electron.atom.io/community/#boilerplates](http://electron.atom.io/community/#boilerplates) - sample starter apps created by the community
+- [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - sample starter apps created by the community
 - [electron/simple-samples](https://github.com/electron/simple-samples) - small applications with ideas for taking them further
 - [electron/electron-api-demos](https://github.com/electron/electron-api-demos) - an Electron app that teaches you how to use Electron
 - [hokein/electron-sample-apps](https://github.com/hokein/electron-sample-apps) - small demo apps for the various Electron APIs
