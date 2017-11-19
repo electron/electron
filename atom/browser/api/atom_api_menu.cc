@@ -200,7 +200,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",
                  &Menu::SendActionToFirstResponder);
-  dict.SetMethod("noteNewRecentDocumentURL", &Menu::NoteNewRecentDocumentURL);
 #endif
 }
 

@@ -31,10 +31,6 @@ class Menu : public mate::TrackableObject<Menu>,
 
   // Fake sending an action from the application menu.
   static void SendActionToFirstResponder(const std::string& action);
-
-  // Add an item corresponding to the data located by a URL to the Open Recent
-  // menu, or replace an existing item with the same URL.
-  static void NoteNewRecentDocumentURL(const std::string& url);
 #endif
 
   AtomMenuModel* model() const { return model_.get(); }
