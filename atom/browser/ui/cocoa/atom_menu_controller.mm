@@ -96,6 +96,8 @@ Role kRolesMap[] = {
         itemWithTitle:@"Electron"] submenu] itemWithTitle:@"Open Recent"];
     [openRecentMenuItem_ setHidden:NO];
     [openRecentMenuItem_ retain];
+    openRecentClearMenuMenuItem_ =
+        [[openRecentMenuItem_ submenu] itemWithTitle:@"Clear Menu"];
   }
 
   model_ = model;
@@ -153,11 +155,22 @@ Role kRolesMap[] = {
   base::string16 role = model->GetRoleAt(index);
 
   if (role == base::ASCIIToUTF16("openrecent")) {
-    // Special role for recent documents
+    // Remove singleton menu item from parent menu
     [[openRecentMenuItem_ menu] removeItem:openRecentMenuItem_];
-    [openRecentMenuItem_ setTitle:label];
-    [[openRecentMenuItem_ submenu] setTitle:label];
+
+    // Label formatted as "Open Recent\tClear Menu"
+    NSArray *titles = [label componentsSeparatedByString:@"\t"];
+
+    // Open recent
+    [openRecentMenuItem_ setTitle:titles[0]];
+    [[openRecentMenuItem_ submenu] setTitle:titles[0]];
     [menu insertItem:openRecentMenuItem_ atIndex:index];
+
+    // Clear menu item only displayed if specified in label
+    bool clearMenuVisible = [titles count] > 1;
+    [openRecentClearMenuMenuItem_ setHidden:!clearMenuVisible];
+    if (clearMenuVisible) [openRecentClearMenuMenuItem_ setTitle:titles[1]];
+
     return;
   }
 
