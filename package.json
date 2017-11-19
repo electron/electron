@@ -57,7 +57,7 @@
     "lint-cpp": "python ./script/cpplint.py",
     "lint-py": "python ./script/pylint.py",
     "lint-docs": "npm run lint-docs-prettier && npm run lint-js-in-markdown -- --fix && npm run create-typescript-definitions",
-    "lint-docs-prettier": "prettier --ignore-path .gitignore --write \"**/*.md\"",
+    "lint-docs-prettier": "prettier --ignore-path .gitignore --write \"docs/**/*.md\" \"*.md\"",
     "lint-js-in-markdown": "standard-markdown docs",
     "create-api-json": "electron-docs-linter docs --outfile=out/electron-api.json --version=$npm_package_version",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=out/electron-api.json --out=out/electron.d.ts",
