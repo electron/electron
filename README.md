@@ -44,7 +44,7 @@ Clone and run the
 [electron/electron-quick-start](https://github.com/electron/electron-quick-start)
 repository to see a minimal Electron app in action:
 
-```
+```sh
 git clone https://github.com/electron/electron-quick-start
 cd electron-quick-start
 npm install
@@ -60,7 +60,7 @@ npm start
 - [electron/electron-api-demos](https://github.com/electron/electron-api-demos) - an Electron app that teaches you how to use Electron
 - [hokein/electron-sample-apps](https://github.com/hokein/electron-sample-apps) - small demo apps for the various Electron APIs
 
-## Programmatic usage
+## Programmatic Usage
 
 Most people use Electron from the command line, but if you require `electron` inside
 your **Node app** (not your Electron app) it will return the file path to the
