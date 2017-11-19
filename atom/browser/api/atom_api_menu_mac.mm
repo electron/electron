@@ -140,6 +140,13 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
+void Menu::NoteNewRecentDocumentURL(const std::string& url) {
+  [[NSDocumentController sharedDocumentController]
+      noteNewRecentDocumentURL:
+          [NSURL fileURLWithPath:base::SysUTF8ToNSString(url)]];
+}
+
+// static
 mate::WrappableBase* Menu::New(mate::Arguments* args) {
   return new MenuMac(args->isolate(), args->GetThis());
 }

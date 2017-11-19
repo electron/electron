@@ -43,6 +43,13 @@ emulating default macOS menu behaviors. Usually you would just use the
 See the [macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)
 for more information on macOS' native actions.
 
+#### `Menu.noteNewRecentDocumentURL(url)` _macOS_
+
+* `url` String
+
+Add an item corresponding to the data located by a URL to the Open Recent menu,
+or replace an existing item with the same URL.
+
 #### `Menu.buildFromTemplate(template)`
 
 * `template` MenuItemConstructorOptions[]
