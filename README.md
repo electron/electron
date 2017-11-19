@@ -51,7 +51,7 @@ npm install
 npm start
 ```
 
-## Resources for learning electron
+## Resources for learning Electron
 
 - [electron.atom.io/docs](http://electron.atom.io/docs) - all of Electron's documentation
 - [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - a very basic starter Electron app
