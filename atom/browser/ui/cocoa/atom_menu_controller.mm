@@ -166,8 +166,7 @@ Role kRolesMap[] = {
       [NSApp setWindowsMenu:submenu];
     else if (role == base::ASCIIToUTF16("help"))
       [NSApp setHelpMenu:submenu];
-
-    if (role == base::ASCIIToUTF16("services"))
+    else if (role == base::ASCIIToUTF16("services"))
       [NSApp setServicesMenu:submenu];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the
