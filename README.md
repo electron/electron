@@ -38,7 +38,7 @@ versioning. For info on how to manage Electron versions in your apps, see
 For more installation options and troubleshooting tips, see
 [installation](https://electron.atom.io/docs/tutorial/installation/).
 
-## Quick Start
+## Quick start
 
 Clone and run the
 [electron/electron-quick-start](https://github.com/electron/electron-quick-start)
@@ -51,7 +51,7 @@ npm install
 npm start
 ```
 
-## Resources for Learning Electron
+## Resources for learning electron
 
 - [electron.atom.io/docs](http://electron.atom.io/docs) - all of Electron's documentation
 - [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - a very basic starter Electron app
@@ -60,7 +60,7 @@ npm start
 - [electron/electron-api-demos](https://github.com/electron/electron-api-demos) - an Electron app that teaches you how to use Electron
 - [hokein/electron-sample-apps](https://github.com/hokein/electron-sample-apps) - small demo apps for the various Electron APIs
 
-## Programmatic Usage
+## Programmatic usage
 
 Most people use Electron from the command line, but if you require `electron` inside
 your **Node app** (not your Electron app) it will return the file path to the
@@ -81,7 +81,7 @@ const child = proc.spawn(electron)
 
 - [China](https://npm.taobao.org/mirrors/electron)
 
-## Documentation Translations
+## Documentation translations
 
 Find documentation translations in [electron/electron-18n](https://github.com/electron/electron-i18n).
 
