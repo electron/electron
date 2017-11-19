@@ -75,7 +75,10 @@ Role kRolesMap[] = {
   // while its context menu is still open.
   [self cancel];
 
-  model_ = nullptr;
+  model_ = nil;
+
+  [openRecentMenuItem_ release];
+
   [super dealloc];
 }
 
@@ -86,6 +89,13 @@ Role kRolesMap[] = {
 - (void)populateWithModel:(atom::AtomMenuModel*)model {
   if (!menu_)
     return;
+
+  // Retain submenu for recent documents
+  if (!openRecentMenuItem_) {
+    openRecentMenuItem_ = [[[[NSApp mainMenu]
+        itemWithTitle:@"Electron"] submenu] itemWithTitle:@"Open Recent"];
+    [openRecentMenuItem_ retain];
+  }
 
   model_ = model;
   [menu_ removeAllItems];
@@ -139,6 +149,17 @@ Role kRolesMap[] = {
             fromModel:(atom::AtomMenuModel*)model {
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
+  base::string16 role = model->GetRoleAt(index);
+
+  if (role == base::ASCIIToUTF16("openrecent")) {
+    // Special role for recent documents
+    [[openRecentMenuItem_ menu] removeItem:openRecentMenuItem_];
+    [openRecentMenuItem_ setTitle:label];
+    [[openRecentMenuItem_ submenu] setTitle:label];
+    [menu insertItem:openRecentMenuItem_ atIndex:index];
+    return;
+  }
+
   base::scoped_nsobject<NSMenuItem> item(
       [[NSMenuItem alloc] initWithTitle:label
                                  action:@selector(itemSelected:)
@@ -161,7 +182,6 @@ Role kRolesMap[] = {
     [item setSubmenu:submenu];
 
     // Set submenu's role.
-    base::string16 role = model->GetRoleAt(index);
     if (role == base::ASCIIToUTF16("window") && [submenu numberOfItems])
       [NSApp setWindowsMenu:submenu];
     else if (role == base::ASCIIToUTF16("help"))

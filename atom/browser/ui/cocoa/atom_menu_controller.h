@@ -26,6 +26,7 @@ class AtomMenuModel;
  @protected
   atom::AtomMenuModel* model_;  // weak
   base::scoped_nsobject<NSMenu> menu_;
+  NSMenuItem* openRecentMenuItem_;
   BOOL isMenuOpen_;
   BOOL useDefaultAccelerator_;
   base::Callback<void()> closeCallback;
