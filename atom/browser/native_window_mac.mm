@@ -962,13 +962,14 @@ NativeWindowMac::NativeWindowMac(
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
-  // Hide the title bar.
-  if (title_bar_style_ == HIDDEN_INSET || title_bar_style_ == HIDDEN) {
+  // Hide the title bar background
+  if (title_bar_style_ != NORMAL) {
     if (base::mac::IsAtLeastOS10_10()) {
       [window_ setTitlebarAppearsTransparent:YES];
     }
   }
 
+  // Hide the title bar.
   if (title_bar_style_ == HIDDEN_INSET) {
     if (base::mac::IsAtLeastOS10_10()) {
       base::scoped_nsobject<NSToolbar> toolbar(
