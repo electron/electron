@@ -94,6 +94,7 @@ Role kRolesMap[] = {
   if (!openRecentMenuItem_) {
     openRecentMenuItem_ = [[[[NSApp mainMenu]
         itemWithTitle:@"Electron"] submenu] itemWithTitle:@"Open Recent"];
+    [openRecentMenuItem_ setHidden:NO];
     [openRecentMenuItem_ retain];
   }
 
