@@ -146,7 +146,7 @@ const template = [
       {
         label: 'Learn More',
         click() {
-          require('electron').shell.openExternal('https://electron.atom.io')
+          require('electron').shell.openExternal('https://electronjs.org')
         }
       }
     ]

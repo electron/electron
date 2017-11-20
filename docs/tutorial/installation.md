@@ -8,7 +8,7 @@ To install prebuilt Electron binaries, use [`npm`](https://docs.npmjs.com/). The
 npm install electron --save-dev
 ```
 
-See the [Electron versioning doc](https://electron.atom.io/docs/tutorial/electron-versioning/) for info on how to manage Electron versions in your apps.
+See the [Electron versioning doc](https://electronjs.org/docs/tutorial/electron-versioning) for info on how to manage Electron versions in your apps.
 
 ## Global Installation
 
