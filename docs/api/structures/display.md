@@ -4,7 +4,7 @@
 * `rotation` Number - Can be 0, 90, 180, 270, represents screen rotation in
   clock-wise degrees.
 * `scaleFactor` Number - Output device's pixel scale factor.
-* `touchSupport` String - Can be `available`, `unavailable`, `unknown`.
+* `touchSupport` String - Can be `available`, `unavailable` or `unknown`.
 * `bounds` [Rectangle](rectangle.md)
 * `size` [Size](size.md)
 * `workArea` [Rectangle](rectangle.md)
