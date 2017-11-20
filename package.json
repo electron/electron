@@ -11,7 +11,7 @@
     "dotenv-safe": "^4.0.4",
     "dugite": "^1.45.0",
     "electabul": "~0.0.4",
-    "electron-docs-linter": "^2.3.3",
+    "electron-docs-linter": "^2.3.4",
     "electron-typescript-definitions": "^1.2.10",
     "github": "^9.2.0",
     "husky": "^0.14.3",
