@@ -633,12 +633,17 @@ void App::OnLogin(LoginHandler* login_handler,
                   const base::DictionaryValue& request_details) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  bool prevent_default = Emit(
-      "login",
-      WebContents::CreateFrom(isolate(), login_handler->GetWebContents()),
-      request_details,
-      login_handler->auth_info(),
-      base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
+  bool prevent_default = false;
+  content::WebContents* web_contents = login_handler->GetWebContents();
+  if (web_contents) {
+    prevent_default =
+        Emit("login",
+             WebContents::CreateFrom(isolate(), web_contents),
+             request_details,
+             login_handler->auth_info(),
+             base::Bind(&PassLoginInformation,
+                        make_scoped_refptr(login_handler)));
+  }
 
   // Default behavior is to always cancel the auth.
   if (!prevent_default)
