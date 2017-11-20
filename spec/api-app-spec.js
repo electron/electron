@@ -368,7 +368,7 @@ describe('app module', () => {
 
       app.setLoginItemSettings({})
       // Wait because login item settings are not applied immediately in MAS build
-      const delay = process.mas ? 100 : 0;
+      const delay = process.mas ? 100 : 0
       setTimeout(() => {
         assert.deepEqual(app.getLoginItemSettings(), {
           openAtLogin: false,
@@ -378,7 +378,7 @@ describe('app module', () => {
           restoreState: false
         })
         done()
-      }, delay);
+      }, delay)
     })
 
     it('allows you to pass a custom executable and arguments', () => {
