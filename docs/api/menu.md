@@ -1,6 +1,5 @@
 ## Class: Menu
 
-
 > Create native application menus and context menus.
 
 Process: [Main](../glossary.md#main-process)
@@ -15,7 +14,7 @@ The `menu` class has the following static methods:
 
 #### `Menu.setApplicationMenu(menu)`
 
-* `menu` Menu
+* `menu` Menu | null
 
 Sets `menu` as the application menu on macOS. On Windows and Linux, the
 `menu` will be set as each window's top menu.
@@ -27,7 +26,7 @@ effect on macOS.
 
 #### `Menu.getApplicationMenu()`
 
-Returns `Menu` - The application menu, if set, or `null`, if not set.
+Returns `Menu | null` - The application menu, if set, or `null`, if not set.
 
 **Note:** The returned `Menu` instance doesn't support dynamic addition or
 removal of menu items. [Instance properties](#instance-properties) can still
