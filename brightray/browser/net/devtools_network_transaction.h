@@ -12,6 +12,7 @@
 #include "net/base/completion_callback.h"
 #include "net/base/load_states.h"
 #include "net/base/request_priority.h"
+#include "net/http/http_raw_request_headers.h"
 #include "net/http/http_transaction.h"
 
 namespace brightray {
@@ -65,6 +66,10 @@ class DevToolsNetworkTransaction : public net::HttpTransaction {
       const BeforeHeadersSentCallback& callback) override;
   int ResumeNetworkStart() override;
   void GetConnectionAttempts(net::ConnectionAttempts* out) const override;
+
+  // FIXME(torycl) Implement these methods properly
+  void SetRequestHeadersCallback(net::RequestHeadersCallback callback) {}
+  void SetResponseHeadersCallback(net::ResponseHeadersCallback callback) {}
 
  private:
   void Fail();
