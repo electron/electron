@@ -963,8 +963,6 @@ describe('chromium feature', () => {
           plugins: plugins
         }
       })
-
-      w.webContents.openDevTools()
     }
 
     function testPDFIsLoadedInSubFrame (page, preloadFile, done) {
