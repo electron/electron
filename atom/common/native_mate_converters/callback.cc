@@ -38,22 +38,6 @@ void CallTranslater(v8::Local<v8::External> external,
   delete holder;
 }
 
-// func.bind(func, arg1).
-// NB(zcbenz): Using C++11 version crashes VS.
-v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
-                                      v8::Local<v8::Context> context,
-                                      v8::Local<v8::Function> func,
-                                      v8::Local<v8::Value> arg1,
-                                      v8::Local<v8::Value> arg2) {
-  v8::MaybeLocal<v8::Value> bind = func->Get(mate::StringToV8(isolate, "bind"));
-  CHECK(!bind.IsEmpty());
-  v8::Local<v8::Function> bind_func =
-      v8::Local<v8::Function>::Cast(bind.ToLocalChecked());
-  v8::Local<v8::Value> converted[] = { func, arg1, arg2 };
-  return bind_func->Call(
-      context, func, arraysize(converted), converted).ToLocalChecked();
-}
-
 }  // namespace
 
 // Destroy the class on UI thread when possible.
@@ -128,6 +112,22 @@ v8::Local<v8::Value> CreateFunctionFromTranslater(
                           call_translater->GetFunction(),
                           v8::External::New(isolate, holder),
                           v8::Object::New(isolate));
+}
+
+// func.bind(func, arg1).
+// NB(zcbenz): Using C++11 version crashes VS.
+v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
+                                      v8::Local<v8::Context> context,
+                                      v8::Local<v8::Function> func,
+                                      v8::Local<v8::Value> arg1,
+                                      v8::Local<v8::Value> arg2) {
+  v8::MaybeLocal<v8::Value> bind = func->Get(mate::StringToV8(isolate, "bind"));
+  CHECK(!bind.IsEmpty());
+  v8::Local<v8::Function> bind_func =
+      v8::Local<v8::Function>::Cast(bind.ToLocalChecked());
+  v8::Local<v8::Value> converted[] = {func, arg1, arg2};
+  return bind_func->Call(context, func, arraysize(converted), converted)
+      .ToLocalChecked();
 }
 
 }  // namespace internal

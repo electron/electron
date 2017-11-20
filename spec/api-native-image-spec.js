@@ -1,6 +1,6 @@
 'use strict'
 
-const assert = require('assert')
+const {expect} = require('chai')
 const {nativeImage} = require('electron')
 const path = require('path')
 
@@ -104,71 +104,71 @@ describe('nativeImage module', () => {
   describe('createEmpty()', () => {
     it('returns an empty image', () => {
       const empty = nativeImage.createEmpty()
-      assert.equal(empty.isEmpty(), true)
-      assert.equal(empty.getAspectRatio(), 1)
-      assert.equal(empty.toDataURL(), 'data:image/png;base64,')
-      assert.equal(empty.toDataURL({scaleFactor: 2.0}), 'data:image/png;base64,')
-      assert.deepEqual(empty.getSize(), {width: 0, height: 0})
-      assert.deepEqual(empty.getBitmap(), [])
-      assert.deepEqual(empty.getBitmap({scaleFactor: 2.0}), [])
-      assert.deepEqual(empty.toBitmap(), [])
-      assert.deepEqual(empty.toBitmap({scaleFactor: 2.0}), [])
-      assert.deepEqual(empty.toJPEG(100), [])
-      assert.deepEqual(empty.toPNG(), [])
-      assert.deepEqual(empty.toPNG({scaleFactor: 2.0}), [])
+      expect(empty.isEmpty())
+      expect(empty.getAspectRatio()).to.equal(1)
+      expect(empty.toDataURL()).to.equal('data:image/png;base64,')
+      expect(empty.toDataURL({scaleFactor: 2.0})).to.equal('data:image/png;base64,')
+      expect(empty.getSize()).to.deep.equal({width: 0, height: 0})
+      expect(empty.getBitmap()).to.be.empty
+      expect(empty.getBitmap({scaleFactor: 2.0})).to.be.empty
+      expect(empty.toBitmap()).to.be.empty
+      expect(empty.toBitmap({scaleFactor: 2.0})).to.be.empty
+      expect(empty.toJPEG(100)).to.be.empty
+      expect(empty.toPNG()).to.be.empty
+      expect(empty.toPNG({scaleFactor: 2.0})).to.be.empty
 
       if (process.platform === 'darwin') {
-        assert.deepEqual(empty.getNativeHandle(), [])
+        expect(empty.getNativeHandle()).to.be.empty
       }
     })
   })
 
   describe('createFromBuffer(buffer, scaleFactor)', () => {
     it('returns an empty image when the buffer is empty', () => {
-      assert(nativeImage.createFromBuffer(Buffer.from([])).isEmpty())
+      expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty())
     })
 
     it('returns an image created from the given buffer', () => {
       const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
 
       const imageB = nativeImage.createFromBuffer(imageA.toPNG())
-      assert.deepEqual(imageB.getSize(), {width: 538, height: 190})
-      assert(imageA.toBitmap().equals(imageB.toBitmap()))
+      expect(imageB.getSize()).to.deep.equal({width: 538, height: 190})
+      expect(imageA.toBitmap().equals(imageB.toBitmap())).to.be.true
 
       const imageC = nativeImage.createFromBuffer(imageA.toJPEG(100))
-      assert.deepEqual(imageC.getSize(), {width: 538, height: 190})
+      expect(imageC.getSize()).to.deep.equal({width: 538, height: 190})
 
       const imageD = nativeImage.createFromBuffer(imageA.toBitmap(),
         {width: 538, height: 190})
-      assert.deepEqual(imageD.getSize(), {width: 538, height: 190})
+      expect(imageD.getSize()).to.deep.equal({width: 538, height: 190})
 
       const imageE = nativeImage.createFromBuffer(imageA.toBitmap(),
         {width: 100, height: 200})
-      assert.deepEqual(imageE.getSize(), {width: 100, height: 200})
+      expect(imageE.getSize()).to.deep.equal({width: 100, height: 200})
 
       const imageF = nativeImage.createFromBuffer(imageA.toBitmap())
-      assert(imageF.isEmpty())
+      expect(imageF.isEmpty())
 
       const imageG = nativeImage.createFromBuffer(imageA.toPNG(),
         {width: 100, height: 200})
-      assert.deepEqual(imageG.getSize(), {width: 538, height: 190})
+      expect(imageG.getSize()).to.deep.equal({width: 538, height: 190})
 
       const imageH = nativeImage.createFromBuffer(imageA.toJPEG(100),
         {width: 100, height: 200})
-      assert.deepEqual(imageH.getSize(), {width: 538, height: 190})
+      expect(imageH.getSize()).to.deep.equal({width: 538, height: 190})
 
       const imageI = nativeImage.createFromBuffer(imageA.toBitmap(),
         {width: 538, height: 190, scaleFactor: 2.0})
-      assert.deepEqual(imageI.getSize(), {width: 269, height: 95})
+      expect(imageI.getSize()).to.deep.equal({width: 269, height: 95})
 
       const imageJ = nativeImage.createFromBuffer(imageA.toPNG(), 2.0)
-      assert.deepEqual(imageJ.getSize(), {width: 269, height: 95})
+      expect(imageJ.getSize()).to.deep.equal({width: 269, height: 95})
     })
   })
 
   describe('createFromDataURL(dataURL)', () => {
     it('returns an empty image from the empty string', () => {
-      assert(nativeImage.createFromDataURL('').isEmpty())
+      expect(nativeImage.createFromDataURL('').isEmpty())
     })
 
     it('returns an image created from the given string', () => {
@@ -177,9 +177,10 @@ describe('nativeImage module', () => {
         const imageFromPath = nativeImage.createFromPath(imageData.path)
         const imageFromDataUrl = nativeImage.createFromDataURL(imageData.dataUrl)
 
-        assert(!imageFromDataUrl.isEmpty())
-        assert.deepEqual(imageFromDataUrl.getSize(), imageFromPath.getSize())
-        assert(imageFromPath.toBitmap().equals(imageFromDataUrl.toBitmap()))
+        expect(imageFromDataUrl.isEmpty())
+        expect(imageFromDataUrl.getSize()).to.deep.equal(imageFromPath.getSize())
+        expect(imageFromDataUrl.toBitmap()).to.satisfy(
+            bitmap => imageFromPath.toBitmap().equals(bitmap))
       }
     })
   })
@@ -190,8 +191,8 @@ describe('nativeImage module', () => {
       for (const imageData of imagesData) {
         const imageFromPath = nativeImage.createFromPath(imageData.path)
 
-        assert.equal(imageFromPath.toDataURL(), imageData.dataUrl)
-        assert.equal(imageFromPath.toDataURL({scaleFactor: 2.0}), imageData.dataUrl)
+        expect(imageFromPath.toDataURL()).to.equal(imageData.dataUrl)
+        expect(imageFromPath.toDataURL({scaleFactor: 2.0})).to.equal(imageData.dataUrl)
       }
     })
 
@@ -204,14 +205,14 @@ describe('nativeImage module', () => {
         height: image.getSize().height,
         scaleFactor: 2.0
       })
-      assert.deepEqual(imageOne.getSize(),
+      expect(imageOne.getSize()).to.deep.equal(
           {width: imageData.width / 2, height: imageData.height / 2})
 
       const imageTwo = nativeImage.createFromDataURL(imageOne.toDataURL())
-      assert.deepEqual(imageTwo.getSize(),
+      expect(imageTwo.getSize()).to.deep.equal(
           {width: imageData.width, height: imageData.height})
 
-      assert(imageOne.toBitmap().equals(imageTwo.toBitmap()))
+      expect(imageOne.toBitmap().equals(imageTwo.toBitmap())).to.be.true
     })
 
     it('supports a scale factor', () => {
@@ -221,11 +222,11 @@ describe('nativeImage module', () => {
 
       const imageFromDataUrlOne = nativeImage.createFromDataURL(
           image.toDataURL({scaleFactor: 1.0}))
-      assert.deepEqual(imageFromDataUrlOne.getSize(), expectedSize)
+      expect(imageFromDataUrlOne.getSize()).to.deep.equal(expectedSize)
 
       const imageFromDataUrlTwo = nativeImage.createFromDataURL(
           image.toDataURL({scaleFactor: 2.0}))
-      assert.deepEqual(imageFromDataUrlTwo.getSize(), expectedSize)
+      expect(imageFromDataUrlTwo.getSize()).to.deep.equal(expectedSize)
     })
   })
 
@@ -239,14 +240,14 @@ describe('nativeImage module', () => {
         height: imageA.getSize().height,
         scaleFactor: 2.0
       })
-      assert.deepEqual(imageB.getSize(),
+      expect(imageB.getSize()).to.deep.equal(
           {width: imageData.width / 2, height: imageData.height / 2})
 
       const imageC = nativeImage.createFromBuffer(imageB.toPNG())
-      assert.deepEqual(imageC.getSize(),
+      expect(imageC.getSize()).to.deep.equal(
           {width: imageData.width, height: imageData.height})
 
-      assert(imageB.toBitmap().equals(imageC.toBitmap()))
+      expect(imageB.toBitmap().equals(imageC.toBitmap())).to.be.true
     })
 
     it('supports a scale factor', () => {
@@ -255,46 +256,44 @@ describe('nativeImage module', () => {
 
       const imageFromBufferOne = nativeImage.createFromBuffer(
           image.toPNG({scaleFactor: 1.0}))
-      assert.deepEqual(
-          imageFromBufferOne.getSize(),
+      expect(imageFromBufferOne.getSize()).to.deep.equal(
           {width: imageData.width, height: imageData.height})
 
       const imageFromBufferTwo = nativeImage.createFromBuffer(
           image.toPNG({scaleFactor: 2.0}), {scaleFactor: 2.0})
-      assert.deepEqual(
-          imageFromBufferTwo.getSize(),
+      expect(imageFromBufferTwo.getSize()).to.deep.equal(
           {width: imageData.width / 2, height: imageData.height / 2})
     })
   })
 
   describe('createFromPath(path)', () => {
     it('returns an empty image for invalid paths', () => {
-      assert(nativeImage.createFromPath('').isEmpty())
-      assert(nativeImage.createFromPath('does-not-exist.png').isEmpty())
-      assert(nativeImage.createFromPath('does-not-exist.ico').isEmpty())
-      assert(nativeImage.createFromPath(__dirname).isEmpty())
-      assert(nativeImage.createFromPath(__filename).isEmpty())
+      expect(nativeImage.createFromPath('').isEmpty())
+      expect(nativeImage.createFromPath('does-not-exist.png').isEmpty())
+      expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty())
+      expect(nativeImage.createFromPath(__dirname).isEmpty())
+      expect(nativeImage.createFromPath(__filename).isEmpty())
     })
 
     it('loads images from paths relative to the current working directory', () => {
       const imagePath = `.${path.sep}${path.join('spec', 'fixtures', 'assets', 'logo.png')}`
       const image = nativeImage.createFromPath(imagePath)
-      assert(!image.isEmpty())
-      assert.deepEqual(image.getSize(), {width: 538, height: 190})
+      expect(image.isEmpty()).to.be.false
+      expect(image.getSize()).to.deep.equal({width: 538, height: 190})
     })
 
     it('loads images from paths with `.` segments', () => {
       const imagePath = `${path.join(__dirname, 'fixtures')}${path.sep}.${path.sep}${path.join('assets', 'logo.png')}`
       const image = nativeImage.createFromPath(imagePath)
-      assert(!image.isEmpty())
-      assert.deepEqual(image.getSize(), {width: 538, height: 190})
+      expect(image.isEmpty()).to.be.false
+      expect(image.getSize()).to.deep.equal({width: 538, height: 190})
     })
 
     it('loads images from paths with `..` segments', () => {
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`
       const image = nativeImage.createFromPath(imagePath)
-      assert(!image.isEmpty())
-      assert.deepEqual(image.getSize(), {width: 538, height: 190})
+      expect(image.isEmpty()).to.be.false
+      expect(image.getSize()).to.deep.equal({width: 538, height: 190})
     })
 
     it('Gets an NSImage pointer on macOS', () => {
@@ -304,10 +303,11 @@ describe('nativeImage module', () => {
       const image = nativeImage.createFromPath(imagePath)
       const nsimage = image.getNativeHandle()
 
-      assert.equal(nsimage.length, 8)
+      expect(nsimage).to.have.lengthOf(8)
 
       // If all bytes are null, that's Bad
-      assert.equal(nsimage.reduce((acc, x) => acc || (x !== 0), false), true)
+      const allBytesAreNotNull = nsimage.reduce((acc, x) => acc || (x !== 0), false)
+      expect(allBytesAreNotNull)
     })
 
     it('loads images from .ico files on Windows', () => {
@@ -315,56 +315,61 @@ describe('nativeImage module', () => {
 
       const imagePath = path.join(__dirname, 'fixtures', 'assets', 'icon.ico')
       const image = nativeImage.createFromPath(imagePath)
-      assert(!image.isEmpty())
-      assert.deepEqual(image.getSize(), {width: 256, height: 256})
+      expect(image.isEmpty()).to.be.false
+      expect(image.getSize()).to.deep.equal({width: 256, height: 256})
     })
   })
 
   describe('createFromNamedImage(name)', () => {
     it('returns empty for invalid options', () => {
       const image = nativeImage.createFromNamedImage('totally_not_real')
-      assert(image.isEmpty())
+      expect(image.isEmpty())
     })
 
     it('returns empty on non-darwin platforms', () => {
       if (process.platform === 'darwin') return
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate')
-      assert(image.isEmpty())
+      expect(image.isEmpty())
     })
 
     it('returns a valid image on darwin', () => {
       if (process.platform !== 'darwin') return
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate')
-      assert(!image.isEmpty())
+      expect(image.isEmpty()).to.be.false
     })
 
     it('returns allows an HSL shift for a valid image on darwin', () => {
       if (process.platform !== 'darwin') return
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8])
-      assert(!image.isEmpty())
+      expect(image.isEmpty()).to.be.false
     })
   })
 
   describe('resize(options)', () => {
     it('returns a resized image', () => {
       const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
-      assert.deepEqual(image.resize({}).getSize(), {width: 538, height: 190})
-      assert.deepEqual(image.resize({width: 269}).getSize(), {width: 269, height: 95})
-      assert.deepEqual(image.resize({width: 600}).getSize(), {width: 600, height: 212})
-      assert.deepEqual(image.resize({height: 95}).getSize(), {width: 269, height: 95})
-      assert.deepEqual(image.resize({height: 200}).getSize(), {width: 566, height: 200})
-      assert.deepEqual(image.resize({width: 80, height: 65}).getSize(), {width: 80, height: 65})
-      assert.deepEqual(image.resize({width: 600, height: 200}).getSize(), {width: 600, height: 200})
-      assert.deepEqual(image.resize({width: 0, height: 0}).getSize(), {width: 0, height: 0})
-      assert.deepEqual(image.resize({width: -1, height: -1}).getSize(), {width: 0, height: 0})
+      for (const [resizeTo, expectedSize] of new Map([
+        [{}, {width: 538, height: 190}],
+        [{width: 269}, {width: 269, height: 95}],
+        [{width: 600}, {width: 600, height: 212}],
+        [{height: 95}, {width: 269, height: 95}],
+        [{height: 200}, {width: 566, height: 200}],
+        [{width: 80, height: 65}, {width: 80, height: 65}],
+        [{width: 600, height: 200}, {width: 600, height: 200}],
+        [{width: 0, height: 0}, {width: 0, height: 0}],
+        [{width: -1, height: -1}, {width: 0, height: 0}]
+      ])) {
+        const actualSize = image.resize(resizeTo).getSize()
+        expect(actualSize).to.deep.equal(expectedSize)
+      }
     })
 
     it('returns an empty image when called on an empty image', () => {
-      assert(nativeImage.createEmpty().resize({width: 1, height: 1}).isEmpty())
-      assert(nativeImage.createEmpty().resize({width: 0, height: 0}).isEmpty())
+      expect(nativeImage.createEmpty().resize({width: 1, height: 1}).isEmpty())
+      expect(nativeImage.createEmpty().resize({width: 0, height: 0}).isEmpty())
     })
 
     it('supports a quality option', () => {
@@ -372,38 +377,39 @@ describe('nativeImage module', () => {
       const good = image.resize({width: 100, height: 100, quality: 'good'})
       const better = image.resize({width: 100, height: 100, quality: 'better'})
       const best = image.resize({width: 100, height: 100, quality: 'best'})
-      assert(good.toPNG().length <= better.toPNG().length)
-      assert(better.toPNG().length < best.toPNG().length)
+
+      expect(good.toPNG()).to.have.lengthOf.at.most(better.toPNG().length)
+      expect(better.toPNG()).to.have.lengthOf.below(best.toPNG().length)
     })
   })
 
   describe('crop(bounds)', () => {
     it('returns an empty image when called on an empty image', () => {
-      assert(nativeImage.createEmpty().crop({width: 1, height: 2, x: 0, y: 0}).isEmpty())
-      assert(nativeImage.createEmpty().crop({width: 0, height: 0, x: 0, y: 0}).isEmpty())
+      expect(nativeImage.createEmpty().crop({width: 1, height: 2, x: 0, y: 0}).isEmpty())
+      expect(nativeImage.createEmpty().crop({width: 0, height: 0, x: 0, y: 0}).isEmpty())
     })
 
     it('returns an empty image when the bounds are invalid', () => {
       const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
-      assert(image.crop({width: 0, height: 0, x: 0, y: 0}).isEmpty())
-      assert(image.crop({width: -1, height: 10, x: 0, y: 0}).isEmpty())
-      assert(image.crop({width: 10, height: -35, x: 0, y: 0}).isEmpty())
-      assert(image.crop({width: 100, height: 100, x: 1000, y: 1000}).isEmpty())
+      expect(image.crop({width: 0, height: 0, x: 0, y: 0}).isEmpty())
+      expect(image.crop({width: -1, height: 10, x: 0, y: 0}).isEmpty())
+      expect(image.crop({width: 10, height: -35, x: 0, y: 0}).isEmpty())
+      expect(image.crop({width: 100, height: 100, x: 1000, y: 1000}).isEmpty())
     })
 
     it('returns a cropped image', () => {
       const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
       const cropA = image.crop({width: 25, height: 64, x: 0, y: 0})
       const cropB = image.crop({width: 25, height: 64, x: 30, y: 40})
-      assert.deepEqual(cropA.getSize(), {width: 25, height: 64})
-      assert.deepEqual(cropB.getSize(), {width: 25, height: 64})
-      assert(!cropA.toPNG().equals(cropB.toPNG()))
+      expect(cropA.getSize()).to.deep.equal({width: 25, height: 64})
+      expect(cropB.getSize()).to.deep.equal({width: 25, height: 64})
+      expect(cropA.toPNG().equals(cropB.toPNG())).to.be.false
     })
   })
 
   describe('getAspectRatio()', () => {
     it('returns an aspect ratio of an empty image', () => {
-      assert.equal(nativeImage.createEmpty().getAspectRatio(), 1.0)
+      expect(nativeImage.createEmpty().getAspectRatio()).to.equal(1.0)
     })
 
     it('returns an aspect ratio of an image', () => {
@@ -412,7 +418,7 @@ describe('nativeImage module', () => {
       const expectedAspectRatio = 2.8315789699554443
 
       const image = nativeImage.createFromPath(imageData.path)
-      assert.equal(image.getAspectRatio(), expectedAspectRatio)
+      expect(image.getAspectRatio()).to.equal(expectedAspectRatio)
     })
   })
 
@@ -443,13 +449,13 @@ describe('nativeImage module', () => {
         buffer: 'invalid'
       })
 
-      assert.equal(image.isEmpty(), false)
-      assert.deepEqual(image.getSize(), {width: 1, height: 1})
+      expect(image.isEmpty()).to.be.false
+      expect(image.getSize()).to.deep.equal({width: 1, height: 1})
 
-      assert.equal(image.toDataURL({scaleFactor: 1.0}), imageDataOne.dataUrl)
-      assert.equal(image.toDataURL({scaleFactor: 2.0}), imageDataTwo.dataUrl)
-      assert.equal(image.toDataURL({scaleFactor: 3.0}), imageDataThree.dataUrl)
-      assert.equal(image.toDataURL({scaleFactor: 4.0}), imageDataThree.dataUrl)
+      expect(image.toDataURL({scaleFactor: 1.0})).to.equal(imageDataOne.dataUrl)
+      expect(image.toDataURL({scaleFactor: 2.0})).to.equal(imageDataTwo.dataUrl)
+      expect(image.toDataURL({scaleFactor: 3.0})).to.equal(imageDataThree.dataUrl)
+      expect(image.toDataURL({scaleFactor: 4.0})).to.equal(imageDataThree.dataUrl)
     })
 
     it('supports adding a data URL representation for a scale factor', () => {
@@ -478,13 +484,13 @@ describe('nativeImage module', () => {
         dataURL: 'invalid'
       })
 
-      assert.equal(image.isEmpty(), false)
-      assert.deepEqual(image.getSize(), {width: 1, height: 1})
+      expect(image.isEmpty()).to.be.false
+      expect(image.getSize()).to.deep.equal({width: 1, height: 1})
 
-      assert.equal(image.toDataURL({scaleFactor: 1.0}), imageDataOne.dataUrl)
-      assert.equal(image.toDataURL({scaleFactor: 2.0}), imageDataTwo.dataUrl)
-      assert.equal(image.toDataURL({scaleFactor: 3.0}), imageDataThree.dataUrl)
-      assert.equal(image.toDataURL({scaleFactor: 4.0}), imageDataThree.dataUrl)
+      expect(image.toDataURL({scaleFactor: 1.0})).to.equal(imageDataOne.dataUrl)
+      expect(image.toDataURL({scaleFactor: 2.0})).to.equal(imageDataTwo.dataUrl)
+      expect(image.toDataURL({scaleFactor: 3.0})).to.equal(imageDataThree.dataUrl)
+      expect(image.toDataURL({scaleFactor: 4.0})).to.equal(imageDataThree.dataUrl)
     })
 
     it('supports adding a representation to an existing image', () => {
@@ -503,8 +509,8 @@ describe('nativeImage module', () => {
         dataURL: imageDataThree.dataUrl
       })
 
-      assert.equal(image.toDataURL({scaleFactor: 1.0}), imageDataOne.dataUrl)
-      assert.equal(image.toDataURL({scaleFactor: 2.0}), imageDataTwo.dataUrl)
+      expect(image.toDataURL({scaleFactor: 1.0})).to.equal(imageDataOne.dataUrl)
+      expect(image.toDataURL({scaleFactor: 2.0})).to.equal(imageDataTwo.dataUrl)
     })
   })
 })

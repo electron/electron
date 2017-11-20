@@ -79,12 +79,12 @@ void OffScreenOutputDevice::EndPaint() {
     OnPaint(damage_rect_);
 }
 
-void OffScreenOutputDevice::SetActive(bool active) {
+void OffScreenOutputDevice::SetActive(bool active, bool paint) {
   if (active == active_)
     return;
   active_ = active;
 
-  if (active_)
+  if (active_ && paint)
     OnPaint(gfx::Rect(viewport_pixel_size_));
 }
 

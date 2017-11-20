@@ -203,7 +203,7 @@ void AutofillAgent::ShowPopup(
 void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
   auto element = render_frame()->GetWebFrame()->GetDocument().FocusedElement();
   if (element.IsFormControlElement()) {
-    ToWebInputElement(&element)->SetSuggestedValue(
+    ToWebInputElement(&element)->SetAutofillValue(
       blink::WebString::FromUTF16(suggestion));
   }
 }

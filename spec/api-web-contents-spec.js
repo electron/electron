@@ -667,4 +667,16 @@ describe('webContents module', () => {
       w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'theme-color.html')}`)
     })
   })
+
+  describe('console-message event', () => {
+    it('is triggered with correct log message', (done) => {
+      w.webContents.on('console-message', (e, level, message) => {
+        // Don't just assert as Chromium might emit other logs that we should ignore.
+        if (message === 'a') {
+          done()
+        }
+      })
+      w.loadURL(`file://${fixtures}/pages/a.html`)
+    })
+  })
 })

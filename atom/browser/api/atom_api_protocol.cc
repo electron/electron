@@ -10,6 +10,7 @@
 #include "atom/browser/net/url_request_async_asar_job.h"
 #include "atom/browser/net/url_request_buffer_job.h"
 #include "atom/browser/net/url_request_fetch_job.h"
+#include "atom/browser/net/url_request_stream_job.h"
 #include "atom/browser/net/url_request_string_job.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -208,6 +209,8 @@ void Protocol::BuildPrototype(
                  &Protocol::RegisterProtocol<URLRequestAsyncAsarJob>)
       .SetMethod("registerHttpProtocol",
                  &Protocol::RegisterProtocol<URLRequestFetchJob>)
+      .SetMethod("registerStreamProtocol",
+                 &Protocol::RegisterProtocol<URLRequestStreamJob>)
       .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
       .SetMethod("isProtocolHandled", &Protocol::IsProtocolHandled)
       .SetMethod("interceptStringProtocol",
@@ -218,6 +221,8 @@ void Protocol::BuildPrototype(
                  &Protocol::InterceptProtocol<URLRequestAsyncAsarJob>)
       .SetMethod("interceptHttpProtocol",
                  &Protocol::InterceptProtocol<URLRequestFetchJob>)
+      .SetMethod("interceptStreamProtocol",
+                 &Protocol::InterceptProtocol<URLRequestStreamJob>)
       .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol);
 }
 

@@ -13,7 +13,6 @@
 #include "atom/browser/net/about_protocol_handler.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/atom_cert_verifier.h"
-#include "atom/browser/net/atom_ct_delegate.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/http_protocol_handler.h"
@@ -72,7 +71,6 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
     : brightray::BrowserContext(partition, in_memory),
-      ct_delegate_(new AtomCTDelegate),
       network_delegate_(new AtomNetworkDelegate),
       cookie_delegate_(new AtomCookieDelegate) {
   // Construct user agent string.
@@ -192,8 +190,9 @@ content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
   return permission_manager_.get();
 }
 
-std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier() {
-  return base::WrapUnique(new AtomCertVerifier(ct_delegate_.get()));
+std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier(
+    brightray::RequireCTDelegate* ct_delegate) {
+  return base::WrapUnique(new AtomCertVerifier(ct_delegate));
 }
 
 std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
@@ -202,11 +201,6 @@ std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
   default_schemes.insert(default_schemes.end(),
                          standard_schemes.begin(), standard_schemes.end());
   return default_schemes;
-}
-
-net::TransportSecurityState::RequireCTDelegate*
-AtomBrowserContext::GetRequireCTDelegate() {
-  return ct_delegate_.get();
 }
 
 void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {

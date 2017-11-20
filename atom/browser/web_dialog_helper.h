@@ -23,7 +23,7 @@ class NativeWindow;
 
 class WebDialogHelper {
  public:
-  explicit WebDialogHelper(NativeWindow* window);
+  WebDialogHelper(NativeWindow* window, bool offscreen);
   ~WebDialogHelper();
 
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
@@ -34,6 +34,7 @@ class WebDialogHelper {
 
  private:
   NativeWindow* window_;
+  bool offscreen_;
 
   base::WeakPtrFactory<WebDialogHelper> weak_factory_;
 

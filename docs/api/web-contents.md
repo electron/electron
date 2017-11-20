@@ -591,6 +591,18 @@ Returns:
 
 Emitted when a `<webview>` has been attached to this web contents.
 
+#### Event: 'console-message'
+
+Returns:
+
+* `level` Integer
+* `message` String
+* `line` Integer
+* `sourceId` String
+
+Emitted when the associated window logs a console message. Will not be emitted
+for windows with *offscreen rendering* enabled.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`

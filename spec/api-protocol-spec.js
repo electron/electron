@@ -5,6 +5,10 @@ const qs = require('querystring')
 const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
+// The RPC API doesn't seem to support calling methods on remote objects very
+// well. In order to test stream protocol, we must work around this limitation
+// and use Stream instances created in the browser process.
+const stream = remote.require('stream')
 
 describe('protocol module', () => {
   const protocolName = 'sp'
@@ -12,6 +16,33 @@ describe('protocol module', () => {
   const postData = {
     name: 'post test',
     type: 'string'
+  }
+
+  function delay (ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms)
+    })
+  }
+
+  function getStream (chunkSize = text.length, data = text) {
+    const body = stream.PassThrough()
+
+    async function sendChunks () {
+      let buf = new Buffer(data)
+      for (;;) {
+        body.push(buf.slice(0, chunkSize))
+        buf = buf.slice(chunkSize)
+        if (!buf.length) {
+          break
+        }
+        // emulate network delay
+        await delay(50)
+      }
+      body.push(null)
+    }
+
+    sendChunks()
+    return body
   }
 
   afterEach((done) => {
@@ -443,6 +474,120 @@ describe('protocol module', () => {
     })
   })
 
+  describe('protocol.registerStreamProtocol', () => {
+    it('sends Stream as response', (done) => {
+      const handler = (request, callback) => callback(getStream())
+      protocol.registerStreamProtocol(protocolName, handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: protocolName + '://fake-host',
+          cache: false,
+          success: (data) => {
+            assert.equal(data, text)
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error || new Error(`Request failed: ${xhr.status}`))
+          }
+        })
+      })
+    })
+
+    it('sends object as response', (done) => {
+      const handler = (request, callback) => callback({data: getStream()})
+      protocol.registerStreamProtocol(protocolName, handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: protocolName + '://fake-host',
+          cache: false,
+          success: (data, _, request) => {
+            assert.equal(request.status, 200)
+            assert.equal(data, text)
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error || new Error(`Request failed: ${xhr.status}`))
+          }
+        })
+      })
+    })
+
+    it('sends custom response headers', (done) => {
+      const handler = (request, callback) => callback({
+        data: getStream(3),
+        headers: {
+          'x-electron': ['a', 'b']
+        }
+      })
+      protocol.registerStreamProtocol(protocolName, handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: protocolName + '://fake-host',
+          cache: false,
+          success: (data, _, request) => {
+            assert.equal(request.status, 200)
+            assert.equal(request.getResponseHeader('x-electron'), 'a,b')
+            assert.equal(data, text)
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error || new Error(`Request failed: ${xhr.status}`))
+          }
+        })
+      })
+    })
+
+    it('sends custom status code', (done) => {
+      const handler = (request, callback) => callback({
+        statusCode: 204,
+        data: null
+      })
+      protocol.registerStreamProtocol(protocolName, handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: protocolName + '://fake-host',
+          cache: false,
+          success: (data, _, request) => {
+            assert.equal(request.status, 204)
+            assert.equal(data, undefined)
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error || new Error(`Request failed: ${xhr.status}`))
+          }
+        })
+      })
+    })
+
+    it('receives request headers', (done) => {
+      const handler = (request, callback) => {
+        callback({
+          headers: {
+            'content-type': 'application/json'
+          },
+          data: getStream(5, JSON.stringify(Object.assign({}, request.headers)))
+        })
+      }
+      protocol.registerStreamProtocol(protocolName, handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: protocolName + '://fake-host',
+          headers: {
+            'x-return-headers': 'yes'
+          },
+          cache: false,
+          success: (data) => {
+            assert.equal(data['x-return-headers'], 'yes')
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error || new Error(`Request failed: ${xhr.status}`))
+          }
+        })
+      })
+    })
+  })
+
   describe('protocol.isProtocolHandled', () => {
     it('returns true for about:', (done) => {
       protocol.isProtocolHandled('about', (result) => {
@@ -717,6 +862,81 @@ describe('protocol module', () => {
         }).catch(() => {
           customSession.webRequest.onBeforeRequest(null)
           done()
+        })
+      })
+    })
+  })
+
+  describe('protocol.interceptStreamProtocol', () => {
+    it('can intercept http protocol', (done) => {
+      const handler = (request, callback) => callback(getStream())
+      protocol.interceptStreamProtocol('http', handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: 'http://fake-host',
+          cache: false,
+          success: (data) => {
+            assert.equal(data, text)
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error || new Error(`Request failed: ${xhr.status}`))
+          }
+        })
+      })
+    })
+
+    it('can receive post data', (done) => {
+      const handler = (request, callback) => {
+        callback(getStream(3, request.uploadData[0].bytes.toString()))
+      }
+      protocol.interceptStreamProtocol('http', handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: 'http://fake-host',
+          cache: false,
+          type: 'POST',
+          data: postData,
+          success: (data) => {
+            assert.deepEqual(qs.parse(data), postData)
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error || new Error(`Request failed: ${xhr.status}`))
+          }
+        })
+      })
+    })
+
+    it('can execute redirects', (done) => {
+      const handler = (request, callback) => {
+        if (request.url.indexOf('http://fake-host') === 0) {
+          setTimeout(() => {
+            callback({
+              data: null,
+              statusCode: 302,
+              headers: {
+                Location: 'http://fake-redirect'
+              }
+            })
+          }, 300)
+        } else {
+          assert.equal(request.url.indexOf('http://fake-redirect'), 0)
+          callback(getStream(1, 'redirect'))
+        }
+      }
+      protocol.interceptStreamProtocol('http', handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: 'http://fake-host',
+          cache: false,
+          success: (data) => {
+            assert.equal(data, 'redirect')
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error || new Error(`Request failed: ${xhr.status}`))
+          }
         })
       })
     })

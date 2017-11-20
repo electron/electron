@@ -49,6 +49,9 @@ template <>
 struct Converter<net::HttpResponseHeaders*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    net::HttpResponseHeaders* headers);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::HttpResponseHeaders* out);
 };
 
 }  // namespace mate

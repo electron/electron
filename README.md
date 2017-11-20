@@ -5,7 +5,8 @@
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
 [![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
-:memo: Available Translations: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/README.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/README.md) | [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/README.md) | [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW/project/README.md) | [Spanish](https://github.com/electron/electron/tree/master/docs-translations/es/project/README.md) | [Turkish](https://github.com/electron/electron/tree/master/docs-translations/tr-TR/project/README.md) | [German](https://github.com/electron/electron/tree/master/docs-translations/de-DE/project/README.md)
+:memo: Available Translations: 🇨🇳 🇹🇼 🇧🇷 🇪🇸 🇰🇷 🇯🇵 🇷🇺 🇫🇷 🇹🇭 🇳🇱 🇹🇷 🇮🇩 🇺🇦 🇨🇿 🇮🇹.
+View these docs in other languages at [electron/electron-i18n](https://github.com/electron/electron-i18n/tree/master/content/).
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
@@ -15,7 +16,7 @@ editor](https://github.com/atom/atom) and many other [apps](https://electron.ato
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
-This project adheres to the Contributor Covenant 
+This project adheres to the Contributor Covenant
 [code of conduct](https://github.com/electron/electron/tree/master/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable
 behavior to [electron@github.com](mailto:electron@github.com).
@@ -39,7 +40,7 @@ For more installation options and troubleshooting tips, see
 
 ## Quick Start
 
-Clone and run the 
+Clone and run the
 [electron/electron-quick-start](https://github.com/electron/electron-quick-start)
 repository to see a minimal Electron app in action:
 
@@ -82,18 +83,7 @@ const child = proc.spawn(electron)
 
 ## Documentation Translations
 
-- [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR)
-- [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR)
-- [Japanese](https://github.com/electron/electron/tree/master/docs-translations/jp)
-- [Spanish](https://github.com/electron/electron/tree/master/docs-translations/es)
-- [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN)
-- [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW)
-- [Turkish](https://github.com/electron/electron/tree/master/docs-translations/tr-TR)
-- [Thai](https://github.com/electron/electron/tree/master/docs-translations/th-TH)
-- [Ukrainian](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
-- [Russian](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
-- [French](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)
-- [Indonesian](https://github.com/electron/electron/tree/master/docs-translations/id)
+Find documentation translations in [electron/electron-18n](https://github.com/electron/electron-i18n).
 
 ## Community
 
@@ -105,6 +95,7 @@ forums
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
 - [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
+- [`electron-kr`](https://electron-kr.github.io/electron-kr) *(Korean)*
 - [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
 - [`electron-tr`](http://electron-tr.herokuapp.com) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*

@@ -49,6 +49,7 @@ struct DialogSettings {
   Filters filters;
   int properties = 0;
   bool shows_tag_field = true;
+  bool force_detached = false;
 };
 
 bool ShowOpenDialog(const DialogSettings& settings,

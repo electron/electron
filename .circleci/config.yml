@@ -10,15 +10,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Setup for headless testing
-          command: sh -e /etc/init.d/xvfb start
-      - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
             if [ -n "${RUN_RELEASE_BUILD}" ]; then
               echo 'release build triggered from api'
               echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
@@ -74,15 +67,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Setup for headless testing
-          command: sh -e /etc/init.d/xvfb start
-      - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
             if [ -n "${RUN_RELEASE_BUILD}" ]; then
               echo 'release build triggered from api'
               echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
@@ -138,15 +124,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Setup for headless testing
-          command: sh -e /etc/init.d/xvfb start
-      - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
             if [ -n "${RUN_RELEASE_BUILD}" ]; then
               echo 'release build triggered from api'
               echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
@@ -199,6 +178,7 @@ jobs:
       - image: electronbuilds/electron:0.0.3
         environment:
           TARGET_ARCH: x64
+          DISPLAY: ':99.0'
     resource_class: xlarge
     steps:
       - checkout
@@ -208,10 +188,6 @@ jobs:
       - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
             if [ -n "${RUN_RELEASE_BUILD}" ]; then
               echo 'release build triggered from api'
               echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
@@ -280,10 +256,17 @@ jobs:
              else
                 echo 'Skipping verify ffmpeg on release build'
              fi
+      - run:
+          name: Generate Typescript Definitions
+          command: npm run create-typescript-definitions
       - store_test_results:
           path: junit
       - store_artifacts:
           path: junit
+      - store_artifacts:
+          path: out/electron.d.ts
+      - store_artifacts:
+          path: out/electron-api.json
 
 workflows:
   version: 2
