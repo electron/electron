@@ -168,7 +168,7 @@ The optional arguments are notated by square brackets `[]` surrounding the optio
 as well as the comma required if this optional argument follows another
 argument:
 
-```
+```sh
 required[, optional]
 ```
 

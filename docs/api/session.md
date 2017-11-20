@@ -140,7 +140,7 @@ option is ignored and `pacScript` configuration is applied.
 
 The `proxyRules` has to follow the rules below:
 
-```
+```sh
 proxyRules = schemeProxies[";"<schemeProxies>]
 schemeProxies = [<urlScheme>"="]<proxyURIList>
 urlScheme = "http" | "https" | "ftp" | "socks"

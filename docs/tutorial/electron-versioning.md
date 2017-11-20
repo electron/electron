@@ -6,7 +6,7 @@ If you've been using Node and npm for a while, you are probably aware of [Semant
 
 Semantic versions are always made up of three numbers:
 
-```
+```sh
 major.minor.patch
 ```
 
@@ -18,7 +18,7 @@ Semantic version numbers are bumped (incremented) using the following rules:
 
 A simple mnemonic for remembering this scheme is as follows:
 
-```
+```sh
 breaking.feature.fix
 ```
 
@@ -35,11 +35,11 @@ This system had a number of drawbacks, such as:
 - New bugs could be introduced into a new patch version because patch versions added features
 - It didn't follow SemVer so it could confuse consumers
 - It wasn't clear what the differences between stable and beta builds were
-- The lack of a formalized stabilization process and release schedule lead to sporadic releases and betas that could last several months 
+- The lack of a formalized stabilization process and release schedule lead to sporadic releases and betas that could last several months
 
 ## Version 2 and Beyond
 
-From version 2.0.0, Electron will attempt to adhere to SemVer and follow a 
+From version 2.0.0, Electron will attempt to adhere to SemVer and follow a
 release schedule and stabilization process similar to that of Chromium.
 
 ### Version Change Rules
@@ -67,11 +67,11 @@ will be prefixed with a caret `^` in package.json:
 }
 ```
 
-The [caret semver range](https://docs.npmjs.com/misc/semver#caret-ranges-123-025-004) 
-allows minor- and patch-level changes to be installed, i.e. non-breaking 
+The [caret semver range](https://docs.npmjs.com/misc/semver#caret-ranges-123-025-004)
+allows minor- and patch-level changes to be installed, i.e. non-breaking
 features and bug fixes.
 
-Alternatively, a more conservative approach is to use the 
+Alternatively, a more conservative approach is to use the
 [tilde semver range](https://docs.npmjs.com/misc/semver#tilde-ranges-123-12-1)
 `~`, which will only allow patch-level upgrades, i.e. bug fixes.
 
@@ -88,28 +88,28 @@ Here are some important points to call out:
 - A new release is performed approximately weekly.
 - Minor versions are branched off of master for stabilization.
 - The stabilization period is approximately weekly.
-- Important bug fixes are cherry-picked to stabilization branches after landing 
+- Important bug fixes are cherry-picked to stabilization branches after landing
   in master.
-- Features are not cherry picked; a minor version should only get *more stable* 
+- Features are not cherry picked; a minor version should only get *more stable*
   with its patch versions.
-- There is little difference in the release schedule between a major and minor 
+- There is little difference in the release schedule between a major and minor
   release, other than the risk/effort it may take for third parties to adopt
-- Chromium updates will be performed as fast as the team can manage. In an ideal 
-  world this would happen every 6 weeks to align with 
+- Chromium updates will be performed as fast as the team can manage. In an ideal
+  world this would happen every 6 weeks to align with
   [Chromium's release schedule][Chromium release].
-- Excluding exceptional circumstances, only the previous stable build will 
+- Excluding exceptional circumstances, only the previous stable build will
   get backported bug fixes.
 
 ### The Beta Process
 
-Electron relies on its consumers getting involved in stabilization. The short 
-target stabilization period and rapid release cadence was designed for shipping 
+Electron relies on its consumers getting involved in stabilization. The short
+target stabilization period and rapid release cadence was designed for shipping
 security and bug fixes out fast and to encourage the automation of testing.
 
-You can install the beta by specifying the `beta` dist tag when installing via 
+You can install the beta by specifying the `beta` dist tag when installing via
 npm:
 
-```
+```sh
 npm install electron@beta
 ```
 

@@ -183,13 +183,13 @@ $ ./node_modules/.bin/electron .
 
 #### Windows
 
-```
+```bash
 $ .\node_modules\.bin\electron .
 ```
 
 #### Node v8.2.0 and later
 
-```
+```bash
 $ npx electron .
 ```
 
@@ -212,7 +212,7 @@ $ ./electron/electron your-app/
 
 #### Windows
 
-```
+```bash
 $ .\electron\electron.exe your-app\
 ```
 
