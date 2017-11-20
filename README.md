@@ -38,20 +38,20 @@ versioning. For info on how to manage Electron versions in your apps, see
 For more installation options and troubleshooting tips, see
 [installation](https://electronjs.org/docs/tutorial/installation).
 
-## Quick Start
+## Quick start
 
 Clone and run the
 [electron/electron-quick-start](https://github.com/electron/electron-quick-start)
 repository to see a minimal Electron app in action:
 
-```
+```sh
 git clone https://github.com/electron/electron-quick-start
 cd electron-quick-start
 npm install
 npm start
 ```
 
-## Resources for Learning Electron
+## Resources for learning Electron
 
 - [electronjs.org/docs](https://electronjs.org/docs) - all of Electron's documentation
 - [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - a very basic starter Electron app
@@ -81,7 +81,7 @@ const child = proc.spawn(electron)
 
 - [China](https://npm.taobao.org/mirrors/electron)
 
-## Documentation Translations
+## Documentation translations
 
 Find documentation translations in [electron/electron-18n](https://github.com/electron/electron-i18n).
 
