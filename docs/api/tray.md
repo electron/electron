@@ -23,16 +23,13 @@ app.on('ready', () => {
 })
 ```
 
-__Platform limitations:__
+**Platform limitations:**
 
-* On Linux the app indicator will be used if it is supported, otherwise
-  `GtkStatusIcon` will be used instead.
-* On Linux distributions that only have app indicator support, you have to
-  install `libappindicator1` to make the tray icon work.
+* On Linux the app indicator will be used if it is supported, otherwise `GtkStatusIcon` will be used instead.
+* On Linux distributions that only have app indicator support, you have to install `libappindicator1` to make the tray icon work.
 * App indicator will only be shown when it has a context menu.
 * When app indicator is used on Linux, the `click` event is ignored.
-* On Linux in order for changes made to individual `MenuItem`s to take effect,
-  you have to call `setContextMenu` again. For example:
+* On Linux in order for changes made to individual `MenuItem`s to take effect, you have to call `setContextMenu` again. For example:
 
 ```javascript
 const {app, Menu, Tray} = require('electron')
@@ -52,11 +49,10 @@ app.on('ready', () => {
   appIcon.setContextMenu(contextMenu)
 })
 ```
+
 * On Windows it is recommended to use `ICO` icons to get best visual effects.
 
-If you want to keep exact same behaviors on all platforms, you should not
-rely on the `click` event and always attach a context menu to the tray icon.
-
+If you want to keep exact same behaviors on all platforms, you should not rely on the `click` event and always attach a context menu to the tray icon.
 
 ### `new Tray(image)`
 
@@ -112,8 +108,7 @@ Emitted when the tray balloon is clicked.
 
 #### Event: 'balloon-closed' _Windows_
 
-Emitted when the tray balloon is closed because of timeout or user manually
-closes it.
+Emitted when the tray balloon is closed because of timeout or user manually closes it.
 
 #### Event: 'drop' _macOS_
 
@@ -213,16 +208,13 @@ Sets the title displayed aside of the tray icon in the status bar.
 #### `tray.setHighlightMode(mode)` _macOS_
 
 * `mode` String - Highlight mode with one of the following values:
-  * `selection` - Highlight the tray icon when it is clicked and also when
-    its context menu is open. This is the default.
+  * `selection` - Highlight the tray icon when it is clicked and also when its context menu is open. This is the default.
   * `always` - Always highlight the tray icon.
   * `never` - Never highlight the tray icon.
 
 Sets when the tray's icon background becomes highlighted (in blue).
 
-**Note:** You can use `highlightMode` with a [`BrowserWindow`](browser-window.md)
-by toggling between `'never'` and `'always'` modes when the window visibility
-changes.
+**Note:** You can use `highlightMode` with a [`BrowserWindow`](browser-window.md) by toggling between `'never'` and `'always'` modes when the window visibility changes.
 
 ```javascript
 const {BrowserWindow, Tray} = require('electron')
@@ -255,8 +247,7 @@ Displays a tray balloon.
 * `menu` Menu (optional)
 * `position` [Point](structures/point.md) (optional) - The pop up position.
 
-Pops up the context menu of the tray icon. When `menu` is passed, the `menu` will
-be shown instead of the tray icon's context menu.
+Pops up the context menu of the tray icon. When `menu` is passed, the `menu` will be shown instead of the tray icon's context menu.
 
 The `position` is only available on Windows, and it is (0, 0) by default.
 

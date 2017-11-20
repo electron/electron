@@ -2,8 +2,7 @@
 
 The following list includes the APIs that will be removed in Electron 2.0.
 
-There is no timetable for when this release will occur but deprecation
-warnings will be added at least 90 days beforehand.
+There is no timetable for when this release will occur but deprecation warnings will be added at least 90 days beforehand.
 
 ## `app`
 
@@ -24,7 +23,6 @@ let windowA = new BrowserWindow(optionsA)
 let optionsB = {webPreferences: {enableBlinkFeatures: ''}}
 let windowB = new BrowserWindow(optionsB)
 ```
-
 
 ```js
 // Deprecated
@@ -115,19 +113,17 @@ process.versions['atom-shell']
 process.versions.electron
 ```
 
-* `process.versions.electron` and `process.version.chrome` will be made
-  read-only properties for consistency with the other `process.versions`
-  properties set by Node.
+* `process.versions.electron` and `process.version.chrome` will be made read-only properties for consistency with the other `process.versions` properties set by Node.
 
 ## `session`
 
 ```js
 // Deprecated
-ses.setCertificateVerifyProc(function (hostname, certificate, callback) {
+ses.setCertificateVerifyProc(function(hostname, certificate, callback) {
   callback(true)
 })
 // Replace with
-ses.setCertificateVerifyProc(function (request, callback) {
+ses.setCertificateVerifyProc(function(request, callback) {
   callback(0)
 })
 ```
@@ -192,8 +188,7 @@ webview.setVisualZoomLevelLimits(1, 2)
 
 ## Node Headers URL
 
-This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
-command line flag when building native Node modules.
+This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url` command line flag when building native Node modules.
 
 Deprecated: https://atom.io/download/atom-shell
 
@@ -201,24 +196,12 @@ Replace with: https://atom.io/download/electron
 
 ## Duplicate ARM Assets
 
-Each Electron release includes two identical ARM builds with slightly different 
-filenames, like `electron-v1.7.3-linux-arm.zip` and 
-`electron-v1.7.3-linux-armv7l.zip`. The asset with the `v7l` prefix was added 
-to clarify to users which ARM version it supports, and to disambiguate it from 
-future armv6l and arm64 assets that may be produced.
+Each Electron release includes two identical ARM builds with slightly different filenames, like `electron-v1.7.3-linux-arm.zip` and `electron-v1.7.3-linux-armv7l.zip`. The asset with the `v7l` prefix was added to clarify to users which ARM version it supports, and to disambiguate it from future armv6l and arm64 assets that may be produced.
 
-The file _without the prefix_ is still being published to avoid breaking any 
-setups that may be consuming it. Starting at 2.0, the un-prefixed file will 
-no longer be published.
+The file _without the prefix_ is still being published to avoid breaking any setups that may be consuming it. Starting at 2.0, the un-prefixed file will no longer be published.
 
-For details, see
-[6986](https://github.com/electron/electron/pull/6986)
-and 
-[7189](https://github.com/electron/electron/pull/7189).
-
+For details, see [6986](https://github.com/electron/electron/pull/6986) and [7189](https://github.com/electron/electron/pull/7189).
 
 ## `FIXME` comments
 
-The `FIXME` string is used in code comments to denote things that should be 
-fixed for the 2.0 release. See 
-https://github.com/electron/electron/search?q=fixme
+The `FIXME` string is used in code comments to denote things that should be fixed for the 2.0 release. See https://github.com/electron/electron/search?q=fixme

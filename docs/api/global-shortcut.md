@@ -4,13 +4,9 @@
 
 Process: [Main](../glossary.md#main-process)
 
-The `globalShortcut` module can register/unregister a global keyboard shortcut
-with the operating system so that you can customize the operations for various
-shortcuts.
+The `globalShortcut` module can register/unregister a global keyboard shortcut with the operating system so that you can customize the operations for various shortcuts.
 
-**Note:** The shortcut is global; it will work even if the app does
-not have the keyboard focus. You should not use this module until the `ready`
-event of the app module is emitted.
+**Note:** The shortcut is global; it will work even if the app does not have the keyboard focus. You should not use this module until the `ready` event of the app module is emitted.
 
 ```javascript
 const {app, globalShortcut} = require('electron')
@@ -47,12 +43,9 @@ The `globalShortcut` module has the following methods:
 * `accelerator` [Accelerator](accelerator.md)
 * `callback` Function
 
-Registers a global shortcut of `accelerator`. The `callback` is called when
-the registered shortcut is pressed by the user.
+Registers a global shortcut of `accelerator`. The `callback` is called when the registered shortcut is pressed by the user.
 
-When the accelerator is already taken by other applications, this call will
-silently fail. This behavior is intended by operating systems, since they don't
-want applications to fight for global shortcuts.
+When the accelerator is already taken by other applications, this call will silently fail. This behavior is intended by operating systems, since they don't want applications to fight for global shortcuts.
 
 ### `globalShortcut.isRegistered(accelerator)`
 
@@ -60,9 +53,7 @@ want applications to fight for global shortcuts.
 
 Returns `Boolean` - Whether this application has registered `accelerator`.
 
-When the accelerator is already taken by other applications, this call will
-still return `false`. This behavior is intended by operating systems, since they
-don't want applications to fight for global shortcuts.
+When the accelerator is already taken by other applications, this call will still return `false`. This behavior is intended by operating systems, since they don't want applications to fight for global shortcuts.
 
 ### `globalShortcut.unregister(accelerator)`
 

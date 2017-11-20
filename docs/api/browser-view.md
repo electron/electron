@@ -2,15 +2,11 @@
 
 > Create and control views.
 
-**Note:** The BrowserView API is currently experimental and may change or be
-removed in future Electron releases.
+**Note:** The BrowserView API is currently experimental and may change or be removed in future Electron releases.
 
 Process: [Main](../glossary.md#main-process)
 
-A `BrowserView` can be used to embed additional web content into a
-`BrowserWindow`. It is like a child window, except that it is positioned
-relative to its owning window. It is meant to be an alternative to the
-`webview` tag.
+A `BrowserView` can be used to embed additional web content into a `BrowserWindow`. It is like a child window, except that it is positioned relative to its owning window. It is meant to be an alternative to the `webview` tag.
 
 ## Example
 
@@ -29,7 +25,7 @@ let view = new BrowserView({
   }
 })
 win.setBrowserView(view)
-view.setBounds({ x: 0, y: 0, width: 300, height: 300 })
+view.setBounds({x: 0, y: 0, width: 300, height: 300})
 view.webContents.loadURL('https://electronjs.org')
 ```
 
@@ -65,10 +61,8 @@ Objects created with `new BrowserView` have the following instance methods:
 #### `view.setAutoResize(options)` _Experimental_
 
 * `options` Object
-  * `width` Boolean - If `true`, the view's width will grow and shrink together
-    with the window. `false` by default.
-  * `height` Boolean - If `true`, the view's height will grow and shrink
-    together with the window. `false` by default.
+  * `width` Boolean - If `true`, the view's width will grow and shrink together with the window. `false` by default.
+  * `height` Boolean - If `true`, the view's height will grow and shrink together with the window. `false` by default.
 
 #### `view.setBounds(bounds)` _Experimental_
 
@@ -78,5 +72,4 @@ Resizes and moves the view to the supplied bounds relative to the window.
 
 #### `view.setBackgroundColor(color)` _Experimental_
 
-* `color` String - Color in `#aarrggbb` or `#argb` form. The alpha channel is
-  optional.
+* `color` String - Color in `#aarrggbb` or `#argb` form. The alpha channel is optional.

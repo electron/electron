@@ -13,7 +13,7 @@ These new features bring those auditing tools to your Electron app. You can choo
 In the testing framework Spectron, you can now audit each window and `<webview>` tag in your application. For example:
 
 ```javascript
-app.client.auditAccessibility().then(function (audit) {
+app.client.auditAccessibility().then(function(audit) {
   if (audit.failed) {
     console.error(audit.message)
   }
@@ -54,7 +54,7 @@ CFStringRef kAXManualAccessibility = CFSTR("AXManualAccessibility");
     AXUIElementRef appRef = AXUIElementCreateApplication(app.processIdentifier);
     if (appRef == nil)
         return;
-    
+
     CFBooleanRef value = enable ? kCFBooleanTrue : kCFBooleanFalse;
     AXUIElementSetAttributeValue(appRef, kAXManualAccessibility, value);
     CFRelease(appRef);

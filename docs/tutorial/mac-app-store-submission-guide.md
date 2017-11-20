@@ -1,39 +1,26 @@
 # Mac App Store Submission Guide
 
-Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store
-(MAS). This guide provides information on: how to submit your app and the
-limitations of the MAS build.
+Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store (MAS). This guide provides information on: how to submit your app and the limitations of the MAS build.
 
-**Note:** Submitting an app to Mac App Store requires enrolling [Apple Developer
-Program][developer-program], which costs money.
+**Note:** Submitting an app to Mac App Store requires enrolling [Apple Developer Program][developer-program], which costs money.
 
 ## How to Submit Your App
 
-The following steps introduce a simple way to submit your app to Mac App Store.
-However, these steps do not ensure your app will be approved by Apple; you
-still need to read Apple's [Submitting Your App][submitting-your-app] guide on
-how to meet the Mac App Store requirements.
+The following steps introduce a simple way to submit your app to Mac App Store. However, these steps do not ensure your app will be approved by Apple; you still need to read Apple's [Submitting Your App][submitting-your-app] guide on how to meet the Mac App Store requirements.
 
 ### Get Certificate
 
-To submit your app to the Mac App Store, you first must get a certificate from
-Apple. You can follow these [existing guides][nwjs-guide] on web.
+To submit your app to the Mac App Store, you first must get a certificate from Apple. You can follow these [existing guides][nwjs-guide] on web.
 
 ### Get Team ID
 
-Before signing your app, you need to know the Team ID of your account. To locate
-your Team ID, Sign in to [Apple Developer Center](https://developer.apple.com/account/),
-and click Membership in the sidebar. Your Team ID appears in the Membership
-Information section under the team name.
+Before signing your app, you need to know the Team ID of your account. To locate your Team ID, Sign in to [Apple Developer Center](https://developer.apple.com/account/), and click Membership in the sidebar. Your Team ID appears in the Membership Information section under the team name.
 
 ### Sign Your App
 
-After finishing the preparation work, you can package your app by following
-[Application Distribution](application-distribution.md), and then proceed to
-signing your app.
+After finishing the preparation work, you can package your app by following [Application Distribution](application-distribution.md), and then proceed to signing your app.
 
-First, you have to add a `ElectronTeamID` key to your app's `Info.plist`, which
-has your Team ID as value:
+First, you have to add a `ElectronTeamID` key to your app's `Info.plist`, which has your Team ID as value:
 
 ```xml
 <plist version="1.0">
@@ -77,8 +64,7 @@ Then, you need to prepare two entitlements files.
 </plist>
 ```
 
-You have to replace `TEAM_ID` with your Team ID, and replace `your.bundle.id`
-with the Bundle ID of your app.
+You have to replace `TEAM_ID` with your Team ID, and replace `your.bundle.id` with the Bundle ID of your app.
 
 And then sign your app with the following script:
 
@@ -116,34 +102,23 @@ codesign -s "$APP_KEY" -f --entitlements "$PARENT_PLIST" "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$RESULT_PATH"
 ```
 
-If you are new to app sandboxing under macOS, you should also read through
-Apple's [Enabling App Sandbox][enable-app-sandbox] to have a basic idea, then
-add keys for the permissions needed by your app to the entitlements files.
+If you are new to app sandboxing under macOS, you should also read through Apple's [Enabling App Sandbox][enable-app-sandbox] to have a basic idea, then add keys for the permissions needed by your app to the entitlements files.
 
-Apart from manually signing your app, you can also choose to use the
-[electron-osx-sign][electron-osx-sign] module to do the job.
+Apart from manually signing your app, you can also choose to use the [electron-osx-sign][electron-osx-sign] module to do the job.
 
 #### Sign Native Modules
 
-Native modules used in your app also need to be signed. If using
-electron-osx-sign, be sure to include the path to the built binaries in the
-argument list:
+Native modules used in your app also need to be signed. If using electron-osx-sign, be sure to include the path to the built binaries in the argument list:
 
 ```bash
 electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/nativemodule/build/release/nativemodule
 ```
 
-Also note that native modules may have intermediate files produced which should
-not be included (as they would also need to be signed). If you use
-[electron-packager][electron-packager] before version 8.1.0, add
-`--ignore=.+\.o$` to your build step to ignore these files. Versions 8.1.0 and
-later ignores those files by default.
+Also note that native modules may have intermediate files produced which should not be included (as they would also need to be signed). If you use [electron-packager][electron-packager] before version 8.1.0, add `--ignore=.+\.o$` to your build step to ignore these files. Versions 8.1.0 and later ignores those files by default.
 
 ### Upload Your App
 
-After signing your app, you can use Application Loader to upload it to iTunes
-Connect for processing, making sure you have [created a record][create-record]
-before uploading.
+After signing your app, you can use Application Loader to upload it to iTunes Connect for processing, making sure you have [created a record][create-record] before uploading.
 
 ### Submit Your App for Review
 
@@ -151,8 +126,7 @@ After these steps, you can [submit your app for review][submit-for-review].
 
 ## Limitations of MAS Build
 
-In order to satisfy all requirements for app sandboxing, the following modules
-have been disabled in the MAS build:
+In order to satisfy all requirements for app sandboxing, the following modules have been disabled in the MAS build:
 
 * `crashReporter`
 * `autoUpdater`
@@ -162,18 +136,13 @@ and the following behaviors have been changed:
 * Video capture may not work for some machines.
 * Certain accessibility features may not work.
 * Apps will not be aware of DNS changes.
-* APIs for launching apps at login are disabled. See
-https://github.com/electron/electron/issues/7312#issuecomment-249479237
+* APIs for launching apps at login are disabled. See https://github.com/electron/electron/issues/7312#issuecomment-249479237
 
-Also, due to the usage of app sandboxing, the resources which can be accessed by
-the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for
-more information.
+Also, due to the usage of app sandboxing, the resources which can be accessed by the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for more information.
 
 ### Additional Entitlements
 
-Depending on which Electron APIs your app uses, you may need to add additional
-entitlements to your `parent.plist` file to be able to use these APIs from your
-app's Mac App Store build.
+Depending on which Electron APIs your app uses, you may need to add additional entitlements to your `parent.plist` file to be able to use these APIs from your app's Mac App Store build.
 
 #### Network Access
 
@@ -184,16 +153,14 @@ Enable outgoing network connections to allow your app to connect to a server:
 <true/>
 ```
 
-Enable incoming network connections to allow your app to open a network
-listening socket:
+Enable incoming network connections to allow your app to open a network listening socket:
 
 ```xml
 <key>com.apple.security.network.server</key>
 <true/>
 ```
 
-See the [Enabling Network Access documentation][network-access] for more
-details.
+See the [Enabling Network Access documentation][network-access] for more details.
 
 #### dialog.showOpenDialog
 
@@ -202,8 +169,7 @@ details.
 <true/>
 ```
 
-See the [Enabling User-Selected File Access documentation][user-selected] for
-more details.
+See the [Enabling User-Selected File Access documentation][user-selected] for more details.
 
 #### dialog.showSaveDialog
 
@@ -212,15 +178,13 @@ more details.
 <true/>
 ```
 
-See the [Enabling User-Selected File Access documentation][user-selected] for
-more details.
+See the [Enabling User-Selected File Access documentation][user-selected] for more details.
 
 ## Known issues
 
-### `shell.openItem(filePath)` 
+### `shell.openItem(filePath)`
 
-This will fail when the app is signed for distribution in the Mac App Store.
-Subscribe to [#9005](https://github.com/electron/electron/issues/9005) for updates.
+This will fail when the app is signed for distribution in the Mac App Store. Subscribe to [#9005](https://github.com/electron/electron/issues/9005) for updates.
 
 #### Workaround
 
@@ -228,9 +192,7 @@ Subscribe to [#9005](https://github.com/electron/electron/issues/9005) for updat
 
 ## Cryptographic Algorithms Used by Electron
 
-Depending on the country and region you are located, Mac App Store may require
-documenting the cryptographic algorithms used in your app, and even ask you to
-submit a copy of U.S. Encryption Registration (ERN) approval.
+Depending on the country and region you are located, Mac App Store may require documenting the cryptographic algorithms used in your app, and even ask you to submit a copy of U.S. Encryption Registration (ERN) approval.
 
 Electron uses following cryptographic algorithms:
 
@@ -258,9 +220,7 @@ Electron uses following cryptographic algorithms:
 * RC5 - http://people.csail.mit.edu/rivest/Rivest-rc5rev.pdf
 * RIPEMD - [ISO/IEC 10118-3](http://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
 
-On how to get the ERN approval, you can reference the article: [How to legally
-submit an app to Apple’s App Store when it uses encryption (or how to obtain an
-ERN)][ern-tutorial].
+On how to get the ERN approval, you can reference the article: [How to legally submit an app to Apple’s App Store when it uses encryption (or how to obtain an ERN)][ern-tutorial].
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html

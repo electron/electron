@@ -1,11 +1,8 @@
 # Source Code Directory Structure
 
-The source code of Electron is separated into a few parts, mostly
-following Chromium on the separation conventions.
+The source code of Electron is separated into a few parts, mostly following Chromium on the separation conventions.
 
-You may need to become familiar with [Chromium's multi-process
-architecture](http://dev.chromium.org/developers/design-documents/multi-process-architecture)
-to understand the source code better.
+You may need to become familiar with [Chromium's multi-process architecture](http://dev.chromium.org/developers/design-documents/multi-process-architecture) to understand the source code better.
 
 ## Structure of Source Code
 
@@ -49,25 +46,17 @@ Electron
 
 ## Structure of Other Directories
 
-* **script** - Scripts used for development purpose like building, packaging,
-  testing, etc.
-* **tools** - Helper scripts used by gyp files, unlike `script`, scripts put
-  here should never be invoked by users directly.
-* **vendor** - Source code of third party dependencies, we didn't use
-  `third_party` as name because it would confuse it with the same directory in
-  Chromium's source code tree.
+* **script** - Scripts used for development purpose like building, packaging, testing, etc.
+* **tools** - Helper scripts used by gyp files, unlike `script`, scripts put here should never be invoked by users directly.
+* **vendor** - Source code of third party dependencies, we didn't use `third_party` as name because it would confuse it with the same directory in Chromium's source code tree.
 * **node_modules** - Third party node modules used for building.
 * **out** - Temporary output directory of `ninja`.
-* **dist** - Temporary directory created by `script/create-dist.py` script
-  when creating a distribution.
-* **external_binaries** - Downloaded binaries of third-party frameworks which
-  do not support building with `gyp`.
+* **dist** - Temporary directory created by `script/create-dist.py` script when creating a distribution.
+* **external_binaries** - Downloaded binaries of third-party frameworks which do not support building with `gyp`.
 
 ## Keeping Git Submodules Up to Date
 
-The Electron repository has a few vendored dependencies, found in the
-[/vendor][vendor] directory. Occasionally you might see a message like this
-when running `git status`:
+The Electron repository has a few vendored dependencies, found in the [/vendor][vendor] directory. Occasionally you might see a message like this when running `git status`:
 
 ```sh
 $ git status
@@ -82,8 +71,7 @@ To update these vendored dependencies, run the following command:
 git submodule update --init --recursive
 ```
 
-If you find yourself running this command often, you can create an alias for it
-in your `~/.gitconfig` file:
+If you find yourself running this command often, you can create an alias for it in your `~/.gitconfig` file:
 
 ```
 [alias]

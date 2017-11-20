@@ -2,45 +2,34 @@
 
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
-This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
-By participating, you are expected to uphold this code. Please report unacceptable
-behavior to electron@github.com.
+This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to electron@github.com.
 
-The following is a set of guidelines for contributing to Electron.
-These are just guidelines, not rules, use your best judgment and feel free to
-propose changes to this document in a pull request.
+The following is a set of guidelines for contributing to Electron. These are just guidelines, not rules, use your best judgment and feel free to propose changes to this document in a pull request.
 
 ## Submitting Issues
 
 ### Creating Issues
-* You can create an issue [here](https://github.com/electron/electron/issues/new),
-but before doing that please read the notes below and include as many details as
-possible with your report. If you can, please include:
+
+* You can create an issue [here](https://github.com/electron/electron/issues/new), but before doing that please read the notes below and include as many details as possible with your report. If you can, please include:
   * The version of Electron you are using
   * The operating system you are using
-  * If applicable, what you were doing when the issue arose and what you
-  expected to happen
+  * If applicable, what you were doing when the issue arose and what you expected to happen
 * Other things that will help resolve your issue:
   * Screenshots and animated GIFs
   * Error output that appears in your terminal, dev tools or as an alert
-  * Perform a [cursory search](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+)
-  to see if a similar issue has already been submitted
+  * Perform a [cursory search](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+) to see if a similar issue has already been submitted
 
 ### Issue Maintenance and Closure
-* If an issue is inactive for 45 days (no activity of any kind), it will be
-marked for closure with `stale`.
-* If after this label is applied, no further activity occurs in the next 7 days,
-the issue will be closed.
-  * If an issue has been closed and you still feel it's relevant, feel free to
-  ping a maintainer or add a comment!
 
+* If an issue is inactive for 45 days (no activity of any kind), it will be marked for closure with `stale`.
+* If after this label is applied, no further activity occurs in the next 7 days, the issue will be closed.
+  * If an issue has been closed and you still feel it's relevant, feel free to ping a maintainer or add a comment!
 
 ## Submitting Pull Requests
 
 * Include screenshots and animated GIFs in your pull request whenever possible.
 * Follow the JavaScript, C++, and Python [coding style defined in docs](/docs/development/coding-style.md).
-* Write documentation in [Markdown](https://daringfireball.net/projects/markdown).
-  See the [Documentation Styleguide](/docs/styleguide.md).
+* Write documentation in [Markdown](https://daringfireball.net/projects/markdown). See the [Documentation Styleguide](/docs/styleguide.md).
 * Use short, present tense commit messages. See [Commit Message Styleguide](#git-commit-messages).
 
 ## Styleguides
@@ -57,8 +46,7 @@ the issue will be closed.
   * Instance methods and properties
 * Avoid platform-dependent code:
   * Use `path.join()` to concatenate filenames.
-  * Use `os.tmpdir()` rather than `/tmp` when you need to reference the
-    temporary directory.
+  * Use `os.tmpdir()` rather than `/tmp` when you need to reference the temporary directory.
 * Using a plain `return` when returning explicitly at the end of a function.
   * Not `return null`, `return undefined`, `null`, or `undefined`
 
