@@ -1,7 +1,7 @@
 const assert = require('assert')
 const {deprecations, deprecate, nativeImage} = require('electron')
 
-describe.only('deprecations', () => {
+describe('deprecations', () => {
   beforeEach(() => {
     deprecations.setHandler(null)
     process.throwDeprecation = true
@@ -54,16 +54,4 @@ describe.only('deprecations', () => {
       deprecate.log('this is deprecated')
     }, /this is deprecated/)
   })
-
-  // it('deprecates a property', () => {
-  //   deprecate.property(object, property, method)
-  // })
-  //
-  // it('deprecates an event', () => {
-  //   deprecate.event(emitter, oldName, newName, fn)
-  // })
-  //
-  // it('forwards a method to member', () => {
-  //   deprecate.member(object, method, member)
-  // })
 })
