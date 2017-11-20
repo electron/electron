@@ -244,7 +244,7 @@ $ npm start
 ```
 
 For more example apps, see the
-[list of boilerplates](https://electron.atom.io/community/#boilerplates)
+[list of boilerplates](https://electronjs.org/community#boilerplates)
 created by the awesome electron community.
 
 [share-data]: ../faq.md#how-to-share-data-between-web-pages
