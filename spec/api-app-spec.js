@@ -347,7 +347,7 @@ describe('app module', () => {
       app.setLoginItemSettings({openAtLogin: false, path: updateExe, args: processStartArgs})
     })
 
-    it('returns the login item status of the app', () => {
+    it('returns the login item status of the app', (done) => {
       app.setLoginItemSettings({openAtLogin: true})
       assert.deepEqual(app.getLoginItemSettings(), {
         openAtLogin: true,
@@ -367,13 +367,18 @@ describe('app module', () => {
       })
 
       app.setLoginItemSettings({})
-      assert.deepEqual(app.getLoginItemSettings(), {
-        openAtLogin: false,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
+      // Wait because login item settings are not applied immediately in MAS build
+      const delay = process.mas ? 100 : 0;
+      setTimeout(() => {
+        assert.deepEqual(app.getLoginItemSettings(), {
+          openAtLogin: false,
+          openAsHidden: false,
+          wasOpenedAtLogin: false,
+          wasOpenedAsHidden: false,
+          restoreState: false
+        })
+        done()
+      }, delay);
     })
 
     it('allows you to pass a custom executable and arguments', () => {
