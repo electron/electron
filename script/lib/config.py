@@ -5,6 +5,11 @@ import os
 import platform
 import sys
 
+# URL to the mips64el sysroot image.
+MIPS64EL_SYSROOT_URL = 'https://github.com/electron/debian-sysroot-image-creator/releases/download/v0.5.0/debian_jessie_mips64-sysroot.tar.bz2'
+# URL to the mips64el toolchain.
+MIPS64EL_GCC = 'gcc-4.8.3-d197-n64-loongson'
+MIPS64EL_GCC_URL = 'http://ftp.loongnix.org/toolchain/gcc/release/' + MIPS64EL_GCC + '.tar.gz'
 
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
     'https://s3.amazonaws.com/github-janky-artifacts/libchromiumcontent'
