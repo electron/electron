@@ -189,7 +189,6 @@ NSMenu* swapMenu_;
             fromModel:(atom::AtomMenuModel*)model {
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
-  base::string16 role = model->GetRoleAt(index);
 
   base::scoped_nsobject<NSMenuItem> item(
       [[NSMenuItem alloc] initWithTitle:label
@@ -201,6 +200,7 @@ NSMenu* swapMenu_;
   if (model->GetIconAt(index, &icon) && !icon.IsEmpty())
     [item setImage:icon.ToNSImage()];
 
+  base::string16 role = model->GetRoleAt(index);
   atom::AtomMenuModel::ItemType type = model->GetTypeAt(index);
   if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
     // Recursively build a submenu from the sub-model at this index.
@@ -244,7 +244,6 @@ NSMenu* swapMenu_;
     }
 
     // Set menu item's role.
-    base::string16 role = model->GetRoleAt(index);
     [item setTarget:self];
     if (!role.empty()) {
       for (const Role& pair : kRolesMap) {
