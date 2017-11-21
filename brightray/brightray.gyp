@@ -69,21 +69,29 @@
           },
           'cflags': [
             '<!@(<(pkg-config) --cflags <(linux_system_libraries))',
-            # Needed by using libgtkui:
-            '-Wno-deprecated-register',
-            '-Wno-sentinel',
-          ],
-          'cflags_cc': [
-            '-Wno-reserved-user-defined-literal',
           ],
           'direct_dependent_settings': {
             'cflags': [
               '<!@(<(pkg-config) --cflags <(linux_system_libraries))',
-              '-Wno-deprecated-register',
-              '-Wno-sentinel',
             ],
           },
           'conditions': [
+            ['clang==1', {
+              'cflags_cc': [
+                '-Wno-reserved-user-defined-literal',
+              ],
+              'cflags': [
+                # Needed by using libgtkui:
+                '-Wno-deprecated-register',
+                '-Wno-sentinel',
+              ],
+              'direct_dependent_settings': {
+                'cflags': [
+                  '-Wno-deprecated-register',
+                  '-Wno-sentinel',
+                ],
+              },
+            }],
             ['libchromiumcontent_component', {
               'link_settings': {
                 'libraries': [

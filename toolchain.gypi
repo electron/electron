@@ -143,6 +143,11 @@
         ['CC.host', '$(CC)'],
         ['CXX.host', '$(CXX)'],
       ],
+      'target_defaults': {
+        'cflags_cc': [
+          '-std=c++11',
+        ],
+      },
     }],
 
     # Specify the SDKROOT.

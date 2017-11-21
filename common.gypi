@@ -109,20 +109,25 @@
         'conditions': [
           ['OS=="linux"', {
             'cflags': [
-              '-Wno-parentheses-equality',
               '-Wno-unused-function',
-              '-Wno-sometimes-uninitialized',
-              '-Wno-pointer-sign',
-              '-Wno-string-plus-int',
               '-Wno-unused-variable',
               '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
-              '-Wno-shift-negative-value',
               '-Wno-format',
               '-Wno-varargs', # https://git.io/v6Olj
               # Required when building as shared library.
               '-fPIC',
+            ],
+          }],
+          ['OS=="linux" and clang==1', {
+            'cflags': [
+              '-Wno-pointer-sign',
+              '-Wno-parentheses-equality',
+              '-Wno-sometimes-uninitialized',
+              '-Wno-string-plus-int',
+              '-Wno-shift-negative-value',
+              '-Wno-reserved-user-defined-literal',
             ],
           }],
         ],

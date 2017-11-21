@@ -358,7 +358,6 @@
           # Required settings of using breakpad.
           'cflags_cc': [
             '-Wno-empty-body',
-            '-Wno-reserved-user-defined-literal',
           ],
           'include_dirs': [
             'vendor/breakpad/src',
@@ -367,6 +366,12 @@
             'vendor/breakpad/breakpad.gyp:breakpad_client',
           ],
         }],  # OS=="linux"
+        ['OS=="linux" and clang==1', {
+          # Required settings of using breakpad.
+          'cflags_cc': [
+            '-Wno-reserved-user-defined-literal',
+          ],
+        }],  # OS=="linux" and clang==1
       ],
     },  # target <(product_name)_lib
     {
