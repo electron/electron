@@ -287,7 +287,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 #### `ses.setPermissionRequestHandler(handler)`
 
-* `handler` Function
+* `handler` Function | null
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.
   * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
     'pointerLock', 'fullscreen', 'openExternal'.
@@ -296,6 +296,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
+To clear the handler, call `setPermissionRequestHandler(null)`.
 
 ```javascript
 const {session} = require('electron')
