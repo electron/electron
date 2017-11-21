@@ -56,10 +56,10 @@ Role kRolesMap[] = {
 }  // namespace
 
 // Menu item is located for ease of removing it from the parent owner
-NSMenuItem* recentDocumentsMenuItem_ = nil;
+static NSMenuItem* recentDocumentsMenuItem_ = nil;
 
 // TODO(sethlu): Doc & find a better naming
-NSMenu* swapMenu_ = nil;
+static NSMenu* swapMenu_ = nil;
 
 @implementation AtomMenuController
 
