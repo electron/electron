@@ -42,9 +42,13 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.readBookmark', () => {
-    it('returns title and url', () => {
-      if (process.platform === 'linux') return
+    before(function () {
+      if (process.platform === 'linux') {
+        this.skip()
+      }
+    })
 
+    it('returns title and url', () => {
       clipboard.writeBookmark('a title', 'https://electronjs.org')
       assert.deepEqual(clipboard.readBookmark(), {
         title: 'a title',
@@ -86,17 +90,25 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.read/writeFindText(text)', () => {
-    it('reads and write text to the find pasteboard', () => {
-      if (process.platform !== 'darwin') return
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
 
+    it('reads and write text to the find pasteboard', () => {
       clipboard.writeFindText('find this')
       assert.equal(clipboard.readFindText(), 'find this')
     })
   })
 
   describe('clipboard.writeBuffer(format, buffer)', () => {
-    it('writes a Buffer for the specified format', () => {
-      if (process.platform !== 'darwin') return
+    it('writes a Buffer for the specified format', function () {
+      if (process.platform !== 'darwin') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return
+      }
 
       const buffer = Buffer.from('writeBuffer', 'utf8')
       clipboard.writeBuffer('public.utf8-plain-text', buffer)
@@ -111,9 +123,13 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.readBuffer(format)', () => {
-    it('returns a Buffer of the content for the specified format', () => {
-      if (process.platform !== 'darwin') return
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
 
+    it('returns a Buffer of the content for the specified format', () => {
       const buffer = Buffer.from('this is binary', 'utf8')
       clipboard.writeText(buffer.toString())
       assert(buffer.equals(clipboard.readBuffer('public.utf8-plain-text')))

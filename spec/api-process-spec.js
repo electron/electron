@@ -10,9 +10,13 @@ describe('process module', () => {
   })
 
   describe('process.getIOCounters()', () => {
-    it('returns an io counters object', () => {
-      if (process.platform === 'darwin') return
+    before(function () {
+      if (process.platform === 'darwin') {
+        this.skip()
+      }
+    })
 
+    it('returns an io counters object', () => {
       const ioCounters = process.getIOCounters()
       assert.equal(typeof ioCounters.readOperationCount, 'number')
       assert.equal(typeof ioCounters.writeOperationCount, 'number')

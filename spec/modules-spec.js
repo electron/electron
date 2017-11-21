@@ -29,8 +29,11 @@ describe('modules support', () => {
     })
 
     describe('ffi', () => {
-      if (!nativeModulesEnabled) return
-      if (process.platform === 'win32') return
+      before(function () {
+        if (!nativeModulesEnabled || process.platform === 'win32') {
+          this.skip()
+        }
+      })
 
       it('does not crash', () => {
         const ffi = require('ffi')

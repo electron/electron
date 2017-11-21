@@ -4,7 +4,11 @@ const {systemPreferences} = remote
 
 describe('systemPreferences module', () => {
   describe('systemPreferences.getAccentColor', () => {
-    if (process.platform !== 'win32') return
+    before(function () {
+      if (process.platform !== 'win32') {
+        this.skip()
+      }
+    })
 
     it('should return a non-empty string', () => {
       let accentColor = systemPreferences.getAccentColor()
@@ -14,7 +18,11 @@ describe('systemPreferences module', () => {
   })
 
   describe('systemPreferences.getColor(id)', () => {
-    if (process.platform !== 'win32') return
+    before(function () {
+      if (process.platform !== 'win32') {
+        this.skip()
+      }
+    })
 
     it('throws an error when the id is invalid', () => {
       assert.throws(() => {
@@ -28,9 +36,11 @@ describe('systemPreferences module', () => {
   })
 
   describe('systemPreferences.getUserDefault(key, type)', () => {
-    if (process.platform !== 'darwin') {
-      return
-    }
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
 
     it('returns values for known user defaults', () => {
       const locale = systemPreferences.getUserDefault('AppleLocale', 'string')
@@ -56,8 +66,6 @@ describe('systemPreferences module', () => {
   })
 
   describe('systemPreferences.setUserDefault(key, type, value)', () => {
-    if (process.platform !== 'darwin') return
-
     const KEY = 'SystemPreferencesTest'
     const TEST_CASES = [
       ['string', 'abc'],
@@ -69,6 +77,12 @@ describe('systemPreferences module', () => {
       ['array', [1, 2, 3]],
       ['dictionary', {'a': 1, 'b': 2}]
     ]
+
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
 
     it('sets values', () => {
       for (const [type, value] of TEST_CASES) {
@@ -94,7 +108,11 @@ describe('systemPreferences module', () => {
   })
 
   describe('systemPreferences.setUserDefault(key, type, value)', () => {
-    if (process.platform !== 'darwin') return
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
 
     it('removes keys', () => {
       const KEY = 'SystemPreferencesTest'

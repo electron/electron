@@ -357,8 +357,12 @@ describe('session module', () => {
       })
     })
 
-    it('can generate a default filename', (done) => {
-      if (process.env.APPVEYOR === 'True') return done()
+    it('can generate a default filename', function (done) {
+      if (process.env.APPVEYOR === 'True') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return done()
+      }
 
       downloadServer.listen(0, '127.0.0.1', () => {
         const port = downloadServer.address().port

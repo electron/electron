@@ -20,7 +20,11 @@ describe('screen module', () => {
   })
 
   describe('screen.getMenuBarHeight()', () => {
-    if (process.platform !== 'darwin') return
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
 
     it('returns an integer', () => {
       const screenHeight = screen.getMenuBarHeight()

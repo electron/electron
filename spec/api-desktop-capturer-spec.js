@@ -4,7 +4,11 @@ const {desktopCapturer, remote} = require('electron')
 const isCI = remote.getGlobal('isCi')
 
 describe('desktopCapturer', () => {
-  if (isCI && process.platform === 'win32') return
+  before(function () {
+    if (isCI && process.platform === 'win32') {
+      this.skip()
+    }
+  })
 
   it('should return a non-empty array of sources', (done) => {
     desktopCapturer.getSources({
