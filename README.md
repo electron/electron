@@ -81,9 +81,9 @@ const child = proc.spawn(electron)
 
 - [China](https://npm.taobao.org/mirrors/electron)
 
-## Documentation translations
+## Documentation Translations
 
-Find documentation translations in [electron/electron-18n](https://github.com/electron/electron-i18n).
+Find documentation translations in [electron/electron-i18n](https://github.com/electron/electron-i18n).
 
 ## Community
 
