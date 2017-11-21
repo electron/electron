@@ -56,10 +56,10 @@ Role kRolesMap[] = {
 }  // namespace
 
 // Menu item is located for ease of removing it from the parent owner
-static NSMenuItem* recentDocumentsMenuItem_ = nil;
+static base::scoped_nsobject<NSMenuItem> recentDocumentsMenuItem_;
 
 // Submenu retained to be swapped back to |recentDocumentsMenuItem_|
-static NSMenu* recentDocumentsMenuSwap_ = nil;
+static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
 @implementation AtomMenuController
 
@@ -97,10 +97,10 @@ static NSMenu* recentDocumentsMenuSwap_ = nil;
 
   if (!recentDocumentsMenuItem_) {
     // Locate & retain the recent documents menu item
-    recentDocumentsMenuItem_ = [[[[[NSApp mainMenu]
+    recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
         itemWithTitle:@"Electron"] submenu]
         itemWithTitle:@"Open Recent"]
-        retain];
+        retain]);
   }
 
   model_ = model;
@@ -171,12 +171,8 @@ static NSMenu* recentDocumentsMenuSwap_ = nil;
   // Swap back the submenu
   [recentDocumentsMenuItem_ setSubmenu:recentDocumentsMenuSwap_];
 
-  // Release the previous swap menu if exists
-  if (recentDocumentsMenuSwap_)
-      [recentDocumentsMenuSwap_ release];
-
   // Retain the item's submenu for a future recovery
-  recentDocumentsMenuSwap_ = [[item submenu] retain];
+  recentDocumentsMenuSwap_.reset([[item submenu] retain]);
 
   // Repopulate with items from the submenu to be replaced
   [self moveMenuItems:recentDocumentsMenuSwap_
@@ -184,10 +180,8 @@ static NSMenu* recentDocumentsMenuSwap_ = nil;
   // Replace submenu
   [item setSubmenu:recentDocumentsMenu];
 
-  // Release the previous menu
-  [recentDocumentsMenuItem_ release];
   // Remember the new menu item that carries the recent documents menu
-  recentDocumentsMenuItem_ = [item retain];
+  recentDocumentsMenuItem_.reset([item retain]);
 }
 
 // Adds an item or a hierarchical menu to the item at the |index|,
