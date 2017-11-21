@@ -5,7 +5,7 @@ on each Chromium upgrade in Electron.
 
 - Upgrade libcc to a new Chromium version
 - Make Electron code compatible with the new libcc
-- Update Electron dependencies (crashpad, NodeJS, etc.)  if needed
+- Update Electron dependencies (crashpad, NodeJS, etc.) if needed
 - Make internal builds of libcc and electron
 - Update Electron docs if necessary
 
@@ -19,8 +19,8 @@ on each Chromium upgrade in Electron.
      $ cd libchromiumcontent
      $ ./script/bootstrap -v
     ```
-2. Get a new beta/stable Chromium revision from OmahaProxy
-3. Put it into the VERSION file, then run `$ ./script/update`
+2. Find the new beta/stable Chromium version from [OmahaProxy](https://omahaproxy.appspot.com/).
+3. Put it into the `libchromiumcontent/VERSION` file, then run `$ ./script/update`
  - It will probably fail applying patches.
 4. Fix `*.patch` files in the `/patches` and `/patches-mas` folders.
 5. (Optional) Run a separate script to apply patches (`script/update` uses it internally):
@@ -39,7 +39,7 @@ on each Chromium upgrade in Electron.
 
 ### Steps
 1. Get the code:
-  - ```
+   ```
     $ git clone git@github.com:electron/electron.git
     $ cd electron
     ```
@@ -64,19 +64,19 @@ on each Chromium upgrade in Electron.
   - You will need it to run tests
 6. Fix compilation and linking errors
 7. Ensure that Release build can be built too: `$ ./script/build.py -c R`
-  - Often you will have different linking errors in Release build, fix them too.
-  -Some compilation and linking errors are caused by missing source/object files in the libcc `dist`
+  - Often the Release build will have different linking errors that you'll need to fix.
+  - Some compilation and linking errors are caused by missing source/object files in the libcc `dist`
 8. Update `./script/create-dist` in the libcc repo, recreate a `dist`, and run Electron bootstrap script once again.
 
 #### Tips for fixing compilation errors
 - Fix build config errors first
 - Fix fatal errors first, like missing files and errors related to compiler flags or defines
-- Try to identify complex errors as soon as possible,
+- Try to identify complex errors as soon as possible.
   - Ask for help if you're not sure how to fix them
 - Disable all Electron features, fix the build, then enable them one by one
 - Add more build flags to disable features in build-time.
 
-When Electron successfully builds in a Debug configuration, try to run tests:
+When a Debug build of Electron succeeds, run the tests:
 `$ ./script/test.py`
 Fix the failing tests.
 
