@@ -50,7 +50,7 @@ Role kRolesMap[] = {
   { @selector(selectPreviousTab:), "selectprevioustab" },
   { @selector(mergeAllWindows:), "mergeallwindows" },
   { @selector(moveTabToNewWindow:), "movetabtonewwindow" },
-  { @selector(clearRecentDocuments:), "clearrecent" },
+  { @selector(clearRecentDocuments:), "clearrecentdocuments" },
 };
 
 }  // namespace
@@ -218,7 +218,7 @@ NSMenu* swapMenu_;
       [NSApp setHelpMenu:submenu];
     else if (role == base::ASCIIToUTF16("services"))
       [NSApp setServicesMenu:submenu];
-    else if (role == base::ASCIIToUTF16("openrecent"))
+    else if (role == base::ASCIIToUTF16("recentdocuments"))
       [self replaceSubmenuShowingRecentDocuments:item];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the
