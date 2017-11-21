@@ -101,7 +101,6 @@ NSMenu* swapMenu_;
         itemWithTitle:@"Electron"] submenu]
         itemWithTitle:@"Open Recent"]
         retain] autorelease];
-    [recentDocumentsMenuItem_ setHidden:NO];
   }
 
   model_ = model;
