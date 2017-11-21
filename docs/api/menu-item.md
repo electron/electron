@@ -88,7 +88,7 @@ The following additional roles are available on macOS:
 * `window` - The submenu is a "Window" menu
 * `help` - The submenu is a "Help" menu
 * `services` - The submenu is a "Services" menu
-* `recentdocuments` - The submenu is a "Open Recent" menu
+* `recentdocuments` - The submenu is an "Open Recent" menu
 * `clearrecentdocuments` - Map to the `clearRecentDocuments` action
 
 When specifying a `role` on macOS, `label` and `accelerator` are the only
