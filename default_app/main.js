@@ -7,26 +7,35 @@ const url = require('url')
 
 // Parse command line options.
 const argv = process.argv.slice(1)
-const option = { file: null, help: null, version: null, abi: null, webdriver: null, modules: [] }
+
+const option = {
+  file: null,
+  help: null,
+  default: null,
+  version: null,
+  webdriver: null,
+  modules: []
+}
+
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--version' || argv[i] === '-v') {
     option.version = true
     break
-  } else if (argv[i] === '--abi') {
-    option.abi = true
-    break
   } else if (argv[i].match(/^--app=/)) {
     option.file = argv[i].split('=')[1]
     break
-  } else if (argv[i] === '--help' || argv[i] === '-h') {
-    option.help = true
+  } else if (argv[i] === '--default' || argv[i] === '-d') {
+    option.default = true
     break
-  } else if (argv[i] === '--interactive' || argv[i] === '-i') {
+  } else if (argv[i] === '--interactive' || argv[i] === '-i' || argv[i] === '-repl') {
     option.interactive = true
   } else if (argv[i] === '--test-type=webdriver') {
     option.webdriver = true
   } else if (argv[i] === '--require' || argv[i] === '-r') {
     option.modules.push(argv[++i])
+    continue
+  } else if (argv[i] === '--abi' || argv[i] === '-a') {
+    option.abi = true
     continue
   } else if (argv[i][0] === '-') {
     continue
@@ -129,7 +138,7 @@ app.once('ready', () => {
         {
           label: 'Learn More',
           click () {
-            shell.openExternal('https://electron.atom.io')
+            shell.openExternal('https://electronjs.org')
           }
         },
         {
@@ -190,22 +199,19 @@ app.once('ready', () => {
         }
       ]
     })
-    template[1].submenu.push(
-      {
-        type: 'separator'
-      },
-      {
-        label: 'Speech',
-        submenu: [
-          {
-            role: 'startspeaking'
-          },
-          {
-            role: 'stopspeaking'
-          }
-        ]
-      }
-    )
+    template[1].submenu.push({
+      type: 'separator'
+    }, {
+      label: 'Speech',
+      submenu: [
+        {
+          role: 'startspeaking'
+        },
+        {
+          role: 'stopspeaking'
+        }
+      ]
+    })
     template[3].submenu = [
       {
         role: 'close'
@@ -226,11 +232,9 @@ app.once('ready', () => {
   } else {
     template.unshift({
       label: 'File',
-      submenu: [
-        {
-          role: 'quit'
-        }
-      ]
+      submenu: [{
+        role: 'quit'
+      }]
     })
   }
 
@@ -330,13 +334,17 @@ if (option.file && !option.webdriver) {
 } else if (option.abi) {
   console.log(process.versions.modules)
   process.exit(0)
-} else if (option.help) {
-  const helpMessage = `Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
-
+} else if (option.default) {
+  const indexPath = path.join(__dirname, '/index.html')
+  loadApplicationByUrl(`file://${indexPath}`)
+} else if (option.interactive) {
+  startRepl()
+} else {
+  const welcomeMessage = `
+  Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
   Usage: electron [options] [path]
 
-  A path to an Electron app may be specified. The path must be one of the following:
-
+  A path to an Electron app may be specified. It must be one of the following:
     - index.js file.
     - Folder containing a package.json file.
     - Folder containing an index.js file.
@@ -344,16 +352,13 @@ if (option.file && !option.webdriver) {
     - http://, https://, or file:// URL.
 
   Options:
-    -h, --help            Print this usage message.
+    -d, --default         Run the default bundled Electron app.
     -i, --interactive     Open a REPL to the main process.
-    -r, --require         Module to preload (option can be repeated)
+    -r, --require         Module to preload (option can be repeated).
     -v, --version         Print the version.
-    --abi                 Print the application binary interface.`
-  console.log(helpMessage)
-  process.exit(0)
-} else if (option.interactive) {
-  startRepl()
-} else {
+    -a, --abi             Print the Node ABI version.`
+
+  console.log(welcomeMessage)
   const indexPath = path.join(__dirname, '/index.html')
   loadApplicationByUrl(`file://${indexPath}`)
 }

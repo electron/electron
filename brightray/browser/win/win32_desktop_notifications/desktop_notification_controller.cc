@@ -137,19 +137,21 @@ void DesktopNotificationController::InitializeFonts() {
     if (!body_font_) {
         NONCLIENTMETRICS metrics = { sizeof(metrics) };
         if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, &metrics, 0)) {
-            auto baseHeight = metrics.lfMessageFont.lfHeight;
+            auto base_height = metrics.lfMessageFont.lfHeight;
 
             HDC hdc = GetDC(NULL);
-            auto dpi_y = GetDeviceCaps(hdc, LOGPIXELSY);
+            auto base_dpi_y = GetDeviceCaps(hdc, LOGPIXELSY);
             ReleaseDC(NULL, hdc);
 
+            ScreenMetrics scr;
+
             metrics.lfMessageFont.lfHeight =
-                (LONG)ScaleForDpi(baseHeight * 1.1f, dpi_y);
+                (LONG)ScaleForDpi(base_height * 1.1f, scr.dpi_y, base_dpi_y);
             body_font_ = CreateFontIndirect(&metrics.lfMessageFont);
 
             if (caption_font_) DeleteFont(caption_font_);
             metrics.lfMessageFont.lfHeight =
-                (LONG)ScaleForDpi(baseHeight * 1.4f, dpi_y);
+                (LONG)ScaleForDpi(base_height * 1.4f, scr.dpi_y, base_dpi_y);
             caption_font_ = CreateFontIndirect(&metrics.lfMessageFont);
         }
     }

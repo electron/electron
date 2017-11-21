@@ -104,6 +104,8 @@ class NativeWindowViews : public NativeWindow,
   void SetBackgroundColor(const std::string& color_name) override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
+  void SetOpacity(const double opacity) override;
+  double GetOpacity() override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
@@ -188,6 +190,7 @@ class NativeWindowViews : public NativeWindow,
       const content::NativeWebKeyboardEvent& event) override;
   void ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
+    content::WebContents* web_contents,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) override;
@@ -274,6 +277,7 @@ class NativeWindowViews : public NativeWindow,
   static HHOOK mouse_hook_;
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = NULL;
+  bool layered_ = false;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
@@ -293,6 +297,7 @@ class NativeWindowViews : public NativeWindow,
   bool fullscreenable_;
   std::string title_;
   gfx::Size widget_size_;
+  double opacity_ = 1.0;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };

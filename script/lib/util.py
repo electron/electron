@@ -161,11 +161,11 @@ def safe_mkdir(path):
       raise
 
 
-def execute(argv, env=os.environ):
+def execute(argv, env=os.environ, cwd=None):
   if is_verbose_mode():
     print ' '.join(argv)
   try:
-    output = subprocess.check_output(argv, stderr=subprocess.STDOUT, env=env)
+    output = subprocess.check_output(argv, stderr=subprocess.STDOUT, env=env, cwd=cwd)
     if is_verbose_mode():
       print output
     return output
@@ -183,7 +183,7 @@ def execute_stdout(argv, env=os.environ, cwd=None):
       print e.output
       raise e
   else:
-    execute(argv, env)
+    execute(argv, env, cwd)
 
 
 def electron_gyp():

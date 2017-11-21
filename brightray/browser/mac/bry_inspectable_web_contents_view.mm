@@ -94,7 +94,6 @@
     if (visible) {
       [devtools_window_ makeKeyAndOrderFront:nil];
     } else {
-      [[self window] makeKeyAndOrderFront:nil];
       [devtools_window_ setDelegate:nil];
       [devtools_window_ close];
       devtools_window_.reset();

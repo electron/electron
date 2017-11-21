@@ -112,7 +112,7 @@ A comma-separated list of servers for which integrated authentication is enabled
 
 For example:
 
-```
+```bash
 --auth-server-whitelist='*example.com, *foobar.com, *baz'
 ```
 

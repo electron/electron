@@ -144,6 +144,7 @@ void Window::Init(v8::Isolate* isolate,
       options,
       parent.IsEmpty() ? nullptr : parent->window_.get()));
   web_contents->SetOwnerWindow(window_.get());
+  window_->set_is_offscreen_dummy(api_web_contents_->IsOffScreen());
 
 #if defined(TOOLKIT_VIEWS)
   // Sets the window icon.
@@ -631,6 +632,14 @@ bool Window::HasShadow() {
   return window_->HasShadow();
 }
 
+void Window::SetOpacity(const double opacity) {
+  window_->SetOpacity(opacity);
+}
+
+double Window::GetOpacity() {
+  return window_->GetOpacity();
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -938,6 +947,10 @@ void Window::ToggleTabBar() {
   window_->ToggleTabBar();
 }
 
+void Window::AddTabbedWindow(NativeWindow* window) {
+  window_->AddTabbedWindow(window);
+}
+
 void Window::SetVibrancy(mate::Arguments* args) {
   std::string type;
 
@@ -1056,6 +1069,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBackgroundColor", &Window::SetBackgroundColor)
       .SetMethod("setHasShadow", &Window::SetHasShadow)
       .SetMethod("hasShadow", &Window::HasShadow)
+      .SetMethod("setOpacity", &Window::SetOpacity)
+      .SetMethod("getOpacity", &Window::GetOpacity)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
@@ -1085,6 +1100,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("selectNextTab", &Window::SelectNextTab)
       .SetMethod("moveTabToNewWindow", &Window::MoveTabToNewWindow)
       .SetMethod("toggleTabBar", &Window::ToggleTabBar)
+      .SetMethod("addTabbedWindow", &Window::AddTabbedWindow)
 #endif
       .SetMethod("setVibrancy", &Window::SetVibrancy)
       .SetMethod("_setTouchBarItems", &Window::SetTouchBar)

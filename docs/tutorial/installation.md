@@ -7,12 +7,11 @@ The preferred method is to install Electron as a development dependency in your
 app:
 
 ```sh
-npm install electron --save-dev --save-exact
+npm install electron --save-dev
 ```
 
-The `--save-exact` flag is recommended as Electron does not follow semantic
-versioning. See the
-[versioning doc](https://electron.atom.io/docs/tutorial/electron-versioning/)
+See the 
+[Electron versioning doc](https://electronjs.org/docs/tutorial/electron-versioning)
 for info on how to manage Electron versions in your apps.
 
 ## Global Installation

@@ -9,6 +9,8 @@
 
 #include "base/compiler_specific.h"
 #include "base/macros.h"
+#include "base/path_service.h"
+#include "brightray/browser/brightray_paths.h"
 #include "content/public/browser/browser_main_parts.h"
 #include "ui/views/layout/layout_provider.h"
 
@@ -45,6 +47,7 @@ class BrowserMainParts : public content::BrowserMainParts {
  private:
 #if defined(OS_MACOSX)
   void InitializeMainNib();
+  void OverrideAppLogsPath();
 #endif
 
 #if defined(TOOLKIT_VIEWS)

@@ -5,11 +5,11 @@
 #include "atom/browser/net/atom_cert_verifier.h"
 
 #include "atom/browser/browser.h"
-#include "atom/browser/net/atom_ct_delegate.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/containers/linked_list.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/weak_ptr.h"
+#include "brightray/browser/net/require_ct_delegate.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
 #include "net/cert/cert_verify_result.h"
@@ -92,6 +92,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
     std::unique_ptr<VerifyRequestParams> request(new VerifyRequestParams());
     request->hostname = params_.hostname();
     request->default_result = net::ErrorToString(error);
+    request->error_code = error;
     request->certificate = params_.certificate();
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
@@ -146,7 +147,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
   base::WeakPtrFactory<CertVerifierRequest> weak_ptr_factory_;
 };
 
-AtomCertVerifier::AtomCertVerifier(AtomCTDelegate* ct_delegate)
+AtomCertVerifier::AtomCertVerifier(brightray::RequireCTDelegate* ct_delegate)
     : default_cert_verifier_(net::CertVerifier::CreateDefault()),
       ct_delegate_(ct_delegate) {}
 

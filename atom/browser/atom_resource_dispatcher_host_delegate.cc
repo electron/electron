@@ -14,6 +14,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/stream_info.h"
 #include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
@@ -34,8 +35,7 @@ namespace atom {
 
 namespace {
 
-void OnOpenExternal(const GURL& escaped_url,
-                    bool allowed) {
+void OnOpenExternal(const GURL& escaped_url, bool allowed) {
   if (allowed)
     platform_util::OpenExternal(
 #if defined(OS_WIN)
@@ -66,6 +66,8 @@ void HandleExternalProtocolInUI(
 
 void OnPdfResourceIntercepted(
     const GURL& original_url,
+    int render_process_host_id,
+    int render_frame_id,
     const content::ResourceRequestInfo::WebContentsGetter&
         web_contents_getter) {
   content::WebContents* web_contents = web_contents_getter.Run();
@@ -75,7 +77,7 @@ void OnPdfResourceIntercepted(
   if (!WebContentsPreferences::IsPluginsEnabled(web_contents)) {
     auto browser_context = web_contents->GetBrowserContext();
     auto download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context);
+        content::BrowserContext::GetDownloadManager(browser_context);
 
     download_manager->DownloadUrl(
         content::DownloadUrlParameters::CreateForWebContentsMainFrame(
@@ -86,26 +88,29 @@ void OnPdfResourceIntercepted(
   // The URL passes the original pdf resource url, that will be requested
   // by the webui page.
   // chrome://pdf-viewer/index.html?src=https://somepage/123.pdf
-  content::NavigationController::LoadURLParams params(
-      GURL(base::StringPrintf(
-          "%sindex.html?%s=%s",
-          kPdfViewerUIOrigin,
-          kPdfPluginSrc,
-          net::EscapeUrlEncodedData(original_url.spec(), false).c_str())));
+  content::NavigationController::LoadURLParams params(GURL(base::StringPrintf(
+      "%sindex.html?%s=%s", kPdfViewerUIOrigin, kPdfPluginSrc,
+      net::EscapeUrlEncodedData(original_url.spec(), false).c_str())));
+
+  content::RenderFrameHost* frame_host =
+      content::RenderFrameHost::FromID(render_process_host_id, render_frame_id);
+  if (!frame_host) {
+    return;
+  }
+
+  params.frame_tree_node_id = frame_host->GetFrameTreeNodeId();
   web_contents->GetController().LoadURLWithParams(params);
 }
 
 }  // namespace
 
-AtomResourceDispatcherHostDelegate::AtomResourceDispatcherHostDelegate() {
-}
+AtomResourceDispatcherHostDelegate::AtomResourceDispatcherHostDelegate() {}
 
 bool AtomResourceDispatcherHostDelegate::HandleExternalProtocol(
     const GURL& url,
     content::ResourceRequestInfo* info) {
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(&HandleExternalProtocolInUI,
-                                     url,
+                          base::Bind(&HandleExternalProtocolInUI, url,
                                      info->GetWebContentsGetterForRequest(),
                                      info->HasUserGesture()));
   return true;
@@ -121,16 +126,16 @@ AtomResourceDispatcherHostDelegate::CreateLoginDelegate(
 std::unique_ptr<net::ClientCertStore>
 AtomResourceDispatcherHostDelegate::CreateClientCertStore(
     content::ResourceContext* resource_context) {
-  #if defined(USE_NSS_CERTS)
-    return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
-        net::ClientCertStoreNSS::PasswordDelegateFactory()));
-  #elif defined(OS_WIN)
-    return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
-  #elif defined(OS_MACOSX)
-    return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
-  #elif defined(USE_OPENSSL)
-    return std::unique_ptr<net::ClientCertStore>();
-  #endif
+#if defined(USE_NSS_CERTS)
+  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
+      net::ClientCertStoreNSS::PasswordDelegateFactory()));
+#elif defined(OS_WIN)
+  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
+#elif defined(OS_MACOSX)
+  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
+#elif defined(USE_OPENSSL)
+  return std::unique_ptr<net::ClientCertStore>();
+#endif
 }
 
 bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
@@ -141,11 +146,20 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     std::string* payload) {
   const content::ResourceRequestInfo* info =
       content::ResourceRequestInfo::ForRequest(request);
-  if (mime_type == "application/pdf" && info->IsMainFrame()) {
+
+  int render_process_host_id;
+  int render_frame_id;
+  if (!info->GetAssociatedRenderFrame(&render_process_host_id,
+                                      &render_frame_id)) {
+    return false;
+  }
+
+  if (mime_type == "application/pdf") {
     *origin = GURL(kPdfViewerUIOrigin);
     content::BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
         base::Bind(&OnPdfResourceIntercepted, request->url(),
+                   render_process_host_id, render_frame_id,
                    info->GetWebContentsGetterForRequest()));
     return true;
   }

@@ -43,7 +43,17 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 - (void)mouseDown:(NSEvent *)event
 {
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
+    // According to Google, using performWindowDragWithEvent:
+    // does not generate a NSWindowWillMoveNotification. Hence post one.
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:NSWindowWillMoveNotification
+                      object:self];
+
     [self.window performWindowDragWithEvent:event];
+    return;
+  }
+
+  if (self.window.styleMask & NSFullScreenWindowMask) {
     return;
   }
 
@@ -56,17 +66,53 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
     return;
   }
 
+  if (self.window.styleMask & NSFullScreenWindowMask) {
+    return;
+  }
+
   NSPoint currentLocation = [NSEvent mouseLocation];
   NSPoint newOrigin;
 
   NSRect screenFrame = [[NSScreen mainScreen] frame];
+  NSSize screenSize = screenFrame.size;
   NSRect windowFrame = [self.window frame];
+  NSSize windowSize = windowFrame.size;
 
   newOrigin.x = currentLocation.x - self.initialLocation.x;
   newOrigin.y = currentLocation.y - self.initialLocation.y;
 
+  BOOL inMenuBar = (newOrigin.y + windowSize.height) > (screenFrame.origin.y + screenSize.height);
+  BOOL screenAboveMainScreen = false;
+
+  if (inMenuBar) {
+    for (NSScreen *screen in [NSScreen screens]) {
+      NSRect currentScreenFrame = [screen frame];
+      BOOL isHigher = currentScreenFrame.origin.y > screenFrame.origin.y;
+
+      // If there's another screen that is generally above the current screen,
+      // we'll draw a new rectangle that is just above the current screen. If the
+      // "higher" screen intersects with this rectangle, we'll allow drawing above
+      // the menubar.
+      if (isHigher) {
+        NSRect aboveScreenRect = NSMakeRect(
+          screenFrame.origin.x,
+          screenFrame.origin.y + screenFrame.size.height - 10,
+          screenFrame.size.width,
+          200
+        );
+
+        BOOL screenAboveIntersects = NSIntersectsRect(currentScreenFrame, aboveScreenRect);
+
+        if (screenAboveIntersects) {
+          screenAboveMainScreen = true;
+          break;
+        }
+      }
+    }
+  }
+
   // Don't let window get dragged up under the menu bar
-  if ((newOrigin.y + windowFrame.size.height) > (screenFrame.origin.y + screenFrame.size.height)) {
+  if (inMenuBar && !screenAboveMainScreen) {
     newOrigin.y = screenFrame.origin.y + (screenFrame.size.height - windowFrame.size.height);
   }
 

@@ -75,11 +75,11 @@ bool ShowItemInFolder(const base::FilePath& full_path) {
   if (!base::DirectoryExists(dir))
     return false;
 
-  return XDGOpen(dir.value(), true);
+  return XDGOpen(dir.value(), false);
 }
 
 bool OpenItem(const base::FilePath& full_path) {
-  return XDGOpen(full_path.value(), true);
+  return XDGOpen(full_path.value(), false);
 }
 
 bool OpenExternal(const GURL& url, bool activate) {

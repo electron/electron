@@ -143,8 +143,14 @@ $ ./node_modules/.bin/electron .
 
 #### Windows
 
-```
+```bash
 $ .\node_modules\.bin\electron .
+```
+
+#### Node v8.2.0 and later
+
+```bash
+$ npx electron .
 ```
 
 ### Manually Downloaded Electron Binary
@@ -166,7 +172,7 @@ $ ./electron/electron your-app/
 
 #### Windows
 
-```
+```bash
 $ .\electron\electron.exe your-app\
 ```
 
@@ -198,7 +204,7 @@ $ npm start
 ```
 
 For more example apps, see the
-[list of boilerplates](https://electron.atom.io/community/#boilerplates)
+[list of boilerplates](https://electronjs.org/community#boilerplates)
 created by the awesome electron community.
 
 [share-data]: ../faq.md#how-to-share-data-between-web-pages

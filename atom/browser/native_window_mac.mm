@@ -4,6 +4,7 @@
 
 #include "atom/browser/native_window_mac.h"
 
+#include <AvailabilityMacros.h>
 #include <Quartz/Quartz.h>
 #include <string>
 
@@ -336,7 +337,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
-  // Setting resizable to true before entering fullscreen 
+  // Setting resizable to true before entering fullscreen
   is_resizable_ = shell_->IsResizable();
   shell_->SetResizable(true);
   // Hide the native toolbar before entering fullscreen, so there is no visual
@@ -465,7 +466,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-#if !defined(MAC_OS_X_VERSION_10_12)
+#if !defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
 
 enum {
   NSWindowTabbingModeDisallowed = 2
@@ -474,6 +475,7 @@ enum {
 @interface NSWindow (SierraSDK)
 - (void)setTabbingMode:(NSInteger)mode;
 - (void)setTabbingIdentifier:(NSString*)identifier;
+- (void)addTabbedWindow:(NSWindow*)window ordered:(NSWindowOrderingMode)ordered;
 - (IBAction)selectPreviousTab:(id)sender;
 - (IBAction)selectNextTab:(id)sender;
 - (IBAction)mergeAllWindows:(id)sender;
@@ -481,7 +483,7 @@ enum {
 - (IBAction)toggleTabBar:(id)sender;
 @end
 
-#endif  // MAC_OS_X_VERSION_10_12
+#endif
 
 @interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate, NSTouchBarDelegate> {
  @private
@@ -960,10 +962,16 @@ NativeWindowMac::NativeWindowMac(
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
+  // Hide the title bar background
+  if (title_bar_style_ != NORMAL) {
+    if (base::mac::IsAtLeastOS10_10()) {
+      [window_ setTitlebarAppearsTransparent:YES];
+    }
+  }
+
   // Hide the title bar.
   if (title_bar_style_ == HIDDEN_INSET) {
     if (base::mac::IsAtLeastOS10_10()) {
-      [window_ setTitlebarAppearsTransparent:YES];
       base::scoped_nsobject<NSToolbar> toolbar(
           [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
       [toolbar setShowsBaselineSeparator:NO];
@@ -1503,6 +1511,14 @@ bool NativeWindowMac::HasShadow() {
   return [window_ hasShadow];
 }
 
+void NativeWindowMac::SetOpacity(const double opacity) {
+  [window_ setAlphaValue:opacity];
+}
+
+double NativeWindowMac::GetOpacity() {
+  return [window_ alphaValue];
+}
+
 void NativeWindowMac::SetRepresentedFilename(const std::string& filename) {
   [window_ setRepresentedFilename:base::SysUTF8ToNSString(filename)];
 }
@@ -1646,6 +1662,12 @@ void NativeWindowMac::MoveTabToNewWindow() {
 void NativeWindowMac::ToggleTabBar() {
   if ([window_ respondsToSelector:@selector(toggleTabBar:)]) {
     [window_ toggleTabBar:nil];
+  }
+}
+
+void NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
+  if ([window_ respondsToSelector:@selector(addTabbedWindow:ordered:)]) {
+    [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];
   }
 }
 

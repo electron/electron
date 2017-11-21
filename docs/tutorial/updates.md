@@ -21,6 +21,11 @@ and can be deployed for free on [Now](https://zeit.co/now).
 but caches app updates on disk and supports private repositories.
 - [electron-release-server](https://github.com/ArekSredzki/electron-release-server) – 
 Provides a dashboard for handling releases
+- [Nucleus](https://github.com/atlassian/nucleus) - A complete update server for Electron apps maintained by Atlassian. Supports multiple applications and channels; uses a static file store to minify server cost.
+
+If your app is packaged with [electron-builder][electron-builder-lib] you can use the 
+[electron-updater] module, which does not require a server and allows for updates 
+from S3, GitHub or any other static file host.
 
 ## Implementing updates in your app
 
@@ -94,3 +99,6 @@ autoUpdater.on('error', message => {
   console.error(message)
 })
 ```
+
+[electron-builder-lib]: https://github.com/electron-userland/electron-builder
+[electron-updater]: https://www.electron.build/auto-update

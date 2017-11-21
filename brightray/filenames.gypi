@@ -61,6 +61,8 @@
       'browser/net/devtools_network_transaction.h',
       'browser/net/devtools_network_upload_data_stream.cc',
       'browser/net/devtools_network_upload_data_stream.h',
+      'browser/net/require_ct_delegate.cc',
+      'browser/net/require_ct_delegate.h',
       'browser/net_log.cc',
       'browser/net_log.h',
       'browser/network_delegate.cc',

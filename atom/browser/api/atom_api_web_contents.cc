@@ -286,12 +286,13 @@ WebContents::WebContents(v8::Isolate* isolate,
       request_id_(0),
       background_throttling_(true),
       enable_devtools_(true) {
+  const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
   if (type == REMOTE) {
     web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
     Init(isolate);
     AttachAsUserData(web_contents);
+    InitZoomController(web_contents, options);
   } else {
-    const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
     auto session = Session::CreateFrom(isolate, GetBrowserContext());
     session_.Reset(isolate, session.ToV8());
     InitWithSessionAndOptions(isolate, web_contents, session, options);
@@ -392,6 +393,15 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
   InitWithSessionAndOptions(isolate, web_contents, session, options);
 }
 
+void WebContents::InitZoomController(content::WebContents* web_contents,
+                                     const mate::Dictionary& options) {
+  WebContentsZoomController::CreateForWebContents(web_contents);
+  zoom_controller_ = WebContentsZoomController::FromWebContents(web_contents);
+  double zoom_factor;
+  if (options.Get(options::kZoomFactor, &zoom_factor))
+    zoom_controller_->SetDefaultZoomFactor(zoom_factor);
+}
+
 void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
                                             content::WebContents *web_contents,
                                             mate::Handle<api::Session> session,
@@ -409,11 +419,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   // Initialize security state client.
   SecurityStateTabHelper::CreateForWebContents(web_contents);
   // Initialize zoom controller.
-  WebContentsZoomController::CreateForWebContents(web_contents);
-  zoom_controller_ = WebContentsZoomController::FromWebContents(web_contents);
-  double zoom_factor;
-  if (options.Get(options::kZoomFactor, &zoom_factor))
-    zoom_controller_->SetDefaultZoomFactor(zoom_factor);
+  InitZoomController(web_contents, options);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -474,7 +480,7 @@ bool WebContents::DidAddMessageToConsole(content::WebContents* source,
                                          const base::string16& message,
                                          int32_t line_no,
                                          const base::string16& source_id) {
-  if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) {
+  if (type_ == OFF_SCREEN) {
     return false;
   } else {
     Emit("console-message", level, message, line_no, source_id);
@@ -903,6 +909,17 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
+void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
+                                    const gfx::RectF& bounds,
+                                    const std::vector<base::string16>& values,
+                                    const std::vector<base::string16>& labels) {
+  auto relay = NativeWindowRelay::FromWebContents(web_contents());
+  if (relay) {
+    relay->window->ShowAutofillPopup(
+        frame_host, web_contents(), bounds, values, labels);
+  }
+}
+
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
@@ -927,9 +944,10 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
   auto relay = NativeWindowRelay::FromWebContents(web_contents());
   if (!relay)
     return false;
+  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
+    IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
+  IPC_END_MESSAGE_MAP()
   IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(NativeWindow, message, frame_host)
-    IPC_MESSAGE_FORWARD(AtomAutofillFrameHostMsg_ShowPopup,
-      relay->window.get(), NativeWindow::ShowAutofillPopup)
     IPC_MESSAGE_FORWARD(AtomAutofillFrameHostMsg_HidePopup,
       relay->window.get(), NativeWindow::HideAutofillPopup)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -1615,10 +1633,6 @@ bool WebContents::IsOffScreen() const {
 #else
   return false;
 #endif
-}
-
-bool WebContents::IsOffScreenOrEmbedderOffscreen() const {
-  return IsOffScreen() || (embedder_ && embedder_->IsOffScreen());
 }
 
 void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {

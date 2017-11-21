@@ -9,7 +9,7 @@ to understand the source code better.
 
 ## Structure of Source Code
 
-```
+```sh
 Electron
 ├── atom/ - C++ source code.
 |   ├── app/ - System entry code.
@@ -85,7 +85,7 @@ git submodule update --init --recursive
 If you find yourself running this command often, you can create an alias for it
 in your `~/.gitconfig` file:
 
-```
+```sh
 [alias]
 	su = submodule update --init --recursive
 ```

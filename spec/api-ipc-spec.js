@@ -8,7 +8,7 @@ const {closeWindow} = require('./window-helpers')
 const {ipcRenderer, remote} = require('electron')
 const {ipcMain, webContents, BrowserWindow} = remote
 
-const comparePaths = function (path1, path2) {
+const comparePaths = (path1, path2) => {
   if (process.platform === 'win32') {
     path1 = path1.toLowerCase()
     path2 = path2.toLowerCase()
@@ -16,29 +16,27 @@ const comparePaths = function (path1, path2) {
   assert.equal(path1, path2)
 }
 
-describe('ipc module', function () {
-  var fixtures = path.join(__dirname, 'fixtures')
+describe('ipc module', () => {
+  const fixtures = path.join(__dirname, 'fixtures')
 
-  var w = null
+  let w = null
 
-  afterEach(function () {
-    return closeWindow(w).then(function () { w = null })
-  })
+  afterEach(() => closeWindow(w).then(() => { w = null }))
 
-  describe('remote.require', function () {
-    it('should returns same object for the same module', function () {
-      var dialog1 = remote.require('electron')
-      var dialog2 = remote.require('electron')
+  describe('remote.require', () => {
+    it('should returns same object for the same module', () => {
+      const dialog1 = remote.require('electron')
+      const dialog2 = remote.require('electron')
       assert.equal(dialog1, dialog2)
     })
 
-    it('should work when object contains id property', function () {
-      var a = remote.require(path.join(fixtures, 'module', 'id.js'))
+    it('should work when object contains id property', () => {
+      const a = remote.require(path.join(fixtures, 'module', 'id.js'))
       assert.equal(a.id, 1127)
     })
 
-    it('should work when object has no prototype', function () {
-      var a = remote.require(path.join(fixtures, 'module', 'no-prototype.js'))
+    it('should work when object has no prototype', () => {
+      const a = remote.require(path.join(fixtures, 'module', 'no-prototype.js'))
       assert.equal(a.foo.constructor.name, '')
       assert.equal(a.foo.bar, 'baz')
       assert.equal(a.foo.baz, false)
@@ -48,13 +46,13 @@ describe('ipc module', function () {
       assert.equal(a.getConstructorName(new (class {})()), '')
     })
 
-    it('should search module from the user app', function () {
+    it('should search module from the user app', () => {
       comparePaths(path.normalize(remote.process.mainModule.filename), path.resolve(__dirname, 'static', 'main.js'))
       comparePaths(path.normalize(remote.process.mainModule.paths[0]), path.resolve(__dirname, 'static', 'node_modules'))
     })
 
-    it('should work with function properties', function () {
-      var a = remote.require(path.join(fixtures, 'module', 'export-function-with-properties.js'))
+    it('should work with function properties', () => {
+      let a = remote.require(path.join(fixtures, 'module', 'export-function-with-properties.js'))
       assert.equal(typeof a, 'function')
       assert.equal(a.bar, 'baz')
 
@@ -75,36 +73,36 @@ describe('ipc module', function () {
       assert.equal(a.bar.baz, undefined)
     })
 
-    it('should work with static class members', function () {
-      var a = remote.require(path.join(fixtures, 'module', 'remote-static.js'))
+    it('should work with static class members', () => {
+      const a = remote.require(path.join(fixtures, 'module', 'remote-static.js'))
       assert.equal(typeof a.Foo, 'function')
       assert.equal(a.Foo.foo(), 3)
       assert.equal(a.Foo.bar, 'baz')
 
-      var foo = new a.Foo()
+      const foo = new a.Foo()
       assert.equal(foo.baz(), 123)
     })
 
-    it('includes the length of functions specified as arguments', function () {
-      var a = remote.require(path.join(fixtures, 'module', 'function-with-args.js'))
-      assert.equal(a(function (a, b, c, d, f) {}), 5)
+    it('includes the length of functions specified as arguments', () => {
+      const a = remote.require(path.join(fixtures, 'module', 'function-with-args.js'))
+      assert.equal(a((a, b, c, d, f) => {}), 5)
       assert.equal(a((a) => {}), 1)
       assert.equal(a((...args) => {}), 0)
     })
 
-    it('handles circular references in arrays and objects', function () {
-      var a = remote.require(path.join(fixtures, 'module', 'circular.js'))
+    it('handles circular references in arrays and objects', () => {
+      const a = remote.require(path.join(fixtures, 'module', 'circular.js'))
 
-      var arrayA = ['foo']
-      var arrayB = [arrayA, 'bar']
+      let arrayA = ['foo']
+      const arrayB = [arrayA, 'bar']
       arrayA.push(arrayB)
       assert.deepEqual(a.returnArgs(arrayA, arrayB), [
         ['foo', [null, 'bar']],
         [['foo', null], 'bar']
       ])
 
-      var objectA = {foo: 'bar'}
-      var objectB = {baz: objectA}
+      let objectA = {foo: 'bar'}
+      const objectB = {baz: objectA}
       objectA.objectB = objectB
       assert.deepEqual(a.returnArgs(objectA, objectB), [
         {foo: 'bar', objectB: {baz: null}},
@@ -145,35 +143,35 @@ describe('ipc module', function () {
     })
   })
 
-  describe('remote.createFunctionWithReturnValue', function () {
-    it('should be called in browser synchronously', function () {
-      var buf = new Buffer('test')
-      var call = remote.require(path.join(fixtures, 'module', 'call.js'))
-      var result = call.call(remote.createFunctionWithReturnValue(buf))
+  describe('remote.createFunctionWithReturnValue', () => {
+    it('should be called in browser synchronously', () => {
+      const buf = new Buffer('test')
+      const call = remote.require(path.join(fixtures, 'module', 'call.js'))
+      const result = call.call(remote.createFunctionWithReturnValue(buf))
       assert.equal(result.constructor.name, 'Buffer')
     })
   })
 
-  describe('remote modules', function () {
-    it('includes browser process modules as properties', function () {
+  describe('remote modules', () => {
+    it('includes browser process modules as properties', () => {
       assert.equal(typeof remote.app.getPath, 'function')
       assert.equal(typeof remote.webContents.getFocusedWebContents, 'function')
       assert.equal(typeof remote.clipboard.readText, 'function')
       assert.equal(typeof remote.shell.openExternal, 'function')
     })
 
-    it('returns toString() of original function via toString()', function () {
+    it('returns toString() of original function via toString()', () => {
       const {readText} = remote.clipboard
       assert(readText.toString().startsWith('function'))
 
-      var {functionWithToStringProperty} = remote.require(path.join(fixtures, 'module', 'to-string-non-function.js'))
+      const {functionWithToStringProperty} = remote.require(path.join(fixtures, 'module', 'to-string-non-function.js'))
       assert.equal(functionWithToStringProperty.toString, 'hello')
     })
   })
 
-  describe('remote object in renderer', function () {
-    it('can change its properties', function () {
-      var property = remote.require(path.join(fixtures, 'module', 'property.js'))
+  describe('remote object in renderer', () => {
+    it('can change its properties', () => {
+      const property = remote.require(path.join(fixtures, 'module', 'property.js'))
       assert.equal(property.property, 1127)
 
       property.property = null
@@ -188,70 +186,70 @@ describe('ipc module', function () {
       assert.equal(property.getFunctionProperty(), 'bar-browser')
       property.func.property = 'foo'  // revert back
 
-      var property2 = remote.require(path.join(fixtures, 'module', 'property.js'))
+      const property2 = remote.require(path.join(fixtures, 'module', 'property.js'))
       assert.equal(property2.property, 1007)
       property.property = 1127
     })
 
-    it('rethrows errors getting/setting properties', function () {
+    it('rethrows errors getting/setting properties', () => {
       const foo = remote.require(path.join(fixtures, 'module', 'error-properties.js'))
 
-      assert.throws(function () {
+      assert.throws(() => {
         foo.bar
       }, /getting error/)
 
-      assert.throws(function () {
+      assert.throws(() => {
         foo.bar = 'test'
       }, /setting error/)
     })
 
-    it('can set a remote property with a remote object', function () {
+    it('can set a remote property with a remote object', () => {
       const foo = remote.require(path.join(fixtures, 'module', 'remote-object-set.js'))
 
-      assert.doesNotThrow(function () {
+      assert.doesNotThrow(() => {
         foo.bar = remote.getCurrentWindow()
       })
     })
 
-    it('can construct an object from its member', function () {
-      var call = remote.require(path.join(fixtures, 'module', 'call.js'))
-      var obj = new call.constructor()
+    it('can construct an object from its member', () => {
+      const call = remote.require(path.join(fixtures, 'module', 'call.js'))
+      const obj = new call.constructor()
       assert.equal(obj.test, 'test')
     })
 
-    it('can reassign and delete its member functions', function () {
-      var remoteFunctions = remote.require(path.join(fixtures, 'module', 'function.js'))
+    it('can reassign and delete its member functions', () => {
+      const remoteFunctions = remote.require(path.join(fixtures, 'module', 'function.js'))
       assert.equal(remoteFunctions.aFunction(), 1127)
 
-      remoteFunctions.aFunction = function () { return 1234 }
+      remoteFunctions.aFunction = () => { return 1234 }
       assert.equal(remoteFunctions.aFunction(), 1234)
 
       assert.equal(delete remoteFunctions.aFunction, true)
     })
 
-    it('is referenced by its members', function () {
+    it('is referenced by its members', () => {
       let stringify = remote.getGlobal('JSON').stringify
       global.gc()
       stringify({})
     })
   })
 
-  describe('remote value in browser', function () {
+  describe('remote value in browser', () => {
     const print = path.join(fixtures, 'module', 'print_name.js')
     const printName = remote.require(print)
 
-    it('keeps its constructor name for objects', function () {
+    it('keeps its constructor name for objects', () => {
       const buf = new Buffer('test')
       assert.equal(printName.print(buf), 'Buffer')
     })
 
-    it('supports instanceof Date', function () {
+    it('supports instanceof Date', () => {
       const now = new Date()
       assert.equal(printName.print(now), 'Date')
       assert.deepEqual(printName.echo(now), now)
     })
 
-    it('supports instanceof Buffer', function () {
+    it('supports instanceof Buffer', () => {
       const buffer = Buffer.from('test')
       assert.ok(buffer.equals(printName.echo(buffer)))
 
@@ -262,7 +260,7 @@ describe('ipc module', function () {
       assert.ok(arrayWithBuffer[2].equals(printName.echo(arrayWithBuffer)[2]))
     })
 
-    it('supports TypedArray', function () {
+    it('supports TypedArray', () => {
       const values = [1, 2, 3, 4]
       assert.deepEqual(printName.typedArray(values), values)
 
@@ -271,93 +269,93 @@ describe('ipc module', function () {
     })
   })
 
-  describe('remote promise', function () {
-    it('can be used as promise in each side', function (done) {
-      var promise = remote.require(path.join(fixtures, 'module', 'promise.js'))
-      promise.twicePromise(Promise.resolve(1234)).then(function (value) {
+  describe('remote promise', () => {
+    it('can be used as promise in each side', (done) => {
+      const promise = remote.require(path.join(fixtures, 'module', 'promise.js'))
+      promise.twicePromise(Promise.resolve(1234)).then((value) => {
         assert.equal(value, 2468)
         done()
       })
     })
 
-    it('handles rejections via catch(onRejected)', function (done) {
-      var promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
-      promise.reject(Promise.resolve(1234)).catch(function (error) {
+    it('handles rejections via catch(onRejected)', (done) => {
+      const promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
+      promise.reject(Promise.resolve(1234)).catch((error) => {
         assert.equal(error.message, 'rejected')
         done()
       })
     })
 
-    it('handles rejections via then(onFulfilled, onRejected)', function (done) {
-      var promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
-      promise.reject(Promise.resolve(1234)).then(function () {}, function (error) {
+    it('handles rejections via then(onFulfilled, onRejected)', (done) => {
+      const promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
+      promise.reject(Promise.resolve(1234)).then(() => {}, (error) => {
         assert.equal(error.message, 'rejected')
         done()
       })
     })
 
-    it('does not emit unhandled rejection events in the main process', function (done) {
+    it('does not emit unhandled rejection events in the main process', (done) => {
       remote.process.once('unhandledRejection', function (reason) {
         done(reason)
       })
 
-      var promise = remote.require(path.join(fixtures, 'module', 'unhandled-rejection.js'))
-      promise.reject().then(function () {
+      const promise = remote.require(path.join(fixtures, 'module', 'unhandled-rejection.js'))
+      promise.reject().then(() => {
         done(new Error('Promise was not rejected'))
-      }).catch(function (error) {
+      }).catch((error) => {
         assert.equal(error.message, 'rejected')
         done()
       })
     })
 
-    it('emits unhandled rejection events in the renderer process', function (done) {
+    it('emits unhandled rejection events in the renderer process', (done) => {
       window.addEventListener('unhandledrejection', function (event) {
         event.preventDefault()
         assert.equal(event.reason.message, 'rejected')
         done()
       })
 
-      var promise = remote.require(path.join(fixtures, 'module', 'unhandled-rejection.js'))
-      promise.reject().then(function () {
+      const promise = remote.require(path.join(fixtures, 'module', 'unhandled-rejection.js'))
+      promise.reject().then(() => {
         done(new Error('Promise was not rejected'))
       })
     })
   })
 
-  describe('remote webContents', function () {
-    it('can return same object with different getters', function () {
-      var contents1 = remote.getCurrentWindow().webContents
-      var contents2 = remote.getCurrentWebContents()
+  describe('remote webContents', () => {
+    it('can return same object with different getters', () => {
+      const contents1 = remote.getCurrentWindow().webContents
+      const contents2 = remote.getCurrentWebContents()
       assert(contents1 === contents2)
     })
   })
 
-  describe('remote class', function () {
-    let cl = remote.require(path.join(fixtures, 'module', 'class.js'))
-    let base = cl.base
+  describe('remote class', () => {
+    const cl = remote.require(path.join(fixtures, 'module', 'class.js'))
+    const base = cl.base
     let derived = cl.derived
 
-    it('can get methods', function () {
+    it('can get methods', () => {
       assert.equal(base.method(), 'method')
     })
 
-    it('can get properties', function () {
+    it('can get properties', () => {
       assert.equal(base.readonly, 'readonly')
     })
 
-    it('can change properties', function () {
+    it('can change properties', () => {
       assert.equal(base.value, 'old')
       base.value = 'new'
       assert.equal(base.value, 'new')
       base.value = 'old'
     })
 
-    it('has unenumerable methods', function () {
+    it('has unenumerable methods', () => {
       assert(!base.hasOwnProperty('method'))
       assert(Object.getPrototypeOf(base).hasOwnProperty('method'))
     })
 
-    it('keeps prototype chain in derived class', function () {
+    it('keeps prototype chain in derived class', () => {
       assert.equal(derived.method(), 'method')
       assert.equal(derived.readonly, 'readonly')
       assert(!derived.hasOwnProperty('method'))
@@ -366,7 +364,7 @@ describe('ipc module', function () {
       assert(Object.getPrototypeOf(proto).hasOwnProperty('method'))
     })
 
-    it('is referenced by methods in prototype chain', function () {
+    it('is referenced by methods in prototype chain', () => {
       let method = derived.method
       derived = null
       global.gc()
@@ -374,9 +372,9 @@ describe('ipc module', function () {
     })
   })
 
-  describe('ipc.sender.send', function () {
-    it('should work when sending an object containing id property', function (done) {
-      var obj = {
+  describe('ipc.sender.send', () => {
+    it('should work when sending an object containing id property', (done) => {
+      const obj = {
         id: 1,
         name: 'ly'
       }
@@ -387,7 +385,7 @@ describe('ipc module', function () {
       ipcRenderer.send('message', obj)
     })
 
-    it('can send instances of Date', function (done) {
+    it('can send instances of Date', (done) => {
       const currentDate = new Date()
       ipcRenderer.once('message', function (event, value) {
         assert.equal(value, currentDate.toISOString())
@@ -396,7 +394,7 @@ describe('ipc module', function () {
       ipcRenderer.send('message', currentDate)
     })
 
-    it('can send instances of Buffer', function (done) {
+    it('can send instances of Buffer', (done) => {
       const buffer = Buffer.from('hello')
       ipcRenderer.once('message', function (event, message) {
         assert.ok(buffer.equals(message))
@@ -405,7 +403,7 @@ describe('ipc module', function () {
       ipcRenderer.send('message', buffer)
     })
 
-    it('can send objects with DOM class prototypes', function (done) {
+    it('can send objects with DOM class prototypes', (done) => {
       ipcRenderer.once('message', function (event, value) {
         assert.equal(value.protocol, 'file:')
         assert.equal(value.hostname, '')
@@ -414,7 +412,7 @@ describe('ipc module', function () {
       ipcRenderer.send('message', document.location)
     })
 
-    it('can send Electron API objects', function (done) {
+    it('can send Electron API objects', (done) => {
       const webContents = remote.getCurrentWebContents()
       ipcRenderer.once('message', function (event, value) {
         assert.deepEqual(value.browserWindowOptions, webContents.browserWindowOptions)
@@ -423,10 +421,10 @@ describe('ipc module', function () {
       ipcRenderer.send('message', webContents)
     })
 
-    it('does not crash on external objects (regression)', function (done) {
+    it('does not crash on external objects (regression)', (done) => {
       const request = http.request({port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/'})
       const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
-      request.on('error', function () {})
+      request.on('error', () => {})
       ipcRenderer.once('message', function (event, requestValue, externalStreamValue) {
         assert.equal(requestValue.method, 'GET')
         assert.equal(requestValue.path, '/')
@@ -437,7 +435,7 @@ describe('ipc module', function () {
       ipcRenderer.send('message', request, stream)
     })
 
-    it('can send objects that both reference the same object', function (done) {
+    it('can send objects that both reference the same object', (done) => {
       const child = {hello: 'world'}
       const foo = {name: 'foo', child: child}
       const bar = {name: 'bar', child: child}
@@ -453,7 +451,7 @@ describe('ipc module', function () {
       ipcRenderer.send('message', array, foo, bar, child)
     })
 
-    it('inserts null for cyclic references', function (done) {
+    it('inserts null for cyclic references', (done) => {
       const array = [5]
       array.push(array)
 
@@ -473,17 +471,17 @@ describe('ipc module', function () {
     })
   })
 
-  describe('ipc.sendSync', function () {
-    afterEach(function () {
+  describe('ipc.sendSync', () => {
+    afterEach(() => {
       ipcMain.removeAllListeners('send-sync-message')
     })
 
-    it('can be replied by setting event.returnValue', function () {
-      var msg = ipcRenderer.sendSync('echo', 'test')
+    it('can be replied by setting event.returnValue', () => {
+      const msg = ipcRenderer.sendSync('echo', 'test')
       assert.equal(msg, 'test')
     })
 
-    it('does not crash when reply is not sent and browser is destroyed', function (done) {
+    it('does not crash when reply is not sent and browser is destroyed', (done) => {
       w = new BrowserWindow({
         show: false
       })
@@ -494,7 +492,7 @@ describe('ipc module', function () {
       w.loadURL('file://' + path.join(fixtures, 'api', 'send-sync-message.html'))
     })
 
-    it('does not crash when reply is sent by multiple listeners', function (done) {
+    it('does not crash when reply is sent by multiple listeners', (done) => {
       w = new BrowserWindow({
         show: false
       })
@@ -509,36 +507,36 @@ describe('ipc module', function () {
     })
   })
 
-  describe('ipcRenderer.sendTo', function () {
+  describe('ipcRenderer.sendTo', () => {
     let contents = null
-    beforeEach(function () {
+    beforeEach(() => {
       contents = webContents.create({})
     })
-    afterEach(function () {
+    afterEach(() => {
       ipcRenderer.removeAllListeners('pong')
       contents.destroy()
       contents = null
     })
 
-    it('sends message to WebContents', function (done) {
+    it('sends message to WebContents', (done) => {
       const webContentsId = remote.getCurrentWebContents().id
       ipcRenderer.once('pong', function (event, id) {
         assert.equal(webContentsId, id)
         done()
       })
-      contents.once('did-finish-load', function () {
+      contents.once('did-finish-load', () => {
         ipcRenderer.sendTo(contents.id, 'ping', webContentsId)
       })
       contents.loadURL('file://' + path.join(fixtures, 'pages', 'ping-pong.html'))
     })
   })
 
-  describe('remote listeners', function () {
-    it('can be added and removed correctly', function () {
+  describe('remote listeners', () => {
+    it('can be added and removed correctly', () => {
       w = new BrowserWindow({
         show: false
       })
-      var listener = function () {}
+      const listener = () => {}
       w.on('test', listener)
       assert.equal(w.listenerCount('test'), 1)
       w.removeListener('test', listener)
@@ -592,8 +590,8 @@ describe('ipc module', function () {
     assert.equal(ipcRenderer.listenerCount('test-event'), 0)
   })
 
-  describe('remote objects registry', function () {
-    it('does not dereference until the render view is deleted (regression)', function (done) {
+  describe('remote objects registry', () => {
+    it('does not dereference until the render view is deleted (regression)', (done) => {
       w = new BrowserWindow({
         show: false
       })

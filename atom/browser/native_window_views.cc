@@ -10,6 +10,8 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_browser_view_views.h"
 #include "atom/browser/ui/views/menu_bar.h"
+#include "atom/browser/web_contents_preferences.h"
+#include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
@@ -814,6 +816,24 @@ bool NativeWindowViews::HasShadow() {
       != wm::ShadowElevation::NONE;
 }
 
+void NativeWindowViews::SetOpacity(const double opacity) {
+#if defined(OS_WIN)
+  HWND hwnd = GetAcceleratedWidget();
+  if (!layered_) {
+    LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
+    ex_style |= WS_EX_LAYERED;
+    ::SetWindowLong(hwnd, GWL_EXSTYLE, ex_style);
+    layered_ = true;
+  }
+  ::SetLayeredWindowAttributes(hwnd, 0, opacity * 255, LWA_ALPHA);
+#endif
+  opacity_ = opacity;
+}
+
+double NativeWindowViews::GetOpacity() {
+  return opacity_;
+}
+
 void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #if defined(OS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
@@ -821,6 +841,8 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
     ex_style |= (WS_EX_TRANSPARENT | WS_EX_LAYERED);
   else
     ex_style &= ~(WS_EX_TRANSPARENT | WS_EX_LAYERED);
+  if (layered_)
+    ex_style |= WS_EX_LAYERED;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
 
   // Forwarding is always disabled when not ignoring mouse messages.
@@ -1337,17 +1359,37 @@ void NativeWindowViews::HandleKeyboardEvent(
 
 void NativeWindowViews::ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
+    content::WebContents* web_contents,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
-  auto wc = atom::api::WebContents::FromWrappedClass(
-    v8::Isolate::GetCurrent(), web_contents());
+  const auto* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents)->web_preferences();
+
+  bool is_offsceen = false;
+  web_preferences->GetBoolean("offscreen", &is_offsceen);
+  int guest_instance_id = 0;
+  web_preferences->GetInteger(options::kGuestInstanceID, &guest_instance_id);
+
+  bool is_embedder_offscreen = false;
+  if (guest_instance_id) {
+    auto manager = WebViewManager::GetWebViewManager(web_contents);
+    if (manager) {
+      auto embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder) {
+        is_embedder_offscreen = WebContentsPreferences::IsPreferenceEnabled(
+            "offscreen", embedder);
+      }
+    }
+  }
+
   autofill_popup_->CreateView(
-    frame_host,
-    wc->IsOffScreenOrEmbedderOffscreen(),
-    widget(),
-    bounds);
+      frame_host,
+      is_offsceen || is_embedder_offscreen,
+      widget(),
+      bounds);
   autofill_popup_->SetItems(values, labels);
+  autofill_popup_->UpdatePopupBounds(menu_bar_visible_ ? 0 : kMenuBarHeight);
 }
 
 void NativeWindowViews::HideAutofillPopup(
@@ -1369,6 +1411,9 @@ void NativeWindowViews::Layout() {
         gfx::Rect(0, menu_bar_bounds.height(), size.width(),
                   size.height() - menu_bar_bounds.height()));
   }
+
+  if (autofill_popup_.get())
+    autofill_popup_->UpdatePopupBounds(menu_bar_visible_ ? 0 : kMenuBarHeight);
 }
 
 gfx::Size NativeWindowViews::GetMinimumSize() const {

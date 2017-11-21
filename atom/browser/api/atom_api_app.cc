@@ -375,6 +375,8 @@ int GetPathConstant(const std::string& name) {
     return brightray::DIR_CACHE;
   else if (name == "userCache")
     return brightray::DIR_USER_CACHE;
+  else if (name == "logs")
+    return brightray::DIR_APP_LOGS;
   else if (name == "home")
     return base::DIR_HOME;
   else if (name == "temp")
@@ -631,12 +633,17 @@ void App::OnLogin(LoginHandler* login_handler,
                   const base::DictionaryValue& request_details) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  bool prevent_default = Emit(
-      "login",
-      WebContents::CreateFrom(isolate(), login_handler->GetWebContents()),
-      request_details,
-      login_handler->auth_info(),
-      base::Bind(&PassLoginInformation, make_scoped_refptr(login_handler)));
+  bool prevent_default = false;
+  content::WebContents* web_contents = login_handler->GetWebContents();
+  if (web_contents) {
+    prevent_default =
+        Emit("login",
+             WebContents::CreateFrom(isolate(), web_contents),
+             request_details,
+             login_handler->auth_info(),
+             base::Bind(&PassLoginInformation,
+                        make_scoped_refptr(login_handler)));
+  }
 
   // Default behavior is to always cancel the auth.
   if (!prevent_default)
@@ -1071,8 +1078,17 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     cpu_dict.Set("percentCPUUsage",
         process_metric.second->metrics->GetPlatformIndependentCPUUsage()
         / processor_count);
+
+#if !defined(OS_WIN)
     cpu_dict.Set("idleWakeupsPerSecond",
         process_metric.second->metrics->GetIdleWakeupsPerSecond());
+#else
+    // Chrome's underlying process_metrics.cc will throw a non-fatal warning
+    // that this method isn't implemented on Windows, so set it to 0 instead
+    // of calling it
+    cpu_dict.Set("idleWakeupsPerSecond", 0);
+#endif
+
     pid_dict.Set("cpu", cpu_dict);
     pid_dict.Set("pid", process_metric.second->pid);
     pid_dict.Set("type",

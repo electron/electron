@@ -7,12 +7,11 @@
 
 #define ATOM_MAJOR_VERSION 1
 #define ATOM_MINOR_VERSION 8
-#define ATOM_PATCH_VERSION 0
+#define ATOM_PATCH_VERSION 2
+#define ATOM_PRE_RELEASE_VERSION -beta.2
 
-#define ATOM_VERSION_IS_RELEASE 1
-
-#ifndef ATOM_TAG
-# define ATOM_TAG ""
+#ifndef ATOM_PRE_RELEASE_VERSION
+# define ATOM_PRE_RELEASE_VERSION ""
 #endif
 
 #ifndef ATOM_STRINGIFY
@@ -20,17 +19,10 @@
 #define ATOM_STRINGIFY_HELPER(n) #n
 #endif
 
-#if ATOM_VERSION_IS_RELEASE
 # define ATOM_VERSION_STRING  ATOM_STRINGIFY(ATOM_MAJOR_VERSION) "." \
                               ATOM_STRINGIFY(ATOM_MINOR_VERSION) "." \
                               ATOM_STRINGIFY(ATOM_PATCH_VERSION)     \
-                              ATOM_TAG
-#else
-# define ATOM_VERSION_STRING  ATOM_STRINGIFY(ATOM_MAJOR_VERSION) "." \
-                              ATOM_STRINGIFY(ATOM_MINOR_VERSION) "." \
-                              ATOM_STRINGIFY(ATOM_PATCH_VERSION)     \
-                              ATOM_TAG "-pre"
-#endif
+                              ATOM_STRINGIFY(ATOM_PRE_RELEASE_VERSION)
 
 #define ATOM_VERSION "v" ATOM_VERSION_STRING
 

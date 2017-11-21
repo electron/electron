@@ -36,7 +36,7 @@ requirements:
 
 Then, go and install the `electron-windows-store` CLI:
 
-```
+```sh
 npm install -g electron-windows-store
 ```
 
@@ -48,7 +48,7 @@ any module you don't actually need will just increase your application's size.
 
 The output should look roughly like this:
 
-```
+```text
 ├── Ghost.exe
 ├── LICENSE
 ├── content_resources_200_percent.pak
@@ -79,7 +79,7 @@ From an elevated PowerShell (run it "as Administrator"), run
 and output directories, the app's name and version, and confirmation that
 `node_modules` should be flattened.
 
-```
+```powershell
 electron-windows-store `
     --input-directory C:\myelectronapp `
     --output-directory C:\output\myelectronapp `

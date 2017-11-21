@@ -549,7 +549,7 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
   if (!frame.render_pass_list.empty()) {
     if (software_output_device_) {
       if (!begin_frame_timer_.get() || IsPopupWidget()) {
-        software_output_device_->SetActive(painting_);
+        software_output_device_->SetActive(painting_, false);
       }
 
       // The compositor will draw directly to the SoftwareOutputDevice which
@@ -935,7 +935,7 @@ void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
   begin_frame_timer_->SetActive(needs_begin_frames);
 
   if (software_output_device_) {
-    software_output_device_->SetActive(needs_begin_frames && painting_);
+    software_output_device_->SetActive(needs_begin_frames && painting_, false);
   }
 }
 
@@ -1151,7 +1151,7 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
 
   if (software_output_device_) {
-    software_output_device_->SetActive(painting_);
+    software_output_device_->SetActive(painting_, true);
   }
 }
 

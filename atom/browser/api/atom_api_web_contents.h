@@ -182,7 +182,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;
-  bool IsOffScreenOrEmbedderOffscreen() const;
   void OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap);
   void StartPainting();
   void StopPainting();
@@ -358,6 +357,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsOpened() override;
   void DevToolsClosed() override;
 
+  void ShowAutofillPopup(content::RenderFrameHost* frame_host,
+                         const gfx::RectF& bounds,
+                         const std::vector<base::string16>& values,
+                         const std::vector<base::string16>& labels);
+
  private:
   AtomBrowserContext* GetBrowserContext() const;
 
@@ -384,6 +388,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Called when received a synchronous message from renderer to
   // get the zoom level.
   void OnGetZoomLevel(IPC::Message* reply_msg);
+
+  void InitZoomController(content::WebContents* web_contents,
+                          const mate::Dictionary& options);
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;

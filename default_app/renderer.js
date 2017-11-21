@@ -1,45 +1,22 @@
 const {remote, shell} = require('electron')
-const {execFile} = require('child_process')
+const path = require('path')
+const URL = require('url')
+const electronPath = path.relative(process.cwd(), remote.process.execPath)
 
-const {execPath} = remote.process
+Array.from(document.querySelectorAll('a[href]')).forEach(link => {
+  // safely add `?utm_source=default_app
+  let url = URL.parse(link.getAttribute('href'), true)
+  url.query = Object.assign(url.query, {utm_source: 'default_app'})
+  url = URL.format(url)
 
-document.onclick = function (e) {
-  e.preventDefault()
-  if (e.target.tagName === 'A') {
-    shell.openExternal(e.target.href)
-  }
-  return false
-}
+  link.addEventListener('click', (e) => {
+    e.preventDefault()
+    shell.openExternal(url)
+  })
+})
 
-document.ondragover = document.ondrop = function (e) {
-  e.preventDefault()
-  return false
-}
-
-const holder = document.getElementById('holder')
-holder.ondragover = function () {
-  this.className = 'hover'
-  return false
-}
-
-holder.ondragleave = holder.ondragend = function () {
-  this.className = ''
-  return false
-}
-
-holder.ondrop = function (e) {
-  this.className = ''
-  e.preventDefault()
-
-  const file = e.dataTransfer.files[0]
-  execFile(execPath, [file.path], {
-    detached: true, stdio: 'ignore'
-  }).unref()
-  return false
-}
-
-const version = process.versions.electron
-document.querySelector('.header-version').innerText = version
-document.querySelector('.command-example').innerText = `${execPath} path-to-your-app`
-document.querySelector('.quick-start-link').href = `https://github.com/electron/electron/blob/v${version}/docs/tutorial/quick-start.md`
-document.querySelector('.docs-link').href = `https://github.com/electron/electron/tree/v${version}/docs#readme`
+document.querySelector('.electron-version').innerText = `Electron v${process.versions.electron}`
+document.querySelector('.chrome-version').innerText = `Chromium v${process.versions.chrome}`
+document.querySelector('.node-version').innerText = `Node v${process.versions.node}`
+document.querySelector('.v8-version').innerText = `v8 v${process.versions.v8}`
+document.querySelector('.command-example').innerText = `${electronPath} path-to-app`

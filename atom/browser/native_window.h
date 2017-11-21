@@ -141,6 +141,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetBackgroundColor(const std::string& color_name) = 0;
   virtual void SetHasShadow(bool has_shadow) = 0;
   virtual bool HasShadow() = 0;
+  virtual void SetOpacity(const double opacity) = 0;
+  virtual double GetOpacity() = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
@@ -190,6 +192,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void MergeAllWindows();
   virtual void MoveTabToNewWindow();
   virtual void ToggleTabBar();
+  virtual void AddTabbedWindow(NativeWindow* window);
 
   // Webview APIs.
   virtual void FocusOnWebView();
@@ -228,6 +231,7 @@ class NativeWindow : public base::SupportsUserData,
       const content::NativeWebKeyboardEvent& event) {}
   virtual void ShowAutofillPopup(
     content::RenderFrameHost* frame_host,
+    content::WebContents* web_contents,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {}
@@ -284,6 +288,9 @@ class NativeWindow : public base::SupportsUserData,
   bool transparent() const { return transparent_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
+
+  void set_is_offscreen_dummy(bool is_dummy) { is_osr_dummy_ = is_dummy; }
+  bool is_offscreen_dummy() const { return is_osr_dummy_; }
 
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
@@ -362,6 +369,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Is this a modal window.
   bool is_modal_;
+
+  // Is this a dummy window for an offscreen WebContents.
+  bool is_osr_dummy_;
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;

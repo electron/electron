@@ -116,18 +116,23 @@ called before `start` is called.
 
 **Note:** This API can only be called from the main process.
 
-### `crashReporter.setExtraParameter(key, value)` _macOS_
+### `crashReporter.addExtraParameter(key, value)` _macOS_
 
 * `key` String - Parameter key, must be less than 64 characters long.
 * `value` String - Parameter value, must be less than 64 characters long.
-  Specifying `null` or `undefined` will remove the key from the extra
-  parameters.
 
 Set an extra parameter to be sent with the crash report. The values
-specified here will be sent in addition to any values set via the `extra` option
-when `start` was called. This API is only available on macOS, if you need to
-add/update extra parameters on Linux and Windows after your first call to
-`start` you can call `start` again with the updated `extra` options.
+specified here will be sent in addition to any values set via the `extra` option when `start` was called. This API is only available on macOS, if you need to add/update extra parameters on Linux and Windows after your first call to `start` you can call `start` again with the updated `extra` options.
+
+### `crashReporter.removeExtraParameter(key)` _macOS_
+
+* `key` String - Parameter key, must be less than 64 characters long.
+
+Remove a extra parameter from the current set of parameters so that it will not be sent with the crash report.
+
+### `crashReporter.getParameters()`
+
+See all of the current parameters being passed to the crash reporter.
 
 ## Crash Report Payload
 

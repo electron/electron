@@ -70,7 +70,9 @@ class TrayIcon {
   void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
 
-  void NotifyClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
+  void NotifyClicked(const gfx::Rect& = gfx::Rect(),
+                     const gfx::Point& location = gfx::Point(),
+                     int modifiers = 0);
   void NotifyDoubleClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
   void NotifyBalloonShow();
   void NotifyBalloonClicked();
@@ -86,6 +88,8 @@ class TrayIcon {
   void NotifyMouseEntered(const gfx::Point& location = gfx::Point(),
                           int modifiers = 0);
   void NotifyMouseExited(const gfx::Point& location = gfx::Point(),
+                         int modifiers = 0);
+  void NotifyMouseMoved(const gfx::Point& location = gfx::Point(),
                          int modifiers = 0);
 
  protected:

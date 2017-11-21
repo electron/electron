@@ -140,7 +140,7 @@ option is ignored and `pacScript` configuration is applied.
 
 The `proxyRules` has to follow the rules below:
 
-```
+```sh
 proxyRules = schemeProxies[";"<schemeProxies>]
 schemeProxies = [<urlScheme>"="]<proxyURIList>
 urlScheme = "http" | "https" | "ftp" | "socks"
@@ -253,12 +253,13 @@ the original network configuration.
   * `request` Object
     * `hostname` String
     * `certificate` [Certificate](structures/certificate.md)
-    * `error` String - Verification result from chromium.
+    * `verificationResult` String - Verification result from chromium.
+    * `errorCode` Integer - Error code.
   * `callback` Function
     * `verificationResult` Integer - Value can be one of certificate error codes
     from [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
     Apart from the certificate error codes, the following special codes can be used.
-      * `0` - Indicates success and disables Certificate Transperancy verification.
+      * `0` - Indicates success and disables Certificate Transparency verification.
       * `-2` - Indicates failure.
       * `-3` - Uses the verification result from chromium.
 
@@ -286,7 +287,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 #### `ses.setPermissionRequestHandler(handler)`
 
-* `handler` Function
+* `handler` Function | null
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.
   * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
     'pointerLock', 'fullscreen', 'openExternal'.
@@ -295,6 +296,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
+To clear the handler, call `setPermissionRequestHandler(null)`.
 
 ```javascript
 const {session} = require('electron')

@@ -78,7 +78,7 @@ Note that it is not enough to call
 code runs after it is possible to make changes to chromium sandbox settings. The
 switch must be passed to electron on the command-line:
 
-```
+```sh
 electron --enable-sandbox app.js
 ```
 
@@ -151,10 +151,12 @@ Important things to notice in the preload script:
 To create a browserify bundle and use it as a preload script, something like
 the following should be used:
 
-    browserify preload/index.js \
-      -x electron \
-      -x fs \
-      --insert-global-vars=__filename,__dirname -o preload.js
+```sh
+  browserify preload/index.js \
+    -x electron \
+    -x fs \
+    --insert-global-vars=__filename,__dirname -o preload.js
+```
 
 The `-x` flag should be used with any required module that is already exposed in
 the preload scope, and tells browserify to use the enclosing `require` function

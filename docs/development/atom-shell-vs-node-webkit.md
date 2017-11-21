@@ -11,9 +11,9 @@ Electron a completely separate product from NW.js:
 
 __1. Entry of Application__
 
-In NW.js the main entry point of an application is a web page. You specify a
-main page URL in the `package.json` and it is opened in a browser window as
-the application's main window.
+In NW.js the main entry point of an application is a web page or a JS script. You specify a
+html or js file in the `package.json` and it is opened in a browser window as
+the application's main window (in case of an html entrypoint) or the script is executed.
 
 In Electron, the entry point is a JavaScript script. Instead of
 providing a URL directly, you manually create a browser window and load

@@ -6,11 +6,11 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {BrowserView, BrowserWindow} = remote
 
-describe('BrowserView module', function () {
-  var w = null
-  var view = null
+describe('BrowserView module', () => {
+  let w = null
+  let view = null
 
-  beforeEach(function () {
+  beforeEach(() => {
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -21,68 +21,68 @@ describe('BrowserView module', function () {
     })
   })
 
-  afterEach(function () {
+  afterEach(() => {
     if (view) {
       view.destroy()
       view = null
     }
 
-    return closeWindow(w).then(function () { w = null })
+    return closeWindow(w).then(() => { w = null })
   })
 
-  describe('BrowserView.setBackgroundColor()', function () {
-    it('does not throw for valid args', function () {
+  describe('BrowserView.setBackgroundColor()', () => {
+    it('does not throw for valid args', () => {
       view = new BrowserView()
       view.setBackgroundColor('#000')
     })
 
-    it('throws for invalid args', function () {
+    it('throws for invalid args', () => {
       view = new BrowserView()
-      assert.throws(function () {
+      assert.throws(() => {
         view.setBackgroundColor(null)
       }, /conversion failure/)
     })
   })
 
-  describe('BrowserView.setAutoResize()', function () {
-    it('does not throw for valid args', function () {
+  describe('BrowserView.setAutoResize()', () => {
+    it('does not throw for valid args', () => {
       view = new BrowserView()
       view.setAutoResize({})
       view.setAutoResize({ width: true, height: false })
     })
 
-    it('throws for invalid args', function () {
+    it('throws for invalid args', () => {
       view = new BrowserView()
-      assert.throws(function () {
+      assert.throws(() => {
         view.setAutoResize(null)
       }, /conversion failure/)
     })
   })
 
-  describe('BrowserView.setBounds()', function () {
-    it('does not throw for valid args', function () {
+  describe('BrowserView.setBounds()', () => {
+    it('does not throw for valid args', () => {
       view = new BrowserView()
       view.setBounds({ x: 0, y: 0, width: 1, height: 1 })
     })
 
-    it('throws for invalid args', function () {
+    it('throws for invalid args', () => {
       view = new BrowserView()
-      assert.throws(function () {
+      assert.throws(() => {
         view.setBounds(null)
       }, /conversion failure/)
-      assert.throws(function () {
+      assert.throws(() => {
         view.setBounds({})
       }, /conversion failure/)
     })
   })
 
-  describe('BrowserWindow.setBrowserView()', function () {
-    it('does not throw for valid args', function () {
+  describe('BrowserWindow.setBrowserView()', () => {
+    it('does not throw for valid args', () => {
       view = new BrowserView()
       w.setBrowserView(view)
     })
 
-    it('does not throw if called multiple times with same view', function () {
+    it('does not throw if called multiple times with same view', () => {
       view = new BrowserView()
       w.setBrowserView(view)
       w.setBrowserView(view)
@@ -90,8 +90,23 @@ describe('BrowserView module', function () {
     })
   })
 
-  describe('BrowserView.webContents.getOwnerBrowserWindow()', function () {
-    it('points to owning window', function () {
+  describe('BrowserWindow.getBrowserView()', () => {
+    it('returns the set view', () => {
+      view = new BrowserView()
+      w.setBrowserView(view)
+      assert.notEqual(view.id, null)
+      let view2 = w.getBrowserView()
+      assert.equal(view2.webContents.id, view.webContents.id)
+    })
+
+    it('returns null if none is set', () => {
+      let view = w.getBrowserView()
+      assert.equal(null, view)
+    })
+  })
+
+  describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
+    it('points to owning window', () => {
       view = new BrowserView()
       assert.ok(!view.webContents.getOwnerBrowserWindow())
       w.setBrowserView(view)
@@ -101,8 +116,8 @@ describe('BrowserView module', function () {
     })
   })
 
-  describe('BrowserView.fromId()', function () {
-    it('returns the view with given id', function () {
+  describe('BrowserView.fromId()', () => {
+    it('returns the view with given id', () => {
       view = new BrowserView()
       w.setBrowserView(view)
       assert.notEqual(view.id, null)

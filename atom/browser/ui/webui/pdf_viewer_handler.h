@@ -45,7 +45,8 @@ class PdfViewerHandler : public content::WebUIMessageHandler,
   void Reload(const base::ListValue* args);
   void OnZoomLevelChanged(content::WebContents* web_contents, double level,
       bool is_temporary);
-
+  void AddObserver();
+  void RemoveObserver();
   std::unique_ptr<base::Value> initialize_callback_id_;
   content::StreamInfo* stream_;
   std::string original_url_;

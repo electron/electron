@@ -1,7 +1,5 @@
 # Contributing to Electron
 
-:memo: Available Translations: [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR/project/CONTRIBUTING.md) | [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN/project/CONTRIBUTING.md) | [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR/project/CONTRIBUTING.md) | [Dutch](https://github.com/electron/electron/tree/master/docs-translations/nl/project/CONTRIBUTING.md)
-
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
 This project adheres to the Contributor Covenant [code of conduct](CODE_OF_CONDUCT.md).
@@ -14,6 +12,7 @@ propose changes to this document in a pull request.
 
 ## Submitting Issues
 
+### Creating Issues
 * You can create an issue [here](https://github.com/electron/electron/issues/new),
 but before doing that please read the notes below and include as many details as
 possible with your report. If you can, please include:
@@ -26,6 +25,15 @@ possible with your report. If you can, please include:
   * Error output that appears in your terminal, dev tools or as an alert
   * Perform a [cursory search](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+)
   to see if a similar issue has already been submitted
+
+### Issue Maintenance and Closure
+* If an issue is inactive for 45 days (no activity of any kind), it will be
+marked for closure with `stale`.
+* If after this label is applied, no further activity occurs in the next 7 days,
+the issue will be closed.
+  * If an issue has been closed and you still feel it's relevant, feel free to
+  ping a maintainer or add a comment!
+
 
 ## Submitting Pull Requests
 
