@@ -15,7 +15,7 @@ If you're interested in helping translate Electron's docs, visit
 
 If you miss having access to Electron's raw markdown files in your preferred
 language, don't fret! You can still get raw docs, they're just in a 
-different place now. See [electron/electron-i18n/tree/master/content]
+different place now. See [electron-i18n/content]
 
 To more easily view and browse offline docs in your language, clone the repo and use [vmd], 
 an Electron-based GitHub-styled markdown viewer:
