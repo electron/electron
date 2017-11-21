@@ -214,6 +214,8 @@ def strip_binary(binary_path):
       strip = 'arm-linux-gnueabihf-strip'
     elif get_target_arch() == 'arm64':
       strip = 'aarch64-linux-gnu-strip'
+    elif get_target_arch() == 'mips64el':
+      strip = 'mips64el-redhat-linux-strip'
     else:
       strip = 'strip'
     execute([strip, binary_path])
