@@ -23,7 +23,7 @@ commands with `xvfb-maybe` and the little tool will automatically configure
 xvfb, if required by the current system. On Windows or macOS, it will simply
 do nothing.
 
-```
+```sh
 ## On Windows or macOS, this just invokes electron-mocha
 ## On Linux, if we are in a headless environment, this will be equivalent
 ## to xvfb-run electron-mocha ./test/*.js

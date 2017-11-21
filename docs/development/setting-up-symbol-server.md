@@ -29,7 +29,7 @@ your symbol path (**Note:** you can replace `c:\code\symbols` with any writable
 directory on your computer, if you'd prefer a different location for downloaded
 symbols):
 
-```
+```powershell
 SRV*c:\code\symbols\*https://electron-symbols.githubapp.com
 ```
 
@@ -37,7 +37,7 @@ Set this string as `_NT_SYMBOL_PATH` in the environment, using the Windbg menus,
 or by typing the `.sympath` command. If you would like to get symbols from
 Microsoft's symbol server as well, you should list that first:
 
-```
+```powershell
 SRV*c:\code\symbols\*http://msdl.microsoft.com/download/symbols;SRV*c:\code\symbols\*https://electron-symbols.githubapp.com
 ```
 
@@ -50,7 +50,7 @@ SRV*c:\code\symbols\*http://msdl.microsoft.com/download/symbols;SRV*c:\code\symb
 
 Type the following commands in Windbg to print why symbols are not loading:
 
-```
+```powershell
 > !sym noisy
 > .reload /f electron.exe
 ```

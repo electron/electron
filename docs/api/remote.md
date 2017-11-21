@@ -146,7 +146,7 @@ of the main process.
 
 e.g.
 
-```
+```sh
 project/
 ├── main
 │   ├── foo.js

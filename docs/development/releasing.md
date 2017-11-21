@@ -73,7 +73,7 @@ Tips:
 
 For a `patch` release, use the following format:
 
-```
+```sh
 ## Bug Fixes
 
 * Fixed a cross-platform thing. #123
@@ -95,7 +95,7 @@ For a `patch` release, use the following format:
 
 For a `minor` release, e.g. `1.8.0`, use this format:
 
-```
+```sh
 ## Upgrades
 
 - Upgraded from Node `oldVersion` to `newVersion`. #123
@@ -118,7 +118,7 @@ For a `minor` release, e.g. `1.8.0`, use this format:
 ```
 
 ### Major releases
-```
+```sh
 ## Upgrades
 
 - Upgraded from Chromium `oldVersion` to `newVersion`. #123
@@ -147,7 +147,7 @@ For a `minor` release, e.g. `1.8.0`, use this format:
 
 ### Beta releases
 Use the same formats as the ones suggested above, but add the following note at the beginning of the changelog:
-```
+```sh
 **Note:** This is a beta release and most likely will have have some instability and/or regressions.
 
 Please file new issues for any bugs you find in it.

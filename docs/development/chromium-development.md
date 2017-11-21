@@ -18,7 +18,9 @@ See also [V8 Development](v8-development.md)
 It is possible to debug Chromium with Electron by passing
 `--build_debug_libcc` to the bootstrap script:
 
-    $ ./script/bootstrap.py -d --build_debug_libcc
+```bash
+$ ./script/bootstrap.py -d --build_debug_libcc
+```
 
 This will download and build libchromiumcontent locally, similarly to the
 `--build_release_libcc`, but it will create a shared library build of
@@ -27,13 +29,17 @@ libchromiumcontent and won't strip any symbols, making it ideal for debugging.
 When built like this, you can make changes to files in
 `vendor/libchromiumcontent/src` and rebuild quickly with:
 
-    $ ./script/build.py -c D --libcc
+```bash
+$ ./script/build.py -c D --libcc
+```
 
 When developing on linux with gdb, it is recommended to add a gdb index to speed
 up loading symbols. This doesn't need to be executed on every build, but it is
-recommended to do it at least once to index most shared libraries: 
+recommended to do it at least once to index most shared libraries:
 
-    $ ./vendor/libchromiumcontent/src/build/gdb-add-index ./out/D/electron
+```bash
+$ ./vendor/libchromiumcontent/src/build/gdb-add-index ./out/D/electron
+```
 
 Building libchromiumcontent requires a powerful machine and takes a long time
 (though incremental rebuilding the shared library component is fast). With an
@@ -54,13 +60,17 @@ several libchromiumcontent build trees on the same machine(to work on different
 branches for example), it is recommended to set the variable to speed up the
 download of Chromium source. For example:
 
-    $ mkdir ~/.chromium-git-cache
-    $ LIBCHROMIUMCONTENT_GIT_CACHE=~/.chromium-git-cache ./script/bootstrap.py -d --build_debug_libcc
+```bash
+$ mkdir ~/.chromium-git-cache
+$ LIBCHROMIUMCONTENT_GIT_CACHE=~/.chromium-git-cache ./script/bootstrap.py -d --build_debug_libcc
+```
 
 If the bootstrap script is interrupted while using the git cache, it will leave
 the cache locked. To remove the lock, delete the files ending in `.lock`:
 
-    $ find ~/.chromium-git-cache/ -type f -name '*.lock' -delete
+```bash
+$ find ~/.chromium-git-cache/ -type f -name '*.lock' -delete
+```
 
 It is possible to share this directory with other machines by exporting it as
 SMB share on linux, but only one process/machine can be using the cache at a
@@ -70,6 +80,8 @@ not work perfectly in a network.
 On Windows, SMBv2 has a directory cache that will cause problems with the git
 cache script, so it is necessary to disable it by setting the registry key
 
-    HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Lanmanworkstation\Parameters\DirectoryCacheLifetime
+```bash
+HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Lanmanworkstation\Parameters\DirectoryCacheLifetime
+```
 
 to 0. More information: https://stackoverflow.com/a/9935126

@@ -314,7 +314,7 @@ Template:
 
 Menu:
 
-```
+```sh
 - 1
 - 2
 - 3
@@ -337,7 +337,7 @@ Template:
 
 Menu:
 
-```
+```sh
 - ---
 - a
 - b

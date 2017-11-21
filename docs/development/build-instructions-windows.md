@@ -114,7 +114,7 @@ Make sure you have the latest Visual Studio update installed.
 If building under Cygwin, you may see `bootstrap.py` failed with following
 error:
 
-```
+```bash
 Assertion failed: ((handle))->activecnt >= 0, file src\win\pipe.c, line 1430
 
 Traceback (most recent call last):
