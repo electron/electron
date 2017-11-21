@@ -82,18 +82,7 @@ const child = proc.spawn(electron)
 
 ## Documentation Translations
 
-- [Brazilian Portuguese](https://github.com/electron/electron/tree/master/docs-translations/pt-BR)
-- [Korean](https://github.com/electron/electron/tree/master/docs-translations/ko-KR)
-- [Japanese](https://github.com/electron/electron/tree/master/docs-translations/jp)
-- [Spanish](https://github.com/electron/electron/tree/master/docs-translations/es)
-- [Simplified Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-CN)
-- [Traditional Chinese](https://github.com/electron/electron/tree/master/docs-translations/zh-TW)
-- [Turkish](https://github.com/electron/electron/tree/master/docs-translations/tr-TR)
-- [Thai](https://github.com/electron/electron/tree/master/docs-translations/th-TH)
-- [Ukrainian](https://github.com/electron/electron/tree/master/docs-translations/uk-UA)
-- [Russian](https://github.com/electron/electron/tree/master/docs-translations/ru-RU)
-- [French](https://github.com/electron/electron/tree/master/docs-translations/fr-FR)
-- [Indonesian](https://github.com/electron/electron/tree/master/docs-translations/id)
+Find documentation translations in [electron/electron-i18n](https://github.com/electron/electron-i18n).
 
 ## Community
 
