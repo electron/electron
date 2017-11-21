@@ -658,12 +658,15 @@ describe('asar package', function () {
 
     describe('child_process.execFile', function () {
       var echo, execFile, execFileSync
-      if (process.platform !== 'darwin') {
-        return
-      }
       execFile = ChildProcess.execFile
       execFileSync = ChildProcess.execFileSync
       echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
+
+      before(function () {
+        if (process.platform !== 'darwin') {
+          this.skip()
+        }
+      })
 
       it('executes binaries', function (done) {
         execFile(echo, ['test'], function (error, stdout) {

@@ -296,8 +296,12 @@ describe('nativeImage module', () => {
       expect(image.getSize()).to.deep.equal({width: 538, height: 190})
     })
 
-    it('Gets an NSImage pointer on macOS', () => {
-      if (process.platform !== 'darwin') return
+    it('Gets an NSImage pointer on macOS', function () {
+      if (process.platform !== 'darwin') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return
+      }
 
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`
       const image = nativeImage.createFromPath(imagePath)
@@ -310,8 +314,12 @@ describe('nativeImage module', () => {
       expect(allBytesAreNotNull)
     })
 
-    it('loads images from .ico files on Windows', () => {
-      if (process.platform !== 'win32') return
+    it('loads images from .ico files on Windows', function () {
+      if (process.platform !== 'win32') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return
+      }
 
       const imagePath = path.join(__dirname, 'fixtures', 'assets', 'icon.ico')
       const image = nativeImage.createFromPath(imagePath)
@@ -326,22 +334,34 @@ describe('nativeImage module', () => {
       expect(image.isEmpty())
     })
 
-    it('returns empty on non-darwin platforms', () => {
-      if (process.platform === 'darwin') return
+    it('returns empty on non-darwin platforms', function () {
+      if (process.platform === 'darwin') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return
+      }
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate')
       expect(image.isEmpty())
     })
 
-    it('returns a valid image on darwin', () => {
-      if (process.platform !== 'darwin') return
+    it('returns a valid image on darwin', function () {
+      if (process.platform !== 'darwin') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return
+      }
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate')
       expect(image.isEmpty()).to.be.false
     })
 
-    it('returns allows an HSL shift for a valid image on darwin', () => {
-      if (process.platform !== 'darwin') return
+    it('returns allows an HSL shift for a valid image on darwin', function () {
+      if (process.platform !== 'darwin') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return
+      }
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8])
       expect(image.isEmpty()).to.be.false

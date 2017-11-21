@@ -682,8 +682,13 @@ describe('protocol module', () => {
       })
     })
 
-    it('sends error when callback is called with nothing', (done) => {
-      if (process.env.TRAVIS === 'true') return done()
+    it('sends error when callback is called with nothing', function (done) {
+      if (process.env.TRAVIS === 'true') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return done()
+      }
+
       protocol.interceptBufferProtocol('http', emptyHandler, (error) => {
         if (error) return done(error)
         $.ajax({

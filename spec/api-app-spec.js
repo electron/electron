@@ -113,8 +113,13 @@ describe('app module', () => {
   })
 
   describe('app.isInApplicationsFolder()', () => {
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
+
     it('should be false during tests', () => {
-      if (process.platform !== 'darwin') return
       assert.equal(app.isInApplicationsFolder(), false)
     })
   })
@@ -220,7 +225,11 @@ describe('app module', () => {
   })
 
   describe('app.setUserActivity(type, userInfo)', () => {
-    if (process.platform !== 'darwin') return
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
 
     it('sets the current activity', () => {
       app.setUserActivity('com.electron.testActivity', {testData: '123'})
@@ -229,9 +238,13 @@ describe('app module', () => {
   })
 
   xdescribe('app.importCertificate', () => {
-    if (process.platform !== 'linux') return
-
     var w = null
+
+    before(function () {
+      if (process.platform !== 'linux') {
+        this.skip()
+      }
+    })
 
     afterEach(() => closeWindow(w).then(() => { w = null }))
 
@@ -310,32 +323,69 @@ describe('app module', () => {
     })
   })
 
-  describe('app.setBadgeCount API', () => {
-    const shouldFail = process.platform === 'win32' ||
-                       (process.platform === 'linux' && !app.isUnityRunning())
+  describe('app.setBadgeCount', () => {
+    const platformIsNotSupported =
+        (process.platform === 'win32') ||
+        (process.platform === 'linux' && !app.isUnityRunning())
+    const platformIsSupported = !platformIsNotSupported
 
-    afterEach(() => {
+    const expectedBadgeCount = 42
+    let returnValue = null
+
+    beforeEach(() => {
+      returnValue = app.setBadgeCount(expectedBadgeCount)
+    })
+
+    after(() => {
+      // Remove the badge.
       app.setBadgeCount(0)
     })
 
-    it('returns false when failed', () => {
-      assert.equal(app.setBadgeCount(42), !shouldFail)
+    describe('on supported platform', () => {
+      before(function () {
+        if (platformIsNotSupported) {
+          this.skip()
+        }
+      })
+
+      it('returns true', () => {
+        assert.equal(returnValue, true)
+      })
+
+      it('sets a badge count', () => {
+        assert.equal(app.getBadgeCount(), expectedBadgeCount)
+      })
     })
 
-    it('should set a badge count', () => {
-      app.setBadgeCount(42)
-      assert.equal(app.getBadgeCount(), shouldFail ? 0 : 42)
+    describe('on unsupported platform', () => {
+      before(function () {
+        if (platformIsSupported) {
+          this.skip()
+        }
+      })
+
+      it('returns false', () => {
+        assert.equal(returnValue, false)
+      })
+
+      it('does not set a badge count', () => {
+        assert.equal(app.getBadgeCount(), 0)
+      })
     })
   })
 
   describe('app.get/setLoginItemSettings API', () => {
-    if (process.platform === 'linux') return
-
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
       '--process-start-args', `"--hidden"`
     ]
+
+    before(function () {
+      if (process.platform === 'linux') {
+        this.skip()
+      }
+    })
 
     beforeEach(() => {
       app.setLoginItemSettings({openAtLogin: false})
@@ -376,8 +426,12 @@ describe('app module', () => {
       })
     })
 
-    it('allows you to pass a custom executable and arguments', () => {
-      if (process.platform !== 'win32') return
+    it('allows you to pass a custom executable and arguments', function () {
+      if (process.platform !== 'win32') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return
+      }
 
       app.setLoginItemSettings({openAtLogin: true, path: updateExe, args: processStartArgs})
 
@@ -438,14 +492,18 @@ describe('app module', () => {
   })
 
   describe('setAsDefaultProtocolClient(protocol, path, args)', () => {
-    if (process.platform !== 'win32') return
-
     const protocol = 'electron-test'
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
       '--process-start-args', `"--hidden"`
     ]
+
+    before(function () {
+      if (process.platform !== 'win32') {
+        this.skip()
+      }
+    })
 
     beforeEach(() => {
       app.removeAsDefaultProtocolClient(protocol)
@@ -474,15 +532,21 @@ describe('app module', () => {
   })
 
   describe('getFileIcon() API', () => {
-    // FIXME Get these specs running on Linux CI
-    if (process.platform === 'linux' && isCI) return
-
     const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
     const sizes = {
       small: 16,
       normal: 32,
       large: process.platform === 'win32' ? 32 : 48
     }
+
+    // (alexeykuzmin): `.skip()` called in `before`
+    // doesn't affect nested `describe`s.
+    beforeEach(function () {
+      // FIXME Get these specs running on Linux CI
+      if (process.platform === 'linux' && isCI) {
+        this.skip()
+      }
+    })
 
     it('fetches a non-empty icon', (done) => {
       app.getFileIcon(iconPath, (err, icon) => {
@@ -523,9 +587,13 @@ describe('app module', () => {
         })
       })
 
-      it('fetches a large icon', (done) => {
+      it('fetches a large icon', function (done) {
         // macOS does not support large icons
-        if (process.platform === 'darwin') return done()
+        if (process.platform === 'darwin') {
+          // FIXME(alexeykuzmin): Skip the test.
+          // this.skip()
+          return done()
+        }
 
         app.getFileIcon(iconPath, { size: 'large' }, function (err, icon) {
           const size = icon.getSize()
@@ -572,14 +640,18 @@ describe('app module', () => {
   })
 
   describe('mixed sandbox option', () => {
-    // FIXME Get these specs running on Linux
-    if (process.platform === 'linux') return
-
     let appProcess = null
     let server = null
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'
 
-    beforeEach((done) => {
+    beforeEach(function (done) {
+      // XXX(alexeykuzmin): Calling `.skip()` inside a `before` hook
+      // doesn't affect nested `describe`s.
+      // FIXME Get these specs running on Linux
+      if (process.platform === 'linux') {
+        this.skip()
+      }
+
       fs.unlink(socketPath, () => {
         server = net.createServer()
         server.listen(socketPath)

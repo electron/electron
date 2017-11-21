@@ -5,8 +5,6 @@ const os = require('os')
 const {shell} = require('electron')
 
 describe('shell module', () => {
-  if (process.platform !== 'win32') return
-
   const fixtures = path.resolve(__dirname, 'fixtures')
   const shortcutOptions = {
     target: 'C:\\target',
@@ -17,6 +15,13 @@ describe('shell module', () => {
     icon: 'icon',
     iconIndex: 1
   }
+
+  // (alexeykuzmin): `.skip()` in `before` doesn't work for nested `describe`s.
+  beforeEach(function () {
+    if (process.platform !== 'win32') {
+      this.skip()
+    }
+  })
 
   describe('shell.readShortcutLink(shortcutPath)', () => {
     it('throws when failed', () => {

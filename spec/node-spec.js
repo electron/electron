@@ -153,7 +153,11 @@ describe('node feature', () => {
 
   describe('contexts', () => {
     describe('setTimeout in fs callback', () => {
-      if (process.env.TRAVIS === 'true') return
+      before(function () {
+        if (process.env.TRAVIS === 'true') {
+          this.skip()
+        }
+      })
 
       it('does not crash', (done) => {
         fs.readFile(__filename, () => {
@@ -245,7 +249,11 @@ describe('node feature', () => {
   })
 
   describe('net.connect', () => {
-    if (process.platform !== 'darwin') return
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
 
     it('emit error when connect to a socket path without listeners', (done) => {
       const socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock')
@@ -300,14 +308,24 @@ describe('node feature', () => {
       })
     })
 
-    it('should have isTTY defined on Mac and Linux', () => {
-      if (isCI) return
-
-      if (process.platform === 'win32') {
-        assert.equal(process.stdout.isTTY, undefined)
-      } else {
-        assert.equal(typeof process.stdout.isTTY, 'boolean')
+    it('should have isTTY defined on Mac and Linux', function () {
+      if (isCI || process.platform === 'win32') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return
       }
+
+      assert.equal(typeof process.stdout.isTTY, 'boolean')
+    })
+
+    it('should have isTTY undefined on Windows', function () {
+      if (isCI || process.platform !== 'win32') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return
+      }
+
+      assert.equal(process.stdout.isTTY, undefined)
     })
   })
 
