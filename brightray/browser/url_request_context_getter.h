@@ -33,6 +33,7 @@ class URLRequestJobFactory;
 
 namespace brightray {
 
+class RequireCTDelegate;
 class DevToolsNetworkControllerHandle;
 class MediaDeviceIDSalt;
 class NetLog;
@@ -53,13 +54,10 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     CreateURLRequestJobFactory(content::ProtocolHandlerMap* protocol_handlers);
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
-    virtual std::unique_ptr<net::CertVerifier> CreateCertVerifier();
+    virtual std::unique_ptr<net::CertVerifier> CreateCertVerifier(
+        RequireCTDelegate* ct_delegate);
     virtual net::SSLConfigService* CreateSSLConfigService();
     virtual std::vector<std::string> GetCookieableSchemes();
-    virtual net::TransportSecurityState::RequireCTDelegate*
-    GetRequireCTDelegate() {
-      return nullptr;
-    }
     virtual MediaDeviceIDSalt* GetMediaDeviceIDSalt() { return nullptr; }
   };
 
@@ -98,6 +96,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   std::string user_agent_;
 
+  std::unique_ptr<RequireCTDelegate> ct_delegate_;
   std::unique_ptr<net::ProxyConfigService> proxy_config_service_;
   std::unique_ptr<net::NetworkDelegate> network_delegate_;
   std::unique_ptr<net::URLRequestContextStorage> storage_;

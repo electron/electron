@@ -45,10 +45,10 @@ describe('clipboard module', () => {
     it('returns title and url', () => {
       if (process.platform === 'linux') return
 
-      clipboard.writeBookmark('a title', 'https://electron.atom.io')
+      clipboard.writeBookmark('a title', 'https://electronjs.org')
       assert.deepEqual(clipboard.readBookmark(), {
         title: 'a title',
-        url: 'https://electron.atom.io'
+        url: 'https://electronjs.org'
       })
 
       clipboard.writeText('no bookmark')

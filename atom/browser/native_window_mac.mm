@@ -337,7 +337,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
-  // Setting resizable to true before entering fullscreen 
+  // Setting resizable to true before entering fullscreen
   is_resizable_ = shell_->IsResizable();
   shell_->SetResizable(true);
   // Hide the native toolbar before entering fullscreen, so there is no visual
@@ -962,10 +962,16 @@ NativeWindowMac::NativeWindowMac(
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
+  // Hide the title bar background
+  if (title_bar_style_ != NORMAL) {
+    if (base::mac::IsAtLeastOS10_10()) {
+      [window_ setTitlebarAppearsTransparent:YES];
+    }
+  }
+
   // Hide the title bar.
   if (title_bar_style_ == HIDDEN_INSET) {
     if (base::mac::IsAtLeastOS10_10()) {
-      [window_ setTitlebarAppearsTransparent:YES];
       base::scoped_nsobject<NSToolbar> toolbar(
           [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
       [toolbar setShowsBaselineSeparator:NO];

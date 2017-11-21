@@ -11,7 +11,8 @@ import stat
 if sys.platform == "win32":
   import _winreg
 
-from lib.config import BASE_URL, PLATFORM, get_target_arch, get_zip_name
+from lib.config import BASE_URL, PLATFORM, enable_verbose_mode, \
+                       get_target_arch, get_zip_name
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
                      execute, electron_gyp
 
@@ -79,6 +80,11 @@ TARGET_DIRECTORIES = {
 
 
 def main():
+  args = parse_args()
+
+  if args.verbose:
+    enable_verbose_mode()
+
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
 
@@ -91,8 +97,6 @@ def main():
   if PLATFORM == 'win32':
     copy_vcruntime_binaries()
     copy_ucrt_binaries()
-
-  args = parse_args()
 
   if PLATFORM != 'win32' and not args.no_api_docs:
     create_api_json_schema()
@@ -307,6 +311,9 @@ def parse_args():
   parser.add_argument('--no_api_docs',
                       action='store_true',
                       help='Skip generating the Electron API Documentation!')
+  parser.add_argument('-v', '--verbose',
+                      action='store_true',
+                      help='Prints the output of the subprocesses')
   return parser.parse_args()
 
 

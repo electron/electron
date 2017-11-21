@@ -217,6 +217,10 @@ app.on('ready', function () {
       window.webContents.send('executeJavaScript-promise-response', result)
     }).catch((error) => {
       window.webContents.send('executeJavaScript-promise-error', error)
+
+      if (error && error.name) {
+        window.webContents.send('executeJavaScript-promise-error-name', error.name)
+      }
     })
 
     if (!hasCallback) {
