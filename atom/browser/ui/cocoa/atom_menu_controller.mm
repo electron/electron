@@ -58,8 +58,8 @@ Role kRolesMap[] = {
 // Menu item is located for ease of removing it from the parent owner
 static NSMenuItem* recentDocumentsMenuItem_ = nil;
 
-// TODO(sethlu): Doc & find a better naming
-static NSMenu* swapMenu_ = nil;
+// Submenu retained to be swapped back to |recentDocumentsMenuItem_|
+static NSMenu* recentDocumentsMenuSwap_ = nil;
 
 @implementation AtomMenuController
 
@@ -148,7 +148,7 @@ static NSMenu* swapMenu_ = nil;
   [menu insertItem:separator atIndex:index];
 }
 
-// TODO(sethlu): Doc
+// Empties the source menu items to the destination.
 - (void)moveMenuItems:(NSMenu*)source
                    to:(NSMenu*)destination {
   const long count = [source numberOfItems];
@@ -159,23 +159,28 @@ static NSMenu* swapMenu_ = nil;
   }
 }
 
-// TODO(sethlu): Doc
+// Replaces the item's submenu instance with the singleton recent documents
+// menu. Previously replaced menu items will be recovered.
 - (void)replaceSubmenuShowingRecentDocuments:(NSMenuItem*)item {
   NSMenu* recentDocumentsMenu = [[[recentDocumentsMenuItem_ submenu]
       retain] autorelease];
 
   // Remove menu items in recent documents back to swap menu
-  [self moveMenuItems:recentDocumentsMenu to:swapMenu_];
+  [self moveMenuItems:recentDocumentsMenu
+                   to:recentDocumentsMenuSwap_];
   // Swap back the submenu
-  [recentDocumentsMenuItem_ setSubmenu:swapMenu_];
+  [recentDocumentsMenuItem_ setSubmenu:recentDocumentsMenuSwap_];
 
   // Release the previous swap menu if exists
-  if (swapMenu_) [swapMenu_ release];
+  if (recentDocumentsMenuSwap_)
+      [recentDocumentsMenuSwap_ release];
+
   // Retain the item's submenu for a future recovery
-  swapMenu_ = [[item submenu] retain];
+  recentDocumentsMenuSwap_ = [[item submenu] retain];
 
   // Repopulate with items from the submenu to be replaced
-  [self moveMenuItems:swapMenu_ to:recentDocumentsMenu];
+  [self moveMenuItems:recentDocumentsMenuSwap_
+                   to:recentDocumentsMenu];
   // Replace submenu
   [item setSubmenu:recentDocumentsMenu];
 
