@@ -50,9 +50,16 @@ Role kRolesMap[] = {
   { @selector(selectPreviousTab:), "selectprevioustab" },
   { @selector(mergeAllWindows:), "mergeallwindows" },
   { @selector(moveTabToNewWindow:), "movetabtonewwindow" },
+  { @selector(clearRecentDocuments:), "clearrecent" },
 };
 
 }  // namespace
+
+// Menu item is located for ease of removing it from the parent owner
+NSMenuItem* recentDocumentsMenuItem_;
+
+// TODO(sethlu): Doc & find a better naming
+NSMenu* swapMenu_;
 
 @implementation AtomMenuController
 
@@ -77,8 +84,6 @@ Role kRolesMap[] = {
 
   model_ = nil;
 
-  [openRecentMenuItem_ release];
-
   [super dealloc];
 }
 
@@ -90,14 +95,13 @@ Role kRolesMap[] = {
   if (!menu_)
     return;
 
-  // Retain submenu for recent documents
-  if (!openRecentMenuItem_) {
-    openRecentMenuItem_ = [[[[NSApp mainMenu]
-        itemWithTitle:@"Electron"] submenu] itemWithTitle:@"Open Recent"];
-    [openRecentMenuItem_ setHidden:NO];
-    [openRecentMenuItem_ retain];
-    openRecentClearMenuMenuItem_ =
-        [[openRecentMenuItem_ submenu] itemWithTitle:@"Clear Menu"];
+  if (!recentDocumentsMenuItem_) {
+    // Locate & retain the recent documents menu item
+    recentDocumentsMenuItem_ = [[[[[[NSApp mainMenu]
+        itemWithTitle:@"Electron"] submenu]
+        itemWithTitle:@"Open Recent"]
+        retain] autorelease];
+    [recentDocumentsMenuItem_ setHidden:NO];
   }
 
   model_ = model;
@@ -145,6 +149,39 @@ Role kRolesMap[] = {
   [menu insertItem:separator atIndex:index];
 }
 
+// TODO(sethlu): Doc
+- (void)moveMenuItems:(NSMenu*)source
+                   to:(NSMenu*)destination {
+  const long count = [source numberOfItems];
+  for (long index = 0; index < count; index++) {
+    NSMenuItem* removedItem = [[[source itemAtIndex:0] retain] autorelease];
+    [source removeItemAtIndex:0];
+    [destination addItem:removedItem];
+  }
+}
+
+// TODO(sethlu): Doc
+- (void)replaceSubmenuShowingRecentDocuments:(NSMenuItem*)item {
+  NSMenu* recentDocumentsMenu = [[[recentDocumentsMenuItem_ submenu]
+      retain] autorelease];
+
+  // Remove menu items in recent documents back to swap menu
+  [self moveMenuItems:recentDocumentsMenu to:swapMenu_];
+  // Swap back the submenu
+  [recentDocumentsMenuItem_ setSubmenu:swapMenu_];
+
+  // Retain the item's submenu for a future recovery
+  swapMenu_ = [[[item submenu] retain] autorelease];
+
+  // Repopulate with items from the submenu to be replaced
+  [self moveMenuItems:swapMenu_ to:recentDocumentsMenu];
+  // Replace submenu
+  [item setSubmenu:recentDocumentsMenu];
+
+  // Remember the new menu item that carries the recent documents menu
+  recentDocumentsMenuItem_ = [[item retain] autorelease];
+}
+
 // Adds an item or a hierarchical menu to the item at the |index|,
 // associated with the entry in the model identified by |modelIndex|.
 - (void)addItemToMenu:(NSMenu*)menu
@@ -153,26 +190,6 @@ Role kRolesMap[] = {
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
   base::string16 role = model->GetRoleAt(index);
-
-  if (role == base::ASCIIToUTF16("openrecent")) {
-    // Remove singleton menu item from parent menu
-    [[openRecentMenuItem_ menu] removeItem:openRecentMenuItem_];
-
-    // Label formatted as "Open Recent\tClear Menu"
-    NSArray *titles = [label componentsSeparatedByString:@"\t"];
-
-    // Open recent
-    [openRecentMenuItem_ setTitle:titles[0]];
-    [[openRecentMenuItem_ submenu] setTitle:titles[0]];
-    [menu insertItem:openRecentMenuItem_ atIndex:index];
-
-    // Clear menu item only displayed if specified in label
-    bool clearMenuVisible = [titles count] > 1;
-    [openRecentClearMenuMenuItem_ setHidden:!clearMenuVisible];
-    if (clearMenuVisible) [openRecentClearMenuMenuItem_ setTitle:titles[1]];
-
-    return;
-  }
 
   base::scoped_nsobject<NSMenuItem> item(
       [[NSMenuItem alloc] initWithTitle:label
@@ -202,6 +219,8 @@ Role kRolesMap[] = {
       [NSApp setHelpMenu:submenu];
     else if (role == base::ASCIIToUTF16("services"))
       [NSApp setServicesMenu:submenu];
+    else if (role == base::ASCIIToUTF16("openrecent"))
+      [self replaceSubmenuShowingRecentDocuments:item];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the
     // tag like we do in other menus. Also set the represented object to be
