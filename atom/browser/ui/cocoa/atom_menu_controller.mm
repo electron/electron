@@ -56,10 +56,10 @@ Role kRolesMap[] = {
 }  // namespace
 
 // Menu item is located for ease of removing it from the parent owner
-NSMenuItem* recentDocumentsMenuItem_;
+NSMenuItem* recentDocumentsMenuItem_ = nil;
 
 // TODO(sethlu): Doc & find a better naming
-NSMenu* swapMenu_;
+NSMenu* swapMenu_ = nil;
 
 @implementation AtomMenuController
 
@@ -97,10 +97,10 @@ NSMenu* swapMenu_;
 
   if (!recentDocumentsMenuItem_) {
     // Locate & retain the recent documents menu item
-    recentDocumentsMenuItem_ = [[[[[[NSApp mainMenu]
+    recentDocumentsMenuItem_ = [[[[[NSApp mainMenu]
         itemWithTitle:@"Electron"] submenu]
         itemWithTitle:@"Open Recent"]
-        retain] autorelease];
+        retain];
   }
 
   model_ = model;
@@ -169,16 +169,20 @@ NSMenu* swapMenu_;
   // Swap back the submenu
   [recentDocumentsMenuItem_ setSubmenu:swapMenu_];
 
+  // Release the previous swap menu if exists
+  if (swapMenu_) [swapMenu_ release];
   // Retain the item's submenu for a future recovery
-  swapMenu_ = [[[item submenu] retain] autorelease];
+  swapMenu_ = [[item submenu] retain];
 
   // Repopulate with items from the submenu to be replaced
   [self moveMenuItems:swapMenu_ to:recentDocumentsMenu];
   // Replace submenu
   [item setSubmenu:recentDocumentsMenu];
 
+  // Release the previous menu
+  [recentDocumentsMenuItem_ release];
   // Remember the new menu item that carries the recent documents menu
-  recentDocumentsMenuItem_ = [[item retain] autorelease];
+  recentDocumentsMenuItem_ = [item retain];
 }
 
 // Adds an item or a hierarchical menu to the item at the |index|,
