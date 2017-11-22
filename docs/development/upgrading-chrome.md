@@ -3,51 +3,118 @@
 This document is meant to serve as an overview of what steps are needed
 on each Chromium upgrade in Electron.
 
-## Update libchromiumcontent (a.k.a. libcc)
+- Upgrade libcc to a new Chromium version
+- Make Electron code compatible with the new libcc
+- Update Electron dependencies (crashpad, NodeJS, etc.) if needed
+- Make internal builds of libcc and electron
+- Update Electron docs if necessary
 
-- Clone the repo:
-```sh
-git clone git@github.com:electron/libchromiumcontent.git
-cd libchromiumcontent
-```
-- Run bootstrap script to init and sync git submodules:
-```sh
-./script/bootstrap -v
-```
-- Update `VERSION` file to correspond to Chromium version.
-- Run `script/update`, it will probably fail applying patches.
-- Fix failing patches. `script/patch.py` might help.
-  - Don't forget to fix patches in the `patches-mas/` folder.
-- Build libcc:
-```sh
-./script/build
-```
-- Create dist folders which will be used by electron:
-```sh
-./script/create-dist --no_zip
-cd dist/main
-../../tools/generate_filenames_gypi filenames.gypi src shared_library static_library
-cd -
-```
-- Open a pull request to `electron/libchromiumcontent` with the changes.
-- Fix compilation on the all supported platforms/arches.
 
-## Update Electron
+## Upgrade `libcc` to a new Chromium
 
-- Set `vendor/libchromiumcontent` revision to a version with the new Chromium.
-  - It will be great if GH builds for this libcc version are already green
-    and its archives are already available. Otherwise everyone would need
-    to build libcc locally in order to try build a new Electron.
-- Set `CLANG_REVISION` in `script/update-clang.sh` to match the version
-  Chromium is using. You can find it in file `src/tools/clang/scripts/update.py` in updated `electron/libchromiumcontent` repo.
-- Run `script/bootstrap.py`.
-- Upgrade Node.js if you are willing to. See the notes below.
-- Fix compilation.
-- Open a pull request on `electron/electron` with the changes.
-  - This should include upgrading the submodules in `vendor/` as needed.
-- Fix failing tests.
+### Steps
+### 1. Get the code and initialize the project:
+```
+$ git clone git@github.com:electron/libchromiumcontent.git
+$ cd libchromiumcontent
+$ ./script/bootstrap -v
+```
+### 2. Find the new beta/stable Chromium version from [OmahaProxy](https://omahaproxy.appspot.com/).
+### 3. Put it into the `libchromiumcontent/VERSION` file, then run `$ ./script/update`
+ - It will probably fail applying patches.
+### 4. Fix `*.patch` files in the `/patches` and `/patches-mas` folders.
+### 5. (Optional) Run a separate script to apply patches (`script/update` uses it internally):
+ ```
+ $ ./script/apply-patches
+ ```
+ - There is also another script `/script/patch.py` that could be more useful, check `--help` to learn how it works with `$ ./script/patch.py -h`
+### 6. Run the build when all patches can be applied without errors
+ ```
+ $ ./script/build
+ ```
+ - If some patches are no longer compatible with the Chromium code, fix compilation errors.
+### 7. When build succeeds, create a `dist` for Electron
+ `$ ./script/create-dist  --no_zip`
+ - It will create `dist/main` folder in the root of the libcc repo, you will need it to build Electron.
+### 8. (Optional) Update script contents if there are errors resultant of some files being removed or renamed. (`--no_zip` prevents script from create `dist` archives, you don't need them.)
 
-## Upgrade Node.js
+
+## Update Electron Code
+
+### Steps
+### 1. Get the code:
+```
+$ git clone git@github.com:electron/electron.git
+$ cd electron
+```
+### 2. If you already have libcc built on you machine in its own repo, you need to tell Electron explicitly to use it:
+   ```
+   $ ./script/bootstrap.py -v \
+  	--libcc_source_path <libcc_folder>/src \
+  	--libcc_shared_library_path <libcc_folder>/shared_library \
+  	--libcc_static_library_path <libcc_folder>/static_library
+   ```
+- If you haven't yet built libcc but it's already supposed to be upgraded to a new Chromium, bootstrap Electron as usual
+    `$ ./script/bootstrap.py -v`
+    - Ensure that libcc submodule (`vendor/libchromiumcontent`) points to a right revision
+
+### 3. Set CLANG_REVISION in` script/update-clang.sh` to match the version Chromium is using.
+- Located in `electron/libchromiumcontent/src/tools/clang/scripts/update.py`
+
+### 4. Checkout Chromium if you haven't already: https://chromium.googlesource.com/chromium/src.git/+/{VERSION}/tools/clang/scripts/update.py
+  - (Replace the `{VERSION}` placeholder in the url above to the Chromium version libcc uses.)
+### 5. Build Electron.
+- Try to build Debug version first: `$ ./script/build.py -c D`
+- You will need it to run tests
+### 6. Fix compilation and linking errors
+### 7. Ensure that Release build can be built too: `$ ./script/build.py -c R`
+  - Often the Release build will have different linking errors that you'll need to fix.
+  - Some compilation and linking errors are caused by missing source/object files in the libcc `dist`
+### 8. Update `./script/create-dist` in the libcc repo, recreate a `dist`, and run Electron bootstrap script once again.
+
+### Tips for fixing compilation errors
+- Fix build config errors first
+- Fix fatal errors first, like missing files and errors related to compiler flags or defines
+- Try to identify complex errors as soon as possible.
+  - Ask for help if you're not sure how to fix them
+- Disable all Electron features, fix the build, then enable them one by one
+- Add more build flags to disable features in build-time.
+
+When a Debug build of Electron succeeds, run the tests:
+`$ ./script/test.py`
+Fix the failing tests.
+
+Follow all the steps above to fix Electron code on all supported platforms.
+
+
+## Update Crashpad
+
+- Electron's crashpad fork: https://github.com/electron/crashpad
+- Primary crashpad repo: https://chromium.googlesource.com/crashpad/crashpad/
+
+
+### Steps
+If there are any compilation errors related to the Crashpad, it probably means you need to update the fork to a newer revision:
+
+### 1. Clone Electron's fork of the Crashpad, add the main repo as another remote:
+   ```$ git clone https://github.com/electron/crashpad && cd crashpad
+   $ git remote add upstream https://chromium.googlesource.com/crashpad/crashpad/ && git fetch upstream
+   ```
+### 2. Find a revision Chromium uses in src/third_party/crashpad/README.chromium
+### 3. Rebase the master branch to that REVISION
+  ```
+  $ git rebase REVISION
+  ```
+  - If there are nontrivial conflicts during rebase, consult with the commit's author.
+### 4. Add a tag with the next Electron version to a top commit in the master branch
+  - e.g. if current Electron version is `1.11.*`, then use tag `electron-1.12.0`, because it will be used in the next version.
+### 5. Ensure Electron-specific commits in the master branch on GitHub are properly tagged
+  - If they aren't, force push will make them orphans and they'll be lost.
+### 6. Force push to Electron's crashpad fork.
+### 7. Update `/vendor/crashpad` submodule in the Electron's upgrade branch to point to the updated crashpad.
+
+
+## Update NodeJS
 
 - Upgrade `vendor/node` to the Node release that corresponds to the v8 version
   being used in the new Chromium release. See the v8 versions in Node on
@@ -55,11 +122,6 @@ cd -
   - You can find v8 version Chromium is using on [OmahaProxy](http://omahaproxy.appspot.com).
     If it's not available check `v8/include/v8-version.h`
     in the Chromium checkout.
-
-## Troubleshooting
-
-**TODO**
-
 
 ## Verify ffmpeg Support
 
