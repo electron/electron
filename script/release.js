@@ -100,7 +100,6 @@ function assetsForVersion (version) {
     `electron-${version}-linux-armv7l.zip`,
     `electron-${version}-linux-ia32-symbols.zip`,
     `electron-${version}-linux-ia32.zip`,
-    `electron-${version}-linux-mips64el-symbols.zip`,
     `electron-${version}-linux-mips64el.zip`,
     `electron-${version}-linux-x64-symbols.zip`,
     `electron-${version}-linux-x64.zip`,
