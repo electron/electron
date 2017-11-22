@@ -14,7 +14,7 @@ on each Chromium upgrade in Electron.
 
 ### Steps
 ### 1. Get the code and initialize the project:
-```
+```sh
 $ git clone git@github.com:electron/libchromiumcontent.git
 $ cd libchromiumcontent
 $ ./script/bootstrap -v
@@ -24,12 +24,12 @@ $ ./script/bootstrap -v
  - It will probably fail applying patches.
 ### 4. Fix `*.patch` files in the `/patches` and `/patches-mas` folders.
 ### 5. (Optional) Run a separate script to apply patches (`script/update` uses it internally):
- ```
+ ```sh
  $ ./script/apply-patches
  ```
  - There is also another script `/script/patch.py` that could be more useful, check `--help` to learn how it works with `$ ./script/patch.py -h`
 ### 6. Run the build when all patches can be applied without errors
- ```
+ ```sh
  $ ./script/build
  ```
  - If some patches are no longer compatible with the Chromium code, fix compilation errors.
@@ -43,12 +43,12 @@ $ ./script/bootstrap -v
 
 ### Steps
 ### 1. Get the code:
-```
+```sh
 $ git clone git@github.com:electron/electron.git
 $ cd electron
 ```
 ### 2. If you already have libcc built on you machine in its own repo, you need to tell Electron explicitly to use it:
-   ```
+   ```sh
    $ ./script/bootstrap.py -v \
   	--libcc_source_path <libcc_folder>/src \
   	--libcc_shared_library_path <libcc_folder>/shared_library \
@@ -97,12 +97,13 @@ Follow all the steps above to fix Electron code on all supported platforms.
 If there are any compilation errors related to the Crashpad, it probably means you need to update the fork to a newer revision:
 
 ### 1. Clone Electron's fork of the Crashpad, add the main repo as another remote:
-   ```$ git clone https://github.com/electron/crashpad && cd crashpad
+   ```sh
+   $ git clone https://github.com/electron/crashpad && cd crashpad
    $ git remote add upstream https://chromium.googlesource.com/crashpad/crashpad/ && git fetch upstream
    ```
 ### 2. Find a revision Chromium uses in src/third_party/crashpad/README.chromium
 ### 3. Rebase the master branch to that REVISION
-  ```
+  ```sh
   $ git rebase REVISION
   ```
   - If there are nontrivial conflicts during rebase, consult with the commit's author.
