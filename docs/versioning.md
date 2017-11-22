@@ -1,5 +1,16 @@
 # Electron Versioning
 
+> This document is a detailed look at our versioning policy and implementation.
+
+For most people, the following will provide you with the most recent stable build:
+
+```bash
+$ npm install --save electron
+```
+
+If you want to track the latest electron _always_,
+you will need to run `npm install --save electron@latest` whenever a new major version is released.
+
 ## Version 1.x
 
 Electron versions *< 2.0* have not conformed to the [semver](http://semver.org) spec. Major versions corresponded to end-user API changes. Minor versions corresponded to Chromium major releases. Patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Stride, Teams, Skype, VS Code, Atom, and Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
@@ -18,7 +29,7 @@ There are several major changes from our 1.x strategy outlined below. Each chang
 2. Introduction of semver-compliant `-beta` tags
 3. Introduction of [semantic-release](https://github.com/semantic-release/semantic-release#default-commit-message-format) style commit messages
 4. Clearly defined stabilization branches
-5. Regular release cadence
+5. The `master` branch is versionless; only stability branches contain version information
 
 We will cover in detail how git branching works, how npm tagging works, what developers should expect to see, and how one can backport changes.
 
@@ -134,3 +145,9 @@ All other commit messages will be rejected from merging to `master`.
 
 * We allow squashing of commits, provided that the squashed message adheres the the above message format.
 * A pull-request can contain non-conforming commit messages, however the commits must adhere to the naming standard _before_ a merge can be approved.
+
+# Versionless `master`
+
+- The `master` branch will always contain `0.0.0-dev` in its `package.json`
+- Release branches are never merged back to master
+- Release branches _do_ contain the correct version in their `package.json`
