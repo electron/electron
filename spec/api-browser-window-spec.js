@@ -818,6 +818,10 @@ describe('BrowserWindow module', () => {
     it('returns the window with the browserView', () => {
       assert.equal(BrowserWindow.fromBrowserView(bv).id, w.id)
     })
+
+    it('returns undefined if not attached', () => {
+      w.setBrowserView(null)
+      assert.equal(BrowserWindow.fromBrowserView(bv), undefined)
     })
   })
 
