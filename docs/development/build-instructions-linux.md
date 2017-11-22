@@ -196,7 +196,13 @@ For example building with GCC toolchain:
 ```bash
 $ env CC=gcc CXX=g++ ./script/bootstrap.py -v --build_release_libcc --disable_clang
 $ ./script/build.py -c R
-```
+
+### Show Current Version of Electron
+
+To show current version of electron 
+
+```bash
+$ npm i electron-version -S
 
 ### Environment variables
 
