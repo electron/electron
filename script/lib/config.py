@@ -84,3 +84,21 @@ def get_zip_name(name, version, suffix=''):
   if suffix:
     zip_name += '-' + suffix
   return zip_name + '.zip'
+
+
+def build_env():
+  env = os.environ.copy()
+  if get_target_arch() == "mips64el":
+    SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
+    gcc_dir = os.path.join(VENDOR_DIR, MIPS64EL_GCC)
+    ldlib_dirs = [
+      gcc_dir + '/usr/x86_64-unknown-linux-gnu/mips64el-redhat-linux/lib',
+      gcc_dir + '/usr/lib64',
+      gcc_dir + '/usr/mips64el-redhat-linux/lib64',
+      gcc_dir + '/usr/mips64el-redhat-linux/sysroot/lib64',
+      gcc_dir + '/usr/mips64el-redhat-linux/sysroot/usr/lib64',
+    ]
+    env['LD_LIBRARY_PATH'] = os.pathsep.join(ldlib_dirs)
+    env['PATH'] = os.pathsep.join([gcc_dir + '/usr/bin', env['PATH']])
+  return env

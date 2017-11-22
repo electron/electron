@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 
-from lib.config import MIPS64EL_GCC, get_target_arch
+from lib.config import MIPS64EL_GCC, get_target_arch, build_env
 from lib.util import electron_gyp, import_vs_env
 
 
@@ -69,21 +69,6 @@ def parse_args():
                       action='store_true', default=False)
   return parser.parse_args()
 
-
-def build_env():
-  env = os.environ.copy()
-  if get_target_arch() == "mips64el":
-    gcc_dir = os.path.join(VENDOR_DIR, MIPS64EL_GCC)
-    ldlib_dirs = [
-      gcc_dir + '/usr/x86_64-unknown-linux-gnu/mips64el-redhat-linux/lib',
-      gcc_dir + '/usr/lib64',
-      gcc_dir + '/usr/mips64el-redhat-linux/lib64',
-      gcc_dir + '/usr/mips64el-redhat-linux/sysroot/lib64',
-      gcc_dir + '/usr/mips64el-redhat-linux/sysroot/usr/lib64',
-    ]
-    env['LD_LIBRARY_PATH'] = os.pathsep.join(ldlib_dirs)
-    env['PATH'] = os.pathsep.join([gcc_dir + '/usr/bin', env['PATH']])
-  return env
 
 if __name__ == '__main__':
   sys.exit(main())
