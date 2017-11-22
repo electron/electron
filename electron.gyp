@@ -350,7 +350,7 @@
               # Make binary search for libraries under current directory, so we
               # don't have to manually set $LD_LIBRARY_PATH:
               # http://serverfault.com/questions/279068/cant-find-so-in-the-same-directory-as-the-executable
-              '-rpath \$$ORIGIN',
+              '-Wl,-rpath=\$$ORIGIN',
               # Make native module dynamic loading work.
               '-rdynamic',
             ],
