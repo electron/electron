@@ -30,4 +30,4 @@ vmd electron-i18n/content/zh-CN
 [Crowdin]: https://crowdin.com/project/electron
 [electron/electron-i18n]: https://github.com/electron/electron-i18n#readme
 [electron/electron-i18n/tree/master/content]: https://github.com/electron/electron-i18n/tree/master/content
-[vmd]: http://ghub.io/vmd
+[vmd]: https://ghub.io/vmd
