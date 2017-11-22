@@ -9,7 +9,7 @@ const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
-const {app, ipcMain, BrowserWindow, protocol, webContents} = remote
+const {app, ipcMain, BrowserWindow, BrowserView, protocol, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
@@ -799,6 +799,25 @@ describe('BrowserWindow module', () => {
         done()
       })
       w.webContents.openDevTools()
+    })
+  })
+
+  describe('BrowserWindow.fromBrowserView(browserView)', () => {
+    let bv = null
+
+    beforeEach(() => {
+      bv = new BrowserView()
+      w.setBrowserView(bv)
+    })
+
+    afterEach(() => {
+      w.setBrowserView(null)
+      bv.destroy()
+    })
+
+    it('returns the window with the browserView', () => {
+      assert.equal(BrowserWindow.fromBrowserView(bv).id, w.id)
+    })
     })
   })
 
