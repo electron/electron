@@ -580,6 +580,12 @@ Returns `BrowserWindow` - The window that is focused in this application, otherw
 
 Returns `BrowserWindow` - The window that owns the given `webContents`.
 
+#### `BrowserWindow.fromBrowserView(browserView)`
+
+* `browserView` [BrowserView](browser-view.md)
+
+Returns `BrowserWindow | null` - The window that owns the given `browserView`. If the given view is not attached to any window, returns `null`.
+
 #### `BrowserWindow.fromId(id)`
 
 * `id` Integer
