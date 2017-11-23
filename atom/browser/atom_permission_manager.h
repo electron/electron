@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "base/id_map.h"
+#include "base/containers/id_map.h"
 #include "base/values.h"
 #include "content/public/browser/permission_manager.h"
 
@@ -93,7 +93,7 @@ class AtomPermissionManager : public content::PermissionManager {
 
  private:
   class PendingRequest;
-  using PendingRequestsMap = IDMap<std::unique_ptr<PendingRequest>>;
+  using PendingRequestsMap = base::IDMap<std::unique_ptr<PendingRequest>>;
 
   RequestHandler request_handler_;
 
