@@ -384,6 +384,7 @@
           4702, # unreachable code
           4715, # not all control paths return a value
           4819, # The file contains a character that cannot be represented in the current code page
+          4275, # non dll-interface class used as base for dll-interface class
         ],
       }],
     ],  # conditions
