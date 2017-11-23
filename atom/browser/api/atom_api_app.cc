@@ -1133,8 +1133,8 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
   auto status = content::GetFeatureStatus();
-  return mate::ConvertToV8(isolate,
-                           status ? *status : base::DictionaryValue());
+  base::DictionaryValue temp;
+  return mate::ConvertToV8(isolate, status ? *status : temp);
 }
 
 void App::EnableMixedSandbox(mate::Arguments* args) {
