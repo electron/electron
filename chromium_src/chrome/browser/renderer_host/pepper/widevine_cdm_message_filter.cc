@@ -9,6 +9,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/webplugininfo.h"
 #include "content/public/browser/plugin_service.h"
+#include "media/media_features.h"
 
 using content::PluginService;
 using content::WebPluginInfo;
@@ -24,17 +25,17 @@ WidevineCdmMessageFilter::WidevineCdmMessageFilter(
 
 bool WidevineCdmMessageFilter::OnMessageReceived(const IPC::Message& message) {
   IPC_BEGIN_MESSAGE_MAP(WidevineCdmMessageFilter, message)
-#if BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if BUILDFLAG(ENABLE_LIBRARY_CDMS)
     IPC_MESSAGE_HANDLER(
         ChromeViewHostMsg_IsInternalPluginAvailableForMimeType,
         OnIsInternalPluginAvailableForMimeType)
-#endif
+#endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
     IPC_MESSAGE_UNHANDLED(return false)
   IPC_END_MESSAGE_MAP()
   return true;
 }
 
-#if BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if BUILDFLAG(ENABLE_LIBRARY_CDMS)
 void WidevineCdmMessageFilter::OnIsInternalPluginAvailableForMimeType(
     const std::string& mime_type,
     bool* is_available,
@@ -60,7 +61,7 @@ void WidevineCdmMessageFilter::OnIsInternalPluginAvailableForMimeType(
 
   *is_available = false;
 }
-#endif // BUILDFLAG(ENABLE_PEPPER_CDMS)
+#endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
 void WidevineCdmMessageFilter::OnDestruct() const {
   BrowserThread::DeleteOnUIThread::Destruct(this);
