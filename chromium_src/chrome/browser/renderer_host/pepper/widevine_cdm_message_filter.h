@@ -7,6 +7,7 @@
 
 #include "chrome/common/widevine_cdm_messages.h"
 #include "content/public/browser/browser_message_filter.h"
+#include "media/media_features.h"
 
 namespace content {
 class BrowserContext;
@@ -25,7 +26,7 @@ class WidevineCdmMessageFilter : public content::BrowserMessageFilter {
 
   virtual ~WidevineCdmMessageFilter();
 
-  #if BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if BUILDFLAG(ENABLE_LIBRARY_CDMS)
   // Returns whether any internal plugin supporting |mime_type| is registered
   // and enabled. Does not determine whether the plugin can actually be
   // instantiated (e.g. whether it has all its dependencies).
@@ -38,7 +39,7 @@ class WidevineCdmMessageFilter : public content::BrowserMessageFilter {
       bool* is_available,
       std::vector<base::string16>* additional_param_names,
       std::vector<base::string16>* additional_param_values);
-#endif
+#endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
   int render_process_id_;
   content::BrowserContext* browser_context_;
