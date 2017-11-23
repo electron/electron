@@ -103,6 +103,23 @@ We need to generate a patch file from each patch applied to V8.
 - Update `patches/v8/README.md`
   =FIXME== (In libchromiumcontent repo) Read `patches/v8/README.md` to see which patchfiles
 
+- Update Electron's submodule references:
+   ```sh
+   cd electron/vendor/node
+   electron/vendor/node$ git fetch
+   electron/vendor/node$ git checkout electron-node-vA.B.C
+   electron/vendor/node$ cd ../libchromiumcontent
+   electron/vendor/libchromiumcontent$ git fetch
+   electron/vendor/libchromiumcontent$ git checkout upgrade-to-chromium-X
+   electron/vendor/libchromiumcontent$ cd ../..
+   electron$ git add vendor
+   electron$ git commit -m "update submodule referefences for node and libc"
+   electron$ git pso upgrade-to-chromium-62
+   electron$ script/bootstrap.py -d
+   electron$ script/build.py -c -D
+   ```
+
+   
 
 ## Notes
 
