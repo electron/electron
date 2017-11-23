@@ -12,6 +12,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
 #include "net/cookies/cookie_monster.h"
+#include "net/cookies/cookie_store.h"
 #include "net/http/http_cache.h"
 #include "net/http/transport_security_state.h"
 #include "net/http/url_security_manager.h"
@@ -44,9 +45,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual ~Delegate() {}
 
     virtual net::NetworkDelegate* CreateNetworkDelegate() { return nullptr; }
-    virtual net::CookieMonsterDelegate* CreateCookieDelegate() {
-      return nullptr;
-    }
     virtual std::string GetUserAgent();
     virtual std::unique_ptr<net::URLRequestJobFactory>
     CreateURLRequestJobFactory(content::ProtocolHandlerMap* protocol_handlers);
