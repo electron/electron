@@ -31,7 +31,7 @@ async function makeRequest (requestOptions, parseResponse) {
         } else {
           console.log('Error: ', `(status ${res.statusCode})`, err || res.body, requestOptions)
         }
-        reject()
+        reject(err)
       }
     })
   })
