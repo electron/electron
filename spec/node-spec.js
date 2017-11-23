@@ -274,7 +274,7 @@ describe('node feature', () => {
     it('can be created from WebKit external string', () => {
       const p = document.createElement('p')
       p.innerText = '闲云潭影日悠悠，物换星移几度秋'
-      const b = new Buffer(p.innerText)
+      const b = Buffer.from(p.innerText)
       assert.equal(b.toString(), '闲云潭影日悠悠，物换星移几度秋')
       assert.equal(Buffer.byteLength(p.innerText), 45)
     })
@@ -282,15 +282,15 @@ describe('node feature', () => {
     it('correctly parses external one-byte UTF8 string', () => {
       const p = document.createElement('p')
       p.innerText = 'Jøhänñéß'
-      const b = new Buffer(p.innerText)
+      const b = Buffer.from(p.innerText)
       assert.equal(b.toString(), 'Jøhänñéß')
       assert.equal(Buffer.byteLength(p.innerText), 13)
     })
 
     it('does not crash when creating large Buffers', () => {
-      let buffer = new Buffer(new Array(4096).join(' '))
+      let buffer = Buffer.from(new Array(4096).join(' '))
       assert.equal(buffer.length, 4095)
-      buffer = new Buffer(new Array(4097).join(' '))
+      buffer = Buffer.from(new Array(4097).join(' '))
       assert.equal(buffer.length, 4096)
     })
   })

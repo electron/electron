@@ -15,7 +15,7 @@ describe('asar package', function () {
 
   describe('node api', function () {
     it('supports paths specified as a Buffer', function () {
-      var file = new Buffer(path.join(fixtures, 'asar', 'a.asar', 'file1'))
+      var file = Buffer.from(path.join(fixtures, 'asar', 'a.asar', 'file1'))
       assert.equal(fs.existsSync(file), true)
     })
 
@@ -491,7 +491,7 @@ describe('asar package', function () {
           file = ref2[j]
           p = path.join(fixtures, 'asar', 'a.asar', file)
           fd = fs.openSync(p, 'r')
-          buffer = new Buffer(6)
+          buffer = Buffer.alloc(6)
           fs.readSync(fd, buffer, 0, 6, 0)
           assert.equal(String(buffer).trim(), 'file1')
           fs.closeSync(fd)
@@ -512,7 +512,7 @@ describe('asar package', function () {
         var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
         fs.open(p, 'r', function (err, fd) {
           assert.equal(err, null)
-          var buffer = new Buffer(6)
+          var buffer = Buffer.alloc(6)
           fs.read(fd, buffer, 0, 6, 0, function (err) {
             assert.equal(err, null)
             assert.equal(String(buffer).trim(), 'file1')

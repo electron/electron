@@ -27,7 +27,7 @@ describe('BrowserWindow module', () => {
     postData = [
       {
         type: 'rawData',
-        bytes: new Buffer('username=test&file=')
+        bytes: Buffer.from('username=test&file=')
       },
       {
         type: 'file',
@@ -270,7 +270,7 @@ describe('BrowserWindow module', () => {
         assert.equal(isMainFrame, true)
         done()
       })
-      const data = new Buffer(2 * 1024 * 1024).toString('base64')
+      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
       w.loadURL(`data:image/png;base64,${data}`)
     })
 
