@@ -3,14 +3,14 @@
 [![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/bc56v83355fi3369/branch/master?svg=true)](https://ci.appveyor.com/project/electron-bot/electron/branch/master)
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
-[![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
+[![Join the Electron Community on Slack](https://atom-slack.herokuapp.com/badge.svg)](https://atom-slack.herokuapp.com/)
 
 :memo: Available Translations: 🇨🇳 🇹🇼 🇧🇷 🇪🇸 🇰🇷 🇯🇵 🇷🇺 🇫🇷 🇹🇭 🇳🇱 🇹🇷 🇮🇩 🇺🇦 🇨🇿 🇮🇹.
 View these docs in other languages at [electron/electron-i18n](https://github.com/electron/electron-i18n/tree/master/content/).
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
-[Chromium](http://www.chromium.org) and is used by the [Atom
+[Chromium](https://www.chromium.org) and is used by the [Atom
 editor](https://github.com/atom/atom) and many other [apps](https://electronjs.org/apps).
 
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
@@ -89,15 +89,15 @@ Find documentation translations in [electron/electron-i18n](https://github.com/e
 
 You can ask questions and interact with the community in the following
 locations:
-- [`electron`](http://discuss.atom.io/c/electron) category on the Atom
+- [`electron`](https://discuss.atom.io/c/electron) category on the Atom
 forums
 - `#atom-shell` channel on Freenode
-- [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
+- [`Atom`](https://atom-slack.herokuapp.com) channel on Slack
 - [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](https://electron-kr.github.io/electron-kr) *(Korean)*
 - [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
-- [`electron-tr`](http://electron-tr.herokuapp.com) *(Turkish)*
+- [`electron-tr`](https://electron-tr.herokuapp.com) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
 
 Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
