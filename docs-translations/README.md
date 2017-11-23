@@ -9,7 +9,7 @@ For more details, visit the [electron/electron-i18n] repo.
 ## Contributing
 
 If you're interested in helping translate Electron's docs, visit 
-[crowdin.com/projects/electron] and log in with your GitHub account. And thanks!
+[Crowdin] and log in with your GitHub account. And thanks!
 
 ## Offline Docs
 
