@@ -31,6 +31,7 @@
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
@@ -337,6 +338,14 @@ void InspectableWebContentsImpl::CloseDevTools() {
     }
     embedder_message_dispatcher_.reset();
     web_contents_->Focus();
+
+    // Restore background color of the page since closing devtools changes the
+    // color to the default white. TODO(brenca): remove this once this fix is
+    // not necessary
+    const auto view = web_contents_->GetRenderWidgetHostView();
+    if (view) {
+      view->SetBackgroundColor(view->background_color());
+    }
   }
 }
 
