@@ -23,6 +23,7 @@
         '<(libchromiumcontent_src_dir)/third_party/skia/include/core',
         '<(libchromiumcontent_src_dir)/third_party/mojo/src',
         '<(libchromiumcontent_src_dir)/third_party/WebKit',
+        '<(libchromiumcontent_src_dir)/third_party/khronos',
         '<(libchromiumcontent_dir)/gen',
       ],
       'direct_dependent_settings': {
