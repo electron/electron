@@ -2178,6 +2178,11 @@ describe('BrowserWindow module', () => {
         w.setFullScreenable(false)
         assert.equal(w.isMaximizable(), true)
       })
+    })
+
+    describe('maximizable state (Windows only)', () => {
+      // Only implemented on windows.
+      if (process.platform !== 'win32') return
 
       it('is set to false when resizable state is set to false', () => {
         w.setResizable(false)
