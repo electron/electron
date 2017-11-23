@@ -7,7 +7,9 @@ const circleCIJobs = [
   'electron-linux-arm64',
   'electron-linux-ia32',
   'electron-linux-x64',
-  'electron-linux-arm'
+  'electron-linux-arm',
+  'electron-osx-x64',
+  'electron-mas-x64'
 ]
 
 const jenkinsJobs = [
