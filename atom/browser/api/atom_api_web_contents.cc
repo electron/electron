@@ -796,8 +796,7 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& url,
                               int error_code,
-                              const base::string16& error_description,
-                              bool was_ignored_by_handler) {
+                              const base::string16& error_description) {
   bool is_main_frame = !render_frame_host->GetParent();
   Emit("did-fail-load", error_code, error_description, url, is_main_frame);
 }
