@@ -125,4 +125,26 @@ describe('BrowserView module', () => {
       assert.equal(view2.webContents.id, view.webContents.id)
     })
   })
+
+  describe('BrowserView.fromWebContents()', () => {
+    it('returns the view with given id', () => {
+      view = new BrowserView()
+      w.setBrowserView(view)
+      assert.notEqual(view.id, null)
+      let view2 = BrowserView.fromWebContents(view.webContents)
+      assert.equal(view2.webContents.id, view.webContents.id)
+    })
+  })
+
+  describe('BrowserView.getAllViews()', () => {
+    it('returns all views', () => {
+      view = new BrowserView()
+      w.setBrowserView(view)
+      assert.notEqual(view.id, null)
+
+      const views = BrowserView.getAllViews()
+      assert.equal(views.length, 1)
+      assert.equal(views[0].webContents.id, view.webContents.id)
+    })
+  })
 })

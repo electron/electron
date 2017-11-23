@@ -40,6 +40,17 @@ view.webContents.loadURL('https://electronjs.org')
 
 ### Static Methods
 
+#### `BrowserView.getAllViews()`
+
+Returns `BrowserView[]` - An array of all opened BrowserViews.
+
+#### `BrowserView.fromWebContents(webContents)`
+
+* `webContents` [WebContents](web-contents.md)
+
+Returns `BrowserView | null` - The BrowserView that owns the given `webContents`
+or `null` if the contents are not owned by a BrowserView.
+
 #### `BrowserView.fromId(id)`
 
 * `id` Integer
