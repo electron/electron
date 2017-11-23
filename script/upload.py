@@ -66,8 +66,9 @@ def main():
   # Upload Electron with GitHub Releases API.
   upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME),
                   args.upload_to_s3)
-  upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME),
-                  args.upload_to_s3)
+  if get_target_arch() != 'mips64el':
+    upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME),
+                    args.upload_to_s3)
   if PLATFORM == 'darwin':
     upload_electron(github, release, os.path.join(DIST_DIR,
                     'electron-api.json'), args.upload_to_s3)
