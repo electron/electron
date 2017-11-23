@@ -202,7 +202,7 @@ $ ./script/build.py -c R
 To show current version of electron 
 
 ```bash
-$ npm i electron-version -S
+$ electron --version
 
 ### Environment variables
 
