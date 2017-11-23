@@ -9,6 +9,9 @@ const {closeWindow} = require('./window-helpers')
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
+/* Most of the APIs here don't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 describe('<webview> tag', function () {
   this.timeout(3 * 60 * 1000)
 
@@ -1423,7 +1426,7 @@ describe('<webview> tag', function () {
         })
 
         webview.style.display = 'none'
-        webview.offsetHeight
+        webview.offsetHeight // eslint-disable-line
         webview.style.display = 'block'
       })
       webview.src = `file://${fixtures}/pages/a.html`
@@ -1442,7 +1445,7 @@ describe('<webview> tag', function () {
         })
 
         webview.style.display = 'none'
-        webview.offsetHeight
+        webview.offsetHeight  // eslint-disable-line
         webview.style.display = 'block'
       })
       webview.src = `file://${fixtures}/pages/a.html`

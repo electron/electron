@@ -298,6 +298,7 @@ describe('node feature', () => {
   describe('process.stdout', () => {
     it('does not throw an exception when accessed', () => {
       assert.doesNotThrow(() => {
+        // eslint-disable-next-line
         process.stdout
       })
     })
@@ -332,7 +333,7 @@ describe('node feature', () => {
   describe('process.stdin', () => {
     it('does not throw an exception when accessed', () => {
       assert.doesNotThrow(() => {
-        process.stdin
+        process.stdin // eslint-disable-line
       })
     })
 

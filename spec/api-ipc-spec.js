@@ -195,6 +195,7 @@ describe('ipc module', () => {
       const foo = remote.require(path.join(fixtures, 'module', 'error-properties.js'))
 
       assert.throws(() => {
+        // eslint-disable-next-line
         foo.bar
       }, /getting error/)
 

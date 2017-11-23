@@ -10,6 +10,9 @@ const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
 // and use Stream instances created in the browser process.
 const stream = remote.require('stream')
 
+/* The whole protocol API doesn't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 describe('protocol module', () => {
   const protocolName = 'sp'
   const text = 'valar morghulis'

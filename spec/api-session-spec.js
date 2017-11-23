@@ -10,6 +10,9 @@ const {closeWindow} = require('./window-helpers')
 const {ipcRenderer, remote} = require('electron')
 const {ipcMain, session, BrowserWindow, net} = remote
 
+/* The whole session API doesn't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 describe('session module', () => {
   let fixtures = path.resolve(__dirname, 'fixtures')
   let w = null
