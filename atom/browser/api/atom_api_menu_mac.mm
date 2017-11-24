@@ -27,24 +27,22 @@ MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
       weak_factory_(this) {
 }
 
-void MenuMac::PopupAt(
-    Window* window, int x, int y, int positioning_item, bool async) {
+void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
   NativeWindow* native_window = window->window();
   if (!native_window)
     return;
 
   auto popup = base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
                           native_window->GetWeakPtr(), window->ID(), x, y,
-                          positioning_item, async);
-  if (async)
-    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, popup);
-  else
-    popup.Run();
+                          positioning_item);
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, popup);
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
-                        int32_t window_id, int x, int y, int positioning_item,
-                        bool async) {
+                        int32_t window_id,
+                        int x,
+                        int y,
+                        int positioning_item) {
   if (!native_window)
     return;
   brightray::InspectableWebContents* web_contents =
@@ -92,29 +90,21 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 
+  [popup_controllers_[window_id] setCloseCallback:close_callback];
+  // Make sure events can be pumped while the menu is up.
+  base::MessageLoop::ScopedNestableTaskAllower allow(
+      base::MessageLoop::current());
 
-  if (async) {
-    [popup_controllers_[window_id] setCloseCallback:close_callback];
-    // Make sure events can be pumped while the menu is up.
-    base::MessageLoop::ScopedNestableTaskAllower allow(
-        base::MessageLoop::current());
+  // One of the events that could be pumped is |window.close()|.
+  // User-initiated event-tracking loops protect against this by
+  // setting flags in -[CrApplication sendEvent:], but since
+  // web-content menus are initiated by IPC message the setup has to
+  // be done manually.
+  base::mac::ScopedSendingEvent sendingEventScoper;
 
-    // One of the events that could be pumped is |window.close()|.
-    // User-initiated event-tracking loops protect against this by
-    // setting flags in -[CrApplication sendEvent:], but since
-    // web-content menus are initiated by IPC message the setup has to
-    // be done manually.
-    base::mac::ScopedSendingEvent sendingEventScoper;
-
-    // Don't emit unresponsive event when showing menu.
-    atom::UnresponsiveSuppressor suppressor;
-    [menu popUpMenuPositioningItem:item atLocation:position inView:view];
-  } else {
-    // Don't emit unresponsive event when showing menu.
-    atom::UnresponsiveSuppressor suppressor;
-    [menu popUpMenuPositioningItem:item atLocation:position inView:view];
-    close_callback.Run();
-  }
+  // Don't emit unresponsive event when showing menu.
+  atom::UnresponsiveSuppressor suppressor;
+  [menu popUpMenuPositioningItem:item atLocation:position inView:view];
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {

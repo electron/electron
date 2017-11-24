@@ -43,6 +43,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
+#include "base/message_loop/message_loop.h"
 #include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -493,19 +494,20 @@ void WebContents::OnCreateWindow(
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const std::vector<std::string>& features,
-    const scoped_refptr<content::ResourceRequestBodyImpl>& body) {
+    const scoped_refptr<content::ResourceRequestBody>& body) {
   if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
     Emit("-new-window", target_url, frame_name, disposition, features, body);
   else
     Emit("new-window", target_url, frame_name, disposition, features);
 }
 
-void WebContents::WebContentsCreated(content::WebContents* source_contents,
-                                     int opener_render_process_id,
-                                     int opener_render_frame_id,
-                                     const std::string& frame_name,
-                                     const GURL& target_url,
-                                     content::WebContents* new_contents) {
+void WebContents::WebContentsCreated(
+    content::WebContents* source_contents,
+    int opener_render_process_id,
+    int opener_render_frame_id,
+    const std::string& frame_name,
+    const GURL& target_url,
+    content::WebContents* new_contents) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto api_web_contents = CreateFrom(isolate(), new_contents, BROWSER_WINDOW);
@@ -836,10 +838,10 @@ void WebContents::DidFinishNavigation(
   bool is_main_frame = navigation_handle->IsInMainFrame();
   if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
     auto url = navigation_handle->GetURL();
-    bool is_in_page = navigation_handle->IsSameDocument();
-    if (is_main_frame && !is_in_page) {
+    bool is_same_document = navigation_handle->IsSameDocument();
+    if (is_main_frame && !is_same_document) {
       Emit("did-navigate", url);
-    } else if (is_in_page) {
+    } else if (is_same_document) {
       Emit("did-navigate-in-page", url, is_main_frame);
     }
   } else {
@@ -864,7 +866,7 @@ void WebContents::DidUpdateFaviconURL(
     const std::vector<content::FaviconURL>& urls) {
   std::set<GURL> unique_urls;
   for (const auto& iter : urls) {
-    if (iter.icon_type != content::FaviconURL::FAVICON)
+    if (iter.icon_type != content::FaviconURL::IconType::kFavicon)
       continue;
     const GURL& url = iter.icon_url;
     if (url.is_valid())
@@ -986,7 +988,7 @@ void WebContents::WebContentsDestroyed() {
 void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& details) {
   Emit("navigation-entry-commited", details.entry->GetURL(),
-       details.is_in_page, details.did_replace_entry);
+       details.is_same_document, details.did_replace_entry);
 }
 
 int64_t WebContents::GetID() const {
@@ -1042,7 +1044,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (options.Get("extraHeaders", &extra_headers))
     params.extra_headers = extra_headers;
 
-  scoped_refptr<content::ResourceRequestBodyImpl> body;
+  scoped_refptr<content::ResourceRequestBody> body;
   if (options.Get("postData", &body)) {
     params.post_data = body;
     params.load_type = content::NavigationController::LOAD_TYPE_HTTP_POST;
@@ -1083,7 +1085,7 @@ void WebContents::DownloadURL(const GURL& url) {
 
   download_manager->DownloadUrl(
       content::DownloadUrlParameters::CreateForWebContentsMainFrame(
-          web_contents(), url));
+          web_contents(), url, NO_TRAFFIC_ANNOTATION_YET));
 }
 
 GURL WebContents::GetURL() const {
@@ -1476,7 +1478,8 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   if (!view)
     return;
 
-  int type = mate::GetWebInputEventType(isolate, input_event);
+  blink::WebInputEvent::Type type = mate::GetWebInputEventType(isolate,
+      input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
@@ -1489,7 +1492,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         blink::WebInputEvent::kNoModifiers,
         ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
-      view->ProcessKeyboardEvent(keyboard_event);
+      view->ProcessKeyboardEvent(keyboard_event, ui::LatencyInfo());
       return;
     }
   } else if (type == blink::WebInputEvent::kMouseWheel) {

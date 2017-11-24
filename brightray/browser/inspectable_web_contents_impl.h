@@ -113,6 +113,8 @@ class InspectableWebContentsImpl :
                      const std::string& value) override;
   void RemovePreference(const std::string& name) override;
   void ClearPreferences() override;
+  void RegisterExtensionsAPI(const std::string& origin,
+                             const std::string& script) override;
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);
@@ -127,10 +129,12 @@ class InspectableWebContentsImpl :
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
                               content::RenderFrameHost* new_host) override;
   void WebContentsDestroyed() override;
-  void OnWebContentsFocused() override;
-  void DidStartNavigationToPendingEntry(
-      const GURL& url,
-      content::ReloadType reload_type) override;
+  void OnWebContentsFocused(
+      content::RenderWidgetHost* render_widget_host) override;
+  void ReadyToCommitNavigation(
+      content::NavigationHandle* navigation_handle) override;
+  void DidFinishNavigation(
+      content::NavigationHandle* navigation_handle) override;
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
@@ -140,6 +144,7 @@ class InspectableWebContentsImpl :
                               const base::string16& source_id) override;
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
+      content::RenderFrameHost* opener,
       content::SiteInstance* source_site_instance,
       int32_t route_id,
       int32_t main_frame_route_id,
@@ -189,6 +194,9 @@ class InspectableWebContentsImpl :
   std::unique_ptr<content::WebContents> web_contents_;
   std::unique_ptr<content::WebContents> devtools_web_contents_;
   std::unique_ptr<InspectableWebContentsView> view_;
+
+  using ExtensionsAPIs = std::map<std::string, std::string>;
+  ExtensionsAPIs extensions_api_;
 
   base::WeakPtrFactory<InspectableWebContentsImpl> weak_factory_;
 

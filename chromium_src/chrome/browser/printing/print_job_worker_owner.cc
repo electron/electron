@@ -16,8 +16,8 @@ PrintJobWorkerOwner::PrintJobWorkerOwner()
 PrintJobWorkerOwner::~PrintJobWorkerOwner() {
 }
 
-bool PrintJobWorkerOwner::RunsTasksOnCurrentThread() const {
-  return task_runner_->RunsTasksOnCurrentThread();
+bool PrintJobWorkerOwner::RunsTasksInCurrentSequence() const {
+  return task_runner_->RunsTasksInCurrentSequence();
 }
 
 bool PrintJobWorkerOwner::PostTask(const tracked_objects::Location& from_here,

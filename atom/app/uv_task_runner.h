@@ -23,7 +23,7 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
   bool PostDelayedTask(const tracked_objects::Location& from_here,
                        base::OnceClosure task,
                        base::TimeDelta delay) override;
-  bool RunsTasksOnCurrentThread() const override;
+  bool RunsTasksInCurrentSequence() const override;
   bool PostNonNestableDelayedTask(
       const tracked_objects::Location& from_here,
       base::OnceClosure task,

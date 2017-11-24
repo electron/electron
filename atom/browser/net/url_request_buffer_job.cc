@@ -41,7 +41,7 @@ void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
     dict->GetString("charset", &charset_);
     dict->GetBinary("data", &binary);
   } else if (options->IsType(base::Value::Type::BINARY)) {
-    options->GetAsBinary(&binary);
+    binary = options.get();
   }
 
   if (mime_type_.empty()) {
@@ -60,8 +60,8 @@ void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
   }
 
   data_ = new base::RefCountedBytes(
-      reinterpret_cast<const unsigned char*>(binary->GetBuffer()),
-      binary->GetSize());
+      reinterpret_cast<const unsigned char*>(binary->GetBlob().data()),
+      binary->GetBlob().size());
   status_code_ = net::HTTP_OK;
   net::URLRequestSimpleJob::Start();
 }

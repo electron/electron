@@ -7,10 +7,13 @@
 
 #include "brightray/browser/inspectable_web_contents_impl.h"
 
+#include "base/guid.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
+#include "base/memory/ptr_util.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
@@ -25,6 +28,7 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/host_zoom_map.h"
+#include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/common/user_agent.h"
@@ -596,6 +600,12 @@ void InspectableWebContentsImpl::ClearPreferences() {
   update.Get()->Clear();
 }
 
+void InspectableWebContentsImpl::RegisterExtensionsAPI(
+    const std::string& origin,
+    const std::string& script) {
+  extensions_api_[origin + "/"] = script;
+}
+
 void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
     const std::string& message) {
   std::string method;
@@ -682,6 +692,7 @@ bool InspectableWebContentsImpl::DidAddMessageToConsole(
 
 bool InspectableWebContentsImpl::ShouldCreateWebContents(
     content::WebContents* web_contents,
+    content::RenderFrameHost* opener,
     content::SiteInstance* source_site_instance,
     int32_t route_id,
     int32_t main_frame_route_id,
@@ -735,20 +746,51 @@ void InspectableWebContentsImpl::EnumerateDirectory(
     delegate->EnumerateDirectory(source, request_id, path);
 }
 
-void InspectableWebContentsImpl::OnWebContentsFocused() {
+void InspectableWebContentsImpl::OnWebContentsFocused(
+    content::RenderWidgetHost* render_widget_host) {
 #if defined(TOOLKIT_VIEWS)
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsFocused();
 #endif
 }
 
-void InspectableWebContentsImpl::DidStartNavigationToPendingEntry(
-    const GURL& url,
-    content::ReloadType reload_type) {
-  frontend_host_.reset(content::DevToolsFrontendHost::Create(
-      web_contents()->GetMainFrame(),
-      base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-                 base::Unretained(this))));
+void InspectableWebContentsImpl::ReadyToCommitNavigation(
+    content::NavigationHandle* navigation_handle) {
+  if (navigation_handle->IsInMainFrame()) {
+    if (navigation_handle->GetRenderFrameHost() ==
+            devtools_web_contents_->GetMainFrame() &&
+        frontend_host_) {
+      return;
+    }
+    frontend_host_.reset(content::DevToolsFrontendHost::Create(
+        web_contents()->GetMainFrame(),
+        base::Bind(
+            &InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
+            base::Unretained(this))));
+    return;
+  }
+}
+
+void InspectableWebContentsImpl::DidFinishNavigation(
+    content::NavigationHandle* navigation_handle) {
+  if (navigation_handle->IsInMainFrame() ||
+      !navigation_handle->GetURL().SchemeIs("chrome-extension") ||
+      !navigation_handle->HasCommitted())
+    return;
+  content::RenderFrameHost* frame = navigation_handle->GetRenderFrameHost();
+  auto origin = navigation_handle->GetURL().GetOrigin().spec();
+  auto it = extensions_api_.find(origin);
+  if (it == extensions_api_.end())
+    return;
+  // Injected Script from devtools frontend doesn't expose chrome,
+  // most likely bug in chromium.
+  base::ReplaceFirstSubstringAfterOffset(&it->second, 0, "var chrome",
+                                         "var chrome = window.chrome ");
+  auto script = base::StringPrintf("%s(\"%s\")", it->second.c_str(),
+                                   base::GenerateGUID().c_str());
+  // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
+  // should be enough, but it seems to be a noop currently.
+  frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script));
 }
 
 void InspectableWebContentsImpl::OnURLFetchComplete(
@@ -758,10 +800,10 @@ void InspectableWebContentsImpl::OnURLFetchComplete(
   DCHECK(it != pending_requests_.end());
 
   base::DictionaryValue response;
-  auto* headers = new base::DictionaryValue();
+  auto headers = base::MakeUnique<base::DictionaryValue>();
   net::HttpResponseHeaders* rh = source->GetResponseHeaders();
   response.SetInteger("statusCode", rh ? rh->response_code() : 200);
-  response.Set("headers", headers);
+  response.Set("headers", std::move(headers));
 
   size_t iterator = 0;
   std::string name;

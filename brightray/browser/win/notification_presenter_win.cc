@@ -16,7 +16,6 @@
 #include "base/win/windows_version.h"
 #include "brightray/browser/win/notification_presenter_win7.h"
 #include "brightray/browser/win/windows_toast_notification.h"
-#include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/codec/png_codec.h"

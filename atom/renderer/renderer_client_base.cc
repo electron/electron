@@ -17,6 +17,7 @@
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
+#include "base/memory/ptr_util.h"
 #include "base/strings/string_split.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
@@ -179,14 +180,14 @@ void RendererClientBase::DidClearWindowObject(
   render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
 }
 
-blink::WebSpeechSynthesizer* RendererClientBase::OverrideSpeechSynthesizer(
+std::unique_ptr<blink::WebSpeechSynthesizer>
+RendererClientBase::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
-  return new TtsDispatcher(client);
+  return base::MakeUnique<TtsDispatcher>(client);
 }
 
 bool RendererClientBase::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
-    blink::WebLocalFrame* frame,
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -216,7 +217,7 @@ void RendererClientBase::AddSupportedKeySystems(
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(
-    blink::WebFrame* frame, v8::Isolate* isolate) {
+    blink::WebLocalFrame* frame, v8::Isolate* isolate) {
   if (isolated_world())
     return frame->WorldScriptContext(isolate, World::ISOLATED_WORLD);
   else

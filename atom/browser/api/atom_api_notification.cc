@@ -9,13 +9,15 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/browser_client.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "url/gurl.h"
+// Must be the last in the includes list.
+// See https://github.com/electron/electron/issues/10363
+#include "atom/common/node_includes.h"
 
 namespace mate {
 template<>

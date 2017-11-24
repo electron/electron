@@ -18,6 +18,7 @@
 #include "brightray/browser/net_log.h"
 #include "brightray/browser/network_delegate.h"
 #include "brightray/common/switches.h"
+#include "components/network_session_configurator/common/network_switches.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
 #include "content/public/common/content_switches.h"
@@ -130,7 +131,6 @@ URLRequestContextGetter::URLRequestContextGetter(
     const base::FilePath& base_path,
     bool in_memory,
     scoped_refptr<base::SingleThreadTaskRunner> io_task_runner,
-    scoped_refptr<base::SingleThreadTaskRunner> file_task_runner,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors)
     : delegate_(delegate),
@@ -139,7 +139,6 @@ URLRequestContextGetter::URLRequestContextGetter(
       base_path_(base_path),
       in_memory_(in_memory),
       io_task_runner_(io_task_runner),
-      file_task_runner_(file_task_runner),
       protocol_interceptors_(std::move(protocol_interceptors)),
       job_factory_(nullptr) {
   // Must first be created on the UI thread.
@@ -155,7 +154,7 @@ URLRequestContextGetter::URLRequestContextGetter(
   // must synchronously run on the glib message loop. This will be passed to
   // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
   proxy_config_service_ = net::ProxyService::CreateSystemProxyConfigService(
-      io_task_runner_, file_task_runner_);
+      io_task_runner_);
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {
@@ -182,7 +181,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // --log-net-log
     if (net_log_) {
-      net_log_->StartLogging(url_request_context_.get());
+      net_log_->StartLogging();
       url_request_context_->set_net_log(net_log_);
     }
 
@@ -300,8 +299,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_ct_policy_enforcer(base::MakeUnique<net::CTPolicyEnforcer>());
 
     net::HttpNetworkSession::Params network_session_params;
-    net::URLRequestContextBuilder::SetHttpNetworkSessionComponents(
-        url_request_context_.get(), &network_session_params);
     network_session_params.ignore_certificate_errors = false;
 
     // --disable-http2
@@ -317,16 +314,18 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       host_mapping_rules_.reset(new net::HostMappingRules);
       host_mapping_rules_->SetRulesFromString(
           command_line.GetSwitchValueASCII(switches::kHostRules));
-      network_session_params.host_mapping_rules = host_mapping_rules_.get();
+      network_session_params.host_mapping_rules = *host_mapping_rules_.get();
     }
 
     // Give |storage_| ownership at the end in case it's |mapped_host_resolver|.
     storage_->set_host_resolver(std::move(host_resolver));
-    network_session_params.host_resolver =
-        url_request_context_->host_resolver();
 
-    http_network_session_.reset(
-        new net::HttpNetworkSession(network_session_params));
+    net::HttpNetworkSession::Context network_session_context;
+    net::URLRequestContextBuilder::SetHttpNetworkSessionComponents(
+        url_request_context_.get(), &network_session_context);
+    http_network_session_.reset(new net::HttpNetworkSession(
+        network_session_params, network_session_context));
+
     std::unique_ptr<net::HttpCache::BackendFactory> backend;
     if (in_memory_) {
       backend = net::HttpCache::DefaultBackend::InMemory(0);

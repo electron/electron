@@ -9,6 +9,7 @@
 
 #include "base/callback.h"
 #include "net/cert/cert_database.h"
+#include "net/cert/x509_util_win.h"
 
 namespace certificate_trust {
 
@@ -68,12 +69,12 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           const ShowTrustCallback& callback) {
   PCCERT_CHAIN_CONTEXT chain_context;
 
-  auto cert_context = cert->CreateOSCertChainForCert();
+  auto cert_context = net::x509_util::CreateCertContextWithChain(cert.get());
 
   auto params = GetCertificateChainParameters();
 
   if (CertGetCertificateChain(NULL,
-                              cert_context,
+                              cert_context.get(),
                               NULL,
                               NULL,
                               &params,
@@ -84,13 +85,11 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
     if (error_status == CERT_TRUST_IS_SELF_SIGNED ||
         error_status == CERT_TRUST_IS_UNTRUSTED_ROOT) {
       // these are the only scenarios we're interested in supporting
-      AddToTrustedRootStore(cert_context, cert);
+      AddToTrustedRootStore(cert_context.get(), cert);
     }
 
     CertFreeCertificateChain(chain_context);
   }
-
-  CertFreeCertificateContext(cert_context);
 
   callback.Run();
 }

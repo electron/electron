@@ -29,8 +29,7 @@ class GeoURLRequestContextGetter : public net::URLRequestContextGetter {
       net::URLRequestContextBuilder builder;
       builder.set_proxy_config_service(
           net::ProxyService::CreateSystemProxyConfigService(
-              BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
-              BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE)));
+              BrowserThread::GetTaskRunnerForThread(BrowserThread::IO)));
       url_request_context_ = builder.Build();
     }
     return url_request_context_.get();

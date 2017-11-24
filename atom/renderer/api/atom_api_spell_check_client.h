@@ -11,8 +11,8 @@
 #include "base/callback.h"
 #include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
 #include "native_mate/scoped_persistent.h"
+#include "third_party/WebKit/public/platform/WebSpellCheckPanelHostClient.h"
 #include "third_party/WebKit/public/platform/WebVector.h"
-#include "third_party/WebKit/public/web/WebSpellCheckClient.h"
 #include "third_party/WebKit/public/web/WebTextCheckClient.h"
 
 namespace blink {
@@ -24,7 +24,7 @@ namespace atom {
 
 namespace api {
 
-class SpellCheckClient : public blink::WebSpellCheckClient,
+class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
                          public blink::WebTextCheckClient {
  public:
   SpellCheckClient(const std::string& language,
@@ -44,7 +44,7 @@ class SpellCheckClient : public blink::WebSpellCheckClient,
       const blink::WebString& textToCheck,
       blink::WebTextCheckingCompletion* completionCallback) override;
 
-  // blink::WebSpellCheckClient:
+  // blink::WebSpellCheckPanelHostClient:
   void ShowSpellingUI(bool show) override;
   bool IsShowingSpellingUI() override;
   void UpdateSpellingUIWithMisspelledWord(

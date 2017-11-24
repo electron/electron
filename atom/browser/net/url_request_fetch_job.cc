@@ -98,7 +98,6 @@ void URLRequestFetchJob::BeforeStartInUI(
       url_request_context_getter_ = new brightray::URLRequestContextGetter(
           this, nullptr, nullptr, base::FilePath(), true,
           BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
-          BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE),
           nullptr, content::URLRequestInterceptorScopedVector());
     } else {
       mate::Handle<api::Session> session;

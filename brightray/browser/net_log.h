@@ -5,9 +5,11 @@
 #ifndef BRIGHTRAY_BROWSER_NET_LOG_H_
 #define BRIGHTRAY_BROWSER_NET_LOG_H_
 
-#include "base/files/scoped_file.h"
 #include "net/log/net_log.h"
-#include "net/log/write_to_file_net_log_observer.h"
+
+namespace net {
+class FileNetLogObserver;
+}
 
 namespace brightray {
 
@@ -16,11 +18,11 @@ class NetLog : public net::NetLog {
   NetLog();
   ~NetLog() override;
 
-  void StartLogging(net::URLRequestContext* url_request_context);
+  void StartLogging();
 
  private:
-  base::ScopedFILE log_file_;
-  net::WriteToFileNetLogObserver write_to_file_observer_;
+  // This observer handles writing NetLogs.
+  std::unique_ptr<net::FileNetLogObserver> file_net_log_observer_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);
 };

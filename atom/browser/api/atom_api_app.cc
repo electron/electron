@@ -45,6 +45,7 @@
 #include "content/public/common/content_switches.h"
 #include "media/audio/audio_manager.h"
 #include "native_mate/object_template_builder.h"
+#include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
@@ -420,19 +421,26 @@ bool NotificationCallbackWrapper(
   return !Browser::Get()->is_shutting_down();
 }
 
+void GotPrivateKey(std::shared_ptr<content::ClientCertificateDelegate> delegate,
+                   scoped_refptr<net::X509Certificate> cert,
+                   scoped_refptr<net::SSLPrivateKey> private_key) {
+  delegate->ContinueWithCertificate(cert, private_key);
+}
+
 void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
+    std::shared_ptr<net::ClientCertIdentityList> identities,
     mate::Arguments* args) {
   if (args->Length() == 2) {
-    delegate->ContinueWithCertificate(nullptr);
+    delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
   }
 
   v8::Local<v8::Value> val;
   args->GetNext(&val);
   if (val->IsNull()) {
-    delegate->ContinueWithCertificate(nullptr);
+    delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
   }
 
@@ -448,8 +456,17 @@ void OnClientCertificateSelected(
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
       data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
-  if (!certs.empty())
-    delegate->ContinueWithCertificate(certs[0].get());
+  if (!certs.empty()) {
+    scoped_refptr<net::X509Certificate> cert(certs[0].get());
+    for (size_t i = 0; i < identities->size(); ++i) {
+      if (cert->Equals((*identities)[i]->certificate())) {
+        net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
+            std::move((*identities)[i]),
+            base::Bind(&GotPrivateKey, delegate, std::move(cert)));
+        break;
+      }
+    }
+  }
 }
 
 void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
@@ -655,15 +672,12 @@ void App::OnCreateWindow(
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const std::vector<std::string>& features,
-    const scoped_refptr<content::ResourceRequestBodyImpl>& body,
-    int render_process_id,
-    int render_frame_id) {
+    const scoped_refptr<content::ResourceRequestBody>& body,
+    content::RenderFrameHost* opener) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  content::RenderFrameHost* rfh =
-      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(rfh);
+      content::WebContents::FromRenderFrameHost(opener);
   if (web_contents) {
     auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
     api_web_contents->OnCreateWindow(target_url,
@@ -702,22 +716,35 @@ void App::AllowCertificateError(
 void App::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
+    net::ClientCertIdentityList identities,
     std::unique_ptr<content::ClientCertificateDelegate> delegate) {
   std::shared_ptr<content::ClientCertificateDelegate>
       shared_delegate(delegate.release());
+
+  // Convert the ClientCertIdentityList to a CertificateList
+  // to avoid changes in the API.
+  auto client_certs = net::CertificateList();
+  for (const std::unique_ptr<net::ClientCertIdentity>& identity : identities)
+    client_certs.push_back(identity->certificate());
+
+  auto shared_identities =
+      std::make_shared<net::ClientCertIdentityList>(std::move(identities));
+
   bool prevent_default =
       Emit("select-client-certificate",
            WebContents::CreateFrom(isolate(), web_contents),
-           cert_request_info->host_and_port.ToString(),
-           cert_request_info->client_certs,
-           base::Bind(&OnClientCertificateSelected,
-                      isolate(),
-                      shared_delegate));
+           cert_request_info->host_and_port.ToString(), std::move(client_certs),
+           base::Bind(&OnClientCertificateSelected, isolate(), shared_delegate,
+                      shared_identities));
 
   // Default to first certificate from the platform store.
-  if (!prevent_default)
-    shared_delegate->ContinueWithCertificate(
-        cert_request_info->client_certs[0].get());
+  if (!prevent_default) {
+    scoped_refptr<net::X509Certificate> cert =
+        (*shared_identities)[0]->certificate();
+    net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
+        std::move((*shared_identities)[0]),
+        base::Bind(&GotPrivateKey, shared_delegate, std::move(cert)));
+  }
 }
 
 void App::OnGpuProcessCrashed(base::TerminationStatus status) {

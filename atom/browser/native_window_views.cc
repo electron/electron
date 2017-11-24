@@ -4,6 +4,9 @@
 
 #include "atom/browser/native_window_views.h"
 
+#if defined(OS_WIN)
+#include <objbase.h>
+#endif
 #include <string>
 #include <vector>
 
@@ -757,8 +760,9 @@ void NativeWindowViews::FlashFrame(bool flash) {
 void NativeWindowViews::SetSkipTaskbar(bool skip) {
 #if defined(OS_WIN)
   base::win::ScopedComPtr<ITaskbarList> taskbar;
-  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
-                                    CLSCTX_INPROC_SERVER)) ||
+  if (FAILED(::CoCreateInstance(CLSID_TaskbarList, nullptr,
+                                CLSCTX_INPROC_SERVER,
+                                IID_PPV_ARGS(&taskbar))) ||
       FAILED(taskbar->HrInit()))
     return;
   if (skip) {
@@ -792,7 +796,7 @@ bool NativeWindowViews::IsKiosk() {
 void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   // web views' background color.
   SkColor background_color = ParseHexColor(color_name);
-  set_background(views::Background::CreateSolidBackground(background_color));
+  SetBackground(views::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
   // Set the background color of native window.

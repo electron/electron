@@ -116,9 +116,9 @@ class OffScreenRenderWidgetHostView
 
   // content::RenderWidgetHostViewBase:
   void DidCreateNewRendererCompositorFrameSink(
-      cc::mojom::MojoCompositorFrameSinkClient* renderer_compositor_frame_sink)
+      cc::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink)
       override;
-  void SubmitCompositorFrame(const cc::LocalSurfaceId& local_surface_id,
+  void SubmitCompositorFrame(const viz::LocalSurfaceId& local_surface_id,
                              cc::CompositorFrame frame) override;
 
   void ClearCompositorFrame(void) override;
@@ -176,7 +176,7 @@ class OffScreenRenderWidgetHostView
   bool DelegatedFrameCanCreateResizeLock() const override;
   std::unique_ptr<content::CompositorResizeLock>
   DelegatedFrameHostCreateResizeLock() override;
-  void OnBeginFrame(const cc::BeginFrameArgs& args) override;
+  void OnBeginFrame() override;
   // CompositorResizeLockClient implementation.
   std::unique_ptr<ui::CompositorLock> GetCompositorLock(
       ui::CompositorLockClient* client) override;
@@ -185,7 +185,7 @@ class OffScreenRenderWidgetHostView
 
   bool TransformPointToLocalCoordSpace(
       const gfx::Point& point,
-      const cc::SurfaceId& original_surface,
+      const viz::SurfaceId& original_surface,
       gfx::Point* transformed_point) override;
   bool TransformPointToCoordSpaceForView(
       const gfx::Point& point,
@@ -237,7 +237,8 @@ class OffScreenRenderWidgetHostView
   void WasResized();
 
   void ProcessKeyboardEvent(
-      const content::NativeWebKeyboardEvent& event) override;
+      const content::NativeWebKeyboardEvent& event,
+      const ui::LatencyInfo& latency) override;
   void ProcessMouseEvent(const blink::WebMouseEvent& event,
       const ui::LatencyInfo& latency) override;
   void ProcessMouseWheelEvent(const blink::WebMouseWheelEvent& event,
@@ -274,7 +275,7 @@ class OffScreenRenderWidgetHostView
   void SetupFrameRate(bool force);
   void ResizeRootLayer();
 
-  cc::FrameSinkId AllocateFrameSinkId(bool is_guest_view_hack);
+  viz::FrameSinkId AllocateFrameSinkId(bool is_guest_view_hack);
 
   // Applies background color without notifying the RenderWidget about
   // opaqueness changes.
@@ -337,7 +338,7 @@ class OffScreenRenderWidgetHostView
   std::string selected_text_;
 #endif
 
-  cc::mojom::MojoCompositorFrameSinkClient* renderer_compositor_frame_sink_;
+  cc::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_;
 
   SkColor background_color_;
 

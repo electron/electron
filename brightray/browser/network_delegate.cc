@@ -123,8 +123,10 @@ bool NetworkDelegate::OnCanSetCookie(const net::URLRequest& request,
   return true;
 }
 
-bool NetworkDelegate::OnCanAccessFile(const net::URLRequest& request,
-                                           const base::FilePath& path) const {
+bool NetworkDelegate::OnCanAccessFile(
+    const net::URLRequest& request,
+    const base::FilePath& original_path,
+    const base::FilePath& absolute_path) const {
   return true;
 }
 
@@ -142,6 +144,30 @@ bool NetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
     const net::URLRequest& request,
     const GURL& target_url,
     const GURL& referrer_url) const {
+  return false;
+}
+
+// TODO(deepak1556) : Enable after hooking into the reporting service
+// https://crbug.com/704259
+bool NetworkDelegate::OnCanQueueReportingReport(
+    const url::Origin& origin) const {
+  return false;
+}
+
+bool NetworkDelegate::OnCanSendReportingReport(
+    const url::Origin& origin) const {
+  return false;
+}
+
+bool NetworkDelegate::OnCanSetReportingClient(
+    const url::Origin& origin,
+    const GURL& endpoint) const {
+  return false;
+}
+
+bool NetworkDelegate::OnCanUseReportingClient(
+    const url::Origin& origin,
+    const GURL& endpoint) const {
   return false;
 }
 

@@ -72,8 +72,7 @@ void AtomBlobReader::StartReading(
   }
 
   auto blob_reader = blob_data_handle->CreateReader(
-      file_system_context_.get(),
-      BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE).get());
+      file_system_context_.get());
   BlobReadHelper* blob_read_helper =
       new BlobReadHelper(std::move(blob_reader), callback);
   blob_read_helper->Read();

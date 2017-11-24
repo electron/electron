@@ -99,8 +99,8 @@ void PrintSettingsToJobSettings(const PrintSettings& settings,
   // range
 
   if (!settings.ranges().empty()) {
-    base::ListValue* page_range_array = new base::ListValue;
-    job_settings->Set(kSettingPageRange, page_range_array);
+    auto page_range_array = base::MakeUnique<base::ListValue>();
+    job_settings->Set(kSettingPageRange, std::move(page_range_array));
     for (size_t i = 0; i < settings.ranges().size(); ++i) {
       std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
       dict->SetInteger(kSettingPageRangeFrom, settings.ranges()[i].from + 1);
@@ -198,7 +198,7 @@ PrintJobWorker::PrintJobWorker(int render_process_id,
                                PrintJobWorkerOwner* owner)
     : owner_(owner), thread_("Printing_Worker"), weak_factory_(this) {
   // The object is created in the IO thread.
-  DCHECK(owner_->RunsTasksOnCurrentThread());
+  DCHECK(owner_->RunsTasksInCurrentSequence());
 
   printing_context_delegate_ = base::MakeUnique<PrintingContextDelegate>(
       render_process_id, render_frame_id);
@@ -209,7 +209,7 @@ PrintJobWorker::~PrintJobWorker() {
   // The object is normally deleted in the UI thread, but when the user
   // cancels printing or in the case of print preview, the worker is destroyed
   // on the I/O thread.
-  DCHECK(owner_->RunsTasksOnCurrentThread());
+  DCHECK(owner_->RunsTasksInCurrentSequence());
   Stop();
 }
 
@@ -225,7 +225,7 @@ void PrintJobWorker::GetSettings(bool ask_user_for_settings,
                                  bool is_scripted,
                                  bool is_modifiable,
                                  const base::string16& device_name) {
-  DCHECK(task_runner_->RunsTasksOnCurrentThread());
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DCHECK_EQ(page_number_, PageNumber::npos());
 
   // Recursive task processing is needed for the dialog in case it needs to be
@@ -266,7 +266,7 @@ void PrintJobWorker::GetSettings(bool ask_user_for_settings,
 
 void PrintJobWorker::SetSettings(
     std::unique_ptr<base::DictionaryValue> new_settings) {
-  DCHECK(task_runner_->RunsTasksOnCurrentThread());
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
 
   BrowserThread::PostTask(
       BrowserThread::UI,
@@ -332,7 +332,7 @@ void PrintJobWorker::InitWithDeviceName(const base::string16& device_name) {
 }
 
 void PrintJobWorker::StartPrinting(PrintedDocument* new_document) {
-  DCHECK(task_runner_->RunsTasksOnCurrentThread());
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DCHECK_EQ(page_number_, PageNumber::npos());
   DCHECK_EQ(document_.get(), new_document);
   DCHECK(document_.get());
@@ -361,7 +361,7 @@ void PrintJobWorker::StartPrinting(PrintedDocument* new_document) {
 }
 
 void PrintJobWorker::OnDocumentChanged(PrintedDocument* new_document) {
-  DCHECK(task_runner_->RunsTasksOnCurrentThread());
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DCHECK_EQ(page_number_, PageNumber::npos());
 
   if (page_number_ != PageNumber::npos())
@@ -375,7 +375,7 @@ void PrintJobWorker::OnNewPage() {
     return;
 
   // message_loop() could return NULL when the print job is cancelled.
-  DCHECK(task_runner_->RunsTasksOnCurrentThread());
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
 
   if (page_number_ == PageNumber::npos()) {
     // Find first page to print.
@@ -446,7 +446,7 @@ bool PrintJobWorker::Start() {
 }
 
 void PrintJobWorker::OnDocumentDone() {
-  DCHECK(task_runner_->RunsTasksOnCurrentThread());
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DCHECK_EQ(page_number_, PageNumber::npos());
   DCHECK(document_.get());
 
@@ -465,7 +465,7 @@ void PrintJobWorker::OnDocumentDone() {
 }
 
 void PrintJobWorker::SpoolPage(PrintedPage* page) {
-  DCHECK(task_runner_->RunsTasksOnCurrentThread());
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
   DCHECK_NE(page_number_, PageNumber::npos());
 
   // Signal everyone that the page is about to be printed.
@@ -503,7 +503,7 @@ void PrintJobWorker::SpoolPage(PrintedPage* page) {
 }
 
 void PrintJobWorker::OnFailure() {
-  DCHECK(task_runner_->RunsTasksOnCurrentThread());
+  DCHECK(task_runner_->RunsTasksInCurrentSequence());
 
   // We may loose our last reference by broadcasting the FAILED event.
   scoped_refptr<PrintJobWorkerOwner> handle(owner_);
