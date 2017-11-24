@@ -324,7 +324,7 @@ void PrintViewManagerBase::ShouldQuitFromInnerMessageLoop() {
       inside_inner_message_loop_) {
     // We are in a message loop created by RenderAllMissingPagesNow. Quit from
     // it.
-    base::MessageLoop::current()->QuitWhenIdle();
+    base::RunLoop::QuitCurrentWhenIdleDeprecated();
     inside_inner_message_loop_ = false;
   }
 }
@@ -433,9 +433,10 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
   // memory-bound.
   static const int kPrinterSettingsTimeout = 60000;
   base::OneShotTimer quit_timer;
-  quit_timer.Start(
-      FROM_HERE, TimeDelta::FromMilliseconds(kPrinterSettingsTimeout),
-      base::MessageLoop::current(), &base::MessageLoop::QuitWhenIdle);
+  base::RunLoop run_loop;
+  quit_timer.Start(FROM_HERE,
+                   TimeDelta::FromMilliseconds(kPrinterSettingsTimeout),
+                   run_loop.QuitWhenIdleClosure());
 
   inside_inner_message_loop_ = true;
 
