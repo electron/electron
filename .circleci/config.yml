@@ -177,7 +177,6 @@ jobs:
       - image: electronbuilds/electron:0.0.3
         environment:
           TARGET_ARCH: mips64el
-          LIBCHROMIUMCONTENT_MIRROR: https://s3.amazonaws.com/gh-contractor-zcbenz/libchromiumcontent
     resource_class: xlarge
     steps:
       - checkout
@@ -337,9 +336,6 @@ workflows:
   build-ia32:
     jobs:
       - electron-linux-ia32
-  build-mips64el:
-    jobs:
-      - electron-linux-mips64el
   build-x64:
     jobs:
       - electron-linux-x64
