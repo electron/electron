@@ -17,22 +17,27 @@ on each Chromium upgrade in Electron.
   $ git clone git@github.com:electron/libchromiumcontent.git
   $ cd libchromiumcontent
   $ ./script/bootstrap -v```
-2. Find the new beta/stable Chromium version from [OmahaProxy](https://omahaproxy.appspot.com/).
-3. Put it into the `libchromiumcontent/VERSION` file, then run `$ ./script/update`
-  - It will probably fail applying patches.
-4. Fix `*.patch` files in the `/patches` and `/patches-mas` folders.
-5. (Optional) Run a separate script to apply patches (`script/update` uses it internally):
+2. Update the Chromium snapshot
+  - Choose a version number from [OmahaProxy](https://omahaproxy.appspot.com/) and update the `VERSION` file with it
+    - This can be done manually by visiting OmahaProxy in a browser, or automatically:
+    - One-liner for the latest stable mac version: `curl -so- https://omahaproxy.appspot.com/mac > VERSION`
+    - One-liner for the latest win64 beta version: `curl -so- https://omahaproxy.appspot.com/all | grep "win64,beta" | awk -F, 'NR==1{print $3}' > VERSION`
+  - run `$ ./script/update`
+    - Time to brew some tea -- this may run for 30m or more.
+    - It will probably fail applying patches.
+3. Fix `*.patch` files in the `/patches` and `/patches-mas` folders.
+4. (Optional) Run a separate script to apply patches (`script/update` uses it internally):
   - `$ ./script/apply-patches`
   - There is also another script `/script/patch.py` that could be more useful
     - Check `--help` to learn how it works with `$ ./script/patch.py -h`
-6. Run the build when all patches can be applied without errors
+5. Run the build when all patches can be applied without errors
   - `$ ./script/build`
   - If some patches are no longer compatible with the Chromium code, fix compilation errors.
-7. When build succeeds, create a `dist` for Electron
+6. When build succeeds, create a `dist` for Electron
   - `$ ./script/create-dist  --no_zip`
     - It will create `dist/main` folder in the root of the libcc repo
       - You will need it to build Electron.
-8. (Optional) Update script contents if there are errors resultant of some files being removed or renamed. (`--no_zip` prevents script from create `dist` archives, you don't need them.)
+7. (Optional) Update script contents if there are errors resultant of some files being removed or renamed. (`--no_zip` prevents script from create `dist` archives, you don't need them.)
 
 
 ## Update Electron Code
@@ -86,20 +91,28 @@ Follow all the steps above to fix Electron code on all supported platforms.
 
 ## Updating Crashpad
 
-If there are any compilation errors related to the Crashpad, it probably means you need to update the fork to a newer revision: see [Upgrading Crashpad](https://github.com/electron/electron/tree/master/docs/development/upgrading-crashpad.md) for instructions on how to do that.
+If there are any compilation errors related to the Crashpad, it probably
+means you need to update the fork to a newer revision. See
+[Upgrading Crashpad](https://github.com/electron/electron/tree/master/docs/development/upgrading-crashpad.md)
+for instructions on how to do that.
 
 
 ## Updating NodeJS
 
-Upgrade `vendor/node` to the Node release that corresponds to the v8 version being used in the new Chromium release. See the v8 versions in Node on
+Upgrade `vendor/node` to the Node release that corresponds to the v8 version
+used in the new Chromium release. See the v8 versions in Node on
 
-See [Upgrading Node](https://github.com/electron/electron/tree/master/docs/development/upgrading-node.md) for instructions on how to do this.
+See [Upgrading Node](https://github.com/electron/electron/tree/master/docs/development/upgrading-node.md)
+for instructions on this.
 
 ## Verify ffmpeg Support
 
 Electron ships with a version of `ffmpeg` that includes proprietary codecs by default. A version without these codecs is built and distributed with each release as well. Each Chrome upgrade should verify that switching this version is still supported.
 
-You can verify Electron's support for multiple `ffmpeg` builds by loading the following page. It should work with the default `ffmpeg` library distributed with Electron and not work with the `ffmpeg` library built without proprietary codecs.
+You can verify Electron's support for multiple `ffmpeg` builds by loading the
+following page. It should work with the default `ffmpeg` library distributed
+with Electron and not work with the `ffmpeg` library built without proprietary
+codecs.
 
 ```html
 <!DOCTYPE html>
