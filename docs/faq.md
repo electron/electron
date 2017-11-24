@@ -158,7 +158,7 @@ and then check if it is in the following form:
 If it is something like `node_modules/electron/index.js`, then you have to
 either remove the npm `electron` module, or rename it.
 
-```bash
+```sh
 npm uninstall electron
 npm uninstall -g electron
 ```
