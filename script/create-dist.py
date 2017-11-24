@@ -12,7 +12,7 @@ if sys.platform == "win32":
   import _winreg
 
 from lib.config import BASE_URL, PLATFORM, enable_verbose_mode, \
-                       get_target_arch, get_zip_name
+                       get_target_arch, get_zip_name, build_env
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
                      execute, electron_gyp
 
@@ -210,13 +210,15 @@ def strip_binaries():
 
 
 def strip_binary(binary_path):
-    if get_target_arch() == 'arm':
-      strip = 'arm-linux-gnueabihf-strip'
-    elif get_target_arch() == 'arm64':
-      strip = 'aarch64-linux-gnu-strip'
-    else:
-      strip = 'strip'
-    execute([strip, binary_path])
+  if get_target_arch() == 'arm':
+    strip = 'arm-linux-gnueabihf-strip'
+  elif get_target_arch() == 'arm64':
+    strip = 'aarch64-linux-gnu-strip'
+  elif get_target_arch() == 'mips64el':
+    strip = 'mips64el-redhat-linux-strip'
+  else:
+    strip = 'strip'
+  execute([strip, binary_path], env=build_env())
 
 
 def create_version():
@@ -226,6 +228,9 @@ def create_version():
 
 
 def create_symbols():
+  if get_target_arch() == 'mips64el':
+    return
+
   destination = os.path.join(DIST_DIR, '{0}.breakpad.syms'.format(PROJECT_NAME))
   dump_symbols = os.path.join(SOURCE_ROOT, 'script', 'dump-symbols.py')
   execute([sys.executable, dump_symbols, destination])
@@ -286,6 +291,9 @@ def create_ffmpeg_zip():
 
 
 def create_symbols_zip():
+  if get_target_arch() == 'mips64el':
+    return
+
   dist_name = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
   zip_file = os.path.join(DIST_DIR, dist_name)
   licenses = ['LICENSE', 'LICENSES.chromium.html', 'version']

@@ -4,10 +4,11 @@ const buildAppVeyorURL = 'https://windows-ci.electronjs.org/api/builds'
 const jenkinsServer = 'https://mac-ci.electronjs.org'
 
 const circleCIJobs = [
+  'electron-linux-arm',
   'electron-linux-arm64',
   'electron-linux-ia32',
-  'electron-linux-x64',
-  'electron-linux-arm'
+  'electron-linux-mips64el',
+  'electron-linux-x64'
 ]
 
 const jenkinsJobs = [

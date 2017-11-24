@@ -1,7 +1,12 @@
 {
   'variables': {
     # The libraries brightray will be compiled to.
-    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 x11-xcb xcb xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0 nss'
+    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 x11-xcb xcb xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0 nss',
+    'conditions': [
+      ['target_arch=="mips64el"', {
+        'linux_system_libraries': '<(linux_system_libraries) libpulse',
+      }],
+    ],
   },
   'includes': [
     'filenames.gypi',
@@ -69,21 +74,29 @@
           },
           'cflags': [
             '<!@(<(pkg-config) --cflags <(linux_system_libraries))',
-            # Needed by using libgtkui:
-            '-Wno-deprecated-register',
-            '-Wno-sentinel',
-          ],
-          'cflags_cc': [
-            '-Wno-reserved-user-defined-literal',
           ],
           'direct_dependent_settings': {
             'cflags': [
               '<!@(<(pkg-config) --cflags <(linux_system_libraries))',
-              '-Wno-deprecated-register',
-              '-Wno-sentinel',
             ],
           },
           'conditions': [
+            ['clang==1', {
+              'cflags_cc': [
+                '-Wno-reserved-user-defined-literal',
+              ],
+              'cflags': [
+                # Needed by using libgtkui:
+                '-Wno-deprecated-register',
+                '-Wno-sentinel',
+              ],
+              'direct_dependent_settings': {
+                'cflags': [
+                  '-Wno-deprecated-register',
+                  '-Wno-sentinel',
+                ],
+              },
+            }],
             ['libchromiumcontent_component', {
               'link_settings': {
                 'libraries': [

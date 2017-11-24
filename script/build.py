@@ -5,12 +5,13 @@ import os
 import subprocess
 import sys
 
-from lib.config import get_target_arch
+from lib.config import MIPS64EL_GCC, get_target_arch, build_env
 from lib.util import electron_gyp, import_vs_env
 
 
 CONFIGURATIONS = ['Release', 'Debug']
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
 LIBCC_SOURCE_ROOT = os.path.join(SOURCE_ROOT, 'vendor', 'libchromiumcontent')
 LIBCC_DIST_MAIN = os.path.join(LIBCC_SOURCE_ROOT, 'dist', 'main')
 GCLIENT_DONE = os.path.join(SOURCE_ROOT, '.gclient_done')
@@ -40,9 +41,10 @@ def main():
                            get_target_arch()])
     subprocess.check_call([ninja, '-C', LIBCC_DIST_MAIN])
 
+  env = build_env()
   for config in args.configuration:
     build_path = os.path.join('out', config[0])
-    ret = subprocess.call([ninja, '-C', build_path, args.target])
+    ret = subprocess.call([ninja, '-C', build_path, args.target], env=env)
     if ret != 0:
       sys.exit(ret)
 

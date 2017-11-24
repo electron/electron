@@ -348,7 +348,7 @@
           ],
         },
       }],
-      ['OS=="linux"', {
+      ['OS=="linux" and clang==1', {
         'cflags': [
           '-Wno-inconsistent-missing-override',
           '-Wno-undefined-var-template', # https://crbug.com/604888
