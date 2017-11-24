@@ -1,4 +1,4 @@
-# Upgrading Chromium Workflow
+# Upgrading Chromium
 
 This document is meant to serve as an overview of what steps are needed
 on each Chromium upgrade in Electron.

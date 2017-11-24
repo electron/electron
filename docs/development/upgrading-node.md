@@ -119,7 +119,7 @@ We need to generate a patch file from each patch applied to V8.
    electron$ script/build.py -c -D
    ```
 
-   
+
 
 ## Notes
 
