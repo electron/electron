@@ -15,13 +15,13 @@ Steps to package your app into an `asar` archive:
 
 ### 1. Install the asar Utility
 
-```bash
+```sh
 $ npm install -g asar
 ```
 
 ### 2. Package with `asar pack`
 
-```bash
+```sh
 $ asar pack your-app app.asar
 ```
 
@@ -38,7 +38,7 @@ files in the filesystem.
 
 For example, suppose we have an `example.asar` archive under `/path/to`:
 
-```bash
+```sh
 $ asar list /path/to/example.asar
 /app.js
 /file.txt
@@ -174,7 +174,7 @@ To work around this, you can unpack some files creating archives by using the
 `--unpack` option, an example of excluding shared libraries of native modules
 is:
 
-```bash
+```sh
 $ asar pack app app.asar --unpack *.node
 ```
 

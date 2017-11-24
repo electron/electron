@@ -169,7 +169,7 @@ an `npm` module that contains pre-compiled versions of Electron.
 If you've installed it globally with `npm`, then you will only need to run the
 following in your app's source directory:
 
-```bash
+```sh
 electron .
 ```
 
@@ -177,19 +177,19 @@ If you've installed it locally, then run:
 
 #### macOS / Linux
 
-```bash
+```sh
 $ ./node_modules/.bin/electron .
 ```
 
 #### Windows
 
-```bash
+```sh
 $ .\node_modules\.bin\electron .
 ```
 
 #### Node v8.2.0 and later
 
-```bash
+```sh
 $ npx electron .
 ```
 
@@ -200,19 +200,19 @@ binary to execute your app directly.
 
 #### macOS
 
-```bash
+```sh
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
 #### Linux
 
-```bash
+```sh
 $ ./electron/electron your-app/
 ```
 
 #### Windows
 
-```bash
+```sh
 $ .\electron\electron.exe your-app\
 ```
 
@@ -232,7 +232,7 @@ repository.
 
 **Note**: Running this requires [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which includes [npm](https://npmjs.org)) on your system.
 
-```bash
+```sh
 # Clone the repository
 $ git clone https://github.com/electron/electron-quick-start
 # Go into the repository

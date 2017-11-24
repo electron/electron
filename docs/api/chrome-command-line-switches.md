@@ -45,7 +45,7 @@ Forces the maximum disk space to be used by the disk cache, in bytes.
 Specifies the flags passed to the Node JS engine. It has to be passed when starting
 Electron if you want to enable the `flags` in the main process.
 
-```bash
+```sh
 $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 ```
 
@@ -112,7 +112,7 @@ A comma-separated list of servers for which integrated authentication is enabled
 
 For example:
 
-```bash
+```sh
 --auth-server-whitelist='*example.com, *foobar.com, *baz'
 ```
 

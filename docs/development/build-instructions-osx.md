@@ -29,7 +29,7 @@ DMG.
 Then, assuming that the Xcode 6.4 DMG has been mounted at `/Volumes/Xcode` and
 that your Xcode 8.2.1 install is at `/Applications/Xcode.app`, run:
 
-```bash
+```sh
 cp -r /Volumes/Xcode/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/
 ```
 
@@ -41,7 +41,7 @@ You will also need to enable Xcode to build against the 10.10 SDK:
 
 ## Getting the Code
 
-```bash
+```sh
 $ git clone https://github.com/electron/electron
 ```
 
@@ -51,7 +51,7 @@ The bootstrap script will download all necessary build dependencies and create
 the build project files. Notice that we're using [ninja](https://ninja-build.org/)
 to build Electron so there is no Xcode project generated.
 
-```bash
+```sh
 $ cd electron
 $ ./script/bootstrap.py -v
 ```
@@ -60,13 +60,13 @@ $ ./script/bootstrap.py -v
 
 Build both `Release` and `Debug` targets:
 
-```bash
+```sh
 $ ./script/build.py
 ```
 
 You can also only build the `Debug` target:
 
-```bash
+```sh
 $ ./script/build.py -c D
 ```
 
@@ -81,13 +81,13 @@ support 32bit macOS in the future.
 
 To clean the build files:
 
-```bash
+```sh
 $ npm run clean
 ```
 
 To clean only `out` and `dist` directories:
 
-```bash
+```sh
 $ npm run clean-build
 ```
 

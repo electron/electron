@@ -82,7 +82,7 @@ with the Bundle ID of your app.
 
 And then sign your app with the following script:
 
-```bash
+```sh
 #!/bin/bash
 
 # Name of your app.
@@ -129,7 +129,7 @@ Native modules used in your app also need to be signed. If using
 electron-osx-sign, be sure to include the path to the built binaries in the
 argument list:
 
-```bash
+```sh
 electron-osx-sign YourApp.app YourApp.app/Contents/Resources/app/node_modules/nativemodule/build/release/nativemodule
 ```
 
