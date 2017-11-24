@@ -36,7 +36,7 @@ So in short, the primary steps are:
   * Update submodules
   * Update Node.js build configuration
 
-## Updating [Electron's Node fork](https://github.com/electron/node)
+## Updating Electron's Node [fork](https://github.com/electron/node)
 
 1. Create a branch in https://github.com/electron/node: `electron-node-vX.X.X`
   - `vX.X.X` Must use a version of node compatible with our current version of chromium
@@ -55,56 +55,57 @@ So in short, the primary steps are:
 
 We need to generate a patch file from each patch applied to V8.
 
-- Get a copy of Electron's libchromiumcontent fork
-- Run `script/update` to get the latest libcc
+1. Get a copy of Electron's libcc fork
+  - `$ git clone https://github.com/electron/libchromiumcontent`
+2. Run `script/update` to get the latest libcc
   - This will be time-consuming
-- Remove our copies of the old Node v8 patches
+3. Remove our copies of the old Node v8 patches
   - (In libchromiumcontent repo) Read `patches/v8/README.md` to see which patchfiles
     were created during the last update
   - Remove those files from `patches/v8/`:
     - `git rm` the patchfiles
     - edit `patches/v8/README.md`
     - commit these removals
-- Inspect Node [repo](https://github.com/electron/node) to see what patches upstream Node
+4. Inspect Node [repo](https://github.com/electron/node) to see what patches upstream Node
   used with their v8 after bumping its version
   - `git log --oneline deps/V8`
-- Create a checklist of the patches. This is useful for tracking your work and for
+5. Create a checklist of the patches. This is useful for tracking your work and for
   having a quick reference of commit hashes to use in the `git diff-tree` step below.
-- For each patch, do:
-  1. (In node repo) `git diff-tree --patch HASH > ~/path_to_libchromiumcontent/patches/v8/xxx-patch_name.patch`
+6. Read `patches/v8/README.md` to see which patchfiles came from the previous version of V8 and therefore need to be removed.
+  - Delete each patchfile referenced in `patches/v8/README.md`
+7. For each patch, do:
+  - (In node repo) `git diff-tree --patch HASH > ~/path_to_libchromiumcontent/patches/v8/xxx-patch_name.patch`
     - `xxx` is an incremented three-digit number (to force patch order)
     - `patch_name` should loosely match the node commit messages,
       e.g. `030-cherry_pick_cc55747,patch` if the Node commit message was "cherry-pick cc55747"
-  2. (remainder of steps in libchromium repo)
+  - (remainder of steps in libchromium repo)
      Manually edit the `.patch` file to match upstream V8's directory:
     - If a diff section has no instances of `deps/V8`, remove it altogether.
       - We don’t want those patches because we’re only patching V8.
     - Replace instances of `a/deps/v8`/filename.ext` with `a/filename.ext`
       - This is needed because upstream Node keeps its V8 files in a subdirectory
-  3. Ensure that local status is clean: `git status` to make sure there are no unstaged changes.
-  4. Confirm that the patch applies cleanly with
+  - Ensure that local status is clean: `git status` to make sure there are no unstaged changes.
+  - Confirm that the patch applies cleanly with
      `script/patch.py -r src/V8 -p patches/v8/xxx-patch_name.patch.patch`
-  5. Create a new copy of the patch:
+  - Create a new copy of the patch:
      - `cd src/v8 && git diff > ../../test.patch && cd ../..`
      - This is needed because the first patch has Node commit checksums that we don't want
-  6. Confirm that checksums are the only difference between the two patches:
+  - Confirm that checksums are the only difference between the two patches:
      - `diff -u test.patch patches/v8/xxx-patch_name.patch`
-  7. Replace the old patch with the new:
+  - Replace the old patch with the new:
      - `mv test.patch patches/v8/xxx-patch_name.patch`
-  8. Add the patched code to the index _without_ committing:
+  - Add the patched code to the index _without_ committing:
      - `cd src/v8 && git add . && cd ../..`
      -  We don't want to commit the changes (they're kept in the patchfiles)
         but need them locally so that they don't show up in subsequent diffs
         while we iterate through more patches
-  9. Add the patch file to the index:
+  - Add the patch file to the index:
      - `git add a patches/v8/`
-  10. Optionally commit each patch file to ensure you can back up if you mess up a step:
+  - (Optionally) commit each patch file to ensure you can back up if you mess up a step:
      - `git commit patches/v8/`
-- Update `patches/v8/README.md`
-  =FIXME== (In libchromiumcontent repo) Read `patches/v8/README.md` to see which patchfiles
-
-- Update Electron's submodule references:
-   ```sh
+8. Update `patches/v8/README.md` with references to all new patches that have been added so that the next person will know which need to be removed.
+9. Update Electron's submodule references:
+   - ```sh
    cd electron/vendor/node
    electron/vendor/node$ git fetch
    electron/vendor/node$ git checkout electron-node-vA.B.C
