@@ -105,7 +105,7 @@ We need to generate a patch file from each patch applied to V8.
      - `git commit patches/v8/`
 8. Update `patches/v8/README.md` with references to all new patches that have been added so that the next person will know which need to be removed.
 9. Update Electron's submodule references:
-   - ```sh
+   ```sh
    cd electron/vendor/node
    electron/vendor/node$ git fetch
    electron/vendor/node$ git checkout electron-node-vA.B.C
