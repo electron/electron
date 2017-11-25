@@ -442,9 +442,7 @@ describe('nativeImage module', () => {
     })
   })
 
-  // TODO(alexeykuzmin): Disabled during Chromium 61 upgrade.
-  // Fix them and enable.
-  xdescribe('addRepresentation()', () => {
+  describe('addRepresentation()', () => {
     it('supports adding a buffer representation for a scale factor', () => {
       const image = nativeImage.createEmpty()
 
