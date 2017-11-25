@@ -114,11 +114,10 @@ We need to generate a patch file from each patch applied to V8.
    electron/vendor/libchromiumcontent$ git checkout upgrade-to-chromium-X
    electron/vendor/libchromiumcontent$ cd ../..
    electron$ git add vendor
-   electron$ git commit -m "update submodule referefences for node and libc"
+   electron$ git commit -m "update submodule references for node and libc"
    electron$ git pso upgrade-to-chromium-62
    electron$ script/bootstrap.py -d
-   electron$ script/build.py -c -D
-   ```
+   electron$ script/build.py -c -D```
 
 
 
