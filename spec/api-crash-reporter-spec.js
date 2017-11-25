@@ -52,14 +52,12 @@ describe('crashReporter module', () => {
         }
       })
 
-      // TODO(alexeykuzmin): Disabled during Chromium 61 upgrade.
-      // It times out on Linux. Fix it and enable.
-      xit('should send minidump when renderer crashes', function (done) {
+      it('should send minidump when renderer crashes', function (done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
         if (process.env.TRAVIS === 'true') return done()
 
-        this.timeout(120000)
+        this.timeout(180000)
 
         stopServer = startServer({
           callback (port) {
@@ -75,14 +73,12 @@ describe('crashReporter module', () => {
         })
       })
 
-      // TODO(alexeykuzmin): Disabled during Chromium 61 upgrade.
-      // It times out on Linux. Fix it and enable.
-      xit('should send minidump when node processes crash', function (done) {
+      it('should send minidump when node processes crash', function (done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
         if (process.env.TRAVIS === 'true') return done()
 
-        this.timeout(120000)
+        this.timeout(180000)
 
         stopServer = startServer({
           callback (port) {
@@ -111,10 +107,8 @@ describe('crashReporter module', () => {
         })
       })
 
-      // TODO(alexeykuzmin): Disabled during Chromium 61 upgrade.
-      // Fix it and enable.
-      xit('should not send minidump if uploadToServer is false', function (done) {
-        this.timeout(120000)
+      it('should not send minidump if uploadToServer is false', function (done) {
+        this.timeout(180000)
 
         let dumpFile
         let crashesDir = crashReporter.getCrashesDirectory()
@@ -175,14 +169,12 @@ describe('crashReporter module', () => {
         })
       })
 
-      // TODO(alexeykuzmin): Disabled during Chromium 61 upgrade.
-      // It times out on Linux. Fix it and enable.
-      xit('should send minidump with updated extra parameters', function (done) {
+      it('should send minidump with updated extra parameters', function (done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
         if (process.env.TRAVIS === 'true') return done()
 
-        this.timeout(120000)
+        this.timeout(180000)
 
         stopServer = startServer({
           callback (port) {
