@@ -40,6 +40,7 @@ void Menu::AfterInit(v8::Isolate* isolate) {
   delegate.Get("getAcceleratorForCommandId", &get_accelerator_);
   delegate.Get("executeCommand", &execute_command_);
   delegate.Get("menuWillShow", &menu_will_show_);
+  delegate.Get("menuClosed", &menu_closed_);
 }
 
 bool Menu::IsCommandIdChecked(int command_id) const {
@@ -73,6 +74,10 @@ void Menu::ExecuteCommand(int command_id, int flags) {
 
 void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
   menu_will_show_.Run();
+}
+
+void Menu::MenuClosed(ui::SimpleMenuModel* source) {
+  menu_closed_.Run();
 }
 
 void Menu::InsertItemAt(
