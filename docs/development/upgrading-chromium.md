@@ -23,25 +23,25 @@ This is an overview of the steps needed to upgrade Chromium in Electron.
     - One-liner for the latest stable mac version: `curl -so- https://omahaproxy.appspot.com/mac > VERSION`
     - One-liner for the latest win64 beta version: `curl -so- https://omahaproxy.appspot.com/all | grep "win64,beta" | awk -F, 'NR==1{print $3}' > VERSION`
   - run `$ ./script/update`
-    - Time to brew some tea -- this may run for 30m or more.
+    - Brew some tea -- this may run for 30m or more.
     - It will probably fail applying patches.
 3. Fix `*.patch` files in the `patches/` and `patches-mas/` folders.
-4. (Optional) Run a separate script to apply patches
-   (`script/update` uses it internally):
-  - `$ ./script/apply-patches`
-  - There is also another script `/script/patch.py` that could be more useful
-    - Check `--help` to learn how it works with `$ ./script/patch.py -h`
+4. (Optional) `script/update` applies patches, but if multiple tries are needed
+   you can manually run the same script that `update` calls:
+   `$ ./script/apply-patches`
+  - There is a second script, `script/patch.py` that may be useful.
+    Read `./script/patch.py -h` for more information.
 5. Run the build when all patches can be applied without errors
   - `$ ./script/build`
   - If some patches are no longer compatible with the Chromium code,
     fix compilation errors.
-6. When build succeeds, create a `dist` for Electron
+6. When the build succeeds, create a `dist` for Electron
   - `$ ./script/create-dist  --no_zip`
-    - It will create `dist/main` folder in the root of the libcc repo
-      - You will need it to build Electron.
+    - It will create a `dist/main` folder in the libcc repo's root.
+      You will need this to build Electron.
 7. (Optional) Update script contents if there are errors resulting from files
-   being removed or renamed. (`--no_zip` prevents script from create `dist`
-   archives, you don't need them.)
+   that were removed or renamed. (`--no_zip` prevents script from create `dist`
+   archives. You don't need them.)
 
 
 ## Update Electron's code
