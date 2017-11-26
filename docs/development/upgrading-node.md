@@ -106,21 +106,19 @@ We need to generate a patch file from each patch applied to V8.
 8. Update `patches/v8/README.md` with references to all new patches that have been added so that the next person will know which need to be removed.
 9. Update Electron's submodule references:
    - ```sh
-   cd electron/vendor/node
-   electron/vendor/node$ git fetch
-   electron/vendor/node$ git checkout electron-node-vA.B.C
-   electron/vendor/node$ cd ../libchromiumcontent
-   electron/vendor/libchromiumcontent$ git fetch
-   electron/vendor/libchromiumcontent$ git checkout upgrade-to-chromium-X
-   electron/vendor/libchromiumcontent$ cd ../..
-   electron$ git add vendor
-   electron$ git commit -m "update submodule referefences for node and libc"
-   electron$ git pso upgrade-to-chromium-62
-   electron$ script/bootstrap.py -d
-   electron$ script/build.py -c -D
-   ```
-
-
+     cd electron/vendor/node
+     electron/vendor/node$ git fetch
+     electron/vendor/node$ git checkout electron-node-vA.B.C
+     electron/vendor/node$ cd ../libchromiumcontent
+     electron/vendor/libchromiumcontent$ git fetch
+     electron/vendor/libchromiumcontent$ git checkout upgrade-to-chromium-X
+     electron/vendor/libchromiumcontent$ cd ../..
+     electron$ git add vendor
+     electron$ git commit -m "update submodule referefences for node and libc"
+     electron$ git pso upgrade-to-chromium-62
+     electron$ script/bootstrap.py -d
+     electron$ script/build.py -c -D
+     ```
 
 ## Notes
 
