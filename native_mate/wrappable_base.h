@@ -46,7 +46,7 @@ class WrappableBase {
 
   // Marks wrapped object as high memory usage
   // Deletes the wrapped object on the first round of GC callbacks
-  void MarkHighMemoryUsage() { high_memory_ = true; }
+  virtual void MarkHighMemoryUsage();
 
  private:
   friend struct internal::Destroyable;
