@@ -1,5 +1,7 @@
 'use strict'
 
+/* eslint-disable no-unused-expressions */
+
 const {expect} = require('chai')
 const {nativeImage} = require('electron')
 const path = require('path')

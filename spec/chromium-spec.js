@@ -11,6 +11,9 @@ const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
+/* Most of the APIs here don't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 describe('chromium feature', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let listener = null

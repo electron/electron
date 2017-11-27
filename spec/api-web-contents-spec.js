@@ -10,6 +10,9 @@ const {BrowserWindow, webContents, ipcMain, session} = remote
 
 const isCi = remote.getGlobal('isCi')
 
+/* The whole webContents API doesn't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 describe('webContents module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w
@@ -634,7 +637,7 @@ describe('webContents module', () => {
       ]
       const responseEvent = 'webcontents-destroyed'
 
-      function* genNavigationEvent () {
+      function * genNavigationEvent () {
         let eventOptions = null
         while ((eventOptions = events.shift()) && events.length) {
           eventOptions.responseEvent = responseEvent
