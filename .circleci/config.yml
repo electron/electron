@@ -377,6 +377,12 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Reclaim disk space
+          command: |
+            df -h
+            sudo rm -rf /Library/Developer/CoreSimulator
+            df -h
+      - run:
           name: Check for release
           command: |
             MESSAGE="$(git log --format=%B -n 1 HEAD)"
