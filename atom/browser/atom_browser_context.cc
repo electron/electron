@@ -70,8 +70,7 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
-    : brightray::BrowserContext(partition, in_memory),
-      cookie_delegate_(new AtomCookieDelegate) {
+    : brightray::BrowserContext(partition, in_memory) {
   // Construct user agent string.
   Browser* browser = Browser::Get();
   std::string name = RemoveWhitespace(browser->GetName());
@@ -106,10 +105,6 @@ void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
 std::unique_ptr<net::NetworkDelegate>
 AtomBrowserContext::CreateNetworkDelegate() {
   return base::MakeUnique<AtomNetworkDelegate>();
-}
-
-net::CookieMonsterDelegate* AtomBrowserContext::CreateCookieDelegate() {
-  return cookie_delegate();
 }
 
 std::string AtomBrowserContext::GetUserAgent() {
