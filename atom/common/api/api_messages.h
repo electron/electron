@@ -8,9 +8,11 @@
 #include "base/strings/string16.h"
 #include "base/values.h"
 #include "content/public/common/common_param_traits.h"
+#include "content/public/common/referrer.h"
 #include "ipc/ipc_message_macros.h"
 #include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/ipc/gfx_param_traits.h"
+#include "url/gurl.h"
 
 // The message starter should be declared in ipc/ipc_message_start.h. Since
 // we don't want to patch Chromium, we just pretend to be Content Shell.
@@ -62,3 +64,8 @@ IPC_SYNC_MESSAGE_ROUTED1_1(AtomViewHostMsg_SetTemporaryZoomLevel,
 
 // Sent by renderer to get the zoom level.
 IPC_SYNC_MESSAGE_ROUTED0_1(AtomViewHostMsg_GetZoomLevel, double /* result */)
+
+// Brings up SaveAs... dialog to save specified URL.
+IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_PDFSaveURLAs,
+                    GURL /* url */,
+                    content::Referrer /* referrer */)

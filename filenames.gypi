@@ -636,7 +636,6 @@
       'chromium_src/chrome/renderer/tts_dispatcher.cc',
       'chromium_src/chrome/renderer/tts_dispatcher.h',
       'chromium_src/chrome/utility/utility_message_handler.h',
-      'chromium_src/components/pdf/common/pdf_messages.h',
       'chromium_src/components/pdf/renderer/pepper_pdf_host.cc',
       'chromium_src/components/pdf/renderer/pepper_pdf_host.h',
       'chromium_src/extensions/browser/app_window/size_constraints.cc',
