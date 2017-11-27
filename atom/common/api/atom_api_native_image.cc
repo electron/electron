@@ -456,7 +456,7 @@ void NativeImage::AddRepresentation(const mate::Dictionary& options) {
   // Re-initialize image when first representation is added to an empty image
   if (skia_rep_added && IsEmpty()) {
     gfx::Image image(image_skia);
-    image_.SwapRepresentations(&image);
+    image_ = std::move(image);
   }
 }
 
