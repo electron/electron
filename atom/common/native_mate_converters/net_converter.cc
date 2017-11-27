@@ -203,7 +203,7 @@ void FillRequestDetails(base::DictionaryValue* details,
   details->SetString("method", request->method());
   std::string url;
   if (!request->url_chain().empty()) url = request->url().spec();
-  details->SetStringWithoutPathExpansion("url", url);
+  details->SetKey("url", base::Value(url));
   details->SetString("referrer", request->referrer());
   std::unique_ptr<base::ListValue> list(new base::ListValue);
   GetUploadData(list.get(), request);
@@ -239,7 +239,7 @@ void GetUploadData(base::ListValue* upload_data_list,
       const net::UploadFileElementReader* file_reader =
           reader->AsFileReader();
       auto file_path = file_reader->path().AsUTF8Unsafe();
-      upload_data_dict->SetStringWithoutPathExpansion("file", file_path);
+      upload_data_dict->SetKey("file", base::Value(file_path));
     } else {
       const storage::UploadBlobElementReader* blob_reader =
           static_cast<storage::UploadBlobElementReader*>(reader.get());
