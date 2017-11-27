@@ -60,7 +60,7 @@ std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
 
 std::unique_ptr<views::InkDrop> SubmenuButton::CreateInkDrop() {
   std::unique_ptr<views::InkDropImpl> ink_drop =
-      CustomButton::CreateDefaultInkDropImpl();
+      views::Button::CreateDefaultInkDropImpl();
   ink_drop->SetShowHighlightOnHover(false);
   return std::move(ink_drop);
 }
