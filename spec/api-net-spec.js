@@ -6,6 +6,9 @@ const url = require('url')
 const {net} = remote
 const {session} = remote
 
+/* The whole net API doesn't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 function randomBuffer (size, start, end) {
   start = start || 0
   end = end || 255
@@ -855,6 +858,8 @@ describe('net module', () => {
         (details, callback) => {
           if (details.url === `${server.url}${requestUrl}`) {
             requestIsIntercepted = true
+            // Disabled due to false positive in StandardJS
+            // eslint-disable-next-line standard/no-callback-literal
             callback({
               redirectURL: `${server.url}${redirectUrl}`
             })
@@ -907,6 +912,8 @@ describe('net module', () => {
       customSession.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === `${server.url}${requestUrl}`) {
           requestIsIntercepted = true
+          // Disabled due to false positive in StandardJS
+          // eslint-disable-next-line standard/no-callback-literal
           callback({
             redirectURL: `${server.url}${redirectUrl}`
           })
@@ -1154,6 +1161,8 @@ describe('net module', () => {
           url: `${server.url}${requestUrl}`,
           session: 1
         })
+
+        // eslint-disable-next-line
         urlRequest
       } catch (exception) {
         done()
@@ -1223,6 +1232,8 @@ describe('net module', () => {
           url: `${server.url}${requestUrl}`,
           partition: 1
         })
+
+        // eslint-disable-next-line
         urlRequest
       } catch (exception) {
         done()

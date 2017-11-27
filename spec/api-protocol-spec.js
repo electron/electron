@@ -10,6 +10,9 @@ const {BrowserWindow, ipcMain, protocol, session, webContents} = remote
 // and use Stream instances created in the browser process.
 const stream = remote.require('stream')
 
+/* The whole protocol API doesn't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 describe('protocol module', () => {
   const protocolName = 'sp'
   const text = 'valar morghulis'
@@ -28,7 +31,7 @@ describe('protocol module', () => {
     const body = stream.PassThrough()
 
     async function sendChunks () {
-      let buf = new Buffer(data)
+      let buf = Buffer.from(data)
       for (;;) {
         body.push(buf.slice(0, chunkSize))
         buf = buf.slice(chunkSize)
@@ -204,7 +207,7 @@ describe('protocol module', () => {
   })
 
   describe('protocol.registerBufferProtocol', () => {
-    const buffer = new Buffer(text)
+    const buffer = Buffer.from(text)
     it('sends Buffer as response', (done) => {
       const handler = (request, callback) => callback(buffer)
       protocol.registerBufferProtocol(protocolName, handler, (error) => {
@@ -767,7 +770,7 @@ describe('protocol module', () => {
 
   describe('protocol.interceptBufferProtocol', () => {
     it('can intercept http protocol', (done) => {
-      const handler = (request, callback) => callback(new Buffer(text))
+      const handler = (request, callback) => callback(Buffer.from(text))
       protocol.interceptBufferProtocol('http', handler, (error) => {
         if (error) return done(error)
         $.ajax({

@@ -145,7 +145,7 @@ describe('ipc module', () => {
 
   describe('remote.createFunctionWithReturnValue', () => {
     it('should be called in browser synchronously', () => {
-      const buf = new Buffer('test')
+      const buf = Buffer.from('test')
       const call = remote.require(path.join(fixtures, 'module', 'call.js'))
       const result = call.call(remote.createFunctionWithReturnValue(buf))
       assert.equal(result.constructor.name, 'Buffer')
@@ -195,6 +195,7 @@ describe('ipc module', () => {
       const foo = remote.require(path.join(fixtures, 'module', 'error-properties.js'))
 
       assert.throws(() => {
+        // eslint-disable-next-line
         foo.bar
       }, /getting error/)
 
@@ -239,7 +240,7 @@ describe('ipc module', () => {
     const printName = remote.require(print)
 
     it('keeps its constructor name for objects', () => {
-      const buf = new Buffer('test')
+      const buf = Buffer.from('test')
       assert.equal(printName.print(buf), 'Buffer')
     })
 

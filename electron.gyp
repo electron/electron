@@ -122,6 +122,19 @@
                 },
               ],
             }],
+            ['mas_build==1', {
+              'dependencies': [
+                '<(project_name)_login_helper',
+              ],
+              'copies': [
+                {
+                  'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Library/LoginItems',
+                  'files': [
+                    '<(PRODUCT_DIR)/<(product_name) Login Helper.app',
+                  ],
+                },
+              ],
+            }],
           ],
         }],  # OS!="mac"
         ['OS=="win"', {
@@ -577,6 +590,7 @@
               '$(SDKROOT)/System/Library/Frameworks/Quartz.framework',
               '$(SDKROOT)/System/Library/Frameworks/Security.framework',
               '$(SDKROOT)/System/Library/Frameworks/SecurityInterface.framework',
+              '$(SDKROOT)/System/Library/Frameworks/ServiceManagement.framework',
             ],
           },
           'mac_bundle': 1,
@@ -695,6 +709,32 @@
             ],
           },
         },  # target helper
+        {
+          'target_name': '<(project_name)_login_helper',
+          'product_name': '<(product_name) Login Helper',
+          'type': 'executable',
+          'sources': [
+            '<@(login_helper_sources)',
+          ],
+          'include_dirs': [
+            '.',
+            'vendor',
+            '<(libchromiumcontent_src_dir)',
+          ],
+          'link_settings': {
+            'libraries': [
+              '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
+            ],
+          },
+          'mac_bundle': 1,
+          'xcode_settings': {
+            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).loginhelper',
+            'INFOPLIST_FILE': 'atom/app/resources/mac/loginhelper-Info.plist',
+            'OTHER_LDFLAGS': [
+              '-ObjC',
+            ],
+          },
+        },  # target login_helper
       ],
     }],  # OS!="mac"
   ],

@@ -4,6 +4,7 @@
 
 #include "atom/browser/browser.h"
 
+#include "atom/common/platform_util.h"
 #include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/mac/dict_util.h"
@@ -193,19 +194,27 @@ bool Browser::UpdateUserActivityState(const std::string& type,
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
+#if defined(MAS_BUILD)
+  settings.open_at_login = platform_util::GetLoginItemEnabled();
+#else
   settings.open_at_login = base::mac::CheckLoginItemStatus(
       &settings.open_as_hidden);
   settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
   settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
   settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
+#endif
   return settings;
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+#if defined(MAS_BUILD)
+  platform_util::SetLoginItemEnabled(settings.open_at_login);
+#else
   if (settings.open_at_login)
     base::mac::AddToLoginItems(settings.open_as_hidden);
   else
     base::mac::RemoveFromLoginItems();
+#endif
 }
 
 std::string Browser::GetExecutableFileVersion() const {

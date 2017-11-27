@@ -6,6 +6,7 @@
 
 #import <Carbon/Carbon.h>
 #import <Cocoa/Cocoa.h>
+#import <ServiceManagement/ServiceManagement.h>
 
 #include "base/callback.h"
 #include "base/files/file_path.h"
@@ -98,6 +99,10 @@ std::string OpenURL(NSURL* ns_url, bool activate) {
   return "";
 }
 
+NSString* GetLoginHelperBundleIdentifier() {
+  return [[[NSBundle mainBundle] bundleIdentifier] stringByAppendingString:@".loginhelper"];
+}
+
 }  // namespace
 
 namespace platform_util {
@@ -175,6 +180,28 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
 
 void Beep() {
   NSBeep();
+}
+
+bool GetLoginItemEnabled() {
+  BOOL enabled = NO;
+  // SMJobCopyDictionary does not work in sandbox (see rdar://13626319)
+  CFArrayRef jobs = SMCopyAllJobDictionaries(kSMDomainUserLaunchd);
+  NSArray* jobs_ = CFBridgingRelease(jobs);
+  NSString* identifier = GetLoginHelperBundleIdentifier();
+  if (jobs_ && [jobs_ count] > 0) {
+    for (NSDictionary* job in jobs_) {
+      if ([identifier isEqualToString:[job objectForKey:@"Label"]]) {
+        enabled = [[job objectForKey:@"OnDemand"] boolValue];
+        break;
+      }
+    }
+  }
+  return enabled;
+}
+
+void SetLoginItemEnabled(bool enabled) {
+  NSString* identifier = GetLoginHelperBundleIdentifier();
+  SMLoginItemSetEnabled((__bridge CFStringRef) identifier, enabled);
 }
 
 }  // namespace platform_util

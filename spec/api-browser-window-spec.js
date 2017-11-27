@@ -27,7 +27,7 @@ describe('BrowserWindow module', () => {
     postData = [
       {
         type: 'rawData',
-        bytes: new Buffer('username=test&file=')
+        bytes: Buffer.from('username=test&file=')
       },
       {
         type: 'file',
@@ -153,7 +153,7 @@ describe('BrowserWindow module', () => {
       ]
       const responseEvent = 'window-webContents-destroyed'
 
-      function* genNavigationEvent () {
+      function * genNavigationEvent () {
         let eventOptions = null
         while ((eventOptions = events.shift()) && events.length) {
           let w = new BrowserWindow({show: false})
@@ -270,7 +270,7 @@ describe('BrowserWindow module', () => {
         assert.equal(isMainFrame, true)
         done()
       })
-      const data = new Buffer(2 * 1024 * 1024).toString('base64')
+      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
       w.loadURL(`data:image/png;base64,${data}`)
     })
 
@@ -1056,6 +1056,8 @@ describe('BrowserWindow module', () => {
       // http protocol to simulate accessing another domain. This is required
       // because the code paths for cross domain popups is different.
       function crossDomainHandler (request, callback) {
+        // Disabled due to false positive in StandardJS
+        // eslint-disable-next-line standard/no-callback-literal
         callback({
           mimeType: 'text/html',
           data: `<html><body><h1>${request.url}</h1></body></html>`
@@ -3033,6 +3035,8 @@ const isScaleFactorRounding = () => {
 function serveFileFromProtocol (protocolName, filePath) {
   return new Promise((resolve, reject) => {
     protocol.registerBufferProtocol(protocolName, (request, callback) => {
+      // Disabled due to false positive in StandardJS
+      // eslint-disable-next-line standard/no-callback-literal
       callback({
         mimeType: 'text/html',
         data: fs.readFileSync(filePath)
