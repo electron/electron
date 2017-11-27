@@ -800,16 +800,21 @@ void InspectableWebContentsImpl::OnURLFetchComplete(
   DCHECK(it != pending_requests_.end());
 
   base::DictionaryValue response;
-  auto headers = base::MakeUnique<base::DictionaryValue>();
+
   net::HttpResponseHeaders* rh = source->GetResponseHeaders();
   response.SetInteger("statusCode", rh ? rh->response_code() : 200);
-  response.Set("headers", std::move(headers));
 
-  size_t iterator = 0;
-  std::string name;
-  std::string value;
-  while (rh && rh->EnumerateHeaderLines(&iterator, &name, &value))
-    headers->SetString(name, value);
+  {
+    auto headers = base::MakeUnique<base::DictionaryValue>();
+
+    size_t iterator = 0;
+    std::string name;
+    std::string value;
+    while (rh && rh->EnumerateHeaderLines(&iterator, &name, &value))
+      headers->SetString(name, value);
+
+    response.Set("headers", std::move(headers));
+  }
 
   it->second.Run(&response);
   pending_requests_.erase(it);
