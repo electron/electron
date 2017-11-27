@@ -8,10 +8,10 @@
 #include <string>
 #include <vector>
 
+#include "base/callback_list.h"
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
-#include "net/cookies/cookie_monster.h"
 #include "net/cookies/cookie_store.h"
 #include "net/http/http_cache.h"
 #include "net/http/transport_security_state.h"
@@ -38,6 +38,7 @@ namespace brightray {
 class RequireCTDelegate;
 class DevToolsNetworkControllerHandle;
 class NetLog;
+struct CookieDetails;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
@@ -71,6 +72,17 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       content::URLRequestInterceptorScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
 
+  // Register callbacks that needs to notified on any cookie store changes.
+  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+  RegisterCookieChangeCallback(
+      const base::Callback<void(const CookieDetails*)>& cb);
+  void NotifyCookieChange(const net::CanonicalCookie& cookie,
+                          bool removed,
+                          net::CookieStore::ChangeCause cause);
+  // net::CookieStore::CookieChangedCallback implementation.
+  void OnCookieChanged(const net::CanonicalCookie& cookie,
+                       net::CookieStore::ChangeCause cause);
+
   // net::URLRequestContextGetter:
   net::URLRequestContext* GetURLRequestContext() override;
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner()
@@ -102,9 +114,12 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   std::unique_ptr<net::HostMappingRules> host_mapping_rules_;
   std::unique_ptr<net::HttpAuthPreferences> http_auth_preferences_;
   std::unique_ptr<net::HttpNetworkSession> http_network_session_;
+  std::unique_ptr<net::CookieStore::CookieChangedSubscription>
+      cookie_change_sub_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 
+  base::CallbackList<void(const CookieDetails*)> cookie_change_sub_list_;
   net::URLRequestJobFactory* job_factory_;  // weak ref
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);

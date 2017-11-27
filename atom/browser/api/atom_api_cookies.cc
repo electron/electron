@@ -20,7 +20,6 @@
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 
-using atom::AtomCookieDelegate;
 using content::BrowserThread;
 
 namespace mate {
@@ -238,17 +237,16 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 
 }  // namespace
 
-Cookies::Cookies(v8::Isolate* isolate,
-                 AtomBrowserContext* browser_context)
-      : request_context_getter_(browser_context->url_request_context_getter()),
-        cookie_delegate_(browser_context->cookie_delegate()) {
+Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
+    : request_context_getter_(browser_context->url_request_context_getter()) {
   Init(isolate);
-  cookie_delegate_->AddObserver(this);
+  cookie_change_subscription_ =
+      browser_context->url_request_context_getter()
+          ->RegisterCookieChangeCallback(
+              base::Bind(&Cookies::OnCookieChanged, base::Unretained(this)));
 }
 
-Cookies::~Cookies() {
-  cookie_delegate_->RemoveObserver(this);
-}
+Cookies::~Cookies() {}
 
 void Cookies::Get(const base::DictionaryValue& filter,
                   const GetCallback& callback) {
@@ -283,10 +281,8 @@ void Cookies::FlushStore(const base::Closure& callback) {
       base::Bind(FlushCookieStoreOnIOThread, getter, callback));
 }
 
-void Cookies::OnCookieChanged(const net::CanonicalCookie& cookie,
-                              bool removed,
-                              net::CookieStore::ChangeCause cause) {
-  Emit("changed", cookie, cause, removed);
+void Cookies::OnCookieChanged(const brightray::CookieDetails* details) {
+  Emit("changed", *(details->cookie), details->cause, details->removed);
 }
 
 

@@ -13,6 +13,7 @@
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "brightray/browser/browser_client.h"
+#include "brightray/browser/net/cookie_details.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "brightray/browser/net/devtools_network_transaction_factory.h"
 #include "brightray/browser/net/require_ct_delegate.h"
@@ -29,7 +30,6 @@
 #include "net/cert/ct_log_verifier.h"
 #include "net/cert/ct_policy_enforcer.h"
 #include "net/cert/multi_log_ct_verifier.h"
-#include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_filter.h"
 #include "net/http/http_auth_handler_factory.h"
@@ -155,6 +155,32 @@ URLRequestContextGetter::URLRequestContextGetter(
 URLRequestContextGetter::~URLRequestContextGetter() {
 }
 
+std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+URLRequestContextGetter::RegisterCookieChangeCallback(
+    const base::Callback<void(const CookieDetails*)>& cb) {
+  return cookie_change_sub_list_.Add(cb);
+}
+
+void URLRequestContextGetter::NotifyCookieChange(
+    const net::CanonicalCookie& cookie,
+    bool removed,
+    net::CookieStore::ChangeCause cause) {
+  CookieDetails cookie_details(&cookie, removed, cause);
+  cookie_change_sub_list_.Notify(&cookie_details);
+}
+
+void URLRequestContextGetter::OnCookieChanged(
+    const net::CanonicalCookie& cookie,
+    net::CookieStore::ChangeCause cause) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::BindOnce(&URLRequestContextGetter::NotifyCookieChange, this, cookie,
+                     !(cause == net::CookieStore::ChangeCause::INSERTED),
+                     cause));
+}
+
 net::HostResolver* URLRequestContextGetter::host_resolver() {
   return url_request_context_->host_resolver();
 }
@@ -188,6 +214,12 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     std::unique_ptr<net::CookieStore> cookie_store =
         content::CreateCookieStore(cookie_config);
     storage_->set_cookie_store(std::move(cookie_store));
+    // Cookie store will outlive notifier by order of declaration
+    // in the header.
+    cookie_change_sub_ =
+        url_request_context_->cookie_store()->AddCallbackForAllChanges(
+            base::Bind(&URLRequestContextGetter::OnCookieChanged, this));
+
     storage_->set_channel_id_service(base::MakeUnique<net::ChannelIDService>(
         new net::DefaultChannelIDStore(nullptr)));
 
