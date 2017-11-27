@@ -599,7 +599,6 @@
       'chromium_src/chrome/common/chrome_paths_linux.cc',
       'chromium_src/chrome/common/chrome_paths_mac.mm',
       'chromium_src/chrome/common/chrome_paths_win.cc',
-      'chromium_src/chrome/common/chrome_utility_messages.h',
       'chromium_src/chrome/common/pref_names.cc',
       'chromium_src/chrome/common/pref_names.h',
       'chromium_src/chrome/common/print_messages.cc',
