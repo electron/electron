@@ -5,12 +5,12 @@
 #include "atom/browser/ui/tray_icon_cocoa.h"
 
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
+#include "atom/browser/ui/cocoa/NSString+ANSI.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/display/screen.h"
-#include "atom/browser/ui/cocoa/NSString+ANSI.h"
 
 namespace {
 
@@ -122,8 +122,8 @@ const CGFloat kVerticalTitleMargin = 2;
     NSRect titleDrawRect = NSMakeRect(
         [self iconWidth], -kVerticalTitleMargin, [self titleWidth], thickness);
 
-    NSAttributedString* titleParsed = [self attributedTitleWithParams:title_];
-
+    base::scoped_nsobject<NSAttributedString> titleParsed(
+        [self attributedTitleWithParams:title_]);
     [titleParsed drawInRect:titleDrawRect];
   }
 }
@@ -174,10 +174,13 @@ const CGFloat kVerticalTitleMargin = 2;
 // The width of the title.
 - (CGFloat)titleWidth {
   if (!title_)
-     return 0;
+    return 0;
 
-  if (ANSI_)
-    return [[title_ attributedStringParsingANSICodes] size].width + 10;
+  if (ANSI_) {
+    base::scoped_nsobject<NSMutableAttributedString> attributedTitle(
+        [title_ attributedStringParsingANSICodes]);
+    return [attributedTitle size].width + 10;
+  }
 
   base::scoped_nsobject<NSAttributedString> attributes(
       [[NSAttributedString alloc] initWithString:title_
@@ -226,25 +229,30 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 
-- (NSAttributedString*) attributedTitleWithParams:(NSString *)fullTitle {
-    fullTitle = [fullTitle stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
-    NSString * title = fullTitle;
+- (NSAttributedString*)attributedTitleWithParams:(NSString*)fullTitle {
+  NSString* title = [fullTitle
+      stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+  NSDictionary* attributes =
+      [self titleAttributesWithHighlight:[self isHighlighted]];
 
-    NSDictionary* attributes = [self titleAttributesWithHighlight:[self isHighlighted]];
-    NSMutableAttributedString * attributedTitle = [NSMutableAttributedString.alloc initWithString:title attributes:attributes];
-    if (ANSI_) {
-        attributedTitle = [title attributedStringParsingANSICodes];
-        [attributedTitle addAttributes:attributes range:NSMakeRange(0, attributedTitle.length)];
-        return attributedTitle;
-    }
+  base::scoped_nsobject<NSMutableAttributedString> attributedTitle(
+      [[NSMutableAttributedString alloc] initWithString:title
+                                             attributes:attributes]);
+  if (ANSI_) {
+    attributedTitle.reset([title attributedStringParsingANSICodes]);
+    [attributedTitle addAttributes:attributes
+                             range:NSMakeRange(0, [attributedTitle length])];
+    return attributedTitle.release();
+  }
 
-    //NSFontAttributeName:[NSFont menuBarFontOfSize:0],
-    //NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
-
-    [attributedTitle addAttributes:attributes range:NSMakeRange(0, attributedTitle.length)];
-    [attributedTitle addAttribute:NSForegroundColorAttributeName value:[self colorWithHighlight: [self isDarkMode]] range:NSMakeRange(0, attributedTitle.length)];
-
-    return attributedTitle;
+  //NSFontAttributeName:[NSFont menuBarFontOfSize:0],
+  //NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
+  [attributedTitle addAttributes:attributes
+                           range:NSMakeRange(0, [attributedTitle length])];
+  [attributedTitle addAttribute:NSForegroundColorAttributeName
+                          value:[self colorWithHighlight: [self isDarkMode]]
+                          range:NSMakeRange(0, [attributedTitle length])];
+  return attributedTitle.release();
 }
 
 - (void)setMenuController:(AtomMenuController*)menu {

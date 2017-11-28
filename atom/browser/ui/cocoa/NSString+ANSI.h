@@ -10,10 +10,8 @@
 #import <Foundation/Foundation.h>
 
 @interface NSString(ANSI)
-
 - (BOOL)containsANSICodes;
 - (NSMutableAttributedString*)attributedStringParsingANSICodes;
-
 @end
 
 #endif  // ATOM_BROWSER_UI_COCOA_NSSTRING_ANSI_H_

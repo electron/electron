@@ -4,9 +4,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "Cocoa/Cocoa.h"
-#import "NSString+ANSI.h"
-#import "NSColor+Hex.h"
+#include "atom/browser/ui/cocoa/NSString+ANSI.h"
+#include "atom/browser/ui/cocoa/NSColor+Hex.h"
+#include "base/mac/scoped_nsobject.h"
 
 @implementation NSMutableDictionary (ANSI)
 
@@ -112,9 +112,12 @@
 - (NSMutableAttributedString*)attributedStringParsingANSICodes {
   NSMutableAttributedString* result = [[NSMutableAttributedString alloc] init];
 
-  NSMutableDictionary* attributes = [NSMutableDictionary.alloc init];
+  base::scoped_nsobject<NSMutableDictionary> attributes(
+      [[NSMutableDictionary alloc] init]);
   NSArray* parts = [self componentsSeparatedByString:@"\\033["];
-  [result appendAttributedString:[NSAttributedString.alloc initWithString:parts.firstObject attributes:nil]];
+  [result appendAttributedString:[[[NSAttributedString alloc]
+                                    initWithString:parts.firstObject
+                                        attributes:nil] autorelease]];
 
   for (NSString* part in [parts subarrayWithRange:NSMakeRange(1, parts.count - 1)]) {
     if (part.length == 0)
@@ -124,17 +127,20 @@
     NSString* text = sequence.lastObject;
 
     if (sequence.count < 2) {
-      [result appendAttributedString:[NSAttributedString.alloc initWithString:text attributes:attributes]];
+      [result appendAttributedString:[[[NSAttributedString alloc]
+                                         initWithString:text
+                                             attributes:attributes] autorelease]];
     } else if (sequence.count >= 2) {
-      text = [[sequence subarrayWithRange:NSMakeRange(1, sequence.count - 1)] componentsJoinedByString:@"m"];
+      text = [[sequence subarrayWithRange:NSMakeRange(1, sequence.count - 1)]
+                 componentsJoinedByString:@"m"];
       [attributes modifyAttributesForANSICodes:sequence[0]];
-      [result appendAttributedString:[NSAttributedString.alloc initWithString:text attributes:attributes]];
+      [result appendAttributedString:[[[NSAttributedString alloc]
+                                         initWithString:text
+                                             attributes:attributes] autorelease]];
     }
   }
 
   return result;
 }
-
-
 
 @end
