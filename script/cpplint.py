@@ -14,6 +14,8 @@ IGNORE_FILES = [
   os.path.join('atom', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'),
   os.path.join('atom', 'browser', 'ui', 'cocoa',
                'touch_bar_forward_declarations.h'),
+  os.path.join('atom', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'),
+  os.path.join('atom', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'),
   os.path.join('atom', 'common', 'api', 'api_messages.h'),
   os.path.join('atom', 'common', 'common_message_generator.cc'),
   os.path.join('atom', 'common', 'common_message_generator.h'),
