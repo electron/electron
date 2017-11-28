@@ -17,7 +17,7 @@ WrappableBase::WrappableBase()
 WrappableBase::~WrappableBase() {
   if (wrapper_.IsEmpty())
     return;
-  
+
   GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
   wrapper_.ClearWeak();
   wrapper_.Reset();
@@ -38,7 +38,9 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
   wrapper->SetAlignedPointerInInternalField(0, this);
   wrapper_.Reset(isolate, wrapper);
   wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
-  wrapper_.MarkIndependent();
+
+  if (high_memory_)
+    wrapper_.MarkIndependent();
 
   // Call object._init if we have one.
   v8::Local<v8::Function> init;
@@ -46,6 +48,12 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
     init->Call(wrapper, 0, nullptr);
 
   AfterInit(isolate);
+}
+
+void WrappableBase::MarkHighMemoryUsage() {
+  high_memory_ = true;
+  if (!wrapper_.IsEmpty())
+    wrapper_.MarkIndependent();
 }
 
 // static
