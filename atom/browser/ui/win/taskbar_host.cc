@@ -204,10 +204,14 @@ bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
 }
 
 bool TaskbarHost::InitializeTaskbar() {
+  if (taskbar_)
+    return true;
+
   if (FAILED(::CoCreateInstance(CLSID_TaskbarList, nullptr,
                                 CLSCTX_INPROC_SERVER,
                                 IID_PPV_ARGS(&taskbar_))) ||
       FAILED(taskbar_->HrInit())) {
+    taskbar_.Reset();
     return false;
   } else {
     return true;
