@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "base/callback_list.h"
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
@@ -38,7 +37,6 @@ namespace brightray {
 class RequireCTDelegate;
 class DevToolsNetworkControllerHandle;
 class NetLog;
-struct CookieDetails;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
@@ -59,6 +57,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         RequireCTDelegate* ct_delegate);
     virtual net::SSLConfigService* CreateSSLConfigService();
     virtual std::vector<std::string> GetCookieableSchemes();
+    virtual void NotifyCookieChange(const net::CanonicalCookie& cookie,
+                                    bool removed,
+                                    net::CookieStore::ChangeCause cause) {}
   };
 
   URLRequestContextGetter(
@@ -72,13 +73,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       content::URLRequestInterceptorScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
 
-  // Register callbacks that needs to notified on any cookie store changes.
-  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
-  RegisterCookieChangeCallback(
-      const base::Callback<void(const CookieDetails*)>& cb);
-  void NotifyCookieChange(const net::CanonicalCookie& cookie,
-                          bool removed,
-                          net::CookieStore::ChangeCause cause);
   // net::CookieStore::CookieChangedCallback implementation.
   void OnCookieChanged(const net::CanonicalCookie& cookie,
                        net::CookieStore::ChangeCause cause);
@@ -119,7 +113,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 
-  base::CallbackList<void(const CookieDetails*)> cookie_change_sub_list_;
   net::URLRequestJobFactory* job_factory_;  // weak ref
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);

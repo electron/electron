@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/callback_list.h"
 #include "brightray/browser/browser_context.h"
 
 namespace atom {
@@ -17,6 +18,7 @@ class AtomDownloadManagerDelegate;
 class AtomNetworkDelegate;
 class AtomPermissionManager;
 class WebViewManager;
+struct CookieDetails;
 
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
@@ -28,6 +30,10 @@ class AtomBrowserContext : public brightray::BrowserContext {
       const base::DictionaryValue& options = base::DictionaryValue());
 
   void SetUserAgent(const std::string& user_agent);
+  // Register callbacks that needs to notified on any cookie store changes.
+  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+  RegisterCookieChangeCallback(
+      const base::Callback<void(const CookieDetails*)>& cb);
 
   // brightray::URLRequestContextGetter::Delegate:
   std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() override;
@@ -39,6 +45,9 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<net::CertVerifier> CreateCertVerifier(
       brightray::RequireCTDelegate* ct_delegate) override;
   std::vector<std::string> GetCookieableSchemes() override;
+  void NotifyCookieChange(const net::CanonicalCookie& cookie,
+                          bool removed,
+                          net::CookieStore::ChangeCause cause) override;
 
   // content::BrowserContext:
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
@@ -62,6 +71,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<AtomBlobReader> blob_reader_;
   std::string user_agent_;
   bool use_cache_;
+
+  base::CallbackList<void(const CookieDetails*)> cookie_change_sub_list_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };

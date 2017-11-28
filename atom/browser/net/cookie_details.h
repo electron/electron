@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BRIGHTRAY_BROWSER_NET_COOKIE_DETAILS_H_
-#define BRIGHTRAY_BROWSER_NET_COOKIE_DETAILS_H_
+#ifndef ATOM_BROWSER_NET_COOKIE_DETAILS_H_
+#define ATOM_BROWSER_NET_COOKIE_DETAILS_H_
 
 #include "base/macros.h"
 #include "net/cookies/cookie_store.h"
 
-namespace brightray {
+namespace atom {
 
 struct CookieDetails {
  public:
@@ -22,6 +22,6 @@ struct CookieDetails {
   net::CookieStore::ChangeCause cause;
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_NET_COOKIE_DETAILS_H_
+#endif  // ATOM_BROWSER_NET_COOKIE_DETAILS_H_

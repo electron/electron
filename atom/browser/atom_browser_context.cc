@@ -15,6 +15,7 @@
 #include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
+#include "atom/browser/net/cookie_details.h"
 #include "atom/browser/net/http_protocol_handler.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
@@ -100,6 +101,12 @@ AtomBrowserContext::~AtomBrowserContext() {
 
 void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
+}
+
+std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+AtomBrowserContext::RegisterCookieChangeCallback(
+    const base::Callback<void(const CookieDetails*)>& cb) {
+  return cookie_change_sub_list_.Add(cb);
 }
 
 std::unique_ptr<net::NetworkDelegate>
@@ -196,6 +203,14 @@ std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
   default_schemes.insert(default_schemes.end(),
                          standard_schemes.begin(), standard_schemes.end());
   return default_schemes;
+}
+
+void AtomBrowserContext::NotifyCookieChange(
+    const net::CanonicalCookie& cookie,
+    bool removed,
+    net::CookieStore::ChangeCause cause) {
+  CookieDetails cookie_details(&cookie, removed, cause);
+  cookie_change_sub_list_.Notify(&cookie_details);
 }
 
 void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {

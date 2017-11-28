@@ -13,7 +13,6 @@
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "brightray/browser/browser_client.h"
-#include "brightray/browser/net/cookie_details.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "brightray/browser/net/devtools_network_transaction_factory.h"
 #include "brightray/browser/net/require_ct_delegate.h"
@@ -155,30 +154,19 @@ URLRequestContextGetter::URLRequestContextGetter(
 URLRequestContextGetter::~URLRequestContextGetter() {
 }
 
-std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
-URLRequestContextGetter::RegisterCookieChangeCallback(
-    const base::Callback<void(const CookieDetails*)>& cb) {
-  return cookie_change_sub_list_.Add(cb);
-}
-
-void URLRequestContextGetter::NotifyCookieChange(
-    const net::CanonicalCookie& cookie,
-    bool removed,
-    net::CookieStore::ChangeCause cause) {
-  CookieDetails cookie_details(&cookie, removed, cause);
-  cookie_change_sub_list_.Notify(&cookie_details);
-}
-
 void URLRequestContextGetter::OnCookieChanged(
     const net::CanonicalCookie& cookie,
     net::CookieStore::ChangeCause cause) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
+  if (!delegate_)
+    return;
+
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::BindOnce(&URLRequestContextGetter::NotifyCookieChange, this, cookie,
-                     !(cause == net::CookieStore::ChangeCause::INSERTED),
-                     cause));
+      base::BindOnce(
+          &Delegate::NotifyCookieChange, base::Unretained(delegate_), cookie,
+          !(cause == net::CookieStore::ChangeCause::INSERTED), cause));
 }
 
 net::HostResolver* URLRequestContextGetter::host_resolver() {
