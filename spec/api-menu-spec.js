@@ -329,25 +329,30 @@ describe('Menu module', () => {
     let w = null
     let menu
 
-    beforeEach(() => {
+    beforeEach((done) => {
       w = new BrowserWindow({show: false, width: 200, height: 200})
       menu = Menu.buildFromTemplate([
         {
           label: '1'
         }
       ])
-      menu.popup(w, {x: 100, y: 100, async: true})
-      menu.closePopup(w)
+
+      w.loadURL('data:text/html,<html>teszt</html>')
+      w.webContents.on('dom-ready', () => {
+        done()
+      })
     })
 
     afterEach(() => {
       return closeWindow(w).then(() => { w = null })
     })
 
-    it('emits closed event', () => {
+    it('emits closed event', (done) => {
+      menu.popup(w, {x: 100, y: 100, async: true})
       menu.on('closed', () => {
         done()
       })
+      menu.closePopup(w)
     })
   })
 
