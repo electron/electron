@@ -106,7 +106,7 @@
 @implementation NSString (ANSI)
 
 - (BOOL)containsANSICodes {
-    return [self rangeOfString:@"\\033["].location != NSNotFound;
+  return [self rangeOfString:@"\033["].location != NSNotFound;
 }
 
 - (NSMutableAttributedString*)attributedStringParsingANSICodes {
@@ -114,10 +114,10 @@
 
   base::scoped_nsobject<NSMutableDictionary> attributes(
       [[NSMutableDictionary alloc] init]);
-  NSArray* parts = [self componentsSeparatedByString:@"\\033["];
+  NSArray* parts = [self componentsSeparatedByString:@"\033["];
   [result appendAttributedString:[[[NSAttributedString alloc]
-                                    initWithString:parts.firstObject
-                                        attributes:nil] autorelease]];
+                                     initWithString:parts.firstObject
+                                         attributes:nil] autorelease]];
 
   for (NSString* part in [parts subarrayWithRange:NSMakeRange(1, parts.count - 1)]) {
     if (part.length == 0)
