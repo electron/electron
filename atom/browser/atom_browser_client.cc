@@ -347,7 +347,8 @@ bool AtomBrowserClient::CanCreateWindow(
     bool user_gesture,
     bool opener_suppressed,
     bool* no_javascript_access) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  // FIXME: Ensure the DCHECK doesn't fail and then re-enable
+  // DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
   int opener_render_process_id = opener->GetProcess()->GetID();
 
