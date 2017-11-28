@@ -182,16 +182,6 @@ const CGFloat kVerticalTitleMargin = 2;
       [NSColor colorWithRed:0.265625 green:0.25390625 blue:0.234375 alpha:1.0];
 }
 
-- (NSDictionary*)titleAttributesWithHighlight:(BOOL)highlight {
-  return @{
-      NSFontAttributeName:[NSFont menuBarFontOfSize:0]
-  };
-}
-
-- (NSDictionary*)titleAttributes {
-  return [self titleAttributesWithHighlight:[self isDarkMode]];
-}
-
 - (void)setImage:(NSImage*)image {
   image_.reset([image copy]);
   [self updateDimensions];
@@ -212,6 +202,7 @@ const CGFloat kVerticalTitleMargin = 2;
     ANSI_ = [title containsANSICodes];
   } else {
     title_.reset();
+    ANSI_ = NO;
   }
   [self updateAttributedTitle];
   [self updateDimensions];
@@ -219,8 +210,9 @@ const CGFloat kVerticalTitleMargin = 2;
 
 
 - (void)updateAttributedTitle {
-  NSDictionary* attributes =
-      [self titleAttributesWithHighlight:[self isHighlighted]];
+  NSDictionary* attributes = @{
+    NSFontAttributeName:[NSFont menuBarFontOfSize:0]
+  };
 
   if (ANSI_) {
     NSCharacterSet* whites = [NSCharacterSet whitespaceCharacterSet];
@@ -240,7 +232,7 @@ const CGFloat kVerticalTitleMargin = 2;
   [attributedTitle_ addAttributes:attributes
                             range:NSMakeRange(0, [attributedTitle_ length])];
   [attributedTitle_ addAttribute:NSForegroundColorAttributeName
-                           value:[self colorWithHighlight: [self isDarkMode]]
+                           value:[self colorWithHighlight: [self isHighlighted]]
                            range:NSMakeRange(0, [attributedTitle_ length])];
 }
 
