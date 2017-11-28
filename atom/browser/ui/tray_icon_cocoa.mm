@@ -402,9 +402,8 @@ TrayIconCocoa::TrayIconCocoa() : menu_model_(nullptr) {
 
 TrayIconCocoa::~TrayIconCocoa() {
   [status_item_view_ removeItem];
-  if (menu_model_){
+  if (menu_model_)
     menu_model_->RemoveObserver(this);
-  }
 }
 
 void TrayIconCocoa::SetImage(const gfx::Image& image) {
