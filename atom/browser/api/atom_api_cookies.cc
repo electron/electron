@@ -238,12 +238,11 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 }  // namespace
 
 Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : request_context_getter_(browser_context->url_request_context_getter()) {
+    : browser_context_(browser_context),
+      request_context_getter_(browser_context->url_request_context_getter()) {
   Init(isolate);
-  cookie_change_subscription_ =
-      browser_context->url_request_context_getter()
-          ->RegisterCookieChangeCallback(
-              base::Bind(&Cookies::OnCookieChanged, base::Unretained(this)));
+  cookie_change_subscription_ = browser_context->RegisterCookieChangeCallback(
+      base::Bind(&Cookies::OnCookieChanged, base::Unretained(this)));
 }
 
 Cookies::~Cookies() {}
@@ -281,7 +280,7 @@ void Cookies::FlushStore(const base::Closure& callback) {
       base::Bind(FlushCookieStoreOnIOThread, getter, callback));
 }
 
-void Cookies::OnCookieChanged(const brightray::CookieDetails* details) {
+void Cookies::OnCookieChanged(const CookieDetails* details) {
   Emit("changed", *(details->cookie), details->cause, details->removed);
 }
 
