@@ -385,7 +385,7 @@ and `will-quit` events will not be emitted.
 ### `app.relaunch([options])`
 
 * `options` Object (optional)
-  * `args` String[] - (optional)
+  * `args` String[] (optional)
   * `execPath` String (optional)
 
 Relaunches the app when current instance exits.

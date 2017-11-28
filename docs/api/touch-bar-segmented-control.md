@@ -7,7 +7,7 @@ Process: [Main](../tutorial/quick-start.md#main-process)
 ### `new TouchBarSegmentedControl(options)` _Experimental_
 
 * `options` Object
-  * `segmentStyle` String - (optional) Style of the segments:
+  * `segmentStyle` String (optional) - Style of the segments:
     * `automatic` - Default. The appearance of the segmented control is
       automatically determined based on the type of window in which the control
       is displayed and the position within the window.
@@ -21,7 +21,7 @@ Process: [Main](../tutorial/quick-start.md#main-process)
     * `small-square` - The control is displayed using the small square style.
     * `separated` - The segments in the control are displayed very close to each
       other but not touching.
-  * `mode` String - (optional) The selection mode of the control:
+  * `mode` String (optional) - The selection mode of the control:
     * `single` - Default. One item selected at a time, selecting one deselects the previously selected item.
     * `multiple` - Multiple items can be selected at a time.
     * `buttons` - Make the segments act as buttons, each segment can be pressed and released but never marked as active.

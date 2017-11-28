@@ -134,7 +134,7 @@ Emitted when the document in the given frame is loaded.
 Returns:
 
 * `event` Event
-* `favicons` String[] - Array of URLs
+* `favicons` String[] - Array of URLs.
 
 Emitted when page receives favicon urls.
 
@@ -148,7 +148,7 @@ Returns:
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window`, `save-to-disk` and `other`.
 * `options` Object - The options which will be used for creating the new
-  `BrowserWindow`.
+  [`BrowserWindow`](browser-window.md).
 * `additionalFeatures` String[] - The non-standard features (features not handled
   by Chromium or Electron) given to `window.open()`.
 
@@ -158,8 +158,8 @@ requested by `window.open` or an external link like `<a target='_blank'>`.
 By default a new `BrowserWindow` will be created for the `url`.
 
 Calling `event.preventDefault()` will prevent Electron from automatically creating a
-new `BrowserWindow`. If you call `event.preventDefault()` and manually create a new
-`BrowserWindow` then you must set `event.newGuest` to reference the new `BrowserWindow`
+new [`BrowserWindow`](browser-window.md). If you call `event.preventDefault()` and manually create a new
+[`BrowserWindow`](browser-window.md) then you must set `event.newGuest` to reference the new [`BrowserWindow`](browser-window.md)
 instance, failing to do so may result in unexpected behavior. For example:
 
 ```javascript
@@ -276,15 +276,15 @@ Emitted when `webContents` is destroyed.
 Returns:
 
 * `event` Event
-* `input` Object - Input properties
-  * `type` String - Either `keyUp` or `keyDown`
-  * `key` String - Equivalent to [KeyboardEvent.key][keyboardevent]
-  * `code` String - Equivalent to [KeyboardEvent.code][keyboardevent]
-  * `isAutoRepeat` Boolean - Equivalent to [KeyboardEvent.repeat][keyboardevent]
-  * `shift` Boolean - Equivalent to [KeyboardEvent.shiftKey][keyboardevent]
-  * `control` Boolean - Equivalent to [KeyboardEvent.controlKey][keyboardevent]
-  * `alt` Boolean - Equivalent to [KeyboardEvent.altKey][keyboardevent]
-  * `meta` Boolean - Equivalent to [KeyboardEvent.metaKey][keyboardevent]
+* `input` Object - Input properties.
+  * `type` String - Either `keyUp` or `keyDown`.
+  * `key` String - Equivalent to [KeyboardEvent.key][keyboardevent].
+  * `code` String - Equivalent to [KeyboardEvent.code][keyboardevent].
+  * `isAutoRepeat` Boolean - Equivalent to [KeyboardEvent.repeat][keyboardevent].
+  * `shift` Boolean - Equivalent to [KeyboardEvent.shiftKey][keyboardevent].
+  * `control` Boolean - Equivalent to [KeyboardEvent.controlKey][keyboardevent].
+  * `alt` Boolean - Equivalent to [KeyboardEvent.altKey][keyboardevent].
+  * `meta` Boolean - Equivalent to [KeyboardEvent.metaKey][keyboardevent].
 
 Emitted before dispatching the `keydown` and `keyup` events in the page.
 Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
@@ -323,10 +323,10 @@ Returns:
 
 * `event` Event
 * `url` String
-* `error` String - The error code
+* `error` String - The error code.
 * `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
-  * `isTrusted` Boolean - Indicates whether the certificate can be considered trusted
+  * `isTrusted` Boolean - Indicates whether the certificate can be considered trusted.
 
 Emitted when failed to verify the `certificate` for `url`.
 
@@ -341,7 +341,7 @@ Returns:
 * `url` URL
 * `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
-  * `certificate` [Certificate](structures/certificate.md) - Must be a certificate from the given list
+  * `certificate` [Certificate](structures/certificate.md) - Must be a certificate from the given list.
 
 Emitted when a client certificate is requested.
 
@@ -423,10 +423,10 @@ Returns:
 
 * `event` Event
 * `type` String
-* `image` NativeImage (optional)
-* `scale` Float (optional) - scaling factor for the custom cursor
-* `size` [Size](structures/size.md) (optional) - the size of the `image`
-* `hotspot` [Point](structures/point.md) (optional) - coordinates of the custom cursor's hotspot
+* `image` [NativeImage](native-image.md) (optional)
+* `scale` Float (optional) - scaling factor for the custom cursor.
+* `size` [Size](structures/size.md) (optional) - the size of the `image`.
+* `hotspot` [Point](structures/point.md) (optional) - coordinates of the custom cursor's hotspot.
 
 Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
@@ -435,10 +435,10 @@ Emitted when the cursor's type changes. The `type` parameter can be `default`,
 `row-resize`, `m-panning`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`,
 `s-panning`, `se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`,
 `cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
-`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing`, `custom`.
+`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing` or `custom`.
 
 If the `type` parameter is `custom`, the `image` parameter will hold the custom
-cursor image in a `NativeImage`, and `scale`, `size` and `hotspot` will hold
+cursor image in a [`NativeImage`](native-image.md), and `scale`, `size` and `hotspot` will hold
 additional information about the custom cursor.
 
 #### Event: 'context-menu'
@@ -447,8 +447,8 @@ Returns:
 
 * `event` Event
 * `params` Object
-  * `x` Integer - x coordinate
-  * `y` Integer - y coordinate
+  * `x` Integer - x coordinate.
+  * `y` Integer - y coordinate.
   * `linkURL` String - URL of the link that encloses the node the context menu
     was invoked on.
   * `linkText` String - Text associated with the link. May be an empty
@@ -475,7 +475,7 @@ Returns:
     field, the type of that field. Possible values are `none`, `plainText`,
     `password`, `other`.
   * `menuSourceType` String - Input source that invoked the context menu.
-    Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`.
+    Can be `none`, `mouse`, `keyboard`, `touch` or `touchMenu`.
   * `mediaFlags` Object - The flags for the media element the context menu was
     invoked on.
     * `inError` Boolean - Whether the media element has crashed.
@@ -611,8 +611,8 @@ for windows with *offscreen rendering* enabled.
 * `options` Object (optional)
   * `httpReferrer` String (optional) - A HTTP Referrer url.
   * `userAgent` String (optional) - A user agent originating the request.
-  * `extraHeaders` String (optional) - Extra headers separated by "\n"
-  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadFileSystem[]](structures/upload-file-system.md) | [UploadBlob[]](structures/upload-blob.md)) - (optional)
+  * `extraHeaders` String (optional) - Extra headers separated by "\n".
+  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadFileSystem[]](structures/upload-file-system.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Loads the `url` in the window. The `url` must contain the protocol prefix,
@@ -906,14 +906,14 @@ Inserts `text` to the focused element.
 
 * `text` String - Content to be searched, must not be empty.
 * `options` Object (optional)
-  * `forward` Boolean - (optional) Whether to search forward or backward, defaults to `true`.
-  * `findNext` Boolean - (optional) Whether the operation is first request or a follow up,
+  * `forward` Boolean (optional) - Whether to search forward or backward, defaults to `true`.
+  * `findNext` Boolean (optional) - Whether the operation is first request or a follow up,
     defaults to `false`.
-  * `matchCase` Boolean - (optional) Whether search should be case-sensitive,
+  * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
-  * `wordStart` Boolean - (optional) Whether to look only at the start of words.
+  * `wordStart` Boolean (optional) - Whether to look only at the start of words.
     defaults to `false`.
-  * `medialCapitalAsWordStart` Boolean - (optional) When combined with `wordStart`,
+  * `medialCapitalAsWordStart` Boolean (optional) - When combined with `wordStart`,
     accepts a match in the middle of a word if the match begins with an
     uppercase letter followed by a lowercase or non-letter.
     Accepts several other intra-word matches, defaults to `false`.
@@ -999,14 +999,14 @@ Use `page-break-before: always; ` CSS style to force to print to a new page.
 #### `contents.printToPDF(options, callback)`
 
 * `options` Object
-  * `marginsType` Integer - (optional) Specifies the type of margins to use. Uses 0 for
+  * `marginsType` Integer (optional) - Specifies the type of margins to use. Uses 0 for
     default margin, 1 for no margin, and 2 for minimum margin.
-  * `pageSize` String - (optional) Specify page size of the generated PDF. Can be `A3`,
+  * `pageSize` String (optional) - Specify page size of the generated PDF. Can be `A3`,
     `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
     and `width` in microns.
-  * `printBackground` Boolean - (optional) Whether to print CSS backgrounds.
-  * `printSelectionOnly` Boolean - (optional) Whether to print selection only.
-  * `landscape` Boolean - (optional) `true` for landscape, `false` for portrait.
+  * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
+  * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
+  * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
 * `callback` Function
   * `error` Error
   * `data` Buffer

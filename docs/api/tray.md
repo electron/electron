@@ -244,7 +244,7 @@ win.on('hide', () => {
 #### `tray.displayBalloon(options)` _Windows_
 
 * `options` Object
-  * `icon` ([NativeImage](native-image.md) | String) - (optional)
+  * `icon` ([NativeImage](native-image.md) | String) (optional) -
   * `title` String
   * `content` String
 

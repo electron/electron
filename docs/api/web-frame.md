@@ -106,11 +106,11 @@ Content Security Policy.
 
 * `scheme` String
 * `options` Object (optional)
-  * `secure` Boolean - (optional) Default true.
-  * `bypassCSP` Boolean - (optional) Default true.
-  * `allowServiceWorkers` Boolean - (optional) Default true.
-  * `supportFetchAPI` Boolean - (optional) Default true.
-  * `corsEnabled` Boolean - (optional) Default true.
+  * `secure` Boolean (optional) - Default true.
+  * `bypassCSP` Boolean (optional) - Default true.
+  * `allowServiceWorkers` Boolean (optional) - Default true.
+  * `supportFetchAPI` Boolean (optional) - Default true.
+  * `corsEnabled` Boolean (optional) - Default true.
 
 Registers the `scheme` as secure, bypasses content security policy for resources,
 allows registering ServiceWorker and supports fetch API.

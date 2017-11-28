@@ -18,8 +18,8 @@ See [`Menu`](menu.md) for examples.
     `click` property will be ignored. See [roles](#roles).
   * `type` String (optional) - Can be `normal`, `separator`, `submenu`, `checkbox` or
     `radio`.
-  * `label` String - (optional)
-  * `sublabel` String - (optional)
+  * `label` String (optional)
+  * `sublabel` String (optional)
   * `accelerator` [Accelerator](accelerator.md) (optional)
   * `icon` ([NativeImage](native-image.md) | String) (optional)
   * `enabled` Boolean (optional) - If false, the menu item will be greyed out and
