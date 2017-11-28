@@ -31,6 +31,7 @@ const CGFloat kVerticalTitleMargin = 2;
   base::scoped_nsobject<NSImage> image_;
   base::scoped_nsobject<NSImage> alternateImage_;
   base::scoped_nsobject<NSString> title_;
+  base::scoped_nsobject<NSMutableAttributedString> attributedTitle_;
   base::scoped_nsobject<NSStatusItem> statusItem_;
 }
 
@@ -121,10 +122,7 @@ const CGFloat kVerticalTitleMargin = 2;
     // Draw title.
     NSRect titleDrawRect = NSMakeRect(
         [self iconWidth], -kVerticalTitleMargin, [self titleWidth], thickness);
-
-    base::scoped_nsobject<NSAttributedString> titleParsed(
-        [self attributedTitleWithParams:title_]);
-    [titleParsed drawInRect:titleDrawRect];
+    [attributedTitle_ drawInRect:titleDrawRect];
   }
 }
 
@@ -175,17 +173,7 @@ const CGFloat kVerticalTitleMargin = 2;
 - (CGFloat)titleWidth {
   if (!title_)
     return 0;
-
-  if (ANSI_) {
-    base::scoped_nsobject<NSMutableAttributedString> attributedTitle(
-        [title_ attributedStringParsingANSICodes]);
-    return [attributedTitle size].width + 10;
-  }
-
-  base::scoped_nsobject<NSAttributedString> attributes(
-      [[NSAttributedString alloc] initWithString:title_
-                                      attributes:[self titleAttributes]]);
-  return [attributes size].width;
+  return [attributedTitle_ size].width;
 }
 
 - (NSColor*)colorWithHighlight:(BOOL)highlight {
@@ -225,34 +213,35 @@ const CGFloat kVerticalTitleMargin = 2;
   } else {
     title_.reset();
   }
+  [self updateAttributedTitle];
   [self updateDimensions];
 }
 
 
-- (NSAttributedString*)attributedTitleWithParams:(NSString*)fullTitle {
-  NSString* title = [fullTitle
-      stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+- (void)updateAttributedTitle {
   NSDictionary* attributes =
       [self titleAttributesWithHighlight:[self isHighlighted]];
 
-  base::scoped_nsobject<NSMutableAttributedString> attributedTitle(
-      [[NSMutableAttributedString alloc] initWithString:title
-                                             attributes:attributes]);
   if (ANSI_) {
-    attributedTitle.reset([title attributedStringParsingANSICodes]);
-    [attributedTitle addAttributes:attributes
-                             range:NSMakeRange(0, [attributedTitle length])];
-    return attributedTitle.release();
+    NSCharacterSet* whites = [NSCharacterSet whitespaceCharacterSet];
+    NSString* title = [title_ stringByTrimmingCharactersInSet:whites];
+    attributedTitle_.reset([title attributedStringParsingANSICodes]);
+    [attributedTitle_ addAttributes:attributes
+                              range:NSMakeRange(0, [attributedTitle_ length])];
+    return;
   }
+
+  attributedTitle_.reset([[NSMutableAttributedString alloc]
+                             initWithString:title_
+                                 attributes:attributes]);
 
   //NSFontAttributeName:[NSFont menuBarFontOfSize:0],
   //NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
-  [attributedTitle addAttributes:attributes
-                           range:NSMakeRange(0, [attributedTitle length])];
-  [attributedTitle addAttribute:NSForegroundColorAttributeName
-                          value:[self colorWithHighlight: [self isDarkMode]]
-                          range:NSMakeRange(0, [attributedTitle length])];
-  return attributedTitle.release();
+  [attributedTitle_ addAttributes:attributes
+                            range:NSMakeRange(0, [attributedTitle_ length])];
+  [attributedTitle_ addAttribute:NSForegroundColorAttributeName
+                           value:[self colorWithHighlight: [self isDarkMode]]
+                           range:NSMakeRange(0, [attributedTitle_ length])];
 }
 
 - (void)setMenuController:(AtomMenuController*)menu {
