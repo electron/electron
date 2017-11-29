@@ -577,7 +577,7 @@ Captures a snapshot of the `webview`'s page. Same as `webContents.capturePage([r
 
 Send an asynchronous message to renderer process via `channel`, you can also
 send arbitrary arguments. The renderer process can handle the message by
-listening to the `channel` event with the `ipcRenderer` module.
+listening to the `channel` event with the [`ipcRenderer`](ipc-renderer.md) module.
 
 See [webContents.send](web-contents.md#webcontentssendchannel-args) for
 examples.
@@ -773,7 +773,7 @@ Returns:
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window`, `save-to-disk` and `other`.
 * `options` Object - The options which should be used for creating the new
-  `BrowserWindow`.
+  [`BrowserWindow`](browser-window.md).
 
 Fired when the guest page attempts to open a new browser window.
 

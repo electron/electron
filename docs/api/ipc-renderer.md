@@ -55,7 +55,7 @@ Send a message to the main process asynchronously via `channel`, you can also
 send arbitrary arguments. Arguments will be serialized in JSON internally and
 hence no functions or prototype chain will be included.
 
-The main process handles it by listening for `channel` with `ipcMain` module.
+The main process handles it by listening for `channel` with [`ipcMain`](ipc-main.md) module.
 
 ### `ipcRenderer.sendSync(channel[, arg1][, arg2][, ...])`
 
@@ -68,7 +68,7 @@ Send a message to the main process synchronously via `channel`, you can also
 send arbitrary arguments. Arguments will be serialized in JSON internally and
 hence no functions or prototype chain will be included.
 
-The main process handles it by listening for `channel` with `ipcMain` module,
+The main process handles it by listening for `channel` with [`ipcMain`](ipc-main.md) module,
 and replies by setting `event.returnValue`.
 
 **Note:** Sending a synchronous message will block the whole renderer process,
