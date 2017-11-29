@@ -208,7 +208,7 @@ Sets the hover text for this tray icon.
 
 * `title` String
 
-Sets the title displayed aside of the tray icon in the status bar.
+Sets the title displayed aside of the tray icon in the status bar (Support ANSI colors).
 
 #### `tray.setHighlightMode(mode)` _macOS_
 

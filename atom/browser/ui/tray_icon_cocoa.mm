@@ -5,6 +5,7 @@
 #include "atom/browser/ui/tray_icon_cocoa.h"
 
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
+#include "atom/browser/ui/cocoa/NSString+ANSI.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
@@ -26,9 +27,11 @@ const CGFloat kVerticalTitleMargin = 2;
   atom::TrayIcon::HighlightMode highlight_mode_;
   BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
+  BOOL ANSI_;
   base::scoped_nsobject<NSImage> image_;
   base::scoped_nsobject<NSImage> alternateImage_;
   base::scoped_nsobject<NSString> title_;
+  base::scoped_nsobject<NSMutableAttributedString> attributedTitle_;
   base::scoped_nsobject<NSStatusItem> statusItem_;
 }
 
@@ -85,12 +88,11 @@ const CGFloat kVerticalTitleMargin = 2;
   //   | icon | title |
   ///  ----------------
 
-  BOOL highlight = [self shouldHighlight];
-  BOOL highlightContent = highlight | [self isDarkMode];
   CGFloat thickness = [[statusItem_ statusBar] thickness];
 
   // Draw the system bar background.
-  [statusItem_ drawStatusBarBackgroundInRect:self.bounds withHighlight:highlight];
+  [statusItem_ drawStatusBarBackgroundInRect:self.bounds
+                               withHighlight:[self isHighlighted]];
 
   // Determine which image to use.
   NSImage* image = image_.get();
@@ -102,7 +104,7 @@ const CGFloat kVerticalTitleMargin = 2;
   if ([image isTemplate] == YES) {
     NSImage* imageWithColor = [[image copy] autorelease];
     [imageWithColor lockFocus];
-    [[self colorWithHighlight: highlightContent] set];
+    [[self colorWithHighlight: [self isHighlighted]] set];
     CGRect imageBounds = CGRectMake(0,0, image.size.width, image.size.height);
     NSRectFillUsingOperation(imageBounds, NSCompositeSourceAtop);
     [imageWithColor unlockFocus];
@@ -121,8 +123,7 @@ const CGFloat kVerticalTitleMargin = 2;
     // Draw title.
     NSRect titleDrawRect = NSMakeRect(
         [self iconWidth], -kVerticalTitleMargin, [self titleWidth], thickness);
-    [title_ drawInRect:titleDrawRect
-        withAttributes:[self titleAttributesWithHighlight:highlightContent]];
+    [attributedTitle_ drawInRect:titleDrawRect];
   }
 }
 
@@ -130,6 +131,12 @@ const CGFloat kVerticalTitleMargin = 2;
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* mode = [defaults stringForKey:@"AppleInterfaceStyle"];
   return mode && [mode isEqualToString:@"Dark"];
+}
+
+
+- (BOOL)isHighlighted {
+  BOOL highlight = [self shouldHighlight];
+  return highlight | [self isDarkMode];
 }
 
 // The width of the full status item.
@@ -166,28 +173,14 @@ const CGFloat kVerticalTitleMargin = 2;
 // The width of the title.
 - (CGFloat)titleWidth {
   if (!title_)
-     return 0;
-  base::scoped_nsobject<NSAttributedString> attributes(
-      [[NSAttributedString alloc] initWithString:title_
-                                      attributes:[self titleAttributes]]);
-  return [attributes size].width;
+    return 0;
+  return [attributedTitle_ size].width;
 }
 
 - (NSColor*)colorWithHighlight:(BOOL)highlight {
   return highlight ?
       [NSColor whiteColor] :
       [NSColor colorWithRed:0.265625 green:0.25390625 blue:0.234375 alpha:1.0];
-}
-
-- (NSDictionary*)titleAttributesWithHighlight:(BOOL)highlight {
-  return @{
-      NSFontAttributeName:[NSFont menuBarFontOfSize:0],
-      NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
-  };
-}
-
-- (NSDictionary*)titleAttributes {
-  return [self titleAttributesWithHighlight:[self isDarkMode]];
 }
 
 - (void)setImage:(NSImage*)image {
@@ -207,10 +200,41 @@ const CGFloat kVerticalTitleMargin = 2;
 - (void)setTitle:(NSString*)title {
   if (title.length > 0) {
     title_.reset([title copy]);
+    ANSI_ = [title containsANSICodes];
   } else {
     title_.reset();
+    ANSI_ = NO;
   }
+  [self updateAttributedTitle];
   [self updateDimensions];
+}
+
+
+- (void)updateAttributedTitle {
+  NSDictionary* attributes = @{
+    NSFontAttributeName:[NSFont menuBarFontOfSize:0]
+  };
+
+  if (ANSI_) {
+    NSCharacterSet* whites = [NSCharacterSet whitespaceCharacterSet];
+    NSString* title = [title_ stringByTrimmingCharactersInSet:whites];
+    attributedTitle_.reset([title attributedStringParsingANSICodes]);
+    [attributedTitle_ addAttributes:attributes
+                              range:NSMakeRange(0, [attributedTitle_ length])];
+    return;
+  }
+
+  attributedTitle_.reset([[NSMutableAttributedString alloc]
+                             initWithString:title_
+                                 attributes:attributes]);
+
+  //NSFontAttributeName:[NSFont menuBarFontOfSize:0],
+  //NSForegroundColorAttributeName:[self colorWithHighlight: highlight]
+  [attributedTitle_ addAttributes:attributes
+                            range:NSMakeRange(0, [attributedTitle_ length])];
+  [attributedTitle_ addAttribute:NSForegroundColorAttributeName
+                           value:[self colorWithHighlight: [self isHighlighted]]
+                           range:NSMakeRange(0, [attributedTitle_ length])];
 }
 
 - (void)setMenuController:(AtomMenuController*)menu {
