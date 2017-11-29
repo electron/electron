@@ -97,6 +97,11 @@ void BrowserClient::GetAdditionalAllowedSchemesForFileSystem(
   additional_schemes->push_back(content::kChromeUIScheme);
 }
 
+void BrowserClient::GetAdditionalWebUISchemes(
+    std::vector<std::string>* additional_schemes) {
+  additional_schemes->push_back(content::kChromeDevToolsScheme);
+}
+
 net::NetLog* BrowserClient::GetNetLog() {
   return &net_log_;
 }
