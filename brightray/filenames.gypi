@@ -47,7 +47,6 @@
       'browser/media/media_device_id_salt.h',
       'browser/media/media_stream_devices_controller.cc',
       'browser/media/media_stream_devices_controller.h',
-      'browser/net/cookie_details.h',
       'browser/net/devtools_network_conditions.cc',
       'browser/net/devtools_network_conditions.h',
       'browser/net/devtools_network_controller.cc',
