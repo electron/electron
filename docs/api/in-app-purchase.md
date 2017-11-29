@@ -2,6 +2,11 @@
 
 Your application should add a listener before to purchase a product. If there are no listener attached to the queue, the payment queue does not synchronize its list of pending transactions with the Apple App Store.
 
+To test it in development, you have to set your app bundle identifier in the `/node_modules/electron/dist/Electron.app/Contents/Info.plist`.
+
+Don't forget to configure your products in itunes Connect (see [In-App Purchase Configuration Guide for iTunes Connect](https://developer.apple.com/library/content/documentation/LanguagesUtilities/Conceptual/iTunesConnectInAppPurchase_Guide/Chapters/Introduction.html)).
+
+
 ## Methods 
 
 The `inAppPurchase` module has the following methods:
