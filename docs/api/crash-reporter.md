@@ -102,7 +102,7 @@ ID.
 
 ### `crashReporter.getUploadToServer()` _Linux_ _macOS_
 
-Returns `Boolean` - Whether reports should be submitted to the server.  Set through
+Returns `Boolean` - Whether reports should be submitted to the server. Set through
 the `start` method or `setUploadToServer`.
 
 **Note:** This API can only be called from the main process.

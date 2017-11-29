@@ -116,13 +116,13 @@ Returns `any` - The value of `key` in `NSUserDefaults`.
 
 Some popular `key` and `type`s are:
 
-* `AppleInterfaceStyle`:  `string`
-* `AppleAquaColorVariant`:  `integer`
-* `AppleHighlightColor`:  `string`
-* `AppleShowScrollBars`:  `string`
-* `NSNavRecentPlaces`:  `array`
-* `NSPreferredWebServices`:  `dictionary`
-* `NSUserDictionaryReplacementItems`:  `array`
+* `AppleInterfaceStyle`: `string`
+* `AppleAquaColorVariant`: `integer`
+* `AppleHighlightColor`: `string`
+* `AppleShowScrollBars`: `string`
+* `NSNavRecentPlaces`: `array`
+* `NSPreferredWebServices`: `dictionary`
+* `NSUserDictionaryReplacementItems`: `array`
 
 ### `systemPreferences.setUserDefault(key, type, value)` _macOS_
 
@@ -137,7 +137,7 @@ if they don't.
 
 Some popular `key` and `type`s are:
 
-* `ApplePressAndHoldEnabled`:  `boolean`
+* `ApplePressAndHoldEnabled`: `boolean`
 
 ### `systemPreferences.removeUserDefault(key)` _macOS_
 

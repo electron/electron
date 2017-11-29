@@ -30,7 +30,7 @@ updates the control in the touch bar. Updating deep properties inside this array
 #### `touchBarScrubber.selectedStyle`
 
 A `String` representing the style that selected items in the scrubber should have. Updating this value immediately
-updates the control in the touch bar.  Possible values:
+updates the control in the touch bar. Possible values:
 
 * `background` - Maps to `[NSScrubberSelectionStyle roundedBackgroundStyle]`.
 * `outline` - Maps to `[NSScrubberSelectionStyle outlineOverlayStyle]`.
@@ -40,7 +40,7 @@ updates the control in the touch bar.  Possible values:
 
 A `String` representing the style that selected items in the scrubber should have. This style is overlayed on top
 of the scrubber item instead of being placed behind it. Updating this value immediately updates the control in the
-touch bar.  Possible values:
+touch bar. Possible values:
 
 * `background` - Maps to `[NSScrubberSelectionStyle roundedBackgroundStyle]`.
 * `outline` - Maps to `[NSScrubberSelectionStyle outlineOverlayStyle]`.
@@ -49,7 +49,7 @@ touch bar.  Possible values:
 #### `touchBarScrubber.showArrowButtons`
 
 A `Boolean` representing whether to show the left / right selection arrows in this scrubber. Updating this value
-immediately updates the control in the touch bar.  
+immediately updates the control in the touch bar.
 
 #### `touchBarScrubber.mode`
 

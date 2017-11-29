@@ -377,7 +377,7 @@ returning `false` in the `beforeunload` event handler.
 
 * `exitCode` Integer (optional)
 
-Exits immediately with `exitCode`.  `exitCode` defaults to 0.
+Exits immediately with `exitCode`. `exitCode` defaults to 0.
 
 All windows will be closed immediately without asking user and the `before-quit`
 and `will-quit` events will not be emitted.
@@ -459,7 +459,7 @@ You can request the following paths by the name:
 * `pictures` Directory for a user's pictures.
 * `videos` Directory for a user's videos.
 * `logs` Directory for your app's log folder.
-* `pepperFlashSystemPlugin`  Full path to the system version of the Pepper Flash plugin.
+* `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
 
 ### `app.getFileIcon(path[, options], callback)`
 
@@ -846,12 +846,12 @@ This method can only be called before app is ready.
 
 ### `app.getAppMemoryInfo()` _Deprecated_
 
-Returns [`ProcessMetric[]`](structures/process-metric.md):  Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
+Returns [`ProcessMetric[]`](structures/process-metric.md): Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
 **Note:** This method is deprecated, use `app.getAppMetrics()` instead.
 
 ### `app.getAppMetrics()`
 
-Returns [`ProcessMetric[]`](structures/process-metric.md):  Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
+Returns [`ProcessMetric[]`](structures/process-metric.md): Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
 
 ### `app.getGPUFeatureStatus()`
 
@@ -998,11 +998,11 @@ This method can only be called before app is ready.
 ### `app.isInApplicationsFolder()` _macOS_
 
 Returns `Boolean` - Whether the application is currently running from the
-systems Application folder.  Use in combination with `app.moveToApplicationsFolder()`
+systems Application folder. Use in combination with `app.moveToApplicationsFolder()`
 
 ### `app.moveToApplicationsFolder()` _macOS_
 
-Returns `Boolean` - Whether the move was successful.  Please note that if
+Returns `Boolean` - Whether the move was successful. Please note that if
 the move is successful your application will quit and relaunch.
 
 No confirmation dialog will be presented by default, if you wish to allow
@@ -1010,9 +1010,9 @@ the user to confirm the operation you may do so using the
 [`dialog`](dialog.md) API.
 
 **NOTE:** This method throws errors if anything other than the user causes the
-move to fail.  For instance if the user cancels the authorization dialog this
-method returns false.  If we fail to perform the copy then this method will
-throw an error.  The message in the error should be informative and tell
+move to fail. For instance if the user cancels the authorization dialog this
+method returns false. If we fail to perform the copy then this method will
+throw an error. The message in the error should be informative and tell
 you exactly what went wrong
 
 ### `app.dock.bounce([type])` _macOS_

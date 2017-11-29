@@ -511,7 +511,7 @@ Returns:
 
 Emitted when bluetooth device needs to be selected on call to
 `navigator.bluetooth.requestDevice`. To use `navigator.bluetooth` api
-`webBluetooth` should be enabled.  If `event.preventDefault` is not called,
+`webBluetooth` should be enabled. If `event.preventDefault` is not called,
 first available device will be selected. `callback` should be called with
 `deviceId` to be selected, passing empty string to `callback` will
 cancel the request.
@@ -762,7 +762,7 @@ invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
 If the result of the executed code is a promise the callback result will be the
-resolved value of the promise.  We recommend that you use the returned Promise
+resolved value of the promise. We recommend that you use the returned Promise
 to handle code that results in a Promise.
 
 ```js
@@ -1144,7 +1144,7 @@ app.on('ready', () => {
 <body>
   <script>
     require('electron').ipcRenderer.on('ping', (event, message) => {
-      console.log(message)  // Prints 'whoooooooh!'
+      console.log(message) // Prints 'whoooooooh!'
     })
   </script>
 </body>
@@ -1334,17 +1334,17 @@ Returns `String` - Returns the WebRTC IP Handling Policy.
 #### `contents.setWebRTCIPHandlingPolicy(policy)`
 
 * `policy` String - Specify the WebRTC IP Handling Policy.
-  * `default` - Exposes user's public and local IPs.  This is the default
-  behavior.  When this policy is used, WebRTC has the right to enumerate all
+  * `default` - Exposes user's public and local IPs. This is the default
+  behavior. When this policy is used, WebRTC has the right to enumerate all
   interfaces and bind them to discover public interfaces.
   * `default_public_interface_only` - Exposes user's public IP, but does not
-  expose user's local IP.  When this policy is used, WebRTC should only use the
+  expose user's local IP. When this policy is used, WebRTC should only use the
   default route used by http. This doesn't expose any local addresses.
   * `default_public_and_private_interfaces` - Exposes user's public and local
-  IPs.  When this policy is used, WebRTC should only use the default route used
+  IPs. When this policy is used, WebRTC should only use the default route used
   by http. This also exposes the associated default private address. Default
   route is the route chosen by the OS on a multi-homed endpoint.
-  * `disable_non_proxied_udp` - Does not expose public or local IPs.  When this
+  * `disable_non_proxied_udp` - Does not expose public or local IPs. When this
   policy is used, WebRTC should only use TCP to contact peers or servers unless
   the proxy server supports UDP.
 

@@ -44,7 +44,7 @@ The `dialog` module has the following methods:
       the path but allows non-existent paths to be returned that should be
       created by the application.
     * `noResolveAliases` _macOS_ - Disable the automatic alias (symlink) path
-      resolution.  Selected aliases will now return the alias path instead of
+      resolution. Selected aliases will now return the alias path instead of
       their target path.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
@@ -175,7 +175,7 @@ will be asynchronous and the result will be passed via `callback(response)`.
 Displays a modal dialog that shows an error message.
 
 This API can be called safely before the `ready` event the `app` module emits,
-it is usually used to report errors in early stage of startup.  If called
+it is usually used to report errors in early stage of startup. If called
 before the app `ready`event on Linux, the message will be emitted to stderr,
 and no GUI dialog will appear.
 

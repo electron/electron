@@ -160,7 +160,7 @@ For example:
   over to the SOCKS5 proxy `bar.com` if `foopy` is unavailable.
 * `http=foopy,direct://` - Use HTTP proxy `foopy` for http URLs, and use no
   proxy if `foopy` is unavailable.
-* `http=foopy;socks=foopy2` -  Use HTTP proxy `foopy` for http URLs, and use
+* `http=foopy;socks=foopy2` - Use HTTP proxy `foopy` for http URLs, and use
   `socks4://foopy2` for all other URLs.
 
 The `proxyBypassRules` is a comma separated list of rules described below:
