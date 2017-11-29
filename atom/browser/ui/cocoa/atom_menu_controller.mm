@@ -177,6 +177,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   // Repopulate with items from the submenu to be replaced
   [self moveMenuItems:recentDocumentsMenuSwap_
                    to:recentDocumentsMenu];
+  // Update the submenu's title
+  [recentDocumentsMenu setTitle:[recentDocumentsMenuSwap_ title]];
   // Replace submenu
   [item setSubmenu:recentDocumentsMenu];
 
