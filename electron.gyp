@@ -565,6 +565,7 @@
               '$(SDKROOT)/System/Library/Frameworks/Quartz.framework',
               '$(SDKROOT)/System/Library/Frameworks/Security.framework',
               '$(SDKROOT)/System/Library/Frameworks/SecurityInterface.framework',
+              '$(SDKROOT)/System/Library/Frameworks/StoreKit.framework',
             ],
           },
           'mac_bundle': 1,
