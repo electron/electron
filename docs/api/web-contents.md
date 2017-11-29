@@ -805,7 +805,7 @@ Sends a request to get current zoom factor, the `callback` will be called with
 
 #### `contents.setZoomLevel(level)`
 
-* `level` Number - Zoom level
+* `level` Number - Zoom level.
 
 Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
@@ -945,7 +945,7 @@ console.log(requestId)
 
 #### `contents.capturePage([rect, ]callback)`
 
-* `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured
+* `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 * `callback` Function
   * `image` [NativeImage](native-image.md)
 
@@ -975,7 +975,7 @@ when the JS promise is rejected.
 
 Get the system printer list.
 
-Returns [`PrinterInfo[]`](structures/printer-info.md)
+Returns [`PrinterInfo[]`](structures/printer-info.md).
 
 #### `contents.print([options], [callback])`
 
@@ -985,7 +985,7 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
     the web page. Default is `false`.
   * `deviceName` String (optional) - Set the printer device name to use. Default is `''`.
 * `callback` Function (optional)
-  * success` Boolean - Indicates success of the print call.
+  * `success` Boolean - Indicates success of the print call.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings
@@ -1120,7 +1120,7 @@ send arbitrary arguments. Arguments will be serialized in JSON internally and
 hence no functions or prototype chain will be included.
 
 The renderer process can handle the message by listening to `channel` with the
-`ipcRenderer` module.
+[`ipcRenderer`](ipc-renderer.md) module.
 
 An example of sending messages from the main process to the renderer process:
 
@@ -1155,17 +1155,17 @@ app.on('ready', () => {
 
 * `parameters` Object
   * `screenPosition` String - Specify the screen type to emulate
-      (default: `desktop`)
-    * `desktop` - Desktop screen type
-    * `mobile` - Mobile screen type
-  * `screenSize` [Size](structures/size.md) - Set the emulated screen size (screenPosition == mobile)
+      (default: `desktop`):
+    * `desktop` - Desktop screen type.
+    * `mobile` - Mobile screen type.
+  * `screenSize` [Size](structures/size.md) - Set the emulated screen size (screenPosition == mobile).
   * `viewPosition` [Point](structures/point.md) - Position the view on the screen
-      (screenPosition == mobile) (default: `{x: 0, y: 0}`)
+      (screenPosition == mobile) (default: `{x: 0, y: 0}`).
   * `deviceScaleFactor` Integer - Set the device scale factor (if zero defaults to
-      original device scale factor) (default: `0`)
+      original device scale factor) (default: `0`).
   * `viewSize` [Size](structures/size.md) - Set the emulated view size (empty means no override)
   * `scale` Float - Scale of emulated view inside available space (not in fit to
-      view mode) (default: `1`)
+      view mode) (default: `1`).
 
 Enable device emulation with the given parameters.
 
@@ -1178,14 +1178,14 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 * `event` Object
   * `type` String (**required**) - The type of the event, can be `mouseDown`,
     `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
-    `mouseMove`, `keyDown`, `keyUp`, `char`.
+    `mouseMove`, `keyDown`, `keyUp` or `char`.
   * `modifiers` String[] - An array of modifiers of the event, can
     include `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
     `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
     `numLock`, `left`, `right`.
 
 Sends an input `event` to the page.
-**Note:** The `BrowserWindow` containing the contents needs to be focused for
+**Note:** The [`BrowserWindow`](browser-window.md) containing the contents needs to be focused for
 `sendInputEvent()` to work.
 
 For keyboard events, the `event` object also have following properties:
@@ -1198,7 +1198,7 @@ For mouse events, the `event` object also have following properties:
 
 * `x` Integer (**required**)
 * `y` Integer (**required**)
-* `button` String - The button pressed, can be `left`, `middle`, `right`
+* `button` String - The button pressed, can be `left`, `middle`, `right`.
 * `globalX` Integer
 * `globalY` Integer
 * `movementX` Integer
@@ -1218,7 +1218,7 @@ For the `mouseWheel` event, the `event` object also have following properties:
 
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
 
-* `onlyDirty` Boolean (optional) - Defaults to `false`
+* `onlyDirty` Boolean (optional) - Defaults to `false`.
 * `callback` Function
   * `frameBuffer` Buffer
   * `dirtyRect` [Rectangle](structures/rectangle.md)
@@ -1349,7 +1349,7 @@ Returns `String` - Returns the WebRTC IP Handling Policy.
   the proxy server supports UDP.
 
 Setting the WebRTC IP handling policy allows you to control which IPs are
-exposed via WebRTC.  See [BrowserLeaks](https://browserleaks.com/webrtc) for
+exposed via WebRTC. See [BrowserLeaks](https://browserleaks.com/webrtc) for
 more details.
 
 #### `contents.getOSProcessId()`

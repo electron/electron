@@ -46,7 +46,7 @@ The `crashReporter` module has the following methods:
   * `extra` Object (optional) - An object you can define that will be sent along with the
     report. Only string properties are sent correctly. Nested objects are not
     supported and the property names and values must be less than 64 characters long.
-  * `crashesDirectory` String (optional) - Directory to store the crashreports temporarily (only used when the crash reporter is started via `process.crashReporter.start`)
+  * `crashesDirectory` String (optional) - Directory to store the crashreports temporarily (only used when the crash reporter is started via `process.crashReporter.start`).
 
 You are required to call this method before using any other `crashReporter` APIs
 and in each process (main/renderer) from which you want to collect crash reports.
@@ -109,7 +109,7 @@ the `start` method or `setUploadToServer`.
 
 ### `crashReporter.setUploadToServer(uploadToServer)` _Linux_ _macOS_
 
-* `uploadToServer` Boolean _macOS_ - Whether reports should be submitted to the server
+* `uploadToServer` Boolean _macOS_ - Whether reports should be submitted to the server.
 
 This would normally be controlled by user preferences. This has no effect if
 called before `start` is called.
@@ -142,7 +142,7 @@ a `multipart/form-data` `POST`:
 * `ver` String - The version of Electron.
 * `platform` String - e.g. 'win32'.
 * `process_type` String - e.g. 'renderer'.
-* `guid` String - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72'
+* `guid` String - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72'.
 * `_version` String - The version in `package.json`.
 * `_productName` String - The product name in the `crashReporter` `options`
   object.

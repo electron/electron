@@ -102,7 +102,7 @@ Callback is invoked with the session's current cache size.
 
 #### `ses.clearCache(callback)`
 
-* `callback` Function - Called when operation is done
+* `callback` Function - Called when operation is done.
 
 Clears the session’s HTTP cache.
 
@@ -113,7 +113,7 @@ Clears the session’s HTTP cache.
     `scheme://host:port`.
   * `storages` String[] (optional) - The types of storages to clear, can contain:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
-    `shadercache`, `websql`, `serviceworkers`
+    `shadercache`, `websql`, `serviceworkers`.
   * `quotas` String[] (optional) - The types of quotas to clear, can contain:
     `temporary`, `persistent`, `syncable`.
 * `callback` Function (optional) - Called when operation is done.
@@ -211,7 +211,7 @@ Resolves the proxy information for `url`. The `callback` will be called with
 
 #### `ses.setDownloadPath(path)`
 
-* `path` String - The download location
+* `path` String - The download location.
 
 Sets download saving directory. By default, the download directory will be the
 `Downloads` under the respective app folder.
@@ -292,7 +292,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
     'pointerLock', 'fullscreen', 'openExternal'.
   * `callback` Function
-    * `permissionGranted` Boolean - Allow or deny the permission
+    * `permissionGranted` Boolean - Allow or deny the permission.
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
@@ -380,7 +380,7 @@ the initial state will be `interrupted`. The download will start only when the
 #### `ses.clearAuthCache(options[, callback])`
 
 * `options` ([RemovePassword](structures/remove-password.md) | [RemoveClientCertificate](structures/remove-client-certificate.md))
-* `callback` Function (optional) - Called when operation is done
+* `callback` Function (optional) - Called when operation is done.
 
 Clears the session’s HTTP authentication cache.
 

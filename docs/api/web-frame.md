@@ -29,7 +29,7 @@ Returns `Number` - The current zoom factor.
 
 ### `webFrame.setZoomLevel(level)`
 
-* `level` Number - Zoom level
+* `level` Number - Zoom level.
 
 Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
@@ -66,7 +66,7 @@ Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 * `language` String
 * `autoCorrectWord` Boolean
 * `provider` Object
-  * `spellCheck` Function - Returns `Boolean`
+  * `spellCheck` Function - Returns `Boolean`.
     * `text` String
 
 Sets a provider for spell checking in input fields and text areas.

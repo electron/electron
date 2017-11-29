@@ -263,7 +263,7 @@ Returns `Boolean` - Whether the image is a template image.
 
 #### `image.crop(rect)`
 
-* `rect` [Rectangle](structures/rectangle.md) - The area of the image to crop
+* `rect` [Rectangle](structures/rectangle.md) - The area of the image to crop.
 
 Returns `NativeImage` - The cropped image.
 
@@ -271,7 +271,7 @@ Returns `NativeImage` - The cropped image.
 
 * `options` Object
   * `width` Integer (optional) - Defaults to the image's width.
-  * `height` Integer (optional) - Defaults to the image's height
+  * `height` Integer (optional) - Defaults to the image's height.
   * `quality` String (optional) - The desired quality of the resize image.
     Possible values are `good`, `better` or `best`. The default is `best`.
     These values express a desired quality/speed tradeoff. They are translated

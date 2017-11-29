@@ -117,7 +117,7 @@ Returns `Object`:
 * `privateBytes` Integer - The amount of memory not shared by other processes, such as
   JS heap or HTML content.
 * `sharedBytes` Integer - The amount of memory shared between processes, typically
-  memory consumed by the Electron code itself
+  memory consumed by the Electron code itself.
 
 Returns an object giving memory usage statistics about the current process. Note
 that all statistics are reported in Kilobytes.
@@ -130,10 +130,10 @@ Returns `Object`:
   system.
 * `free` Integer - The total amount of memory not being used by applications or disk
   cache.
-* `swapTotal` Integer - The total amount of swap memory in Kilobytes available to the
-  system.  _Windows_ _Linux_
-* `swapFree` Integer - The free amount of swap memory in Kilobytes available to the
-  system.  _Windows_ _Linux_
+* `swapTotal` Integer _Windows_ _Linux_ - The total amount of swap memory in Kilobytes available to the
+  system.
+* `swapFree` Integer _Windows_ _Linux_ - The free amount of swap memory in Kilobytes available to the
+  system.
 
 Returns an object giving memory usage statistics about the entire system. Note
 that all statistics are reported in Kilobytes.

@@ -28,7 +28,7 @@ The `powerSaveBlocker` module has the following methods:
   * `prevent-display-sleep` - Prevent the display from going to sleep. Keeps
     system and screen active.  Example use case: playing video.
 
-Returns `Integer` - The blocker ID that is assigned to this power blocker
+Returns `Integer` - The blocker ID that is assigned to this power blocker.
 
 Starts preventing the system from entering lower-power mode. Returns an integer
 identifying the power save blocker.

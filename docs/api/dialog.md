@@ -25,7 +25,7 @@ The `dialog` module has the following methods:
 
 ### `dialog.showOpenDialog([browserWindow, ]options[, callback])`
 
-* `browserWindow` BrowserWindow (optional)
+* `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
   * `title` String (optional)
   * `defaultPath` String (optional)
@@ -38,16 +38,16 @@ The `dialog` module has the following methods:
     * `openDirectory` - Allow directories to be selected.
     * `multiSelections` - Allow multiple paths to be selected.
     * `showHiddenFiles` - Show hidden files in dialog.
-    * `createDirectory` - Allow creating new directories from dialog. _macOS_
-    * `promptToCreate` - Prompt for creation if the file path entered
+    * `createDirectory` _macOS_ - Allow creating new directories from dialog.
+    * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
       in the dialog does not exist. This does not actually create the file at
       the path but allows non-existent paths to be returned that should be
-      created by the application. _Windows_
-    * `noResolveAliases` - Disable the automatic alias (symlink) path
+      created by the application.
+    * `noResolveAliases` _macOS_ - Disable the automatic alias (symlink) path
       resolution.  Selected aliases will now return the alias path instead of
-      their target path. _macOS_
-    * `treatPackageAsDirectory` - Treat packages, such as `.app` folders,
-      as a directory instead of a file. _macOS_
+      their target path.
+    * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
+      as a directory instead of a file.
   * `message` String (optional) _macOS_ - Message to display above input
     boxes.
 * `callback` Function (optional)
@@ -77,7 +77,7 @@ The `extensions` array should contain extensions without wildcards or dots (e.g.
 `'*'` wildcard (no other wildcard is supported).
 
 If a `callback` is passed, the API call will be asynchronous and the result
-will be passed via `callback(filenames)`
+will be passed via `callback(filenames)`.
 
 **Note:** On Windows and Linux an open dialog can not be both a file selector
 and a directory selector, so if you set `properties` to
@@ -86,7 +86,7 @@ shown.
 
 ### `dialog.showSaveDialog([browserWindow, ]options[, callback])`
 
-* `browserWindow` BrowserWindow (optional)
+* `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
   * `title` String (optional)
   * `defaultPath` String (optional) - Absolute directory path, absolute file
@@ -111,11 +111,11 @@ The `filters` specifies an array of file types that can be displayed, see
 `dialog.showOpenDialog` for an example.
 
 If a `callback` is passed, the API call will be asynchronous and the result
-will be passed via `callback(filename)`
+will be passed via `callback(filename)`.
 
 ### `dialog.showMessageBox([browserWindow, ]options[, callback])`
 
-* `browserWindow` BrowserWindow (optional)
+* `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
@@ -152,7 +152,7 @@ will be passed via `callback(filename)`
     converted to `Vie_w` on Linux and `View` on macOS and can be selected
     via `Alt-W` on Windows and Linux.
 * `callback` Function (optional)
-  * `response` Number - The index of the button that was clicked
+  * `response` Number - The index of the button that was clicked.
   * `checkboxChecked` Boolean - The checked state of the checkbox if
     `checkboxLabel` was set. Otherwise `false`.
 
@@ -169,8 +169,8 @@ will be asynchronous and the result will be passed via `callback(response)`.
 
 ### `dialog.showErrorBox(title, content)`
 
-* `title` String - The title to display in the error box
-* `content` String - The text content to display in the error box
+* `title` String - The title to display in the error box.
+* `content` String - The text content to display in the error box.
 
 Displays a modal dialog that shows an error message.
 
@@ -181,7 +181,7 @@ and no GUI dialog will appear.
 
 ### `dialog.showCertificateTrustDialog([browserWindow, ]options, callback)` _macOS_ _Windows_
 
-* `browserWindow` BrowserWindow (optional)
+* `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
   * `certificate` [Certificate](structures/certificate.md) - The certificate to trust/import.
   * `message` String - The message to display to the user.
@@ -202,7 +202,7 @@ On Windows the options are more limited, due to the Win32 APIs used:
 ## Sheets
 
 On macOS, dialogs are presented as sheets attached to a window if you provide
-a `BrowserWindow` reference in the `browserWindow` parameter, or modals if no
+a [`BrowserWindow`](browser-window.md) reference in the `browserWindow` parameter, or modals if no
 window is provided.
 
 You can call `BrowserWindow.getCurrentWindow().setSheetOffset(offset)` to change

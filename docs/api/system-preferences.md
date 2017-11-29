@@ -98,7 +98,7 @@ Removes the subscriber with `id`.
   * `userInfo` Object
 
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
-This is necessary for events such as `NSUserDefaultsDidChangeNotification`
+This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 
 ### `systemPreferences.unsubscribeLocalNotification(id)` _macOS_
 
@@ -110,7 +110,7 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificati
 
 * `key` String
 * `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`,
-  `url`, `array`, `dictionary`
+  `url`, `array` or `dictionary`.
 
 Returns `any` - The value of `key` in `NSUserDefaults`.
 
@@ -127,7 +127,7 @@ Some popular `key` and `type`s are:
 ### `systemPreferences.setUserDefault(key, type, value)` _macOS_
 
 * `key` String
-* `type` String - See [`getUserDefault`][#systempreferencesgetuserdefaultkey-type-macos]
+* `type` String - See [`getUserDefault`][#systempreferencesgetuserdefaultkey-type-macos].
 * `value` String
 
 Set the value of `key` in `NSUserDefaults`.

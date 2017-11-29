@@ -564,7 +564,7 @@ Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options, cal
 
 ### `<webview>.capturePage([rect, ]callback)`
 
-* `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured
+* `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 * `callback` Function
   * `image` [NativeImage](native-image.md)
 
@@ -600,7 +600,7 @@ zoom percent divided by 100, so 300% = 3.0.
 
 ### `<webview>.setZoomLevel(level)`
 
-* `level` Number - Zoom level
+* `level` Number - Zoom level.
 
 Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default

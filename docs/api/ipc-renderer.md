@@ -80,7 +80,7 @@ unless you know what you are doing you should never use it.
 * `channel` String
 * `...args` any[]
 
-Sends a message to a window with `windowid` via `channel`
+Sends a message to a window with `windowid` via `channel`.
 
 ### `ipcRenderer.sendToHost(channel[, arg1][, arg2][, ...])`
 

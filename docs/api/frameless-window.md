@@ -84,12 +84,12 @@ win.show()
   the user's system).
 * On Windows operating systems, transparent windows will not work when DWM is
   disabled.
-* On Linux users have to put `--enable-transparent-visuals --disable-gpu` in
+* On Linux, users have to put `--enable-transparent-visuals --disable-gpu` in
   the command line to disable GPU and allow ARGB to make transparent window,
   this is caused by an upstream bug that [alpha channel doesn't work on some
   NVidia drivers](https://code.google.com/p/chromium/issues/detail?id=369209) on
   Linux.
-* On Mac the native window shadow will not be shown on a transparent window.
+* On Mac, the native window shadow will not be shown on a transparent window.
 
 ## Click-through window
 
