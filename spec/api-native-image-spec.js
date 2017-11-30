@@ -31,7 +31,7 @@ describe('nativeImage module', () => {
       width: 1
     },
     {
-      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFUlEQVQYlWP8////fwYGBgYmBigAAD34BABBrq9BAAAAAElFTkSuQmCC',
+      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==',
       filename: '2x2.jpg',
       format: ImageFormat.JPEG,
       hasAlphaChannel: false,
@@ -183,6 +183,7 @@ describe('nativeImage module', () => {
         expect(imageFromDataUrl.getSize()).to.deep.equal(imageFromPath.getSize())
         expect(imageFromDataUrl.toBitmap()).to.satisfy(
             bitmap => imageFromPath.toBitmap().equals(bitmap))
+        expect(imageFromDataUrl.toDataURL()).to.equal(imageFromPath.toDataURL())
       }
     })
   })
@@ -193,8 +194,10 @@ describe('nativeImage module', () => {
       for (const imageData of imagesData) {
         const imageFromPath = nativeImage.createFromPath(imageData.path)
 
-        expect(imageFromPath.toDataURL()).to.equal(imageData.dataUrl)
-        expect(imageFromPath.toDataURL({scaleFactor: 2.0})).to.equal(imageData.dataUrl)
+        const scaleFactors = [1.0, 2.0]
+        for (const scaleFactor of scaleFactors) {
+          expect(imageFromPath.toDataURL({scaleFactor})).to.equal(imageData.dataUrl)
+        }
       }
     })
 
@@ -444,9 +447,7 @@ describe('nativeImage module', () => {
     })
   })
 
-  // TODO(alexeykuzmin): Disabled during Chromium 61 upgrade.
-  // Fix them and enable.
-  xdescribe('addRepresentation()', () => {
+  describe('addRepresentation()', () => {
     it('supports adding a buffer representation for a scale factor', () => {
       const image = nativeImage.createEmpty()
 
