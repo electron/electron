@@ -936,9 +936,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Disabled during Chromium 61 upgrade.
-  // Fix it and enable.
-  xdescribe('found-in-page event', () => {
+  describe('found-in-page event', () => {
     it('emits when a request is made', (done) => {
       let requestId = null
       let activeMatchOrdinal = []
@@ -961,6 +959,11 @@ describe('<webview> tag', function () {
       webview.addEventListener('did-finish-load', listener2)
       webview.src = `file://${fixtures}/pages/content.html`
       document.body.appendChild(webview)
+      // TODO(deepak1556): With https://codereview.chromium.org/2836973002
+      // focus of the webContents is required when triggering the api.
+      // Remove this workaround after determining the cause for
+      // incorrect focus.
+      webview.focus()
     })
   })
 
