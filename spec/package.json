@@ -6,7 +6,7 @@
   "devDependencies": {
     "basic-auth": "^1.0.4",
     "chai": "^4.1.2",
-    "coffee-script": "^1.12.3",
+    "coffee-script": "1.12.7",
     "graceful-fs": "^4.1.9",
     "mkdirp": "^0.5.1",
     "mocha": "^3.1.0",
