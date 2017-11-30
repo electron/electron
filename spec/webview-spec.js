@@ -655,6 +655,30 @@ describe('<webview> tag', function () {
     })
   })
 
+  describe('setDevToolsWebCotnents() API', () => {
+    it('sets webContents of webview as devtools', (done) => {
+      const webview2 = new WebView()
+      webview2.addEventListener('did-attach', () => {
+        webview2.addEventListener('dom-ready', () => {
+          const devtools = webview2.getWebContents()
+          assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
+          devtools.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
+            assert.ok(name, 'InspectorFrontendHostImpl')
+            document.body.removeChild(webview2)
+            done()
+          })
+        })
+        webview.addEventListener('dom-ready', () => {
+          webview.getWebContents().setDevToolsWebContents(webview2.getWebContents())
+          webview.getWebContents().openDevTools()
+        })
+        webview.src = 'about:blank'
+        document.body.appendChild(webview)
+      })
+      document.body.appendChild(webview2)
+    })
+  })
+
   describe('devtools-opened event', () => {
     it('should fire when webview.openDevTools() is called', (done) => {
       const listener = () => {
