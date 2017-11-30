@@ -896,9 +896,10 @@ void WebContents::DevToolsOpened() {
       "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
 
   // Inherit owner window in devtools.
-  if (owner_window())
-    handle->SetOwnerWindow(managed_web_contents()->GetDevToolsWebContents(),
-                           owner_window());
+  auto* devtools = managed_web_contents()->GetDevToolsWebContents();
+  if (owner_window() &&
+      !devtools->GetUserData(NativeWindowRelay::UserDataKey()))
+    handle->SetOwnerWindow(devtools, owner_window());
 
   Emit("devtools-opened");
 }
@@ -1808,6 +1809,11 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
   }
 }
 
+void WebContents::SetDevToolsWebContents(const WebContents* devtools) {
+  if (managed_web_contents())
+    managed_web_contents()->SetDevToolsWebContents(devtools->web_contents());
+}
+
 v8::Local<v8::Value> WebContents::GetNativeView() const {
   gfx::NativeView ptr = web_contents()->GetNativeView();
   auto buffer = node::Buffer::Copy(
@@ -1929,6 +1935,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
+      .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
       .SetMethod("getNativeView", &WebContents::GetNativeView)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)

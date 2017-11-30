@@ -242,13 +242,14 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
 
 InspectableWebContentsImpl::~InspectableWebContentsImpl() {
   // Unsubscribe from devtools and Clean up resources.
-  if (devtools_web_contents_) {
-    devtools_web_contents_->SetDelegate(nullptr);
+  if (GetDevToolsWebContents()) {
+    if (managed_devtools_web_contents_)
+      managed_devtools_web_contents_->SetDelegate(nullptr);
     // Calling this also unsubscribes the observer, so WebContentsDestroyed
     // won't be called again.
     WebContentsDestroyed();
   }
-  // Let destructor destroy devtools_web_contents_.
+  // Let destructor destroy managed_devtools_web_contents_.
 }
 
 InspectableWebContentsView* InspectableWebContentsImpl::GetView() const {
@@ -261,7 +262,10 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
 
 content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents()
     const {
-  return devtools_web_contents_.get();
+  if (external_devtools_web_contents_)
+    return external_devtools_web_contents_;
+  else
+    return managed_devtools_web_contents_.get();
 }
 
 void InspectableWebContentsImpl::InspectElement(int x, int y) {
@@ -288,43 +292,56 @@ void InspectableWebContentsImpl::SetDockState(const std::string& state) {
   }
 }
 
+void InspectableWebContentsImpl::SetDevToolsWebContents(
+    content::WebContents* devtools) {
+  if (!managed_devtools_web_contents_)
+    external_devtools_web_contents_ = devtools;
+}
+
 void InspectableWebContentsImpl::ShowDevTools() {
+  if (embedder_message_dispatcher_) {
+    if (managed_devtools_web_contents_)
+      view_->ShowDevTools();
+    return;
+  }
+
   // Show devtools only after it has done loading, this is to make sure the
   // SetIsDocked is called *BEFORE* ShowDevTools.
-  if (!devtools_web_contents_) {
-    embedder_message_dispatcher_.reset(
-        DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this));
+  embedder_message_dispatcher_.reset(
+      DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this));
 
-    content::WebContents::CreateParams create_params(
-        web_contents_->GetBrowserContext());
-    devtools_web_contents_.reset(content::WebContents::Create(create_params));
-
-    Observe(devtools_web_contents_.get());
-    devtools_web_contents_->SetDelegate(this);
-
-    AttachTo(content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get()));
-
-    devtools_web_contents_->GetController().LoadURL(
-        GetDevToolsURL(can_dock_),
-        content::Referrer(),
-        ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
-        std::string());
-  } else {
-    view_->ShowDevTools();
+  if (!external_devtools_web_contents_) {  // no external devtools
+    managed_devtools_web_contents_.reset(
+        content::WebContents::Create(
+            content::WebContents::CreateParams(
+                web_contents_->GetBrowserContext())));
+    managed_devtools_web_contents_->SetDelegate(this);
   }
+
+  Observe(GetDevToolsWebContents());
+  AttachTo(content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get()));
+
+  GetDevToolsWebContents()->GetController().LoadURL(
+      GetDevToolsURL(can_dock_),
+      content::Referrer(),
+      ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
+      std::string());
 }
 
 void InspectableWebContentsImpl::CloseDevTools() {
-  if (devtools_web_contents_) {
+  if (GetDevToolsWebContents()) {
     frontend_loaded_ = false;
-    view_->CloseDevTools();
-    devtools_web_contents_.reset();
+    if (managed_devtools_web_contents_) {
+      view_->CloseDevTools();
+      managed_devtools_web_contents_.reset();
+    }
+    embedder_message_dispatcher_.reset();
     web_contents_->Focus();
   }
 }
 
 bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
-  return devtools_web_contents_ && view_->IsDevToolsViewShowing();
+  return managed_devtools_web_contents_ && view_->IsDevToolsViewShowing();
 }
 
 void InspectableWebContentsImpl::AttachTo(
@@ -347,7 +364,7 @@ void InspectableWebContentsImpl::CallClientFunction(
     const base::Value* arg1,
     const base::Value* arg2,
     const base::Value* arg3) {
-  if (!devtools_web_contents_)
+  if (!GetDevToolsWebContents())
     return;
 
   std::string javascript = function_name + "(";
@@ -365,7 +382,7 @@ void InspectableWebContentsImpl::CallClientFunction(
     }
   }
   javascript.append(");");
-  devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(
+  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
       base::UTF8ToUTF16(javascript));
 }
 
@@ -400,7 +417,8 @@ void InspectableWebContentsImpl::CloseWindow() {
 
 void InspectableWebContentsImpl::LoadCompleted() {
   frontend_loaded_ = true;
-  view_->ShowDevTools();
+  if (managed_devtools_web_contents_)
+    view_->ShowDevTools();
 
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_) {
@@ -415,7 +433,7 @@ void InspectableWebContentsImpl::LoadCompleted() {
     }
     base::string16 javascript = base::UTF8ToUTF16(
         "Components.dockController.setDockSide(\"" + dock_state_ + "\");");
-    devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(javascript);
+    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
   }
 
   if (view_->GetDelegate())
@@ -428,15 +446,17 @@ void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
     return;
 
   contents_resizing_strategy_.CopyFrom(strategy);
-  view_->SetContentsResizingStrategy(contents_resizing_strategy_);
+  if (managed_devtools_web_contents_)
+    view_->SetContentsResizingStrategy(contents_resizing_strategy_);
 }
 
 void InspectableWebContentsImpl::InspectElementCompleted() {
 }
 
 void InspectableWebContentsImpl::InspectedURLChanged(const std::string& url) {
-  view_->SetTitle(base::UTF8ToUTF16(base::StringPrintf(kTitleFormat,
-                                                       url.c_str())));
+  if (managed_devtools_web_contents_)
+    view_->SetTitle(base::UTF8ToUTF16(base::StringPrintf(kTitleFormat,
+                                                         url.c_str())));
 }
 
 void InspectableWebContentsImpl::LoadNetworkResource(
@@ -452,8 +472,8 @@ void InspectableWebContentsImpl::LoadNetworkResource(
     return;
   }
 
-  auto browser_context =
-      static_cast<BrowserContext*>(devtools_web_contents_->GetBrowserContext());
+  auto* browser_context = static_cast<BrowserContext*>(
+      GetDevToolsWebContents()->GetBrowserContext());
 
   net::URLFetcher* fetcher =
       (net::URLFetcher::Create(gurl, net::URLFetcher::GET, this)).release();
@@ -468,7 +488,8 @@ void InspectableWebContentsImpl::LoadNetworkResource(
 
 void InspectableWebContentsImpl::SetIsDocked(const DispatchCallback& callback,
                                              bool docked) {
-  view_->SetIsDocked(docked);
+  if (managed_devtools_web_contents_)
+    view_->SetIsDocked(docked);
   if (!callback.is_null())
     callback.Run(nullptr);
 }
@@ -640,7 +661,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessage(
   if (message.length() < kMaxMessageChunkSize) {
     base::string16 javascript = base::UTF8ToUTF16(
         "DevToolsAPI.dispatchMessage(" + message + ");");
-    devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(javascript);
+    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
     return;
   }
 
@@ -664,13 +685,15 @@ void InspectableWebContentsImpl::RenderFrameHostChanged(
   frontend_host_.reset(content::DevToolsFrontendHost::Create(
       new_host,
       base::Bind(&InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-                 base::Unretained(this))));
+                 weak_factory_.GetWeakPtr())));
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
   frontend_loaded_ = false;
+  external_devtools_web_contents_ = nullptr;
   Observe(nullptr);
   Detach();
+  embedder_message_dispatcher_.reset();
 
   for (const auto& pair : pending_requests_)
     delete pair.first;
@@ -758,7 +781,7 @@ void InspectableWebContentsImpl::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
   if (navigation_handle->IsInMainFrame()) {
     if (navigation_handle->GetRenderFrameHost() ==
-            devtools_web_contents_->GetMainFrame() &&
+            GetDevToolsWebContents()->GetMainFrame() &&
         frontend_host_) {
       return;
     }
