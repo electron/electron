@@ -1131,7 +1131,7 @@ app.once('ready', () => {
   devtools = new BrowserWindow({show: false})
   devtools.show()
   win.webContents.setDevToolsWebContents(devtools.webContents)
-  win.webContents.openDevTools()
+  win.webContents.openDevTools({mode: 'detach'})
 })
 ```
 
