@@ -181,6 +181,7 @@ describe('nativeImage module', () => {
         expect(imageFromDataUrl.getSize()).to.deep.equal(imageFromPath.getSize())
         expect(imageFromDataUrl.toBitmap()).to.satisfy(
             bitmap => imageFromPath.toBitmap().equals(bitmap))
+        expect(imageFromDataUrl.toDataURL()).to.equal(imageFromPath.toDataURL())
       }
     })
   })
@@ -191,8 +192,10 @@ describe('nativeImage module', () => {
       for (const imageData of imagesData) {
         const imageFromPath = nativeImage.createFromPath(imageData.path)
 
-        expect(imageFromPath.toDataURL()).to.equal(imageData.dataUrl)
-        expect(imageFromPath.toDataURL({scaleFactor: 2.0})).to.equal(imageData.dataUrl)
+        const scaleFactors = [1.0, 2.0]
+        for (const scaleFactor of scaleFactors) {
+          expect(imageFromPath.toDataURL({scaleFactor})).to.equal(imageData.dataUrl)
+        }
       }
     })
 
