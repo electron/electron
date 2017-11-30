@@ -135,12 +135,6 @@ describe('node feature', () => {
 
   describe('contexts', () => {
     describe('setTimeout in fs callback', () => {
-      before(function () {
-        if (process.env.TRAVIS === 'true') {
-          this.skip()
-        }
-      })
-
       it('does not crash', (done) => {
         fs.readFile(__filename, () => {
           setTimeout(done, 0)

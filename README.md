@@ -1,7 +1,9 @@
 [![Electron Logo](https://electronjs.org/images/electron-logo.svg)](https://electronjs.org)
 
-[![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
-[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/bc56v83355fi3369/branch/master?svg=true)](https://ci.appveyor.com/project/electron-bot/electron/branch/master)
+
+[![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/master.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/master)
+[![AppVeyor Build Status](https://windows-ci.electronjs.org/api/projects/status/nilyf07hcef14dvj/branch/master?svg=true)](https://windows-ci.electronjs.org/project/AppVeyor/electron/branch/master)
+[![Jenkins Build Status](https://mac-ci.electronjs.org/buildStatus/icon?job=Electron%20org/electron/master)](https://mac-ci.electronjs.org/blue/organizations/jenkins/Electron%20org%2Felectron/activity?branch=master)
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
 [![Join the Electron Community on Slack](https://atom-slack.herokuapp.com/badge.svg)](https://atom-slack.herokuapp.com/)
 

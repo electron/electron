@@ -55,7 +55,6 @@ describe('crashReporter module', () => {
       it('should send minidump when renderer crashes', function (done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
-        if (process.env.TRAVIS === 'true') return done()
 
         this.timeout(180000)
 
@@ -76,7 +75,6 @@ describe('crashReporter module', () => {
       it('should send minidump when node processes crash', function (done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
-        if (process.env.TRAVIS === 'true') return done()
 
         this.timeout(180000)
 
@@ -172,7 +170,6 @@ describe('crashReporter module', () => {
       it('should send minidump with updated extra parameters', function (done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
-        if (process.env.TRAVIS === 'true') return done()
 
         this.timeout(180000)
 
@@ -261,11 +258,9 @@ describe('crashReporter module', () => {
 
   describe('getLastCrashReport', () => {
     it('correctly returns the most recent report', () => {
-      if (process.env.TRAVIS === 'False') {
-        const reports = crashReporter.getUploadedReports()
-        const lastReport = reports[0]
-        assert(lastReport != null)
-      }
+      const reports = crashReporter.getUploadedReports()
+      const lastReport = reports[0]
+      assert(lastReport != null)
     })
   })
 

@@ -42,6 +42,7 @@
 /vendor/llvm-build/
 /vendor/llvm/
 /vendor/node/deps/node-inspect/.npmrc
+/vendor/node/deps/npm/test/fixtures/config/.npmrc
 /vendor/npm/
 /vendor/python_26/
 node_modules/

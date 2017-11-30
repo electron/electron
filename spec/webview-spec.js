@@ -416,12 +416,6 @@ describe('<webview> tag', function () {
   })
 
   describe('allowpopups attribute', () => {
-    before(function () {
-      if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
-        this.skip()
-      }
-    })
-
     it('can not open new window when not set', (done) => {
       const listener = (e) => {
         assert.equal(e.message, 'null')
@@ -506,12 +500,6 @@ describe('<webview> tag', function () {
   })
 
   describe('new-window event', () => {
-    before(function () {
-      if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
-        this.skip()
-      }
-    })
-
     it('emits when window.open is called', (done) => {
       webview.addEventListener('new-window', (e) => {
         assert.equal(e.url, 'http://host/')
@@ -840,12 +828,6 @@ describe('<webview> tag', function () {
 
   describe('executeJavaScript', () => {
     it('should support user gesture', function (done) {
-      if (process.env.TRAVIS !== 'true' || process.platform === 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done()
-      }
-
       const listener = () => {
         webview.removeEventListener('enter-html-full-screen', listener)
         done()
@@ -862,12 +844,6 @@ describe('<webview> tag', function () {
     })
 
     it('can return the result of the executed script', function (done) {
-      if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done()
-      }
-
       const listener = () => {
         const jsScript = "'4'+2"
         webview.executeJavaScript(jsScript, false, (result) => {
@@ -1579,12 +1555,6 @@ describe('<webview> tag', function () {
     })
 
     it('can be manually resized with setSize even when attribute is present', function (done) {
-      if (process.env.TRAVIS === 'true') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done()
-      }
-
       w = new BrowserWindow({show: false, width: 200, height: 200})
       w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
 
