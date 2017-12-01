@@ -1126,10 +1126,8 @@ let devtools = null
 
 app.once('ready', () => {
   win = new BrowserWindow()
+  devtools = new BrowserWindow()
   win.loadURL('https://github.com')
-  win.show()
-  devtools = new BrowserWindow({show: false})
-  devtools.show()
   win.webContents.setDevToolsWebContents(devtools.webContents)
   win.webContents.openDevTools({mode: 'detach'})
 })
