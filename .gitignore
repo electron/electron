@@ -47,3 +47,5 @@
 /vendor/python_26/
 node_modules/
 SHASUMS256.txt
+package-lock.json
+spec/package-lock.json
