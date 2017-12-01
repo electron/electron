@@ -16,7 +16,7 @@ const comparePaths = (path1, path2) => {
   assert.equal(path1, path2)
 }
 
-describe.only('ipc renderer module', () => {
+describe('ipc renderer module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
   let w = null
