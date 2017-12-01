@@ -81,7 +81,7 @@ Alternatively, a more conservative approach is to use the
 **Note: The schedule outlined here is _aspirational_. We are not yet cutting
 releases at a weekly cadence, but we hope to get there eventually.**
 
-<img style="width:100%;margin:20px 0;" src="../images/tutorial-release-schedule.svg">
+<img style="width:100%;margin:20px 0;" src="https://cdn.rawgit.com/electron/electron/master/docs/images/tutorial-release-schedule.svg">
 
 Here are some important points to call out:
 
