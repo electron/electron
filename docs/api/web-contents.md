@@ -1089,6 +1089,9 @@ with native view, which developers have very limited control of. With the
 the devtools in it, including `BrowserWindow`, `BrowserView` and `<webview>`
 tag.
 
+Note that closing the devtools does not destory the `devToolsWebContents`, it
+is caller's responsibility to destroy `devToolsWebContents`.
+
 An example of showing devtools in a `<webview>` tag:
 
 ```html
