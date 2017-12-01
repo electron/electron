@@ -1144,6 +1144,9 @@ app.once('ready', () => {
 
 Opens the devtools.
 
+When `contents` is a `<webview>` tag, the `mode` would be `detach` by default,
+explicitly passing an empty `mode` can force using last used dock state.
+
 #### `contents.closeDevTools()`
 
 Closes the devtools.

@@ -895,10 +895,10 @@ void WebContents::DevToolsOpened() {
   managed_web_contents()->CallClientFunction(
       "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
 
-  // Inherit owner window in devtools.
+  // Inherit owner window in devtools when it doesn't have one.
   auto* devtools = managed_web_contents()->GetDevToolsWebContents();
-  if (owner_window() &&
-      !devtools->GetUserData(NativeWindowRelay::UserDataKey()))
+  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
+  if (owner_window() && !has_window)
     handle->SetOwnerWindow(devtools, owner_window());
 
   Emit("devtools-opened");
@@ -1179,7 +1179,8 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   std::string state;
   if (type_ == WEB_VIEW || !owner_window()) {
     state = "detach";
-  } else if (args && args->Length() == 1) {
+  }
+  if (args && args->Length() == 1) {
     bool detach = false;
     mate::Dictionary options;
     if (args->GetNext(&options)) {
