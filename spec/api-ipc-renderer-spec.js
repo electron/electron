@@ -8,14 +8,6 @@ const {closeWindow} = require('./window-helpers')
 const {ipcRenderer, remote} = require('electron')
 const {ipcMain, webContents, BrowserWindow} = remote
 
-const comparePaths = (path1, path2) => {
-  if (process.platform === 'win32') {
-    path1 = path1.toLowerCase()
-    path2 = path2.toLowerCase()
-  }
-  assert.equal(path1, path2)
-}
-
 describe('ipc renderer module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 

@@ -1,7 +1,6 @@
 'use strict'
 
 const assert = require('assert')
-const http = require('http')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
 
@@ -372,4 +371,3 @@ describe('remote module', () => {
     })
   })
 })
-

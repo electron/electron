@@ -1,20 +1,11 @@
 'use strict'
 
 const assert = require('assert')
-const http = require('http')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
 
-const {ipcRenderer, remote} = require('electron')
-const {ipcMain, webContents, BrowserWindow} = remote
-
-const comparePaths = (path1, path2) => {
-  if (process.platform === 'win32') {
-    path1 = path1.toLowerCase()
-    path2 = path2.toLowerCase()
-  }
-  assert.equal(path1, path2)
-}
+const {remote} = require('electron')
+const {ipcMain, BrowserWindow} = remote
 
 describe('ipc main module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
