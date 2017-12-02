@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_IN_APP_PURCHASE_H_
-#define ATOM_BROWSER_UI_IN_APP_PURCHASE_H_
+#ifndef ATOM_BROWSER_IN_APP_PURCHASE_H_
+#define ATOM_BROWSER_IN_APP_PURCHASE_H_
 
 #include <string>
 
@@ -27,4 +27,4 @@ void PurchaseProduct(const std::string& productID,
 
 }  // namespace in_app_purchase
 
-#endif  // ATOM_BROWSER_UI_IN_APP_PURCHASE_H_
+#endif  // ATOM_BROWSER_IN_APP_PURCHASE_H_
