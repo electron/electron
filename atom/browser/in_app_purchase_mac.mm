@@ -112,8 +112,10 @@
  * @param product - The product to purchase.
  */
 - (void)runCallback:(bool)isProductValid {
-  content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
-                                   base::Bind(callback_, isProductValid));
+  if (callback_) {
+    content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+                                     base::Bind(callback_, isProductValid));
+  }
 }
 
 @end
