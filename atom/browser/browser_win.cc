@@ -153,15 +153,16 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  base::string16 keyPath = base::UTF8ToUTF16("Software\\Classes\\" + protocol);
+  base::string16 keyPath = L"Software\\Classes\\";
 
   // Command Key
-  base::string16 cmdPath = keyPath + L"\\shell\\open\\command";
+  base::string16 protocol16 = base::UTF8ToUTF16(protocol);
+  base::string16 cmdPath = keyPath + protocol16 + L"\\shell\\open\\command";
 
   base::win::RegKey key;
   base::win::RegKey commandKey;
   if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
-    // Key doesn't even exist, we can confirm that it is not set
+    // Classes key doesn't exist, that's concerning, but I guess we're not the default handler
     return true;
 
   if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
@@ -179,8 +180,11 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   if (keyVal == exe) {
     // Let's kill the key
-    if (FAILED(key.DeleteKey(L"shell")))
+    if (FAILED(key.DeleteKey(protocol16 + L"shell")))
       return false;
+
+    // If empty, delete
+    key.DeleteEmptyKey(protocol16);
 
     return true;
   } else {
