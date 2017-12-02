@@ -70,7 +70,7 @@ The following methods are available on instances of `Cookies`:
   * `error` Error
   * `cookies` [Cookie[]](structures/cookie.md) - an array of cookie objects.
 
-Sends a request to get all cookies matching `details`, `callback` will be called
+Sends a request to get all cookies matching `filter`, `callback` will be called
 with `callback(error, cookies)` on complete.
 
 #### `cookies.set(details, callback)`
