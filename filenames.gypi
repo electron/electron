@@ -733,6 +733,15 @@
           'atom/browser/osr/osr_view_proxy.h',
         ],
       }],  # enable_osr==1
+      ['OS=="win"', {
+        'app_sources': [
+          'atom/browser/in_app_purchase.h',
+          'atom/browser/in_app_purchase_mac.mm',
+          'atom/browser/in_app_purchase_observer.h',
+          'atom/browser/in_app_purchase_observer_mac.mm'
+        ],
+      }], # OS=="mac"
+      
     ],
   },
 }
