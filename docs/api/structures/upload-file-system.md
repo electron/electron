@@ -6,4 +6,4 @@
 * `length` Integer - Number of bytes to read from `offset`.
   Defaults to `0`.
 * `modificationTime` Double - Last Modification time in
-  number of seconds sine the UNIX epoch.
+  number of seconds since the UNIX epoch.
