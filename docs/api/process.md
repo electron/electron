@@ -47,8 +47,8 @@ will disable the support for `asar` archives in Node's built-in modules.
 
 ### `process.noDeprecation`
 
-A `Boolean` that controls whether or not deprecation warnings are printed to `stderr`.  
-Setting this to `true` will silence deprecation warnings.  This property is used
+A `Boolean` that controls whether or not deprecation warnings are printed to `stderr`.
+Setting this to `true` will silence deprecation warnings. This property is used
 instead of the `--no-deprecation` command line flag.
 
 ### `process.resourcesPath`
@@ -58,20 +58,20 @@ A `String` representing the path to the resources directory.
 ### `process.throwDeprecation`
 
 A `Boolean` that controls whether or not deprecation warnings will be thrown as
-exceptions.  Setting this to `true` will throw errors for deprecations.  This
+exceptions. Setting this to `true` will throw errors for deprecations. This
 property is used instead of the `--throw-deprecation` command line flag.
 
 ### `process.traceDeprecation`
 
 A `Boolean` that controls whether or not deprecations printed to `stderr` include
- their stack trace.  Setting this to `true` will print  stack traces for deprecations.
-   This property is instead of the `--trace-deprecation` command line flag.
+ their stack trace. Setting this to `true` will print stack traces for deprecations.
+ This property is instead of the `--trace-deprecation` command line flag.
 
 ### `process.traceProcessWarnings`
 A `Boolean` that controls whether or not process warnings printed to `stderr` include
- their stack trace.  Setting this to `true` will print stack traces for process warnings
-  (including deprecations).  This property is instead of the `--trace-warnings` command
-  line flag.
+ their stack trace. Setting this to `true` will print stack traces for process warnings
+ (including deprecations). This property is instead of the `--trace-warnings` command
+ line flag.
 
 ### `process.type`
 
@@ -117,7 +117,7 @@ Returns `Object`:
 * `privateBytes` Integer - The amount of memory not shared by other processes, such as
   JS heap or HTML content.
 * `sharedBytes` Integer - The amount of memory shared between processes, typically
-  memory consumed by the Electron code itself
+  memory consumed by the Electron code itself.
 
 Returns an object giving memory usage statistics about the current process. Note
 that all statistics are reported in Kilobytes.
@@ -130,10 +130,10 @@ Returns `Object`:
   system.
 * `free` Integer - The total amount of memory not being used by applications or disk
   cache.
-* `swapTotal` Integer - The total amount of swap memory in Kilobytes available to the
-  system.  _Windows_ _Linux_
-* `swapFree` Integer - The free amount of swap memory in Kilobytes available to the
-  system.  _Windows_ _Linux_
+* `swapTotal` Integer _Windows_ _Linux_ - The total amount of swap memory in Kilobytes available to the
+  system.
+* `swapFree` Integer _Windows_ _Linux_ - The free amount of swap memory in Kilobytes available to the
+  system.
 
 Returns an object giving memory usage statistics about the entire system. Note
 that all statistics are reported in Kilobytes.
