@@ -169,12 +169,12 @@ under the `beta` tag and can be installed via `npm install electron@beta`.
 
 1. Visit [the releases page] and you'll see a new draft release with placeholder
 release notes.
-1. Edit the release and add release notes.
-1. Uncheck the `prerelease` checkbox if you're publishing a stable release;
+2. Edit the release and add release notes.
+3. Uncheck the `prerelease` checkbox if you're publishing a stable release;
 leave it checked for beta releases.
-1. Click 'Save draft'. **Do not click 'Publish release'!**
-1. Wait for all builds to pass before proceeding.
-1. You can run `npm run release --validateRelease` to verify that all of the
+4. Click 'Save draft'. **Do not click 'Publish release'!**
+5. Wait for all builds to pass before proceeding.
+6. You can run `npm run release --validateRelease` to verify that all of the
 required files have been created for the release.
 
 ## Merge temporary branch
