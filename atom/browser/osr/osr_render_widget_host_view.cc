@@ -370,11 +370,11 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(
 
   base::TimeTicks deadline = display_time - estimated_browser_composite_time;
 
-  const cc::BeginFrameArgs& begin_frame_args =
-      cc::BeginFrameArgs::Create(BEGINFRAME_FROM_HERE,
-                                 begin_frame_source_.source_id(),
-                                 begin_frame_number_, frame_time, deadline,
-                                 vsync_period, cc::BeginFrameArgs::NORMAL);
+  const viz::BeginFrameArgs& begin_frame_args =
+      viz::BeginFrameArgs::Create(BEGINFRAME_FROM_HERE,
+                                  begin_frame_source_.source_id(),
+                                  begin_frame_number_, frame_time, deadline,
+                                  vsync_period, viz::BeginFrameArgs::NORMAL);
   DCHECK(begin_frame_args.IsValid());
   begin_frame_number_++;
 
