@@ -5,19 +5,22 @@ This document describes the process for releasing a new version of Electron.
 ## Determine which branch to release from
 
 - **If releasing beta,** create a new branch from `master`.
-- **If releasing a stable version,** create a new branch from the beta branch you're stabilizing.
+- **If releasing a stable version,** create a new branch from the beta branch
+  you're stabilizing.
 
 ## Find out what version change is needed
 Run `npm run prepare-release -- --notesOnly` to view auto generated release
-notes.  The notes generated should help you determine if this is a major, minor,
-patch, or beta version change. Read the
-[Version Change Rules](../tutorial/electron-versioning.md#version-change-rules) for more information.
+notes.  The notes generated should help you determine if this is a major,
+minor, patch, or beta version change. Read the
+[Version Change Rules](../tutorial/electron-versioning.md#version-change-rules)
+for more information.
 
 ## Run the prepare-release script
 The prepare release script will do the following:
 1. Check if a release is already in process and if so it will halt.
 2. Create a release branch.
-3. Bump the version number in several files.  See [this bump commit] for an example.
+3. Bump the version number in several files.  See [this bump commit] for an
+example.
 4. Create a draft release on GitHub with auto-generated release notes
 5. Push the release branch so that the release builds get built.
 Once you have determined which type of version change is needed, run the
@@ -61,13 +64,16 @@ To monitor the build progress, see the following pages:
 
 ## Compile release notes
 
-Writing release notes is a good way to keep yourself busy while the builds are running.
-For prior art, see existing releases on [the releases page].
+Writing release notes is a good way to keep yourself busy while the builds
+are running. For prior art, see existing releases on [the releases page].
 
 Tips:
-- Each listed item should reference a PR on electron/electron, not an issue, nor a PR from another repo like libcc.
-- No need to use link markup when referencing PRs. Strings like `#123` will automatically be converted to links on github.com.
-- To see the version of Chromium, V8, and Node in every version of Electron, visit [atom.io/download/electron/index.json](https://atom.io/download/electron/index.json).
+- Each listed item should reference a PR on electron/electron, not an issue,
+nor a PR from another repo like libcc.
+- No need to use link markup when referencing PRs. Strings like `#123` will
+automatically be converted to links on github.com.
+- To see the version of Chromium, V8, and Node in every version of Electron,
+visit [atom.io/download/electron/index.json](https://atom.io/download/electron/index.json).
 
 ### Patch releases
 
@@ -146,21 +152,26 @@ For a `minor` release, e.g. `1.8.0`, use this format:
 ```
 
 ### Beta releases
-Use the same formats as the ones suggested above, but add the following note at the beginning of the changelog:
+Use the same formats as the ones suggested above, but add the following note at
+the beginning of the changelog:
 ```sh
-**Note:** This is a beta release and most likely will have have some instability and/or regressions.
+**Note:** This is a beta release and most likely will have have some
+instability and/or regressions.
 
 Please file new issues for any bugs you find in it.
 
-This release is published to [npm](https://www.npmjs.com/package/electron) under the `beta` tag and can be installed via `npm install electron@beta`.
+This release is published to [npm](https://www.npmjs.com/package/electron)
+under the `beta` tag and can be installed via `npm install electron@beta`.
 ```
 
 
 ## Edit the release draft
 
-1. Visit [the releases page] and you'll see a new draft release with placeholder release notes.
+1. Visit [the releases page] and you'll see a new draft release with placeholder
+release notes.
 1. Edit the release and add release notes.
-1. Uncheck the `prerelease` checkbox if you're publishing a stable release; leave it checked for beta releases.
+1. Uncheck the `prerelease` checkbox if you're publishing a stable release;
+leave it checked for beta releases.
 1. Click 'Save draft'. **Do not click 'Publish release'!**
 1. Wait for all builds to pass before proceeding.
 1. You can run `npm run release --validateRelease` to verify that all of the
