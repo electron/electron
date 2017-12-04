@@ -348,7 +348,7 @@ describe('Menu module', () => {
     })
 
     it('emits closed event', (done) => {
-      menu.popup(w, {x: 100, y: 100, async: true})
+      menu.popup(w, {x: 100, y: 100})
       menu.on('closed', () => {
         done()
       })
