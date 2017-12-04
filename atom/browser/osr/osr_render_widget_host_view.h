@@ -118,7 +118,7 @@ class OffScreenRenderWidgetHostView
 
   // content::RenderWidgetHostViewBase:
   void DidCreateNewRendererCompositorFrameSink(
-      cc::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink)
+      viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink)
       override;
   void SubmitCompositorFrame(const viz::LocalSurfaceId& local_surface_id,
                              cc::CompositorFrame frame) override;
@@ -342,7 +342,7 @@ class OffScreenRenderWidgetHostView
   std::string selected_text_;
 #endif
 
-  cc::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_;
+  viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_;
 
   SkColor background_color_;
 
