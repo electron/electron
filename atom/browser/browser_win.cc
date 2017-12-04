@@ -164,7 +164,8 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   base::win::RegKey commandKey;
 
   if (FAILED(classesKey.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
-    // Classes key doesn't exist, that's concerning, but I guess we're not the default handler
+    // Classes key doesn't exist, that's concerning, but I guess
+    // we're not the default handler
     return true;
 
   if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
@@ -189,11 +190,13 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     base::win::RegKey protocolKey;
     base::string16 protocolPath = keyPath + wprotocol;
 
-    if (SUCCEEDED(protocolKey.Open(root, protocolPath.c_str(), KEY_ALL_ACCESS))) {
+    if (SUCCEEDED(protocolKey
+      .Open(root, protocolPath.c_str(), KEY_ALL_ACCESS))) {
       protocolKey.DeleteValue(L"URL Protocol");
 
       // Overwrite the default value to be empty, we can't delete it right away
       protocolKey.WriteValue(L"", L"");
+      protocolKey.DeleteValue(L"");
     }
 
     // If now empty, delete the whole key
