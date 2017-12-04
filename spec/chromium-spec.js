@@ -30,12 +30,6 @@ describe('chromium feature', () => {
 
   describe('heap snapshot', () => {
     it('does not crash', function () {
-      if (process.env.TRAVIS === 'true') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       process.atomBinding('v8_util').takeHeapSnapshot()
     })
   })
@@ -173,12 +167,6 @@ describe('chromium feature', () => {
   })
 
   describe('window.open', () => {
-    before(function () {
-      if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
-        this.skip()
-      }
-    })
-
     it('returns a BrowserWindowProxy object', () => {
       const b = window.open('about:blank', '', 'show=no')
       assert.equal(b.closed, false)

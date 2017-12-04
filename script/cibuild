@@ -57,19 +57,6 @@ def main():
   if os.environ.has_key('TARGET_ARCH'):
     target_arch = os.environ['TARGET_ARCH']
 
-  is_travis = (os.getenv('TRAVIS') == 'true')
-  if is_travis and PLATFORM == 'linux':
-    print 'Setup travis CI'
-    execute(['sudo', 'apt-get', 'update'])
-    deps = LINUX_DEPS
-    if target_arch == 'arm':
-      deps += LINUX_DEPS_ARM
-    elif target_arch == 'arm64':
-      deps += LINUX_DEPS_ARM64
-    else:
-      deps += LINUX_DEPS_NO_ARM
-    execute(['sudo', 'apt-get', 'install'] + deps)
-
   if PLATFORM == 'linux' and target_arch == 'x64':
     os.environ['DISPLAY'] = ':99.0'
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
