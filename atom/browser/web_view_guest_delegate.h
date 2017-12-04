@@ -88,6 +88,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // Returns the default size of the guestview.
   gfx::Size GetDefaultSize() const;
 
+  void ResetZoomController();
+
   // The WebContents that attaches this guest view.
   content::WebContents* embedder_web_contents_ = nullptr;
 

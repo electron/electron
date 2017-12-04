@@ -273,8 +273,9 @@ NativeWindowViews::NativeWindowViews(
       state_atom_list.push_back(GetAtom("_NET_WM_STATE_MODAL"));
   }
 
-  ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
-                           state_atom_list);
+  if (!state_atom_list.empty())
+    ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
+                             state_atom_list);
 
   // Set the _NET_WM_WINDOW_TYPE.
   if (!window_type.empty())
