@@ -14,7 +14,7 @@
 #include "base/memory/ptr_util.h"
 #include "base/single_thread_task_runner.h"
 #include "base/time/time.h"
-#include "cc/scheduler/delay_based_time_source.h"
+#include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/gl_helper.h"
 #include "components/viz/common/quads/copy_output_request.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
@@ -214,12 +214,12 @@ class AtomCopyFrameGenerator {
   DISALLOW_COPY_AND_ASSIGN(AtomCopyFrameGenerator);
 };
 
-class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
+class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
  public:
   AtomBeginFrameTimer(int frame_rate_threshold_us,
                       const base::Closure& callback)
       : callback_(callback) {
-    time_source_.reset(new cc::DelayBasedTimeSource(
+    time_source_.reset(new viz::DelayBasedTimeSource(
         content::BrowserThread::GetTaskRunnerForThread(
             content::BrowserThread::UI).get()));
     time_source_->SetTimebaseAndInterval(
@@ -248,7 +248,7 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
   }
 
   const base::Closure callback_;
-  std::unique_ptr<cc::DelayBasedTimeSource> time_source_;
+  std::unique_ptr<viz::DelayBasedTimeSource> time_source_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBeginFrameTimer);
 };

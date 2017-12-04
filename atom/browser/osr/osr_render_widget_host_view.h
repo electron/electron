@@ -21,7 +21,7 @@
 #include "base/threading/thread.h"
 #include "base/time/time.h"
 #include "cc/output/compositor_frame.h"
-#include "cc/scheduler/begin_frame_source.h"
+#include "components/viz/common/frame_sinks/begin_frame_source.h"
 #include "content/browser/frame_host/render_widget_host_view_guest.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"
@@ -323,7 +323,7 @@ class OffScreenRenderWidgetHostView
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
 
   // Provides |source_id| for BeginFrameArgs that we create.
-  cc::StubBeginFrameSource begin_frame_source_;
+  viz::StubBeginFrameSource begin_frame_source_;
   uint64_t begin_frame_number_ = cc::BeginFrameArgs::kStartingFrameNumber;
 
 #if defined(OS_MACOSX)
