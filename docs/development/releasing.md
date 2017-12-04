@@ -15,6 +15,27 @@ minor, patch, or beta version change. Read the
 [Version Change Rules](../tutorial/electron-versioning.md#version-change-rules)
 for more information.
 
+## Set your tokens and environment variables
+The Electron S3 Bucket in LastPass has environment variables needed for the
+release process. If you don't have access to this, make a request similar to
+these:
+[1](https://github.com/github/security/issues/2660),
+[2](https://github.com/github/security/issues/2951)
+
+There are a handful of `*_TOKEN` environment variables needed by the release
+scripts. Once you've generated these per-user tokens, you may want to keep
+them in a local file that you can `source` when starting a release.
+* `ELECTRON_GITHUB_TOKEN`:
+Create as described at https://github.com/settings/tokens/new,
+giving the token repo access scope.
+* `APPVEYOR_TOKEN`:
+Create a token from https://windows-ci.electronjs.org/api-token
+If you don't have an account, ask a team member to add you.
+* `CIRCLE_TOKEN`:
+Create a token from "Personal API Tokens" at https://circleci.com/account/api
+* `JENKINS_AUTH_TOKEN` and `JENKINS_BUILD_TOKEN`:
+Are provided by a Jenkins admin
+
 ## Run the prepare-release script
 The prepare release script will do the following:
 1. Check if a release is already in process and if so it will halt.
