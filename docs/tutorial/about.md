@@ -27,7 +27,11 @@ In Electron, Node.js and Chromium share a single V8 instance—usually the versi
 
 ### Versioning
 
-Due to the hard dependency on Node.js and Chromium, Electron is in a tricky versioning position and [does not follow `semver`](http://semver.org). You should therefore always reference a specific version of Electron. [Read more about Electron's versioning](https://electronjs.org/docs/tutorial/electron-versioning) or see the [versions currently in use](https://electronjs.org/#electron-versions).
+As of version 2.0 Electron [follows `semver`](http://semver.org).
+For most applications, and using any recent version of npm,
+running `$ npm install electron` will do the right thing.
+
+The version update process is detailed explicitly in our [Versioning Doc](versioning.md).
 
 ### LTS
 
