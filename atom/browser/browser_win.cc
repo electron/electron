@@ -325,8 +325,15 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 
 PCWSTR Browser::GetAppUserModelID() {
   if (app_user_model_id_.empty()) {
-    SetAppUserModelID(base::ReplaceStringPlaceholders(
-        kAppUserModelIDFormat, base::UTF8ToUTF16(GetName()), nullptr));
+    PWSTR current_app_id;
+    if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
+      app_user_model_id_ = currrent_app_id;
+    } else {
+      current_app_id = base::ReplaceStringPlaceholders(
+        kAppUserModelIDFormat, base::UTF8ToUTF16(GetName()), nullptr);
+      SetAppUserModelID(current_app_id);
+    }
+    CoTaskMemFree(current_app_id);
   }
 
   return app_user_model_id_.c_str();
