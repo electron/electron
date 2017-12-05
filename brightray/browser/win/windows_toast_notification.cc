@@ -32,13 +32,7 @@ namespace brightray {
 namespace {
 
 bool GetAppUserModelId(ScopedHString* app_id) {
-  PWSTR current_app_id;
-  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-    app_id->Reset(current_app_id);
-    CoTaskMemFree(current_app_id);
-  } else {
-    app_id->Reset(base::UTF8ToUTF16(GetApplicationName()));
-  }
+  app_id->Reset(atom::api::Browser::Get()->GetAppUserModelID());
   return app_id->success();
 }
 
