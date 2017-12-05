@@ -16,7 +16,7 @@ namespace brightray {
 
 namespace {
 
-base::string16 g_app_user_model_id;
+base::string16 app_user_model_id_;
 
 }
 
@@ -37,15 +37,15 @@ std::string GetApplicationVersion() {
 }
 
 void SetAppUserModelID(const base::string16& name) {
-  g_app_user_model_id = name;
-  SetCurrentProcessExplicitAppUserModelID(g_app_user_model_id.c_str());
+  app_user_model_id_ = name;
+  SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
 }
 
 PCWSTR GetRawAppUserModelID() {
-  if (g_app_user_model_id.empty()) {
+  if (app_user_model_id_.empty()) {
     PWSTR current_app_id;
     if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-      g_app_user_model_id = current_app_id;
+      app_user_model_id_ = current_app_id;
     } else {
       std::string name = GetOverridenApplicationName();
       if (name.empty()) {
@@ -58,7 +58,7 @@ PCWSTR GetRawAppUserModelID() {
     CoTaskMemFree(current_app_id);
   }
 
-  return g_app_user_model_id.c_str();
+  return app_user_model_id_.c_str();
 }
 
 bool GetAppUserModelID(ScopedHString* app_id) {
