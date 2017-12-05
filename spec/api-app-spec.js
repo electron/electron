@@ -530,7 +530,7 @@ describe('app module', () => {
         // The last test leaves the registry dirty,
         // delete the protocol key for those of us who test at home
         protocolKey.destroy(() => done())
-      } 
+      }
     })
 
     beforeEach(() => {
