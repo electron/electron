@@ -9,7 +9,7 @@ const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
-const {app, ipcMain, BrowserWindow, BrowserView, protocol, webContents} = remote
+const {app, ipcMain, BrowserWindow, BrowserView, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
@@ -1018,6 +1018,43 @@ describe('BrowserWindow module', () => {
           }
         })
         w.loadURL(`file://${path.join(fixtures, 'api', 'preload.html')}`)
+      })
+    })
+
+    describe('session preload scripts', function () {
+      const preloads = [
+        path.join(fixtures, 'module', 'set-global-preload-1.js'),
+        path.join(fixtures, 'module', 'set-global-preload-2.js')
+      ]
+      const defaultSession = session.defaultSession
+
+      beforeEach(() => {
+        assert.deepEqual(defaultSession.getPreloads(), [])
+        defaultSession.setPreloads(preloads)
+      })
+      afterEach(() => {
+        defaultSession.setPreloads([])
+      })
+
+      it('can set multiple session preload script', function () {
+        assert.deepEqual(defaultSession.getPreloads(), preloads)
+      })
+
+      it('loads the script before other scripts in window including normal preloads', function (done) {
+        ipcMain.once('vars', function (event, preload1, preload2, preload3) {
+          assert.equal(preload1, 'preload-1')
+          assert.equal(preload2, 'preload-1-2')
+          assert.equal(preload3, 'preload-1-2-3')
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: path.join(fixtures, 'module', 'set-global-preload-3.js')
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preloads.html'))
       })
     })
 

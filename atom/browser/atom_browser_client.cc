@@ -17,6 +17,7 @@
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/session_preferences.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
@@ -277,9 +278,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   }
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
-  if (web_contents)
+  if (web_contents) {
     WebContentsPreferences::AppendExtraCommandLineSwitches(
         web_contents, command_line);
+    SessionPreferences::AppendExtraCommandLineSwitches(
+        web_contents->GetBrowserContext(), command_line);
+  }
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(
