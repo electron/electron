@@ -2,18 +2,21 @@
 
 > This document is a detailed look at our versioning policy and implementation.
 
-For most people, the following will provide you with the most recent stable build:
+The following command will install the most recent stable build of Electron:
 
-```bash
-$ npm install --save electron
+```sh
+npm install --save-dev electron
 ```
 
-If you want to track the latest electron _always_,
-you will need to run `npm install --save electron@latest` whenever a new major version is released.
+To update an existing project to use the latest stable version:
+
+```sh
+npm install --save-dev electron@latest
+```
 
 ## Version 1.x
 
-Electron versions *< 2.0* have not conformed to the [semver](http://semver.org) spec. Major versions corresponded to end-user API changes. Minor versions corresponded to Chromium major releases. Patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Stride, Teams, Skype, VS Code, Atom, and Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
+Electron versions *< 2.0* did not conform to the [semver](http://semver.org) spec. Major versions corresponded to end-user API changes. Minor versions corresponded to Chromium major releases. Patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Stride, Teams, Skype, VS Code, Atom, and Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
 
 Here is an example of the 1.x strategy:
 
@@ -123,28 +126,27 @@ As a future consideration, we may introduce one or both of the following:
 * alpha releases that have looser stability constraints to betas; for example it would be allowable to admit new features while a stability channel is in _alpha_
 
 # Feature Flags
-Feature flags are a common practice in Chromium, and is well-established in the web-development ecosystem. In the context of Electron, a feature flag or **soft-branch** must have the following properties:
+Feature flags are a common practice in Chromium, and are well-established in the web-development ecosystem. In the context of Electron, a feature flag or **soft branch** must have the following properties:
 
-* is is enabled/disabled either at runtime, or build-time; we do not support the concept of a request-scoped feature-flag
+* is is enabled/disabled either at runtime, or build-time; we do not support the concept of a request-scoped feature flag
 * it completely segments new and old code paths; refactoring old code to support a new feature _violates_ the feature-flag contract
 * feature flags are eventually removed after the soft-branch is merged
 
 We reconcile flagged code with our versioning strategy as follows:
 
-1. we do not consider iterating on feature-flagged code in a stability branch; even judicious use of feature-flags is not without risk
+1. we do not consider iterating on feature-flagged code in a stability branch; even judicious use of feature flags is not without risk
 2. you may break API contracts in feature-flagged code without bumping the major version. Flagged code does not adhere to semver
 
 # Semantic Commits
-We seek to increase clarity at all levels of the update and releases process. Starting with `2.0.0` we will require that all commits adhere to the following commit-message standard _before_ merging to `master`.
+
+We seek to increase clarity at all levels of the update and releases process. Starting with `2.0.0` we will require pull requests adhere to the [Conventional Commits](https://conventionalcommits.org/) spec, which can be summarized as follows:
 
 * Commits that would result in a semver **major** bump must start with `BREAKING CHANGE:`.
 * Commits that would result in a semver **minor** bump must start with `feat:`.
 * Commits that would result in a semver **patch** bump must start with `fix:`.
 
-All other commit messages will be rejected from merging to `master`.
-
 * We allow squashing of commits, provided that the squashed message adheres the the above message format.
-* A pull-request can contain non-conforming commit messages, however the commits must adhere to the naming standard _before_ a merge can be approved.
+* It is acceptable for some commits in a pull request to not include a semantic prefix, as long as a later commit in the same pull request contains a meaningful encompassing semantic message.
 
 # Versionless `master`
 
