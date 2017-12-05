@@ -202,8 +202,12 @@ release notes.
 leave it checked for beta releases.
 4. Click 'Save draft'. **Do not click 'Publish release'!**
 5. Wait for all builds to pass before proceeding.
-6. You can run `npm run release -- --validateRelease` to verify that all of the
-required files have been created for the release.
+6. In the `release` branch, verify that the release's files have been created:
+```sh
+$ git rev-parse --abbrev-ref HEAD
+release
+$ npm run release -- --validateRelease
+```
 
 ## Merge temporary branch
 Once the release builds have finished, merge the `release` branch back into
