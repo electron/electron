@@ -17,7 +17,7 @@ for more information.
 
 **NB:** If releasing from a branch, e.g. 1-8-x, check out the branch with
 `git checkout 1-8-x` rather than `git checkout -b remotes/origin/1-8-x`.
-The scrips need `git rev-parse --abbrev-ref HEAD` to return a short name,
+The scripts need `git rev-parse --abbrev-ref HEAD` to return a short name,
 e.g. no `remotes/origin/`
 
 ## Set your tokens and environment variables
