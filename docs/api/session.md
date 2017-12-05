@@ -384,22 +384,17 @@ the initial state will be `interrupted`. The download will start only when the
 
 Clears the session’s HTTP authentication cache.
 
-#### `ses.addPreload(preloadPath)`
+#### `ses.setPreloads(preloads)`
 
-* `preloadPath` String - An absolute path to the preload script
+* `preloads` String[] - An array of absolute path to preload scripts
 
-Adds a script that will be executed on ALL web contents that are associated with
+Adds scripts that will be executed on ALL web contents that are associated with
 this session just before normal `preload` scripts run.
-
-#### `ses.removePreload(preloadPath)`
-
-* `preloadPath` String - An absolute path to the preload script
-
-Removes the given script from the list of preload scripts
 
 #### `ses.getPreloads()`
 
-Returns `String[]` an array of paths to preload scripts that have been registered
+Returns `String[]` an array of paths to preload scripts that have been
+registered.
 
 ### Instance Properties
 

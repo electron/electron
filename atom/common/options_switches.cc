@@ -177,18 +177,18 @@ const char kAppUserModelId[] = "app-user-model-id";
 const char kAppPath[] = "app-path";
 
 // The command line switch versions of the options.
-const char kBackgroundColor[]      = "background-color";
-const char kPreloadScript[]        = "preload";
-const char kPreloadURL[]           = "preload-url";
-const char kSessionPreloadScript[] = "session-preload";
-const char kNodeIntegration[]      = "node-integration";
-const char kContextIsolation[]     = "context-isolation";
-const char kGuestInstanceID[]      = "guest-instance-id";
-const char kOpenerID[]             = "opener-id";
-const char kScrollBounce[]         = "scroll-bounce";
-const char kHiddenPage[]           = "hidden-page";
-const char kNativeWindowOpen[]     = "native-window-open";
-const char kWebviewTag[]           = "webview-tag";
+const char kBackgroundColor[]  = "background-color";
+const char kPreloadScript[]    = "preload";
+const char kPreloadURL[]       = "preload-url";
+const char kPreloadScripts[]   = "preload-scripts";
+const char kNodeIntegration[]  = "node-integration";
+const char kContextIsolation[] = "context-isolation";
+const char kGuestInstanceID[]  = "guest-instance-id";
+const char kOpenerID[]         = "opener-id";
+const char kScrollBounce[]     = "scroll-bounce";
+const char kHiddenPage[]       = "hidden-page";
+const char kNativeWindowOpen[] = "native-window-open";
+const char kWebviewTag[]       = "webview-tag";
 
 // Command switch passed to renderer process to control nodeIntegration.
 const char kNodeIntegrationInWorker[]  = "node-integration-in-worker";

@@ -17,6 +17,7 @@
 #include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/net/atom_cert_verifier.h"
+#include "atom/browser/session_preferences.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -447,6 +448,8 @@ Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
   content::BrowserContext::GetDownloadManager(browser_context)->
       AddObserver(this);
 
+  new SessionPreferences(browser_context);
+
   Init(isolate);
   AttachAsUserData(browser_context);
 }
@@ -680,18 +683,17 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
 }
 
-void Session::AddPreload(const base::FilePath::StringType& preloadPath) {
-  preloads_.push_back(preloadPath);
-}
-
-void Session::RemovePreload(const base::FilePath::StringType& preloadPath) {
-  preloads_.erase(
-    std::remove(preloads_.begin(), preloads_.end(), preloadPath),
-    preloads_.end());
+void Session::SetPreloads(
+    const std::vector<base::FilePath::StringType>& preloads) {
+  auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
+  DCHECK(prefs);
+  prefs->set_preloads(preloads);
 }
 
 std::vector<base::FilePath::StringType> Session::GetPreloads() const {
-  return preloads_;
+  auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
+  DCHECK(prefs);
+  return prefs->preloads();
 }
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
@@ -780,8 +782,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("createInterruptedDownload",
                  &Session::CreateInterruptedDownload)
-      .SetMethod("addPreload", &Session::AddPreload)
-      .SetMethod("removePreload", &Session::RemovePreload)
+      .SetMethod("setPreloads", &Session::SetPreloads)
       .SetMethod("getPreloads", &Session::GetPreloads)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)

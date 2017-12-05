@@ -82,8 +82,7 @@ class Session: public mate::TrackableObject<Session>,
   void GetBlobData(const std::string& uuid,
                    const AtomBlobReader::CompletionCallback& callback);
   void CreateInterruptedDownload(const mate::Dictionary& options);
-  void AddPreload(const base::FilePath::StringType& preloadPath);
-  void RemovePreload(const base::FilePath::StringType& preloadPath);
+  void SetPreloads(const std::vector<base::FilePath::StringType>& preloads);
   std::vector<base::FilePath::StringType> GetPreloads() const;
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
@@ -107,7 +106,6 @@ class Session: public mate::TrackableObject<Session>,
   std::string devtools_network_emulation_client_id_;
 
   scoped_refptr<AtomBrowserContext> browser_context_;
-  std::vector<base::FilePath::StringType> preloads_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

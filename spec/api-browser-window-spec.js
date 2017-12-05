@@ -1022,39 +1022,39 @@ describe('BrowserWindow module', () => {
     })
 
     describe('session preload scripts', function () {
-      it('can add and remove multiple session preload script', function () {
-        var preload = path.join(fixtures, 'module', 'set-global.js')
-        var preload2 = path.join(fixtures, 'module', 'set-global-2.js')
-        const mSession = session.defaultSession
-        assert.deepEqual(mSession.getPreloads(), [])
-        mSession.addPreload(preload)
-        assert.deepEqual(mSession.getPreloads(), [preload])
-        mSession.addPreload(preload2)
-        assert.deepEqual(mSession.getPreloads(), [preload, preload2])
-        mSession.removePreload(preload)
-        assert.deepEqual(mSession.getPreloads(), [preload2])
-        mSession.removePreload(preload2)
-        assert.deepEqual(mSession.getPreloads(), [])
+      const preloads = [
+        path.join(fixtures, 'module', 'set-global-preload-1.js'),
+        path.join(fixtures, 'module', 'set-global-preload-2.js')
+      ]
+      const defaultSession = session.defaultSession
+
+      beforeEach(() => {
+        assert.deepEqual(defaultSession.getPreloads(), [])
+        defaultSession.setPreloads(preloads)
+      })
+      afterEach(() => {
+        defaultSession.setPreloads([])
+      })
+
+      it('can set multiple session preload script', function () {
+        assert.deepEqual(defaultSession.getPreloads(), preloads)
       })
 
       it('loads the script before other scripts in window including normal preloads', function (done) {
-        var preload = path.join(fixtures, 'module', 'set-global.js')
-        var preload2 = path.join(fixtures, 'module', 'set-global-2.js')
-        const mSession = session.defaultSession
-        ipcMain.once('answer', function (event, test) {
-          mSession.removePreload(preload2)
-          assert.equal(test, 'preload2')
+        ipcMain.once('vars', function (event, preload1, preload2, preload3) {
+          assert.equal(preload1, 'preload-1')
+          assert.equal(preload2, 'preload-1-2')
+          assert.equal(preload3, 'preload-1-2-3')
           done()
         })
         w.destroy()
-        mSession.addPreload(preload2)
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            preload: preload
+            preload: path.join(fixtures, 'module', 'set-global-preload-3.js')
           }
         })
-        w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'))
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preloads.html'))
       })
     })
 
