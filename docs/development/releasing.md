@@ -200,7 +200,7 @@ release notes.
 leave it checked for beta releases.
 4. Click 'Save draft'. **Do not click 'Publish release'!**
 5. Wait for all builds to pass before proceeding.
-6. You can run `npm run release --validateRelease` to verify that all of the
+6. You can run `npm run release -- --validateRelease` to verify that all of the
 required files have been created for the release.
 
 ## Merge temporary branch
