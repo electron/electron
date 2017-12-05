@@ -11,6 +11,7 @@
 #include <shlobj.h>
 #include <vector>
 
+#include "atom/browser/browser.h"
 #include "base/environment.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
