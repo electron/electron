@@ -35,7 +35,7 @@ npm install electron --save-dev --save-exact
 
 The `--save-exact` flag is recommended as Electron does not follow semantic
 versioning. For info on how to manage Electron versions in your apps, see
-[Electron versioning](https://electronjs.org/docs/tutorial/electron-versioning).
+[Electron versioning](https://electronjs.org/docs/tutorial/versioning).
 
 For more installation options and troubleshooting tips, see
 [installation](https://electronjs.org/docs/tutorial/installation).
