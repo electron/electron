@@ -558,8 +558,12 @@ describe('app module', () => {
 
     it('creates a registry entry for the protocol class', (done) => {
       app.setAsDefaultProtocolClient(protocol)
-      
+
       classesKey.keys((error, keys) => {
+        if (error) {
+          throw error
+        }
+
         const exists = !!keys.find((key) => key.key.includes(protocol))
         assert.equal(exists, true)
 
@@ -570,11 +574,15 @@ describe('app module', () => {
     it('completely removes a registry entry for the protocol class', (done) => {
       app.setAsDefaultProtocolClient(protocol)
       app.removeAsDefaultProtocolClient(protocol)
-      
+
       classesKey.keys((error, keys) => {
+        if (error) {
+          throw error
+        }
+
         const exists = !!keys.find((key) => key.key.includes(protocol))
         assert.equal(exists, false)
-        
+
         done()
       })
     })
@@ -591,9 +599,13 @@ describe('app module', () => {
         app.removeAsDefaultProtocolClient(protocol)
 
         classesKey.keys((error, keys) => {
+          if (error) {
+            throw error
+          }
+
           const exists = !!keys.find((key) => key.key.includes(protocol))
           assert.equal(exists, true)
-          
+
           done()
         })
       })
