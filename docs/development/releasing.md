@@ -79,6 +79,13 @@ npm run prepare-release -- beta
 npm run prepare-release -- --stable
 ```
 
+Tip: You can test the new version number before running `prepare-release` with
+a dry run of the `bump-version` script with the same major/minor/patch/beta
+arguments, e.g.:
+```sh
+$ ./script/bump-version.py --bump minor --dry-run
+```
+
 ## Wait for builds :hourglass_flowing_sand:
 
 The presence of the word [`Bump`](https://github.com/electron/electron/blob/7961a97d7ddbed657c6c867cc8426e02c236c077/script/cibuild-linux#L3-L6) in the commit message created by the `bump-version` script
