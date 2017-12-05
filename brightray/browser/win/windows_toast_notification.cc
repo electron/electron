@@ -11,11 +11,7 @@
 #include <shlobj.h>
 #include <vector>
 
-<<<<<<< HEAD
-#include "atom/browser/browser.h"
 #include "base/environment.h"
-=======
->>>>>>> Fix build and ensure no breaking change
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
 #include "brightray/browser/win/notification_presenter_win.h"
@@ -33,13 +29,7 @@ using ABI::Windows::Data::Xml::Dom::IXmlText;
 
 namespace brightray {
 
-<<<<<<< HEAD
 namespace {
-
-bool GetAppUserModelId(ScopedHString* app_id) {
-  app_id->Reset(atom::api::Browser::Get()->GetAppUserModelID());
-  return app_id->success();
-}
 
 bool IsDebuggingNotifications() {
   return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
@@ -47,8 +37,6 @@ bool IsDebuggingNotifications() {
 
 }  // namespace
 
-=======
->>>>>>> Fix build and ensure no breaking change
 // static
 ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>
     WindowsToastNotification::toast_manager_;
