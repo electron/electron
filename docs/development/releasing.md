@@ -25,7 +25,9 @@ The Electron S3 Bucket in LastPass has environment variables needed for the
 release process. If you don't have access to this, make a request similar to
 these:
 [1](https://github.com/github/security/issues/2660),
-[2](https://github.com/github/security/issues/2951)
+[2](https://github.com/github/security/issues/2951).
+When you find the bucket, click on 'edit'. In the notes will be four
+`ELECTRON_*` environment variables you need to export to your shell.
 
 There are a handful of `*_TOKEN` environment variables needed by the release
 scripts. Once you've generated these per-user tokens, you may want to keep
