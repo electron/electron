@@ -391,6 +391,10 @@ class NativeWindowRelay :
   explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window)
     : key(UserDataKey()), window(window) {}
 
+  static void* UserDataKey() {
+    return content::WebContentsUserData<NativeWindowRelay>::UserDataKey();
+  }
+
   void* key;
   base::WeakPtr<NativeWindow> window;
 

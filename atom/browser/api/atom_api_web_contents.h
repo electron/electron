@@ -126,6 +126,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Print(mate::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   void SetEmbedder(const WebContents* embedder);
+  void SetDevToolsWebContents(const WebContents* devtools);
   v8::Local<v8::Value> GetNativeView() const;
 
   // Print current page as PDF.

@@ -1074,6 +1074,68 @@ win.webContents.on('devtools-opened', () => {
 
 Removes the specified path from DevTools workspace.
 
+#### `contents.setDevToolsWebContents(devToolsWebContents)`
+
+* `devToolsWebContents` WebContents
+
+Uses the `devToolsWebContents` as the target `WebContents` to show devtools.
+
+The `devToolsWebContents` must not have done any navigation, and it should not
+be used for other purposes after the call.
+
+By default Electron manages the devtools by creating an internal `WebContents`
+with native view, which developers have very limited control of. With the
+`setDevToolsWebContents` method, developers can use any `WebContents` to show
+the devtools in it, including `BrowserWindow`, `BrowserView` and `<webview>`
+tag.
+
+Note that closing the devtools does not destory the `devToolsWebContents`, it
+is caller's responsibility to destroy `devToolsWebContents`.
+
+An example of showing devtools in a `<webview>` tag:
+
+```html
+<html>
+<head>
+  <style type="text/css">
+    * { margin: 0; }
+    #browser { height: 70%; }
+    #devtools { height: 30%; }
+  </style>
+</head>
+<body>
+  <webview id="browser" src="https://github.com"></webview>
+  <webview id="devtools"></webview>
+  <script>
+    const browserView = document.getElementById('browser')
+    const devtoolsView = document.getElementById('devtools')
+    browserView.addEventListener('dom-ready', () => {
+      const browser = browserView.getWebContents()
+      browser.setDevToolsWebContents(devtoolsView.getWebContents())
+      browser.openDevTools()
+    })
+  </script>
+</body>
+</html>
+```
+
+An example of showing devtools in a `BrowserWindow`:
+
+```js
+const {app, BrowserWindow} = require('electron')
+
+let win = null
+let devtools = null
+
+app.once('ready', () => {
+  win = new BrowserWindow()
+  devtools = new BrowserWindow()
+  win.loadURL('https://github.com')
+  win.webContents.setDevToolsWebContents(devtools.webContents)
+  win.webContents.openDevTools({mode: 'detach'})
+})
+```
+
 #### `contents.openDevTools([options])`
 
 * `options` Object (optional)
@@ -1082,6 +1144,9 @@ Removes the specified path from DevTools workspace.
   In `undocked` mode it's possible to dock back. In `detach` mode it's not.
 
 Opens the devtools.
+
+When `contents` is a `<webview>` tag, the `mode` would be `detach` by default,
+explicitly passing an empty `mode` can force using last used dock state.
 
 #### `contents.closeDevTools()`
 

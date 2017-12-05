@@ -895,10 +895,11 @@ void WebContents::DevToolsOpened() {
   managed_web_contents()->CallClientFunction(
       "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
 
-  // Inherit owner window in devtools.
-  if (owner_window())
-    handle->SetOwnerWindow(managed_web_contents()->GetDevToolsWebContents(),
-                           owner_window());
+  // Inherit owner window in devtools when it doesn't have one.
+  auto* devtools = managed_web_contents()->GetDevToolsWebContents();
+  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
+  if (owner_window() && !has_window)
+    handle->SetOwnerWindow(devtools, owner_window());
 
   Emit("devtools-opened");
 }
@@ -1178,7 +1179,8 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   std::string state;
   if (type_ == WEB_VIEW || !owner_window()) {
     state = "detach";
-  } else if (args && args->Length() == 1) {
+  }
+  if (args && args->Length() == 1) {
     bool detach = false;
     mate::Dictionary options;
     if (args->GetNext(&options)) {
@@ -1808,6 +1810,11 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
   }
 }
 
+void WebContents::SetDevToolsWebContents(const WebContents* devtools) {
+  if (managed_web_contents())
+    managed_web_contents()->SetDevToolsWebContents(devtools->web_contents());
+}
+
 v8::Local<v8::Value> WebContents::GetNativeView() const {
   gfx::NativeView ptr = web_contents()->GetNativeView();
   auto buffer = node::Buffer::Copy(
@@ -1929,6 +1936,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
+      .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
       .SetMethod("getNativeView", &WebContents::GetNativeView)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
