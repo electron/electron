@@ -230,7 +230,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
-  AtomBrowserContext* GetBrowserContext() const;
 
  protected:
   WebContents(v8::Isolate* isolate,
@@ -368,6 +367,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
                          const std::vector<base::string16>& labels);
 
  private:
+  AtomBrowserContext* GetBrowserContext() const;
+
   uint32_t GetNextRequestId() {
     return ++request_id_;
   }
