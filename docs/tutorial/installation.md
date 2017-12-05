@@ -11,7 +11,7 @@ npm install electron --save-dev
 ```
 
 See the 
-[Electron versioning doc](https://electron.atom.io/docs/versioning/)
+[Electron versioning doc](versioning.md)
 for info on how to manage Electron versions in your apps.
 
 ## Global Installation
