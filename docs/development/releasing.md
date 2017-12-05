@@ -277,6 +277,8 @@ electron
 $ npm run publish-to-npm
 ```
 
+Note: the `publish-to-npm` script may have trouble with Node 7 or higher. If
+you have trouble, try running with an older version of Node, e.g. a 6.x LTS.
 
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
