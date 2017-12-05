@@ -30,7 +30,7 @@ There are several major changes from our 1.x strategy outlined below. Each chang
 
 1. Strict use of semver
 2. Introduction of semver-compliant `-beta` tags
-3. Introduction of [semantic-release](https://github.com/semantic-release/semantic-release#default-commit-message-format) style commit messages
+3. Introduction of [conventional commit messages](https://conventionalcommits.org/)
 4. Clearly defined stabilization branches
 5. The `master` branch is versionless; only stability branches contain version information
 
