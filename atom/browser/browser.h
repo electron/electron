@@ -278,10 +278,6 @@ class Browser : public WindowListObserver {
 
   int badge_count_ = 0;
 
-#if defined(OS_WIN)
-  base::string16 app_user_model_id_;
-#endif
-
 #if defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;
 #endif

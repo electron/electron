@@ -112,6 +112,7 @@
       'browser/zoom_level_delegate.cc',
       'browser/zoom_level_delegate.h',
       'common/application_info.h',
+      'common/application_info.cc',
       'common/application_info_mac.mm',
       'common/application_info_win.cc',
       'common/content_client.cc',

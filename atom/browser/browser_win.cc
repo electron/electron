@@ -24,12 +24,11 @@
 #include "base/win/registry.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
+#include "brightray/common/application_info.h"
 
 namespace atom {
 
 namespace {
-
-const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
 
 BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
   DWORD target_process_id = *reinterpret_cast<DWORD*>(param);
@@ -119,8 +118,7 @@ void Browser::ClearRecentDocuments() {
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {
-  app_user_model_id_ = name;
-  SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
+  brightray::SetAppUserModelID(name);
 }
 
 bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
@@ -324,19 +322,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 }
 
 PCWSTR Browser::GetAppUserModelID() {
-  if (app_user_model_id_.empty()) {
-    PWSTR current_app_id;
-    if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-      app_user_model_id_ = currrent_app_id;
-    } else {
-      current_app_id = base::ReplaceStringPlaceholders(
-        kAppUserModelIDFormat, base::UTF8ToUTF16(GetName()), nullptr);
-      SetAppUserModelID(current_app_id);
-    }
-    CoTaskMemFree(current_app_id);
-  }
-
-  return app_user_model_id_.c_str();
+  return brightray::GetRawAppUserModelID();
 }
 
 std::string Browser::GetExecutableFileVersion() const {
@@ -352,14 +338,7 @@ std::string Browser::GetExecutableFileVersion() const {
 }
 
 std::string Browser::GetExecutableFileProductName() const {
-  base::FilePath path;
-  if (PathService::Get(base::FILE_EXE, &path)) {
-    std::unique_ptr<FileVersionInfo> version_info(
-        FileVersionInfo::CreateFileVersionInfo(path));
-    return base::UTF16ToUTF8(version_info->product_name());
-  }
-
-  return ATOM_PRODUCT_NAME;
+  return brightray::GetApplicationName();
 }
 
 }  // namespace atom
