@@ -8,8 +8,8 @@ import sys
 # URL to the mips64el sysroot image.
 MIPS64EL_SYSROOT_URL = 'https://github.com/electron/debian-sysroot-image-creator/releases/download/v0.5.0/debian_jessie_mips64-sysroot.tar.bz2'
 # URL to the mips64el toolchain.
-MIPS64EL_GCC = 'gcc-4.8.3-d197-n64-loongson'
-MIPS64EL_GCC_URL = 'http://ftp.loongnix.org/toolchain/gcc/release/' + MIPS64EL_GCC + '.tar.gz'
+MIPS64EL_GCC = 'cross-gcc-4.9.3-n64-loongson-rc5.4'
+MIPS64EL_GCC_URL = 'https://github.com/electron/debian-sysroot-image-creator/releases/download/v0.5.0/' + MIPS64EL_GCC + '.tar.gz'
 
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
     'https://s3.amazonaws.com/github-janky-artifacts/libchromiumcontent'
@@ -93,11 +93,11 @@ def build_env():
     VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
     gcc_dir = os.path.join(VENDOR_DIR, MIPS64EL_GCC)
     ldlib_dirs = [
-      gcc_dir + '/usr/x86_64-unknown-linux-gnu/mips64el-redhat-linux/lib',
+      gcc_dir + '/usr/x86_64-unknown-linux-gnu/mips64el-loongson-linux/lib',
       gcc_dir + '/usr/lib64',
-      gcc_dir + '/usr/mips64el-redhat-linux/lib64',
-      gcc_dir + '/usr/mips64el-redhat-linux/sysroot/lib64',
-      gcc_dir + '/usr/mips64el-redhat-linux/sysroot/usr/lib64',
+      gcc_dir + '/usr/mips64el-loongson-linux/lib64',
+      gcc_dir + '/usr/mips64el-loongson-linux/sysroot/lib64',
+      gcc_dir + '/usr/mips64el-loongson-linux/sysroot/usr/lib64',
     ]
     env['LD_LIBRARY_PATH'] = os.pathsep.join(ldlib_dirs)
     env['PATH'] = os.pathsep.join([gcc_dir + '/usr/bin', env['PATH']])
