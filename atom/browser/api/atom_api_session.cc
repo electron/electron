@@ -681,15 +681,17 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
 }
 
 void Session::AddPreload(const base::FilePath::StringType& preloadPath) {
-  g_preloads.push_back(preloadPath);
+  preloads_.push_back(preloadPath);
 }
+
 void Session::RemovePreload(const base::FilePath::StringType& preloadPath) {
-  g_preloads.erase(
-    std::remove(g_preloads.begin(), g_preloads.end(), preloadPath),
-    g_preloads.end());
+  preloads_.erase(
+    std::remove(preloads_.begin(), preloads_.end(), preloadPath),
+    preloads_.end());
 }
-std::vector<base::FilePath::StringType> Session::GetPreloads() {
-  return g_preloads;
+
+std::vector<base::FilePath::StringType> Session::GetPreloads() const {
+  return preloads_;
 }
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
