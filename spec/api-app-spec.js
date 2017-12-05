@@ -521,14 +521,16 @@ describe('app module', () => {
     })
 
     after(function (done) {
-      const protocolKey = new Winreg({
-        hive: Winreg.HKCU,
-        key: `\\Software\\Classes\\${protocol}`
-      })
+      if (process.platform === 'win32') {
+        const protocolKey = new Winreg({
+          hive: Winreg.HKCU,
+          key: `\\Software\\Classes\\${protocol}`
+        })
 
-      // The last test leaves the registry dirty,
-      // delete the protocol key for those of us who test at home
-      protocolKey.destroy(() => done())
+        // The last test leaves the registry dirty,
+        // delete the protocol key for those of us who test at home
+        protocolKey.destroy(() => done())
+      } 
     })
 
     beforeEach(() => {
