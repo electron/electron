@@ -1,8 +1,8 @@
 # Electron Versioning
 
-> This document is a detailed look at our versioning policy and implementation.
+> A detailed look at our versioning policy and implementation.
 
-The following command will install the most recent stable build of Electron:
+As of version 2.0.0, Electron follows [semver](#semver). The following command will install the most recent stable build of Electron:
 
 ```sh
 npm install --save-dev electron
