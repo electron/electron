@@ -238,8 +238,32 @@ the correct checksums as specified in the SHASUMS files.
 
 ## Publish to npm
 
-Once the publish is successful, run `npm run publish-to-npm` to publish to
-release to npm.
+Before publishing to npm, you'll need to log into npm as Electron. Optionally,
+you may find [npmrc](https://www.npmjs.com/package/npmrc) to be a useful way
+to keep Electron's profile side-by-side with your own:
+```sh
+$ sudo npm install -g npmrc
+$ npmrc -c electron
+Removing old .npmrc (default)
+Activating .npmrc "electron"
+```
+
+The Electron account's credentials are stored in LastPass under the entry
+"Electron - NPM" for the URL "https://www.npmjs.com/login".
+```sh
+$ npm login
+Username: electron
+Password:
+Email: (this IS public) electron@github.com
+```
+
+Publish the release to npm.
+```sh
+$ npm whoami
+electron
+$ npm run publish-to-npm
+```
+
 
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
