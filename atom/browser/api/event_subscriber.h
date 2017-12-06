@@ -44,14 +44,12 @@ class EventSubscriber {
 
   void RemoveAllListeners();
   void RemoveListener(JSHandlersMap::iterator it);
-  void EventEmitted(const std::string& event, mate::Arguments* args);
 
   v8::Isolate* isolate_;
   v8::Global<v8::Object> emitter_;
   base::WeakPtr<atom::URLRequestStreamJob> url_job_;
 
   JSHandlersMap js_handlers_;
-  std::map<std::string, EventCallback> callbacks_;
 
   base::WeakPtrFactory<EventSubscriber> weak_factory_;
 };

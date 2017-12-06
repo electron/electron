@@ -36,16 +36,13 @@ EventSubscriber::~EventSubscriber() {
 
 void EventSubscriber::On(const std::string& event, EventCallback&& callback) {  // NOLINT
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  DCHECK(callbacks_.find(event) == callbacks_.end());
-  callbacks_[event] = callback;
+  DCHECK(js_handlers_.find(event) == js_handlers_.end());
 
   v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
   // emitter.on(event, EventEmitted)
-  auto fn = CallbackToV8(isolate_, base::Bind(&EventSubscriber::EventEmitted,
-                                              weak_factory_.GetWeakPtr(),
-                                              event));
+  auto fn = CallbackToV8(isolate_, callback);
   js_handlers_[event] = v8::Global<v8::Value>(isolate_, fn);
   internal::ValueVector args = { StringToV8(isolate_, event), fn };
   internal::CallMethodWithArgs(isolate_, emitter_.Get(isolate_), "on", &args);
@@ -53,8 +50,7 @@ void EventSubscriber::On(const std::string& event, EventCallback&& callback) {  
 
 void EventSubscriber::Off(const std::string& event) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  DCHECK(callbacks_.find(event) != callbacks_.end());
-  callbacks_.erase(event);
+  DCHECK(js_handlers_.find(event) != js_handlers_.end());
 
   v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
@@ -98,8 +94,6 @@ void EventSubscriber::OnError(mate::Arguments* args) {
 }
 
 void EventSubscriber::RemoveAllListeners() {
-  callbacks_.clear();
-
   v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
@@ -114,13 +108,6 @@ void EventSubscriber::RemoveListener(JSHandlersMap::iterator it) {
   internal::CallMethodWithArgs(isolate_, emitter_.Get(isolate_),
                                "removeListener", &args);
   js_handlers_.erase(it);
-}
-
-void EventSubscriber::EventEmitted(const std::string& event,
-                                   mate::Arguments* args) {
-  auto it = callbacks_.find(event);
-  if (it != callbacks_.end())
-    it->second.Run(args);
 }
 
 }  // namespace mate
