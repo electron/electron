@@ -521,7 +521,9 @@ describe('app module', () => {
     })
 
     after(function (done) {
-      if (process.platform === 'win32') {
+      if (process.platform !== 'win32') {
+        done()
+      } else {
         const protocolKey = new Winreg({
           hive: Winreg.HKCU,
           key: `\\Software\\Classes\\${protocol}`
