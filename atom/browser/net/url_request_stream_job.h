@@ -5,9 +5,9 @@
 #ifndef ATOM_BROWSER_NET_URL_REQUEST_STREAM_JOB_H_
 #define ATOM_BROWSER_NET_URL_REQUEST_STREAM_JOB_H_
 
-#include <deque>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/event_subscriber.h"
 #include "atom/browser/net/js_asker.h"

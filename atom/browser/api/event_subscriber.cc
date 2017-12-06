@@ -4,7 +4,6 @@
 
 #include "atom/browser/api/event_subscriber.h"
 
-#include <deque>
 #include <string>
 
 #include "atom/browser/net/url_request_stream_job.h"
