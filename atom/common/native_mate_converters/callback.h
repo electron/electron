@@ -108,8 +108,8 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
 
 // Helper to pass a C++ funtion to JavaScript.
 using Translater = base::Callback<void(Arguments* args)>;
-v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
-                                                  const Translater& translater);
+v8::Local<v8::Value> CreateFunctionFromTranslater(
+    v8::Isolate* isolate, const Translater& translater, bool one_time);
 v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
                                       v8::Local<v8::Context> context,
                                       v8::Local<v8::Function> func,
@@ -152,9 +152,11 @@ struct Converter<base::RepeatingCallback<Sig>> {
                                    const base::RepeatingCallback<Sig>& val) {
     // We don't use CreateFunctionTemplate here because it creates a new
     // FunctionTemplate everytime, which is cached by V8 and causes leaks.
-    internal::Translater translater =
-        base::BindRepeating(&internal::NativeFunctionInvoker<Sig>::Go, val);
-    return internal::CreateFunctionFromTranslater(isolate, translater);
+    internal::Translater translater = base::Bind(
+        &internal::NativeFunctionInvoker<Sig>::Go, val);
+    // To avoid memory leak, we ensure that the callback can only be called
+    // for once.
+    return internal::CreateFunctionFromTranslater(isolate, translater, true);
   }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -167,6 +169,16 @@ struct Converter<base::RepeatingCallback<Sig>> {
     return true;
   }
 };
+
+// Convert a callback to V8 without the call number limitation, this can easily
+// cause memory leaks so use it with caution.
+template<typename Sig>
+v8::Local<v8::Value> CallbackToV8(v8::Isolate* isolate,
+                                  const base::Callback<Sig>& val) {
+  internal::Translater translater = base::Bind(
+      &internal::NativeFunctionInvoker<Sig>::Go, val);
+  return internal::CreateFunctionFromTranslater(isolate, translater, false);
+}
 
 }  // namespace mate
 

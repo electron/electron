@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "base/callback.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_thread.h"
 #include "v8/include/v8.h"
 
@@ -27,18 +28,20 @@ class EventSubscriber {
 
   void On(const std::string& event, EventCallback&& callback);
   void Off(const std::string& event);
-  void RemoveAllListeners();
-  void EventEmitted(const std::string& event, mate::Arguments* args);
 
  private:
   using JSHandlersMap = std::map<std::string, v8::Global<v8::Value>>;
 
+  void RemoveAllListeners();
   void RemoveListener(JSHandlersMap::iterator it);
+  void EventEmitted(const std::string& event, mate::Arguments* args);
 
   v8::Isolate* isolate_;
   v8::Global<v8::Object> emitter_;
   JSHandlersMap js_handlers_;
   std::map<std::string, EventCallback> callbacks_;
+
+  base::WeakPtrFactory<EventSubscriber> weak_factory_;
 };
 
 }  // namespace mate
