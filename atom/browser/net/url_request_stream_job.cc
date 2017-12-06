@@ -76,10 +76,13 @@ void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
   }
 
   subscriber_.reset(new mate::EventSubscriber<URLRequestStreamJob>(
-      this, isolate, data.GetHandle()));
-  subscriber_->On("data", &URLRequestStreamJob::OnData);
-  subscriber_->On("end", &URLRequestStreamJob::OnEnd);
-  subscriber_->On("error", &URLRequestStreamJob::OnError);
+      isolate, data.GetHandle()));
+  subscriber_->On("data", base::Bind(&URLRequestStreamJob::OnData,
+                                     weak_factory_.GetWeakPtr()));
+  subscriber_->On("end", base::Bind(&URLRequestStreamJob::OnEnd,
+                                    weak_factory_.GetWeakPtr()));
+  subscriber_->On("error", base::Bind(&URLRequestStreamJob::OnError,
+                                      weak_factory_.GetWeakPtr()));
 }
 
 void URLRequestStreamJob::StartAsync(std::unique_ptr<base::Value> options) {
