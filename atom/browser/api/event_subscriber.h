@@ -49,46 +49,13 @@ class EventSubscriber : internal::EventSubscriberBase {
  public:
   using EventCallback = base::Callback<void(mate::Arguments* args)>;
 
-  // Alias to unique_ptr with deleter.
-  using unique_ptr = std::unique_ptr<EventSubscriber<HandlerType>,
-                                     void (*)(EventSubscriber<HandlerType>*)>;
-
-  // EventSubscriber should only be created/deleted in the main thread since it
-  // communicates with the V8 engine. This smart pointer makes it simpler to
-  // bind the lifetime of EventSubscriber with a class whose lifetime is managed
-  // by a non-UI thread.
-  class SafePtr : public unique_ptr {
-   public:
-    SafePtr() : SafePtr(nullptr) {}
-    explicit SafePtr(EventSubscriber<HandlerType>* ptr)
-        : unique_ptr(ptr, Deleter) {}
-
-   private:
-    // Custom deleter that schedules destructor invocation to the main thread.
-    static void Deleter(EventSubscriber<HandlerType>* ptr) {
-      DCHECK(
-          !::content::BrowserThread::CurrentlyOn(::content::BrowserThread::UI));
-      DCHECK(ptr);
-      content::BrowserThread::PostTask(
-          content::BrowserThread::UI, FROM_HERE,
-          base::BindOnce(
-              [](EventSubscriber<HandlerType>* subscriber) {
-                {
-                  // It is possible that this function will execute in the UI
-                  // thread before the outer function has returned and destroyed
-                  // its auto_lock. We need to acquire the lock before deleting
-                  // or risk a crash.
-                  base::AutoLock auto_lock(subscriber->handler_lock_);
-                }
-                delete subscriber;
-              },
-              ptr));
-    }
-  };
-
   EventSubscriber(v8::Isolate* isolate,
                   v8::Local<v8::Object> emitter)
       : EventSubscriberBase(isolate, emitter) {
+    DCHECK_CURRENTLY_ON(::content::BrowserThread::UI);
+  }
+
+  ~EventSubscriber() {
     DCHECK_CURRENTLY_ON(::content::BrowserThread::UI);
   }
 

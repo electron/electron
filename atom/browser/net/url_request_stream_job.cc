@@ -26,7 +26,12 @@ URLRequestStreamJob::URLRequestStreamJob(net::URLRequest* request,
     : JsAsker<net::URLRequestJob>(request, network_delegate),
       weak_factory_(this) {}
 
-URLRequestStreamJob::~URLRequestStreamJob() = default;
+URLRequestStreamJob::~URLRequestStreamJob() {
+  if (subscriber_) {
+    content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
+                                       std::move(subscriber_));
+  }
+}
 
 void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
                                           v8::Local<v8::Value> value) {
@@ -128,7 +133,8 @@ int URLRequestStreamJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
 }
 
 void URLRequestStreamJob::DoneReading() {
-  subscriber_.reset();
+  content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
+                                     std::move(subscriber_));
   buffer_.clear();
   ended_ = true;
 }
@@ -140,7 +146,8 @@ void URLRequestStreamJob::DoneReadingRedirectResponse() {
 void URLRequestStreamJob::CopyMoreDataDone(scoped_refptr<net::IOBuffer> io_buf,
                                            int status) {
   if (status <= 0) {
-    subscriber_.reset();
+    content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
+                                       std::move(subscriber_));
   }
   ReadRawDataComplete(status);
   io_buf = nullptr;
