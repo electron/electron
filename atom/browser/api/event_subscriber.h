@@ -26,7 +26,7 @@ class EventSubscriber {
   EventSubscriber(v8::Isolate* isolate, v8::Local<v8::Object> emitter);
   ~EventSubscriber();
 
-  void On(const std::string& event, EventCallback&& callback);
+  void On(const std::string& event, EventCallback&& callback);  // NOLINT
   void Off(const std::string& event);
 
  private:

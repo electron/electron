@@ -23,7 +23,7 @@ EventSubscriber::~EventSubscriber() {
   RemoveAllListeners();
 }
 
-void EventSubscriber::On(const std::string& event, EventCallback&& callback) {
+void EventSubscriber::On(const std::string& event, EventCallback&& callback) {  // NOLINT
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   callbacks_[event] = callback;
 
