@@ -323,7 +323,8 @@ def parse_args():
                       action='store_true',
                       help='Skip generating the Electron API Documentation!')
   parser.add_argument('--chromium_dir',
-                     help='Specify a custom libchromiumcontent dist directory if manually compiled')
+                     help='Specify a custom libchromiumcontent dist directory '
+                        + 'if manually compiled')
   parser.add_argument('-v', '--verbose',
                       action='store_true',
                       help='Prints the output of the subprocesses')
