@@ -38,7 +38,7 @@ versioning. For info on how to manage Electron versions in your apps, see
 [Electron versioning](docs/tutorial/versioning.md).
 
 For more installation options and troubleshooting tips, see
-[installation](https://electronjs.org/docs/tutorial/installation).
+[installation](docs/tutorial/installation.md).
 
 ## Quick start
 
