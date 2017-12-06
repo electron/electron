@@ -93,7 +93,7 @@ e.g. `2.0.1`.
 
 For each major and minor bump, you should expect too see something like the following:
 
-```
+```text
 2.0.0-beta.1
 2.0.0-beta.2
 2.0.0-beta.3
