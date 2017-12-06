@@ -80,8 +80,7 @@ void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
     return;
   }
 
-  subscriber_.reset(new mate::EventSubscriber<URLRequestStreamJob>(
-      isolate, data.GetHandle()));
+  subscriber_.reset(new mate::EventSubscriber(isolate, data.GetHandle()));
   subscriber_->On("data", base::Bind(&URLRequestStreamJob::OnData,
                                      weak_factory_.GetWeakPtr()));
   subscriber_->On("end", base::Bind(&URLRequestStreamJob::OnEnd,

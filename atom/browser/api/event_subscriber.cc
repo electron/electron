@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/event_subscriber.h"
-
 #include <string>
-#include <utility>
 
+#include "atom/browser/api/event_subscriber.h"
+#include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "native_mate/native_mate/arguments.h"
 
 namespace {
 
@@ -17,7 +17,7 @@ v8::Global<v8::FunctionTemplate> g_cached_template;
 
 struct JSHandlerData {
   JSHandlerData(v8::Isolate* isolate,
-                mate::internal::EventSubscriberBase* subscriber)
+                mate::EventSubscriber* subscriber)
       : handle_(isolate, v8::External::New(isolate, this)),
         subscriber_(subscriber) {
     handle_.SetWeak(this, GC, v8::WeakCallbackType::kFinalizer);
@@ -28,7 +28,7 @@ struct JSHandlerData {
   }
 
   v8::Global<v8::External> handle_;
-  mate::internal::EventSubscriberBase* subscriber_;
+  mate::EventSubscriber* subscriber_;
 };
 
 void InvokeCallback(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -51,54 +51,66 @@ void InvokeCallback(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 namespace mate {
 
-namespace internal {
-
-EventSubscriberBase::EventSubscriberBase(v8::Isolate* isolate,
-                                         v8::Local<v8::Object> emitter)
+EventSubscriber::EventSubscriber(v8::Isolate* isolate,
+                                 v8::Local<v8::Object> emitter)
     : isolate_(isolate), emitter_(isolate, emitter) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (g_cached_template.IsEmpty()) {
     g_cached_template = v8::Global<v8::FunctionTemplate>(
         isolate_, v8::FunctionTemplate::New(isolate_, InvokeCallback));
   }
 }
 
-EventSubscriberBase::~EventSubscriberBase() {
-  if (!isolate_) {
-    return;
-  }
+EventSubscriber::~EventSubscriber() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   RemoveAllListeners();
   emitter_.Reset();
   DCHECK_EQ(js_handlers_.size(), 0u);
 }
 
-void EventSubscriberBase::On(const std::string& event_name) {
-  DCHECK(js_handlers_.find(event_name) == js_handlers_.end());
+void EventSubscriber::On(const std::string& event, EventCallback&& callback) {
+  DCHECK_CURRENTLY_ON(::content::BrowserThread::UI);
+  DCHECK(js_handlers_.find(event) == js_handlers_.end());
+  callbacks_.insert(std::make_pair(event, callback));
+
   v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
   auto fn_template = g_cached_template.Get(isolate_);
+<<<<<<< HEAD
   auto event = mate::StringToV8(isolate_, event_name);
   auto* js_handler_data = new JSHandlerData(isolate_, this);
+=======
+  auto v8event = mate::StringToV8(isolate_, event);
+  auto js_handler_data = new JSHandlerData(isolate_, this);
+>>>>>>> Simplify EventSubscriber
   v8::Local<v8::Value> fn = internal::BindFunctionWith(
       isolate_, isolate_->GetCurrentContext(), fn_template->GetFunction(),
-      js_handler_data->handle_.Get(isolate_), event);
+      js_handler_data->handle_.Get(isolate_), v8event);
   js_handlers_.insert(
-      std::make_pair(event_name, v8::Global<v8::Value>(isolate_, fn)));
-  internal::ValueVector converted_args = {event, fn};
+      std::make_pair(event, v8::Global<v8::Value>(isolate_, fn)));
+  internal::ValueVector converted_args = { v8event, fn };
   internal::CallMethodWithArgs(isolate_, emitter_.Get(isolate_), "on",
                                &converted_args);
 }
 
-void EventSubscriberBase::Off(const std::string& event_name) {
+void EventSubscriber::Off(const std::string& event) {
+  DCHECK_CURRENTLY_ON(::content::BrowserThread::UI);
+  DCHECK(callbacks_.find(event) != callbacks_.end());
+  callbacks_.erase(callbacks_.find(event));
+
   v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
-  auto js_handler = js_handlers_.find(event_name);
+  auto js_handler = js_handlers_.find(event);
   DCHECK(js_handler != js_handlers_.end());
   RemoveListener(js_handler);
 }
 
-void EventSubscriberBase::RemoveAllListeners() {
+void EventSubscriber::RemoveAllListeners() {
+  DCHECK_CURRENTLY_ON(::content::BrowserThread::UI);
+  callbacks_.clear();
+
   v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
@@ -107,18 +119,22 @@ void EventSubscriberBase::RemoveAllListeners() {
   }
 }
 
-std::map<std::string, v8::Global<v8::Value>>::iterator
-EventSubscriberBase::RemoveListener(
-    std::map<std::string, v8::Global<v8::Value>>::iterator it) {
-  internal::ValueVector args = {StringToV8(isolate_, it->first),
-                                it->second.Get(isolate_)};
+void EventSubscriber::EventEmitted(const std::string& event,
+                                   mate::Arguments* args) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  auto it = callbacks_.find(event);
+  if (it != callbacks_.end())
+    it->second.Run(args);
+}
+
+void EventSubscriber::RemoveListener(JSHandlersMap::iterator it) {
+  internal::ValueVector args = { StringToV8(isolate_, it->first),
+                                 it->second.Get(isolate_) };
   internal::CallMethodWithArgs(
       isolate_, v8::Local<v8::Object>::Cast(emitter_.Get(isolate_)),
       "removeListener", &args);
   it->second.Reset();
-  return js_handlers_.erase(it);
+  js_handlers_.erase(it);
 }
-
-}  // namespace internal
 
 }  // namespace mate

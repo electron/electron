@@ -58,7 +58,7 @@ class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
   scoped_refptr<net::IOBuffer> pending_io_buf_;
   int pending_io_buf_size_ = 0;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
-  std::unique_ptr<mate::EventSubscriber<URLRequestStreamJob>> subscriber_;
+  std::unique_ptr<mate::EventSubscriber> subscriber_;
 
   base::WeakPtrFactory<URLRequestStreamJob> weak_factory_;
 
