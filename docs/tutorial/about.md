@@ -31,7 +31,7 @@ As of version 2.0 Electron [follows `semver`](http://semver.org).
 For most applications, and using any recent version of npm,
 running `$ npm install electron` will do the right thing.
 
-The version update process is detailed explicitly in our [Versioning Doc](versioning.md).
+The version update process is detailed explicitly in our [Versioning Doc](electron-versioning.md).
 
 ### LTS
 
