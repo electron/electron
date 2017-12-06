@@ -92,7 +92,7 @@ The [`node-pre-gyp` tool][node-pre-gyp] provides a way to deploy native Node
 modules with prebuilt binaries, and many popular modules are using it.
 
 Usually those modules work fine under Electron, but sometimes when Electron uses
-a newer version of V8 than Node, and there are ABI changes, bad things may
+a newer version of V8 than Node, and there are API changes, bad things may
 happen. So in general it is recommended to always build native modules from
 source code.
 
