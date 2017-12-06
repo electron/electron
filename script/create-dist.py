@@ -82,6 +82,9 @@ TARGET_DIRECTORIES = {
 def main():
   args = parse_args()
 
+  if args.chromium_dir:
+    globals().update(CHROMIUM_DIR=args.chromium_dir)
+
   if args.verbose:
     enable_verbose_mode()
 
@@ -319,6 +322,8 @@ def parse_args():
   parser.add_argument('--no_api_docs',
                       action='store_true',
                       help='Skip generating the Electron API Documentation!')
+  parser.add_argument('--chromium_dir',
+                     help='Specify a custom libchromiumcontent dist directory if manually compiled')
   parser.add_argument('-v', '--verbose',
                       action='store_true',
                       help='Prints the output of the subprocesses')
