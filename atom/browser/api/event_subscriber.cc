@@ -37,6 +37,7 @@ EventSubscriber::~EventSubscriber() {
 
 void EventSubscriber::On(const std::string& event, EventCallback&& callback) {  // NOLINT
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK(callbacks_.find(event) == callbacks_.end());
   callbacks_[event] = callback;
 
   v8::Locker locker(isolate_);
@@ -98,7 +99,6 @@ void EventSubscriber::OnError(mate::Arguments* args) {
 }
 
 void EventSubscriber::RemoveAllListeners() {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   callbacks_.clear();
 
   v8::Locker locker(isolate_);
@@ -119,7 +119,6 @@ void EventSubscriber::RemoveListener(JSHandlersMap::iterator it) {
 
 void EventSubscriber::EventEmitted(const std::string& event,
                                    mate::Arguments* args) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   auto it = callbacks_.find(event);
   if (it != callbacks_.end())
     it->second.Run(args);
