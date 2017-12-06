@@ -15,6 +15,10 @@
 #include "content/public/browser/browser_thread.h"
 #include "v8/include/v8.h"
 
+namespace atom {
+class URLRequestStreamJob;
+}
+
 namespace mate {
 
 class Arguments;
@@ -23,14 +27,20 @@ class EventSubscriber {
  public:
   using EventCallback = base::Callback<void(mate::Arguments* args)>;
 
-  EventSubscriber(v8::Isolate* isolate, v8::Local<v8::Object> emitter);
+  EventSubscriber(v8::Isolate* isolate,
+                  v8::Local<v8::Object> emitter,
+                  base::WeakPtr<atom::URLRequestStreamJob> url_job);
   ~EventSubscriber();
+
+ private:
+  using JSHandlersMap = std::map<std::string, v8::Global<v8::Value>>;
 
   void On(const std::string& event, EventCallback&& callback);  // NOLINT
   void Off(const std::string& event);
 
- private:
-  using JSHandlersMap = std::map<std::string, v8::Global<v8::Value>>;
+  void OnData(mate::Arguments* args);
+  void OnEnd(mate::Arguments* args);
+  void OnError(mate::Arguments* args);
 
   void RemoveAllListeners();
   void RemoveListener(JSHandlersMap::iterator it);
@@ -38,6 +48,8 @@ class EventSubscriber {
 
   v8::Isolate* isolate_;
   v8::Global<v8::Object> emitter_;
+  base::WeakPtr<atom::URLRequestStreamJob> url_job_;
+
   JSHandlersMap js_handlers_;
   std::map<std::string, EventCallback> callbacks_;
 

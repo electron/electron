@@ -17,6 +17,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/time/time.h"
+#include "net/base/net_errors.h"
 #include "net/filter/gzip_source_stream.h"
 
 namespace atom {
@@ -24,6 +25,11 @@ namespace atom {
 URLRequestStreamJob::URLRequestStreamJob(net::URLRequest* request,
                                          net::NetworkDelegate* network_delegate)
     : JsAsker<net::URLRequestJob>(request, network_delegate),
+      pending_buf_(nullptr),
+      pending_buf_size_(0),
+      ended_(false),
+      has_error_(false),
+      response_headers_(nullptr),
       weak_factory_(this) {}
 
 URLRequestStreamJob::~URLRequestStreamJob() {
@@ -38,7 +44,7 @@ void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
   if (value->IsNull() || value->IsUndefined() || !value->IsObject()) {
     // Invalid opts.
     ended_ = true;
-    errored_ = true;
+    has_error_ = true;
     return;
   }
 
@@ -76,109 +82,75 @@ void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
       !data.Get("removeListener", &value) || !value->IsFunction()) {
     // If data is passed but it is not a stream, signal an error.
     ended_ = true;
-    errored_ = true;
+    has_error_ = true;
     return;
   }
 
-  subscriber_.reset(new mate::EventSubscriber(isolate, data.GetHandle()));
-  subscriber_->On("data", base::Bind(&URLRequestStreamJob::OnData,
-                                     weak_factory_.GetWeakPtr()));
-  subscriber_->On("end", base::Bind(&URLRequestStreamJob::OnEnd,
-                                    weak_factory_.GetWeakPtr()));
-  subscriber_->On("error", base::Bind(&URLRequestStreamJob::OnError,
-                                      weak_factory_.GetWeakPtr()));
+  subscriber_.reset(new mate::EventSubscriber(isolate, data.GetHandle(),
+                                              weak_factory_.GetWeakPtr()));
 }
 
 void URLRequestStreamJob::StartAsync(std::unique_ptr<base::Value> options) {
+  if (has_error_) {
+    OnError();
+    return;
+  }
   NotifyHeadersComplete();
 }
 
-void URLRequestStreamJob::OnData(mate::Arguments* args) {
-  v8::Local<v8::Value> node_data;
-  args->GetNext(&node_data);
-  if (node_data->IsUint8Array()) {
-    const char* data = node::Buffer::Data(node_data);
-    size_t data_size = node::Buffer::Length(node_data);
-    std::copy(data, data + data_size, std::back_inserter(buffer_));
-  } else {
-    NOTREACHED();
-  }
-  if (pending_io_buf_) {
-    CopyMoreData(pending_io_buf_, pending_io_buf_size_);
+void URLRequestStreamJob::OnData(const std::vector<char>& buffer) {
+  if (buffer.empty())
+    return;
+
+  // Save buffer.
+  size_t len = write_buffer_.size();
+  write_buffer_.resize(len + buffer.size());
+  std::copy(buffer.begin(), buffer.end(), write_buffer_.begin() + len);
+
+  // Copy to output.
+  if (pending_buf_) {
+    int len = BufferCopy(&write_buffer_, pending_buf_.get(), pending_buf_size_);
+    write_buffer_.erase(write_buffer_.begin(), write_buffer_.begin() + len);
+    ReadRawDataComplete(len);
   }
 }
 
-void URLRequestStreamJob::OnEnd(mate::Arguments* args) {
+void URLRequestStreamJob::OnEnd() {
   ended_ = true;
-  if (pending_io_buf_) {
-    CopyMoreData(pending_io_buf_, pending_io_buf_size_);
-  }
+  ReadRawDataComplete(0);
 }
 
-void URLRequestStreamJob::OnError(mate::Arguments* args) {
-  errored_ = true;
-  if (pending_io_buf_) {
-    CopyMoreData(pending_io_buf_, pending_io_buf_size_);
-  }
+void URLRequestStreamJob::OnError() {
+  NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                         net::ERR_FAILED));
 }
 
 int URLRequestStreamJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::BindOnce(&URLRequestStreamJob::CopyMoreData,
-                     weak_factory_.GetWeakPtr(), WrapRefCounted(dest),
-                     dest_size));
-  return net::ERR_IO_PENDING;
+  if (ended_)
+    return 0;
+
+  // When write_buffer_ is empty, there is no data valable yet, we have to save
+  // the dest buffer util DataAvailable.
+  if (write_buffer_.empty()) {
+    pending_buf_ = dest;
+    pending_buf_size_ = dest_size;
+    return net::ERR_IO_PENDING;
+  }
+
+  // Read from the write buffer and clear them after reading.
+  int len = BufferCopy(&write_buffer_, dest, dest_size);
+  write_buffer_.erase(write_buffer_.begin(), write_buffer_.begin() + len);
+  return len;
 }
 
 void URLRequestStreamJob::DoneReading() {
   content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
                                      std::move(subscriber_));
-  buffer_.clear();
-  ended_ = true;
+  write_buffer_.clear();
 }
 
 void URLRequestStreamJob::DoneReadingRedirectResponse() {
   DoneReading();
-}
-
-void URLRequestStreamJob::CopyMoreDataDone(scoped_refptr<net::IOBuffer> io_buf,
-                                           int status) {
-  if (status <= 0) {
-    content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
-                                       std::move(subscriber_));
-  }
-  ReadRawDataComplete(status);
-  io_buf = nullptr;
-}
-
-void URLRequestStreamJob::CopyMoreData(scoped_refptr<net::IOBuffer> io_buf,
-                                       int io_buf_size) {
-  // reset any instance references to io_buf
-  pending_io_buf_ = nullptr;
-  pending_io_buf_size_ = 0;
-
-  int read_count = 0;
-  if (buffer_.size()) {
-    size_t count = std::min((size_t)io_buf_size, buffer_.size());
-    std::copy(buffer_.begin(), buffer_.begin() + count, io_buf->data());
-    buffer_.erase(buffer_.begin(), buffer_.begin() + count);
-    read_count = count;
-  } else if (!ended_ && !errored_) {
-    // No data available yet, save references to the IOBuffer, which will be
-    // passed back to this function when OnData/OnEnd/OnError are called
-    pending_io_buf_ = io_buf;
-    pending_io_buf_size_ = io_buf_size;
-  }
-
-  if (!pending_io_buf_) {
-    // Only call CopyMoreDataDone if we have read something.
-    int status = (errored_ && !read_count) ? net::ERR_FAILED : read_count;
-    content::BrowserThread::PostTask(
-        content::BrowserThread::IO, FROM_HERE,
-        base::BindOnce(&URLRequestStreamJob::CopyMoreDataDone,
-                       weak_factory_.GetWeakPtr(), io_buf, status));
-  }
 }
 
 std::unique_ptr<net::SourceStream> URLRequestStreamJob::SetUpSourceStream() {
@@ -209,6 +181,13 @@ int URLRequestStreamJob::GetResponseCode() const {
 
 void URLRequestStreamJob::GetResponseInfo(net::HttpResponseInfo* info) {
   info->headers = response_headers_;
+}
+
+int URLRequestStreamJob::BufferCopy(std::vector<char>* source,
+                                    net::IOBuffer* target, int target_size) {
+  int bytes_written = std::min(static_cast<int>(source->size()), target_size);
+  memcpy(target->data(), source->data(), bytes_written);
+  return bytes_written;
 }
 
 }  // namespace atom
