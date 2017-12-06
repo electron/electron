@@ -504,9 +504,34 @@ describe('app module', () => {
       '--process-start-args', `"--hidden"`
     ]
 
+    let Winreg
+    let classesKey
+
     before(function () {
       if (process.platform !== 'win32') {
         this.skip()
+      } else {
+        Winreg = require('winreg')
+
+        classesKey = new Winreg({
+          hive: Winreg.HKCU,
+          key: '\\Software\\Classes\\'
+        })
+      }
+    })
+
+    after(function (done) {
+      if (process.platform !== 'win32') {
+        done()
+      } else {
+        const protocolKey = new Winreg({
+          hive: Winreg.HKCU,
+          key: `\\Software\\Classes\\${protocol}`
+        })
+
+        // The last test leaves the registry dirty,
+        // delete the protocol key for those of us who test at home
+        protocolKey.destroy(() => done())
       }
     })
 
@@ -533,6 +558,61 @@ describe('app module', () => {
       app.setAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
       assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), true)
       assert.equal(app.isDefaultProtocolClient(protocol), false)
+    })
+
+    it('creates a registry entry for the protocol class', (done) => {
+      app.setAsDefaultProtocolClient(protocol)
+
+      classesKey.keys((error, keys) => {
+        if (error) {
+          throw error
+        }
+
+        const exists = !!keys.find((key) => key.key.includes(protocol))
+        assert.equal(exists, true)
+
+        done()
+      })
+    })
+
+    it('completely removes a registry entry for the protocol class', (done) => {
+      app.setAsDefaultProtocolClient(protocol)
+      app.removeAsDefaultProtocolClient(protocol)
+
+      classesKey.keys((error, keys) => {
+        if (error) {
+          throw error
+        }
+
+        const exists = !!keys.find((key) => key.key.includes(protocol))
+        assert.equal(exists, false)
+
+        done()
+      })
+    })
+
+    it('only unsets a class registry key if it contains other data', (done) => {
+      app.setAsDefaultProtocolClient(protocol)
+
+      const protocolKey = new Winreg({
+        hive: Winreg.HKCU,
+        key: `\\Software\\Classes\\${protocol}`
+      })
+
+      protocolKey.set('test-value', 'REG_BINARY', '123', () => {
+        app.removeAsDefaultProtocolClient(protocol)
+
+        classesKey.keys((error, keys) => {
+          if (error) {
+            throw error
+          }
+
+          const exists = !!keys.find((key) => key.key.includes(protocol))
+          assert.equal(exists, true)
+
+          done()
+        })
+      })
     })
   })
 
