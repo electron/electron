@@ -351,8 +351,7 @@ bool AtomBrowserClient::CanCreateWindow(
     bool user_gesture,
     bool opener_suppressed,
     bool* no_javascript_access) {
-  // FIXME: Ensure the DCHECK doesn't fail and then re-enable
-  // DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   int opener_render_process_id = opener->GetProcess()->GetID();
 
@@ -373,15 +372,11 @@ bool AtomBrowserClient::CanCreateWindow(
   }
 
   if (delegate_) {
-    content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&api::App::OnCreateWindow,
-                   base::Unretained(static_cast<api::App*>(delegate_)),
-                                    target_url,
-                                    frame_name,
-                                    disposition,
-                                    additional_features,
-                                    body,
-                                    opener));
+    return delegate_->CanCreateWindow(
+        opener, opener_url, opener_top_level_frame_url, source_origin,
+        container_type, target_url, referrer, frame_name, disposition, features,
+        additional_features, body, user_gesture, opener_suppressed,
+        no_javascript_access);
   }
 
   return false;
