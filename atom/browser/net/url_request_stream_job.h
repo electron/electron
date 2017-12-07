@@ -26,7 +26,7 @@ class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
                       net::NetworkDelegate* network_delegate);
   ~URLRequestStreamJob() override;
 
-  void OnData(std::vector<char>&& buffer);
+  void OnData(std::vector<char>&& buffer);  // NOLINT
   void OnEnd();
   void OnError();
 

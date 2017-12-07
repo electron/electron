@@ -98,7 +98,7 @@ void URLRequestStreamJob::StartAsync(std::unique_ptr<base::Value> options) {
   NotifyHeadersComplete();
 }
 
-void URLRequestStreamJob::OnData(std::vector<char>&& buffer) {
+void URLRequestStreamJob::OnData(std::vector<char>&& buffer) {  // NOLINT
   if (write_buffer_.empty()) {
     // Quick branch without copying.
     write_buffer_ = std::move(buffer);
