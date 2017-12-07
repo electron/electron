@@ -86,7 +86,7 @@ void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
     return;
   }
 
-  subscriber_.reset(new mate::EventSubscriber(isolate, data.GetHandle(),
+  subscriber_.reset(new mate::StreamSubscriber(isolate, data.GetHandle(),
                                               weak_factory_.GetWeakPtr()));
 }
 

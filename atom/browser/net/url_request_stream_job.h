@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/event_subscriber.h"
+#include "atom/browser/api/stream_subscriber.h"
 #include "atom/browser/net/js_asker.h"
 #include "base/memory/ref_counted_memory.h"
 #include "native_mate/persistent_dictionary.h"
@@ -61,7 +61,7 @@ class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
   bool ended_;
   bool has_error_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
-  std::unique_ptr<mate::EventSubscriber> subscriber_;
+  std::unique_ptr<mate::StreamSubscriber> subscriber_;
 
   base::WeakPtrFactory<URLRequestStreamJob> weak_factory_;
 

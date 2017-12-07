@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/event_subscriber.h"
+#include "atom/browser/api/stream_subscriber.h"
 
 #include <string>
 
@@ -14,7 +14,7 @@
 
 namespace mate {
 
-EventSubscriber::EventSubscriber(
+StreamSubscriber::StreamSubscriber(
     v8::Isolate* isolate,
     v8::Local<v8::Object> emitter,
     base::WeakPtr<atom::URLRequestStreamJob> url_job)
@@ -24,17 +24,17 @@ EventSubscriber::EventSubscriber(
       weak_factory_(this) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   auto weak_self = weak_factory_.GetWeakPtr();
-  On("data", base::Bind(&EventSubscriber::OnData, weak_self));
-  On("end", base::Bind(&EventSubscriber::OnEnd, weak_self));
-  On("error", base::Bind(&EventSubscriber::OnError, weak_self));
+  On("data", base::Bind(&StreamSubscriber::OnData, weak_self));
+  On("end", base::Bind(&StreamSubscriber::OnEnd, weak_self));
+  On("error", base::Bind(&StreamSubscriber::OnError, weak_self));
 }
 
-EventSubscriber::~EventSubscriber() {
+StreamSubscriber::~StreamSubscriber() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   RemoveAllListeners();
 }
 
-void EventSubscriber::On(const std::string& event, EventCallback&& callback) {  // NOLINT
+void StreamSubscriber::On(const std::string& event, EventCallback&& callback) {  // NOLINT
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   DCHECK(js_handlers_.find(event) == js_handlers_.end());
 
@@ -48,7 +48,7 @@ void EventSubscriber::On(const std::string& event, EventCallback&& callback) {  
   internal::CallMethodWithArgs(isolate_, emitter_.Get(isolate_), "on", &args);
 }
 
-void EventSubscriber::Off(const std::string& event) {
+void StreamSubscriber::Off(const std::string& event) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   DCHECK(js_handlers_.find(event) != js_handlers_.end());
 
@@ -60,7 +60,7 @@ void EventSubscriber::Off(const std::string& event) {
   RemoveListener(js_handler);
 }
 
-void EventSubscriber::OnData(mate::Arguments* args) {
+void StreamSubscriber::OnData(mate::Arguments* args) {
   v8::Local<v8::Value> buf;
   args->GetNext(&buf);
   if (!node::Buffer::HasInstance(buf)) {
@@ -81,19 +81,19 @@ void EventSubscriber::OnData(mate::Arguments* args) {
                  url_job_, buffer));
 }
 
-void EventSubscriber::OnEnd(mate::Arguments* args) {
+void StreamSubscriber::OnEnd(mate::Arguments* args) {
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&atom::URLRequestStreamJob::OnEnd, url_job_));
 }
 
-void EventSubscriber::OnError(mate::Arguments* args) {
+void StreamSubscriber::OnError(mate::Arguments* args) {
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&atom::URLRequestStreamJob::OnError, url_job_));
 }
 
-void EventSubscriber::RemoveAllListeners() {
+void StreamSubscriber::RemoveAllListeners() {
   v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
@@ -102,7 +102,7 @@ void EventSubscriber::RemoveAllListeners() {
   }
 }
 
-void EventSubscriber::RemoveListener(JSHandlersMap::iterator it) {
+void StreamSubscriber::RemoveListener(JSHandlersMap::iterator it) {
   internal::ValueVector args = { StringToV8(isolate_, it->first),
                                  it->second.Get(isolate_) };
   internal::CallMethodWithArgs(isolate_, emitter_.Get(isolate_),
