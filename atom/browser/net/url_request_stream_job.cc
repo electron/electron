@@ -98,14 +98,16 @@ void URLRequestStreamJob::StartAsync(std::unique_ptr<base::Value> options) {
   NotifyHeadersComplete();
 }
 
-void URLRequestStreamJob::OnData(const std::vector<char>& buffer) {
-  if (buffer.empty())
-    return;
-
-  // Save buffer.
-  size_t len = write_buffer_.size();
-  write_buffer_.resize(len + buffer.size());
-  std::copy(buffer.begin(), buffer.end(), write_buffer_.begin() + len);
+void URLRequestStreamJob::OnData(std::vector<char>&& buffer) {
+  if (write_buffer_.empty()) {
+    // Quick branch without copying.
+    write_buffer_ = std::move(buffer);
+  } else {
+    // write_buffer_ += buffer
+    size_t len = write_buffer_.size();
+    write_buffer_.resize(len + buffer.size());
+    std::copy(buffer.begin(), buffer.end(), write_buffer_.begin() + len);
+  }
 
   // Copy to output.
   if (pending_buf_) {

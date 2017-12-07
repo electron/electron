@@ -68,17 +68,17 @@ void StreamSubscriber::OnData(mate::Arguments* args) {
     return;
   }
 
-  // Copy the data from Buffer.
-  // TODO(zcbenz): Is there a way to move the data?
   const char* data = node::Buffer::Data(buf);
   size_t length = node::Buffer::Length(buf);
-  std::vector<char> buffer(length);
-  buffer.assign(data, data + length);
+  if (length == 0)
+    return;
+
   // Pass the data to the URLJob in IO thread.
+  std::vector<char> buffer(data, data + length);
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&atom::URLRequestStreamJob::OnData,
-                 url_job_, buffer));
+                 url_job_, base::Passed(&buffer)));
 }
 
 void StreamSubscriber::OnEnd(mate::Arguments* args) {
