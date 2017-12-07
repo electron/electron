@@ -26,10 +26,16 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
   explicit PowerMonitor(v8::Isolate* isolate);
   ~PowerMonitor() override;
 
+  void BlockShutdown(mate::Arguments* args);
+  void UnblockShutdown(mate::Arguments* args);
+
   // base::PowerObserver implementations:
   void OnPowerStateChange(bool on_battery_power) override;
   void OnSuspend() override;
   void OnResume() override;
+
+  // atom::PowerObserver
+  bool OnShutdown() override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);

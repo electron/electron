@@ -18,7 +18,19 @@ namespace atom {
 #if defined(OS_LINUX)
 typedef PowerObserverLinux PowerObserver;
 #else
-typedef base::PowerObserver PowerObserver;
+class PowerObserver : public base::PowerObserver {
+ public:
+  PowerObserver() {}
+  void BlockShutdown() {}
+  void UnblockShutdown() {}
+  // Notification that the system is rebooting or shutting down. If the
+  // implementation returns true, the PowerObserver instance should try to delay
+  // OS shutdown so the application can perform cleanup before exiting.
+  virtual bool OnShutdown() { return false; }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(PowerObserver);
+};
 #endif  // defined(OS_LINUX)
 
 }  // namespace atom

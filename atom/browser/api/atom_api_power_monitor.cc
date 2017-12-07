@@ -24,6 +24,14 @@ PowerMonitor::~PowerMonitor() {
   base::PowerMonitor::Get()->RemoveObserver(this);
 }
 
+void PowerMonitor::BlockShutdown(mate::Arguments* args) {
+  atom::PowerObserver::BlockShutdown();
+}
+
+void PowerMonitor::UnblockShutdown(mate::Arguments* args) {
+  atom::PowerObserver::UnblockShutdown();
+}
+
 void PowerMonitor::OnPowerStateChange(bool on_battery_power) {
   if (on_battery_power)
     Emit("on-battery");
@@ -37,6 +45,10 @@ void PowerMonitor::OnSuspend() {
 
 void PowerMonitor::OnResume() {
   Emit("resume");
+}
+
+bool PowerMonitor::OnShutdown() {
+  return Emit("shutdown");
 }
 
 // static
@@ -55,6 +67,9 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
 void PowerMonitor::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "PowerMonitor"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
+      .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown);
 }
 
 }  // namespace api
