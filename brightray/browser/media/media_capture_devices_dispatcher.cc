@@ -44,8 +44,7 @@ MediaCaptureDevicesDispatcher::MediaCaptureDevicesDispatcher()
     : is_device_enumeration_disabled_(false) {
   // MediaCaptureDevicesDispatcher is a singleton. It should be created on
   // UI thread.
-  // FIXME: Ensure the DCHECK doesn't fail and then re-enable
-  // DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 }
 
 MediaCaptureDevicesDispatcher::~MediaCaptureDevicesDispatcher() {}

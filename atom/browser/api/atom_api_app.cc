@@ -667,25 +667,33 @@ void App::OnLogin(LoginHandler* login_handler,
     login_handler->CancelAuth();
 }
 
-void App::OnCreateWindow(
+bool App::CanCreateWindow(
+    content::RenderFrameHost* opener,
+    const GURL& opener_url,
+    const GURL& opener_top_level_frame_url,
+    const GURL& source_origin,
+    content::mojom::WindowContainerType container_type,
     const GURL& target_url,
+    const content::Referrer& referrer,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
-    const std::vector<std::string>& features,
+    const blink::mojom::WindowFeatures& features,
+    const std::vector<std::string>& additional_features,
     const scoped_refptr<content::ResourceRequestBody>& body,
-    content::RenderFrameHost* opener) {
+    bool user_gesture,
+    bool opener_suppressed,
+    bool* no_javascript_access) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   if (web_contents) {
     auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
-    api_web_contents->OnCreateWindow(target_url,
-                                     frame_name,
-                                     disposition,
-                                     features,
-                                     body);
+    api_web_contents->OnCreateWindow(target_url, frame_name, disposition,
+                                     additional_features, body);
   }
+
+  return false;
 }
 
 void App::AllowCertificateError(
