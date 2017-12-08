@@ -244,9 +244,16 @@
             # perform FPO regardless, so we must explicitly disable.
             # We still want the false setting above to avoid having
             # "/Oy /Oy-" and warnings about overriding.
-            'AdditionalOptions': ['/Oy-'],
+            'AdditionalOptions': ['/Oy-', '/d2guard4'],
           },
           'VCLinkerTool': {
+            # Control Flow Guard is a security feature in Windows
+            # 8.1 and higher designed to prevent exploitation of
+            # indirect calls in executables.
+            # Control Flow Guard is enabled using the /d2guard4
+            # compiler setting in combination with the /guard:cf
+            # linker setting.
+            'AdditionalOptions': ['/guard:cf'],
             # Turn off incremental linking to save binary size.
             'LinkIncremental': '1',  # /INCREMENTAL:NO
           },
