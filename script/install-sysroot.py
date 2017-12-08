@@ -85,11 +85,12 @@ def main(args):
 def InstallDefaultSysrootForArch(target_arch):
   if target_arch not in VALID_ARCHS:
     raise Error('Unknown architecture: %s' % target_arch)
-  InstallSysroot('Jessie', target_arch)
+  InstallSysroot('Stretch', target_arch)
 
 
 def InstallSysroot(target_platform, target_arch):
-  # The sysroot directory should match the one specified in build/common.gypi.
+  # The sysroot directory should match the one specified in
+  # build/config/sysroot.gni.
   # TODO(thestig) Consider putting this elsewhere to avoid having to recreate
   # it on every build.
   linux_dir = os.path.dirname(SCRIPT_DIR)
@@ -111,8 +112,6 @@ def InstallSysroot(target_platform, target_arch):
   if os.path.exists(stamp):
     with open(stamp) as s:
       if s.read() == url:
-        print '%s %s sysroot image already up to date: %s' % \
-            (target_platform, target_arch, sysroot)
         return
 
   print 'Installing Debian %s %s root image: %s' % \
