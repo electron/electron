@@ -1,56 +1,38 @@
 {
-    "jessie_amd64": {
-        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
-        "Sha1Sum": "8b2167b36f3cd85ebbec5c2a39a1842ef613f6a2",
-        "SysrootDir": "debian_jessie_amd64-sysroot",
-        "Tarball": "debian_jessie_amd64_sysroot.tgz"
+    "stretch_amd64": {
+        "Revision": "961ad7bca2518fd9495e9d9676a8228ec8c54335",
+        "Sha1Sum": "c748f6e2de1f392bed9b69f8b5a0aaa12a2bea7d",
+        "SysrootDir": "debian_stretch_amd64-sysroot",
+        "Tarball": "debian_stretch_amd64_sysroot.tar.xz"
     },
-    "jessie_arm": {
-        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
-        "Sha1Sum": "3fa13635be0c6d8ed461715ad51cdb3809a19422",
-        "SysrootDir": "debian_jessie_arm-sysroot",
-        "Tarball": "debian_jessie_arm_sysroot.tgz"
+    "stretch_arm": {
+        "Revision": "961ad7bca2518fd9495e9d9676a8228ec8c54335",
+        "Sha1Sum": "72cd0dae301971c69422f7290e608c1298571bd2",
+        "SysrootDir": "debian_stretch_arm-sysroot",
+        "Tarball": "debian_stretch_arm_sysroot.tar.xz"
     },
-    "jessie_arm64": {
-        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
-        "Sha1Sum": "bcf92ed2a033b4b2d1032df3b53eac4910c78fde",
-        "SysrootDir": "debian_jessie_arm64-sysroot",
-        "Tarball": "debian_jessie_arm64_sysroot.tgz"
+    "stretch_arm64": {
+        "Revision": "961ad7bca2518fd9495e9d9676a8228ec8c54335",
+        "Sha1Sum": "06b19055e17c4f99c494e17f7422f0aaa2d62af6",
+        "SysrootDir": "debian_stretch_arm64-sysroot",
+        "Tarball": "debian_stretch_arm64_sysroot.tar.xz"
     },
-    "jessie_i386": {
-        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
-        "Sha1Sum": "4e83ed9a1b457a1ca59512c3d4823e87e950deb4",
-        "SysrootDir": "debian_jessie_i386-sysroot",
-        "Tarball": "debian_jessie_i386_sysroot.tgz"
+    "stretch_i386": {
+        "Revision": "961ad7bca2518fd9495e9d9676a8228ec8c54335",
+        "Sha1Sum": "de4f82ec6400fd2e2e9a455f29155e7763de26c2",
+        "SysrootDir": "debian_stretch_i386-sysroot",
+        "Tarball": "debian_stretch_i386_sysroot.tar.xz"
     },
-    "jessie_mips": {
-        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
-        "Sha1Sum": "0f550cd150f077a6e749a629e2fda0f0a4348eae",
-        "SysrootDir": "debian_jessie_mips-sysroot",
-        "Tarball": "debian_jessie_mips_sysroot.tgz"
+    "stretch_mips": {
+        "Revision": "961ad7bca2518fd9495e9d9676a8228ec8c54335",
+        "Sha1Sum": "256d581b85fb752f94da0b81004d2af878465cd6",
+        "SysrootDir": "debian_stretch_mips-sysroot",
+        "Tarball": "debian_stretch_mips_sysroot.tar.xz"
     },
-    "wheezy_amd64": {
-        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
-        "Sha1Sum": "fe372c4394ece7fd1d853a205de8c13b46e2f45a",
-        "SysrootDir": "debian_wheezy_amd64-sysroot",
-        "Tarball": "debian_wheezy_amd64_sysroot.tgz"
-    },
-    "wheezy_arm": {
-        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
-        "Sha1Sum": "73323fae0b5597398a38f0d7e64f48309da112fa",
-        "SysrootDir": "debian_wheezy_arm-sysroot",
-        "Tarball": "debian_wheezy_arm_sysroot.tgz"
-    },
-    "wheezy_i386": {
-        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
-        "Sha1Sum": "7e96584297a5c9916b3bed4b88abe332fc79a247",
-        "SysrootDir": "debian_wheezy_i386-sysroot",
-        "Tarball": "debian_wheezy_i386_sysroot.tgz"
-    },
-    "wheezy_mips": {
-        "Revision": "d65c31e063bab0486665e087a1b4c5bb7bc7423c",
-        "Sha1Sum": "b2f173905a41ec9f23c329fe529508b4bdc76230",
-        "SysrootDir": "debian_wheezy_mips-sysroot",
-        "Tarball": "debian_wheezy_mips_sysroot.tgz"
+    "stretch_mips64el": {
+        "Revision": "961ad7bca2518fd9495e9d9676a8228ec8c54335",
+        "Sha1Sum": "6405f537c9ecee3a021749712fbca36ff7304bee",
+        "SysrootDir": "debian_stretch_mips64el-sysroot",
+        "Tarball": "debian_stretch_mips64el_sysroot.tar.xz"
     }
 }

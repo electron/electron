@@ -53,16 +53,16 @@
             ['target_arch=="arm"', {
               # sysroot needs to be an absolute path otherwise it generates
               # incorrect results when passed to pkg-config
-              'sysroot%': '<(source_root)/vendor/debian_jessie_arm-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_stretch_arm-sysroot',
             }],
             ['target_arch=="arm64"', {
-              'sysroot%': '<(source_root)/vendor/debian_jessie_arm64-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_stretch_arm64-sysroot',
             }],
             ['target_arch=="ia32"', {
-              'sysroot%': '<(source_root)/vendor/debian_jessie_i386-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_stretch_i386-sysroot',
             }],
             ['target_arch=="x64"', {
-              'sysroot%': '<(source_root)/vendor/debian_jessie_amd64-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_stretch_amd64-sysroot',
             }],
             ['target_arch=="mips64el"', {
               'sysroot%': '<(source_root)/vendor/debian_jessie_mips64-sysroot',
