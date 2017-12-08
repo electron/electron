@@ -82,7 +82,7 @@ We need to generate a patch file from each patch applied to V8.
      Manually edit the `.patch` file to match upstream V8's directory:
     - If a diff section has no instances of `deps/V8`, remove it altogether.
       - We don’t want those patches because we’re only patching V8.
-    - Replace instances of `a/deps/v8`/filename.ext` with `a/filename.ext`
+    - Replace instances of `a/deps/v8/filename.ext` with `a/filename.ext`
       - This is needed because upstream Node keeps its V8 files in a subdirectory
   - Ensure that local status is clean: `git status` to make sure there are no unstaged changes.
   - Confirm that the patch applies cleanly with
@@ -105,20 +105,20 @@ We need to generate a patch file from each patch applied to V8.
      - `git commit patches/v8/`
 8. Update `patches/v8/README.md` with references to all new patches that have been added so that the next person will know which need to be removed.
 9. Update Electron's submodule references:
-   - ```sh
-     cd electron/vendor/node
-     electron/vendor/node$ git fetch
-     electron/vendor/node$ git checkout electron-node-vA.B.C
-     electron/vendor/node$ cd ../libchromiumcontent
-     electron/vendor/libchromiumcontent$ git fetch
-     electron/vendor/libchromiumcontent$ git checkout upgrade-to-chromium-X
-     electron/vendor/libchromiumcontent$ cd ../..
-     electron$ git add vendor
-     electron$ git commit -m "update submodule referefences for node and libc"
-     electron$ git pso upgrade-to-chromium-62
-     electron$ script/bootstrap.py -d
-     electron$ script/build.py -c -D
-     ```
+  ```sh
+  $ cd electron/vendor/node
+  electron/vendor/node$ git fetch
+  electron/vendor/node$ git checkout electron-node-vA.B.C
+  electron/vendor/node$ cd ../libchromiumcontent
+  electron/vendor/libchromiumcontent$ git fetch
+  electron/vendor/libchromiumcontent$ git checkout upgrade-to-chromium-X
+  electron/vendor/libchromiumcontent$ cd ../..
+  electron$ git add vendor
+  electron$ git commit -m "update submodule referefences for node and libc"
+  electron$ git pso upgrade-to-chromium-62
+  electron$ script/bootstrap.py -d
+  electron$ script/build.py -c -D
+  ```
 
 ## Notes
 
@@ -143,16 +143,3 @@ We need to generate a patch file from each patch applied to V8.
  - Building node:
    - There’s a chance we need to change our build configuration
    to match the build flags that node wants in `node/common.gypi`
-
-
-
-
-
-
-
-
-
-
-
-
-
