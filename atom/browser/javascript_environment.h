@@ -10,6 +10,7 @@
 
 namespace node {
 class Environment;
+class NodePlatform;
 }
 
 namespace atom {
@@ -29,6 +30,9 @@ class JavascriptEnvironment {
 
  private:
   bool Initialize();
+
+  // Leaked on exit.
+  node::NodePlatform* platform_;
 
   bool initialized_;
   gin::IsolateHolder isolate_holder_;
