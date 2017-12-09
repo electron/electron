@@ -9,6 +9,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/memory/ptr_util.h"
 #include "content/public/browser/devtools_agent_host.h"
@@ -48,20 +49,11 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
-  v8::Local<v8::String> local_message =
-      v8::String::NewFromUtf8(isolate(), message.data());
-  v8::MaybeLocal<v8::Value> parsed_message = v8::JSON::Parse(
-      isolate()->GetCurrentContext(), local_message);
-  if (parsed_message.IsEmpty()) {
+  std::unique_ptr<base::Value> result = base::JSONReader::Read(message);
+  if (!result || !result->is_dict())
     return;
-  }
-
-  std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue());
-  if (!mate::ConvertFromV8(isolate(), parsed_message.ToLocalChecked(),
-                           dict.get())) {
-    return;
-  }
-
+  base::DictionaryValue* dict =
+      static_cast<base::DictionaryValue*>(result.get());
   int id;
   if (!dict->GetInteger("id", &id)) {
     std::string method;
