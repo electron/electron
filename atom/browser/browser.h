@@ -258,6 +258,11 @@ class Browser : public WindowListObserver {
   void OnWindowCloseCancelled(NativeWindow* window) override;
   void OnWindowAllClosed() override;
 
+  // Called after attempting to create the user data directory
+  // for the app.
+  void OnUserDataDirectoryCreated(const base::DictionaryValue& launch_info,
+                                  bool success);
+
   // Observers of the browser.
   base::ObserverList<BrowserObserver> observers_;
 
