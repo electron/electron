@@ -7,6 +7,7 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
+#include "base/threading/thread_restrictions.h"
 #include "brightray/browser/brightray_paths.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
@@ -101,9 +102,13 @@ BrowserContext::~BrowserContext() {
 void BrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   PrefServiceFactory prefs_factory;
-  prefs_factory.SetUserPrefsFile(prefs_path,
-      JsonPrefStore::GetTaskRunnerForFile(
-          prefs_path, BrowserThread::GetBlockingPool()).get());
+  scoped_refptr<JsonPrefStore> pref_store =
+      base::MakeRefCounted<JsonPrefStore>(prefs_path);
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    pref_store->ReadPrefs();  // Synchronous.
+  }
+  prefs_factory.set_user_prefs(pref_store);
 
   auto registry = make_scoped_refptr(new PrefRegistrySimple);
   RegisterInternalPrefs(registry.get());
