@@ -1064,6 +1064,27 @@ describe('<webview> tag', function () {
     })
   })
 
+  describe('<webview>.removePermissionRequestHandler', () => {
+    it('can remove permission-request handler', (done) => {
+      webview.addEventListener('ipc-message', (e) => {
+        assert.equal(e.channel, 'message')
+        assert.deepEqual(e.args, ['granted'])
+        done()
+      })
+
+      webview.src = `file://${fixtures}/pages/permissions/notification.html`
+      webview.partition = 'permissionTest'
+      webview.setAttribute('nodeintegration', 'on')
+
+      webview.setPermissionRequestHandler((e) => {
+        setTimeout(() => { e.request.deny() }, 10)
+      })
+      webview.removePermissionRequestHandler()
+
+      document.body.appendChild(webview)
+    })
+  })
+
   describe('<webview>.getWebContents', () => {
     it('can return the webcontents associated', (done) => {
       webview.addEventListener('did-finish-load', () => {
