@@ -14,6 +14,8 @@
 #include "base/logging.h"
 #include "base/pickle.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/task_scheduler/post_task.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/values.h"
 
 #if defined(OS_WIN)
@@ -115,17 +117,19 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 }  // namespace
 
 Archive::Archive(const base::FilePath& path)
-    : path_(path),
-      file_(path_, base::File::FLAG_OPEN | base::File::FLAG_READ),
+    : path_(path), file_(base::File::FILE_OK), header_size_(0) {
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if defined(OS_WIN)
-      fd_(_open_osfhandle(
-              reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0)),
+    fd_ =
+        _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
 #elif defined(OS_POSIX)
-      fd_(file_.GetPlatformFile()),
+    fd_ = file_.GetPlatformFile();
 #else
-      fd_(-1),
+    fd_ = -1;
 #endif
-      header_size_(0) {
+  }
 }
 
 Archive::~Archive() {
@@ -136,6 +140,11 @@ Archive::~Archive() {
     file_.TakePlatformFile();
   }
 #endif
+  base::PostTaskWithTraits(
+      FROM_HERE,
+      {base::MayBlock(), base::TaskPriority::BACKGROUND,
+       base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
+      base::Bind([](base::File file) { file.Close(); }, Passed(&file_)));
 }
 
 bool Archive::Init() {
@@ -151,7 +160,10 @@ bool Archive::Init() {
   int len;
 
   buf.resize(8);
-  len = file_.ReadAtCurrentPos(buf.data(), buf.size());
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    len = file_.ReadAtCurrentPos(buf.data(), buf.size());
+  }
   if (len != static_cast<int>(buf.size())) {
     PLOG(ERROR) << "Failed to read header size from " << path_.value();
     return false;
@@ -165,7 +177,10 @@ bool Archive::Init() {
   }
 
   buf.resize(size);
-  len = file_.ReadAtCurrentPos(buf.data(), buf.size());
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    len = file_.ReadAtCurrentPos(buf.data(), buf.size());
+  }
   if (len != static_cast<int>(buf.size())) {
     PLOG(ERROR) << "Failed to read header from " << path_.value();
     return false;

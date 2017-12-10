@@ -13,6 +13,7 @@
 #include "base/strings/string_piece.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/threading/thread_restrictions.h"
 #include "vendor/crashpad/client/crashpad_client.h"
 #include "vendor/crashpad/client/crashpad_info.h"
 #include "vendor/crashpad/client/settings.h"
@@ -139,8 +140,11 @@ std::vector<CrashReporter::UploadReportResult>
 CrashReporterMac::GetUploadedReports(const base::FilePath& crashes_dir) {
   std::vector<CrashReporter::UploadReportResult> uploaded_reports;
 
-  if (!base::PathExists(crashes_dir)) {
-    return uploaded_reports;
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    if (!base::PathExists(crashes_dir)) {
+      return uploaded_reports;
+    }
   }
   // Load crashpad database.
   std::unique_ptr<crashpad::CrashReportDatabase> database =
