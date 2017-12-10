@@ -36,6 +36,10 @@ describe('systemPreferences module', () => {
   })
 
   describe('systemPreferences.registerDefaults(defaults)', () => {
+    before(function () {
+      if (process.platform !== 'darwin') this.skip()
+    })
+
     it('registers defaults', () => {
       const userDefaults = {
         'one': 'onee',
@@ -49,6 +53,14 @@ describe('systemPreferences module', () => {
 
       const val = systemPreferences.getUserDefault('two', 'string')
       assert.equal(val, 'twoo')
+    })
+
+    it('throws when bad defaults are passed', () => {
+      const userDefaults = 1
+
+      assert.throws(() => {
+        systemPreferences.setUserDefault(userDefaults)
+      }, `Unable to parse userDefaults dict`)
     })
   })
 
