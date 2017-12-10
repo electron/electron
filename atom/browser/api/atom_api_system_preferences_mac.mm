@@ -145,21 +145,11 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
 }
 
 void SystemPreferences::RegisterDefaults(const base::DictionaryValue& defaults) {
-  NSString *userDefaultsValuesPath;
-    NSDictionary *userDefaultsValuesDict;
-    NSDictionary *initialValuesDict;
-    NSArray *resettableUserDefaultsKeys;
-
-    userDefaultsValuesPath=[[NSBundle mainBundle] pathForResource:@"UserDefaults"
-                               ofType:@"plist"];
-    userDefaultsValuesDict=[NSDictionary dictionaryWithContentsOfFile:userDefaultsValuesPath];
-
-    [[NSUserDefaults standardUserDefaults] registerDefaults:userDefaultsValuesDict];
-
-    resettableUserDefaultsKeys=[NSArray arrayWithObjects:@"Value1",@"Value2",@"Value3",nil];
-    initialValuesDict=[userDefaultsValuesDict dictionaryWithValuesForKeys:resettableUserDefaultsKeys];
-
-    [[NSUserDefaultsController sharedUserDefaultsController] setInitialValues:initialValuesDict];
+  if (NSDictionary* defaultsDict = DictionaryValueToNSDictionary(defaults)) {
+    [[NSUserDefaults standardUserDefaults] registerDefaults:defaultsDict];
+  } else {
+    defaults->ThrowError("Unable to parse userDefaults");
+  }
 }
 
 void SystemPreferences::SetUserDefault(const std::string& name,
