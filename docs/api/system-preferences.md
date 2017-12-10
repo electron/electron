@@ -108,10 +108,10 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificati
 
 ### `systemPreferences.registerDefaults(defaults)` _macOS_
 
-* `defaults`: a dictionary of (`key: value`) user defaults
-  * `key` - must be of type `string`
-  * `value` - can be of type `string`, `boolean`, `integer`, `float`, `double`,
-    `url`, `array` or `dictionary`.
+* `defaults` Object - a dictionary of (`key: value`) user defaults
+  * `key` String - must be of type `string`
+  * `value` Object - object of type `string`, `boolean`, `integer`, `float`, `double`,
+    `url`, `array`, or `dictionary`.
 
 Allows for registering of your application's preference defaults in `NSUserDefaults`.
 
