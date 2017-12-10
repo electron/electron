@@ -15,6 +15,7 @@
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
+#include "base/threading/thread_restrictions.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/data_url.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -130,8 +131,11 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
                      const base::FilePath& path,
                      double scale_factor) {
   std::string file_contents;
-  if (!asar::ReadFileToString(path, &file_contents))
-    return false;
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    if (!asar::ReadFileToString(path, &file_contents))
+      return false;
+  }
 
   const unsigned char* data =
       reinterpret_cast<const unsigned char*>(file_contents.data());
