@@ -969,22 +969,21 @@ describe('<webview> tag', function () {
     })
   })
 
-  describe('permission-request event', () => {
+  describe('<webview>.setPermissionRequestHandler', () => {
     function setUpRequestHandler (webview, requestedPermission, completed) {
-      const listener = function (webContents, permission, callback) {
-        if (webContents.getId() === webview.getId()) {
-          // requestMIDIAccess with sysex requests both midi and midiSysex so
-          // grant the first midi one and then reject the midiSysex one
-          if (requestedPermission === 'midiSysex' && permission === 'midi') {
-            return callback(true)
-          }
-
-          assert.equal(permission, requestedPermission)
-          callback(false)
-          if (completed) completed()
+      const listener = function (e) {
+        // requestMIDIAccess with sysex requests both midi and midiSysex so
+        // grant the first midi one and then reject the midiSysex one
+        if (requestedPermission === 'midiSysex' && e.permission === 'midi') {
+          return e.request.allow()
         }
+
+        assert.equal(e.permission, requestedPermission)
+        e.request.deny()
+        if (completed) completed()
       }
-      session.fromPartition(webview.partition).setPermissionRequestHandler(listener)
+
+      webview.setPermissionRequestHandler(listener)
     }
 
     it('emits when using navigator.getUserMedia api', (done) => {
@@ -1057,11 +1056,9 @@ describe('<webview> tag', function () {
       webview.src = `file://${fixtures}/pages/permissions/notification.html`
       webview.partition = 'permissionTest'
       webview.setAttribute('nodeintegration', 'on')
-      session.fromPartition(webview.partition).setPermissionRequestHandler((webContents, permission, callback) => {
-        if (webContents.getId() === webview.getId()) {
-          assert.equal(permission, 'notifications')
-          setTimeout(() => { callback(true) }, 10)
-        }
+      webview.setPermissionRequestHandler((e) => {
+        assert.equal(e.permission, 'notifications')
+        setTimeout(() => { e.request.allow() }, 10)
       })
       document.body.appendChild(webview)
     })
