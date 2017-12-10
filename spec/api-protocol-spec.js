@@ -477,7 +477,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerStreamProtocol', () => {
+  xdescribe('protocol.registerStreamProtocol', () => {
     it('sends Stream as response', (done) => {
       const handler = (request, callback) => callback(getStream())
       protocol.registerStreamProtocol(protocolName, handler, (error) => {
@@ -869,7 +869,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.interceptStreamProtocol', () => {
+  xdescribe('protocol.interceptStreamProtocol', () => {
     it('can intercept http protocol', (done) => {
       const handler = (request, callback) => callback(getStream())
       protocol.interceptStreamProtocol('http', handler, (error) => {
