@@ -35,6 +35,23 @@ describe('systemPreferences module', () => {
     })
   })
 
+  describe('systemPreferences.registerDefaults(defaults)', () => {
+    it('registers defaults', () => {
+      const userDefaults = {
+        'one': 'onee',
+        'two': 'twoo',
+        'three': 'threee',
+        'four': 'fourr',
+        'five': 'fivee'
+      }
+
+      systemPreferences.registerDefaults(userDefaults)
+
+      const val = systemPreferences.getUserDefault('two', 'string')
+      assert.equal(val, 'twoo')
+    })
+  })
+
   describe('systemPreferences.getUserDefault(key, type)', () => {
     before(function () {
       if (process.platform !== 'darwin') {
