@@ -144,11 +144,15 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   }
 }
 
-void SystemPreferences::RegisterDefaults(const base::DictionaryValue& defaults) {
-  if (NSDictionary* defaultsDict = DictionaryValueToNSDictionary(defaults)) {
-    [[NSUserDefaults standardUserDefaults] registerDefaults:defaultsDict];
-  } else {
-    defaults->ThrowError("Unable to parse userDefaults");
+void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
+  base::DictionaryValue value;
+  if (!args->GetNext(&value)) {
+    args->ThrowError("Unable to parse userDefaults dict");
+    return;
+  }
+
+  if (NSDictionary* dict = DictionaryValueToNSDictionary(value)) {
+    [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
   }
 }
 
