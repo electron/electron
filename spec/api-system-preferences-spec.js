@@ -35,32 +35,44 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.registerDefaults(defaults)', () => {
+  describe.only('systemPreferences.registerDefaults(defaults)', () => {
     before(function () {
       if (process.platform !== 'darwin') this.skip()
     })
 
     it('registers defaults', () => {
-      const userDefaults = {
+      const defaultsDict = {
         'one': 'ONE',
-        'two': 'TWO',
-        'three': 'THREE'
+        'two': 2,
+        'three': [1, 2, 3]
       }
 
-      systemPreferences.registerDefaults(userDefaults)
+      const defaultsMap = [
+        { key: 'one', type: 'string', value: 'ONE' },
+        { key: 'two', value: 2, type: 'integer' },
+        { key: 'three', value: [1, 2, 3], type: 'array' }
+      ]
 
-      for (const [key, expectedValue] of Object.entries(userDefaults)) {
-        const actualValue = systemPreferences.getUserDefault(key, 'string')
-        assert.equal(actualValue, expectedValue)
+      systemPreferences.registerDefaults(defaultsDict)
+
+      for (const def of defaultsMap) {
+        const [key, expectedValue, type] = [def.key, def.value, def.type]
+        const actualValue = systemPreferences.getUserDefault(key, type)
+        assert.deepEqual(actualValue, expectedValue)
       }
     })
 
     it('throws when bad defaults are passed', () => {
       const badDefaults1 = { 'one': null }
+      //const badDefaults1 = { 'one': null }
 
       assert.throws(() => {
         systemPreferences.registerDefaults(badDefaults1)
       }, 'Invalid userDefault data provided')
+      //
+      // assert.throws(() => {
+      //   systemPreferences.registerDefaults(badDefaults1)
+      // }, 'Invalid userDefault data provided')
     })
   })
 
