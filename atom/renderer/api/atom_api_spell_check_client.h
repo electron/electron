@@ -50,22 +50,28 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   void UpdateSpellingUIWithMisspelledWord(
       const blink::WebString& word) override;
 
+  struct SpellCheckScope {
+    v8::HandleScope handle_scope_;
+    v8::Context::Scope context_scope_;
+    v8::Local<v8::Object> provider_;
+    v8::Local<v8::Function> spell_check_;
+
+    explicit SpellCheckScope(const SpellCheckClient& client);
+  };
+
   // Check the spelling of text.
   void SpellCheckText(const base::string16& text,
                       bool stop_at_first_result,
                       std::vector<blink::WebTextCheckingResult>* results);
 
   // Call JavaScript to check spelling a word.
-  bool SpellCheckWord(const base::string16& word_to_check);
-
-  // Find a possible correctly spelled word for a misspelled word. Computes an
-  // empty string if input misspelled word is too long, there is ambiguity, or
-  // the correct spelling cannot be determined.
-  base::string16 GetAutoCorrectionWord(const base::string16& word);
+  bool SpellCheckWord(const SpellCheckScope& scope,
+                      const base::string16& word_to_check) const;
 
   // Returns whether or not the given word is a contraction of valid words
   // (e.g. "word:word").
-  bool IsValidContraction(const base::string16& word);
+  bool IsValidContraction(const SpellCheckScope& scope,
+                          const base::string16& word);
 
   // Represents character attributes used for filtering out characters which
   // are not supported by this SpellCheck object.
@@ -79,9 +85,8 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   SpellcheckWordIterator text_iterator_;
   SpellcheckWordIterator contraction_iterator_;
 
-  bool auto_spell_correct_turned_on_;
-
   v8::Isolate* isolate_;
+  v8::Persistent<v8::Context> context_;
   mate::ScopedPersistent<v8::Object> provider_;
   mate::ScopedPersistent<v8::Function> spell_check_;
 
