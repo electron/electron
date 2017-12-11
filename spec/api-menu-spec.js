@@ -283,18 +283,43 @@ describe('Menu module', () => {
     })
 
     it('returns immediately', () => {
-      menu.popup(w, {x: 100, y: 100})
+      const { browserWindow, x, y } = menu.popup(w, {x: 100, y: 100})
+
+      assert.equal(browserWindow, w)
+      assert.equal(x, 100)
+      assert.equal(y, 100)
+
       menu.closePopup(w)
     })
 
     it('works without a given BrowserWindow and options', () => {
-      menu.popup({x: 100, y: 100})
+      const { browserWindow, x, y } = menu.popup({x: 100, y: 100})
+
+      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
+      assert.equal(x, 100)
+      assert.equal(y, 100)
+
       menu.closePopup()
     })
 
     it('works without a given BrowserWindow', () => {
-      menu.popup(100, 100)
+      const { browserWindow, x, y } = menu.popup(100, 100)
+
+      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
+      assert.equal(x, 100)
+      assert.equal(y, 100)
+
       menu.closePopup()
+    })
+
+    it('works with a given BrowserWindow and no options', () => {
+      const { browserWindow, x, y } = menu.popup(w, 100, 100)
+
+      assert.equal(browserWindow, w)
+      assert.equal(x, 100)
+      assert.equal(y, 100)
+
+      menu.closePopup(w)
     })
   })
 
