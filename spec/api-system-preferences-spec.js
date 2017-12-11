@@ -42,25 +42,25 @@ describe('systemPreferences module', () => {
 
     it('registers defaults', () => {
       const userDefaults = {
-        'one': 'onee',
-        'two': 'twoo',
-        'three': 'threee',
-        'four': 'fourr',
-        'five': 'fivee'
+        'one': 'ONE',
+        'two': 'TWO',
+        'three': 'THREE'
       }
 
       systemPreferences.registerDefaults(userDefaults)
 
-      const val = systemPreferences.getUserDefault('two', 'string')
-      assert.equal(val, 'twoo')
+      for (const [key, expectedValue] of Object.entries(userDefaults)) {
+        const actualValue = systemPreferences.getUserDefault(key, 'string')
+        assert.equal(actualValue, expectedValue)
+      }
     })
 
     it('throws when bad defaults are passed', () => {
-      const userDefaults = 1
+      const badDefaults1 = { 'one': null }
 
       assert.throws(() => {
-        systemPreferences.setUserDefault(userDefaults)
-      }, `Unable to parse userDefaults dict`)
+        systemPreferences.registerDefaults(badDefaults1)
+      }, 'Invalid userDefault data provided')
     })
   })
 

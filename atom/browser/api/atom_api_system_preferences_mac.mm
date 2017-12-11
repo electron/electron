@@ -146,13 +146,13 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
 
 void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
   base::DictionaryValue value;
-  if (!args->GetNext(&value)) {
-    args->ThrowError("Unable to parse userDefaults dict");
-    return;
-  }
-
-  if (NSDictionary* dict = DictionaryValueToNSDictionary(value)) {
+  args->GetNext(&value);
+  
+  @try {
+    NSDictionary* dict = DictionaryValueToNSDictionary(value);
     [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
+  } @catch (NSException* exception) {
+    args->ThrowError("Invalid userDefault data provided");
   }
 }
 
