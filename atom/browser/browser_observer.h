@@ -55,9 +55,6 @@ class BrowserObserver {
   // The browser's accessibility suppport has changed.
   virtual void OnAccessibilitySupportChanged() {}
 
-  // The app message loop is ready
-  virtual void OnPreMainMessageLoopRun() {}
-
 #if defined(OS_MACOSX)
   // The browser wants to report that an user activity will resume. (macOS only)
   virtual void OnWillContinueUserActivity(

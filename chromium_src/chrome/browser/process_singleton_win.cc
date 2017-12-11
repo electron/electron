@@ -182,15 +182,11 @@ bool TerminateAppWithError() {
 
 }  // namespace
 
-ProcessSingleton::ProcessSingleton(
-    const base::FilePath& user_data_dir,
-    const NotificationCallback& notification_callback)
-    : notification_callback_(notification_callback),
-      is_virtualized_(false),
+ProcessSingleton::ProcessSingleton(const base::FilePath& user_data_dir)
+    : is_virtualized_(false),
       lock_file_(INVALID_HANDLE_VALUE),
       user_data_dir_(user_data_dir),
-      should_kill_remote_process_callback_(
-          base::Bind(&TerminateAppWithError)) {
+      should_kill_remote_process_callback_(base::Bind(&TerminateAppWithError)) {
   // The user_data_dir may have not been created yet.
   base::CreateDirectoryAndGetError(user_data_dir, nullptr);
 }

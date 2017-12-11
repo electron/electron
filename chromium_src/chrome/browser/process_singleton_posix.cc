@@ -716,11 +716,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
 ///////////////////////////////////////////////////////////////////////////////
 // ProcessSingleton
 //
-ProcessSingleton::ProcessSingleton(
-    const base::FilePath& user_data_dir,
-    const NotificationCallback& notification_callback)
-    : notification_callback_(notification_callback),
-      current_pid_(base::GetCurrentProcId()) {
+ProcessSingleton::ProcessSingleton(const base::FilePath& user_data_dir)
+    : current_pid_(base::GetCurrentProcId()) {
   // The user_data_dir may have not been created yet.
   base::CreateDirectoryAndGetError(user_data_dir, nullptr);
 
