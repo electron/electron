@@ -101,7 +101,7 @@ forums
 - [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
 - [`electron-tr`](https://electron-tr.herokuapp.com) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
-- [`electron-pl`](electronpl.github.io) *(Poland)*
+- [`electron-pl`](https://electronpl.github.io) *(Poland)*
 
 Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 for a community maintained list of useful example apps, tools and resources.
