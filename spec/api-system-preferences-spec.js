@@ -35,18 +35,20 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe.only('systemPreferences.registerDefaults(defaults)', () => {
+  describe('systemPreferences.registerDefaults(defaults)', () => {
     before(function () {
       if (process.platform !== 'darwin') this.skip()
     })
 
     it('registers defaults', () => {
+      // to pass into registerDefaults
       const defaultsDict = {
         'one': 'ONE',
         'two': 2,
         'three': [1, 2, 3]
       }
 
+      // to test type
       const defaultsMap = [
         { key: 'one', type: 'string', value: 'ONE' },
         { key: 'two', value: 2, type: 'integer' },
@@ -63,16 +65,21 @@ describe('systemPreferences module', () => {
     })
 
     it('throws when bad defaults are passed', () => {
-      const badDefaults1 = { 'one': null }
-      //const badDefaults1 = { 'one': null }
+      const badDefaults1 = { 'one': null } // catches null values
+      const badDefaults2 = 1 // argument must be a dictionary
+      const badDefaults3 = null // argument can't be null
 
       assert.throws(() => {
         systemPreferences.registerDefaults(badDefaults1)
       }, 'Invalid userDefault data provided')
-      //
-      // assert.throws(() => {
-      //   systemPreferences.registerDefaults(badDefaults1)
-      // }, 'Invalid userDefault data provided')
+
+      assert.throws(() => {
+        systemPreferences.registerDefaults(badDefaults2)
+      }, 'Invalid userDefault data provided')
+
+      assert.throws(() => {
+        systemPreferences.registerDefaults(badDefaults3)
+      }, 'Invalid userDefault data provided')
     })
   })
 
