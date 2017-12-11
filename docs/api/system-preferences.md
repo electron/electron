@@ -110,7 +110,7 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificati
 
 * `defaults` Object - a dictionary of (`key: value`) user defaults
   * `key` String
-  * `value` (String | Boolean | Int | Float | Double | Array | Dictionary)
+  * `value` Any
 
 Add the specified defaults to your application's `NSUserDefaults`.
 
