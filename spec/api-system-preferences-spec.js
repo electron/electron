@@ -35,6 +35,44 @@ describe('systemPreferences module', () => {
     })
   })
 
+  describe('systemPreferences.registerDefaults(defaults)', () => {
+    before(function () {
+      if (process.platform !== 'darwin') this.skip()
+    })
+
+    it('registers defaults', () => {
+      const defaultsMap = [
+        { key: 'one', type: 'string', value: 'ONE' },
+        { key: 'two', value: 2, type: 'integer' },
+        { key: 'three', value: [1, 2, 3], type: 'array' }
+      ]
+
+      const defaultsDict = {}
+      defaultsMap.forEach(row => { defaultsDict[row.key] = row.value })
+
+      systemPreferences.registerDefaults(defaultsDict)
+
+      for (const userDefault of defaultsMap) {
+        const { key, value: expectedValue, type } = userDefault
+        const actualValue = systemPreferences.getUserDefault(key, type)
+        assert.deepEqual(actualValue, expectedValue)
+      }
+    })
+
+    it('throws when bad defaults are passed', () => {
+      for (const badDefaults of [
+        { 'one': null },  // catches null values
+        1,  // argument must be a dictionary
+        null, // argument can't be null
+        new Date() // shouldn't be able to pass date object
+      ]) {
+        assert.throws(() => {
+          systemPreferences.registerDefaults(badDefaults)
+        }, 'Invalid userDefault data provided')
+      }
+    })
+  })
+
   describe('systemPreferences.getUserDefault(key, type)', () => {
     before(function () {
       if (process.platform !== 'darwin') {
