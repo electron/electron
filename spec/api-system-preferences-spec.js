@@ -41,45 +41,35 @@ describe('systemPreferences module', () => {
     })
 
     it('registers defaults', () => {
-      // to pass into registerDefaults
-      const defaultsDict = {
-        'one': 'ONE',
-        'two': 2,
-        'three': [1, 2, 3]
-      }
-
-      // to test type
       const defaultsMap = [
         { key: 'one', type: 'string', value: 'ONE' },
         { key: 'two', value: 2, type: 'integer' },
         { key: 'three', value: [1, 2, 3], type: 'array' }
       ]
 
+      const defaultsDict = {}
+      defaultsMap.forEach(row => { defaultsDict[row.key] = row.value })
+
       systemPreferences.registerDefaults(defaultsDict)
 
-      for (const def of defaultsMap) {
-        const [key, expectedValue, type] = [def.key, def.value, def.type]
+      for (const userDefault of defaultsMap) {
+        const { key, value: expectedValue, type } = userDefault
         const actualValue = systemPreferences.getUserDefault(key, type)
         assert.deepEqual(actualValue, expectedValue)
       }
     })
 
     it('throws when bad defaults are passed', () => {
-      const badDefaults1 = { 'one': null } // catches null values
-      const badDefaults2 = 1 // argument must be a dictionary
-      const badDefaults3 = null // argument can't be null
-
-      assert.throws(() => {
-        systemPreferences.registerDefaults(badDefaults1)
-      }, 'Invalid userDefault data provided')
-
-      assert.throws(() => {
-        systemPreferences.registerDefaults(badDefaults2)
-      }, 'Invalid userDefault data provided')
-
-      assert.throws(() => {
-        systemPreferences.registerDefaults(badDefaults3)
-      }, 'Invalid userDefault data provided')
+      for (const badDefaults of [
+        { 'one': null },  // catches null values
+        1,  // argument must be a dictionary
+        null, // argument can't be null
+        new Date() // shouldn't be able to pass date object
+      ]) {
+        assert.throws(() => {
+          systemPreferences.registerDefaults(badDefaults)
+        }, 'Invalid userDefault data provided')
+      }
     })
   })
 

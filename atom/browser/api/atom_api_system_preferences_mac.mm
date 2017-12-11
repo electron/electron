@@ -150,7 +150,6 @@ void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
   if(!args->GetNext(&value)) {
     args->ThrowError("Invalid userDefault data provided");
   } else {
-    args->GetNext(&value);
     @try {
       NSDictionary* dict = DictionaryValueToNSDictionary(value);
       [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
