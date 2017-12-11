@@ -529,6 +529,8 @@ void OnIconDataAvailable(v8::Isolate* isolate,
 }  // namespace
 
 App::App(v8::Isolate* isolate) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
@@ -566,11 +568,6 @@ void App::OnWindowAllClosed() {
 void App::OnQuit() {
   int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
-
-  if (process_singleton_) {
-    process_singleton_->Cleanup();
-    process_singleton_.reset();
-  }
 }
 
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
@@ -596,12 +593,6 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
 #endif
   Emit("ready", launch_info);
-}
-
-void App::OnPreMainMessageLoopRun() {
-  if (process_singleton_) {
-    process_singleton_->OnBrowserReady();
-  }
 }
 
 void App::OnAccessibilitySupportChanged() {
@@ -856,20 +847,20 @@ std::string App::GetLocale() {
 
 bool App::MakeSingleInstance(
     const ProcessSingleton::NotificationCallback& callback) {
-  if (process_singleton_)
+  auto process_singleton = AtomBrowserMainParts::Get()->process_singleton();
+  if (process_singleton_created_)
     return false;
 
-  base::FilePath user_dir;
-  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
-  process_singleton_.reset(new ProcessSingleton(
-      user_dir, base::Bind(NotificationCallbackWrapper, callback)));
+  process_singleton->RegisterSingletonNotificationCallback(
+      base::Bind(NotificationCallbackWrapper, callback));
 
-  switch (process_singleton_->NotifyOtherProcessOrCreate()) {
+  switch (process_singleton->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
-    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
-      process_singleton_.reset();
+    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
+      process_singleton_created_ = true;
       return true;
+    }
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
     default:  // Shouldn't be needed, but VS warns if it is not there.
       return false;
@@ -877,9 +868,9 @@ bool App::MakeSingleInstance(
 }
 
 void App::ReleaseSingleInstance() {
-  if (process_singleton_) {
-    process_singleton_->Cleanup();
-    process_singleton_.reset();
+  auto process_singleton = AtomBrowserMainParts::Get()->process_singleton();
+  if (process_singleton) {
+    process_singleton->Cleanup();
   }
 }
 

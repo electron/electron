@@ -126,27 +126,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
-  js_env_.reset(new JavascriptEnvironment);
-
-  node_bindings_->Initialize();
-
-  // Create the global environment.
-  node::Environment* env =
-      node_bindings_->CreateEnvironment(js_env_->context());
-  node_env_.reset(new NodeEnvironment(env));
-
-  // Enable support for v8 inspector
-  node_debugger_.reset(new NodeDebugger(env));
-  node_debugger_->Start(js_env_->platform());
-
-  // Add Electron extended APIs.
-  atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
-
-  // Load everything.
-  node_bindings_->LoadEnvironment(env);
-
-  // Wrap the uv loop with global env.
-  node_bindings_->set_uv_env(env);
+  JavascriptEnvironment::Initialize();
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
@@ -185,7 +165,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->DidFinishLaunching(*empty_info);
 #endif
 
-  Browser::Get()->PreMainMessageLoopRun();
+  if (process_singleton_)
+    process_singleton_->OnBrowserReady();
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
@@ -200,6 +181,32 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 #endif
   device::GeolocationProvider::SetGeolocationDelegate(
       new AtomGeolocationDelegate());
+
+  base::FilePath user_dir;
+  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  process_singleton_.reset(new ProcessSingleton(user_dir));
+
+  js_env_.reset(new JavascriptEnvironment);
+
+  node_bindings_->Initialize();
+
+  // Create the global environment.
+  node::Environment* env =
+      node_bindings_->CreateEnvironment(js_env_->context());
+  node_env_.reset(new NodeEnvironment(env));
+
+  // Enable support for v8 inspector
+  node_debugger_.reset(new NodeDebugger(env));
+  node_debugger_->Start();
+
+  // Add Electron extended APIs.
+  atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
+
+  // Load everything.
+  node_bindings_->LoadEnvironment(env);
+
+  // Wrap the uv loop with global env.
+  node_bindings_->set_uv_env(env);
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
@@ -220,6 +227,14 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
     base::Closure& callback = *iter;
     ++iter;
     callback.Run();
+  }
+}
+
+void AtomBrowserMainParts::PostDestroyThreads() {
+  brightray::BrowserMainParts::PostDestroyThreads();
+  if (process_singleton_) {
+    process_singleton_->Cleanup();
+    process_singleton_.reset();
   }
 }
 

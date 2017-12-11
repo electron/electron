@@ -159,8 +159,7 @@ describe('app module', () => {
     })
   })
 
-  // TODO(deepak1556): Fix and enable for base dchecks.
-  xdescribe('app.makeSingleInstance', () => {
+  describe('app.makeSingleInstance', () => {
     it('prevents the second launch of app', function (done) {
       this.timeout(120000)
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')

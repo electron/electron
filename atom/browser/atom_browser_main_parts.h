@@ -11,6 +11,7 @@
 #include "base/callback.h"
 #include "base/timer/timer.h"
 #include "brightray/browser/browser_main_parts.h"
+#include "chrome/browser/process_singleton.h"
 #include "content/public/browser/browser_context.h"
 
 class BrowserProcess;
@@ -44,6 +45,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   base::Closure RegisterDestructionCallback(const base::Closure& callback);
 
   Browser* browser() { return browser_.get(); }
+  ProcessSingleton* process_singleton() { return process_singleton_.get(); }
 
  protected:
   // content::BrowserMainParts:
@@ -56,6 +58,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 #if defined(OS_MACOSX)
   void PreMainMessageLoopStart() override;
 #endif
+  void PostDestroyThreads() override;
 
  private:
 #if defined(OS_POSIX)
@@ -84,6 +87,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   std::unique_ptr<AtomBindings> atom_bindings_;
   std::unique_ptr<NodeEnvironment> node_env_;
   std::unique_ptr<NodeDebugger> node_debugger_;
+  std::unique_ptr<ProcessSingleton> process_singleton_;
 
   base::Timer gc_timer_;
 
