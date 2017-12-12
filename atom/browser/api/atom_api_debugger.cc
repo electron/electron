@@ -49,11 +49,11 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
-  std::unique_ptr<base::Value> result = base::JSONReader::Read(message);
-  if (!result || !result->is_dict())
+  std::unique_ptr<base::Value> parsed_message = base::JSONReader::Read(message);
+  if (!parsed_message || !parsed_message->is_dict())
     return;
   base::DictionaryValue* dict =
-      static_cast<base::DictionaryValue*>(result.get());
+      static_cast<base::DictionaryValue*>(parsed_message.get());
   int id;
   if (!dict->GetInteger("id", &id)) {
     std::string method;

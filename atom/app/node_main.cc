@@ -45,6 +45,8 @@ int NodeMain(int argc, char *argv[]) {
     // V8 requires a task scheduler apparently
     base::TaskScheduler::CreateAndStartWithDefaultParams("Electron");
 
+    // Initialize gin::IsolateHolder.
+    JavascriptEnvironment::Initialize();
     JavascriptEnvironment gin_env;
 
     int exec_argc;
