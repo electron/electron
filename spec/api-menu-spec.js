@@ -279,6 +279,8 @@ describe('Menu module', () => {
     })
 
     afterEach(() => {
+      menu.closePopup()
+      menu.closePopup(w)
       return closeWindow(w).then(() => { w = null })
     })
 
@@ -288,8 +290,6 @@ describe('Menu module', () => {
       assert.equal(browserWindow, w)
       assert.equal(x, 100)
       assert.equal(y, 101)
-
-      menu.closePopup(w)
     })
 
     it('works without a given BrowserWindow and options', () => {
@@ -298,8 +298,6 @@ describe('Menu module', () => {
       assert.equal(browserWindow.constructor.name, 'BrowserWindow')
       assert.equal(x, 100)
       assert.equal(y, 101)
-
-      menu.closePopup()
     })
 
     it('works without a given BrowserWindow', () => {
@@ -308,8 +306,6 @@ describe('Menu module', () => {
       assert.equal(browserWindow.constructor.name, 'BrowserWindow')
       assert.equal(x, 100)
       assert.equal(y, 101)
-
-      menu.closePopup()
     })
 
     it('works without a given BrowserWindow and 0 options', () => {
@@ -318,8 +314,6 @@ describe('Menu module', () => {
       assert.equal(browserWindow.constructor.name, 'BrowserWindow')
       assert.equal(x, 0)
       assert.equal(y, 1)
-
-      menu.closePopup()
     })
 
     it('works with a given BrowserWindow and no options', () => {
@@ -328,8 +322,6 @@ describe('Menu module', () => {
       assert.equal(browserWindow, w)
       assert.equal(x, 100)
       assert.equal(y, 101)
-
-      menu.closePopup(w)
     })
   })
 
