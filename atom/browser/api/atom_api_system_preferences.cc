@@ -65,7 +65,6 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::SubscribeLocalNotification)
       .SetMethod("unsubscribeLocalNotification",
                  &SystemPreferences::UnsubscribeLocalNotification)
-      .SetMethod("registerDefaults", &SystemPreferences::RegisterDefaults)
       .SetMethod("getUserDefault", &SystemPreferences::GetUserDefault)
       .SetMethod("setUserDefault", &SystemPreferences::SetUserDefault)
       .SetMethod("removeUserDefault", &SystemPreferences::RemoveUserDefault)
