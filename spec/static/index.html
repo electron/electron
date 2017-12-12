@@ -35,14 +35,8 @@
   if (isCi) {
     global.__defineGetter__('console', function () {
       return {
-        log: () => {
-          const args = Array.prototype.slice.call(arguments)
-          ipcRenderer.send('console.log', args)
-        },
-        error: () => {
-          const args = Array.prototype.slice.call(arguments)
-          ipcRenderer.send('console.error', args)
-        }
+        log: (...args) => ipcRenderer.send('console.log', args),
+        error: (...args) => ipcRenderer.send('console.error', args)
       }
     })
   }
