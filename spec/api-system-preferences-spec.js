@@ -2,7 +2,7 @@ const assert = require('assert')
 const {remote} = require('electron')
 const {systemPreferences} = remote
 
-describe.only('systemPreferences module', () => {
+describe('systemPreferences module', () => {
   describe('systemPreferences.getAccentColor', () => {
     before(function () {
       if (process.platform !== 'win32') {
@@ -66,7 +66,6 @@ describe.only('systemPreferences module', () => {
         1,
         null,
         new Date(),
-        { 'one': null }
       ]
 
       for (const badDefault of badDefaults) {
