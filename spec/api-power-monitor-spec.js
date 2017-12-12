@@ -85,5 +85,34 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRES
         })
       })
     })
+
+    describe('when a listener is added to shutdown event', () => {
+      before(async () => {
+        const calls = await getCalls()
+        assert.equal(calls.length, 2)
+        powerMonitor.once('shutdown', () => { })
+      })
+
+      it('should call Inhibit to delay shutdown', async () => {
+        const calls = await getCalls()
+        assert.equal(calls.length, 3)
+        assert.deepEqual(calls[2].slice(1), [
+          'Inhibit', [
+            [[{type: 's', child: []}], ['shutdown']],
+            [[{type: 's', child: []}], ['electron']],
+            [[{type: 's', child: []}], ['Ensure a clean shutdown']],
+            [[{type: 's', child: []}], ['delay']]
+          ]
+        ])
+      })
+
+      describe('when PrepareForShutdown(true) signal is sent by logind', () => {
+        it('should emit "shutdown" event', (done) => {
+          powerMonitor.once('shutdown', () => { done() })
+          emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown',
+            'b', [['b', true]])
+        })
+      })
+    })
   })
 })
