@@ -106,6 +106,14 @@ This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 
 Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificationCenter`.
 
+### `systemPreferences.registerDefaults(defaults)` _macOS_		
+
+* `defaults` Object - a dictionary of (`key: value`) user defaults		
+  * `key` String		
+  * `value` Any				
+
+Add the specified defaults to your application's `NSUserDefaults`.
+
 ### `systemPreferences.getUserDefault(key, type)` _macOS_
 
 * `key` String

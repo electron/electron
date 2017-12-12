@@ -2,7 +2,7 @@ const assert = require('assert')
 const {remote} = require('electron')
 const {systemPreferences} = remote
 
-describe('systemPreferences module', () => {
+describe.only('systemPreferences module', () => {
   describe('systemPreferences.getAccentColor', () => {
     before(function () {
       if (process.platform !== 'win32') {
@@ -32,6 +32,48 @@ describe('systemPreferences module', () => {
 
     it('returns a hex RGB color string', () => {
       assert.equal(/^#[0-9A-F]{6}$/i.test(systemPreferences.getColor('window')), true)
+    })
+  })
+
+  describe('systemPreferences.registerDefaults(defaults)', () => {
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
+
+    it('registers defaults', () => {
+      const defaultsMap = [
+        { key: 'one', type: 'string', value: 'ONE' },
+        { key: 'two', value: 2, type: 'integer' },
+        { key: 'three', value: [1, 2, 3], type: 'array' }
+      ]
+
+      const defaultsDict = {}
+      defaultsMap.forEach(row => { defaultsDict[row.key] = row.value })
+
+      systemPreferences.registerDefaults(defaultsDict)
+
+      for (const userDefault of defaultsMap) {
+        const { key, value: expectedValue, type } = userDefault
+        const actualValue = systemPreferences.getUserDefault(key, type)
+        assert.deepEqual(actualValue, expectedValue)
+      }
+    })
+
+    it('throws when bad defaults are passed', () => {
+      const badDefaults = [
+        1,
+        null,
+        new Date(),
+        { 'one': null }
+      ]
+
+      for (const badDefault of badDefaults) {
+        assert.throws(() => {
+          systemPreferences.registerDefaults(badDefault)
+        }, 'Invalid userDefault data provided')
+      }
     })
   })
 
