@@ -66,6 +66,7 @@ describe('systemPreferences module', () => {
         1,
         null,
         new Date(),
+        { 'one': null }
       ]
 
       for (const badDefault of badDefaults) {

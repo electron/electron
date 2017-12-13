@@ -152,13 +152,13 @@ void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
   } else {
     @try {
       NSDictionary* dict = DictionaryValueToNSDictionary(value);
-      // for (id key in dict) {
-      //   id value = [dict objectForKey:key];
-      //   if (value == nil) {
-      //     printf("HELLO\n");
-      //     args->ThrowError("Invalid userDefault data provided");
-      //   }
-      // }
+      for (id key in dict) {
+        id value = [dict objectForKey:key];
+        if ([value isKindOfClass:[NSNull class]] || value == nil) {
+          args->ThrowError("Invalid userDefault data provided");
+          return;
+        }
+      }
       [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
     } @catch (NSException* exception) {
       args->ThrowError("Invalid userDefault data provided");
