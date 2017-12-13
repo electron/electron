@@ -50,7 +50,8 @@
     "lint-js": "standard && cd spec && standard",
     "lint-cpp": "python ./script/cpplint.py",
     "lint-py": "python ./script/pylint.py",
-    "lint-docs": "remark docs -qf && npm run lint-js-in-markdown && npm run create-typescript-definitions",
+    "lint-docs": "remark docs -qf && npm run lint-js-in-markdown && npm run create-typescript-definitions && npm run lint-docs-relative-links",
+    "lint-docs-relative-links": "python ./script/check-relative-doc-links.py",
     "lint-js-in-markdown": "standard-markdown docs",
     "create-api-json": "electron-docs-linter docs --outfile=out/electron-api.json --version=$npm_package_version",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=out/electron-api.json --out=out/electron.d.ts",
@@ -71,5 +72,8 @@
   "author": "Electron Community",
   "keywords": [
     "electron"
-  ]
+  ],
+  "dependencies": {
+    "lint": "^1.1.2"
+  }
 }
