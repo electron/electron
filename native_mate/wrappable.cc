@@ -24,7 +24,6 @@ WrappableBase::~WrappableBase() {
 }
 
 v8::Local<v8::Object> WrappableBase::GetWrapper() {
-  DCHECK(!wrapper_.IsEmpty());
   if (!wrapper_.IsEmpty())
     return v8::Local<v8::Object>::New(isolate_, wrapper_);
   else
