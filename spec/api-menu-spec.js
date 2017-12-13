@@ -279,12 +279,49 @@ describe('Menu module', () => {
     })
 
     afterEach(() => {
+      menu.closePopup()
+      menu.closePopup(w)
       return closeWindow(w).then(() => { w = null })
     })
 
     it('returns immediately', () => {
-      menu.popup(w, {x: 100, y: 100, async: true})
-      menu.closePopup(w)
+      const { browserWindow, x, y } = menu.popup(w, {x: 100, y: 101})
+
+      assert.equal(browserWindow, w)
+      assert.equal(x, 100)
+      assert.equal(y, 101)
+    })
+
+    it('works without a given BrowserWindow and options', () => {
+      const { browserWindow, x, y } = menu.popup({x: 100, y: 101})
+
+      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
+      assert.equal(x, 100)
+      assert.equal(y, 101)
+    })
+
+    it('works without a given BrowserWindow', () => {
+      const { browserWindow, x, y } = menu.popup(100, 101)
+
+      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
+      assert.equal(x, 100)
+      assert.equal(y, 101)
+    })
+
+    it('works without a given BrowserWindow and 0 options', () => {
+      const { browserWindow, x, y } = menu.popup(0, 1)
+
+      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
+      assert.equal(x, 0)
+      assert.equal(y, 1)
+    })
+
+    it('works with a given BrowserWindow and no options', () => {
+      const { browserWindow, x, y } = menu.popup(w, 100, 101)
+
+      assert.equal(browserWindow, w)
+      assert.equal(x, 100)
+      assert.equal(y, 101)
     })
   })
 
