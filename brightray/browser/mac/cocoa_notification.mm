@@ -105,7 +105,7 @@ void CocoaNotification::NotificationButtonClicked() {
   if (delegate())
     delegate()->NotificationAction(action_index_);
 
-  this->LogAction("clicked");
+  this->LogAction("button clicked");
 }
 
 void CocoaNotification::LogAction(const char* action) {

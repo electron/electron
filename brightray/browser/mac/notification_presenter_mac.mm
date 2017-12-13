@@ -22,6 +22,11 @@ CocoaNotification* NotificationPresenterMac::GetNotification(
           isEqual:ns_notification.identifier])
       return native_notification;
   }
+
+  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+    NSLog(@"%s \"%@\"", "Could not find cocoa notification for", ns_notification.identifier);
+  }
+
   return nullptr;
 }
 
