@@ -39,10 +39,15 @@ class WebContentsPreferences
 
   static bool IsPreferenceEnabled(const std::string& attribute_name,
                                   content::WebContents* web_contents);
+  static bool GetPreferenceString(const std::string& attribute_name,
+                                  content::WebContents* web_contents,
+                                  std::string* strValue);
   static bool IsSandboxed(content::WebContents* web_contents);
   static bool UsesNativeWindowOpen(content::WebContents* web_contents);
   static bool DisablePopups(content::WebContents* web_contents);
   static bool IsPluginsEnabled(content::WebContents* web_contents);
+  static bool GetAffinity(content::WebContents* web_contents,
+                          std::string* string_value);
 
   // Modify the WebPreferences according to |web_contents|'s preferences.
   static void OverrideWebkitPrefs(

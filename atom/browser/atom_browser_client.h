@@ -113,6 +113,8 @@ class AtomBrowserClient : public brightray::BrowserClient,
                            base::TerminationStatus status,
                            int exit_code) override;
 
+  void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
+
  private:
   bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,
                                    content::BrowserContext* browser_context,
@@ -134,6 +136,10 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
   std::map<int, ProcessPreferences> process_preferences_;
   std::map<int, base::ProcessId> render_process_host_pids_;
+
+  // list of site per affinity. weak_ptr to prevent instance locking
+  std::map<std::string, content::SiteInstance*> site_per_affinities;
+
   base::Lock process_preferences_lock_;
 
   std::unique_ptr<AtomResourceDispatcherHostDelegate>

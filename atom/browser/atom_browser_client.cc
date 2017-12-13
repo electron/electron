@@ -218,21 +218,61 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
                                    current_instance, url))
     return;
 
-  scoped_refptr<content::SiteInstance> site_instance =
-      content::SiteInstance::CreateForURL(browser_context, url);
+  bool is_new_instance = true;
+  scoped_refptr<content::SiteInstance> site_instance;
+
+  // Do we have an affinity site to manage ?
+  std::string affinity;
+  auto web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  if (WebContentsPreferences::GetAffinity(web_contents, &affinity)
+      && !affinity.empty()) {
+    affinity = base::ToLowerASCII(affinity);
+    auto iter = site_per_affinities.find(affinity);
+    if (iter != site_per_affinities.end()) {
+      site_instance = iter->second;
+      is_new_instance = false;
+    } else {
+      // We must not provide the url.
+      // This site is "isolated" and must not be taken into account
+      // when Chromium looking at a candidate for an url.
+      site_instance = content::SiteInstance::Create(
+          browser_context);
+      site_per_affinities[affinity] = site_instance.get();
+    }
+  } else {
+    site_instance = content::SiteInstance::CreateForURL(
+        browser_context,
+        url);
+  }
   *new_instance = site_instance.get();
 
-  // Make sure the |site_instance| is not freed when this function returns.
-  // FIXME(zcbenz): We should adjust OverrideSiteInstanceForNavigation's
-  // interface to solve this.
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&Noop, base::RetainedRef(site_instance)));
+  if (is_new_instance) {
+    // Make sure the |site_instance| is not freed
+    // when this function returns.
+    // FIXME(zcbenz): We should adjust
+    // OverrideSiteInstanceForNavigation's interface to solve this.
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI, FROM_HERE,
+        base::Bind(&Noop, base::RetainedRef(site_instance)));
 
-  // Remember the original web contents for the pending renderer process.
-  auto pending_process = (*new_instance)->GetProcess();
-  pending_processes_[pending_process->GetID()] =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
+    // Remember the original web contents for the pending renderer process.
+    auto pending_process = site_instance->GetProcess();
+    pending_processes_[pending_process->GetID()] = web_contents;
+  }
+}
+
+// We are storing weak_ptr, is it fundamental to maintain the map up-to-date
+// when an instance is destroyed.
+void AtomBrowserClient::SiteInstanceDeleting(
+    content::SiteInstance* site_instance) {
+  for (auto iter = site_per_affinities.begin();
+      iter != site_per_affinities.end(); ++iter) {
+    if (iter->second == site_instance) {
+      site_per_affinities.erase(iter);
+      break;
+    }
+  }
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(

@@ -237,6 +237,22 @@ bool WebContentsPreferences::IsPreferenceEnabled(
   return bool_value;
 }
 
+bool WebContentsPreferences::GetPreferenceString(
+    const std::string& attribute_name,
+    content::WebContents* web_contents,
+    std::string* strValue) {
+    WebContentsPreferences* self;
+    if (!web_contents)
+        return false;
+
+    self = FromWebContents(web_contents);
+    if (!self)
+        return false;
+
+    base::DictionaryValue& web_preferences = self->web_preferences_;
+    return web_preferences.GetString(attribute_name, strValue);
+}
+
 bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
   return IsPreferenceEnabled("sandbox", web_contents);
 }
@@ -254,6 +270,12 @@ bool WebContentsPreferences::IsPluginsEnabled(
 bool WebContentsPreferences::DisablePopups(
     content::WebContents* web_contents) {
   return IsPreferenceEnabled("disablePopups", web_contents);
+}
+
+bool WebContentsPreferences::GetAffinity(
+    content::WebContents* web_contents,
+    std::string* string_value) {
+    return GetPreferenceString("affinity", web_contents, string_value);
 }
 
 // static
