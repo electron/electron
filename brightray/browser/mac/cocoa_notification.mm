@@ -38,7 +38,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   g_identifier_++;
 
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
-    NSLog(@"%s (%@)", "Cocoa notification created", identifier);
+    LOG(INFO) << "Notification created (" << [identifier UTF8String] << ")";
   }
 
   if ([notification_ respondsToSelector:@selector(setContentImage:)] &&
@@ -111,7 +111,7 @@ void CocoaNotification::NotificationButtonClicked() {
 void CocoaNotification::LogAction(const char* action) {
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
     NSString* identifier = [notification_ valueForKey:@"identifier"];
-    NSLog(@"%s %s (%@)", "Cocoa notification", action, identifier);
+    LOG(INFO) << "Notification " << action << " (" << [identifier UTF8String] << ")";
   }
 }
 

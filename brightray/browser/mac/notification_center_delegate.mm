@@ -30,7 +30,7 @@
   auto notification = presenter_->GetNotification(notif);
 
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
-    NSLog(@"%s (%@)", "Cocoa notification activated", notif.identifier);
+    LOG(INFO) << "Notification activated (" << [notif.identifier UTF8String] << ")";
   }
 
   if (notification) {
