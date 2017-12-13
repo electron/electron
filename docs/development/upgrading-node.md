@@ -38,7 +38,8 @@ So in short, the primary steps are:
 
 ## Updating Electron's Node [fork](https://github.com/electron/node)
 
-1. Create a branch in https://github.com/electron/node: `electron-node-vX.X.X`
+1. Ensure that `master` on `electron/node` has updated release tags from `nodejs/node`
+1. Create a branch in https://github.com/electron/node: `electron-node-vX.X.X` where the base that you're branching from is the tag for the desired update
   - `vX.X.X` Must use a version of node compatible with our current version of chromium
 2. Re-apply our commits from the previous version of node we were using (`vY.Y.Y`) to `v.X.X.X`
   - Check release tag and select the range of commits we need to re-apply
