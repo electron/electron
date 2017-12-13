@@ -3,20 +3,19 @@ version: 2
 jobs:
   electron-linux-arm:
     docker:
-      - image: electronbuilds/electron:0.0.3
+      - image: electronbuilds/electron:0.0.4
         environment:
           TARGET_ARCH: arm
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout
-      - run: sh -e /etc/init.d/xvfb start
       - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
+            if [ -n "${RUN_RELEASE_BUILD}" ]; then
+              echo 'release build triggered from api'
+              echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
+            fi
       - run:
          name: Bootstrap
          command: |
@@ -50,29 +49,30 @@ jobs:
       - run:
           name: Upload distribution
           command: |
-             if [ "$ELECTRON_RELEASE" == "1" ]; then
-                echo 'Uploading Electron release distribution'
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
                 script/upload.py
+             elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
+                echo 'Uploading Electron release distribution to s3'
+                script/upload.py --upload_to_s3
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
-
   electron-linux-ia32:
     docker:
-      - image: electronbuilds/electron:0.0.3
+      - image: electronbuilds/electron:0.0.4
         environment:
           TARGET_ARCH: ia32
     resource_class: xlarge
     steps:
       - checkout
-      - run: sh -e /etc/init.d/xvfb start
       - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
+            if [ -n "${RUN_RELEASE_BUILD}" ]; then
+              echo 'release build triggered from api'
+              echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
+            fi
       - run:
          name: Bootstrap
          command: |
@@ -106,29 +106,34 @@ jobs:
       - run:
           name: Upload distribution
           command: |
-             if [ "$ELECTRON_RELEASE" == "1" ]; then
-                echo 'Uploading Electron release distribution'
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
                 script/upload.py
+             elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
+                echo 'Uploading Electron release distribution to s3'
+                script/upload.py --upload_to_s3
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
-
   electron-linux-x64:
     docker:
-      - image: electronbuilds/electron:0.0.3
+      - image: electronbuilds/electron:0.0.4
         environment:
           TARGET_ARCH: x64
+          DISPLAY: ':99.0'
     resource_class: xlarge
     steps:
       - checkout
-      - run: sh -e /etc/init.d/xvfb start
+      - run:
+          name: Setup for headless testing
+          command: sh -e /etc/init.d/xvfb start
       - run:
           name: Check for release
           command: |
-            MESSAGE="$(git log --format=%B -n 1 HEAD)"
-            case ${MESSAGE} in
-              Bump* ) echo 'export ELECTRON_RELEASE=1' >> $BASH_ENV
-            esac
+            if [ -n "${RUN_RELEASE_BUILD}" ]; then
+              echo 'release build triggered from api'
+              echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
+            fi
       - run:
          name: Bootstrap
          command: |
@@ -162,9 +167,12 @@ jobs:
       - run:
           name: Upload distribution
           command: |
-             if [ "$ELECTRON_RELEASE" == "1" ]; then
-                echo 'Uploading Electron release distribution'
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
                 script/upload.py
+             elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
+                echo 'Uploading Electron release distribution to s3'
+                script/upload.py --upload_to_s3
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
@@ -190,10 +198,17 @@ jobs:
              else
                 echo 'Skipping verify ffmpeg on release build'
              fi
+      - run:
+          name: Generate Typescript Definitions
+          command: npm run create-typescript-definitions
       - store_test_results:
           path: junit
       - store_artifacts:
           path: junit
+      - store_artifacts:
+          path: out/electron.d.ts
+      - store_artifacts:
+          path: out/electron-api.json
 
 workflows:
   version: 2

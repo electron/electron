@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import argparse
 
 from lib.util import execute, get_electron_version, parse_version, scoped_cwd
 
@@ -11,29 +12,85 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 def main():
-  if len(sys.argv) != 2 or sys.argv[1] == '-h':
-    print 'Usage: bump-version.py [<version> | major | minor | patch]'
+
+  parser = argparse.ArgumentParser(
+    description='Bump version numbers. Must specify at least one of the three'
+               +' options:\n'
+               +'   --bump=patch to increment patch version, or\n'
+               +'   --stable to promote current beta to stable, or\n'
+               +'   --version={version} to set version number directly\n'
+               +'Note that you can use both --bump and --stable '
+               +'simultaneously.',
+               formatter_class=argparse.RawTextHelpFormatter
+  )
+  parser.add_argument(
+    '--version',
+    default=None,
+    dest='new_version',
+    help='new version number'
+  )
+  parser.add_argument(
+    '--bump',
+    action='store',
+    default=None,
+    dest='bump',
+    help='increment [major | minor | patch | beta]'
+  )
+  parser.add_argument(
+    '--stable',
+    action='store_true',
+    default= False,
+    dest='stable',
+    help='promote to stable (i.e. remove `-beta.x` suffix)'
+  )
+  parser.add_argument(
+    '--dry-run',
+    action='store_true',
+    default= False,
+    dest='dry_run',
+    help='just to check that version number is correct'
+  )
+
+  args = parser.parse_args()
+
+  if args.new_version == None and args.bump == None and args.stable == False:
+    parser.print_help()
     return 1
 
-  option = sys.argv[1]
-  increments = ['major', 'minor', 'patch', 'build']
-  if option in increments:
-    version = get_electron_version()
-    versions = parse_version(version.split('-')[0])
-    versions = increase_version(versions, increments.index(option))
-  else:
-    versions = parse_version(option)
+  increments = ['major', 'minor', 'patch', 'beta']
+
+  curr_version = get_electron_version()
+  versions = parse_version(re.sub('-beta', '', curr_version))
+
+  if args.bump in increments:
+    versions = increase_version(versions, increments.index(args.bump))
+    if versions[3] == '0':
+      # beta starts at 1
+      versions = increase_version(versions, increments.index('beta'))
+
+  if args.stable == True:
+    versions[3] = '0'
+
+  if args.new_version != None:
+    versions = parse_version(re.sub('-beta', '', args.new_version))
 
   version = '.'.join(versions[:3])
+  suffix = '' if versions[3] == '0' else '-beta.' + versions[3]
+
+  if args.dry_run:
+    print 'new version number would be: {0}\n'.format(version + suffix)
+    return 0
+
 
   with scoped_cwd(SOURCE_ROOT):
-    update_electron_gyp(version)
+    update_electron_gyp(version, suffix)
     update_win_rc(version, versions)
-    update_version_h(versions)
+    update_version_h(versions, suffix)
     update_info_plist(version)
-    update_package_json(version)
-    tag_version(version)
+    update_package_json(version, suffix)
+    tag_version(version, suffix)
 
+  print 'Bumped to version: {0}'.format(version + suffix)
 
 def increase_version(versions, index):
   for i in range(index + 1, 4):
@@ -42,14 +99,14 @@ def increase_version(versions, index):
   return versions
 
 
-def update_electron_gyp(version):
-  pattern = re.compile(" *'version%' *: *'[0-9.]+'")
+def update_electron_gyp(version, suffix):
+  pattern = re.compile(" *'version%' *: *'[0-9.]+(-beta[0-9.]*)?'")
   with open('electron.gyp', 'r') as f:
     lines = f.readlines()
 
   for i in range(0, len(lines)):
     if pattern.match(lines[i]):
-      lines[i] = "    'version%': '{0}',\n".format(version)
+      lines[i] = "    'version%': '{0}',\n".format(version + suffix)
       with open('electron.gyp', 'w') as f:
         f.write(''.join(lines))
       return
@@ -81,7 +138,7 @@ def update_win_rc(version, versions):
     f.write(''.join(lines))
 
 
-def update_version_h(versions):
+def update_version_h(versions, suffix):
   version_h = os.path.join('atom', 'common', 'atom_version.h')
   with open(version_h, 'r') as f:
     lines = f.readlines()
@@ -92,6 +149,11 @@ def update_version_h(versions):
       lines[i] = '#define ATOM_MAJOR_VERSION {0}\n'.format(versions[0])
       lines[i + 1] = '#define ATOM_MINOR_VERSION {0}\n'.format(versions[1])
       lines[i + 2] = '#define ATOM_PATCH_VERSION {0}\n'.format(versions[2])
+
+      if (suffix):
+        lines[i + 3] = '#define ATOM_PRE_RELEASE_VERSION {0}\n'.format(suffix)
+      else:
+        lines[i + 3] = '// #define ATOM_PRE_RELEASE_VERSION\n'
 
       with open(version_h, 'w') as f:
         f.write(''.join(lines))
@@ -114,7 +176,7 @@ def update_info_plist(version):
     f.write(''.join(lines))
 
 
-def update_package_json(version):
+def update_package_json(version, suffix):
   package_json = 'package.json'
   with open(package_json, 'r') as f:
     lines = f.readlines()
@@ -122,15 +184,15 @@ def update_package_json(version):
   for i in range(0, len(lines)):
     line = lines[i];
     if 'version' in line:
-      lines[i] = '  "version": "{0}",\n'.format(version)
+      lines[i] = '  "version": "{0}",\n'.format(version + suffix)
       break
 
   with open(package_json, 'w') as f:
     f.write(''.join(lines))
 
 
-def tag_version(version):
-  execute(['git', 'commit', '-a', '-m', 'Bump v{0}'.format(version)])
+def tag_version(version, suffix):
+  execute(['git', 'commit', '-a', '-m', 'Bump v{0}'.format(version + suffix)])
 
 
 if __name__ == '__main__':
