@@ -1,0 +1,35 @@
+FROM multiarch/debian-debootstrap:arm64-jessie
+
+RUN apt-get update && apt-get install -y\
+ bison \
+ build-essential \
+ clang \
+ curl \
+ gperf \
+ libasound2 \
+ libasound2-dev \
+ libcap-dev \
+ libcups2-dev \
+ libdbus-1-dev \
+ libgconf-2-4 \
+ libgconf2-dev \
+ libgnome-keyring-dev \
+ libgtk-3-0 \
+ libgtk2.0-0 \
+ libgtk2.0-dev \
+ libnotify-dev \
+ libnss3 \
+ libnss3-dev \
+ libx11-xcb-dev \
+ libxss1 \
+ libxtst-dev \
+ libxtst6 \
+ python-dbusmock \
+ wget \
+ xvfb
+
+ADD tools/xvfb-init.sh /etc/init.d/xvfb
+RUN chmod a+x /etc/init.d/xvfb
+ADD tools/run-electron.sh /run-electron.sh
+RUN chmod a+x /run-electron.sh
+CMD sh /run-electron.sh
