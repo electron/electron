@@ -144,6 +144,28 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
   }
 }
 
+void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
+  base::DictionaryValue value;
+
+  if(!args->GetNext(&value)) {
+    args->ThrowError("Invalid userDefault data provided");
+  } else {
+    @try {
+      NSDictionary* dict = DictionaryValueToNSDictionary(value);
+      for (id key in dict) {
+        id value = [dict objectForKey:key];
+        if ([value isKindOfClass:[NSNull class]] || value == nil) {
+          args->ThrowError("Invalid userDefault data provided");
+          return;
+        }
+      }
+      [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
+    } @catch (NSException* exception) {
+      args->ThrowError("Invalid userDefault data provided");
+    }
+  }
+}
+
 void SystemPreferences::SetUserDefault(const std::string& name,
                                        const std::string& type,
                                        mate::Arguments* args) {
