@@ -28,13 +28,18 @@
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
        didActivateNotification:(NSUserNotification *)notif {
   auto notification = presenter_->GetNotification(notif);
+
+  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+    NSLog(@"%s (%@)", "Cocoa notification activated", notif.identifier);
+  }
+
   if (notification) {
     if (notif.activationType == NSUserNotificationActivationTypeReplied) {
       notification->NotificationReplied([notif.response.string UTF8String]);
     } else if (notif.activationType == NSUserNotificationActivationTypeActionButtonClicked) {
       notification->NotificationButtonClicked();
     } else if (notif.activationType == NSUserNotificationActivationTypeContentsClicked) {
-      notification->NotificationClicked(); 
+      notification->NotificationClicked();
     }
   }
 }
