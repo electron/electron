@@ -615,6 +615,22 @@ Shows pop-up dictionary that searches the selected word on the page.
 Returns [`WebContents`](web-contents.md) - The web contents associated with
 this `webview`.
 
+### `<webview>.setPermissionRequestHandler(callback)`
+
+* `callback` Function
+  * `event` Object
+    * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex', 'pointerLock', 'fullscreen', 'openExternal'.
+    * `request` Object Has an `allow` and `deny` function.
+
+Add handler for when `webview` is requested for example to go fullscreen or present a notification.
+Use `deny` to prevent default behavior. Use `allow` to accept default behavior. 
+
+You can only have one handler for each `webview`.
+
+### `<webview>.removePermissionRequestHandler()`
+
+Remove permission request handler from `webview`.
+
 ## DOM events
 
 The following DOM events are available to the `webview` tag:
