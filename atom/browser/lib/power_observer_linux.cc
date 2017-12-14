@@ -122,12 +122,12 @@ void PowerObserverLinux::OnInhibitResponse(base::ScopedFD* scoped_fd,
 
 void PowerObserverLinux::OnPrepareForSleep(dbus::Signal* signal) {
   dbus::MessageReader reader(signal);
-  bool status;
-  if (!reader.PopBool(&status)) {
+  bool suspending;
+  if (!reader.PopBool(&suspending)) {
     LOG(ERROR) << "Invalid signal: " << signal->ToString();
     return;
   }
-  if (status) {
+  if (suspending) {
     OnSuspend();
     sleep_lock_.reset();
   } else {
@@ -138,12 +138,12 @@ void PowerObserverLinux::OnPrepareForSleep(dbus::Signal* signal) {
 
 void PowerObserverLinux::OnPrepareForShutdown(dbus::Signal* signal) {
   dbus::MessageReader reader(signal);
-  bool status;
-  if (!reader.PopBool(&status)) {
+  bool shutting_down;
+  if (!reader.PopBool(&shutting_down)) {
     LOG(ERROR) << "Invalid signal: " << signal->ToString();
     return;
   }
-  if (status) {
+  if (shutting_down) {
     if (!OnShutdown()) {
       // The user didn't try to prevent shutdown. Release the lock and allow the
       // shutdown to continue normally.
