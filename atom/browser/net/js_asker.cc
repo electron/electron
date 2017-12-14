@@ -17,13 +17,11 @@ namespace {
 
 // The callback which is passed to |handler|.
 void HandlerCallback(const BeforeStartCallback& before_start,
-                     const base::Closure& before_post_callback,
                      const ResponseCallback& callback,
                      mate::Arguments* args) {
   // If there is no argument passed then we failed.
   v8::Local<v8::Value> value;
   if (!args->GetNext(&value)) {
-    before_post_callback.Run();
     content::BrowserThread::PostTask(
         content::BrowserThread::IO, FROM_HERE,
         base::Bind(callback, false, nullptr));
@@ -37,7 +35,6 @@ void HandlerCallback(const BeforeStartCallback& before_start,
   V8ValueConverter converter;
   v8::Local<v8::Context> context = args->isolate()->GetCurrentContext();
   std::unique_ptr<base::Value> options(converter.FromV8Value(value, context));
-  before_post_callback.Run();
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(callback, true, base::Passed(&options)));
@@ -49,7 +46,6 @@ void AskForOptions(v8::Isolate* isolate,
                    const JavaScriptHandler& handler,
                    std::unique_ptr<base::DictionaryValue> request_details,
                    const BeforeStartCallback& before_start,
-                   const base::Closure& before_post_callback,
                    const ResponseCallback& callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   v8::Locker locker(isolate);
@@ -59,8 +55,7 @@ void AskForOptions(v8::Isolate* isolate,
   handler.Run(
       *(request_details.get()),
       mate::ConvertToV8(isolate,
-                        base::Bind(&HandlerCallback, before_start,
-                                   before_post_callback, callback)));
+                        base::Bind(&HandlerCallback, before_start, callback)));
 }
 
 bool IsErrorOptions(base::Value* value, int* error) {
