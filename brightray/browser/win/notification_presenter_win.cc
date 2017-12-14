@@ -9,11 +9,11 @@
 #include <string>
 #include <vector>
 
+#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/md5.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
-#include "base/environment.h"
 #include "base/win/windows_version.h"
 #include "brightray/browser/win/notification_presenter_win7.h"
 #include "brightray/browser/win/windows_toast_notification.h"
@@ -54,10 +54,9 @@ NotificationPresenter* NotificationPresenter::Create() {
       new NotificationPresenterWin);
   if (!presenter->Init())
     return nullptr;
-  
-  if (IsDebuggingNotifications()) {
+
+  if (IsDebuggingNotifications())
     LOG(INFO) << "Successfully created Windows notifications presenter";
-  }
 
   return presenter.release();
 }
