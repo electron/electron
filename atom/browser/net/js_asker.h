@@ -9,7 +9,6 @@
 #include "base/callback.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
-#include "base/synchronization/waitable_event.h"
 #include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
@@ -36,7 +35,6 @@ void AskForOptions(v8::Isolate* isolate,
                    const JavaScriptHandler& handler,
                    std::unique_ptr<base::DictionaryValue> request_details,
                    const BeforeStartCallback& before_start,
-                   const base::Closure& before_post_callback,
                    const ResponseCallback& callback);
 
 // Test whether the |options| means an error.
@@ -48,21 +46,7 @@ template<typename RequestJob>
 class JsAsker : public RequestJob {
  public:
   JsAsker(net::URLRequest* request, net::NetworkDelegate* network_delegate)
-      : RequestJob(request, network_delegate),
-        wait_ui_event_(base::WaitableEvent::ResetPolicy::MANUAL,
-                       base::WaitableEvent::InitialState::SIGNALED),
-        weak_factory_(this) {}
-
-  ~JsAsker() override {
-    // It is not safe to destroy JsAsker without calling Kill() while waiting
-    // for response from UI thread. Because by the time ~JsAsker() is called,
-    // the subclass has already been destructed, while we are still executing
-    // the subclass's BeforeStartInUI() method.
-    // But this corner case should never happen, since Kill() is usually called
-    // before destroying the URLRequestJob, so we just assert for that case.
-    CHECK(wait_ui_event_.IsSignaled()) <<
-        "JsAsker is destroyed while waiting for response from UI thread.";
-  }
+      : RequestJob(request, network_delegate), weak_factory_(this) {}
 
   // Called by |CustomProtocolHandler| to store handler related information.
   void SetHandlerInfo(
@@ -82,36 +66,23 @@ class JsAsker : public RequestJob {
     return request_context_getter_;
   }
 
- protected:
+ private:
   // RequestJob:
   void Start() override {
     std::unique_ptr<base::DictionaryValue> request_details(
         new base::DictionaryValue);
     request_start_time_ = base::TimeTicks::Now();
     FillRequestDetails(request_details.get(), RequestJob::request());
-    // Do not kill the job while waiting for UI thread's response.
-    wait_ui_event_.Reset();
-    // Ask for options from the UI thread.
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
         base::Bind(&internal::AskForOptions,
                    isolate_,
                    handler_,
                    base::Passed(&request_details),
-                   // The RequestJob is guaranteed to exist before OnResponse()
-                   // is called.
                    base::Bind(&JsAsker::BeforeStartInUI,
-                              base::Unretained(this)),
-                   base::Bind(&base::WaitableEvent::Signal,
-                              base::Unretained(&wait_ui_event_)),
+                              weak_factory_.GetWeakPtr()),
                    base::Bind(&JsAsker::OnResponse,
                               weak_factory_.GetWeakPtr())));
-  }
-
-  void Kill() override {
-    // Wait for UI thread before killing the job.
-    wait_ui_event_.Wait();
-    RequestJob::Kill();
   }
 
   int GetResponseCode() const override { return net::HTTP_OK; }
@@ -129,7 +100,6 @@ class JsAsker : public RequestJob {
     info->headers = new net::HttpResponseHeaders("");
   }
 
- private:
   // Called when the JS handler has sent the response, we need to decide whether
   // to start, or fail the job.
   void OnResponse(bool success, std::unique_ptr<base::Value> value) {
@@ -142,12 +112,6 @@ class JsAsker : public RequestJob {
           net::URLRequestStatus(net::URLRequestStatus::FAILED, error));
     }
   }
-
-  // Prevent this class from being destroyed when it is still accessed by UI
-  // thread.
-  // FIXME(zcbenz): Refactor JsAsker and its subclasses so this class is not
-  // used by both UI and IO threads.
-  base::WaitableEvent wait_ui_event_;
 
   v8::Isolate* isolate_;
   net::URLRequestContextGetter* request_context_getter_;
