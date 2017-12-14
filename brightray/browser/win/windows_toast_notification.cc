@@ -27,7 +27,6 @@ using ABI::Windows::Data::Xml::Dom::IXmlNode;
 using ABI::Windows::Data::Xml::Dom::IXmlNodeList;
 using ABI::Windows::Data::Xml::Dom::IXmlText;
 
-
 namespace brightray {
 
 namespace {
@@ -96,7 +95,7 @@ void WindowsToastNotification::Show(const NotificationOptions& options) {
   std::wstring icon_path = presenter_win->SaveIconToFilesystem(
     options.icon,
     options.icon_url);
-  
+
   ComPtr<IXmlDocument> toast_xml;
   if (FAILED(GetToastXml(toast_manager_.Get(), options.title, options.msg,
                          icon_path, options.silent, &toast_xml))) {
@@ -142,7 +141,7 @@ void WindowsToastNotification::Show(const NotificationOptions& options) {
 }
 
 void WindowsToastNotification::Dismiss() {
-  if (IsDebuggingNotifications()) LOG(INFO) << "Hiding notification";  
+  if (IsDebuggingNotifications()) LOG(INFO) << "Hiding notification";
   toast_notifier_->Hide(toast_notification_.Get());
 }
 
@@ -173,22 +172,28 @@ bool WindowsToastNotification::GetToastXml(
             ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText02
             : ABI::Windows::UI::Notifications::
                   ToastTemplateType_ToastImageAndText02;
-    if (FAILED(toastManager->GetTemplateContent(template_type, toast_xml)))
-      if (IsDebuggingNotifications()) LOG(INFO) << "Fetching XML template failed";    
+    if (FAILED(toastManager->GetTemplateContent(template_type, toast_xml))) {
+      if (IsDebuggingNotifications())
+        LOG(INFO) << "Fetching XML template failed";
       return false;
-    if (!SetXmlText(*toast_xml, title, msg))
-      if (IsDebuggingNotifications()) LOG(INFO) << "Setting text fields on template failed";    
+    }
+
+    if (!SetXmlText(*toast_xml, title, msg)) {
+      if (IsDebuggingNotifications())
+        LOG(INFO) << "Setting text fields on template failed";
       return false;
+    }
   }
 
   // Configure the toast's notification sound
   if (silent) {
-    if (FAILED(SetXmlAudioSilent(*toast_xml)))
+    if (FAILED(SetXmlAudioSilent(*toast_xml))) {
       if (IsDebuggingNotifications()) {
-        LOG(INFO) << "Setting \"silent\" option on notification failed";  
+        LOG(INFO) << "Setting \"silent\" option on notification failed";
       }
-       
+
       return false;
+    }
   }
 
   // Configure the toast's image
@@ -413,7 +418,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationClicked, notification_));
-  if (IsDebuggingNotifications()) LOG(INFO) << "Notification clicked";          
+  if (IsDebuggingNotifications()) LOG(INFO) << "Notification clicked";
 
   return S_OK;
 }
@@ -424,8 +429,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationDismissed, notification_));
-  if (IsDebuggingNotifications()) LOG(INFO) << "Notification dismissed";                
-  
+  if (IsDebuggingNotifications()) LOG(INFO) << "Notification dismissed";
+
   return S_OK;
 }
 
@@ -435,7 +440,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationFailed, notification_));
-  if (IsDebuggingNotifications()) LOG(INFO) << "Notification failed";                      
+  if (IsDebuggingNotifications()) LOG(INFO) << "Notification failed";
 
   return S_OK;
 }
