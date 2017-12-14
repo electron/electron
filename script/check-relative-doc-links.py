@@ -13,23 +13,24 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   filepaths = []
+  totalDirs = 0
   try:
     for root, dirs, files in os.walk(DOCS_DIR):
-      for file in files:
-        if file.endswith('.md'):
-          filepaths.append(os.path.join(root, file))
+      totalDirs += len(dirs)
+      for f in files:
+        if f.endswith('.md'):
+          filepaths.append(os.path.join(root, f))
   except KeyboardInterrupt:
     print('Keyboard interruption. Please try again.')
-    return
-  except:
-    print('Error: Could not read files in directories.')
     return
 
   totalBrokenLinks = 0
   for path in filepaths:
     totalBrokenLinks += getBrokenLinks(path)
 
-  print('Parsed through ' + str(len(filepaths)) + ' files.')
+  print('Parsed through ' + str(len(filepaths)) +
+        ' files within docs directory and its ' +
+        str(totalDirs) + ' subdirectories.')
   print('Found ' + str(totalBrokenLinks) + ' broken relative links.')
 
 
@@ -38,14 +39,12 @@ def getBrokenLinks(filepath):
   brokenLinks = []
 
   try:
-    file = open(filepath, 'r')
-    lines = file.readlines()
+    f = open(filepath, 'r')
+    lines = f.readlines()
   except KeyboardInterrupt:
     print('Keyboard interruption whle parsing. Please try again.')
-  except:
-    print('Error: Could not open file ', filepath)
   finally:
-    file.close()
+    f.close()
 
   regexLink = re.compile('\[(.*?)\]\((?P<links>(.*?))\)')
   links = []
@@ -60,7 +59,7 @@ def getBrokenLinks(filepath):
     sections = link.split('#')
     if len(sections) > 1:
       if str(link).startswith('#'):
-        if not checkSections(sections, link, lines, filepath):
+        if not checkSections(sections, lines):
           brokenLinks.append(link)
       else:
         tempFile = os.path.join(currentDir, sections[0])
@@ -70,12 +69,10 @@ def getBrokenLinks(filepath):
             newLines = newFile.readlines()
           except KeyboardInterrupt:
             print('Keyboard interruption whle parsing. Please try again.')
-          except:
-            print('Error: Could not open file ', filepath)
           finally:
             newFile.close()
 
-          if not checkSections(sections, link, newLines, tempFile):
+          if not checkSections(sections, newLines):
             brokenLinks.append(link)
         else:
           brokenLinks.append(link)
@@ -88,7 +85,7 @@ def getBrokenLinks(filepath):
   return len(brokenLinks)
 
 
-def checkSections(sections, link, lines, path):
+def checkSections(sections, lines):
   sectionHeader = sections[1].replace('-', '')
   regexSectionTitle = re.compile('# (?P<header>.*)')
   for line in lines:
