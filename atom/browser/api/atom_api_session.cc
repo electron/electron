@@ -439,6 +439,17 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       std::vector<content::DownloadItem::ReceivedSlice>());
 }
 
+void SetDevToolsNetworkEmulationClientIdInIO(
+    brightray::URLRequestContextGetter* context_getter,
+    const std::string& client_id) {
+  if (!context_getter)
+    return;
+  auto network_delegate =
+      static_cast<AtomNetworkDelegate*>(context_getter->network_delegate());
+  if (network_delegate)
+    network_delegate->SetDevToolsNetworkEmulationClientId(client_id);
+}
+
 }  // namespace
 
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -548,16 +559,24 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
-  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
-      devtools_network_emulation_client_id_);
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(
+          &SetDevToolsNetworkEmulationClientIdInIO,
+          base::RetainedRef(browser_context_->url_request_context_getter()),
+          devtools_network_emulation_client_id_));
 }
 
 void Session::DisableNetworkEmulation() {
   std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
-  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
-      std::string());
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(
+          &SetDevToolsNetworkEmulationClientIdInIO,
+          base::RetainedRef(browser_context_->url_request_context_getter()),
+          std::string()));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,

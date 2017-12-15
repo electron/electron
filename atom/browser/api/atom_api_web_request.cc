@@ -74,10 +74,16 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
     return;
   }
 
-  auto delegate = browser_context_->network_delegate();
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-                          base::Bind(method, base::Unretained(delegate), type,
-                                     patterns, listener));
+  auto url_request_context_getter =
+      browser_context_->url_request_context_getter();
+  if (!url_request_context_getter)
+    return;
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(method,
+                 base::Unretained(static_cast<AtomNetworkDelegate*>(
+                     url_request_context_getter->network_delegate())),
+                 type, patterns, listener));
 }
 
 // static

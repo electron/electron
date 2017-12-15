@@ -247,7 +247,6 @@ void AtomNetworkDelegate::SetResponseListenerInIO(
 
 void AtomNetworkDelegate::SetDevToolsNetworkEmulationClientId(
     const std::string& client_id) {
-  base::AutoLock auto_lock(lock_);
   client_id_ = client_id;
 }
 
@@ -266,16 +265,10 @@ int AtomNetworkDelegate::OnBeforeStartTransaction(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
-  std::string client_id;
-  {
-    base::AutoLock auto_lock(lock_);
-    client_id = client_id_;
-  }
-
-  if (!client_id.empty())
+  if (!client_id_.empty())
     headers->SetHeader(
         DevToolsNetworkTransaction::kDevToolsEmulateNetworkConditionsClientId,
-        client_id);
+        client_id_);
   if (!base::ContainsKey(response_listeners_, kOnBeforeSendHeaders))
     return brightray::NetworkDelegate::OnBeforeStartTransaction(
         request, callback, headers);

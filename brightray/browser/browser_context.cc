@@ -145,8 +145,8 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
   return url_request_getter_.get();
 }
 
-net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
-  return new NetworkDelegate;
+std::unique_ptr<net::NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
+  return base::MakeUnique<NetworkDelegate>();
 }
 
 std::string BrowserContext::GetMediaDeviceIDSalt() {
