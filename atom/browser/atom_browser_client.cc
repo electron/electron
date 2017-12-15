@@ -235,9 +235,7 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   // Remember the original web contents for the pending renderer process.
   auto pending_process = (*new_instance)->GetProcess();
   pending_processes_[pending_process->GetID()] =
-      content::WebContents::FromRenderFrameHost(render_frame_host);;
-  // Clear the entry in map when process ends.
-  pending_process->AddObserver(this);
+      content::WebContents::FromRenderFrameHost(render_frame_host);
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
