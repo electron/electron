@@ -15,6 +15,7 @@
 #include "net/http/http_cache.h"
 #include "net/http/transport_security_state.h"
 #include "net/http/url_security_manager.h"
+#include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 
 namespace base {
@@ -44,7 +45,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     Delegate() {}
     virtual ~Delegate() {}
 
-    virtual net::NetworkDelegate* CreateNetworkDelegate() { return nullptr; }
+    virtual std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() {
+      return nullptr;
+    }
     virtual net::CookieMonsterDelegate* CreateCookieDelegate() {
       return nullptr;
     }
@@ -77,6 +80,11 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   net::HostResolver* host_resolver();
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }
+  net::NetworkDelegate* network_delegate() const {
+    if (url_request_context_)
+      return url_request_context_->network_delegate();
+    return nullptr;
+  }
 
  private:
   Delegate* delegate_;
@@ -91,7 +99,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   std::unique_ptr<RequireCTDelegate> ct_delegate_;
   std::unique_ptr<net::ProxyConfigService> proxy_config_service_;
-  std::unique_ptr<net::NetworkDelegate> network_delegate_;
   std::unique_ptr<net::URLRequestContextStorage> storage_;
   std::unique_ptr<net::URLRequestContext> url_request_context_;
   std::unique_ptr<net::HostMappingRules> host_mapping_rules_;

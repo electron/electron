@@ -32,7 +32,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   void SetUserAgent(const std::string& user_agent);
 
   // brightray::URLRequestContextGetter::Delegate:
-  net::NetworkDelegate* CreateNetworkDelegate() override;
+  std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() override;
   net::CookieMonsterDelegate* CreateCookieDelegate() override;
   std::string GetUserAgent() override;
   std::unique_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
@@ -52,7 +52,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
 
   AtomBlobReader* GetBlobReader();
-  AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
   AtomCookieDelegate* cookie_delegate() const {
     return cookie_delegate_.get();
   }
@@ -70,8 +69,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::string user_agent_;
   bool use_cache_;
 
-  // Managed by brightray::BrowserContext.
-  AtomNetworkDelegate* network_delegate_;
   scoped_refptr<AtomCookieDelegate> cookie_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);

@@ -185,11 +185,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       url_request_context_->set_net_log(net_log_);
     }
 
-    network_delegate_.reset(delegate_->CreateNetworkDelegate());
-    url_request_context_->set_network_delegate(network_delegate_.get());
-
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
+
+    storage_->set_network_delegate(delegate_->CreateNetworkDelegate());
 
     auto cookie_path = in_memory_ ?
         base::FilePath() : base_path_.Append(FILE_PATH_LITERAL("Cookies"));

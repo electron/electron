@@ -90,7 +90,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   virtual void RegisterPrefs(PrefRegistrySimple* pref_registry) {}
 
   // URLRequestContextGetter::Delegate:
-  net::NetworkDelegate* CreateNetworkDelegate() override;
+  std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() override;
 
   base::FilePath GetPath() const override;
 
