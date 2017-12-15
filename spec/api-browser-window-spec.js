@@ -1356,7 +1356,7 @@ describe('BrowserWindow module', () => {
         })
       })
 
-      xit('supports calling preventDefault on new-window events', (done) => {
+      it('supports calling preventDefault on new-window events', (done) => {
         w.destroy()
         w = new BrowserWindow({
           show: false,
