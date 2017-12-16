@@ -39,7 +39,10 @@ namespace {
 // A provider of Geolocation services to override AccessTokenStore.
 class AtomGeolocationDelegate : public device::GeolocationDelegate {
  public:
-  AtomGeolocationDelegate() = default;
+  AtomGeolocationDelegate() {
+    device::GeolocationProvider::GetInstance()
+        ->UserDidOptIntoLocationServices();
+  }
 
   scoped_refptr<device::AccessTokenStore> CreateAccessTokenStore() final {
     return new AtomAccessTokenStore();
