@@ -8,6 +8,7 @@
 
 #include "base/environment.h"
 #include "base/strings/string_util.h"
+#include "base/threading/thread_restrictions.h"
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
@@ -51,6 +52,7 @@ void SetWindowType(::Window xwindow, const std::string& type) {
 }
 
 bool ShouldUseGlobalMenuBar() {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
     return false;
