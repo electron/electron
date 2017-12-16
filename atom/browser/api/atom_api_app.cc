@@ -842,7 +842,7 @@ void App::SetDesktopName(const std::string& desktop_name) {
 }
 
 std::string App::GetLocale() {
-  return l10n_util::GetApplicationLocale("");
+  return g_browser_process->GetApplicationLocale();
 }
 
 bool App::MakeSingleInstance(

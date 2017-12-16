@@ -24,6 +24,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "device/geolocation/geolocation_delegate.h"
 #include "device/geolocation/geolocation_provider.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
@@ -127,6 +128,12 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
   JavascriptEnvironment::Initialize();
+}
+
+int AtomBrowserMainParts::PreCreateThreads() {
+  fake_browser_process_->SetApplicationLocale(
+      l10n_util::GetApplicationLocale(""));
+  return brightray::BrowserMainParts::PreCreateThreads();
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {

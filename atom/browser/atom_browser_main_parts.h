@@ -51,6 +51,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   // content::BrowserMainParts:
   void PreEarlyInitialization() override;
   void PostEarlyInitialization() override;
+  int PreCreateThreads() override;
   void PreMainMessageLoopRun() override;
   bool MainMessageLoopRun(int* result_code) override;
   void PostMainMessageLoopStart() override;

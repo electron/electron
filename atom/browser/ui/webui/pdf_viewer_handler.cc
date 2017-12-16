@@ -8,6 +8,7 @@
 #include "base/bind.h"
 #include "base/memory/ptr_util.h"
 #include "base/values.h"
+#include "chrome/browser/browser_process.h"
 #include "content/public/browser/stream_handle.h"
 #include "content/public/browser/stream_info.h"
 #include "content/public/browser/web_contents.h"
@@ -193,7 +194,7 @@ void PdfViewerHandler::GetStrings(const base::ListValue* args) {
   SET_STRING("tooltipZoomOut", "Zoom out");
 #undef SET_STRING
 
-  webui::SetLoadTimeDataDefaults(l10n_util::GetApplicationLocale(""),
+  webui::SetLoadTimeDataDefaults(g_browser_process->GetApplicationLocale(),
                                  result.get());
   ResolveJavascriptCallback(*callback_id, *result);
 }

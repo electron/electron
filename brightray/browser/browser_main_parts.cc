@@ -16,6 +16,7 @@
 #include "base/message_loop/message_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "brightray/browser/browser_client.h"
 #include "brightray/browser/browser_context.h"
 #include "brightray/browser/devtools_manager_delegate.h"
 #include "brightray/browser/media/media_capture_devices_dispatcher.h"
@@ -274,6 +275,9 @@ int BrowserMainParts::PreCreateThreads() {
 
   if (!views::LayoutProvider::Get())
     layout_provider_.reset(new views::LayoutProvider());
+
+  // Initialize the app locale.
+  BrowserClient::SetApplicationLocale(l10n_util::GetApplicationLocale(""));
 
   return 0;
 }

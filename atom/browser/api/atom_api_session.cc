@@ -126,10 +126,13 @@ net::HttpAuth::Scheme GetAuthSchemeFromString(const std::string& scheme) {
 void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
                       const std::string& accept_lang,
                       const std::string& user_agent) {
+  std::string accept_lang_header = net::HttpUtil::GenerateAcceptLanguageHeader(
+      accept_lang.empty() ? getter->GetURLRequestContext()
+                                ->http_user_agent_settings()
+                                ->GetAcceptLanguage()
+                          : accept_lang);
   getter->GetURLRequestContext()->set_http_user_agent_settings(
-      new net::StaticHttpUserAgentSettings(
-          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
-          user_agent));
+      new net::StaticHttpUserAgentSettings(accept_lang_header, user_agent));
 }
 
 }  // namespace
@@ -642,7 +645,7 @@ void Session::SetUserAgent(const std::string& user_agent,
                            mate::Arguments* args) {
   browser_context_->SetUserAgent(user_agent);
 
-  std::string accept_lang = l10n_util::GetApplicationLocale("");
+  std::string accept_lang;
   args->GetNext(&accept_lang);
 
   scoped_refptr<brightray::URLRequestContextGetter> getter(
