@@ -202,10 +202,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
 }
 
-std::string AtomBrowserClient::GetApplicationLocale() {
-  return l10n_util::GetApplicationLocale("");
-}
-
 void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     content::RenderFrameHost* render_frame_host,
     content::BrowserContext* browser_context,
