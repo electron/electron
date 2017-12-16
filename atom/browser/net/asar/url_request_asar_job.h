@@ -63,6 +63,13 @@ class URLRequestAsarJob : public net::URLRequestJob {
   void GetResponseInfo(net::HttpResponseInfo* info) override;
 
  private:
+  // The type of this job.
+  enum JobType {
+    TYPE_ERROR,
+    TYPE_ASAR,
+    TYPE_FILE,
+  };
+
   // Meta information about the file. It's used as a member in the
   // URLRequestFileJob and also passed between threads because disk access is
   // necessary to obtain it.
@@ -80,10 +87,13 @@ class URLRequestAsarJob : public net::URLRequestJob {
     bool file_exists;
     // Flag showing whether the file name actually refers to a directory.
     bool is_directory;
+    // Path to the file.
+    base::FilePath file_path;
   };
 
   // Fetches file info on a background thread.
   static void FetchMetaInfo(const base::FilePath& file_path,
+                            JobType type,
                             FileMetaInfo* meta_info);
 
   // Callback after fetching file info on a background thread.
@@ -99,12 +109,6 @@ class URLRequestAsarJob : public net::URLRequestJob {
   // Callback after data is asynchronously read from the file into |buf|.
   void DidRead(scoped_refptr<net::IOBuffer> buf, int result);
 
-  // The type of this job.
-  enum JobType {
-    TYPE_ERROR,
-    TYPE_ASAR,
-    TYPE_FILE,
-  };
   JobType type_;
 
   std::shared_ptr<Archive> archive_;
