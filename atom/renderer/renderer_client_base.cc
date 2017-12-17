@@ -113,6 +113,10 @@ void RendererClientBase::RenderThreadStarted() {
     blink::SchemeRegistry::RegisterURLSchemeAsSecure(
         WTF::String::FromUTF8(scheme.data(), scheme.length()));
 
+  // Allow file scheme to handle service worker by default.
+  // FIXME(zcbenz): Can this be moved elsewhere?
+  blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
+
   preferences_manager_.reset(new PreferencesManager);
 
 #if defined(OS_WIN)
@@ -144,10 +148,6 @@ void RendererClientBase::RenderFrameCreated(
   new PepperHelper(render_frame);
   new ContentSettingsObserver(render_frame);
   new printing::PrintWebViewHelper(render_frame);
-
-  // Allow file scheme to handle service worker by default.
-  // FIXME(zcbenz): Can this be moved elsewhere?
-  blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
 
   // This is required for widevine plugin detection provided during runtime.
   blink::ResetPluginCache();
