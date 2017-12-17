@@ -20,7 +20,7 @@ UvTaskRunner::~UvTaskRunner() {
   }
 }
 
-bool UvTaskRunner::PostDelayedTask(const tracked_objects::Location& from_here,
+bool UvTaskRunner::PostDelayedTask(const base::Location& from_here,
                                    base::OnceClosure task,
                                    base::TimeDelta delay) {
   auto* timer = new uv_timer_t;
@@ -36,7 +36,7 @@ bool UvTaskRunner::RunsTasksInCurrentSequence() const {
 }
 
 bool UvTaskRunner::PostNonNestableDelayedTask(
-    const tracked_objects::Location& from_here,
+    const base::Location& from_here,
     base::OnceClosure task,
     base::TimeDelta delay) {
   return PostDelayedTask(from_here, std::move(task), delay);
