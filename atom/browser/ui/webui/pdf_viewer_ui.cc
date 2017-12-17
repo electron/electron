@@ -29,6 +29,7 @@
 #include "content/public/browser/web_contents.h"
 #include "grit/pdf_viewer_resources_map.h"
 #include "net/base/load_flags.h"
+#include "net/base/mime_util.h"
 #include "net/url_request/url_request.h"
 #include "net/url_request/url_request_context.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -77,26 +78,12 @@ class BundledDataSource : public content::URLDataSource {
   }
 
   std::string GetMimeType(const std::string& path) const override {
-    std::string filename = PathWithoutParams(path);
-    if (base::EndsWith(filename, ".html",
-                       base::CompareCase::INSENSITIVE_ASCII)) {
-      return "text/html";
-    } else if (base::EndsWith(filename, ".css",
-                              base::CompareCase::INSENSITIVE_ASCII)) {
-      return "text/css";
-    } else if (base::EndsWith(filename, ".js",
-                              base::CompareCase::INSENSITIVE_ASCII)) {
-      return "application/javascript";
-    } else if (base::EndsWith(filename, ".png",
-                              base::CompareCase::INSENSITIVE_ASCII)) {
-      return "image/png";
-    } else if (base::EndsWith(filename, ".gif",
-                              base::CompareCase::INSENSITIVE_ASCII)) {
-      return "image/gif";
-    } else if (base::EndsWith(filename, ".svg",
-                              base::CompareCase::INSENSITIVE_ASCII)) {
-      return "image/svg+xml";
-    }
+    auto file = base::FilePath(PathWithoutParams(path));
+    base::FilePath::StringType ext = file.Extension();
+    std::string mime_type;
+    if (!ext.empty() &&
+        net::GetWellKnownMimeTypeFromExtension(ext.substr(1), &mime_type))
+      return mime_type;
     return "text/html";
   }
 
