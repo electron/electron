@@ -196,7 +196,7 @@ class OffScreenRenderWidgetHostView
       gfx::Point* transformed_point) override;
 
   // ui::CompositorDelegate:
-  std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
+  std::unique_ptr<viz::SoftwareOutputDevice> CreateSoftwareOutputDevice(
       ui::Compositor* compositor) override;
 
   bool InstallTransparency();
