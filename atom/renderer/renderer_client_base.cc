@@ -116,6 +116,7 @@ void RendererClientBase::RenderThreadStarted() {
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
+  blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
 
   preferences_manager_.reset(new PreferencesManager);
 

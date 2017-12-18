@@ -215,6 +215,10 @@ void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
 
 void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
                                              mate::Arguments* args) {
+  // TODO(deepak1556): blink::SchemeRegistry methods should be called
+  // before any renderer threads are created. Fixing this would break
+  // current api. Change it with 2.0.
+
   // Read optional flags
   bool secure = true;
   bool bypassCSP = true;
