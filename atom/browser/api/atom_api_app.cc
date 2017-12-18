@@ -659,7 +659,7 @@ void App::OnLogin(LoginHandler* login_handler,
              request_details,
              login_handler->auth_info(),
              base::Bind(&PassLoginInformation,
-                        make_scoped_refptr(login_handler)));
+                        WrapRefCounted(login_handler)));
   }
 
   // Default behavior is to always cancel the auth.
