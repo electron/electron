@@ -45,8 +45,7 @@ void HoldRefCallback(const scoped_refptr<PrintJobWorkerOwner>& owner,
 }  // namespace
 
 PrintJob::PrintJob()
-    : source_(nullptr),
-      is_job_pending_(false),
+    : is_job_pending_(false),
       is_canceling_(false),
       quit_factory_(this) {
   // This is normally a UI message loop, but in unit tests, the message loop is
@@ -65,19 +64,17 @@ PrintJob::~PrintJob() {
 }
 
 void PrintJob::Initialize(PrintJobWorkerOwner* job,
-                          PrintedPagesSource* source,
+                          const base::string16& name,
                           int page_count) {
-  DCHECK(!source_);
   DCHECK(!worker_);
   DCHECK(!is_job_pending_);
   DCHECK(!is_canceling_);
   DCHECK(!document_.get());
-  source_ = source;
   worker_ = job->DetachWorker(this);
   settings_ = job->settings();
 
   PrintedDocument* new_doc =
-      new PrintedDocument(settings_, source_, job->cookie());
+      new PrintedDocument(settings_, name, job->cookie());
   new_doc->set_page_count(page_count);
   UpdatePrintedDocument(new_doc);
 
@@ -202,12 +199,6 @@ bool PrintJob::FlushJob(base::TimeDelta timeout) {
   base::RunLoop().Run();
 
   return true;
-}
-
-void PrintJob::DisconnectSource() {
-  source_ = nullptr;
-  if (document_.get())
-    document_->DisconnectSource();
 }
 
 bool PrintJob::is_job_pending() const {
