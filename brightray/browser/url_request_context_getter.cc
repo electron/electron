@@ -250,11 +250,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       storage_->set_proxy_service(
           net::CreateUsingSystemProxyResolver(
               std::move(proxy_config_service_),
-              new net::ProxyScriptFetcherImpl(url_request_context_.get()),
-              dhcp_factory.Create(url_request_context_.get()),
-              host_resolver.get(),
-              nullptr,
-              url_request_context_->network_delegate()));
+              net_log_));
     }
 
     std::vector<std::string> schemes;
