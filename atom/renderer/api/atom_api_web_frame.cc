@@ -161,9 +161,8 @@ void WebFrame::SetLayoutZoomLevelLimits(double min_level, double max_level) {
 
 v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
     const base::string16& name, v8::Local<v8::Object> options) {
-  blink::WebExceptionCode c = 0;
   return web_frame_->GetDocument().RegisterEmbedderCustomElement(
-      blink::WebString::FromUTF16(name), options, c);
+      blink::WebString::FromUTF16(name), options);
 }
 
 void WebFrame::RegisterElementResizeCallback(
