@@ -860,6 +860,7 @@ void WebContents::DidFinishNavigation(
 void WebContents::TitleWasSet(content::NavigationEntry* entry) {
   auto title = entry ? entry->GetTitle() : base::string16();
   bool explicit_set;
+  base::string16 final_title;
   if (entry && entry->GetURL().SchemeIsFile() && title.empty()) {
     final_title = base::UTF8ToUTF16(entry->GetURL().ExtractFileName());
     explicit_set = false;
@@ -867,7 +868,7 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
     base::TrimWhitespace(title, base::TRIM_ALL, &final_title);
     explicit_set = true;
   }
-  Emit("page-title-updated", title, explicit_set);
+  Emit("page-title-updated", final_title, explicit_set);
 }
 
 void WebContents::DidUpdateFaviconURL(
@@ -929,6 +930,15 @@ void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
     relay->window->ShowAutofillPopup(
         frame_host, web_contents(), bounds, values, labels);
   }
+}
+
+// Should only be used for IPC message maps
+bool WebContents::Send(IPC::Message* message) {
+  auto host = web_contents()->GetRenderViewHost();
+
+  if (host)
+    return host->Send(message);
+  return false;
 }
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
@@ -1231,14 +1241,20 @@ void WebContents::EnableDeviceEmulation(
   if (type_ == REMOTE)
     return;
 
-  Send(new ViewMsg_EnableDeviceEmulation(routing_id(), params));
+  auto host = web_contents()->GetRenderViewHost();
+
+  if (host)
+    host->Send(new ViewMsg_EnableDeviceEmulation(host->GetRoutingID(), params));
 }
 
 void WebContents::DisableDeviceEmulation() {
   if (type_ == REMOTE)
     return;
 
-  Send(new ViewMsg_DisableDeviceEmulation(routing_id()));
+  auto host = web_contents()->GetRenderViewHost();
+
+  if (host)
+    host->Send(new ViewMsg_DisableDeviceEmulation(host->GetRoutingID()));
 }
 
 void WebContents::ToggleDevTools() {
@@ -1480,7 +1496,12 @@ void WebContents::TabTraverse(bool reverse) {
 bool WebContents::SendIPCMessage(bool all_frames,
                                  const base::string16& channel,
                                  const base::ListValue& args) {
-  return Send(new AtomViewMsg_Message(routing_id(), all_frames, channel, args));
+  auto host = web_contents()->GetRenderViewHost();
+  if (host) {
+    return host->Send(new AtomViewMsg_Message(host->GetRoutingID(),
+                                                all_frames, channel, args));
+  }
+  return false;
 }
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
@@ -1766,12 +1787,17 @@ void WebContents::OnSetTemporaryZoomLevel(double level,
   zoom_controller_->SetTemporaryZoomLevel(level);
   double new_level = zoom_controller_->GetZoomLevel();
   AtomViewHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg, new_level);
-  Send(reply_msg);
+
+  auto host = web_contents()->GetRenderViewHost();
+  if (host)
+    host->Send(reply_msg);
 }
 
 void WebContents::OnGetZoomLevel(IPC::Message* reply_msg) {
   AtomViewHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
-  Send(reply_msg);
+  auto host = web_contents()->GetRenderViewHost();
+  if (host)
+    host->Send(reply_msg);
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
