@@ -857,9 +857,16 @@ void WebContents::DidFinishNavigation(
   }
 }
 
-void WebContents::TitleWasSet(content::NavigationEntry* entry,
-                              bool explicit_set) {
+void WebContents::TitleWasSet(content::NavigationEntry* entry) {
   auto title = entry ? entry->GetTitle() : base::string16();
+  bool explicit_set;
+  if (entry && entry->GetURL().SchemeIsFile() && title.empty()) {
+    final_title = base::UTF8ToUTF16(entry->GetURL().ExtractFileName());
+    explicit_set = false;
+  } else {
+    base::TrimWhitespace(title, base::TRIM_ALL, &final_title);
+    explicit_set = true;
+  }
   Emit("page-title-updated", title, explicit_set);
 }
 
