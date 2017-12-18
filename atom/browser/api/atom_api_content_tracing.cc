@@ -41,13 +41,13 @@ namespace {
 
 using CompletionCallback = base::Callback<void(const base::FilePath&)>;
 
-scoped_refptr<TracingController::TraceDataSink> GetTraceDataSink(
+scoped_refptr<TracingController::TraceDataEndpoint> GetTraceDataEndpoint(
     const base::FilePath& path, const CompletionCallback& callback) {
   base::FilePath result_file_path = path;
   if (result_file_path.empty() && !base::CreateTemporaryFile(&result_file_path))
     LOG(ERROR) << "Creating temporary file failed";
 
-  return TracingController::CreateFileSink(result_file_path,
+  return TracingController::CreateFileEndpoint(result_file_path,
                                            base::Bind(callback,
                                                       result_file_path));
 }
@@ -55,7 +55,7 @@ scoped_refptr<TracingController::TraceDataSink> GetTraceDataSink(
 void StopRecording(const base::FilePath& path,
                    const CompletionCallback& callback) {
   TracingController::GetInstance()->StopTracing(
-      GetTraceDataSink(path, callback));
+      GetTraceDataEndpoint(path, callback));
 }
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
