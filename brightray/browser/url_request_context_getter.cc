@@ -248,7 +248,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
           proxy_config));
     } else {
       storage_->set_proxy_service(
-          net::CreateUsingSystemProxyResolver(
+          net::ProxyService::CreateUsingSystemProxyResolver(
               std::move(proxy_config_service_),
               net_log_));
     }
