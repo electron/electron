@@ -11,6 +11,7 @@
 #include "base/files/file_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
+#include "base/threading/thread_restrictions.h"
 #include "content/public/common/content_switches.h"
 
 namespace crash_reporter {
@@ -53,6 +54,7 @@ bool CrashReporter::GetUploadToServer() {
 
 std::vector<CrashReporter::UploadReportResult>
 CrashReporter::GetUploadedReports(const base::FilePath& crashes_dir) {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   std::string file_content;
   std::vector<CrashReporter::UploadReportResult> result;
   base::FilePath uploads_path =
