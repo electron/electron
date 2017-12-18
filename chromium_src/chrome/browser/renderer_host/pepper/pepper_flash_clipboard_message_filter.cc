@@ -83,18 +83,15 @@ std::string ReadDataFromPickle(const base::string16& format,
   return result;
 }
 
-bool WriteDataToPickle(const std::map<base::string16, std::string>& data,
+void WriteDataToPickle(const std::map<base::string16, std::string>& data,
                        base::Pickle* pickle) {
   pickle->WriteUInt32(data.size());
   for (std::map<base::string16, std::string>::const_iterator it = data.begin();
        it != data.end();
        ++it) {
-    if (!pickle->WriteString16(it->first))
-      return false;
-    if (!pickle->WriteString(it->second))
-      return false;
+    pickle->WriteString16(it->first);
+    pickle->WriteString(it->second);
   }
-  return true;
 }
 
 }  // namespace
@@ -344,12 +341,9 @@ int32_t PepperFlashClipboardMessageFilter::OnMsgWriteData(
 
   if (custom_data_map.size() > 0) {
     base::Pickle pickle;
-    if (WriteDataToPickle(custom_data_map, &pickle)) {
-      scw.WritePickledData(pickle,
-                           ui::Clipboard::GetPepperCustomDataFormatType());
-    } else {
-      res = PP_ERROR_BADARGUMENT;
-    }
+    WriteDataToPickle(custom_data_map, &pickle);
+    scw.WritePickledData(pickle,
+                         ui::Clipboard::GetPepperCustomDataFormatType());
   }
 
   if (res != PP_OK) {
