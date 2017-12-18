@@ -259,8 +259,10 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->images_enabled = b;
   if (self->web_preferences_.GetBoolean("textAreasAreResizable", &b))
     prefs->text_areas_are_resizable = b;
-  if (self->web_preferences_.GetBoolean("webgl", &b))
-    prefs->experimental_webgl_enabled = b;
+  if (self->web_preferences_.GetBoolean("webgl", &b)) {
+    prefs->webgl1_enabled = b;
+    prefs->webgl2_enabled = b;
+  }
   if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
     prefs->web_security_enabled = b;
     prefs->allow_running_insecure_content = !b;
