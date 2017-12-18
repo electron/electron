@@ -12,16 +12,12 @@ To get started, you first need to deploy a server that the
 
 Depending on your needs, you can choose from one of these:
 
-- [Hazel](https://github.com/zeit/hazel) – Simple update server for open-source 
-apps. Pulls from 
-[GitHub Releases](https://help.github.com/articles/creating-releases/) 
-and can be deployed for free on [Now](https://zeit.co/now).
+- [Hazel](https://github.com/zeit/hazel) – Update server for private or open-source apps. Can be deployed for free on [Now](https://zeit.co/now) (using a single command), pulls from [GitHub Releases](https://help.github.com/articles/creating-releases/) and leverages the power of GitHub's CDN.
 - [Nuts](https://github.com/GitbookIO/nuts) – Also uses 
 [GitHub Releases](https://help.github.com/articles/creating-releases/), 
 but caches app updates on disk and supports private repositories.
-- [electron-release-server](https://github.com/ArekSredzki/electron-release-server) – 
-Provides a dashboard for handling releases
-- [Nucleus](https://github.com/atlassian/nucleus) - A complete update server for Electron apps maintained by Atlassian. Supports multiple applications and channels; uses a static file store to minify server cost.
+- [electron-release-server](https://github.com/ArekSredzki/electron-release-server) – Provides a dashboard for handling releases
+- [Nucleus](https://github.com/atlassian/nucleus) – A complete update server for Electron apps maintained by Atlassian. Supports multiple applications and channels; uses a static file store to minify server cost.
 
 If your app is packaged with [electron-builder][electron-builder-lib] you can use the 
 [electron-updater] module, which does not require a server and allows for updates 
