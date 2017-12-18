@@ -44,7 +44,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
   if (dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT &&
       dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
-    callback.Run(false, base::string16());
+    std::move(callback).Run(false, base::string16());
     return;
   }
 
@@ -81,7 +81,7 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     bool is_reload,
     DialogClosedCallback callback) {
   bool default_prevented = api_web_contents_->Emit("will-prevent-unload");
-  callback.Run(default_prevented, base::string16());
+  std::move(callback).Run(default_prevented, base::string16());
   return;
 }
 
@@ -95,9 +95,13 @@ void AtomJavaScriptDialogManager::OnMessageBoxCallback(
     const std::string& origin,
     int code,
     bool checkbox_checked) {
+<<<<<<< HEAD
   if (checkbox_checked)
     origin_counts_[origin] = kUserWantsNoMoreDialogs;
   callback.Run(code == 0, base::string16());
+=======
+  std::move(callback).Run(code == 0, base::string16());
+>>>>>>> Calling non-const callbacks requires some tricks
 }
 
 }  // namespace atom
