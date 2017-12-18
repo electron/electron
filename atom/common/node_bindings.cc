@@ -135,6 +135,7 @@ NodeBindings::~NodeBindings() {
       if (!uv_run(uv_loop_, UV_RUN_DEFAULT))
         break;
 
+    DCHECK(uv_loop_alive(uv_loop_) == 0);
     uv_loop_delete(uv_loop_);
   }
 }
