@@ -40,7 +40,6 @@
 #include "net/proxy/proxy_config_service.h"
 #include "net/proxy/proxy_script_fetcher_impl.h"
 #include "net/proxy/proxy_service.h"
-#include "net/proxy/proxy_service_v8.h"
 #include "net/ssl/channel_id_service.h"
 #include "net/ssl/default_channel_id_store.h"
 #include "net/ssl/ssl_config_service_defaults.h"
@@ -249,7 +248,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
           proxy_config));
     } else {
       storage_->set_proxy_service(
-          net::CreateProxyServiceUsingV8ProxyResolver(
+          net::CreateUsingSystemProxyResolver(
               std::move(proxy_config_service_),
               new net::ProxyScriptFetcherImpl(url_request_context_.get()),
               dhcp_factory.Create(url_request_context_.get()),
