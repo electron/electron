@@ -119,9 +119,24 @@ NodeBindings::~NodeBindings() {
   uv_sem_destroy(&embed_sem_);
   uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
 
-  // Destroy loop.
-  if (uv_loop_ != uv_default_loop())
+  // Clean up any custom loop
+  if (uv_loop_ != uv_default_loop()) {
+    // Close any active handles
+    uv_stop(uv_loop_);
+    uv_walk(uv_loop_, [](uv_handle_t* handle, void*){
+      if (!uv_is_closing(handle)) {
+        uv_close(handle, nullptr);
+      }
+    }, nullptr);
+
+    // Run the loop to let it finish all the closing handles
+    // NB: after uv_close(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
+    for (;;)
+      if (!uv_run(uv_loop_, UV_RUN_DEFAULT))
+        break;
+
     uv_loop_delete(uv_loop_);
+  }
 }
 
 void NodeBindings::Initialize() {
