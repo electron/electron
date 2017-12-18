@@ -263,6 +263,9 @@
         # See Chromium src/third_party/protobuf/BUILD.gn
         'GOOGLE_PROTOBUF_NO_RTTI',
         'GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER',
+
+        # Enables SkBitmap size 64 operations
+        'SK_SUPPORT_LEGACY_SAFESIZE64',
       ],
       'sources': [
         '<@(lib_sources)',
