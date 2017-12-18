@@ -1001,18 +1001,19 @@ void WebContents::NavigationEntryCommitted(
 }
 
 int64_t WebContents::GetID() const {
-  int64_t process_id = web_contents()->GetRenderProcessHost()->GetID();
+  int64_t process_id = web_contents()->GetMainFrame()->GetProcess()->GetID();
   int64_t routing_id = web_contents()->GetRenderViewHost()->GetRoutingID();
   int64_t rv = (process_id << 32) + routing_id;
   return rv;
 }
 
 int WebContents::GetProcessID() const {
-  return web_contents()->GetRenderProcessHost()->GetID();
+  return web_contents()->GetMainFrame()->GetProcess()->GetID();
 }
 
 base::ProcessId WebContents::GetOSProcessID() const {
-  auto process_handle = web_contents()->GetRenderProcessHost()->GetHandle();
+  auto process_handle =
+      web_contents()->GetMainFrame()->GetProcess()->GetHandle();
   return base::GetProcId(process_handle);
 }
 
