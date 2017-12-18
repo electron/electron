@@ -119,7 +119,7 @@ int URLRequestStreamJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&URLRequestStreamJob::CopyMoreData, weak_factory_.GetWeakPtr(),
-                 make_scoped_refptr(dest), dest_size));
+                 WrapRefCounted(dest), dest_size));
   return net::ERR_IO_PENDING;
 }
 
