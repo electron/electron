@@ -242,7 +242,7 @@ void PrintJobWorker::GetSettings(bool ask_user_for_settings,
   if (ask_user_for_settings) {
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
-        base::Bind(&HoldRefCallback, make_scoped_refptr(owner_),
+        base::Bind(&HoldRefCallback, WrapRefCounted(owner_),
                    base::Bind(&PrintJobWorker::GetSettingsWithUI,
                               base::Unretained(this),
                               document_page_count,
@@ -251,14 +251,14 @@ void PrintJobWorker::GetSettings(bool ask_user_for_settings,
   } else if (!device_name.empty()) {
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
-        base::Bind(&HoldRefCallback, make_scoped_refptr(owner_),
+        base::Bind(&HoldRefCallback, WrapRefCounted(owner_),
                    base::Bind(&PrintJobWorker::InitWithDeviceName,
                               base::Unretained(this),
                               device_name)));
   } else {
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
-        base::Bind(&HoldRefCallback, make_scoped_refptr(owner_),
+        base::Bind(&HoldRefCallback, WrapRefCounted(owner_),
                    base::Bind(&PrintJobWorker::UseDefaultSettings,
                               base::Unretained(this))));
   }
@@ -272,7 +272,7 @@ void PrintJobWorker::SetSettings(
       BrowserThread::UI,
       FROM_HERE,
       base::Bind(&HoldRefCallback,
-                 make_scoped_refptr(owner_),
+                 WrapRefCounted(owner_),
                  base::Bind(&PrintJobWorker::UpdatePrintSettings,
                             base::Unretained(this),
                             base::Passed(&new_settings))));
@@ -299,7 +299,7 @@ void PrintJobWorker::GetSettingsDone(PrintingContext::Result result) {
   // PrintJob will create the new PrintedDocument.
   owner_->PostTask(FROM_HERE,
                    base::Bind(&PrintJobWorkerOwner::GetSettingsDone,
-                              make_scoped_refptr(owner_),
+                              WrapRefCounted(owner_),
                               printing_context_->settings(),
                               result));
 }
@@ -313,7 +313,7 @@ void PrintJobWorker::GetSettingsWithUI(
   // weak_factory_ creates pointers valid only on owner_ thread.
   printing_context_->AskUserForSettings(
       document_page_count, has_selection, is_scripted,
-      base::Bind(&PostOnOwnerThread, make_scoped_refptr(owner_),
+      base::Bind(&PostOnOwnerThread, WrapRefCounted(owner_),
                  base::Bind(&PrintJobWorker::GetSettingsDone,
                             weak_factory_.GetWeakPtr())));
 }
