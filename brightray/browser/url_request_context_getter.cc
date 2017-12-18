@@ -10,8 +10,8 @@
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "base/task_scheduler/post_task.h"
 #include "base/threading/sequenced_worker_pool.h"
-#include "base/threading/worker_pool.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "brightray/browser/net/devtools_network_transaction_factory.h"
@@ -75,13 +75,14 @@ URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
   }
   protocol_handlers->clear();
 
+  auto runner = base::CreateSequencedTaskRunnerWithTraits(
+            {base::MayBlock(), base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
+
   job_factory->SetProtocolHandler(
       url::kDataScheme, base::WrapUnique(new net::DataProtocolHandler));
   job_factory->SetProtocolHandler(
       url::kFileScheme,
-      base::WrapUnique(new net::FileProtocolHandler(
-          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
-              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN))));
+      base::WrapUnique(new net::FileProtocolHandler(runner)));
 
   return std::move(job_factory);
 }
