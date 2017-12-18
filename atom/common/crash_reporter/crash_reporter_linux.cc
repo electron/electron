@@ -17,7 +17,7 @@
 #include "base/logging.h"
 #include "base/memory/singleton.h"
 #include "base/process/memory.h"
-#include "base/task_scheduler/post_task.h"
+#include "base/threading/thread_restrictions.h"
 #include "vendor/breakpad/src/client/linux/handler/exception_handler.h"
 #include "vendor/breakpad/src/common/linux/linux_libc_support.h"
 
@@ -34,18 +34,6 @@ static const size_t kDistroSize = 128;
 // throws away any larger than 1.2MB (1.2 * 1024 * 1024).  A value of -1 means
 // no limit.
 static const off_t kMaxMinidumpFileSize = 1258291;
-
-bool CreateCrashDataDirectory(const base::FilePath& crashes_dir) {
-  // Make sure the crash log directory is created.
-  bool success = base::CreateDirectoryAndGetError(crashes_dir, nullptr);
-
-  if (!success) {
-    NOTREACHED() << "Failed to create directory '" << crashes_dir.value()
-                 << "'";
-  }
-
-  return success;
-}
 
 }  // namespace
 
@@ -103,19 +91,10 @@ bool CrashReporterLinux::GetUploadToServer() {
 }
 
 void CrashReporterLinux::EnableCrashDumping(const base::FilePath& crashes_dir) {
-  base::PostTaskWithTraitsAndReplyWithResult(
-      FROM_HERE, {base::MayBlock(), base::TaskPriority::BACKGROUND},
-      base::Bind(&CreateCrashDataDirectory, crashes_dir),
-      base::Bind(&CrashReporterLinux::OnCrashDataDirectoryCreated,
-                 base::Unretained(this), crashes_dir));
-}
-
-void CrashReporterLinux::OnCrashDataDirectoryCreated(
-    const base::FilePath& crashes_dir,
-    bool success) {
-  if (!success)
-    return;
-
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    base::CreateDirectory(crashes_dir);
+  }
   std::string log_file = crashes_dir.Append("uploads.log").value();
   strncpy(g_crash_log_path, log_file.c_str(), sizeof(g_crash_log_path));
 

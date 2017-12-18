@@ -45,8 +45,6 @@ class CrashReporterLinux : public CrashReporter {
   virtual ~CrashReporterLinux();
 
   void EnableCrashDumping(const base::FilePath& crashes_dir);
-  void OnCrashDataDirectoryCreated(const base::FilePath& crashes_dir,
-                                   bool success);
 
   static bool CrashDone(const google_breakpad::MinidumpDescriptor& minidump,
                         void* context,
