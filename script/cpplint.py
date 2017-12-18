@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+import argparse
 import fnmatch
 import os
 import sys
 
+from lib.config import enable_verbose_mode
 from lib.util import execute
 
 IGNORE_FILES = [
@@ -40,34 +42,73 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 def main():
+
+  parser = argparse.ArgumentParser(
+    description="Run cpplint on Electron's C++ files",
+    formatter_class=argparse.RawTextHelpFormatter
+  )
+  parser.add_argument(
+    '-c', '--only-changed',
+    action='store_true',
+    default=False,
+    dest='only_changed',
+    help='only run on changed files'
+  )
+  parser.add_argument(
+    '-v', '--verbose',
+    action='store_true',
+    default=False,
+    dest='verbose',
+    help='show cpplint output'
+  )
+  args = parser.parse_args()
+
   if not os.path.isfile(cpplint_path()):
     print("[INFO] Skipping cpplint, dependencies has not been bootstrapped")
     return
 
-  os.chdir(SOURCE_ROOT)
-  atom_files = list_files('atom',
-                          ['app', 'browser', 'common', 'renderer', 'utility'],
-                          ['*.cc', '*.h'])
-  call_cpplint(list(set(atom_files) - set(IGNORE_FILES)))
+  if args.only_changed:
+    changed_files = get_changed_files()
 
-  brightray_files = list_files('brightray', ['browser', 'common'],
-                               ['*.cc', '*.h'])
-  call_cpplint(list(set(brightray_files) - set(IGNORE_FILES)))
+  if args.verbose:
+    enable_verbose_mode()
+
+  ignore = set(IGNORE_FILES)
+
+  os.chdir(SOURCE_ROOT)
+  files = list_files('atom',
+                     ['app', 'browser', 'common', 'renderer', 'utility'],
+                     ['*.cc', '*.h'])
+  files -= ignore
+  if args.only_changed:
+    files &= changed_files
+  call_cpplint(list(files))
+
+  files = list_files('brightray', ['browser', 'common'], ['*.cc', '*.h'])
+  files -= ignore
+  if args.only_changed:
+    files &= changed_files
+  call_cpplint(list(files))
 
 
 def list_files(parent, directories, filters):
-  matches = []
+  matches = set()
   for directory in directories:
     for root, _, filenames, in os.walk(os.path.join(parent, directory)):
       for f in filters:
         for filename in fnmatch.filter(filenames, f):
-          matches.append(os.path.join(root, filename))
+          matches.add(os.path.join(root, filename))
   return matches
 
 
+def get_changed_files():
+  return set(execute(['git', 'diff', '--name-only']).splitlines())
+
+
 def call_cpplint(files):
-  cpplint = cpplint_path()
-  execute([sys.executable, cpplint] + files)
+  if files:
+    cpplint = cpplint_path()
+    execute([sys.executable, cpplint] + files)
 
 
 def cpplint_path():
