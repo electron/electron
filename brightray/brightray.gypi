@@ -375,6 +375,7 @@
             '-Wno-undefined-var-template', # https://crbug.com/604888
             '-Wno-unneeded-internal-declaration',
             '-Wno-inconsistent-missing-override',
+            '-Wno-tautological-unsigned-enum-zero-compare',
           ],
         },
       }],
@@ -382,6 +383,7 @@
         'cflags': [
           '-Wno-inconsistent-missing-override',
           '-Wno-undefined-var-template', # https://crbug.com/604888
+          '-Wno-tautological-unsigned-enum-zero-compare',
         ],
       }],
       ['OS=="win"', {
