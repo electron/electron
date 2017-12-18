@@ -22,7 +22,7 @@ void BridgeTaskRunner::MessageLoopIsReady() {
 }
 
 bool BridgeTaskRunner::PostDelayedTask(
-    const tracked_objects::Location& from_here,
+    const base::Location& from_here,
     base::OnceClosure task,
     base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();
@@ -44,7 +44,7 @@ bool BridgeTaskRunner::RunsTasksInCurrentSequence() const {
 }
 
 bool BridgeTaskRunner::PostNonNestableDelayedTask(
-    const tracked_objects::Location& from_here,
+    const base::Location& from_here,
     base::OnceClosure task,
     base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();

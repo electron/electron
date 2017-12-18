@@ -8,6 +8,7 @@
 #include <tuple>
 #include <vector>
 
+#include "base/location.h"
 #include "base/single_thread_task_runner.h"
 #include "base/tuple.h"
 
@@ -24,18 +25,18 @@ class BridgeTaskRunner : public base::SingleThreadTaskRunner {
   void MessageLoopIsReady();
 
   // base::SingleThreadTaskRunner:
-  bool PostDelayedTask(const tracked_objects::Location& from_here,
+  bool PostDelayedTask(const base::Location& from_here,
                        base::OnceClosure task,
                        base::TimeDelta delay) override;
   bool RunsTasksInCurrentSequence() const override;
   bool PostNonNestableDelayedTask(
-      const tracked_objects::Location& from_here,
+      const base::Location& from_here,
       base::OnceClosure task,
       base::TimeDelta delay) override;
 
  private:
   using TaskPair = std::tuple<
-      tracked_objects::Location, base::OnceClosure, base::TimeDelta>;
+      base::Location, base::OnceClosure, base::TimeDelta>;
   std::vector<TaskPair> tasks_;
   std::vector<TaskPair> non_nestable_tasks_;
 
