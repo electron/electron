@@ -20,9 +20,9 @@
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
 #include "base/time/time.h"
-#include "cc/output/compositor_frame.h"
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
 #include "components/viz/common/frame_sinks/begin_frame_source.h"
+#include "components/viz/common/quads/compositor_frame.h"
 #include "content/browser/frame_host/render_widget_host_view_guest.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"
@@ -120,7 +120,7 @@ class OffScreenRenderWidgetHostView
       viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink)
       override;
   void SubmitCompositorFrame(const viz::LocalSurfaceId& local_surface_id,
-                             cc::CompositorFrame frame) override;
+                             viz::CompositorFrame frame) override;
 
   void ClearCompositorFrame(void) override;
   void InitAsPopup(content::RenderWidgetHostView *rwhv, const gfx::Rect& rect)

@@ -541,7 +541,7 @@ void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
 
 void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
     const viz::LocalSurfaceId& local_surface_id,
-    cc::CompositorFrame frame) {
+    viz::CompositorFrame frame) {
   TRACE_EVENT0("electron",
     "OffScreenRenderWidgetHostView::SubmitCompositorFrame");
 
