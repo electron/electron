@@ -103,10 +103,14 @@ DevToolsManagerDelegate::~DevToolsManagerDelegate() {
 void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {
 }
 
-base::DictionaryValue* DevToolsManagerDelegate::HandleCommand(
+bool DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHost* agent_host,
+    int session_id,
     base::DictionaryValue* command) {
-  return handler_->HandleCommand(agent_host, command);
+  if (handler_->HandleCommand(agent_host, command)) {
+    return true;
+  }
+  return false;
 }
 
 scoped_refptr<content::DevToolsAgentHost>
