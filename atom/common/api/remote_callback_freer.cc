@@ -7,6 +7,8 @@
 #include "atom/common/api/api_messages.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "content/public/browser/render_view_host.h"
+#include "content/public/browser/web_contents.h"
 
 namespace atom {
 
@@ -35,7 +37,11 @@ void RemoteCallbackFreer::RunDestructor() {
       base::ASCIIToUTF16("ELECTRON_RENDERER_RELEASE_CALLBACK");
   base::ListValue args;
   args.AppendInteger(object_id_);
-  Send(new AtomViewMsg_Message(routing_id(), false, channel, args));
+  auto host = web_contents()->GetRenderViewHost();
+  if (host) {
+    host->Send(new AtomViewMsg_Message(
+        host->GetRoutingID(), false, channel, args));
+  }
 
   Observe(nullptr);
 }
