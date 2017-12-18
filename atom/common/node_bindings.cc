@@ -135,7 +135,7 @@ NodeBindings::~NodeBindings() {
     }, nullptr);
 
     // Run the loop to let it finish all the closing handles
-    // NB: after uv_close(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
+    // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
     for (;;)
       if (!uv_run(uv_loop_, UV_RUN_DEFAULT))
         break;
