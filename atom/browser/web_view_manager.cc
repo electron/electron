@@ -5,6 +5,7 @@
 #include "atom/browser/web_view_manager.h"
 
 #include "atom/browser/atom_browser_context.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 
@@ -23,7 +24,7 @@ void WebViewManager::AddGuest(int guest_instance_id,
   web_contents_embedder_map_[guest_instance_id] = { web_contents, embedder };
 
   // Map the element in embedder to guest.
-  int owner_process_id = embedder->GetRenderProcessHost()->GetID();
+  int owner_process_id = embedder->GetMainFrame()->GetProcess()->GetID();
   ElementInstanceKey key(owner_process_id, element_instance_id);
   element_instance_id_to_guest_map_[key] = guest_instance_id;
 }
