@@ -85,6 +85,9 @@ class NodeBindings {
   // Whether the libuv loop has ended.
   bool embed_closed_;
 
+  // Loop used when constructed in WORKER mode
+  uv_loop_t worker_loop_;
+
   // Dummy handle to make uv's loop not quit.
   uv_async_t dummy_uv_handle_;
 

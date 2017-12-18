@@ -100,10 +100,15 @@ base::FilePath GetResourcesPath(bool is_browser) {
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
     : browser_env_(browser_env),
-      uv_loop_(browser_env == WORKER ? uv_loop_new() : uv_default_loop()),
       embed_closed_(false),
       uv_env_(nullptr),
       weak_factory_(this) {
+  if (browser_env == WORKER) {
+    uv_loop_init(&worker_loop_);
+    uv_loop_ = &worker_loop_;
+  } else {
+    uv_loop_ = uv_default_loop();
+  }
 }
 
 NodeBindings::~NodeBindings() {
@@ -119,8 +124,8 @@ NodeBindings::~NodeBindings() {
   uv_sem_destroy(&embed_sem_);
   uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
 
-  // Clean up any custom loop
-  if (uv_loop_ != uv_default_loop()) {
+  // Clean up worker loop
+  if (uv_loop_ == &worker_loop_) {
     // Close any active handles
     uv_stop(uv_loop_);
     uv_walk(uv_loop_, [](uv_handle_t* handle, void*){
@@ -136,7 +141,7 @@ NodeBindings::~NodeBindings() {
         break;
 
     DCHECK(uv_loop_alive(uv_loop_) == 0);
-    uv_loop_delete(uv_loop_);
+    uv_loop_close(uv_loop_);
   }
 }
 
