@@ -897,7 +897,7 @@ void OffScreenRenderWidgetHostView::OnGuestViewFrameSwapped(
   RegisterGuestViewFrameSwappedCallback(guest_host_view);
 }
 
-std::unique_ptr<cc::SoftwareOutputDevice>
+std::unique_ptr<viz::SoftwareOutputDevice>
   OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(
     ui::Compositor* compositor) {
   DCHECK_EQ(GetCompositor(), compositor);
