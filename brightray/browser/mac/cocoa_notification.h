@@ -32,6 +32,8 @@ class CocoaNotification : public Notification {
   NSUserNotification* notification() const { return notification_; }
 
  private:
+  void LogAction(const char* action);
+
   base::scoped_nsobject<NSUserNotification> notification_;
   int action_index_;
 

@@ -28,11 +28,18 @@ CocoaNotification::~CocoaNotification() {
 
 void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
+
+  NSString* identifier = [NSString stringWithFormat:@"%s%d", "ElectronNotification", g_identifier_];
+
   [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
   [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];
   [notification_ setInformativeText:base::SysUTF16ToNSString(options.msg)];
-  [notification_ setIdentifier:[NSString stringWithFormat:@"%s%d", "ElectronNotification", g_identifier_]];
+  [notification_ setIdentifier:identifier];
   g_identifier_++;
+
+  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+    LOG(INFO) << "Notification created (" << [identifier UTF8String] << ")";
+  }
 
   if ([notification_ respondsToSelector:@selector(setContentImage:)] &&
       !options.icon.drawsNothing()) {
@@ -74,22 +81,38 @@ void CocoaNotification::Dismiss() {
   if (notification_)
     [NSUserNotificationCenter.defaultUserNotificationCenter
         removeDeliveredNotification:notification_];
+
   NotificationDismissed();
+
+  this->LogAction("dismissed");
 }
 
 void CocoaNotification::NotificationDisplayed() {
   if (delegate())
     delegate()->NotificationDisplayed();
+
+  this->LogAction("displayed");
 }
 
 void CocoaNotification::NotificationReplied(const std::string& reply) {
   if (delegate())
     delegate()->NotificationReplied(reply);
+
+  this->LogAction("replied to");
 }
 
 void CocoaNotification::NotificationButtonClicked() {
   if (delegate())
     delegate()->NotificationAction(action_index_);
+
+  this->LogAction("button clicked");
+}
+
+void CocoaNotification::LogAction(const char* action) {
+  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+    NSString* identifier = [notification_ valueForKey:@"identifier"];
+    LOG(INFO) << "Notification " << action << " (" << [identifier UTF8String] << ")";
+  }
 }
 
 }  // namespace brightray
