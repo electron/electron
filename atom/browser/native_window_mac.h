@@ -139,6 +139,7 @@ class NativeWindowMac : public NativeWindow,
     HIDDEN,
     HIDDEN_INSET,
     CUSTOM_BUTTONS_ON_HOVER,
+    HIDE_DISABLED_BUTTONS,
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
@@ -194,6 +195,10 @@ class NativeWindowMac : public NativeWindow,
   bool zoom_to_page_width_;
 
   bool fullscreen_window_title_;
+
+  bool minimizable_;
+  bool maximizable_;
+  bool closable_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
 

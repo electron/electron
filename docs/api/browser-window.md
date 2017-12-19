@@ -223,11 +223,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `hidden-inset` - Deprecated, use `hiddenInset` instead.
     * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
-    * `customButtonsOnHover` Boolean (optional) - Draw custom close, minimize,
+    * `customButtonsOnHover` - Draw custom close, minimize,
       and full screen buttons on macOS frameless windows. These buttons will not
       display unless hovered over in the top left of the window. These custom
       buttons prevent issues with mouse events that occur with the standard
       window toolbar buttons. **Note:** This option is currently experimental.
+    * `hideDisabledButtons` - Results in a hidden title bar which only renders the
+      window controls that are not disabled.
   * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
     tile bar in full screen mode on macOS for all `titleBarStyle` options.
     Default is `false`.

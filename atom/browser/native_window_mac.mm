@@ -816,6 +816,8 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
       *out = atom::NativeWindowMac::HIDDEN_INSET;
     } else if (title_bar_style == "customButtonsOnHover") {
       *out = atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER;
+    } else if (title_bar_style == "hideDisabledButtons") {
+      *out = atom::NativeWindowMac::HIDE_DISABLED_BUTTONS;
     } else {
       return false;
     }
@@ -837,6 +839,9 @@ NativeWindowMac::NativeWindowMac(
       was_fullscreen_(false),
       zoom_to_page_width_(false),
       fullscreen_window_title_(false),
+      minimizable_(true),
+      maximizable_(true),
+      closable_(true),
       attention_request_id_(0),
       title_bar_style_(NORMAL),
       always_simple_fullscreen_(false),
@@ -855,14 +860,9 @@ NativeWindowMac::NativeWindowMac(
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
 
-  bool minimizable = true;
-  options.Get(options::kMinimizable, &minimizable);
-
-  bool maximizable = true;
-  options.Get(options::kMaximizable, &maximizable);
-
-  bool closable = true;
-  options.Get(options::kClosable, &closable);
+  options.Get(options::kMinimizable, &minimizable_);
+  options.Get(options::kMaximizable, &maximizable_);
+  options.Get(options::kClosable, &closable_);
 
   options.Get(options::kTitleBarStyle, &title_bar_style_);
 
@@ -886,10 +886,10 @@ NativeWindowMac::NativeWindowMac(
       (!useStandardWindow || transparent() || !has_frame())) {
     styleMask = NSFullSizeContentViewWindowMask;
   }
-  if (minimizable) {
+  if (minimizable_) {
     styleMask |= NSMiniaturizableWindowMask;
   }
-  if (closable) {
+  if (closable_) {
     styleMask |= NSClosableWindowMask;
   }
   if (title_bar_style_ != NORMAL) {
@@ -1039,7 +1039,7 @@ NativeWindowMac::NativeWindowMac(
 
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
-  SetMaximizable(maximizable);
+  SetMaximizable(maximizable_);
 
   RegisterInputEventObserver(
       web_contents->GetWebContents()->GetRenderViewHost());
@@ -1281,6 +1281,9 @@ bool NativeWindowMac::IsMovable() {
 }
 
 void NativeWindowMac::SetMinimizable(bool minimizable) {
+  if (title_bar_style_ == HIDE_DISABLED_BUTTONS) {
+    [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:!minimizable];
+  }
   SetStyleMask(minimizable, NSMiniaturizableWindowMask);
 }
 
@@ -1289,6 +1292,9 @@ bool NativeWindowMac::IsMinimizable() {
 }
 
 void NativeWindowMac::SetMaximizable(bool maximizable) {
+  if (title_bar_style_ == HIDE_DISABLED_BUTTONS) {
+    [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!maximizable];
+  }
   [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:maximizable];
 }
 
@@ -1310,6 +1316,9 @@ bool NativeWindowMac::IsFullScreenable() {
 }
 
 void NativeWindowMac::SetClosable(bool closable) {
+  if (title_bar_style_ == HIDE_DISABLED_BUTTONS) {
+    [[window_ standardWindowButton:NSWindowCloseButton] setHidden:!closable];
+  }
   SetStyleMask(closable, NSClosableWindowMask);
 }
 
@@ -1878,19 +1887,26 @@ void NativeWindowMac::InstallView() {
           initWithFrame:NSZeroRect] autorelease];
       [content_view_ addSubview:window_button_view];
     } else {
-      if (title_bar_style_ != NORMAL) {
-        if (base::mac::IsOS10_9()) {
-          ShowWindowButton(NSWindowZoomButton);
-          ShowWindowButton(NSWindowMiniaturizeButton);
-          ShowWindowButton(NSWindowCloseButton);
-        }
+      if (title_bar_style_ == HIDE_DISABLED_BUTTONS) {
+        [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!maximizable_];
+        [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:!minimizable_];
+        [[window_ standardWindowButton:NSWindowCloseButton] setHidden:!closable_];
         return;
-      }
+      } else {
+        if (title_bar_style_ != NORMAL) {
+          if (base::mac::IsOS10_9()) {
+            ShowWindowButton(NSWindowZoomButton);
+            ShowWindowButton(NSWindowMiniaturizeButton);
+            ShowWindowButton(NSWindowCloseButton);
+          }
+          return;
+        }
 
-      // Hide the window buttons.
-      [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
-      [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
-      [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
+        // Hide the window buttons.
+        [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
+        [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+        [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
+      }
     }
 
     // Some third-party macOS utilities check the zoom button's enabled state to
