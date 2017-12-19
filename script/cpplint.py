@@ -71,17 +71,17 @@ def main():
     enable_verbose_mode()
 
   os.chdir(SOURCE_ROOT)
-  files = list_files('atom',
+  files = find_files('atom',
                      ['app', 'browser', 'common', 'renderer', 'utility'],
                      ['*.cc', '*.h'])
-  files += list_files('brightray', ['browser', 'common'], ['*.cc', '*.h'])
+  files += find_files('brightray', ['browser', 'common'], ['*.cc', '*.h'])
   files -= set(IGNORE_FILES)
   if args.only_changed:
-    files &= get_changed_files()
+    files &= find_changed_files()
   call_cpplint(list(files))
 
 
-def list_files(parent, directories, filters):
+def find_files(parent, directories, filters):
   matches = set()
   for directory in directories:
     for root, _, filenames, in os.walk(os.path.join(parent, directory)):
@@ -91,7 +91,7 @@ def list_files(parent, directories, filters):
   return matches
 
 
-def get_changed_files():
+def find_changed_files():
   return set(execute(['git', 'diff', '--name-only']).splitlines())
 
 
