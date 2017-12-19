@@ -12,7 +12,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/browser/net/devtools_network_protocol_handler.h"
 #include "brightray/common/content_client.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
@@ -93,9 +92,7 @@ void DevToolsManagerDelegate::StartHttpHandler() {
       base::FilePath());
 }
 
-DevToolsManagerDelegate::DevToolsManagerDelegate()
-    : handler_(new DevToolsNetworkProtocolHandler) {
-}
+DevToolsManagerDelegate::DevToolsManagerDelegate() {}
 
 DevToolsManagerDelegate::~DevToolsManagerDelegate() {
 }
@@ -107,9 +104,6 @@ bool DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHost* agent_host,
     int session_id,
     base::DictionaryValue* command) {
-  if (handler_->HandleCommand(agent_host, command)) {
-    return true;
-  }
   return false;
 }
 
