@@ -89,7 +89,7 @@ def find_files(roots, test):
 
 
 def is_cpp_file(filename):
-      return filename.endswith('.cc') or filename.endswith('.h')
+  return filename.endswith('.cc') or filename.endswith('.h')
 
 
 def find_changed_files():
