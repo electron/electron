@@ -20,6 +20,7 @@ IGNORE_FILES = [
   os.path.join('atom', 'common', 'api', 'api_messages.h'),
   os.path.join('atom', 'common', 'common_message_generator.cc'),
   os.path.join('atom', 'common', 'common_message_generator.h'),
+  os.path.join('atom', 'node', 'osfhandle.cc'),
   os.path.join('brightray', 'browser', 'mac',
                'bry_inspectable_web_contents_view.h'),
   os.path.join('brightray', 'browser', 'mac', 'event_dispatching_window.h'),
