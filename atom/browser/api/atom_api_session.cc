@@ -31,11 +31,11 @@
 #include "base/strings/string_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/media/media_device_id_salt.h"
-#include "brightray/browser/net/devtools_network_conditions.h"
-#include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
+#include "content/common/devtools/devtools_network_conditions.h"
+#include "content/common/devtools/devtools_network_controller.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/storage_partition.h"
@@ -543,23 +543,20 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 }
 
 void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
-  std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
+  std::unique_ptr<content::DevToolsNetworkConditions> conditions;
   bool offline = false;
   double latency = 0.0, download_throughput = 0.0, upload_throughput = 0.0;
   if (options.Get("offline", &offline) && offline) {
-    conditions.reset(new brightray::DevToolsNetworkConditions(offline));
+    conditions.reset(new content::DevToolsNetworkConditions(offline));
   } else {
     options.Get("latency", &latency);
     options.Get("downloadThroughput", &download_throughput);
     options.Get("uploadThroughput", &upload_throughput);
-    conditions.reset(
-        new brightray::DevToolsNetworkConditions(false,
-                                                 latency,
-                                                 download_throughput,
-                                                 upload_throughput));
+    conditions.reset(new content::DevToolsNetworkConditions(
+        false, latency, download_throughput, upload_throughput));
   }
 
-  browser_context_->network_controller_handle()->SetNetworkState(
+  content::DevToolsNetworkController::SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
@@ -570,8 +567,8 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 }
 
 void Session::DisableNetworkEmulation() {
-  std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
-  browser_context_->network_controller_handle()->SetNetworkState(
+  auto conditions = base::MakeUnique<content::DevToolsNetworkConditions>();
+  content::DevToolsNetworkController::SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
