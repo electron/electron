@@ -87,7 +87,7 @@ module gets emitted.
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
   * `callback` Function
-    * `filePath` String (optional)
+    * `filePath` ( String | {path:string} | number | {error:any} ) (optional)
 * `completion` Function (optional)
   * `error` Error
 
@@ -121,7 +121,7 @@ treated as a standard scheme.
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
   * `callback` Function
-    * `buffer` (Buffer | [MimeTypedBuffer](structures/mime-typed-buffer.md)) (optional)
+    * `buffer` (Buffer | [MimeTypedBuffer](structures/mime-typed-buffer.md) | number) (optional)
 * `completion` Function (optional)
   * `error` Error
 
@@ -267,7 +267,7 @@ Unregisters the custom protocol of `scheme`.
 
 * `scheme` String
 * `callback` Function
-  * `error` Error
+  * `isHandled` boolean
 
 The `callback` will be called with a boolean that indicates whether there is
 already a handler for `scheme`.
