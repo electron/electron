@@ -115,6 +115,20 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
       //  reuse process to allow synchronous cross-window scripting.)
       return true;
     }
+
+    // In a non-sandboxed renderer with native window open we should
+    // reuse the same site to allow cross-window scripting.  We do
+    // not need to check urls / domains as native window open logic
+    // handles cross site scripting protection.
+    //
+    // NOTE: We know that nativeWindowOpen is enabled at this point
+    // because we check if it is NOT enabled above this point.  We
+    // will only reach this return if sandbox is disabled but
+    // nativeWindowOpen is enabled.
+    //
+    // Please note that file:// is apparently the default url for when
+    // no url is provided
+    if (current_instance->GetSiteURL() == "file:///") return false;
   }
 
   // Create new a SiteInstance if navigating to a different site.
@@ -231,11 +245,19 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Noop, base::RetainedRef(site_instance)));
+}
+
+// This is called whenever either we override the site instance
+// or chromium creates a new instance
+void AtomBrowserClient::OnCreateSiteInstanceForNavigation(
+    content::SiteInstance* current_instance,
+    content::RenderFrameHost* render_frame_host) {
 
   // Remember the original web contents for the pending renderer process.
-  auto pending_process = (*new_instance)->GetProcess();
+  content::RenderProcessHost* pending_process = current_instance->GetProcess();
   pending_processes_[pending_process->GetID()] =
-      content::WebContents::FromRenderFrameHost(render_frame_host);;
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+
   // Clear the entry in map when process ends.
   pending_process->AddObserver(this);
 }

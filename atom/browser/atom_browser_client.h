@@ -60,6 +60,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
       content::SiteInstance* current_instance,
       const GURL& dest_url,
       content::SiteInstance** new_instance) override;
+  void OnCreateSiteInstanceForNavigation(
+    content::SiteInstance* current_instance,
+    content::RenderFrameHost* render_frame_host) override;
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
