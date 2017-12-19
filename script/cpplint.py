@@ -71,20 +71,17 @@ def main():
     enable_verbose_mode()
 
   os.chdir(SOURCE_ROOT)
-  files = find_files('atom',
-                     ['app', 'browser', 'common', 'renderer', 'utility'],
-                     is_cpp_file)
-  files |= find_files('brightray', ['browser', 'common'], is_cpp_file)
+  files = find_files(['atom', 'brightray'], is_cpp_file)
   files -= set(IGNORE_FILES)
   if args.only_changed:
     files &= find_changed_files()
   call_cpplint(list(files))
 
 
-def find_files(root, directories, test):
+def find_files(roots, test):
   matches = set()
-  for directory in directories:
-    for parent, _, children, in os.walk(os.path.join(root, directory)):
+  for root in roots:
+    for parent, _, children, in os.walk(root):
       for child in children:
         filename = os.path.join(parent,child)
         if test(filename):
