@@ -18,7 +18,6 @@
 
 #define IPC_MESSAGE_FORWARD_CODE(msg_class, obj, member_func, code)            \
     case msg_class::ID: {                                                      \
-        TRACK_RUN_IN_THIS_SCOPED_REGION(member_func);                          \
         if (!msg_class::Dispatch(&ipc_message__, obj, this, param__,           \
                                  &member_func))                                \
           ipc_message__.set_dispatch_error();                                  \
