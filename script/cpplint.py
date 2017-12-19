@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import argparse
-import fnmatch
 import os
 import sys
 
@@ -83,7 +82,7 @@ def find_files(roots, test):
   for root in roots:
     for parent, _, children, in os.walk(root):
       for child in children:
-        filename = os.path.join(parent,child)
+        filename = os.path.join(parent, child)
         if test(filename):
           matches.add(filename)
   return matches
