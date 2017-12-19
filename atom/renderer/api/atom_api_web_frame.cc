@@ -28,6 +28,32 @@
 
 #include "atom/common/node_includes.h"
 
+namespace mate {
+
+template <>
+struct Converter<blink::WebLocalFrame::ScriptExecutionType> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::WebLocalFrame::ScriptExecutionType* out) {
+    std::string execution_type;
+    if (!ConvertFromV8(isolate, val, &execution_type))
+      return false;
+    if (execution_type == "asynchronous") {
+      *out = blink::WebLocalFrame::kAsynchronous;
+    } else if (execution_type ==
+                   "asynchronousBlockingOnload") {
+      *out = blink::WebLocalFrame::kAsynchronousBlockingOnload;
+    } else if (execution_type == "synchronous") {
+      *out = blink::WebLocalFrame::kSynchronous;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 namespace api {
@@ -226,6 +252,69 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
       callback.release());
 }
 
+void WebFrame::ExecuteJavaScriptInIsolatedWorld(
+    int world_id,
+    const std::vector<mate::Dictionary>& scripts,
+    mate::Arguments* args) {
+  std::vector<blink::WebScriptSource> sources;
+
+  for (const auto& script : scripts) {
+    base::string16 code;
+    base::string16 url;
+    int start_line = 1;
+    script.Get("url", &url);
+    script.Get("startLine", &start_line);
+
+    if (!script.Get("code", &code)) {
+      args->ThrowError("Invalid 'code'");
+      return;
+    }
+
+    sources.emplace_back(blink::WebScriptSource(
+            blink::WebString::FromUTF16(code),
+            blink::WebURL(GURL(url)), start_line));
+  }
+
+  bool has_user_gesture = false;
+  args->GetNext(&has_user_gesture);
+
+  blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
+      blink::WebLocalFrame::kSynchronous;
+  args->GetNext(&scriptExecutionType);
+
+  ScriptExecutionCallback::CompletionCallback completion_callback;
+  args->GetNext(&completion_callback);
+  std::unique_ptr<blink::WebScriptExecutionCallback> callback(
+      new ScriptExecutionCallback(completion_callback));
+
+  web_frame_->RequestExecuteScriptInIsolatedWorld(
+      world_id, &sources.front(), sources.size(), has_user_gesture,
+      scriptExecutionType, callback.release());
+}
+
+void WebFrame::SetIsolatedWorldSecurityOrigin(
+    int world_id,
+    const std::string& origin_url) {
+  web_frame_->SetIsolatedWorldSecurityOrigin(
+      world_id,
+      blink::WebSecurityOrigin::CreateFromString(
+          blink::WebString::FromUTF8(origin_url)));
+}
+
+void WebFrame::SetIsolatedWorldContentSecurityPolicy(
+    int world_id,
+    const std::string& security_policy) {
+  web_frame_->SetIsolatedWorldContentSecurityPolicy(
+      world_id, blink::WebString::FromUTF8(security_policy));
+}
+
+void WebFrame::SetIsolatedWorldHumanReadableName(
+    int world_id,
+    const std::string& name) {
+  web_frame_->SetIsolatedWorldHumanReadableName(
+      world_id, blink::WebString::FromUTF8(name));
+}
+
 // static
 mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new WebFrame(isolate));
@@ -275,6 +364,14 @@ void WebFrame::BuildPrototype(
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
+      .SetMethod("executeJavaScriptInIsolatedWorld",
+                 &WebFrame::ExecuteJavaScriptInIsolatedWorld)
+      .SetMethod("setIsolatedWorldSecurityOrigin",
+                 &WebFrame::SetIsolatedWorldSecurityOrigin)
+      .SetMethod("setIsolatedWorldContentSecurityPolicy",
+                 &WebFrame::SetIsolatedWorldContentSecurityPolicy)
+      .SetMethod("setIsolatedWorldHumanReadableName",
+                 &WebFrame::SetIsolatedWorldHumanReadableName)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
