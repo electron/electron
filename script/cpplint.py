@@ -70,14 +70,12 @@ def main():
   if args.verbose:
     enable_verbose_mode()
 
-  ignore = set(IGNORE_FILES)
-
   os.chdir(SOURCE_ROOT)
   files = list_files('atom',
                      ['app', 'browser', 'common', 'renderer', 'utility'],
                      ['*.cc', '*.h'])
   files += list_files('brightray', ['browser', 'common'], ['*.cc', '*.h'])
-  files -= ignore
+  files -= set(IGNORE_FILES)
   if args.only_changed:
     files &= get_changed_files()
   call_cpplint(list(files))
