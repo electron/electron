@@ -67,9 +67,6 @@ def main():
     print("[INFO] Skipping cpplint, dependencies has not been bootstrapped")
     return
 
-  if args.only_changed:
-    changed_files = get_changed_files()
-
   if args.verbose:
     enable_verbose_mode()
 
@@ -82,7 +79,7 @@ def main():
   files += list_files('brightray', ['browser', 'common'], ['*.cc', '*.h'])
   files -= ignore
   if args.only_changed:
-    files &= changed_files
+    files &= get_changed_files()
   call_cpplint(list(files))
 
 
