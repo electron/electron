@@ -134,7 +134,6 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
   DCHECK(!url_request_getter_.get());
   url_request_getter_ = new URLRequestContextGetter(
       this,
-      network_controller_handle(),
       static_cast<NetLog*>(BrowserClient::Get()->GetNetLog()),
       GetPath(),
       in_memory_,

@@ -13,8 +13,6 @@
 
 namespace brightray {
 
-class DevToolsNetworkProtocolHandler;
-
 class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
  public:
   static void StartHttpHandler();
@@ -34,8 +32,6 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   std::string GetFrontendResource(const std::string& path) override;
 
  private:
-  std::unique_ptr<DevToolsNetworkProtocolHandler> handler_;
-
   DISALLOW_COPY_AND_ASSIGN(DevToolsManagerDelegate);
 };
 

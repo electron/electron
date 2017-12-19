@@ -10,12 +10,12 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
-#include "brightray/browser/net/devtools_network_transaction.h"
+#include "content/common/devtools/devtools_network_transaction.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "net/url_request/url_request.h"
 
-using brightray::DevToolsNetworkTransaction;
+using content::DevToolsNetworkTransaction;
 using content::BrowserThread;
 
 namespace atom {
@@ -266,9 +266,9 @@ int AtomNetworkDelegate::OnBeforeStartTransaction(
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
   if (!client_id_.empty())
-    headers->SetHeader(
-        DevToolsNetworkTransaction::kDevToolsEmulateNetworkConditionsClientId,
-        client_id_);
+    headers->SetHeader(content::DevToolsNetworkTransaction::
+                           kDevToolsEmulateNetworkConditionsClientId,
+                       client_id_);
   if (!base::ContainsKey(response_listeners_, kOnBeforeSendHeaders))
     return brightray::NetworkDelegate::OnBeforeStartTransaction(
         request, callback, headers);
