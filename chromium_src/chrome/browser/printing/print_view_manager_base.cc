@@ -378,8 +378,10 @@ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
 }
 
 void PrintViewManagerBase::PrintingDone(bool success) {
+  auto host = web_contents()->GetRenderViewHost();
   if (print_job_.get()) {
-    Send(new PrintMsg_PrintingDone(routing_id(), success));
+    if (host)
+      host->Send(new PrintMsg_PrintingDone(host->GetRoutingID(), success));
   }
   if (!callback.is_null()) {
     callback.Run(success && print_job_);
