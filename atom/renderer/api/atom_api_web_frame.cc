@@ -253,9 +253,9 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
 }
 
 void WebFrame::ExecuteJavaScriptInIsolatedWorld(
-  int world_id,
-  const std::vector<mate::Dictionary>& scripts,
-  mate::Arguments* args) {
+    int world_id,
+    const std::vector<mate::Dictionary>& scripts,
+    mate::Arguments* args) {
   std::vector<blink::WebScriptSource> sources;
 
   for (const auto& script : scripts) {
@@ -279,7 +279,7 @@ void WebFrame::ExecuteJavaScriptInIsolatedWorld(
   args->GetNext(&has_user_gesture);
 
   blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
-    blink::WebLocalFrame::kSynchronous;
+      blink::WebLocalFrame::kSynchronous;
   args->GetNext(&scriptExecutionType);
 
   ScriptExecutionCallback::CompletionCallback completion_callback;
@@ -292,23 +292,26 @@ void WebFrame::ExecuteJavaScriptInIsolatedWorld(
       scriptExecutionType, callback.release());
 }
 
-void WebFrame::SetIsolatedWorldSecurityOrigin(int world_id,
-  const std::string& origin_url) {
-    web_frame_->SetIsolatedWorldSecurityOrigin(
+void WebFrame::SetIsolatedWorldSecurityOrigin(
+    int world_id,
+    const std::string& origin_url) {
+  web_frame_->SetIsolatedWorldSecurityOrigin(
       world_id,
       blink::WebSecurityOrigin::CreateFromString(
-        blink::WebString::FromUTF8(origin_url)));
+          blink::WebString::FromUTF8(origin_url)));
 }
 
-void WebFrame::SetIsolatedWorldContentSecurityPolicy(int world_id,
-  const std::string& security_policy) {
+void WebFrame::SetIsolatedWorldContentSecurityPolicy(
+    int world_id,
+    const std::string& security_policy) {
   web_frame_->SetIsolatedWorldContentSecurityPolicy(
-    world_id, blink::WebString::FromUTF8(security_policy));
+      world_id, blink::WebString::FromUTF8(security_policy));
 }
 
-void WebFrame::SetIsolatedWorldHumanReadableName(int world_id,
-  const std::string& name) {
-    web_frame_->SetIsolatedWorldHumanReadableName(
+void WebFrame::SetIsolatedWorldHumanReadableName(
+    int world_id,
+    const std::string& name) {
+  web_frame_->SetIsolatedWorldHumanReadableName(
       world_id, blink::WebString::FromUTF8(name));
 }
 
