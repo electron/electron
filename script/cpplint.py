@@ -73,22 +73,27 @@ def main():
   os.chdir(SOURCE_ROOT)
   files = find_files('atom',
                      ['app', 'browser', 'common', 'renderer', 'utility'],
-                     ['*.cc', '*.h'])
-  files += find_files('brightray', ['browser', 'common'], ['*.cc', '*.h'])
+                     is_cpp_file)
+  files |= find_files('brightray', ['browser', 'common'], is_cpp_file)
   files -= set(IGNORE_FILES)
   if args.only_changed:
     files &= find_changed_files()
   call_cpplint(list(files))
 
 
-def find_files(parent, directories, filters):
+def find_files(root, directories, test):
   matches = set()
   for directory in directories:
-    for root, _, filenames, in os.walk(os.path.join(parent, directory)):
-      for f in filters:
-        for filename in fnmatch.filter(filenames, f):
-          matches.add(os.path.join(root, filename))
+    for parent, _, children, in os.walk(os.path.join(root, directory)):
+      for child in children:
+        filename = os.path.join(parent,child)
+        if test(filename):
+          matches.add(filename)
   return matches
+
+
+def is_cpp_file(filename):
+      return filename.endswith('.cc') or filename.endswith('.h')
 
 
 def find_changed_files():
