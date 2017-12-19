@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "osfhandle.h"
+#include "atom/node/osfhandle.h"
 
 #if !defined(DEBUG)
 #define U_I18N_IMPLEMENTATION
@@ -23,10 +23,10 @@
 #include "third_party/icu/source/i18n/unicode/ucsdet.h"
 #include "third_party/icu/source/i18n/unicode/ulocdata.h"
 #include "third_party/icu/source/i18n/unicode/uregex.h"
-#include "third_party/icu/source/i18n/unicode/uspoof.h"
 #include "third_party/icu/source/i18n/unicode/usearch.h"
-#include "v8-profiler.h"
-#include "v8-inspector.h"
+#include "third_party/icu/source/i18n/unicode/uspoof.h"
+#include "v8/include/v8-inspector.h"
+#include "v8/include/v8-profiler.h"
 
 namespace node {
 
