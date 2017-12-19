@@ -79,12 +79,7 @@ def main():
   files = list_files('atom',
                      ['app', 'browser', 'common', 'renderer', 'utility'],
                      ['*.cc', '*.h'])
-  files -= ignore
-  if args.only_changed:
-    files &= changed_files
-  call_cpplint(list(files))
-
-  files = list_files('brightray', ['browser', 'common'], ['*.cc', '*.h'])
+  files += list_files('brightray', ['browser', 'common'], ['*.cc', '*.h'])
   files -= ignore
   if args.only_changed:
     files &= changed_files
