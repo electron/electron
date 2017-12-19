@@ -113,7 +113,7 @@ Under the hood calling `autoUpdater.quitAndInstall()` will close all application
 windows first, and automatically call `app.quit()` after all windows have been
 closed.
 
-**Note** If the application is quit without calling this API after the
+**Note:** If the application is quit without calling this API after the
 `update-downloaded` event has been emitted, the application will still be
 replaced by the updated one on the next run.
 
