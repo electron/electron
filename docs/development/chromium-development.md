@@ -18,7 +18,7 @@ See also [V8 Development](v8-development.md)
 It is possible to debug Chromium with Electron by passing
 `--build_debug_libcc` to the bootstrap script:
 
-```bash
+```sh
 $ ./script/bootstrap.py -d --build_debug_libcc
 ```
 
@@ -29,7 +29,7 @@ libchromiumcontent and won't strip any symbols, making it ideal for debugging.
 When built like this, you can make changes to files in
 `vendor/libchromiumcontent/src` and rebuild quickly with:
 
-```bash
+```sh
 $ ./script/build.py -c D --libcc
 ```
 
@@ -37,7 +37,7 @@ When developing on linux with gdb, it is recommended to add a gdb index to speed
 up loading symbols. This doesn't need to be executed on every build, but it is
 recommended to do it at least once to index most shared libraries:
 
-```bash
+```sh
 $ ./vendor/libchromiumcontent/src/build/gdb-add-index ./out/D/electron
 ```
 
@@ -60,7 +60,7 @@ several libchromiumcontent build trees on the same machine(to work on different
 branches for example), it is recommended to set the variable to speed up the
 download of Chromium source. For example:
 
-```bash
+```sh
 $ mkdir ~/.chromium-git-cache
 $ LIBCHROMIUMCONTENT_GIT_CACHE=~/.chromium-git-cache ./script/bootstrap.py -d --build_debug_libcc
 ```
@@ -68,7 +68,7 @@ $ LIBCHROMIUMCONTENT_GIT_CACHE=~/.chromium-git-cache ./script/bootstrap.py -d --
 If the bootstrap script is interrupted while using the git cache, it will leave
 the cache locked. To remove the lock, delete the files ending in `.lock`:
 
-```bash
+```sh
 $ find ~/.chromium-git-cache/ -type f -name '*.lock' -delete
 ```
 
@@ -80,7 +80,7 @@ not work perfectly in a network.
 On Windows, SMBv2 has a directory cache that will cause problems with the git
 cache script, so it is necessary to disable it by setting the registry key
 
-```bash
+```sh
 HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Lanmanworkstation\Parameters\DirectoryCacheLifetime
 ```
 

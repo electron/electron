@@ -61,13 +61,13 @@ class WebContentsPreferences
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
 
+  // Get preferences value as integer possibly coercing it from a string
+  bool GetInteger(const std::string& attributeName, int* intValue);
+
   static std::vector<WebContentsPreferences*> instances_;
 
   content::WebContents* web_contents_;
   base::DictionaryValue web_preferences_;
-
-  // Get preferences value as integer possibly coercing it from a string
-  bool GetInteger(const std::string& attributeName, int* intValue);
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };

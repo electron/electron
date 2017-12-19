@@ -11,6 +11,9 @@ const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
+/* Most of the APIs here don't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 describe('chromium feature', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let listener = null
@@ -27,12 +30,6 @@ describe('chromium feature', () => {
 
   describe('heap snapshot', () => {
     it('does not crash', function () {
-      if (process.env.TRAVIS === 'true') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       process.atomBinding('v8_util').takeHeapSnapshot()
     })
   })
@@ -170,12 +167,6 @@ describe('chromium feature', () => {
   })
 
   describe('window.open', () => {
-    before(function () {
-      if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
-        this.skip()
-      }
-    })
-
     it('returns a BrowserWindowProxy object', () => {
       const b = window.open('about:blank', '', 'show=no')
       assert.equal(b.closed, false)

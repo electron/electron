@@ -12,15 +12,15 @@ The ASAR format was created primarily to improve performance on Windows... TODO
 
 ### Brightray
 
-Brightray [was](https://github.com/electron-archive/brightray) a static library 
-that made [libchromiumcontent] easier to use in applications. It is now 
+Brightray [was](https://github.com/electron-archive/brightray) a static library
+that made [libchromiumcontent] easier to use in applications. It is now
 deprecated and has been merged into Electron's codebase.
 
 ### CRT
 
-The C Run-time Library (CRT) is the part of the C++ Standard Library that 
-incorporates the ISO C99 standard library. The Visual C++ libraries that 
-implement the CRT support native code development, and both mixed native and 
+The C Run-time Library (CRT) is the part of the C++ Standard Library that
+incorporates the ISO C99 standard library. The Visual C++ libraries that
+implement the CRT support native code development, and both mixed native and
 managed code, and pure managed code for .NET development.
 
 ### DMG
@@ -31,8 +31,8 @@ supports `dmg` as a build target.
 
 ### IME
 
-Input Method Editor. A program that allows users to enter characters and 
-symbols not found on their keyboard. For example, this allows users of Latin 
+Input Method Editor. A program that allows users to enter characters and
+symbols not found on their keyboard. For example, this allows users of Latin
 keyboards to input Chinese, Japanese, Korean and Indic characters.
 
 ### IPC
@@ -51,7 +51,7 @@ dependencies (e.g., Blink, [V8], etc.). Also referred to as "libcc".
 
 The main process, commonly a file named `main.js`, is the entry point to every
 Electron app. It controls the life of the app, from open to close. It also
-manages native elements such as the Menu, Menu Bar, Dock, Tray, etc.  The
+manages native elements such as the Menu, Menu Bar, Dock, Tray, etc. The
 main process is responsible for creating each new renderer process in the app.
 The full Node API is built in.
 
@@ -93,8 +93,8 @@ as a build target.
 
 ### OSR
 
-OSR (Off-screen rendering) can be used for loading heavy page in 
-background and then displaying it after (it will be much faster). 
+OSR (Off-screen rendering) can be used for loading heavy page in
+background and then displaying it after (it will be much faster).
 It allows you to render page without showing it on screen.
 
 ### process
@@ -149,10 +149,10 @@ available in "core".
 V8 is Google's open source JavaScript engine. It is written in C++ and is
 used in Google Chrome. V8 can run standalone, or can be embedded into any C++ application.
 
-Electron builds V8 as part of Chromium and then points Node to that V8 when 
+Electron builds V8 as part of Chromium and then points Node to that V8 when
 building it.
 
-V8's version numbers always correspond to those of Google Chrome. Chrome 59 
+V8's version numbers always correspond to those of Google Chrome. Chrome 59
 includes V8 5.9, Chrome 58 includes V8 5.8, etc.
 
 - [developers.google.com/v8](https://developers.google.com/v8)

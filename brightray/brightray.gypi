@@ -54,11 +54,6 @@
         'WarningLevel': '4',
         'WarnAsError': 'true',
         'DebugInformationFormat': '3',
-        # Programs that use the Standard C++ library must be compiled with
-        # C++
-        # exception handling enabled.
-        # http://support.microsoft.com/kb/154419
-        'ExceptionHandling': 1,
       },
       'VCLinkerTool': {
         'GenerateDebugInformation': 'true',
@@ -126,11 +121,18 @@
               'USE_NSS',  # deprecated after Chrome 45.
             ],
           }],
+          ['OS in ["linux", "mac"]', {
+            'defines': [
+              'WEBRTC_POSIX',
+              'UCHAR_TYPE=uint16_t',
+            ],
+          }],
           ['OS=="linux"', {
             'defines': [
               '_LARGEFILE_SOURCE',
               '_LARGEFILE64_SOURCE',
               '_FILE_OFFSET_BITS=64',
+              'WEBRTC_LINUX',
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
@@ -163,6 +165,7 @@
               # The usage of "webrtc/modules/desktop_capture/desktop_capture_options.h"
               # is required to see this macro.
               'WEBRTC_WIN',
+              'UCHAR_TYPE=wchar_t',
             ],
             'conditions': [
               ['target_arch=="x64"', {

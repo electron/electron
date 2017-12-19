@@ -215,7 +215,7 @@ async function uploadShasumFile (filePath, fileName, release) {
     filePath,
     name: fileName
   }
-  return await github.repos.uploadAsset(githubOpts)
+  return github.repos.uploadAsset(githubOpts)
     .catch(err => {
       console.log(`${fail} Error uploading ${filePath} to GitHub:`, err)
       process.exit(1)
@@ -250,7 +250,7 @@ async function publishRelease (release) {
     tag_name: release.tag_name,
     draft: false
   }
-  return await github.repos.editRelease(githubOpts)
+  return github.repos.editRelease(githubOpts)
     .catch(err => {
       console.log(`${fail} Error publishing release:`, err)
       process.exit(1)
@@ -447,7 +447,7 @@ async function cleanupReleaseBranch () {
   await callGit(['branch', '-D', 'release'], errorMessage, successMessage)
   errorMessage = `Could not delete remote release branch.`
   successMessage = `Successfully deleted remote release branch.`
-  return await callGit(['push', 'origin', ':release'], errorMessage, successMessage)
+  return callGit(['push', 'origin', ':release'], errorMessage, successMessage)
 }
 
 async function callGit (args, errorMessage, successMessage) {

@@ -38,7 +38,6 @@ namespace {
 const std::string kIpcKey = "ipcNative";
 const std::string kModuleCacheKey = "native-module-cache";
 
-
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   mate::Dictionary global(isolate, isolate->GetCurrentContext()->Global());
   v8::Local<v8::Value> cache;
@@ -107,10 +106,10 @@ class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
     }
 
  protected:
-  void EmitIPCEvent(blink::WebFrame* frame,
+  void EmitIPCEvent(blink::WebLocalFrame* frame,
                     const base::string16& channel,
                     const base::ListValue& args) override {
-    if (!frame || frame->IsWebRemoteFrame())
+    if (!frame)
       return;
 
     auto isolate = blink::MainThreadIsolate();
@@ -155,6 +154,11 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 
 void AtomSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+
+  // Only allow preload for the main frame
+  if (!render_frame->IsMainFrame())
+    return;
+
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   std::string preload_script = command_line->GetSwitchValueASCII(
       switches::kPreloadScript);
@@ -192,6 +196,11 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
 
 void AtomSandboxedRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+
+  // Only allow preload for the main frame
+  if (!render_frame->IsMainFrame())
+    return;
+
   auto isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);

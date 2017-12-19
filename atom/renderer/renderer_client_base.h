@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 
 namespace atom {
 
@@ -30,7 +31,7 @@ class RendererClientBase : public content::ContentRendererClient {
 
   // Get the context that the Electron API is running in.
   v8::Local<v8::Context> GetContext(
-      blink::WebFrame* frame, v8::Isolate* isolate);
+      blink::WebLocalFrame* frame, v8::Isolate* isolate);
 
  protected:
   void AddRenderBindings(v8::Isolate* isolate,
@@ -40,10 +41,9 @@ class RendererClientBase : public content::ContentRendererClient {
   void RenderThreadStarted() override;
   void RenderFrameCreated(content::RenderFrame*) override;
   void RenderViewCreated(content::RenderView*) override;
-  blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
+  std::unique_ptr<blink::WebSpeechSynthesizer> OverrideSpeechSynthesizer(
       blink::WebSpeechSynthesizerClient* client) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
-                            blink::WebLocalFrame* frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
   content::BrowserPluginDelegate* CreateBrowserPluginDelegate(

@@ -10,7 +10,6 @@
 #include "brightray/browser/brightray_paths.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
-#include "brightray/browser/media/media_device_id_salt.h"
 #include "brightray/browser/network_delegate.h"
 #include "brightray/browser/special_storage_policy.h"
 #include "brightray/browser/zoom_level_delegate.h"
@@ -52,13 +51,6 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
 
   net::URLRequestContext* GetRequestContext() override {
     return getter_->GetURLRequestContext();
-  }
-
-  std::string GetMediaDeviceIDSalt() override {
-    auto media_device_id_salt_ = getter_->GetMediaDeviceIDSalt();
-    if (media_device_id_salt_)
-      return media_device_id_salt_->GetSalt();
-    return content::ResourceContext::GetMediaDeviceIDSalt();
   }
 
   URLRequestContextGetter* getter_;
@@ -142,7 +134,6 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
       GetPath(),
       in_memory_,
       BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
-      BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE),
       protocol_handlers,
       std::move(protocol_interceptors));
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
@@ -153,12 +144,10 @@ net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
   return new NetworkDelegate;
 }
 
-MediaDeviceIDSalt* BrowserContext::GetMediaDeviceIDSalt() {
-  if (IsOffTheRecord())
-    return nullptr;
+std::string BrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
     media_device_id_salt_.reset(new MediaDeviceIDSalt(prefs_.get()));
-  return media_device_id_salt_.get();
+  return media_device_id_salt_->GetSalt();
 }
 
 base::FilePath BrowserContext::GetPath() const {
@@ -209,6 +198,11 @@ content::PermissionManager* BrowserContext::GetPermissionManager() {
 
 content::BackgroundSyncController*
 BrowserContext::GetBackgroundSyncController() {
+  return nullptr;
+}
+
+content::BrowsingDataRemoverDelegate*
+BrowserContext::GetBrowsingDataRemoverDelegate() {
   return nullptr;
 }
 

@@ -16,7 +16,7 @@ directly.
 
 An example of installing all dependencies for Electron:
 
-```bash
+```sh
 # Electron's version.
 export npm_config_target=1.2.3
 # The architecture of Electron, can be ia32 or x64.
@@ -41,7 +41,7 @@ of downloading headers and building native modules for your app.
 
 An example of installing `electron-rebuild` and then rebuild modules with it:
 
-```bash
+```sh
 npm install --save-dev electron-rebuild
 
 # Every time you run "npm install", run this:
@@ -57,7 +57,7 @@ If you are a developer developing a native module and want to test it against
 Electron, you might want to rebuild the module for Electron manually. You can
 use `node-gyp` directly to build for Electron:
 
-```bash
+```sh
 cd /path-to-module/
 HOME=~/.electron-gyp node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://atom.io/download/electron
 ```
@@ -72,8 +72,8 @@ where to download the headers. The `--arch=x64` says the module is built for
 If you installed a native module and found it was not working, you need to check
 following things:
 
-* The architecture of module has to match Electron's architecture (ia32 or x64).
-* After you upgraded Electron, you usually need to rebuild the modules.
+* The architecture of the module has to match Electron's architecture (ia32 or x64).
+* After you upgrade Electron, you usually need to rebuild the modules.
 * When in doubt, run `electron-rebuild` first.
 
 ## Modules that rely on `prebuild`

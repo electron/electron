@@ -41,10 +41,7 @@ void WebViewGuestDelegate::Initialize(api::WebContents* api_web_contents) {
 
 void WebViewGuestDelegate::Destroy() {
   // Give the content module an opportunity to perform some cleanup.
-  if (embedder_zoom_controller_) {
-    embedder_zoom_controller_->RemoveObserver(this);
-    embedder_zoom_controller_ = nullptr;
-  }
+  ResetZoomController();
   guest_host_->WillDestroy();
   guest_host_ = nullptr;
 }
@@ -113,11 +110,15 @@ void WebViewGuestDelegate::DidFinishNavigation(
 
 void WebViewGuestDelegate::DidDetach() {
   attached_ = false;
+  ResetZoomController();
 }
 
 void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {
   attached_ = true;
   api_web_contents_->Emit("did-attach");
+
+  ResetZoomController();
+
   embedder_zoom_controller_ =
       WebContentsZoomController::FromWebContents(embedder_web_contents_);
   auto zoom_controller = api_web_contents_->GetZoomController();
@@ -180,6 +181,13 @@ gfx::Size WebViewGuestDelegate::GetDefaultSize() const {
                                  ->GetVisibleViewportSize();
   } else {
     return gfx::Size(kDefaultWidth, kDefaultHeight);
+  }
+}
+
+void WebViewGuestDelegate::ResetZoomController() {
+  if (embedder_zoom_controller_) {
+    embedder_zoom_controller_->RemoveObserver(this);
+    embedder_zoom_controller_ = nullptr;
   }
 }
 

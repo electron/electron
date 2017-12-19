@@ -25,7 +25,7 @@ specified, `partition` is ignored.
   * `protocol` String (optional) - The protocol scheme in the form 'scheme:'.
 Currently supported values are 'http:' or 'https:'. Defaults to 'http:'.
   * `host` String (optional) - The server host provided as a concatenation of
-the hostname and the port number 'hostname:port'
+the hostname and the port number 'hostname:port'.
   * `hostname` String (optional) - The server host name.
   * `port` Integer (optional) - The server's listening port number.
   * `path` String (optional) - The path part of the request URL.

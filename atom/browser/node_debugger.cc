@@ -13,10 +13,13 @@
 
 namespace atom {
 
-NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {
+NodeDebugger::NodeDebugger(node::Environment* env)
+    : env_(env), platform_(nullptr) {
 }
 
 NodeDebugger::~NodeDebugger() {
+  if (platform_)
+    FreePlatform(platform_);
 }
 
 void NodeDebugger::Start() {
@@ -35,17 +38,20 @@ void NodeDebugger::Start() {
 
   if (options.inspector_enabled()) {
     // Use custom platform since the gin platform does not work correctly
-    // with node's inspector agent
-    platform_.reset(v8::platform::CreateDefaultPlatform());
+    // with node's inspector agent. We use the default thread pool size
+    // specified by node.cc
+    platform_ = node::CreatePlatform(
+        /* thread_pool_size */ 4, env_->event_loop(),
+        /* tracing_controller */ nullptr);
 
     // Set process._debugWaitConnect if --inspect-brk was specified to stop
     // the debugger on the first line
     if (options.wait_for_connect()) {
       mate::Dictionary process(env_->isolate(), env_->process_object());
-      process.Set("_debugWaitConnect", true);
+      process.Set("_breakFirstLine", true);
     }
 
-    inspector->Start(platform_.get(), nullptr, options);
+    inspector->Start(platform_, nullptr, options);
   }
 }
 

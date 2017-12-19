@@ -147,7 +147,7 @@ header.
 
 #### `downloadItem.getState()`
 
-Returns `String` - The current state.  Can be `progressing`, `completed`, `cancelled` or `interrupted`.
+Returns `String` - The current state. Can be `progressing`, `completed`, `cancelled` or `interrupted`.
 
 **Note:** The following methods are useful specifically to resume a
 `cancelled` item when session is restarted.

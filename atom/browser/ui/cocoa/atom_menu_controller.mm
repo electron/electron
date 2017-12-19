@@ -50,9 +50,16 @@ Role kRolesMap[] = {
   { @selector(selectPreviousTab:), "selectprevioustab" },
   { @selector(mergeAllWindows:), "mergeallwindows" },
   { @selector(moveTabToNewWindow:), "movetabtonewwindow" },
+  { @selector(clearRecentDocuments:), "clearrecentdocuments" },
 };
 
 }  // namespace
+
+// Menu item is located for ease of removing it from the parent owner
+static base::scoped_nsobject<NSMenuItem> recentDocumentsMenuItem_;
+
+// Submenu retained to be swapped back to |recentDocumentsMenuItem_|
+static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
 @implementation AtomMenuController
 
@@ -75,7 +82,8 @@ Role kRolesMap[] = {
   // while its context menu is still open.
   [self cancel];
 
-  model_ = nullptr;
+  model_ = nil;
+
   [super dealloc];
 }
 
@@ -86,6 +94,14 @@ Role kRolesMap[] = {
 - (void)populateWithModel:(atom::AtomMenuModel*)model {
   if (!menu_)
     return;
+
+  if (!recentDocumentsMenuItem_) {
+    // Locate & retain the recent documents menu item
+    recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
+        itemWithTitle:@"Electron"] submenu]
+        itemWithTitle:@"Open Recent"]
+        retain]);
+  }
 
   model_ = model;
   [menu_ removeAllItems];
@@ -132,6 +148,42 @@ Role kRolesMap[] = {
   [menu insertItem:separator atIndex:index];
 }
 
+// Empties the source menu items to the destination.
+- (void)moveMenuItems:(NSMenu*)source
+                   to:(NSMenu*)destination {
+  const long count = [source numberOfItems];
+  for (long index = 0; index < count; index++) {
+    NSMenuItem* removedItem = [[[source itemAtIndex:0] retain] autorelease];
+    [source removeItemAtIndex:0];
+    [destination addItem:removedItem];
+  }
+}
+
+// Replaces the item's submenu instance with the singleton recent documents
+// menu. Previously replaced menu items will be recovered.
+- (void)replaceSubmenuShowingRecentDocuments:(NSMenuItem*)item {
+  NSMenu* recentDocumentsMenu = [[[recentDocumentsMenuItem_ submenu]
+      retain] autorelease];
+
+  // Remove menu items in recent documents back to swap menu
+  [self moveMenuItems:recentDocumentsMenu
+                   to:recentDocumentsMenuSwap_];
+  // Swap back the submenu
+  [recentDocumentsMenuItem_ setSubmenu:recentDocumentsMenuSwap_];
+
+  // Retain the item's submenu for a future recovery
+  recentDocumentsMenuSwap_.reset([[item submenu] retain]);
+
+  // Repopulate with items from the submenu to be replaced
+  [self moveMenuItems:recentDocumentsMenuSwap_
+                   to:recentDocumentsMenu];
+  // Replace submenu
+  [item setSubmenu:recentDocumentsMenu];
+
+  // Remember the new menu item that carries the recent documents menu
+  recentDocumentsMenuItem_.reset([item retain]);
+}
+
 // Adds an item or a hierarchical menu to the item at the |index|,
 // associated with the entry in the model identified by |modelIndex|.
 - (void)addItemToMenu:(NSMenu*)menu
@@ -139,6 +191,7 @@ Role kRolesMap[] = {
             fromModel:(atom::AtomMenuModel*)model {
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
+
   base::scoped_nsobject<NSMenuItem> item(
       [[NSMenuItem alloc] initWithTitle:label
                                  action:@selector(itemSelected:)
@@ -149,6 +202,7 @@ Role kRolesMap[] = {
   if (model->GetIconAt(index, &icon) && !icon.IsEmpty())
     [item setImage:icon.ToNSImage()];
 
+  base::string16 role = model->GetRoleAt(index);
   atom::AtomMenuModel::ItemType type = model->GetTypeAt(index);
   if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
     // Recursively build a submenu from the sub-model at this index.
@@ -161,14 +215,14 @@ Role kRolesMap[] = {
     [item setSubmenu:submenu];
 
     // Set submenu's role.
-    base::string16 role = model->GetRoleAt(index);
     if (role == base::ASCIIToUTF16("window") && [submenu numberOfItems])
       [NSApp setWindowsMenu:submenu];
     else if (role == base::ASCIIToUTF16("help"))
       [NSApp setHelpMenu:submenu];
-
-    if (role == base::ASCIIToUTF16("services"))
+    else if (role == base::ASCIIToUTF16("services"))
       [NSApp setServicesMenu:submenu];
+    else if (role == base::ASCIIToUTF16("recentdocuments"))
+      [self replaceSubmenuShowingRecentDocuments:item];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the
     // tag like we do in other menus. Also set the represented object to be
@@ -192,7 +246,6 @@ Role kRolesMap[] = {
     }
 
     // Set menu item's role.
-    base::string16 role = model->GetRoleAt(index);
     [item setTarget:self];
     if (!role.empty()) {
       for (const Role& pair : kRolesMap) {

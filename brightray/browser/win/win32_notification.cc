@@ -18,8 +18,6 @@ void Win32Notification::Show(const NotificationOptions& options) {
 
     if (!options.icon.drawsNothing()) {
         if (options.icon.colorType() == kBGRA_8888_SkColorType) {
-            options.icon.lockPixels();
-
             BITMAPINFOHEADER bmi = { sizeof(BITMAPINFOHEADER) };
             bmi.biWidth = options.icon.width();
             bmi.biHeight = -options.icon.height();
@@ -33,8 +31,6 @@ void Win32Notification::Show(const NotificationOptions& options) {
                                    reinterpret_cast<BITMAPINFO*>(&bmi),
                                    DIB_RGB_COLORS);
             ReleaseDC(NULL, hdcScreen);
-
-            options.icon.unlockPixels();
         }
     }
 

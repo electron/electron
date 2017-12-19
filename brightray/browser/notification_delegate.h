@@ -7,11 +7,9 @@
 
 #include <string>
 
-#include "content/public/browser/desktop_notification_delegate.h"
-
 namespace brightray {
 
-class NotificationDelegate : public content::DesktopNotificationDelegate {
+class NotificationDelegate {
  public:
   // The native Notification object is destroyed.
   virtual void NotificationDestroyed() {}
@@ -22,6 +20,14 @@ class NotificationDelegate : public content::DesktopNotificationDelegate {
   // Notification was replied to
   virtual void NotificationReplied(const std::string& reply) {}
   virtual void NotificationAction(int index) {}
+
+  virtual void NotificationClick() {}
+  virtual void NotificationClosed() {}
+  virtual void NotificationDisplayed() {}
+
+ protected:
+  NotificationDelegate() = default;
+  ~NotificationDelegate() = default;
 };
 
 }  // namespace brightray

@@ -65,7 +65,7 @@ EventSubscriberBase::~EventSubscriberBase() {
   }
   RemoveAllListeners();
   emitter_.Reset();
-  DCHECK_EQ(js_handlers_.size(), 0);
+  DCHECK_EQ(js_handlers_.size(), 0u);
 }
 
 void EventSubscriberBase::On(const std::string& event_name) {

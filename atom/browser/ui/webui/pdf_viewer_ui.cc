@@ -144,7 +144,7 @@ class PdfViewerUI::ResourceRequester
 
     std::unique_ptr<content::ResourceHandler> handler =
         base::MakeUnique<content::StreamResourceHandler>(
-            request.get(), stream_context->registry(), origin);
+            request.get(), stream_context->registry(), origin, false);
     info->set_is_stream(true);
     stream_info_.reset(new content::StreamInfo);
     stream_info_->handle =

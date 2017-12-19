@@ -77,8 +77,8 @@ void SubmenuButton::SetUnderlineColor(SkColor color) {
   underline_color_ = color;
 }
 
-void SubmenuButton::OnPaint(gfx::Canvas* canvas) {
-  views::MenuButton::OnPaint(canvas);
+void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
+  views::MenuButton::PaintButtonContents(canvas);
 
   if (show_underline_ && (underline_start_ != underline_end_)) {
     int padding = (width() - text_width_) / 2;

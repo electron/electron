@@ -20,8 +20,7 @@ MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
       weak_factory_(this) {
 }
 
-void MenuViews::PopupAt(
-    Window* window, int x, int y, int positioning_item, bool async) {
+void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
   NativeWindow* native_window = static_cast<NativeWindow*>(window->window());
   if (!native_window)
     return;
@@ -42,8 +41,6 @@ void MenuViews::PopupAt(
   }
 
   int flags = MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS;
-  if (async)
-    flags |= MenuRunner::ASYNC;
 
   // Don't emit unresponsive event when showing menu.
   atom::UnresponsiveSuppressor suppressor;
@@ -54,12 +51,12 @@ void MenuViews::PopupAt(
       &MenuViews::ClosePopupAt, weak_factory_.GetWeakPtr(), window_id);
   menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
       model(), flags, close_callback));
-  ignore_result(menu_runners_[window_id]->RunMenuAt(
+  menu_runners_[window_id]->RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,
       gfx::Rect(location, gfx::Size()),
       views::MENU_ANCHOR_TOPLEFT,
-      ui::MENU_SOURCE_MOUSE));
+      ui::MENU_SOURCE_MOUSE);
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {

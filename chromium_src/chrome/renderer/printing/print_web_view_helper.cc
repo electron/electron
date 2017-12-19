@@ -236,12 +236,12 @@ void ComputeWebKitPrintParamsInDesiredDpi(
       ConvertUnit(print_params.page_size.height(), dpi, kPointsPerInch);
 }
 
-blink::WebPlugin* GetPlugin(const blink::WebFrame* frame) {
+blink::WebPlugin* GetPlugin(const blink::WebLocalFrame* frame) {
   return frame->GetDocument().IsPluginDocument() ?
-         frame->GetDocument().To<blink::WebPluginDocument>().Plugin() : NULL;
+         frame->GetDocument().To<blink::WebPluginDocument>().Plugin() : nullptr;
 }
 
-bool PrintingNodeOrPdfFrame(const blink::WebFrame* frame,
+bool PrintingNodeOrPdfFrame(const blink::WebLocalFrame* frame,
                             const blink::WebNode& node) {
   if (!node.IsNull())
     return true;
@@ -249,7 +249,7 @@ bool PrintingNodeOrPdfFrame(const blink::WebFrame* frame,
   return plugin && plugin->SupportsPaginatedPrint();
 }
 
-MarginType GetMarginsForPdf(blink::WebFrame* frame,
+MarginType GetMarginsForPdf(blink::WebLocalFrame* frame,
                             const blink::WebNode& node) {
   if (frame->IsPrintScalingDisabledForPlugin(node))
     return NO_MARGINS;
@@ -339,7 +339,7 @@ blink::WebView* FrameReference::view() {
 }
 
 // static - Not anonymous so that platform implementations can use it.
-float PrintWebViewHelper::RenderPageContent(blink::WebFrame* frame,
+float PrintWebViewHelper::RenderPageContent(blink::WebLocalFrame* frame,
                                             int page_number,
                                             const gfx::Rect& canvas_area,
                                             const gfx::Rect& content_area,
@@ -401,6 +401,7 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
       const blink::WebString& name,
       const blink::WebString& unique_name,
       blink::WebSandboxFlags sandbox_flags,
+      const blink::WebParsedFeaturePolicy& container_policy,
       const blink::WebFrameOwnerProperties& frame_owner_properties) override;
 
  private:
@@ -478,7 +479,7 @@ void PrepareFrameAndViewForPrint::ResizeForPrinting() {
   blink::WebView* web_view = frame_.view();
   if (blink::WebFrame* web_frame = web_view->MainFrame()) {
     if (web_frame->IsWebLocalFrame())
-      prev_scroll_offset_ = web_frame->GetScrollOffset();
+      prev_scroll_offset_ = web_frame->ToWebLocalFrame()->GetScrollOffset();
   }
   prev_view_size_ = web_view->Size();
 
@@ -524,10 +525,9 @@ void PrepareFrameAndViewForPrint::CopySelection(
       blink::WebView::Create(this, blink::kWebPageVisibilityStateVisible);
   owns_web_view_ = true;
   content::RenderView::ApplyWebPreferences(prefs, web_view);
-  blink::WebLocalFrame* main_frame = blink::WebLocalFrame::Create(
-      blink::WebTreeScopeType::kDocument, this, nullptr, nullptr);
-  web_view->SetMainFrame(main_frame);
-  blink::WebFrameWidget::Create(this, web_view, main_frame);
+  blink::WebLocalFrame* main_frame = blink::WebLocalFrame::CreateMainFrame(
+      web_view, this, nullptr, nullptr);
+  blink::WebFrameWidget::Create(this, main_frame);
   frame_.Reset(web_view->MainFrame()->ToWebLocalFrame());
   node_to_print_.Reset();
 
@@ -555,10 +555,10 @@ blink::WebLocalFrame* PrepareFrameAndViewForPrint::CreateChildFrame(
     const blink::WebString& name,
     const blink::WebString& unique_name,
     blink::WebSandboxFlags sandbox_flags,
+    const blink::WebParsedFeaturePolicy& container_policy,
     const blink::WebFrameOwnerProperties& frame_owner_properties) {
-  blink::WebLocalFrame* frame = blink::WebLocalFrame::Create(
-      scope, this, nullptr, nullptr);
-  parent->AppendChild(frame);
+  blink::WebLocalFrame* frame = parent->CreateLocalChild(
+      scope, this, nullptr);
   return frame;
 }
 
@@ -574,7 +574,7 @@ void PrepareFrameAndViewForPrint::RestoreSize() {
   web_view->Resize(prev_view_size_);
   if (blink::WebFrame* web_frame = web_view->MainFrame()) {
     if (web_frame->IsWebLocalFrame())
-      web_frame->SetScrollOffset(prev_scroll_offset_);
+      web_frame->ToWebLocalFrame()->SetScrollOffset(prev_scroll_offset_);
   }
 }
 
@@ -1165,8 +1165,9 @@ bool PrintWebViewHelper::CopyMetafileDataToSharedMem(
   if (!metafile.GetData(shared_buf->memory(), buf_size))
     return false;
 
-  return shared_buf->GiveToProcess(base::GetCurrentProcessHandle(),
-                                   shared_mem_handle);
+  *shared_mem_handle =
+      base::SharedMemory::DuplicateHandle(shared_buf->handle());
+  return true;
 }
 #endif  // defined(OS_POSIX)
 

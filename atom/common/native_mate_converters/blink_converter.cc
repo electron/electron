@@ -137,7 +137,8 @@ struct Converter<blink::WebInputEvent::Modifiers> {
   }
 };
 
-int GetWebInputEventType(v8::Isolate* isolate, v8::Local<v8::Value> val) {
+blink::WebInputEvent::Type GetWebInputEventType(v8::Isolate* isolate,
+    v8::Local<v8::Value> val) {
   blink::WebInputEvent::Type type = blink::WebInputEvent::kUndefined;
   mate::Dictionary dict;
   ConvertFromV8(isolate, val, &dict) && dict.Get("type", &type);
@@ -342,8 +343,6 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
   dict.Get("viewPosition", &out->view_position);
   dict.Get("deviceScaleFactor", &out->device_scale_factor);
   dict.Get("viewSize", &out->view_size);
-  dict.Get("fitToView", &out->fit_to_view);
-  dict.Get("offset", &out->offset);
   dict.Get("scale", &out->scale);
   return true;
 }

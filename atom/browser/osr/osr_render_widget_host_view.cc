@@ -16,7 +16,7 @@
 #include "base/time/time.h"
 #include "cc/output/copy_output_request.h"
 #include "cc/scheduler/delay_based_time_source.h"
-#include "components/display_compositor/gl_helper.h"
+#include "components/viz/common/gl_helper.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
@@ -301,8 +301,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       factory->GetContextFactoryPrivate();
   compositor_.reset(
       new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
-                         content::GetContextFactory(), context_factory_private,
-                         base::ThreadTaskRunnerHandle::Get()));
+        content::GetContextFactory(), context_factory_private,
+        base::ThreadTaskRunnerHandle::Get(), false));
   compositor_->SetAcceleratedWidget(native_window_->GetAcceleratedWidget());
   compositor_->SetRootLayer(root_layer_.get());
 #endif
@@ -378,9 +378,8 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(
   DCHECK(begin_frame_args.IsValid());
   begin_frame_number_++;
 
-  render_widget_host_->Send(new ViewMsg_BeginFrame(
-      render_widget_host_->GetRoutingID(),
-      begin_frame_args));
+  if (renderer_compositor_frame_sink_)
+    renderer_compositor_frame_sink_->OnBeginFrame(begin_frame_args);
 }
 
 bool OffScreenRenderWidgetHostView::OnMessageReceived(
@@ -528,7 +527,7 @@ void OffScreenRenderWidgetHostView::UnlockMouse() {
 }
 
 void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
-    cc::mojom::MojoCompositorFrameSinkClient* renderer_compositor_frame_sink) {
+    cc::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink) {
   renderer_compositor_frame_sink_ = renderer_compositor_frame_sink;
   if (GetDelegatedFrameHost()) {
     GetDelegatedFrameHost()->DidCreateNewRendererCompositorFrameSink(
@@ -537,7 +536,7 @@ void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
 }
 
 void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
-    const cc::LocalSurfaceId& local_surface_id,
+    const viz::LocalSurfaceId& local_surface_id,
     cc::CompositorFrame frame) {
   TRACE_EVENT0("electron",
     "OffScreenRenderWidgetHostView::SubmitCompositorFrame");
@@ -778,8 +777,7 @@ OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock() {
   return base::MakeUnique<content::CompositorResizeLock>(this, desired_size);
 }
 
-void
-OffScreenRenderWidgetHostView::OnBeginFrame(const cc::BeginFrameArgs& args) {
+void OffScreenRenderWidgetHostView::OnBeginFrame() {
 }
 
 std::unique_ptr<ui::CompositorLock>
@@ -796,7 +794,7 @@ void OffScreenRenderWidgetHostView::CompositorResizeLockEnded() {
 
 bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpace(
     const gfx::Point& point,
-    const cc::SurfaceId& original_surface,
+    const viz::SurfaceId& original_surface,
     gfx::Point* transformed_point) {
   // Transformations use physical pixels rather than DIP, so conversion
   // is necessary.
@@ -943,9 +941,6 @@ void CopyBitmapTo(
     const SkBitmap& destination,
     const SkBitmap& source,
     const gfx::Rect& pos) {
-  SkAutoLockPixels source_pixels_lock(source);
-  SkAutoLockPixels destination_pixels_lock(destination);
-
   char* src = static_cast<char*>(source.getPixels());
   char* dest = static_cast<char*>(destination.getPixels());
   int pixelsize = source.bytesPerPixel();
@@ -1017,7 +1012,7 @@ void OffScreenRenderWidgetHostView::OnPaint(
 void OffScreenRenderWidgetHostView::OnPopupPaint(
     const gfx::Rect& damage_rect, const SkBitmap& bitmap) {
   if (popup_host_view_ && popup_bitmap_.get())
-    bitmap.deepCopyTo(popup_bitmap_.get());
+    popup_bitmap_.reset(new SkBitmap(bitmap));
   InvalidateBounds(popup_host_view_->popup_position_);
 }
 
@@ -1058,10 +1053,11 @@ void OffScreenRenderWidgetHostView::WasResized() {
 }
 
 void OffScreenRenderWidgetHostView::ProcessKeyboardEvent(
-    const content::NativeWebKeyboardEvent& event) {
+    const content::NativeWebKeyboardEvent& event,
+    const ui::LatencyInfo& latency) {
   if (!render_widget_host_)
     return;
-  render_widget_host_->ForwardKeyboardEvent(event);
+  render_widget_host_->ForwardKeyboardEventWithLatencyInfo(event, latency);
 }
 
 void OffScreenRenderWidgetHostView::ProcessMouseEvent(
@@ -1257,7 +1253,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer() {
   GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels);
 }
 
-cc::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
+viz::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
     bool is_guest_view_hack) {
   // GuestViews have two RenderWidgetHostViews and so we need to make sure
   // we don't have FrameSinkId collisions.
@@ -1267,7 +1263,7 @@ cc::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
       content::ImageTransportFactory::GetInstance();
   return is_guest_view_hack
           ? factory->GetContextFactoryPrivate()->AllocateFrameSinkId()
-          : cc::FrameSinkId(base::checked_cast<uint32_t>(
+          : viz::FrameSinkId(base::checked_cast<uint32_t>(
                                 render_widget_host_->GetProcess()->GetID()),
                             base::checked_cast<uint32_t>(
                                 render_widget_host_->GetRoutingID()));

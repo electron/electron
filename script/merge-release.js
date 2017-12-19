@@ -31,7 +31,7 @@ async function checkoutBranch (branchName) {
   console.log(`Checking out ${branchName}.`)
   let errorMessage = `Error checking out branch ${branchName}:`
   let successMessage = `Successfully checked out branch ${branchName}.`
-  return await callGit(['checkout', branchName], errorMessage, successMessage)
+  return callGit(['checkout', branchName], errorMessage, successMessage)
 }
 
 async function commitMerge () {
@@ -39,7 +39,7 @@ async function commitMerge () {
   let errorMessage = `Error committing merge:`
   let successMessage = `Successfully committed the merge for v${pkg.version}`
   let gitArgs = ['commit', '-m', `v${pkg.version}`]
-  return await callGit(gitArgs, errorMessage, successMessage)
+  return callGit(gitArgs, errorMessage, successMessage)
 }
 
 async function mergeReleaseIntoBranch (branchName) {
@@ -67,14 +67,14 @@ async function pushBranch (branchName) {
   let pushArgs = ['push', 'origin', branchName]
   let errorMessage = `Could not push branch ${branchName} due to an error:`
   let successMessage = `Successfully pushed branch ${branchName}.`
-  return await callGit(pushArgs, errorMessage, successMessage)
+  return callGit(pushArgs, errorMessage, successMessage)
 }
 
 async function pull () {
   console.log(`Performing a git pull`)
   let errorMessage = `Could not pull due to an error:`
   let successMessage = `Successfully performed a git pull`
-  return await callGit(['pull'], errorMessage, successMessage)
+  return callGit(['pull'], errorMessage, successMessage)
 }
 
 async function rebase (targetBranch) {
@@ -82,7 +82,7 @@ async function rebase (targetBranch) {
   let errorMessage = `Could not rebase due to an error:`
   let successMessage = `Successfully rebased release branch from ` +
     `${targetBranch}`
-  return await callGit(['rebase', targetBranch], errorMessage, successMessage)
+  return callGit(['rebase', targetBranch], errorMessage, successMessage)
 }
 
 async function mergeRelease () {

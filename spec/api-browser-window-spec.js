@@ -9,7 +9,7 @@ const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
-const {app, ipcMain, BrowserWindow, BrowserView, protocol, webContents} = remote
+const {app, ipcMain, BrowserWindow, BrowserView, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
@@ -27,7 +27,7 @@ describe('BrowserWindow module', () => {
     postData = [
       {
         type: 'rawData',
-        bytes: new Buffer('username=test&file=')
+        bytes: Buffer.from('username=test&file=')
       },
       {
         type: 'file',
@@ -153,7 +153,7 @@ describe('BrowserWindow module', () => {
       ]
       const responseEvent = 'window-webContents-destroyed'
 
-      function* genNavigationEvent () {
+      function * genNavigationEvent () {
         let eventOptions = null
         while ((eventOptions = events.shift()) && events.length) {
           let w = new BrowserWindow({show: false})
@@ -270,7 +270,7 @@ describe('BrowserWindow module', () => {
         assert.equal(isMainFrame, true)
         done()
       })
-      const data = new Buffer(2 * 1024 * 1024).toString('base64')
+      const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
       w.loadURL(`data:image/png;base64,${data}`)
     })
 
@@ -1021,6 +1021,43 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    describe('session preload scripts', function () {
+      const preloads = [
+        path.join(fixtures, 'module', 'set-global-preload-1.js'),
+        path.join(fixtures, 'module', 'set-global-preload-2.js')
+      ]
+      const defaultSession = session.defaultSession
+
+      beforeEach(() => {
+        assert.deepEqual(defaultSession.getPreloads(), [])
+        defaultSession.setPreloads(preloads)
+      })
+      afterEach(() => {
+        defaultSession.setPreloads([])
+      })
+
+      it('can set multiple session preload script', function () {
+        assert.deepEqual(defaultSession.getPreloads(), preloads)
+      })
+
+      it('loads the script before other scripts in window including normal preloads', function (done) {
+        ipcMain.once('vars', function (event, preload1, preload2, preload3) {
+          assert.equal(preload1, 'preload-1')
+          assert.equal(preload2, 'preload-1-2')
+          assert.equal(preload3, 'preload-1-2-3')
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: path.join(fixtures, 'module', 'set-global-preload-3.js')
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preloads.html'))
+      })
+    })
+
     describe('"node-integration" option', () => {
       it('disables node integration when specified to false', (done) => {
         const preload = path.join(fixtures, 'module', 'send-later.js')
@@ -1056,6 +1093,8 @@ describe('BrowserWindow module', () => {
       // http protocol to simulate accessing another domain. This is required
       // because the code paths for cross domain popups is different.
       function crossDomainHandler (request, callback) {
+        // Disabled due to false positive in StandardJS
+        // eslint-disable-next-line standard/no-callback-literal
         callback({
           mimeType: 'text/html',
           data: `<html><body><h1>${request.url}</h1></body></html>`
@@ -2177,8 +2216,16 @@ describe('BrowserWindow module', () => {
         assert.equal(w.isMaximizable(), true)
         w.setFullScreenable(false)
         assert.equal(w.isMaximizable(), true)
+      })
+    })
+
+    describe('maximizable state (Windows only)', () => {
+      // Only implemented on windows.
+      if (process.platform !== 'win32') return
+
+      it('is set to false when resizable state is set to false', () => {
         w.setResizable(false)
-        assert.equal(w.isMaximizable(), true)
+        assert.equal(w.isMaximizable(), false)
       })
     })
 
@@ -3025,6 +3072,8 @@ const isScaleFactorRounding = () => {
 function serveFileFromProtocol (protocolName, filePath) {
   return new Promise((resolve, reject) => {
     protocol.registerBufferProtocol(protocolName, (request, callback) => {
+      // Disabled due to false positive in StandardJS
+      // eslint-disable-next-line standard/no-callback-literal
       callback({
         mimeType: 'text/html',
         data: fs.readFileSync(filePath)

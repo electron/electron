@@ -2,7 +2,7 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   const {ipcRenderer} = require('electron')
-  const popup = window.open('http://host')
+  const popup = window.open('http://127.0.0.1')
   const intervalID = setInterval(function () {
     try {
       if (popup.location.toString() !== 'about:blank') {

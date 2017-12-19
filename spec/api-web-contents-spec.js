@@ -10,6 +10,9 @@ const {BrowserWindow, webContents, ipcMain, session} = remote
 
 const isCi = remote.getGlobal('isCi')
 
+/* The whole webContents API doesn't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 describe('webContents module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w
@@ -86,6 +89,22 @@ describe('webContents module', () => {
 
       specWebContents.openDevTools({mode: 'detach'})
       w.inspectElement(100, 100)
+    })
+  })
+
+  describe('setDevToolsWebCotnents() API', () => {
+    it('sets arbitry webContents as devtools', (done) => {
+      let devtools = new BrowserWindow({show: false})
+      devtools.webContents.once('dom-ready', () => {
+        assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
+        devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
+          assert.ok(name, 'InspectorFrontendHostImpl')
+          devtools.destroy()
+          done()
+        })
+      })
+      w.webContents.setDevToolsWebContents(devtools.webContents)
+      w.webContents.openDevTools()
     })
   })
 
@@ -634,7 +653,7 @@ describe('webContents module', () => {
       ]
       const responseEvent = 'webcontents-destroyed'
 
-      function* genNavigationEvent () {
+      function * genNavigationEvent () {
         let eventOptions = null
         while ((eventOptions = events.shift()) && events.length) {
           eventOptions.responseEvent = responseEvent

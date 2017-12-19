@@ -4,6 +4,9 @@ const {closeWindow} = require('./window-helpers')
 const {remote, webFrame} = require('electron')
 const {BrowserWindow, protocol, ipcMain} = remote
 
+/* Most of the APIs here don't use standard callbacks */
+/* eslint-disable standard/no-callback-literal */
+
 describe('webFrame module', function () {
   var fixtures = path.resolve(__dirname, 'fixtures')
   var w = null

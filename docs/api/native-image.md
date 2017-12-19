@@ -165,21 +165,21 @@ Creates a new `NativeImage` instance from `dataURL`.
 Returns `NativeImage`
 
 Creates a new `NativeImage` instance from the NSImage that maps to the
-given image name.  See [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename?language=objc)
+given image name. See [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename?language=objc)
 for a list of possible values.
 
 The `hslShift` is applied to the image with the following rules
 * `hsl_shift[0]` (hue): The absolute hue value for the image - 0 and 1 map
      to 0 and 360 on the hue color wheel (red).
 * `hsl_shift[1]` (saturation): A saturation shift for the image, with the
-    following key values:  
-    0 = remove all color.  
-    0.5 = leave unchanged.  
-    1 = fully saturate the image.  
+    following key values:
+    0 = remove all color.
+    0.5 = leave unchanged.
+    1 = fully saturate the image.
 * `hsl_shift[2]` (lightness): A lightness shift for the image, with the
-    following key values:  
-    0 = remove all lightness (make all pixels black).  
-    0.5 = leave unchanged.  
+    following key values:
+    0 = remove all lightness (make all pixels black).
+    0.5 = leave unchanged.
     1 = full lightness (make all pixels white).
 
 This means that `[-1, 0, 1]` will make the image completely white and
@@ -245,7 +245,7 @@ image instead of a copy, so you _must_ ensure that the associated
 
 #### `image.isEmpty()`
 
-Returns `Boolean` -  Whether the image is empty.
+Returns `Boolean` - Whether the image is empty.
 
 #### `image.getSize()`
 
@@ -263,7 +263,7 @@ Returns `Boolean` - Whether the image is a template image.
 
 #### `image.crop(rect)`
 
-* `rect` [Rectangle](structures/rectangle.md) - The area of the image to crop
+* `rect` [Rectangle](structures/rectangle.md) - The area of the image to crop.
 
 Returns `NativeImage` - The cropped image.
 
@@ -271,7 +271,7 @@ Returns `NativeImage` - The cropped image.
 
 * `options` Object
   * `width` Integer (optional) - Defaults to the image's width.
-  * `height` Integer (optional) - Defaults to the image's height
+  * `height` Integer (optional) - Defaults to the image's height.
   * `quality` String (optional) - The desired quality of the resize image.
     Possible values are `good`, `better` or `best`. The default is `best`.
     These values express a desired quality/speed tradeoff. They are translated

@@ -35,7 +35,6 @@ namespace brightray {
 
 class RequireCTDelegate;
 class DevToolsNetworkControllerHandle;
-class MediaDeviceIDSalt;
 class NetLog;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
@@ -58,7 +57,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         RequireCTDelegate* ct_delegate);
     virtual net::SSLConfigService* CreateSSLConfigService();
     virtual std::vector<std::string> GetCookieableSchemes();
-    virtual MediaDeviceIDSalt* GetMediaDeviceIDSalt() { return nullptr; }
   };
 
   URLRequestContextGetter(
@@ -68,7 +66,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       const base::FilePath& base_path,
       bool in_memory,
       scoped_refptr<base::SingleThreadTaskRunner> io_task_runner,
-      scoped_refptr<base::SingleThreadTaskRunner> file_task_runner,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
@@ -80,9 +77,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   net::HostResolver* host_resolver();
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }
-  MediaDeviceIDSalt* GetMediaDeviceIDSalt() const {
-    return delegate_->GetMediaDeviceIDSalt();
-  }
 
  private:
   Delegate* delegate_;
@@ -92,7 +86,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   base::FilePath base_path_;
   bool in_memory_;
   scoped_refptr<base::SingleThreadTaskRunner> io_task_runner_;
-  scoped_refptr<base::SingleThreadTaskRunner> file_task_runner_;
 
   std::string user_agent_;
 

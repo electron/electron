@@ -32,7 +32,7 @@ When you invoke methods of a remote object, call a remote function, or create
 a new object with the remote constructor (function), you are actually sending
 synchronous inter-process messages.
 
-In the example above, both `BrowserWindow` and `win` were remote objects and
+In the example above, both [`BrowserWindow`](browser-window.md) and `win` were remote objects and
 `new BrowserWindow` didn't create a `BrowserWindow` object in the renderer
 process. Instead, it created a `BrowserWindow` object in the main process and
 returned the corresponding remote object in the renderer process, namely the

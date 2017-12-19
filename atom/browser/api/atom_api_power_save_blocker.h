@@ -9,8 +9,8 @@
 #include <memory>
 
 #include "atom/browser/api/trackable_object.h"
-#include "device/power_save_blocker/power_save_blocker.h"
 #include "native_mate/handle.h"
+#include "services/device/wake_lock/power_save_blocker/power_save_blocker.h"
 
 namespace mate {
 class Dictionary;

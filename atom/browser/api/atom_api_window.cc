@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_window.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 
 #include "atom/browser/api/atom_api_browser_view.h"
 #include "atom/browser/api/atom_api_menu.h"
@@ -17,6 +16,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"

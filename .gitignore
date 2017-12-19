@@ -1,7 +1,7 @@
 .DS_Store
 .env
 .gclient_done
-.npmrc
+**/.npmrc
 .tags*
 .vs/
 .vscode/
@@ -41,8 +41,8 @@
 /vendor/download/
 /vendor/llvm-build/
 /vendor/llvm/
-/vendor/node/deps/node-inspect/.npmrc
 /vendor/npm/
 /vendor/python_26/
 node_modules/
 SHASUMS256.txt
+**/package-lock.json

@@ -31,7 +31,7 @@ bool UvTaskRunner::PostDelayedTask(const tracked_objects::Location& from_here,
   return true;
 }
 
-bool UvTaskRunner::RunsTasksOnCurrentThread() const {
+bool UvTaskRunner::RunsTasksInCurrentSequence() const {
   return true;
 }
 

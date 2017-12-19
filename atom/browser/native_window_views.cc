@@ -4,6 +4,9 @@
 
 #include "atom/browser/native_window_views.h"
 
+#if defined(OS_WIN)
+#include <objbase.h>
+#endif
 #include <string>
 #include <vector>
 
@@ -270,8 +273,9 @@ NativeWindowViews::NativeWindowViews(
       state_atom_list.push_back(GetAtom("_NET_WM_STATE_MODAL"));
   }
 
-  ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
-                           state_atom_list);
+  if (!state_atom_list.empty())
+    ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
+                             state_atom_list);
 
   // Set the _NET_WM_WINDOW_TYPE.
   if (!window_type.empty())
@@ -547,9 +551,9 @@ bool NativeWindowViews::IsFullscreen() const {
 }
 
 void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
-#if defined(USE_X11)
-  // On Linux the minimum and maximum size should be updated with window size
-  // when window is not resizable.
+#if defined(OS_WIN) || defined(USE_X11)
+  // On Linux and Windows the minimum and maximum size should be updated with
+  // window size when window is not resizable.
   if (!resizable_) {
     SetMaximumSize(bounds.size());
     SetMinimumSize(bounds.size());
@@ -594,17 +598,14 @@ void NativeWindowViews::SetContentSizeConstraints(
   // this to determine whether native widget has initialized.
   if (window_ && window_->widget_delegate())
     window_->OnSizeConstraintsChanged();
-#if defined(USE_X11)
+#if defined(OS_WIN) || defined(USE_X11)
   if (resizable_)
     old_size_constraints_ = size_constraints;
 #endif
 }
 
 void NativeWindowViews::SetResizable(bool resizable) {
-#if defined(OS_WIN)
-  if (has_frame() && thick_frame_)
-    FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
-#elif defined(USE_X11)
+#if defined(OS_WIN) || defined(USE_X11)
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
@@ -618,6 +619,10 @@ void NativeWindowViews::SetResizable(bool resizable) {
           extensions::SizeConstraints(content_size, content_size));
     }
   }
+#endif
+#if defined(OS_WIN)
+  if (has_frame() && thick_frame_)
+    FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
 
   resizable_ = resizable;
@@ -756,8 +761,9 @@ void NativeWindowViews::FlashFrame(bool flash) {
 void NativeWindowViews::SetSkipTaskbar(bool skip) {
 #if defined(OS_WIN)
   base::win::ScopedComPtr<ITaskbarList> taskbar;
-  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
-                                    CLSCTX_INPROC_SERVER)) ||
+  if (FAILED(::CoCreateInstance(CLSID_TaskbarList, nullptr,
+                                CLSCTX_INPROC_SERVER,
+                                IID_PPV_ARGS(&taskbar))) ||
       FAILED(taskbar->HrInit()))
     return;
   if (skip) {
@@ -791,7 +797,7 @@ bool NativeWindowViews::IsKiosk() {
 void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
   // web views' background color.
   SkColor background_color = ParseHexColor(color_name);
-  set_background(views::Background::CreateSolidBackground(background_color));
+  SetBackground(views::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
   // Set the background color of native window.

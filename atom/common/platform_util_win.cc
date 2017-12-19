@@ -10,6 +10,7 @@
 #include <comdef.h>
 #include <commdlg.h>
 #include <dwmapi.h>
+#include <objbase.h>
 #include <shellapi.h>
 #include <shlobj.h>
 
@@ -243,7 +244,7 @@ bool ShowItemInFolder(const base::FilePath& full_path) {
   }
 
   base::win::ScopedComPtr<IShellFolder> desktop;
-  HRESULT hr = SHGetDesktopFolder(desktop.Receive());
+  HRESULT hr = SHGetDesktopFolder(desktop.GetAddressOf());
   if (FAILED(hr))
     return false;
 
@@ -328,7 +329,8 @@ bool MoveItemToTrash(const base::FilePath& path) {
     return false;
 
   base::win::ScopedComPtr<IFileOperation> pfo;
-  if (FAILED(pfo.CreateInstance(CLSID_FileOperation)))
+  if (FAILED(::CoCreateInstance(CLSID_FileOperation, nullptr, CLSCTX_ALL,
+                                IID_PPV_ARGS(&pfo))))
     return false;
 
   // Elevation prompt enabled for UAC protected files.  This overrides the
@@ -356,9 +358,10 @@ bool MoveItemToTrash(const base::FilePath& path) {
 
   // Create an IShellItem from the supplied source path.
   base::win::ScopedComPtr<IShellItem> delete_item;
-  if (FAILED(SHCreateItemFromParsingName(path.value().c_str(),
-                                         NULL,
-                                         IID_PPV_ARGS(delete_item.Receive()))))
+  if (FAILED(SHCreateItemFromParsingName(
+      path.value().c_str(),
+      NULL,
+      IID_PPV_ARGS(delete_item.GetAddressOf()))))
     return false;
 
   base::win::ScopedComPtr<IFileOperationProgressSink> delete_sink(
@@ -368,7 +371,7 @@ bool MoveItemToTrash(const base::FilePath& path) {
 
   // Processes the queued command DeleteItem. This will trigger
   // the DeleteFileProgressSink to check for Recycle Bin.
-  return SUCCEEDED(pfo->DeleteItem(delete_item.get(), delete_sink.get())) &&
+  return SUCCEEDED(pfo->DeleteItem(delete_item.Get(), delete_sink.Get())) &&
          SUCCEEDED(pfo->PerformOperations());
 }
 

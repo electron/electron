@@ -5,16 +5,11 @@
 #ifndef ATOM_BROWSER_NODE_DEBUGGER_H_
 #define ATOM_BROWSER_NODE_DEBUGGER_H_
 
-#include <memory>
-
 #include "base/macros.h"
 
 namespace node {
 class Environment;
-}
-
-namespace v8 {
-class Platform;
+class NodePlatform;
 }
 
 namespace atom {
@@ -29,7 +24,7 @@ class NodeDebugger {
 
  private:
   node::Environment* env_;
-  std::unique_ptr<v8::Platform> platform_;
+  node::NodePlatform* platform_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeDebugger);
 };

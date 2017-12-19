@@ -397,7 +397,7 @@ describe('app module', () => {
       app.setLoginItemSettings({openAtLogin: false, path: updateExe, args: processStartArgs})
     })
 
-    it('returns the login item status of the app', () => {
+    it('returns the login item status of the app', (done) => {
       app.setLoginItemSettings({openAtLogin: true})
       assert.deepEqual(app.getLoginItemSettings(), {
         openAtLogin: true,
@@ -410,20 +410,25 @@ describe('app module', () => {
       app.setLoginItemSettings({openAtLogin: true, openAsHidden: true})
       assert.deepEqual(app.getLoginItemSettings(), {
         openAtLogin: true,
-        openAsHidden: process.platform === 'darwin', // Only available on macOS
+        openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
         wasOpenedAtLogin: false,
         wasOpenedAsHidden: false,
         restoreState: false
       })
 
       app.setLoginItemSettings({})
-      assert.deepEqual(app.getLoginItemSettings(), {
-        openAtLogin: false,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
+      // Wait because login item settings are not applied immediately in MAS build
+      const delay = process.mas ? 100 : 0
+      setTimeout(() => {
+        assert.deepEqual(app.getLoginItemSettings(), {
+          openAtLogin: false,
+          openAsHidden: false,
+          wasOpenedAtLogin: false,
+          wasOpenedAsHidden: false,
+          restoreState: false
+        })
+        done()
+      }, delay)
     })
 
     it('allows you to pass a custom executable and arguments', function () {
@@ -465,7 +470,7 @@ describe('app module', () => {
     })
   })
 
-  xdescribe('select-client-certificate event', () => {
+  describe('select-client-certificate event', () => {
     let w = null
 
     beforeEach(() => {
@@ -499,9 +504,34 @@ describe('app module', () => {
       '--process-start-args', `"--hidden"`
     ]
 
+    let Winreg
+    let classesKey
+
     before(function () {
       if (process.platform !== 'win32') {
         this.skip()
+      } else {
+        Winreg = require('winreg')
+
+        classesKey = new Winreg({
+          hive: Winreg.HKCU,
+          key: '\\Software\\Classes\\'
+        })
+      }
+    })
+
+    after(function (done) {
+      if (process.platform !== 'win32') {
+        done()
+      } else {
+        const protocolKey = new Winreg({
+          hive: Winreg.HKCU,
+          key: `\\Software\\Classes\\${protocol}`
+        })
+
+        // The last test leaves the registry dirty,
+        // delete the protocol key for those of us who test at home
+        protocolKey.destroy(() => done())
       }
     })
 
@@ -528,6 +558,61 @@ describe('app module', () => {
       app.setAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
       assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), true)
       assert.equal(app.isDefaultProtocolClient(protocol), false)
+    })
+
+    it('creates a registry entry for the protocol class', (done) => {
+      app.setAsDefaultProtocolClient(protocol)
+
+      classesKey.keys((error, keys) => {
+        if (error) {
+          throw error
+        }
+
+        const exists = !!keys.find((key) => key.key.includes(protocol))
+        assert.equal(exists, true)
+
+        done()
+      })
+    })
+
+    it('completely removes a registry entry for the protocol class', (done) => {
+      app.setAsDefaultProtocolClient(protocol)
+      app.removeAsDefaultProtocolClient(protocol)
+
+      classesKey.keys((error, keys) => {
+        if (error) {
+          throw error
+        }
+
+        const exists = !!keys.find((key) => key.key.includes(protocol))
+        assert.equal(exists, false)
+
+        done()
+      })
+    })
+
+    it('only unsets a class registry key if it contains other data', (done) => {
+      app.setAsDefaultProtocolClient(protocol)
+
+      const protocolKey = new Winreg({
+        hive: Winreg.HKCU,
+        key: `\\Software\\Classes\\${protocol}`
+      })
+
+      protocolKey.set('test-value', 'REG_BINARY', '123', () => {
+        app.removeAsDefaultProtocolClient(protocol)
+
+        classesKey.keys((error, keys) => {
+          if (error) {
+            throw error
+          }
+
+          const exists = !!keys.find((key) => key.key.includes(protocol))
+          assert.equal(exists, true)
+
+          done()
+        })
+      })
     })
   })
 
