@@ -1,73 +1,101 @@
 #!/usr/bin/env python
 
-import fnmatch
+import argparse
 import os
 import sys
 
+from lib.config import enable_verbose_mode
 from lib.util import execute
 
-IGNORE_FILES = [
-  os.path.join('atom', 'browser', 'mac', 'atom_application.h'),
-  os.path.join('atom', 'browser', 'mac', 'atom_application_delegate.h'),
-  os.path.join('atom', 'browser', 'resources', 'win', 'resource.h'),
-  os.path.join('atom', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'),
-  os.path.join('atom', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'),
-  os.path.join('atom', 'browser', 'ui', 'cocoa',
-               'touch_bar_forward_declarations.h'),
-  os.path.join('atom', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'),
-  os.path.join('atom', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'),
-  os.path.join('atom', 'common', 'api', 'api_messages.h'),
-  os.path.join('atom', 'common', 'common_message_generator.cc'),
-  os.path.join('atom', 'common', 'common_message_generator.h'),
-  os.path.join('brightray', 'browser', 'mac',
-               'bry_inspectable_web_contents_view.h'),
-  os.path.join('brightray', 'browser', 'mac', 'event_dispatching_window.h'),
-  os.path.join('brightray', 'browser', 'mac',
-               'notification_center_delegate.h'),
-  os.path.join('brightray', 'browser', 'win', 'notification_presenter_win7.h'),
-  os.path.join('brightray', 'browser', 'win', 'win32_desktop_notifications',
-               'common.h'),
-  os.path.join('brightray', 'browser', 'win', 'win32_desktop_notifications',
-               'desktop_notification_controller.cc'),
-  os.path.join('brightray', 'browser', 'win', 'win32_desktop_notifications',
-               'desktop_notification_controller.h'),
-  os.path.join('brightray', 'browser', 'win', 'win32_desktop_notifications',
-               'toast.h'),
-  os.path.join('brightray', 'browser', 'win', 'win32_notification.h')
-]
+IGNORE_FILES = set(os.path.join(*components) for components in [
+  ['atom', 'browser', 'mac', 'atom_application.h'],
+  ['atom', 'browser', 'mac', 'atom_application_delegate.h'],
+  ['atom', 'browser', 'resources', 'win', 'resource.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'touch_bar_forward_declarations.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
+  ['atom', 'common', 'api', 'api_messages.h'],
+  ['atom', 'common', 'common_message_generator.cc'],
+  ['atom', 'common', 'common_message_generator.h'],
+  ['atom', 'node', 'osfhandle.cc'],
+  ['brightray', 'browser', 'mac', 'bry_inspectable_web_contents_view.h'],
+  ['brightray', 'browser', 'mac', 'event_dispatching_window.h'],
+  ['brightray', 'browser', 'mac', 'notification_center_delegate.h'],
+  ['brightray', 'browser', 'win', 'notification_presenter_win7.h'],
+  ['brightray', 'browser', 'win', 'win32_desktop_notifications', 'common.h'],
+  ['brightray', 'browser', 'win', 'win32_desktop_notifications',
+   'desktop_notification_controller.cc'],
+  ['brightray', 'browser', 'win', 'win32_desktop_notifications',
+   'desktop_notification_controller.h'],
+  ['brightray', 'browser', 'win', 'win32_desktop_notifications', 'toast.h'],
+  ['brightray', 'browser', 'win', 'win32_notification.h']
+])
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 def main():
+
+  parser = argparse.ArgumentParser(
+    description="Run cpplint on Electron's C++ files",
+    formatter_class=argparse.RawTextHelpFormatter
+  )
+  parser.add_argument(
+    '-c', '--only-changed',
+    action='store_true',
+    default=False,
+    dest='only_changed',
+    help='only run on changed files'
+  )
+  parser.add_argument(
+    '-v', '--verbose',
+    action='store_true',
+    default=False,
+    dest='verbose',
+    help='show cpplint output'
+  )
+  args = parser.parse_args()
+
   if not os.path.isfile(cpplint_path()):
     print("[INFO] Skipping cpplint, dependencies has not been bootstrapped")
     return
 
+  if args.verbose:
+    enable_verbose_mode()
+
   os.chdir(SOURCE_ROOT)
-  atom_files = list_files('atom',
-                          ['app', 'browser', 'common', 'renderer', 'utility'],
-                          ['*.cc', '*.h'])
-  call_cpplint(list(set(atom_files) - set(IGNORE_FILES)))
-
-  brightray_files = list_files('brightray', ['browser', 'common'],
-                               ['*.cc', '*.h'])
-  call_cpplint(list(set(brightray_files) - set(IGNORE_FILES)))
+  files = find_files(['atom', 'brightray'], is_cpp_file)
+  files -= IGNORE_FILES
+  if args.only_changed:
+    files &= find_changed_files()
+  call_cpplint(files)
 
 
-def list_files(parent, directories, filters):
-  matches = []
-  for directory in directories:
-    for root, _, filenames, in os.walk(os.path.join(parent, directory)):
-      for f in filters:
-        for filename in fnmatch.filter(filenames, f):
-          matches.append(os.path.join(root, filename))
+def find_files(roots, test):
+  matches = set()
+  for root in roots:
+    for parent, _, children, in os.walk(root):
+      for child in children:
+        filename = os.path.join(parent, child)
+        if test(filename):
+          matches.add(filename)
   return matches
 
 
+def is_cpp_file(filename):
+  return filename.endswith('.cc') or filename.endswith('.h')
+
+
+def find_changed_files():
+  return set(execute(['git', 'diff', '--name-only']).splitlines())
+
+
 def call_cpplint(files):
-  cpplint = cpplint_path()
-  execute([sys.executable, cpplint] + files)
+  if files:
+    cpplint = cpplint_path()
+    execute([sys.executable, cpplint] + list(files))
 
 
 def cpplint_path():
