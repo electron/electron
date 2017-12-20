@@ -42,7 +42,7 @@ void NodeDebugger::Start() {
     // the debugger on the first line
     if (options.wait_for_connect()) {
       mate::Dictionary process(env_->isolate(), env_->process_object());
-      process.Set("_debugWaitConnect", true);
+      process.Set("_breakFirstLine", true);
     }
 
     inspector->Start(platform_.get(), nullptr, options);
