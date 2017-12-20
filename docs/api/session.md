@@ -293,6 +293,8 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     'pointerLock', 'fullscreen', 'openExternal'.
   * `callback` Function
     * `permissionGranted` Boolean - Allow or deny the permission.
+  * `details` Object - Some properties are only available on certain permission types.
+    * `externalURL` String - The url of the `openExternal` request.
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.

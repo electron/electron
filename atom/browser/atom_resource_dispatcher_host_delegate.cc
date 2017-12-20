@@ -61,7 +61,8 @@ void HandleExternalProtocolInUI(
 
   GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::Bind(&OnOpenExternal, escaped_url);
-  permission_helper->RequestOpenExternalPermission(callback, has_user_gesture);
+  permission_helper->RequestOpenExternalPermission(callback, has_user_gesture,
+                                                   url);
 }
 
 void OnPdfResourceIntercepted(
