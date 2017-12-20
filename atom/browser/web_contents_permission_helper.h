@@ -43,12 +43,8 @@ class WebContentsPermissionHelper
   void RequestPermission(
       content::PermissionType permission,
       const base::Callback<void(bool)>& callback,
-      bool user_gesture = false);
-  void RequestPermissionWithDetails(
-      content::PermissionType permission,
-      const base::Callback<void(bool)>& callback,
-      bool user_gesture,
-      const base::DictionaryValue* details);
+      bool user_gesture = false,
+      const base::DictionaryValue* details = nullptr);
 
   content::WebContents* web_contents_;
 
