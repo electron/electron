@@ -8,8 +8,21 @@
 #include "ui/views/widget/native_widget_aura.h"
 
 #if defined(OS_LINUX)
+#include "base/environment.h"
+#include "base/nix/xdg_util.h"
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
+
+namespace {
+
+bool IsDesktopEnvironmentUnity() {
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  base::nix::DesktopEnvironment desktop_env =
+      base::nix::GetDesktopEnvironment(env.get());
+  return desktop_env == base::nix::DESKTOP_ENVIRONMENT_UNITY;
+}
+
+}  // namespace
 
 namespace brightray {
 
@@ -104,8 +117,10 @@ bool ViewsDelegate::WindowManagerProvidesTitleBar(bool maximized) {
 #if defined(OS_LINUX)
   // On Ubuntu Unity, the system always provides a title bar for maximized
   // windows.
-  views::LinuxUI* ui = views::LinuxUI::instance();
-  return maximized && ui && ui->UnityIsRunning();
+  if (!maximized)
+    return false;
+  static bool is_desktop_environment_unity = IsDesktopEnvironmentUnity();
+  return is_desktop_environment_unity;
 #else
   return false;
 #endif
