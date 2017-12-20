@@ -81,7 +81,7 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
     if (!uv_run(loop, UV_RUN_DEFAULT))
       break;
 
-  DCHECK_EQ(!uv_loop_alive(loop));
+  DCHECK(!uv_loop_alive(loop));
   uv_loop_close(loop);
 }
 
