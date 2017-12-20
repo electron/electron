@@ -60,9 +60,10 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {
-  if (menu_runners_[window_id])
+  if (menu_runners_[window_id]) {
     menu_runners_[window_id]->Cancel();
-  menu_runners_.erase(window_id);
+    menu_runners_.erase(window_id);
+  }
 }
 
 // static
