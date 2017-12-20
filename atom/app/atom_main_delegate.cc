@@ -137,6 +137,9 @@ void AtomMainDelegate::PreSandboxStartup() {
     }
   }
 
+  // TODO(deepak1556): Fix and re-enable the plznavigation code path.
+  command_line->AppendSwitch(::switches::kDisableBrowserSideNavigation);
+
   // Allow file:// URIs to read other file:// URIs by default.
   command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
 
