@@ -140,7 +140,7 @@ NodeBindings::~NodeBindings() {
       if (!uv_run(uv_loop_, UV_RUN_DEFAULT))
         break;
 
-    DCHECK_EQ(uv_loop_alive(uv_loop_), 0);
+    DCHECK_EQ(!uv_loop_alive(uv_loop_));
     uv_loop_close(uv_loop_);
   }
 }
