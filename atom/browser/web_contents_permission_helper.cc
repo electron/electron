@@ -69,8 +69,8 @@ void WebContentsPermissionHelper::RequestPermissionWithDetails(
       web_contents_->GetBrowserContext()->GetPermissionManager());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermissionWithDetails(
-    permission, rfh, origin, false, details,
-    base::Bind(&OnPermissionResponse, callback));
+      permission, rfh, origin, false, details,
+      base::Bind(&OnPermissionResponse, callback));
 }
 
 void WebContentsPermissionHelper::RequestFullscreenPermission(
@@ -106,8 +106,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
     bool user_gesture,
     const GURL& url) {
   base::DictionaryValue details;
-  details.SetString("scheme", url.scheme());
-  details.SetString("url", url.spec());
+  details.SetString("externalURL", url.spec());
   RequestPermissionWithDetails(
       static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL),
       callback, user_gesture, &details);
