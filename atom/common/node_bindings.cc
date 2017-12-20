@@ -64,6 +64,29 @@ REFERENCE_MODULE(atom_renderer_ipc);
 REFERENCE_MODULE(atom_renderer_web_frame);
 #undef REFERENCE_MODULE
 
+namespace {
+
+void stop_and_close_uv_loop(uv_loop_t* loop) {
+  // Close any active handles
+  uv_stop(loop);
+  uv_walk(loop, [](uv_handle_t* handle, void*){
+    if (!uv_is_closing(handle)) {
+      uv_close(handle, nullptr);
+    }
+  }, nullptr);
+
+  // Run the loop to let it finish all the closing handles
+  // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
+  for (;;)
+    if (!uv_run(loop, UV_RUN_DEFAULT))
+      break;
+
+  DCHECK_EQ(!uv_loop_alive(loop));
+  uv_loop_close(loop);
+}
+
+}  // namespace
+
 namespace atom {
 
 namespace {
@@ -125,24 +148,8 @@ NodeBindings::~NodeBindings() {
   uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
 
   // Clean up worker loop
-  if (uv_loop_ == &worker_loop_) {
-    // Close any active handles
-    uv_stop(uv_loop_);
-    uv_walk(uv_loop_, [](uv_handle_t* handle, void*){
-      if (!uv_is_closing(handle)) {
-        uv_close(handle, nullptr);
-      }
-    }, nullptr);
-
-    // Run the loop to let it finish all the closing handles
-    // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
-    for (;;)
-      if (!uv_run(uv_loop_, UV_RUN_DEFAULT))
-        break;
-
-    DCHECK_EQ(!uv_loop_alive(uv_loop_));
-    uv_loop_close(uv_loop_);
-  }
+  if (uv_loop_ == &worker_loop_)
+    stop_and_close_uv_loop(uv_loop_);
 }
 
 void NodeBindings::Initialize() {
