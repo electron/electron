@@ -55,13 +55,6 @@ WebContentsPermissionHelper::~WebContentsPermissionHelper() {
 void WebContentsPermissionHelper::RequestPermission(
     content::PermissionType permission,
     const base::Callback<void(bool)>& callback,
-    bool user_gesture) {
-  RequestPermissionWithDetails(permission, callback, user_gesture, nullptr);
-}
-
-void WebContentsPermissionHelper::RequestPermissionWithDetails(
-    content::PermissionType permission,
-    const base::Callback<void(bool)>& callback,
     bool user_gesture,
     const base::DictionaryValue* details) {
   auto rfh = web_contents_->GetMainFrame();
@@ -107,7 +100,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
     const GURL& url) {
   base::DictionaryValue details;
   details.SetString("externalURL", url.spec());
-  RequestPermissionWithDetails(
+  RequestPermission(
       static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL),
       callback, user_gesture, &details);
 }
