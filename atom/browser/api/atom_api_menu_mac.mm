@@ -108,7 +108,12 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {
-  popup_controllers_.erase(window_id);
+  auto it = popup_controllers_.find(window_id);
+  if (it != popup_controllers_.end()) {
+    popup_controllers_.erase(it);
+  } else if (window_id == -1) {
+    popup_controllers_.clear();
+  }
 }
 
 // static
