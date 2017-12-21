@@ -70,10 +70,10 @@ void PowerObserverLinux::OnLoginServiceAvailable(bool service_available) {
                            base::Bind(&PowerObserverLinux::OnSignalConnected,
                                       weak_ptr_factory_.GetWeakPtr()));
   // Take sleep inhibit lock
-  TakeSleepLock();
+  BlockSleep();
 }
 
-void PowerObserverLinux::TakeSleepLock() {
+void PowerObserverLinux::BlockSleep() {
   dbus::MethodCall sleep_inhibit_call(kLogindManagerInterface, "Inhibit");
   dbus::MessageWriter inhibit_writer(&sleep_inhibit_call);
   inhibit_writer.AppendString("sleep");                               // what
@@ -86,6 +86,10 @@ void PowerObserverLinux::TakeSleepLock() {
                       dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
                       base::Bind(&PowerObserverLinux::OnInhibitResponse,
                                  weak_ptr_factory_.GetWeakPtr(), &sleep_lock_));
+}
+
+void PowerObserverLinux::UnblockSleep() {
+  sleep_lock_.reset();
 }
 
 void PowerObserverLinux::BlockShutdown() {
@@ -129,9 +133,9 @@ void PowerObserverLinux::OnPrepareForSleep(dbus::Signal* signal) {
   }
   if (suspending) {
     OnSuspend();
-    sleep_lock_.reset();
+    UnblockSleep();
   } else {
-    TakeSleepLock();
+    BlockSleep();
     OnResume();
   }
 }

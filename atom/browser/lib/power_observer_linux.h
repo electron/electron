@@ -20,12 +20,13 @@ class PowerObserverLinux : public base::PowerObserver {
  public:
   PowerObserverLinux();
 
+  void BlockSleep();
+  void UnblockSleep();
   void BlockShutdown();
   void UnblockShutdown();
   virtual bool OnShutdown() { return false; }
 
  private:
-  void TakeSleepLock();
   void OnLoginServiceAvailable(bool available);
   void OnInhibitResponse(base::ScopedFD* scoped_fd, dbus::Response* response);
   void OnPrepareForSleep(dbus::Signal* signal);
