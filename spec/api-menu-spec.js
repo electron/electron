@@ -279,14 +279,26 @@ describe('Menu module', () => {
     })
 
     afterEach(() => {
+      menu.closePopup()
+      menu.closePopup(w)
       return closeWindow(w).then(() => { w = null })
     })
 
-    describe('when called with async: true', () => {
-      it('returns immediately', () => {
-        menu.popup(w, {x: 100, y: 100, async: true})
-        menu.closePopup(w)
-      })
+    it('returns immediately', () => {
+      const { browserWindow, x, y, async } = menu.popup(w, {x: 100, y: 101, async: true})
+
+      assert.equal(browserWindow, w)
+      assert.equal(x, 100)
+      assert.equal(y, 101)
+      assert.equal(async, true)
+    })
+
+    it('works without a given BrowserWindow and options', () => {
+      const { browserWindow, x, y } = menu.popup({x: 100, y: 101, async: true})
+
+      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
+      assert.equal(x, 100)
+      assert.equal(y, 101)
     })
   })
 
