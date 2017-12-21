@@ -48,7 +48,7 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
   // Show the menu.
   int32_t window_id = window->ID();
   auto close_callback = base::Bind(
-      &MenuViews::ClosePopupAt, weak_factory_.GetWeakPtr(), window_id);
+      &MenuViews::OnClosed, weak_factory_.GetWeakPtr(), window_id);
   menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
       model(), flags, close_callback));
   menu_runners_[window_id]->RunMenuAt(
@@ -60,10 +60,21 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {
-  if (menu_runners_[window_id]) {
-    menu_runners_[window_id]->Cancel();
-    menu_runners_.erase(window_id);
+  auto runner = menu_runners_.find(window_id);
+  if (runner != menu_runners_.end()) {
+    // Close the runner for the window.
+    runner->second->Cancel();
+  } else if (window_id == -1) {
+    // Or just close all opened runners.
+    for (auto it = menu_runners_.begin(); it != menu_runners_.end();) {
+      // The iterator is invalidated after the call.
+      (it++)->second->Cancel();
+    }
   }
+}
+
+void MenuViews::OnClosed(int32_t window_id) {
+  menu_runners_.erase(window_id);
 }
 
 // static
