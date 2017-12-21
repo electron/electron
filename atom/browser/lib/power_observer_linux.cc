@@ -16,10 +16,6 @@ const char kLogindServiceName[] = "org.freedesktop.login1";
 const char kLogindObjectPath[] = "/org/freedesktop/login1";
 const char kLogindManagerInterface[] = "org.freedesktop.login1.Manager";
 
-// Store shutdown lock as a global, since we only want to release it when the
-// main process exits.
-base::ScopedFD shutdown_lock;
-
 std::string get_executable_basename() {
   char buf[4096];
   size_t buf_size = sizeof(buf);
@@ -93,7 +89,7 @@ void PowerObserverLinux::UnblockSleep() {
 }
 
 void PowerObserverLinux::BlockShutdown() {
-  if (shutdown_lock.is_valid()) {
+  if (shutdown_lock_.is_valid()) {
     LOG(WARNING) << "Trying to subscribe to shutdown multiple times";
     return;
   }
@@ -106,16 +102,16 @@ void PowerObserverLinux::BlockShutdown() {
   logind_->CallMethod(
       &shutdown_inhibit_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
       base::Bind(&PowerObserverLinux::OnInhibitResponse,
-                 weak_ptr_factory_.GetWeakPtr(), &shutdown_lock));
+                 weak_ptr_factory_.GetWeakPtr(), &shutdown_lock_));
 }
 
 void PowerObserverLinux::UnblockShutdown() {
-  if (!shutdown_lock.is_valid()) {
+  if (!shutdown_lock_.is_valid()) {
     LOG(WARNING)
         << "Trying to unsubscribe to shutdown without being subscribed";
     return;
   }
-  shutdown_lock.reset();
+  shutdown_lock_.reset();
 }
 
 void PowerObserverLinux::OnInhibitResponse(base::ScopedFD* scoped_fd,
@@ -151,7 +147,7 @@ void PowerObserverLinux::OnPrepareForShutdown(dbus::Signal* signal) {
     if (!OnShutdown()) {
       // The user didn't try to prevent shutdown. Release the lock and allow the
       // shutdown to continue normally.
-      shutdown_lock.reset();
+      shutdown_lock_.reset();
     }
   }
 }

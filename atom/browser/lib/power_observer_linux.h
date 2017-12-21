@@ -39,6 +39,7 @@ class PowerObserverLinux : public base::PowerObserver {
   scoped_refptr<dbus::ObjectProxy> logind_;
   std::string lock_owner_name_;
   base::ScopedFD sleep_lock_;
+  base::ScopedFD shutdown_lock_;
   base::WeakPtrFactory<PowerObserverLinux> weak_ptr_factory_;
   DISALLOW_COPY_AND_ASSIGN(PowerObserverLinux);
 };
