@@ -203,6 +203,12 @@ void Browser::RequestLogin(
     observer.OnLogin(login_handler, *(request_details.get()));
 }
 
+void Browser::PreMainMessageLoopRun() {
+  for (BrowserObserver& observer : observers_) {
+    observer.OnPreMainMessageLoopRun();
+  }
+}
+
 void Browser::NotifyAndShutdown() {
   if (is_shutdown_)
     return;
