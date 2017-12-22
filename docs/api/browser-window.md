@@ -229,7 +229,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       buttons prevent issues with mouse events that occur with the standard
       window toolbar buttons. **Note:** This option is currently experimental.
   * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
-    tile bar in full screen mode on macOS for all `titleBarStyle` options.
+    title bar in full screen mode on macOS for all `titleBarStyle` options.
     Default is `false`.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
