@@ -529,8 +529,6 @@ void OnIconDataAvailable(v8::Isolate* isolate,
 }  // namespace
 
 App::App(v8::Isolate* isolate) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
