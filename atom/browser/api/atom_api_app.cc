@@ -532,7 +532,6 @@ App::App(v8::Isolate* isolate) {
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
-  content::BrowserChildProcessObserver::Add(this);
   base::ProcessId pid = base::GetCurrentProcId();
   std::unique_ptr<atom::ProcessMetric> process_metric(
       new atom::ProcessMetric(
@@ -595,6 +594,10 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
 
 void App::OnAccessibilitySupportChanged() {
   Emit("accessibility-support-changed", IsAccessibilitySupportEnabled());
+}
+
+void App::OnPreMainMessageLoopRun() {
+  content::BrowserChildProcessObserver::Add(this);
 }
 
 #if defined(OS_MACOSX)
