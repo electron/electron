@@ -145,7 +145,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // Enable support for v8 inspector
   node_debugger_.reset(new NodeDebugger(env));
-  node_debugger_->Start();
+  node_debugger_->Start(js_env_->platform());
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), env->process_object());

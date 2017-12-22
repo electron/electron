@@ -32,6 +32,9 @@ class JavascriptEnvironment {
  private:
   bool Initialize();
 
+  // Leaked on exit.
+  node::NodePlatform* platform_;
+
   bool initialized_;
   gin::IsolateHolder isolate_holder_;
   v8::Isolate* isolate_;
