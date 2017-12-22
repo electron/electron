@@ -18,22 +18,9 @@
 
 namespace atom {
 
-// static
-void JavascriptEnvironment::Initialize() {
-  auto cmd = base::CommandLine::ForCurrentProcess();
-
-  // --js-flags.
-  std::string js_flags = cmd->GetSwitchValueASCII(switches::kJavaScriptFlags);
-  if (!js_flags.empty())
-    v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
-
-  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
-                                 gin::IsolateHolder::kStableV8Extras,
-                                 gin::ArrayBufferAllocator::SharedInstance());
-}
-
 JavascriptEnvironment::JavascriptEnvironment()
-    : isolate_holder_(base::ThreadTaskRunnerHandle::Get()),
+    : initialized_(Initialize()),
+      isolate_holder_(base::ThreadTaskRunnerHandle::Get()),
       isolate_(isolate_holder_.isolate()),
       isolate_scope_(isolate_),
       locker_(isolate_),
@@ -47,6 +34,21 @@ void JavascriptEnvironment::OnMessageLoopCreated() {
 
 void JavascriptEnvironment::OnMessageLoopDestroying() {
   isolate_holder_.RemoveRunMicrotasksObserver();
+}
+
+bool JavascriptEnvironment::Initialize() {
+  auto cmd = base::CommandLine::ForCurrentProcess();
+
+  // --js-flags.
+  std::string js_flags = cmd->GetSwitchValueASCII(switches::kJavaScriptFlags);
+  if (!js_flags.empty())
+    v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
+
+  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
+                                 gin::IsolateHolder::kStableV8Extras,
+                                 gin::ArrayBufferAllocator::SharedInstance());
+
+  return true;
 }
 
 NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {

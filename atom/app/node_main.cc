@@ -46,7 +46,6 @@ int NodeMain(int argc, char *argv[]) {
     base::TaskScheduler::CreateAndStartWithDefaultParams("Electron");
 
     // Initialize gin::IsolateHolder.
-    JavascriptEnvironment::Initialize();
     JavascriptEnvironment gin_env;
 
     int exec_argc;
