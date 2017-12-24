@@ -135,10 +135,11 @@ AtomBrowserContext::CreateURLRequestJobFactory(
   job_factory->SetProtocolHandler(
       url::kDataScheme, base::WrapUnique(new net::DataProtocolHandler));
   job_factory->SetProtocolHandler(
-      url::kFileScheme, base::WrapUnique(new asar::AsarProtocolHandler(
-          base::CreateSequencedTaskRunnerWithTraits(
-            {base::MayBlock(),
-              base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN}))));
+      url::kFileScheme,
+      base::WrapUnique(
+          new asar::AsarProtocolHandler(base::CreateTaskRunnerWithTraits(
+              {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+               base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN}))));
   job_factory->SetProtocolHandler(
       url::kHttpScheme,
       base::WrapUnique(new HttpProtocolHandler(url::kHttpScheme)));

@@ -8,7 +8,6 @@
 
 #include "atom/common/atom_constants.h"
 #include "base/task_scheduler/post_task.h"
-#include "base/threading/sequenced_worker_pool.h"
 
 namespace atom {
 
@@ -33,7 +32,8 @@ void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options) {
   } else {
     asar::URLRequestAsarJob::Initialize(
         base::CreateSequencedTaskRunnerWithTraits(
-            {base::MayBlock(), base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN}),
+            {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+             base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN}),
         base::FilePath(file_path));
     asar::URLRequestAsarJob::Start();
   }
