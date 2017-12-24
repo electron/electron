@@ -858,15 +858,17 @@ void WebContents::DidFinishNavigation(
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry) {
-  auto title = entry ? entry->GetTitle() : base::string16();
-  bool explicit_set;
   base::string16 final_title;
-  if (entry && entry->GetURL().SchemeIsFile() && title.empty()) {
-    final_title = base::UTF8ToUTF16(entry->GetURL().ExtractFileName());
-    explicit_set = false;
-  } else {
-    base::TrimWhitespace(title, base::TRIM_ALL, &final_title);
-    explicit_set = true;
+  bool explicit_set = true;
+  if (entry) {
+    auto title = entry->GetTitle();
+    auto url = entry->GetURL();
+    if (url.SchemeIsFile() && title.empty()) {
+      final_title = base::UTF8ToUTF16(url.ExtractFileName());
+      explicit_set = false;
+    } else {
+      final_title = title;
+    }
   }
   Emit("page-title-updated", final_title, explicit_set);
 }
