@@ -15,7 +15,6 @@ using base::PlatformThreadRef;
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task_scheduler/post_task.h"
-#include "base/threading/sequenced_worker_pool.h"
 #include "chrome/browser/media/desktop_media_list_observer.h"
 #include "content/public/browser/browser_thread.h"
 #include "media/base/video_util.h"
@@ -237,7 +236,7 @@ NativeDesktopMediaList::NativeDesktopMediaList(
       observer_(NULL),
       weak_factory_(this) {
   capture_task_runner_ = base::CreateSequencedTaskRunnerWithTraits(
-            {base::MayBlock()});
+      {base::MayBlock(), base::TaskPriority::USER_VISIBLE});
 }
 
 NativeDesktopMediaList::~NativeDesktopMediaList() {
