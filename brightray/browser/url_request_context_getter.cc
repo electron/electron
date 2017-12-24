@@ -11,7 +11,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/task_scheduler/post_task.h"
-#include "base/threading/sequenced_worker_pool.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/net/require_ct_delegate.h"
 #include "brightray/browser/net_log.h"
@@ -73,14 +72,14 @@ URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
   }
   protocol_handlers->clear();
 
-  auto runner = base::CreateSequencedTaskRunnerWithTraits(
-            {base::MayBlock(), base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
-
   job_factory->SetProtocolHandler(
       url::kDataScheme, base::WrapUnique(new net::DataProtocolHandler));
   job_factory->SetProtocolHandler(
       url::kFileScheme,
-      base::WrapUnique(new net::FileProtocolHandler(runner)));
+      base::WrapUnique(
+          new net::FileProtocolHandler(base::CreateTaskRunnerWithTraits(
+              {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+               base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN}))));
 
   return std::move(job_factory);
 }
@@ -227,7 +226,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     }
 
     // --proxy-server
-    net::DhcpProxyScriptFetcherFactory dhcp_factory;
     if (command_line.HasSwitch(switches::kNoProxyServer)) {
       storage_->set_proxy_service(net::ProxyService::CreateDirect());
     } else if (command_line.HasSwitch(switches::kProxyServer)) {
