@@ -67,7 +67,7 @@ The `menu` object has the following instance methods:
     Must be declared if `y` is declared.
   * `y` Number (optional) - Default is the current mouse cursor position.
     Must be declared if `x` is declared.
-  * `positioningItem` Number (optional) _macOS_ - The index of the menu item to
+  * `positioningItem` Number (optional) - The index of the menu item to
     be positioned under the mouse cursor at the specified coordinates. Default
     is -1.
 

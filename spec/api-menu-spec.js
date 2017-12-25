@@ -293,11 +293,12 @@ describe('Menu module', () => {
     })
 
     it('works without a given BrowserWindow and options', () => {
-      const { browserWindow, x, y } = menu.popup({x: 100, y: 101})
+      const { browserWindow, x, y, position } = menu.popup({ x: 100, y: 101, positioningItem: 1 })
 
       assert.equal(browserWindow.constructor.name, 'BrowserWindow')
       assert.equal(x, 100)
       assert.equal(y, 101)
+      assert.equal(position, 1)
     })
 
     it('works without a given BrowserWindow', () => {

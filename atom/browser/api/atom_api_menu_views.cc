@@ -42,6 +42,12 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
 
   int flags = MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS;
 
+  // Show the entire menu by default, or just a submenu if specified.
+  AtomMenuModel* menu = model();
+  if (positioning_item >= 0 && positioning_item < menu->GetItemCount()) {
+    menu = menu->GetSubmenuModelAt(positioning_item);
+  }
+
   // Don't emit unresponsive event when showing menu.
   atom::UnresponsiveSuppressor suppressor;
 
@@ -50,7 +56,7 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item) {
   auto close_callback = base::Bind(
       &MenuViews::OnClosed, weak_factory_.GetWeakPtr(), window_id);
   menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
-      model(), flags, close_callback));
+      menu, flags, close_callback));
   menu_runners_[window_id]->RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,
