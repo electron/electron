@@ -34,6 +34,8 @@ the issue will be closed.
   * If an issue has been closed and you still feel it's relevant, feel free to
   ping a maintainer or add a comment!
 
+## Development
+* Build instructions can be found [here](https://electronjs.org/docs/development).
 
 ## Submitting Pull Requests
 
