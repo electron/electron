@@ -313,6 +313,20 @@ describe('node feature', () => {
       buffer = Buffer.from(new Array(4097).join(' '))
       assert.equal(buffer.length, 4096)
     })
+
+    it('does not crash for crypto operations', () => {
+      const crypto = require('crypto')
+      const data = 'lG9E+/g4JmRmedDAnihtBD4Dfaha/GFOjd+xUOQI05UtfVX3DjUXvrS98p7kZQwY3LNhdiFo7MY5rGft8yBuDhKuNNag9vRx/44IuClDhdQ='
+      const key = 'q90K9yBqhWZnAMCMTOJfPQ=='
+      const cipherText = '{"error_code":114,"error_message":"Tham số không hợp lệ","data":null}'
+      for (let i = 0; i < 10000; ++i) {
+        let iv = Buffer.from('0'.repeat(32), 'hex')
+        let input = Buffer.from(data, 'base64')
+        let decipher = crypto.createDecipheriv('aes-128-cbc', Buffer.from(key, 'base64'), iv)
+        let result = Buffer.concat([decipher.update(input), decipher.final()])
+        assert.equal(cipherText, result)
+      }
+    })
   })
 
   describe('process.stdout', () => {
