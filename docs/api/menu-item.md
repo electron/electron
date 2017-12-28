@@ -54,19 +54,19 @@ The `role` property can have following values:
 * `cut`
 * `copy`
 * `paste`
-* `pasteandmatchstyle`
-* `selectall`
+* `pasteAndMatchStyle`
+* `selectAll`
 * `delete`
 * `minimize` - Minimize current window.
 * `close` - Close current window.
 * `quit`- Quit the application.
 * `reload` - Reload the current window.
-* `forcereload` - Reload the current window ignoring the cache.
-* `toggledevtools` - Toggle developer tools in the current window.
-* `togglefullscreen`- Toggle full screen mode on the current window.
-* `resetzoom` - Reset the focused page's zoom level to the original size.
-* `zoomin` - Zoom in the focused page by 10%.
-* `zoomout` - Zoom out the focused page by 10%.
+* `forceReload` - Reload the current window ignoring the cache.
+* `toggleDevTools` - Toggle developer tools in the current window.
+* `toggleFullScreen`- Toggle full screen mode on the current window.
+* `resetZoom` - Reset the focused page's zoom level to the original size.
+* `zoomIn` - Zoom in the focused page by 10%.
+* `zoomOut` - Zoom out the focused page by 10%.
 * `editMenu` - Whole default "Edit" menu (Undo, Copy, etc.).
 * `windowMenu` - Whole default "Window" menu (Minimize, Close, etc.).
 
@@ -74,25 +74,26 @@ The following additional roles are available on _macOS_:
 
 * `about` - Map to the `orderFrontStandardAboutPanel` action.
 * `hide` - Map to the `hide` action.
-* `hideothers` - Map to the `hideOtherApplications` action.
+* `hideOthers` - Map to the `hideOtherApplications` action.
 * `unhide` - Map to the `unhideAllApplications` action.
-* `startspeaking` - Map to the `startSpeaking` action.
-* `stopspeaking` - Map to the `stopSpeaking` action.
+* `startSpeaking` - Map to the `startSpeaking` action.
+* `stopSpeaking` - Map to the `stopSpeaking` action.
 * `front` - Map to the `arrangeInFront` action.
 * `zoom` - Map to the `performZoom` action.
-* `toggletabbar` - Map to the `toggleTabBar` action.
-* `selectnexttab` - Map to the `selectNextTab` action.
-* `selectprevioustab` - Map to the `selectPreviousTab` action.
-* `mergeallwindows` - Map to the `mergeAllWindows` action.
-* `movetabtonewwindow` - Map to the `moveTabToNewWindow` action.
+* `toggleTabBar` - Map to the `toggleTabBar` action.
+* `selectNextTab` - Map to the `selectNextTab` action.
+* `selectPreviousTab` - Map to the `selectPreviousTab` action.
+* `mergeAllWindows` - Map to the `mergeAllWindows` action.
+* `moveTabToNewWindow` - Map to the `moveTabToNewWindow` action.
 * `window` - The submenu is a "Window" menu.
 * `help` - The submenu is a "Help" menu.
 * `services` - The submenu is a "Services" menu.
-* `recentdocuments` - The submenu is an "Open Recent" menu.
-* `clearrecentdocuments` - Map to the `clearRecentDocuments` action.
+* `recentDocuments` - The submenu is an "Open Recent" menu.
+* `clearRecentDocuments` - Map to the `clearRecentDocuments` action.
 
 When specifying a `role` on macOS, `label` and `accelerator` are the only
 options that will affect the menu item. All other options will be ignored.
+Lowercase `role`, e.g. `toggledevtools`, is still supported.
 
 ### Instance Properties
 
