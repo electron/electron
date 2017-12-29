@@ -10,7 +10,6 @@
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/WebKit/public/web/WebView.h"
 
 using content::RenderFrame;
 using blink::WebLocalFrame;

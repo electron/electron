@@ -970,15 +970,6 @@ void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
   }
 }
 
-// Should only be used for IPC message maps
-bool WebContents::Send(IPC::Message* message) {
-  auto host = web_contents()->GetRenderViewHost();
-
-  if (host)
-    return host->Send(message);
-  return false;
-}
-
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
@@ -1538,10 +1529,10 @@ void WebContents::TabTraverse(bool reverse) {
 bool WebContents::SendIPCMessage(bool all_frames,
                                  const base::string16& channel,
                                  const base::ListValue& args) {
-  auto host = web_contents()->GetRenderViewHost();
-  if (host) {
-    return host->Send(new AtomViewMsg_Message(host->GetRoutingID(),
-                                                all_frames, channel, args));
+  auto frame_host = web_contents()->GetMainFrame();
+  if (frame_host) {
+    return frame_host->Send(new AtomFrameMsg_Message(
+        frame_host->GetRoutingID(), all_frames, channel, args));
   }
   return false;
 }
@@ -1832,18 +1823,15 @@ void WebContents::OnSetTemporaryZoomLevel(content::RenderFrameHost* rfh,
                                           IPC::Message* reply_msg) {
   zoom_controller_->SetTemporaryZoomLevel(level);
   double new_level = zoom_controller_->GetZoomLevel();
-  AtomViewHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg, new_level);
-
-  auto host = web_contents()->GetRenderViewHost();
-  if (host)
-    host->Send(reply_msg);
+  AtomFrameHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg,
+                                                           new_level);
+  rfh->Send(reply_msg);
 }
 
-void WebContents::OnGetZoomLevel(IPC::Message* reply_msg) {
-  AtomViewHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
-  auto host = web_contents()->GetRenderViewHost();
-  if (host)
-    host->Send(reply_msg);
+void WebContents::OnGetZoomLevel(content::RenderFrameHost* rfh,
+                                 IPC::Message* reply_msg) {
+  AtomFrameHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
+  rfh->Send(reply_msg);
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
