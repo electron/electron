@@ -6,7 +6,13 @@
 #define ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
 
 #include "atom/renderer/renderer_client_base.h"
+#include "base/strings/string16.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
+
+namespace base {
+class ListValue;
+}
 
 namespace atom {
 
@@ -23,6 +29,10 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   AtomRenderFrameObserver(content::RenderFrame* frame,
                           RendererClientBase* renderer_client);
 
+  virtual void EmitIPCEvent(blink::WebLocalFrame* frame,
+                            const base::string16& channel,
+                            const base::ListValue& args);
+
   // content::RenderFrameObserver:
   void DidClearWindowObject() override;
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
@@ -31,12 +41,17 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override;
   void OnDestruct() override;
+  bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
   bool ShouldNotifyClient(int world_id);
   void CreateIsolatedWorldContext();
   bool IsMainWorld(int world_id);
   bool IsIsolatedWorld(int world_id);
+
+  void OnBrowserMessage(bool send_to_all,
+                        const base::string16& channel,
+                        const base::ListValue& args);
 
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;

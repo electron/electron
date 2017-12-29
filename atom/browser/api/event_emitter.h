@@ -11,7 +11,7 @@
 #include "native_mate/wrappable.h"
 
 namespace content {
-class WebContents;
+class RenderFrameHost;
 }
 
 namespace IPC {
@@ -24,7 +24,7 @@ namespace internal {
 
 v8::Local<v8::Object> CreateJSEvent(v8::Isolate* isolate,
                                     v8::Local<v8::Object> object,
-                                    content::WebContents* sender,
+                                    content::RenderFrameHost* sender,
                                     IPC::Message* message);
 v8::Local<v8::Object> CreateCustomEvent(
     v8::Isolate* isolate,
@@ -72,9 +72,9 @@ class EventEmitter : public Wrappable<T> {
   }
 
   // this.emit(name, new Event(sender, message), args...);
-  template<typename... Args>
+  template <typename... Args>
   bool EmitWithSender(const base::StringPiece& name,
-                      content::WebContents* sender,
+                      content::RenderFrameHost* sender,
                       IPC::Message* message,
                       const Args&... args) {
     v8::Locker locker(isolate());

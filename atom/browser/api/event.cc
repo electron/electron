@@ -6,7 +6,7 @@
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "native_mate/object_template_builder.h"
 
@@ -21,17 +21,32 @@ Event::Event(v8::Isolate* isolate)
 Event::~Event() {
 }
 
-void Event::SetSenderAndMessage(content::WebContents* sender,
+void Event::SetSenderAndMessage(content::RenderFrameHost* sender,
                                 IPC::Message* message) {
   DCHECK(!sender_);
   DCHECK(!message_);
   sender_ = sender;
   message_ = message;
 
-  Observe(sender);
+  Observe(content::WebContents::FromRenderFrameHost(sender));
 }
 
-void Event::WebContentsDestroyed() {
+void Event::RenderFrameDeleted(content::RenderFrameHost* rfh) {
+  if (sender_ != rfh)
+    return;
+  sender_ = nullptr;
+  message_ = nullptr;
+}
+
+void Event::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
+                                   content::RenderFrameHost* new_rfh) {
+  if (sender_ && sender_ == old_rfh)
+    sender_ = new_rfh;
+}
+
+void Event::FrameDeleted(content::RenderFrameHost* rfh) {
+  if (sender_ != rfh)
+    return;
   sender_ = nullptr;
   message_ = nullptr;
 }
@@ -45,10 +60,8 @@ bool Event::SendReply(const base::string16& json) {
   if (message_ == nullptr || sender_ == nullptr)
     return false;
 
-  AtomViewHostMsg_Message_Sync::WriteReplyParams(message_, json);
-  auto host = sender_->GetRenderViewHost();
-  if (!host) return false;
-  bool success = host->Send(message_);
+  AtomFrameHostMsg_Message_Sync::WriteReplyParams(message_, json);
+  bool success = sender_->Send(message_);
   message_ = nullptr;
   sender_ = nullptr;
   return success;

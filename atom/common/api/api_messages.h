@@ -24,16 +24,16 @@ IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
   IPC_STRUCT_TRAITS_MEMBER(bounds)
 IPC_STRUCT_TRAITS_END()
 
-IPC_MESSAGE_ROUTED2(AtomViewHostMsg_Message,
+IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_Message,
                     base::string16 /* channel */,
                     base::ListValue /* arguments */)
 
-IPC_SYNC_MESSAGE_ROUTED2_1(AtomViewHostMsg_Message_Sync,
+IPC_SYNC_MESSAGE_ROUTED2_1(AtomFrameHostMsg_Message_Sync,
                            base::string16 /* channel */,
                            base::ListValue /* arguments */,
                            base::string16 /* result (in JSON) */)
 
-IPC_MESSAGE_ROUTED3(AtomViewMsg_Message,
+IPC_MESSAGE_ROUTED3(AtomFrameMsg_Message,
                     bool /* send_to_all */,
                     base::string16 /* channel */,
                     base::ListValue /* arguments */)
@@ -58,12 +58,12 @@ IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
 IPC_MESSAGE_CONTROL1(AtomMsg_UpdatePreferences, base::ListValue)
 
 // Sent by renderer to set the temporary zoom level.
-IPC_SYNC_MESSAGE_ROUTED1_1(AtomViewHostMsg_SetTemporaryZoomLevel,
+IPC_SYNC_MESSAGE_ROUTED1_1(AtomFrameHostMsg_SetTemporaryZoomLevel,
                            double /* zoom level */,
                            double /* result */)
 
 // Sent by renderer to get the zoom level.
-IPC_SYNC_MESSAGE_ROUTED0_1(AtomViewHostMsg_GetZoomLevel, double /* result */)
+IPC_SYNC_MESSAGE_ROUTED0_1(AtomFrameHostMsg_GetZoomLevel, double /* result */)
 
 // Brings up SaveAs... dialog to save specified URL.
 IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_PDFSaveURLAs,

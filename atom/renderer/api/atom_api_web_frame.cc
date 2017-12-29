@@ -126,19 +126,19 @@ void WebFrame::SetName(const std::string& name) {
 
 double WebFrame::SetZoomLevel(double level) {
   double result = 0.0;
-  content::RenderView* render_view =
-      content::RenderView::FromWebView(web_frame_->View());
-  render_view->Send(new AtomViewHostMsg_SetTemporaryZoomLevel(
-      render_view->GetRoutingID(), level, &result));
+  content::RenderFrame* render_frame =
+      content::RenderFrame::FromWebFrame(web_frame_);
+  render_frame->Send(new AtomFrameHostMsg_SetTemporaryZoomLevel(
+      render_frame->GetRoutingID(), level, &result));
   return result;
 }
 
 double WebFrame::GetZoomLevel() const {
   double result = 0.0;
-  content::RenderView* render_view =
-      content::RenderView::FromWebView(web_frame_->View());
-  render_view->Send(
-      new AtomViewHostMsg_GetZoomLevel(render_view->GetRoutingID(), &result));
+  content::RenderFrame* render_frame =
+      content::RenderFrame::FromWebFrame(web_frame_);
+  render_frame->Send(
+      new AtomFrameHostMsg_GetZoomLevel(render_frame->GetRoutingID(), &result));
   return result;
 }
 

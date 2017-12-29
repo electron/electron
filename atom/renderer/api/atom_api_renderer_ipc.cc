@@ -7,43 +7,37 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
-#include "content/public/renderer/render_view.h"
+#include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/WebKit/public/web/WebView.h"
 
-using content::RenderView;
+using content::RenderFrame;
 using blink::WebLocalFrame;
-using blink::WebView;
 
 namespace atom {
 
 namespace api {
 
-RenderView* GetCurrentRenderView() {
+RenderFrame* GetCurrentRenderFrame() {
   WebLocalFrame* frame = WebLocalFrame::FrameForCurrentContext();
   if (!frame)
     return nullptr;
 
-  WebView* view = frame->View();
-  if (!view)
-    return nullptr;  // can happen during closing.
-
-  return RenderView::FromWebView(view);
+  return RenderFrame::FromWebFrame(frame);
 }
 
 void Send(mate::Arguments* args,
           const base::string16& channel,
           const base::ListValue& arguments) {
-  RenderView* render_view = GetCurrentRenderView();
-  if (render_view == nullptr)
+  RenderFrame* render_frame = GetCurrentRenderFrame();
+  if (render_frame == nullptr)
     return;
 
-  bool success = render_view->Send(new AtomViewHostMsg_Message(
-      render_view->GetRoutingID(), channel, arguments));
+  bool success = render_frame->Send(new AtomFrameHostMsg_Message(
+      render_frame->GetRoutingID(), channel, arguments));
 
   if (!success)
-    args->ThrowError("Unable to send AtomViewHostMsg_Message");
+    args->ThrowError("Unable to send AtomFrameHostMsg_Message");
 }
 
 base::string16 SendSync(mate::Arguments* args,
@@ -51,16 +45,16 @@ base::string16 SendSync(mate::Arguments* args,
                         const base::ListValue& arguments) {
   base::string16 json;
 
-  RenderView* render_view = GetCurrentRenderView();
-  if (render_view == nullptr)
+  RenderFrame* render_frame = GetCurrentRenderFrame();
+  if (render_frame == nullptr)
     return json;
 
-  IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
-      render_view->GetRoutingID(), channel, arguments, &json);
-  bool success = render_view->Send(message);
+  IPC::SyncMessage* message = new AtomFrameHostMsg_Message_Sync(
+      render_frame->GetRoutingID(), channel, arguments, &json);
+  bool success = render_frame->Send(message);
 
   if (!success)
-    args->ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
+    args->ThrowError("Unable to send AtomFrameHostMsg_Message_Sync");
 
   return json;
 }
