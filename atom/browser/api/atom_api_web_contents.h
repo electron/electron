@@ -149,9 +149,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void AddWorkSpace(mate::Arguments* args, const base::FilePath& path);
   void RemoveWorkSpace(mate::Arguments* args, const base::FilePath& path);
 
-  // IPC
-  bool Send(IPC::Message* message);
-
   // Editing commands.
   void Undo();
   void Redo();
