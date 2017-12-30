@@ -65,8 +65,6 @@
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/render_process_host.h"
-#include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/resource_request_details.h"
@@ -1259,20 +1257,30 @@ void WebContents::EnableDeviceEmulation(
   if (type_ == REMOTE)
     return;
 
-  auto host = web_contents()->GetRenderViewHost();
-
-  if (host)
-    host->Send(new ViewMsg_EnableDeviceEmulation(host->GetRoutingID(), params));
+  auto frame_host = web_contents()->GetMainFrame();
+  if (frame_host) {
+    auto widget_host =
+        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
+    if (!widget_host)
+      return;
+    widget_host->Send(
+        new ViewMsg_EnableDeviceEmulation(widget_host->GetRoutingID(), params));
+  }
 }
 
 void WebContents::DisableDeviceEmulation() {
   if (type_ == REMOTE)
     return;
 
-  auto host = web_contents()->GetRenderViewHost();
-
-  if (host)
-    host->Send(new ViewMsg_DisableDeviceEmulation(host->GetRoutingID()));
+  auto frame_host = web_contents()->GetMainFrame();
+  if (frame_host) {
+    auto widget_host =
+        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
+    if (!widget_host)
+      return;
+    widget_host->Send(
+        new ViewMsg_DisableDeviceEmulation(widget_host->GetRoutingID()));
+  }
 }
 
 void WebContents::ToggleDevTools() {
