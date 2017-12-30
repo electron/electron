@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/converter.h"
 
 namespace mate {
