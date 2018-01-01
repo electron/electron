@@ -68,10 +68,11 @@
   // npm run test -match=menu
   const moduleMatch = process.env.npm_config_match
     ? new RegExp(process.env.npm_config_match, 'g')
-    : /.*/gi
+    : null
 
   walker.on('file', (file) => {
-    if (/-spec\.js$/.test(file) && moduleMatch.test(file) && !file.includes(crashSpec)) {
+    if (/-spec\.js$/.test(file) && !file.includes(crashSpec) &&
+        (!moduleMatch || moduleMatch.test(file))) {
       mocha.addFile(file)
     }
   })
