@@ -115,8 +115,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 - (void)cancel {
   if (isMenuOpen_) {
     [menu_ cancelTracking];
-    model_->MenuWillClose();
     isMenuOpen_ = NO;
+    model_->MenuWillClose();
+    closeCallback.Run();
   }
 }
 
