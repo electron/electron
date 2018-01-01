@@ -6,7 +6,8 @@
 
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/unresponsive_suppressor.h"
-#include "content/public/browser/render_widget_host_view.h"
+#include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "ui/display/screen.h"
 
 using views::MenuRunner;
@@ -25,11 +26,8 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item,
   NativeWindow* native_window = static_cast<NativeWindow*>(window->window());
   if (!native_window)
     return;
-  content::WebContents* web_contents = native_window->web_contents();
+  auto* web_contents = native_window->inspectable_web_contents();
   if (!web_contents)
-    return;
-  content::RenderWidgetHostView* view = web_contents->GetRenderWidgetHostView();
-  if (!view)
     return;
 
   // (-1, -1) means showing on mouse location.
@@ -37,7 +35,8 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item,
   if (x == -1 || y == -1) {
     location = display::Screen::GetScreen()->GetCursorScreenPoint();
   } else {
-    gfx::Point origin = view->GetViewBounds().origin();
+    auto* view = web_contents->GetView()->GetWebView();
+    gfx::Point origin = view->bounds().origin();
     location = gfx::Point(origin.x() + x, origin.y() + y);
   }
 
