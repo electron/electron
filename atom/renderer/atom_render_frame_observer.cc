@@ -52,7 +52,7 @@ void AtomRenderFrameObserver::DraggableRegionsChanged() {
     region.draggable = webregion.draggable;
     regions.push_back(region);
   }
-  Send(new AtomViewHostMsg_UpdateDraggableRegions(routing_id(), regions));
+  Send(new AtomFrameHostMsg_UpdateDraggableRegions(routing_id(), regions));
 }
 
 void AtomRenderFrameObserver::WillReleaseScriptContext(
