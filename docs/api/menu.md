@@ -59,7 +59,7 @@ will become properties of the constructed menu items.
 
 The `menu` object has the following instance methods:
 
-#### `menu.popup([browserWindow, options])`
+#### `menu.popup([browserWindow, options, callback])`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional) - Default is the focused window.
 * `options` Object (optional)
@@ -70,6 +70,7 @@ The `menu` object has the following instance methods:
   * `positioningItem` Number (optional) _macOS_ - The index of the menu item to
     be positioned under the mouse cursor at the specified coordinates. Default
     is -1.
+* `callback` Function (optional) - Called when menu is closed.
 
 Pops up this menu as a context menu in the [`BrowserWindow`](browser-window.md).
 
@@ -117,6 +118,9 @@ the following events:
 #### Event: 'closed'
 
 Emitted when the menu is closed.
+
+Note that one menu can be shown for multiple windows, and in this case the
+`closed` event would be emitted for multiple times.
 
 ## Examples
 
