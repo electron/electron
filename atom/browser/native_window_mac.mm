@@ -1814,8 +1814,9 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
 }
 
 void NativeWindowMac::UpdateDraggableRegions(
+    content::RenderFrameHost* rfh,
     const std::vector<DraggableRegion>& regions) {
-  NativeWindow::UpdateDraggableRegions(regions);
+  NativeWindow::UpdateDraggableRegions(rfh, regions);
   draggable_regions_ = regions;
   UpdateDraggableRegionViews(regions);
 }

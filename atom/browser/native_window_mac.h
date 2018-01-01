@@ -159,6 +159,7 @@ class NativeWindowMac : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const;
   void UpdateDraggableRegions(
+      content::RenderFrameHost* rfh,
       const std::vector<DraggableRegion>& regions) override;
 
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
