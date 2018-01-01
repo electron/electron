@@ -323,6 +323,11 @@ describe('Menu module', () => {
       assert.equal(x, 100)
       assert.equal(y, 101)
     })
+
+    it('calls the callback', (done) => {
+      menu.popup({}, () => done())
+      menu.closePopup()
+    })
   })
 
   describe('Menu.closePopup()', () => {
