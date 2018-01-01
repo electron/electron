@@ -74,7 +74,7 @@ void MenuViews::ClosePopupAt(int32_t window_id) {
   }
 }
 
-void MenuViews::OnClosed(int32_t window_id, const base::Closure& callback) {
+void MenuViews::OnClosed(int32_t window_id, base::Closure callback) {
   menu_runners_.erase(window_id);
   callback.Run();
 }

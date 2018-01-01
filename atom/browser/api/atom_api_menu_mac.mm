@@ -44,7 +44,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                         int x,
                         int y,
                         int positioning_item,
-                        const base::Closure& callback) {
+                        base::Closure callback) {
   if (!native_window)
     return;
   brightray::InspectableWebContents* web_contents =
@@ -124,7 +124,7 @@ void MenuMac::ClosePopupAt(int32_t window_id) {
   }
 }
 
-void MenuMac::OnClosed(int32_t window_id, const base::Closure& callback) {
+void MenuMac::OnClosed(int32_t window_id, base::Closure callback) {
   popup_controllers_.erase(window_id);
   callback.Run();
 }

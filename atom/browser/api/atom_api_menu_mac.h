@@ -29,13 +29,13 @@ class MenuMac : public Menu {
                  int x,
                  int y,
                  int positioning_item,
-                 const base::Closure& callback);
+                 base::Closure callback);
   void ClosePopupAt(int32_t window_id) override;
 
  private:
   friend class Menu;
 
-  void OnClosed(int32_t window_id, const base::Closure& callback);
+  void OnClosed(int32_t window_id, base::Closure callback);
 
   scoped_nsobject<AtomMenuController> menu_controller_;
 
