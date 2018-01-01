@@ -335,37 +335,6 @@ describe('Menu module', () => {
     })
   })
 
-  describe('Menu.closePopup()', () => {
-    let w = null
-    let menu
-
-    beforeEach((done) => {
-      w = new BrowserWindow({show: false, width: 200, height: 200})
-      menu = Menu.buildFromTemplate([
-        {
-          label: '1'
-        }
-      ])
-
-      w.loadURL('data:text/html,<html>teszt</html>')
-      w.webContents.on('dom-ready', () => {
-        done()
-      })
-    })
-
-    afterEach(() => {
-      return closeWindow(w).then(() => { w = null })
-    })
-
-    it('emits closed event', (done) => {
-      menu.popup(w, {x: 100, y: 100})
-      menu.on('closed', () => {
-        done()
-      })
-      menu.closePopup(w)
-    })
-  })
-
   describe('Menu.setApplicationMenu', () => {
     it('sets a menu', () => {
       const menu = Menu.buildFromTemplate([

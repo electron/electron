@@ -115,13 +115,6 @@ can have a submenu.
 Objects created with `new Menu` or returned by `Menu.buildFromTemplate` emit
 the following events:
 
-#### Event: 'closed'
-
-Emitted when the menu is closed.
-
-Note that one menu can be shown for multiple windows, and in this case the
-`closed` event would be emitted for multiple times.
-
 ## Examples
 
 The `Menu` class is only available in the main process, but you can also use it
