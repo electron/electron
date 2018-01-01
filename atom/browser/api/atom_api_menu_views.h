@@ -21,11 +21,12 @@ class MenuViews : public Menu {
   MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
  protected:
-  void PopupAt(Window* window, int x, int y, int positioning_item) override;
+  void PopupAt(Window* window, int x, int y, int positioning_item,
+               const base::Closure& callback) override;
   void ClosePopupAt(int32_t window_id) override;
 
  private:
-  void OnClosed(int32_t window_id);
+  void OnClosed(int32_t window_id, const base::Closure& callback);
 
   // window ID -> open context menu
   std::map<int32_t, std::unique_ptr<views::MenuRunner>> menu_runners_;
