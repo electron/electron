@@ -328,6 +328,11 @@ describe('Menu module', () => {
       menu.popup({}, () => done())
       menu.closePopup()
     })
+
+    it('works with old style', (done) => {
+      menu.popup(w, 100, 101, () => done())
+      menu.closePopup()
+    })
   })
 
   describe('Menu.closePopup()', () => {
