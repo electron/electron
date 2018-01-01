@@ -33,7 +33,7 @@ class MenuMac : public Menu {
  private:
   friend class Menu;
 
-  static void SendActionToFirstResponder(const std::string& action);
+  void OnClosed(int32_t window_id);
 
   scoped_nsobject<AtomMenuController> menu_controller_;
 
