@@ -1341,6 +1341,7 @@ void WebContents::Print(mate::Arguments* args) {
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
   auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   print_backend->EnumeratePrinters(&printers);
   return printers;
 }
