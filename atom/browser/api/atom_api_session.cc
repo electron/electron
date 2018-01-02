@@ -33,6 +33,7 @@
 #include "brightray/browser/media/media_device_id_salt.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
+#include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
@@ -126,13 +127,10 @@ net::HttpAuth::Scheme GetAuthSchemeFromString(const std::string& scheme) {
 void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
                       const std::string& accept_lang,
                       const std::string& user_agent) {
-  std::string accept_lang_header = net::HttpUtil::GenerateAcceptLanguageHeader(
-      accept_lang.empty() ? getter->GetURLRequestContext()
-                                ->http_user_agent_settings()
-                                ->GetAcceptLanguage()
-                          : accept_lang);
   getter->GetURLRequestContext()->set_http_user_agent_settings(
-      new net::StaticHttpUserAgentSettings(accept_lang_header, user_agent));
+      new net::StaticHttpUserAgentSettings(
+          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
+          user_agent));
 }
 
 }  // namespace
@@ -645,7 +643,7 @@ void Session::SetUserAgent(const std::string& user_agent,
                            mate::Arguments* args) {
   browser_context_->SetUserAgent(user_agent);
 
-  std::string accept_lang;
+  std::string accept_lang = g_browser_process->GetApplicationLocale();
   args->GetNext(&accept_lang);
 
   scoped_refptr<brightray::URLRequestContextGetter> getter(
