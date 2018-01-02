@@ -52,9 +52,9 @@ class Menu : public mate::TrackableObject<Menu>,
       ui::Accelerator* accelerator) const override;
   void ExecuteCommand(int command_id, int event_flags) override;
   void MenuWillShow(ui::SimpleMenuModel* source) override;
-  void MenuClosed(ui::SimpleMenuModel* source) override;
 
-  virtual void PopupAt(Window* window, int x, int y, int positioning_item) = 0;
+  virtual void PopupAt(Window* window, int x, int y, int positioning_item,
+                       const base::Closure& callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
 
   std::unique_ptr<AtomMenuModel> model_;
@@ -94,7 +94,6 @@ class Menu : public mate::TrackableObject<Menu>,
   base::Callback<v8::Local<v8::Value>(int, bool)> get_accelerator_;
   base::Callback<void(v8::Local<v8::Value>, int)> execute_command_;
   base::Callback<void()> menu_will_show_;
-  base::Callback<void()> menu_closed_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };

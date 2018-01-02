@@ -323,36 +323,15 @@ describe('Menu module', () => {
       assert.equal(x, 100)
       assert.equal(y, 101)
     })
-  })
 
-  describe('Menu.closePopup()', () => {
-    let w = null
-    let menu
-
-    beforeEach((done) => {
-      w = new BrowserWindow({show: false, width: 200, height: 200})
-      menu = Menu.buildFromTemplate([
-        {
-          label: '1'
-        }
-      ])
-
-      w.loadURL('data:text/html,<html>teszt</html>')
-      w.webContents.on('dom-ready', () => {
-        done()
-      })
+    it('calls the callback', (done) => {
+      menu.popup({}, () => done())
+      menu.closePopup()
     })
 
-    afterEach(() => {
-      return closeWindow(w).then(() => { w = null })
-    })
-
-    it('emits closed event', (done) => {
-      menu.popup(w, {x: 100, y: 100})
-      menu.on('closed', () => {
-        done()
-      })
-      menu.closePopup(w)
+    it('works with old style', (done) => {
+      menu.popup(w, 100, 101, () => done())
+      menu.closePopup()
     })
   })
 

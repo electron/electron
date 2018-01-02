@@ -27,14 +27,15 @@ MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
       weak_factory_(this) {
 }
 
-void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item) {
+void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item,
+                      const base::Closure& callback) {
   NativeWindow* native_window = window->window();
   if (!native_window)
     return;
 
   auto popup = base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
                           native_window->GetWeakPtr(), window->ID(), x, y,
-                          positioning_item);
+                          positioning_item, callback);
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, popup);
 }
 
@@ -42,7 +43,8 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                         int32_t window_id,
                         int x,
                         int y,
-                        int positioning_item) {
+                        int positioning_item,
+                        base::Closure callback) {
   if (!native_window)
     return;
   brightray::InspectableWebContents* web_contents =
@@ -50,8 +52,8 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (!web_contents)
     return;
 
-  auto close_callback = base::Bind(&MenuMac::ClosePopupAt,
-                                   weak_factory_.GetWeakPtr(), window_id);
+  auto close_callback = base::Bind(
+      &MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
   popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>(
       [[AtomMenuController alloc] initWithModel:model()
                           useDefaultAccelerator:NO]);
@@ -108,12 +110,23 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {
-  auto it = popup_controllers_.find(window_id);
-  if (it != popup_controllers_.end()) {
-    popup_controllers_.erase(it);
+  auto controller = popup_controllers_.find(window_id);
+  if (controller != popup_controllers_.end()) {
+    // Close the controller for the window.
+    [controller->second cancel];
   } else if (window_id == -1) {
-    popup_controllers_.clear();
+    // Or just close all opened controllers.
+    for (auto it = popup_controllers_.begin();
+         it != popup_controllers_.end();) {
+      // The iterator is invalidated after the call.
+      [(it++)->second cancel];
+    }
   }
+}
+
+void MenuMac::OnClosed(int32_t window_id, base::Closure callback) {
+  popup_controllers_.erase(window_id);
+  callback.Run();
 }
 
 // static

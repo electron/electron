@@ -12,11 +12,8 @@
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
-#include "content/public/browser/browser_thread.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
-
-using content::BrowserThread;
 
 namespace {
 
@@ -118,8 +115,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 - (void)cancel {
   if (isMenuOpen_) {
     [menu_ cancelTracking];
-    model_->MenuWillClose();
     isMenuOpen_ = NO;
+    model_->MenuWillClose();
+    closeCallback.Run();
   }
 }
 
@@ -334,11 +332,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (isMenuOpen_) {
     isMenuOpen_ = NO;
     model_->MenuWillClose();
-
-    // Post async task so that itemSelected runs before the close callback
-    // deletes the controller from the map which deallocates it
-    if (!closeCallback.is_null())
-      BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, closeCallback);
+    closeCallback.Run();
   }
 }
 
