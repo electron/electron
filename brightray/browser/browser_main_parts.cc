@@ -186,7 +186,8 @@ void OverrideAppLogsPath() {
 
 void BrowserMainParts::PreEarlyInitialization() {
   std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
-  feature_list->InitializeFromCommandLine("", "");
+  // TODO(deepak1556): Disable guest webcontents based on OOPIF feature.
+  feature_list->InitializeFromCommandLine("", "GuestViewCrossProcessFrames");
   base::FeatureList::SetInstance(std::move(feature_list));
   OverrideAppLogsPath();
 #if defined(USE_X11)
