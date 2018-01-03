@@ -85,6 +85,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/platform_thread.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
@@ -716,9 +717,13 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
 ///////////////////////////////////////////////////////////////////////////////
 // ProcessSingleton
 //
-ProcessSingleton::ProcessSingleton(const base::FilePath& user_data_dir)
-    : current_pid_(base::GetCurrentProcId()) {
+ProcessSingleton::ProcessSingleton(
+    const base::FilePath& user_data_dir,
+    const NotificationCallback& notification_callback)
+    : notification_callback_(notification_callback),
+      current_pid_(base::GetCurrentProcId()) {
   // The user_data_dir may have not been created yet.
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::CreateDirectoryAndGetError(user_data_dir, nullptr);
 
   socket_path_ = user_data_dir.Append(kSingletonSocketFilename);
@@ -957,6 +962,7 @@ void ProcessSingleton::DisablePromptForTesting() {
 }
 
 bool ProcessSingleton::Create() {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   int sock;
   sockaddr_un addr;
 

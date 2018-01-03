@@ -218,6 +218,8 @@ class App : public AtomBrowserClient::Delegate,
   JumpListResult SetJumpList(v8::Local<v8::Value> val, mate::Arguments* args);
 #endif  // defined(OS_WIN)
 
+  std::unique_ptr<ProcessSingleton> process_singleton_;
+
 #if defined(USE_NSS_CERTS)
   std::unique_ptr<CertificateManagerModel> certificate_manager_model_;
 #endif
@@ -231,8 +233,6 @@ class App : public AtomBrowserClient::Delegate,
       std::unordered_map<base::ProcessId,
                          std::unique_ptr<atom::ProcessMetric>>;
   ProcessMetricMap app_metrics_;
-
-  bool process_singleton_created_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };
