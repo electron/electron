@@ -735,6 +735,10 @@ ProcessSingleton::ProcessSingleton(
 
 ProcessSingleton::~ProcessSingleton() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  // Manually free resources with IO explicitly allowed.
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  watcher_ = nullptr;
+  ignore_result(socket_dir_.Delete());
 }
 
 ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
