@@ -14,30 +14,11 @@
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
-#include "base/task_scheduler/post_task.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/brightray_paths.h"
-#include "content/public/browser/browser_thread.h"
 
 namespace atom {
-
-namespace {
-
-bool CreateUserDataDirectory() {
-  // Make sure the userData directory is created.
-  base::FilePath user_data;
-  bool success = false;
-  if (PathService::Get(brightray::DIR_USER_DATA, &user_data))
-    success = base::CreateDirectoryAndGetError(user_data, nullptr);
-
-  if (!success) {
-    NOTREACHED() << "Failed to create directory '" << user_data.value() << "'";
-  }
-
-  return success;
-}
-
-}  // namespace
 
 Browser::Browser()
     : is_quiting_(false),
@@ -170,25 +151,15 @@ void Browser::WillFinishLaunching() {
 }
 
 void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  // Make sure the userData directory is created.
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  base::FilePath user_data;
+  if (PathService::Get(brightray::DIR_USER_DATA, &user_data))
+    base::CreateDirectoryAndGetError(user_data, nullptr);
 
-  base::PostTaskWithTraitsAndReplyWithResult(
-      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_BLOCKING},
-      base::Bind(&CreateUserDataDirectory),
-      base::Bind(&Browser::OnUserDataDirectoryCreated, base::Unretained(this),
-                 launch_info));
-}
-
-void Browser::OnUserDataDirectoryCreated(
-    const base::DictionaryValue& launch_info,
-    bool success) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
-  if (success) {
-    is_ready_ = true;
-    for (BrowserObserver& observer : observers_)
-      observer.OnFinishLaunching(launch_info);
-  }
+  is_ready_ = true;
+  for (BrowserObserver& observer : observers_)
+    observer.OnFinishLaunching(launch_info);
 }
 
 void Browser::OnAccessibilitySupportChanged() {
