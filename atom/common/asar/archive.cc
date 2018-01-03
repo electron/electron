@@ -118,18 +118,16 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 
 Archive::Archive(const base::FilePath& path)
     : path_(path), file_(base::File::FILE_OK), header_size_(0) {
-  {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
-    file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if defined(OS_WIN)
-    fd_ =
-        _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
+  fd_ =
+      _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
 #elif defined(OS_POSIX)
-    fd_ = file_.GetPlatformFile();
+  fd_ = file_.GetPlatformFile();
 #else
-    fd_ = -1;
+  fd_ = -1;
 #endif
-  }
 }
 
 Archive::~Archive() {
