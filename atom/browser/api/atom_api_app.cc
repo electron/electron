@@ -565,6 +565,11 @@ void App::OnWindowAllClosed() {
 void App::OnQuit() {
   int exitCode = AtomBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
+
+  if (process_singleton_) {
+    process_singleton_->Cleanup();
+    process_singleton_.reset();
+  }
 }
 
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
@@ -592,12 +597,15 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
   Emit("ready", launch_info);
 }
 
-void App::OnAccessibilitySupportChanged() {
-  Emit("accessibility-support-changed", IsAccessibilitySupportEnabled());
-}
-
 void App::OnPreMainMessageLoopRun() {
   content::BrowserChildProcessObserver::Add(this);
+  if (process_singleton_) {
+    process_singleton_->OnBrowserReady();
+  }
+}
+
+void App::OnAccessibilitySupportChanged() {
+  Emit("accessibility-support-changed", IsAccessibilitySupportEnabled());
 }
 
 #if defined(OS_MACOSX)
@@ -848,18 +856,19 @@ std::string App::GetLocale() {
 
 bool App::MakeSingleInstance(
     const ProcessSingleton::NotificationCallback& callback) {
-  auto process_singleton = AtomBrowserMainParts::Get()->process_singleton();
-  if (process_singleton_created_)
+  if (process_singleton_)
     return false;
 
-  process_singleton->RegisterSingletonNotificationCallback(
-      base::Bind(NotificationCallbackWrapper, callback));
+  base::FilePath user_dir;
+  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  process_singleton_.reset(new ProcessSingleton(
+      user_dir, base::Bind(NotificationCallbackWrapper, callback)));
 
-  switch (process_singleton->NotifyOtherProcessOrCreate()) {
+  switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
-      process_singleton_created_ = true;
+      process_singleton_.reset();
       return true;
     }
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
@@ -869,9 +878,9 @@ bool App::MakeSingleInstance(
 }
 
 void App::ReleaseSingleInstance() {
-  auto process_singleton = AtomBrowserMainParts::Get()->process_singleton();
-  if (process_singleton) {
-    process_singleton->Cleanup();
+  if (process_singleton_) {
+    process_singleton_->Cleanup();
+    process_singleton_.reset();
   }
 }
 

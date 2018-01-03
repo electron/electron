@@ -62,7 +62,8 @@ class ProcessSingleton {
       base::Callback<bool(const base::CommandLine::StringVector& command_line,
                           const base::FilePath& current_directory)>;
 
-  explicit ProcessSingleton(const base::FilePath& user_data_dir);
+  ProcessSingleton(const base::FilePath& user_data_dir,
+                   const NotificationCallback& notification_callback);
   ~ProcessSingleton();
 
   // Notify another process, if available. Otherwise sets ourselves as the
@@ -97,11 +98,6 @@ class ProcessSingleton {
   void OverrideShouldKillRemoteProcessCallbackForTesting(
       const ShouldKillRemoteProcessCallback& display_dialog_callback);
 #endif
-
-  void RegisterSingletonNotificationCallback(
-      const NotificationCallback& callback) {
-    notification_callback_ = callback;
-  }
 
  protected:
   // Notify another process, if available.

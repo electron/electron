@@ -128,10 +128,6 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   bridge_task_runner_ = new BridgeTaskRunner;
   base::ThreadTaskRunnerHandle handle(bridge_task_runner_);
 
-  base::FilePath user_dir;
-  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
-  process_singleton_.reset(new ProcessSingleton(user_dir));
-
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
   js_env_.reset(new JavascriptEnvironment);
@@ -188,9 +184,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   bridge_task_runner_->MessageLoopIsReady();
   bridge_task_runner_ = nullptr;
 
-  // Notify observers that main thread message loop was initialized.
-  Browser::Get()->PreMainMessageLoopRun();
-
 #if defined(USE_X11)
   libgtkui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
 #endif
@@ -202,8 +195,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->DidFinishLaunching(*empty_info);
 #endif
 
-  if (process_singleton_)
-    process_singleton_->OnBrowserReady();
+  // Notify observers that main thread message loop was initialized.
+  Browser::Get()->PreMainMessageLoopRun();
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
@@ -238,14 +231,6 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
     base::Closure& callback = *iter;
     ++iter;
     callback.Run();
-  }
-}
-
-void AtomBrowserMainParts::PostDestroyThreads() {
-  brightray::BrowserMainParts::PostDestroyThreads();
-  if (process_singleton_) {
-    process_singleton_->Cleanup();
-    process_singleton_.reset();
   }
 }
 
