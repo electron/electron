@@ -1159,6 +1159,14 @@ win.loadURL('http://localhost:8000/post', {
 })
 ```
 
+#### `win.loadFile(filePath)`
+
+* `filePath` String
+
+Same as `webContents.loadFile`, `filePath` should be a path to an HTML
+file relative to the root of your application.  See the `webContents` docs
+for more information.
+
 #### `win.reload()`
 
 Same as `webContents.reload`.
