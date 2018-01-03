@@ -138,11 +138,8 @@ Archive::~Archive() {
     file_.TakePlatformFile();
   }
 #endif
-  base::PostTaskWithTraits(
-      FROM_HERE,
-      {base::MayBlock(), base::TaskPriority::BACKGROUND,
-       base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
-      base::Bind([](base::File file) { file.Close(); }, Passed(&file_)));
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  file_.Close();
 }
 
 bool Archive::Init() {
