@@ -570,15 +570,15 @@ describe('Menu module', () => {
       assert.equal(item.submenu.items[5].role, 'paste')
 
       if (process.platform === 'darwin') {
-        assert.equal(item.submenu.items[6].role, 'pasteAndMatchStyle')
+        assert.equal(item.submenu.items[6].role, 'pasteandmatchstyle')
         assert.equal(item.submenu.items[7].role, 'delete')
-        assert.equal(item.submenu.items[8].role, 'selectAll')
+        assert.equal(item.submenu.items[8].role, 'selectall')
       }
 
       if (process.platform === 'win32') {
         assert.equal(item.submenu.items[6].role, 'delete')
         assert.equal(item.submenu.items[7].type, 'separator')
-        assert.equal(item.submenu.items[8].role, 'selectAll')
+        assert.equal(item.submenu.items[8].role, 'selectall')
       }
     })
 
