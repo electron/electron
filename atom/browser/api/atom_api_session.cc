@@ -33,6 +33,7 @@
 #include "brightray/browser/media/media_device_id_salt.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
+#include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
@@ -439,6 +440,17 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       std::vector<content::DownloadItem::ReceivedSlice>());
 }
 
+void SetDevToolsNetworkEmulationClientIdInIO(
+    brightray::URLRequestContextGetter* context_getter,
+    const std::string& client_id) {
+  if (!context_getter)
+    return;
+  auto network_delegate =
+      static_cast<AtomNetworkDelegate*>(context_getter->network_delegate());
+  if (network_delegate)
+    network_delegate->SetDevToolsNetworkEmulationClientId(client_id);
+}
+
 }  // namespace
 
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -548,16 +560,24 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
-  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
-      devtools_network_emulation_client_id_);
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(
+          &SetDevToolsNetworkEmulationClientIdInIO,
+          base::RetainedRef(browser_context_->url_request_context_getter()),
+          devtools_network_emulation_client_id_));
 }
 
 void Session::DisableNetworkEmulation() {
   std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
-  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
-      std::string());
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(
+          &SetDevToolsNetworkEmulationClientIdInIO,
+          base::RetainedRef(browser_context_->url_request_context_getter()),
+          std::string()));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
@@ -623,7 +643,7 @@ void Session::SetUserAgent(const std::string& user_agent,
                            mate::Arguments* args) {
   browser_context_->SetUserAgent(user_agent);
 
-  std::string accept_lang = l10n_util::GetApplicationLocale("");
+  std::string accept_lang = g_browser_process->GetApplicationLocale();
   args->GetNext(&accept_lang);
 
   scoped_refptr<brightray::URLRequestContextGetter> getter(

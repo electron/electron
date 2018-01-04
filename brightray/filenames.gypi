@@ -29,6 +29,8 @@
       'browser/inspectable_web_contents_view.h',
       'browser/inspectable_web_contents_view_mac.h',
       'browser/inspectable_web_contents_view_mac.mm',
+      'browser/io_thread.cc',
+      'browser/io_thread.h',
       'browser/mac/bry_inspectable_web_contents_view.h',
       'browser/mac/bry_inspectable_web_contents_view.mm',
       'browser/mac/cocoa_notification.h',

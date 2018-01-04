@@ -532,7 +532,6 @@ App::App(v8::Isolate* isolate) {
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
-  content::BrowserChildProcessObserver::Add(this);
   base::ProcessId pid = base::GetCurrentProcId();
   std::unique_ptr<atom::ProcessMetric> process_metric(
       new atom::ProcessMetric(
@@ -599,6 +598,7 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
 }
 
 void App::OnPreMainMessageLoopRun() {
+  content::BrowserChildProcessObserver::Add(this);
   if (process_singleton_) {
     process_singleton_->OnBrowserReady();
   }
@@ -851,7 +851,7 @@ void App::SetDesktopName(const std::string& desktop_name) {
 }
 
 std::string App::GetLocale() {
-  return l10n_util::GetApplicationLocale("");
+  return g_browser_process->GetApplicationLocale();
 }
 
 bool App::MakeSingleInstance(
@@ -867,9 +867,10 @@ bool App::MakeSingleInstance(
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
-    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
+    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
       process_singleton_.reset();
       return true;
+    }
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
     default:  // Shouldn't be needed, but VS warns if it is not there.
       return false;

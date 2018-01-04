@@ -13,6 +13,7 @@
 #include "base/files/file_util.h"
 #include "base/md5.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/time/time.h"
 #include "base/win/windows_version.h"
 #include "brightray/browser/win/notification_presenter_win7.h"
@@ -68,6 +69,7 @@ NotificationPresenterWin::~NotificationPresenterWin() {
 }
 
 bool NotificationPresenterWin::Init() {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   return temp_dir_.CreateUniqueTempDir();
 }
 
@@ -82,6 +84,7 @@ base::string16 NotificationPresenterWin::SaveIconToFilesystem(
     filename = std::to_string(now.ToInternalValue()) + ".png";
   }
 
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToUTF16(filename));
   if (base::PathExists(path))
     return path.value();

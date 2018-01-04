@@ -53,7 +53,6 @@ class AtomBrowserClient : public brightray::BrowserClient,
       CreateSpeechRecognitionManagerDelegate() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                            content::WebPreferences* prefs) override;
-  std::string GetApplicationLocale() override;
   void OverrideSiteInstanceForNavigation(
       content::RenderFrameHost* render_frame_host,
       content::BrowserContext* browser_context,

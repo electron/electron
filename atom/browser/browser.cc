@@ -14,6 +14,7 @@
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/brightray_paths.h"
 
@@ -151,6 +152,7 @@ void Browser::WillFinishLaunching() {
 
 void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   // Make sure the userData directory is created.
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::FilePath user_data;
   if (PathService::Get(brightray::DIR_USER_DATA, &user_data))
     base::CreateDirectoryAndGetError(user_data, nullptr);

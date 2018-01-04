@@ -17,7 +17,6 @@ describe('webFrame module', function () {
 
   describe('webFrame.registerURLSchemeAsPrivileged', function () {
     it('supports fetch api by default', function (done) {
-      webFrame.registerURLSchemeAsPrivileged('file')
       var url = 'file://' + fixtures + '/assets/logo.png'
       window.fetch(url).then(function (response) {
         assert(response.ok)

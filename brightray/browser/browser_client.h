@@ -20,6 +20,7 @@ class PlatformNotificationService;
 class BrowserClient : public content::ContentBrowserClient {
  public:
   static BrowserClient* Get();
+  static void SetApplicationLocale(const std::string& locale);
 
   BrowserClient();
   ~BrowserClient();
@@ -47,6 +48,7 @@ class BrowserClient : public content::ContentBrowserClient {
   net::NetLog* GetNetLog() override;
   base::FilePath GetDefaultDownloadDirectory() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
+  std::string GetApplicationLocale() override;
 
  protected:
   // Subclasses should override this to provide their own BrowserMainParts

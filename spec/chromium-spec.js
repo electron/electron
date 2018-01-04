@@ -4,7 +4,7 @@ const http = require('http')
 const path = require('path')
 const ws = require('ws')
 const url = require('url')
-const {ipcRenderer, remote, webFrame} = require('electron')
+const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
 const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
@@ -1043,13 +1043,6 @@ describe('chromium feature', () => {
     })
 
     it('should not open when pdf is requested as sub resource', (done) => {
-      createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
-      webFrame.registerURLSchemeAsPrivileged('file', {
-        secure: false,
-        bypassCSP: false,
-        allowServiceWorkers: false,
-        corsEnabled: false
-      })
       fetch(pdfSource).then((res) => {
         assert.equal(res.status, 200)
         assert.notEqual(document.title, 'cat.pdf')

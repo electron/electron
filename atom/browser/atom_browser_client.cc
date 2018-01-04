@@ -202,10 +202,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
 }
 
-std::string AtomBrowserClient::GetApplicationLocale() {
-  return l10n_util::GetApplicationLocale("");
-}
-
 void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     content::RenderFrameHost* render_frame_host,
     content::BrowserContext* browser_context,
@@ -235,9 +231,7 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   // Remember the original web contents for the pending renderer process.
   auto pending_process = (*new_instance)->GetProcess();
   pending_processes_[pending_process->GetID()] =
-      content::WebContents::FromRenderFrameHost(render_frame_host);;
-  // Clear the entry in map when process ends.
-  pending_process->AddObserver(this);
+      content::WebContents::FromRenderFrameHost(render_frame_host);
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(

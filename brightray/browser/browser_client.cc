@@ -4,6 +4,7 @@
 
 #include "brightray/browser/browser_client.h"
 
+#include "base/lazy_instance.h"
 #include "base/path_service.h"
 #include "brightray/browser/browser_context.h"
 #include "brightray/browser/browser_main_parts.h"
@@ -11,7 +12,10 @@
 #include "brightray/browser/media/media_capture_devices_dispatcher.h"
 #include "brightray/browser/notification_presenter.h"
 #include "brightray/browser/platform_notification_service.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/common/url_constants.h"
+
+using content::BrowserThread;
 
 namespace brightray {
 
@@ -19,7 +23,29 @@ namespace {
 
 BrowserClient* g_browser_client;
 
+base::LazyInstance<std::string>::DestructorAtExit
+    g_io_thread_application_locale = LAZY_INSTANCE_INITIALIZER;
+
+std::string g_application_locale;
+
+void SetApplicationLocaleOnIOThread(const std::string& locale) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  g_io_thread_application_locale.Get() = locale;
+}
+
 }  // namespace
+
+// static
+void BrowserClient::SetApplicationLocale(const std::string& locale) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
+  if (!BrowserThread::PostTask(
+          BrowserThread::IO, FROM_HERE,
+          base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
+    g_io_thread_application_locale.Get() = locale;
+  }
+  g_application_locale = locale;
+}
 
 BrowserClient* BrowserClient::Get() {
   return g_browser_client;
@@ -86,6 +112,12 @@ base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
 
 content::DevToolsManagerDelegate* BrowserClient::GetDevToolsManagerDelegate() {
   return new DevToolsManagerDelegate;
+}
+
+std::string BrowserClient::GetApplicationLocale() {
+  if (BrowserThread::CurrentlyOn(BrowserThread::IO))
+    return g_io_thread_application_locale.Get();
+  return g_application_locale;
 }
 
 }  // namespace brightray

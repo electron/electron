@@ -78,11 +78,13 @@ class BundledDataSource : public content::URLDataSource {
   }
 
   std::string GetMimeType(const std::string& path) const override {
-    std::string filename = PathWithoutParams(path);
+    base::FilePath::StringType ext =
+        base::FilePath::FromUTF8Unsafe(PathWithoutParams(path)).Extension();
     std::string mime_type;
-    net::GetMimeTypeFromFile(
-        base::FilePath::FromUTF8Unsafe(filename), &mime_type);
-    return mime_type;
+    if (!ext.empty() &&
+        net::GetWellKnownMimeTypeFromExtension(ext.substr(1), &mime_type))
+      return mime_type;
+    return "text/html";
   }
 
   bool ShouldAddContentSecurityPolicy() const override { return false; }

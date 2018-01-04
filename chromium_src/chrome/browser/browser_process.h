@@ -28,6 +28,7 @@ class BrowserProcess {
   BrowserProcess();
   ~BrowserProcess();
 
+  void SetApplicationLocale(const std::string& locale);
   std::string GetApplicationLocale();
   IconManager* GetIconManager();
 
@@ -36,6 +37,7 @@ class BrowserProcess {
  private:
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
   std::unique_ptr<IconManager> icon_manager_;
+  std::string locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcess);
 };

@@ -24,6 +24,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "device/geolocation/geolocation_delegate.h"
 #include "device/geolocation/geolocation_provider.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
@@ -38,7 +39,10 @@ namespace {
 // A provider of Geolocation services to override AccessTokenStore.
 class AtomGeolocationDelegate : public device::GeolocationDelegate {
  public:
-  AtomGeolocationDelegate() = default;
+  AtomGeolocationDelegate() {
+    device::GeolocationProvider::GetInstance()
+        ->UserDidOptIntoLocationServices();
+  }
 
   scoped_refptr<device::AccessTokenStore> CreateAccessTokenStore() final {
     return new AtomAccessTokenStore();
@@ -149,6 +153,12 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->set_uv_env(env);
 }
 
+int AtomBrowserMainParts::PreCreateThreads() {
+  fake_browser_process_->SetApplicationLocale(
+      l10n_util::GetApplicationLocale(""));
+  return brightray::BrowserMainParts::PreCreateThreads();
+}
+
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
   js_env_->OnMessageLoopCreated();
 
@@ -185,6 +195,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->DidFinishLaunching(*empty_info);
 #endif
 
+  // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
 }
 

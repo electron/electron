@@ -12,6 +12,7 @@
 #include "base/strings/string_util.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
+#include "brightray/browser/browser_client.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "brightray/browser/net/devtools_network_transaction_factory.h"
 #include "brightray/browser/net/require_ct_delegate.h"
@@ -53,12 +54,7 @@
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
 #include "storage/browser/quota/special_storage_policy.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
-
-#if defined(USE_NSS_CERTS)
-#include "net/cert_net/nss_ocsp.h"
-#endif
 
 using content::BrowserThread;
 
@@ -142,7 +138,7 @@ URLRequestContextGetter::URLRequestContextGetter(
       protocol_interceptors_(std::move(protocol_interceptors)),
       job_factory_(nullptr) {
   // Must first be created on the UI thread.
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   if (protocol_handlers)
     std::swap(protocol_handlers_, *protocol_handlers);
@@ -158,9 +154,6 @@ URLRequestContextGetter::URLRequestContextGetter(
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {
-#if defined(USE_NSS_CERTS)
-  net::SetURLRequestContextForNSSHttpIO(NULL);
-#endif
 }
 
 net::HostResolver* URLRequestContextGetter::host_resolver() {
@@ -168,16 +161,12 @@ net::HostResolver* URLRequestContextGetter::host_resolver() {
 }
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   if (!url_request_context_.get()) {
     ct_delegate_.reset(new RequireCTDelegate);
     auto& command_line = *base::CommandLine::ForCurrentProcess();
     url_request_context_.reset(new net::URLRequestContext);
-
-#if defined(USE_NSS_CERTS)
-    net::SetURLRequestContextForNSSHttpIO(url_request_context_.get());
-#endif
 
     // --log-net-log
     if (net_log_) {
@@ -185,11 +174,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       url_request_context_->set_net_log(net_log_);
     }
 
-    network_delegate_.reset(delegate_->CreateNetworkDelegate());
-    url_request_context_->set_network_delegate(network_delegate_.get());
-
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
+
+    storage_->set_network_delegate(delegate_->CreateNetworkDelegate());
 
     auto cookie_path = in_memory_ ?
         base::FilePath() : base_path_.Append(FILE_PATH_LITERAL("Cookies"));
@@ -205,10 +193,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_channel_id_service(base::MakeUnique<net::ChannelIDService>(
         new net::DefaultChannelIDStore(nullptr)));
 
-    std::string accept_lang = l10n_util::GetApplicationLocale("");
-    storage_->set_http_user_agent_settings(base::WrapUnique(
-        new net::StaticHttpUserAgentSettings(
-            net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
+    storage_->set_http_user_agent_settings(
+        base::WrapUnique(new net::StaticHttpUserAgentSettings(
+            net::HttpUtil::GenerateAcceptLanguageHeader(
+                BrowserClient::Get()->GetApplicationLocale()),
             user_agent_)));
 
     std::unique_ptr<net::HostResolver> host_resolver(

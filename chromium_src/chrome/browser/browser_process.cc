@@ -20,8 +20,12 @@ BrowserProcess::~BrowserProcess() {
   g_browser_process = NULL;
 }
 
+void BrowserProcess::SetApplicationLocale(const std::string& locale) {
+  locale_ = locale;
+}
+
 std::string BrowserProcess::GetApplicationLocale() {
-  return l10n_util::GetApplicationLocale("");
+  return locale_;
 }
 
 IconManager* BrowserProcess::GetIconManager() {

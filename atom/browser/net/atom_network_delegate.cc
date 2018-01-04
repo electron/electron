@@ -41,20 +41,38 @@ const char* ResourceTypeToString(content::ResourceType type) {
   }
 }
 
+int32_t GetWebContentsID(int process_id, int frame_id) {
+  auto* webContents = content::WebContents::FromRenderFrameHost(
+      content::RenderFrameHost::FromID(process_id, frame_id));
+  return atom::api::WebContents::GetIDFromWrappedClass(webContents);
+}
+
 namespace {
 
 using ResponseHeadersContainer =
     std::pair<scoped_refptr<net::HttpResponseHeaders>*, const std::string&>;
 
 void RunSimpleListener(const AtomNetworkDelegate::SimpleListener& listener,
-                       std::unique_ptr<base::DictionaryValue> details) {
+                       std::unique_ptr<base::DictionaryValue> details,
+                       int render_process_id,
+                       int render_frame_id) {
+  int32_t id = GetWebContentsID(render_process_id, render_frame_id);
+  // id must be greater than zero
+  if (id)
+    details->SetInteger("webContentsId", id);
   return listener.Run(*(details.get()));
 }
 
 void RunResponseListener(
     const AtomNetworkDelegate::ResponseListener& listener,
     std::unique_ptr<base::DictionaryValue> details,
+    int render_process_id,
+    int render_frame_id,
     const AtomNetworkDelegate::ResponseCallback& callback) {
+  int32_t id = GetWebContentsID(render_process_id, render_frame_id);
+  // id must be greater than zero
+  if (id)
+    details->SetInteger("webContentsId", id);
   return listener.Run(*(details.get()), callback);
 }
 
@@ -78,16 +96,6 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
   details->SetDouble("timestamp", base::Time::Now().ToDoubleT() * 1000);
   const auto* info = content::ResourceRequestInfo::ForRequest(request);
   if (info) {
-    int process_id = info->GetChildID();
-    int frame_id = info->GetRenderFrameID();
-    auto* webContents = content::WebContents::FromRenderFrameHost(
-        content::RenderFrameHost::FromID(process_id, frame_id));
-    int webContentsId = atom::api::WebContents::GetIDFromWrappedClass(
-        webContents);
-
-    // webContentsId must be greater than zero
-    if (webContentsId)
-      details->SetInteger("webContentsId", webContentsId);
     details->SetString("resourceType",
         ResourceTypeToString(info->GetResourceType()));
   } else {
@@ -239,7 +247,6 @@ void AtomNetworkDelegate::SetResponseListenerInIO(
 
 void AtomNetworkDelegate::SetDevToolsNetworkEmulationClientId(
     const std::string& client_id) {
-  base::AutoLock auto_lock(lock_);
   client_id_ = client_id;
 }
 
@@ -258,16 +265,10 @@ int AtomNetworkDelegate::OnBeforeStartTransaction(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
-  std::string client_id;
-  {
-    base::AutoLock auto_lock(lock_);
-    client_id = client_id_;
-  }
-
-  if (!client_id.empty())
+  if (!client_id_.empty())
     headers->SetHeader(
         DevToolsNetworkTransaction::kDevToolsEmulateNetworkConditionsClientId,
-        client_id);
+        client_id_);
   if (!base::ContainsKey(response_listeners_, kOnBeforeSendHeaders))
     return brightray::NetworkDelegate::OnBeforeStartTransaction(
         request, callback, headers);
@@ -382,6 +383,10 @@ int AtomNetworkDelegate::HandleResponseEvent(
   std::unique_ptr<base::DictionaryValue> details(new base::DictionaryValue);
   FillDetailsObject(details.get(), request, args...);
 
+  int render_process_id, render_frame_id;
+  content::ResourceRequestInfo::GetRenderFrameForRequest(
+      request, &render_process_id, &render_frame_id);
+
   // The |request| could be destroyed before the |callback| is called.
   callbacks_[request->identifier()] = callback;
 
@@ -391,7 +396,7 @@ int AtomNetworkDelegate::HandleResponseEvent(
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(RunResponseListener, info.listener, base::Passed(&details),
-                 response));
+                 render_process_id, render_frame_id, response));
   return net::ERR_IO_PENDING;
 }
 
@@ -405,9 +410,14 @@ void AtomNetworkDelegate::HandleSimpleEvent(
   std::unique_ptr<base::DictionaryValue> details(new base::DictionaryValue);
   FillDetailsObject(details.get(), request, args...);
 
+  int render_process_id, render_frame_id;
+  content::ResourceRequestInfo::GetRenderFrameForRequest(
+      request, &render_process_id, &render_frame_id);
+
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(RunSimpleListener, info.listener, base::Passed(&details)));
+      base::Bind(RunSimpleListener, info.listener, base::Passed(&details),
+                 render_process_id, render_frame_id));
 }
 
 template<typename T>

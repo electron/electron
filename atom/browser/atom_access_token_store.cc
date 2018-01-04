@@ -54,7 +54,6 @@ class GeoURLRequestContextGetter : public net::URLRequestContextGetter {
 
 AtomAccessTokenStore::AtomAccessTokenStore()
     : request_context_getter_(new internal::GeoURLRequestContextGetter) {
-  device::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
 }
 
 AtomAccessTokenStore::~AtomAccessTokenStore() {

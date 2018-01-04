@@ -189,8 +189,7 @@ ProcessSingleton::ProcessSingleton(
       is_virtualized_(false),
       lock_file_(INVALID_HANDLE_VALUE),
       user_data_dir_(user_data_dir),
-      should_kill_remote_process_callback_(
-          base::Bind(&TerminateAppWithError)) {
+      should_kill_remote_process_callback_(base::Bind(&TerminateAppWithError)) {
   // The user_data_dir may have not been created yet.
   base::CreateDirectoryAndGetError(user_data_dir, nullptr);
 }
