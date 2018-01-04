@@ -48,8 +48,7 @@ bool JavascriptEnvironment::Initialize() {
   // The V8Platform of gin relies on Chromium's task schedule, which has not
   // been started at this point, so we have to rely on Node's V8Platform.
   platform_ = node::CreatePlatform(
-      base::RecommendedMaxNumberOfThreadsInPool(3, 8, 0.1, 0),
-      uv_default_loop(), nullptr);
+      base::RecommendedMaxNumberOfThreadsInPool(3, 8, 0.1, 0), nullptr);
   v8::V8::InitializePlatform(platform_);
 
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
