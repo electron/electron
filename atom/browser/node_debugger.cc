@@ -42,7 +42,8 @@ void NodeDebugger::Start(node::MultiIsolatePlatform* platform) {
       process.Set("_breakFirstLine", true);
     }
 
-    inspector->Start(static_cast<node::NodePlatform*>(platform), nullptr, options);
+    inspector->Start(static_cast<node::NodePlatform*>(platform),
+    nullptr, options);
   }
 }
 
