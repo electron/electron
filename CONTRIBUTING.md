@@ -35,7 +35,7 @@ the issue will be closed.
   ping a maintainer or add a comment!
 
 ## Development
-* Build instructions can be found [here](https://electronjs.org/docs/development).
+* Build instructions can be found in [docs/development](docs/development).
 
 ## Submitting Pull Requests
 
