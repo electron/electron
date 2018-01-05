@@ -25,44 +25,47 @@
 
 #include "atom/common/node_includes.h"
 
-// Force all builtin modules to be referenced so they can actually run their
-// DSO constructors, see http://git.io/DRIqCg.
-#define REFERENCE_MODULE(name) \
-  extern "C" void _register_ ## name(void); \
-  void (*fp_register_ ## name)(void) = _register_ ## name
-// Electron's builtin modules.
-REFERENCE_MODULE(atom_browser_app);
-REFERENCE_MODULE(atom_browser_auto_updater);
-REFERENCE_MODULE(atom_browser_browser_view);
-REFERENCE_MODULE(atom_browser_content_tracing);
-REFERENCE_MODULE(atom_browser_debugger);
-REFERENCE_MODULE(atom_browser_desktop_capturer);
-REFERENCE_MODULE(atom_browser_dialog);
-REFERENCE_MODULE(atom_browser_download_item);
-REFERENCE_MODULE(atom_browser_global_shortcut);
-REFERENCE_MODULE(atom_browser_menu);
-REFERENCE_MODULE(atom_browser_net);
-REFERENCE_MODULE(atom_browser_power_monitor);
-REFERENCE_MODULE(atom_browser_power_save_blocker);
-REFERENCE_MODULE(atom_browser_protocol);
-REFERENCE_MODULE(atom_browser_render_process_preferences);
-REFERENCE_MODULE(atom_browser_session);
-REFERENCE_MODULE(atom_browser_system_preferences);
-REFERENCE_MODULE(atom_browser_tray);
-REFERENCE_MODULE(atom_browser_web_contents);
-REFERENCE_MODULE(atom_browser_web_view_manager);
-REFERENCE_MODULE(atom_browser_window);
-REFERENCE_MODULE(atom_common_asar);
-REFERENCE_MODULE(atom_common_clipboard);
-REFERENCE_MODULE(atom_common_crash_reporter);
-REFERENCE_MODULE(atom_common_native_image);
-REFERENCE_MODULE(atom_common_notification);
-REFERENCE_MODULE(atom_common_screen);
-REFERENCE_MODULE(atom_common_shell);
-REFERENCE_MODULE(atom_common_v8_util);
-REFERENCE_MODULE(atom_renderer_ipc);
-REFERENCE_MODULE(atom_renderer_web_frame);
-#undef REFERENCE_MODULE
+#define ELECTRON_BUILTIN_MODULES(V)          \
+  V(atom_browser_app)                        \
+  V(atom_browser_auto_updater)               \
+  V(atom_browser_browser_view)               \
+  V(atom_browser_content_tracing)            \
+  V(atom_browser_debugger)                   \
+  V(atom_browser_desktop_capturer)           \
+  V(atom_browser_dialog)                     \
+  V(atom_browser_download_item)              \
+  V(atom_browser_global_shortcut)            \
+  V(atom_browser_menu)                       \
+  V(atom_browser_net)                        \
+  V(atom_browser_power_monitor)              \
+  V(atom_browser_power_save_blocker)         \
+  V(atom_browser_protocol)                   \
+  V(atom_browser_render_process_preferences) \
+  V(atom_browser_session)                    \
+  V(atom_browser_system_preferences)         \
+  V(atom_browser_tray)                       \
+  V(atom_browser_web_contents)               \
+  V(atom_browser_web_view_manager)           \
+  V(atom_browser_window)                     \
+  V(atom_common_asar)                        \
+  V(atom_common_clipboard)                   \
+  V(atom_common_crash_reporter)              \
+  V(atom_common_native_image)                \
+  V(atom_common_notification)                \
+  V(atom_common_screen)                      \
+  V(atom_common_shell)                       \
+  V(atom_common_v8_util)                     \
+  V(atom_renderer_ipc)                       \
+  V(atom_renderer_web_frame)
+
+// This is used to load built-in modules. Instead of using
+// __attribute__((constructor)), we call the _register_<modname>
+// function for each built-in modules explicitly. This is only
+// forward declaration. The definitions are in each module's
+// implementation when calling the NODE_BUILTIN_MODULE_CONTEXT_AWARE.
+#define V(modname) void _register_##modname();
+ELECTRON_BUILTIN_MODULES(V)
+#undef V
 
 namespace {
 
@@ -119,6 +122,12 @@ base::FilePath GetResourcesPath(bool is_browser) {
   return resources_path;
 }
 
+void RegisterBuiltinModules() {
+#define V(modname) _register_##modname();
+  ELECTRON_BUILTIN_MODULES(V)
+#undef V
+}
+
 }  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
@@ -166,6 +175,9 @@ void NodeBindings::Initialize() {
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
   node::Init(nullptr, nullptr, nullptr, nullptr);
+
+  // Explicitly register electron's builtin modules.
+  RegisterBuiltinModules();
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
