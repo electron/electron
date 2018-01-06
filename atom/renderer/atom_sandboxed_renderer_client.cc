@@ -11,6 +11,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_view_observer.h"
@@ -136,6 +137,8 @@ class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
 
 
 AtomSandboxedRendererClient::AtomSandboxedRendererClient() {
+  // Explicitly register electron's builtin modules.
+  NodeBindings::RegisterBuiltinModules();
 }
 
 AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {
