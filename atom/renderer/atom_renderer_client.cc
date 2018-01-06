@@ -25,6 +25,7 @@
 
 #include "atom/common/node_includes.h"
 #include "atom_natives.h"  // NOLINT: This file is generated with js2c
+#include "vendor/node/src/tracing/trace_event.h"
 
 namespace atom {
 
@@ -94,6 +95,11 @@ void AtomRendererClient::DidCreateScriptContext(
     node_bindings_->Initialize();
     node_bindings_->PrepareMessageLoop();
   }
+
+  // Setup node tracing controller.
+  if (!node::tracing::TraceEventHelper::GetTracingController())
+    node::tracing::TraceEventHelper::SetTracingController(
+        new v8::TracingController());
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);

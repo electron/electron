@@ -34,17 +34,16 @@ void NodeDebugger::Start(node::MultiIsolatePlatform* platform) {
 #endif
   }
 
-  if (options.inspector_enabled()) {
-    // Set process._debugWaitConnect if --inspect-brk was specified to stop
-    // the debugger on the first line
-    if (options.wait_for_connect()) {
-      mate::Dictionary process(env_->isolate(), env_->process_object());
-      process.Set("_breakFirstLine", true);
-    }
-
-    inspector->Start(static_cast<node::NodePlatform*>(platform),
-    nullptr, options);
+  // Set process._debugWaitConnect if --inspect-brk was specified to stop
+  // the debugger on the first line
+  if (options.wait_for_connect()) {
+    mate::Dictionary process(env_->isolate(), env_->process_object());
+    process.Set("_breakFirstLine", true);
   }
+
+  inspector->Start(static_cast<node::NodePlatform*>(platform), nullptr,
+                   options);
+  DCHECK(env_->inspector_agent()->IsStarted());
 }
 
 }  // namespace atom

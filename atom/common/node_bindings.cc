@@ -122,12 +122,6 @@ base::FilePath GetResourcesPath(bool is_browser) {
   return resources_path;
 }
 
-void RegisterBuiltinModules() {
-#define V(modname) _register_##modname();
-  ELECTRON_BUILTIN_MODULES(V)
-#undef V
-}
-
 }  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
@@ -161,6 +155,12 @@ NodeBindings::~NodeBindings() {
     stop_and_close_uv_loop(uv_loop_);
 }
 
+void NodeBindings::RegisterBuiltinModules() {
+#define V(modname) _register_##modname();
+  ELECTRON_BUILTIN_MODULES(V)
+#undef V
+}
+
 void NodeBindings::Initialize() {
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = browser_env_ == BROWSER;
@@ -172,12 +172,12 @@ void NodeBindings::Initialize() {
     AtomCommandLine::InitializeFromCommandLine();
 #endif
 
+  // Explicitly register electron's builtin modules.
+  RegisterBuiltinModules();
+
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
   node::Init(nullptr, nullptr, nullptr, nullptr);
-
-  // Explicitly register electron's builtin modules.
-  RegisterBuiltinModules();
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -189,7 +189,8 @@ void NodeBindings::Initialize() {
 }
 
 node::Environment* NodeBindings::CreateEnvironment(
-    v8::Handle<v8::Context> context) {
+    v8::Handle<v8::Context> context,
+    node::MultiIsolatePlatform* platform) {
   auto args = AtomCommandLine::argv();
 
   // Feed node the path to initialization script.
@@ -215,8 +216,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
-      new node::IsolateData(context->GetIsolate(), uv_loop_), context,
-      args.size(), c_argv.get(), 0, nullptr);
+      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
+      context, args.size(), c_argv.get(), 0, nullptr);
 
   if (browser_env_ == BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
