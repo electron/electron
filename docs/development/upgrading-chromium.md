@@ -107,7 +107,7 @@ Follow all the steps above to fix Electron code on all supported platforms.
 
 If there are any compilation errors related to the Crashpad, it probably means
 you need to update the fork to a newer revision. See
-[Upgrading Crashpad](https://github.com/electron/electron/tree/master/docs/development/upgrading-crashpad.md)
+[Upgrading Crashpad](upgrading-crashpad.md)
 for instructions on how to do that.
 
 
@@ -116,7 +116,7 @@ for instructions on how to do that.
 Upgrade `vendor/node` to the Node release that corresponds to the v8 version
 used in the new Chromium release. See the v8 versions in Node on
 
-See [Upgrading Node](https://github.com/electron/electron/tree/master/docs/development/upgrading-node.md)
+See [Upgrading Node](upgrading-node.md)
 for instructions on this.
 
 ## Verify ffmpeg support

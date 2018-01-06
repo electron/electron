@@ -133,7 +133,7 @@ state is `hidden` in order to minimize power consumption.
 Process: [Main](../glossary.md#main-process)
 
 `BrowserWindow` is an
-[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+[EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter).
 
 It creates a new `BrowserWindow` with native properties as set by the `options`.
 
