@@ -144,4 +144,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_screen, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_screen, Initialize)

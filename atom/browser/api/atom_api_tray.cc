@@ -252,4 +252,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_tray, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_tray, Initialize)

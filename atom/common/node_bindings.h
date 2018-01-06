@@ -17,6 +17,7 @@ class MessageLoop;
 
 namespace node {
 class Environment;
+class MultiIsolatePlatform;
 }
 
 namespace atom {
@@ -30,6 +31,7 @@ class NodeBindings {
   };
 
   static NodeBindings* Create(BrowserEnvironment browser_env);
+  static void RegisterBuiltinModules();
 
   virtual ~NodeBindings();
 
@@ -37,7 +39,9 @@ class NodeBindings {
   void Initialize();
 
   // Create the environment and load node.js.
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context);
+  node::Environment* CreateEnvironment(
+      v8::Handle<v8::Context> context,
+      node::MultiIsolatePlatform* platform = nullptr);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);
