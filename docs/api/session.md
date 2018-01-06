@@ -358,8 +358,6 @@ Returns `String` - The user agent for this session.
 * `callback` Function
   * `result` Buffer - Blob data.
 
-Returns `Blob` - The blob data associated with the `identifier`.
-
 #### `ses.createInterruptedDownload(options)`
 
 * `options` Object
