@@ -49,7 +49,7 @@ IPC_MESSAGE_ROUTED1(AtomAutofillFrameMsg_AcceptSuggestion,
                     base::string16 /* suggestion */)
 
 // Sent by the renderer when the draggable regions are updated.
-IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
+IPC_MESSAGE_ROUTED1(AtomFrameHostMsg_UpdateDraggableRegions,
                     std::vector<atom::DraggableRegion> /* regions */)
 
 // Update renderer process preferences.

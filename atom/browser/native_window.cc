@@ -688,10 +688,11 @@ void NativeWindow::DidFirstVisuallyNonEmptyPaint() {
       base::Bind(&NativeWindow::NotifyReadyToShow, GetWeakPtr()));
 }
 
-bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
+bool NativeWindow::OnMessageReceived(const IPC::Message& message,
+                                     content::RenderFrameHost* rfh) {
   bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_UpdateDraggableRegions,
+  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(NativeWindow, message, rfh)
+    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_UpdateDraggableRegions,
                         UpdateDraggableRegions)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
@@ -700,6 +701,7 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
 }
 
 void NativeWindow::UpdateDraggableRegions(
+    content::RenderFrameHost* rfh,
     const std::vector<DraggableRegion>& regions) {
   // Draggable region is not supported for non-frameless window.
   if (has_frame_)

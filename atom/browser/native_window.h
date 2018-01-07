@@ -313,13 +313,15 @@ class NativeWindow : public base::SupportsUserData,
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
+      content::RenderFrameHost* rfh,
       const std::vector<DraggableRegion>& regions);
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
   void DidFirstVisuallyNonEmptyPaint() override;
-  bool OnMessageReceived(const IPC::Message& message) override;
+  bool OnMessageReceived(const IPC::Message& message,
+                         content::RenderFrameHost* rfh) override;
 
  private:
   // Schedule a notification unresponsive event.
