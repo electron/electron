@@ -1623,7 +1623,7 @@ void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
-  SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
+  SetCollectionBehavior(visible, (NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary));
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
