@@ -86,6 +86,14 @@ describe('BrowserWindow module', () => {
     return closeWindow(w).then(() => { w = null })
   })
 
+  describe('BrowserWindow constructor', () => {
+    it('allows passing void 0 as the webContents', () => {
+      w = new BrowserWindow({
+        webContents: void 0
+      })
+    })
+  })
+
   describe('BrowserWindow.close()', () => {
     let server
 
