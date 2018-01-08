@@ -10,6 +10,7 @@
 #include "base/bind.h"
 #include "base/memory/ptr_util.h"
 #include "base/message_loop/message_loop.h"
+#include "base/task_scheduler/post_task.h"
 #include "base/threading/thread.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/display/win/dpi.h"
@@ -30,8 +31,10 @@ IconLoader::IconGroup IconLoader::GroupForFilepath(
 }
 
 // static
-content::BrowserThread::ID IconLoader::ReadIconThreadID() {
-  return content::BrowserThread::FILE;
+scoped_refptr<base::TaskRunner> IconLoader::GetReadIconTaskRunner() {
+  // Technically speaking, only a thread with COM is needed, not one that has
+  // a COM STA. However, this is what is available for now.
+  return base::CreateCOMSTATaskRunnerWithTraits(traits());
 }
 
 void IconLoader::ReadIcon() {

@@ -2,8 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <utility>
+
 #include "chrome/browser/icon_loader.h"
 #include "base/bind.h"
+#include "base/task_scheduler/post_task.h"
+#include "base/task_scheduler/task_traits.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/browser/browser_thread.h"
 
@@ -18,10 +22,10 @@ IconLoader* IconLoader::Create(const base::FilePath& file_path,
 
 void IconLoader::Start() {
   target_task_runner_ = base::ThreadTaskRunnerHandle::Get();
-  BrowserThread::PostTaskAndReply(
-      BrowserThread::FILE, FROM_HERE,
-      base::Bind(&IconLoader::ReadGroup, base::Unretained(this)),
-      base::Bind(&IconLoader::OnReadGroup, base::Unretained(this)));
+
+  base::PostTaskWithTraits(
+      FROM_HERE, traits(),
+      base::BindOnce(&IconLoader::ReadGroup, base::Unretained(this)));
 }
 
 IconLoader::IconLoader(const base::FilePath& file_path,
@@ -33,10 +37,6 @@ IconLoader::~IconLoader() {}
 
 void IconLoader::ReadGroup() {
   group_ = GroupForFilepath(file_path_);
-}
-
-void IconLoader::OnReadGroup() {
-  BrowserThread::PostTask(
-      ReadIconThreadID(), FROM_HERE,
-      base::Bind(&IconLoader::ReadIcon, base::Unretained(this)));
+  GetReadIconTaskRunner()->PostTask(
+      FROM_HERE, base::BindOnce(&IconLoader::ReadIcon, base::Unretained(this)));
 }
