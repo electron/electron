@@ -79,4 +79,41 @@ describe('shell module', () => {
       assert.deepEqual(shell.readShortcutLink(tmpShortcut), change)
     })
   })
+
+  describe('shell.moveItemToTrash', () => {
+    const filePath = path.join(os.tmpdir(), `${Date.now()}.md`)
+    fs.writeFileSync(filePath, '# Hello')
+
+    it('moves file to trash asynchronously', done => {
+      shell.moveItemToTrash(filePath).then(() => {
+        assert.equal(fs.existsSync(filePath), false)
+        done()
+      }).catch(e => {
+        done(e)
+      })
+      assert.equal(fs.existsSync(filePath), true)
+    })
+
+    it('rejects the promise in case of error', done => {
+      shell.moveItemToTrash(filePath + '_does_not_exist').then(() => {
+        done(new Error('Should be unreachable'))
+      }).catch(e => {
+        assert.ok(e)
+        done(e)
+      })
+    })
+  })
+
+  describe('shell.moveItemToTrashSync', () => {
+    const filePath = path.join(os.tmpdir(), `${Date.now()}.md`)
+    fs.writeFileSync(filePath, '# Hello')
+
+    it('moves file to trash synchronously', () => {
+      assert.equal(fs.existsSync(filePath), true)
+
+      const result = shell.moveItemToTrash(filePath)
+      assert.equal(result, true)
+      assert.equal(fs.existsSync(filePath), false)
+    })
+  })
 })

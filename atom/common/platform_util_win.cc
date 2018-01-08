@@ -22,6 +22,9 @@
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task_scheduler/post_task.h"
+#include "base/task_scheduler/task_traits.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_com_initializer.h"
@@ -345,7 +348,7 @@ void OpenExternal(const base::string16& url,
   callback.Run(OpenExternal(url, activate) ? "" : "Failed to open");
 }
 
-bool MoveItemToTrash(const base::FilePath& path) {
+bool MoveItemToTrashSync(const base::FilePath& path) {
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.Succeeded())
     return false;
@@ -389,6 +392,16 @@ bool MoveItemToTrash(const base::FilePath& path) {
   // the DeleteFileProgressSink to check for Recycle Bin.
   return SUCCEEDED(pfo->DeleteItem(delete_item.Get(), delete_sink.Get())) &&
          SUCCEEDED(pfo->PerformOperations());
+}
+
+void MoveItemToTrash(const base::FilePath& full_path,
+                     MoveItemToTrashCallback callback) {
+  base::PostTaskWithTraitsAndReplyWithResult(
+    FROM_HERE,
+    {base::TaskPriority::USER_VISIBLE, base::MayBlock()},
+    base::Bind(&MoveItemToTrashSync, full_path),
+    callback
+  );
 }
 
 void Beep() {

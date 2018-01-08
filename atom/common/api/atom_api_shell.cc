@@ -43,6 +43,60 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
+class MoveItemToTrashRequest {
+ public:
+  static MoveItemToTrashRequest* Create(v8::Isolate* isolate,
+                                        mate::Arguments* args,
+                                        const base::FilePath& file_path) {
+    return new MoveItemToTrashRequest(isolate, args, file_path);
+  }
+
+  MoveItemToTrashRequest(v8::Isolate* isolate,
+                         mate::Arguments* args,
+                         const base::FilePath& file_path)
+    : isolate_(isolate), args_(args), file_path_(file_path) {};
+
+  ~MoveItemToTrashRequest();
+
+  void Start() {
+    v8::Locker locker(isolate_);
+    v8::Isolate::Scope isolate_scope(isolate_);
+    v8::HandleScope handle_scope(isolate_);
+
+    resolver_.Reset(isolate_, v8::Promise::Resolver::New(isolate_));
+
+    args_->Return(resolver_.Get(isolate_)->GetPromise().As<v8::Value>());
+
+    auto callback = base::Bind(&MoveItemToTrashRequest::OnMoveItemToTrashFinished,
+                               base::Unretained(this));
+    platform_util::MoveItemToTrash(file_path_, callback);
+  }
+
+  void OnMoveItemToTrashFinished(bool result) {
+    v8::Locker locker(isolate_);
+    v8::Isolate::Scope isolate_scope(isolate_);
+    v8::HandleScope handle_scope(isolate_);
+
+    if (result) {
+      resolver_.Get(isolate_)->Resolve(v8::Null(isolate_));
+    } else {
+      printf("Rejected");
+      auto message = mate::StringToV8(isolate_, "Underlying command returned error message code");
+      resolver_.Get(isolate_)->Reject(v8::Exception::Error(message));
+    }
+
+    resolver_.Reset();
+  }
+
+  v8::Isolate* isolate_;
+  mate::Arguments* args_;
+  v8::Persistent<v8::Promise::Resolver> resolver_;
+  base::FilePath file_path_;
+
+  DISALLOW_COPY_AND_ASSIGN(MoveItemToTrashRequest);
+};
+
+
 void OnOpenExternalFinished(
     v8::Isolate* isolate,
     const base::Callback<void(v8::Local<v8::Value>)>& callback,
@@ -79,6 +133,12 @@ bool OpenExternal(
   }
 
   return platform_util::OpenExternal(url, activate);
+}
+
+void MoveItemToTrash(const base::FilePath& url, mate::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  auto request = MoveItemToTrashRequest::Create(isolate, args, url);
+  request->Start();
 }
 
 #if defined(OS_WIN)
@@ -144,7 +204,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
   dict.SetMethod("openItem", &platform_util::OpenItem);
   dict.SetMethod("openExternal", &OpenExternal);
-  dict.SetMethod("moveItemToTrash", &platform_util::MoveItemToTrash);
+  dict.SetMethod("moveItemToTrash", &MoveItemToTrash);
+  dict.SetMethod("moveItemToTrashSync", &platform_util::MoveItemToTrashSync);
   dict.SetMethod("beep", &platform_util::Beep);
 #if defined(OS_WIN)
   dict.SetMethod("writeShortcutLink", &WriteShortcutLink);
