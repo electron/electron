@@ -82,8 +82,6 @@ class IconLoader {
 
   IconSize icon_size_;
 
-  std::unique_ptr<gfx::Image> image_;
-
   IconLoadedCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(IconLoader);
