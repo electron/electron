@@ -4,6 +4,10 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
+`webFrame` export of the electron module is an instance of the `WebFrame`
+class representing the top frame of the current `BrowserWindow`. Sub-frames can
+be retrieved by certain properties and methods (e.g. `webFrame.firstChild`) 
+
 An example of zooming current page to 200%.
 
 ```javascript
@@ -14,7 +18,7 @@ webFrame.setZoomFactor(2)
 
 ## Methods
 
-The `webFrame` module has the following methods:
+The `WebFrame` class has the following instance methods:
 
 ### `webFrame.setZoomFactor(factor)`
 
@@ -214,3 +218,49 @@ memory (i.e. you have navigated from a super heavy page to a mostly empty one,
 and intend to stay there).
 
 [spellchecker]: https://github.com/atom/node-spellchecker
+
+### `webFrame.getFrameForSelector(selector)`
+
+* Returns `WebFrame` for the frame element in `webFrame's` document selected by
+  `selector`
+* Returns `null` if `selector` does not select a frame or if the frame is not in
+  the current renderer process.
+* `selector` String - CSS selector for a frame element
+
+
+### `webFrame.findFrameByName(name)`
+
+* Returns `WebFrame` - a child of `webFrame` with the supplied `name`
+* Returns `null` if there's no such frame or if the frame is not in the current
+  renderer process.
+
+## Properties
+
+### `webFrame.top`
+
+* Returns `WebFrame` - top frame in frame hierarchy to which `webFrame` belongs
+* Returns `null` if top frame is not in the current renderer process.
+
+### `webFrame.opener`
+
+* Returns `WebFrame` - frame which opened `webFrame`
+* Returns `null` if there's no opener or opener is not in the current renderer
+  process.
+
+### `webFrame.parent`
+
+* Returns `WebFrame` - parent frame of `webFrame`
+* Returns `null` if `webFrame` is top or parent is not in the current renderer
+  process.
+
+### `webFrame.firstChild`
+
+* Returns `WebFrame` - first child frame of `webFrame`
+* Returns `null` if `webFrame` has no children or if first child is not in the
+  current renderer process.
+
+### `webFrame.nextSibling`
+
+* Returns `WebFrame` - next sibling frame
+* Returns `null` if `webFrame` is the last frame its parent or if the next
+  sibling is not in the current renderer process.

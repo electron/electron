@@ -19,6 +19,7 @@
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/platform/WebCache.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
+#include "third_party/WebKit/public/web/WebElement.h"
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebInputMethodController.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
@@ -112,7 +113,12 @@ class FrameSpellChecker : public content::RenderFrameVisitor {
 }  // namespace
 
 WebFrame::WebFrame(v8::Isolate* isolate)
-    : web_frame_(blink::WebLocalFrame::FrameForCurrentContext()) {
+  : web_frame_(blink::WebLocalFrame::FrameForCurrentContext()) {
+  Init(isolate);
+}
+
+WebFrame::WebFrame(v8::Isolate* isolate, blink::WebLocalFrame* blink_frame)
+    : web_frame_(blink_frame) {
   Init(isolate);
 }
 
@@ -368,6 +374,82 @@ void WebFrame::ClearCache(v8::Isolate* isolate) {
     base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
 }
 
+v8::Local<v8::Value> WebFrame::Opener() const {
+  blink::WebFrame* frame = web_frame_->Opener();
+  if (frame && frame->IsWebLocalFrame())
+    return mate::CreateHandle(isolate(),
+                              new WebFrame(isolate(),
+                                           frame->ToWebLocalFrame())).ToV8();
+  else
+    return v8::Null(isolate());
+}
+
+v8::Local<v8::Value> WebFrame::Parent() const {
+  blink::WebFrame* frame = web_frame_->Parent();
+  if (frame && frame->IsWebLocalFrame())
+    return mate::CreateHandle(isolate(),
+                              new WebFrame(isolate(),
+                                           frame->ToWebLocalFrame())).ToV8();
+  else
+    return v8::Null(isolate());
+}
+
+v8::Local<v8::Value> WebFrame::Top() const {
+  blink::WebFrame* frame = web_frame_->Top();
+  if (frame && frame->IsWebLocalFrame())
+    return mate::CreateHandle(isolate(),
+                              new WebFrame(isolate(),
+                                           frame->ToWebLocalFrame())).ToV8();
+  else
+    return v8::Null(isolate());
+}
+
+v8::Local<v8::Value> WebFrame::FirstChild() const {
+  blink::WebFrame* frame = web_frame_->FirstChild();
+  if (frame && frame->IsWebLocalFrame())
+    return mate::CreateHandle(isolate(),
+                              new WebFrame(isolate(),
+                                           frame->ToWebLocalFrame())).ToV8();
+  else
+    return v8::Null(isolate());
+}
+
+v8::Local<v8::Value> WebFrame::NextSibling() const {
+  blink::WebFrame* frame = web_frame_->NextSibling();
+  if (frame && frame->IsWebLocalFrame())
+    return mate::CreateHandle(isolate(),
+                              new WebFrame(isolate(),
+                                           frame->ToWebLocalFrame())).ToV8();
+  else
+    return v8::Null(isolate());
+}
+
+v8::Local<v8::Value> WebFrame::GetFrameForSelector(const std::string& selector)
+const {
+  blink::WebElement element =
+    web_frame_->GetDocument()
+    .QuerySelector(blink::WebString::FromUTF8(selector));
+  blink::WebLocalFrame* element_frame =
+    blink::WebLocalFrame::FromFrameOwnerElement(element);
+  if (element_frame)
+    return mate::CreateHandle(isolate(),
+                              new WebFrame(isolate(), element_frame)).ToV8();
+  else
+    return v8::Null(isolate());
+}
+
+v8::Local<v8::Value> WebFrame::FindFrameByName(const std::string& name) const {
+  blink::WebLocalFrame* local_frame =
+    WebFrame::web_frame_
+    ->FindFrameByName(blink::WebString::FromUTF8(name))
+    ->ToWebLocalFrame();
+  if (local_frame)
+    return mate::CreateHandle(isolate(),
+                              new WebFrame(isolate(), local_frame)).ToV8();
+  else
+    return v8::Null(isolate());
+}
+
 // static
 void WebFrame::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
@@ -407,7 +489,14 @@ void WebFrame::BuildPrototype(
       .SetMethod("setIsolatedWorldHumanReadableName",
                  &WebFrame::SetIsolatedWorldHumanReadableName)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
-      .SetMethod("clearCache", &WebFrame::ClearCache);
+      .SetMethod("clearCache", &WebFrame::ClearCache)
+      .SetProperty("opener", &WebFrame::Opener)
+      .SetProperty("parent", &WebFrame::Parent)
+      .SetProperty("top", &WebFrame::Top)
+      .SetProperty("firstChild", &WebFrame::FirstChild)
+      .SetProperty("nextSibling", &WebFrame::NextSibling)
+      .SetMethod("getFrameForSelector", &WebFrame::GetFrameForSelector)
+      .SetMethod("findFrameByName", &WebFrame::FindFrameByName);
 }
 
 }  // namespace api
