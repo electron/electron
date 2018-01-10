@@ -32,6 +32,7 @@ struct Transaction {
   int errorCode = 0;
   std::string errorMessage = "";
   std::string transactionState = "";
+  Payment payment;
 };
 
 // --------------------------- Classes ---------------------------
@@ -41,8 +42,7 @@ class TransactionObserver {
   TransactionObserver();
   virtual ~TransactionObserver();
 
-  virtual void OnTransactionUpdated(const Payment& payment,
-                                    const Transaction& transaction) = 0;
+  virtual void OnTransactionUpdated(const Transaction& transaction) = 0;
 
  private:
   InAppTransactionObserver* obeserver_;

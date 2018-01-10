@@ -18,8 +18,7 @@
 namespace {
 
 using InAppTransactionCallback =
-    base::RepeatingCallback<void(const in_app_purchase::Payment&,
-                                 const in_app_purchase::Transaction&)>;
+    base::RepeatingCallback<void(const in_app_purchase::Transaction&)>;
 
 }  // namespace
 
@@ -60,10 +59,6 @@ using InAppTransactionCallback =
     return;
   }
 
-  // Convert the payment.
-  in_app_purchase::Payment paymentStruct;
-  paymentStruct = [self skPaymentToStruct:transaction.payment];
-
   // Convert the transaction.
   in_app_purchase::Transaction transactionStruct;
   transactionStruct = [self skPaymentTransactionToStruct:transaction];
@@ -71,7 +66,7 @@ using InAppTransactionCallback =
   // Send the callback to the browser thread.
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(callback_, paymentStruct, transactionStruct));
+      base::Bind(callback_, transactionStruct));
 }
 
 /**
@@ -97,10 +92,6 @@ using InAppTransactionCallback =
 - (in_app_purchase::Payment)skPaymentToStruct:(SKPayment*)payment {
   in_app_purchase::Payment paymentStruct;
 
-  if (payment == nil) {
-    return paymentStruct;
-  }
-
   if (payment.productIdentifier != nil) {
     paymentStruct.productIdentifier = [payment.productIdentifier UTF8String];
   }
@@ -120,10 +111,6 @@ using InAppTransactionCallback =
 - (in_app_purchase::Transaction)skPaymentTransactionToStruct:
     (SKPaymentTransaction*)transaction {
   in_app_purchase::Transaction transactionStruct;
-
-  if (transaction == nil) {
-    return transactionStruct;
-  }
 
   if (transaction.transactionIdentifier != nil) {
     transactionStruct.transactionIdentifier =
@@ -150,6 +137,10 @@ using InAppTransactionCallback =
     transactionStruct.transactionState = [[@[
         @"purchasing", @"purchased", @"failed", @"restored", @"deferred"
     ] objectAtIndex:transaction.transactionState] UTF8String];
+  }
+
+  if (transaction.payment != nil) {
+    transactionStruct.payment = [self skPaymentToStruct:transaction.payment];
   }
 
   return transactionStruct;

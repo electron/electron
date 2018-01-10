@@ -40,6 +40,7 @@ struct Converter<in_app_purchase::Transaction> {
     dict.Set("transactionState", val.transactionState);
     dict.Set("errorCode", val.errorCode);
     dict.Set("errorMessage", val.errorMessage);
+    dict.Set("payment", val.payment);
     return dict.GetHandle();
   }
 };
@@ -82,9 +83,8 @@ void InAppPurchase::PurchaseProduct(const std::string& product_id,
 }
 
 void InAppPurchase::OnTransactionUpdated(
-    const in_app_purchase::Payment& payment,
     const in_app_purchase::Transaction& transaction) {
-  Emit("transaction-updated", payment, transaction);
+  Emit("transaction-updated", transaction);
 }
 
 }  // namespace api
