@@ -8,23 +8,14 @@ Process: [Main](../glossary.md#main-process)
 
 The `inAppPurchase` module emits the following events:
 
-### Event: 'transaction-updated'
+### Event: 'transactions-updated'
 
-Emitted when a transaction has been updated.
+Emitted when one or more transactions have been updated.
 
 Returns:
 
 * `event` Event
-* `transaction` Object
-  * `transactionIdentifier` String
-  * `transactionDate` String
-  * `originalTransactionIdentifier` String
-  * `transactionState` String - The transaction sate (`"purchasing"`, `"purchased"`, `"failed"`, `"restored"`, or `"deferred"`)
-  * `errorCode` Integer
-  * `errorMessage` String
-  * `payment` Object
-    * `productIdentifier` String
-    * `quantity` Integer
+* `transactions` ([Transaction[]](structures/transaction.md) - Array of transactions.
 
 ## Methods
 

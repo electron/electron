@@ -18,7 +18,8 @@
 namespace {
 
 using InAppTransactionCallback =
-    base::RepeatingCallback<void(const in_app_purchase::Transaction&)>;
+    base::RepeatingCallback<
+        void(const std::vector<in_app_purchase::Transaction>&)>;
 
 }  // namespace
 
@@ -54,19 +55,17 @@ using InAppTransactionCallback =
  *
  * @param transaction - The transaction to pass to the callback.
  */
-- (void)runCallback:(SKPaymentTransaction*)transaction {
-  if (transaction == nil) {
-    return;
-  }
-
+- (void)runCallback:(NSArray<SKPaymentTransaction*>*)transactions {
   // Convert the transaction.
-  in_app_purchase::Transaction transactionStruct;
-  transactionStruct = [self skPaymentTransactionToStruct:transaction];
+  std::vector<in_app_purchase::Transaction> converted;
+  converted.reserve([transactions count]);
+  for (SKPaymentTransaction* transaction in transactions) {
+    converted.push_back([self skPaymentTransactionToStruct:transaction]);
+  }
 
   // Send the callback to the browser thread.
   content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::Bind(callback_, transactionStruct));
+      content::BrowserThread::UI, FROM_HERE, base::Bind(callback_, converted));
 }
 
 /**
@@ -157,9 +156,7 @@ using InAppTransactionCallback =
  */
 - (void)paymentQueue:(SKPaymentQueue*)queue
     updatedTransactions:(NSArray*)transactions {
-  for (SKPaymentTransaction* transaction in transactions) {
-    [self runCallback:transaction];
-  }
+  [self runCallback:transactions];
 }
 
 @end
@@ -172,7 +169,7 @@ namespace in_app_purchase {
 
 TransactionObserver::TransactionObserver() : weak_ptr_factory_(this) {
   obeserver_ = [[InAppTransactionObserver alloc]
-     initWithCallback:base::Bind(&TransactionObserver::OnTransactionUpdated,
+     initWithCallback:base::Bind(&TransactionObserver::OnTransactionsUpdated,
                                  weak_ptr_factory_.GetWeakPtr())];
 }
 

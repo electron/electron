@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_IN_APP_PURCHASE_H_
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/mac/in_app_purchase.h"
@@ -31,8 +32,8 @@ class InAppPurchase: public mate::EventEmitter<InAppPurchase>,
   void PurchaseProduct(const std::string& product_id, mate::Arguments* args);
 
   // TransactionObserver:
-  void OnTransactionUpdated(
-      const in_app_purchase::Transaction& transaction) override;
+  void OnTransactionsUpdated(
+      const std::vector<in_app_purchase::Transaction>& transactions) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(InAppPurchase);

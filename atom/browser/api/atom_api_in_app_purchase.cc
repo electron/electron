@@ -82,9 +82,9 @@ void InAppPurchase::PurchaseProduct(const std::string& product_id,
   in_app_purchase::PurchaseProduct(product_id, quantity, callback);
 }
 
-void InAppPurchase::OnTransactionUpdated(
-    const in_app_purchase::Transaction& transaction) {
-  Emit("transaction-updated", transaction);
+void InAppPurchase::OnTransactionsUpdated(
+    const std::vector<in_app_purchase::Transaction>& transactions) {
+  Emit("transactions-updated", transactions);
 }
 
 }  // namespace api
