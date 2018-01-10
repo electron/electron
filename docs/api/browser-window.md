@@ -362,6 +362,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `additionArguments` String[] (optional) - A list of strings that will be appended
       to `process.argv` in the renderer process of this app.  Useful for passing small
       bits of data down to renderer process preload scripts.
+    * `safeDialogs` Boolean (optional) - Whether to enable browser style
+      consecutive dialog protection.
+    * `safeDialogsMessage` String (optional) - The message to display when consecutive
+      dialog protection is triggered.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

@@ -301,4 +301,13 @@ bool WebContentsPreferences::GetInteger(const std::string& attributeName,
   return false;
 }
 
+bool WebContentsPreferences::GetString(const std::string& attributeName,
+                                       std::string* stringValue,
+                                       content::WebContents* web_contents) {
+  WebContentsPreferences* self = FromWebContents(web_contents);
+  if (!self)
+    return false;
+  return self->web_preferences()->GetString(attributeName, stringValue);
+}
+
 }  // namespace atom

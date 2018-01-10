@@ -10,6 +10,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/message_box.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "base/bind.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/gfx/image/image_skia.h"
@@ -30,6 +31,13 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     const base::string16& default_prompt_text,
     const DialogClosedCallback& callback,
     bool* did_suppress_message) {
+  const std::string origin = origin_url.GetOrigin().spec();
+  if (origin_counts_.find(origin) == origin_counts_.end()) {
+    origin_counts_[origin] = 0;
+  }
+
+  if (origin_counts_[origin] == -1) return callback.Run(false, base::string16());;
+
   if (dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT &&
       dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
     callback.Run(false, base::string16());
@@ -41,12 +49,23 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     buttons.push_back("Cancel");
   }
 
+  origin_counts_[origin]++;
+
+  std::string checkbox_string;
+  if (origin_counts_[origin] > 1 &&
+      WebContentsPreferences::IsPreferenceEnabled("safeDialogs", web_contents)) {
+    if (!WebContentsPreferences::GetString("safeDialogsMessage",
+                                           &checkbox_string, web_contents)) {
+      checkbox_string = "Prevent this app from creating additional dialogs";
+    }
+  }
   atom::ShowMessageBox(NativeWindow::FromWebContents(web_contents),
                        atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1,
                        0, atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
-                       base::UTF16ToUTF8(message_text), "", "", false,
+                       base::UTF16ToUTF8(message_text), "", checkbox_string, false,
                        gfx::ImageSkia(),
-                       base::Bind(&OnMessageBoxCallback, callback));
+                       base::Bind(&OnMessageBoxCallback, callback, origin,
+                                  &origin_counts_));
 }
 
 void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
@@ -66,8 +85,13 @@ void AtomJavaScriptDialogManager::CancelDialogs(
 // static
 void AtomJavaScriptDialogManager::OnMessageBoxCallback(
     const DialogClosedCallback& callback,
+    const std::string& origin,
+    std::map<std::string, int>* origin_counts_,
     int code,
     bool checkbox_checked) {
+  if (checkbox_checked) {
+    (*origin_counts_)[origin] = -1;
+  }
   callback.Run(code == 0, base::string16());
 }
 
