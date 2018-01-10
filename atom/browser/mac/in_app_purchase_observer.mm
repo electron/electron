@@ -63,7 +63,7 @@ using InAppTransactionCallback =
  *
  * @param transaction - The transaction to pass to the callback.
  */
-- (void)runCallback:(NSArray<SKPaymentTransaction*>*)transactions {
+- (void)runCallback:(NSArray*)transactions {
   // Convert the transaction.
   std::vector<in_app_purchase::Transaction> converted;
   converted.reserve([transactions count]);

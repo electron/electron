@@ -51,6 +51,7 @@ namespace atom {
 
 namespace api {
 
+#if defined(OS_MACOSX)
 // static
 mate::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new InAppPurchase(isolate));
@@ -86,6 +87,7 @@ void InAppPurchase::OnTransactionsUpdated(
     const std::vector<in_app_purchase::Transaction>& transactions) {
   Emit("transactions-updated", transactions);
 }
+#endif
 
 }  // namespace api
 
