@@ -76,6 +76,9 @@
  */
 - (void)productsRequest:(SKProductsRequest*)request
      didReceiveResponse:(SKProductsResponse*)response {
+  // Release request object.
+  [request release];
+
   // Get the first product.
   NSArray* products = response.products;
   SKProduct* product = [products count] == 1 ? [products firstObject] : nil;
@@ -117,6 +120,8 @@
     content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
                                      base::Bind(callback_, isProductValid));
   }
+  // Release this delegate.
+  [self release];
 }
 
 @end
