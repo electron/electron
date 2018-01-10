@@ -290,7 +290,7 @@
                   '<(libchromiumcontent_dir)/desktop_capture.lib',
                   '<(libchromiumcontent_dir)/dom_keycode_converter.lib',
                   '<(libchromiumcontent_dir)/rtc_base.lib',
-                  '<(libchromiumcontent_dir)/rtc_base_approved.lib',
+                  '<(libchromiumcontent_dir)/rtc_base_generic.lib',
                   '<(libchromiumcontent_dir)/system_wrappers.lib',
                   '<(libchromiumcontent_dir)/webrtc_common.lib',
                   '<(libchromiumcontent_dir)/init_webrtc.lib',
