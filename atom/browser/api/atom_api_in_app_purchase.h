@@ -16,7 +16,8 @@ namespace atom {
 
 namespace api {
 
-class InAppPurchase: public mate::EventEmitter<InAppPurchase> {
+class InAppPurchase: public mate::EventEmitter<InAppPurchase>,
+                     public in_app_purchase::TransactionObserver {
  public:
   static mate::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 
@@ -28,6 +29,11 @@ class InAppPurchase: public mate::EventEmitter<InAppPurchase> {
   ~InAppPurchase() override;
 
   void PurchaseProduct(const std::string& product_id, mate::Arguments* args);
+
+  // TransactionObserver:
+  void OnTransactionUpdated(
+      const in_app_purchase::Payment& payment,
+      const in_app_purchase::Transaction& transaction) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(InAppPurchase);

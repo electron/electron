@@ -62,9 +62,7 @@ void InAppPurchase::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("canMakePayments", &in_app_purchase::CanMakePayments)
       .SetMethod("getReceiptURL", &in_app_purchase::GetReceiptURL)
-      .SetMethod("purchaseProduct", &InAppPurchase::PurchaseProduct)
-      .SetMethod("addTransactionListener",
-                 &in_app_purchase::AddTransactionObserver);
+      .SetMethod("purchaseProduct", &InAppPurchase::PurchaseProduct);
 }
 
 InAppPurchase::InAppPurchase(v8::Isolate* isolate) {
@@ -81,6 +79,12 @@ void InAppPurchase::PurchaseProduct(const std::string& product_id,
   args->GetNext(&quantity);
   args->GetNext(&callback);
   in_app_purchase::PurchaseProduct(product_id, quantity, callback);
+}
+
+void InAppPurchase::OnTransactionUpdated(
+    const in_app_purchase::Payment& payment,
+    const in_app_purchase::Transaction& transaction) {
+  Emit("transaction-updated", payment, transaction);
 }
 
 }  // namespace api

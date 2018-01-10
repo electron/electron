@@ -15,13 +15,20 @@
 //                             InAppTransactionObserver
 // ============================================================================
 
+namespace {
+
+using InAppTransactionCallback =
+    base::RepeatingCallback<void(const in_app_purchase::Payment&,
+                                 const in_app_purchase::Transaction&)>;
+
+}  // namespace
+
 @interface InAppTransactionObserver : NSObject<SKPaymentTransactionObserver> {
  @private
-  in_app_purchase::InAppTransactionCallback callback_;
+  InAppTransactionCallback callback_;
 }
 
-- (id)initWithCallback:
-    (const in_app_purchase::InAppTransactionCallback&)callback;
+- (id)initWithCallback:(const InAppTransactionCallback&)callback;
 
 @end
 
@@ -33,8 +40,7 @@
  * @param callback - The callback that will be called for each transaction
  * update.
  */
-- (id)initWithCallback:
-    (const in_app_purchase::InAppTransactionCallback&)callback {
+- (id)initWithCallback:(const InAppTransactionCallback&)callback {
   if ((self = [super init])) {
     callback_ = callback;
 
@@ -143,7 +149,8 @@
   if (transaction.transactionState < 5) {
     transactionStruct.transactionState = [[@[
       @"SKPaymentTransactionStatePurchasing",
-      @"SKPaymentTransactionStatePurchased", @"SKPaymentTransactionStateFailed",
+      @"SKPaymentTransactionStatePurchased",
+      @"SKPaymentTransactionStateFailed",
       @"SKPaymentTransactionStateRestored",
       @"SKPaymentTransactionStateDeferred"
     ] objectAtIndex:transaction.transactionState] UTF8String];
@@ -176,10 +183,14 @@
 
 namespace in_app_purchase {
 
-void AddTransactionObserver(const InAppTransactionCallback& callback) {
-  // This is leaked, but we should be fine since we don't have a way to remove
-  // callback and the inAppPurchase module is never unloaded.
-  [[InAppTransactionObserver alloc] initWithCallback:callback];
+TransactionObserver::TransactionObserver() : weak_ptr_factory_(this) {
+  obeserver_ = [[InAppTransactionObserver alloc]
+     initWithCallback:base::Bind(&TransactionObserver::OnTransactionUpdated,
+                                 weak_ptr_factory_.GetWeakPtr())];
+}
+
+TransactionObserver::~TransactionObserver() {
+  [obeserver_ release];
 }
 
 }  // namespace in_app_purchase
