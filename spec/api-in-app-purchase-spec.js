@@ -22,4 +22,11 @@ describe('inAppPurchase module', () => {
       done()
     })
   })
+
+  it('purchaseProduct() accepts optional arguments', (done) => {
+    inAppPurchase.purchaseProduct('non-exist', () => {
+      inAppPurchase.purchaseProduct('non-exist', 1)
+      done()
+    })
+  })
 })

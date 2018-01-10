@@ -177,6 +177,8 @@
 namespace in_app_purchase {
 
 void AddTransactionObserver(const InAppTransactionCallback& callback) {
+  // This is leaked, but we should be fine since we don't have a way to remove
+  // callback and the inAppPurchase module is never unloaded.
   [[InAppTransactionObserver alloc] initWithCallback:callback];
 }
 

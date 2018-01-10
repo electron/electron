@@ -15,47 +15,92 @@
 
 namespace mate {
 
-v8::Local<v8::Value> Converter<in_app_purchase::Payment>::ToV8(
-    v8::Isolate* isolate,
-    const in_app_purchase::Payment& payment) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
-  dict.Set("productIdentifier", payment.productIdentifier);
-  dict.Set("quantity", payment.quantity);
-  return dict.GetHandle();
-}
+template <>
+struct Converter<in_app_purchase::Payment> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const in_app_purchase::Payment& payment) {
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    dict.SetHidden("simple", true);
+    dict.Set("productIdentifier", payment.productIdentifier);
+    dict.Set("quantity", payment.quantity);
+    return dict.GetHandle();
+  }
+};
 
-v8::Local<v8::Value> Converter<in_app_purchase::Transaction>::ToV8(
-    v8::Isolate* isolate,
-    const in_app_purchase::Transaction& transaction) {
-  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
-  dict.Set("transactionIdentifier", transaction.transactionIdentifier);
-  dict.Set("transactionDate", transaction.transactionDate);
-  dict.Set("originalTransactionIdentifier",
-           transaction.originalTransactionIdentifier);
-  dict.Set("transactionState", transaction.transactionState);
+template <>
+struct Converter<in_app_purchase::Transaction> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const in_app_purchase::Transaction& val) {
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    dict.SetHidden("simple", true);
+    dict.Set("transactionIdentifier", val.transactionIdentifier);
+    dict.Set("transactionDate", val.transactionDate);
+    dict.Set("originalTransactionIdentifier",
+             val.originalTransactionIdentifier);
+    dict.Set("transactionState", val.transactionState);
+    dict.Set("errorCode", val.errorCode);
+    dict.Set("errorMessage", val.errorMessage);
+    return dict.GetHandle();
+  }
+};
 
-  dict.Set("errorCode", transaction.errorCode);
-  dict.Set("errorMessage", transaction.errorMessage);
-
-  return dict.GetHandle();
-}
 }  // namespace mate
 
+namespace atom {
+
+namespace api {
+
+// static
+mate::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
+  return mate::CreateHandle(isolate, new InAppPurchase(isolate));
+}
+
+// static
+void InAppPurchase::BuildPrototype(v8::Isolate* isolate,
+                                   v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "InAppPurchase"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("canMakePayments", &in_app_purchase::CanMakePayments)
+      .SetMethod("getReceiptURL", &in_app_purchase::GetReceiptURL)
+      .SetMethod("purchaseProduct", &InAppPurchase::PurchaseProduct)
+      .SetMethod("addTransactionListener",
+                 &in_app_purchase::AddTransactionObserver);
+}
+
+InAppPurchase::InAppPurchase(v8::Isolate* isolate) {
+  Init(isolate);
+}
+
+InAppPurchase::~InAppPurchase() {
+}
+
+void InAppPurchase::PurchaseProduct(const std::string& product_id,
+                                    mate::Arguments* args) {
+  int quantity = 1;
+  in_app_purchase::InAppPurchaseCallback callback;
+  args->GetNext(&quantity);
+  args->GetNext(&callback);
+  in_app_purchase::PurchaseProduct(product_id, quantity, callback);
+}
+
+}  // namespace api
+
+}  // namespace atom
+
 namespace {
+
+using atom::api::InAppPurchase;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  mate::Dictionary dict(context->GetIsolate(), exports);
 #if defined(OS_MACOSX)
-  dict.SetMethod("canMakePayments", &in_app_purchase::CanMakePayments);
-  dict.SetMethod("getReceiptURL", &in_app_purchase::GetReceiptURL);
-  dict.SetMethod("purchaseProduct", &in_app_purchase::PurchaseProduct);
-  dict.SetMethod("addTransactionListener",
-                 &in_app_purchase::AddTransactionObserver);
+  v8::Isolate* isolate = context->GetIsolate();
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("inAppPurchase", InAppPurchase::Create(isolate));
+  dict.Set("InAppPurchase",
+           InAppPurchase::GetConstructor(isolate)->GetFunction());
 #endif
 }
 
