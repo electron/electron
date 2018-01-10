@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_MAC_IN_APP_PURCHASE_OBSERVER_H_
 
 #include <string>
+#include <vector>
 
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
@@ -14,7 +15,7 @@
 @class InAppTransactionObserver;
 #else  // __OBJC__
 class InAppTransactionObserver;
-#endif // __OBJC__
+#endif  // __OBJC__
 
 namespace in_app_purchase {
 
@@ -42,7 +43,8 @@ class TransactionObserver {
   TransactionObserver();
   virtual ~TransactionObserver();
 
-  virtual void OnTransactionUpdated(const Transaction& transaction) = 0;
+  virtual void OnTransactionsUpdated(
+      const std::vector<Transaction>& transactions) = 0;
 
  private:
   InAppTransactionObserver* obeserver_;
