@@ -2,7 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/in_app_purchase.h"
+#include "atom/browser/mac/in_app_purchase.h"
+
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_thread.h"

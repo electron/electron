@@ -2,11 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/api/atom_api_in_app_purchase.h"
+
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_api_in_app_purchase.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "native_mate/dictionary.h"
 

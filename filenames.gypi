@@ -187,10 +187,6 @@
       'atom/browser/atom_browser_context.h',
       'atom/browser/atom_download_manager_delegate.cc',
       'atom/browser/atom_download_manager_delegate.h',
-      'atom/browser/in_app_purchase.h',
-      'atom/browser/in_app_purchase_mac.mm',
-      'atom/browser/in_app_purchase_observer.h',
-      'atom/browser/in_app_purchase_observer_mac.mm',
       'atom/browser/atom_browser_main_parts.cc',
       'atom/browser/atom_browser_main_parts.h',
       'atom/browser/atom_browser_main_parts_mac.mm',
@@ -238,6 +234,10 @@
       'atom/browser/mac/atom_application_delegate.mm',
       'atom/browser/mac/dict_util.h',
       'atom/browser/mac/dict_util.mm',
+      'atom/browser/mac/in_app_purchase.h',
+      'atom/browser/mac/in_app_purchase.mm',
+      'atom/browser/mac/in_app_purchase_observer.h',
+      'atom/browser/mac/in_app_purchase_observer.mm',
       'atom/browser/native_browser_view.cc',
       'atom/browser/native_browser_view.h',
       'atom/browser/native_browser_view_mac.h',
@@ -733,15 +733,6 @@
           'atom/browser/osr/osr_view_proxy.h',
         ],
       }],  # enable_osr==1
-      ['OS=="mac"', {
-        'app_sources': [
-          'atom/browser/in_app_purchase.h',
-          'atom/browser/in_app_purchase_mac.mm',
-          'atom/browser/in_app_purchase_observer.h',
-          'atom/browser/in_app_purchase_observer_mac.mm'
-        ],
-      }], # OS=="mac"
-      
     ],
   },
 }
