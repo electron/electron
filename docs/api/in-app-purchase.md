@@ -1,4 +1,4 @@
-# inAppPurchase  _macOS_
+# inAppPurchase
 
 > In-app purchases on Mac App Store.
 
