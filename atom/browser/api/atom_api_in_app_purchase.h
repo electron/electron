@@ -32,7 +32,6 @@ class InAppPurchase: public mate::EventEmitter<InAppPurchase>,
 
   // TransactionObserver:
   void OnTransactionUpdated(
-      const in_app_purchase::Payment& payment,
       const in_app_purchase::Transaction& transaction) override;
 
  private:

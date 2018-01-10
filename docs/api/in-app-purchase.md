@@ -15,9 +15,6 @@ Emitted when a transaction has been updated.
 Returns:
 
 * `event` Event
-* `payment` Object
-  * `productIdentifier` String
-  * `quantity` Integer
 * `transaction` Object
   * `transactionIdentifier` String
   * `transactionDate` String
@@ -25,6 +22,9 @@ Returns:
   * `transactionState` String - The transaction sate (`"purchasing"`, `"purchased"`, `"failed"`, `"restored"`, or `"deferred"`)
   * `errorCode` Integer
   * `errorMessage` String
+  * `payment` Object
+    * `productIdentifier` String
+    * `quantity` Integer
 
 ## Methods
 
