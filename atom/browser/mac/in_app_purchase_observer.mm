@@ -148,11 +148,7 @@ using InAppTransactionCallback =
 
   if (transaction.transactionState < 5) {
     transactionStruct.transactionState = [[@[
-      @"SKPaymentTransactionStatePurchasing",
-      @"SKPaymentTransactionStatePurchased",
-      @"SKPaymentTransactionStateFailed",
-      @"SKPaymentTransactionStateRestored",
-      @"SKPaymentTransactionStateDeferred"
+        @"purchasing", @"purchased", @"failed", @"restored", @"deferred"
     ] objectAtIndex:transaction.transactionState] UTF8String];
   }
 
