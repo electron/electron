@@ -3,10 +3,11 @@
 const assert = require('assert')
 
 const {remote} = require('electron')
-const {inAppPurchase} = remote
 
 describe('inAppPurchase module', () => {
   if (process.platform !== 'darwin') return
+
+  const {inAppPurchase} = remote
 
   it('canMakePayments() does not throw', () => {
     inAppPurchase.canMakePayments()
