@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "atom/browser/in_app_purchase.h"
-#include "atom/browser/in_app_purchase_observer.h"
+#include "atom/browser/mac/in_app_purchase.h"
+#include "atom/browser/mac/in_app_purchase_observer.h"
 #include "native_mate/dictionary.h"
 
 namespace mate {
