@@ -1,0 +1,157 @@
+// Copyright (c) 2017 Amaplex Software, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#include "atom/browser/mac/in_app_purchase.h"
+
+#include "base/bind.h"
+#include "base/strings/sys_string_conversions.h"
+#include "content/public/browser/browser_thread.h"
+
+#import <CommonCrypto/CommonCrypto.h>
+#import <StoreKit/StoreKit.h>
+
+// ============================================================================
+//                             InAppPurchase
+// ============================================================================
+
+// --------------------------------- Interface --------------------------------
+
+@interface InAppPurchase : NSObject<SKProductsRequestDelegate> {
+ @private
+  in_app_purchase::InAppPurchaseCallback callback_;
+  NSInteger quantity_;
+}
+
+- (id)initWithCallback:(const in_app_purchase::InAppPurchaseCallback&)callback
+              quantity:(NSInteger)quantity;
+
+- (void)purchaseProduct:(NSString*)productID;
+
+@end
+
+// ------------------------------- Implementation -----------------------------
+
+@implementation InAppPurchase
+
+/**
+ * Init with a callback.
+ *
+ * @param callback - The callback that will be called when the payment is added
+ * to the queue.
+ */
+- (id)initWithCallback:(const in_app_purchase::InAppPurchaseCallback&)callback
+              quantity:(NSInteger)quantity {
+  if ((self = [super init])) {
+    callback_ = callback;
+    quantity_ = quantity;
+  }
+
+  return self;
+}
+
+/**
+ * Start the in-app purchase process.
+ *
+ * @param productID - The id of the product to purchase (the id of
+ * com.example.app.product1 is product1).
+ */
+- (void)purchaseProduct:(NSString*)productID {
+  // Retrieve the product information. (The products request retrieves,
+  // information about valid products along with a list of the invalid product
+  // identifiers, and then calls its delegate to process the result).
+  SKProductsRequest* productsRequest;
+  productsRequest = [[SKProductsRequest alloc]
+      initWithProductIdentifiers:[NSSet setWithObject:productID]];
+
+  productsRequest.delegate = self;
+  [productsRequest start];
+}
+
+/**
+ * Process product informations and start the payment.
+ *
+ * @param request - The product request.
+ * @param response - The informations about the list of products.
+ */
+- (void)productsRequest:(SKProductsRequest*)request
+     didReceiveResponse:(SKProductsResponse*)response {
+  // Release request object.
+  [request release];
+
+  // Get the first product.
+  NSArray* products = response.products;
+  SKProduct* product = [products count] == 1 ? [products firstObject] : nil;
+
+  // Return if the product is not found or invalid.
+  if (product == nil) {
+    [self runCallback:false];
+    return;
+  }
+
+  // Start the payment process.
+  [self checkout:product];
+}
+
+/**
+ * Submit a payment request to the App Store.
+ *
+ * @param product - The product to purchase.
+ */
+- (void)checkout:(SKProduct*)product {
+  // Add the payment to the transaction queue. (The observer will be called
+  // when the transaction is finished).
+  SKMutablePayment* payment = [SKMutablePayment paymentWithProduct:product];
+  payment.quantity = quantity_;
+
+  [[SKPaymentQueue defaultQueue] addPayment:payment];
+
+  // Notify that the payment has been added to the queue with success.
+  [self runCallback:true];
+}
+
+/**
+ * Submit a payment request to the App Store.
+ *
+ * @param product - The product to purchase.
+ */
+- (void)runCallback:(bool)isProductValid {
+  if (callback_) {
+    content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+                                     base::Bind(callback_, isProductValid));
+  }
+  // Release this delegate.
+  [self release];
+}
+
+@end
+
+// ============================================================================
+//                             C++ in_app_purchase
+// ============================================================================
+
+namespace in_app_purchase {
+
+bool CanMakePayments() {
+  return [SKPaymentQueue canMakePayments];
+}
+
+std::string GetReceiptURL() {
+  NSURL* receiptURL = [[NSBundle mainBundle] appStoreReceiptURL];
+  if (receiptURL != nil) {
+    return [[receiptURL absoluteString] UTF8String];
+  } else {
+    return "";
+  }
+}
+
+void PurchaseProduct(const std::string& productID,
+                     int quantity,
+                     const InAppPurchaseCallback& callback) {
+  auto* iap =
+      [[InAppPurchase alloc] initWithCallback:callback quantity:quantity];
+
+  [iap purchaseProduct:base::SysUTF8ToNSString(productID)];
+}
+
+}  // namespace in_app_purchase
