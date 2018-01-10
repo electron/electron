@@ -51,6 +51,14 @@ using InAppTransactionCallback =
 }
 
 /**
+ * Cleanup.
+ */
+- (void)dealloc {
+  [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
+  [super dealloc];
+}
+
+/**
  * Run the callback in the browser thread.
  *
  * @param transaction - The transaction to pass to the callback.
