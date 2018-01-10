@@ -22,7 +22,7 @@ bool CanMakePayments(void);
 std::string GetReceiptURL(void);
 
 void PurchaseProduct(const std::string& productID,
-                     const int quantity,
+                     int quantity,
                      const InAppPurchaseCallback& callback);
 
 }  // namespace in_app_purchase

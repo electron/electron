@@ -7,30 +7,34 @@
 
 #include <string>
 
+#include "atom/browser/api/event_emitter.h"
 #include "atom/browser/mac/in_app_purchase.h"
 #include "atom/browser/mac/in_app_purchase_observer.h"
-#include "native_mate/dictionary.h"
+#include "native_mate/handle.h"
 
-namespace mate {
+namespace atom {
 
-template <>
-struct Converter<in_app_purchase::Payment> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const in_app_purchase::Payment& val);
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     in_app_purchase::Payment* out);
+namespace api {
+
+class InAppPurchase: public mate::EventEmitter<InAppPurchase> {
+ public:
+  static mate::Handle<InAppPurchase> Create(v8::Isolate* isolate);
+
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype);
+
+ protected:
+  explicit InAppPurchase(v8::Isolate* isolate);
+  ~InAppPurchase() override;
+
+  void PurchaseProduct(const std::string& product_id, mate::Arguments* args);
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(InAppPurchase);
 };
 
-template <>
-struct Converter<in_app_purchase::Transaction> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const in_app_purchase::Transaction& val);
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     in_app_purchase::Transaction* out);
-};
+}  // namespace api
 
-}  // namespace mate
+}  // namespace atom
 
 #endif  // ATOM_BROWSER_API_ATOM_API_IN_APP_PURCHASE_H_

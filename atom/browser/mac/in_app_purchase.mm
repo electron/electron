@@ -146,9 +146,9 @@ std::string GetReceiptURL() {
 }
 
 void PurchaseProduct(const std::string& productID,
-                     const int quantity,
+                     int quantity,
                      const InAppPurchaseCallback& callback) {
-  auto iap =
+  auto* iap =
       [[InAppPurchase alloc] initWithCallback:callback quantity:quantity];
 
   [iap purchaseProduct:base::SysUTF8ToNSString(productID)];
