@@ -8,6 +8,13 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/memory/weak_ptr.h"
+
+#if defined(__OBJC__)
+@class InAppTransactionObserver;
+#else  // __OBJC__
+class InAppTransactionObserver;
+#endif // __OBJC__
 
 namespace in_app_purchase {
 
@@ -27,14 +34,23 @@ struct Transaction {
   std::string transactionState = "";
 };
 
-// --------------------------- Typedefs ---------------------------
+// --------------------------- Classes ---------------------------
 
-typedef base::RepeatingCallback<void(const Payment, const Transaction)>
-    InAppTransactionCallback;
+class TransactionObserver {
+ public:
+  TransactionObserver();
+  virtual ~TransactionObserver();
 
-// --------------------------- Functions ---------------------------
+  virtual void OnTransactionUpdated(const Payment& payment,
+                                    const Transaction& transaction) = 0;
 
-void AddTransactionObserver(const InAppTransactionCallback& callback);
+ private:
+  InAppTransactionObserver* obeserver_;
+
+  base::WeakPtrFactory<TransactionObserver> weak_ptr_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN(TransactionObserver);
+};
 
 }  // namespace in_app_purchase
 
