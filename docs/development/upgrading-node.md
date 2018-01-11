@@ -97,7 +97,7 @@ We need to generate a patch file from each patch applied to V8.
      - `mv test.patch patches/v8/xxx-patch_name.patch`
   - Add the patched code to the index _without_ committing:
      - `cd src/v8 && git add . && cd ../..`
-     -  We don't want to commit the changes (they're kept in the patchfiles)
+     - We don't want to commit the changes (they're kept in the patchfiles)
         but need them locally so that they don't show up in subsequent diffs
         while we iterate through more patches
   - Add the patch file to the index:

@@ -343,7 +343,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       Console tab. **Note:** This option is currently experimental and may
       change or be removed in future Electron releases.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
-      `window.open()`. Defaults to `false`.  **Note:** This option is currently
+      `window.open()`. Defaults to `false`. **Note:** This option is currently
       experimental.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to the value of the `nodeIntegration` option. **Note:** The
@@ -1459,6 +1459,6 @@ removed in future Electron releases.
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
-[vibrancy-docs]:  https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
+[vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment

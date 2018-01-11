@@ -19,7 +19,7 @@
     - Or view https://github.com/electron/crashpad/commits/previous-branch-name
 
 3. For each patch:
-  - In `electron-crashpad-vA.B.C.D`, cherry-pick the patch's checksum    
+  - In `electron-crashpad-vA.B.C.D`, cherry-pick the patch's checksum
     - `git cherry-pick <checksum>`
   - Resolve any conflicts
   - Make sure it builds then add, commit, and push work to electron's crashpad fork

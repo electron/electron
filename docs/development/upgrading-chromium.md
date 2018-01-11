@@ -37,7 +37,7 @@ This is an overview of the steps needed to upgrade Chromium in Electron.
   - If some patches are no longer compatible with the Chromium code,
     fix compilation errors.
 6. When the build succeeds, create a `dist` for Electron
-  - `$ ./script/create-dist  --no_zip`
+  - `$ ./script/create-dist --no_zip`
     - It will create a `dist/main` folder in the libcc repo's root.
       You will need this to build Electron.
 7. (Optional) Update script contents if there are errors resulting from files
