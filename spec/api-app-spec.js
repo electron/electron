@@ -157,6 +157,24 @@ describe('app module', () => {
         done()
       })
     })
+
+    it('exits gracefully on macos', (done) => {
+      if (process.platform !== 'darwin') {
+          this.skip()
+      }
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
+      const electronPath = remote.getGlobal('process').execPath
+      appProcess = ChildProcess.spawn(electronPath, [appPath])
+      appProcess.stdout.once('data', () => {
+        // The apple script will try to terminate the app
+        // If there's an error terminating the app, then it will print to stderr
+        ChildProcess.exec('osascript -e \'quit app "Electron"\'', (err, stdout, stderr) => {
+          assert(!err)
+          assert(!stderr.trim())
+          done()
+        })
+      })
+    })
   })
 
   describe('app.makeSingleInstance', () => {

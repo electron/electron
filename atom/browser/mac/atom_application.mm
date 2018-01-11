@@ -4,6 +4,7 @@
 
 #import "atom/browser/mac/atom_application.h"
 
+#import "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/mac/dict_util.h"
 #include "atom/browser/browser.h"
 #include "base/auto_reset.h"
@@ -25,6 +26,11 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 
 + (AtomApplication*)sharedApplication {
   return (AtomApplication*)[super sharedApplication];
+}
+
+- (void)terminate:(id)sender {
+  AtomApplicationDelegate* atomDelegate = (AtomApplicationDelegate*) [NSApp delegate];
+  [atomDelegate tryToTerminateApp:self];
 }
 
 - (BOOL)isHandlingSendEvent {
