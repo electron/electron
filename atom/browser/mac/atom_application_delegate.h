@@ -11,6 +11,8 @@
   base::scoped_nsobject<AtomMenuController> menu_controller_;
 }
 
+- (void)tryToTerminateApp:(NSApplication*)app;
+
 // Sets the menu that will be returned in "applicationDockMenu:".
 - (void)setApplicationDockMenu:(atom::AtomMenuModel*)model;
 
