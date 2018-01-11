@@ -1459,6 +1459,6 @@ removed in future Electron releases.
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
-[vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
+[vibrancy-docs]:  https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
