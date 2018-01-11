@@ -11,6 +11,7 @@
 #include "base/i18n/icu_util.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/scoped_nsautorelease_pool.h"
+#include "atom/browser/mac/atom_application.h"
 #include "brightray/common/mac/main_application_bundle.h"
 #include "content/public/app/content_main.h"
 
@@ -21,7 +22,10 @@ int AtomMain(int argc, const char* argv[]) {
   params.argc = argc;
   params.argv = argv;
   atom::AtomCommandLine::Init(argc, argv);
-  return content::ContentMain(params);
+  auto return_value = content::ContentMain(params);
+  printf("\nREPLYING YES TO replyToApplicationShouldTerminate\n");
+  [[AtomApplication sharedApplication] replyToApplicationShouldTerminate:NSTerminateNow];
+  return return_value;
 }
 
 int AtomInitializeICUandStartNode(int argc, char *argv[]) {

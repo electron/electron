@@ -94,7 +94,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
   } else {
     // System started termination.
     atom::Browser::Get()->Quit();
-    return NSTerminateCancel;
+    return NSTerminateLater;
   }
 }
 
