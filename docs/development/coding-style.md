@@ -8,7 +8,7 @@ You can run `npm run lint` to show any style issues detected by `cpplint` and
 ## C++ and Python
 
 For C++ and Python, we follow Chromium's [Coding
-Style](http://www.chromium.org/developers/coding-style). You can use
+Style](https://www.chromium.org/developers/coding-style). You can use
 [clang-format](clang-format.md) to format the C++ code automatically. There is
 also a script `script/cpplint.py` to check whether all files conform.
 
@@ -23,7 +23,7 @@ etc.
 
 ## JavaScript
 
-* Write [standard](http://npm.im/standard) JavaScript style.
+* Write [standard](https://npm.im/standard) JavaScript style.
 * File names should be concatenated with `-` instead of `_`, e.g.
   `file-name.js` rather than `file_name.js`, because in
   [github/atom](https://github.com/github/atom) module names are usually in

@@ -10,7 +10,7 @@ This document describes the process for releasing a new version of Electron.
 
 ## Find out what version change is needed
 Run `npm run prepare-release -- --notesOnly` to view auto generated release
-notes.  The notes generated should help you determine if this is a major, minor,
+notes. The notes generated should help you determine if this is a major, minor,
 patch, or beta version change. Read the
 [Version Change Rules](../tutorial/electron-versioning.md#semver) for more information.
 
@@ -18,7 +18,7 @@ patch, or beta version change. Read the
 The prepare release script will do the following:
 1. Check if a release is already in process and if so it will halt.
 2. Create a release branch.
-3. Bump the version number in several files.  See [this bump commit] for an example.
+3. Bump the version number in several files. See [this bump commit] for an example.
 4. Create a draft release on GitHub with auto-generated release notes.
 5. Push the release branch.
 6. Call the APIs to run the release builds.
@@ -57,7 +57,7 @@ To monitor the build progress, see the following pages:
 
 - [mac-ci.electronjs.org/blue/organizations/jenkins/electron-mas-x64-release/activity](https://mac-ci.electronjs.org/blue/organizations/jenkins/electron-mas-x64-release/activity) for Mac App Store
 - [mac-ci.electronjs.org/blue/organizations/jenkins/electron-osx-x64-release/activity](https://mac-ci.electronjs.org/blue/organizations/jenkins/electron-osx-x64-release/activity) for OS X
-- [circleci.com/gh/electron](https://circleci.com/gh/electron) for Linux
+- [circleci.com/gh/electron/electron](https://circleci.com/gh/electron) for Linux
 - [windows-ci.electronjs.org/project/AppVeyor/electron](https://windows-ci.electronjs.org/project/AppVeyor/electron) for Windows
 
 ## Compile release notes
@@ -188,7 +188,7 @@ npm run merge-release -- 1-7-x
 ## Publish the release
 
 Once the merge has finished successfully, run the `release` script
-via `npm run release` to finish the release process.  This script will do the
+via `npm run release` to finish the release process. This script will do the
 following:
 1. Build the project to validate that the correct version number is being released.
 2. Download the binaries and generate the node headers and the .lib linker used

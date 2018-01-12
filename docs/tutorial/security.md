@@ -1,7 +1,7 @@
 # Security, Native Capabilities, and Your Responsibility
 
 As web developers, we usually enjoy the strong security net of the browser - the
-risks associated with the code we write are relatively small.  Our websites are
+risks associated with the code we write are relatively small. Our websites are
 granted limited powers in a sandbox, and we trust that our users enjoy a browser
 built by a large team of engineers that is able to quickly respond to newly
 discovered security threats.
