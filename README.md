@@ -83,9 +83,9 @@ const child = proc.spawn(electron)
 
 - [China](https://npm.taobao.org/mirrors/electron)
 
-  Please run the following command before installing to configure China mirror:
+  If you want to configure this mirror to `~/.npmrc`, please run the following command before installation:
   ```shell
-  npx mirror-config-china --registry=http://registry.npm.taobao.org
+  npx mirror-config-china
   ```
 
 ## Documentation Translations
