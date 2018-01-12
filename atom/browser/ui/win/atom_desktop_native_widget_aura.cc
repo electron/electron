@@ -31,8 +31,7 @@ void AtomDesktopNativeWidgetAura::OnWindowActivated(
     reason, gained_active, lost_active);
   if (lost_active != nullptr) {
     auto* tooltip_controller = static_cast<views::corewm::TooltipController*>(
-      aura::client::GetTooltipClient(lost_active->GetRootWindow())
-    );
+      aura::client::GetTooltipClient(lost_active->GetRootWindow()));
 
     // This will cause the tooltip to be hidden when a window is deactivated,
     // as it should be. Remove this fix when the chromium issue is fixed.
