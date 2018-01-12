@@ -160,7 +160,7 @@ describe('app module', () => {
 
     it('exits gracefully on macos', (done) => {
       if (process.platform !== 'darwin') {
-          this.skip()
+        this.skip()
       }
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
       const electronPath = remote.getGlobal('process').execPath
