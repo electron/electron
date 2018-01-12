@@ -158,7 +158,7 @@ describe('app module', () => {
       })
     })
 
-    it('exits gracefully on macos', (done) => {
+    it('exits gracefully on macos', function (done) {
       if (process.platform !== 'darwin') {
         this.skip()
       }
