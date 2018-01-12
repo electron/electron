@@ -1375,7 +1375,7 @@ Set the size of the page. This is only supported for `<webview>` guest contents.
 
 * `options` Object
   * `normal` Object (optional) - Normal size of the page. This can be used in
-    combination with the [`disableguestresize`](web-view-tag.md#disableguestresize)
+    combination with the [`disableguestresize`](webview-tag.md#disableguestresize)
     attribute to manually resize the webview guest contents.
     * `width` Integer
     * `height` Integer

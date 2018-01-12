@@ -1,6 +1,6 @@
 # Accessibility
 
-Making accessible applications is important and we're happy to introduce new functionality to [Devtron](https://electron.atom.io/devtron) and [Spectron](https://electron.atom.io/spectron) that gives developers the opportunity to make their apps better for everyone.
+Making accessible applications is important and we're happy to introduce new functionality to [Devtron](https://electronjs.org/devtron) and [Spectron](https://electronjs.org/spectron) that gives developers the opportunity to make their apps better for everyone.
 
 ---
 
@@ -38,7 +38,7 @@ Electron applications keep accessibility disabled by default for performance rea
 
 ### Inside Application
 
-By using [`app.setAccessibilitySupportEnabled(enabled)`](https://electron.atom.io/docs/api/app.md#appsetaccessibilitysupportenabledenabled-macos-windows), you can expose accessibility switch to users in the application preferences. User's system assistive utilities have priority over this setting and will override it.
+By using [`app.setAccessibilitySupportEnabled(enabled)`](../api/app.md#appsetaccessibilitysupportenabledenabled-macos-windows), you can expose accessibility switch to users in the application preferences. User's system assistive utilities have priority over this setting and will override it.
 
 ### Assistive Technology
 
@@ -54,7 +54,7 @@ CFStringRef kAXManualAccessibility = CFSTR("AXManualAccessibility");
     AXUIElementRef appRef = AXUIElementCreateApplication(app.processIdentifier);
     if (appRef == nil)
         return;
-    
+
     CFBooleanRef value = enable ? kCFBooleanTrue : kCFBooleanFalse;
     AXUIElementSetAttributeValue(appRef, kAXManualAccessibility, value);
     CFRelease(appRef);

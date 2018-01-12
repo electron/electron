@@ -47,7 +47,7 @@ Below is a table explicitly mapping types of changes to their corresponding cate
 	* node.js major version updates
 	* Electron breaking API changes
 * **Minor Version Increments**
-	* node.js  minor version updates
+	* node.js minor version updates
 	* Electron non-breaking API changes
 * **Patch Version Increments**
 	* node.js patch version updates
@@ -71,9 +71,9 @@ Older lines will not be supported by GitHub, but other groups can take ownership
 
 # Beta Releases and Bug Fixes
 
-Developers want to know which releases are _safe_ to use. Even seemingly innocent features can introduce regressions in complex applications.  At the same time, locking to a fixed version is dangerous because you’re ignoring security patches and bug fixes that may have come out since your version. Our goal is to allow the following standard semver ranges in `package.json` :
+Developers want to know which releases are _safe_ to use. Even seemingly innocent features can introduce regressions in complex applications. At the same time, locking to a fixed version is dangerous because you’re ignoring security patches and bug fixes that may have come out since your version. Our goal is to allow the following standard semver ranges in `package.json` :
 
-* Use `~2.0.0` to  admit only stability or security related fixes to your `2.0.0` release.
+* Use `~2.0.0` to admit only stability or security related fixes to your `2.0.0` release.
 * Use `^2.0.0` to admit non-breaking _reasonably stable_ feature work as well as security and bug fixes.
 
 What’s important about the second point is that apps using `^` should still be able to expect a reasonable level of stability. To accomplish this, semver allows for a _pre-release identifier_ to indicate a particular version is not yet _safe_ or _stable_.
@@ -104,7 +104,7 @@ For each major and minor bump, you should expect too see something like the foll
 
 An example lifecycle in pictures:
 
-* A new release branch is created that includes the latest set of features. It is published as  `2.0.0-beta.1`.
+* A new release branch is created that includes the latest set of features. It is published as `2.0.0-beta.1`.
 ![](../images/versioning-sketch-3.png)
 * A bug fix comes into master that can be pack-ported to the release branch. The patch is applied, and a new beta is published as `2.0.0-beta.2`.
 ![](../images/versioning-sketch-4.png)

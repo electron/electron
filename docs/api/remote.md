@@ -195,5 +195,5 @@ process.
 The `process` object in the main process. This is the same as
 `remote.getGlobal('process')` but is cached.
 
-[rmi]: http://en.wikipedia.org/wiki/Java_remote_method_invocation
+[rmi]: https://en.wikipedia.org/wiki/Java_remote_method_invocation
 [enumerable-properties]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
