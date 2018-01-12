@@ -19,6 +19,10 @@ class AtomDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
   void Activate() override;
 
  private:
+  void OnWindowActivated(
+      aura::client::ActivationChangeObserver::ActivationReason reason,
+      aura::Window* gained_active,
+      aura::Window* lost_active) override;
   DISALLOW_COPY_AND_ASSIGN(AtomDesktopNativeWidgetAura);
 };
 
