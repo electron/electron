@@ -732,7 +732,7 @@ enum {
     [super performClose:sender];
 }
 
-- (void)toggleFullScreen:(id)sender {
+- (void)toggleFullScreenMode:(id)sender {
   if (shell_->simple_fullscreen())
     shell_->SetSimpleFullScreen(!shell_->IsSimpleFullScreen());
   else
@@ -1178,7 +1178,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
-  [window_ toggleFullScreen:nil];
+  [window_ toggleFullScreenMode:nil];
 }
 
 bool NativeWindowMac::IsFullscreen() const {
