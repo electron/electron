@@ -91,10 +91,6 @@ jobs:
                 echo "Versions do not match"
                 exit 1
               fi
-              if grep -q "core dumped" version.txt; then
-                echo "Core dump detected"
-                exit 1
-              fi
             else
               echo "Skipping test for release build"
             fi
@@ -186,10 +182,6 @@ jobs:
                 echo "Versions match"
               else
                 echo "Versions do not match"
-                exit 1
-              fi
-              if grep -q "core dumped" version.txt; then
-                echo "Core dump detected"
                 exit 1
               fi
             else
