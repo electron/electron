@@ -34,12 +34,15 @@
   }
 
   if (notification) {
-    if (notif.activationType == NSUserNotificationActivationTypeReplied) {
-      notification->NotificationReplied([notif.response.string UTF8String]);
+    // Ref: https://developer.apple.com/documentation/foundation/nsusernotificationactivationtype?language=objc
+    if (notif.activationType == NSUserNotificationActivationTypeContentsClicked) {
+      notification->NotificationClicked();
     } else if (notif.activationType == NSUserNotificationActivationTypeActionButtonClicked) {
       notification->NotificationButtonClicked();
-    } else if (notif.activationType == NSUserNotificationActivationTypeContentsClicked) {
-      notification->NotificationClicked();
+    } else if (notif.activationType == NSUserNotificationActivationTypeReplied) {
+      notification->NotificationReplied([notif.response.string UTF8String]);
+    } else if (notif.activationType == NSUserNotificationActivationTypeAdditionalActionClicked) {
+      notification->NotificationAdditionalActionClicked([notif additionalActivationAction]);
     }
   }
 }

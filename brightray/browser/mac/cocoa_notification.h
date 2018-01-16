@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "base/mac/scoped_nsobject.h"
 #include "brightray/browser/notification.h"
@@ -28,6 +29,7 @@ class CocoaNotification : public Notification {
   void NotificationDisplayed();
   void NotificationReplied(const std::string& reply);
   void NotificationButtonClicked();
+  void NotificationAdditionalActionClicked(NSUserNotificationAction* action);
 
   NSUserNotification* notification() const { return notification_; }
 
@@ -35,7 +37,8 @@ class CocoaNotification : public Notification {
   void LogAction(const char* action);
 
   base::scoped_nsobject<NSUserNotification> notification_;
-  int action_index_;
+  std::map<std::string, unsigned> additional_action_indices_;
+  unsigned action_index_;
 
   DISALLOW_COPY_AND_ASSIGN(CocoaNotification);
 };
