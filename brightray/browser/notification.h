@@ -35,6 +35,7 @@ struct NotificationOptions {
   base::string16 reply_placeholder;
   base::string16 sound;
   std::vector<NotificationAction> actions;
+  base::string16 close_button_text;
 };
 
 class Notification {

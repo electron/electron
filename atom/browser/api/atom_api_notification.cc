@@ -70,6 +70,7 @@ Notification::Notification(v8::Isolate* isolate,
     opts.Get("hasReply", &has_reply_);
     opts.Get("actions", &actions_);
     opts.Get("sound", &sound_);
+    opts.Get("closeButtonText", &close_button_text_);
   }
 }
 
@@ -120,6 +121,10 @@ base::string16 Notification::GetSound() const {
   return sound_;
 }
 
+base::string16 Notification::GetCloseButtonText() const {
+  return close_button_text_;
+}
+
 // Setters
 void Notification::SetTitle(const base::string16& new_title) {
   title_ = new_title;
@@ -152,6 +157,10 @@ void Notification::SetActions(
 
 void Notification::SetSound(const base::string16& new_sound) {
   sound_ = new_sound;
+}
+
+void Notification::SetCloseButtonText(const base::string16& text) {
+  close_button_text_ = text;
 }
 
 void Notification::NotificationAction(int index) {
@@ -201,6 +210,7 @@ void Notification::Show() {
       options.reply_placeholder = reply_placeholder_;
       options.actions = actions_;
       options.sound = sound_;
+      options.close_button_text = close_button_text_;
       notification_->Show(options);
     }
   }
@@ -230,7 +240,9 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("actions", &Notification::GetActions,
                    &Notification::SetActions)
       .SetProperty("sound", &Notification::GetSound,
-                   &Notification::SetSound);
+                   &Notification::SetSound)
+      .SetProperty("closeButtonText", &Notification::GetCloseButtonText,
+                   &Notification::SetCloseButtonText);
 }
 
 }  // namespace api
