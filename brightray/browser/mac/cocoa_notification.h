@@ -7,9 +7,9 @@
 
 #import <Foundation/Foundation.h>
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 #include "base/mac/scoped_nsobject.h"
 #include "brightray/browser/notification.h"
