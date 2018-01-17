@@ -48,10 +48,10 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
   if (options.silent) {
     [notification_ setSoundName:nil];
-  } else if (options.sound != nil) {
-    [notification_ setSoundName:base::SysUTF16ToNSString(options.sound)];
-  } else {
+  } else if (options.sound.empty()) {
     [notification_ setSoundName:NSUserNotificationDefaultSoundName];
+  } else {
+    [notification_ setSoundName:base::SysUTF16ToNSString(options.sound)];
   }
 
   [notification_ setHasActionButton:false];
