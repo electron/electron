@@ -46,14 +46,15 @@ If you need to use an HTTP proxy you can [set these environment variables](https
 ## Custom Mirrors and Caches
 During installation, the `electron` module will call out to [`electron-download`](https://github.com/electron-userland/electron-download) to download prebuilt
 binaries of Electron for your platform. It will do so by contacting GitHub's
-release download page (https://github.com/electron/electron/releases/download/v).
+release download page (`https://github.com/electron/electron/releases/tag/v$VERSION`,
+where `$VERSION` is the exact version of Electron).
 
 If you are unable to access GitHub or you need to provide a custom build, you
-can do so by either providing mirror or by providing an existing cache directory.
+can do so by either providing a mirror or an existing cache directory.
 
 #### Mirror
-You can override the base url, the path at which to look for Electron binaries,
-and the binary filename using environment variables. The url used by `electron-download`
+You can use environment variables to override the base URL, the path at which to
+look for Electron binaries, and the binary filename. The url used by `electron-download`
 is composed as follows:
 
 ```
@@ -77,23 +78,25 @@ with the network at all.
 * Windows: `$LOCALAPPDATA/electron/Cache` or `~/AppData/Local/electron/Cache/`
 
 On environments that have been using older versions of Electron, you might find the
-cache also in ``~/.electron`.
+cache also in `~/.electron`.
 
 You can also override the local cache location by providing a `ELECTRON_CACHE`
 environment variable.
 
 The cache contains the version's official zip file as well as a checksum, stored as
 a text file. A typical cache might look like this:
-
 ```
-~ ls
 
-SHASUMS256.txt-1.7.10                 electron-v1.7.10-darwin-x64.zip
-SHASUMS256.txt-1.7.9                  electron-v1.7.9-darwin-x64.zip
-SHASUMS256.txt-1.8.1                  electron-v1.8.1-darwin-x64.zip
-SHASUMS256.txt-1.8.2-beta.1           electron-v1.8.2-beta.1-darwin-x64.zip
-SHASUMS256.txt-1.8.2-beta.2           electron-v1.8.2-beta.2-darwin-x64.zip
-SHASUMS256.txt-1.8.2-beta.3           electron-v1.8.2-beta.3-darwin-x64.zip
+├── electron-v1.7.9-darwin-x64.zip
+├── electron-v1.8.1-darwin-x64.zip
+├── electron-v1.8.2-beta.1-darwin-x64.zip
+├── electron-v1.8.2-beta.2-darwin-x64.zip
+├── electron-v1.8.2-beta.3-darwin-x64.zip
+├── SHASUMS256.txt-1.7.9
+├── SHASUMS256.txt-1.8.1
+├── SHASUMS256.txt-1.8.2-beta.1
+├── SHASUMS256.txt-1.8.2-beta.2
+├── SHASUMS256.txt-1.8.2-beta.3
 ```
 
 ## Troubleshooting
