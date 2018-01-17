@@ -192,6 +192,7 @@ jobs:
       - image: electronbuilds/electron:0.0.4
         environment:
           TARGET_ARCH: ia32
+          DISPLAY: ':99.0'
     resource_class: xlarge
     steps:
       - checkout
