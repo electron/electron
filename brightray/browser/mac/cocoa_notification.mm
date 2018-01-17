@@ -41,8 +41,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
     LOG(INFO) << "Notification created (" << [identifier UTF8String] << ")";
   }
 
-  if ([notification_ respondsToSelector:@selector(setContentImage:)] &&
-      !options.icon.drawsNothing()) {
+  if (!options.icon.drawsNothing()) {
     NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
         options.icon, base::mac::GetGenericRGBColorSpace());
     [notification_ setContentImage:image];
