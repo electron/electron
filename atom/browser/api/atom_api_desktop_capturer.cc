@@ -13,6 +13,7 @@ using base::PlatformThreadRef;
 #include "native_mate/dictionary.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
+#include "content/public/browser/desktop_capture.h"
 
 #include "atom/common/node_includes.h"
 
@@ -49,18 +50,7 @@ DesktopCapturer::~DesktopCapturer() {
 void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,
                                     const gfx::Size& thumbnail_size) {
-  webrtc::DesktopCaptureOptions options =
-      webrtc::DesktopCaptureOptions::CreateDefault();
-
-#if defined(OS_WIN)
-  // On windows, desktop effects (e.g. Aero) will be disabled when the Desktop
-  // capture API is active by default.
-  // We keep the desktop effects in most times. Howerver, the screen still
-  // fickers when the API is capturing the window due to limitation of current
-  // implemetation. This is a known and wontFix issue in webrtc (see:
-  // http://code.google.com/p/webrtc/issues/detail?id=3373)
-  options.set_disable_effects(false);
-#endif
+  webrtc::DesktopCaptureOptions options = content::CreateDesktopCaptureOptions();
 
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
       capture_screen ? webrtc::DesktopCapturer::CreateScreenCapturer(options)
