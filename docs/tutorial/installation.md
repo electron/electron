@@ -57,13 +57,13 @@ You can use environment variables to override the base URL, the path at which to
 look for Electron binaries, and the binary filename. The url used by `electron-download`
 is composed as follows:
 
-```
+```txt
 url = ELECTRON_MIRROR + ELECTRON_CUSTOM_DIR + '/' + ELECTRON_CUSTOM_FILENAME
 ```
 
 For instance, to use the China mirror:
 
-```
+```txt
 ELECTRON_MIRROR="https://npm.taobao.org/mirrors/electron/"
 ```
 
@@ -85,8 +85,8 @@ environment variable.
 
 The cache contains the version's official zip file as well as a checksum, stored as
 a text file. A typical cache might look like this:
-```
 
+```sh
 ├── electron-v1.7.9-darwin-x64.zip
 ├── electron-v1.8.1-darwin-x64.zip
 ├── electron-v1.8.2-beta.1-darwin-x64.zip
