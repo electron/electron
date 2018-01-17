@@ -116,14 +116,14 @@ void CocoaNotification::NotificationReplied(const std::string& reply) {
   this->LogAction("replied to");
 }
 
-void CocoaNotification::NotificationButtonClicked() {
+void CocoaNotification::NotificationActivated() {
   if (delegate())
     delegate()->NotificationAction(action_index_);
 
   this->LogAction("button clicked");
 }
 
-void CocoaNotification::NotificationAdditionalActionClicked(NSUserNotificationAction* action) {
+void CocoaNotification::NotificationActivated(NSUserNotificationAction* action) {
   if (delegate()) {
     unsigned index = action_index_;
     std::string identifier = base::SysNSStringToUTF8(action.identifier);

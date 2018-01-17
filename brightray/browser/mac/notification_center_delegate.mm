@@ -38,11 +38,11 @@
     if (notif.activationType == NSUserNotificationActivationTypeContentsClicked) {
       notification->NotificationClicked();
     } else if (notif.activationType == NSUserNotificationActivationTypeActionButtonClicked) {
-      notification->NotificationButtonClicked();
+      notification->NotificationActivated();
     } else if (notif.activationType == NSUserNotificationActivationTypeReplied) {
       notification->NotificationReplied([notif.response.string UTF8String]);
     } else if (notif.activationType == NSUserNotificationActivationTypeAdditionalActionClicked) {
-      notification->NotificationAdditionalActionClicked([notif additionalActivationAction]);
+      notification->NotificationActivated([notif additionalActivationAction]);
     }
   }
 }
