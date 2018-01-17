@@ -7,7 +7,7 @@
 
 | Action Type | Platform Support | Usage of `text` | Default `text` | Limitations |
 |-------------|------------------|-----------------|----------------|-------------|
-| `button`    | macOS            | Used as the label for the button | "Show" | Maximum of one button, if multiple are provided only the last is used.  This action is also incompatible with `hasReply` and will be ignored if `hasReply` is `true`. |
+| `button`    | macOS            | Used as the label for the button | "Show" | Only the first one is used. If multiple are provided, those beyond the first will be listed as additional actions (displayed when mouse active over the action button). Any of such action also is incompatible with `hasReply` and will be ignored if `hasReply` is `true`. |
 
 ### Button support on macOS
 
