@@ -29,13 +29,12 @@ CocoaNotification::~CocoaNotification() {
 void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
 
-  NSString* identifier = [NSString stringWithFormat:@"%s%d", "ElectronNotification", g_identifier_];
+  NSString* identifier = [NSString stringWithFormat:@"ElectronNotification%d", g_identifier_++];
 
   [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
   [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];
   [notification_ setInformativeText:base::SysUTF16ToNSString(options.msg)];
   [notification_ setIdentifier:identifier];
-  g_identifier_++;
 
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
     LOG(INFO) << "Notification created (" << [identifier UTF8String] << ")";
