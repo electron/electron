@@ -37,7 +37,8 @@ void AtomDesktopNativeWidgetAura::OnWindowActivated(
     // as it should be.
     // TODO(brenca): Remove this fix when the chromium issue is fixed.
     // crbug.com/724538
-    tooltip_controller->OnCancelMode(nullptr);
+    if (tooltip_controller != nullptr)
+      tooltip_controller->OnCancelMode(nullptr);
   }
 }
 
