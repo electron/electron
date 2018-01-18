@@ -10,10 +10,10 @@ using base::PlatformThreadRef;
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/media/desktop_media_list.h"
+#include "content/public/browser/desktop_capture.h"
 #include "native_mate/dictionary.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
-#include "content/public/browser/desktop_capture.h"
 
 #include "atom/common/node_includes.h"
 
@@ -50,7 +50,8 @@ DesktopCapturer::~DesktopCapturer() {
 void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,
                                     const gfx::Size& thumbnail_size) {
-  webrtc::DesktopCaptureOptions options = content::CreateDesktopCaptureOptions();
+  webrtc::DesktopCaptureOptions options =
+    content::CreateDesktopCaptureOptions();
 
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
       capture_screen ? webrtc::DesktopCapturer::CreateScreenCapturer(options)
