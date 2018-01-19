@@ -41,7 +41,10 @@ Role kRolesMap[] = {
   { @selector(performClose:), "close" },
   { @selector(performZoom:), "zoom" },
   { @selector(terminate:), "quit" },
-  { @selector(toggleFullScreen:), "togglefullscreen" },
+  // ↓ is intentionally not `toggleFullScreen`. The macOS full screen menu item behaves weird.
+  // If we use `toggleFullScreen`, then the menu item will use the default label, and not take
+  // the one provided.
+  { @selector(toggleFullScreenMode:), "togglefullscreen" },
   { @selector(toggleTabBar:), "toggletabbar" },
   { @selector(selectNextTab:), "selectnexttab" },
   { @selector(selectPreviousTab:), "selectprevioustab" },
