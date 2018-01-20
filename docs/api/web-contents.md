@@ -189,7 +189,7 @@ It is also not emitted for in-page navigations, such as clicking anchor links
 or updating the `window.location.hash`. Use `did-navigate-in-page` event for
 this purpose.
 
-Calling `event.preventDefault()` will prevent the navigation.
+Calling `event.preventDefault()` will NOT prevent the navigation.
 
 #### Event: 'did-navigate'
 
