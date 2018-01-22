@@ -128,7 +128,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     return crash_service::Main(cmd);
   }
 
-  if(!atom::CheckCommandLineArguments(arguments.argc, arguments.argv))
+  if (!atom::CheckCommandLineArguments(arguments.argc, arguments.argv))
     return -1;
 
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
