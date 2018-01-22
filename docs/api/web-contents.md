@@ -633,7 +633,7 @@ Loads the given file in the window, `filePath` should be a path to
 an HTML file relative to the root of your application.  For instance
 an app structure like this:
 
-```
+```sh
 | root
 | - package.json
 | - src
