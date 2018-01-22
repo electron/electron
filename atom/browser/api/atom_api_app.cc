@@ -897,11 +897,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
   }
 
   if (!override_argv) {
-#if defined(OS_WIN)
-    const relauncher::StringVector& argv = atom::AtomCommandLine::wargv();
-#else
     const relauncher::StringVector& argv = atom::AtomCommandLine::argv();
-#endif
     return relauncher::RelaunchApp(argv);
   }
 

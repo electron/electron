@@ -38,6 +38,7 @@
 #include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/resource_request_body.h"
 #include "content/public/common/url_constants.h"
@@ -237,6 +238,11 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int process_id) {
+  // Make sure we're about to launch a known executable
+  base::FilePath child_path;
+  PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+  CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
+
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
   if (process_type != ::switches::kRendererProcess)

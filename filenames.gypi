@@ -99,6 +99,8 @@
       'atom/app/atom_main_delegate.cc',
       'atom/app/atom_main_delegate.h',
       'atom/app/atom_main_delegate_mac.mm',
+      'atom/app/command_line_args.cc',
+      'atom/app/command_line_args.h',
       'atom/app/node_main.cc',
       'atom/app/node_main.h',
       'atom/app/uv_task_runner.cc',

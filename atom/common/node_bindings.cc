@@ -4,6 +4,7 @@
 
 #include "atom/common/node_bindings.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -17,6 +18,7 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
@@ -179,7 +181,14 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context) {
+#if defined(OS_WIN)
+  auto& atom_args = AtomCommandLine::argv();
+  std::vector<std::string> args(atom_args.size());
+  std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
+                 [](auto& a) { return base::WideToUTF8(a); });
+#else
   auto args = AtomCommandLine::argv();
+#endif
 
   // Feed node the path to initialization script.
   base::FilePath::StringType process_type;
@@ -199,8 +208,7 @@ node::Environment* NodeBindings::CreateEnvironment(
       resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
                     .Append(process_type)
                     .Append(FILE_PATH_LITERAL("init.js"));
-  std::string script_path_str = script_path.AsUTF8Unsafe();
-  args.insert(args.begin() + 1, script_path_str.c_str());
+  args.insert(args.begin() + 1, script_path.AsUTF8Unsafe());
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
