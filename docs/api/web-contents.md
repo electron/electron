@@ -625,6 +625,28 @@ const options = {extraHeaders: 'pragma: no-cache\n'}
 webContents.loadURL('https://github.com', options)
 ```
 
+#### `contents.loadFile(filePath)`
+
+* `filePath` String
+
+Loads the given file in the window, `filePath` should be a path to
+an HTML file relative to the root of your application.  For instance
+an app structure like this:
+
+```sh
+| root
+| - package.json
+| - src
+|   - main.js
+|   - index.html
+```
+
+Would require code like this
+
+```js
+win.loadFile('src/index.html')
+```
+
 #### `contents.downloadURL(url)`
 
 * `url` String
