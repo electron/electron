@@ -28,9 +28,9 @@ struct NotificationOptions {
   base::string16 subtitle;
   base::string16 msg;
   std::string tag;
+  bool silent;
   GURL icon_url;
   SkBitmap icon;
-  bool silent;
   bool has_reply;
   base::string16 reply_placeholder;
   base::string16 sound;

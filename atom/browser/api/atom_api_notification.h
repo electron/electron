@@ -52,10 +52,10 @@ class Notification : public mate::TrackableObject<Notification>,
   base::string16 GetSubtitle() const;
   base::string16 GetBody() const;
   bool GetSilent() const;
-  base::string16 GetReplyPlaceholder() const;
   bool GetHasReply() const;
-  std::vector<brightray::NotificationAction> GetActions() const;
+  base::string16 GetReplyPlaceholder() const;
   base::string16 GetSound() const;
+  std::vector<brightray::NotificationAction> GetActions() const;
   base::string16 GetCloseButtonText() const;
 
   // Prop Setters
@@ -63,10 +63,10 @@ class Notification : public mate::TrackableObject<Notification>,
   void SetSubtitle(const base::string16& new_subtitle);
   void SetBody(const base::string16& new_body);
   void SetSilent(bool new_silent);
-  void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetHasReply(bool new_has_reply);
-  void SetActions(const std::vector<brightray::NotificationAction>& actions);
+  void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetSound(const base::string16& sound);
+  void SetActions(const std::vector<brightray::NotificationAction>& actions);
   void SetCloseButtonText(const base::string16& text);
 
  private:
@@ -77,10 +77,10 @@ class Notification : public mate::TrackableObject<Notification>,
   base::string16 icon_path_;
   bool has_icon_ = false;
   bool silent_ = false;
-  base::string16 reply_placeholder_;
   bool has_reply_ = false;
-  std::vector<brightray::NotificationAction> actions_;
+  base::string16 reply_placeholder_;
   base::string16 sound_;
+  std::vector<brightray::NotificationAction> actions_;
   base::string16 close_button_text_;
 
   brightray::NotificationPresenter* presenter_;

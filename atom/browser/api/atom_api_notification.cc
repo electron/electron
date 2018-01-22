@@ -105,20 +105,20 @@ bool Notification::GetSilent() const {
   return silent_;
 }
 
-base::string16 Notification::GetReplyPlaceholder() const {
-  return reply_placeholder_;
-}
-
 bool Notification::GetHasReply() const {
   return has_reply_;
 }
 
-std::vector<brightray::NotificationAction> Notification::GetActions() const {
-  return actions_;
+base::string16 Notification::GetReplyPlaceholder() const {
+  return reply_placeholder_;
 }
 
 base::string16 Notification::GetSound() const {
   return sound_;
+}
+
+std::vector<brightray::NotificationAction> Notification::GetActions() const {
+  return actions_;
 }
 
 base::string16 Notification::GetCloseButtonText() const {
@@ -142,21 +142,21 @@ void Notification::SetSilent(bool new_silent) {
   silent_ = new_silent;
 }
 
+void Notification::SetHasReply(bool new_has_reply) {
+  has_reply_ = new_has_reply;
+}
+
 void Notification::SetReplyPlaceholder(const base::string16& new_placeholder) {
   reply_placeholder_ = new_placeholder;
 }
 
-void Notification::SetHasReply(bool new_has_reply) {
-  has_reply_ = new_has_reply;
+void Notification::SetSound(const base::string16& new_sound) {
+  sound_ = new_sound;
 }
 
 void Notification::SetActions(
   const std::vector<brightray::NotificationAction>& actions) {
   actions_ = actions;
-}
-
-void Notification::SetSound(const base::string16& new_sound) {
-  sound_ = new_sound;
 }
 
 void Notification::SetCloseButtonText(const base::string16& text) {
@@ -232,15 +232,16 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("subtitle", &Notification::GetSubtitle,
                    &Notification::SetSubtitle)
       .SetProperty("body", &Notification::GetBody, &Notification::SetBody)
-      .SetProperty("silent", &Notification::GetSilent, &Notification::SetSilent)
-      .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
-                   &Notification::SetReplyPlaceholder)
+      .SetProperty("silent", &Notification::GetSilent,
+                   &Notification::SetSilent)
       .SetProperty("hasReply", &Notification::GetHasReply,
                    &Notification::SetHasReply)
-      .SetProperty("actions", &Notification::GetActions,
-                   &Notification::SetActions)
+      .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
+                   &Notification::SetReplyPlaceholder)
       .SetProperty("sound", &Notification::GetSound,
                    &Notification::SetSound)
+      .SetProperty("actions", &Notification::GetActions,
+                   &Notification::SetActions)
       .SetProperty("closeButtonText", &Notification::GetCloseButtonText,
                    &Notification::SetCloseButtonText);
 }
