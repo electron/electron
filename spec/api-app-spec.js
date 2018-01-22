@@ -531,6 +531,54 @@ describe('app module', () => {
     })
   })
 
+  describe('app launch through uri', () => {
+    before(function () {
+      if (process.platform !== 'win32') {
+        this.skip()
+      }
+    })
+
+    it('does not launch for blacklisted argument', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // App should exit with non 123 code.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--no-sandbox', '--gpu-launcher=cmd.exe /c start calc'])
+      first.once('exit', (code) => {
+        assert.notEqual(code, 123)
+        done()
+      })    
+    })
+    
+    it('launches successfully for multiple uris in cmd args', function (done) {
+      const appPath = path.join(__dirname,'fixtures', 'api','quit-app')
+      // App should exit with code 123.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'http://electronjs.org', 'electron-test://testdata'])
+      first.once('exit', (code) => {
+        assert.equal(code, 123)
+        done()
+      })    
+    })
+
+    it('does not launch for encoded space', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // App should exit with non 123 code.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--no-sandbox', '--gpu-launcher%20"cmd.exe /c start calc'])
+      first.once('exit', (code) => {
+        assert.notEqual(code, 123)
+        done()
+      })    
+    })
+
+    it('launches successfully for argnames similar to blacklisted ones', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // inspect is blacklisted, but inspector should work, and app launch should succeed
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--inspector'])
+      first.once('exit', (code) => {
+        assert.equal(code, 123)
+        done()
+      })    
+    })
+  })
+
   describe('getFileIcon() API', () => {
     const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
     const sizes = {

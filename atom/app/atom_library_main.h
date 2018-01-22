@@ -10,7 +10,7 @@
 #if defined(OS_MACOSX)
 extern "C" {
 __attribute__((visibility("default")))
-int AtomMain(int argc, const char* argv[]);
+int AtomMain(int argc, char* argv[]);
 
 __attribute__((visibility("default")))
 int AtomInitializeICUandStartNode(int argc, char *argv[]);

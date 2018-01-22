@@ -140,11 +140,7 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
 }
 
 int RelauncherMain(const content::MainFunctionParams& main_parameters) {
-#if defined(OS_WIN)
-  const StringVector& argv = atom::AtomCommandLine::wargv();
-#else
   const StringVector& argv = atom::AtomCommandLine::argv();
-#endif
 
   if (argv.size() < 4 || argv[1] != internal::kRelauncherTypeArg) {
     LOG(ERROR) << "relauncher process invoked with unexpected arguments";
