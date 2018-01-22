@@ -32,7 +32,7 @@ the hostname and the port number 'hostname:port'.
   * `redirect` String (optional) - The redirect mode for this request. Should be
 one of `follow`, `error` or `manual`. Defaults to `follow`. When mode is `error`,
 any redirection will be aborted. When mode is `manual` the redirection will be
-deferred until [`request.followRedirect`](#requestfollowRedirect) is invoked. Listen for the [`redirect`](#event-redirect) event in
+deferred until [`request.followRedirect`](#requestfollowredirect) is invoked. Listen for the [`redirect`](#event-redirect) event in
 this mode to get more details about the redirect request.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
@@ -137,7 +137,7 @@ Returns:
 * `responseHeaders` Object
 
 Emitted when there is redirection and the mode is `manual`. Calling
-[`request.followRedirect`](#requestfollowRedirect) will continue with the redirection.
+[`request.followRedirect`](#requestfollowredirect) will continue with the redirection.
 
 ### Instance Properties
 

@@ -15,7 +15,7 @@ To ensure that your JavaScript is in compliance with the Electron coding
 style, run `npm run lint-js`, which will run `standard` against both
 Electron itself as well as the unit tests. If you are using an editor
 with a plugin/addon system, you might want to use one of the many
-[StandardJS addons](standard-addons) to be informed of coding style
+[StandardJS addons][standard-addons] to be informed of coding style
 violations before you ever commit them.
 
 To run `standard` with parameters, run `npm run lint-js --` followed by
