@@ -545,17 +545,17 @@ describe('app module', () => {
       first.once('exit', (code) => {
         assert.notEqual(code, 123)
         done()
-      })    
+      })
     })
-    
+
     it('launches successfully for multiple uris in cmd args', function (done) {
-      const appPath = path.join(__dirname,'fixtures', 'api','quit-app')
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
       // App should exit with code 123.
       const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'http://electronjs.org', 'electron-test://testdata'])
       first.once('exit', (code) => {
         assert.equal(code, 123)
         done()
-      })    
+      })
     })
 
     it('does not launch for encoded space', function (done) {
@@ -565,7 +565,7 @@ describe('app module', () => {
       first.once('exit', (code) => {
         assert.notEqual(code, 123)
         done()
-      })    
+      })
     })
 
     it('launches successfully for argnames similar to blacklisted ones', function (done) {
@@ -575,7 +575,7 @@ describe('app module', () => {
       first.once('exit', (code) => {
         assert.equal(code, 123)
         done()
-      })    
+      })
     })
   })
 
