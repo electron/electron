@@ -22,6 +22,7 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
+#include "base/path_service.h"
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -37,6 +38,7 @@
 #include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/content_paths.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -207,6 +209,11 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int process_id) {
+  // Make sure we're about to launch a known executable
+  base::FilePath child_path;
+  PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+  CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
+
   std::string process_type = command_line->GetSwitchValueASCII("type");
   if (process_type != "renderer")
     return;
