@@ -10,30 +10,21 @@
 namespace atom {
 
 // static
-std::vector<std::string> AtomCommandLine::argv_;
-
-#if defined(OS_WIN)
-// static
-std::vector<std::wstring> AtomCommandLine::wargv_;
-#endif
+base::CommandLine::StringVector AtomCommandLine::argv_;
 
 // static
-void AtomCommandLine::Init(int argc, const char* const* argv) {
+void AtomCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
+  DCHECK(argv_.empty());
+
+  // NOTE: uv_setup_args does nothing on Windows, so we don't need to call it.
+  // Otherwise we'd have to convert the arguments from UTF16.
+#if !defined(OS_WIN)
   // Hack around with the argv pointer. Used for process.title = "blah"
-  char** new_argv = uv_setup_args(argc, const_cast<char**>(argv));
-  for (int i = 0; i < argc; ++i) {
-    argv_.push_back(new_argv[i]);
-  }
-}
-
-#if defined(OS_WIN)
-// static
-void AtomCommandLine::InitW(int argc, const wchar_t* const* argv) {
-  for (int i = 0; i < argc; ++i) {
-    wargv_.push_back(argv[i]);
-  }
-}
+  argv = uv_setup_args(argc, argv);
 #endif
+
+  argv_.assign(argv, argv + argc);
+}
 
 #if defined(OS_LINUX)
 // static
