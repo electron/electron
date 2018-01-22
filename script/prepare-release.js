@@ -29,7 +29,7 @@ github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 
 async function createReleaseBranch () {
   console.log(`Creating release branch.`)
-  let checkoutDetails = await GitProcess.exec([ 'checkout', '-b', 'release' ], gitDir)
+  let checkoutDetails = await GitProcess.exec([ 'checkout', '-b', 'release-1-7-x' ], gitDir)
   if (checkoutDetails.exitCode === 0) {
     console.log(`${pass} Successfully created the release branch.`)
   } else {
@@ -160,7 +160,7 @@ async function pushRelease () {
 }
 
 async function runReleaseBuilds () {
-  await ciReleaseBuild('release', {
+  await ciReleaseBuild('release-1-7-x', {
     ghRelease: true
   })
 }

@@ -439,7 +439,7 @@ async function cleanupReleaseBranch () {
   console.log(`Cleaning up release branch.`)
   let errorMessage = `Could not delete local release branch.`
   let successMessage = `Successfully deleted local release branch.`
-  await callGit(['branch', '-D', 'release'], errorMessage, successMessage)
+  await callGit(['branch', '-D', 'release-1-7-x'], errorMessage, successMessage)
   errorMessage = `Could not delete remote release branch.`
   successMessage = `Successfully deleted remote release branch.`
   return callGit(['push', 'origin', ':release'], errorMessage, successMessage)

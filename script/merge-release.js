@@ -44,7 +44,7 @@ async function commitMerge () {
 
 async function mergeReleaseIntoBranch (branchName) {
   console.log(`Merging release branch into ${branchName}.`)
-  let mergeArgs = ['merge', 'release', '--squash']
+  let mergeArgs = ['merge', 'release-1-7-x', '--squash']
   let mergeDetails = await GitProcess.exec(mergeArgs, gitDir)
   if (mergeDetails.exitCode === 0) {
     return true
@@ -99,7 +99,7 @@ async function mergeRelease () {
   } else {
     console.log(`Trying rebase of ${branchToRelease} into release branch.`)
     await pull()
-    await checkoutBranch('release')
+    await checkoutBranch('release-1-7-x')
     let rebaseResult = await rebase(branchToRelease)
     if (rebaseResult) {
       let pushResult = pushBranch('HEAD')
