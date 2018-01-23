@@ -38,7 +38,9 @@
 
 namespace {
 
+#ifdef ENABLE_RUN_AS_NODE
 const auto kRunAsNode = "ELECTRON_RUN_AS_NODE";
+#endif
 
 bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
@@ -89,7 +91,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   }
 #endif
 
+#ifdef ENABLE_RUN_AS_NODE
   bool run_as_node = IsEnvSet(kRunAsNode);
+#else
+  bool run_as_node = false;
+#endif
 
   // Make sure the output is printed to console.
   if (run_as_node || !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE"))
@@ -114,6 +120,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   });
 #endif
 
+#ifdef ENABLE_RUN_AS_NODE
   if (run_as_node) {
     std::vector<char*> argv(arguments.argc);
     std::transform(
@@ -125,7 +132,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     auto ret = atom::NodeMain(argv.size(), argv.data());
     std::for_each(argv.begin(), argv.end(), free);
     return ret;
-  } else if (IsEnvSet("ELECTRON_INTERNAL_CRASH_SERVICE")) {
+  }
+#endif
+
+  if (IsEnvSet("ELECTRON_INTERNAL_CRASH_SERVICE")) {
     return crash_service::Main(cmd);
   }
 
@@ -146,11 +156,13 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 
 int main(int argc, char* argv[]) {
+#ifdef ENABLE_RUN_AS_NODE
   if (IsEnvSet(kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
     return atom::NodeMain(argc, argv);
   }
+#endif
 
   atom::AtomMainDelegate delegate;
   content::ContentMainParams params(&delegate);
@@ -163,9 +175,11 @@ int main(int argc, char* argv[]) {
 #else  // defined(OS_LINUX)
 
 int main(int argc, char* argv[]) {
+#ifdef ENABLE_RUN_AS_NODE
   if (IsEnvSet(kRunAsNode)) {
     return AtomInitializeICUandStartNode(argc, argv);
   }
+#endif
 
   return AtomMain(argc, argv);
 }
