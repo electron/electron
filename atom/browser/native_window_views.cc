@@ -1363,22 +1363,26 @@ void NativeWindowViews::ShowAutofillPopup(
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
-  const auto* web_preferences =
-      WebContentsPreferences::FromWebContents(web_contents)->web_preferences();
-
   bool is_offsceen = false;
-  web_preferences->GetBoolean("offscreen", &is_offsceen);
-  int guest_instance_id = 0;
-  web_preferences->GetInteger(options::kGuestInstanceID, &guest_instance_id);
-
   bool is_embedder_offscreen = false;
-  if (guest_instance_id) {
-    auto manager = WebViewManager::GetWebViewManager(web_contents);
-    if (manager) {
-      auto embedder = manager->GetEmbedder(guest_instance_id);
-      if (embedder) {
-        is_embedder_offscreen = WebContentsPreferences::IsPreferenceEnabled(
-            "offscreen", embedder);
+
+  auto* web_contents_preferences =
+      WebContentsPreferences::FromWebContents(web_contents);
+  if (web_contents_preferences) {
+    const auto* web_preferences = web_contents_preferences->web_preferences();
+
+    web_preferences->GetBoolean("offscreen", &is_offsceen);
+    int guest_instance_id = 0;
+    web_preferences->GetInteger(options::kGuestInstanceID, &guest_instance_id);
+
+    if (guest_instance_id) {
+      auto manager = WebViewManager::GetWebViewManager(web_contents);
+      if (manager) {
+        auto embedder = manager->GetEmbedder(guest_instance_id);
+        if (embedder) {
+          is_embedder_offscreen = WebContentsPreferences::IsPreferenceEnabled(
+              "offscreen", embedder);
+        }
       }
     }
   }
