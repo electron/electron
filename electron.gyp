@@ -28,6 +28,11 @@
           'ENABLE_OSR',
         ],
       }],  # enable_osr==1
+      ['enable_run_as_node', {
+        'defines': [
+          'ENABLE_RUN_AS_NODE',
+        ],
+      }],  # enable_run_as_node
     ],
   },
   'targets': [

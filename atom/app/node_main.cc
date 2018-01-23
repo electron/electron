@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifdef ENABLE_RUN_AS_NODE
+
 #include "atom/app/node_main.h"
 
 #include "atom/app/uv_task_runner.h"
@@ -107,3 +109,5 @@ int NodeMain(int argc, char *argv[]) {
 }
 
 }  // namespace atom
+
+#endif  // ENABLE_RUN_AS_NODE
