@@ -302,9 +302,6 @@ NativeWindowViews::NativeWindowViews(
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
-  // Window without thick frame has to have WS_EX_COMPOSITED style.
-  if (!thick_frame_)
-    ex_style |= WS_EX_COMPOSITED;
   if (window_type == "toolbar")
     ex_style |= WS_EX_TOOLWINDOW;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
