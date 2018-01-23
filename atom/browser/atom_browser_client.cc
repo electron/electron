@@ -239,9 +239,13 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int process_id) {
   // Make sure we're about to launch a known executable
-  base::FilePath child_path;
-  PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
-  CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
+  {
+    base::FilePath child_path;
+    PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
+  }
 
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
