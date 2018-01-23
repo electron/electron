@@ -343,7 +343,6 @@
         ['OS=="linux"', {
           'sources': [
             '<@(lib_sources_linux)',
-            '<@(lib_sources_nss)',
           ],
           'link_settings': {
             'ldflags': [
@@ -366,6 +365,11 @@
             'vendor/breakpad/breakpad.gyp:breakpad_client',
           ],
         }],  # OS=="linux"
+        ['OS=="linux" and target_arch!="mips64el"', {
+          'sources': [
+            '<@(lib_sources_nss)',
+          ],
+        }],  # OS=="linux" and target_arch!="mips64el"
         ['OS=="linux" and clang==1', {
           # Required settings of using breakpad.
           'cflags_cc': [

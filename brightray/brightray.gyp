@@ -1,10 +1,12 @@
 {
   'variables': {
     # The libraries brightray will be compiled to.
-    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 x11-xcb xcb xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0 nss',
+    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 x11-xcb xcb xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0',
     'conditions': [
       ['target_arch=="mips64el"', {
         'linux_system_libraries': '<(linux_system_libraries) libpulse',
+      }, {
+        'linux_system_libraries': '<(linux_system_libraries) nss',
       }],
     ],
   },
