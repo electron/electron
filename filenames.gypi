@@ -101,8 +101,6 @@
       'atom/app/atom_main_delegate_mac.mm',
       'atom/app/command_line_args.cc',
       'atom/app/command_line_args.h',
-      'atom/app/node_main.cc',
-      'atom/app/node_main.h',
       'atom/app/uv_task_runner.cc',
       'atom/app/uv_task_runner.h',
       'atom/browser/api/atom_api_app.cc',
@@ -735,6 +733,12 @@
           'atom/browser/osr/osr_view_proxy.h',
         ],
       }],  # enable_osr==1
+      ['enable_run_as_node', {
+        'lib_sources': [
+          'atom/app/node_main.cc',
+          'atom/app/node_main.h',
+        ],
+      }],  # enable_run_as_node
     ],
   },
 }
