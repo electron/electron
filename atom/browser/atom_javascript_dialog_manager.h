@@ -5,8 +5,8 @@
 #ifndef ATOM_BROWSER_ATOM_JAVASCRIPT_DIALOG_MANAGER_H_
 #define ATOM_BROWSER_ATOM_JAVASCRIPT_DIALOG_MANAGER_H_
 
-#include <string>
 #include <map>
+#include <string>
 
 #include "content/public/browser/javascript_dialog_manager.h"
 
