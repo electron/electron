@@ -368,6 +368,12 @@ void WebFrame::ClearCache(v8::Isolate* isolate) {
     base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
 }
 
+void WebFrame::SetCacheCapacity(size_t capacity) {
+  if (capacity > 0) {
+    blink::WebCache::SetCapacity(capacity);
+  }
+}
+
 // static
 void WebFrame::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
@@ -408,6 +414,7 @@ void WebFrame::BuildPrototype(
                  &WebFrame::SetIsolatedWorldHumanReadableName)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
       .SetMethod("clearCache", &WebFrame::ClearCache)
+      .SetMethod("setCacheCapacity", &WebFrame::SetCacheCapacity)
       // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
       .SetMethod("setZoomLevelLimits", &WebFrame::SetVisualZoomLevelLimits);
 }
