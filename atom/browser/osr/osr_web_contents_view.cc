@@ -15,6 +15,8 @@ namespace atom {
 OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent, const OnPaintCallback& callback)
     : transparent_(transparent),
+      painting_(true),
+      frame_rate_(60),
       callback_(callback),
       web_contents_(nullptr) {
 #if defined(OS_MACOSX)
@@ -103,6 +105,8 @@ content::RenderWidgetHostViewBase*
   auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   return new OffScreenRenderWidgetHostView(
       transparent_,
+      painting_,
+      GetFrameRate(),
       callback_,
       render_widget_host,
       nullptr,
@@ -125,6 +129,8 @@ content::RenderWidgetHostViewBase*
 
   return new OffScreenRenderWidgetHostView(
       transparent_,
+      true,
+      view->GetFrameRate(),
       callback_,
       render_widget_host,
       view,
@@ -200,6 +206,42 @@ void OffScreenWebContentsView::StartDragging(
 
 void OffScreenWebContentsView::UpdateDragCursor(
     blink::WebDragOperation operation) {
+}
+
+void OffScreenWebContentsView::SetPainting(bool painting) {
+  auto* view = GetView();
+  if (view != nullptr) {
+    view->SetPainting(painting);
+  } else {
+    painting_ = painting;
+  }
+}
+
+bool OffScreenWebContentsView::IsPainting() const {
+  auto* view = GetView();
+  if (view != nullptr) {
+    return view->IsPainting();
+  } else {
+    return painting_;
+  }
+}
+
+void OffScreenWebContentsView::SetFrameRate(int frame_rate) {
+  auto* view = GetView();
+  if (view != nullptr) {
+    view->SetFrameRate(frame_rate);
+  } else {
+    frame_rate_ = frame_rate;
+  }
+}
+
+int OffScreenWebContentsView::GetFrameRate() const {
+  auto* view = GetView();
+  if (view != nullptr) {
+    return view->GetFrameRate();
+  } else {
+    return frame_rate_;
+  }
 }
 
 OffScreenRenderWidgetHostView* OffScreenWebContentsView::GetView() const {
