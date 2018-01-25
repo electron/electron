@@ -124,7 +124,7 @@ class AtomCopyFrameGenerator {
   }
 
   void GenerateCopyFrame(const gfx::Rect& damage_rect) {
-    if (!view_->render_widget_host())
+    if (!view_->render_widget_host() || !view_->IsPainting())
       return;
 
     std::unique_ptr<cc::CopyOutputRequest> request =
