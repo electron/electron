@@ -279,6 +279,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       popup_position_(gfx::Rect()),
       hold_resize_(false),
       pending_resize_(false),
+      paint_callback_running_(false),
       renderer_compositor_frame_sink_(nullptr),
       background_color_(SkColor()),
       weak_ptr_factory_(this) {
@@ -1004,7 +1005,9 @@ void OffScreenRenderWidgetHostView::OnPaint(
     }
 
     damage.Intersect(GetViewBounds());
+    paint_callback_running_ = true;
     callback_.Run(damage, bitmap);
+    paint_callback_running_ = false;
 
     for (size_t i = 0; i < damages.size(); i++) {
       CopyBitmapTo(bitmap, originals[i], damages[i]);
@@ -1151,7 +1154,7 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
 
   if (software_output_device_) {
-    software_output_device_->SetActive(painting_, true);
+    software_output_device_->SetActive(painting_, !paint_callback_running_);
   }
 }
 
