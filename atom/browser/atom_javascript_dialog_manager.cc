@@ -36,7 +36,9 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     origin_counts_[origin] = 0;
   }
 
-  if (origin_counts_[origin] == -1) return callback.Run(false, base::string16());;
+  if (origin_counts_[origin] == -1) {
+    return callback.Run(false, base::string16());
+  }
 
   if (dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT &&
       dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
@@ -62,8 +64,8 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
   atom::ShowMessageBox(NativeWindow::FromWebContents(web_contents),
                        atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1,
                        0, atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
-                       base::UTF16ToUTF8(message_text), "", checkbox_string, false,
-                       gfx::ImageSkia(),
+                       base::UTF16ToUTF8(message_text), "", checkbox_string,
+                       false, gfx::ImageSkia(),
                        base::Bind(&OnMessageBoxCallback, callback, origin,
                                   &origin_counts_));
 }
