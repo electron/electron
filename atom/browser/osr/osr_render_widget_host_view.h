@@ -73,6 +73,8 @@ class OffScreenRenderWidgetHostView
       public OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
+                                bool painting,
+                                int frame_rate,
                                 const OnPaintCallback& callback,
                                 content::RenderWidgetHost* render_widget_host,
                                 OffScreenRenderWidgetHostView* parent_host_view,

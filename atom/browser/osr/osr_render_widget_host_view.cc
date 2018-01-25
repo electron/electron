@@ -312,6 +312,8 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
+    bool painting,
+    int frame_rate,
     const OnPaintCallback& callback,
     content::RenderWidgetHost* host,
     OffScreenRenderWidgetHostView* parent_host_view,
@@ -325,12 +327,12 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       transparent_(transparent),
       callback_(callback),
       parent_callback_(nullptr),
-      frame_rate_(60),
+      frame_rate_(frame_rate),
       frame_rate_threshold_us_(0),
       last_time_(base::Time::Now()),
       scale_factor_(kDefaultScaleFactor),
       size_(native_window->GetSize()),
-      painting_(true),
+      painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
       is_destroyed_(false),
       popup_position_(gfx::Rect()),
@@ -775,6 +777,8 @@ content::RenderWidgetHostViewBase*
 
   return new OffScreenRenderWidgetHostView(
       transparent_,
+      true,
+      embedder_host_view->GetFrameRate(),
       callback_,
       render_widget_host,
       embedder_host_view,
@@ -973,7 +977,7 @@ bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
 
 void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
     bool needs_begin_frames) {
-  SetupFrameRate(false);
+  SetupFrameRate(true);
 
   begin_frame_timer_->SetActive(needs_begin_frames);
 
@@ -1216,10 +1220,10 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
     frame_rate_ = frame_rate;
   }
 
+  SetupFrameRate(true);
+
   for (auto guest_host_view : guest_host_views_)
     guest_host_view->SetFrameRate(frame_rate);
-
-  SetupFrameRate(true);
 }
 
 int OffScreenRenderWidgetHostView::GetFrameRate() const {
