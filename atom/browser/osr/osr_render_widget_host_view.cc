@@ -1210,8 +1210,8 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   } else {
     if (frame_rate <= 0)
       frame_rate = 1;
-    if (frame_rate > 60)
-      frame_rate = 60;
+    if (frame_rate > 240)
+      frame_rate = 240;
 
     frame_rate_ = frame_rate;
   }
