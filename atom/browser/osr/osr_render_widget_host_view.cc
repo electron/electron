@@ -1247,7 +1247,7 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
 
   frame_rate_threshold_us_ = 1000000 / frame_rate_;
 
-  GetCompositor()->vsync_manager()->SetAuthoritativeVSyncInterval(
+  GetCompositor()->SetAuthoritativeVSyncInterval(
       base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_));
 
   if (copy_frame_generator_.get()) {
