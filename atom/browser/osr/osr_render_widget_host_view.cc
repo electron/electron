@@ -336,6 +336,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       popup_position_(gfx::Rect()),
       hold_resize_(false),
       pending_resize_(false),
+      paint_callback_running_(false),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
@@ -591,7 +592,7 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
   if (!frame.render_pass_list.empty()) {
     if (software_output_device_) {
       if (!begin_frame_timer_.get() || IsPopupWidget()) {
-        software_output_device_->SetActive(painting_);
+        software_output_device_->SetActive(painting_, false);
       }
 
       // The compositor will draw directly to the SoftwareOutputDevice which
@@ -977,7 +978,7 @@ void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
   begin_frame_timer_->SetActive(needs_begin_frames);
 
   if (software_output_device_) {
-    software_output_device_->SetActive(needs_begin_frames && painting_);
+    software_output_device_->SetActive(needs_begin_frames && painting_, false);
   }
 }
 
@@ -1046,7 +1047,9 @@ void OffScreenRenderWidgetHostView::OnPaint(
     }
 
     damage.Intersect(GetViewBounds());
+    paint_callback_running_ = true;
     callback_.Run(damage, bitmap);
+    paint_callback_running_ = false;
 
     for (size_t i = 0; i < damages.size(); i++) {
       CopyBitmapTo(bitmap, originals[i], damages[i]);
@@ -1190,7 +1193,7 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
 
   if (software_output_device_) {
-    software_output_device_->SetActive(painting_);
+    software_output_device_->SetActive(painting_, !paint_callback_running_);
   }
 }
 
