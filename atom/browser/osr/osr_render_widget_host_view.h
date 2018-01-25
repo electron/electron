@@ -315,6 +315,8 @@ class OffScreenRenderWidgetHostView
   bool hold_resize_;
   bool pending_resize_;
 
+  bool paint_callback_running_;
+
   std::unique_ptr<ui::Layer> root_layer_;
   std::unique_ptr<ui::Compositor> compositor_;
   std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
