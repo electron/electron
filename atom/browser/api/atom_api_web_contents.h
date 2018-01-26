@@ -13,7 +13,6 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
 #include "atom/browser/ui/autofill_popup.h"
-#include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
@@ -357,10 +356,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   uint32_t GetNextRequestId() {
     return ++request_id_;
-  }
-
-  content::WebContentsImpl* web_contents_impl() const {
-    return static_cast<content::WebContentsImpl*>(web_contents());
   }
 
   // Called when we receive a CursorChange message from chromium.
