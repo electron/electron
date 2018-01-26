@@ -1644,12 +1644,8 @@ void WebContents::StartPainting() {
     return;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = web_contents_impl();
-  if (!wc_impl)
-    return;
-
-  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(
-      wc_impl->GetView());
+  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
   if (osr_wcv)
     osr_wcv->SetPainting(true);
 #endif
@@ -1660,12 +1656,8 @@ void WebContents::StopPainting() {
     return;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = web_contents_impl();
-  if (!wc_impl)
-    return;
-
-  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(
-      wc_impl->GetView());
+  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
   if (osr_wcv)
     osr_wcv->SetPainting(false);
 #endif
@@ -1676,12 +1668,9 @@ bool WebContents::IsPainting() const {
     return false;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = web_contents_impl();
-  if (!wc_impl)
-    return false;
+  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
 
-  const auto* osr_wcv = static_cast<OffScreenWebContentsView*>(
-      wc_impl->GetView());
   return osr_wcv && osr_wcv->IsPainting();
 #else
   return false;
@@ -1693,12 +1682,9 @@ void WebContents::SetFrameRate(int frame_rate) {
     return;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = web_contents_impl();
-  if (!wc_impl)
-    return;
+  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
 
-  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(
-      wc_impl->GetView());
   if (osr_wcv)
     osr_wcv->SetFrameRate(frame_rate);
 #endif
@@ -1709,12 +1695,9 @@ int WebContents::GetFrameRate() const {
     return 0;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = web_contents_impl();
-  if (!wc_impl)
-    return 0;
+  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
 
-  const auto* osr_wcv = static_cast<OffScreenWebContentsView*>(
-      wc_impl->GetView());
   return osr_wcv ? osr_wcv->GetFrameRate() : 0;
 #else
   return 0;
