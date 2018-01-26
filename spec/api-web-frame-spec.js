@@ -139,4 +139,10 @@ describe('webFrame module', function () {
       webFrame.setLayoutZoomLevelLimits(0, 25)
     })
   })
+
+  it('supports setting cache capacity', function () {
+    assert.doesNotThrow(function () {
+      webFrame.setCacheCapacity(1024)
+    })
+  })
 })
