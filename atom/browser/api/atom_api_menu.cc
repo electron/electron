@@ -23,9 +23,13 @@ Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
     : model_(new AtomMenuModel(this)),
       parent_(nullptr) {
   InitWith(isolate, wrapper);
+  model_->AddObserver(this);
 }
 
 Menu::~Menu() {
+  if (model_) {
+    model_->RemoveObserver(this);
+  }
 }
 
 void Menu::AfterInit(v8::Isolate* isolate) {

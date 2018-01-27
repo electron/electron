@@ -18,7 +18,8 @@ namespace atom {
 namespace api {
 
 class Menu : public mate::TrackableObject<Menu>,
-             public AtomMenuModel::Delegate {
+              public AtomMenuModel::Delegate,
+              public AtomMenuModel::Observer {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 
