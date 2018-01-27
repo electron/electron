@@ -153,6 +153,14 @@ bool Menu::IsVisibleAt(int index) const {
   return model_->IsVisibleAt(index);
 }
 
+void Menu::OnMenuWillClose() {
+  Emit("menu-will-close");
+}
+
+void Menu::OnMenuWillShow() {
+  Emit("menu-will-show");
+}
+
 // static
 void Menu::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {

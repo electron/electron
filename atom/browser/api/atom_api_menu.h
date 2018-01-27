@@ -60,6 +60,10 @@ class Menu : public mate::TrackableObject<Menu>,
   std::unique_ptr<AtomMenuModel> model_;
   Menu* parent_;
 
+  // Observable:
+  void OnMenuWillClose() override;
+  void OnMenuWillShow() override;
+
  private:
   void InsertItemAt(int index, int command_id, const base::string16& label);
   void InsertSeparatorAt(int index);
