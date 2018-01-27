@@ -119,7 +119,7 @@ event is emitted.
 
 To avoid this problem, ensure you clean up any references to renderer callbacks
 passed to the main process. This involves cleaning up event handlers, or
-ensuring the main process is explicitly told to deference callbacks that came
+ensuring the main process is explicitly told to dereference callbacks that came
 from a renderer process that is exiting.
 
 ## Accessing built-in modules in the main process
