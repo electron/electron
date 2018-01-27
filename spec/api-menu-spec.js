@@ -261,7 +261,7 @@ describe('Menu module', () => {
     })
   })
 
-  describe.only('Menu.popup', () => {
+  describe('Menu.popup', () => {
     let w = null
     let menu
 
