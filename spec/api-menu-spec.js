@@ -261,7 +261,7 @@ describe('Menu module', () => {
     })
   })
 
-  describe('Menu.popup', () => {
+  describe.only('Menu.popup', () => {
     let w = null
     let menu
 
@@ -285,14 +285,14 @@ describe('Menu module', () => {
     })
 
     it('should emit menu-will-show event', (done) => {
-      menu.popup(w)
       menu.on('menu-will-show', () => { done() })
+      menu.popup(w)
     })
 
     it('should emit menu-will-close event', (done) => {
+      menu.on('menu-will-close', () => { done() })
       menu.popup(w)
       menu.closePopup()
-      menu.on('menu-will-close', () => { done() })
     })
 
     it('returns immediately', () => {
