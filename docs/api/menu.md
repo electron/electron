@@ -120,7 +120,7 @@ Returns:
 
 * `event` Event
 
-Emitted when a popup is close either manually or with `menu.closePopup()`
+Emitted when a popup is closed either manually or with `menu.closePopup()`.
 
 ### Instance Properties
 
