@@ -301,6 +301,35 @@ const mainWindow = new BrowserWindow({
 const mainWindow = new BrowserWindow({})
 ```
 
+
+## Do Not Enable Experimental Features
+
+Advanced users of Electron can enable experimental Chromium features using the
+`experimentalFeatures` and `experimentalCanvasFeatures` properties.
+
+### Why?
+
+Experimental features are, as the name suggests, experimental and have not been
+enabled for all Chromium users. Futhermore, their impact on Electron as a whole
+has likely not been tested.
+
+Legitimate use cases exist, but unless you know what you are doing, you should
+not enable this property.
+
+### How?
+
+```js
+// Bad
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    experimentalFeatures: true
+  }
+})
+
+// Good
+const mainWindow = new BrowserWindow({})
+```
+
 ## Verify WebView Options Before Creation
 A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
