@@ -358,6 +358,43 @@ const mainWindow = new BrowserWindow()
 ```
 
 
+## Do Not Disable WebSecurity
+
+You may have already guessed that disabling the `webSecurity` property on a
+renderer process (`BrowserView`, `BrowserWindow`, `WebView`) disables crucial
+security features.
+
+Legitimate use cases for this property exist in testing cases, but generally
+speaking, `webSecurity` should never be disabled in any production application.
+
+### Why?
+
+Disabling `webSecurity` will disable the same-origin policy as well as
+implicitly setting the `allowRunningInsecureContent` property to `true`. In
+other words, it allows the execution of insecure code from different domains.
+
+### How?
+```js
+// Bad
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    webSecurity: false
+  }
+})
+
+// Good
+const mainWindow = new BrowserWindow()
+```
+
+```html
+<!-- Bad -->
+<webview disablewebsecurity src="page.html"></webview>
+
+<!-- Good -->
+<webview src="page.html"></webview>
+```
+
+
 ## Verify WebView Options Before Creation
 A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
