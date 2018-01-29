@@ -50,8 +50,8 @@ the actual destination), they will be able to execute native code on the user's
 machine.
 
 > :warning: Under no circumstances should you load and execute remote code with
-Node integration enabled. Instead, use only local files (packaged together with
-your application) to execute Node code. To display remote content, use the
+Node.js integration enabled. Instead, use only local files (packaged together with
+your application) to execute Node.js code. To display remote content, use the
 `webview` tag and make sure to disable the `nodeIntegration`.
 
 #### Checklist: Security Recommendations
@@ -59,7 +59,7 @@ your application) to execute Node code. To display remote content, use the
 This is not bulletproof, but at the least, you should attempt the following:
 
 * [Only display secure (https) content](#only-display-secure-content)
-* Disable the Node integration in all renderers that display remote content
+* [Disable the Node integration in all renderers that display remote content](#disable-node-integration-for-remote-content)
   (setting `nodeIntegration` to `false` in `webPreferences`)
 * Enable context isolation in all renderers that display remote content
   (setting `contextIsolation` to `true` in `webPreferences`)
@@ -99,23 +99,26 @@ app.on('web-contents-created', (event, contents) => {
 ```
 
 ## Only Display Secure Content
-Any resources not included with your application should be loaded using a secure protocol
-like `HTTPS`. Furthermore, avoid "mixed content", which occurs when the initial HTML is
-loaded over an `HTTPS` connection, but additional resources (scripts, stylesheets, etc)
-are loaded over an insecure connection.
+Any resources not included with your application should be loaded using a secure
+protocol like `HTTPS`. Furthermore, avoid "mixed content", which occurs when the
+initial HTML is loaded over an `HTTPS` connection, but additional resources
+(scripts, stylesheets, etc) are loaded over an insecure connection.
 
-#### Why?
+### Why?
 `HTTPS` has three main benefits:
 
-1) It authenticates the remote server, ensuring that the host is actually who it claims
-   to be. When loading a resource from an `HTTPS` host, it prevents an attacker from
-   impersonating that host, thus ensuring that the computer your app's users are
-   connecting to is actually the host you wanted them to connect to.
-2) It ensures data integrity, asserting that the data was not modified while in transit
-   between your application and the host.
-3) It encryps the traffic between your user and the destination host, making it more
-   difficult to eavesdropping on the information sent between your app and the host.
+1) It authenticates the remote server, ensuring that the host is actually who it
+   claims to be. When loading a resource from an `HTTPS` host, it prevents an
+   attacker from impersonating that host, thus ensuring that the computer your
+   app's users are connecting to is actually the host you wanted them to connect
+   to.
+2) It ensures data integrity, asserting that the data was not modified while in
+   transit between your application and the host.
+3) It encryps the traffic between your user and the destination host, making it
+   more difficult to eavesdropping on the information sent between your app and
+   the host.
 
+### How?
 ```js
 // Bad
 browserWindow.loadURL('http://my-website.com')
@@ -132,6 +135,61 @@ browserWindow.loadURL('https://my-website.com')
 <!-- Good -->
 <script crossorigin src="https://cdn.com/react.js"></script>
 <link rel="stylesheet" href="https://cdn.com/style.css">
+```
+
+## Disable Node Integration for Remote Content
+It is paramount that you disable Node integration in any renderer (`BrowserWindow`,
+`BrowserView`, `WebView`) that loads remote content. The goal of disabling Node
+integration is to limit the powers you grant to remote content, thus making it
+dramatically more difficult for an attacker to harm your users should they gain
+control over your website.
+
+Disabling Node integration does not mean that you cannot grant additional powers
+to the website you are loading – if you are opening a `BrowserWindow` pointed at
+`https://my-website.com`, the goal is to give that website exactly the ability it
+needs, but no more.
+
+### Why?
+A cross-site-scripting (XSS) becomes dramatically more dangerous if an attacker
+can jump out of the renderer process and execute code on the user's computer.
+Cross-site-scripting attacks are fairly common - and while an issue, their power
+is usually limited to messing with the website that they are executed on. However,
+in a renderer process with Node integration enabled, an XSS attack becomes a whole
+different class of threat vector: A so-called "Remote Code Execution" (RCE) attack.
+Disabling Node.js integration limits the power of successful XSS attacks.
+
+### How?
+```js
+// Bad
+const mainWindow = new BrowserWindow()
+mainWindow.loadURL('https://my-website.com')
+
+// Good
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    nodeIntegration: false,
+    preload: './preload.js'
+  }
+})
+
+mainWindow.loadURL('https://my-website.com')
+```
+
+When disabling Node integration, you can still expose APIs to your
+website that do consume Node.js modules or features. Preload scripts continue to
+have access to `require` and other Node.js features, allowing developers to expose
+a custom API to remotely loaded content.
+
+In the following example preload script, the later loaded website will have access
+to a `window.readConfig()` method, but no Node.js features.
+
+```js
+const { readFileSync } = require('fs')
+
+window.readConfig = function () {
+  const data = readFileSync('./config.json')
+  return data;
+}
 ```
 
 Again, this list merely minimizes the risk, it does not remove it. If your goal
