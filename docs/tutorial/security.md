@@ -214,6 +214,38 @@ session
 ```
 
 
+## Define a Content Security Policy
+
+A Content Security Policy (CSP) is an additional layer of protection against
+cross-site-scripting attacks (XSS) and data injection attacks. They can be
+enabled by websites and we recommend that any website you load inside Electron
+does so.
+
+### Why?
+
+CSP allows the server serving content to restrict and control the resources
+Electron will load for that given web page. `https://your-page.com` should have
+be allowed to scripts from the origins you defined, while scripts from
+`https://evil.attacker.com` should not be allowed to run. Defining a CSP is an
+easy way to improve your applications security.
+
+### How?
+
+Electron respects [the `Content-Security-Policy` HTTP header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)
+as well as the respective `<meta>` tag.
+
+The following CSP will allow Electron to execute scripts from the current
+website as well as from `apis.mydomain.com`.
+
+```
+// Bad
+Content-Security-Policy: '*'
+
+// Good
+Content-Security-Policy: script-src 'self' https://apis.mydomain.com
+```
+
+
 ## Verify WebView Options Before Creation
 A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
