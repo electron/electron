@@ -330,6 +330,34 @@ const mainWindow = new BrowserWindow({
 const mainWindow = new BrowserWindow({})
 ```
 
+
+## Do Not Use `blinkFeatures`
+Blink is the name of the rendering engine behind Chromium. Similarly to
+`experimentalFeatures`, the `blinkFeatures` property allows developers to
+enable features that have been disabled by default.
+
+### Why?
+
+Generally speaking, there are likely good reasons if a feature was not enabled
+by default. Legitimate use cases for enabling specific features exist. As a
+developer, you should know exactly why you need to enable a feature, what the
+ramifications are, and how it impacts the security of your application. Under
+no circumstances should you enable features speculatively.
+
+### How?
+```js
+// Bad
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    blinkFeatures: ['ExecCommandInJavaScript']
+  }
+})
+
+// Good
+const mainWindow = new BrowserWindow()
+```
+
+
 ## Verify WebView Options Before Creation
 A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
