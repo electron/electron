@@ -44,15 +44,15 @@ effort are always very welcome.
 
 A security issue exists whenever you receive code from a remote destination and
 execute it locally. As an example, consider a remote website being displayed
-inside a `BrowserWindow`. If an attacker somehow manages to change said content
-(either by attacking the source directly, or by sitting between your app and
-the actual destination), they will be able to execute native code on the user's
-machine.
+inside a [`BrowserWindow`](browser-window). If an attacker somehow manages to
+change said content (either by attacking the source directly, or by sitting
+between  your app and the actual destination), they will be able to execute
+native code on the user's machine.
 
 > :warning: Under no circumstances should you load and execute remote code with
 Node.js integration enabled. Instead, use only local files (packaged together
 with your application) to execute Node.js code. To display remote content, use
-the `webview` tag and make sure to disable the `nodeIntegration`.
+the [`webview`](web-view) tag and make sure to disable the `nodeIntegration`.
 
 #### Checklist: Security Recommendations
 
@@ -68,7 +68,7 @@ This is not bulletproof, but at the least, you should attempt the following:
 * [Override and disable `eval`](#override-and-disable)
 , which allows strings to be executed as code.
 * [Do not set `allowRunningInsecureContent` to `true`](#do-not-set-allowRunningInsecureContent-to-true)
-* [Do not enable experimental features](#do-not-enable-enable-experimental-features)
+* [Do not enable experimental features](#do-not-enable-experimental-features)
 * [Do not use `blinkFeatures`](#do-not-use-blinkfeatures)
 * [WebViews: Do not use `allowpopups`](#do-not-use-allowpopups)
 * [WebViews: Verify the options and params of all `<webview>` tags](#verify-webview-options-before-creation)
@@ -77,13 +77,14 @@ This is not bulletproof, but at the least, you should attempt the following:
 ## Only Display Secure Content
 
 Any resources not included with your application should be loaded using a
-secure protocol like `HTTPS`.
+secure protocol like `HTTPS`. In other words, do not use insecure protocols
+like
 
 ### Why?
 
 `HTTPS` has three main benefits:
 
-1) It authenticates the remote server, ensuring that the host is actually who
+1) It authenticates the remote server, ensuring that the host is actually whom
    it claims to be. When loading a resource from an `HTTPS` host, it prevents
    an attacker from impersonating that host, thus ensuring that the computer
    your app's users are connecting to is actually the host you wanted them to
@@ -118,15 +119,16 @@ browserWindow.loadURL('https://my-website.com')
 ## Disable Node Integration for Remote Content
 
 It is paramount that you disable Node integration in any renderer
-(`BrowserWindow`, `BrowserView`, or `WebView`) that loads remote content. The
-goal of disabling Node integration is to limit the powers you grant to remote
-content, thus making it dramatically more difficult for an attacker to harm
-your users should they gain the ability to execute JavaScript on your website.
+([`BrowserWindow`](browser-view), [`BrowserView`](browser-view), or
+[`WebView`](web-view)) that loads remote content. The goal of disabling Node
+integration is to limit the powers you grant to remote content, thus making it
+dramatically more difficult for an attacker to harm your users should they gain
+the ability to execute JavaScript on your website.
 
 Disabling Node integration does not mean that you cannot grant additional
-powers to the website you are loading. If you are opening a `BrowserWindow`
-pointed at `https://my-website.com`, the goal is to give that website exactly
-the abilities it needs, but no more.
+powers to the website you are loading. If you are opening a
+[`BrowserWindow`](browser-window) pointed at `https://my-website.com`, the
+goal is to give that website exactly the abilities it needs, but no more.
 
 ### Why?
 
@@ -337,6 +339,8 @@ window.eval = global.eval = function() {
 
 ## Do Not Set `allowRunningInsecureContent` to `true`
 
+_Recommendation is Electron's default_
+
 By default, Electron will now allow websites loaded over `HTTPS` to load and
 execute scripts, CSS, or plugins from insecure sources (`HTTP`). Setting the
 property `allowRunningInsecureContent` to `true` disables that protection.
@@ -368,6 +372,8 @@ const mainWindow = new BrowserWindow({})
 
 ## Do Not Enable Experimental Features
 
+_Recommendation is Electron's default_
+
 Advanced users of Electron can enable experimental Chromium features using the
 `experimentalFeatures` and `experimentalCanvasFeatures` properties.
 
@@ -396,6 +402,9 @@ const mainWindow = new BrowserWindow({})
 
 
 ## Do Not Use `blinkFeatures`
+
+_Recommendation is Electron's default_
+
 Blink is the name of the rendering engine behind Chromium. Similarly to
 `experimentalFeatures`, the `blinkFeatures` property allows developers to
 enable features that have been disabled by default.
@@ -424,8 +433,11 @@ const mainWindow = new BrowserWindow()
 
 ## Do Not Disable WebSecurity
 
+_Recommendation is Electron's default_
+
 You may have already guessed that disabling the `webSecurity` property on a
-renderer process (`BrowserView`, `BrowserWindow`, `WebView`) disables crucial
+renderer process ([`BrowserWindow`](browser-view),
+[`BrowserView`](browser-view), or [`WebView`](web-view)) disables crucial
 security features.
 
 Legitimate use cases for this property exist in testing cases, but generally
@@ -461,17 +473,20 @@ const mainWindow = new BrowserWindow()
 
 ## Do Not Use `allowpopups`
 
-If you are using `WebViews`, you might need the pages and scripts loaded in
-your `<webview>` tag to open new windows. The `allowpopups` attribute enables
-them to create new `BrowserWindows` using the `window.open()` method. By
-default, `WebViews` are not allowed to create new windows.
+_Recommendation is Electron's default_
+
+If you are using [`WebViews`](web-view), you might need the pages and scripts
+loaded in your `<webview>` tag to open new windows. The `allowpopups` attribute
+enables them to create new [`BrowserWindows`](browser-window) using the
+`window.open()` method. By default, `WebViews` are not allowed to create new
+windows.
 
 ### Why?
 
 If you do not need popups, you are better off not allowing the creation of
-new `BrowserWindows` by default. This follows the principle of the minimally
-required access: Websites that you do not know to need popups should not have
-the ability to create new popups.
+new [`BrowserWindows`](browser-window) by default. This follows the principle
+of the minimally required access: Websites that you do not know to need popups
+should not have the ability to create new popups.
 
 ### How?
 
@@ -490,9 +505,9 @@ A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
 always create an independent renderer process with its own `webPreferences`.
 
-It is a good idea to control the creation of new `WebViews` from the main
-process and to verify that their webPreferences do not disable security
-features.
+It is a good idea to control the creation of new [`WebViews`](web-view) from
+the main process and to verify that their webPreferences do not disable
+security features.
 
 ### Why?
 
@@ -502,11 +517,11 @@ website even if Node integration is otherwise disabled.
 Electron enables developers to disable various security features that control
 a renderer process. In most cases, developers do not need to disable any of
 those features - and you should therefore not allow different configurations
-for newly created `<WebView>` tags.
+for newly created [`<WebView>`](web-view) tags.
 
 ### How?
 
-Before a `<WebView>` tag is attached, Electron will fire the
+Before a [`<WebView>`](web-view) tag is attached, Electron will fire the
 `will-attach-webview` event on the hosting `webContents`. Use the event to
 prevent the creation of WebViews with possibly insecure options.
 
@@ -530,3 +545,7 @@ app.on('web-contents-created', (event, contents) => {
 
 Again, this list merely minimizes the risk, it does not remove it. If your goal
 is to display a website, a browser will be a more secure option.
+
+[browser-window]: (../api/browser-window)
+[browser-view]: (../api/browser-view)
+[web-view]: (../api/web-view)
