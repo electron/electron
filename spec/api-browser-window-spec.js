@@ -91,6 +91,8 @@ describe('BrowserWindow module', () => {
       w = new BrowserWindow({
         webContents: void 0
       })
+      w.close()
+      w = null
     })
   })
 
