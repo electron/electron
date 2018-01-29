@@ -99,6 +99,29 @@ Returns `MenuItem` the item with the specified `id`
 
 Inserts the `menuItem` to the `pos` position of the menu.
 
+### Instance Events
+
+Objects created with `new Menu` emit the following events:
+
+**Note:** Some events are only available on specific operating systems and are
+labeled as such.
+
+#### Event: 'menu-will-show'
+
+Returns:
+
+* `event` Event
+
+Emitted when `menu.popup()` is called.
+
+#### Event: 'menu-will-close'
+
+Returns:
+
+* `event` Event
+
+Emitted when a popup is closed either manually or with `menu.closePopup()`.
+
 ### Instance Properties
 
 `menu` objects also have the following properties:

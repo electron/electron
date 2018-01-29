@@ -284,6 +284,17 @@ describe('Menu module', () => {
       return closeWindow(w).then(() => { w = null })
     })
 
+    it('should emit menu-will-show event', (done) => {
+      menu.on('menu-will-show', () => { done() })
+      menu.popup(w)
+    })
+
+    it('should emit menu-will-close event', (done) => {
+      menu.on('menu-will-close', () => { done() })
+      menu.popup(w)
+      menu.closePopup()
+    })
+
     it('returns immediately', () => {
       const { browserWindow, x, y } = menu.popup(w, {x: 100, y: 101})
 

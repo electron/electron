@@ -35,7 +35,7 @@ class TrayIconCocoa : public TrayIcon,
 
  protected:
   // AtomMenuModel::Observer:
-  void MenuWillClose() override;
+  void OnMenuWillClose() override;
 
  private:
   // Atom custom view for NSStatusItem.
