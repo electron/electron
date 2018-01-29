@@ -174,6 +174,46 @@ window.readConfig = function () {
 }
 ```
 
+## Enable Context Isolation for Remote Content
+
+## Handle Session Permission Requests From Remote Content
+
+You may have seen permission requests while using Chrome: They pop up whenever
+the website attempts to use a feature that the user has to manually approve (
+like notifications).
+
+The API is based on the [Chromium permissions API](https://developer.chrome.com/extensions/permissions)
+and implements the same types of permissions.
+
+### Why?
+
+By default, Electron will automatically approve all permission requests unless
+the developer has manually configured a custom handler. While a solid default,
+security-conscious developers might want to assume the very opposite.
+
+### How?
+
+```js
+const { session } = require('electron')
+
+session
+  .fromPartition('some-partition')
+  .setPermissionRequestHandler((webContents, permission, callback) => {
+    const url = webContents.getURL()
+
+    if (permission === 'notifications') {
+      // Approves the permissions request
+      callback(true)
+    }
+
+    if (!url.startsWith('https://my-website.com')) {
+      // Denies the permissions request
+      return callback(false)
+    }
+  })
+```
+
+
 ## Verify WebView Options Before Creation
 A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
