@@ -395,6 +395,31 @@ const mainWindow = new BrowserWindow()
 ```
 
 
+## Do Not Use `allowpopups`
+
+If you are using `WebViews`, you might need the pages and scripts loaded in
+your `<webview>` tag to open new windows. The `allowpopups` attribute enables
+them to create new `BrowserWindows` using the `window.open()` method. By
+default, `WebViews` are not allowed to create new windows.
+
+### Why?
+
+If you do not need popups, you are better off not allowing the creation of
+new `BrowserWindows` by default. This follows the principle of the minimally
+required access: Websites that you do not know to need popups should not have
+the ability to create new popups.
+
+### How?
+
+```html
+<!-- Bad -->
+<webview allowpopups src="page.html"></webview>
+
+<!-- Good -->
+<webview src="page.html"></webview>
+```
+
+
 ## Verify WebView Options Before Creation
 A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
