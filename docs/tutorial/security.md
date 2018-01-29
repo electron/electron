@@ -271,6 +271,36 @@ window.eval = global.eval = function() {
 ```
 
 
+## Do Not Set `allowRunningInsecureContent` to `true`
+
+By default, Electron will now allow websites loaded over `HTTPS` to load and
+execute scripts, CSS, or plugins from insecure sources (`HTTP`). Setting the
+property `allowRunningInsecureContent` to `true` disables that protection.
+
+Loading the initial HTML of a website over `HTTPS` and attempting to load
+subsequent resources via `HTTP` is also known as "mixed content".
+
+### Why?
+
+See the section on [only displaying secure content](#only-display-secure-content)
+for more details, but simply put, loading content over `HTTPS` assures the
+authenticity and integrity of the loaded resources while encrypting the traffic
+itself.
+
+### How?
+
+```js
+// Bad
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    allowRunningInsecureContent: true
+  }
+})
+
+// Good
+const mainWindow = new BrowserWindow({})
+```
+
 ## Verify WebView Options Before Creation
 A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
