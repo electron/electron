@@ -147,7 +147,9 @@ of successful XSS attacks.
 // Bad
 const mainWindow = new BrowserWindow()
 mainWindow.loadURL('https://my-website.com')
+```
 
+```js
 // Good
 const mainWindow = new BrowserWindow({
   webPreferences: {
@@ -180,7 +182,7 @@ const { readFileSync } = require('fs')
 
 window.readConfig = function () {
   const data = readFileSync('./config.json')
-  return data;
+  return data
 }
 ```
 
@@ -331,8 +333,8 @@ it bulletproof. Thus, if you do not need it, it is a good idea to disable it.
 ### How?
 
 ```js
-window.eval = global.eval = function() {
-  throw new Error(`Sorry, this app does not support window.eval().`);
+window.eval = global.eval = function () {
+  throw new Error(`Sorry, this app does not support window.eval().`)
 }
 ```
 
@@ -364,7 +366,9 @@ const mainWindow = new BrowserWindow({
     allowRunningInsecureContent: true
   }
 })
+```
 
+```js
 // Good
 const mainWindow = new BrowserWindow({})
 ```
@@ -395,7 +399,9 @@ const mainWindow = new BrowserWindow({
     experimentalFeatures: true
   }
 })
+```
 
+```js
 // Good
 const mainWindow = new BrowserWindow({})
 ```
@@ -425,7 +431,9 @@ const mainWindow = new BrowserWindow({
     blinkFeatures: ['ExecCommandInJavaScript']
   }
 })
+```
 
+```js
 // Good
 const mainWindow = new BrowserWindow()
 ```
@@ -458,6 +466,7 @@ const mainWindow = new BrowserWindow({
   }
 })
 
+```js
 // Good
 const mainWindow = new BrowserWindow()
 ```
