@@ -77,26 +77,7 @@ This is not bulletproof, but at the least, you should attempt the following:
 * WebViews: Do not use `disablewebsecurity`
 * WebViews: Do not use `allowpopups`
 * WebViews: Do not use `insertCSS` or `executeJavaScript` with remote CSS/JS.
-* WebViews: Verify the options and params of all `<webview>` tags before they
-  get attached using the `will-attach-webview` event:
-
-```js
-app.on('web-contents-created', (event, contents) => {
-  contents.on('will-attach-webview', (event, webPreferences, params) => {
-    // Strip away preload scripts if unused or verify their location is legitimate
-    delete webPreferences.preload
-    delete webPreferences.preloadURL
-
-    // Disable node integration
-    webPreferences.nodeIntegration = false
-
-    // Verify URL being loaded
-    if (!params.src.startsWith('https://yourapp.com/')) {
-      event.preventDefault()
-    }
-  })
-})
-```
+* [WebViews: Verify the options and params of all `<webview>` tags](#verify-webview-options-before-creation)
 
 ## Only Display Secure Content
 Any resources not included with your application should be loaded using a secure
@@ -139,24 +120,25 @@ browserWindow.loadURL('https://my-website.com')
 
 ## Disable Node Integration for Remote Content
 It is paramount that you disable Node integration in any renderer (`BrowserWindow`,
-`BrowserView`, `WebView`) that loads remote content. The goal of disabling Node
+`BrowserView`, or `WebView`) that loads remote content. The goal of disabling Node
 integration is to limit the powers you grant to remote content, thus making it
 dramatically more difficult for an attacker to harm your users should they gain
-control over your website.
+the ability to execute JavaScript on your website.
 
 Disabling Node integration does not mean that you cannot grant additional powers
-to the website you are loading – if you are opening a `BrowserWindow` pointed at
-`https://my-website.com`, the goal is to give that website exactly the ability it
-needs, but no more.
+to the website you are loading. If you are opening a `BrowserWindow` pointed at
+`https://my-website.com`, the goal is to give that website exactly the abilities
+it needs, but no more.
 
 ### Why?
-A cross-site-scripting (XSS) becomes dramatically more dangerous if an attacker
-can jump out of the renderer process and execute code on the user's computer.
-Cross-site-scripting attacks are fairly common - and while an issue, their power
-is usually limited to messing with the website that they are executed on. However,
-in a renderer process with Node integration enabled, an XSS attack becomes a whole
-different class of threat vector: A so-called "Remote Code Execution" (RCE) attack.
-Disabling Node.js integration limits the power of successful XSS attacks.
+A cross-site-scripting (XSS) attack becomes dramatically more dangerous if an
+attacker can jump out of the renderer process and execute code on the user's
+computer. Cross-site-scripting attacks are fairly common - and while an issue,
+their power is usually limited to messing with the website that they are executed
+on. However, in a renderer process with Node.js integration enabled, an XSS attack
+becomes a whole different class of attack: A so-called "Remote Code Execution"
+(RCE) attack. Disabling Node.js integration limits the power of successful XSS
+attacks.
 
 ### How?
 ```js
@@ -190,6 +172,46 @@ window.readConfig = function () {
   const data = readFileSync('./config.json')
   return data;
 }
+```
+
+## Verify WebView Options Before Creation
+A WebView created in a renderer process that does not have Node.js integration
+enabled will not be able to enable integration itself. However, a WebView will
+always create an independent renderer process with its own `webPreferences`.
+
+It is a good idea to control the creation of new `WebViews` from the main process
+and to verify that their webPreferences do not disable security features.
+
+### Why?
+Since WebViews live in the DOM, they can be created by a script running on your
+website even if Node integration is otherwise disabled.
+
+Electron enables developers to disable various security features that control
+a renderer process. In most cases, developers do not need to disable any of those
+features - and you should therefore not allow different configurations for newly
+created `<WebView>` tags.
+
+### How?
+Before a `<WebView>` tag is attached, Electron will fire the
+`will-attach-webview` event on the hosting `webContents`. Use the event to
+prevent the creation of WebViews with possibly insecure options.
+
+```js
+app.on('web-contents-created', (event, contents) => {
+  contents.on('will-attach-webview', (event, webPreferences, params) => {
+    // Strip away preload scripts if unused or verify their location is legitimate
+    delete webPreferences.preload
+    delete webPreferences.preloadURL
+
+    // Disable node integration
+    webPreferences.nodeIntegration = false
+
+    // Verify URL being loaded
+    if (!params.src.startsWith('https://yourapp.com/')) {
+      event.preventDefault()
+    }
+  })
+})
 ```
 
 Again, this list merely minimizes the risk, it does not remove it. If your goal
