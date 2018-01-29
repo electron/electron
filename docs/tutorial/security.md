@@ -301,7 +301,7 @@ as well as the respective `<meta>` tag.
 The following CSP will allow Electron to execute scripts from the current
 website as well as from `apis.mydomain.com`.
 
-```
+```txt
 // Bad
 Content-Security-Policy: '*'
 
