@@ -174,7 +174,62 @@ window.readConfig = function () {
 }
 ```
 
+
 ## Enable Context Isolation for Remote Content
+
+Context isolation is an Electron feature that allows developers to run code
+in preload scripts and in Electron APIs in a dedicated JavaScript context. In
+practice, that means that global objects like `Array.prototype.push` or
+`JSON.parse` cannot be modified by scripts running in the renderer process.
+
+Electron uses the same technology as Chromium's [Content Scripts](https://developer.chrome.com/extensions/content_scripts#execution-environment)
+to enable this behavior.
+
+### Why?
+
+Context isolation allows each the scripts on running in the renderer to make
+changes to its JavaScript environment without worrying about conflicting with
+the scripts in the Electron API or the preload script.
+
+While still an experimental Electron feature, context isolation also adds an
+additional layer of security by completely separating any Electron APIs and
+preload scripts from access by the scripts running in the renderer. At the
+same time, preload scripts continue to have access to the `document` and
+`window` object, meaning that you are very likely not reduced in your ability
+to use preload scripts. In other words, you're getting a decent return on a
+likely very small investment.
+
+### How?
+
+```js
+// Main process
+const mainWindow = new BrowserWindow({
+  webPreferences: {
+    contextIsolation: true,
+    preload: 'preload.js'
+  }
+})
+```
+
+```js
+// Preload script
+
+// Set a variable in the page before it loads
+webFrame.executeJavaScript('window.foo = "foo";')
+
+// The loaded page will not be able to access this, it is only available
+// in this context
+window.bar = 'bar'
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Will log out 'undefined' since window.foo is only available in the main
+  // context
+  console.log(window.foo)
+
+  // Will log out 'bar' since window.bar is available in this context
+  console.log(window.bar)
+})
+```
 
 ## Handle Session Permission Requests From Remote Content
 
