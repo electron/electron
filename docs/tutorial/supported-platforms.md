@@ -39,4 +39,5 @@ The `arm` binary is built against ARM v7 with hard-float ABI and NEON, and it is
 not guaranteed to run on all ARM platforms.
 
 The `mips64el` binary is built with toolchains provided by Loongson, and it is
-not guaranteed to run on all MIPS64 platforms.
+not guaranteed to run on all MIPS64 platforms. And currently all certificate
+related APIs are not working on `mips64el` builds.
