@@ -54,11 +54,11 @@ Node integration enabled. Instead, use only local files (packaged together with
 your application) to execute Node code. To display remote content, use the
 `webview` tag and make sure to disable the `nodeIntegration`.
 
-#### Checklist
+#### Checklist: Security Recommendations
 
 This is not bulletproof, but at the least, you should attempt the following:
 
-* Only display secure (https) content
+* [Only display secure (https) content](#only-display-secure-content)
 * Disable the Node integration in all renderers that display remote content
   (setting `nodeIntegration` to `false` in `webPreferences`)
 * Enable context isolation in all renderers that display remote content
@@ -96,6 +96,42 @@ app.on('web-contents-created', (event, contents) => {
     }
   })
 })
+```
+
+## Only Display Secure Content
+Any resources not included with your application should be loaded using a secure protocol
+like `HTTPS`. Furthermore, avoid "mixed content", which occurs when the initial HTML is
+loaded over an `HTTPS` connection, but additional resources (scripts, stylesheets, etc)
+are loaded over an insecure connection.
+
+#### Why?
+`HTTPS` has three main benefits:
+
+1) It authenticates the remote server, ensuring that the host is actually who it claims
+   to be. When loading a resource from an `HTTPS` host, it prevents an attacker from
+   impersonating that host, thus ensuring that the computer your app's users are
+   connecting to is actually the host you wanted them to connect to.
+2) It ensures data integrity, asserting that the data was not modified while in transit
+   between your application and the host.
+3) It encryps the traffic between your user and the destination host, making it more
+   difficult to eavesdropping on the information sent between your app and the host.
+
+```js
+// Bad
+browserWindow.loadURL('http://my-website.com')
+
+// Good
+browserWindow.loadURL('https://my-website.com')
+```
+
+```html
+<!-- Bad -->
+<script crossorigin src="http://cdn.com/react.js"></script>
+<link rel="stylesheet" href="http://cdn.com/style.css">
+
+<!-- Good -->
+<script crossorigin src="https://cdn.com/react.js"></script>
+<link rel="stylesheet" href="https://cdn.com/style.css">
 ```
 
 Again, this list merely minimizes the risk, it does not remove it. If your goal
