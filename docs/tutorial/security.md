@@ -246,6 +246,31 @@ Content-Security-Policy: script-src 'self' https://apis.mydomain.com
 ```
 
 
+## Override and Disable `eval`
+
+`eval()` is a core JavaScript method that allows the execution of JavaScript
+from a string. Disabling it disables your app's ability to evaluate JavaScript
+that is not known in advance.
+
+### Why?
+
+The `eval()` method has precisely one mission: To evaluate a series of
+characters as JavaScript and execute it. It is a required method whenever you
+need to evaluate code that is known ahead of time. While legitimate use cases
+exist, just like any other code generators, `eval()` is difficult to harden.
+
+Generally speaking, it is easier to completely disable `eval()` than to make
+it bulletproof. Thus, if you do not need it, it is a good idea to disable it.
+
+### How?
+
+```js
+window.eval = global.eval = function() {
+  throw new Error(`Sorry, this app does not support window.eval().`);
+}
+```
+
+
 ## Verify WebView Options Before Creation
 A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
