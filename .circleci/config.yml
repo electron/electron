@@ -339,3 +339,6 @@ workflows:
   build-x64:
     jobs:
       - electron-linux-x64
+  build-mips64el:
+    jobs:
+      - electron-linux-mips64el

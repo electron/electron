@@ -6,7 +6,7 @@
     'clang%': 1,
 
     # Path to mips64el toolchain.
-    'make_mips64_dir%': 'vendor/gcc-4.8.3-d197-n64-loongson/usr',
+    'make_mips64_dir%': 'vendor/cross-gcc-4.9.3-n64-loongson-rc5.4/usr',
 
     'variables': {
       # The minimum macOS SDK version to use.
@@ -138,8 +138,8 @@
 
     ['target_arch=="mips64el"', {
       'make_global_settings': [
-        ['CC', '<(make_mips64_dir)/bin/mips64el-redhat-linux-gcc'],
-        ['CXX', '<(make_mips64_dir)/bin/mips64el-redhat-linux-g++'],
+        ['CC', '<(make_mips64_dir)/bin/mips64el-loongson-linux-gcc'],
+        ['CXX', '<(make_mips64_dir)/bin/mips64el-loongson-linux-g++'],
         ['CC.host', '$(CC)'],
         ['CXX.host', '$(CXX)'],
       ],
