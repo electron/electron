@@ -182,7 +182,10 @@
               '-Wl,--no-whole-archive',
             ],
           }, {
-            'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
+            'libraries': [
+              '<@(libchromiumcontent_v8_libraries)',
+              '<(libchromiumcontent_dir)/libc++.so',
+            ],
           }],
         ],
       }],
@@ -243,6 +246,22 @@
           }],  # OS=="win"
         ],
       }],
+      ['OS=="linux" and _target_name in ["dump_syms"]', {
+        'conditions': [
+          ['libchromiumcontent_component==0', {
+            'libraries': [
+              '<(libchromiumcontent_dir)/libc++.a',
+            ],
+          }, {
+            'libraries': [
+              '<(libchromiumcontent_dir)/libc++.so',
+            ],
+            'ldflags': [
+              '-Wl,-rpath=\$$ORIGIN',
+            ],
+          }],
+        ],
+      }]
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
     'msvs_disabled_warnings': [

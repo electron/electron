@@ -110,9 +110,6 @@
         ['CXX.host', '$(CXX)'],
       ],
       'target_defaults': {
-        'cflags_cc': [
-          '-std=c++14',
-        ],
         'xcode_settings': {
           'CC': '<(make_clang_dir)/bin/clang',
           'LDPLUSPLUS': '<(make_clang_dir)/bin/clang++',
@@ -125,12 +122,23 @@
           'CLANG_CXX_LANGUAGE_STANDARD': 'c++14',  # -std=c++14
         },
         'target_conditions': [
-          ['_type in ["executable", "shared_library"]', {
+          ['OS=="mac" and _type in ["executable", "shared_library"]', {
             'xcode_settings': {
               # On some machines setting CLANG_CXX_LIBRARY doesn't work for
               # linker.
               'OTHER_LDFLAGS': [ '-stdlib=libc++' ],
             },
+          }],
+          ['OS=="linux"', {
+            'cflags_cc': [
+              '-std=gnu++14',
+              '-nostdinc++',
+              '-isystem<(libchromiumcontent_src_dir)/buildtools/third_party/libc++/trunk/include',
+              '-isystem<(libchromiumcontent_src_dir)/buildtools/third_party/libc++abi/trunk/include',
+            ],
+            'ldflags': [
+              '-nostdlib++',
+            ],
           }],
         ],
       },
@@ -145,7 +153,7 @@
       ],
       'target_defaults': {
         'cflags_cc': [
-          '-std=c++11',
+          '-std=gnu++14',
         ],
       },
     }],
