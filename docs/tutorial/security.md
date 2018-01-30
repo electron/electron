@@ -294,7 +294,7 @@ easy way to improve your applications security.
 ### How?
 
 Electron respects [the `Content-Security-Policy` HTTP header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)
-as well as the respective `<meta>` tag.
+and the respective `<meta>` tag.
 
 The following CSP will allow Electron to execute scripts from the current
 website and from `apis.mydomain.com`.
