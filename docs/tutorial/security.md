@@ -328,6 +328,8 @@ it bulletproof. Thus, if you do not need it, it is a good idea to disable it.
 ### How?
 
 ```js
+// ESLint will warn about any use of eval(), even this one
+// eslint-disable-next-line
 window.eval = global.eval = function () {
   throw new Error(`Sorry, this app does not support window.eval().`)
 }
