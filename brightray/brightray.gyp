@@ -72,6 +72,7 @@
             ],
             'libraries': [
               '-lpthread',
+              '-latomic',
               '<!@(<(pkg-config) --libs-only-l <(linux_system_libraries))',
             ],
           },
