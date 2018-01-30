@@ -13,7 +13,7 @@ can access the filesystem, user shell, and more. This allows you to build
 high quality native applications, but the inherent security risks scale with
 the additional powers granted to your code.
 
-With that in mind, be aware that displaying arbitrary content from un-trusted
+With that in mind, be aware that displaying arbitrary content from untrusted
 sources poses a severe security risk that Electron is not intended to handle.
 In fact, the most popular Electron apps (Atom, Slack, Visual Studio Code, etc)
 display primarily local content (or trusted, secure remote content without Node
@@ -58,14 +58,14 @@ the [`webview`](web-view) tag and make sure to disable the `nodeIntegration`.
 
 This is not bulletproof, but at the least, you should attempt the following:
 
-* [Only display secure (https) content](#only-display-secure-content)
-* [Disable the Node integration in all renderers that display remote content](#disable-node-integration-for-remote-content)
+* [Only load secure content](#only-load-secure-content)
+* [Disable the Node.js integration in all renderers that display remote content](#disable-node.js-integration-for-remote-content)
 * [Enable context isolation in all renderers that display remote content](#enable-context-isolation-for-remote-content)
 * [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#handle-session-permission-requests-from-remote-content)
 * [Do not disable `webSecurity`](#do-not-disable-websecurity)
 * [Define a `Content-Security-Policy`](#define-a-content-security-policy)
-, and use restrictive rules (i.e. `script-src 'self'`)
-* [Override and disable `eval`](#override-and-disable)
+  and use restrictive rules (i.e. `script-src 'self'`)
+* [Override and disable `eval`](#override-and-disable-eval)
 , which allows strings to be executed as code.
 * [Do not set `allowRunningInsecureContent` to `true`](#do-not-set-allowRunningInsecureContent-to-true)
 * [Do not enable experimental features](#do-not-enable-experimental-features)
@@ -74,25 +74,23 @@ This is not bulletproof, but at the least, you should attempt the following:
 * [WebViews: Verify the options and params of all `<webview>` tags](#verify-webview-options-before-creation)
 
 
-## Only Display Secure Content
+## Only Load Secure Content
 
 Any resources not included with your application should be loaded using a
 secure protocol like `HTTPS`. In other words, do not use insecure protocols
-like
+like `HTTP`. Similarly, we recommed the use of `WSS` over `WS`, `FTPS` over
+`FTP`, and so on.
 
 ### Why?
 
 `HTTPS` has three main benefits:
 
-1) It authenticates the remote server, ensuring that the host is actually whom
-   it claims to be. When loading a resource from an `HTTPS` host, it prevents
-   an attacker from impersonating that host, thus ensuring that the computer
-   your app's users are connecting to is actually the host you wanted them to
-   connect to.
+1) It authenticates the remote server, ensuring your app connects to the correct
+   host instead of an impersonator.
 2) It ensures data integrity, asserting that the data was not modified while in
    transit between your application and the host.
-3) It encryps the traffic between your user and the destination host, making it
-   more difficult to eavesdropping on the information sent between your app and
+3) It encrypts the traffic between your user and the destination host, making it
+   more difficult to eavesdrop on the information sent between your app and
    the host.
 
 ### How?
@@ -116,30 +114,27 @@ browserWindow.loadURL('https://my-website.com')
 ```
 
 
-## Disable Node Integration for Remote Content
+## Disable Node.js Integration for Remote Content
 
-It is paramount that you disable Node integration in any renderer
-([`BrowserWindow`](browser-view), [`BrowserView`](browser-view), or
-[`WebView`](web-view)) that loads remote content. The goal of disabling Node
-integration is to limit the powers you grant to remote content, thus making it
-dramatically more difficult for an attacker to harm your users should they gain
-the ability to execute JavaScript on your website.
+It is paramount that you disable Node.js integration in any renderer
+([`BrowserWindow`](browser-window), [`BrowserView`](browser-view), or
+[`WebView`](web-view)) that loads remote content. The goal is to limit the
+powers you grant to remote content, thus making it dramatically more difficult
+for an attacker to harm your users should they gain the ability to execute
+JavaScript on your website.
 
-Disabling Node integration does not mean that you cannot grant additional
-powers to the website you are loading. If you are opening a
-[`BrowserWindow`](browser-window) pointed at `https://my-website.com`, the
-goal is to give that website exactly the abilities it needs, but no more.
+After this, you can grant additional permissions for specific hosts. For example,
+if you are opening a BrowserWindow pointed at `https://my-website.com/", you can
+give that website exactly the abilities it needs, but no more.
 
 ### Why?
 
-A cross-site-scripting (XSS) attack becomes dramatically more dangerous if an
-attacker can jump out of the renderer process and execute code on the user's
-computer. Cross-site-scripting attacks are fairly common - and while an issue,
-their power is usually limited to messing with the website that they are
-executed on. However, in a renderer process with Node.js integration enabled,
-an XSS attack becomes a whole different class of attack: A so-called "Remote
-Code Execution" (RCE) attack. Disabling Node.js integration limits the power
-of successful XSS attacks.
+A cross-site-scripting (XSS) attack is more dangerous if an attacker can jump
+out of the renderer process and execute code on the user's computer.
+Cross-site-scripting attacks are fairly common - and while an issue, their
+power is usually limited to messing with the website that they are executed on.
+Disabling Node.js integration helps prevent an XSS from being escalated into a
+so-called "Remote Code Execution" (RCE) attack.
 
 ### How?
 
@@ -169,7 +164,7 @@ mainWindow.loadURL('https://my-website.com')
 <webview src="page.html"></webview>
 ```
 
-When disabling Node integration, you can still expose APIs to your website that
+When disabling Node.js integration, you can still expose APIs to your website that
 do consume Node.js modules or features. Preload scripts continue to have access
 to `require` and other Node.js features, allowing developers to expose a custom
 API to remotely loaded content.
@@ -203,13 +198,13 @@ Context isolation allows each the scripts on running in the renderer to make
 changes to its JavaScript environment without worrying about conflicting with
 the scripts in the Electron API or the preload script.
 
-While still an experimental Electron feature, context isolation also adds an
-additional layer of security by completely separating any Electron APIs and
-preload scripts from access by the scripts running in the renderer. At the
-same time, preload scripts continue to have access to the `document` and
-`window` object, meaning that you are very likely not reduced in your ability
-to use preload scripts. In other words, you're getting a decent return on a
-likely very small investment.
+While still an experimental Electron feature, context isolation adds an
+additional layer of security. It creates a new JavaScript world for Electron
+APIs and preload scripts.
+
+At the same time, preload scripts still have access to the  `document` and
+`window` objects. In other words, you're getting a decent return on a likely
+very small investment.
 
 ### How?
 
@@ -285,15 +280,14 @@ session
 ## Define a Content Security Policy
 
 A Content Security Policy (CSP) is an additional layer of protection against
-cross-site-scripting attacks (XSS) and data injection attacks. They can be
-enabled by websites and we recommend that any website you load inside Electron
-does so.
+cross-site-scripting attacks and data injection attacks. We recommend that they
+be enabled by any website you load inside Electron.
 
 ### Why?
 
 CSP allows the server serving content to restrict and control the resources
-Electron will load for that given web page. `https://your-page.com` should have
-be allowed to scripts from the origins you defined, while scripts from
+Electron can load for that given web page. `https://your-page.com` should
+be allowed to load scripts from the origins you defined while scripts from
 `https://evil.attacker.com` should not be allowed to run. Defining a CSP is an
 easy way to improve your applications security.
 
@@ -303,7 +297,7 @@ Electron respects [the `Content-Security-Policy` HTTP header](https://developer.
 as well as the respective `<meta>` tag.
 
 The following CSP will allow Electron to execute scripts from the current
-website as well as from `apis.mydomain.com`.
+website and from `apis.mydomain.com`.
 
 ```txt
 // Bad
@@ -324,8 +318,9 @@ that is not known in advance.
 
 The `eval()` method has precisely one mission: To evaluate a series of
 characters as JavaScript and execute it. It is a required method whenever you
-need to evaluate code that is known ahead of time. While legitimate use cases
-exist, just like any other code generators, `eval()` is difficult to harden.
+need to evaluate code that is not known ahead of time. While legitimate use
+cases exist, just like any other code generators, `eval()` is difficult to
+harden.
 
 Generally speaking, it is easier to completely disable `eval()` than to make
 it bulletproof. Thus, if you do not need it, it is a good idea to disable it.
@@ -352,10 +347,9 @@ subsequent resources via `HTTP` is also known as "mixed content".
 
 ### Why?
 
-See the section on [only displaying secure content](#only-display-secure-content)
-for more details, but simply put, loading content over `HTTPS` assures the
-authenticity and integrity of the loaded resources while encrypting the traffic
-itself.
+Simply put, loading content over `HTTPS` assures the authenticity and integrity
+of the loaded resources while encrypting the traffic itself. See the section on
+[only displaying secure content](#only-display-secure-content) for more details.
 
 ### How?
 
@@ -411,7 +405,7 @@ const mainWindow = new BrowserWindow({})
 
 _Recommendation is Electron's default_
 
-Blink is the name of the rendering engine behind Chromium. Similarly to
+Blink is the name of the rendering engine behind Chromium. As with
 `experimentalFeatures`, the `blinkFeatures` property allows developers to
 enable features that have been disabled by default.
 
@@ -444,18 +438,17 @@ const mainWindow = new BrowserWindow()
 _Recommendation is Electron's default_
 
 You may have already guessed that disabling the `webSecurity` property on a
-renderer process ([`BrowserWindow`](browser-view),
+renderer process ([`BrowserWindow`](browser-window),
 [`BrowserView`](browser-view), or [`WebView`](web-view)) disables crucial
 security features.
 
-Legitimate use cases for this property exist in testing cases, but generally
-speaking, `webSecurity` should never be disabled in any production application.
+Do not disable `webSecurity` in production applications.
 
 ### Why?
 
-Disabling `webSecurity` will disable the same-origin policy as well as
-implicitly setting the `allowRunningInsecureContent` property to `true`. In
-other words, it allows the execution of insecure code from different domains.
+Disabling `webSecurity` will disable the same-origin policy and set
+`allowRunningInsecureContent` property to `true`. In other words, it allows
+the execution of insecure code from different domains.
 
 ### How?
 ```js
@@ -465,6 +458,7 @@ const mainWindow = new BrowserWindow({
     webSecurity: false
   }
 })
+```
 
 ```js
 // Good
@@ -487,15 +481,15 @@ _Recommendation is Electron's default_
 If you are using [`WebViews`](web-view), you might need the pages and scripts
 loaded in your `<webview>` tag to open new windows. The `allowpopups` attribute
 enables them to create new [`BrowserWindows`](browser-window) using the
-`window.open()` method. By default, `WebViews` are not allowed to create new
+`window.open()` method. `WebViews` are otherwise not allowed to create new
 windows.
 
 ### Why?
 
 If you do not need popups, you are better off not allowing the creation of
 new [`BrowserWindows`](browser-window) by default. This follows the principle
-of the minimally required access: Websites that you do not know to need popups
-should not have the ability to create new popups.
+of minimally required access: Don't let a website create new popups unless
+you know it needs that feature.
 
 ### How?
 
@@ -521,7 +515,7 @@ security features.
 ### Why?
 
 Since WebViews live in the DOM, they can be created by a script running on your
-website even if Node integration is otherwise disabled.
+website even if Node.js integration is otherwise disabled.
 
 Electron enables developers to disable various security features that control
 a renderer process. In most cases, developers do not need to disable any of
@@ -541,7 +535,7 @@ app.on('web-contents-created', (event, contents) => {
     delete webPreferences.preload
     delete webPreferences.preloadURL
 
-    // Disable node integration
+    // Disable Node.js integration
     webPreferences.nodeIntegration = false
 
     // Verify URL being loaded
@@ -555,6 +549,6 @@ app.on('web-contents-created', (event, contents) => {
 Again, this list merely minimizes the risk, it does not remove it. If your goal
 is to display a website, a browser will be a more secure option.
 
-[browser-window]: (../api/browser-window)
-[browser-view]: (../api/browser-view)
-[web-view]: (../api/web-view)
+[browser-window]: ../api/browser-window.md
+[browser-view]: ../api/browser-view.md
+[web-view]: ../api/web-view
