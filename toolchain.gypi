@@ -172,7 +172,11 @@
       'target_defaults': {
         'target_conditions': [
           ['_toolset=="target"', {
-            'cflags': [
+            # Do not use 'cflags' to make sure sysroot is appended at last.
+            'cflags_cc': [
+              '--sysroot=<(sysroot)',
+            ],
+            'cflags_c': [
               '--sysroot=<(sysroot)',
             ],
             'ldflags': [
