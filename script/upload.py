@@ -172,7 +172,7 @@ def get_text_with_editor(name):
 def create_or_get_release_draft(github, releases, tag, tag_exists):
   # Search for existing draft.
   for release in releases:
-    if release['draft']:
+    if release['draft'] and release['tag_name'] == tag:
       return release
 
   if tag_exists:
