@@ -83,6 +83,11 @@ const child = proc.spawn(electron)
 
 - [China](https://npm.taobao.org/mirrors/electron)
 
+  If you want to configure this mirror to `~/.npmrc`, please run the following command before installation:
+  ```shell
+  npx mirror-config-china
+  ```
+
 ## Documentation Translations
 
 Find documentation translations in [electron/electron-i18n](https://github.com/electron/electron-i18n).
