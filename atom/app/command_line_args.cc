@@ -1378,7 +1378,8 @@ bool IsBlacklistedArg(const base::CommandLine::CharType* arg) {
 
   if (prefix_length > 0) {
     a += prefix_length;
-    std::string switch_name(a, strcspn(a, "="));
+    std::string switch_name =
+        base::ToLowerASCII(base::StringPiece(a, strcspn(a, "=")));
     for (auto& item : blacklist) {
       if (switch_name == item)
         return true;
