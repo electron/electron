@@ -129,7 +129,7 @@
               'OTHER_LDFLAGS': [ '-stdlib=libc++' ],
             },
           }],
-          ['OS=="linux"', {
+          ['OS=="linux" and _toolset=="target"', {
             'cflags_cc': [
               '-std=gnu++14',
               '-nostdinc++',
@@ -138,6 +138,11 @@
             ],
             'ldflags': [
               '-nostdlib++',
+            ],
+          }],
+          ['OS=="linux" and _toolset=="host"', {
+            'cflags_cc': [
+              '-std=gnu++14',
             ],
           }],
         ],

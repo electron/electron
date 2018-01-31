@@ -245,7 +245,7 @@
           }],  # OS=="win"
         ],
       }],
-      ['OS=="linux" and _target_name in ["dump_syms", "node"]', {
+      ['OS=="linux" and _toolset=="target" and _target_name in ["dump_syms", "node"]', {
         'conditions': [
           ['libchromiumcontent_component==0', {
             'libraries': [
