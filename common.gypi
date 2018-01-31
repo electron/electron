@@ -184,7 +184,6 @@
           }, {
             'libraries': [
               '<@(libchromiumcontent_v8_libraries)',
-              '<(libchromiumcontent_dir)/libc++.so',
             ],
           }],
         ],
