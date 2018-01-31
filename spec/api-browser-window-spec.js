@@ -703,8 +703,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // FIXME(alexeykuzmin): Fails on Mac.
-  xdescribe('BrowserWindow.addTabbedWindow()', () => {
+  describe('BrowserWindow.addTabbedWindow()', () => {
     before(function () {
       if (process.platform !== 'darwin') {
         this.skip()
@@ -716,7 +715,13 @@ describe('BrowserWindow module', () => {
       assert.doesNotThrow(() => {
         w.addTabbedWindow(tabbedWindow)
       })
-      closeWindow(tabbedWindow).then(done)
+
+      assert.equal(BrowserWindow.getAllWindows().length, 3) // Test window + w + tabbedWindow
+
+      closeWindow(tabbedWindow, {assertSingleWindow: false}).then(function () {
+        assert.equal(BrowserWindow.getAllWindows().length, 2) // Test window + w
+        done()
+      })
     })
   })
 
