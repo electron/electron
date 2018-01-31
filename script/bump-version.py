@@ -34,6 +34,7 @@ def main():
     update_package_json(version)
     tag_version(version)
 
+  print 'Bumped to version: {0}'.format(version)
 
 def increase_version(versions, index):
   for i in range(index + 1, 4):

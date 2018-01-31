@@ -1,11 +1,11 @@
 {
   "name": "electron",
-  "version": "1.6.16",
+  "version": "1.6.17",
   "devDependencies": {
     "asar": "^0.11.0",
     "browserify": "^13.1.0",
     "colors": "^1.1.2",
-    "dugite": "^1.45.0",
+    "dugite": "^1.57.0",
     "electabul": "~0.0.4",
     "electron-docs-linter": "^2.3.3",
     "electron-typescript-definitions": "1.2.7",

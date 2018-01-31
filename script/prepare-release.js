@@ -18,8 +18,8 @@ const versionType = args._[0]
 
 assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
 if (!versionType && !args.notesOnly) {
-  console.log(`Usage: prepare-release versionType [major | minor | patch | beta]` +
-     ` (--stable) (--notesOnly)`)
+  console.log(`Usage: prepare-release versionType [major | minor | patch ]` +
+     ` (--notesOnly)`)
   process.exit(1)
 }
 
@@ -29,7 +29,7 @@ github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 
 async function createReleaseBranch () {
   console.log(`Creating release branch.`)
-  let checkoutDetails = await GitProcess.exec([ 'checkout', '-b', 'release-1-7-x' ], gitDir)
+  let checkoutDetails = await GitProcess.exec([ 'checkout', '-b', 'release-1-6-x' ], gitDir)
   if (checkoutDetails.exitCode === 0) {
     console.log(`${pass} Successfully created the release branch.`)
   } else {
@@ -48,7 +48,7 @@ async function createReleaseBranch () {
 function getNewVersion () {
   console.log(`Bumping for new "${versionType}" version.`)
   let bumpScript = path.join(__dirname, 'bump-version.py')
-  let scriptArgs = [bumpScript, `--bump ${versionType}`]
+  let scriptArgs = [bumpScript, `${versionType}`]
   if (args.stable) {
     scriptArgs.push('--stable')
   }
@@ -161,7 +161,7 @@ async function pushRelease () {
 }
 
 async function runReleaseBuilds () {
-  await ciReleaseBuild('release-1-7-x', {
+  await ciReleaseBuild('release-1-6-x', {
     ghRelease: true
   })
 }
