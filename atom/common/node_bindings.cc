@@ -192,18 +192,14 @@ void NodeBindings::Initialize() {
 }
 
 node::Environment* NodeBindings::CreateEnvironment(
-<<<<<<< c1acc6cb5c9591122cecfcf3910c73d62d28eaf7
-    v8::Handle<v8::Context> context) {
+    v8::Handle<v8::Context> context,
+    node::MultiIsolatePlatform* platform) {
 #if defined(OS_WIN)
   auto& atom_args = AtomCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
   std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
                  [](auto& a) { return base::WideToUTF8(a); });
 #else
-=======
-    v8::Handle<v8::Context> context,
-    node::MultiIsolatePlatform* platform) {
->>>>>>> Upgrade to node v9.3.0 (#11507)
   auto args = AtomCommandLine::argv();
 #endif
 
