@@ -31,21 +31,18 @@ async function getDraftRelease (version, skipValidation) {
   let drafts
   let versionToCheck
   if (version) {
-    drafts = releaseInfo.data
-      .filter(release => release.tag_name === version)
     versionToCheck = version
   } else {
-    drafts = releaseInfo.data
-      .filter(release => release.draft)
     versionToCheck = pkgVersion
   }
-
+  drafts = releaseInfo.data
+    .filter(release => release.tag_name === versionToCheck &&
+      release.draft === true)
   const draft = drafts[0]
   if (!skipValidation) {
     failureCount = 0
     check(drafts.length === 1, 'one draft exists', true)
-    check(draft.tag_name === versionToCheck, `draft release version matches local package.json (${versionToCheck})`)
-    if (versionToCheck.indexOf('beta')) {
+    if (versionToCheck.indexOf('beta') > -1) {
       check(draft.prerelease, 'draft is a prerelease')
     }
     check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes')
