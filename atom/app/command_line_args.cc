@@ -1388,11 +1388,8 @@ bool IsBlacklistedArg(const base::CommandLine::CharType* arg) {
     a += prefix_length;
     std::string switch_name =
         base::ToLowerASCII(base::StringPiece(a, strcspn(a, "=")));
-    auto* iter = std::lower_bound(std::begin(kBlacklist), std::end(kBlacklist),
-                                  switch_name);
-    if (iter != std::end(kBlacklist) && switch_name == *iter) {
-      return true;
-    }
+    return std::lower_bound(std::begin(kBlacklist), std::end(kBlacklist),
+                            switch_name);
   }
 
   return false;
@@ -1408,9 +1405,8 @@ bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv) {
                           return base::StringPiece(a) < base::StringPiece(b);
                         }))
       << "The kBlacklist must be in sorted order";
-  DCHECK_NE(std::find(std::begin(kBlacklist), std::end(kBlacklist),
-                      base::StringPiece("inspect")),
-            std::end(kBlacklist))
+  DCHECK_NE(std::binary_search(std::begin(kBlacklist), std::end(kBlacklist),
+                      base::StringPiece("inspect"));
       << "Do not forget to add Node command line flags to kBlacklist";
 
   const base::CommandLine::StringType dashdash(2, '-');
