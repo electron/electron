@@ -161,6 +161,18 @@ to the app's binary:
 exec "$@" --executed-from="$(pwd)" --pid=$$ > /dev/null 2>&1 &
 ```
 
+Alternatively, if you're building your `snap` with `strict` confinement, you
+can use the `desktop-launch` command:
+
+```yaml
+apps:
+  myApp:
+    # Correct the TMPDIR path for Chromium Framework/Electron to ensure
+    # libappindicator has readable resources.
+    command: env TMPDIR=$XDG_RUNTIME_DIR PATH=/usr/local/bin:${PATH} ${SNAP}/bin/desktop-launch $SNAP/myApp/desktop
+    desktop: usr/share/applications/desktop.desktop
+```
+
 [snapcraft.io]: https://snapcraft.io/
 [snapcraft-store]: https://snapcraft.io/store/
 [snapcraft-syntax]: https://docs.snapcraft.io/build-snaps/syntax
