@@ -679,6 +679,22 @@ console.log(installed)
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
+#### `BrowserWindow.querySystemIdleState(idle_threshold, callback)`
+
+* `idleThreshold` Interger
+* `callback` Function
+  * `active` | `idle` | `locked` | `unknown` String
+
+Calculate system idle state. `idle_threshold` is the amount of time (in seconds)
+before considered idle. State will be notified via callback represents current system
+idle state. `locked` is available on supported system only.
+
+#### `BrowserWindow.querySystemIdleTime(callback)`
+
+* `callback` Function
+
+Calculate system idle time in seconds.
+
 ### Instance Properties
 
 Objects created with `new BrowserWindow` have the following properties:
