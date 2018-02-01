@@ -6,17 +6,17 @@ for any Snapcraft environment, including the Ubuntu Software Center.
 ## Background and Requirements
 
 Together with the broader Linux community, Canonical aims to fix many of the
-common software installation problems with the [`snapcraft`](snapcraft.io)
+common software installation problems with the [`snapcraft`][snapcraft.io)
 project. Snaps are containerized software packages that include required
 dependencies, auto-update, and work on all major Linux distributions without
 system modification.
 
 There are three ways to create a `.snap` file:
 
-1) Using `electron-installer-snap`, which takes `electron-packager's` output
-2) Using an already created `.deb` package
-3) Using [`electron-forge`](electron-forge) or
-   [`electron-builder`](electron-builder), both tools that come with `snap`
+1) Using `electron-installer-snap`, which takes `electron-packager's` output.
+2) Using an already created `.deb` package.
+3) Using [`electron-forge`][electron-forge] or
+   [`electron-builder`][electron-builder], both tools that come with `snap`
    support out of the box. This is the easiest option.
 
 In all cases, you will need to have the `snapcraft` tool installed. We
@@ -27,7 +27,7 @@ snap install snapcraft --classic
 ```
 
 While it _is possible_ to install `snapcraft` on macOS using Homebrew, it
-is not able to build `snap` packages and is focused on managed packages
+is not able to build `snap` packages and is focused on managing  packages
 in the store.
 
 # Using `electron-installer-snap`
@@ -41,7 +41,7 @@ npm install --save-dev electron-installer-snap
 
 ## Step 1: Package Your Electron Application
 
-Package the application using [electron-packager](electron-packager) (or a
+Package the application using [electron-packager][electron-packager] (or a
 similar tool). Make sure to remove `node_modules` that you don't need in your
 final application, since any module you don't actually need will just increase
 your application's size.
@@ -77,7 +77,7 @@ npx electron-installer-snap --src=out/myappname-linux-x64
 ```
 
 If you have an existing build pipeline, you can use `electron-installer-snap`
-programmatically. For more information, see the [API docs](snapcraft-syntax).
+programmatically. For more information, see the [API docs][snapcraft-syntax].
 
 ```js
 const snap = require('electron-installer-snap')
@@ -97,14 +97,14 @@ building blocks.
 
 If you do not already have a `.deb` package, using `electron-installer-snap`
 might be an easier path to create snap packages. However, multiple solutions
-for creating Debian packages exist, including [`electron-forge`](electron-forge),
-[`electron-builder`](electron-builder) or
-[`electron-installer-debian`](electron-installer-debian).
+for creating Debian packages exist, including [`electron-forge`][electron-forge],
+[`electron-builder`][electron-builder] or
+[`electron-installer-debian`][electron-installer-debian].
 
 ## Step 2: Create a snapcraft.yaml
 
 For more information on the available configuration options, see the
-[documentation on the snapcraft syntax](https://docs.snapcraft.io/build-snaps/syntax).
+[documentation on the snapcraft syntax][snapcraft-syntax].
 Let's look at an example:
 
 ```yaml
@@ -125,8 +125,6 @@ parts:
     source-type: deb
     after:
       - desktop-gtk2
-    build-packages:
-      - patchelf
     stage-packages:
       - libasound2
       - libgconf2-4
