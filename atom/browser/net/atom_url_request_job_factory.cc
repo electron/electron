@@ -15,7 +15,17 @@ using content::BrowserThread;
 
 namespace atom {
 
+namespace {
+
+int disable_protocol_intercept_flag_key = 0;
+
+}  // namespace
+
 typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
+
+const void* DisableProtocolInterceptFlagKey() {
+  return &disable_protocol_intercept_flag_key;
+}
 
 AtomURLRequestJobFactory::AtomURLRequestJobFactory() {}
 
@@ -92,6 +102,8 @@ net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
 
   auto it = protocol_handler_map_.find(scheme);
   if (it == protocol_handler_map_.end())
+    return nullptr;
+  if (request->GetUserData(DisableProtocolInterceptFlagKey()))
     return nullptr;
   return it->second->MaybeCreateJob(request, network_delegate);
 }
