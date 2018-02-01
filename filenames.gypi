@@ -63,6 +63,7 @@
       'lib/renderer/init.js',
       'lib/renderer/inspector.js',
       'lib/renderer/override.js',
+      'lib/renderer/security-warnings.js',
       'lib/renderer/window-setup.js',
       'lib/renderer/web-view/guest-view-internal.js',
       'lib/renderer/web-view/web-view.js',
