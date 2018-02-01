@@ -209,6 +209,10 @@ class App : public AtomBrowserClient::Delegate,
   bool MoveToApplicationsFolder(mate::Arguments* args);
   bool IsInApplicationsFolder();
 #endif
+#if defined(MAS_BUILD)
+  base::Callback<void()> StartAccessingSecurityScopedResource(
+    mate::Arguments* args);
+#endif
 
 #if defined(OS_WIN)
   // Get the current Jump List settings.

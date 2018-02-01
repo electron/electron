@@ -970,6 +970,23 @@ details. Disabled by default.
 Set the about panel options. This will override the values defined in the app's
 `.plist` file. See the [Apple docs][about-panel-options] for more details.
 
+### `app.startAccessingSecurityScopedResource(bookmarkData)` _macOS (mas)_
+
+* `bookmarkData` String - The base64 encoded security scoped bookmark data returned by the `dialog.showOpenDialog` or `dialog.showSaveDialog` methods.
+
+Returns `Function` - This function **must** be called once you have finished accessing the security scoped file. If you do not remember to stop accessing the bookmark, [kernel resources will be leaked](https://developer.apple.com/reference/foundation/nsurl/1417051-startaccessingsecurityscopedreso?language=objc) and your app will lose its ability to reach outside the sandbox completely, until your app is restarted.
+
+```js
+// Start accessing the file.
+const stopAccessingSecurityScopedResource = app.startAccessingSecurityScopedResource(data)
+// You can now access the file outside of the sandbox 🎉
+
+// Remember to stop accessing the file once you've finished with it.
+stopAccessingSecurityScopedResource()
+```
+
+Start accessing a security scoped resource. With this method electron applications that are packaged for the Mac App Store may reach outside their sandbox to access files chosen by the user. See [Apple's documentation](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) for a description of how this system works.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 * `switch` String - A command-line switch
