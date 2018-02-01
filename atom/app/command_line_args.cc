@@ -38,24 +38,20 @@ bool IsUrlArg(const base::CommandLine::CharType* arg) {
   return false;
 }
 
-// The blacklist of command line switches, must be sorted.
-// Created with:
-//     find ./ -name "*switches.cc" \
-//       | xargs grep -P --no-filename "\"\S+\";" \
-//       | perl -pe 's|^.*?"(\S+)";|  "$1",|' \
-//       | sort | uniq
-// then manually insert following switches into the list:
-//     "inspect",
-//     "inspect-brk",
-// finally write a small piece of code to print out the sorted list since
-// the "sort" tool may use differnt rules from C++ STL.
-//     std::vector<std::string> sorted(std::begin(kBlacklist),
-//                                     std::end(kBlacklist));
-//     std::sort(sorted.begin(), sorted.end());
-//     FILE* f = fopen("testlist2", "w+");
-//     for (auto& i : sorted)
-//       fprintf(f, "\"%s\",\n", i.c_str());
-//     fclose(f);
+/*
+ * The blacklist of command line switches, must be sorted.
+ * Update the list by pasting the following command into bash
+ * in libchromiumcontent/src/:
+
+   (find ./ -name "*switches.cc" | \
+      xargs grep -P --no-filename "\"\S+\";" | \
+      perl -pe 's|^.*?"(\S+)";|  "$1",|'; \
+      echo '  "inspect",'; \
+      echo '  "inspect-brk",') | \
+    LANG=C sort | \
+    uniq > blacklist-switches.txt
+
+ */
 const char* kBlacklist[] = {
   "/prefetch:1",
   "/prefetch:2",
