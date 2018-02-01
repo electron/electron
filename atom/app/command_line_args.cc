@@ -1405,9 +1405,9 @@ bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv) {
                           return base::StringPiece(a) < base::StringPiece(b);
                         }))
       << "The kBlacklist must be in sorted order";
-  DCHECK_NE(std::binary_search(std::begin(kBlacklist), std::end(kBlacklist),
-                      base::StringPiece("inspect"));
-      << "Do not forget to add Node command line flags to kBlacklist";
+  DCHECK(std::binary_search(std::begin(kBlacklist), std::end(kBlacklist),
+                            base::StringPiece("inspect")))
+      << "Remember to add Node command line flags to kBlacklist";
 
   const base::CommandLine::StringType dashdash(2, '-');
   bool block_blacklisted_args = false;
