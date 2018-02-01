@@ -718,7 +718,7 @@ describe('BrowserWindow module', () => {
 
       assert.equal(BrowserWindow.getAllWindows().length, 3) // Test window + w + tabbedWindow
 
-      closeWindow(tabbedWindow, {assertSingleWindow: false}).then(function () {
+      closeWindow(tabbedWindow, {assertSingleWindow: false}).then(() => {
         assert.equal(BrowserWindow.getAllWindows().length, 2) // Test window + w
         done()
       })
