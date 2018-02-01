@@ -33,7 +33,7 @@ enum FileDialogProperty {
   FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY = 1 << 7,
 };
 
-#if defined(OS_MACOSX)
+#if defined(MAS_BUILD)
   typedef base::Callback<void(
       bool result,
       const std::vector<base::FilePath>& paths,

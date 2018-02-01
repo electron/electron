@@ -53,7 +53,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   ~FileSelectHelper() override {}
 
-#if defined(OS_MACOSX)
+#if defined(MAS_BUILD)
   void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths,
                         const std::vector<std::string>& bookmarks)
 #else
@@ -79,7 +79,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     OnFilesSelected(file_info);
   }
 
-#if defined(OS_MACOSX)
+#if defined(MAS_BUILD)
   void OnSaveDialogDone(bool result, const base::FilePath& path,
                         const std::string& bookmark)
 #else
