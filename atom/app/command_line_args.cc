@@ -1388,8 +1388,8 @@ bool IsBlacklistedArg(const base::CommandLine::CharType* arg) {
     a += prefix_length;
     std::string switch_name =
         base::ToLowerASCII(base::StringPiece(a, strcspn(a, "=")));
-    return std::lower_bound(std::begin(kBlacklist), std::end(kBlacklist),
-                            switch_name);
+    return std::binary_search(std::begin(kBlacklist), std::end(kBlacklist),
+                              switch_name);
   }
 
   return false;
