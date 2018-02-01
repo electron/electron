@@ -21,8 +21,7 @@ There are three ways to create a `.snap` file:
 2) Using an already created `.deb` package
 3) Using [`electron-forge`](electron-forge) or
    [`electron-builder`](electron-builder), both tools that come with `snap`
-   support out of the box (not further documented here, please see those
-   frameworks for further guidance)
+   support out of the box. This is the easiest option.
 
 In all cases, you will need to have the `snapcraft` tool installed. We
 recommend building on Ubuntu 16.04 (or the current LTS).
