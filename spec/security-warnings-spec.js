@@ -3,8 +3,6 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const url = require('url')
-const os = require('os')
-const qs = require('querystring')
 
 const {remote} = require('electron')
 const {BrowserWindow} = remote
@@ -15,22 +13,22 @@ describe('security warnings', () => {
   let useCsp = true
 
   before(() => {
-    server = http.createServer(function(request, response) {
+    server = http.createServer((request, response) => {
       const uri = url.parse(request.url).pathname
       let filename = path.join(__dirname, './fixtures/pages', uri)
 
-      fs.exists(filename, (exists) => {
-        if (!exists) {
+      fs.stat(filename, (error, stats) => {
+        if (error) {
           response.writeHead(404, { 'Content-Type': 'text/plain' })
           response.end()
           return
         }
 
-        if (fs.statSync(filename).isDirectory()) {
+        if (stats.isDirectory()) {
           filename += '/index.html'
         }
 
-        fs.readFile(filename, 'binary', function(err, file) {
+        fs.readFile(filename, 'binary', (err, file) => {
           if (err) {
             response.writeHead(404, { 'Content-Type': 'text/plain' })
             response.end()
