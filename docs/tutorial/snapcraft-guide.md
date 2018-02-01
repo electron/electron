@@ -26,9 +26,9 @@ recommend building on Ubuntu 16.04 (or the current LTS).
 snap install snapcraft --classic
 ```
 
-While it _is possible_ to install `snapcraft` on macOS using Homebrew, you are
-less likely to encounter issues when running `snapcraft` on an actual Linux
-distribution. As of today, it is not able ot build `snap` packages, for instance.
+While it _is possible_ to install `snapcraft` on macOS using Homebrew, it
+is not able to build `snap` packages and is focused on managed packages
+in the store.
 
 # Using `electron-installer-snap`
 
