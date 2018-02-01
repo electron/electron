@@ -38,24 +38,20 @@ bool IsUrlArg(const base::CommandLine::CharType* arg) {
   return false;
 }
 
-// The blacklist of command line switches, must be sorted.
-// Created with:
-//     find ./ -name "*switches.cc" \
-//       | xargs grep -P --no-filename "\"\S+\";" \
-//       | perl -pe 's|^.*?"(\S+)";|  "$1",|' \
-//       | sort | uniq
-// then manually insert following switches into the list:
-//     "inspect",
-//     "inspect-brk",
-// finally write a small piece of code to print out the sorted list since
-// the "sort" tool may use differnt rules from C++ STL.
-//     std::vector<std::string> sorted(std::begin(kBlacklist),
-//                                     std::end(kBlacklist));
-//     std::sort(sorted.begin(), sorted.end());
-//     FILE* f = fopen("testlist2", "w+");
-//     for (auto& i : sorted)
-//       fprintf(f, "\"%s\",\n", i.c_str());
-//     fclose(f);
+/*
+ * The blacklist of command line switches, must be sorted.
+ * Update the list by pasting the following command into bash
+ * in libchromiumcontent/src/:
+
+   (find ./ -name "*switches.cc" | \
+      xargs grep -P --no-filename "\"\S+\";" | \
+      perl -pe 's|^.*?"(\S+)";|  "$1",|'; \
+      echo '  "inspect",'; \
+      echo '  "inspect-brk",') | \
+    LANG=C sort | \
+    uniq > blacklist-switches.txt
+
+ */
 const char* kBlacklist[] = {
   "/prefetch:1",
   "/prefetch:2",
@@ -1390,12 +1386,10 @@ bool IsBlacklistedArg(const base::CommandLine::CharType* arg) {
 
   if (prefix_length > 0) {
     a += prefix_length;
-    std::string switch_name(a, strcspn(a, "="));
-    auto* iter = std::lower_bound(std::begin(kBlacklist), std::end(kBlacklist),
-                                  switch_name);
-    if (iter != std::end(kBlacklist) && switch_name == *iter) {
-      return true;
-    }
+    std::string switch_name =
+        base::ToLowerASCII(base::StringPiece(a, strcspn(a, "=")));
+    return std::binary_search(std::begin(kBlacklist), std::end(kBlacklist),
+                              switch_name);
   }
 
   return false;
@@ -1411,10 +1405,9 @@ bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv) {
                           return base::StringPiece(a) < base::StringPiece(b);
                         }))
       << "The kBlacklist must be in sorted order";
-  DCHECK_NE(std::find(std::begin(kBlacklist), std::end(kBlacklist),
-                      base::StringPiece("inspect")),
-            std::end(kBlacklist))
-      << "Do not forget to add Node command line flags to kBlacklist";
+  DCHECK(std::binary_search(std::begin(kBlacklist), std::end(kBlacklist),
+                            base::StringPiece("inspect")))
+      << "Remember to add Node command line flags to kBlacklist";
 
   const base::CommandLine::StringType dashdash(2, '-');
   bool block_blacklisted_args = false;
