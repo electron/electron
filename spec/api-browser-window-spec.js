@@ -3129,6 +3129,41 @@ describe('BrowserWindow module', () => {
       })
     })
   })
+
+  describe('BrowserWindow.querySystemIdleState', () => {
+    it('notify current system idle state', (done) => {
+      BrowserWindow.querySystemIdleState(1, (idleState) => {
+        assert.ok(idleState)
+        done()
+      })
+    })
+
+    it('does not accept non positive integer threshold', () => {
+      assert.throws(() => {
+        BrowserWindow.querySystemIdleState(-1, (idleState) => {
+        })
+      })
+
+      assert.throws(() => {
+        BrowserWindow.querySystemIdleState(NaN, (idleState) => {
+        })
+      })
+
+      assert.throws(() => {
+        BrowserWindow.querySystemIdleState('a', (idleState) => {
+        })
+      })
+    })
+  });
+
+  describe('BrowserWindow.querySystemIdleTime', () => {
+    it('notify current system idle time', (done) => {
+      BrowserWindow.querySystemIdleTime((idleTime) => {
+        assert.ok(idleTime)
+        done()
+      })
+    })
+  });
 })
 
 const assertBoundsEqual = (actual, expect) => {
