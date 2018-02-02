@@ -10,26 +10,28 @@ const assert = require('assert')
 const dbus = require('dbus-native')
 const Promise = require('bluebird')
 
-const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS;
+const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS
 
-(skip ? describe.skip : describe)('powerMonitor', () => {
-  let logindMock, powerMonitor, getCalls, emitSignal, reset
+describe('powerMonitor', () => {
+  let logindMock, dbusMockPowerMonitor, getCalls, emitSignal, reset
 
-  before(async () => {
-    const systemBus = dbus.systemBus()
-    const loginService = systemBus.getService('org.freedesktop.login1')
-    const getInterface = Promise.promisify(loginService.getInterface, {context: loginService})
-    logindMock = await getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock')
-    getCalls = Promise.promisify(logindMock.GetCalls, {context: logindMock})
-    emitSignal = Promise.promisify(logindMock.EmitSignal, {context: logindMock})
-    reset = Promise.promisify(logindMock.Reset, {context: logindMock})
-  })
+  if (!skip) {
+    before(async () => {
+      const systemBus = dbus.systemBus()
+      const loginService = systemBus.getService('org.freedesktop.login1')
+      const getInterface = Promise.promisify(loginService.getInterface, { context: loginService })
+      logindMock = await getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock')
+      getCalls = Promise.promisify(logindMock.GetCalls, { context: logindMock })
+      emitSignal = Promise.promisify(logindMock.EmitSignal, { context: logindMock })
+      reset = Promise.promisify(logindMock.Reset, { context: logindMock })
+    })
 
-  after(async () => {
-    await reset()
-  })
+    after(async () => {
+      await reset()
+    })
+  }
 
-  describe('when powerMonitor module is loaded', () => {
+  (skip ? describe.skip : describe)('when powerMonitor module is loaded with dbus mock', () => {
     function onceMethodCalled (done) {
       function cb () {
         logindMock.removeListener('MethodCalled', cb)
@@ -41,7 +43,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRES
     before((done) => {
       logindMock.on('MethodCalled', onceMethodCalled(done))
       // lazy load powerMonitor after we listen to MethodCalled mock signal
-      powerMonitor = require('electron').remote.powerMonitor
+      dbusMockPowerMonitor = require('electron').remote.powerMonitor
     })
 
     it('should call Inhibit to delay suspend', async () => {
@@ -49,24 +51,24 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRES
       assert.equal(calls.length, 1)
       assert.deepEqual(calls[0].slice(1), [
         'Inhibit', [
-          [[{type: 's', child: []}], ['sleep']],
-          [[{type: 's', child: []}], ['electron']],
-          [[{type: 's', child: []}], ['Application cleanup before suspend']],
-          [[{type: 's', child: []}], ['delay']]
+          [[{ type: 's', child: [] }], ['sleep']],
+          [[{ type: 's', child: [] }], ['electron']],
+          [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
+          [[{ type: 's', child: [] }], ['delay']]
         ]
       ])
     })
 
     describe('when PrepareForSleep(true) signal is sent by logind', () => {
       it('should emit "suspend" event', (done) => {
-        powerMonitor.once('suspend', () => done())
+        dbusMockPowerMonitor.once('suspend', () => done())
         emitSignal('org.freedesktop.login1.Manager', 'PrepareForSleep',
           'b', [['b', true]])
       })
 
       describe('when PrepareForSleep(false) signal is sent by logind', () => {
         it('should emit "resume" event', (done) => {
-          powerMonitor.once('resume', () => done())
+          dbusMockPowerMonitor.once('resume', () => done())
           emitSignal('org.freedesktop.login1.Manager', 'PrepareForSleep',
             'b', [['b', false]])
         })
@@ -76,10 +78,10 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRES
           assert.equal(calls.length, 2)
           assert.deepEqual(calls[1].slice(1), [
             'Inhibit', [
-              [[{type: 's', child: []}], ['sleep']],
-              [[{type: 's', child: []}], ['electron']],
-              [[{type: 's', child: []}], ['Application cleanup before suspend']],
-              [[{type: 's', child: []}], ['delay']]
+              [[{ type: 's', child: [] }], ['sleep']],
+              [[{ type: 's', child: [] }], ['electron']],
+              [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
+              [[{ type: 's', child: [] }], ['delay']]
             ]
           ])
         })
@@ -90,7 +92,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRES
       before(async () => {
         const calls = await getCalls()
         assert.equal(calls.length, 2)
-        powerMonitor.once('shutdown', () => { })
+        dbusMockPowerMonitor.once('shutdown', () => { })
       })
 
       it('should call Inhibit to delay shutdown', async () => {
@@ -98,19 +100,61 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRES
         assert.equal(calls.length, 3)
         assert.deepEqual(calls[2].slice(1), [
           'Inhibit', [
-            [[{type: 's', child: []}], ['shutdown']],
-            [[{type: 's', child: []}], ['electron']],
-            [[{type: 's', child: []}], ['Ensure a clean shutdown']],
-            [[{type: 's', child: []}], ['delay']]
+            [[{ type: 's', child: [] }], ['shutdown']],
+            [[{ type: 's', child: [] }], ['electron']],
+            [[{ type: 's', child: [] }], ['Ensure a clean shutdown']],
+            [[{ type: 's', child: [] }], ['delay']]
           ]
         ])
       })
 
       describe('when PrepareForShutdown(true) signal is sent by logind', () => {
         it('should emit "shutdown" event', (done) => {
-          powerMonitor.once('shutdown', () => { done() })
+          dbusMockPowerMonitor.once('shutdown', () => { done() })
           emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown',
             'b', [['b', true]])
+        })
+      })
+    })
+  })
+
+  describe('powerMonitor', () => {
+    let powerMonitor
+    before(() => {
+      powerMonitor = require('electron').remote.powerMonitor
+    })
+
+    describe('powerMonitor.querySystemIdleState', () => {
+      it('notify current system idle state', (done) => {
+        powerMonitor.querySystemIdleState(1, (idleState) => {
+          assert.ok(idleState)
+          done()
+        })
+      })
+
+      it('does not accept non positive integer threshold', () => {
+        assert.throws(() => {
+          powerMonitor.querySystemIdleState(-1, (idleState) => {
+          })
+        })
+
+        assert.throws(() => {
+          powerMonitor.querySystemIdleState(NaN, (idleState) => {
+          })
+        })
+
+        assert.throws(() => {
+          powerMonitor.querySystemIdleState('a', (idleState) => {
+          })
+        })
+      })
+    })
+
+    describe('powerMonitor.querySystemIdleTime', () => {
+      it('notify current system idle time', (done) => {
+        powerMonitor.querySystemIdleTime((idleTime) => {
+          assert.ok(idleTime >= 0)
+          done()
         })
       })
     })

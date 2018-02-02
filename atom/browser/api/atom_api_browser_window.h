@@ -19,8 +19,6 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/render_widget_host.h"
 #include "native_mate/persistent_dictionary.h"
-#include "ui/base/idle/idle.h"
-#include "ui/gfx/image/image.h"
 
 class GURL;
 
@@ -53,12 +51,6 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   // Returns the BrowserWindow object from |native_window|.
   static v8::Local<v8::Value> From(v8::Isolate* isolate,
                                    NativeWindow* native_window);
-
-  static void QuerySystemIdleState(v8::Isolate* isolate,
-                                   int idle_threshold,
-                                   const ui::IdleCallback& callback);
-
-  static void QuerySystemIdleTime(const ui::IdleTimeCallback& callback);
 
   NativeWindow* window() const { return window_.get(); }
 
@@ -118,9 +110,9 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
                             const base::DictionaryValue& details) override;
   void OnNewWindowForTab() override;
 
-#if defined(OS_WIN)
+  #if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
-#endif
+  #endif
 
   base::WeakPtr<BrowserWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -332,23 +324,6 @@ struct Converter<atom::NativeWindow*> {
   }
 };
 
-template<>
-struct Converter<ui::IdleState> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const ui::IdleState& in) {
-    switch (in) {
-      case ui::IDLE_STATE_ACTIVE:
-        return mate::StringToV8(isolate, "active");
-      case ui::IDLE_STATE_IDLE:
-        return mate::StringToV8(isolate, "idle");
-      case ui::IDLE_STATE_LOCKED:
-        return mate::StringToV8(isolate, "locked");
-      case ui::IDLE_STATE_UNKNOWN:
-      default:
-        return mate::StringToV8(isolate, "unknown");
-    }
-  }
-};
 }  // namespace mate
 
 #endif  // ATOM_BROWSER_API_ATOM_API_BROWSER_WINDOW_H_
