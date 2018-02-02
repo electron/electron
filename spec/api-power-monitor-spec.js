@@ -19,11 +19,11 @@ describe('powerMonitor', () => {
     before(async () => {
       const systemBus = dbus.systemBus()
       const loginService = systemBus.getService('org.freedesktop.login1')
-      const getInterface = Promise.promisify(loginService.getInterface, { context: loginService })
+      const getInterface = Promise.promisify(loginService.getInterface, {context: loginService})
       logindMock = await getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock')
-      getCalls = Promise.promisify(logindMock.GetCalls, { context: logindMock })
-      emitSignal = Promise.promisify(logindMock.EmitSignal, { context: logindMock })
-      reset = Promise.promisify(logindMock.Reset, { context: logindMock })
+      getCalls = Promise.promisify(logindMock.GetCalls, {context: logindMock})
+      emitSignal = Promise.promisify(logindMock.EmitSignal, {context: logindMock})
+      reset = Promise.promisify(logindMock.Reset, {context: logindMock})
     })
 
     after(async () => {
@@ -51,10 +51,10 @@ describe('powerMonitor', () => {
       assert.equal(calls.length, 1)
       assert.deepEqual(calls[0].slice(1), [
         'Inhibit', [
-          [[{ type: 's', child: [] }], ['sleep']],
-          [[{ type: 's', child: [] }], ['electron']],
-          [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
-          [[{ type: 's', child: [] }], ['delay']]
+          [[{type: 's', child: []}], ['sleep']],
+          [[{type: 's', child: []}], ['electron']],
+          [[{type: 's', child: []}], ['Application cleanup before suspend']],
+          [[{type: 's', child: []}], ['delay']]
         ]
       ])
     })
@@ -78,10 +78,10 @@ describe('powerMonitor', () => {
           assert.equal(calls.length, 2)
           assert.deepEqual(calls[1].slice(1), [
             'Inhibit', [
-              [[{ type: 's', child: [] }], ['sleep']],
-              [[{ type: 's', child: [] }], ['electron']],
-              [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
-              [[{ type: 's', child: [] }], ['delay']]
+              [[{type: 's', child: []}], ['sleep']],
+              [[{type: 's', child: []}], ['electron']],
+              [[{type: 's', child: []}], ['Application cleanup before suspend']],
+              [[{type: 's', child: []}], ['delay']]
             ]
           ])
         })
@@ -100,10 +100,10 @@ describe('powerMonitor', () => {
         assert.equal(calls.length, 3)
         assert.deepEqual(calls[2].slice(1), [
           'Inhibit', [
-            [[{ type: 's', child: [] }], ['shutdown']],
-            [[{ type: 's', child: [] }], ['electron']],
-            [[{ type: 's', child: [] }], ['Ensure a clean shutdown']],
-            [[{ type: 's', child: [] }], ['delay']]
+            [[{type: 's', child: []}], ['shutdown']],
+            [[{type: 's', child: []}], ['electron']],
+            [[{type: 's', child: []}], ['Ensure a clean shutdown']],
+            [[{type: 's', child: []}], ['delay']]
           ]
         ])
       })
@@ -118,7 +118,7 @@ describe('powerMonitor', () => {
     })
   })
 
-  describe('powerMonitor', () => {
+  describe('when powerMonitor module is loaded', () => {
     let powerMonitor
     before(() => {
       powerMonitor = require('electron').remote.powerMonitor
