@@ -13,11 +13,11 @@ system modification.
 
 There are three ways to create a `.snap` file:
 
-1) Using `electron-installer-snap`, which takes `electron-packager's` output.
-2) Using an already created `.deb` package.
-3) Using [`electron-forge`][electron-forge] or
+1) Using [`electron-forge`][electron-forge] or
    [`electron-builder`][electron-builder], both tools that come with `snap`
    support out of the box. This is the easiest option.
+2) Using `electron-installer-snap`, which takes `electron-packager`'s output.
+3) Using an already created `.deb` package.
 
 In all cases, you will need to have the `snapcraft` tool installed. We
 recommend building on Ubuntu 16.04 (or the current LTS).
@@ -27,19 +27,20 @@ snap install snapcraft --classic
 ```
 
 While it _is possible_ to install `snapcraft` on macOS using Homebrew, it
-is not able to build `snap` packages and is focused on managing  packages
+is not able to build `snap` packages and is focused on managing packages
 in the store.
 
-# Using `electron-installer-snap`
+## Using `electron-installer-snap`
 
-The module works like `electron-winstaller` and similar modules in that its
-scope is limited to building snap packages. You can install it with:
+The module works like [`electron-winstaller`][electron-winstaller] and similar
+modules in that its scope is limited to building snap packages. You can install
+it with:
 
 ```sh
 npm install --save-dev electron-installer-snap
 ```
 
-## Step 1: Package Your Electron Application
+### Step 1: Package Your Electron Application
 
 Package the application using [electron-packager][electron-packager] (or a
 similar tool). Make sure to remove `node_modules` that you don't need in your
@@ -66,7 +67,7 @@ The output should look roughly like this:
         └── version
 ```
 
-## Step 2: Running `electron-installer-snap`
+### Step 2: Running `electron-installer-snap`
 
 From a terminal that has `snapcraft` in its `PATH`, run `electron-installer-snap`
 with the only required parameter `--src`, which is the location of your packaged
@@ -77,7 +78,7 @@ npx electron-installer-snap --src=out/myappname-linux-x64
 ```
 
 If you have an existing build pipeline, you can use `electron-installer-snap`
-programmatically. For more information, see the [API docs][snapcraft-syntax].
+programmatically. For more information, see the [Snapcraft API docs][snapcraft-syntax].
 
 ```js
 const snap = require('electron-installer-snap')
@@ -86,14 +87,14 @@ snap(options)
   .then(snapPath => console.log(`Created snap at ${snapPath}!`))
 ```
 
-# Using an Existing Debian Package
+## Using an Existing Debian Package
 
 Snapcraft is capable of taking an existing `.deb` file and turning it into
 a `.snap` file. The creation of a snap is configured using a `snapcraft.yaml`
 file that describes the sources, dependencies, description, and other core
 building blocks.
 
-## Step 1: Create a Debian Package
+### Step 1: Create a Debian Package
 
 If you do not already have a `.deb` package, using `electron-installer-snap`
 might be an easier path to create snap packages. However, multiple solutions
@@ -101,7 +102,7 @@ for creating Debian packages exist, including [`electron-forge`][electron-forge]
 [`electron-builder`][electron-builder] or
 [`electron-installer-debian`][electron-installer-debian].
 
-## Step 2: Create a snapcraft.yaml
+### Step 2: Create a snapcraft.yaml
 
 For more information on the available configuration options, see the
 [documentation on the snapcraft syntax][snapcraft-syntax].
@@ -180,3 +181,4 @@ apps:
 [electron-forge]: https://github.com/electron-userland/electron-forge
 [electron-builder]: https://github.com/electron-userland/electron-builder
 [electron-installer-debian]: https://github.com/unindented/electron-installer-debian
+[electron-winstaller]: https://github.com/electron/windows-installer
