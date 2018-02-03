@@ -78,7 +78,6 @@ describe('security warnings', () => {
       }
     })
     w.webContents.on('console-message', (e, level, message) => {
-      console.log(message)
       assert(message.includes('Disabled webSecurity'))
       done()
     })
