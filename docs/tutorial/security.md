@@ -54,9 +54,20 @@ Node.js integration enabled. Instead, use only local files (packaged together
 with your application) to execute Node.js code. To display remote content, use
 the [`webview`][web-view] tag and make sure to disable the `nodeIntegration`.
 
-#### Checklist: Security Recommendations
+## Electron Security Warnings
 
-This is not bulletproof, but at the least, you should attempt the following:
+From Electron 2.0 on, developers will see warnings and recommendations printed
+to the developer console. They only show op when the binary's name is Electron,
+indicating that a developer is currently looking at the console.
+
+You can force-enable or force-disable these warnings by setting
+`ELECTRON_ENABLE_SECURITY_WARNINGS` or `ELECTRON_DISABLE_SECURITY_WARNINGS` on
+either `process.env` or the `window` object.
+
+## Checklist: Security Recommendations
+
+This is not bulletproof, but at the least, you should follow these steps to
+improve the security of your application.
 
 1) [Only load secure content](#only-load-secure-content)
 2) [Disable the Node.js integration in all renderers that display remote content](#disable-node.js-integration-for-remote-content)
