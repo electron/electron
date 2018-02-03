@@ -3,9 +3,12 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const url = require('url')
+const {execSync} = require('child_process')
 
 const {remote} = require('electron')
 const {BrowserWindow} = remote
+
+const {closeWindow} = require('./window-helpers')
 
 describe('security warnings', () => {
   let server
@@ -13,6 +16,7 @@ describe('security warnings', () => {
   let useCsp = true
 
   before(() => {
+    // Create HTTP Server
     server = http.createServer((request, response) => {
       const uri = url.parse(request.url).pathname
       let filename = path.join(__dirname, './fixtures/pages', uri)
@@ -35,7 +39,7 @@ describe('security warnings', () => {
             return
           }
 
-          const cspHeaders = { 'Content-Security-Policy': `script-src 'self'` }
+          const cspHeaders = { 'Content-Security-Policy': `script-src 'self' 'unsafe-inline'` }
           response.writeHead(200, useCsp ? cspHeaders : undefined)
           response.write(file, 'binary')
           response.end()
@@ -45,12 +49,14 @@ describe('security warnings', () => {
   })
 
   after(() => {
+    // Close server
     server.close()
     server = null
   })
 
   afterEach(() => {
-    if (w && w.close) w.close()
+    closeWindow(w).then(() => { w = null })
+
     useCsp = true
   })
 
@@ -61,7 +67,7 @@ describe('security warnings', () => {
       done()
     })
 
-    w.loadURL(`http://127.0.0.1:8881/base-page.html`)
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
   it('should warn about disabled webSecurity', (done) => {
@@ -73,11 +79,12 @@ describe('security warnings', () => {
       }
     })
     w.webContents.on('console-message', (e, level, message) => {
+      console.log(message)
       assert(message.includes('Disabled webSecurity'))
       done()
     })
 
-    w.loadURL(`http://127.0.0.1:8881/base-page.html`)
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
   it('should warn about insecure Content-Security-Policy', (done) => {
@@ -94,7 +101,7 @@ describe('security warnings', () => {
     })
 
     useCsp = false
-    w.loadURL(`http://127.0.0.1:8881/base-page.html`)
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
   it('should warn about allowRunningInsecureContent', (done) => {
@@ -110,7 +117,7 @@ describe('security warnings', () => {
       done()
     })
 
-    w.loadURL(`http://127.0.0.1:8881/base-page.html`)
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
   it('should warn about experimentalFeatures', (done) => {
@@ -126,7 +133,7 @@ describe('security warnings', () => {
       done()
     })
 
-    w.loadURL(`http://127.0.0.1:8881/base-page.html`)
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
   it('should warn about blinkFeatures', (done) => {
@@ -142,7 +149,7 @@ describe('security warnings', () => {
       done()
     })
 
-    w.loadURL(`http://127.0.0.1:8881/base-page.html`)
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
   it('should warn about allowpopups', (done) => {
@@ -159,5 +166,22 @@ describe('security warnings', () => {
     })
 
     w.loadURL(`http://127.0.0.1:8881/webview-allowpopups.html`)
+  })
+
+  it('should warn about insecure resources', (done) => {
+    w = new BrowserWindow({
+      show: true,
+      webPreferences: {
+        nodeIntegration: false
+      }
+    })
+    w.webContents.on('console-message', (e, level, message) => {
+      console.log(message)
+      assert(message.includes('Insecure Resources'))
+      done()
+    })
+
+    w.loadURL(`http://127.0.0.1:8881/insecure-resources.html`)
+    w.webContents.openDevTools()
   })
 })
