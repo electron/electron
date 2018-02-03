@@ -3,7 +3,6 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const url = require('url')
-const {execSync} = require('child_process')
 
 const {remote} = require('electron')
 const {BrowserWindow} = remote
