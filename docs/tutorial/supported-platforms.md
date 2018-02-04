@@ -20,6 +20,7 @@ Please note, the `ARM` version of Windows is not supported for now.
 The prebuilt `ia32` (`i686`) and `x64` (`amd64`) binaries of Electron are built on
 Ubuntu 12.04, the `arm` binary is built against ARM v7 with hard-float ABI and
 NEON for Debian Wheezy.
+It is to be noted that arm and armv7l are currently identical.
 
 Whether the prebuilt binary can run on a distribution depends on whether the
 distribution includes the libraries that Electron is linked to on the building
