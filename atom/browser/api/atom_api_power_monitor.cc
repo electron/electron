@@ -92,10 +92,6 @@ using atom::api::PowerMonitor;
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-#if defined(OS_MACOSX)
-  base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
-#endif
-
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("powerMonitor", PowerMonitor::Create(isolate));
