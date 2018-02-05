@@ -39,3 +39,10 @@ Emitted when the system changes to AC power.
 ### Event: 'on-battery' _Windows_
 
 Emitted when system changes to battery power.
+
+### Event: 'shutdown' _Linux_ _macOS_
+
+Emitted when the system is about to reboot or shut down. If the event handler
+invokes `e.preventDefault()`, Electron will attempt to delay system shutdown in
+order for the app to exit cleanly. If `e.preventDefault()` is called, the app
+should exit as soon as possible by calling something like `app.quit()`.
