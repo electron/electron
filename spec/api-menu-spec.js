@@ -87,15 +87,18 @@ describe('Menu module', () => {
       it('should position at endof existing separator groups', () => {
         const menu = Menu.buildFromTemplate([
           {
-            type: 'separator',
-            id: 'numbers'
+            label: 'first',
+            id: 'first'
           }, {
             type: 'separator',
-            id: 'letters'
+            id: 'numbers'
           }, {
             label: 'a',
             id: 'a',
             position: 'endof=letters'
+          }, {
+            type: 'separator',
+            id: 'letters'
           }, {
             label: '1',
             id: '1',
@@ -118,14 +121,59 @@ describe('Menu module', () => {
             position: 'endof=numbers'
           }
         ])
-        assert.equal(menu.items[0].id, 'numbers')
-        assert.equal(menu.items[1].label, '1')
-        assert.equal(menu.items[2].label, '2')
-        assert.equal(menu.items[3].label, '3')
-        assert.equal(menu.items[4].id, 'letters')
-        assert.equal(menu.items[5].label, 'a')
-        assert.equal(menu.items[6].label, 'b')
-        assert.equal(menu.items[7].label, 'c')
+
+        assert.equal(menu.items[1].id, 'numbers')
+        assert.equal(menu.items[2].label, '1')
+        assert.equal(menu.items[3].label, '2')
+        assert.equal(menu.items[4].label, '3')
+        assert.equal(menu.items[5].id, 'letters')
+        assert.equal(menu.items[6].label, 'a')
+        assert.equal(menu.items[7].label, 'b')
+        assert.equal(menu.items[8].label, 'c')
+      })
+
+      it('should filter excess menu separators', () => {
+        const menuOne = Menu.buildFromTemplate([
+          {
+            type: 'separator'
+          }, {
+            label: 'a'
+          }, {
+            label: 'b'
+          }, {
+            label: 'c'
+          }, {
+            type: 'separator'
+          }
+        ])
+
+        assert.equal(menuOne.items.length, 3)
+        assert.equal(menuOne.items[0].label, 'a')
+        assert.equal(menuOne.items[1].label, 'b')
+        assert.equal(menuOne.items[2].label, 'c')
+
+        const menuTwo = Menu.buildFromTemplate([
+          {
+            type: 'separator'
+          }, {
+            type: 'separator'
+          }, {
+            label: 'a'
+          }, {
+            label: 'b'
+          }, {
+            label: 'c'
+          }, {
+            type: 'separator'
+          }, {
+            type: 'separator'
+          }
+        ])
+
+        assert.equal(menuTwo.items.length, 3)
+        assert.equal(menuTwo.items[0].label, 'a')
+        assert.equal(menuTwo.items[1].label, 'b')
+        assert.equal(menuTwo.items[2].label, 'c')
       })
 
       it('should create separator group if endof does not reference existing separator group', () => {
