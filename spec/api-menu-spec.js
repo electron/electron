@@ -133,7 +133,7 @@ describe('Menu module', () => {
       })
 
       it('should filter excess menu separators', () => {
-        const menu = Menu.buildFromTemplate([
+        const menuOne = Menu.buildFromTemplate([
           {
             type: 'separator'
           }, {
@@ -147,10 +147,33 @@ describe('Menu module', () => {
           }
         ])
 
-        assert.equal(menu.items.length, 3)
-        assert.equal(menu.items[0].label, 'a')
-        assert.equal(menu.items[1].label, 'b')
-        assert.equal(menu.items[2].label, 'c')
+        assert.equal(menuOne.items.length, 3)
+        assert.equal(menuOne.items[0].label, 'a')
+        assert.equal(menuOne.items[1].label, 'b')
+        assert.equal(menuOne.items[2].label, 'c')
+
+        const menuTwo = Menu.buildFromTemplate([
+          {
+            type: 'separator'
+          }, {
+            type: 'separator'
+          }, {
+            label: 'a'
+          }, {
+            label: 'b'
+          }, {
+            label: 'c'
+          }, {
+            type: 'separator'
+          }, {
+            type: 'separator'
+          }
+        ])
+
+        assert.equal(menuTwo.items.length, 3)
+        assert.equal(menuTwo.items[0].label, 'a')
+        assert.equal(menuTwo.items[1].label, 'b')
+        assert.equal(menuTwo.items[2].label, 'c')
       })
 
       it('should create separator group if endof does not reference existing separator group', () => {
