@@ -112,6 +112,7 @@ class Window : public mate::TrackableObject<Window>,
   void Hide();
   bool IsVisible();
   bool IsEnabled();
+  void SetEnabled(bool enable);
   void Maximize();
   void Unmaximize();
   bool IsMaximized();

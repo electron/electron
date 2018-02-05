@@ -9,6 +9,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/native_window_views.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -25,10 +26,6 @@
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
-
-#if defined(TOOLKIT_VIEWS)
-#include "atom/browser/native_window_views.h"
-#endif
 
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/taskbar_host.h"
@@ -391,6 +388,11 @@ bool Window::IsVisible() {
 
 bool Window::IsEnabled() {
   return window_->IsEnabled();
+}
+
+void Window::SetEnabled(bool enable) {
+  auto window = static_cast<NativeWindowViews*>(window_.get());
+  window->SetEnabled(enable);
 }
 
 void Window::Maximize() {
@@ -1008,6 +1010,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("hide", &Window::Hide)
       .SetMethod("isVisible", &Window::IsVisible)
       .SetMethod("isEnabled", &Window::IsEnabled)
+      .SetMethod("setEnabled", & Window::SetEnabled)
       .SetMethod("maximize", &Window::Maximize)
       .SetMethod("unmaximize", &Window::Unmaximize)
       .SetMethod("isMaximized", &Window::IsMaximized)
