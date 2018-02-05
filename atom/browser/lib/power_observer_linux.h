@@ -20,10 +20,12 @@ class PowerObserverLinux : public base::PowerObserver {
  public:
   PowerObserverLinux();
 
+ protected:
   void BlockSleep();
   void UnblockSleep();
   void BlockShutdown();
   void UnblockShutdown();
+
   virtual bool OnShutdown() { return false; }
 
  private:
@@ -41,6 +43,7 @@ class PowerObserverLinux : public base::PowerObserver {
   base::ScopedFD sleep_lock_;
   base::ScopedFD shutdown_lock_;
   base::WeakPtrFactory<PowerObserverLinux> weak_ptr_factory_;
+
   DISALLOW_COPY_AND_ASSIGN(PowerObserverLinux);
 };
 
