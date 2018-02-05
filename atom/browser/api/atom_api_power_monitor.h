@@ -26,15 +26,19 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
   explicit PowerMonitor(v8::Isolate* isolate);
   ~PowerMonitor() override;
 
+  // Called by native calles.
+  bool ShouldShutdown();
+
+#if defined(OS_LINUX)
+  // Private JS APIs.
+  void BlockShutdown();
+  void UnblockShutdown();
+#endif
+
   // base::PowerObserver implementations:
   void OnPowerStateChange(bool on_battery_power) override;
   void OnSuspend() override;
   void OnResume() override;
-
-#if defined(OS_LINUX)
-  // atom::PowerObserver
-  bool OnShutdown() override;
-#endif
 
  private:
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);

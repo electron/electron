@@ -26,7 +26,7 @@ class PowerObserverLinux : public base::PowerObserver {
   void BlockShutdown();
   void UnblockShutdown();
 
-  virtual bool OnShutdown() { return false; }
+  void SetShutdownHandler(base::Callback<bool()> should_shutdown);
 
  private:
   void OnLoginServiceAvailable(bool available);
@@ -36,6 +36,8 @@ class PowerObserverLinux : public base::PowerObserver {
   void OnSignalConnected(const std::string& interface,
                          const std::string& signal,
                          bool success);
+
+  base::Callback<bool()> should_shutdown_;
 
   scoped_refptr<dbus::Bus> bus_;
   scoped_refptr<dbus::ObjectProxy> logind_;

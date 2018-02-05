@@ -114,6 +114,10 @@ void PowerObserverLinux::UnblockShutdown() {
   shutdown_lock_.reset();
 }
 
+void PowerObserverLinux::SetShutdownHandler(base::Callback<bool()> handler) {
+  should_shutdown_ = std::move(handler);
+}
+
 void PowerObserverLinux::OnInhibitResponse(base::ScopedFD* scoped_fd,
                                            dbus::Response* response) {
   dbus::MessageReader reader(response);
@@ -144,7 +148,7 @@ void PowerObserverLinux::OnPrepareForShutdown(dbus::Signal* signal) {
     return;
   }
   if (shutting_down) {
-    if (!OnShutdown()) {
+    if (!should_shutdown_ || !should_shutdown_.Run()) {
       // The user didn't try to prevent shutdown. Release the lock and allow the
       // shutdown to continue normally.
       shutdown_lock_.reset();

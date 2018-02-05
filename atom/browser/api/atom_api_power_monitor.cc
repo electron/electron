@@ -16,6 +16,11 @@ namespace atom {
 namespace api {
 
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
+#if defined(OS_LINUX)
+  SetShutdownHandler(base::Bind(&PowerMonitor::ShouldShutdown,
+                                // Passed to base class, no need for weak ptr.
+                                base::Unretained(this)));
+#endif
   base::PowerMonitor::Get()->AddObserver(this);
   Init(isolate);
 }
@@ -23,6 +28,20 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 PowerMonitor::~PowerMonitor() {
   base::PowerMonitor::Get()->RemoveObserver(this);
 }
+
+bool PowerMonitor::ShouldShutdown() {
+  return Emit("shutdown");
+}
+
+#if defined(OS_LINUX)
+void PowerMonitor::BlockShutdown() {
+  PowerObserverLinux::BlockShutdown();
+}
+
+void PowerMonitor::UnblockShutdown() {
+  PowerObserverLinux::UnblockShutdown();
+}
+#endif
 
 void PowerMonitor::OnPowerStateChange(bool on_battery_power) {
   if (on_battery_power)
@@ -38,12 +57,6 @@ void PowerMonitor::OnSuspend() {
 void PowerMonitor::OnResume() {
   Emit("resume");
 }
-
-#if defined(OS_LINUX)
-bool PowerMonitor::OnShutdown() {
-  return Emit("shutdown");
-}
-#endif
 
 // static
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
