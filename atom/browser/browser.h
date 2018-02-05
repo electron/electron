@@ -105,6 +105,9 @@ class Browser : public WindowListObserver {
   LoginItemSettings GetLoginItemSettings(const LoginItemSettings& options);
 
 #if defined(OS_MACOSX)
+  // Set the handler which decides whether to shutdown.
+  void SetShutdownHandler(base::Callback<bool()> handler);
+
   // Hide the application.
   void Hide();
 

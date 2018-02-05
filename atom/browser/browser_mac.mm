@@ -21,6 +21,10 @@
 
 namespace atom {
 
+void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
+  [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
+}
+
 void Browser::Focus() {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
 }

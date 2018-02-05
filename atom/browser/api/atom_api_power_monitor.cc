@@ -18,8 +18,10 @@ namespace api {
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 #if defined(OS_LINUX)
   SetShutdownHandler(base::Bind(&PowerMonitor::ShouldShutdown,
-                                // Passed to base class, no need for weak ptr.
                                 base::Unretained(this)));
+#elif defined(OS_MACOSX)
+  Browser::Get()->SetShutdownHandler(base::Bind(&PowerMonitor::ShouldShutdown,
+                                                base::Unretained(this)));
 #endif
   base::PowerMonitor::Get()->AddObserver(this);
   Init(isolate);
@@ -30,7 +32,7 @@ PowerMonitor::~PowerMonitor() {
 }
 
 bool PowerMonitor::ShouldShutdown() {
-  return Emit("shutdown");
+  return !Emit("shutdown");
 }
 
 #if defined(OS_LINUX)

@@ -29,8 +29,14 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 }
 
 - (void)terminate:(id)sender {
+  if (shouldShutdown_ && !shouldShutdown_.Run())
+    return;  // User will call Quit later.
   AtomApplicationDelegate* atomDelegate = (AtomApplicationDelegate*) [NSApp delegate];
   [atomDelegate tryToTerminateApp:self];
+}
+
+- (void)setShutdownHandler:(base::Callback<bool()>)handler {
+  shouldShutdown_ = std::move(handler);
 }
 
 - (BOOL)isHandlingSendEvent {

@@ -148,7 +148,7 @@ void PowerObserverLinux::OnPrepareForShutdown(dbus::Signal* signal) {
     return;
   }
   if (shutting_down) {
-    if (!should_shutdown_ || !should_shutdown_.Run()) {
+    if (!should_shutdown_ || should_shutdown_.Run()) {
       // The user didn't try to prevent shutdown. Release the lock and allow the
       // shutdown to continue normally.
       shutdown_lock_.reset();
