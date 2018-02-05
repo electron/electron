@@ -31,8 +31,11 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (void)terminate:(id)sender {
   if (shouldShutdown_ && !shouldShutdown_.Run())
     return;  // User will call Quit later.
-  AtomApplicationDelegate* atomDelegate = (AtomApplicationDelegate*) [NSApp delegate];
-  [atomDelegate tryToTerminateApp:self];
+
+  // We simply try to close the browser, which in turn will try to close the
+  // windows. Termination can proceed if all windows are closed or window close
+  // can be cancelled which will abort termination.
+  atom::Browser::Get()->Quit();
 }
 
 - (void)setShutdownHandler:(base::Callback<bool()>)handler {
