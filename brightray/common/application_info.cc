@@ -4,15 +4,15 @@ namespace brightray {
 
 namespace {
 
-std::string overriden_application_name_;
+std::string g_overriden_application_name;
 
 }
 
 void OverrideApplicationName(const std::string& name) {
-    overriden_application_name_ = name;
+  g_overriden_application_name = name;
 }
 std::string GetOverridenApplicationName() {
-    return overriden_application_name_;
+  return g_overriden_application_name;
 }
 
 }  // namespace brightray
