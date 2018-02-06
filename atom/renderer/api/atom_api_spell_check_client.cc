@@ -9,6 +9,7 @@
 
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
+#include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
@@ -83,16 +84,14 @@ void SpellCheckClient::RequestCheckingOfText(
   completionCallback->DidFinishCheckingText(results);
 }
 
-void SpellCheckClient::ShowSpellingUI(bool show) {
-}
+void SpellCheckClient::ShowSpellingUI(bool show) {}
 
 bool SpellCheckClient::IsShowingSpellingUI() {
   return false;
 }
 
 void SpellCheckClient::UpdateSpellingUIWithMisspelledWord(
-    const blink::WebString& word) {
-}
+    const blink::WebString& word) {}
 
 void SpellCheckClient::SpellCheckText(
     const base::string16& text,
@@ -103,9 +102,9 @@ void SpellCheckClient::SpellCheckText(
 
   if (!text_iterator_.IsInitialized() &&
       !text_iterator_.Initialize(&character_attributes_, true)) {
-      // We failed to initialize text_iterator_, return as spelled correctly.
-      VLOG(1) << "Failed to initialize SpellcheckWordIterator";
-      return;
+    // We failed to initialize text_iterator_, return as spelled correctly.
+    VLOG(1) << "Failed to initialize SpellcheckWordIterator";
+    return;
   }
 
   if (!contraction_iterator_.IsInitialized() &&
@@ -121,7 +120,13 @@ void SpellCheckClient::SpellCheckText(
   base::string16 word;
   int word_start;
   int word_length;
-  while (text_iterator_.GetNextWord(&word, &word_start, &word_length)) {
+  for (auto status =
+           text_iterator_.GetNextWord(&word, &word_start, &word_length);
+       status != SpellcheckWordIterator::IS_END_OF_TEXT;
+       status = text_iterator_.GetNextWord(&word, &word_start, &word_length)) {
+    if (status == SpellcheckWordIterator::IS_SKIPPABLE)
+      continue;
+
     // Found a word (or a contraction) that the spellchecker can check the
     // spelling of.
     if (SpellCheckWord(scope, word))
@@ -145,7 +150,7 @@ void SpellCheckClient::SpellCheckText(
 bool SpellCheckClient::SpellCheckWord(
     const SpellCheckScope& scope,
     const base::string16& word_to_check) const {
-    DCHECK(!scope.spell_check_.IsEmpty());
+  DCHECK(!scope.spell_check_.IsEmpty());
 
   v8::Local<v8::Value> word = mate::ConvertToV8(isolate_, word_to_check);
   v8::Local<v8::Value> result =
@@ -171,7 +176,14 @@ bool SpellCheckClient::IsValidContraction(const SpellCheckScope& scope,
   int word_start;
   int word_length;
 
-  while (contraction_iterator_.GetNextWord(&word, &word_start, &word_length)) {
+  for (auto status =
+           contraction_iterator_.GetNextWord(&word, &word_start, &word_length);
+       status != SpellcheckWordIterator::IS_END_OF_TEXT;
+       status = contraction_iterator_.GetNextWord(&word, &word_start,
+                                                  &word_length)) {
+    if (status == SpellcheckWordIterator::IS_SKIPPABLE)
+      continue;
+
     if (!SpellCheckWord(scope, word))
       return false;
   }
