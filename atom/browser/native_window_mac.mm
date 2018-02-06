@@ -1135,6 +1135,17 @@ bool NativeWindowMac::IsEnabled() {
   return [window_ attachedSheet] == nil;
 }
 
+void NativeWindowMac::SetEnabled(bool enable) {
+  if (enable) {
+    [window_ beginSheet: window_ completionHandler:^(NSModalResponse returnCode) {
+       NSLog(@"modal enabled");
+       return;
+    }];
+  } else {
+    [window_ endSheet: [window_ attachedSheet]];
+  }
+}
+
 void NativeWindowMac::Maximize() {
   if (IsMaximized())
     return;

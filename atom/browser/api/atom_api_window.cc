@@ -393,6 +393,10 @@ bool Window::IsEnabled() {
   return window_->IsEnabled();
 }
 
+void Window::SetEnabled(bool enable) {
+  window_->SetEnabled(enable);
+}
+
 void Window::Maximize() {
   window_->Maximize();
 }
@@ -1008,6 +1012,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("hide", &Window::Hide)
       .SetMethod("isVisible", &Window::IsVisible)
       .SetMethod("isEnabled", &Window::IsEnabled)
+      .SetMethod("setEnabled", & Window::SetEnabled)
       .SetMethod("maximize", &Window::Maximize)
       .SetMethod("unmaximize", &Window::Unmaximize)
       .SetMethod("isMaximized", &Window::IsMaximized)
