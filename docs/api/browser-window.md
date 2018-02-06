@@ -847,7 +847,7 @@ the supplied bounds.
 
 Returns [`Rectangle`](structures/rectangle.md)
 
-### `win.setEnabled(enable)`
+#### `win.setEnabled(enable)`
 
 * `enable` Boolean
 

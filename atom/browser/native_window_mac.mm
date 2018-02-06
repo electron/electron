@@ -1045,6 +1045,8 @@ NativeWindowMac::NativeWindowMac(
       web_contents->GetWebContents()->GetRenderViewHost());
 }
 
+NSWindow* currentSheet;
+
 NativeWindowMac::~NativeWindowMac() {
   [NSEvent removeMonitor:wheel_event_monitor_];
   Observe(nullptr);
@@ -1137,9 +1139,12 @@ bool NativeWindowMac::IsEnabled() {
 
 void NativeWindowMac::SetEnabled(bool enable) {
   if (enable) {
-    // TODO(codebytere): figure out how to implement window enabling
+    [window_ beginSheet: window_ completionHandler:^(NSModalResponse returnCode) {
+       NSLog(@"modal enabled");
+       return;
+    }];
   } else {
-    [window_ attachedSheet] = nil;
+    [window_ endSheet: [window_ attachedSheet]];
   }
 }
 
