@@ -42,17 +42,17 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
 
 }  // namespace
 
-void InitializeResourceBundle(const std::string& locale) {
-  // Load locales.
-  ui::ResourceBundle::InitSharedInstanceWithLocale(
-      locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
-
-  // Load other resource files.
+void LoadResourceBundle(const std::string& locale) {
+  if (!ui::ResourceBundle::HasSharedInstance())
+    ui::ResourceBundle::InitSharedInstanceWithLocale(
+        locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
+  bundle.ReloadLocaleResources(locale);
+// Load other resource files.
 #if defined(OS_MACOSX)
   LoadCommonResources();
 #else
   base::FilePath pak_dir;
-  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
   PathService::Get(base::DIR_MODULE, &pak_dir);
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak")),
@@ -104,7 +104,7 @@ void MainDelegate::PreSandboxStartup() {
   // browser process as a command line flag.
   if (SubprocessNeedsResourceBundle(process_type)) {
     std::string locale = cmd.GetSwitchValueASCII(switches::kLang);
-    InitializeResourceBundle(locale);
+    LoadResourceBundle(locale);
   }
 }
 

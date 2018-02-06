@@ -29,6 +29,8 @@
 #include "net/proxy/proxy_resolver_v8.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/material_design/material_design_controller.h"
+#include "ui/base/resource/resource_bundle.h"
+#include "ui/base/ui_base_switches.h"
 
 #if defined(USE_AURA)
 #include "ui/display/display.h"
@@ -220,24 +222,28 @@ void BrowserMainParts::ToolkitInitialized() {
 }
 
 void BrowserMainParts::PreMainMessageLoopStart() {
+  // Initialize ui::ResourceBundle.
+  ui::ResourceBundle::InitSharedInstanceWithLocale(
+      "", nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+  auto cmd_line = base::CommandLine::ForCurrentProcess();
+  if (cmd_line->HasSwitch(switches::kLang)) {
+    base::FilePath locale_file_path;
+    const std::string locale = cmd_line->GetSwitchValueASCII(switches::kLang);
+    locale_file_path =
+        ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale, true);
+    if (!locale_file_path.empty())
+      custom_locale_ = locale;
+  }
+
 #if defined(OS_MACOSX)
-  l10n_util::OverrideLocaleWithCocoaLocale();
+  if (custom_locale_.empty())
+    l10n_util::OverrideLocaleWithCocoaLocale();
 #endif
-  InitializeResourceBundle("");
+  LoadResourceBundle(custom_locale_);
 #if defined(OS_MACOSX)
   InitializeMainNib();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
-}
-
-void BrowserMainParts::PreMainMessageLoopRun() {
-  content::WebUIControllerFactory::RegisterFactory(
-      WebUIControllerFactory::GetInstance());
-
-  // --remote-debugging-port
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
-    DevToolsManagerDelegate::StartHttpHandler();
 }
 
 void BrowserMainParts::PostMainMessageLoopStart() {
@@ -277,7 +283,8 @@ int BrowserMainParts::PreCreateThreads() {
     layout_provider_.reset(new views::LayoutProvider());
 
   // Initialize the app locale.
-  BrowserClient::SetApplicationLocale(l10n_util::GetApplicationLocale(""));
+  BrowserClient::SetApplicationLocale(
+    l10n_util::GetApplicationLocale(custom_locale_));
 
   // Manage global state of net and other IO thread related.
   io_thread_ = base::MakeUnique<IOThread>();
