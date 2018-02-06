@@ -835,12 +835,6 @@ Resizes and moves the window to the supplied bounds
 
 Returns [`Rectangle`](structures/rectangle.md)
 
-#### `win.setEnabled(enable)`
-
-* `enable` Boolean
-
-Disable or enable the window (must be called before `ready`).
-
 #### `win.setContentBounds(bounds[, animate])`
 
 * `bounds` [Rectangle](structures/rectangle.md)

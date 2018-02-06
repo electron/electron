@@ -126,6 +126,19 @@ describe('app module', () => {
         done()
       })
     })
+    it('should not set an invalid locale', (done) => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'locale-check')
+      const electronPath = remote.getGlobal('process').execPath
+      let output = ''
+      let appProcess = ChildProcess.spawn(electronPath, [appPath, '--lang=asdfkl'])
+      appProcess.stdout.on('data', (data) => {
+        output += data
+      })
+      appProcess.stdout.on('end', () => {
+        assert.equal(output, 'en-US')
+        done()
+      })
+    })
   })
 
   describe('app.isInApplicationsFolder()', () => {

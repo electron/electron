@@ -530,6 +530,12 @@ Returns `String` - The current application locale. Possible return values are do
 
 **Note:** On Windows you have to call it after the `ready` events gets emitted.
 
+### `app.setLocale(locale)`
+
+* `locale` String
+
+Set the locale of the app (must be called before the `ready` event).
+
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
 * `path` String
