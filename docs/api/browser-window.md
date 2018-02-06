@@ -847,6 +847,12 @@ the supplied bounds.
 
 Returns [`Rectangle`](structures/rectangle.md)
 
+### `win.setEnabled(enabled)`
+
+* `enabled` Boolean
+
+Disable or enable the window.
+
 #### `win.setSize(width, height[, animate])`
 
 * `width` Integer
