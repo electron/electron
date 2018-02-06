@@ -80,6 +80,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void Hide() = 0;
   virtual bool IsVisible() = 0;
   virtual bool IsEnabled() = 0;
+  virtual void SetEnabled(bool enable) = 0;
   virtual void Maximize() = 0;
   virtual void Unmaximize() = 0;
   virtual bool IsMaximized() = 0;

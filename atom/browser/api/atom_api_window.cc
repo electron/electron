@@ -391,8 +391,7 @@ bool Window::IsEnabled() {
 }
 
 void Window::SetEnabled(bool enable) {
-  auto window = static_cast<NativeWindowViews*>(window_.get());
-  window->SetEnabled(enable);
+  window_->SetEnabled(enable);
 }
 
 void Window::Maximize() {

@@ -1135,6 +1135,14 @@ bool NativeWindowMac::IsEnabled() {
   return [window_ attachedSheet] == nil;
 }
 
+void NativeWindowMac::SetEnabled(bool enable) {
+  if (enable == false){
+    [window_ attachedSheet] = nil;
+  } else {
+    [window_ beginSheet:window_];
+  }
+}
+
 void NativeWindowMac::Maximize() {
   if (IsMaximized())
     return;
