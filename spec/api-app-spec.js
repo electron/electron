@@ -122,6 +122,7 @@ describe('app module', () => {
         output += data
       })
       appProcess.stdout.on('end', () => {
+        output = output.replace(/(\r\n|\n|\r)/gm, '')
         assert.equal(output, 'fr')
         done()
       })
@@ -135,6 +136,7 @@ describe('app module', () => {
         output += data
       })
       appProcess.stdout.on('end', () => {
+        output = output.replace(/(\r\n|\n|\r)/gm, '')
         assert.equal(output, 'en-US')
         done()
       })
