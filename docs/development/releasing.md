@@ -164,7 +164,7 @@ This release is published to [npm](https://www.npmjs.com/package/electron) under
 1. Uncheck the `prerelease` checkbox if you're publishing a stable release; leave it checked for beta releases.
 1. Click 'Save draft'. **Do not click 'Publish release'!**
 1. Wait for all builds to pass before proceeding.
-1. You can run `npm run release --validateRelease` to verify that all of the
+1. You can run `npm run release -- --validateRelease` to verify that all of the
 required files have been created for the release.
 
 ## Merge temporary branch
