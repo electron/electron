@@ -1045,8 +1045,6 @@ NativeWindowMac::NativeWindowMac(
       web_contents->GetWebContents()->GetRenderViewHost());
 }
 
-NSWindow* currentSheet;
-
 NativeWindowMac::~NativeWindowMac() {
   [NSEvent removeMonitor:wheel_event_monitor_];
   Observe(nullptr);
