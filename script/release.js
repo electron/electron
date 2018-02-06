@@ -51,8 +51,8 @@ async function getDraftRelease (version, skipValidation) {
   return draft
 }
 
-async function validateReleaseAssets (release) {
-  const requiredAssets = assetsForVersion(release.tag_name).sort()
+async function validateReleaseAssets (release, validatingRelease) {
+  const requiredAssets = assetsForVersion(release.tag_name, validatingRelease).sort()
   const extantAssets = release.assets.map(asset => asset.name).sort()
   const downloadUrls = release.assets.map(asset => asset.browser_download_url).sort()
 
@@ -84,7 +84,7 @@ function check (condition, statement, exitIfFail = false) {
   }
 }
 
-function assetsForVersion (version) {
+function assetsForVersion (version, validatingRelease) {
   const patterns = [
     `electron-${version}-darwin-x64-dsym.zip`,
     `electron-${version}-darwin-x64-symbols.zip`,
@@ -120,9 +120,11 @@ function assetsForVersion (version) {
     `ffmpeg-${version}-linux-x64.zip`,
     `ffmpeg-${version}-mas-x64.zip`,
     `ffmpeg-${version}-win32-ia32.zip`,
-    `ffmpeg-${version}-win32-x64.zip`,
-    `SHASUMS256.txt`
+    `ffmpeg-${version}-win32-x64.zip`
   ]
+  if (!validatingRelease) {
+    patterns.push('SHASUMS256.txt')
+  }
   return patterns
 }
 
@@ -256,9 +258,14 @@ async function publishRelease (release) {
 
 async function makeRelease (releaseToValidate) {
   if (releaseToValidate) {
-    console.log(`Validating release ${args.validateRelease}`)
-    let release = await getDraftRelease(args.validateRelease)
-    await validateReleaseAssets(release)
+    if (releaseToValidate === true) {
+      releaseToValidate = pkgVersion
+    } else {
+      console.log('Release to validate !=== true')
+    }
+    console.log(`Validating release ${releaseToValidate}`)
+    let release = await getDraftRelease(releaseToValidate)
+    await validateReleaseAssets(release, true)
   } else {
     checkVersion()
     let draftRelease = await getDraftRelease()

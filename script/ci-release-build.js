@@ -32,7 +32,7 @@ async function makeRequest (requestOptions, parseResponse) {
         } else {
           console.log('Error: ', `(status ${res.statusCode})`, err || res.body, requestOptions)
         }
-        reject()
+        reject(err)
       }
     })
   })
@@ -199,7 +199,7 @@ function runRelease (targetBranch, options) {
 module.exports = runRelease
 
 if (require.main === module) {
-  const args = require('minimist')(process.argv.slice(2))
+  const args = require('minimist')(process.argv.slice(2), { boolean: 'ghRelease' })
   const targetBranch = args._[0]
   if (args._.length < 1) {
     console.log(`Trigger CI to build release builds of electron.
