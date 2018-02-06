@@ -112,6 +112,22 @@ describe('app module', () => {
     })
   })
 
+  describe('app.setLocale()', () => {
+    it('should set the locale', (done) => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'locale-check')
+      const electronPath = remote.getGlobal('process').execPath
+      let output = ''
+      let appProcess = ChildProcess.spawn(electronPath, [appPath, '--lang=fr'])
+      appProcess.stdout.on('data', (data) => {
+        output += data
+      })
+      appProcess.stdout.on('end', () => {
+        assert.equal(output, 'fr')
+        done()
+      })
+    })
+  })
+
   describe('app.isInApplicationsFolder()', () => {
     before(function () {
       if (process.platform !== 'darwin') {

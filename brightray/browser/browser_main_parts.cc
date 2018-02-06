@@ -246,6 +246,16 @@ void BrowserMainParts::PreMainMessageLoopStart() {
   media::SetLocalizedStringProvider(MediaStringProvider);
 }
 
+void BrowserMainParts::PreMainMessageLoopRun() {
+  content::WebUIControllerFactory::RegisterFactory(
+      WebUIControllerFactory::GetInstance());
+
+  // --remote-debugging-port
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
+    DevToolsManagerDelegate::StartHttpHandler();
+}
+
 void BrowserMainParts::PostMainMessageLoopStart() {
 #if defined(USE_X11)
   // Installs the X11 error handlers for the browser process after the
