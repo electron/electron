@@ -9,7 +9,6 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/native_window_views.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -26,6 +25,10 @@
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
+
+#if defined(TOOLKIT_VIEWS)
+#include "atom/browser/native_window_views.h"
+#endif
 
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/taskbar_host.h"
