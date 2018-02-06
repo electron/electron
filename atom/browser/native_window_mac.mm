@@ -1136,7 +1136,7 @@ bool NativeWindowMac::IsEnabled() {
 }
 
 void NativeWindowMac::SetEnabled(bool enable) {
-  if (enable){
+  if (enable) {
     // TODO(codebytere): figure out how to implement window enabling
   } else {
     [window_ attachedSheet] = nil;
