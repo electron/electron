@@ -139,6 +139,8 @@ const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
 // Enable the web view tag.
 const char kWebviewTag[] = "webviewTag";
 
+const char kCustomArgs[] = "additionalArguments";
+
 }  // namespace options
 
 namespace switches {
