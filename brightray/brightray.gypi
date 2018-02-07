@@ -275,7 +275,6 @@
               # can be removed at link time with --gc-sections.
               '-fdata-sections',
               '-ffunction-sections',
-              '-flto=thin',
             ],
             'ldflags': [
               # Specifically tell the linker to perform optimizations.
@@ -283,13 +282,20 @@
               '-Wl,-O1',
               '-Wl,--as-needed',
               '-Wl,--gc-sections',
+            ],
+          }],  # OS=="linux"
+          ['OS=="linux" and target_arch in ["ia32", "x64", "arm64"]', {
+            'cflags': [
+              '-flto=thin',
+            ],
+            'ldflags': [
               '-flto=thin',
               '-fuse-ld=lld',  # Chromium Clang uses lld for doing LTO
               '-Wl,--lto-O0',  # this could be removed in future; see https://codereview.chromium.org/2939923004
               '-Wl,-mllvm,-function-sections',
               '-Wl,-mllvm,-data-sections',
             ],
-          }],  # OS=="linux"
+          }],
         ],
       },  # Release_Base
       'conditions': [
