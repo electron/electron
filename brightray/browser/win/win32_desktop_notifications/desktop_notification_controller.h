@@ -36,8 +36,7 @@ class DesktopNotificationController {
         TimerID_Animate = 1
     };
 
-    template<typename T>
-    static constexpr T toast_margin_ = 20;
+    static constexpr int toast_margin_ = 20;
 
     // Wrapper around `NotificationData` which makes sure that
     // the `controller` member is cleared when the controller object
