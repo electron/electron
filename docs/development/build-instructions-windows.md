@@ -41,6 +41,7 @@ there is no Visual Studio project generated.
 $ cd electron
 $ python script\bootstrap.py -v
 ```
+To avoid errors running the bootstrap script, run the bootstrap script as administrator
 
 ## Building
 
