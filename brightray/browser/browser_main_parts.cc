@@ -11,6 +11,10 @@
 #include <sys/stat.h>
 #include <string>
 
+#if defined(OS_LINUX)
+#include <glib.h> // for g_setenv()
+#endif
+
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/message_loop/message_loop.h"
@@ -236,7 +240,7 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 #if defined(OS_LINUX)
       /* When built with USE_GLIB, libcc's GetApplicationLocaleInternal() uses
        * glib's g_get_language_names(), which keys off of getenv("LC_ALL") */
-      setenv("LC_ALL", custom_locale_.c_str(), 1);
+      g_setenv("LC_ALL", custom_locale_.c_str(), TRUE);
 #endif
     }
   }
