@@ -12,7 +12,7 @@
 #include <string>
 
 #if defined(OS_LINUX)
-#include <glib.h> // for g_setenv()
+#include <glib.h>  // for g_setenv()
 #endif
 
 #include "base/command_line.h"
