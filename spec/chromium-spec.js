@@ -4,10 +4,11 @@ const http = require('http')
 const path = require('path')
 const ws = require('ws')
 const url = require('url')
+const ChildProcess = require('child_process')
 const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
-const {app, BrowserWindow, ipcMain, protocol, session, webContents, ChildProcess} = remote
+const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 
@@ -26,7 +27,7 @@ describe('chromium feature', () => {
     listener = null
   })
 
-  describe('command line switches', () => {
+  describe.only('command line switches', () => {
     describe('--lang switch', () => {
       const testLocale = (locale, result, done) => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'locale-check')
