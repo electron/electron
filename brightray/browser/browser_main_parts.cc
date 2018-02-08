@@ -231,8 +231,14 @@ void BrowserMainParts::PreMainMessageLoopStart() {
     const std::string locale = cmd_line->GetSwitchValueASCII(switches::kLang);
     locale_file_path =
         ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale, true);
-    if (!locale_file_path.empty())
+    if (!locale_file_path.empty()) {
       custom_locale_ = locale;
+#if defined(OS_LINUX)
+      /* When built with USE_GLIB, libcc's GetApplicationLocaleInternal() uses
+       * glib's g_get_language_names(), which keys off of getenv("LC_ALL") */
+      setenv("LC_ALL", custom_locale_.c_str(), 1);
+#endif
+    }
   }
 
 #if defined(OS_MACOSX)
