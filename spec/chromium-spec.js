@@ -27,7 +27,7 @@ describe('chromium feature', () => {
     listener = null
   })
 
-  describe.only('command line switches', () => {
+  describe('command line switches', () => {
     describe('--lang switch', () => {
       const testLocale = (locale, result, done) => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'locale-check')
