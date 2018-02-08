@@ -4,7 +4,7 @@
 
 #include "brightray/browser/browser_main_parts.h"
 
-#if defined(OSX_POSIX)
+#if defined(OS_POSIX)
 #include <stdlib.h>
 #endif
 
