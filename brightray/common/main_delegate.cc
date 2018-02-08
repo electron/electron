@@ -43,11 +43,16 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
 }  // namespace
 
 void LoadResourceBundle(const std::string& locale) {
-  if (!ui::ResourceBundle::HasSharedInstance())
-    ui::ResourceBundle::InitSharedInstanceWithLocale(
-        locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+  const bool initialized = ui::ResourceBundle::HasSharedInstance();
+  if (initialized)
+    ui::ResourceBundle::CleanupSharedInstance();
+
+  ui::ResourceBundle::InitSharedInstanceWithLocale(
+    locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+
   ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
   bundle.ReloadLocaleResources(locale);
+
 // Load other resource files.
 #if defined(OS_MACOSX)
   LoadCommonResources();

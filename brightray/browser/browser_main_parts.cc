@@ -231,9 +231,8 @@ void BrowserMainParts::PreMainMessageLoopStart() {
       "", nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
   auto cmd_line = base::CommandLine::ForCurrentProcess();
   if (cmd_line->HasSwitch(switches::kLang)) {
-    base::FilePath locale_file_path;
     const std::string locale = cmd_line->GetSwitchValueASCII(switches::kLang);
-    locale_file_path =
+    const base::FilePath locale_file_path =
         ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale, true);
     if (!locale_file_path.empty()) {
       custom_locale_ = locale;
