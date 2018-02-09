@@ -25,6 +25,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
     for (size_t j = 0; j < filter.second.size(); ++j) {
       // If we meet a '*' file extension, we allow all the file types and no
       // need to set the specified file types.
+
       if (filter.second[j] == "*") {
         [dialog setAllowsOtherFileTypes:YES];
         return;
@@ -41,6 +42,25 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
     file_types = [file_type_set allObjects];
 
   [dialog setAllowedFileTypes:file_types];
+
+  // add file format picker
+  NSView  *accessoryView = [[NSView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 200, 32.0)];
+  NSTextField *label = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 60, 22)];
+
+  [label setEditable:NO];
+  [label setStringValue:@"Format:"];
+  [label setBordered:NO];
+  [label setBezeled:NO];
+  [label setDrawsBackground:NO];
+
+  NSPopUpButton *popupButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(50.0, 2, 140, 22.0) pullsDown:NO];
+  [popupButton addItemsWithTitles:file_types];
+  [popupButton setAction:@selector(selectFormat:)];
+
+  [accessoryView addSubview:label];
+  [accessoryView addSubview:popupButton];
+
+  [dialog setAccessoryView:accessoryView];
 }
 
 void SetupDialog(NSSavePanel* dialog,
