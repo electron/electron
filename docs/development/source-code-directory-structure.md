@@ -9,7 +9,7 @@ to understand the source code better.
 
 ## Structure of Source Code
 
-```
+```diff
 Electron
 ├── atom/ - C++ source code.
 |   ├── app/ - System entry code.
