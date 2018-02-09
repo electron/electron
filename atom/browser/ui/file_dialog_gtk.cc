@@ -13,6 +13,8 @@
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
+#include <glib/gi18n.h>  // _() macro
+
 namespace file_dialog {
 
 namespace {
@@ -39,20 +41,20 @@ class FileChooserDialog {
                     const DialogSettings& settings)
       : parent_(static_cast<atom::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
-    const char* confirm_text = GTK_STOCK_OK;
+    const char* confirm_text = _("_OK");
 
     if (!settings.button_label.empty())
       confirm_text = settings.button_label.c_str();
     else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-      confirm_text = GTK_STOCK_SAVE;
+      confirm_text = _("_Save");
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
-      confirm_text = GTK_STOCK_OPEN;
+      confirm_text = _("_Open");
 
     dialog_ = gtk_file_chooser_dialog_new(
         settings.title.c_str(),
         NULL,
         action,
-        GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+        _("_Cancel"), GTK_RESPONSE_CANCEL,
         confirm_text, GTK_RESPONSE_ACCEPT,
         NULL);
     if (parent_) {
